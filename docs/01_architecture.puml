@@ -1,0 +1,116 @@
+@startuml
+!pragma layout smetana
+title Общая архитектура проверки ответа агента
+
+skinparam backgroundColor #FAFAFA
+skinparam shadowing false
+skinparam roundcorner 14
+skinparam defaultFontName Arial
+skinparam ArrowColor #455A64
+skinparam packageBorderColor #607D8B
+skinparam componentBorderColor #455A64
+skinparam componentBackgroundColor #FFFFFF
+skinparam noteBackgroundColor #FFF8E1
+skinparam noteBorderColor #FFB300
+
+left to right direction
+
+rectangle "Вход" as INPUT #E3F2FD {
+  artifact "Контекст диалога" as PROMPT
+  artifact "Проверяемый ответ" as RESPONSE
+}
+
+package "1. Разбор" as PARSING #E8F5E9 {
+  component "Разделитель источников" as SPLITTER
+  component "Разбор правил\nи описаний инструментов" as POLICY_PARSER
+  component "Разбор истории\nи результатов инструментов" as TRACE_PARSER
+  component "Разбор ответа\nна обязательства" as RESPONSE_PARSER
+  component "Проверка полноты\nразбора ответа" as COVERAGE
+}
+
+package "2. Проверяемое представление" as MODEL #FFF3E0 {
+  database "Реестр правил" as RULES
+  database "Журнал состояний" as STATE
+  database "Указатель доказательств" as EVIDENCE
+  collections "Обязательства ответа\n• утверждения\n• действия\n• отказы\n• запросы сведений" as OBLIGATIONS
+}
+
+package "3. Проверка в двух направлениях" as VERIFY #F3E5F5 {
+  component "Точные проверки\nсхема, типы, числа, даты,\nдоступность инструмента" as HARD
+  component "Прямое доказательство\nответ → основания" as FORWARD
+  component "Обратный поиск пути\nцель → допустимые действия" as BACKWARD
+  component "Смысловая проверка\nтолько неразрешённых мест" as SEMANTIC
+}
+
+package "4. Решение" as DECISION #FFEBEE {
+  component "Сборщик свидетельств" as PROOF
+  component "Правило решения" as RULE
+  artifact "Метка 0 или 1\n+ минимальное объяснение\n+ степень уверенности" as RESULT
+}
+
+PROMPT --> SPLITTER
+RESPONSE --> SPLITTER
+SPLITTER --> POLICY_PARSER
+SPLITTER --> TRACE_PARSER
+SPLITTER --> RESPONSE_PARSER
+
+POLICY_PARSER --> RULES
+TRACE_PARSER --> STATE
+TRACE_PARSER --> EVIDENCE
+RESPONSE_PARSER --> OBLIGATIONS
+RESPONSE_PARSER --> COVERAGE
+
+RULES --> HARD
+STATE --> HARD
+OBLIGATIONS --> HARD
+
+RULES --> FORWARD
+STATE --> FORWARD
+EVIDENCE --> FORWARD
+OBLIGATIONS --> FORWARD
+
+RULES --> BACKWARD
+STATE --> BACKWARD
+OBLIGATIONS --> BACKWARD
+
+FORWARD --> SEMANTIC : если точного вывода нет
+BACKWARD --> SEMANTIC : если смысл цели неоднозначен
+
+HARD --> PROOF
+FORWARD --> PROOF
+BACKWARD --> PROOF
+SEMANTIC --> PROOF
+COVERAGE --> PROOF
+PROOF --> RULE
+RULE --> RESULT
+
+note bottom of HARD
+  Найденное строгое нарушение
+  нельзя «перевесить» вероятностями.
+end note
+
+note bottom of FORWARD
+  Для каждого заявления ищем путь:
+  источник → вывод → заявление.
+end note
+
+note bottom of BACKWARD
+  Нужен прежде всего для проверки
+  фраз «не могу» и переводов к человеку.
+end note
+
+note bottom of COVERAGE
+  Каждый содержательный фрагмент ответа
+  должен попасть хотя бы в одно обязательство.
+end note
+
+legend bottom
+  |= Цвет |= Назначение |
+  |<#E3F2FD> Голубой | входные данные |
+  |<#E8F5E9> Зелёный | разбор текста |
+  |<#FFF3E0> Оранжевый | хранимые знания и обязательства |
+  |<#F3E5F5> Фиолетовый | проверка |
+  |<#FFEBEE> Красный | итоговое решение |
+endlegend
+
+@enduml

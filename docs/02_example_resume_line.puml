@@ -1,0 +1,61 @@
+@startuml
+!pragma layout smetana
+title Пример: почему resume_line(C1001, L1002) недопустим
+
+skinparam backgroundColor #FAFAFA
+skinparam shadowing false
+skinparam roundcorner 14
+skinparam defaultFontName Arial
+skinparam ArrowColor #455A64
+
+top to bottom direction
+
+rectangle "Источники" as SOURCES #E3F2FD {
+  card "Системное правило\nТекущее время:\n2025-02-25" as NOW
+  card "Результат инструмента, ход 4\nЛиния: L1002\nКлиент: C1001\nОкончание договора:\n2025-01-31" as LINE
+  card "Правило предметной области\nНельзя возобновлять линию,\nесли договор уже закончился" as POLICY
+}
+
+rectangle "Однозначные выводы" as DERIVED #E8F5E9 {
+  card "L1002 принадлежит C1001" as OWNERSHIP
+  card "2025-01-31 < 2025-02-25" as COMPARE
+  card "Договор закончился" as EXPIRED
+}
+
+rectangle "Обязательства вызова" as OBLIGATIONS #FFF3E0 {
+  card "Инструмент существует" as TOOL_EXISTS
+  card "Аргументы имеют верный вид" as SCHEMA
+  card "Линия принадлежит клиенту" as OWNER_REQUIRED
+  card "Договор ещё действует" as CONTRACT_REQUIRED
+}
+
+rectangle "Проверяемый ответ" as CANDIDATE #F3E5F5 {
+  card "resume_line(\n  customer_id=C1001,\n  line_id=L1002\n)" as ACTION
+}
+
+rectangle "Итог" as RESULT #FFCDD2 {
+  card "Строгое нарушение\nобязательства:\nдоговор должен действовать\n\nМетка: 1" as VERDICT
+}
+
+LINE --> OWNERSHIP : точное извлечение
+NOW --> COMPARE
+LINE --> COMPARE
+COMPARE --> EXPIRED : сравнение дат
+POLICY --> CONTRACT_REQUIRED : создаёт условие
+
+ACTION --> TOOL_EXISTS
+ACTION --> SCHEMA
+ACTION --> OWNER_REQUIRED
+ACTION --> CONTRACT_REQUIRED
+
+OWNERSHIP --> OWNER_REQUIRED : подтверждает
+EXPIRED -[#D32F2F,bold]-> CONTRACT_REQUIRED : опровергает
+CONTRACT_REQUIRED -[#D32F2F,bold]-> VERDICT : одного нарушения достаточно
+
+note right of VERDICT
+  Здесь нет обучаемого веса.
+  Результат следует из даты
+  и явного запрета.
+end note
+
+@enduml

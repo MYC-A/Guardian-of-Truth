@@ -1,0 +1,71 @@
+@startuml
+!pragma layout smetana
+title Где хранятся значения уверенности и как принимается решение
+
+skinparam backgroundColor #FAFAFA
+skinparam shadowing false
+skinparam roundcorner 14
+skinparam defaultFontName Arial
+skinparam ArrowColor #455A64
+
+left to right direction
+
+database "Граф доказательств" as GRAPH #FFF3E0 {
+  card "Узел сведения\n• сущность\n• свойство\n• значение\n• источник\n• номер хода\n• срок действия\n• уверенность извлечения" as FACT
+  card "Связь вывода\n• какое правило применено\n• входные узлы\n• результат\n• точный или смысловой вывод\n• уверенность сопоставления" as EDGE
+}
+
+database "Правила приоритета источников" as AUTHORITY #E8F5E9 {
+  card "Правило поведения\n← система или политика" as A1
+  card "Состояние внешней системы\n← результат инструмента" as A2
+  card "Желание и согласие\n← пользователь" as A3
+  card "Предыдущий ответ агента\n← сам по себе не доказательство" as A4
+}
+
+rectangle "Результаты обязательств" as CHECKS #E3F2FD {
+  card "ПОДТВЕРЖДЕНО" as SUPPORTED
+  card "ОПРОВЕРГНУТО" as CONTRADICTED
+  card "НЕИЗВЕСТНО" as UNKNOWN
+  card "ДЕЙСТВИЕ НЕДОПУСТИМО" as INVALID
+}
+
+component "Иерархическое правило решения" as DECIDER #F3E5F5
+component "Настраиваемая оценка\nтолько для неразрешённых случаев" as CALIBRATOR #FFFDE7
+artifact "Итог\nметка + свидетельство\n+ уверенность проверяющей системы" as RESULT #FFEBEE
+
+FACT --> CHECKS
+EDGE --> CHECKS
+AUTHORITY --> CHECKS : определяет подходящий источник
+
+CONTRADICTED --> DECIDER
+INVALID --> DECIDER
+SUPPORTED --> DECIDER
+UNKNOWN --> DECIDER
+
+DECIDER --> RESULT : есть строгое нарушение → 1
+DECIDER --> RESULT : всё доказано и покрыто → 0
+DECIDER --> CALIBRATOR : осталась неопределённость
+CALIBRATOR --> RESULT
+
+note bottom of GRAPH
+  В графе нет единого «веса истины».
+  Уверенность относится к качеству извлечения
+  или смыслового сопоставления.
+end note
+
+note bottom of AUTHORITY
+  Это не числа 0,9 / 0,7 / 0,5.
+  Это правило применимости:
+  источник либо вправе подтверждать
+  данный вид сведения, либо нет.
+end note
+
+note bottom of DECIDER
+  Порядок сильнее среднего:
+  1. Строгое нарушение.
+  2. Явное противоречие.
+  3. Полностью доказанный ответ.
+  4. Вероятностное решение остатка.
+end note
+
+@enduml

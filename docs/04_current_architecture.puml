@@ -1,0 +1,57 @@
+@startuml
+!pragma layout smetana
+title Что реально работает сейчас — этап 2, без LLM
+top to bottom direction
+skinparam backgroundColor #FAFAFA
+skinparam shadowing false
+skinparam defaultFontName Arial
+skinparam roundcorner 12
+skinparam ArrowColor #455A64
+skinparam componentStyle rectangle
+skinparam componentBackgroundColor #E8F5E9
+skinparam noteBackgroundColor #FFF8E1
+
+artifact "prompt + response\nБез id, label, explanation" as INPUT #E3F2FD
+component "Разбор ролей и событий\nJSON, каталог инструментов\nparsing.py" as PARSE
+component "Точные проверки\nдоступность, обязательные поля,\nтипы, вложенность, enum\nchecks.py" as EXACT
+component "Структурный граф\nнаблюдения, идентификаторы,\nпредыдущие версии, аргументы\nprovenance.py" as GRAPH
+component "Поиск по словам и ID\n+ блоки ответа для проверки\nevidence.py / pipeline.py" as SEARCH
+component "AnalysisContext\nИстория, каталог, граф,\nобязательства, ссылки" as CONTEXT #E3F2FD
+component "SemanticAnalyzer — интерфейс есть\nПо умолчанию NoSemanticAnalyzer\nНикакая модель не вызывается" as SEMANTIC #E3F2FD
+component "Проверка вывода адаптера\nСсылки в пределах исходного текста\nЛюбой вывод — hypothesis" as GUARD
+component "Текущее решение\nЕсть точное нарушение: violation\nИначе: unknown" as DECISION
+artifact "CSV: id,label\nviolation → 1\nunknown → 0 по умолчанию" as CSV #E3F2FD
+artifact "JSONL: полный отчёт\nИсточники, граф, предположения,\nunknown и used_fallback" as AUDIT #E3F2FD
+
+INPUT --> PARSE
+PARSE --> EXACT
+PARSE --> GRAPH
+PARSE --> SEARCH
+PARSE --> CONTEXT
+GRAPH --> CONTEXT
+SEARCH --> CONTEXT
+CONTEXT --> SEMANTIC
+SEMANTIC --> GUARD
+EXACT --> DECISION : только эти проверки\nсейчас определяют нарушение
+DECISION --> CSV
+DECISION --> AUDIT
+GUARD --> AUDIT : предположения\nне меняют метку
+GRAPH --> AUDIT
+
+note bottom of GRAPH
+  Совпадение значения не доказывает
+  владение, разрешение или актуальность.
+  Данные графа сами не выставляют 1.
+end note
+note bottom of CSV
+  0 для unknown — техническая подстановка,
+  а не доказательство правильности ответа.
+  Вероятность пока null.
+end note
+legend bottom
+  |= Цвет |= Статус |
+  |<#E8F5E9> Зелёный | Реализовано |
+  |<#E3F2FD> Голубой | Данные / реализованная граница подключения |
+  F1 на рабочем файле: 0,414. Граф пока не дал прироста F1.
+endlegend
+@enduml

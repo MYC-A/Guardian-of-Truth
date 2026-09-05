@@ -1,0 +1,60 @@
+@startuml
+!pragma layout smetana
+title Целевая архитектура — расширения проходят независимую проверку
+top to bottom direction
+skinparam backgroundColor #FAFAFA
+skinparam shadowing false
+skinparam defaultFontName Arial
+skinparam roundcorner 12
+skinparam ArrowColor #455A64
+skinparam componentStyle rectangle
+skinparam componentBackgroundColor #FFF3E0
+skinparam noteBackgroundColor #FFF8E1
+
+component "Существующее ядро\nРазбор + каталог + граф + поиск\nAnalysisContext" as CORE #E8F5E9
+component "Существующие проверки\nИнструменты и аргументы" as EXACT #E8F5E9
+
+component "P1. Без LLM\nПравила в ограниченном формате\nИсточник, область, исключения\nПоддержанное правило / unknown" as RULES
+component "P1. Общий исполнитель\nДаты, сравнения, принадлежность,\nусловия и переходы состояния" as ENGINE
+component "P2. Адаптер локальной модели\nПакетная обработка\nЛимиты времени и контекста\nЧерез SemanticAnalyzer" as MODEL
+component "P2. Прямая оценка ответа\nПростая база сравнения" as DIRECT
+component "P2. Составная проверка\nУтверждения, цель, согласие\nГраф + текст + источники\nСвидетельства за и против" as VERIFY
+component "Новая политика итоговой метки\nТочные нарушения отдельно от оценок модели\nПорог и вероятности — на отдельной выборке" as DECISION
+artifact "CSV + объяснение + диагностика\nКачество, время, память, неопределённость" as OUTPUT #E3F2FD
+component "Опыты только при измеренной пользе\nДополнительное чтение / RLM\nПоиск допустимого плана для отказа" as EXPERIMENT #ECEFF1
+
+CORE --> EXACT
+CORE ..> RULES
+RULES ..> ENGINE
+CORE ..> MODEL
+MODEL ..> DIRECT
+MODEL ..> VERIFY
+EXACT --> DECISION
+ENGINE ..> DECISION
+DIRECT ..> DECISION
+VERIFY ..> DECISION
+VERIFY ..> EXPERIMENT
+EXPERIMENT ..> DECISION
+DECISION ..> OUTPUT
+
+note bottom of RULES
+  Операторы общие для разных задач.
+  Конкретные даты, статусы, запреты
+  берутся из входа, не из valid.parquet.
+  Произвольный текст — unknown.
+  Кандидат правила от модели требует
+  отдельной проверки перевода.
+end note
+note bottom of DIRECT
+  Прямой и составной варианты сравниваются
+  при одинаковом бюджете. Их не обязательно
+  запускать вместе или объединять.
+end note
+legend bottom
+  |= Цвет |= Статус |
+  |<#E8F5E9> Зелёный | Уже работает |
+  |<#FFF3E0> Оранжевый | Нужно реализовать и проверить |
+  |<#ECEFF1> Серый | Эксперимент, может быть исключён |
+  Пунктир — будущая связь. Численный прирост пока неизвестен.
+endlegend
+@enduml
