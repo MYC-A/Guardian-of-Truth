@@ -6,6 +6,7 @@ separate, evaluated decision policy is implemented.
 """
 
 from dataclasses import dataclass, field, replace
+import math
 from typing import Protocol
 
 from .types import Catalog, Event, EvidenceGraph, Finding, Obligation, SemanticChecker, Source
@@ -21,12 +22,16 @@ class AnalysisContext:
     obligations: list[Obligation]
     graph: EvidenceGraph
     evidence: list[Source]
+    planning: dict | None = None
 
 
 @dataclass
 class SemanticResult:
     findings: list[Finding] = field(default_factory=list)
     unresolved: list[str] = field(default_factory=list)
+    score: float | None = None
+    trace: list[dict] = field(default_factory=list)
+    usage: dict = field(default_factory=dict)
 
 
 class SemanticAnalyzer(Protocol):
@@ -81,7 +86,15 @@ def run_semantic(backend: SemanticAnalyzer, context: AnalysisContext) -> Semanti
             if not finding.sources:
                 unresolved.append('semantic_uncited_hypothesis')
             accepted.append(replace(finding, sources=list(finding.sources), status='hypothesis'))
-        return SemanticResult(accepted, unresolved)
+        score = result.score
+        if score is not None and (type(score) not in (int, float) or not math.isfinite(score) or not 0 <= score <= 1):
+            score = None
+            unresolved.append('semantic_invalid_score')
+        if 'semantic_invalid_finding' in unresolved:
+            score = None
+        return SemanticResult(accepted, unresolved, score,
+                              result.trace if isinstance(result.trace, list) else [],
+                              result.usage if isinstance(result.usage, dict) else {})
     except Exception:
         # Do not expose prompts, backend credentials or arbitrary exception text.
         return SemanticResult(unresolved=['semantic_backend_error'])

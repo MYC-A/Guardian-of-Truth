@@ -129,6 +129,10 @@ class Review:
     probability: float | None = None
     graph: EvidenceGraph = field(default_factory=EvidenceGraph)
     semantic_backend: str = "none"
+    semantic_score: float | None = None
+    reading_trace: list[dict] = field(default_factory=list)
+    semantic_usage: dict = field(default_factory=dict)
+    planning: dict | None = None
 
 
 class SemanticChecker(Protocol):

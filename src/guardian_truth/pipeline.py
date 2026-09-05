@@ -1,17 +1,21 @@
+from dataclasses import asdict
+
 from .checks import check_calls
 from .evidence import observations, retrieve
 from .parsing import parse_catalog, parse_events
 from .provenance import build_graph
+from .rules import check_rules
+from .planning import analyze_plan
 from .semantic import (AnalysisContext, LegacyCheckerAdapter, NoSemanticAnalyzer,
                        SemanticAnalyzer, run_semantic)
 from .types import EvidenceGraph, Obligation, Review, SemanticChecker
 
 
 class Detector:
-    def __init__(self, enabled=frozenset({'availability', 'schema', 'provenance'}),
+    def __init__(self, enabled=frozenset({'availability', 'schema', 'provenance', 'rules', 'planning'}),
                  checker: SemanticChecker | None = None, *, semantic: SemanticAnalyzer | None = None):
         self.enabled = frozenset(enabled)
-        if self.enabled - {'availability', 'schema', 'provenance'}:
+        if self.enabled - {'availability', 'schema', 'provenance', 'rules', 'planning'}:
             raise ValueError('Unknown check family')
         if checker is not None and semantic is not None:
             raise ValueError('Pass semantic or the legacy checker, not both')
@@ -28,6 +32,11 @@ class Detector:
         candidate = parse_events(response, 'response')
         catalog = parse_catalog(history, prompt)
         findings, unresolved = check_calls(candidate, catalog, self.enabled)
+        graph = build_graph(history, candidate) if self.enabled & {'provenance','rules','planning'} else EvidenceGraph()
+        if 'rules' in self.enabled:
+            rule_findings, rule_issues = check_rules(history, candidate, graph)
+            findings.extend(rule_findings)
+            unresolved.extend(rule_issues)
         unresolved.extend(catalog.issues)
         if any(event.kind == 'text' for event in candidate):
             unresolved.append('text_meaning_not_verified')
@@ -43,12 +52,15 @@ class Detector:
                 obligation.status = 'violation'
             obligations.append(obligation)
         evidence = retrieve(history, prompt, response)
-        graph = build_graph(history, candidate) if 'provenance' in self.enabled else EvidenceGraph()
         unresolved.extend(graph.issues)
         context = AnalysisContext(prompt, response, history, candidate, catalog, obligations, graph, evidence)
+        plan = analyze_plan(history,catalog,graph) if 'planning' in self.enabled else None
+        context.planning = asdict(plan) if plan is not None else None
         semantic_result = run_semantic(self.semantic, context)
         findings.extend(semantic_result.findings)
         unresolved.extend(semantic_result.unresolved)
         status = 'violation' if any(f.status == 'violation' for f in findings) else 'unknown'
         return Review(findings, obligations, sorted(set(unresolved)), observations(history), evidence,
-                      sorted(self.enabled), status, graph=graph, semantic_backend=self.semantic.name)
+                      sorted(self.enabled), status, graph=graph, semantic_backend=self.semantic.name,
+                      semantic_score=semantic_result.score, reading_trace=semantic_result.trace,
+                      semantic_usage=semantic_result.usage, planning=context.planning)

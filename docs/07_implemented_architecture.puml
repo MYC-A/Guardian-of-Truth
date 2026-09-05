@@ -1,0 +1,59 @@
+@startuml
+!pragma layout smetana
+title Guardian of Truth — реализованная архитектура, этап 3
+top to bottom direction
+skinparam backgroundColor #FAFAFA
+skinparam shadowing false
+skinparam defaultFontName Arial
+skinparam componentStyle rectangle
+skinparam componentBackgroundColor #E8F5E9
+skinparam noteBackgroundColor #FFF8E1
+
+artifact "prompt + response\nБез эталонных меток" as INPUT #E3F2FD
+component "Разбор истории и каталога\nparsing.py" as PARSE
+component "Точные проверки\nchecks.py + rules.py\nДоступность, схема, явные правила" as RULES
+component "Граф наблюдений\nprovenance.py\nСущности, области, версии, источники" as GRAPH
+component "Ограниченный планировщик\nplanning.py\nТолько явные переходы и предусловия" as PLAN
+component "Пакет доказательств\nreader.py\nЧтение / поиск / граф / сущность" as READER
+component "Смысловая проверка\nlanguage.py\ndirect | graph | rlm" as LLM
+component "Проверка ответа модели\nСсылки, противоречия, unknown\nВсе выводы остаются гипотезами" as VALIDATE
+component "Сменный транспорт\nllm_client.py + runtime.py\nGroq / localhost / none" as TRANSPORT #E3F2FD
+component "Решение\ndecision.py\nТочное нарушение → 1\nИначе сырой score или fallback" as DECISION
+artifact "CSV: id,label\nJSONL: источники, граф, трасса\nJSON: бюджет и счётчики" as OUTPUT #E3F2FD
+component "Независимый контур оценки\nbenchmarking.py\nГруппы → calibration → фиксация → test" as EVAL #E3F2FD
+
+INPUT --> PARSE
+PARSE --> RULES
+PARSE --> GRAPH
+GRAPH --> RULES : наблюдения
+GRAPH --> PLAN
+PARSE --> PLAN : каталог и явная модель
+GRAPH --> READER
+PARSE --> READER : исходные интервалы
+PLAN --> LLM : план в объявленной модели\nне успех будущего действия
+READER --> LLM : выбранные источники
+LLM --> READER : rlm: запрос дочитывания\nдо 3 раундов по умолчанию
+LLM <--> TRANSPORT
+LLM --> VALIDATE
+VALIDATE --> DECISION : сырой score, не вероятность
+RULES --> DECISION : установленные нарушения
+DECISION --> OUTPUT
+OUTPUT --> EVAL : сопоставление с метками\nтолько после предсказания
+
+note bottom of TRANSPORT
+  По умолчанию сеть отключена.
+  Локальные HTTP-тесты пройдены.
+  Живое подключение Groq ещё не подтверждено.
+end note
+note bottom of GRAPH
+  Совпадение и предыдущее наблюдение
+  не доказывают владение или актуальность.
+  «Проценты доверия» не выдумываются.
+end note
+note bottom of EVAL
+  46 строк valid — регрессия, не закрытый тест.
+  Синтетика — проверка механизмов.
+  RAGTruth — отдельный резерв фактической проверки.
+  Прирост от graph/rlm пока не измерен.
+end note
+@enduml

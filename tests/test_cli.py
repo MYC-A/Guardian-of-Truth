@@ -6,8 +6,21 @@ import sys
 import tempfile
 import unittest
 
+from guardian_truth.cli import read_rows, validate_rows
+
 
 class CliTests(unittest.TestCase):
+    def test_jsonl_inputs_and_invalid_rows(self):
+        row = {'id':'001','prompt':'Context','response':'Answer'}
+        with tempfile.TemporaryDirectory() as folder:
+            source = Path(folder)/'input.jsonl'
+            source.write_text(json.dumps(row)+'\n\n',encoding='utf-8')
+            self.assertEqual(read_rows(source), [row])
+            validate_rows(read_rows(source))
+        for invalid in (None, [], {}, {**row,'id':None}, {**row,'id':''}):
+            with self.subTest(row=invalid), self.assertRaises(ValueError):
+                validate_rows([invalid])
+
     def test_csv_roundtrip_and_audit_without_labels(self):
         with tempfile.TemporaryDirectory() as folder:
             root = Path(folder)
