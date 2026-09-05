@@ -4,7 +4,7 @@ RLM-inspired external reading, not an unrestricted REPL or a reproduction of all
 RLM algorithms. All information-access actions are local and read-only.
 """
 
-from dataclasses import dataclass
+from dataclasses import asdict, dataclass
 import json
 import math
 import threading
@@ -55,6 +55,10 @@ graph fact ID as if it were a source. Valid read requests:
 {"action":"graph","fact_ids":["f3"]},
 {"action":"entity","field":"order_id","value":"A"}.
 When reading rounds remain and evidence is insufficient, request targeted reads.
+Associate requests with a specific claim and missing fact, rule, exception or
+state update; optionally include short "claim" and "need" strings in the request.
+In rolling mode, earlier chunks may be evicted. Only evidence IDs in the CURRENT
+payload can be cited. Request all mutually needed chunks together to retain them.
 When no rounds remain, finalize using only available evidence; use unknown if
 the missing context prevents an assessment. No commands, URLs, code or tool calls.
 '''
@@ -108,10 +112,13 @@ class LanguageConfig:
     max_rounds: int = 3
     max_evidence_chars: int = 24000
     max_prompt_chars: int = 120000
+    rolling_evidence: bool = False
 
     def __post_init__(self):
         if self.mode not in ('direct','graph','rlm'):
             raise ValueError('Unknown language mode')
+        if type(self.rolling_evidence) is not bool:
+            raise ValueError('rolling_evidence must be boolean')
         if (type(self.max_rounds) is not int or not 1 <= self.max_rounds <= 6
                 or type(self.max_evidence_chars) is not int or self.max_evidence_chars < 1800
                 or type(self.max_prompt_chars) is not int or self.max_prompt_chars < 3000):
@@ -126,7 +133,8 @@ class LanguageAnalyzer:
         self.name = 'language:' + self.config.mode
 
     def analyze(self, context):
-        reader = EvidenceReader(context, max_evidence_chars=self.config.max_evidence_chars)
+        reader = EvidenceReader(context, max_evidence_chars=self.config.max_evidence_chars,
+                                rolling=self.config.rolling_evidence and self.config.mode=='rlm')
         if self.config.mode != 'direct':
             reader.initialize()
         rounds = self.config.max_rounds if self.config.mode == 'rlm' else 1
@@ -137,7 +145,8 @@ class LanguageAnalyzer:
                            'response':context.response,'remaining_read_rounds':0}
             else:
                 payload = {'mode':self.config.mode,'evidence':reader.packet(),
-                           'catalog':reader.catalog(),'graph':reader.graph_summary(),
+                           'rolling_evidence':reader.rolling,
+                           **reader.metadata(),
                            'planning':context.planning,
                            'response':context.response, 'read_feedback':feedback,
                            'remaining_read_rounds':rounds-round_number-1,
@@ -162,7 +171,8 @@ class LanguageAnalyzer:
                 category = getattr(exc, 'category', '')
                 allowed = {'authentication','forbidden','rate_limit','timeout','configuration','missing_api_key',
                            'invalid_api_key','invalid_request','invalid_response','truncated',
-                           'connection','server','redirect','http_request','transport'}
+                           'connection','server','redirect','http_request','transport',
+                           'request_too_large','model_or_endpoint_unavailable'}
                 issue = 'language_' + category if category in allowed else 'language_client_error'
                 return SemanticResult(unresolved=[issue], trace=trace, usage=usage)
             for key, value in completion.usage.items():
@@ -181,15 +191,23 @@ class LanguageAnalyzer:
                 if round_number+1 >= rounds:
                     return SemanticResult(unresolved=['language_unfinished_reading'], trace=trace, usage=usage)
                 feedback = [reader.request(request) for request in requests]
+                trace[-1]['read_feedback'] = feedback
                 if not any(item['added'] for item in feedback):
                     return SemanticResult(unresolved=['language_no_read_progress'], trace=trace, usage=usage)
                 continue
+            # Shadow ablation only: hold the generated answer and all citations
+            # fixed, isolate loss caused by the per-claim validator. This score
+            # never replaces the production score implicitly.
+            overall = self._assessment(parsed, context, reader, require_claims=False)
+            trace[-1]['overall_assessment'] = {
+                'score':overall.score,'unresolved':overall.unresolved,
+                'findings':[asdict(finding) for finding in overall.findings]}
             result = self._assessment(parsed, context, reader)
             result.trace, result.usage = trace, usage
             return result
         return SemanticResult(unresolved=['language_unfinished_reading'], trace=trace, usage=usage)
 
-    def _assessment(self, output, context, reader):
+    def _assessment(self, output, context, reader, *, require_claims=True):
         verdict, score = output.get('verdict'), output.get('risk')
         if verdict not in ('error','ok','unknown') or type(score) not in (int,float) or not math.isfinite(score) or not 0 <= score <= 1:
             return SemanticResult(unresolved=['language_invalid_assessment'])
@@ -197,10 +215,6 @@ class LanguageAnalyzer:
             return SemanticResult(unresolved=['language_assessment_unknown'])
         if (verdict == 'error') != (score >= 0.5):
             return SemanticResult(unresolved=['language_inconsistent_assessment'])
-        claims = output.get('claims')
-        if not isinstance(claims,list) or not 1 <= len(claims) <= 40:
-            return SemanticResult(unresolved=['language_claim_coverage_missing'])
-
         def sources(ids):
             if not isinstance(ids,list) or not ids or len(ids) > 32:
                 return None
@@ -221,6 +235,15 @@ class LanguageAnalyzer:
         overall = sources(output.get('evidence_ids'))
         if not overall or not any(s.document == 'prompt' for s in overall):
             return SemanticResult(unresolved=['language_missing_grounding'])
+        reason = output.get('reason')
+        if not isinstance(reason,str) or not reason.strip():
+            return SemanticResult(unresolved=['language_missing_reason'])
+        if not require_claims:
+            return SemanticResult([Finding('semantic_overall_assessment',reason[:2400],overall,'hypothesis')],
+                                  score=float(score))
+        claims = output.get('claims')
+        if not isinstance(claims,list) or not 1 <= len(claims) <= 40:
+            return SemanticResult(unresolved=['language_claim_coverage_missing'])
         findings = []
         claim_verdicts = set()
         for claim in claims:

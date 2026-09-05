@@ -2,6 +2,8 @@ from types import SimpleNamespace
 import unittest
 
 from guardian_truth.reader import EvidenceReader
+from guardian_truth.parsing import parse_events
+from guardian_truth.provenance import build_graph
 from guardian_truth.types import EntityKey, Event, EvidenceGraph, FactNode, Source
 
 
@@ -17,6 +19,59 @@ def reader():
 
 
 class ReaderTests(unittest.TestCase):
+    def test_answer_entity_retrieval_survives_distractors_and_case_is_not_normalized(self):
+        import json
+        for identifier in ('CASE_A17','RECORD_Z92'):
+            prompt = '⟦SYSTEM⟧\n'+'Policy. '*700
+            prompt += '\n⟦TOOL_RESULT name="lookup" requestor="assistant"⟧\n'+json.dumps(
+                {'record_id':identifier,'status':'complete'})
+            prompt += '\n⟦USER⟧\n'+'complete status record '*500
+            history = parse_events(prompt,'prompt')
+            context = SimpleNamespace(prompt=prompt,response='Completed record '+identifier,
+                                      history=history,graph=build_graph(history,[]))
+            evidence = EvidenceReader(context,max_evidence_chars=3600)
+            evidence.initialize()
+            self.assertTrue(any(identifier in item['text'] and item['kind']=='result'
+                                for item in evidence.packet()))
+            context.response=identifier.lower()
+            self.assertEqual(EvidenceReader(context).response_entity_chunks(),[])
+
+    def test_metadata_is_bounded_even_when_a_fact_contains_a_large_value(self):
+        import json
+        evidence = reader()
+        evidence.facts['f0'].value = 'large scalar '*10000
+        evidence.read(['p0'])
+        metadata = evidence.metadata()
+        size = sum(len(json.dumps(value,ensure_ascii=False)) for value in metadata.values())
+        self.assertLessEqual(size,6000)
+        self.assertTrue(metadata['graph']['truncated'])
+        self.assertEqual(evidence.facts['f0'].value,'large scalar '*10000)
+        self.assertEqual(evidence.request({'action':'read','ids':['p9']})['added'],['p9'])
+
+    def test_rolling_reads_replace_old_chunks_and_invalidate_their_citations(self):
+        evidence = EvidenceReader(reader().context, max_evidence_chars=3600, rolling=True)
+        evidence.read(['p0','p1'])
+        feedback = evidence.request({'action':'read','ids':['p1','p8']})
+        self.assertEqual(feedback['evicted'], ['p0'])
+        self.assertEqual(evidence.selected, ['p1','p8'])
+        self.assertEqual(evidence.used_chars,3600)
+        self.assertIsNone(evidence.citation('p0'))
+        self.assertIsNotNone(evidence.citation('p8'))
+
+    def test_rolling_does_not_evict_just_requested_sources_to_claim_false_progress(self):
+        evidence = EvidenceReader(reader().context, max_evidence_chars=3600, rolling=True)
+        evidence.read(['p0','p1'])
+        feedback = evidence.request({'action':'read','ids':['p2','p3','p4']})
+        self.assertEqual(evidence.selected,['p2','p3'])
+        self.assertEqual(feedback['added'],['p2','p3'])
+        self.assertIsNone(evidence.citation('p4'))
+
+    def test_fixed_reader_still_preserves_original_window(self):
+        evidence = EvidenceReader(reader().context,max_evidence_chars=3600)
+        evidence.read(['p0','p1'])
+        self.assertEqual(evidence.request({'action':'read','ids':['p8']})['added'],[])
+        self.assertEqual(evidence.selected,['p0','p1'])
+
     def test_text_only_response_graph_includes_retrieved_observations(self):
         evidence = reader()
         self.assertEqual(evidence.graph_summary()['facts'], [])

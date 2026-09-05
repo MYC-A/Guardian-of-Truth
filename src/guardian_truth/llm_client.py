@@ -308,6 +308,10 @@ class ChatClient:
                 raise ChatClientError("authentication")
             if status == 403:
                 raise ChatClientError("forbidden")
+            if status == 413:
+                raise ChatClientError("request_too_large")
+            if status == 404:
+                raise ChatClientError("model_or_endpoint_unavailable")
             if 300 <= status < 400:
                 raise ChatClientError("redirect")
             retryable = status == 429 or 500 <= status < 600

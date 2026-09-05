@@ -42,6 +42,9 @@ def main():
     source_hashes={p.name:hashlib.sha256(p.read_bytes()).hexdigest() for p in sorted(package.glob('*.py'))}
     report={'data_role':'development_only','input_hash':hashlib.sha256(args.input.read_bytes()).hexdigest(),
             'source_hashes':source_hashes,'backend':args.backend,'threshold':args.threshold,
+            'configuration':{key:getattr(args,key) for key in (
+                'modes','limit','checks','max_requests','max_input_chars','seconds','max_rounds',
+                'max_evidence_chars','max_prompt_chars','rolling_evidence','max_output_tokens','timeout_seconds','retries')},
             'warning':'No threshold tuning here. Model scores are uncalibrated. Dataset may already be inspected.',
             'runs':{}}
     for mode in modes:
@@ -49,6 +52,10 @@ def main():
         try: detector=detector_from_args(args)
         except (ValueError,ChatClientError) as error: parser.error(str(error))
         args.output_dir.mkdir(parents=True,exist_ok=True)
+        if args.backend!='none':
+            report['configuration'].update(model=detector.semantic.client.config.model,
+                                            base_url=detector.semantic.client.config.base_url)
+        (args.output_dir/'comparison.json').write_text(json.dumps(report,indent=2,allow_nan=False),encoding='utf-8')
         started=time.monotonic(); predictions=[]; issues=Counter(); calls=tokens=fallbacks=0
         with (args.output_dir/(mode+'.jsonl')).open('w',encoding='utf-8') as stream:
             for row in rows:

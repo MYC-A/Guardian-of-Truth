@@ -56,6 +56,12 @@ attempt. Delays use bounded `Retry-After` seconds/dates or exponential backoff,
 with a 30-second maximum delay. Socket/network failures fail immediately with a
 retryable category so an application can decide whether to repeat a potentially
 billed request. HTTP authentication errors and other 4xx responses never retry.
+
+Live integration uses the explicit `guardian-truth/0.2` User-Agent. On the observed
+Groq endpoint the standard Python-urllib header received HTTP 403 while the same
+key with this header succeeded. A 403 is `forbidden`, not proof of an invalid key.
+HTTP 413 is `request_too_large`; 404 is `model_or_endpoint_unavailable`.
+Provider TPM/TPD quotas remain separate from local character/time budgets.
 The response read is capped at 8 MiB. A truncated completion (`finish_reason=length`)
 fails, as do refusals, tool-call responses, malformed JSON, non-object content,
 and invalid token usage metadata.

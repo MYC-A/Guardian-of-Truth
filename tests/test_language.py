@@ -30,6 +30,27 @@ class FakeClient:
 
 
 class LanguageTests(unittest.TestCase):
+    def test_shadow_gate_recovers_score_without_changing_production(self):
+        review, client = self.review(assessment(ids=['response']))
+        self.assertIsNone(review.semantic_score)
+        self.assertIn('language_claim_missing_grounding',review.unresolved)
+        shadow=review.reading_trace[-1]['overall_assessment']
+        self.assertEqual(shadow['score'],.1)
+        self.assertTrue(all(f['status']=='hypothesis' for f in shadow['findings']))
+        self.assertEqual(len(client.messages),1)
+        self.assertEqual(review.status,'unknown')
+
+    def test_shadow_gate_still_requires_valid_global_grounding(self):
+        for ids in (['response'],['missing'],[],None):
+            output=assessment(); output['evidence_ids']=ids
+            review,_=self.review(output)
+            self.assertIsNone(review.reading_trace[-1]['overall_assessment']['score'])
+
+    def test_shadow_gate_preserves_unknown_and_inconsistent_verdict(self):
+        for output in (assessment('unknown'),assessment('error',.1)):
+            review,_=self.review(output)
+            self.assertIsNone(review.reading_trace[-1]['overall_assessment']['score'])
+
     def review(self, output, *, budget=None, prompt='Authoritative context.', config=None):
         client = FakeClient(output)
         analyzer = LanguageAnalyzer(client, config or LanguageConfig(mode='direct'), budget=budget)
@@ -86,7 +107,8 @@ class LanguageTests(unittest.TestCase):
     def test_all_client_error_categories_are_preserved_without_details(self):
         categories = ('authentication', 'forbidden', 'rate_limit', 'timeout', 'configuration', 'missing_api_key',
                       'invalid_api_key', 'invalid_request', 'invalid_response', 'truncated',
-                      'connection', 'server', 'redirect', 'http_request', 'transport')
+                      'connection', 'server', 'redirect', 'http_request', 'transport',
+                      'request_too_large', 'model_or_endpoint_unavailable')
         for category in categories:
             with self.subTest(category=category):
                 review, _ = self.review(ChatClientError(category))

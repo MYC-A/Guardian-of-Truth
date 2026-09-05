@@ -6,6 +6,7 @@ not become independent evidence for the text they summarize.
 """
 
 from dataclasses import dataclass
+import json
 import re
 
 from .provenance import value_key
@@ -24,11 +25,12 @@ class Chunk:
 
 
 class EvidenceReader:
-    def __init__(self, context, *, chunk_chars=1800, max_evidence_chars=24000):
+    def __init__(self, context, *, chunk_chars=1800, max_evidence_chars=24000, rolling=False):
         if (type(chunk_chars) is not int or type(max_evidence_chars) is not int
                 or chunk_chars < 100 or max_evidence_chars < chunk_chars):
             raise ValueError('Invalid evidence limits')
         self.context = context
+        self.rolling = rolling
         self.max_chars = max_evidence_chars
         self.chunks = {}
         self.selected = []
@@ -46,13 +48,25 @@ class EvidenceReader:
                                         Source('prompt', start, end), context.prompt[start:end])
 
     def read(self, ids):
+        ids = list(dict.fromkeys(ids))
+        protected = set(ids) & set(self.selected)
         added = []
         for key in ids:
             chunk = self.chunks.get(key)
             if chunk is None or key in self.selected:
                 continue
             if self.used_chars + len(chunk.text) > self.max_chars:
-                continue
+                if not self.rolling:
+                    continue
+                removable = [old for old in self.selected if old not in protected and old not in added]
+                reclaimable = sum(len(self.chunks[old].text) for old in removable)
+                if self.used_chars - reclaimable + len(chunk.text) > self.max_chars:
+                    continue
+                for old in removable:
+                    if self.used_chars + len(chunk.text) <= self.max_chars:
+                        break
+                    self.selected.remove(old)
+                    self.used_chars -= len(self.chunks[old].text)
             self.selected.append(key)
             self.used_chars += len(chunk.text)
             added.append(key)
@@ -88,12 +102,44 @@ class EvidenceReader:
             e.field == field and value_key(e.value) == value_key(value) for e in f.entities)]
         return self.graph_chunks(ids, limit=limit)
 
+    def response_entity_chunks(self, limit=2):
+        """Read exact opaque-identity mentions before broad lexical matches.
+
+        This only ranks sources. It neither equates differently named fields nor
+        concludes ownership, correctness or absence from a failed lookup.
+        """
+        values = {e.value for f in self.facts.values() for e in f.entities
+                  if (e.field.endswith('_id') or e.field.endswith('_number'))
+                  and isinstance(e.value,str) and len(e.value)>=3
+                  and re.search(r'(?<!\w)'+re.escape(e.value)+r'(?!\w)',self.context.response)}
+        if not values:
+            return []
+        relevant = [f for f in self.facts.values() if any(e.value in values for e in f.entities
+                     if isinstance(e.value,str))]
+        sources = [f.sources[0] for f in relevant if f.sources]
+        chunks = [c for c in self.chunks.values() if c.kind=='result' and any(
+            c.source.start < s.end and c.source.end > s.start for s in sources)]
+        # Prioritize a chunk actually containing the identity over other chunks
+        # belonging to the same possibly very large JSON result.
+        chunks.sort(key=lambda c:(any(value in c.text for value in values),c.event),reverse=True)
+        return [c.id for c in chunks if c.id not in self.selected][:limit]
+
     def initialize(self, max_initial_chars=12000):
+        rolling = self.rolling
+        self.rolling = False  # Initial ranking is unchanged by the experiment.
         old_limit = self.max_chars
         self.max_chars = min(old_limit, max_initial_chars)
-        # Policy first, then user's latest message and evidence for arguments.
+        # One policy anchor, then the actual entity's observations. Broad lexical
+        # matches must not crowd out a direct source with an opaque identity.
         policy = [c.id for c in self.chunks.values() if c.role == 'system']
-        self.read(policy[:2])
+        self.read(policy[:1])
+        entity_chunks = self.response_entity_chunks()
+        self.read(entity_chunks)
+        if not entity_chunks:
+            results = [c for c in self.chunks.values() if c.kind=='result']
+            if results:
+                last_event = results[-1].event
+                self.read([c.id for c in results if c.event==last_event][:2])
         users = [c for c in self.chunks.values() if c.role == 'user' and c.kind == 'text']
         if users:
             last_event = users[-1].event
@@ -102,8 +148,9 @@ class EvidenceReader:
                for key in (trace.alternatives + trace.supporting)[:4]]
         self.read(self.graph_chunks(ids, limit=4))
         self.read(self.search(self.context.response, limit=6))
-        self.read(policy[2:])
+        self.read(policy[1:])
         self.max_chars = old_limit
+        self.rolling = rolling
 
     def request(self, request):
         if not isinstance(request, dict):
@@ -122,8 +169,10 @@ class EvidenceReader:
             ids = self.entity_chunks(request['field'], value)
         else:
             return {'status': 'invalid_request', 'added': []}
+        previous = list(self.selected)
         added = self.read(ids)
-        return {'status': 'ok' if added else 'no_new_evidence', 'added': added}
+        return {'status': 'ok' if added else 'no_new_evidence', 'added': added,
+                'evicted': [key for key in previous if key not in self.selected]}
 
     def packet(self):
         return [{'id': key, 'role': self.chunks[key].role, 'kind': self.chunks[key].kind,
@@ -137,6 +186,28 @@ class EvidenceReader:
         return {'total_chunks': len(items), 'truncated':len(items) > limit,
                 'chunks':[{'id':c.id,'role':c.role,'kind':c.kind,'tool':c.tool}
                           for c in items[:limit]]}
+
+    def metadata(self):
+        """Metadata must not crowd out the original evidence it points to.
+
+        Bound serialized character size independently of fact count: one result
+        can contain large scalar values and repeated entity bindings. Truncation
+        remains explicit; search/read still address the full local history.
+        """
+        cap = max(900, min(6000, self.max_chars // 2))
+        catalog_limit, graph_limit = 160, 40
+        catalog, graph = self.catalog(catalog_limit), self.graph_summary(graph_limit)
+        while True:
+            catalog_size = len(json.dumps(catalog,ensure_ascii=False))
+            graph_size = len(json.dumps(graph,ensure_ascii=False))
+            if catalog_size + graph_size <= cap or not (catalog_limit or graph_limit):
+                return {'catalog':catalog,'graph':graph}
+            if catalog_limit and (catalog_size >= graph_size or not graph_limit):
+                catalog_limit //= 2
+                catalog = self.catalog(catalog_limit)
+            else:
+                graph_limit //= 2
+                graph = self.graph_summary(graph_limit)
 
     def graph_summary(self, limit=40):
         keys = list(dict.fromkeys(key for t in self.context.graph.arguments

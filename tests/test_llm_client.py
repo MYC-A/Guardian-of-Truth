@@ -69,6 +69,7 @@ class ChatClientTests(unittest.TestCase):
         request, timeout = transport.requests[0]
         self.assertEqual(request.full_url, "https://api.groq.com/openai/v1/chat/completions")
         self.assertEqual(request.get_header("Authorization"), "Bearer synthetic-test-key")
+        self.assertEqual(request.get_header("User-agent"), "guardian-truth/0.2")
         body = json.loads(request.data)
         self.assertEqual(body["response_format"], {"type": "json_object"})
         self.assertEqual(body["max_completion_tokens"], 2048)
@@ -157,6 +158,13 @@ class ChatClientTests(unittest.TestCase):
             error = self.assert_category(client, "authentication" if status == 401 else "forbidden")
             self.assertNotIn("private", str(error))
             self.assertEqual(len(transport.requests), 1)
+            self.assertFalse(delays)
+
+    def test_oversize_and_unavailable_are_not_authentication_errors(self):
+        for status, category in ((413,'request_too_large'),(404,'model_or_endpoint_unavailable')):
+            client, transport, delays = self.client(HTTPResponse(status,b'private details'))
+            self.assert_category(client, category)
+            self.assertEqual(len(transport.requests),1)
             self.assertFalse(delays)
 
     def test_transport_error_traceback_is_redacted(self):
