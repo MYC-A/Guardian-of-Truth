@@ -80,6 +80,33 @@ it can be cited. Unresolved uncertainty stays unknown, not error or confident ok
 '''
 
 
+STRICT_VERIFICATION_INSTRUCTION = '''
+Strict one-shot verification protocol (no decomposition and no extra calls):
+Before choosing the verdict, internally audit every material claim/action in the
+candidate using this fixed sequence. Do not expose hidden reasoning; return only
+the required JSON assessment.
+1. State the smallest proposition actually made, preserving negation, entity,
+   identifier, date/time, unit, scope and certainty.
+2. For each cited source decide whether it entails that exact proposition,
+   directly contradicts it, is only related, or is insufficient. Related or
+   insufficient evidence is NEVER a contradiction.
+3. Do not compare records from different entities, dates, flights, orders or
+   state versions as if they were the same observation. A literal ID/number being
+   present does not by itself prove ownership, current applicability or permission.
+4. For a policy conclusion identify the applicable rule, every necessary
+   condition and any exception. A related rule without its conditions does not
+   prove a violation.
+5. Check explicit arithmetic from the cited operands; never parse dates, IDs,
+   flight/order numbers, percentages or versions as arithmetic operands merely
+   because they contain digits.
+6. An error verdict needs one specific material candidate proposition/action
+   whose falsity or violation follows from the cited sources. Do not replace a
+   false accusation with a different possible error to preserve an error label.
+This remains one assessment of the complete response. Do not create a check
+ledger, delegate work, request another verifier, or use external information.
+'''
+
+
 class BudgetExceeded(Exception):
     pass
 
@@ -130,6 +157,7 @@ class LanguageConfig:
     max_prompt_chars: int = 120000
     rolling_evidence: bool = False
     recovery: str = 'off'
+    protocol: str = 'baseline'
 
     def __post_init__(self):
         if self.mode not in ('direct','graph','rlm'):
@@ -138,6 +166,8 @@ class LanguageConfig:
             raise ValueError('rolling_evidence must be boolean')
         if self.recovery not in ('off', 'observe', 'directed', 'repeat'):
             raise ValueError('Unknown recovery experiment')
+        if self.protocol not in ('baseline', 'strict'):
+            raise ValueError('Unknown semantic protocol')
         if self.recovery != 'off' and self.mode != 'graph':
             raise ValueError('Recovery experiment currently requires graph mode')
         if (type(self.max_rounds) is not int or not 1 <= self.max_rounds <= 6
@@ -163,7 +193,11 @@ class LanguageAnalyzer:
             rounds = 2
         trace, usage, feedback = [], {}, []
         memory, focused = [], None
-        instruction = INSTRUCTION + (UNCERTAINTY_INSTRUCTION if self.config.recovery != 'off' else '')
+        instruction = INSTRUCTION
+        if self.config.protocol == 'strict':
+            instruction += STRICT_VERIFICATION_INSTRUCTION
+        if self.config.recovery != 'off':
+            instruction += UNCERTAINTY_INSTRUCTION
         for round_number in range(rounds):
             if self.config.mode == 'direct':
                 payload = {'mode':'direct','evidence':[{'id':'prompt','text':context.prompt}],

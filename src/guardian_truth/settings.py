@@ -8,7 +8,10 @@ def load_env_file(path: Path | str = '.env') -> bool:
     path = Path(path)
     if not path.is_file():
         return False
-    allowed = {'GROQ_API_KEY', 'GUARDIAN_API_KEY', 'GUARDIAN_MODEL', 'GUARDIAN_BASE_URL',
+    allowed = {'GROQ_API_KEY', 'OPENROUTER_API_KEY', 'OPENROUTE_API_KEY',
+               'GEMINI_API_KEY', 'GEMENI_API_KEY', 'OPENROUTER_MODEL',
+               'OPENROUTE_MODEL', 'GEMINI_MODEL', 'GEMENI_MODEL',
+               'GUARDIAN_API_KEY', 'GUARDIAN_MODEL', 'GUARDIAN_BASE_URL',
                'GUARDIAN_LOCAL_API_KEY', 'GUARDIAN_LOCAL_BASE_URL',
                'GUARDIAN_LLM_BASE_URL', 'GUARDIAN_LLM_MODEL', 'GUARDIAN_LLM_API_KEY_ENV',
                'GUARDIAN_LLM_TIMEOUT_SECONDS', 'GUARDIAN_LLM_MAX_OUTPUT_TOKENS',

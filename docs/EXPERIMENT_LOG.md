@@ -1,5 +1,24 @@
 # Журнал измеримых экспериментов
 
+## Новый goal: one-shot против минимальной декомпозиции
+
+- Baseline A заморожен без изменения prompt: 46 строк, TP/FP/FN/TN=14/5/9/18,
+  F1=0,6667, fallback=18; 99 HTTP attempts, 143389 reported tokens, 1104,3 с.
+- Его ручной Reason Precision: 4/13–5/13; correct-label/wrong-reason semantic TP=4/8.
+- B меняет только verification appendix одного one-shot запроса. C ограничен extractor,
+  typed exact checks, одним узким verifier и final judge; debate/voting/RLM отсутствуют.
+- Зафиксирован error-heavy экран 12 строк до новых запросов. Live B на Groq 20B завершён:
+  TP/FP/FN/TN=3/2/4/3, F1=0,5000 против A=0,2857 на том же намеренно тяжёлом срезе;
+  fallback=3/12, 12 логических вызовов, 15 HTTP attempts, 53233 reported tokens, 335,9 с.
+- Ручной аудит пяти semantic-positive B: Reason Precision=1/5, correct-label/wrong-reason
+  TP=2/3. Поэтому улучшение метки на срезе ещё не является улучшением причин.
+- Несколько C format-smoke не считаются quality-result: сначала обнаружен `json_validate_failed`,
+  затем исправлены reasoning/structured schema и привязка checks к точным цитатам. Последний
+  вариант с обязательной coverage ещё не проверен чистым запуском: Groq вернул token rate limit,
+  согласующийся с исчерпанием суточного лимита выбранной модели. После сброса лимита нужен один
+  новый smoke; при провале extractor C останавливается по заранее заданному stop-rule.
+  Протокол и stop/go границы: [DECOMPOSITION_EXPERIMENT](DECOMPOSITION_EXPERIMENT.md).
+
 ## Новый V4 goal после e498c56: этапы 1–2
 
 - Canonical baseline — полный strict-run 46 строк, F1=0,6667; меньшие срезы не участвуют

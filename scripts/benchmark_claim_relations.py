@@ -80,7 +80,10 @@ def load_cases(path):
                                     or any(not isinstance(t, str) or not t.strip()
                                            for t in case[key])):
                     raise ValueError
-            build_messages(case["claim"], case["evidence"], case.get("candidate_response"))
+            messages = build_messages(case["claim"], case["evidence"], case.get("candidate_response"))
+            if ("messages_sha256" in case
+                    and case["messages_sha256"] != _hash(_json(messages).encode())):
+                raise ValueError
         return cases, _hash(raw)
     except (ValueError, TypeError, KeyError, RecursionError):
         raise ValueError("Invalid frozen claim case input") from None
@@ -115,10 +118,10 @@ def _write_line(stream, row):
 class AuditedTransport:
     """Pace and flush each HTTP attempt, including retries, without server data."""
 
-    def __init__(self, stream, pacer, budget, *, transport=_http_transport,
+    def __init__(self, stream, pacer, budget, *, transport=None,
                  clock=time.monotonic):
         self.stream, self.pacer, self.budget = stream, pacer, budget
-        self.transport, self.clock = transport, clock
+        self.transport, self.clock = transport or _http_transport, clock
         self.case_id = None
         self.attempts = 0
 
@@ -203,6 +206,22 @@ def summarize(records):
     }
 
 
+def _token_usage(usage):
+    """Retain token accounting only, excluding arbitrary echoed server fields."""
+    result = {}
+    for key in ("prompt_tokens", "completion_tokens", "total_tokens"):
+        value = usage.get(key)
+        if type(value) is int and value >= 0:
+            result[key] = value
+    for key in ("prompt_tokens_details", "completion_tokens_details"):
+        detail = usage.get(key)
+        if isinstance(detail, dict):
+            result[key] = {name: value for name, value in detail.items()
+                           if isinstance(name, str) and name.endswith("_tokens")
+                           and type(value) is int and value >= 0}
+    return result
+
+
 def run_cases(cases, client, stream, budget, *, pacer=None, transport=None,
               progress=print, clock=time.monotonic):
     """Run each case once at completion level; shared budget also bounds retries."""
@@ -229,7 +248,7 @@ def run_cases(cases, client, stream, budget, *, pacer=None, transport=None,
             row["raw_response"] = completion.content
             # Preserve only standard usage counts and nested token accounting;
             # client completion excludes HTTP metadata and transport secrets.
-            row["usage"] = completion.usage
+            row["usage"] = _token_usage(completion.usage)
             row["response_model"] = completion.model
             verification = parse_verification(completion.content, case["evidence"])
             row.update(status="valid", relation=verification.verdict,
@@ -324,8 +343,11 @@ def main(argv=None):
 
         def bounded_sleep(delay):
             until = time.monotonic() + delay
-            while time.monotonic() < until:
-                time.sleep(min(1.0, until - time.monotonic(), budget.remaining_seconds()))
+            while True:
+                remaining = until - time.monotonic()
+                if remaining <= 0:
+                    return
+                time.sleep(min(1.0, remaining, budget.remaining_seconds()))
 
         client = ChatClient(config, transport=audited, sleep=bounded_sleep)
         report = run_cases(cases, client, calls, budget, transport=audited)

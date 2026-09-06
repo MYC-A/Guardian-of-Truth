@@ -1,0 +1,47 @@
+@startuml
+title Guardian of Truth — controlled A/B/C experiment
+skinparam shadowing false
+skinparam componentStyle rectangle
+
+rectangle "Frozen valid.parquet\n46 rows" as Data
+rectangle "Existing exact checks\navailability / schema / rules / planning" as Exact
+Data --> Exact
+
+package "A — unchanged baseline" {
+  rectangle "One-shot judge\noriginal prompt" as A
+}
+package "B — strict one-shot control" {
+  rectangle "One-shot judge\nentity/date/state/policy checklist" as B
+}
+package "C — minimal decomposition" {
+  rectangle "Material-check extractor\nresponse only; no verdict" as Extract
+  rectangle "Proof-safe exact route\notherwise abstain" as Route
+  rectangle "Narrow verifier\n2–4 related checks" as Verify
+  database "Check ledger\nSUPPORTED / CONTRADICTED /\nRELATED_ONLY / INSUFFICIENT" as Ledger
+  rectangle "Constrained final judge\nledger + response only" as Final
+  Extract --> Route
+  Route --> Ledger : exact proof
+  Route --> Verify : semantic
+  Verify --> Ledger
+  Ledger --> Final
+}
+
+Exact --> A : unresolved rows
+Exact --> B : same unresolved rows
+Exact --> Extract : same unresolved rows
+A --> Compare
+B --> Compare
+Final --> Compare
+rectangle "Compare labels + reasons + cost\nF1/P/R · fallback · RP · calls/tokens/latency" as Compare
+
+note right of Route
+  UNKNOWN/abstain is safe.
+  ID presence does not prove
+  ownership or permission.
+end note
+note right of Final
+  RELATED_ONLY / INSUFFICIENT
+  never automatically mean error.
+  Invalid final => old fallback 0.
+end note
+@enduml

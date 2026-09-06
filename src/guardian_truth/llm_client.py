@@ -246,11 +246,14 @@ class ChatClient:
         _, local = _endpoint(self.config.base_url)
         self._credential(local)
 
-    def complete_budgeted(self, messages: list[dict], *, budget, schema: dict | None = None) -> Completion:
+    def complete_budgeted(self, messages: list[dict], *, budget, schema: dict | None = None,
+                          reasoning_effort: str | None = None) -> Completion:
         """Reserve every HTTP attempt against a shared run budget."""
-        return self.complete(messages, schema=schema, budget=budget)
+        return self.complete(messages, schema=schema, budget=budget,
+                             reasoning_effort=reasoning_effort)
 
-    def complete(self, messages: list[dict], *, schema: dict | None = None, budget=None) -> Completion:
+    def complete(self, messages: list[dict], *, schema: dict | None = None, budget=None,
+                 reasoning_effort: str | None = None) -> Completion:
         endpoint, local = _endpoint(self.config.base_url)
         key = self._credential(local)
         if (not isinstance(messages, list) or not messages
@@ -259,20 +262,25 @@ class ChatClient:
             raise ChatClientError("invalid_request")
         if schema is not None and (not isinstance(schema, dict) or not schema):
             raise ChatClientError("invalid_request")
+        if reasoning_effort not in (None,"low","medium","high"):
+            raise ChatClientError("invalid_request")
         response_format = {"type": "json_object"}
         if schema is not None:
             response_format = {"type": "json_schema", "json_schema": {
                 "name": "guardian_response", "schema": schema, "strict": self.config.strict_schema,
             }}
         try:
-            data = json.dumps({
+            payload = {
                 "model": self.config.model,
                 "messages": messages,
                 "temperature": 0,
                 "max_completion_tokens": self.config.max_output_tokens,
                 "stream": False,
                 "response_format": response_format,
-            }, ensure_ascii=True, allow_nan=False).encode("utf-8")
+            }
+            if reasoning_effort is not None:
+                payload["reasoning_effort"] = reasoning_effort
+            data = json.dumps(payload, ensure_ascii=True, allow_nan=False).encode("utf-8")
         except (ValueError, TypeError, RecursionError):
             raise ChatClientError("invalid_request") from None
         headers = {"Content-Type": "application/json", "Accept": "application/json",

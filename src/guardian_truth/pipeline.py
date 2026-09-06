@@ -7,7 +7,7 @@ from .provenance import build_graph
 from .rules import check_rules
 from .planning import analyze_plan
 from .semantic import (AnalysisContext, LegacyCheckerAdapter, NoSemanticAnalyzer,
-                       SemanticAnalyzer, run_semantic)
+                       SemanticAnalyzer, SemanticResult, run_semantic)
 from .types import EvidenceGraph, Obligation, Review, SemanticChecker
 
 
@@ -56,7 +56,13 @@ class Detector:
         context = AnalysisContext(prompt, response, history, candidate, catalog, obligations, graph, evidence)
         plan = analyze_plan(history,catalog,graph) if 'planning' in self.enabled else None
         context.planning = asdict(plan) if plan is not None else None
-        semantic_result = run_semantic(self.semantic, context)
+        mechanical_violation = any(finding.status == 'violation' for finding in findings)
+        if mechanical_violation and getattr(self.semantic, 'skip_when_mechanical_violation', False) is True:
+            semantic_result = SemanticResult(
+                trace=[{'stage':'mechanical_short_circuit','call':None,'valid':True}],
+                usage={'llm_calls':0})
+        else:
+            semantic_result = run_semantic(self.semantic, context)
         findings.extend(semantic_result.findings)
         unresolved.extend(semantic_result.unresolved)
         status = 'violation' if any(f.status == 'violation' for f in findings) else 'unknown'

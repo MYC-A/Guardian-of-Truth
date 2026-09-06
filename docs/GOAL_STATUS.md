@@ -1,4 +1,4 @@
-# V4: evidence → semantic claim
+# V4: one-shot против минимальной декомпозиции
 
 Рабочая отправная точка: пользовательский commit `e498c56e31ef161a7a36e1c814a751cec89e5850`.
 Предыдущий goal завершён; его отрицательные результаты не отменяем и не запускаем UNKNOWN/RLM заново.
@@ -13,15 +13,16 @@ F1=0,75 на восьми строках не заменяет полный base
 
 ## Current best candidate
 
-Новая V4 candidate ещё не выбрана. Текущий канонический baseline остаётся точкой сравнения.
-Номер commit V4 сам по себе не означает выполнение нового V4 goal.
+Полный кандидат ещё не выбран. На фиксированном error-heavy screen строгий one-shot B
+дал TP/FP/FN/TN=3/2/4/3, F1=0,5 против A=2/5/5/0, F1=0,286 на тех же строках.
+Это stop/go сигнал, не замена полного результата; три решения B были fallback.
 
 ## Current bottleneck
 
-Допустимая цитата не доказывает правильную сущность, дату, условие или логический переход.
-Аудит 23 claims: 4/8 semantic TP имеют неправильную причину; Reason Precision 4/13–5/13,
-cited RP 1/13–2/13. Семь неверных claims содержат узкий проверяемый предикат или неверную
-привязку сущности; это ещё не автоматическое исправление семи причин. Подробности в ERROR_AUDIT.
+Нужно отделить эффект строгого prompt от эффекта архитектурного разложения. Допустимая цитата
+не доказывает правильную сущность, состояние, условие или вывод. Extractor C сам может стать
+новым источником ошибок; два первых технических pilot-вызова дали HTTP 400 json_validate_failed
+и остановлены, а не посчитаны качеством архитектуры.
 
 ## Accepted mechanisms
 
@@ -38,20 +39,23 @@ multi-agent debate и большой causal graph. Подтверждённог�
 
 ## Current experiment
 
-Этапы 3–6: typed deterministic predicates с консервативным abstention, standalone shadow
-verifier и фиксированный claim benchmark. Аудит этапов 1–2 завершён; live V4 генерации ещё
-не выполнялись. Shadow verifier не подключён к production prediction.
+Этап C: extractor material checks → proof-safe exact routing / узкий verifier пачками 2–4 →
+ledger → ограниченный final judge. Реализованы strict schemas, точные уникальные `quote`,
+coverage-gate, безопасная арифметика и 0 LLM-вызовов после уже доказанного механического нарушения.
+Старые format-pilot каталоги сохраняются и не смешиваются с результатом. Последний код ещё не
+имеет чистого live-smoke: выбранная Groq 20B исчерпала token rate limit; смена модели сейчас
+исказила бы A/B/C-сравнение.
 
 ## Next experiment
 
-Проверка det-layer на позитивных/негативных примерах и shadow-абляция; одинаковый claim
-benchmark четырём доступным general-purpose judge, затем полный valid двум финалистам
-и повторная проверка стабильности. До вызовов фиксируются prompt/набор/лимиты.
+Чистый C-screen на тех же 12 строках. Если он лучше B по ошибкам/Reason Precision без провала
+recall и чрезмерной цены — полный B/C на 46 строках; затем ручной reason audit всех новых
+semantic positives и окончательное KEEP_ONE_SHOT/KEEP_STRICT_ONE_SHOT/KEEP_DECOMPOSED.
 
 ## Should we continue this goal?
 
-Да. H1/H2/H3 и Reason Precision готовы; det-layer, многомодельный benchmark, выбор judge,
-V4 candidate и её новый error audit ещё не завершены. Следующую архитектурную задачу не подменяем
+Да. Baseline и B-screen готовы; чистый C-screen, полный B/C, cost/reason audit, выбор режима
+и новый error audit ещё не завершены. Следующую архитектурную задачу не подменяем
 этим списком намерений; REPLACE_GOAL будет предложен только после выполнения критериев.
 
 ## Проверяемые этапы
@@ -60,9 +64,9 @@ V4 candidate и её новый error audit ещё не завершены. Сл
 |---|---|---|
 | 1. H1/H2/H3 | Числа и построчные источники, не прежняя оценка «1/8 полностью правильно» | Готово, H2 с ограниченной областью доказательства |
 | 2. Reason Precision | Явный знаменатель semantic-positive, material-valid основание, coverage/неоднозначности | Готово |
-| 3–4. Det-layer | Общие классы, контрпримеры, тесты, FP-аудит, shadow-абляция | Реализация и тесты |
-| 5. Claim↔evidence verifier | ENTAILED/CONTRADICTED/RELATED_ONLY/INSUFFICIENT, shadow only | Реализован, 12 автономных тестов |
-| 6. Judges | Одинаковые входы и настройки; claim → full → stability | Готовится claim benchmark |
-| 7. Рекомендации | Leaderboard/robust/recommended отдельно, с числами | Не выбраны |
-| 8. Candidate | Выбранный judge + принятые det-сигналы, full validation и новые ошибки | Не собрана |
-| 9. Новый bottleneck | Повторный аудит всех остаточных FP/FN candidate | Не определён |
+| 3–4. Det-layer | Общие классы, контрпримеры, тесты, FP-аудит, shadow-абляция | Typed слой и 16 тестов; runtime только безопасная арифметика |
+| 5. Narrow verifier/ledger/final | SUPPORTED/CONTRADICTED/RELATED_ONLY/INSUFFICIENT; fail-safe | Реализовано, автономные тесты проходят |
+| 6. A/B/C screen | Одинаковые строки; baseline/strict/decomposed | A/B готовы; C format pilot остановлен |
+| 7. Полный A/B/C | Метрики, calls/tokens/latency/validity и Reason Precision | Не выполнено |
+| 8. Выбор KEEP_* | Преимущество над хорошим one-shot, цена и переносимость | Не выбран |
+| 9. Новый bottleneck | Повторный аудит всех остаточных FP/FN выбранного варианта | Не определён |

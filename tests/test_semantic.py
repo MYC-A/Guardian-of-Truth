@@ -40,6 +40,22 @@ class SemanticTests(unittest.TestCase):
         self.assertIn('semantic_backend_error', review.unresolved)
         self.assertNotIn('secret', str(review))
 
+    def test_opt_in_backend_skips_after_mechanical_proof(self):
+        class MustNotRun:
+            name = 'language:decomposed'
+            skip_when_mechanical_violation = True
+            def analyze(self, context):
+                raise AssertionError('semantic backend must not run')
+        prompt = '⟦SYSTEM⟧\n[AVAILABLE TOOLS]\n- known — Read.\n'
+        response = '⟦ASSISTANT_TOOL_CALL name="missing"⟧\n{}'
+        review = Detector(semantic=MustNotRun()).review(prompt, response)
+        self.assertEqual(review.status, 'violation')
+        self.assertIn('unavailable_tool', {item.code for item in review.findings})
+        self.assertEqual(review.reading_trace,
+                         [{'stage':'mechanical_short_circuit','call':None,'valid':True}])
+        self.assertEqual(review.semantic_usage, {'llm_calls':0})
+        self.assertNotIn('semantic_backend_error', review.unresolved)
+
     def test_invalid_output_is_rejected(self):
         class Invalid:
             name = 'invalid'

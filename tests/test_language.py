@@ -3,7 +3,8 @@ import math
 import unittest
 from unittest.mock import patch
 
-from guardian_truth.language import BudgetExceeded, LanguageAnalyzer, LanguageConfig, RunBudget
+from guardian_truth.language import (BudgetExceeded, LanguageAnalyzer, LanguageConfig, RunBudget,
+                                     STRICT_VERIFICATION_INSTRUCTION)
 from guardian_truth.llm_client import ChatClientError, Completion
 from guardian_truth.pipeline import Detector
 
@@ -150,6 +151,19 @@ class LanguageTests(unittest.TestCase):
         self.assertIsNone(review.semantic_score)
         self.assertIn('language_invalid_citation', review.unresolved)
 
+    def test_strict_protocol_changes_only_instruction_not_call_shape(self):
+        baseline, baseline_client = self.review(assessment(), config=LanguageConfig(mode='direct'))
+        strict, strict_client = self.review(
+            assessment(), config=LanguageConfig(mode='direct', protocol='strict'))
+        self.assertEqual(baseline.semantic_score, strict.semantic_score)
+        self.assertEqual(len(baseline_client.messages), 1)
+        self.assertEqual(len(strict_client.messages), 1)
+        self.assertNotIn(STRICT_VERIFICATION_INSTRUCTION,
+                         baseline_client.messages[0][0]['content'])
+        self.assertIn(STRICT_VERIFICATION_INSTRUCTION,
+                      strict_client.messages[0][0]['content'])
+        self.assertEqual(baseline_client.messages[0][1], strict_client.messages[0][1])
+
 
 class RunBudgetTests(unittest.TestCase):
     def test_invalid_limits_are_rejected(self):
@@ -166,6 +180,8 @@ class RunBudgetTests(unittest.TestCase):
             for value in (float('nan'), float('inf'), True, 1.5):
                 with self.subTest(name=name, value=value), self.assertRaises(ValueError):
                     LanguageConfig(**{name: value})
+        with self.assertRaises(ValueError):
+            LanguageConfig(protocol='decomposed')
 
     def test_reservations_cannot_reduce_usage(self):
         budget = RunBudget(max_requests=1, max_input_chars=10)

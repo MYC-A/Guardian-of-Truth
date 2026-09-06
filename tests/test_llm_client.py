@@ -78,6 +78,17 @@ class ChatClientTests(unittest.TestCase):
         self.assertNotIn("synthetic-test-key", repr(client.config))
         self.assertNotIn("synthetic-test-key", repr(client.__dict__))
 
+    def test_optional_reasoning_effort_is_explicit_and_validated(self):
+        os.environ["GROQ_API_KEY"] = "synthetic-test-key"
+        client, transport, _ = self.client(success())
+        client.complete(self.messages,reasoning_effort="low")
+        self.assertEqual(json.loads(transport.requests[0][0].data)["reasoning_effort"],"low")
+        client, transport, _ = self.client(success())
+        with self.assertRaises(ChatClientError) as caught:
+            client.complete(self.messages,reasoning_effort="none")
+        self.assertEqual(caught.exception.category,"invalid_request")
+        self.assertFalse(transport.requests)
+
     def test_missing_key_does_not_reach_transport(self):
         transport = FakeTransport(success())
         self.assert_category(ChatClient(ClientConfig(), transport=transport), "missing_api_key")

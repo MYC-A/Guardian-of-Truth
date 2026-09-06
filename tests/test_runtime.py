@@ -12,7 +12,7 @@ from unittest.mock import patch
 
 from guardian_truth.decision import decide
 from guardian_truth.language import LanguageAnalyzer, LanguageConfig, RunBudget
-from guardian_truth.llm_client import Completion
+from guardian_truth.llm_client import Completion, ConfigurationError
 from guardian_truth.pipeline import Detector
 from guardian_truth.runtime import make_detector
 from guardian_truth.settings import load_env_file
@@ -71,10 +71,14 @@ class RuntimeTests(unittest.TestCase):
     def test_env_file_does_not_override_process_env_or_execute(self):
         with tempfile.TemporaryDirectory() as folder, patch.dict(os.environ,{'GROQ_API_KEY':'process-value'}):
             path=Path(folder)/'.env'
-            path.write_text('GROQ_API_KEY=file-value\nGUARDIAN_MODEL="local-model"\nDANGEROUS=$(whoami)\n',encoding='utf-8')
+            path.write_text('GROQ_API_KEY=file-value\nOPENROUTER_API_KEY=router-value\n'
+                            'GEMINI_API_KEY=gemini-value\nGUARDIAN_MODEL="local-model"\n'
+                            'DANGEROUS=$(whoami)\n',encoding='utf-8')
             self.assertTrue(load_env_file(path))
             self.assertEqual(os.environ['GROQ_API_KEY'],'process-value')
             self.assertEqual(os.environ['GUARDIAN_MODEL'],'local-model')
+            self.assertEqual(os.environ['OPENROUTER_API_KEY'],'router-value')
+            self.assertEqual(os.environ['GEMINI_API_KEY'],'gemini-value')
             self.assertNotIn('DANGEROUS',os.environ)
 
     def test_local_switch_does_not_use_groq_credential(self):
@@ -88,6 +92,39 @@ class RuntimeTests(unittest.TestCase):
         from guardian_truth.llm_client import ConfigurationError
         with self.assertRaises(ConfigurationError):
             make_detector(backend='groq',base_url='https://unrelated.example/v1')
+
+    def test_remote_providers_bind_distinct_credentials_and_hosts(self):
+        credentials={'OPENROUTER_API_KEY':'router-test','GEMINI_API_KEY':'gemini-test'}
+        with patch.dict(os.environ,credentials,clear=True):
+            router=make_detector(backend='openrouter',model='vendor/model')
+            gemini=make_detector(backend='gemini',model='gemini-test-model')
+        self.assertEqual(router.semantic.client.config.base_url,'https://openrouter.ai/api/v1')
+        self.assertEqual(router.semantic.client.config.api_key_env,'OPENROUTER_API_KEY')
+        self.assertEqual(gemini.semantic.client.config.base_url,
+                         'https://generativelanguage.googleapis.com/v1beta/openai')
+        self.assertEqual(gemini.semantic.client.config.api_key_env,'GEMINI_API_KEY')
+        with patch.dict(os.environ,credentials,clear=True), self.assertRaises(ConfigurationError):
+            make_detector(backend='openrouter',model='x',base_url='https://api.groq.com/openai/v1')
+
+    def test_saved_provider_aliases_are_supported_without_copying_keys(self):
+        aliases={'OPENROUTE_API_KEY':'router-alias','OPENROUTE_MODEL':'vendor/alias',
+                 'GEMENI_API_KEY':'gemini-alias'}
+        with patch.dict(os.environ,aliases,clear=True):
+            router=make_detector(backend='openrouter')
+            gemini=make_detector(backend='gemini',model='gemini-model')
+        self.assertEqual(router.semantic.client.config.api_key_env,'OPENROUTE_API_KEY')
+        self.assertEqual(router.semantic.client.config.model,'vendor/alias')
+        self.assertEqual(gemini.semantic.client.config.api_key_env,'GEMENI_API_KEY')
+
+    def test_decomposed_runtime_is_explicit_and_defaults_remain_one_shot(self):
+        with patch.dict(os.environ,{},clear=True):
+            baseline=make_detector(backend='local')
+            decomposed=make_detector(backend='local',semantic_protocol='decomposed',
+                                     decomposition_max_checks=8,decomposition_group_size=3)
+        self.assertEqual(baseline.semantic.name,'language:graph')
+        self.assertEqual(decomposed.semantic.name,'language:decomposed')
+        self.assertEqual(decomposed.semantic.config.max_checks,8)
+        self.assertEqual(decomposed.semantic.config.group_size,3)
 
     def test_cli_local_http_end_to_end(self):
         requests=[]

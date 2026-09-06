@@ -29,12 +29,16 @@ def main():
     parser.add_argument('--output-dir', type=Path, required=True)
     parser.add_argument('--env-file', type=Path, default=Path('.env'))
     parser.add_argument('--limit', type=int)
+    parser.add_argument('--ids-file', type=Path,
+                        help='Optional frozen JSON array of row IDs; order is preserved')
     parser.add_argument('--bootstrap-samples', type=int, default=1000)
+    parser.add_argument('--interval-seconds', type=float, default=0,
+                        help='Minimum delay between semantic row starts for provider rate limits')
     add_runtime_arguments(parser)
     args = parser.parse_args()
     if args.limit is not None and args.limit < 1:
         parser.error('Limit must be positive')
-    if args.bootstrap_samples < 1:
+    if args.bootstrap_samples < 1 or args.interval_seconds < 0:
         parser.error('Bootstrap samples must be positive')
     names = ('configuration.json','audit.jsonl','report.json')
     paths = [args.output_dir/name for name in names]
@@ -44,6 +48,21 @@ def main():
         parser.error('Output must not overwrite input or credentials')
     rows = read_rows(args.input)
     validate_rows(rows)
+    ids_hash = None
+    if args.ids_file is not None:
+        try:
+            raw_ids = args.ids_file.read_bytes()
+            wanted = json.loads(raw_ids)
+            if (not isinstance(wanted,list) or not wanted or len(set(wanted)) != len(wanted)
+                    or any(not isinstance(item,str) or not item for item in wanted)):
+                raise ValueError
+            by_id = {str(row['id']):row for row in rows}
+            if any(item not in by_id for item in wanted):
+                raise ValueError
+            rows = [by_id[item] for item in wanted]
+            ids_hash = hashlib.sha256(raw_ids).hexdigest()
+        except (OSError,ValueError,TypeError,json.JSONDecodeError):
+            parser.error('Invalid frozen IDs file')
     if args.limit:
         rows = rows[:args.limit]
     if not rows or any(str(row.get('label')) not in ('0','1') for row in rows):
@@ -55,13 +74,16 @@ def main():
     config = {key:getattr(args,key) for key in (
         'backend','mode','checks','max_requests','max_input_chars','seconds','max_rounds',
         'max_evidence_chars','max_prompt_chars','rolling_evidence','max_output_tokens',
-        'timeout_seconds','retries','threshold','limit','bootstrap_samples','recovery')}
+        'timeout_seconds','retries','threshold','limit','bootstrap_samples','interval_seconds','recovery','semantic_protocol',
+        'decomposition_max_checks','decomposition_group_size')}
     if args.backend != 'none':
         config.update(model=detector.semantic.client.config.model,base_url=detector.semantic.client.config.base_url)
     package = Path(__import__('guardian_truth').__file__).parent
     config['source_hashes'] = {p.name:hashlib.sha256(p.read_bytes()).hexdigest() for p in sorted(package.glob('*.py'))}
     config['runner_hash'] = hashlib.sha256(Path(__file__).read_bytes()).hexdigest()
     config['input_hash'] = hashlib.sha256(args.input.read_bytes()).hexdigest()
+    config['ids_file_hash'] = ids_hash
+    config['selected_ids'] = [str(row['id']) for row in rows]
     config.update(data_role='development_only',experiment='same_generation_full_claim_gate_vs_overall_gate',
                   skip_mechanical_violations=True,threshold_tuning=False)
     args.output_dir.mkdir(parents=True,exist_ok=True)
@@ -69,12 +91,19 @@ def main():
     records, examples, strict_scores, overall_scores = [], [], [], []
     issues = Counter()
     started = time.monotonic()
+    last_semantic_start = None
     with (args.output_dir/'audit.jsonl').open('w',encoding='utf-8') as stream:
         for index,row in enumerate(rows):
             # No label, explanation or ID crosses the inference boundary.
             review = precheck.review(row['prompt'],row['response'])
             skipped = review.status == 'violation'
             if not skipped:
+                if last_semantic_start is not None:
+                    remaining = args.interval_seconds - (time.monotonic()-last_semantic_start)
+                    while remaining > 0:
+                        time.sleep(min(1.0,remaining))
+                        remaining = args.interval_seconds - (time.monotonic()-last_semantic_start)
+                last_semantic_start = time.monotonic()
                 review = detector.review(row['prompt'],row['response'])
             strict, overall = gate_decisions(review,args.threshold)
             record = {'id':str(row['id']),'label':int(row['label']),'strict':asdict(strict),
