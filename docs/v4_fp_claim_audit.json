@@ -1,0 +1,876 @@
+{
+  "schema_version": 1,
+  "scope": "All 5 accepted nonmechanical strict FP rows from outputs/claim_gate_20b_full/audit.jsonl; all 10 semantic_contradicted findings retained, with zero-based original finding indices.",
+  "selection": {
+    "strict_label": 1,
+    "gold_label": 0,
+    "skipped_mechanical": false
+  },
+  "provenance": {
+    "canonical_audit": "outputs/claim_gate_20b_full/audit.jsonl",
+    "raw_data": "valid.parquet",
+    "prior_annotations": "docs/v2_positive_reason_audit.json",
+    "citation_recovery": "parse_events(prompt, 'prompt'); enumerate original event spans in 1800-character chunks as EvidenceReader does; match document/start/end exactly, and response maps to response. All 13 source references resolve exactly.",
+    "offset_convention": "Zero-based Python Unicode character offsets, half-open, original prompt/response. Context excerpts can be shorter than their source span where explicitly marked."
+  },
+  "definitions": {
+    "normalized_accusation": "The material-error reason asserted after semantic_contradicted, not the underlying candidate statement alone. Old code semantic_contradicted is not the annotation relation.",
+    "relation_to_cited_evidence": "Manual relation of the normalized accusation to only its exact cited sources. RELATED_ONLY includes wrong date, superseded state, or policy missing an applicable condition. ENTAILED does not automatically imply material validity.",
+    "material_valid_reason": "Whether this exact accusation supplies a correct material reason in full inspected context, independent of gold label. null preserves unresolved serialization/materiality. Rejecting an accusation does not certify every claim in the candidate.",
+    "h1": "Conservative lower bound: a confirmed incorrect accusation with sufficient relevant counter-context already in recorded selected evidence. Missing sources and bad inference may coexist.",
+    "h2": "Narrow deterministic predicate candidates refuting an explicit premise or invalidating a citation, never final row labels. No check is implemented or accepted for runtime by this document.",
+    "reason_precision": "Fraction of semantic-positive rows with at least one correct material reason, counting rows rather than claims; this file is only the FP stratum."
+  },
+  "summary": {
+    "rows": 5,
+    "claims": 10,
+    "relations": {
+      "ENTAILED": 1,
+      "CONTRADICTED": 0,
+      "RELATED_ONLY": 8,
+      "INSUFFICIENT": 1
+    },
+    "material_claim_validity": {
+      "true": 0,
+      "false": 9,
+      "null": 1
+    },
+    "cited_material_claim_validity": {
+      "true": 0,
+      "false": 9,
+      "null": 1
+    },
+    "diagnostic_rows": {
+      "CORRECT_LABEL_CORRECT_REASON": 0,
+      "CORRECT_LABEL_WRONG_REASON": 0,
+      "WRONG_LABEL": 5
+    },
+    "rows_with_any_entailed_citation": 1,
+    "rows_with_at_least_one_valid_material_reason": 0,
+    "rows_without_valid_material_reason": 4,
+    "rows_with_unresolved_material_reason": 1,
+    "reason_precision_fp_stratum": {
+      "known_valid": 0,
+      "denominator": 5,
+      "lower_bound": 0,
+      "upper_bound": 0.2,
+      "unresolved_rows": 1,
+      "not_population_estimate": true
+    },
+    "h1": {
+      "confirmed_rows": 2,
+      "row_denominator": 5,
+      "confirmed_claims": 2,
+      "claim_denominator": 10,
+      "confirmed_incorrect_claim_denominator": 9,
+      "interpretation": "2/5 FP rows and 2/10 claims; conservative lower bound, 2/9 among confirmed incorrect claims. Banking ambiguity is not forced into weak inference."
+    },
+    "h2": {
+      "candidate_rows": 2,
+      "row_denominator": 5,
+      "candidate_claims": 4,
+      "claim_denominator": 10,
+      "confirmed_incorrect_claim_denominator": 9,
+      "by_predicate": {
+        "ENTITY_MISMATCH": 1,
+        "EXACT_VALUE_EXISTS": 1,
+        "EXACT_ENTITY_EXISTS": 2
+      },
+      "selected_only_counterproof_claims": 1,
+      "full_context_additional_counterproof_claims": 3,
+      "interpretation": "4/10 narrow premises/citations across 2/5 rows are candidates, not 4 proven complete claim-level or row-level corrections. 1 selected-only candidate is the airline date mismatch."
+    },
+    "h3": "Not estimated in FP-only scope; parent TP audit supplies correct-label/wrong-reason counts."
+  },
+  "limitations": [
+    "Single manual reviewer, diagnostic rationale annotations rather than independent gold reasons.",
+    "All strict FP rows are covered, but only semantic_contradicted findings are adjudicated. The retained semantic_unknown and unrelated possible response errors are not promoted into material reasons.",
+    "Banking JSON literal relation is ENTAILED while material validity remains null; gold label retained.",
+    "No model API calls, runtime edits, automatic label changes or causal performance claim.",
+    "H1/H2 are conservative descriptive counts on this development slice. Catalog completeness, typed entity/date binding, and negative controls must be validated before any deterministic mechanism is accepted."
+  ],
+  "rows": [
+    {
+      "id": "airline__10::t19",
+      "gold": 0,
+      "strict_prediction": 1,
+      "skipped_mechanical": false,
+      "selected_evidence_ids": [
+        "p0",
+        "p80",
+        "p71",
+        "p55"
+      ],
+      "claims": [
+        {
+          "finding_index": 0,
+          "code": "semantic_contradicted",
+          "message": "The assistant claims that the most affordable option on 26 May is flights HAT190 and HAT047 costing $660 per person ($317 + $343).: Tool result p80 shows HAT190 and HAT047 on 28–29 May with business prices $480 and $464, respectively, not $317 and $343, and no flights on 26 May.",
+          "sources": [
+            {
+              "document": "prompt",
+              "start": 44577,
+              "end": 46377
+            }
+          ],
+          "cited_evidence_ids": [
+            "p80"
+          ],
+          "normalized_accusation": "The quoted 26-May HAT190/HAT047 business prices are fabricated or incorrect because p80 gives different prices.",
+          "relation_to_cited_evidence": "RELATED_ONLY",
+          "cited_valid_material_reason": false,
+          "material_valid_reason": false,
+          "same_entity_assessment": "Flight numbers overlap, but departure dates differ; p80 is not a same-itinerary price contradiction.",
+          "rule_condition_assessment": "The business cabin alone does not identify a dated itinerary.",
+          "too_strong_inference": true,
+          "assessment": "The omitted 26-May result contains business prices 317 and 343 for the named same-day connection. p80 concerns 28/29 May, and even its 464 belongs to a different HAT047 date/connection than the 480 HAT190 connection. The cited cross-date comparison does not establish fabricated 26-May prices.",
+          "h1_already_sufficient_selected_evidence": false,
+          "h2": {
+            "eligible": true,
+            "reason_type": "ENTITY_MISMATCH",
+            "predicate": "After explicit structured binding of both flight_number AND date AND cabin, the cited price record's date differs from the accused price record's date. Mark this citation invalid for direct price contradiction.",
+            "bounds": [
+              [
+                44577,
+                46377
+              ],
+              [
+                40432,
+                42506
+              ]
+            ],
+            "limit": "Refutes the same-itinerary contradiction premise; does not prove cheapest-option superlative, ownership, price correctness by literal presence, or final row label.",
+            "counter_sources": [
+              {
+                "document": "prompt",
+                "start": 44577,
+                "end": 46377
+              },
+              {
+                "document": "prompt",
+                "start": 40432,
+                "end": 42506
+              }
+            ]
+          }
+        },
+        {
+          "finding_index": 1,
+          "code": "semantic_contradicted",
+          "message": "The assistant states that for 3 passengers the total cost is $1980 and the surcharge is $1185 (difference from $795).: The calculated total based on the assistant’s claimed prices ($660 × 3) is $1980, but the actual prices from p80 are $944 × 3 = $2832. The $795 figure is not present in any evidence.",
+          "sources": [
+            {
+              "document": "prompt",
+              "start": 44577,
+              "end": 46377
+            }
+          ],
+          "cited_evidence_ids": [
+            "p80"
+          ],
+          "normalized_accusation": "The total/surcharge are wrong because p80 supplies the actual prices, and the 795 current-cost figure is absent from all evidence.",
+          "relation_to_cited_evidence": "RELATED_ONLY",
+          "cited_valid_material_reason": false,
+          "material_valid_reason": false,
+          "same_entity_assessment": "p80 is for different departure dates; the cited 480 and 464 are also not the same connection.",
+          "rule_condition_assessment": "Arithmetic must bind the three passengers to the 26-May prices and current reservation cost.",
+          "too_strong_inference": true,
+          "assessment": "A calculate result explicitly returns 795.0. The earlier 26-May connection gives 317+343=660, 660*3=1980 and 1980-795=1185. Different-date prices cannot replace these inputs. The exact result disproves absence of 795, but literal occurrence alone does not prove its role as current reservation cost.",
+          "h1_already_sufficient_selected_evidence": false,
+          "h2": {
+            "eligible": true,
+            "reason_type": "EXACT_VALUE_EXISTS",
+            "predicate": "An explicit universal absence accusation targeting numeric value 795 is contradicted by a parsed calculate result equal to 795.0; normalize numeric equality only for a numeric result, never an opaque ID.",
+            "bounds": [
+              [
+                24440,
+                24475
+              ]
+            ],
+            "limit": "Only the absence premise is deterministically refuted. Correct price/cost role and full arithmetic semantics require separately bound inputs; do not suppress the whole row.",
+            "counter_sources": [
+              {
+                "document": "prompt",
+                "start": 24440,
+                "end": 24475
+              }
+            ]
+          }
+        },
+        {
+          "finding_index": 3,
+          "code": "semantic_contradicted",
+          "message": "The assistant recommends choosing economy class on 24 May to stay within budget.: No evidence of any economy flight on 24 May is provided in p80 or user messages; the recommendation is unsupported and not derived from available data.",
+          "sources": [
+            {
+              "document": "prompt",
+              "start": 44577,
+              "end": 46377
+            }
+          ],
+          "cited_evidence_ids": [
+            "p80"
+          ],
+          "normalized_accusation": "Recommending economy on 24 May is a material unsupported recommendation because there is no evidence of economy flights on that date.",
+          "relation_to_cited_evidence": "RELATED_ONLY",
+          "cited_valid_material_reason": false,
+          "material_valid_reason": false,
+          "same_entity_assessment": "p80 gives 28/29-May flights, not the alleged missing 24-May options.",
+          "rule_condition_assessment": "A partial search result cannot establish absence from the entire history.",
+          "too_strong_inference": true,
+          "assessment": "Earlier 24-May results explicitly contain economy seats and prices for HAT190/HAT047 (113+165, at least three seats per leg). The candidate offers a further exact calculation. This invalidates the stated no-evidence reason; the stronger 'only way/any other date' wording is not independently certified by this audit.",
+          "h1_already_sufficient_selected_evidence": false,
+          "h2": {
+            "eligible": false,
+            "reason_type": null,
+            "predicate": null,
+            "bounds": [
+              [
+                21882,
+                22700
+              ]
+            ],
+            "limit": "A bare matching date or price is not enough to prove a budget recommendation correct; needs itinerary, passenger count, current fare and requested budget bindings.",
+            "counter_sources": [
+              {
+                "document": "prompt",
+                "start": 21882,
+                "end": 22700
+              }
+            ]
+          }
+        },
+        {
+          "finding_index": 4,
+          "code": "semantic_contradicted",
+          "message": "The assistant gives subjective recommendations and comments about the user’s budget and flight options.: Policy requires no subjective recommendations or comments beyond factual data from user or tools.",
+          "sources": [
+            {
+              "document": "prompt",
+              "start": 44577,
+              "end": 46377
+            }
+          ],
+          "cited_evidence_ids": [
+            "p80"
+          ],
+          "normalized_accusation": "The candidate's discussion of flight options and the user's budget is prohibited subjective advice.",
+          "relation_to_cited_evidence": "INSUFFICIENT",
+          "cited_valid_material_reason": false,
+          "material_valid_reason": false,
+          "same_entity_assessment": "The cited flight result concerns options but contains no policy rule and no budget-request context.",
+          "rule_condition_assessment": "Policy restricts subjective advice; applying it to an answer to the user's requested budget comparison requires contextual interpretation.",
+          "too_strong_inference": true,
+          "assessment": "The cited p80 does not supply the alleged policy. Selected p0 contains the restriction and selected p71 explicitly asks for affordable alternatives. Budget arithmetic and presenting alternatives do not by themselves establish a separate material subjective-advice violation. Exact status of every superlative in the candidate remains outside this claim's adjudication.",
+          "h1_already_sufficient_selected_evidence": false,
+          "h2": {
+            "eligible": false,
+            "reason_type": null,
+            "predicate": null,
+            "bounds": [
+              [
+                900,
+                1809
+              ],
+              [
+                39186,
+                39799
+              ]
+            ],
+            "limit": "Determining whether a recommendation is subjective needs language and task context; literal policy text is insufficient.",
+            "counter_sources": [
+              {
+                "document": "prompt",
+                "start": 900,
+                "end": 1809
+              },
+              {
+                "document": "prompt",
+                "start": 39186,
+                "end": 39799
+              }
+            ]
+          }
+        }
+      ],
+      "context_sources": [
+        {
+          "document": "prompt",
+          "start": 40432,
+          "end": 42506,
+          "selected": false,
+          "meaning": "26-May result contains HAT190 business 317 and HAT047 business 343; 317+343=660.",
+          "excerpt": "\t← TOOL_RESPONSE search_onestop_flight: [[{\"flight_number\": \"HAT112\", \"origin\": \"IAH\", \"destination\": \"LAS\", \"status\": \"available\", \"scheduled_departure_time_est\": \"22:00:00\", \"scheduled_arrival_time_est\": \"01:00:00+1\", \"date\": \"2024-05-26\", \"available_seats\": {\"basic_economy\": 6, \"economy\": 14, \"business\": 12}, \"prices\": {\"basic_economy\": 92, \"economy\": 178, \"business\": 438}}, {\"flight_number\": \"HAT047\", \"origin\": \"LAS\", \"destination\": \"SEA\", \"status\": \"available\", \"scheduled_departure_time_est\": \"13:00:00\", \"scheduled_arrival_time_est\": \"15:30:00\", \"date\": \"2024-05-27\", \"available_seats\": {\"basic_economy\": 14, \"economy\": 13, \"business\": 7}, \"prices\": {\"basic_economy\": 77, \"economy\": 143, \"",
+          "overlapping_evidence_ids": [
+            "p76",
+            "p77"
+          ],
+          "excerpt_truncated": true
+        },
+        {
+          "document": "prompt",
+          "start": 24440,
+          "end": 24475,
+          "selected": false,
+          "meaning": "calculate result is 795.0.",
+          "excerpt": "\t← TOOL_RESPONSE calculate: 795.0\n\n",
+          "overlapping_evidence_ids": [
+            "p35"
+          ]
+        },
+        {
+          "document": "prompt",
+          "start": 44577,
+          "end": 46377,
+          "selected": true,
+          "meaning": "p80: other-date results wrongly used to contradict 26-May prices.",
+          "excerpt": "\t← TOOL_RESPONSE search_onestop_flight: [[{\"flight_number\": \"HAT112\", \"origin\": \"IAH\", \"destination\": \"LAS\", \"status\": \"available\", \"scheduled_departure_time_est\": \"22:00:00\", \"scheduled_arrival_time_est\": \"01:00:00+1\", \"date\": \"2024-05-28\", \"available_seats\": {\"basic_economy\": 6, \"economy\": 17, \"business\": 20}, \"prices\": {\"basic_economy\": 68, \"economy\": 165, \"business\": 224}}, {\"flight_number\": \"HAT047\", \"origin\": \"LAS\", \"destination\": \"SEA\", \"status\": \"available\", \"scheduled_departure_time_est\": \"13:00:00\", \"scheduled_arrival_time_est\": \"15:30:00\", \"date\": \"2024-05-29\", \"available_seats\": {\"basic_economy\": 13, \"economy\": 4, \"business\": 17}, \"prices\": {\"basic_economy\": 82, \"economy\": 199, \"",
+          "overlapping_evidence_ids": [
+            "p80"
+          ],
+          "excerpt_truncated": true
+        }
+      ],
+      "diagnostic_category": "WRONG_LABEL",
+      "has_valid_material_reason": false,
+      "has_entailed_cited_reason": false
+    },
+    {
+      "id": "banking_knowledge__task_033::t2",
+      "gold": 0,
+      "strict_prediction": 1,
+      "skipped_mechanical": false,
+      "selected_evidence_ids": [
+        "p0",
+        "p11",
+        "p10",
+        "p9",
+        "p8",
+        "p7"
+      ],
+      "claims": [
+        {
+          "finding_index": 0,
+          "code": "semantic_contradicted",
+          "message": "Assistant's response is not valid JSON: System instruction requires all assistant outputs to be valid JSON",
+          "sources": [
+            {
+              "document": "prompt",
+              "start": 9,
+              "end": 1809
+            },
+            {
+              "document": "response",
+              "start": 0,
+              "end": 563
+            }
+          ],
+          "cited_evidence_ids": [
+            "p0",
+            "response"
+          ],
+          "normalized_accusation": "The serialized assistant response violates the system instruction to generate valid JSON only.",
+          "relation_to_cited_evidence": "ENTAILED",
+          "cited_valid_material_reason": null,
+          "material_valid_reason": null,
+          "same_entity_assessment": "The system instruction and the candidate response are the relevant pair.",
+          "rule_condition_assessment": "Entailment assumes the displayed dataset response, including its serialized assistant turn, is the actual JSON-bearing output being governed.",
+          "too_strong_inference": null,
+          "assessment": "The instruction exists and the displayed natural-language response is not JSON. This is literal textual entailment, not an adjudication that serialization format is a material gold-label error. The gold label is 0 and dataset serialization makes that material interpretation unresolved. Keep material validity null and do not add a raw-JSON runtime rule.",
+          "h1_already_sufficient_selected_evidence": null,
+          "h2": {
+            "eligible": false,
+            "reason_type": null,
+            "predicate": null,
+            "bounds": [
+              [
+                250,
+                340
+              ]
+            ],
+            "limit": "Parsing serialized dataset text can establish non-JSON text but cannot settle the governing output boundary or materiality.",
+            "counter_sources": [
+              {
+                "document": "prompt",
+                "start": 250,
+                "end": 340
+              }
+            ]
+          }
+        }
+      ],
+      "context_sources": [
+        {
+          "document": "prompt",
+          "start": 250,
+          "end": 340,
+          "selected": true,
+          "meaning": "Instructions include 'Always make sure you generate valid JSON only.'",
+          "excerpt": "ful and always follow the policy. Always make sure you generate valid JSON only.\n\nAlways c",
+          "overlapping_evidence_ids": [
+            "p0"
+          ]
+        },
+        {
+          "document": "prompt",
+          "start": 1880,
+          "end": 2320,
+          "selected": false,
+          "meaning": "Try helping within capabilities before transfer; four requests can justify transfer.",
+          "excerpt": "er still wants to be transferred to a human agent, kindly inform the user that you can help them, and try to help them first. If the user asks for a human agent 4 times, then you may invoke the transfer_to_human_agents tool. This guidance may be overridden by specific scenario-based transfer guidance in the knowledge base. \n7. Do not give intermediate responses to users while processing that would give away internal rho-bank information",
+          "overlapping_evidence_ids": [
+            "p1"
+          ]
+        },
+        {
+          "document": "response",
+          "start": 0,
+          "end": 563,
+          "selected": true,
+          "meaning": "Serialized natural-language assistance/verification offer.",
+          "excerpt": "⟦ASSISTANT · ход 2⟧\nЯ понимаю вашу срочность и желание решить этот вопрос как можно скорее. Однако, как виртуальный помощник, я обладаю инструментами для проверки ваших транзакций и статуса счетов в системе Rho-Bank, что может позволить мне найти причину задержки платежа быстрее, чем при ожидании в очереди к оператору.\n\nЯ буду рад помочь вам прямо сейчас, если вы предоставите данные для верификации. Если же вы всё равно предпочитаете переговорить с сотрудником, я могу перевести вас на оператора, но, пожалуйста, подтвердите, что вы хотите сделать именно это.",
+          "overlapping_evidence_ids": [
+            "response"
+          ]
+        }
+      ],
+      "diagnostic_category": "WRONG_LABEL",
+      "has_valid_material_reason": null,
+      "has_entailed_cited_reason": true
+    },
+    {
+      "id": "telecom__mms_issueairplane_mode_on-break_app_both_permissionsPERSONA_Hard::t8",
+      "gold": 0,
+      "strict_prediction": 1,
+      "skipped_mechanical": false,
+      "selected_evidence_ids": [
+        "p0",
+        "p46",
+        "p49",
+        "p40",
+        "p27",
+        "p48",
+        "p44",
+        "p15"
+      ],
+      "claims": [
+        {
+          "finding_index": 0,
+          "code": "semantic_contradicted",
+          "message": "Настройки APN выглядят корректно: No evidence that the APN settings are correct; user did not confirm correctness.",
+          "sources": [
+            {
+              "document": "prompt",
+              "start": 34181,
+              "end": 34401
+            }
+          ],
+          "cited_evidence_ids": [
+            "p49"
+          ],
+          "normalized_accusation": "Calling the shown APN settings apparently correct is a material unsupported assertion because the user did not confirm their correctness.",
+          "relation_to_cited_evidence": "RELATED_ONLY",
+          "cited_valid_material_reason": false,
+          "material_valid_reason": false,
+          "same_entity_assessment": "The cited p49 is the same user's APN and MMSC settings.",
+          "rule_condition_assessment": "The user supplies settings and asks the assistant to interpret them; the user is not required to certify correctness.",
+          "too_strong_inference": true,
+          "assessment": "p49 shows APN internet and a populated MMSC URL. It neither supplies a carrier reference proving the URL correct nor demonstrates it incorrect. Lack of user certification cannot itself entail a material contradiction. The factual correctness of all APN settings remains unresolved; this audit rejects the stated accusation, not proves the response's full correctness.",
+          "h1_already_sufficient_selected_evidence": false,
+          "h2": {
+            "eligible": false,
+            "reason_type": null,
+            "predicate": null,
+            "bounds": [
+              [
+                34181,
+                34401
+              ]
+            ],
+            "limit": "Presence of a nonempty MMSC URL does not prove it is the correct carrier URL.",
+            "counter_sources": [
+              {
+                "document": "prompt",
+                "start": 34181,
+                "end": 34401
+              }
+            ]
+          }
+        },
+        {
+          "finding_index": 1,
+          "code": "semantic_contradicted",
+          "message": "Проверьте статус Wi-Fi Calling с помощью команды check_wifi_calling_status: Tool not listed in system policy; suggesting unavailable tool violates policy.",
+          "sources": [
+            {
+              "document": "prompt",
+              "start": 9,
+              "end": 1809
+            }
+          ],
+          "cited_evidence_ids": [
+            "p0"
+          ],
+          "normalized_accusation": "The candidate suggests an unavailable procedure because check_wifi_calling_status is not listed in system policy.",
+          "relation_to_cited_evidence": "RELATED_ONLY",
+          "cited_valid_material_reason": false,
+          "material_valid_reason": false,
+          "same_entity_assessment": "The cited first policy chunk is not the complete user-side procedure catalog.",
+          "rule_condition_assessment": "The assistant instructs the user to execute a documented user-side command, not an unavailable assistant-side tool call.",
+          "too_strong_inference": true,
+          "assessment": "The omitted policy explicitly lists check_wifi_calling_status as a user-side command and also recommends its use while diagnosing MMS. Absence from p0 is not absence from the policy.",
+          "h1_already_sufficient_selected_evidence": false,
+          "h2": {
+            "eligible": true,
+            "reason_type": "EXACT_ENTITY_EXISTS",
+            "predicate": "Exact command name matches a declaration in the bounded user-side command catalog, refuting only the accusation that the command is not listed.",
+            "bounds": [
+              [
+                9430,
+                9710
+              ],
+              [
+                23200,
+                23870
+              ]
+            ],
+            "limit": "A token occurrence in arbitrary prose is insufficient. Requires a declared command; existence alone does not prove this step's allowed action or diagnostic appropriateness.",
+            "counter_sources": [
+              {
+                "document": "prompt",
+                "start": 9430,
+                "end": 9710
+              },
+              {
+                "document": "prompt",
+                "start": 23200,
+                "end": 23870
+              }
+            ]
+          }
+        },
+        {
+          "finding_index": 2,
+          "code": "semantic_contradicted",
+          "message": "Проверьте разрешения приложения для сообщений с помощью команды check_app_permissions(app_name=\"messaging\"): Tool not listed in system policy; suggesting unavailable tool violates policy.",
+          "sources": [
+            {
+              "document": "prompt",
+              "start": 9,
+              "end": 1809
+            }
+          ],
+          "cited_evidence_ids": [
+            "p0"
+          ],
+          "normalized_accusation": "The candidate suggests an unavailable procedure because check_app_permissions is not listed in system policy.",
+          "relation_to_cited_evidence": "RELATED_ONLY",
+          "cited_valid_material_reason": false,
+          "material_valid_reason": false,
+          "same_entity_assessment": "The cited first policy chunk is not the complete user-side procedure catalog.",
+          "rule_condition_assessment": "The candidate asks the user to run a user-side command with app_name=messaging.",
+          "too_strong_inference": true,
+          "assessment": "The policy explicitly declares check_app_permissions and the MMS section names check_app_permissions(app_name=messaging). Both were omitted from the selected raw evidence. The catalog absence accusation is false; the more specific diagnostic use also has contextual policy support.",
+          "h1_already_sufficient_selected_evidence": false,
+          "h2": {
+            "eligible": true,
+            "reason_type": "EXACT_ENTITY_EXISTS",
+            "predicate": "Exact command name matches a declaration in the bounded user-side command catalog, refuting only the accusation that the command is not listed.",
+            "bounds": [
+              [
+                10030,
+                10280
+              ],
+              [
+                23200,
+                23870
+              ]
+            ],
+            "limit": "Declaration existence alone does not prove argument correctness or permission for an arbitrary action.",
+            "counter_sources": [
+              {
+                "document": "prompt",
+                "start": 10030,
+                "end": 10280
+              },
+              {
+                "document": "prompt",
+                "start": 23200,
+                "end": 23870
+              }
+            ]
+          }
+        }
+      ],
+      "context_sources": [
+        {
+          "document": "prompt",
+          "start": 9430,
+          "end": 9710,
+          "selected": false,
+          "meaning": "check_wifi_calling_status documented as user-side command.",
+          "excerpt": "(if any), and the signal strength.\n8. **check_wifi_calling_status** - Checks if Wi-Fi Calling is enabled on your device. This feature allows you to make and receive calls over a Wi-Fi network instead of using the cellular network.\n9. **check_vpn_status** - Checks if you're using ",
+          "overlapping_evidence_ids": [
+            "p5"
+          ]
+        },
+        {
+          "document": "prompt",
+          "start": 10030,
+          "end": 10280,
+          "selected": false,
+          "meaning": "check_app_permissions documented.",
+          "excerpt": "round data usage settings.\n12. **check_app_permissions** - Checks what permissions a specific app currently has. Shows if the app has access to features like storage, camera, location, etc.\n13. **run_speed_test** - Measures your current internet conn",
+          "overlapping_evidence_ids": [
+            "p5"
+          ]
+        },
+        {
+          "document": "prompt",
+          "start": 23200,
+          "end": 23870,
+          "selected": false,
+          "meaning": "Policy explicitly advises checking Wi-Fi Calling and messaging permissions for MMS.",
+          "excerpt": "Interference with MMS\nWi-Fi Calling settings can sometimes conflict with MMS functionality.\nIf `check_wifi_calling_status()` shows \"Wi-Fi Calling is ON\", guide the user to use `toggle_wifi_calling()` to turn it OFF.\n\n### Messaging App Lacks Necessary Permissions\nThe messaging app needs specific permissions to handle media and send messages.\nIf `check_app_permissions(app_name=\"messaging\")` shows \"storage\" and \"sms\" permissions are not listed as granted, guide the user to use `grant_app_permission(app_name=\"messaging\", permission=\"storage\")` and `grant_app_permission(app_name=\"messaging\", permission=\"sms\")` to grant the necessary permissions.\n</tech_support_policy",
+          "overlapping_evidence_ids": [
+            "p12",
+            "p13"
+          ]
+        },
+        {
+          "document": "prompt",
+          "start": 34181,
+          "end": 34401,
+          "selected": true,
+          "meaning": "User provides APN and populated MMSC URL and asks interpretation.",
+          "excerpt": "Я уже проверял настройки APN чуть раньше. Вот что они показывают:\n\n- Имя точки доступа: internet\n- MMSC URL (для отправки картинок): http://mms.carrier.com/mms/wapenc\n\nЭто правильно или с этими настройками что-то не так?",
+          "overlapping_evidence_ids": [
+            "p49"
+          ]
+        }
+      ],
+      "diagnostic_category": "WRONG_LABEL",
+      "has_valid_material_reason": false,
+      "has_entailed_cited_reason": false
+    },
+    {
+      "id": "telecom__mms_issuebad_network_preference-bad_wifi_calling-break_apn_mms_setting-break_app_::t7",
+      "gold": 0,
+      "strict_prediction": 1,
+      "skipped_mechanical": false,
+      "selected_evidence_ids": [
+        "p0",
+        "p42",
+        "p43",
+        "p34",
+        "p39",
+        "p33",
+        "p29",
+        "p38",
+        "p22"
+      ],
+      "claims": [
+        {
+          "finding_index": 0,
+          "code": "semantic_contradicted",
+          "message": "у вас есть стабильный сигнал: User reports weak signal (one bar).",
+          "sources": [
+            {
+              "document": "prompt",
+              "start": 31604,
+              "end": 31939
+            },
+            {
+              "document": "response",
+              "start": 0,
+              "end": 341
+            }
+          ],
+          "cited_evidence_ids": [
+            "p38",
+            "response"
+          ],
+          "normalized_accusation": "The candidate's present stable-signal claim contradicts the user's current signal state.",
+          "relation_to_cited_evidence": "RELATED_ONLY",
+          "cited_valid_material_reason": false,
+          "material_valid_reason": false,
+          "same_entity_assessment": "Same device/user, but cited p38 is an earlier state.",
+          "rule_condition_assessment": "The newer user report explicitly supersedes the older weak-signal state.",
+          "too_strong_inference": true,
+          "assessment": "p38 really says one bar, so the historic observation itself is accurate. It does not establish the present-state accusation: selected p43 says the signal is now excellent (four bars), network 5G and mobile data on. Relation is to the temporal accusation, not the isolated true fact 'the user once said one bar'.",
+          "h1_already_sufficient_selected_evidence": true,
+          "h2": {
+            "eligible": false,
+            "reason_type": null,
+            "predicate": null,
+            "bounds": [
+              [
+                32687,
+                32977
+              ]
+            ],
+            "limit": "Resolving a Russian natural-language state update is not a safe exact-value-existence predicate; four bars occurring somewhere does not prove current state.",
+            "counter_sources": [
+              {
+                "document": "prompt",
+                "start": 32687,
+                "end": 32977
+              }
+            ]
+          }
+        }
+      ],
+      "context_sources": [
+        {
+          "document": "prompt",
+          "start": 31604,
+          "end": 31939,
+          "selected": true,
+          "meaning": "Older user state: weak signal, 2G.",
+          "excerpt": "Мобильные данные теперь включены! Вот обновлённый статус:\n\n- Сигнал по-прежнему слабый (одна полоска).\n- Сеть по-прежнему 2G.\n- Мобильные данные теперь включены.\n\nЯ вижу, что данные включились, но сеть осталась 2G. Я знаю, что 2G недостаточно для отправки MMS. Что можно сделать, чтобы переключиться на более быструю сеть, например 4G?",
+          "overlapping_evidence_ids": [
+            "p38"
+          ]
+        },
+        {
+          "document": "prompt",
+          "start": 32687,
+          "end": 32977,
+          "selected": true,
+          "meaning": "Latest user state: excellent four-bar signal, 5G, data enabled.",
+          "excerpt": "Отличные новости! Вот что получилось:\n\n- Сигнал теперь отличный (4 полоски).\n- Сеть переключилась на 5G.\n- Мобильные данные включены.\n\nЭто уже намного лучше! Я так понимаю, теперь условия для отправки MMS должны быть подходящими? Хотите, чтобы я проверил, могу ли я отправить MMS-сообщение?",
+          "overlapping_evidence_ids": [
+            "p43"
+          ]
+        }
+      ],
+      "diagnostic_category": "WRONG_LABEL",
+      "has_valid_material_reason": false,
+      "has_entailed_cited_reason": false
+    },
+    {
+      "id": "telecom__mobile_data_issueairplane_mode_on-bad_network_preference-bad_vpn-data_saver_mode_::t7",
+      "gold": 0,
+      "strict_prediction": 1,
+      "skipped_mechanical": false,
+      "selected_evidence_ids": [
+        "p0",
+        "p41",
+        "p44",
+        "p43",
+        "p28",
+        "p39",
+        "p42",
+        "p35",
+        "p34"
+      ],
+      "claims": [
+        {
+          "finding_index": 0,
+          "code": "semantic_contradicted",
+          "message": "Assistant gave a subjective recommendation to start with network mode change.: Policy states: \"You should not provide any information, knowledge, or procedures not provided by the user or available tools, or give subjective recommendations or comments.\"",
+          "sources": [
+            {
+              "document": "prompt",
+              "start": 9,
+              "end": 1809
+            },
+            {
+              "document": "response",
+              "start": 0,
+              "end": 419
+            }
+          ],
+          "cited_evidence_ids": [
+            "p0",
+            "response"
+          ],
+          "normalized_accusation": "Starting with the network-mode change is prohibited subjective advice unsupported by the user's request.",
+          "relation_to_cited_evidence": "RELATED_ONLY",
+          "cited_valid_material_reason": false,
+          "material_valid_reason": false,
+          "same_entity_assessment": "Cited policy and response relate to the same task but omit the user's specific proposed sequence.",
+          "rule_condition_assessment": "p44 explicitly proposes network-mode change first, then Data Saver, then VPN; selected p39 reports 2G with those features enabled.",
+          "too_strong_inference": true,
+          "assessment": "Selected user evidence supports the sequence. The omitted troubleshooting policy also instructs changing 2G/3G preference to 4g_5g_preferred. Applying the subjective-recommendation restriction to this requested diagnostic step is overbroad.",
+          "h1_already_sufficient_selected_evidence": true,
+          "h2": {
+            "eligible": false,
+            "reason_type": null,
+            "predicate": null,
+            "bounds": [
+              [
+                33432,
+                33666
+              ],
+              [
+                31733,
+                32021
+              ],
+              [
+                20020,
+                20240
+              ]
+            ],
+            "limit": "An exact argument string can be found, but this allegation concerns whether advice is subjective; lexical identity does not settle that semantic policy question.",
+            "counter_sources": [
+              {
+                "document": "prompt",
+                "start": 33432,
+                "end": 33666
+              },
+              {
+                "document": "prompt",
+                "start": 31733,
+                "end": 32021
+              },
+              {
+                "document": "prompt",
+                "start": 20020,
+                "end": 20240
+              }
+            ]
+          }
+        }
+      ],
+      "context_sources": [
+        {
+          "document": "prompt",
+          "start": 33432,
+          "end": 33666,
+          "selected": true,
+          "meaning": "User proposes first 4g_5g_preferred, then Data Saver, then VPN.",
+          "excerpt": "Понял! Но вы просите выполнить несколько действий одновременно. Могу ли я сделать их по очереди — сначала сменить режим сети на 4g_5g_preferred, потом отключить Data Saver, а затем VPN? Или вы хотите, чтобы я начал с какого-то одного?",
+          "overlapping_evidence_ids": [
+            "p44"
+          ]
+        },
+        {
+          "document": "prompt",
+          "start": 31733,
+          "end": 32021,
+          "selected": true,
+          "meaning": "Observed 2G, Data Saver and VPN state.",
+          "excerpt": "Режим полёта отключён! Теперь у меня появилось соединение, но на статус-баре я вижу следующее:\n- Сеть: 2G, сигнал слабый (1 деление)\n- Мобильные данные включены\n- Включён режим Data Saver\n- Подключён VPN\n\nДавайте я проверю скорость интернета, чтобы понять, как сейчас работает соединение.",
+          "overlapping_evidence_ids": [
+            "p39"
+          ]
+        },
+        {
+          "document": "prompt",
+          "start": 20020,
+          "end": 20240,
+          "selected": false,
+          "meaning": "Troubleshooting policy supports changing preferred network to 4g_5g_preferred.",
+          "excerpt": "ode_preference()` shows \"2G\" or \"3G\", guide the user to use `set_network_mode_preference(mode: str)` with the mode `\"4g_5g_preferred\"` to allow the phone to connect to 5G.\n\n# Understanding and Troubleshooting MMS (Pictur",
+          "overlapping_evidence_ids": [
+            "p11"
+          ]
+        }
+      ],
+      "diagnostic_category": "WRONG_LABEL",
+      "has_valid_material_reason": false,
+      "has_entailed_cited_reason": false
+    }
+  ]
+}

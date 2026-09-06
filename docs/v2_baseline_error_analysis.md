@@ -6,7 +6,7 @@
 [один цикл неопределённости](uncertainty_experiment.md); положительного эффекта не получено.
 
 Основания: [абляция claim gate](claim_gate_ablation.md), [аудит положительных решений](v2_positive_reason_audit.json),
-[аудит FN и fallback](v2_unknown_reason_audit.json), [журнал опытов](experiment_log.md).
+[аудит FN и fallback](v2_unknown_reason_audit.json), [журнал опытов](EXPERIMENT_LOG.md).
 В JSON находятся построчные объяснения, координаты исходных фрагментов и признаки их доставки.
 [current_status_and_roadmap.md](current_status_and_roadmap.md) явно описывает исторический этап 2:
 его утверждения «LLM нет», «56 тестов» и «поиск не RLM» не характеризуют текущую V2.

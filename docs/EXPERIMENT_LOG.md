@@ -1,5 +1,23 @@
 # Журнал измеримых экспериментов
 
+## Новый V4 goal после e498c56: этапы 1–2
+
+- Canonical baseline — полный strict-run 46 строк, F1=0,6667; меньшие срезы не участвуют
+  в выборе исходной лучшей конфигурации.
+- Начат по-claim аудит всех 5 semantic FP и 8 semantic TP; старые wrong-or-partial оценки
+  не подменяют новое определение Reason Precision.
+- `reason_metrics.py` считает verified bounds/coverage, отдельно full-context и cited-grounding
+  Precision, correct-label/wrong-reason и общие ошибки меток. Самостоятельного вывода об истинности
+  причин этот модуль не делает; ему нужны проверенные аннотации.
+- 214 автономных тестов проходят. Production prediction этим изменением не меняется.
+- GET Groq models: HTTP 200; GPT-OSS 20B/120B, Qwen 3.6/3.8 27B доступны в каталоге.
+  Живой benchmark ещё не запущен, победитель не назначен.
+
+Актуальные обязательства: [GOAL_STATUS](GOAL_STATUS.md), [ERROR_AUDIT](ERROR_AUDIT.md),
+[MODEL_BENCHMARK](MODEL_BENCHMARK.md). Ни det-layer, ни новый judge пока не объявлены принятыми.
+
+## Завершённый предыдущий этап
+
 Завершён [контроль одного цикла UNKNOWN](uncertainty_experiment.md): на 12 заранее выбранных
 строках initial F1=0,5455, directed=repeat=0,5000; +1 FP, без исправленных FN. Цикл выключен.
 Разбор исходных причин — [V2 baseline](v2_baseline_error_analysis.md);
