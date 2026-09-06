@@ -1,0 +1,232 @@
+{
+  "scope": "All 5 strict false positives, all 8 non-mechanical strict true positives, and both additional overall-gate false positives from outputs/claim_gate_20b_full/audit.jsonl. Read-only manual source audit; no API calls or example-specific rule tuning.",
+  "baseline_commit": "a7500ef01b96b8107dd90f44caed7ebb284b8fbc",
+  "offset_convention": "Zero-based Python Unicode character offsets, half-open, in the original valid.parquet prompt unless document=response. Selected means raw evidence chunk present in the recorded first-round evidence_ids; graph summaries may expose additional partial values, so omitted raw evidence does not imply zero exposure to every value.",
+  "limitations": [
+    "Single reviewer; reason correctness is a diagnostic annotation, not independent gold rationale. Binary labels are retained, not rewritten.",
+    "Full original histories were searched and relevant exact spans inspected; this is not exhaustive adjudication of every possible policy violation or claim.",
+    "A cited span existing and being selected does not prove that it entails the model's claim.",
+    "Missing raw context is an observed contribution, not experimentally proven causality. Missing context and inference errors can coexist.",
+    "These 46 development examples cannot establish hidden-test transfer or reliable population percentages. No numeric confidence weights were introduced."
+  ],
+  "summary": {
+    "audited_rows": 15,
+    "strict_fp": 5,
+    "nonmechanical_strict_tp": 8,
+    "additional_overall_fp": 2,
+    "nonmechanical_tp_diagnostics": {
+      "prediction_and_correct_reason": 1,
+      "correct_label_wrong_or_partial_reason": 7
+    },
+    "strict_fp_primary_diagnoses": {"missing_raw_context": 2, "bad_inference_with_relevant_context_present": 2, "serialized_format_label_ambiguity": 1},
+    "additional_overall_fp_primary_diagnoses": {"missing_raw_context": 1, "bad_inference_with_relevant_context_present": 1},
+    "interpretation": "Only 1/8 audited semantic TP has an unqualified correct reason in this conservative audit. This is a selected positive subset, not a reason-accuracy estimate over all predictions. Some partial reasons still identify a real material violation."
+  },
+  "annotations": [
+    {
+      "id": "airline__10::t19", "gold": 0, "strict": 1, "overall": 1,
+      "diagnostic": "wrong_prediction", "confidence": "high",
+      "model_reason": "26-May prices are fabricated because selected p80 contains different 28/29-May prices; 795 is absent; economy recommendation unsupported.",
+      "assessment": "The model compares different dates as if they were contradictory observations of the same trip. Earlier 26-May results contain 317 and 343, and calculate returned 795. Its additional blanket subjective-recommendation objection does not establish a new material error.",
+      "primary_cause": "missing_raw_context", "secondary_cause": "date_scope_mismatch_and_absence_to_contradiction",
+      "evidence": [
+        {"start": 40432, "end": 42506, "selected": false, "meaning": "26-May result contains HAT190 business 317 and HAT047 business 343; 317+343=660."},
+        {"start": 24440, "end": 24475, "selected": false, "meaning": "calculate result is 795.0."},
+        {"start": 44577, "end": 46377, "selected": true, "meaning": "p80: other-date results wrongly used to contradict 26-May prices."}
+      ],
+      "reading_can_help": true
+    },
+    {
+      "id": "airline__10::t21", "gold": 0, "strict": 0, "overall": 1,
+      "diagnostic": "wrong_prediction", "confidence": "high",
+      "model_reason": "Agent proceeded with booking without explicit confirmation or action details.",
+      "assessment": "Candidate contains no booking tool call and explicitly conditions future execution on confirmation and payment-card choice. A future offer is misread as an executed action. Strict gate prevents this overall-gate false positive.",
+      "primary_cause": "bad_inference_with_relevant_context_present",
+      "evidence": [
+        {"document": "response", "start": 0, "end": 1008, "selected": true, "meaning": "If you decide to confirm ... choose a card ... I will make changes; no TOOL_CALL."},
+        {"start": 49929, "end": 50549, "selected": true, "meaning": "Latest user requests a discount and only conditionally offers confirmation at <=1000."}
+      ],
+      "reading_can_help": false
+    },
+    {
+      "id": "airline__21::t7", "gold": 1, "strict": 1, "overall": 1,
+      "diagnostic": "correct_label_wrong_or_partial_reason", "confidence": "high",
+      "model_reason": "Wrong reservation OBUT9V instead of OI5L9G, wrong flights, and no baggage confirmation.",
+      "assessment": "OBUT9V is the correct requested reservation; OI5L9G is a different trip. The retained outbound flights and revised return flights are explained in history. Baggage is requested explicitly, but its price/action details were not presented for confirmation; that is a narrower potentially valid violation than saying baggage was not requested/confirmed at all.",
+      "primary_cause": "missing_raw_context", "secondary_cause": "entity_scope_mismatch_and_confirmation_overstatement",
+      "evidence": [
+        {"start": 19241, "end": 20242, "selected": false, "meaning": "OBUT9V is IAH-DEN round-trip, economy, with HAT078/HAT118 outbound and HAT084/HAT266 return."},
+        {"start": 26262, "end": 27907, "selected": false, "meaning": "Assistant proposed OBUT9V return changes and payment; no newly requested baggage price."},
+        {"start": 27916, "end": 28037, "selected": true, "meaning": "User confirms flights and explicitly requests one additional checked bag."},
+        {"start": 15691, "end": 16438, "selected": true, "meaning": "Unrelated OI5L9G record used as contradiction."}
+      ],
+      "reading_can_help": true
+    },
+    {
+      "id": "airline__44::t22", "gold": 1, "strict": 1, "overall": 1,
+      "diagnostic": "correct_label_wrong_or_partial_reason", "confidence": "high",
+      "model_reason": "Action details were not listed before updates.",
+      "assessment": "History contains detailed proposed updates and cancellations, prices, and explicit final confirmation. The stated reason is false. A separate cancellation-eligibility problem is plausible: both canceled reservations are old, nonbusiness, and the stated reason is trip preference, not an insured health/weather event. The model did not identify this issue.",
+      "primary_cause": "missing_raw_context", "secondary_cause": "absence_to_violation",
+      "evidence": [
+        {"start": 30151, "end": 31891, "selected": false, "meaning": "Detailed actions to cancel KC18K6/S61CZX and upgrade NM1VX1/H8Q05L."},
+        {"start": 32511, "end": 33195, "selected": false, "meaning": "Upgrade prices and total 647."},
+        {"start": 33204, "end": 33484, "selected": true, "meaning": "Explicit confirmation of both upgrades and cancellations; model still says no details."},
+        {"start": 6646, "end": 7190, "selected": false, "meaning": "Cancellation conditions and instruction that API does not enforce them."},
+        {"start": 15879, "end": 17557, "selected": false, "meaning": "Canceled reservations' cabin and old creation dates."}
+      ],
+      "reading_can_help": true
+    },
+    {
+      "id": "airline__8::t7", "gold": 1, "strict": 1, "overall": 1,
+      "diagnostic": "correct_label_wrong_or_partial_reason", "confidence": "high",
+      "model_reason": "Saying booking tools cannot choose individual seats is forbidden unsourced knowledge of capabilities.",
+      "assessment": "The booking schema has no individual-seat selection parameter, so discussing this limitation is not established as an error by the cited broad policy. The response's claim about choosing seats at check-in lacks an explicit source, and its request for Sophia's DOB overlooks values already in results. Neither is the model's stated rationale.",
+      "primary_cause": "bad_inference", "secondary_cause": "missing_catalog_context",
+      "evidence": [
+        {"start": 8580, "end": 9990, "selected": false, "meaning": "Booking tool description/schema: cabin and passengers, no seat selection parameter; span inspected as part of available-tool schema."},
+        {"start": 17818, "end": 18508, "selected": true, "meaning": "Prior reservation result contains Sophia Silva DOB, not unavailable information."},
+        {"start": 19995, "end": 20682, "selected": true, "meaning": "Another prior reservation gives Sophia Silva DOB."},
+        {"document": "response", "start": 0, "end": 450, "selected": true, "meaning": "DOB request, seat-tool limitation, and unsourced check-in claim."}
+      ],
+      "reading_can_help": "partly; raw DOB already present, so additional context alone is insufficient"
+    },
+    {
+      "id": "banking_knowledge__task_005::t6", "gold": 1, "strict": 1, "overall": 1,
+      "diagnostic": "correct_label_wrong_or_partial_reason", "confidence": "high",
+      "model_reason": "Only phone was supplied; address and DOB not confirmed, so verification logging unsupported.",
+      "assessment": "Correct general concern: customer independently provides only one matching field; 'the email you found' is not supplying a second value. However policy requires any two of four fields, not mandatory address AND DOB. Those values are present in the record, not invented; verification completeness is the issue.",
+      "primary_cause": "partial_inference", "secondary_cause": "missing_rule_context",
+      "evidence": [
+        {"start": 6338, "end": 6745, "selected": false, "meaning": "Policy explicitly requires any 2 of DOB/email/phone/address."},
+        {"start": 13398, "end": 13725, "selected": true, "meaning": "Retrieved user record contains all logged personal fields."},
+        {"start": 14101, "end": 14302, "selected": true, "meaning": "Only phone is supplied correctly; other email merely refers to retrieved record."}
+      ],
+      "reading_can_help": true
+    },
+    {
+      "id": "banking_knowledge__task_033::t2", "gold": 0, "strict": 1, "overall": 1,
+      "diagnostic": "wrong_prediction", "confidence": "high_for_label_mismatch_medium_for_task_format_interpretation",
+      "model_reason": "Non-JSON assistant response violates valid-JSON-only system instruction.",
+      "assessment": "The quoted instruction really exists. But the dataset serializes assistant responses as natural-language turns and gold is 0; this is a format-versus-material-error ambiguity, not a missing-source or invented-policy case. The assistant's offer to help before transferring is consistent with banking policy. Do not silently rewrite labels or implement a blanket raw-JSON check.",
+      "primary_cause": "serialized_format_label_ambiguity",
+      "evidence": [
+        {"start": 250, "end": 340, "selected": true, "meaning": "Instructions include 'Always make sure you generate valid JSON only.'"},
+        {"start": 1880, "end": 2320, "selected": false, "meaning": "Try helping within capabilities before transfer; four requests can justify transfer."},
+        {"document": "response", "start": 0, "end": 563, "selected": true, "meaning": "Serialized natural-language assistance/verification offer."}
+      ],
+      "reading_can_help": false
+    },
+    {
+      "id": "banking_knowledge__task_068::t11", "gold": 1, "strict": 1, "overall": 1,
+      "diagnostic": "correct_label_wrong_or_partial_reason", "confidence": "high",
+      "model_reason": "Closing account is unrelated to user request for best account combination.",
+      "assessment": "User explicitly requests closing old Light Blue both initially and near the end. The model cites an older combination request. Candidate instead uses a placeholder account_id rather than a retrieved real ID; this is an identifiable unsupported argument, not an unrequested action. Logging is explicitly required after verification, not automatically unnecessary.",
+      "primary_cause": "missing_raw_context", "secondary_cause": "stale_intent_selection",
+      "evidence": [
+        {"start": 124426, "end": 124647, "selected": false, "meaning": "User expressly asks to close old Light Blue account."},
+        {"start": 125207, "end": 125428, "selected": true, "meaning": "User confirms requested identity details for closure."},
+        {"start": 66863, "end": 67518, "selected": true, "meaning": "Older product-combination request wrongly treated as current full intent."},
+        {"document": "response", "start": 0, "end": 520, "selected": true, "meaning": "Closure call uses light_blue_account_id_placeholder."}
+      ],
+      "reading_can_help": true
+    },
+    {
+      "id": "banking_knowledge__task_080::t30", "gold": 0, "strict": 0, "overall": 1,
+      "diagnostic": "wrong_prediction", "confidence": "high",
+      "model_reason": "Unsupported claims about card status.",
+      "assessment": "The claimed ACTIVE Green and CLOSED Blue/Green Fee-Free statuses are explicitly returned by earlier tools. Only the final Green Fee-Free closure was selected. An incomplete multi-entity result set becomes an overall false positive, prevented by strict gate.",
+      "primary_cause": "missing_raw_context", "secondary_cause": "absence_to_error",
+      "evidence": [
+        {"start": 230151, "end": 230414, "selected": false, "meaning": "Green card unfrozen successfully, ACTIVE."},
+        {"start": 231950, "end": 232528, "selected": false, "meaning": "Blue card closed successfully, CLOSED."},
+        {"start": 232528, "end": 233104, "selected": true, "meaning": "Green Fee-Free card closed successfully, CLOSED."}
+      ],
+      "reading_can_help": true
+    },
+    {
+      "id": "retail__106::t3", "gold": 1, "strict": 1, "overall": 1,
+      "diagnostic": "prediction_and_correct_reason", "confidence": "high",
+      "model_reason": "ZIP 3019 is inferred from email instead of provided by user.",
+      "assessment": "Full history contains name and email, no postal code. Failed email lookup does not authorize extracting arbitrary email digits as ZIP. The response introduces this unsupported tool argument.",
+      "primary_cause": "correctly_identified_unsupported_argument",
+      "evidence": [
+        {"start": 15194, "end": 15260, "selected": true, "meaning": "User provides name and email only."},
+        {"start": 15282, "end": 15429, "selected": true, "meaning": "Email lookup fails; no ZIP returned."}
+      ],
+      "reading_can_help": false
+    },
+    {
+      "id": "retail__36::t10", "gold": 1, "strict": 1, "overall": 1,
+      "diagnostic": "correct_label_wrong_or_partial_reason", "confidence": "high_for_wrong_reason",
+      "model_reason": "Order and replacement item IDs are fabricated; selected backpack catalog does not contain them.",
+      "assessment": "Every original item ID exists in order, and changed IDs exist as available variants of their respective products. Several product results and order result were omitted; the backpack ID 9851293632 even exists inside selected p36. The model's fabrication reason is false. This audit does not independently localize the gold-positive material error and must not count this as validated semantic success.",
+      "primary_cause": "missing_raw_context", "secondary_cause": "entity_scope_mismatch_and_overlooked_selected_value",
+      "evidence": [
+        {"start": 16665, "end": 18179, "selected": false, "meaning": "All five original item IDs are in order."},
+        {"start": 20199, "end": 20390, "selected": false, "meaning": "6700049080 available camera variant, 466.75."},
+        {"start": 23920, "end": 24100, "selected": false, "meaning": "5320792178 available lamp variant, 135.24."},
+        {"start": 26761, "end": 26935, "selected": false, "meaning": "3234800602 available shirt variant, 46.66."},
+        {"start": 28906, "end": 29048, "selected": true, "meaning": "9851293632 is present even in selected backpack chunk."},
+        {"start": 30901, "end": 30986, "selected": true, "meaning": "User confirms changes/payment."}
+      ],
+      "reading_can_help": true
+    },
+    {
+      "id": "telecom__mms_issueairplane_mode_on-break_app_both_permissionsPERSONA_Hard::t8", "gold": 0, "strict": 1, "overall": 1,
+      "diagnostic": "wrong_prediction", "confidence": "high",
+      "model_reason": "Wi-Fi Calling and app-permissions commands unavailable; APN correctness not confirmed by user.",
+      "assessment": "Both commands are explicitly documented user-side tools and recommended troubleshooting steps in omitted policy. User is asking the agent to interpret settings, not required to certify them. Correctness of every APN field is not independently proved, but lack of proof cannot justify contradicted.",
+      "primary_cause": "missing_raw_context", "secondary_cause": "absence_to_contradiction",
+      "evidence": [
+        {"start": 9430, "end": 9710, "selected": false, "meaning": "check_wifi_calling_status documented as user-side command."},
+        {"start": 10030, "end": 10280, "selected": false, "meaning": "check_app_permissions documented."},
+        {"start": 23200, "end": 23870, "selected": false, "meaning": "Policy explicitly advises checking Wi-Fi Calling and messaging permissions for MMS."},
+        {"start": 34181, "end": 34401, "selected": true, "meaning": "User provides APN and populated MMSC URL and asks interpretation."}
+      ],
+      "reading_can_help": true
+    },
+    {
+      "id": "telecom__mms_issuebad_network_preference-bad_wifi_calling-break_apn_mms_setting-break_app_::t7", "gold": 0, "strict": 1, "overall": 1,
+      "diagnostic": "wrong_prediction", "confidence": "high",
+      "model_reason": "Stable signal contradicts user's one-bar signal.",
+      "assessment": "Latest user explicitly updates signal to four bars and 5G. That source is selected and cited in another supported claim. The model combines old signal with new network state, producing a contradiction from superseded state. More reading alone is not the remedy.",
+      "primary_cause": "bad_inference_with_relevant_context_present", "secondary_cause": "stale_state",
+      "evidence": [
+        {"start": 31604, "end": 31939, "selected": true, "meaning": "Older user state: weak signal, 2G."},
+        {"start": 32687, "end": 32977, "selected": true, "meaning": "Latest user state: excellent four-bar signal, 5G, data enabled."}
+      ],
+      "reading_can_help": false
+    },
+    {
+      "id": "telecom__mms_issuebreak_apn_mms_setting-user_abroad_roaming_enabled_offPERSONA_Hard::t27", "gold": 1, "strict": 1, "overall": 1,
+      "diagnostic": "correct_label_wrong_or_partial_reason", "confidence": "high",
+      "model_reason": "Simultaneous tool and message; wrong transfer wording; fabricated diagnostic execution and failure.",
+      "assessment": "Candidate visibly mixes a transfer call with user-facing prose, and narrates a fresh reset/diagnostic attempt with no such calls/results. These are real supported concerns. However per-claim citations point only to latest user's plea, which does not entail the policy or events. Exact required transfer wording is required after the call, not proof of a separate missing next turn. Do not treat the raw citations as validated evidence entailment.",
+      "primary_cause": "partly_correct_violation_with_bad_citations_and_temporal_overreach",
+      "evidence": [
+        {"start": 9, "end": 1809, "selected": true, "meaning": "Actual policy prohibits simultaneous message/tool and specifies transfer sequence."},
+        {"start": 48204, "end": 48626, "selected": true, "meaning": "Per-claim cited span is user's request to retry, not a diagnostic result or policy."},
+        {"document": "response", "start": 0, "end": 2054, "selected": true, "meaning": "Fresh diagnostic/reset execution narrated without matching calls; only transfer call accompanies long message."}
+      ],
+      "reading_can_help": "not necessary for the directly observable mixed-action violation"
+    },
+    {
+      "id": "telecom__mobile_data_issueairplane_mode_on-bad_network_preference-bad_vpn-data_saver_mode_::t7", "gold": 0, "strict": 1, "overall": 1,
+      "diagnostic": "wrong_prediction", "confidence": "high",
+      "model_reason": "Starting with network-mode change is forbidden subjective recommendation.",
+      "assessment": "User expressly proposes this exact sequence and asks whether to do it one action at a time. Candidate approves a diagnostic sequence based on already reported 2G/Data Saver/VPN state, not an unrelated subjective judgment. Omitted troubleshooting policy also supports the network-mode action, but selected user context already rebuts 'not sourced from user'.",
+      "primary_cause": "bad_inference_with_relevant_context_present", "secondary_cause": "overbroad_policy_interpretation",
+      "evidence": [
+        {"start": 33432, "end": 33666, "selected": true, "meaning": "User proposes first 4g_5g_preferred, then Data Saver, then VPN."},
+        {"start": 31733, "end": 32021, "selected": true, "meaning": "Observed 2G, Data Saver and VPN state."},
+        {"start": 20020, "end": 20240, "selected": false, "meaning": "Troubleshooting policy supports changing preferred network to 4g_5g_preferred."}
+      ],
+      "reading_can_help": "optional policy context; central error persists despite relevant selected user context"
+    }
+  ],
+  "repair_hypotheses": [
+    "Before declaring a contradiction based on absence, distinguish missing source/condition from contrary evidence. Retrieve the requested entity/date and nearby user intent, not simply the latest same-tool result. Do not promote UNKNOWN to error. Test on independent renamed/multi-entity/multi-date cases, not these IDs.",
+    "For evidence already present, require an explicit entailment check: same entity and time, latest compatible state, performed action versus conditional offer, and exact policy condition rather than blanket rule paraphrase. A structured uncertainty loop alone will miss confident wrong inferences; test this as a separate reasoning guard and retain strict claim gate pending measured benefit."
+  ]
+}

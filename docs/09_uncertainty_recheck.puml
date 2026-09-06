@@ -1,0 +1,40 @@
+@startuml
+!pragma layout smetana
+title Эксперимент: причина неопределённости → одна повторная проверка
+skinparam defaultFontName Arial
+skinparam shadowing false
+start
+:Точные проверки + существующий граф;
+if (Точное нарушение?) then (да)
+  :Метка 1 без LLM;
+  stop
+endif
+:Начальный reader-пакет;
+:Один ответ LLM с claims и явным need;
+:Строгая проверка + сохранение исходных суждений;
+if (Получен разбираемый ответ?) then (нет)
+  :Технический fallback;\nне выдумывать смысловой UNKNOWN;
+  stop
+endif
+if (Причина допускает действие?) then (нет)
+  :Сохранить initial;
+  stop
+endif
+fork
+  :Контроль repeat;\nточно те же входные сообщения;
+  :Одна новая генерация;
+fork again
+  if (INVALID_OUTPUT?) then (да)
+    :Те же источники + причина отклонения;
+  else (MISSING_EVIDENCE)
+    :Один локальный read/search/graph/entity\nпо конкретному need;
+    :Учесть доставку и вытеснение источников;
+  endif
+  :Пересматриваемые прежние claims;\nнедоступная опора → текущее UNKNOWN;
+  :Не более одной повторной оценки;\nбез новых источников чтение останавливается;
+end fork
+:Прежний strict gate в обеих ветках;
+:UNKNOWN не означает CONTRADICTED;\nнет ручных весов или автоматического включения;
+:Сравнить initial / repeat / directed:\nF1, новые FP, исправленные FN, причины;
+stop
+@enduml

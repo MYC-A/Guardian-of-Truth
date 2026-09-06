@@ -55,7 +55,7 @@ def main():
     config = {key:getattr(args,key) for key in (
         'backend','mode','checks','max_requests','max_input_chars','seconds','max_rounds',
         'max_evidence_chars','max_prompt_chars','rolling_evidence','max_output_tokens',
-        'timeout_seconds','retries','threshold','limit','bootstrap_samples')}
+        'timeout_seconds','retries','threshold','limit','bootstrap_samples','recovery')}
     if args.backend != 'none':
         config.update(model=detector.semantic.client.config.model,base_url=detector.semantic.client.config.base_url)
     package = Path(__import__('guardian_truth').__file__).parent

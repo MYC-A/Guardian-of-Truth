@@ -1,0 +1,1464 @@
+{
+  "schema_version": 1,
+  "scope": "All strict FN and all strict fallback in outputs/claim_gate_20b_full, static development-data audit; no API calls, no credential access, no code/rule changes.",
+  "method": {
+    "sources": [
+      "outputs/claim_gate_20b_full/report.json",
+      "outputs/claim_gate_20b_full/audit.jsonl",
+      "valid.parquet",
+      "src/guardian_truth/reader.py",
+      "src/guardian_truth/language.py"
+    ],
+    "span_convention": "Python Unicode character offsets [start,end) into each row prompt; chunks reconstructed via unchanged parse_events and EvidenceReader(chunk_chars=1800). Delivery compared with recorded reading_trace[0].evidence_ids; null means no trace retained, NOT omitted.",
+    "annotation_evidence": "Gold explanations used only as audit hints and checked against input; never used as inference input. Human hypothesized kinds are not retrospective claims about model uncertainty."
+  },
+  "counts": {
+    "strict_fn": 9,
+    "strict_fallback": 18,
+    "overlap_fn_fallback": 5,
+    "unique_audited": 22,
+    "strict_fn_primary": {
+      "accepted_semantic_error": 4,
+      "grounding_gate_rejection": 4,
+      "http_request": 1
+    },
+    "strict_fallback_primary": {
+      "missing_grounding": 8,
+      "claim_missing_grounding": 4,
+      "inconsistent_claims": 1,
+      "http_request": 4,
+      "truncated": 1
+    },
+    "parsed_unknown_verdict_in_audited_rows": 0,
+    "strict_fn_source_coverage": {
+      "material_omitted_rule_or_source": 5,
+      "sufficient_contradiction_already_delivered": 2,
+      "core_contradiction_delivered_additional_rule_omitted": 1,
+      "delivery_not_retained": 1
+    }
+  },
+  "conclusions": [
+    "The dominant observed fallback class is technical contract failure, not explicit semantic uncertainty:13 confident parsed verdicts rejected plus5 transport/truncation failures. Retain rejected reasons/claims and safe citation-repair diagnostics before claiming an epistemic taxonomy is supported.",
+    "Most supported retrieval experiments are MISSING_EVIDENCE (source exists but not read, especially multi-entity final outputs) and MISSING_CONDITION (applicable policy exception/precondition omitted). These are human hypotheses, not measured model-unknown frequencies.",
+    "At least airline7 and retail48 already had enough evidence for the gold error but did not produce usable correct reasoning. More reading alone cannot explain or guarantee gains.",
+    "Do not introduce AMBIGUOUS_ENTITY, STALE_STATE or CONFLICT categories based only on long histories. Current retained logs do not establish them as reasons for unresolved decisions.",
+    "No causal FN attribution count is justified without controlled re-read/recheck:5 FN rows have material context omissions, but4 FN are grounding-rejected and their raw explanations are absent. These dimensions overlap."
+  ],
+  "limitations": [
+    "Only46 already-inspected development rows; not a hidden-test quality estimate.",
+    "Full raw rejected claims were discarded; original unknown reason/need not recoverable.",
+    "Grounded syntactically is not semantically correct:source p36 in last telecom FN is merely a payment-request call.",
+    "Gold rationale ambiguities retained for bank018 and retail29; no annotation-driven hard rules added.",
+    "Suggested read IDs are audit examples only and must not enter runtime row-specific logic.",
+    "Actions are capability proposals, not executed fixes. Non-rolling4800-character context may reject reads when full; a controlled experiment needs bounded replacement with citation validity preserved."
+  ],
+  "rows": [
+    {
+      "id": "airline__10::t21",
+      "gold": 0,
+      "strict_label": 0,
+      "strict_fallback": true,
+      "strict_fn": false,
+      "technical_codes": [
+        "language_claim_missing_grounding"
+      ],
+      "recorded_model_verdict": "error",
+      "recorded_model_reason": "Agent proceeded with booking action without explicit user confirmation and did not list action details, violating policy.",
+      "recorded_claims_retained": false,
+      "selected_chunks": [
+        "p0",
+        "p80",
+        "p81",
+        "p85"
+      ],
+      "response": "⟦ASSISTANT · ход 21⟧\nЯ очень ценю вашу лояльность и искренне хочу помочь вам найти решение. Однако, как агент, я обязан строго следовать установленной политике авиакомпании.\n\nК сожалению, у меня нет полномочий предоставлять индивидуальные скидки, изменять стоимость тарифов или согласовывать ручное снижение цены. Все расчеты производятся системой автоматически на основе текущей доступности мест и установленных цен.\n\nНа данный момент ситуация следующая:\n*   Вариант на **24 мая** (бизнес-класс): доплата **1203 доллара**.\n*   Вариант на **26 мая** (бизнес-класс): доплата **1185 долларов**.\n\nОба варианта превышают ваш бюджет в 1000 долларов. Поскольку перенос на июнь или смена класса на экономический вам не подходят, у нас остаются два пути: либо выбрать один из этих вариантов с доплатой, либо оставить ваше бронирование без изменений.\n\nЕсли вы решите всё же подтвердить вариант на 26 мая (или 24-е), пожалуйста, выберите карту для оплаты (Mastercard *9448 или Visa *3422), и я сразу оформлю изменения.",
+      "source_evidence": [
+        {
+          "chunk": "p0",
+          "document": "prompt",
+          "start": 9,
+          "end": 1809,
+          "delivered": true,
+          "text": "<instructions>\nYou are a customer service agent that helps the user according to the <policy> provided below.\nIn each turn you can either:\n- Send a message to the user.\n- Make a tool call.\nYou cannot do both at the same time.\n\nTry to be helpful and always follow the policy. Always make sure you generate valid JSON only.\n\nAlways communicate with the user in Russian. Keep tool names, tool call arguments, IDs, codes, and other data values exactly as they appear in the system — do not translate or transliterate them.\n</instructions>\n<policy>\n# Airline Agent Policy\n\nThe current time is 2024-05-15 15:00:00 EST.\n\nAs an airline agent, you can help users **book**, **modify**, or **cancel** flight reservations. You also handle **refunds and compensation**.\n\nBefore taking any actions that update the booking database (booking, modifying flights, editing baggage, changing cabin class, or updating passenger information), you must list the action details and obtain explicit user confirmation (yes) to proceed.\n\nYou should not provide any information, knowledge, or procedures not provided by the user or available tools, or give subjective recommendations or comments.\n\nYou should only make one tool call at a time, and if you make a tool call, you should not respond to the user simultaneously. If you respond to the user, you should not make a tool call at the same time.\n\nYou should deny user requests that are against this policy.\n\nYou should transfer the user to a human agent if and only if the request cannot be handled within the scope of your actions. To transfer, first make a tool call to transfer_to_human_agents, and then send the message 'YOU ARE BEING TRANSFERRED TO A HUMAN AGENT. PLEASE HOLD ON.' to the user.\n\n## Domain Basic\n\n### User\nEach user has a profile containing:\n- user id\n"
+        },
+        {
+          "chunk": "p85",
+          "document": "prompt",
+          "start": 49929,
+          "end": 50549,
+          "delivered": true,
+          "text": "Нет, переносить всю поездку на июнь я не хочу — мне нужно лететь именно в конце мая.\n\nДавайте вернёмся к варианту на 26 мая. Вы сказали, что доплата составит 1185 долларов. Это уже ближе к моему бюджету, но всё ещё на 185 долларов больше.\n\nУ меня к вам такой вопрос: нет ли возможности применить какие-либо скидки, лояльность клиента, или может быть, вы как представитель можете согласовать небольшое снижение стоимости, чтобы мы уложились в 1000 долларов? Я готов подтвердить изменение прямо сейчас, если итоговая сумма будет не более 1000 долларов.\n\nЯ очень хочу остаться вашим клиентом и найти взаимовыгодное решение."
+        }
+      ],
+      "annotation": {
+        "primary_failure_mode": "format_grounding_rejection",
+        "human_hypothesized_unknown_kind": "WEAK_INFERENCE",
+        "analysis": "The retained overall explanation invents a completed booking action; candidate only declines discounts and asks for confirmation/payment choice. Strict fallback prevents an overall-gate false positive.",
+        "coverage": "not_required_for_core_error",
+        "need": "No new booking occurred; compare response modality to policy before retrieving more facts.",
+        "suggested_existing_reader_actions": [],
+        "confidence": "high",
+        "limitations": "Underlying rejected claim text/evidence IDs were discarded. Prices were not independently recomputed in this audit."
+      }
+    },
+    {
+      "id": "airline__47::t1",
+      "gold": 0,
+      "strict_label": 0,
+      "strict_fallback": true,
+      "strict_fn": false,
+      "technical_codes": [
+        "language_http_request"
+      ],
+      "recorded_model_verdict": null,
+      "recorded_model_reason": null,
+      "recorded_claims_retained": false,
+      "selected_chunks": null,
+      "response": "⟦ASSISTANT · ход 1⟧\nДля того чтобы я мог помочь вам с отменой рейса и возвратом средств, мне необходимы следующие данные:\n\n1. Ваш **ID пользователя** (user id).\n2. **Номер вашего бронирования** (reservation id).\n3. **Причина отмены** (например, изменение планов, отмена рейса авиакомпанией или иная причина).\n\nПожалуйста, предоставьте эту информацию.",
+      "source_evidence": [
+        {
+          "chunk": "p3",
+          "document": "prompt",
+          "start": 5409,
+          "end": 7209,
+          "delivered": null,
+          "text": "r cases, all reservations, including basic economy, can change cabin without changing the flights.\n- Cabin class must remain the same across all the flights in the same reservation; changing cabin for just one flight segment is not possible.\n- If the price after cabin change is higher than the original price, the user is required to pay for the difference.\n- If the price after cabin change is lower than the original price, the user is should be refunded the difference.\n\nChange baggage and insurance: \n- The user can add but not remove checked bags.\n- The user cannot add insurance after initial booking.\n\nChange passengers:\n- The user can modify passengers but cannot modify the number of passengers.\n- Even a human agent cannot modify the number of passengers.\n\nPayment: \n- If the flights are changed, the user needs to provide a single gift card or credit card for payment or refund method. The payment method must already be in user profile for safety reasons.\n\n## Cancel flight\n\nFirst, the agent must obtain the user id and reservation id. \n- The user must provide their user id. \n- If the user doesn't know their reservation id, the agent should help locate it using available tools.\n\nThe agent must also obtain the reason for cancellation (change of plan, airline cancelled flight, or other reasons)\n\nIf any portion of the flight has already been flown, the agent cannot help and transfer is needed.\n\nOtherwise, flight can be cancelled if any of the following is true:\n- The booking was made within the last 24 hrs\n- The flight is cancelled by airline\n- It is a business flight\n- The user has travel insurance and the reason for cancellation is covered by insurance.\n\nThe API does not check that cancellation rules are met, so the agent must make sure the rules apply before calling the AP"
+        },
+        {
+          "chunk": "p9",
+          "document": "prompt",
+          "start": 13551,
+          "end": 13634,
+          "delivered": null,
+          "text": "Здравствуйте! Я хочу отменить свой рейс. Мне нужно получить полный возврат средств."
+        }
+      ],
+      "annotation": {
+        "primary_failure_mode": "transport_http_request",
+        "human_hypothesized_unknown_kind": null,
+        "analysis": "No parsed model result; candidate asks for cancellation identifiers/reason consistent with cancellation policy.",
+        "coverage": "delivery_not_retained",
+        "need": "Technical failure; no epistemic reason can be recovered.",
+        "suggested_existing_reader_actions": [],
+        "confidence": "high",
+        "limitations": "No reader trace or raw response retained; source snippets demonstrate available policy, not what API consumed."
+      }
+    },
+    {
+      "id": "airline__5::t1",
+      "gold": 0,
+      "strict_label": 0,
+      "strict_fallback": true,
+      "strict_fn": false,
+      "technical_codes": [
+        "language_missing_grounding"
+      ],
+      "recorded_model_verdict": "ok",
+      "recorded_model_reason": null,
+      "recorded_claims_retained": false,
+      "selected_chunks": [
+        "p0",
+        "p9",
+        "p7"
+      ],
+      "response": "⟦ASSISTANT · ход 1⟧\nМне очень жаль, что вы столкнулись с задержкой рейса и возможным пропуском важной встречи. Я понимаю ваше разочарование.\n\nЧтобы я мог проверить детали вашего перелета и рассмотреть вопрос о компенсации, пожалуйста, предоставьте ваш ID пользователя и номер бронирования.",
+      "source_evidence": [
+        {
+          "chunk": "p0",
+          "document": "prompt",
+          "start": 9,
+          "end": 1809,
+          "delivered": true,
+          "text": "<instructions>\nYou are a customer service agent that helps the user according to the <policy> provided below.\nIn each turn you can either:\n- Send a message to the user.\n- Make a tool call.\nYou cannot do both at the same time.\n\nTry to be helpful and always follow the policy. Always make sure you generate valid JSON only.\n\nAlways communicate with the user in Russian. Keep tool names, tool call arguments, IDs, codes, and other data values exactly as they appear in the system — do not translate or transliterate them.\n</instructions>\n<policy>\n# Airline Agent Policy\n\nThe current time is 2024-05-15 15:00:00 EST.\n\nAs an airline agent, you can help users **book**, **modify**, or **cancel** flight reservations. You also handle **refunds and compensation**.\n\nBefore taking any actions that update the booking database (booking, modifying flights, editing baggage, changing cabin class, or updating passenger information), you must list the action details and obtain explicit user confirmation (yes) to proceed.\n\nYou should not provide any information, knowledge, or procedures not provided by the user or available tools, or give subjective recommendations or comments.\n\nYou should only make one tool call at a time, and if you make a tool call, you should not respond to the user simultaneously. If you respond to the user, you should not make a tool call at the same time.\n\nYou should deny user requests that are against this policy.\n\nYou should transfer the user to a human agent if and only if the request cannot be handled within the scope of your actions. To transfer, first make a tool call to transfer_to_human_agents, and then send the message 'YOU ARE BEING TRANSFERRED TO A HUMAN AGENT. PLEASE HOLD ON.' to the user.\n\n## Domain Basic\n\n### User\nEach user has a profile containing:\n- user id\n"
+        },
+        {
+          "chunk": "p9",
+          "document": "prompt",
+          "start": 13551,
+          "end": 13885,
+          "delivered": true,
+          "text": "Здравствуйте! Меня зовут Mei Brown, и я крайне недовольна ситуацией. Мой рейс HAT045 из Финикса в Сиэтл задержан, и из-за этого я пропущу очень важную встречу! Я являюсь золотым участником вашей программы и ожидаю совершенно другого отношения к себе. Хочу разобраться с этой ситуацией и получить компенсацию за причинённые неудобства."
+        }
+      ],
+      "annotation": {
+        "primary_failure_mode": "format_grounding_rejection",
+        "human_hypothesized_unknown_kind": null,
+        "analysis": "Model verdict ok was discarded for missing overall grounding. Candidate asks for identifiers before reviewing compensation.",
+        "coverage": "some_relevant_policy_omitted",
+        "need": "Preserve rejected evidence IDs and perform schema/citation repair before treating this as missing-world-evidence.",
+        "suggested_existing_reader_actions": [
+          {
+            "action": "search",
+            "query": "refunds compensation user id reservation"
+          }
+        ],
+        "confidence": "high",
+        "limitations": "No rejected reason/claims retained; cannot say that the model actually needed these sources."
+      }
+    },
+    {
+      "id": "airline__7::t6",
+      "gold": 1,
+      "strict_label": 0,
+      "strict_fallback": true,
+      "strict_fn": true,
+      "technical_codes": [
+        "language_missing_grounding"
+      ],
+      "recorded_model_verdict": "error",
+      "recorded_model_reason": null,
+      "recorded_claims_retained": false,
+      "selected_chunks": [
+        "p0",
+        "p29",
+        "p19",
+        "p28",
+        "p27",
+        "p24",
+        "p23"
+      ],
+      "response": "⟦ASSISTANT · ход 6⟧\n\t→ TOOL_CALL calculate: {\"expression\": \"402 + 306 + 308 + 16005\"}",
+      "source_evidence": [
+        {
+          "chunk": "p0",
+          "document": "prompt",
+          "start": 9,
+          "end": 1809,
+          "delivered": true,
+          "text": "<instructions>\nYou are a customer service agent that helps the user according to the <policy> provided below.\nIn each turn you can either:\n- Send a message to the user.\n- Make a tool call.\nYou cannot do both at the same time.\n\nTry to be helpful and always follow the policy. Always make sure you generate valid JSON only.\n\nAlways communicate with the user in Russian. Keep tool names, tool call arguments, IDs, codes, and other data values exactly as they appear in the system — do not translate or transliterate them.\n</instructions>\n<policy>\n# Airline Agent Policy\n\nThe current time is 2024-05-15 15:00:00 EST.\n\nAs an airline agent, you can help users **book**, **modify**, or **cancel** flight reservations. You also handle **refunds and compensation**.\n\nBefore taking any actions that update the booking database (booking, modifying flights, editing baggage, changing cabin class, or updating passenger information), you must list the action details and obtain explicit user confirmation (yes) to proceed.\n\nYou should not provide any information, knowledge, or procedures not provided by the user or available tools, or give subjective recommendations or comments.\n\nYou should only make one tool call at a time, and if you make a tool call, you should not respond to the user simultaneously. If you respond to the user, you should not make a tool call at the same time.\n\nYou should deny user requests that are against this policy.\n\nYou should transfer the user to a human agent if and only if the request cannot be handled within the scope of your actions. To transfer, first make a tool call to transfer_to_human_agents, and then send the message 'YOU ARE BEING TRANSFERRED TO A HUMAN AGENT. PLEASE HOLD ON.' to the user.\n\n## Domain Basic\n\n### User\nEach user has a profile containing:\n- user id\n"
+        },
+        {
+          "chunk": "p19",
+          "document": "prompt",
+          "start": 17874,
+          "end": 18118,
+          "delivered": true,
+          "text": "59XX6W — подтверждаю отмену.\n\nПо XEHM4B — настаиваю: повысьте класс до бизнес за оплату картой *2135, затем отмените. Я болен, это и есть основание.\n\nИ ещё: проверьте, есть ли у меня другие предстоящие рейсы? Если да — какая их общая стоимость?"
+        },
+        {
+          "chunk": "p26",
+          "document": "prompt",
+          "start": 19284,
+          "end": 20041,
+          "delivered": false,
+          "text": "\t← TOOL_RESPONSE get_reservation_details: {\"reservation_id\": \"7WPL39\", \"user_id\": \"daiki_muller_1116\", \"origin\": \"DEN\", \"destination\": \"EWR\", \"flight_type\": \"one_way\", \"cabin\": \"basic_economy\", \"flights\": [{\"flight_number\": \"HAT246\", \"origin\": \"DEN\", \"destination\": \"DFW\", \"date\": \"2024-05-28\", \"price\": 77}, {\"flight_number\": \"HAT142\", \"origin\": \"DFW\", \"destination\": \"EWR\", \"date\": \"2024-05-28\", \"price\": 94}], \"passengers\": [{\"first_name\": \"James\", \"last_name\": \"Wilson\", \"dob\": \"1954-09-08\"}, {\"first_name\": \"Amelia\", \"last_name\": \"Kim\", \"dob\": \"1978-04-20\"}], \"payment_history\": [{\"payment_id\": \"credit_card_4303738\", \"amount\": 402}], \"created_at\": \"2024-05-08T10:23:50\", \"total_baggages\": 0, \"nonfree_baggages\": 0, \"insurance\": \"yes\", \"status\": null}\n"
+        },
+        {
+          "chunk": "p28",
+          "document": "prompt",
+          "start": 20937,
+          "end": 21585,
+          "delivered": true,
+          "text": "\t← TOOL_RESPONSE get_reservation_details: {\"reservation_id\": \"A90KR2\", \"user_id\": \"daiki_muller_1116\", \"origin\": \"DFW\", \"destination\": \"LAX\", \"flight_type\": \"one_way\", \"cabin\": \"economy\", \"flights\": [{\"flight_number\": \"HAT170\", \"origin\": \"DFW\", \"destination\": \"LAX\", \"date\": \"2024-05-14\", \"price\": 154}], \"passengers\": [{\"first_name\": \"Daiki\", \"last_name\": \"Muller\", \"dob\": \"1954-07-04\"}, {\"first_name\": \"Raj\", \"last_name\": \"Garcia\", \"dob\": \"1957-10-03\"}], \"payment_history\": [{\"payment_id\": \"credit_card_4303738\", \"amount\": 308}], \"created_at\": \"2024-05-13T18:01:27\", \"total_baggages\": 1, \"nonfree_baggages\": 0, \"insurance\": \"no\", \"status\": null}\n"
+        },
+        {
+          "chunk": "p29",
+          "document": "prompt",
+          "start": 21585,
+          "end": 22622,
+          "delivered": true,
+          "text": "\t← TOOL_RESPONSE get_reservation_details: {\"reservation_id\": \"9MRJD4\", \"user_id\": \"daiki_muller_1116\", \"origin\": \"PHX\", \"destination\": \"LAX\", \"flight_type\": \"round_trip\", \"cabin\": \"business\", \"flights\": [{\"flight_number\": \"HAT009\", \"origin\": \"PHX\", \"destination\": \"SFO\", \"date\": \"2024-05-06\", \"price\": 1398}, {\"flight_number\": \"HAT273\", \"origin\": \"SFO\", \"destination\": \"LAX\", \"date\": \"2024-05-06\", \"price\": 1798}, {\"flight_number\": \"HAT094\", \"origin\": \"LAX\", \"destination\": \"SFO\", \"date\": \"2024-05-13\", \"price\": 579}, {\"flight_number\": \"HAT123\", \"origin\": \"SFO\", \"destination\": \"PHX\", \"date\": \"2024-05-13\", \"price\": 1560}], \"passengers\": [{\"first_name\": \"Amelia\", \"last_name\": \"Kim\", \"dob\": \"1978-04-20\"}, {\"first_name\": \"Liam\", \"last_name\": \"Johansson\", \"dob\": \"1955-04-10\"}, {\"first_name\": \"Noah\", \"last_name\": \"Moore\", \"dob\": \"1969-11-25\"}], \"payment_history\": [{\"payment_id\": \"credit_card_4303738\", \"amount\": 16005}], \"created_at\": \"2024-05-05T00:38:24\", \"total_baggages\": 1, \"nonfree_baggages\": 0, \"insurance\": \"no\", \"status\": null}"
+        }
+      ],
+      "annotation": {
+        "primary_failure_mode": "format_grounding_rejection",
+        "human_hypothesized_unknown_kind": "WEAK_INFERENCE",
+        "analysis": "Model said error but grounding gate discarded it. Upcoming-only request, current date, and past-flight amounts 308 and 16005 were already selected; candidate includes both in calculation.",
+        "coverage": "sufficient_contradiction_delivered",
+        "need": "Compare included amounts with their flight dates and current time; additional reading is unnecessary to establish at least one error.",
+        "suggested_existing_reader_actions": [
+          {
+            "action": "read",
+            "ids": [
+              "p26"
+            ]
+          }
+        ],
+        "confidence": "high",
+        "limitations": "p26 omitted, so full correct sum requires one extra source; that omission does not prevent proving candidate sum includes past flights. LLM explanation was discarded."
+      }
+    },
+    {
+      "id": "airline__9::t6",
+      "gold": 1,
+      "strict_label": 0,
+      "strict_fallback": true,
+      "strict_fn": true,
+      "technical_codes": [
+        "language_missing_grounding"
+      ],
+      "recorded_model_verdict": "error",
+      "recorded_model_reason": null,
+      "recorded_claims_retained": false,
+      "selected_chunks": [
+        "p0",
+        "p16",
+        "p15",
+        "p25",
+        "p7"
+      ],
+      "response": "⟦ASSISTANT · ход 6⟧\n\t→ TOOL_CALL cancel_reservation: {\"reservation_id\": \"IFOYYZ\"}\n\t→ TOOL_CALL transfer_to_human_agents: {\"summary\": \"The user wants to cancel reservation NQNU5R. Since the flights were scheduled for May 13th and 14th (current date is May 15th), the agent needs to check if any portion of the flight has been flown, which requires a human agent's assistance as per policy.\"}",
+      "source_evidence": [
+        {
+          "chunk": "p0",
+          "document": "prompt",
+          "start": 9,
+          "end": 1809,
+          "delivered": true,
+          "text": "<instructions>\nYou are a customer service agent that helps the user according to the <policy> provided below.\nIn each turn you can either:\n- Send a message to the user.\n- Make a tool call.\nYou cannot do both at the same time.\n\nTry to be helpful and always follow the policy. Always make sure you generate valid JSON only.\n\nAlways communicate with the user in Russian. Keep tool names, tool call arguments, IDs, codes, and other data values exactly as they appear in the system — do not translate or transliterate them.\n</instructions>\n<policy>\n# Airline Agent Policy\n\nThe current time is 2024-05-15 15:00:00 EST.\n\nAs an airline agent, you can help users **book**, **modify**, or **cancel** flight reservations. You also handle **refunds and compensation**.\n\nBefore taking any actions that update the booking database (booking, modifying flights, editing baggage, changing cabin class, or updating passenger information), you must list the action details and obtain explicit user confirmation (yes) to proceed.\n\nYou should not provide any information, knowledge, or procedures not provided by the user or available tools, or give subjective recommendations or comments.\n\nYou should only make one tool call at a time, and if you make a tool call, you should not respond to the user simultaneously. If you respond to the user, you should not make a tool call at the same time.\n\nYou should deny user requests that are against this policy.\n\nYou should transfer the user to a human agent if and only if the request cannot be handled within the scope of your actions. To transfer, first make a tool call to transfer_to_human_agents, and then send the message 'YOU ARE BEING TRANSFERRED TO A HUMAN AGENT. PLEASE HOLD ON.' to the user.\n\n## Domain Basic\n\n### User\nEach user has a profile containing:\n- user id\n"
+        },
+        {
+          "chunk": "p3",
+          "document": "prompt",
+          "start": 5409,
+          "end": 7209,
+          "delivered": false,
+          "text": "r cases, all reservations, including basic economy, can change cabin without changing the flights.\n- Cabin class must remain the same across all the flights in the same reservation; changing cabin for just one flight segment is not possible.\n- If the price after cabin change is higher than the original price, the user is required to pay for the difference.\n- If the price after cabin change is lower than the original price, the user is should be refunded the difference.\n\nChange baggage and insurance: \n- The user can add but not remove checked bags.\n- The user cannot add insurance after initial booking.\n\nChange passengers:\n- The user can modify passengers but cannot modify the number of passengers.\n- Even a human agent cannot modify the number of passengers.\n\nPayment: \n- If the flights are changed, the user needs to provide a single gift card or credit card for payment or refund method. The payment method must already be in user profile for safety reasons.\n\n## Cancel flight\n\nFirst, the agent must obtain the user id and reservation id. \n- The user must provide their user id. \n- If the user doesn't know their reservation id, the agent should help locate it using available tools.\n\nThe agent must also obtain the reason for cancellation (change of plan, airline cancelled flight, or other reasons)\n\nIf any portion of the flight has already been flown, the agent cannot help and transfer is needed.\n\nOtherwise, flight can be cancelled if any of the following is true:\n- The booking was made within the last 24 hrs\n- The flight is cancelled by airline\n- It is a business flight\n- The user has travel insurance and the reason for cancellation is covered by insurance.\n\nThe API does not check that cancellation rules are met, so the agent must make sure the rules apply before calling the AP"
+        },
+        {
+          "chunk": "p7",
+          "document": "prompt",
+          "start": 12609,
+          "end": 13497,
+          "delivered": true,
+          "text": "still be included in the array.\n        · flight_number: string! — Flight number, such as 'HAT001'.\n        · date: string! — The date for the flight in the format 'YYYY-MM-DD', such as '2024-05-01'.\n    payment_id: string! — The payment id stored in user profile, such as 'credit_card_7815826', 'gift_card_7815826', 'certificate_7815826'.\n- update_reservation_passengers — Update the passenger information of a reservation.\n    reservation_id: string! — The reservation ID, such as 'ZFA04Y'.\n    passengers: array! — An array of objects containing details about each passenger.\n        · first_name: string! — Passenger's first name\n        · last_name: string! — Passenger's last name\n        · dob: string! — Date of birth in YYYY-MM-DD format\n- get_flight_status — Get the status of a flight.\n    flight_number: string! — The flight number.\n    date: string! — The date of the flight."
+        },
+        {
+          "chunk": "p16",
+          "document": "prompt",
+          "start": 15032,
+          "end": 15787,
+          "delivered": true,
+          "text": "\t← TOOL_RESPONSE get_reservation_details: {\"reservation_id\": \"NQNU5R\", \"user_id\": \"aarav_ahmed_6699\", \"origin\": \"MCO\", \"destination\": \"SEA\", \"flight_type\": \"one_way\", \"cabin\": \"business\", \"flights\": [{\"flight_number\": \"HAT214\", \"origin\": \"MCO\", \"destination\": \"PHX\", \"date\": \"2024-05-13\", \"price\": 1377}, {\"flight_number\": \"HAT045\", \"origin\": \"PHX\", \"destination\": \"SEA\", \"date\": \"2024-05-14\", \"price\": 1712}], \"passengers\": [{\"first_name\": \"Aarav\", \"last_name\": \"Ahmed\", \"dob\": \"1981-05-26\"}, {\"first_name\": \"Aarav\", \"last_name\": \"Patel\", \"dob\": \"1980-12-03\"}], \"payment_history\": [{\"payment_id\": \"credit_card_4959530\", \"amount\": 6178}], \"created_at\": \"2024-05-13T05:37:57\", \"total_baggages\": 1, \"nonfree_baggages\": 0, \"insurance\": \"no\", \"status\": null}\n"
+        }
+      ],
+      "annotation": {
+        "primary_failure_mode": "format_grounding_rejection",
+        "human_hypothesized_unknown_kind": "WEAK_INFERENCE",
+        "analysis": "Model said error but no retained grounded reason. Gold targets claim that flight-status checking requires a human; selected p7 exposes get_flight_status and p16 supplies flight/date arguments.",
+        "coverage": "core_contradiction_delivered_rule_omitted",
+        "need": "Audit false escalation against available capability, not cancellation or generic multi-call rules.",
+        "suggested_existing_reader_actions": [
+          {
+            "action": "read",
+            "ids": [
+              "p3",
+              "p7",
+              "p16"
+            ]
+          }
+        ],
+        "confidence": "high",
+        "limitations": "Flight execution state is genuinely unobserved, but capability to check it is present. Gold explicitly says cancellation is not the new hallucination; p3 cancellation policy may support different errors, so do not substitute reasons."
+      }
+    },
+    {
+      "id": "banking_knowledge__task_003::t7",
+      "gold": 1,
+      "strict_label": 0,
+      "strict_fallback": false,
+      "strict_fn": true,
+      "technical_codes": [],
+      "recorded_model_verdict": "ok",
+      "recorded_model_reason": "Assistant correctly transferred the user to a human agent as requested, following policy.",
+      "recorded_claims_retained": true,
+      "selected_chunks": [
+        "p0",
+        "p52",
+        "p55",
+        "p53",
+        "p7"
+      ],
+      "response": "⟦ASSISTANT · ход 7⟧\n\t→ TOOL_CALL transfer_to_human_agents: {\"reason\": \"kb_search_unsuccessful_customer_requests_transfer\", \"summary\": \"Клиент хочет выбрать между картами Diamond Elite и Gold Rewards, так как они соответствуют требованиям по 0% комиссии за рубежом и защите покупок. Однако в базе знаний отсутствует информация о годовых комиссиях для этих карт. Platinum Rewards не подходит из-за высокого порога трат для возврата комиссии, а Silver Rewards — из-за необходимости отдельной подписки. Клиент просит соединить с оператором для уточнения стоимости обслуживания Diamond Elite и Gold Rewards.\"}",
+      "source_evidence": [
+        {
+          "chunk": "p0",
+          "document": "prompt",
+          "start": 9,
+          "end": 1809,
+          "delivered": true,
+          "text": "<instructions>\nYou are a customer service agent that helps the user according to the <policy> provided below.\nIn each turn you can either:\n- Send a message to the user.\n- Make a tool call.\nYou cannot do both at the same time.\n\nTry to be helpful and always follow the policy. Always make sure you generate valid JSON only.\n\nAlways communicate with the user in Russian. Keep tool names, tool call arguments, IDs, codes, and other data values exactly as they appear in the system — do not translate or transliterate them.\n</instructions>\n<policy>\n# Rho-Bank Customer Service Policy\n\nYou are a helpful customer service agent for Rho-Bank.\nYour goal is to help customers by searching the knowledge base and providing accurate information.\n\n## Guidelines\n\n1. Do not make up policies, information or actions that you can take on behalf of the user. All instructions will be found here or in the knowledge base. If you cannot find relevant information, let the user know. \n2. Do not ask for any documentation, receipts... from the customer unless it states very clearly in the knowledge base how to process it, and whether you're allowed to do so. \n3. Be polite and professional\n4. If you need the current time, always use the get_current_time() tool. Do not make up or assume the current time. \n5. Generally, if the issue cannot be resolved or is outside your capabilities, ask the user whether they would like to be transferred to a human agent. If they do, invoke the appropriate transfer_to_human_agents tool. Do this only if you absolutely have to, and you are sure that there are no potential actions you can take as specified in the knowledge base, or in your policy. Do not transfer without asking the user first. This guidance may be overridden by specific scenario-based transfer guidance in the kn"
+        },
+        {
+          "chunk": "p1",
+          "document": "prompt",
+          "start": 1809,
+          "end": 3609,
+          "delivered": false,
+          "text": "owledge base. \n6. If an issue falls within your capabilities and the user still wants to be transferred to a human agent, kindly inform the user that you can help them, and try to help them first. If the user asks for a human agent 4 times, then you may invoke the transfer_to_human_agents tool. This guidance may be overridden by specific scenario-based transfer guidance in the knowledge base. \n7. Do not give intermediate responses to users while processing that would give away internal rho-bank information/policies. \n\n\n## Knowledge base search tools\n\nYou have three complementary ways to access the knowledge base:\n\n### `KB_search_bm25`\n\n**Search the knowledge base** using **BM25** sparse retrieval. Pass **`k`** (default 10) to control how many documents to retrieve.\n\n### `KB_search_dense`\n\nThe `KB_search_dense` tool uses **OpenRouter** with embedding model `qwen3-embedding-8b` for dense retrieval.\n\nPass **`k`** (default 10) to control how many documents to retrieve.\n\n### `grep`\n\n**Search the knowledge base** for exact keyword or phrase matches using the `grep` tool. Useful for looking up specific terms, product names, or codes verbatim.\n\n\n## Additional Instructions\n\n### Discoverable Tools\n\n#### Giving Discoverable Tools to Users\nThe knowledge base may contain instructions that indicate certain actions should be performed by the user themselves rather than by you. These are called \"user discoverable tools.\" A user discoverable tool is a tool that you provide to the user so they can execute it on their own (e.g., through a customer portal or app).\n\n**When to give user discoverable tools:**\n-  Only give a tool when the user would like to perform an action, and the knowledge base explicitly has a tool that allows the user to perform this action (e.g., \"to do X, have the user"
+        },
+        {
+          "chunk": "p3",
+          "document": "prompt",
+          "start": 5409,
+          "end": 7209,
+          "delivered": false,
+          "text": "call_discoverable_agent_tool(agent_tool_name, arguments)` with the required arguments\n3. The unlock step is required before calling - you cannot call a tool that hasn't been unlocked\n\n### Authenticating Users\n\nGenerally, for any scenario involving accessing customer information in internal databases, you must first verify their identify before proceeding. No need to verify more than once in a single conversation. You should ONLY verify a user's identity if you need to access or modify their customer information in internal databases on their behalf.\n\nHere are some concrete examples:\n* Looking up account balances, transaction history, referral history...\n* Changing account settings (e.g., address, phone number, email)\n* Closing an account\n* Adding or removing authorized users\n* Requesting information about specific transactions\n* Discussing specific loan or credit details\n* Filing a dispute on behalf of the user\n\nTo verify the identity of the user, call the appropriate read tools, and ensure that they are able to give correctly any 2 out of the following values: date of birth, email, phone number, address. Knowing full name or userID is not enough to verify. After verification, you must call the verification logging tool to properly log the information into the verification records. Do not leak any information about the user before they are verified.\n\n\n## Knowledge base language\n\nThe knowledge base documents are written in Russian. Always formulate knowledge base search queries (`KB_search_bm25`, `KB_search_dense`, `grep`, `KB_search`) in Russian. Official product and account names (e.g. 'Platinum Rewards', 'Blue Account'), tool identifiers, and status codes remain in English — use them in queries as-is.\n</policy>\n\n[AVAILABLE TOOLS]\n- KB_search_bm25 — Search the knowledg"
+        },
+        {
+          "chunk": "p55",
+          "document": "prompt",
+          "start": 75990,
+          "end": 76513,
+          "delivered": true,
+          "text": "Спасибо за разъяснения! К сожалению, Platinum Rewards меня не устраивает — мой основной расход — это путешествия, и я не гарантирую, что буду тратить $7,500 каждый месяц, поэтому возврат годовой комиссии не гарантирован.\n\nSilver Rewards не подходит, так как требует отдельную подписку для 0% за рубежом.\n\nDiamond Elite и Gold Rewards потенциально подходят, но без информации о годовой комиссии я не могу принять решение. Не могли бы вы соединить меня со специалистом, который сможет уточнить годовые комиссии для этих карт?"
+        }
+      ],
+      "annotation": {
+        "primary_failure_mode": "accepted_semantic_error",
+        "human_hypothesized_unknown_kind": "MISSING_EVIDENCE",
+        "analysis": "Accepted ok focused on user's transfer request; did not establish exhaustion of search or support for Gold Rewards purchase protection in transfer summary. Additional search capability and transfer qualifications are omitted.",
+        "coverage": "material_policy_or_source_omitted",
+        "need": "Read transfer exception/full rule and available search inventory, then evaluate summary assertions separately.",
+        "suggested_existing_reader_actions": [
+          {
+            "action": "read",
+            "ids": [
+              "p1",
+              "p3"
+            ]
+          },
+          {
+            "action": "search",
+            "query": "Gold Rewards purchase protection"
+          }
+        ],
+        "confidence": "medium",
+        "limitations": "Gold's failure-to-use-every-retriever rationale is not itself a universal hard rule. Missing KB values should remain unknown; this audit does not prove exact fee data exists."
+      }
+    },
+    {
+      "id": "banking_knowledge__task_018::t6",
+      "gold": 1,
+      "strict_label": 0,
+      "strict_fallback": false,
+      "strict_fn": true,
+      "technical_codes": [],
+      "recorded_model_verdict": "ok",
+      "recorded_model_reason": "Agent correctly invoked transfer_to_human_agents tool after user explicitly requested a transfer and no other viable actions were available.",
+      "recorded_claims_retained": true,
+      "selected_chunks": [
+        "p0",
+        "p13",
+        "p19",
+        "p18",
+        "p17",
+        "p14",
+        "p16",
+        "p15",
+        "p10",
+        "p7"
+      ],
+      "response": "⟦ASSISTANT · ход 6⟧\n\t→ TOOL_CALL transfer_to_human_agents: {\"reason\": \"customer_requests_human_no_specific_reason\", \"summary\": \"Клиент Фатима Аль-Хассан хочет проверить начисления кэшбэка, но агент не смог найти ее профиль в системе по имени. Клиент не может предоставить ID пользователя или email и имеет сложности с использованием мобильного приложения. Перевод на оператора для альтернативной идентификации.\"}",
+      "source_evidence": [
+        {
+          "chunk": "p1",
+          "document": "prompt",
+          "start": 1809,
+          "end": 3609,
+          "delivered": false,
+          "text": "owledge base. \n6. If an issue falls within your capabilities and the user still wants to be transferred to a human agent, kindly inform the user that you can help them, and try to help them first. If the user asks for a human agent 4 times, then you may invoke the transfer_to_human_agents tool. This guidance may be overridden by specific scenario-based transfer guidance in the knowledge base. \n7. Do not give intermediate responses to users while processing that would give away internal rho-bank information/policies. \n\n\n## Knowledge base search tools\n\nYou have three complementary ways to access the knowledge base:\n\n### `KB_search_bm25`\n\n**Search the knowledge base** using **BM25** sparse retrieval. Pass **`k`** (default 10) to control how many documents to retrieve.\n\n### `KB_search_dense`\n\nThe `KB_search_dense` tool uses **OpenRouter** with embedding model `qwen3-embedding-8b` for dense retrieval.\n\nPass **`k`** (default 10) to control how many documents to retrieve.\n\n### `grep`\n\n**Search the knowledge base** for exact keyword or phrase matches using the `grep` tool. Useful for looking up specific terms, product names, or codes verbatim.\n\n\n## Additional Instructions\n\n### Discoverable Tools\n\n#### Giving Discoverable Tools to Users\nThe knowledge base may contain instructions that indicate certain actions should be performed by the user themselves rather than by you. These are called \"user discoverable tools.\" A user discoverable tool is a tool that you provide to the user so they can execute it on their own (e.g., through a customer portal or app).\n\n**When to give user discoverable tools:**\n-  Only give a tool when the user would like to perform an action, and the knowledge base explicitly has a tool that allows the user to perform this action (e.g., \"to do X, have the user"
+        },
+        {
+          "chunk": "p13",
+          "document": "prompt",
+          "start": 13675,
+          "end": 13752,
+          "delivered": true,
+          "text": "\t← TOOL_RESPONSE get_user_information_by_name: No records found in 'users'.\n\n"
+        },
+        {
+          "chunk": "p18",
+          "document": "prompt",
+          "start": 15068,
+          "end": 15812,
+          "delivered": true,
+          "text": "К сожалению, я не могу осуществлять поиск аккаунта напрямую по номеру телефона или дате рождения в целях безопасности. Для того чтобы начать поиск вашего профиля, мне в любом случае понадобится ваше полное имя, ID пользователя или адрес электронной почты.\n\nПоскольку мы не можем найти ваш аккаунт по имени и у вас возникают сложности с доступом к приложению или почте, я предлагаю следующее:\n\nВы можете обратиться в ближайшее отделение нашего банка с паспортом, где сотрудники помогут вам восстановить доступ к данным и проверить начисления по кэшбэку.\n\nЛибо, если вы хотите, я могу перевести вас на одного из наших операторов-людей, который сможет предложить альтернативные варианты идентификации. Желаете ли вы быть переведены на специалиста?"
+        },
+        {
+          "chunk": "p19",
+          "document": "prompt",
+          "start": 15821,
+          "end": 16015,
+          "delivered": true,
+          "text": "Да, пожалуйста, переведите меня на специалиста. Я бы очень хотела разобраться с этой ситуацией, но, к сожалению, не могу предоставить информацию, которой у меня нет. Буду признательна за помощь."
+        }
+      ],
+      "annotation": {
+        "primary_failure_mode": "accepted_semantic_error",
+        "human_hypothesized_unknown_kind": "MISSING_CONDITION",
+        "analysis": "Accepted ok treats one user request as sufficient for transfer and asserts no viable action. Full transfer qualifications (including 4 requests if in scope) are in omitted p1.",
+        "coverage": "material_policy_or_source_omitted",
+        "need": "Read applicable transfer conditions and actual identification attempts; do not invent an alternative identity spelling.",
+        "suggested_existing_reader_actions": [
+          {
+            "action": "read",
+            "ids": [
+              "p1",
+              "p12",
+              "p13",
+              "p19"
+            ]
+          }
+        ],
+        "confidence": "medium",
+        "limitations": "Gold suggests Latin Fatima Al-Hassan, but visible user gave Cyrillic and system forbids transliteration of data. That alternative is not independently supported; this is a label/rationale ambiguity, not evidence to hard-code transliteration."
+      }
+    },
+    {
+      "id": "banking_knowledge__task_051::t15",
+      "gold": 1,
+      "strict_label": 0,
+      "strict_fallback": true,
+      "strict_fn": true,
+      "technical_codes": [
+        "language_claim_missing_grounding"
+      ],
+      "recorded_model_verdict": "error",
+      "recorded_model_reason": "Agent attempted to unlock and invoke a tool for approving a credit limit increase, which is not a user-initiated action and violates policy. Additionally, the agent did not respond in Russian as required.",
+      "recorded_claims_retained": false,
+      "selected_chunks": [
+        "p0",
+        "p59",
+        "p38",
+        "p56",
+        "p52",
+        "p33",
+        "p58",
+        "p57",
+        "p54",
+        "p7"
+      ],
+      "response": "⟦ASSISTANT · ход 15⟧\n\t→ TOOL_CALL unlock_discoverable_agent_tool: {\"agent_tool_name\": \"approve_credit_limit_increase_5847\"}",
+      "source_evidence": [
+        {
+          "chunk": "p32",
+          "document": "prompt",
+          "start": 35945,
+          "end": 36383,
+          "delivered": false,
+          "text": "\t← TOOL_RESPONSE get_credit_card_accounts_by_user: Found 1 record(s) in 'credit_card_accounts':\n\t  \n\t  1. Record ID: cc_5e4c1a83b0_bronze\n\t     account_id: cc_5e4c1a83b0_bronze\n\t     user_id: 5e4c1a83b0\n\t     card_type: Bronze Rewards Card\n\t     date_of_account_open: 05/10/2023\n\t     current_balance: $3,000.00\n\t     reward_points: 5692 points\n\t     credit_limit: $4,000.00\n\t     account_status: ACTIVE\n\t     past_due_amount: $0.00\n\t  \n\n"
+        },
+        {
+          "chunk": "p45",
+          "document": "prompt",
+          "start": 48110,
+          "end": 49910,
+          "delivered": false,
+          "text": " шаги ДОЛЖНЫ выполняться строго в указанном порядке.\n\t  \n\t  ## Шаг 0: Подтверждение того, что запрашиваемая сумма находится в пределах лимитов\n\t  \n\t  ПЕРЕД подачей любого запроса CLI убедитесь, что запрашиваемая клиентом сумма увеличения находится в пределах максимально допустимой для уровня его карты. Если запрашиваемая сумма превышает лимит, сообщите клиенту о максимально допустимой сумме и попросите его скорректировать запрос. НЕ подавайте запрос, который превышает лимит уровня.\n\t  \n\t  ## Шаг 1: Подача запроса CLI\n\t  \n\t  Как только клиент подтвердит корректную сумму увеличения в пределах лимитов своего уровня, подайте запрос от его имени, используя инструмент submit_credit_limit_increase_request_7392. Это создает официальную запись о запросе до проведения проверок на соответствие требованиям. Проверки на соответствие требованиям являются внутренними и не раскрываются клиентам, поэтому подача запроса должна произойти первой.\n\t  \n\t  ### Аргументы инструмента: submit_credit_limit_increase_request_7392\n\t  \n\t  - credit_card_account_id (string, обязательно): ID счета кредитной карты.\n\t  - user_id (string, обязательно): уникальный идентификатор клиента.\n\t  - requested_increase_amount (integer, обязательно): сумма в долларах, на которую необходимо увеличить кредитный лимит (например, 1000 для увеличения на 1,000 долларов).\n\t  \n\t  ## Шаг 2: Проверка базового соответствия требованиям\n\t  \n\t  После подачи запроса убедитесь, что клиент соответствует всем требованиям. Вы ДОЛЖНЫ проверить ВСЕ следующие критерии соответствия перед принятием решения об одобрении или отказе, так как это обеспечивает полноту записей аудита.\n\t  \n\t  1. Срок владения счетом: Убедитесь, что счет был открыт в течение минимального количества дней, требуемого для уровня его карты.\n\t  2. Период охлаждения: Исп"
+        },
+        {
+          "chunk": "p46",
+          "document": "prompt",
+          "start": 49910,
+          "end": 51710,
+          "delivered": false,
+          "text": "ользуйте инструмент get_credit_limit_increase_history_4829, чтобы проверить, не подавал ли клиент запрос в течение периода охлаждения для уровня его карты. Если запрос в этот период существует, отклоните новый запрос и сообщите клиенту, когда он снова сможет подать заявку.\n\t  3. Отсутствие незавершенных споров: Убедитесь, что по счету нет активных споров.\n\t  4. Отсутствие ожидающих замены карт: Убедитесь, что по данному счету нет невыполненных заказов на замену карты. Если замена ожидается, CLI не может быть обработан до тех пор, пока замена не будет доставлена или отменена.\n\t  5. Надлежащее состояние счета: Счет должен быть текущим, без просроченной задолженности.\n\t  6. Использование кредита: Убедитесь, что текущий уровень использования ниже максимального порога для уровня его карты.\n\t  \n\t  ### Аргументы инструмента: get_credit_limit_increase_history_4829\n\t  \n\t  - credit_card_account_id (string, обязательно): ID счета кредитной карты для проверки.\n\t  \n\t  ## Шаг 3: Проверка истории платежей и запрашиваемой суммы\n\t  \n\t  .\n\t  \n\t  ## Шаг 4: Обработка решения\n\t  \n\t  Если все требования соблюдены и запрашиваемая сумма находится в пределах лимитов:\n\t  \n\t  1. Используйте инструмент approve_credit_limit_increase_5847, чтобы одобрить и применить увеличение.\n\t  \n\t  ### Аргументы инструмента: approve_credit_limit_increase_5847\n\t  \n\t  - credit_card_account_id (string, обязательно): ID счета кредитной карты.\n\t  - user_id (string, обязательно): уникальный идентификатор клиента.\n\t  - new_credit_limit (float, обязательно): новый общий кредитный лимит, который необходимо установить.\n\t  \n\t  Если какое-либо из требований не соблюдено:\n\t  \n\t  1. Используйте инструмент deny_credit_limit_increase_5848, чтобы зафиксировать отказ.\n\t  \n\t  ### Аргументы инструмента: deny_credit_limit_increase_58"
+        },
+        {
+          "chunk": "p49",
+          "document": "prompt",
+          "start": 55310,
+          "end": 57110,
+          "delivered": false,
+          "text": ", а не полагайтесь на разовые обходные пути.\n\t  \n\t  9. Требования к соответствию для CLI по уровням карт\n\t     ID: doc_credit_cards_credit_card_account_logistics_005\n\t     Score: 8.8476\n\t     Content: ## Обзор\n\t  \n\t  Используйте данное руководство, чтобы определить, соответствуете ли вы требованиям для увеличения кредитного лимита (CLI) для вашего уровня карты. Все три критерия должны быть соблюдены на момент подачи вашего запроса.\n\t  \n\t  ### Сводка по уровням\n\t  \n\t  | Уровень карты | Минимальный срок владения счётом (дней) | Период ожидания между запросами (дней) | Макс. использование при запросе (%) |\n\t  |---------------|-----------------------------|-----------------------------------|---------------------------------|\n\t  | Entry-tier    | $120 | $120 | 70% |\n\t  | Mid-tier      | 90   | 90   | 80%   |\n\t  | Premium-tier  | 60 | 60 | 90% |\n\t  \n\t  ## 1. Минимальный срок владения счётом\n\t  \n\t  Ваш счёт кредитной карты должен быть открыт в течение минимального количества дней, прежде чем вы сможете запросить CLI. Вы проходите по критерию в день достижения минимума или после него.\n\t  \n\t  - Entry-tier: $120 дней\n\t  - Mid-tier: 90 дней\n\t  - Premium-tier: 60 дней\n\t  \n\t  Пример: счёт уровня entry-tier, открытый в течение 119 дней, не соответствует требованиям; на день $120 и далее он соответствует (при условии соблюдения других критериев).\n\t  \n\t  ## 2. Период ожидания между запросами\n\t  \n\t  Вы должны подождать необходимое количество дней между подачами заявок на CLI. Это относится только к случаям, когда ваш последний запрос был одобрен. Отклоненные запросы не запускают период ожидания.\n\t  \n\t  - Entry-tier: $120 дней\n\t  - Mid-tier: 90 дней\n\t  - Premium-tier: 60 дней\n\t  \n\t  Совет: отсчитывайте период ожидания с даты подачи последнего запроса на CLI. Например, если вы недавно по"
+        },
+        {
+          "chunk": "p50",
+          "document": "prompt",
+          "start": 57110,
+          "end": 58910,
+          "delivered": false,
+          "text": "дали запрос для mid-tier, вы должны подождать, пока не пройдет 90 полных дней, прежде чем подавать следующий.\n\t  \n\t  ## 3. Порог использования кредита\n\t  \n\t  Ваше текущее использование кредита должно быть ниже максимального порога на момент подачи запроса. Использование на уровне порога или выше него не соответствует требованиям.\n\t  \n\t  - Entry-tier: ниже 70%\n\t  - Mid-tier: ниже 80%\n\t  - Premium-tier: ниже 90%\n\t  \n\t  Примеры:\n\t  - Если использование для entry-tier составляет 71%, это выше 70% и не соответствует требованиям.\n\t  - Если использование для premium-tier составляет ровно 90%, оно не соответствует требованию «ниже»; снизьте использование перед подачей запроса.\n\t  \n\t  ## Быстрый контрольный список соответствия\n\t  \n\t  Перед подачей запроса на CLI подтвердите следующее для вашего уровня карты:\n\t  \n\t  - Срок владения вашим счётом составляет не менее минимума: $120 / 90 / 60 дней (в зависимости от уровня).\n\t  - Период ожидания с момента вашей последней подачи на CLI полностью истек: $120 / 90 / 60 дней.\n\t  - Ваше текущее использование ниже применимого порога: 70% / 80% / 90%.\n\t  \n\t  Если хотя бы один критерий не соблюден, подождите до момента его выполнения (или снизьте использование кредита), прежде чем подавать запрос.\n\t  \n\t  10. EcoCard: Подача заявки на кредитную карту 'Sustainable Rewards'\n\t     ID: doc_credit_cards_ecocard_001\n\t     Score: 8.4238\n\t     Content: ## Соответствие требованиям и условия\n\t  - Минимальный кредитный рейтинг, необходимый для подачи заявки: 0 (0 означает отсутствие требований к кредитному рейтингу).\n\t  - В процессе подачи заявки вы должны предоставить стандартную информацию о личности и доходах.\n\t  \n\t  ## Как подать заявку\n\t  1. Заполните онлайн-заявку, указав ваши личные и финансовые данные.\n\t  2. Ознакомьтесь с ценами и условиями, вкл"
+        }
+      ],
+      "annotation": {
+        "primary_failure_mode": "format_grounding_rejection",
+        "human_hypothesized_unknown_kind": "MISSING_CONDITION",
+        "analysis": "Strict rejects claims; retained overall error reason is wrong/unsupported: user did request CLI and a tool call need not be in Russian. Actual workflow/utilization evidence was omitted (balance3000/limit4000; approval only if all conditions pass).",
+        "coverage": "material_policy_or_source_omitted",
+        "need": "Retrieve approving-tool procedure, account balance/limit and tier threshold, then verify the actual precondition; do not equate unlock with completed approval.",
+        "suggested_existing_reader_actions": [
+          {
+            "action": "search",
+            "query": "approve_credit_limit_increase_5847"
+          },
+          {
+            "action": "read",
+            "ids": [
+              "p32",
+              "p45",
+              "p46",
+              "p49",
+              "p50"
+            ]
+          }
+        ],
+        "confidence": "high",
+        "limitations": "Delivery gap is certain. To conclude threshold violation requires verified Bronze-to-entry tier mapping; unlocking itself is preparatory, so materiality must follow full policy rather than guessed completion."
+      }
+    },
+    {
+      "id": "banking_knowledge__task_057::t2",
+      "gold": 0,
+      "strict_label": 0,
+      "strict_fallback": true,
+      "strict_fn": false,
+      "technical_codes": [
+        "language_http_request"
+      ],
+      "recorded_model_verdict": null,
+      "recorded_model_reason": null,
+      "recorded_claims_retained": false,
+      "selected_chunks": null,
+      "response": "⟦ASSISTANT · ход 2⟧\nЯ с радостью помогу вам открыть новый расчетный счет!\n\nДля того чтобы я мог приступить к процессу, мне необходимо сначала подтвердить вашу личность. Пожалуйста, предоставьте ваши данные (например, полное имя, ID пользователя или адрес электронной почты), чтобы я мог найти ваш профиль.\n\nПосле этого мне потребуется подтвердить два любых из следующих пунктов:\n* Дата рождения\n* Электронная почта\n* Номер телефона\n* Адрес проживания\n\nКак только мы завершим верификацию, я проверю соответствие всем требованиям и помогу вам выбрать подходящий тип счета.",
+      "source_evidence": [
+        {
+          "chunk": "p5",
+          "document": "prompt",
+          "start": 9009,
+          "end": 10809,
+          "delivered": null,
+          "text": "for a user by their user id.\n    user_id: string! — The ID of the user\n- get_user_information_by_name — Get the information (date of birth, email, phone number, address) for a user by their name. Case Sensitive.\n    customer_name: string! — The name of the user\n- get_user_information_by_email — Get the information (date of birth, email, phone number, address) for a user by their email.\n    email: string! — The email of the user\n- change_user_email — Change the email address for a user.\n    user_id: string! — The ID of the user whose email should be changed\n    new_email: string! — The new email address to set for the user\n- get_referrals_by_user — Get all referrals made by a user.\n    user_id: string! — The ID of the user (referrer) to look up referrals for\n- get_credit_card_transactions_by_user — Get all credit card transactions for a user.\n    user_id: string! — The ID of the user to look up transactions for\n- get_credit_card_accounts_by_user — Get all credit card accounts for a user.\n    \n    Returns information about each credit card account including card type,\n    date opened, current balance, and reward points.\n    user_id: string! — The ID of the user to look up credit card accounts for\n- log_verification — Log a verification record after successfully verifying a user's identity.\n    \n    Call this tool after you have verified a user by confirming 2 out of 4 identity fields\n    (date of birth, email, phone number, address). This creates an audit record of the verification.\n    name: string! — The verified user's full name\n    user_id: string! — The verified user's ID\n    address: string! — The verified user's address\n    email: string! — The verified user's email\n    phone_number: string! — The verified user's phone number\n    date_of_birth: string! — The verifi"
+        }
+      ],
+      "annotation": {
+        "primary_failure_mode": "transport_http_request",
+        "human_hypothesized_unknown_kind": null,
+        "analysis": "No parsed result. Candidate proposes identity verification; policy/tool schema shows two of four fields.",
+        "coverage": "delivery_not_retained",
+        "need": "Technical failure; no model need retained.",
+        "suggested_existing_reader_actions": [],
+        "confidence": "high",
+        "limitations": "Cannot infer missing evidence or a semantic diagnosis from HTTP code."
+      }
+    },
+    {
+      "id": "banking_knowledge__task_063::t8",
+      "gold": 0,
+      "strict_label": 0,
+      "strict_fallback": true,
+      "strict_fn": false,
+      "technical_codes": [
+        "language_missing_grounding"
+      ],
+      "recorded_model_verdict": "error",
+      "recorded_model_reason": null,
+      "recorded_claims_retained": false,
+      "selected_chunks": [
+        "p0",
+        "p60",
+        "p71",
+        "p58",
+        "p7"
+      ],
+      "response": "⟦ASSISTANT · ход 8⟧\n\t→ TOOL_CALL transfer_to_human_agents: {\"reason\": \"specialized_department_required\", \"summary\": \"Клиент Taylor Brooks хочет открыть Silver Account и EcoCard для максимизации APY (4.7%). Однако он категорически требует подтверждения, что EcoCard проводит 'hard credit check', так как для него это принципиальный вопрос. Требуется уточнение типа кредитной проверки специалистом.\"}",
+      "source_evidence": [
+        {
+          "chunk": "p58",
+          "document": "prompt",
+          "start": 86101,
+          "end": 86590,
+          "delivered": true,
+          "text": "Спасибо за подробный разбор! Что касается EcoCard и проверки кредитной истории — я бы хотел уточнить, но не хочу, чтобы это затянулось надолго. Можете проверить в своей системе: EcoCard проводит hard credit check при подаче заявки? Мне просто нужно знать наверняка, прежде чем я соглашусь.\n\nЕсли да — то давайте остановимся на комбинации **Silver Account + EcoCard** с итоговой ставкой 4.7% и доходом $376 за год. Меня это устраивает.\n\nКакие данные вам нужны от меня для начала оформления?"
+        },
+        {
+          "chunk": "p60",
+          "document": "prompt",
+          "start": 86720,
+          "end": 88520,
+          "delivered": true,
+          "text": "\t← TOOL_RESPONSE KB_search_dense: 1. BNPL Silver: мягкие кредитные проверки, провайдеры и лимиты запросов\n\t     ID: doc_buy_now_pay_later_bnpl_silver_005\n\t     Score: 0.5685\n\t     Content: ## Требование\n\t  - Активация и определённые транзакции инициируют мягкую кредитную проверку только в том случае, если [value not available] имеет значение true.\n\t  \n\t  ## Провайдер\n\t  - Мягкие запросы выполняются через [value not available].\n\t  \n\t  ## Лимиты запросов\n\t  - Вы можете выполнить до [value not available] мягких кредитных проверок BNPL Silver за календарный месяц.\n\t  - После достижения [value not available] дополнительные попытки блокируются до начала следующего месяца.\n\t  \n\t  ## Управление попытками\n\t  - Если проверка не удалась из-за месячного лимита, подождите до следующего календарного месяца перед повторной попыткой.\n\t  - Убедитесь, что ваша информация совпадает с профилем вашего счёта, чтобы избежать ненужных повторных запросов.\n\t  \n\t  2. Green Account (savings): эксклюзивные преимущества для владельцев EcoCard\n\t     ID: doc_savings_accounts_green_account_(savings)_009\n\t     Score: 0.5541\n\t     Content: ## Обзор преимуществ для владельцев EcoCard\n\t  \n\t  Владельцы Green Account (savings), которые также имеют EcoCard, получают расширенные преимущества, которые делают экологически ответственный банкинг ещё более выгодным. Ваш ежемесячный лимит на снятие средств увеличен на 7 дополнительных бесплатных операций, что в сумме составляет 8 + 7 = 15 операций по снятию средств в месяц. Вы также получаете 20 в виде компенсации комиссий ATM ежемесячно. В сочетании с существующим бонусным APY 0.5% для владельцев EcoCard в дополнение к базовой ставке 4.0%, это создает комплексный экологичный опыт сбережений с максимальной гибкостью.\n\t  \n\t  ## Что вы получаете как владелец EcoCard\n\t"
+        },
+        {
+          "chunk": "p70",
+          "document": "prompt",
+          "start": 104128,
+          "end": 105267,
+          "delivered": false,
+          "text": "К сожалению, в моей базе знаний нет прямого и однозначного подтверждения того, проводит ли `EcoCard` именно **hard credit check** (жесткую проверку кредитной истории). Информация о типах проверок доступна для некоторых других продуктов (например, BNPL Silver), но по `EcoCard` этот конкретный технический нюанс не зафиксирован.\n\nПоскольку для вас это принципиальный вопрос и вы не хотите рисковать своим кредитным рейтингом, я предлагаю следующее:\n\nЯ не хочу вводить вас в заблуждение, угадывая тип проверки. Чтобы вы были уверены на 100%, я могу прямо сейчас перевести вас на специалиста по кредитным продуктам. Он точно скажет, какой тип проверки используется для `EcoCard`. Это займет всего пару минут, зато у вас будет гарантия.\n\n**Как поступим?**\n1. Перевести вас на специалиста для уточнения типа проверки по `EcoCard`?\n2. Или, если вы готовы рискнуть, мы можем приступить к оформлению **Silver Account + EcoCard**?\n\nЕсли выберете второй вариант, мне понадобятся ваши данные для верификации (так как мы будем открывать новые продукты и работать с вашим профилем). Но я очень рекомендую сначала прояснить вопрос с кредитным рейтингом."
+        },
+        {
+          "chunk": "p71",
+          "document": "prompt",
+          "start": 105276,
+          "end": 105665,
+          "delivered": true,
+          "text": "Давайте всё-таки проясним вопрос с кредитной проверкой — для меня это принципиально. Переводите на специалиста.\n\nНо чтобы сэкономить время, я сразу назову свои данные для верификации, чтобы потом не тратить на это лишние минуты:\n\n- Имя: Taylor Brooks\n- Телефон: 503-555-0847\n- Email: taylor.brooks@gmail.com\n- Дата рождения: 09/12/1993\n- Адрес: 2156 Hawthorne Boulevard, Portland, OR 97214"
+        }
+      ],
+      "annotation": {
+        "primary_failure_mode": "format_grounding_rejection",
+        "human_hypothesized_unknown_kind": null,
+        "analysis": "Model verdict error discarded without grounded reason. Candidate escalates to clarify whether EcoCard uses hard credit check; input includes explicit uncertainty rather than affirmative hard-check claim.",
+        "coverage": "some_relevant_context_omitted",
+        "need": "If rechecked, verify request/KB product scope and transfer conditions; avoid borrowing other products' credit-check rules.",
+        "suggested_existing_reader_actions": [
+          {
+            "action": "read",
+            "ids": [
+              "p70",
+              "p71"
+            ]
+          },
+          {
+            "action": "search",
+            "query": "EcoCard hard credit check"
+          }
+        ],
+        "confidence": "medium",
+        "limitations": "No original reason/claims retained. Cannot assign AMBIGUOUS_ENTITY merely because other products occur in KB."
+      }
+    },
+    {
+      "id": "banking_knowledge__task_080::t30",
+      "gold": 0,
+      "strict_label": 0,
+      "strict_fallback": true,
+      "strict_fn": false,
+      "technical_codes": [
+        "language_inconsistent_claims"
+      ],
+      "recorded_model_verdict": "error",
+      "recorded_model_reason": "Unsupported claims about card status",
+      "recorded_claims_retained": false,
+      "selected_chunks": [
+        "p0",
+        "p207",
+        "p185",
+        "p116",
+        "p7"
+      ],
+      "response": "⟦ASSISTANT · ход 30⟧\nВаша дебетовая карта для **Green Account** успешно разморожена и снова активна — вы можете пользоваться ею прямо сейчас.\n\nЧто касается двух других карт: дебетовые карты для **Blue Account** и **Green Fee-Free Account** теперь **окончательно закрыты** в связи с кражей. Они полностью деактивированы и больше не могут быть использованы.\n\nТеперь нам нужно заказать для вас новые карты. Чтобы я мог оформить заказ, пожалуйста, уточните следующие детали для каждой из карт:\n\n1. **Вариант доставки:**\n   * **STANDARD**: Бесплатно (7-10 рабочих дней)\n   * **EXPEDITED**: $15 (3-5 рабочих дней)\n   * **RUSH**: $35 (1-2 рабочих дня)\n2. **Дизайн карты:**\n   * **CLASSIC**: Стандартный синий дизайн (бесплатно)\n   * **PREMIUM**: Металлическое серебряное покрытие ($10)\n   * **CUSTOM**: С вашим изображением ($25)\n\nПожалуйста, напишите, какой вариант доставки и дизайна вы предпочитаете (например: «Для обеих карт — экспресс-доставка и классический дизайн»), и я немедленно оформлю заказ на ваш адрес в Денвере.",
+      "source_evidence": [
+        {
+          "chunk": "p197",
+          "document": "prompt",
+          "start": 230151,
+          "end": 230414,
+          "delivered": false,
+          "text": "\t← TOOL_RESPONSE call_discoverable_agent_tool: Debit Card Unfrozen Successfully\n\t  Card ID: dbc_tm92c4d7e8_green\n\t  Status: ACTIVE\n\t  Unfrozen Date: 11/14/2025\n\t  \n\t  The card is now active and ready to use immediately.\n\t  All transactions will process normally.\n"
+        },
+        {
+          "chunk": "p206",
+          "document": "prompt",
+          "start": 231950,
+          "end": 232528,
+          "delivered": false,
+          "text": "\t← TOOL_RESPONSE call_discoverable_agent_tool: Debit Card Closed Successfully\n\t  Card ID: dbc_tm92c4d7e8_blue\n\t  Previous Status: ACTIVE\n\t  New Status: CLOSED\n\t  Closure Reason: Stolen\n\t  Closure Date: 11/14/2025\n\t  \n\t  IMPORTANT: This card has been immediately deactivated for security.\n\t  Any pending transactions may still be processed.\n\t  \n\t  Note: This card cannot be reactivated. If the customer needs a new card, they can order one through the standard ordering process.\n\t  Any recurring payments linked to this card will need to be updated with new payment information.\n"
+        },
+        {
+          "chunk": "p207",
+          "document": "prompt",
+          "start": 232528,
+          "end": 233104,
+          "delivered": true,
+          "text": "\t← TOOL_RESPONSE call_discoverable_agent_tool: Debit Card Closed Successfully\n\t  Card ID: dbc_tm92c4d7e8_gff\n\t  Previous Status: ACTIVE\n\t  New Status: CLOSED\n\t  Closure Reason: Stolen\n\t  Closure Date: 11/14/2025\n\t  \n\t  IMPORTANT: This card has been immediately deactivated for security.\n\t  Any pending transactions may still be processed.\n\t  \n\t  Note: This card cannot be reactivated. If the customer needs a new card, they can order one through the standard ordering process.\n\t  Any recurring payments linked to this card will need to be updated with new payment information."
+        }
+      ],
+      "annotation": {
+        "primary_failure_mode": "format_consistency_rejection",
+        "human_hypothesized_unknown_kind": "MISSING_EVIDENCE",
+        "analysis": "Overall error says unsupported card status; two supporting final outcomes were omitted: Green unfrozen ACTIVE p197 and Blue CLOSED p206; GFF CLOSED p207 selected. Strict rejection protects correct label.",
+        "coverage": "material_policy_or_source_omitted",
+        "need": "Read both omitted latest outcomes and scope each card separately.",
+        "suggested_existing_reader_actions": [
+          {
+            "action": "read",
+            "ids": [
+              "p197",
+              "p206",
+              "p207"
+            ]
+          },
+          {
+            "action": "search",
+            "query": "dbc_tm92c4d7e8_green"
+          }
+        ],
+        "confidence": "high",
+        "limitations": "Prior reopening/closing sequence exists, but current retained model reason is absence of support, not a demonstrated stale-state reasoning failure. Raw prose tool outputs are not graph-indexed, so entity graph alone may miss them."
+      }
+    },
+    {
+      "id": "retail__12::t4",
+      "gold": 0,
+      "strict_label": 0,
+      "strict_fallback": true,
+      "strict_fn": false,
+      "technical_codes": [
+        "language_claim_missing_grounding"
+      ],
+      "recorded_model_verdict": "ok",
+      "recorded_model_reason": "All claims are supported by evidence and no policy violations detected.",
+      "recorded_claims_retained": false,
+      "selected_chunks": [
+        "p0",
+        "p16",
+        "p12",
+        "p11",
+        "p10",
+        "p9",
+        "p8"
+      ],
+      "response": "⟦ASSISTANT · ход 4⟧\nЯ понимаю ваше раздражение и сделаю всё возможное, чтобы решить ваши вопросы максимально быстро. Я нашел ваш профиль.\n\nУ вас есть два заказа: **#W5490111** и **#W7387996**. Чтобы я мог помочь вам с возвратом и отменой, мне нужно проверить статус каждого из них. \n\nПожалуйста, уточните, какие именно товары вы хотите вернуть и какой заказ нужно отменить? Или я могу просто проверить оба заказа и рассказать вам, что можно сделать с каждым из них.",
+      "source_evidence": [
+        {
+          "chunk": "p0",
+          "document": "prompt",
+          "start": 9,
+          "end": 1809,
+          "delivered": true,
+          "text": "<instructions>\nYou are a customer service agent that helps the user according to the <policy> provided below.\nIn each turn you can either:\n- Send a message to the user.\n- Make a tool call.\nYou cannot do both at the same time.\n\nTry to be helpful and always follow the policy. Always make sure you generate valid JSON only.\n\nAlways communicate with the user in Russian. Keep tool names, tool call arguments, IDs, codes, and other data values exactly as they appear in the system — do not translate or transliterate them.\n</instructions>\n<policy>\n# Retail agent policy\n\nAs a retail agent, you can help users:\n\n- **cancel or modify pending orders**\n- **return or exchange delivered orders**\n- **modify their default user address**\n- **provide information about their own profile, orders, and related products**\n\nAt the beginning of the conversation, you have to authenticate the user identity by locating their user id via email, or via name + zip code. This has to be done even when the user already provides the user id.\n\nOnce the user has been authenticated, you can provide the user with information about order, product, profile information, e.g. help the user look up order id.\n\nYou can only help one user per conversation (but you can handle multiple requests from the same user), and must deny any requests for tasks related to any other user.\n\nBefore taking any action that updates the database (cancel, modify, return, exchange), you must list the action details and obtain explicit user confirmation (yes) to proceed.\n\nYou should not make up any information or knowledge or procedures not provided by the user or the tools, or give subjective recommendations or comments.\n\nYou should at most make one tool call at a time, and if you take a tool call, you should not respond to the user at the "
+        },
+        {
+          "chunk": "p16",
+          "document": "prompt",
+          "start": 15875,
+          "end": 16415,
+          "delivered": true,
+          "text": "\t← TOOL_RESPONSE get_user_details: {\"user_id\": \"mia_garcia_4516\", \"name\": {\"first_name\": \"Mia\", \"last_name\": \"Garcia\"}, \"address\": {\"address1\": \"537 Main Street\", \"address2\": \"Suite 572\", \"city\": \"Indianapolis\", \"country\": \"USA\", \"state\": \"IN\", \"zip\": \"46229\"}, \"email\": \"mia.garcia2723@example.com\", \"payment_methods\": {\"paypal_9497703\": {\"source\": \"paypal\", \"id\": \"paypal_9497703\"}, \"credit_card_3124723\": {\"source\": \"credit_card\", \"id\": \"credit_card_3124723\", \"brand\": \"visa\", \"last_four\": \"7285\"}}, \"orders\": [\"#W5490111\", \"#W7387996\"]}"
+        }
+      ],
+      "annotation": {
+        "primary_failure_mode": "format_grounding_rejection",
+        "human_hypothesized_unknown_kind": null,
+        "analysis": "Overall ok retained; strict rejects at least one claim citation. Correct user profile and both order IDs are already present in selected p16.",
+        "coverage": "sufficient_support_delivered",
+        "need": "Repair citation output for existing sources before expanding context.",
+        "suggested_existing_reader_actions": [],
+        "confidence": "high",
+        "limitations": "Specific rejected claim/evidence IDs not retained; don't invent an epistemic reason."
+      }
+    },
+    {
+      "id": "retail__27::t10",
+      "gold": 1,
+      "strict_label": 0,
+      "strict_fallback": true,
+      "strict_fn": true,
+      "technical_codes": [
+        "language_missing_grounding"
+      ],
+      "recorded_model_verdict": "error",
+      "recorded_model_reason": null,
+      "recorded_claims_retained": false,
+      "selected_chunks": [
+        "p0",
+        "p24",
+        "p25",
+        "p29"
+      ],
+      "response": "⟦ASSISTANT · ход 10⟧\n\t→ TOOL_CALL return_delivered_order_items: {\"item_ids\": [\"5753502325\", \"9851293632\"], \"order_id\": \"#W7181492\", \"payment_method_id\": \"paypal_3024827\"}\n\t→ TOOL_CALL exchange_delivered_order_items: {\"item_ids\": [\"8118291112\"], \"new_item_ids\": [\"8277474082\"], \"order_id\": \"#W7181492\", \"payment_method_id\": \"paypal_3024827\"}",
+      "source_evidence": [
+        {
+          "chunk": "p3",
+          "document": "prompt",
+          "start": 5409,
+          "end": 7209,
+          "delivered": false,
+          "text": "In particular, remember to remind the customer to confirm they have provided all the items they want to modify.\n\nFor a pending order, each item can be modified to an available new item of the same product but of different product option. There cannot be any change of product types, e.g. modify shirt to shoe.\n\nThe user must provide a payment method to pay or receive refund of the price difference. If the user provides a gift card, it must have enough balance to cover the price difference.\n\n## Return delivered order\n\nAn order can only be returned if its status is 'delivered', and you should check its status before taking the action.\n\nThe user needs to confirm the order id and the list of items to be returned.\n\nThe user needs to provide a payment method to receive the refund.\n\nThe refund must either go to the original payment method, or an existing gift card.\n\nAfter user confirmation, the order status will be changed to 'return requested', and the user will receive an email regarding how to return items.\n\n## Exchange delivered order\n\nAn order can only be exchanged if its status is 'delivered', and you should check its status before taking the action. In particular, remember to remind the customer to confirm they have provided all items to be exchanged.\n\nFor a delivered order, each item can be exchanged to an available new item of the same product but of different product option. There cannot be any change of product types, e.g. modify shirt to shoe.\n\nThe user must provide a payment method to pay or receive refund of the price difference. If the user provides a gift card, it must have enough balance to cover the price difference.\n\nAfter user confirmation, the order status will be changed to 'exchange requested', and the user will receive an email regarding how to return ite"
+        },
+        {
+          "chunk": "p4",
+          "document": "prompt",
+          "start": 7209,
+          "end": 9009,
+          "delivered": false,
+          "text": "ms. There is no need to place a new order.\n\n</policy>\n\n[AVAILABLE TOOLS]\n- calculate — Calculate the result of a mathematical expression.\n    expression: string! — The mathematical expression to calculate, such as '2 + 2'. The expression can contain numbers, operators (+, -, *, /), parentheses, and spaces.\n- cancel_pending_order — Cancel a pending order. If the order is already processed or delivered,\n    \n    it cannot be cancelled. The agent needs to explain the cancellation detail\n    and ask for explicit user confirmation (yes/no) to proceed. If the user confirms,\n    the order status will be changed to 'cancelled' and the payment will be refunded.\n    The refund will be added to the user's gift card balance immediately if the payment\n    was made using a gift card, otherwise the refund would take 5-7 business days to process.\n    The function returns the order details after the cancellation.\n    order_id: string! — The order id, such as '#W0000000'. Be careful there is a '#' symbol at the beginning of the order id.\n    reason: string! — The reason for cancellation, which should be either 'no longer needed' or 'ordered by mistake'.\n- exchange_delivered_order_items — Exchange items in a delivered order to new items of the same product type.\n    \n    For a delivered order, return or exchange can be only done once by the agent.\n    The agent needs to explain the exchange detail and ask for explicit user confirmation (yes/no) to proceed.\n    order_id: string! — The order id, such as '#W0000000'. Be careful there is a '#' symbol at the beginning of the order id.\n    item_ids: array! — The item ids to be exchanged, each such as '1008292230'. There could be duplicate items in the list.\n    new_item_ids: array! — The item ids to be exchanged for, each such as '1008292230'. "
+        },
+        {
+          "chunk": "p22",
+          "document": "prompt",
+          "start": 19316,
+          "end": 20932,
+          "delivered": false,
+          "text": "\t← TOOL_RESPONSE get_order_details: {\"order_id\": \"#W7181492\", \"user_id\": \"isabella_johansson_2152\", \"address\": {\"address1\": \"313 Chestnut Street\", \"address2\": \"Suite 537\", \"city\": \"Jacksonville\", \"country\": \"USA\", \"state\": \"FL\", \"zip\": \"32286\"}, \"items\": [{\"name\": \"Garden Hose\", \"product_id\": \"6679515468\", \"item_id\": \"5753502325\", \"price\": 96.35, \"options\": {\"length\": \"25ft\", \"material\": \"rubber\", \"color\": \"green\"}}, {\"name\": \"Backpack\", \"product_id\": \"2524789262\", \"item_id\": \"9851293632\", \"price\": 193.38, \"options\": {\"color\": \"green\", \"size\": \"small\", \"material\": \"polyester\", \"compartment\": \"camera\"}}, {\"name\": \"Bookshelf\", \"product_id\": \"8600330539\", \"item_id\": \"3778705663\", \"price\": 473.48, \"options\": {\"material\": \"metal\", \"color\": \"black\", \"height\": \"6 ft\"}}, {\"name\": \"Hiking Boots\", \"product_id\": \"7363354090\", \"item_id\": \"8118291112\", \"price\": 260.56, \"options\": {\"size\": \"12\", \"material\": \"leather\", \"waterproof\": \"no\"}}, {\"name\": \"Coffee Maker\", \"product_id\": \"7996920482\", \"item_id\": \"3020722515\", \"price\": 238.64, \"options\": {\"color\": \"black\", \"capacity\": \"1 cup\", \"type\": \"french press\", \"features\": \"auto shutoff\"}}], \"status\": \"delivered\", \"fulfillments\": [{\"tracking_id\": [\"418708581751\"], \"item_ids\": [\"5753502325\", \"9851293632\", \"3778705663\", \"8118291112\", \"3020722515\"]}], \"payment_history\": [{\"transaction_type\": \"payment\", \"amount\": 1262.41, \"payment_method_id\": \"paypal_3024827\"}], \"cancel_reason\": null, \"exchange_items\": null, \"exchange_new_items\": null, \"exchange_payment_method_id\": null, \"exchange_price_difference\": null, \"return_items\": null, \"return_payment_method_id\": null}\n\n"
+        },
+        {
+          "chunk": "p29",
+          "document": "prompt",
+          "start": 26000,
+          "end": 26057,
+          "delivered": true,
+          "text": "Да, подтверждаю обе операции! Всё верно. Большое спасибо!"
+        }
+      ],
+      "annotation": {
+        "primary_failure_mode": "format_grounding_rejection",
+        "human_hypothesized_unknown_kind": "MISSING_CONDITION",
+        "analysis": "Model says error but discarded reason. Return+exchange same delivered order requires full once-only/status-transition rules omitted from initial context; order p22 also omitted.",
+        "coverage": "material_policy_or_source_omitted",
+        "need": "Read order state and both action preconditions/effects; distinguish mutually exclusive state-changing operations from a blanket multi-call ban.",
+        "suggested_existing_reader_actions": [
+          {
+            "action": "read",
+            "ids": [
+              "p3",
+              "p4",
+              "p22"
+            ]
+          },
+          {
+            "action": "entity",
+            "field": "order_id",
+            "value": "#W7181492"
+          }
+        ],
+        "confidence": "high",
+        "limitations": "Explicit policy suffices; no need to invent probabilistic transition weights. Original LLM reason absent; omission causality cannot be established from this run alone."
+      }
+    },
+    {
+      "id": "retail__29::t13",
+      "gold": 1,
+      "strict_label": 0,
+      "strict_fallback": true,
+      "strict_fn": true,
+      "technical_codes": [
+        "language_http_request"
+      ],
+      "recorded_model_verdict": null,
+      "recorded_model_reason": null,
+      "recorded_claims_retained": false,
+      "selected_chunks": null,
+      "response": "⟦ASSISTANT · ход 13⟧\nЯ понимаю ваше беспокойство, и я действительно очень внимательно изучила детали вашего заказа **#W2575533**. Согласно данным из системы, в этом заказе присутствует только один товар в категории садовых шлангов — именно тот, о котором я говорила: черный виниловый шланг длиной 50 футов с ID 5206946487. Других шлангов в этом заказе просто нет.\n\nЕсли вы уверены, что заказывали что-то другое, и данные в системе отображаются некорректно, я не смогу исправить это самостоятельно с помощью имеющихся инструментов. В данной ситуации лучшим решением будет перевести вас на специалиста службы поддержки, который сможет детально проверить историю вашего заказа и разобраться, почему в системе указан не тот товар.\n\nХотите, чтобы я перевела вас на оператора?",
+      "source_evidence": [
+        {
+          "chunk": "p3",
+          "document": "prompt",
+          "start": 5409,
+          "end": 7209,
+          "delivered": null,
+          "text": "In particular, remember to remind the customer to confirm they have provided all the items they want to modify.\n\nFor a pending order, each item can be modified to an available new item of the same product but of different product option. There cannot be any change of product types, e.g. modify shirt to shoe.\n\nThe user must provide a payment method to pay or receive refund of the price difference. If the user provides a gift card, it must have enough balance to cover the price difference.\n\n## Return delivered order\n\nAn order can only be returned if its status is 'delivered', and you should check its status before taking the action.\n\nThe user needs to confirm the order id and the list of items to be returned.\n\nThe user needs to provide a payment method to receive the refund.\n\nThe refund must either go to the original payment method, or an existing gift card.\n\nAfter user confirmation, the order status will be changed to 'return requested', and the user will receive an email regarding how to return items.\n\n## Exchange delivered order\n\nAn order can only be exchanged if its status is 'delivered', and you should check its status before taking the action. In particular, remember to remind the customer to confirm they have provided all items to be exchanged.\n\nFor a delivered order, each item can be exchanged to an available new item of the same product but of different product option. There cannot be any change of product types, e.g. modify shirt to shoe.\n\nThe user must provide a payment method to pay or receive refund of the price difference. If the user provides a gift card, it must have enough balance to cover the price difference.\n\nAfter user confirmation, the order status will be changed to 'exchange requested', and the user will receive an email regarding how to return ite"
+        },
+        {
+          "chunk": "p27",
+          "document": "prompt",
+          "start": 19798,
+          "end": 21413,
+          "delivered": null,
+          "text": "\t← TOOL_RESPONSE get_order_details: {\"order_id\": \"#W7181492\", \"user_id\": \"isabella_johansson_2152\", \"address\": {\"address1\": \"313 Chestnut Street\", \"address2\": \"Suite 537\", \"city\": \"Jacksonville\", \"country\": \"USA\", \"state\": \"FL\", \"zip\": \"32286\"}, \"items\": [{\"name\": \"Garden Hose\", \"product_id\": \"6679515468\", \"item_id\": \"5753502325\", \"price\": 96.35, \"options\": {\"length\": \"25ft\", \"material\": \"rubber\", \"color\": \"green\"}}, {\"name\": \"Backpack\", \"product_id\": \"2524789262\", \"item_id\": \"9851293632\", \"price\": 193.38, \"options\": {\"color\": \"green\", \"size\": \"small\", \"material\": \"polyester\", \"compartment\": \"camera\"}}, {\"name\": \"Bookshelf\", \"product_id\": \"8600330539\", \"item_id\": \"3778705663\", \"price\": 473.48, \"options\": {\"material\": \"metal\", \"color\": \"black\", \"height\": \"6 ft\"}}, {\"name\": \"Hiking Boots\", \"product_id\": \"7363354090\", \"item_id\": \"8118291112\", \"price\": 260.56, \"options\": {\"size\": \"12\", \"material\": \"leather\", \"waterproof\": \"no\"}}, {\"name\": \"Coffee Maker\", \"product_id\": \"7996920482\", \"item_id\": \"3020722515\", \"price\": 238.64, \"options\": {\"color\": \"black\", \"capacity\": \"1 cup\", \"type\": \"french press\", \"features\": \"auto shutoff\"}}], \"status\": \"delivered\", \"fulfillments\": [{\"tracking_id\": [\"418708581751\"], \"item_ids\": [\"5753502325\", \"9851293632\", \"3778705663\", \"8118291112\", \"3020722515\"]}], \"payment_history\": [{\"transaction_type\": \"payment\", \"amount\": 1262.41, \"payment_method_id\": \"paypal_3024827\"}], \"cancel_reason\": null, \"exchange_items\": null, \"exchange_new_items\": null, \"exchange_payment_method_id\": null, \"exchange_price_difference\": null, \"return_items\": null, \"return_payment_method_id\": null}\n"
+        },
+        {
+          "chunk": "p29",
+          "document": "prompt",
+          "start": 22630,
+          "end": 24144,
+          "delivered": null,
+          "text": "\t← TOOL_RESPONSE get_order_details: {\"order_id\": \"#W2575533\", \"user_id\": \"isabella_johansson_2152\", \"address\": {\"address1\": \"313 Chestnut Street\", \"address2\": \"Suite 537\", \"city\": \"Jacksonville\", \"country\": \"USA\", \"state\": \"FL\", \"zip\": \"32286\"}, \"items\": [{\"name\": \"Vacuum Cleaner\", \"product_id\": \"1762337868\", \"item_id\": \"4806644905\", \"price\": 658.89, \"options\": {\"type\": \"robotic\", \"bagged/bagless\": \"bagless\", \"features\": \"cordless\"}}, {\"name\": \"Portable Charger\", \"product_id\": \"6942297802\", \"item_id\": \"8349903180\", \"price\": 102.07, \"options\": {\"capacity\": \"20000mAh\", \"output\": \"Wireless\", \"color\": \"black\"}}, {\"name\": \"E-Reader\", \"product_id\": \"3801771308\", \"item_id\": \"9494281769\", \"price\": 252.06, \"options\": {\"screen size\": \"8-inch\", \"connectivity\": \"Wi-Fi\", \"storage\": \"8GB\"}}, {\"name\": \"Garden Hose\", \"product_id\": \"6679515468\", \"item_id\": \"5206946487\", \"price\": 95.08, \"options\": {\"length\": \"50ft\", \"material\": \"vinyl\", \"color\": \"black\"}}, {\"name\": \"Office Chair\", \"product_id\": \"4794339885\", \"item_id\": \"8323284863\", \"price\": 511.24, \"options\": {\"material\": \"fabric\", \"color\": \"blue\", \"armrest\": \"adjustable\", \"backrest height\": \"standard\"}}], \"status\": \"pending\", \"fulfillments\": [], \"payment_history\": [{\"transaction_type\": \"payment\", \"amount\": 1619.34, \"payment_method_id\": \"paypal_3024827\"}], \"cancel_reason\": null, \"exchange_items\": null, \"exchange_new_items\": null, \"exchange_payment_method_id\": null, \"exchange_price_difference\": null, \"return_items\": null, \"return_payment_method_id\": null}\n\n"
+        },
+        {
+          "chunk": "p41",
+          "document": "prompt",
+          "start": 33319,
+          "end": 33568,
+          "delivered": null,
+          "text": "Нет-нет, подождите! Вы сказали ID товара 5206946487 — но это не тот, что мне нужен. Я знаю, что в моём ожидаемом заказе должен быть другой шланг. Пожалуйста, поищите ещё раз, посмотрите внимательнее. Мне нужен именно тот, что я заказывал, а не этот."
+        }
+      ],
+      "annotation": {
+        "primary_failure_mode": "transport_http_request",
+        "human_hypothesized_unknown_kind": "WEAK_INFERENCE",
+        "analysis": "No model result. Candidate claims inability and offers escalation. Input policy permits same-product variant exchanges, but gold rationale misstates current user's desired ID: user explicitly rejects ID5206946487.",
+        "coverage": "delivery_not_retained",
+        "need": "Read delivered/pending items, product relation and last user request; ask what is unknown rather than assume rejected variant is desired.",
+        "suggested_existing_reader_actions": [
+          {
+            "action": "read",
+            "ids": [
+              "p3",
+              "p27",
+              "p29",
+              "p41"
+            ]
+          }
+        ],
+        "confidence": "medium",
+        "limitations": "Gold positive remains metric label. Its exact proposed exchange is not fully supported by current user intent or independently observed variant availability; cannot claim validated corrected reason."
+      }
+    },
+    {
+      "id": "retail__47::t12",
+      "gold": 0,
+      "strict_label": 0,
+      "strict_fallback": true,
+      "strict_fn": false,
+      "technical_codes": [
+        "language_http_request"
+      ],
+      "recorded_model_verdict": null,
+      "recorded_model_reason": null,
+      "recorded_claims_retained": false,
+      "selected_chunks": null,
+      "response": "⟦ASSISTANT · ход 12⟧\nЗаказ #W9502127 найден, и его статус «доставлен», значит, мы можем оформить возврат.\n\nВ этом заказе у вас два пылесоса и один очиститель воздуха. Пожалуйста, уточните, какие именно товары вы хотите вернуть:\n1. Пылесос (canister, bagged, pet hair removal) — ID: 2872451762\n2. Пылесос (robotic, bagged, pet hair removal) — ID: 6259501109\n3. Очиститель воздуха (large, ionic, smart sensors) — ID: 9534205511\n\nТакже для оформления возврата мне необходимо знать, какой способ оплаты использовать для возврата средств. Возврат может быть осуществлен либо на исходный способ оплаты (PayPal `paypal_2433177`), либо на вашу подарочную карту (если она у вас есть). Что вы выберете?",
+      "source_evidence": [
+        {
+          "chunk": "p29",
+          "document": "prompt",
+          "start": 18234,
+          "end": 19898,
+          "delivered": null,
+          "text": "\t← TOOL_RESPONSE get_order_details: {\"order_id\": \"#W9502127\", \"user_id\": \"daiki_johnson_9523\", \"address\": {\"address1\": \"834 Park Avenue\", \"address2\": \"Suite 947\", \"city\": \"Denver\", \"country\": \"USA\", \"state\": \"CO\", \"zip\": \"80273\"}, \"items\": [{\"name\": \"Vacuum Cleaner\", \"product_id\": \"1762337868\", \"item_id\": \"2872451762\", \"price\": 622.12, \"options\": {\"type\": \"canister\", \"bagged/bagless\": \"bagged\", \"features\": \"pet hair removal\"}}, {\"name\": \"Air Purifier\", \"product_id\": \"3821016478\", \"item_id\": \"9534205511\", \"price\": 473.43, \"options\": {\"room size\": \"large\", \"filter type\": \"ionic\", \"features\": \"smart sensors\"}}, {\"name\": \"Patio Umbrella\", \"product_id\": \"9743693396\", \"item_id\": \"6243981804\", \"price\": 329.85, \"options\": {\"size\": \"7 ft\", \"color\": \"green\", \"material\": \"sunbrella\", \"tilt mechanism\": \"auto tilt\"}}, {\"name\": \"Dumbbell Set\", \"product_id\": \"7233192239\", \"item_id\": \"3877338112\", \"price\": 545.68, \"options\": {\"weight range\": \"5-25 lbs\", \"material\": \"iron\", \"set type\": \"adjustable\"}}, {\"name\": \"Vacuum Cleaner\", \"product_id\": \"1762337868\", \"item_id\": \"6259501109\", \"price\": 652.61, \"options\": {\"type\": \"robotic\", \"bagged/bagless\": \"bagged\", \"features\": \"pet hair removal\"}}], \"status\": \"delivered\", \"fulfillments\": [{\"tracking_id\": [\"269178517234\"], \"item_ids\": [\"2872451762\", \"9534205511\", \"6243981804\", \"3877338112\", \"6259501109\"]}], \"payment_history\": [{\"transaction_type\": \"payment\", \"amount\": 2623.69, \"payment_method_id\": \"paypal_2433177\"}], \"cancel_reason\": null, \"exchange_items\": null, \"exchange_new_items\": null, \"exchange_payment_method_id\": null, \"exchange_price_difference\": null, \"return_items\": null, \"return_payment_method_id\": null}"
+        }
+      ],
+      "annotation": {
+        "primary_failure_mode": "transport_http_request",
+        "human_hypothesized_unknown_kind": null,
+        "analysis": "No model result. Final order result exists with listed items and original PayPal payment; candidate asks which items/payment to return.",
+        "coverage": "delivery_not_retained",
+        "need": "Technical failure; record result spans for future grounded recheck.",
+        "suggested_existing_reader_actions": [],
+        "confidence": "high",
+        "limitations": "No original API context trace; evidence delivery not inferable."
+      }
+    },
+    {
+      "id": "retail__48::t4",
+      "gold": 1,
+      "strict_label": 0,
+      "strict_fallback": false,
+      "strict_fn": true,
+      "technical_codes": [],
+      "recorded_model_verdict": "ok",
+      "recorded_model_reason": "Agent correctly initiated a single tool call to authenticate the user via name and zip code, following policy requirements and without providing a user message.",
+      "recorded_claims_retained": true,
+      "selected_chunks": [
+        "p0",
+        "p15",
+        "p13",
+        "p5",
+        "p8"
+      ],
+      "response": "⟦ASSISTANT · ход 4⟧\n\t→ TOOL_CALL find_user_id_by_name_zip: {\"first_name\": \"daiki\", \"last_name\": \"johnson_9523\", \"zip\": \"80273\"}",
+      "source_evidence": [
+        {
+          "chunk": "p13",
+          "document": "prompt",
+          "start": 15501,
+          "end": 15683,
+          "delivered": true,
+          "text": "\t→ TOOL_CALL find_user_id_by_name_zip: {\"first_name\": \"daiki\", \"last_name\": \"johnson_9523\", \"zip\": \"80273\"}\n\t← TOOL_RESPONSE find_user_id_by_name_zip [ERROR]: Error: User not found\n\n"
+        },
+        {
+          "chunk": "p15",
+          "document": "prompt",
+          "start": 15939,
+          "end": 16156,
+          "delivered": true,
+          "text": "Странно, данные должны быть верными. Давайте я ещё раз уточню: имя — daiki_johnson_9523, город — Denver, штат США, почтовый индекс — 80273. Может быть, вы могли бы попробовать поискать именно по этому индексу и имени?"
+        }
+      ],
+      "annotation": {
+        "primary_failure_mode": "accepted_semantic_error",
+        "human_hypothesized_unknown_kind": "WEAK_INFERENCE",
+        "analysis": "Accepted support says call matches user input; overlooks exact identical failed call and User not found already present together in selected p13. Gold labels unchanged retry as looping.",
+        "coverage": "sufficient_contradiction_delivered",
+        "need": "Compare current tool name+arguments with previous failure and whether new information changes preconditions.",
+        "suggested_existing_reader_actions": [],
+        "confidence": "high",
+        "limitations": "A failed retry is not always hallucination. User explicitly asks retry; generalizing this requires reasoned progress/alternatives, not unconditional duplicate-call=error."
+      }
+    },
+    {
+      "id": "retail__78::t1",
+      "gold": 0,
+      "strict_label": 0,
+      "strict_fallback": true,
+      "strict_fn": false,
+      "technical_codes": [
+        "language_missing_grounding"
+      ],
+      "recorded_model_verdict": "ok",
+      "recorded_model_reason": null,
+      "recorded_claims_retained": false,
+      "selected_chunks": [
+        "p0",
+        "p10",
+        "p7",
+        "p8"
+      ],
+      "response": "⟦ASSISTANT · ход 1⟧\nДля того чтобы я мог приступить к решению ваших вопросов, мне необходимо подтвердить вашу личность. Пожалуйста, предоставьте одну из следующих комбинаций данных:\n\n*   Ваш адрес электронной почты.\n*   Ваше имя, фамилию и почтовый индекс (zip code).\n\nКак только вы предоставите эту информацию, я проверю статус ваших заказов и помогу с изменением адреса, обменом товара и отменой заказа.",
+      "source_evidence": [
+        {
+          "chunk": "p0",
+          "document": "prompt",
+          "start": 9,
+          "end": 1809,
+          "delivered": true,
+          "text": "<instructions>\nYou are a customer service agent that helps the user according to the <policy> provided below.\nIn each turn you can either:\n- Send a message to the user.\n- Make a tool call.\nYou cannot do both at the same time.\n\nTry to be helpful and always follow the policy. Always make sure you generate valid JSON only.\n\nAlways communicate with the user in Russian. Keep tool names, tool call arguments, IDs, codes, and other data values exactly as they appear in the system — do not translate or transliterate them.\n</instructions>\n<policy>\n# Retail agent policy\n\nAs a retail agent, you can help users:\n\n- **cancel or modify pending orders**\n- **return or exchange delivered orders**\n- **modify their default user address**\n- **provide information about their own profile, orders, and related products**\n\nAt the beginning of the conversation, you have to authenticate the user identity by locating their user id via email, or via name + zip code. This has to be done even when the user already provides the user id.\n\nOnce the user has been authenticated, you can provide the user with information about order, product, profile information, e.g. help the user look up order id.\n\nYou can only help one user per conversation (but you can handle multiple requests from the same user), and must deny any requests for tasks related to any other user.\n\nBefore taking any action that updates the database (cancel, modify, return, exchange), you must list the action details and obtain explicit user confirmation (yes) to proceed.\n\nYou should not make up any information or knowledge or procedures not provided by the user or the tools, or give subjective recommendations or comments.\n\nYou should at most make one tool call at a time, and if you take a tool call, you should not respond to the user at the "
+        },
+        {
+          "chunk": "p10",
+          "document": "prompt",
+          "start": 14889,
+          "end": 15513,
+          "delivered": true,
+          "text": "Здравствуйте... У меня несколько проблем с заказами, и я очень надеюсь, что вы сможете помочь, хотя я не слишком оптимистична насчёт этого.\n\nУ меня есть три запроса:\n\n1. По заказу #W5056519 мне нужно изменить адрес доставки — хочу сделать его таким же, как у заказа #W8277957.\n2. По тому же заказу #W5056519 хочу обменять набор Makeup Kit с параметрами {'skin tone': 'light', 'kit size': 'professional', 'brand': 'Brand B'} на другой — с {'skin tone': 'dark', 'brand': 'Brand A'}.\n3. Заказ #W5995614 нужно отменить, потому что я оформила его по ошибке.\n\nПодскажите, что мне нужно предоставить, чтобы мы могли всё это решить?"
+        }
+      ],
+      "annotation": {
+        "primary_failure_mode": "format_grounding_rejection",
+        "human_hypothesized_unknown_kind": null,
+        "analysis": "Model ok discarded for missing overall citations despite selected p0 explicitly requiring email or name+ZIP authentication.",
+        "coverage": "sufficient_support_delivered",
+        "need": "Repair/retain citation output; no reason-driven retrieval indicated.",
+        "suggested_existing_reader_actions": [],
+        "confidence": "high",
+        "limitations": "Underlying LLM reason not retained; fallback label0 is not successful semantic validation."
+      }
+    },
+    {
+      "id": "retail__87::t6",
+      "gold": 0,
+      "strict_label": 0,
+      "strict_fallback": true,
+      "strict_fn": false,
+      "technical_codes": [
+        "language_truncated"
+      ],
+      "recorded_model_verdict": null,
+      "recorded_model_reason": null,
+      "recorded_claims_retained": false,
+      "selected_chunks": null,
+      "response": "⟦ASSISTANT · ход 6⟧\nЯ нашел заказ №W1994898 с адресом в Вашингтоне:\n**565 Maple Drive, Suite 501, Washington, DC, 20307, USA**.\n\nСогласно вашему запросу, я предлагаю изменить адрес на этот для вашего профиля и всех заказов в статусе `pending`.\n\n**Вот список изменений:**\n1. **Профиль пользователя:** изменение адреса по умолчанию на адрес в Вашингтоне.\n2. **Заказ №W2166301 (pending):** изменение адреса на адрес в Вашингтоне.\n3. **Заказ №W2466703 (pending):** изменение адреса на адрес в Вашингтоне.\n4. **Заказ №W6832752 (pending):** изменение адреса на адрес в Вашингтоне.\n\n*Примечание: Заказы №W7739115 (delivered) и №W1994898 (processed) изменить нельзя, так как они уже не находятся в статусе pending.*\n\nВы подтверждаете эти изменения? (Пожалуйста, ответьте «да» или «нет»).",
+      "source_evidence": [
+        {
+          "chunk": "p24",
+          "document": "prompt",
+          "start": 16904,
+          "end": 18020,
+          "delivered": null,
+          "text": "\t← TOOL_RESPONSE get_order_details: {\"order_id\": \"#W2166301\", \"user_id\": \"yusuf_hernandez_6785\", \"address\": {\"address1\": \"580 Broadway\", \"address2\": \"Suite 162\", \"city\": \"Denver\", \"country\": \"USA\", \"state\": \"CO\", \"zip\": \"80265\"}, \"items\": [{\"name\": \"Gaming Mouse\", \"product_id\": \"5713490933\", \"item_id\": \"3330317167\", \"price\": 137.32, \"options\": {\"color\": \"black\", \"sensor type\": \"optical\", \"connectivity\": \"wired\"}}, {\"name\": \"Running Shoes\", \"product_id\": \"6938111410\", \"item_id\": \"1775591963\", \"price\": 154.75, \"options\": {\"size\": \"10\", \"color\": \"white\", \"material\": \"leather\", \"sole\": \"EVA\"}}, {\"name\": \"Bicycle\", \"product_id\": \"9783735446\", \"item_id\": \"3624655057\", \"price\": 2195.04, \"options\": {\"frame size\": \"medium\", \"color\": \"blue\", \"type\": \"road\"}}], \"status\": \"pending\", \"fulfillments\": [], \"payment_history\": [{\"transaction_type\": \"payment\", \"amount\": 2487.11, \"payment_method_id\": \"paypal_7529813\"}], \"cancel_reason\": null, \"exchange_items\": null, \"exchange_new_items\": null, \"exchange_payment_method_id\": null, \"exchange_price_difference\": null, \"return_items\": null, \"return_payment_method_id\": null}\n"
+        },
+        {
+          "chunk": "p25",
+          "document": "prompt",
+          "start": 18020,
+          "end": 19109,
+          "delivered": null,
+          "text": "\t← TOOL_RESPONSE get_order_details: {\"order_id\": \"#W2466703\", \"user_id\": \"yusuf_hernandez_6785\", \"address\": {\"address1\": \"271 Sunset Drive\", \"address2\": \"Suite 421\", \"city\": \"Dallas\", \"country\": \"USA\", \"state\": \"TX\", \"zip\": \"75243\"}, \"items\": [{\"name\": \"Grill\", \"product_id\": \"6819683148\", \"item_id\": \"7848293342\", \"price\": 942.71, \"options\": {\"type\": \"charcoal\", \"size\": \"medium\", \"features\": \"side burner\"}}, {\"name\": \"Bookshelf\", \"product_id\": \"8600330539\", \"item_id\": \"4894369688\", \"price\": 537.01, \"options\": {\"material\": \"glass\", \"color\": \"brown\", \"height\": \"5 ft\"}}, {\"name\": \"Fleece Jacket\", \"product_id\": \"8560156827\", \"item_id\": \"9385662952\", \"price\": 159.92, \"options\": {\"size\": \"L\", \"color\": \"black\", \"zipper\": \"full\"}}], \"status\": \"pending\", \"fulfillments\": [], \"payment_history\": [{\"transaction_type\": \"payment\", \"amount\": 1639.64, \"payment_method_id\": \"paypal_7529813\"}], \"cancel_reason\": null, \"exchange_items\": null, \"exchange_new_items\": null, \"exchange_payment_method_id\": null, \"exchange_price_difference\": null, \"return_items\": null, \"return_payment_method_id\": null}\n"
+        },
+        {
+          "chunk": "p26",
+          "document": "prompt",
+          "start": 19109,
+          "end": 19879,
+          "delivered": null,
+          "text": "\t← TOOL_RESPONSE get_order_details: {\"order_id\": \"#W6832752\", \"user_id\": \"yusuf_hernandez_6785\", \"address\": {\"address1\": \"366 Maple Drive\", \"address2\": \"Suite 260\", \"city\": \"Indianapolis\", \"country\": \"USA\", \"state\": \"IN\", \"zip\": \"46246\"}, \"items\": [{\"name\": \"Hiking Boots\", \"product_id\": \"7363354090\", \"item_id\": \"3812493782\", \"price\": 244.34, \"options\": {\"size\": \"7\", \"material\": \"leather\", \"waterproof\": \"yes\"}}], \"status\": \"pending\", \"fulfillments\": [], \"payment_history\": [{\"transaction_type\": \"payment\", \"amount\": 244.34, \"payment_method_id\": \"paypal_7529813\"}], \"cancel_reason\": null, \"exchange_items\": null, \"exchange_new_items\": null, \"exchange_payment_method_id\": null, \"exchange_price_difference\": null, \"return_items\": null, \"return_payment_method_id\": null}\n"
+        },
+        {
+          "chunk": "p28",
+          "document": "prompt",
+          "start": 20713,
+          "end": 21749,
+          "delivered": null,
+          "text": "\t← TOOL_RESPONSE get_order_details: {\"order_id\": \"#W1994898\", \"user_id\": \"yusuf_hernandez_6785\", \"address\": {\"address1\": \"565 Maple Drive\", \"address2\": \"Suite 501\", \"city\": \"Washington\", \"country\": \"USA\", \"state\": \"DC\", \"zip\": \"20307\"}, \"items\": [{\"name\": \"Hiking Boots\", \"product_id\": \"7363354090\", \"item_id\": \"3812493782\", \"price\": 244.34, \"options\": {\"size\": \"7\", \"material\": \"leather\", \"waterproof\": \"yes\"}}, {\"name\": \"Smartphone\", \"product_id\": \"1801728040\", \"item_id\": \"5758570643\", \"price\": 1233.68, \"options\": {\"color\": \"rose gold\", \"storage\": \"256GB\", \"RAM\": \"4GB\", \"screen size\": \"6.5-inch\"}}], \"status\": \"processed\", \"fulfillments\": [{\"tracking_id\": [\"421166355775\"], \"item_ids\": [\"3812493782\", \"5758570643\"]}], \"payment_history\": [{\"transaction_type\": \"payment\", \"amount\": 1478.02, \"payment_method_id\": \"paypal_7529813\"}], \"cancel_reason\": null, \"exchange_items\": null, \"exchange_new_items\": null, \"exchange_payment_method_id\": null, \"exchange_price_difference\": null, \"return_items\": null, \"return_payment_method_id\": null}"
+        }
+      ],
+      "annotation": {
+        "primary_failure_mode": "transport_truncated",
+        "human_hypothesized_unknown_kind": null,
+        "analysis": "Completion truncated before a valid assessment. Full input has order-status/address observations supporting a proposed change list; no changes claimed executed.",
+        "coverage": "delivery_not_retained",
+        "need": "Bound output verbosity or repair format separately from source uncertainty.",
+        "suggested_existing_reader_actions": [],
+        "confidence": "high",
+        "limitations": "No parsed trace; cannot infer need, contradiction, or which order sources were consumed."
+      }
+    },
+    {
+      "id": "telecom__mms_issueairplane_mode_on-bad_network_preference-bad_wifi_calling-break_app_sms_p::t7",
+      "gold": 0,
+      "strict_label": 0,
+      "strict_fallback": true,
+      "strict_fn": false,
+      "technical_codes": [
+        "language_missing_grounding"
+      ],
+      "recorded_model_verdict": "ok",
+      "recorded_model_reason": null,
+      "recorded_claims_retained": false,
+      "selected_chunks": [
+        "p0",
+        "p28",
+        "p19",
+        "p18",
+        "p5",
+        "p17"
+      ],
+      "response": "⟦ASSISTANT · ход 7⟧\nСпасибо, Джон! Я нашел ваш профиль. \n\nДля решения проблемы с MMS мне нужно провести диагностику вашего устройства. Пожалуйста, выполните следующие действия на вашем телефоне и сообщите мне о результатах:\n\n1. Проверьте статус-бар (верхнюю часть экрана). Видите ли вы там иконку сигнала сети и включены ли мобильные данные (обычно значки \"4G\", \"5G\" или \"LTE\")?\n2. Попробуйте открыть любую веб-страницу в браузере через мобильный интернет (не Wi-Fi). Загружается ли она?\n\nЭто поможет мне понять, есть ли у вас общая связь и доступ к данным, которые необходимы для работы MMS.",
+      "source_evidence": [
+        {
+          "chunk": "p5",
+          "document": "prompt",
+          "start": 9009,
+          "end": 10809,
+          "delivered": true,
+          "text": " features active. Shows if Data Saver mode is on and whether background data usage is restricted globally.\n6. **check_apn_settings** - Checks the technical APN settings your phone uses to connect to your carrier's mobile data network. Shows current APN name and MMSC URL for picture messaging.\n7. **check_wifi_status** - Checks your Wi-Fi connection status. Shows if Wi-Fi is turned on, which network you're connected to (if any), and the signal strength.\n8. **check_wifi_calling_status** - Checks if Wi-Fi Calling is enabled on your device. This feature allows you to make and receive calls over a Wi-Fi network instead of using the cellular network.\n9. **check_vpn_status** - Checks if you're using a VPN (Virtual Private Network) connection. Shows if a VPN is active, connected, and displays any available connection details.\n10. **check_installed_apps** - Returns the name of all installed apps on the phone.\n11. **check_app_status** - Checks detailed information about a specific app. Shows its permissions and background data usage settings.\n12. **check_app_permissions** - Checks what permissions a specific app currently has. Shows if the app has access to features like storage, camera, location, etc.\n13. **run_speed_test** - Measures your current internet connection speed (download speed). Provides information about connection quality and what activities it can support. Download speed can be \"unknown\", \"very poor\", \"poor\", \"fair\", \"good\", or \"excellent\".\n14. **can_send_mms** - Checks if the messaging app can send MMS messages.\n\n## Fix Actions (Write/Modify)\n1. **set_network_mode_preference** - Changes the type of cellular network your phone prefers to connect to (e.g., 5G, 4G, 3G). Higher-speed networks (5G, 4G) provide faster data but may use more battery.\n2. **toggle_airplane_"
+        },
+        {
+          "chunk": "p21",
+          "document": "prompt",
+          "start": 28122,
+          "end": 28738,
+          "delivered": false,
+          "text": "\t← TOOL_RESPONSE get_customer_by_phone: {\"customer_id\": \"C1001\", \"full_name\": \"John Smith\", \"date_of_birth\": \"1985-06-15\", \"email\": \"john.smith@example.com\", \"phone_number\": \"555-123-2002\", \"address\": {\"street\": \"123 Main St\", \"city\": \"Anytown\", \"state\": \"CA\", \"zip_code\": \"90210\"}, \"account_status\": \"Active\", \"payment_methods\": [{\"method_type\": \"Credit Card\", \"account_number_last_4\": \"1235\", \"expiration_date\": \"12/2026\"}], \"line_ids\": [\"L1001\", \"L1002\", \"L1003\"], \"bill_ids\": [\"B1001\", \"B1002\", \"B1003\"], \"created_at\": \"2025-01-15 10:30:00\", \"last_extension_date\": null, \"goodwill_credit_used_this_year\": 25.0}\n\n"
+        },
+        {
+          "chunk": "p28",
+          "document": "prompt",
+          "start": 29809,
+          "end": 30085,
+          "delivered": true,
+          "text": "\t← TOOL_RESPONSE get_details_by_id: {\"device_id\": \"D1002\", \"device_type\": \"phone\", \"model\": \"Smartphone Pro Max\", \"imei\": \"234567890123456\", \"is_esim_capable\": true, \"activated\": true, \"activation_date\": \"2025-02-15 11:45:00\", \"last_esim_transfer_date\": \"2025-01-20 09:30:00\"}"
+        }
+      ],
+      "annotation": {
+        "primary_failure_mode": "format_grounding_rejection",
+        "human_hypothesized_unknown_kind": null,
+        "analysis": "Model ok discarded for missing grounding. Customer lookup source p21 is omitted while later device result selected; source for 'found your profile' is available in input.",
+        "coverage": "some_relevant_context_omitted",
+        "need": "If needed, read customer lookup and diagnostic policy; do not classify missing citation as hallucination.",
+        "suggested_existing_reader_actions": [
+          {
+            "action": "read",
+            "ids": [
+              "p21"
+            ]
+          }
+        ],
+        "confidence": "medium",
+        "limitations": "No claim/reason retained; omission is factual but not established cause of grounding failure."
+      }
+    },
+    {
+      "id": "telecom__mms_issueairplane_mode_on-bad_network_preference-break_app_both_permissions-data_::t12",
+      "gold": 0,
+      "strict_label": 0,
+      "strict_fallback": true,
+      "strict_fn": false,
+      "technical_codes": [
+        "language_missing_grounding"
+      ],
+      "recorded_model_verdict": "error",
+      "recorded_model_reason": null,
+      "recorded_claims_retained": false,
+      "selected_chunks": [
+        "p0",
+        "p58",
+        "p59",
+        "p37",
+        "p44",
+        "p35",
+        "p52",
+        "p30"
+      ],
+      "response": "⟦ASSISTANT · ход 12⟧\nПожалуйста, не расстраивайтесь, Джон! Мы уже прошли самый сложный этап и восстановили связь. То, что MMS всё ещё не отправляются, может быть связано с несколькими другими настройками, которые мы сейчас проверим.\n\nДавайте проверим две важные вещи:\n\n1. **Wi-Fi Calling**. Иногда эта функция может конфликтовать с отправкой MMS. Пожалуйста, выполните команду `check_wifi_calling_status`. Если она включена, мы попробуем её временно отключить.\n2. **Разрешения приложения**. Чтобы отправить фото, приложению для сообщений нужен доступ к памяти вашего телефона. Пожалуйста, выполните команду `check_app_permissions(app_name=\"messaging\")`.\n\nПожалуйста, сообщите мне результаты этих проверок, и мы найдем причину проблемы! Мы обязательно добьемся того, чтобы ваши внуки получили фотографии.",
+      "source_evidence": [
+        {
+          "chunk": "p13",
+          "document": "prompt",
+          "start": 23409,
+          "end": 25209,
+          "delivered": false,
+          "text": "t OFF.\n\n### Messaging App Lacks Necessary Permissions\nThe messaging app needs specific permissions to handle media and send messages.\nIf `check_app_permissions(app_name=\"messaging\")` shows \"storage\" and \"sms\" permissions are not listed as granted, guide the user to use `grant_app_permission(app_name=\"messaging\", permission=\"storage\")` and `grant_app_permission(app_name=\"messaging\", permission=\"sms\")` to grant the necessary permissions.\n</tech_support_policy>\n</policy>\n\n[AVAILABLE TOOLS]\n- get_customer_by_phone — Finds a customer by their primary contact or line phone number.\n    phone_number: string! — The phone number to search for.\n- get_customer_by_id — Retrieves a customer directly by their unique ID.\n    customer_id: string! — The unique identifier of the customer.\n- get_customer_by_name — Searches for customers by name and DOB. May return multiple matches if names are similar,\n    \n    DOB helps disambiguate.\n    full_name: string! — The full name of the customer.\n    dob: string! — Date of birth for verification, in the format YYYY-MM-DD.\n- get_details_by_id — Retrieves the details for a given ID.\n    \n    The ID must be a valid ID for a Customer, Line, Device, Bill, or Plan.\n    id: string! — The ID of the object to retrieve.\n- suspend_line — Suspends a specific line (max 6 months).\n    \n    Checks: Line status must be Active.\n    Logic: Sets line status to Suspended, records suspension_start_date.\n    customer_id: string! — ID of the customer who owns the line.\n    line_id: string! — ID of the line to suspend.\n    reason: string! — Reason for suspension.\n- resume_line — Resumes a suspended line.\n    \n    Checks: Line status must be Suspended or Pending Activation.\n    Logic: Sets line status to Active, clears suspension_start_date.\n    customer_id: string! — ID"
+        },
+        {
+          "chunk": "p47",
+          "document": "prompt",
+          "start": 34465,
+          "end": 34584,
+          "delivered": false,
+          "text": "\t← TOOL_RESPONSE toggle_airplane_mode: Airplane Mode is now OFF.\n\t  Status Bar: 📵 No Signal | 📵 Data Disabled | 🔋 80%\n\n"
+        },
+        {
+          "chunk": "p51",
+          "document": "prompt",
+          "start": 34934,
+          "end": 35213,
+          "delivered": false,
+          "text": "Ой, кажется, что-то появилось! Теперь на экране показывает:\n- Сигнал есть, но слабенький — одна полоска\n- Сеть какая-то \"2G\"\n- Мобильные данные включены\n\nНо сигнал очень слабый, и 2G — это ведь медленно? Смогу ли я отправить MMS с таким сигналом? Может, нужно что-то ещё сделать?"
+        },
+        {
+          "chunk": "p58",
+          "document": "prompt",
+          "start": 36357,
+          "end": 36434,
+          "delivered": true,
+          "text": "\t← TOOL_RESPONSE can_send_mms: Your messaging app cannot send MMS messages.\n\n"
+        },
+        {
+          "chunk": "p59",
+          "document": "prompt",
+          "start": 36441,
+          "end": 36656,
+          "delivered": true,
+          "text": "Нет... опять не получается. MMS по-прежнему не отправляется. Я уже начинаю расстраиваться, мы столько всего сделали, а оно всё равно не работает. Что ещё может быть не так? Неужели с моим телефоном что-то серьёзное?"
+        }
+      ],
+      "annotation": {
+        "primary_failure_mode": "format_grounding_rejection",
+        "human_hypothesized_unknown_kind": null,
+        "analysis": "Model error discarded without reason. Candidate requests user-side Wi-Fi Calling/app-permission diagnostics; full user diagnostic procedure p13 and direct restored-signal observation p51 were omitted.",
+        "coverage": "some_relevant_context_omitted",
+        "need": "Read user-action procedure and latest observed network state; distinguish user commands in text from assistant tool invocations.",
+        "suggested_existing_reader_actions": [
+          {
+            "action": "read",
+            "ids": [
+              "p13",
+              "p51"
+            ]
+          }
+        ],
+        "confidence": "medium",
+        "limitations": "Cannot say model confused tool roles because rejected reasoning wasn't retained. Candidate is gold0."
+      }
+    },
+    {
+      "id": "telecom__mms_issueairplane_mode_on-bad_wifi_calling-break_app_both_permissions-data_mode_o::t15",
+      "gold": 0,
+      "strict_label": 0,
+      "strict_fallback": true,
+      "strict_fn": false,
+      "technical_codes": [
+        "language_claim_missing_grounding"
+      ],
+      "recorded_model_verdict": "ok",
+      "recorded_model_reason": "All material claims are supported by evidence and comply with policy.",
+      "recorded_claims_retained": false,
+      "selected_chunks": [
+        "p0",
+        "p88",
+        "p89",
+        "p79",
+        "p68",
+        "p34",
+        "p29"
+      ],
+      "response": "⟦ASSISTANT · ход 15⟧\nМы нашли причину! Без доступа к хранилищу приложение не может прикрепить медиафайл, а без доступа к SMS — отправить его.\n\nПожалуйста, предоставьте приложению оба разрешения. Начните с **хранилища (storage)**, а затем сразу включите разрешение **SMS**.\n\nПосле того как вы добавите оба разрешения, попробуйте отправить ваше MMS-сообщение еще раз. Я буду ждать вашего подтверждения — надеюсь, в этот раз всё получится!",
+      "source_evidence": [
+        {
+          "chunk": "p13",
+          "document": "prompt",
+          "start": 23409,
+          "end": 25209,
+          "delivered": false,
+          "text": "t OFF.\n\n### Messaging App Lacks Necessary Permissions\nThe messaging app needs specific permissions to handle media and send messages.\nIf `check_app_permissions(app_name=\"messaging\")` shows \"storage\" and \"sms\" permissions are not listed as granted, guide the user to use `grant_app_permission(app_name=\"messaging\", permission=\"storage\")` and `grant_app_permission(app_name=\"messaging\", permission=\"sms\")` to grant the necessary permissions.\n</tech_support_policy>\n</policy>\n\n[AVAILABLE TOOLS]\n- get_customer_by_phone — Finds a customer by their primary contact or line phone number.\n    phone_number: string! — The phone number to search for.\n- get_customer_by_id — Retrieves a customer directly by their unique ID.\n    customer_id: string! — The unique identifier of the customer.\n- get_customer_by_name — Searches for customers by name and DOB. May return multiple matches if names are similar,\n    \n    DOB helps disambiguate.\n    full_name: string! — The full name of the customer.\n    dob: string! — Date of birth for verification, in the format YYYY-MM-DD.\n- get_details_by_id — Retrieves the details for a given ID.\n    \n    The ID must be a valid ID for a Customer, Line, Device, Bill, or Plan.\n    id: string! — The ID of the object to retrieve.\n- suspend_line — Suspends a specific line (max 6 months).\n    \n    Checks: Line status must be Active.\n    Logic: Sets line status to Suspended, records suspension_start_date.\n    customer_id: string! — ID of the customer who owns the line.\n    line_id: string! — ID of the line to suspend.\n    reason: string! — Reason for suspension.\n- resume_line — Resumes a suspended line.\n    \n    Checks: Line status must be Suspended or Pending Activation.\n    Logic: Sets line status to Active, clears suspension_start_date.\n    customer_id: string! — ID"
+        },
+        {
+          "chunk": "p88",
+          "document": "prompt",
+          "start": 41028,
+          "end": 41112,
+          "delivered": true,
+          "text": "\t← TOOL_RESPONSE check_app_permissions: App 'messaging' has permission for: phone.\n\n"
+        },
+        {
+          "chunk": "p89",
+          "document": "prompt",
+          "start": 41119,
+          "end": 41393,
+          "delivered": true,
+          "text": "Вот что показывает проверка разрешений для приложения `messaging`:\n\n- Есть доступ только к **phone**\n- **Хранилище (storage)** и **SMS** — отсутствуют!\n\nПохоже, это и есть проблема — у приложения нет нужных разрешений. Давайте я добавлю их. Какое разрешение включить первым?"
+        }
+      ],
+      "annotation": {
+        "primary_failure_mode": "format_grounding_rejection",
+        "human_hypothesized_unknown_kind": null,
+        "analysis": "Model overall ok retained but strict claim citation rejected. Selected p88/p89 establishes missing permissions; omitted p13 explicitly connects those permissions with MMS.",
+        "coverage": "some_relevant_context_omitted",
+        "need": "Read policy support for permissions-to-MMS link if that is the uncertain claim, otherwise citation repair.",
+        "suggested_existing_reader_actions": [
+          {
+            "action": "read",
+            "ids": [
+              "p13"
+            ]
+          }
+        ],
+        "confidence": "high",
+        "limitations": "No exact rejected claim text retained. This is a potential missing-rule source, not evidence that WEAK_INFERENCE was model's unknown reason."
+      }
+    },
+    {
+      "id": "telecom__service_issuebreak_apn_settings-contract_end_suspension-lock_sim_card_pin-unseat_::t13",
+      "gold": 1,
+      "strict_label": 0,
+      "strict_fallback": false,
+      "strict_fn": true,
+      "technical_codes": [],
+      "recorded_model_verdict": "ok",
+      "recorded_model_reason": "The assistant correctly invoked the resume_line tool with the appropriate customer_id and line_id, consistent with the user’s request and the evidence that the line is suspended and the bill is paid.",
+      "recorded_claims_retained": true,
+      "selected_chunks": [
+        "p0",
+        "p50",
+        "p29",
+        "p48",
+        "p25",
+        "p28",
+        "p30",
+        "p36"
+      ],
+      "response": "⟦ASSISTANT · ход 13⟧\n\t→ TOOL_CALL resume_line: {\"customer_id\": \"C1001\", \"line_id\": \"L1002\"}",
+      "source_evidence": [
+        {
+          "chunk": "p0",
+          "document": "prompt",
+          "start": 9,
+          "end": 1809,
+          "delivered": true,
+          "text": "<instructions>\nYou are a customer service agent that helps the user according to the <policy> provided below.\nIn each turn you can either:\n- Send a message to the user.\n- Make a tool call.\nYou cannot do both at the same time.\n\nTry to be helpful and always follow the policy. Always make sure you generate valid JSON only.\n\nAlways communicate with the user in Russian. Keep tool names, tool call arguments, IDs, codes, and other data values exactly as they appear in the system — do not translate or transliterate them.\n</instructions>\n<policy>\n<main_policy>\n# Telecom Agent Policy\n\nThe current time is 2025-02-25 12:08:00 EST.\n\nAs a telecom agent, you can help users with  **technical support**, **overdue bill payment**, **line suspension**, and **plan options**.\n\nYou should not provide any information, knowledge, or procedures not provided by the user or available tools, or give subjective recommendations or comments.\n\nYou should only make one tool call at a time, and if you make a tool call, you should not respond to the user simultaneously. If you respond to the user, you should not make a tool call at the same time.\n\nYou should deny user requests that are against this policy.\n\nYou should transfer the user to a human agent if and only if the request cannot be handled within the scope of your actions. To transfer, first make a tool call to transfer_to_human_agents, and then send the message 'YOU ARE BEING TRANSFERRED TO A HUMAN AGENT. PLEASE HOLD ON.' to the user.\n\nYou should try your best to resolve the issue for the user before transferring the user to a human agent.\n\n## Domain Basics\n\n### Customer\nEach customer has a profile containing:\n- customer ID\n- full name\n- date of birth\n- email\n- phone number\n- address (street, city, state, zip code)\n- account status\n- created date\n"
+        },
+        {
+          "chunk": "p2",
+          "document": "prompt",
+          "start": 3609,
+          "end": 5409,
+          "delivered": false,
+          "text": "ake sure it is overdue.\n- Check the bill amount due\n- Send the user a payment request for the overdue bill.\n    - This will change the status of the bill to AWAITING PAYMENT.\n- Inform the user that a payment request has been sent. They should:\n    - Check their payment requests using the check_payment_request tool.\n- If the user accepts the payment request, use the make_payment tool to make the payment.\n- After the payment is made, the bill status will be updated to PAID.\n- Always check that the bill status is updated to PAID before informing the user that the bill has been paid.\n\nImportant:\n- A user can only have one bill in the AWAITING PAYMENT status at a time.\n- The send payement request tool will not check if the bill is overdue. You should always check that the bill is overdue before sending a payment request.\n\n## Line Suspension\nWhen a line is suspended, the user will not have service.\nA line can be suspended for the following reasons:\n- The user has an overdue bill.\n- The line's contract end date is in the past.\n\nYou are allowed to lift the suspension after the user has paid all their overdue bills.\nYou are not allowed to lift the suspension if the line's contract end date is in the past, even if the user has paid all their overdue bills.\n\nAfter you resume the line, the user will have to reboot their device to get service.\n\n## Data Refueling\nEach plan specify the maxium data usage per month.\nIf the user's data usage for a line exceeds the plan's data limit, data connectivity will be lost.\nYou can add more data to the line by \"refueling\" data at a price per GB specified by the plan.\nThe maximum amount of data that can be refueled is 2GB.\nTo refuel data you should:\n- Ask them how much data they want to refuel\n- Confirm the price\n- Apply the refueled data to the li"
+        },
+        {
+          "chunk": "p25",
+          "document": "prompt",
+          "start": 29296,
+          "end": 29679,
+          "delivered": true,
+          "text": "\t← TOOL_RESPONSE get_details_by_id: {\"line_id\": \"L1002\", \"phone_number\": \"555-123-2002\", \"status\": \"Suspended\", \"plan_id\": \"P1002\", \"device_id\": \"D1002\", \"data_used_gb\": 8.7, \"data_refueling_gb\": 0.0, \"roaming_enabled\": true, \"contract_end_date\": \"2025-01-31\", \"last_plan_change_date\": \"2024-12-15\", \"last_sim_replacement_date\": \"2025-01-20\", \"suspension_start_date\": \"2025-02-25\"}\n\n"
+        },
+        {
+          "chunk": "p36",
+          "document": "prompt",
+          "start": 33251,
+          "end": 33334,
+          "delivered": true,
+          "text": "\t→ TOOL_CALL send_payment_request: {\"bill_id\": \"B1234321\", \"customer_id\": \"C1001\"}\n"
+        }
+      ],
+      "annotation": {
+        "primary_failure_mode": "accepted_semantic_error",
+        "human_hypothesized_unknown_kind": "MISSING_CONDITION",
+        "analysis": "Accepted ok uses bill paid and suspended line, but omitted p2 explicitly prohibits resuming expired-contract lines even after payment. Contract expiry and current time were selected. Claimed grounding p36 is only a prior send_payment_request call, not proof resume is valid.",
+        "coverage": "material_policy_or_source_omitted",
+        "need": "Read full suspension exception and compare selected contract_end_date to policy current time.",
+        "suggested_existing_reader_actions": [
+          {
+            "action": "read",
+            "ids": [
+              "p2",
+              "p25"
+            ]
+          },
+          {
+            "action": "search",
+            "query": "contract end suspension"
+          }
+        ],
+        "confidence": "high",
+        "limitations": "This is missing rule coverage plus wrong inference, not missing current bill state; graph expansion alone will not supply prose policy."
+      }
+    }
+  ]
+}

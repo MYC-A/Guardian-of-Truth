@@ -44,7 +44,7 @@ def main():
             'source_hashes':source_hashes,'backend':args.backend,'threshold':args.threshold,
             'configuration':{key:getattr(args,key) for key in (
                 'modes','limit','checks','max_requests','max_input_chars','seconds','max_rounds',
-                'max_evidence_chars','max_prompt_chars','rolling_evidence','max_output_tokens','timeout_seconds','retries')},
+                'max_evidence_chars','max_prompt_chars','rolling_evidence','max_output_tokens','timeout_seconds','retries','recovery')},
             'warning':'No threshold tuning here. Model scores are uncalibrated. Dataset may already be inspected.',
             'runs':{}}
     for mode in modes:

@@ -72,7 +72,7 @@ def main():
     package=Path(__import__('guardian_truth').__file__).parent
     configuration={key:getattr(args,key) for key in (
         'backend','baseline_mode','candidate_mode','threshold','checks','max_requests','max_input_chars',
-        'seconds','max_rounds','max_evidence_chars','max_prompt_chars','rolling_evidence','max_output_tokens','timeout_seconds','retries')}
+        'seconds','max_rounds','max_evidence_chars','max_prompt_chars','rolling_evidence','max_output_tokens','timeout_seconds','retries','recovery')}
     configuration['budget_time_basis']='per_detector_active_review_time_calibration_and_test_combined'
     configuration['source_hashes']={p.name:hashlib.sha256(p.read_bytes()).hexdigest() for p in sorted(package.glob('*.py'))}
     if args.backend!='none':

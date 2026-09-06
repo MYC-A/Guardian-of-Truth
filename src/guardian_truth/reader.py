@@ -172,6 +172,7 @@ class EvidenceReader:
         previous = list(self.selected)
         added = self.read(ids)
         return {'status': 'ok' if added else 'no_new_evidence', 'added': added,
+                'matched_ids':ids, 'not_added_ids':[key for key in ids if key not in self.selected],
                 'evicted': [key for key in previous if key not in self.selected]}
 
     def packet(self):

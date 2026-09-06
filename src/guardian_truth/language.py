@@ -14,6 +14,7 @@ from .parsing import decode_json
 from .reader import EvidenceReader
 from .semantic import SemanticResult
 from .types import Finding, Source
+from .uncertainty import claim_memory, diagnose, recovery_action, refresh_memory, snapshots
 
 
 INSTRUCTION = '''You are an evidence-based auditor of ONE candidate agent turn.
@@ -61,6 +62,21 @@ In rolling mode, earlier chunks may be evicted. Only evidence IDs in the CURRENT
 payload can be cited. Request all mutually needed chunks together to retain them.
 When no rounds remain, finalize using only available evidence; use unknown if
 the missing context prevents an assessment. No commands, URLs, code or tool calls.
+'''
+
+UNCERTAINTY_INSTRUCTION = '''
+Experimental diagnostic protocol: make an assessment now with requests=[].
+For each UNKNOWN material claim add uncertainty: {kind: "MISSING_EVIDENCE"|"OTHER",
+need: a specific missing source, policy, exception or factual value,
+request: one read/search/graph/entity request, or null}.
+Do not invent uncertainty to request more text. An invalid citation is not a
+missing world fact. Lack of proof alone cannot justify a contradicted claim.
+Previous_claims, if supplied, are revisable MODEL HYPOTHESES, not evidence.
+Recheck the focused need; retain other judgments only if still supported by the
+CURRENT evidence. Revise any prior judgment when warranted, never freeze it.
+Return a complete final assessment covering all material claims; do not return
+only the changed claim. Unavailable previous evidence must be read again before
+it can be cited. Unresolved uncertainty stays unknown, not error or confident ok.
 '''
 
 
@@ -113,12 +129,17 @@ class LanguageConfig:
     max_evidence_chars: int = 24000
     max_prompt_chars: int = 120000
     rolling_evidence: bool = False
+    recovery: str = 'off'
 
     def __post_init__(self):
         if self.mode not in ('direct','graph','rlm'):
             raise ValueError('Unknown language mode')
         if type(self.rolling_evidence) is not bool:
             raise ValueError('rolling_evidence must be boolean')
+        if self.recovery not in ('off', 'observe', 'directed', 'repeat'):
+            raise ValueError('Unknown recovery experiment')
+        if self.recovery != 'off' and self.mode != 'graph':
+            raise ValueError('Recovery experiment currently requires graph mode')
         if (type(self.max_rounds) is not int or not 1 <= self.max_rounds <= 6
                 or type(self.max_evidence_chars) is not int or self.max_evidence_chars < 1800
                 or type(self.max_prompt_chars) is not int or self.max_prompt_chars < 3000):
@@ -138,7 +159,11 @@ class LanguageAnalyzer:
         if self.config.mode != 'direct':
             reader.initialize()
         rounds = self.config.max_rounds if self.config.mode == 'rlm' else 1
+        if self.config.recovery in ('directed', 'repeat'):
+            rounds = 2
         trace, usage, feedback = [], {}, []
+        memory, focused = [], None
+        instruction = INSTRUCTION + (UNCERTAINTY_INSTRUCTION if self.config.recovery != 'off' else '')
         for round_number in range(rounds):
             if self.config.mode == 'direct':
                 payload = {'mode':'direct','evidence':[{'id':'prompt','text':context.prompt}],
@@ -151,12 +176,17 @@ class LanguageAnalyzer:
                            'response':context.response, 'read_feedback':feedback,
                            'remaining_read_rounds':rounds-round_number-1,
                            'unread_chunks':len(reader.chunks)-len(reader.selected)}
+            if self.config.recovery != 'off':
+                payload['remaining_read_rounds'] = 0
+            if focused is not None and self.config.recovery == 'directed':
+                payload['focused_uncertainty'] = focused
+                payload['previous_claims'] = refresh_memory(memory, reader)
             encoded = json.dumps(payload, ensure_ascii=False)
-            size = len(INSTRUCTION) + len(encoded)
+            size = len(instruction) + len(encoded)
             if size > self.config.max_prompt_chars:
                 return SemanticResult(unresolved=['language_context_budget_exceeded'], trace=trace, usage=usage)
             try:
-                messages = [{'role':'system','content':INSTRUCTION}, {'role':'user','content':encoded}]
+                messages = [{'role':'system','content':instruction}, {'role':'user','content':encoded}]
                 complete_budgeted = getattr(self.client, 'complete_budgeted', None)
                 if callable(complete_budgeted):
                     completion = complete_budgeted(messages, budget=self.budget)
@@ -187,7 +217,14 @@ class LanguageAnalyzer:
             trace.append({'round':round_number+1,'input_chars':size,
                           'evidence_ids':['prompt'] if self.config.mode == 'direct' else list(reader.selected),
                           'requested_reads':len(requests), 'verdict':parsed.get('verdict')})
-            if requests:
+            # Preserve bounded original judgments even if the validator rejects
+            # them. This is diagnostic data, never trusted evidence or a score.
+            trace[-1]['model_assessment'] = {
+                'reason':parsed.get('reason', '')[:2400] if isinstance(parsed.get('reason'), str) else None,
+                'evidence_ids':parsed.get('evidence_ids', [])[:32] if isinstance(parsed.get('evidence_ids'), list) else None,
+                'claims':parsed.get('claims', [])[:40] if isinstance(parsed.get('claims'), list) else None,
+                'risk':parsed.get('risk'), 'plan':parsed.get('plan', [])}
+            if requests and self.config.recovery == 'off':
                 if round_number+1 >= rounds:
                     return SemanticResult(unresolved=['language_unfinished_reading'], trace=trace, usage=usage)
                 feedback = [reader.request(request) for request in requests]
@@ -203,6 +240,32 @@ class LanguageAnalyzer:
                 'score':overall.score,'unresolved':overall.unresolved,
                 'findings':[asdict(finding) for finding in overall.findings]}
             result = self._assessment(parsed, context, reader)
+            if requests and self.config.recovery != 'off':
+                result = SemanticResult(unresolved=['language_unfinished_reading'])
+            uncertainties = diagnose(parsed, result, reader, direct=self.config.mode == 'direct')
+            memory = claim_memory(parsed, reader, direct=self.config.mode == 'direct')
+            trace[-1]['assessment'] = {'score':result.score, 'unresolved':result.unresolved,
+                                      'findings':[asdict(finding) for finding in result.findings]}
+            trace[-1]['claim_state'] = memory
+            trace[-1]['uncertainties'] = snapshots(uncertainties)
+            if round_number == 0 and self.config.recovery in ('directed', 'repeat'):
+                item, action = recovery_action(uncertainties)
+                if action is not None:
+                    if self.config.recovery == 'repeat':
+                        outcome = {'status':'control_repeat', 'added':[], 'evicted':[]}
+                    elif action['action'] == 'recheck_same_evidence':
+                        outcome = {'status':'same_evidence', 'added':[], 'evicted':[]}
+                    else:
+                        # One bounded replacement, same initial ranking and size.
+                        reader.rolling = True
+                        outcome = reader.request(action)
+                    item.attempted_actions.append({'request':action, 'result':outcome})
+                    trace[-1]['uncertainties'] = snapshots(uncertainties)
+                    trace[-1]['recovery'] = {'policy':self.config.recovery, 'action':action, 'result':outcome}
+                    if outcome['status'] in ('same_evidence', 'control_repeat') or outcome['added']:
+                        focused = snapshots([item])[0]
+                        feedback = [outcome] if self.config.recovery == 'directed' else []
+                        continue
             result.trace, result.usage = trace, usage
             return result
         return SemanticResult(unresolved=['language_unfinished_reading'], trace=trace, usage=usage)

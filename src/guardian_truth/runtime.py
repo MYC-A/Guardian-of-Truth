@@ -12,7 +12,7 @@ from .pipeline import Detector
 def make_detector(*, backend='none', mode='graph', model=None, base_url=None,
                   max_requests=100, max_input_chars=2_000_000, seconds=1500,
                   max_rounds=3, max_evidence_chars=24000, max_prompt_chars=120000, rolling_evidence=False,
-                  max_output_tokens=2048, timeout_seconds=30, retries=0,
+                  max_output_tokens=2048, timeout_seconds=30, retries=0, recovery='off',
                   checks=frozenset({'availability','schema','provenance','rules','planning'})):
     if backend == 'none':
         return Detector(enabled=checks)
@@ -34,7 +34,7 @@ def make_detector(*, backend='none', mode='graph', model=None, base_url=None,
                      timeout_seconds=timeout_seconds, max_retries=retries)
     client = ChatClient(config)
     client.validate_configuration()
-    language = LanguageAnalyzer(client, LanguageConfig(mode,max_rounds,max_evidence_chars,max_prompt_chars,rolling_evidence),
+    language = LanguageAnalyzer(client, LanguageConfig(mode,max_rounds,max_evidence_chars,max_prompt_chars,rolling_evidence,recovery),
                                 budget=RunBudget(max_requests,max_input_chars,seconds))
     return Detector(enabled=checks, semantic=language)
 
@@ -52,6 +52,8 @@ def add_runtime_arguments(parser):
     parser.add_argument('--max-prompt-chars', type=int, default=120000)
     parser.add_argument('--rolling-evidence', action='store_true',
                         help='Experimental RLM window replacement; evicted sources cannot be cited')
+    parser.add_argument('--recovery', choices=('off','observe','directed','repeat'), default='off',
+                        help='Experimental graph-mode uncertainty diagnostics and at most one recheck')
     parser.add_argument('--max-output-tokens', type=int, default=2048)
     parser.add_argument('--timeout-seconds', type=float, default=30)
     parser.add_argument('--retries', type=int, default=0)
@@ -62,6 +64,6 @@ def add_runtime_arguments(parser):
 
 def detector_from_args(args):
     fields = ('backend','mode','model','base_url','max_requests','max_input_chars','seconds',
-              'max_rounds','max_evidence_chars','max_prompt_chars','rolling_evidence','max_output_tokens','timeout_seconds','retries')
+              'max_rounds','max_evidence_chars','max_prompt_chars','rolling_evidence','max_output_tokens','timeout_seconds','retries','recovery')
     return make_detector(**{key:getattr(args,key) for key in fields},
                          checks=frozenset(x.strip() for x in args.checks.split(',') if x.strip()))
