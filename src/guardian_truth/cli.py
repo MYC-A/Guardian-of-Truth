@@ -93,7 +93,7 @@ def main():
             if audit_stream:
                 audit_stream.close()
     if args.run_report:
-        counts.update(seconds=time.monotonic()-started,backend=args.backend,mode=args.mode,
+        counts.update(seconds=time.monotonic()-started,backend=args.backend,mode=args.mode,recovery=args.recovery,
                       threshold=args.threshold,score_kind='uncalibrated',
                       budget=detector.semantic.budget.summary() if hasattr(detector.semantic,'budget') else None)
         args.run_report.parent.mkdir(parents=True,exist_ok=True)

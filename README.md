@@ -6,6 +6,12 @@
 Безопасный публичный шаблон — `.env.template`. Обычное место секрета — игнорируемый `.env`.
 Живые измерения и решения по гипотезам: [журнал экспериментов](docs/experiment_log.md).
 
+Последний проверенный этап: [аудит V2](docs/v2_baseline_error_analysis.md) и
+[один цикл structured UNKNOWN](docs/uncertainty_experiment.md).
+На 12 заранее выбранных строках адресное исправление не помогло: F1 0,5455 → 0,5000,
+один новый FP, ни одного исправленного FN. Поэтому `--recovery off` остаётся по умолчанию;
+диагностический прототип не объявлен улучшением качества. [Схема эксперимента](docs/09_uncertainty_recheck.puml).
+
 Проверка одного хода агента по `prompt` и `response`: автономные проверки и явно подключаемая LLM.
 Начать здесь: [что готово, архитектура PlantUML, план и проверка прироста](docs/current_status_and_roadmap.md).
 Актуальная схема этапа 3: [PlantUML](docs/07_implemented_architecture.puml), [SVG](docs/07_implemented_architecture.svg).

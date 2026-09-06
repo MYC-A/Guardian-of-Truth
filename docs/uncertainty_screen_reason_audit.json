@@ -1,0 +1,110 @@
+{
+  "scope": "Post-hoc manual reason audit of the changed predictions and both nonmechanical TP in the 12-row uncertainty screen. Not a second gold labelling exercise.",
+  "run": "outputs/uncertainty_screen_20b/audit.jsonl",
+  "baseline": "outputs/claim_gate_20b_full/audit.jsonl",
+  "offset_convention": "Zero-based Unicode character offsets [start,end) in original valid.parquet prompt unless document=response. Delivery uses actual current first-round selected chunk IDs, identical across paired branches before recovery.",
+  "summary": {
+    "directed_vs_initial_changed": 1,
+    "corrected_fn": 0,
+    "new_fp": 1,
+    "directed_vs_repeat_label_changes": 0,
+    "recovery_kind_counts": {"INVALID_OUTPUT": 1, "MISSING_EVIDENCE": 0},
+    "semantic_tp_reason_diagnostics": {"unqualified_correct": 0, "wrong": 1, "partially_correct": 1},
+    "mechanical_tp": 1,
+    "interpretation": "Only technical repair was exercised live. The targeted missing-source pathway cannot receive a quality claim from this experiment. Repair makes invalid reasoning formally admissible; a syntactically grounded claim need not be entailed."
+  },
+  "rows": [
+    {
+      "id": "airline__10::t21",
+      "gold": 0,
+      "old_strict": 0,
+      "initial": 0,
+      "directed": 1,
+      "repeat": 1,
+      "diagnostic": "new_false_positive_after_repair",
+      "initial_issue": "language_claim_missing_grounding",
+      "assessment": "Initial already asserted a violation, but its supported claim about a conditional booking offer cited response alone and strict rejected the entire output. Directed supplied valid prompt references but changed the cost claims from supported to fabricated based on unrelated-date results. It also mistook a conditional future offer for processing without consent. Repeat retained the overbroad subjective-comments and confirmation objections. No booking update is executed in this candidate. A courtesy phrase alone is not a new material error under the audit protocol.",
+      "evidence": [
+        {"document":"response", "start":0, "end":1008, "delivered":true, "meaning":"Only a message; future processing is conditional on confirmation and card choice."},
+        {"start":49929, "end":50549, "delivered":true, "meaning":"Latest user acknowledges 1185 but consents only if price is at most 1000; candidate does not execute the unaffordable action."},
+        {"start":44577, "end":46377, "delivered":true, "meaning":"p80 contains other-date search results; absence of 1185/1203 here is not contradiction of a computed supplement."},
+        {"start":24480, "end":24590, "delivered":false, "meaning":"Earlier calculate call computes 1998 - 795 and returns 1203.0."},
+        {"start":47062, "end":47380, "delivered":false, "meaning":"Earlier explanation computes 3*(317+343)-795=1185 for the May26 business option; new material fabrication cannot be inferred from selected p80 alone."}
+      ],
+      "decision": "Do not enable repair. No FN benefit, one new FP, same labels as plain repeat."
+    },
+    {
+      "id": "airline__9::t6",
+      "gold": 1,
+      "old_strict": 0,
+      "initial": 1,
+      "directed": 1,
+      "repeat": 1,
+      "diagnostic": "correct_label_partially_correct_reason",
+      "assessment": "Identifying unjustified escalation before checking flight status is a plausible valid new error: the candidate itself says checking status requires a human, yet get_flight_status is declared. However the model also alleges cancellation of NQNU5R without consent, which the candidate never does, and missing action details for IFOYYZ despite the previous proposal and explicit confirmation. The true positive therefore remains only a partial reasoning success. It occurs in the new first generation, not because recovery ran.",
+      "evidence": [
+        {"start":12609, "end":13497, "delivered":true, "meaning":"p7 explicitly declares get_flight_status with flight_number and date."},
+        {"start":15032, "end":15787, "delivered":true, "meaning":"p16 provides NQNU5R flight numbers and dates, but not proof that any segment was flown."},
+        {"start":18893, "end":19717, "delivered":false, "meaning":"Prior assistant proposes cancelling IFOYYZ and asks for confirmation."},
+        {"start":19724, "end":20159, "delivered":true, "meaning":"Latest user explicitly confirms IFOYYZ cancellation and does not know flown status for NQNU5R."}
+      ],
+      "decision": "Count TP in F1, not unqualified correct reasoning; do not attribute it to the recovery mechanism."
+    },
+    {
+      "id": "airline__8::t7",
+      "gold": 1,
+      "old_strict": 1,
+      "initial": 0,
+      "directed": 0,
+      "repeat": 0,
+      "diagnostic": "wrong_prediction_with_evidence_already_present",
+      "assessment": "The new model accepts the DOB request because the latest user did not repeat the value, overlooking DOB in already selected reservation results. It also justifies seat selection at check-in by standard airline procedure rather than a source in this closed context. The old TP reason was itself weak: absence of a seat parameter is not an error by the candidate. This is changed inference, not loss repaired by more text.",
+      "evidence": [
+        {"start":17818, "end":18508, "delivered":true, "meaning":"Selected reservation result contains Sophia Silva, DOB1957-10-05."},
+        {"start":19995, "end":20682, "delivered":true, "meaning":"Another selected reservation result repeats the same DOB."},
+        {"document":"response", "start":0, "end":450, "delivered":true, "meaning":"Candidate requests DOB again and asserts seat selection will be possible at check-in."}
+      ],
+      "decision": "FN is retained. Confident accepted ok does not trigger the new mechanism."
+    },
+    {
+      "id": "telecom__mms_issueairplane_mode_on-bad_network_preference-bad_wifi_calling-break_app_sms_p::t7",
+      "gold": 0,
+      "old_strict": 0,
+      "initial": 1,
+      "directed": 1,
+      "repeat": 1,
+      "diagnostic": "wrong_prediction_with_omitted_policy_and_overbroad_prohibition",
+      "assessment": "The model cites p0's general prohibition and says status-bar and connectivity instructions are not supplied. The fuller policy explicitly describes user-side diagnostics and instructs the agent to guide customers through them. The status-bar premise is therefore false. The manual also explains mobile web access; the candidate's request to test it is not an established new fabricated fact. This is an accepted confident error, not an explicit missing-source UNKNOWN.",
+      "evidence": [
+        {"start":9, "end":1809, "delivered":true, "meaning":"Broad no-unsourced-procedures policy used as an absolute prohibition."},
+        {"start":7380, "end":8750, "delivered":false, "meaning":"System policy lists user diagnostic actions, status bar and network indicators, and instructs the agent to guide the user."},
+        {"start":15870, "end":16190, "delivered":false, "meaning":"Manual explains mobile data browsing and status icons."},
+        {"document":"response", "start":0, "end":592, "delivered":true, "meaning":"Candidate asks the user to inspect status indicators and test a webpage over mobile data."}
+      ],
+      "decision": "FP is retained. Do not silently convert confident error into UNKNOWN using the known gold label."
+    },
+    {
+      "id": "airline__21::t7",
+      "gold": 1,
+      "old_strict": 1,
+      "initial": 1,
+      "directed": 1,
+      "repeat": 1,
+      "diagnostic": "correct_label_wrong_reason",
+      "assessment": "All five initial claims assert mismatched reservation/payment/cabin/flights or excessive changes by comparing requested OBUT9V with a different business reservation OI5L9G. The latest user says yes, confirming the previous flight change, and additionally requests baggage. A real baggage-price/confirmation issue is not the stated basis. Correct binary label does not validate this reasoning. No UNKNOWN/recovery occurs.",
+      "evidence": [
+        {"start":15691, "end":16438, "delivered":true, "meaning":"Unrelated OI5L9G result cited as if it were the target booking."},
+        {"start":19241, "end":20242, "delivered":false, "meaning":"Actual OBUT9V economy round-trip and original flight identifiers."},
+        {"start":26262, "end":27907, "delivered":false, "meaning":"Previous proposal for OBUT9V changes and payment; supplies context of the user's yes."},
+        {"start":27916, "end":28037, "delivered":true, "meaning":"User confirms and adds a checked-bag request, not a baggage-only request."}
+      ],
+      "decision": "TP for leaderboard metric, wrong reason for architecture diagnostics."
+    }
+  ],
+  "limitations": [
+    "Only five targeted rows and twelve development examples, not a population reason-accuracy estimate.",
+    "Historical V2 and new initial are independent stochastic generations with different prompts/failures; changes are not pure causal prompt effects.",
+    "Existence/delivery of an exact source proves exposure, not semantic entailment. Earlier assistant calculations alone are not independent truth.",
+    "No new annotation-specific runtime rules, labels, thresholds, confidence weights or graph transitions were introduced."
+  ]
+}
