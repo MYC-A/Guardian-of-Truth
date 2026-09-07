@@ -1,0 +1,53 @@
+@startuml
+title Guardian of Truth V7 — conservative routed verification
+
+skinparam componentStyle rectangle
+skinparam shadowing false
+
+rectangle "prompt + candidate\n(untrusted data)" as Input
+rectangle "parse events + provenance graph" as Parse
+rectangle "exact mechanical checks" as Exact {
+  rectangle "catalog/schema" as Schema
+  rectangle "turn cardinality" as Cardinality
+  rectangle "DATE_GATED_ACTION\npolicy + entity + typed date + action" as DateGate
+}
+diamond "material exact violation?" as ExactDecision
+rectangle "positive row label\nwith exact source spans" as Positive
+
+diamond "model-blind route" as Router
+rectangle "D: bounded LINC translation\n≤16 atoms, ≤8 rules\nSHADOW" as Linc
+rectangle "external finite solver\nIF / ONLY_IF / IFF\nproof certificate" as Solver
+rectangle "C: rule + facts + applicability\nREJECTED CURRENT PROTOCOL" as Fairr
+rectangle "B: narrow entailment\nDIAGNOSTIC" as Entailment
+rectangle "A: current semantic judge / fallback" as Judge
+rectangle "abstain / preserve A" as Abstain
+
+Input --> Parse
+Parse --> Schema
+Schema --> Cardinality
+Cardinality --> DateGate
+DateGate --> ExactDecision
+ExactDecision --> Positive : yes
+ExactDecision --> Router : no
+
+Router --> Linc : explicit bounded rule
+Linc --> Solver : validated JSON + exact quotes
+Solver --> Abstain : shadow only\ntranslation unstable
+Router --> Fairr : scope/conditions/exceptions
+Fairr --> Abstain : 2/4 valid
+Router --> Entailment : pure semantic strength
+Entailment --> Judge : diagnostic evidence only
+Router --> Judge : unsupported
+
+note right of Solver
+Solver proves only relative to translation.
+It never certifies translation faithfulness.
+end note
+
+note bottom of Positive
+V7 development replay:
+17 TP / 5 FP / 6 FN / 18 TN
+F1 0.7556
+One new activation; not hidden-test proof.
+end note
+@enduml

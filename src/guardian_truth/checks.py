@@ -2,6 +2,7 @@
 
 import json
 import re
+from datetime import date
 
 from .types import Catalog, Event, FieldSpec, Finding, Source
 
@@ -14,6 +15,15 @@ EXCLUSIVE_ACTION = re.compile(
     r"\b(?:either|can\s+either)\b[\s\S]{0,240}\bsend\s+a\s+message\b"
     r"[\s\S]{0,240}\bmake\s+a\s+tool\s+call\b[\s\S]{0,160}"
     r"\bcannot\s+do\s+both\b", re.IGNORECASE)
+EXPIRED_CONTRACT_GATE = re.compile(
+    r"\byou\s+are\s+not\s+allowed\s+to\s+lift\s+the\s+suspension\s+if\s+the\s+"
+    r"line['’]s\s+contract\s+end\s+date\s+is\s+in\s+the\s+past\b",
+    re.IGNORECASE,
+)
+CURRENT_DATE = re.compile(
+    r"\bthe\s+current\s+(?:time|date)\s+is\s+(\d{4}-\d{2}-\d{2})\b",
+    re.IGNORECASE,
+)
 
 
 def _system_rule(history, pattern):
@@ -57,6 +67,77 @@ def check_turn_structure(history: list[Event], candidate: list[Event],
             "The system policy forbids combining a user message and a tool call in one turn.",
             [exclusive, *(event.source for event in texts),
              *(event.source for event in calls)],
+        ))
+    return findings
+
+
+def _authoritative_matches(history, pattern):
+    return [(event, match) for event in history if event.role == "system"
+            for match in pattern.finditer(event.text)]
+
+
+def _iso_date(value):
+    if not isinstance(value, str):
+        return None
+    try:
+        return date.fromisoformat(value)
+    except ValueError:
+        return None
+
+
+def check_date_gated_actions(history: list[Event], candidate: list[Event],
+                              enabled: frozenset[str]):
+    """Enforce one narrow typed date gate from authoritative policy.
+
+    This intentionally recognizes only an explicit system prohibition and the
+    corresponding structured ``resume_line`` action. Missing/ambiguous policy,
+    clock, JSON, entity binding or date data abstains. The latest same-line
+    structured result wins; values for another line never unify.
+    """
+    if "rules" not in enabled:
+        return []
+    policies = _authoritative_matches(history, EXPIRED_CONTRACT_GATE)
+    clocks = _authoritative_matches(history, CURRENT_DATE)
+    if len(policies) != 1 or len(clocks) != 1:
+        return []
+    current = _iso_date(clocks[0][1].group(1))
+    if current is None:
+        return []
+    policy_event, policy_match = policies[0]
+    clock_event, clock_match = clocks[0]
+    policy_source = Source(policy_event.source.document,
+                           policy_event.source.start + policy_match.start(),
+                           policy_event.source.start + policy_match.end())
+    clock_source = Source(clock_event.source.document,
+                          clock_event.source.start + clock_match.start(1),
+                          clock_event.source.start + clock_match.end(1))
+    findings = []
+    for call in candidate:
+        if (call.role != "assistant" or call.kind != "call" or call.name != "resume_line"
+                or not call.json_valid or not isinstance(call.value, dict)):
+            continue
+        line_id = call.value.get("line_id")
+        if not isinstance(line_id, str) or not line_id:
+            continue
+        observations = []
+        for index, event in enumerate(history):
+            value = event.value
+            if (event.kind != "result" or not event.json_valid or not isinstance(value, dict)
+                    or value.get("line_id") != line_id):
+                continue
+            end = _iso_date(value.get("contract_end_date"))
+            if end is not None:
+                observations.append((index, end, event.source))
+        if not observations:
+            continue
+        latest_index = max(item[0] for item in observations)
+        latest = [item for item in observations if item[0] == latest_index]
+        if len(latest) != 1 or latest[0][1] >= current:
+            continue
+        findings.append(Finding(
+            "date_gated_action_violation",
+            "The system policy forbids resuming this line after its contract end date.",
+            [policy_source, clock_source, latest[0][2], call.source],
         ))
     return findings
 

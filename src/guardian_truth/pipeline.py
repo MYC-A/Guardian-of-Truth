@@ -1,6 +1,6 @@
 from dataclasses import asdict
 
-from .checks import check_calls, check_turn_structure
+from .checks import check_calls, check_date_gated_actions, check_turn_structure
 from .evidence import observations, retrieve
 from .parsing import parse_catalog, parse_events
 from .provenance import build_graph
@@ -33,6 +33,7 @@ class Detector:
         catalog = parse_catalog(history, prompt)
         findings, unresolved = check_calls(candidate, catalog, self.enabled)
         findings.extend(check_turn_structure(history, candidate, self.enabled))
+        findings.extend(check_date_gated_actions(history, candidate, self.enabled))
         graph = build_graph(history, candidate) if self.enabled & {'provenance','rules','planning'} else EvidenceGraph()
         if 'rules' in self.enabled:
             rule_findings, rule_issues = check_rules(history, candidate, graph)

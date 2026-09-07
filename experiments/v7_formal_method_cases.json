@@ -1,0 +1,90 @@
+{
+  "schema_version": 1,
+  "data_role": "frozen target-level development diagnostic",
+  "warning": "Gold outputs and notes are local scoring metadata and must never enter model messages.",
+  "cases": [
+    {
+      "id": "d-only-if-direction-control",
+      "method": "D",
+      "target": "A refund is allowed.",
+      "rule": null,
+      "evidence": [
+        {"id": "policy", "text": "A refund is allowed only if identity is verified and the order is eligible."},
+        {"id": "facts", "text": "Identity is verified. The order is eligible."}
+      ],
+      "gold_output": "INSUFFICIENT",
+      "tags": ["only_if", "missing_sufficiency"]
+    },
+    {
+      "id": "d-expired-contract-real",
+      "method": "D",
+      "target": "The resume_line action for line L1002 is allowed.",
+      "rule": null,
+      "evidence": [
+        {"id": "policy", "text": "You are not allowed to lift the suspension if the line's contract end date is in the past, even if the user has paid all their overdue bills."},
+        {"id": "line", "text": "get_details_by_id returned line_id L1002, status Suspended, contract_end_date 2025-01-31."},
+        {"id": "clock", "text": "The current time is 2025-02-25 12:08:00 EST."},
+        {"id": "typed_date", "text": "Verified typed date comparison for line L1002: contract_end_date 2025-01-31 is before current date 2025-02-25."},
+        {"id": "response", "text": "TOOL_CALL resume_line with customer_id C1001 and line_id L1002."}
+      ],
+      "gold_output": "CONTRADICTS",
+      "tags": ["real_residual_fn", "date", "exception", "same_entity"]
+    },
+    {
+      "id": "c-expired-contract-real",
+      "method": "C",
+      "target": "The general paid-bill permission applies and permits resume_line for L1002.",
+      "rule": "You are allowed to lift the suspension after the user has paid all their overdue bills. You are not allowed to lift the suspension if the line's contract end date is in the past, even if the user has paid all their overdue bills.",
+      "evidence": [
+        {"id": "policy", "text": "You are allowed to lift the suspension after the user has paid all their overdue bills. You are not allowed to lift the suspension if the line's contract end date is in the past, even if the user has paid all their overdue bills."},
+        {"id": "line", "text": "get_details_by_id returned line_id L1002, status Suspended, contract_end_date 2025-01-31."},
+        {"id": "clock", "text": "The current time is 2025-02-25 12:08:00 EST."},
+        {"id": "typed_date", "text": "Verified typed date comparison for line L1002: contract_end_date 2025-01-31 is before current date 2025-02-25."},
+        {"id": "bill", "text": "Bill B1234321 for a charge on line L1002 has status Paid."},
+        {"id": "response", "text": "TOOL_CALL resume_line with customer_id C1001 and line_id L1002."}
+      ],
+      "gold_output": "NOT_APPLIES",
+      "tags": ["real_residual_fn", "active_exception", "same_entity", "same_time"]
+    },
+    {
+      "id": "c-missing-condition-control",
+      "method": "C",
+      "target": "The refund rule applies to order O1.",
+      "rule": "If identity is verified and order O1 is eligible, then a refund for order O1 is allowed.",
+      "evidence": [
+        {"id": "policy", "text": "If identity is verified and order O1 is eligible, then a refund for order O1 is allowed."},
+        {"id": "identity", "text": "Identity is verified for user U1."},
+        {"id": "order", "text": "No eligibility result for order O1 is available."}
+      ],
+      "gold_output": "UNKNOWN",
+      "tags": ["missing_condition", "open_world"]
+    },
+    {
+      "id": "c-wrong-entity-control",
+      "method": "C",
+      "target": "The return rule applies to user U1 and order O2.",
+      "rule": "If an order belongs to the requesting user and is within 30 days, then that user may return that order.",
+      "evidence": [
+        {"id": "policy", "text": "If an order belongs to the requesting user and is within 30 days, then that user may return that order."},
+        {"id": "request", "text": "User U1 requests a return for order O2."},
+        {"id": "ownership", "text": "Order O2 belongs to user U2."},
+        {"id": "time", "text": "Order O2 is within 30 days."}
+      ],
+      "gold_output": "NOT_APPLIES",
+      "tags": ["wrong_entity"]
+    },
+    {
+      "id": "c-stale-state-control",
+      "method": "C",
+      "target": "The weak-current-signal rule applies to device D1 now.",
+      "rule": "If the current signal for a device is weak, then run weak-signal diagnostics for that device.",
+      "evidence": [
+        {"id": "policy", "text": "If the current signal for a device is weak, then run weak-signal diagnostics for that device."},
+        {"id": "old", "text": "At turn 3 device D1 had one signal bar."},
+        {"id": "new", "text": "At turn 5 device D1 has four signal bars."}
+      ],
+      "gold_output": "NOT_APPLIES",
+      "tags": ["stale_state", "same_entity"]
+    }
+  ]
+}

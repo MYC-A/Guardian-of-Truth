@@ -1,5 +1,10 @@
 # Что работает, куда развиваемся и как измеряем пользу
 
+> Обновление V7: текущий frozen development-кандидат — TP=17, FP=5, FN=6,
+> TN=18, F1=0.7556. Новое исправление даёт точная проверка date-gated action;
+> LINC/FaiRR пока только shadow. Детали: [V7_FORMAL_REASONING_CYCLE.md](V7_FORMAL_REASONING_CYCLE.md)
+> и [11_v7_routed_formal_verification.puml](11_v7_routed_formal_verification.puml).
+
 > Ниже сохранён срез после этапа 2. Новая полная итерация и фактические проверки: [goal_progress.md](goal_progress.md).
 
 Состояние после этапа 2. Это описание существующего кода и план, а не обещание конкурсного результата.

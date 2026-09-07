@@ -1,0 +1,111 @@
+{
+  "schema_version": 1,
+  "reference": {
+    "rows": 46,
+    "tp": 16,
+    "fp": 5,
+    "fn": 7,
+    "tn": 18,
+    "precision": 0.7619047619047619,
+    "recall": 0.6956521739130435,
+    "f1": 0.7272727272727273,
+    "fallback": 16
+  },
+  "methods": {
+    "A_current_judge": {
+      "scope": "full frozen 46-row replay after V6 turn-cardinality precheck",
+      "artifact": "outputs/v6_turn_structure_replay_v5/report.json"
+    },
+    "B_narrow_entailment": {
+      "scope": "16 frozen claim/evidence cases; 8 real accusations and 8 exact-source contrast controls",
+      "valid": 16,
+      "correct": 12,
+      "accuracy": 0.75,
+      "real_correct": 4,
+      "real_total": 8,
+      "control_correct": 8,
+      "control_total": 8,
+      "http_attempts": 19,
+      "reported_tokens": 36414,
+      "decision": "diagnostic_only",
+      "artifact": "outputs/v6_targeted_verifier_groq20b/report.json"
+    },
+    "C_fairr_applicability": {
+      "scope": "one real expired-contract residual and three synthetic missing-condition/entity/stale-state controls",
+      "valid": 2,
+      "attempted": 4,
+      "correct_valid": 2,
+      "accuracy_all": 0.5,
+      "invalid_categories": {"invalid_clause_quote": 2},
+      "http_attempts": 4,
+      "reported_tokens": 9941,
+      "decision": "reject_current_protocol",
+      "artifact": "outputs/v7_formal_methods_groq120b_c_r3/report.json"
+    },
+    "D_linc_bounded_formalization": {
+      "scope": "one real expired-contract residual and one only-if polarity control, each repeated twice",
+      "valid": 4,
+      "attempted": 4,
+      "correct": 4,
+      "accuracy_all": 1.0,
+      "stable_final_output_cases": 2,
+      "stability_cases": 2,
+      "stable_normalized_translation_cases": 0,
+      "http_attempts": 4,
+      "reported_tokens": 10760,
+      "decision": "shadow_only_translation_unstable",
+      "artifact": "outputs/v7_formal_methods_groq120b_d_stability/report.json"
+    },
+    "E_exact_code": {
+      "scope": "full 46-row replay of explicit date-gated action after V6",
+      "hits": 1,
+      "hit_gold_positive": 1,
+      "hit_gold_negative": 0,
+      "tp": 17,
+      "fp": 5,
+      "fn": 6,
+      "tn": 18,
+      "precision": 0.7727272727272727,
+      "recall": 0.7391304347826086,
+      "f1": 0.7555555555555555,
+      "delta_f1": 0.028282828282828243,
+      "delta_f1_bootstrap_95": [0.0, 0.09418604651162787],
+      "logical_calls_before": 35,
+      "logical_calls_after": 34,
+      "reported_tokens_before": 121024,
+      "reported_tokens_after": 116494,
+      "decision": "keep_narrow_exact_candidate_with_single_activation_warning",
+      "artifact": "outputs/v7_date_gate_replay_v2/report.json"
+    }
+  },
+  "exact_only_current_detector": {
+    "tp": 12,
+    "fp": 0,
+    "fn": 11,
+    "tn": 23,
+    "precision": 1.0,
+    "recall": 0.5217391304347826,
+    "f1": 0.6857142857142856,
+    "warning": "Observed development precision is not a guarantee for unseen data."
+  },
+  "proof_tree": {
+    "decision": "stop_separate_branch",
+    "reason": "Only one residual clearly needs multiple inference steps; proof certificates are already emitted by the bounded solver."
+  },
+  "invalid_protocol_artifacts": [
+    {
+      "artifact": "outputs/v7_formal_methods_groq120b_r1",
+      "reason": "Harness referenced a supplied schema but sent only json_object; 0/6 is not a method result."
+    },
+    {
+      "artifact": "outputs/v7_formal_methods_groq120b_r2",
+      "reason": "Mixed recovery run: D valid, C rejected invented source IDs; superseded by method-specific runs."
+    }
+  ],
+  "global_limitations": [
+    "Development rows and routing were inspected; this is not independent competition validation.",
+    "B/C/D are target-level diagnostics and do not produce autonomous row-level F1.",
+    "D solver correctness is relative to the supplied translation; translation stability failed.",
+    "E changes one row only, so the bootstrap interval includes zero and cross-case transfer is unmeasured."
+  ]
+}

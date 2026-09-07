@@ -1,6 +1,14 @@
 # Guardian of Truth
 
-Актуальный результат V6: [полный исследовательский цикл](docs/V6_RESEARCH_CYCLE.md)
+Current research result: the V7 routed formal-verification cycle raises the
+frozen development replay from F1 `0.7273` to `0.7556` with one exact,
+zero-LLM date-gated-action correction. LINC/FaiRR remain shadow-only because
+translation stability and structural validity are not yet sufficient. See
+[V7 experiment](docs/V7_FORMAL_REASONING_CYCLE.md),
+[V7 architecture](docs/11_v7_routed_formal_verification.puml), and the
+[machine-readable result](docs/v7_formal_methods_result.json).
+
+Предыдущий результат V6: [полный исследовательский цикл](docs/V6_RESEARCH_CYCLE.md)
 и [PlantUML кандидата](docs/10_v6_candidate.puml). Новый точный precheck применяет
 ограничение числа действий только при явном правиле в системной политике. На
 полном `valid.parquet` frozen replay улучшился с F1 0.6667 до 0.7273 без новых
@@ -34,6 +42,8 @@ LLM-вызовов; это результат на изученном developmen
 - Каталог инструментов только из системного блока; проверка обязательных полей, вложенных объектов, типов и перечислений.
 - Журнал структурированных наблюдений с путями к полям и ссылками на исходный текст. Сведения разных событий не сливаются автоматически.
 - Граф наблюдений и аргументов: совпадения полей/значений, сопоставление идентификаторов, связи с предыдущими наблюдениями. Индекс массива не считается идентификатором сущности.
+- Ограниченный formal shadow: неисполняемый JSON из атомов/правил, корректные `IF`/`ONLY_IF`/`IFF`, открытый мир, точные цитаты и proof certificate.
+- Точный date-gate: явный запрет из SYSTEM + уникальная системная дата + последнее наблюдение той же сущности + соответствующий tool call.
 - Отдельный интерфейс `SemanticAnalyzer`; по умолчанию `NoSemanticAnalyzer`, без зависимостей от библиотек моделей. Ошибка подключённого модуля не отменяет точные проверки.
 - Клиент Groq, OpenRouter, Gemini OpenAI-compatible API или локального совместимого сервера: режимы `direct`, `graph`, `rlm`, ограниченное чтение и общий бюджет HTTP-попыток. Каждый удалённый профиль жёстко привязан к собственной переменной ключа.
 - Исполнитель явных декларативных правил из системного блока: даты, сравнения, принадлежность, исключения и неизвестность. Произвольная политика на естественном языке этим исполнителем не разбирается.
