@@ -65,7 +65,17 @@ def select_rows(rows,ids_file):
     return [by_id[i] for i in ids],hashlib.sha256(raw).hexdigest()
 
 
-CALL_STAGES=('extractor','semantic_verifier','final_judge')
+def window_rows(rows,start_index,row_count):
+    if type(start_index) is not int or start_index < 0:
+        raise ValueError('Invalid start index')
+    if row_count is not None and (type(row_count) is not int or row_count < 1):
+        raise ValueError('Invalid row count')
+    selected=rows[start_index:] if row_count is None else rows[start_index:start_index+row_count]
+    if not selected: raise ValueError('Empty row window')
+    return selected
+
+
+CALL_STAGES=('one_shot','extractor','semantic_verifier','final_judge')
 
 
 def call_telemetry(records):
@@ -73,14 +83,25 @@ def call_telemetry(records):
     stages={stage:{'total':0,'valid':0,'invalid':0} for stage in CALL_STAGES}
     relations=Counter()
     for record in records:
-        for item in record['review']['reading_trace']:
+        trace=record['review']['reading_trace']
+        is_decomposed=any(item.get('stage') in ('extractor','semantic_verifier','final_judge')
+                          for item in trace)
+        usage=record['review'].get('semantic_usage',{})
+        one_shot_total=usage.get('llm_calls',0) if isinstance(usage,dict) else 0
+        if not is_decomposed and type(one_shot_total) is int and one_shot_total >= 0:
+            stages['one_shot']['total']+=one_shot_total
+        for item in trace:
             stage=item.get('stage')
             if stage in stages and item.get('call') is not None:
                 stages[stage]['total']+=1
                 key='valid' if item.get('valid') is True else 'invalid'
                 stages[stage][key]+=1
+            elif type(item.get('round')) is int:
+                stages['one_shot']['valid']+=1
             if stage=='semantic_verifier' and isinstance(item.get('relations'),dict):
                 relations.update(value for value in item['relations'].values() if isinstance(value,str))
+    for item in stages.values():
+        item['invalid']=item['total']-item['valid']
     total=sum(item['total'] for item in stages.values())
     valid=sum(item['valid'] for item in stages.values())
     return {'by_stage':stages,'total':total,'valid':valid,'invalid':total-valid,
@@ -95,6 +116,9 @@ def main():
     parser.add_argument('--base-url')
     parser.add_argument('--input',type=Path,required=True)
     parser.add_argument('--ids-file',type=Path)
+    parser.add_argument('--start-index',type=int,default=0,
+                        help='Zero-based deterministic row window for quota-safe shards')
+    parser.add_argument('--row-count',type=int)
     parser.add_argument('--output-dir',type=Path,required=True)
     parser.add_argument('--env-file',type=Path,required=True)
     parser.add_argument('--model',default='openai/gpt-oss-20b')
@@ -116,6 +140,7 @@ def main():
     try:
         rows=read_rows(args.input); validate_rows(rows)
         rows,ids_hash=select_rows(rows,args.ids_file)
+        rows=window_rows(rows,args.start_index,args.row_count)
         if not rows or any(str(row.get('label')) not in ('0','1') for row in rows): raise ValueError
         load_env_file(args.env_file)
         initial=ClientConfig.from_env()
@@ -135,8 +160,11 @@ def main():
     run_config={'variant':args.variant,'provider':args.provider,
         'model':config.model,'base_url':config.base_url,
         'input_hash':hashlib.sha256(args.input.read_bytes()).hexdigest(),'ids_file_hash':ids_hash,
+        'row_window':{'start_index':args.start_index,'row_count':args.row_count},
         'selected_ids':[str(row['id']) for row in rows],
-        'request':{'temperature':0,'max_completion_tokens':config.max_output_tokens,
+        'request':{'temperature':0,'max_output_tokens':config.max_output_tokens,
+                   'provider_token_parameter':('max_tokens' if args.provider=='openrouter'
+                                               else 'max_completion_tokens'),
                    'response_format':'json_schema_strict' if args.variant=='decomposed' else 'json_object',
                    'reasoning_effort':({'extractor':'low','semantic_verifier':'native_medium',
                                         'final_judge':'low'} if args.variant=='decomposed'
@@ -176,9 +204,12 @@ def main():
             decision=decide(review,threshold=args.threshold,use_semantic=True)
             trace=review.reading_trace
             ledger=next((item.get('ledger') for item in reversed(trace) if 'ledger' in item),None)
-            logical_calls=sum(1 for item in trace if item.get('stage') in
-                              ('extractor','semantic_verifier','final_judge')
-                              and item.get('call') is not None)
+            supplied_calls=review.semantic_usage.get('llm_calls')
+            logical_calls=(supplied_calls if type(supplied_calls) is int and supplied_calls >= 0
+                           else sum(1 for item in trace if
+                                    (item.get('stage') in ('extractor','semantic_verifier','final_judge')
+                                     and item.get('call') is not None)
+                                    or type(item.get('round')) is int))
             record={'id':str(row['id']),'label':int(row['label']),'prediction':decision.label,
                 'decision':asdict(decision),'skipped_mechanical':skipped,'review':asdict(review),
                 'logical_llm_calls':logical_calls,'http_attempts':budget.requests-before,

@@ -221,6 +221,7 @@ class LanguageAnalyzer:
                 return SemanticResult(unresolved=['language_context_budget_exceeded'], trace=trace, usage=usage)
             try:
                 messages = [{'role':'system','content':instruction}, {'role':'user','content':encoded}]
+                usage['llm_calls'] = usage.get('llm_calls',0) + 1
                 complete_budgeted = getattr(self.client, 'complete_budgeted', None)
                 if callable(complete_budgeted):
                     completion = complete_budgeted(messages, budget=self.budget)

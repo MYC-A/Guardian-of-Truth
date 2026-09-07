@@ -1,0 +1,56 @@
+{
+  "decision": "KEEP_ONE_SHOT",
+  "baseline_full_groq_20b": {
+    "n": 46, "tp": 14, "fp": 5, "fn": 9, "tn": 18,
+    "precision": 0.7368421052631579, "recall": 0.6086956521739131,
+    "f1": 0.6666666666666666, "fallback": 18,
+    "logical_llm_calls": 40, "http_attempts": 99,
+    "reported_tokens": 143389, "elapsed_seconds": 1104.3,
+    "reason_precision_lower": 0.3076923076923077,
+    "reason_precision_upper": 0.38461538461538464,
+    "correct_label_wrong_reason_tp": 4
+  },
+  "groq_20b_error_heavy_screen": {
+    "A": {"n": 12, "tp": 2, "fp": 5, "fn": 5, "tn": 0,
+      "precision": 0.2857142857142857, "recall": 0.2857142857142857,
+      "f1": 0.2857142857142857, "fallback": 3, "structured_valid": 9,
+      "logical_llm_calls": 12, "http_attempts": null, "reported_tokens": 52083,
+      "elapsed_seconds": null, "reason_precision_lower": 0.2857142857142857,
+      "reason_precision_upper": 0.42857142857142855},
+    "B": {"n": 12, "tp": 3, "fp": 2, "fn": 4, "tn": 3,
+      "precision": 0.6, "recall": 0.42857142857142855, "f1": 0.5,
+      "fallback": 3, "structured_valid": 9, "logical_llm_calls": 12,
+      "http_attempts": 15, "reported_tokens": 53233, "elapsed_seconds": 335.933329,
+      "reason_precision": 0.2, "correct_label_wrong_reason_tp": 2,
+      "semantic_fp_wrong_reason": 2},
+    "transitions": {"changed": 6, "corrected": 5, "regressed": 1}
+  },
+  "gemini_35_error_heavy_screen": {
+    "A": {"n": 12, "tp": 2, "fp": 0, "fn": 5, "tn": 5,
+      "precision": 1.0, "recall": 0.2857142857142857, "f1": 0.4444444444444444,
+      "fallback": 7, "structured_valid": 9, "logical_llm_calls": 12,
+      "http_attempts": 12, "reported_tokens": 36181, "elapsed_seconds": 120.2002575},
+    "B": {"n": 12, "tp": 1, "fp": 0, "fn": 6, "tn": 5,
+      "precision": 1.0, "recall": 0.14285714285714285, "f1": 0.25,
+      "fallback": 7, "structured_valid": 5, "logical_llm_calls": 12,
+      "http_attempts": 17, "reported_tokens": 21806, "elapsed_seconds": 174.9621276},
+    "transitions": {"changed": 1, "corrected": 0, "regressed": 1}
+  },
+  "C_material_extractor_gate": [
+    {"provider": "groq", "model": "openai/gpt-oss-20b", "checks": 9,
+      "uncovered_anchors": ["$317", "$343"], "logical_llm_calls": 1,
+      "reported_tokens": 1437, "result": "STOP_MISSING_COVERAGE"},
+    {"provider": "gemini", "model": "gemini-3.5-flash", "checks": 5,
+      "uncovered_anchors": ["$1000"], "logical_llm_calls": 1,
+      "reported_tokens": 1183, "result": "STOP_MISSING_COVERAGE"}
+  ],
+  "C_decision_metrics": null,
+  "C_deterministic_catches": 0,
+  "excluded_runs": [
+    "Groq full-B attempts dominated by HTTP 429",
+    "format pilots before the final extractor/coverage contract",
+    "OpenRouter free-model probe returned HTTP 429",
+    "Gemini 3.8 probes returned HTTP 503"
+  ],
+  "next_bottleneck": "one-shot fallback and Reason Precision"
+}

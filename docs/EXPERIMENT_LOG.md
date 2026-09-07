@@ -2,6 +2,11 @@
 
 ## Новый goal: one-shot против минимальной декомпозиции
 
+Итог: `KEEP_ONE_SHOT`. C остановлен на material-extractor gate: Groq 20B пропустил
+`$317/$343`, Gemini 3.5 — `$1000` в одной frozen smoke-строке. B на Groq screen повысил
+F1 0,2857→0,5000, но снизил Reason Precision до 1/5; на Gemini screen B снизил
+F1 0,4444→0,2500. Полный отчёт: [DECOMPOSITION_RESULT](DECOMPOSITION_RESULT.md).
+
 - Baseline A заморожен без изменения prompt: 46 строк, TP/FP/FN/TN=14/5/9/18,
   F1=0,6667, fallback=18; 99 HTTP attempts, 143389 reported tokens, 1104,3 с.
 - Его ручной Reason Precision: 4/13–5/13; correct-label/wrong-reason semantic TP=4/8.

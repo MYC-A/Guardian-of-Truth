@@ -8,6 +8,7 @@ from urllib.request import HTTPRedirectHandler,build_opener
 from guardian_truth.cli import read_rows
 from guardian_truth.decomposition import EXTRACTOR_INSTRUCTION,EXTRACTOR_SCHEMA
 from guardian_truth.llm_client import ChatClient,ClientConfig,HTTPResponse
+from guardian_truth.runtime import provider_config
 from guardian_truth.settings import load_env_file
 
 class NoRedirect(HTTPRedirectHandler):
@@ -22,7 +23,9 @@ def safe_rate_headers(headers):
     return {key:lowered[key] for key in allowed if key in lowered}
 
 def main():
-    p=argparse.ArgumentParser();p.add_argument('--env-file',type=Path,required=True);args=p.parse_args()
+    p=argparse.ArgumentParser();p.add_argument('--env-file',type=Path,required=True)
+    p.add_argument('--provider',choices=('groq','openrouter','gemini'),default='groq')
+    p.add_argument('--model');args=p.parse_args()
     load_env_file(args.env_file)
     row=read_rows(Path('valid.parquet'))[0]
     summary={}
@@ -57,7 +60,8 @@ def main():
                             summary['message_sha256']=hashlib.sha256(message.encode()).hexdigest()
                             summary['message_flags']={word:word in lowered for word in
                                 ('json','schema','reason','token','failed','generation','input','valid','strict',
-                                 'day','daily','minute','retry','limit','requested','used')}
+                                 'day','daily','minute','retry','limit','requested','used','quota',
+                                 'model','unavailable','overloaded','internal')}
                         failed=detail.get('failed_generation')
                         if isinstance(failed,str):
                             summary['failed_chars']=len(failed)
@@ -81,8 +85,10 @@ def main():
                                 except Exception: summary[label+'_json']=False
                 except Exception: summary['json_body']=False
                 return HTTPResponse(error.code,b'',dict(error.headers or {}))
-    client=ChatClient(replace(ClientConfig.from_env(),model='openai/gpt-oss-20b',max_output_tokens=2048,
-                              max_retries=0,strict_schema=True),transport=transport)
+    base=ClientConfig.from_env()
+    selected_url=base.base_url if args.provider=='groq' else None
+    config=provider_config(base,args.provider,model=args.model,base_url=selected_url)
+    client=ChatClient(replace(config,max_output_tokens=2048,max_retries=0,strict_schema=True),transport=transport)
     try:
         completion=client.complete([{'role':'system','content':EXTRACTOR_INSTRUCTION},
                                     {'role':'user','content':json.dumps({'response':row['response']},ensure_ascii=False)}],

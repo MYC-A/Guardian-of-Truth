@@ -47,6 +47,7 @@ class RuntimeTests(unittest.TestCase):
         self.assertEqual(review.semantic_score,.9)
         self.assertEqual(len(review.reading_trace),2)
         self.assertEqual(review.semantic_usage['total_tokens'],20)
+        self.assertEqual(review.semantic_usage['llm_calls'],2)
         self.assertEqual(decide(review,use_semantic=True).label,1)
         self.assertEqual(review.status,'unknown')
 

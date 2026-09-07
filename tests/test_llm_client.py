@@ -89,6 +89,18 @@ class ChatClientTests(unittest.TestCase):
         self.assertEqual(caught.exception.category,"invalid_request")
         self.assertFalse(transport.requests)
 
+    def test_openrouter_uses_its_documented_token_and_reasoning_fields(self):
+        os.environ['OPENROUTER_API_KEY']='synthetic-router-key'
+        transport=FakeTransport(success())
+        client=ChatClient(ClientConfig(base_url='https://openrouter.ai/api/v1',
+            model='vendor/model',api_key_env='OPENROUTER_API_KEY'),transport=transport)
+        client.complete(self.messages,reasoning_effort='low')
+        request=json.loads(transport.requests[0][0].data)
+        self.assertEqual(request['max_tokens'],2048)
+        self.assertEqual(request['reasoning'],{'effort':'low','exclude':True})
+        self.assertNotIn('max_completion_tokens',request)
+        self.assertNotIn('reasoning_effort',request)
+
     def test_missing_key_does_not_reach_transport(self):
         transport = FakeTransport(success())
         self.assert_category(ChatClient(ClientConfig(), transport=transport), "missing_api_key")

@@ -270,16 +270,20 @@ class ChatClient:
                 "name": "guardian_response", "schema": schema, "strict": self.config.strict_schema,
             }}
         try:
+            openrouter = urlsplit(self.config.base_url).hostname == 'openrouter.ai'
             payload = {
                 "model": self.config.model,
                 "messages": messages,
                 "temperature": 0,
-                "max_completion_tokens": self.config.max_output_tokens,
                 "stream": False,
                 "response_format": response_format,
             }
+            payload["max_tokens" if openrouter else "max_completion_tokens"] = self.config.max_output_tokens
             if reasoning_effort is not None:
-                payload["reasoning_effort"] = reasoning_effort
+                if openrouter:
+                    payload["reasoning"] = {"effort": reasoning_effort, "exclude": True}
+                else:
+                    payload["reasoning_effort"] = reasoning_effort
             data = json.dumps(payload, ensure_ascii=True, allow_nan=False).encode("utf-8")
         except (ValueError, TypeError, RecursionError):
             raise ChatClientError("invalid_request") from None

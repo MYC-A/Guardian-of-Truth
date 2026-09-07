@@ -1,6 +1,7 @@
 # Проверка минимальной декомпозиции
 
-Статус: эксперимент выполняется. Решение `KEEP_*` ещё не принято.
+Статус: эксперимент завершён. Решение — `KEEP_ONE_SHOT`.
+Итоговые данные и stop-rule: [DECOMPOSITION_RESULT](DECOMPOSITION_RESULT.md).
 
 ## A — замороженный baseline
 
@@ -44,8 +45,8 @@ F1=0,5000, fallback=3/12, 12 логических вызовов, 15 HTTP attemp
 
 Первые C-вызовы были только format-smoke и не входят в метрики качества. После исправления
 strict schema, reasoning effort, Unicode payload, точных уникальных цитат и coverage-gate
-нужен один чистый smoke последней версии. Он отложен до сброса token rate limit Groq 20B;
-смена модели до окончания контроля запрещена сопоставимостью эксперимента.
+чистый smoke последней версии выполнен на Groq 20B и повторён на Gemini 3.5. Оба extractor
+вернули неполный material set, поэтому сработал заранее объявленный stop-rule.
 
 ## Критерии принятия
 
@@ -57,5 +58,10 @@ judge использует прежний безопасный fallback 0. Од�
 
 Итоговая таблица должна содержать F1/P/R/TP/FP/FN/TN/fallback, логические calls,
 HTTP attempts, reported tokens, latency, structured validity, Reason Precision,
-wrong-reason TP, det catches и все изменившиеся строки. До заполнения полной таблицы
-решение `KEEP_ONE_SHOT`, `KEEP_STRICT_ONE_SHOT` или `KEEP_DECOMPOSED` не объявляется.
+wrong-reason TP, det catches и все изменившиеся строки. Полная quality-таблица обязательна
+только для варианта, прошедшего stop-gate; не прошедшему C нельзя приписывать метрики решений.
+
+Фактический stop-gate: последняя версия extractor пропустила очевидные material anchors
+на одной и той же frozen smoke-строке и с Groq 20B, и с Gemini 3.5 Flash. C остановлен
+до quality-run, как требовал протокол. B не принят: label-прирост Groq screen сопровождался
+падением Reason Precision, а независимый Gemini screen дал худший recall/F1.

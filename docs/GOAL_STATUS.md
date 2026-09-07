@@ -13,16 +13,16 @@ F1=0,75 на восьми строках не заменяет полный base
 
 ## Current best candidate
 
-Полный кандидат ещё не выбран. На фиксированном error-heavy screen строгий one-shot B
+Итоговый выбранный режим — исходный one-shot A (`KEEP_ONE_SHOT`). На фиксированном error-heavy screen строгий one-shot B
 дал TP/FP/FN/TN=3/2/4/3, F1=0,5 против A=2/5/5/0, F1=0,286 на тех же строках.
-Это stop/go сигнал, не замена полного результата; три решения B были fallback.
+Это был только label stop/go сигнал; Reason Precision B упал до 1/5, а Gemini-control
+дал F1=0,25 против A=0,4444. Поэтому B не принят.
 
 ## Current bottleneck
 
-Нужно отделить эффект строгого prompt от эффекта архитектурного разложения. Допустимая цитата
-не доказывает правильную сущность, состояние, условие или вывод. Extractor C сам может стать
-новым источником ошибок; два первых технических pilot-вызова дали HTTP 400 json_validate_failed
-и остановлены, а не посчитаны качеством архитектуры.
+У выбранного one-shot A остаются fallback=18/46 и Reason Precision 4/13–5/13.
+Следующая узкая гипотеза — упростить только output schema/claim-validator, не добавляя
+semantic stages, и проверить снижение `missing_grounding`/`truncated` без потери recall.
 
 ## Accepted mechanisms
 
@@ -39,24 +39,21 @@ multi-agent debate и большой causal graph. Подтверждённог�
 
 ## Current experiment
 
-Этап C: extractor material checks → proof-safe exact routing / узкий verifier пачками 2–4 →
-ledger → ограниченный final judge. Реализованы strict schemas, точные уникальные `quote`,
-coverage-gate, безопасная арифметика и 0 LLM-вызовов после уже доказанного механического нарушения.
-Старые format-pilot каталоги сохраняются и не смешиваются с результатом. Последний код ещё не
-имеет чистого live-smoke: выбранная Groq 20B исчерпала token rate limit; смена модели сейчас
-исказила бы A/B/C-сравнение.
+Этап C закрыт отрицательно. Последняя версия extractor с strict schema, exact unique `quote`
+и coverage-gate пропустила `$317/$343` на Groq 20B и `$1000` на Gemini 3.5. Оба раза
+coverage безопасно включил fallback. Согласно заранее объявленному stop-rule C не запускался
+на полном screen и не принимается. Итог: [DECOMPOSITION_RESULT](DECOMPOSITION_RESULT.md).
 
 ## Next experiment
 
-Чистый C-screen на тех же 12 строках. Если он лучше B по ошибкам/Reason Precision без провала
-recall и чрезмерной цены — полный B/C на 46 строках; затем ручной reason audit всех новых
-semantic positives и окончательное KEEP_ONE_SHOT/KEEP_STRICT_ONE_SHOT/KEEP_DECOMPOSED.
+Один one-shot вызов с упрощённым output schema/claim-validator на новом frozen screen.
+Цель — уменьшить `missing_grounding`/`truncated` и correct-label/wrong-reason TP без потери recall.
 
 ## Should we continue this goal?
 
-Да. Baseline и B-screen готовы; чистый C-screen, полный B/C, cost/reason audit, выбор режима
-и новый error audit ещё не завершены. Следующую архитектурную задачу не подменяем
-этим списком намерений; REPLACE_GOAL будет предложен только после выполнения критериев.
+Нет: текущая гипотеза получила измеримый отрицательный результат, stop-rule применён,
+построчный аудит выполнен и выбран `KEEP_ONE_SHOT`. Указанный выше следующий опыт —
+отдельный будущий goal, а не незавершённая часть decomposition.
 
 ## Проверяемые этапы
 
@@ -66,7 +63,7 @@ semantic positives и окончательное KEEP_ONE_SHOT/KEEP_STRICT_ONE_S
 | 2. Reason Precision | Явный знаменатель semantic-positive, material-valid основание, coverage/неоднозначности | Готово |
 | 3–4. Det-layer | Общие классы, контрпримеры, тесты, FP-аудит, shadow-абляция | Typed слой и 16 тестов; runtime только безопасная арифметика |
 | 5. Narrow verifier/ledger/final | SUPPORTED/CONTRADICTED/RELATED_ONLY/INSUFFICIENT; fail-safe | Реализовано, автономные тесты проходят |
-| 6. A/B/C screen | Одинаковые строки; baseline/strict/decomposed | A/B готовы; C format pilot остановлен |
-| 7. Полный A/B/C | Метрики, calls/tokens/latency/validity и Reason Precision | Не выполнено |
-| 8. Выбор KEEP_* | Преимущество над хорошим one-shot, цена и переносимость | Не выбран |
-| 9. Новый bottleneck | Повторный аудит всех остаточных FP/FN выбранного варианта | Не определён |
+| 6. A/B/C screen | Одинаковые строки; baseline/strict/decomposed | A/B измерены; C не прошёл stop-gate |
+| 7. Полный A/B/C | Только при положительном screen/coverage сигнале | Не требуется по stop-rule |
+| 8. Выбор KEEP_* | Преимущество над хорошим one-shot, цена и переносимость | `KEEP_ONE_SHOT` |
+| 9. Новый bottleneck | Fallback и Reason Precision выбранного варианта | Определён |
