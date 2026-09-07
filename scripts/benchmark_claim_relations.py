@@ -21,6 +21,7 @@ from guardian_truth.language import BudgetExceeded, RunBudget
 from guardian_truth.llm_client import (
     ChatClient, ChatClientError, ClientConfig, _http_transport,
 )
+from guardian_truth.runtime import provider_config
 from guardian_truth.settings import load_env_file
 
 
@@ -279,6 +280,8 @@ def run_cases(cases, client, stream, budget, *, pacer=None, transport=None,
 def build_parser():
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument("--input", type=Path, required=True)
+    parser.add_argument("--provider", choices=("groq", "openrouter", "gemini"),
+                        help="Bind endpoint and credentials explicitly; omitted preserves the configured profile")
     parser.add_argument("--model", required=True)
     parser.add_argument("--output-dir", type=Path, required=True)
     parser.add_argument("--env-file", type=Path, required=True)
@@ -303,8 +306,14 @@ def main(argv=None):
     try:
         cases, input_hash = load_cases(args.input)
         load_env_file(args.env_file)
-        config = replace(ClientConfig.from_env(), model=args.model,
-                         max_output_tokens=args.max_output_tokens,
+        initial = ClientConfig.from_env()
+        if args.provider is None:
+            config = replace(initial, model=args.model)
+        else:
+            selected_url = initial.base_url if args.provider == "groq" else None
+            config = provider_config(initial, args.provider, model=args.model,
+                                     base_url=selected_url)
+        config = replace(config, max_output_tokens=args.max_output_tokens,
                          max_retries=args.retries, strict_schema=False)
         budget = RunBudget(max_requests=args.max_requests,
                            max_input_chars=args.max_input_chars, seconds=args.seconds)
@@ -317,7 +326,8 @@ def main(argv=None):
                for p in sorted(package.glob("*.py"))}
     sources["scripts/benchmark_claim_relations.py"] = _hash(Path(__file__).read_bytes())
     configuration = {
-        "model": config.model, "base_url": config.base_url,
+        "provider": args.provider or "configured", "model": config.model,
+        "base_url": config.base_url,
         "input_sha256": input_hash, "case_count": len(cases),
         "system_prompt_sha256": _hash(INSTRUCTION.encode()),
         "case_prompt_sha256": {case["id"]: _hash(_json(build_messages(

@@ -4,7 +4,7 @@ import unittest
 from unittest.mock import patch
 
 from guardian_truth.language import (BudgetExceeded, LanguageAnalyzer, LanguageConfig, RunBudget,
-                                     STRICT_VERIFICATION_INSTRUCTION)
+                                     COMPACT_INSTRUCTION, STRICT_VERIFICATION_INSTRUCTION)
 from guardian_truth.llm_client import ChatClientError, Completion
 from guardian_truth.pipeline import Detector
 
@@ -163,6 +163,29 @@ class LanguageTests(unittest.TestCase):
         self.assertIn(STRICT_VERIFICATION_INSTRUCTION,
                       strict_client.messages[0][0]['content'])
         self.assertEqual(baseline_client.messages[0][1], strict_client.messages[0][1])
+
+    def test_compact_protocol_derives_overall_reason_and_grounding_from_claims(self):
+        output = assessment('error', 0.9, 'contradicted')
+        for key in ('reason', 'evidence_ids', 'requests', 'plan'):
+            output.pop(key)
+        review, client = self.review(
+            output, config=LanguageConfig(mode='direct', protocol='compact'))
+        self.assertEqual(review.semantic_score, 0.9)
+        self.assertIn(COMPACT_INSTRUCTION, client.messages[0][0]['content'])
+        self.assertNotIn(STRICT_VERIFICATION_INSTRUCTION,
+                         client.messages[0][0]['content'])
+        self.assertEqual(review.reading_trace[-1]['overall_assessment']['unresolved'],
+                         ['language_compact_has_no_overall_ablation'])
+        self.assertTrue(any(f.code == 'semantic_assessment' for f in review.findings))
+
+    def test_compact_protocol_keeps_per_claim_grounding_gate(self):
+        output = assessment('error', 0.9, 'contradicted', ['response'])
+        for key in ('reason', 'evidence_ids', 'requests', 'plan'):
+            output.pop(key)
+        review, _ = self.review(
+            output, config=LanguageConfig(mode='direct', protocol='compact'))
+        self.assertIsNone(review.semantic_score)
+        self.assertIn('language_claim_missing_grounding', review.unresolved)
 
 
 class RunBudgetTests(unittest.TestCase):

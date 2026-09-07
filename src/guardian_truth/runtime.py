@@ -95,7 +95,7 @@ def add_runtime_arguments(parser):
                         help='Experimental RLM window replacement; evicted sources cannot be cited')
     parser.add_argument('--recovery', choices=('off','observe','directed','repeat'), default='off',
                         help='Experimental graph-mode uncertainty diagnostics and at most one recheck')
-    parser.add_argument('--semantic-protocol', choices=('baseline','strict','decomposed'), default='baseline',
+    parser.add_argument('--semantic-protocol', choices=('baseline','strict','compact','decomposed'), default='baseline',
                         help='Semantic architecture; strict remains one-shot')
     parser.add_argument('--decomposition-max-checks',type=int,default=12)
     parser.add_argument('--decomposition-group-size',type=int,default=4)

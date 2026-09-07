@@ -1,8 +1,64 @@
 """Checks whose evidence is inspectable. No dataset IDs or label-based routing."""
 
 import json
+import re
 
-from .types import Catalog, Event, FieldSpec, Finding
+from .types import Catalog, Event, FieldSpec, Finding, Source
+
+
+ONE_CALL = re.compile(
+    r"\b(?:you\s+)?(?:should|must)\s+(?:only\s+make|at\s+most\s+make)\s+one\s+"
+    r"tool\s+call\s+at\s+a\s+time\b",
+                      re.IGNORECASE)
+EXCLUSIVE_ACTION = re.compile(
+    r"\b(?:either|can\s+either)\b[\s\S]{0,240}\bsend\s+a\s+message\b"
+    r"[\s\S]{0,240}\bmake\s+a\s+tool\s+call\b[\s\S]{0,160}"
+    r"\bcannot\s+do\s+both\b", re.IGNORECASE)
+
+
+def _system_rule(history, pattern):
+    """Return the exact first authoritative rule span, never user text."""
+    for event in history:
+        if event.role != "system":
+            continue
+        match = pattern.search(event.text)
+        if match:
+            return Source(event.source.document,
+                          event.source.start + match.start(),
+                          event.source.start + match.end())
+    return None
+
+
+def check_turn_structure(history: list[Event], candidate: list[Event],
+                         enabled: frozenset[str]):
+    """Enforce explicit per-turn action cardinality from system policy.
+
+    Multiple calls are not intrinsically erroneous.  This check fires only when
+    an authoritative system event contains a narrowly parsed prohibition.
+    """
+    if "schema" not in enabled:
+        return []
+    calls = [event for event in candidate
+             if event.role == "assistant" and event.kind == "call"]
+    texts = [event for event in candidate
+             if event.role == "assistant" and event.kind == "text" and event.text.strip()]
+    findings = []
+    one_call = _system_rule(history, ONE_CALL)
+    if one_call is not None and len(calls) > 1:
+        findings.append(Finding(
+            "multiple_tool_calls_in_turn",
+            "The system policy permits only one tool call in this turn.",
+            [one_call, *(event.source for event in calls)],
+        ))
+    exclusive = _system_rule(history, EXCLUSIVE_ACTION)
+    if exclusive is not None and calls and texts:
+        findings.append(Finding(
+            "mixed_text_and_tool_call",
+            "The system policy forbids combining a user message and a tool call in one turn.",
+            [exclusive, *(event.source for event in texts),
+             *(event.source for event in calls)],
+        ))
+    return findings
 
 
 def type_matches(value, kind):

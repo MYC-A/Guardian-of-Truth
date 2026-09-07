@@ -1,5 +1,11 @@
 # Guardian of Truth
 
+Актуальный результат V6: [полный исследовательский цикл](docs/V6_RESEARCH_CYCLE.md)
+и [PlantUML кандидата](docs/10_v6_candidate.puml). Новый точный precheck применяет
+ограничение числа действий только при явном правиле в системной политике. На
+полном `valid.parquet` frozen replay улучшился с F1 0.6667 до 0.7273 без новых
+LLM-вызовов; это результат на изученном development-файле, не гарантия hidden-test.
+
 Последняя завершённая архитектурная проверка: [one-shot против минимальной декомпозиции](docs/DECOMPOSITION_RESULT.md).
 Результат — `KEEP_ONE_SHOT`: decomposition не прошёл material-extractor stop-gate.
 По умолчанию сеть отключена (`--backend none`); Groq включается только явно.

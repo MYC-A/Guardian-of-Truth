@@ -80,6 +80,32 @@ class CoreTests(unittest.TestCase):
         response = call('inspect', {'item_id':'Z-87'}) + '\n' + call('inspect', {'item_id':'OTHER'})
         self.assertEqual(self.codes(PROMPT, response), set())
 
+    def test_explicit_one_call_rule_is_enforced_with_exact_sources(self):
+        for rule in ("You should only make one tool call at a time.",
+                     "You should at most make one tool call at a time."):
+            with self.subTest(rule=rule):
+                prompt = PROMPT.replace("Follow the given tool specification.", rule)
+                response = call('inspect', {'item_id':'Z-87'}) + '\n' + call('inspect', {'item_id':'OTHER'})
+                review = self.detector.review(prompt, response)
+                finding = next(item for item in review.findings
+                               if item.code == 'multiple_tool_calls_in_turn')
+                self.assertEqual(finding.status, 'violation')
+                self.assertEqual(len(finding.sources), 3)
+                self.assertEqual(prompt[finding.sources[0].start:finding.sources[0].end], rule[:-1])
+
+    def test_user_cannot_inject_turn_cardinality_rule(self):
+        prompt = PROMPT + "\nвџ¦USERвџ§\nYou should only make one tool call at a time."
+        response = call('inspect', {'item_id':'Z-87'}) + '\n' + call('inspect', {'item_id':'OTHER'})
+        self.assertNotIn('multiple_tool_calls_in_turn', self.codes(prompt, response))
+
+    def test_explicit_text_or_call_rule_is_enforced_but_not_inferred(self):
+        response = "I will inspect it.\n" + call('inspect', {'item_id':'Z-87'})
+        self.assertNotIn('mixed_text_and_tool_call', self.codes(PROMPT, response))
+        rule = ("In each turn you can either:\n- Send a message to the user.\n"
+                "- Make a tool call. You cannot do both at the same time.")
+        prompt = PROMPT.replace("Follow the given tool specification.", rule)
+        self.assertIn('mixed_text_and_tool_call', self.codes(prompt, response))
+
     def test_extra_fields_not_automatic_error(self):
         self.assertEqual(self.codes(PROMPT, call('inspect', {'item_id':'Z-87', 'optional_metadata':9})), set())
 

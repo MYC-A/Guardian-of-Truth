@@ -111,7 +111,7 @@ def call_telemetry(records):
 
 def main():
     parser=argparse.ArgumentParser(description=__doc__)
-    parser.add_argument('--variant',choices=('baseline','strict','decomposed'),required=True)
+    parser.add_argument('--variant',choices=('baseline','strict','compact','decomposed'),required=True)
     parser.add_argument('--provider',choices=('groq','openrouter','gemini'),default='groq')
     parser.add_argument('--base-url')
     parser.add_argument('--input',type=Path,required=True)
@@ -185,7 +185,7 @@ def main():
          (args.output_dir/'audit.jsonl').open('x',encoding='utf-8') as audit:
         paced=PacedTransport(attempts,args.interval_seconds,budget)
         client=ChatClient(config,transport=paced)
-        if args.variant in ('baseline','strict'):
+        if args.variant in ('baseline','strict','compact'):
             semantic=LanguageAnalyzer(client,LanguageConfig(mode='graph',max_rounds=1,
                 max_evidence_chars=args.max_evidence_chars,max_prompt_chars=args.max_prompt_chars,
                 protocol=args.variant),budget=budget)

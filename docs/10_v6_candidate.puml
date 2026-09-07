@@ -1,0 +1,35 @@
+@startuml
+title V6 production candidate: explicit turn-cardinality precheck
+top to bottom direction
+skinparam shadowing false
+skinparam componentStyle rectangle
+
+artifact "prompt + candidate response\n(no id, label, explanation)" as Input
+component "Lossless event parser\nsystem / user / assistant / tool" as Parser
+component "Exact checks\ntool schema + explicit system rules" as Exact
+diamond "Explicit one-call or\ntext-XOR-call rule violated?" as Gate
+component "Frozen one-shot semantic path\nevidence reader + LLM + strict claim gate" as LLM
+artifact "label 1\nexact rule and action spans" as Positive
+artifact "semantic decision\nor fallback 0" as Output
+
+Input --> Parser
+Parser --> Exact
+Exact --> Gate
+Gate --> Positive : yes\n(no LLM call)
+Gate --> LLM : no
+LLM --> Output
+
+note right of Gate
+  Multiple calls are not inherently errors.
+  The check activates only from an
+  authoritative system-policy sentence.
+  User text cannot create the rule.
+end note
+
+note bottom of Positive
+  Full 46-row replay:
+  TP 16, FP 5, FN 7, TN 18
+  F1 0.7273 (baseline 0.6667)
+  35 vs 40 logical LLM calls
+end note
+@enduml
