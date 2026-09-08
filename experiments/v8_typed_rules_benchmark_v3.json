@@ -1,0 +1,652 @@
+{
+  "schema_version": 1,
+  "data_role": "frozen real-rule semantic benchmark",
+  "warning": "gold is local scoring metadata and must never enter model messages",
+  "selection": "16 unique real SYSTEM rules across airline, banking, retail and telecom; labels and explanations were not read",
+  "cases": [
+    {
+      "case_id": "confirm_before_db_update",
+      "row_id": "airline__21::t7",
+      "source": {
+        "document": "prompt",
+        "role": "SYSTEM",
+        "start": 767,
+        "end": 1018,
+        "sha256": "1c0436d01b4f0981b51b4d420154a612f6a3979019417a8d99f02b9e49f9fc6a"
+      },
+      "rule": "Before taking any actions that update the booking database (booking, modifying flights, editing baggage, changing cabin class, or updating passenger information), you must list the action details and obtain explicit user confirmation (yes) to proceed.",
+      "gold": {
+        "supported_by_fragment": true,
+        "relations": [
+          "ONLY_IF"
+        ],
+        "effects": [
+          "REQUIRED"
+        ],
+        "operators": [
+          "BEFORE",
+          "AND"
+        ],
+        "features": {
+          "modality": "MUST",
+          "quantifier": "ALL",
+          "causality": "NONE",
+          "strength": "NONE",
+          "condition": "NECESSARY",
+          "negation": false,
+          "exception": false
+        },
+        "critical_requirements": [
+          "update action",
+          "list action details before action",
+          "explicit yes confirmation before same action"
+        ]
+      }
+    },
+    {
+      "case_id": "turn_tool_message_exclusion",
+      "row_id": "airline__23::t10",
+      "source": {
+        "document": "prompt",
+        "role": "SYSTEM",
+        "start": 1179,
+        "end": 1382,
+        "sha256": "5abaf0d77f89d6e49b822757c30de30af51f3efbdd34a75ef74e440863b6aa01"
+      },
+      "rule": "You should only make one tool call at a time, and if you make a tool call, you should not respond to the user simultaneously. If you respond to the user, you should not make a tool call at the same time.",
+      "gold": {
+        "supported_by_fragment": true,
+        "relations": [
+          "UNCONDITIONAL"
+        ],
+        "effects": [
+          "REQUIRED"
+        ],
+        "operators": [
+          "LE",
+          "COUNT",
+          "NOT",
+          "AND"
+        ],
+        "features": {
+          "modality": "SHOULD",
+          "quantifier": "ALL",
+          "causality": "NONE",
+          "strength": "NONE",
+          "condition": "NONE",
+          "negation": true,
+          "exception": false
+        },
+        "critical_requirements": [
+          "tool calls in one turn <= 1",
+          "tool call and user message are mutually exclusive in a turn"
+        ]
+      }
+    },
+    {
+      "case_id": "reservation_passenger_cap",
+      "row_id": "airline__10::t19",
+      "source": {
+        "document": "prompt",
+        "role": "SYSTEM",
+        "start": 3278,
+        "end": 3328,
+        "sha256": "2cce81e9410639f6e4ae88bc5354bc376a5b34829cf1f0b8f7d7b8b123937cf2"
+      },
+      "rule": "Each reservation can have at most five passengers.",
+      "gold": {
+        "supported_by_fragment": true,
+        "relations": [
+          "UNCONDITIONAL"
+        ],
+        "effects": [
+          "ASSERTED"
+        ],
+        "operators": [
+          "LE",
+          "COUNT"
+        ],
+        "features": {
+          "modality": "MUST",
+          "quantifier": "ALL",
+          "causality": "NONE",
+          "strength": "NONE",
+          "condition": "NONE",
+          "negation": false,
+          "exception": false
+        },
+        "critical_requirements": [
+          "per reservation",
+          "passenger count <= 5"
+        ]
+      }
+    },
+    {
+      "case_id": "reservation_payment_cardinality",
+      "row_id": "airline__24::t14",
+      "source": {
+        "document": "prompt",
+        "role": "SYSTEM",
+        "start": 3500,
+        "end": 3611,
+        "sha256": "e1fec6a4b429d3832b6bdd38573a128fed6b408943c9823f3352f148f1a03d46"
+      },
+      "rule": "Each reservation can use at most one travel certificate, at most one credit card, and at most three gift cards.",
+      "gold": {
+        "supported_by_fragment": true,
+        "relations": [
+          "UNCONDITIONAL"
+        ],
+        "effects": [
+          "ASSERTED"
+        ],
+        "operators": [
+          "AND",
+          "LE",
+          "COUNT"
+        ],
+        "features": {
+          "modality": "MUST",
+          "quantifier": "ALL",
+          "causality": "NONE",
+          "strength": "NONE",
+          "condition": "NONE",
+          "negation": false,
+          "exception": false
+        },
+        "critical_requirements": [
+          "travel certificate count <= 1",
+          "credit card count <= 1",
+          "gift card count <= 3",
+          "same reservation"
+        ]
+      }
+    },
+    {
+      "case_id": "cancellation_or_conditions",
+      "row_id": "airline__44::t22",
+      "source": {
+        "document": "prompt",
+        "role": "SYSTEM",
+        "start": 6821,
+        "end": 7086,
+        "sha256": "d33b67d2428a104854845408a18742fc02ba81f77558ac5a02cbe9412860e8cb"
+      },
+      "rule": "Otherwise, flight can be cancelled if any of the following is true:\n- The booking was made within the last 24 hrs\n- The flight is cancelled by airline\n- It is a business flight\n- The user has travel insurance and the reason for cancellation is covered by insurance.",
+      "gold": {
+        "supported_by_fragment": false,
+        "relations": [
+          "IF"
+        ],
+        "effects": [
+          "PERMITTED"
+        ],
+        "operators": [
+          "OR",
+          "AND",
+          "LE"
+        ],
+        "features": {
+          "modality": "MAY",
+          "quantifier": "ANY",
+          "causality": "NONE",
+          "strength": "NONE",
+          "condition": "SUFFICIENT",
+          "negation": false,
+          "exception": true
+        },
+        "critical_requirements": [
+          "requires preceding otherwise branch",
+          "booking age <= 24 hours",
+          "airline cancellation",
+          "business flight",
+          "insurance and covered reason"
+        ]
+      }
+    },
+    {
+      "case_id": "partial_segment_retention",
+      "row_id": "airline__8::t7",
+      "source": {
+        "document": "prompt",
+        "role": "SYSTEM",
+        "start": 5088,
+        "end": 5186,
+        "sha256": "77418f4f985252d0d2fbdd5d7e8966771941aefe14e1bfcb9c28dba10f079230"
+      },
+      "rule": "Some flight segments can be kept, but their prices will not be updated based on the current price.",
+      "gold": {
+        "supported_by_fragment": false,
+        "relations": [
+          "UNCONDITIONAL"
+        ],
+        "effects": [
+          "PERMITTED",
+          "REQUIRED"
+        ],
+        "operators": [
+          "NOT",
+          "EQ"
+        ],
+        "features": {
+          "modality": "MAY",
+          "quantifier": "SOME",
+          "causality": "NONE",
+          "strength": "NONE",
+          "condition": "NONE",
+          "negation": true,
+          "exception": false
+        },
+        "critical_requirements": [
+          "permission to keep a subset",
+          "kept segment price remains original"
+        ]
+      }
+    },
+    {
+      "case_id": "identity_two_of_four",
+      "row_id": "banking_knowledge__task_005::t6",
+      "source": {
+        "document": "prompt",
+        "role": "SYSTEM",
+        "start": 6335,
+        "end": 6780,
+        "sha256": "8cf68f19c47bbf5b000c9f2e4140dd34eeb8c5f715cf2e0727fb56ba4c5181e1"
+      },
+      "rule": "To verify the identity of the user, call the appropriate read tools, and ensure that they are able to give correctly any 2 out of the following values: date of birth, email, phone number, address. Knowing full name or userID is not enough to verify. After verification, you must call the verification logging tool to properly log the information into the verification records. Do not leak any information about the user before they are verified.",
+      "gold": {
+        "supported_by_fragment": false,
+        "relations": [
+          "ONLY_IF",
+          "IF"
+        ],
+        "effects": [
+          "REQUIRED",
+          "PROHIBITED"
+        ],
+        "operators": [
+          "GE",
+          "COUNT",
+          "BEFORE",
+          "AFTER",
+          "NOT"
+        ],
+        "features": {
+          "modality": "MUST",
+          "quantifier": "ANY",
+          "causality": "NONE",
+          "strength": "NONE",
+          "condition": "BOTH",
+          "negation": true,
+          "exception": false
+        },
+        "critical_requirements": [
+          "2 of dob/email/phone/address correct",
+          "full name/user id insufficient",
+          "log after verification",
+          "no leak before verification"
+        ]
+      }
+    },
+    {
+      "case_id": "discoverable_tool_unlock_sequence",
+      "row_id": "banking_knowledge__task_083::t10",
+      "source": {
+        "document": "prompt",
+        "role": "SYSTEM",
+        "start": 5057,
+        "end": 5591,
+        "sha256": "f7bc7d67b264dc880ee3c73a8b17141d3d51d5691d53bdcb71d90dcf7d3b90e7"
+      },
+      "rule": "First, unlock the tool using `unlock_discoverable_agent_tool(agent_tool_name)` with the exact tool name from the knowledge base: you must unlock the tool before using it to get information on the proper params. IMPORTANT: Do not unlock tools that you do not plan on actually using: this causes issues in database logging.\n2. Then, call the tool using `call_discoverable_agent_tool(agent_tool_name, arguments)` with the required arguments\n3. The unlock step is required before calling - you cannot call a tool that hasn't been unlocked",
+      "gold": {
+        "supported_by_fragment": false,
+        "relations": [
+          "ONLY_IF"
+        ],
+        "effects": [
+          "REQUIRED",
+          "PROHIBITED"
+        ],
+        "operators": [
+          "BEFORE",
+          "SAME_ENTITY",
+          "AND",
+          "NOT"
+        ],
+        "features": {
+          "modality": "MUST",
+          "quantifier": "ALL",
+          "causality": "NONE",
+          "strength": "NONE",
+          "condition": "NECESSARY",
+          "negation": true,
+          "exception": false
+        },
+        "critical_requirements": [
+          "exact KB tool name",
+          "unlock before call",
+          "do not unlock unless planned use",
+          "same agent_tool_name"
+        ]
+      }
+    },
+    {
+      "case_id": "single_user_scope",
+      "row_id": "retail__108::t1",
+      "source": {
+        "document": "prompt",
+        "role": "SYSTEM",
+        "start": 1190,
+        "end": 1356,
+        "sha256": "35c4f291b47c698f2ff3d47df5bee971f7fb9326218b5d2edb1882acd7a98603"
+      },
+      "rule": "You can only help one user per conversation (but you can handle multiple requests from the same user), and must deny any requests for tasks related to any other user.",
+      "gold": {
+        "supported_by_fragment": false,
+        "relations": [
+          "UNCONDITIONAL",
+          "IF"
+        ],
+        "effects": [
+          "REQUIRED"
+        ],
+        "operators": [
+          "LE",
+          "COUNT",
+          "NOT",
+          "EQ"
+        ],
+        "features": {
+          "modality": "MUST",
+          "quantifier": "ALL",
+          "causality": "NONE",
+          "strength": "NONE",
+          "condition": "SUFFICIENT",
+          "negation": true,
+          "exception": false
+        },
+        "critical_requirements": [
+          "distinct users per conversation <= 1",
+          "multiple requests by same user allowed",
+          "deny other-user task"
+        ]
+      }
+    },
+    {
+      "case_id": "cancel_pending_only_if",
+      "row_id": "retail__12::t4",
+      "source": {
+        "document": "prompt",
+        "role": "SYSTEM",
+        "start": 3936,
+        "end": 4052,
+        "sha256": "be51712775959c77490aebe9ae1f231b71477d3760cbd09fff9a338e6a74f9d2"
+      },
+      "rule": "An order can only be cancelled if its status is 'pending', and you should check its status before taking the action.",
+      "gold": {
+        "supported_by_fragment": false,
+        "relations": [
+          "ONLY_IF"
+        ],
+        "effects": [
+          "PERMITTED",
+          "REQUIRED"
+        ],
+        "operators": [
+          "FIELD_EQUALS",
+          "BEFORE",
+          "AND"
+        ],
+        "features": {
+          "modality": "SHOULD",
+          "quantifier": "ALL",
+          "causality": "NONE",
+          "strength": "NONE",
+          "condition": "NECESSARY",
+          "negation": false,
+          "exception": false
+        },
+        "critical_requirements": [
+          "latest status pending is necessary",
+          "check same order status before cancellation"
+        ]
+      }
+    },
+    {
+      "case_id": "cancellation_reason_enum",
+      "row_id": "retail__14::t1",
+      "source": {
+        "document": "prompt",
+        "role": "SYSTEM",
+        "start": 4054,
+        "end": 4211,
+        "sha256": "85f927e412a03491b5d0882d861c7e480905cd161417609edc64db1766cab65d"
+      },
+      "rule": "The user needs to confirm the order id and the reason (either 'no longer needed' or 'ordered by mistake') for cancellation. Other reasons are not acceptable.",
+      "gold": {
+        "supported_by_fragment": true,
+        "relations": [
+          "ONLY_IF"
+        ],
+        "effects": [
+          "PERMITTED"
+        ],
+        "operators": [
+          "AND",
+          "EQ",
+          "OR"
+        ],
+        "features": {
+          "modality": "MUST",
+          "quantifier": "ALL",
+          "causality": "NONE",
+          "strength": "NONE",
+          "condition": "NECESSARY",
+          "negation": true,
+          "exception": false
+        },
+        "critical_requirements": [
+          "confirm order id",
+          "confirm reason",
+          "reason is no longer needed or ordered by mistake"
+        ]
+      }
+    },
+    {
+      "case_id": "same_product_different_option",
+      "row_id": "retail__36::t10",
+      "source": {
+        "document": "prompt",
+        "role": "SYSTEM",
+        "start": 5522,
+        "end": 5718,
+        "sha256": "cd83aecf1d2060a28ae1771d56333fd561205bf105e97ce4e3bf8a7e9f40e99b"
+      },
+      "rule": "For a pending order, each item can be modified to an available new item of the same product but of different product option. There cannot be any change of product types, e.g. modify shirt to shoe.",
+      "gold": {
+        "supported_by_fragment": true,
+        "relations": [
+          "ONLY_IF"
+        ],
+        "effects": [
+          "PERMITTED"
+        ],
+        "operators": [
+          "FIELD_EQUALS",
+          "AND",
+          "NOT",
+          "EQ"
+        ],
+        "features": {
+          "modality": "MUST",
+          "quantifier": "ALL",
+          "causality": "NONE",
+          "strength": "NONE",
+          "condition": "NECESSARY",
+          "negation": true,
+          "exception": false
+        },
+        "critical_requirements": [
+          "latest order status pending",
+          "new item available",
+          "same product",
+          "different option",
+          "aligned item pair"
+        ]
+      }
+    },
+    {
+      "case_id": "expired_contract_resume_exception",
+      "row_id": "telecom__service_issuebreak_apn_settings-contract_end_suspension-lock_sim_card_pin-unseat_::t13",
+      "source": {
+        "document": "prompt",
+        "role": "SYSTEM",
+        "start": 4734,
+        "end": 4875,
+        "sha256": "c2aacddbc1d937703881d6ba3ed3b29b0085d6fe0ba93ab14868624db0dc5c3c"
+      },
+      "rule": "You are not allowed to lift the suspension if the line's contract end date is in the past, even if the user has paid all their overdue bills.",
+      "gold": {
+        "supported_by_fragment": true,
+        "relations": [
+          "IF"
+        ],
+        "effects": [
+          "PROHIBITED"
+        ],
+        "operators": [
+          "IS_PAST"
+        ],
+        "features": {
+          "modality": "MUST",
+          "quantifier": "ALL",
+          "causality": "NONE",
+          "strength": "NONE",
+          "condition": "SUFFICIENT",
+          "negation": true,
+          "exception": true
+        },
+        "critical_requirements": [
+          "same line contract_end_date < current_date",
+          "paid bills do not override prohibition"
+        ]
+      }
+    },
+    {
+      "case_id": "refuel_two_gb_cap",
+      "row_id": "telecom__mms_issueairplane_mode_on-bad_network_preference-bad_wifi_calling-data_usage_exce::t7",
+      "source": {
+        "document": "prompt",
+        "role": "SYSTEM",
+        "start": 5226,
+        "end": 5281,
+        "sha256": "09a19ec10b65ccbc89b12241104953171a59cf2079fdfb2deb4f5cc02eb9732f"
+      },
+      "rule": "The maximum amount of data that can be refueled is 2GB.",
+      "gold": {
+        "supported_by_fragment": true,
+        "relations": [
+          "UNCONDITIONAL"
+        ],
+        "effects": [
+          "ASSERTED"
+        ],
+        "operators": [
+          "LE"
+        ],
+        "features": {
+          "modality": "MUST",
+          "quantifier": "ALL",
+          "causality": "NONE",
+          "strength": "NONE",
+          "condition": "NONE",
+          "negation": false,
+          "exception": false
+        },
+        "critical_requirements": [
+          "refuel amount <= 2 GB",
+          "unit is GB",
+          "boundary is inclusive"
+        ]
+      }
+    },
+    {
+      "case_id": "vpn_disconnect_conjunction",
+      "row_id": "telecom__mobile_data_issueairplane_mode_on-bad_network_preference-bad_vpn-data_saver_mode_::t7",
+      "source": {
+        "document": "prompt",
+        "role": "SYSTEM",
+        "start": 19193,
+        "end": 19345,
+        "sha256": "d18e08035ea318b1477936480e811e00a33efb9f9663abf2cedee75e47849d9b"
+      },
+      "rule": "If `check_vpn_status()` shows \"VPN is ON and connected\" and performance level is \"Poor\", guide the user to use `disconnect_vpn()` to disconnect the VPN.",
+      "gold": {
+        "supported_by_fragment": true,
+        "relations": [
+          "IF"
+        ],
+        "effects": [
+          "REQUIRED"
+        ],
+        "operators": [
+          "AND",
+          "FIELD_EQUALS"
+        ],
+        "features": {
+          "modality": "SHOULD",
+          "quantifier": "ALL",
+          "causality": "NONE",
+          "strength": "NONE",
+          "condition": "SUFFICIENT",
+          "negation": false,
+          "exception": false
+        },
+        "critical_requirements": [
+          "current VPN on and connected",
+          "current performance poor",
+          "guide disconnect for same device"
+        ]
+      }
+    },
+    {
+      "case_id": "mms_necessary_connectivity",
+      "row_id": "telecom__mms_issuebad_network_preference-bad_wifi_calling-break_apn_mms_setting-break_app_::t7",
+      "source": {
+        "document": "prompt",
+        "role": "SYSTEM",
+        "start": 20650,
+        "end": 20731,
+        "sha256": "38b9ee57c27b04008c3ecb5a6ebef1eeeef9ec149637b783d8983674734ece92"
+      },
+      "rule": "For MMS to work, the user must have cellular service and mobile data (any speed).",
+      "gold": {
+        "supported_by_fragment": true,
+        "relations": [
+          "ONLY_IF"
+        ],
+        "effects": [
+          "ASSERTED"
+        ],
+        "operators": [
+          "AND"
+        ],
+        "features": {
+          "modality": "MUST",
+          "quantifier": "ANY",
+          "causality": "NONE",
+          "strength": "NONE",
+          "condition": "NECESSARY",
+          "negation": false,
+          "exception": false
+        },
+        "critical_requirements": [
+          "cellular service necessary",
+          "mobile data necessary",
+          "no minimum speed threshold"
+        ]
+      }
+    }
+  ]
+}

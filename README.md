@@ -1,5 +1,13 @@
 # Guardian of Truth
 
+Latest research cycle: the V9 underspecified-semantics safety kernel is
+implemented in shadow mode, but production integration is stopped. It passes
+15/15 controlled metamorphic pairs, yet represents only 45/84 unique per-rule
+construction features on 16 real rules and 0/16 pass the frozen gold audit gate.
+See the [V9 report](docs/V9_OUTER_SEMANTICS_CYCLE.md),
+[architecture](docs/12_v9_outer_semantics.puml), and
+[machine-readable result](docs/v9_outer_semantics_result.json).
+
 Current research result: the V7 routed formal-verification cycle raises the
 frozen development replay from F1 `0.7273` to `0.7556` with one exact,
 zero-LLM date-gated-action correction. LINC/FaiRR remain shadow-only because

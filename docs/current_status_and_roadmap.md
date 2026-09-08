@@ -1,5 +1,15 @@
 # Что работает, куда развиваемся и как измеряем пользу
 
+> Обновление V9: реализовано минимальное shadow-ядро underspecified semantics,
+> но интеграция остановлена falsification-gate. Controlled metamorphic tests:
+> 15/15; уникальные размеченные policy features: 45/84 (53,6%); frozen gold
+> audit gate: 0/16. Это означает `KEEP` для safety-kernel и `REJECT` для текущего
+> lexical translator. Полный отчёт: [V9_OUTER_SEMANTICS_CYCLE.md](V9_OUTER_SEMANTICS_CYCLE.md),
+> схема: [12_v9_outer_semantics.puml](12_v9_outer_semantics.puml).
+
+> Разделы ниже, где явно указаны этапы 2/V7 и старое число тестов, являются
+> историческими срезами, а не текущим итогом репозитория.
+
 > Обновление V7: текущий frozen development-кандидат — TP=17, FP=5, FN=6,
 > TN=18, F1=0.7556. Новое исправление даёт точная проверка date-gated action;
 > LINC/FaiRR пока только shadow. Детали: [V7_FORMAL_REASONING_CYCLE.md](V7_FORMAL_REASONING_CYCLE.md)

@@ -1,0 +1,70 @@
+@startuml
+title Guardian V9 — falsifiable underspecified semantics (shadow only)
+
+skinparam componentStyle rectangle
+skinparam shadowing false
+
+package "Trusted existing runtime" {
+  [Exact checks] as Exact
+  [Current semantic fallback] as Fallback
+  [Binary contest adapter] as Binary
+}
+
+package "V9 shadow candidate" {
+  [Independent views\nlexical / event-role / entity-state] as Views
+  artifact "Semantic concepts" as Concepts
+  artifact "Translation obligations\nsource + kind + scope + status" as Obligations
+  artifact "Structural holes\nvalue / binding / subtree / whole-rule" as Holes
+  [Outer builder] as OuterBuilder
+  database "Phi_outer\nall non-excluded completions" as Outer
+  database "Phi_working\nranked subset" as Working
+  [Bidirectional coverage gate] as Coverage
+  [Invariant evaluator\nQ1=K and V; Q0=K and not V] as Solver
+  [Missing-concept /\ninformation witness] as Missing
+  [Metamorphic audit] as Meta
+  [Residual / standard factors] as Residual
+}
+
+[SYSTEM policy + schema + trace] --> Exact
+[SYSTEM policy + schema + trace] --> Views
+Views --> Concepts
+Views --> Obligations
+Concepts --> Obligations
+Obligations --> Holes
+Holes --> OuterBuilder
+OuterBuilder --> Outer : exact/verified exclusions only
+OuterBuilder --> Working : heuristics may rank/narrow search
+Obligations --> Coverage
+Concepts --> Missing
+Views --> Meta
+Outer --> Solver
+Coverage --> Solver : strict result only if complete
+Missing --> Solver : otherwise UNRESOLVED
+Residual --> Outer
+
+Exact --> Binary : proved violation
+Solver --> Binary : proved invariant result
+Solver --> Fallback : residual or unresolved
+Fallback --> Binary : required binary fallback
+
+note right of Outer
+  LLM confidence, voting and ranking
+  never remove an outer interpretation.
+end note
+
+note bottom of Solver
+  SAT/UNSAT -> PROVED_VIOLATION
+  UNSAT/SAT -> PROVED_NO_VIOLATION
+  SAT/SAT -> UNRESOLVED + two witnesses
+  UNSAT/UNSAT -> EMPTY_SPACE
+  timeout -> COMPUTATION_UNRESOLVED
+end note
+
+note bottom of Coverage
+  Current V9 experiment fails this gate:
+  45/84 unique feature requirements represented,
+  0/16 pass the frozen gold audit gate.
+  Therefore this package is not on the
+  production decision path.
+end note
+@enduml
