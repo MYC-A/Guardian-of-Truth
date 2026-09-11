@@ -15,12 +15,18 @@ def _same_scope(claim: Claim, evidence: EvidenceRecord) -> bool:
     return all(key in actual and actual[key] == value for key, value in wanted.items())
 
 
+def _same_predicate(claim: Claim, evidence: EvidenceRecord) -> bool:
+    return (evidence.predicate == "effect_confirmed" and isinstance(evidence.object, str)
+            and evidence.object.casefold() == claim.predicate.casefold())
+
+
 def bind_claim(claim: Claim, evidence: list[EvidenceRecord]) -> Binding:
     scoped = [item for item in evidence if _same_scope(claim, item)]
     if claim.kind is ClaimKind.INTENT:
         return Binding(claim.id, (), FourValue.TRUE, "intent_is_not_execution_claim")
     if claim.kind is ClaimKind.ACTION:
-        confirmed = [item for item in scoped if item.status is EvidenceStatus.CONFIRMED]
+        confirmed = [item for item in scoped
+                     if item.status is EvidenceStatus.CONFIRMED and _same_predicate(claim, item)]
         if confirmed:
             return Binding(claim.id, tuple(item.id for item in confirmed), FourValue.TRUE,
                            "explicit_effect_confirmation")

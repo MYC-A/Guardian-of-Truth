@@ -5,7 +5,9 @@ from guardian_truth.next.claims import extract_claims
 from guardian_truth.next.logic import conjunction, disjunction, negate
 from guardian_truth.next.normalize import build_evidence, normalize_trace
 from guardian_truth.next.policy import compile_policy
-from guardian_truth.next.records import Claim, ClaimKind, EvidenceStatus, FourValue, Span
+from guardian_truth.next.records import (
+    Claim, ClaimKind, EvidenceRecord, EvidenceStatus, FourValue, Span, ToolEffectContract,
+)
 
 
 SYSTEM = """⟦SYSTEM⟧
@@ -51,6 +53,36 @@ class EvidenceBoundaryTests(unittest.TestCase):
         response = '⟦ASSISTANT_TOOL_CALL name="update"⟧\n{"line_id":"L1"}'
         binding = bind_claim(claim, build_evidence(normalize_trace(SYSTEM, response)))
         self.assertEqual(FourValue.UNKNOWN, binding.status)
+
+    def test_success_confirms_only_contract_guaranteed_effect(self):
+        prompt = SYSTEM + ('⟦ASSISTANT_TOOL_CALL name="update"⟧\n{"line_id":"L1"}\n'
+                           '⟦TOOL_RESULT name="update" requestor="assistant"⟧\n'
+                           '{"success":true}')
+        contract = ToolEffectContract("update", guaranteed_effects=("line_updated",),
+                                      provenance="T1_human_contract")
+        evidence = build_evidence(normalize_trace(prompt, ""), {"update": contract})
+        confirmed = [item for item in evidence if item.status is EvidenceStatus.CONFIRMED]
+        self.assertEqual(["line_updated"], [item.object for item in confirmed])
+
+    def test_failure_no_effect_requires_explicit_contract(self):
+        prompt = SYSTEM + ('⟦ASSISTANT_TOOL_CALL name="update"⟧\n{"line_id":"L1"}\n'
+                           '⟦TOOL_RESULT name="update" requestor="assistant"⟧\n'
+                           '{"success":false}')
+        unknown = ToolEffectContract("update", guaranteed_effects=("line_updated",))
+        proven = ToolEffectContract("update", guaranteed_effects=("line_updated",),
+                                    failure_no_effect=FourValue.TRUE,
+                                    provenance="T1_human_contract")
+        self.assertFalse(any(item.predicate == "no_effect" for item in
+                             build_evidence(normalize_trace(prompt, ""), {"update": unknown})))
+        self.assertTrue(any(item.predicate == "no_effect" for item in
+                            build_evidence(normalize_trace(prompt, ""), {"update": proven})))
+
+    def test_unrelated_confirmed_effect_does_not_support_action(self):
+        claim = Claim("c", ClaimKind.ACTION, "assistant", "refund", "completed",
+                      Span("response", 0, 1), modality="completed")
+        evidence = [EvidenceRecord("e", "event", "call", "effect_confirmed", "booking_changed",
+                                   EvidenceStatus.CONFIRMED, Span("prompt", 0, 1))]
+        self.assertEqual(FourValue.UNKNOWN, bind_claim(claim, evidence).status)
 
 
 class ClaimBoundaryTests(unittest.TestCase):

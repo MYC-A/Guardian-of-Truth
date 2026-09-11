@@ -1,5 +1,34 @@
 # Guardian of Truth
 
+## Guardian Next experimental branch
+
+This branch starts from frozen V5.3 commit
+`afb7906c3a3244fbc4196fe5cb2ea18ee86e0d96`. The later V6–V9 files inherited
+from that tree are research/regression references, not the production base.
+The new evidence-first architecture and current decision are documented in
+[`docs/next/ARCHITECTURE.md`](docs/next/ARCHITECTURE.md) and
+[`docs/next/FINAL_DECISION.md`](docs/next/FINAL_DECISION.md).
+
+Reproducible stages:
+
+```powershell
+python -m guardian_truth.next.evaluate baseline --input valid.parquet
+python -m guardian_truth.next.evaluate policy --input valid.parquet
+python -m guardian_truth.next.evaluate tool --input valid.parquet
+python -m guardian_truth.next.evaluate claims --input valid.parquet
+python -m guardian_truth.next.evaluate internal --input valid.parquet
+```
+
+Live calls are always explicit. For example, a blind response-only claim probe:
+
+```powershell
+python -m guardian_truth.next.evaluate claims --input valid.parquet --live `
+  --provider groq --model openai/gpt-oss-120b --env-file .env --max-rows 6
+```
+
+The provider receives neither reference labels nor explanations. Do not commit
+the env file; reports serialise environment variable names, never secret values.
+
 Latest research cycle: the V9 underspecified-semantics safety kernel is
 implemented in shadow mode, but production integration is stopped. It passes
 15/15 controlled metamorphic pairs, yet represents only 45/84 unique per-rule

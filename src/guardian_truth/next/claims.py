@@ -33,6 +33,7 @@ _REFUSAL = re.compile(
 )
 _ABSENCE = re.compile(
     r"\b(?:не\s+(?:наш[её]л|существует|доступно)|нет\s+(?:доступных|других)|"
+    r"других\s+[^.!?\n]{0,80}\s+не\s+найдено|"
     r"not\s+found|does\s+not\s+exist|no\s+(?:available|other))\b",
     re.IGNORECASE,
 )

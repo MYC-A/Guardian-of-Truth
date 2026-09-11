@@ -4,6 +4,6 @@ WORKDIR /app
 COPY pyproject.toml README.md ./
 COPY src ./src
 COPY scripts ./scripts
-RUN pip install --no-cache-dir .
+RUN pip install --no-cache-dir ".[data]"
 USER 65534:65534
 ENTRYPOINT ["python", "scripts/predict.py"]

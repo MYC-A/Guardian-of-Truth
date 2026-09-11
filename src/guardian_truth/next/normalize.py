@@ -7,7 +7,7 @@ from typing import Any, Iterable
 
 from guardian_truth.parsing import parse_events
 
-from .records import EvidenceRecord, EvidenceStatus, NormalizedEvent, Span
+from .records import EvidenceRecord, EvidenceStatus, FourValue, NormalizedEvent, Span, ToolEffectContract
 
 
 def _source(source) -> Span:
@@ -71,11 +71,24 @@ def _failed(value: Any) -> bool:
     return isinstance(status, str) and status.lower() in {"failed", "failure", "error", "rejected"}
 
 
-def build_evidence(events: list[NormalizedEvent]) -> list[EvidenceRecord]:
+def _succeeded(value: Any) -> bool:
+    if not isinstance(value, dict):
+        return False
+    if value.get("success") is True or value.get("ok") is True:
+        return True
+    status = value.get("status")
+    return isinstance(status, str) and status.lower() in {"success", "succeeded", "completed", "ok"}
+
+
+def build_evidence(events: list[NormalizedEvent],
+                   contracts: dict[str, ToolEffectContract] | None = None) -> list[EvidenceRecord]:
     """Create append-only evidence.  Failure never implies confirmed no-effect."""
     records: list[EvidenceRecord] = []
+    calls: dict[str, NormalizedEvent] = {}
     for event in events:
         if event.kind == "call":
+            if event.call_id:
+                calls[event.call_id] = event
             records.append(EvidenceRecord(
                 id=f"ev:{len(records)}",
                 event_id=event.id,
@@ -116,4 +129,27 @@ def build_evidence(events: list[NormalizedEvent]) -> list[EvidenceRecord]:
                         entities=entities,
                         freshness=event.index,
                     ))
+            contract = (contracts or {}).get(event.name or "")
+            call = calls.get(event.call_id or "")
+            if contract is not None and call is not None:
+                call_entities = _entities(call.value)
+                if _succeeded(event.value):
+                    for effect in contract.guaranteed_effects:
+                        records.append(EvidenceRecord(
+                            id=f"ev:{len(records)}", event_id=event.id,
+                            subject=event.call_id or event.id, predicate="effect_confirmed",
+                            object=effect, status=EvidenceStatus.CONFIRMED, source=event.source,
+                            entities=call_entities, freshness=event.index,
+                            provenance=contract.provenance,
+                        ))
+                elif failed and contract.failure_no_effect is FourValue.TRUE:
+                    for effect in contract.guaranteed_effects:
+                        records.append(EvidenceRecord(
+                            id=f"ev:{len(records)}", event_id=event.id,
+                            subject=event.call_id or event.id, predicate="no_effect",
+                            object=effect, status=EvidenceStatus.CONFIRMED, source=event.source,
+                            entities=call_entities, freshness=event.index,
+                            provenance=contract.provenance,
+                            completeness_certificate=f"contract:{contract.tool}:failure_no_effect",
+                        ))
     return records

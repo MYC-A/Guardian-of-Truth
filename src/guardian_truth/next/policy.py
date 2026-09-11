@@ -16,6 +16,7 @@ from .records import CoverageItem, PolicyBundle, PolicyRule, Span
 
 COMPILER_VERSION = "p0-structural-v1"
 _SEGMENT = re.compile(r"(?m)^(?:#{1,6}\s+.+|\s*(?:[-*]|\d+[.)])\s+.+)$")
+_POLICY_BLOCK = re.compile(r"<(instructions|policy)>\s*(?P<body>[\s\S]*?)\s*</\1>", re.IGNORECASE)
 
 
 def _span(start: int, end: int) -> Span:
@@ -42,16 +43,35 @@ def _segments(text: str, start: int, end: int) -> list[tuple[int, int]]:
     return result
 
 
+def _policy_regions(prompt: str, event) -> list[tuple[int, int]]:
+    """Exclude tool schemas when explicit instruction/policy blocks exist."""
+    matches = list(_POLICY_BLOCK.finditer(event.text))
+    if not matches:
+        return [(event.source.start, event.source.end)]
+    return [(event.source.start + match.start("body"), event.source.start + match.end("body"))
+            for match in matches]
+
+
+def policy_source_identity(prompt: str) -> tuple[str, tuple[tuple[int, int], ...]]:
+    events = parse_events(prompt, "prompt")
+    systems = [event for event in events if event.role == "system" and event.kind == "text"]
+    regions = [(start, end) for event in systems for start, end in _policy_regions(prompt, event)]
+    source_text = [prompt[start:end] for start, end in regions]
+    digest = hashlib.sha256(json.dumps(source_text, ensure_ascii=False, separators=(",", ":")).encode("utf-8")).hexdigest()
+    return digest, tuple(regions)
+
+
 def compile_policy(prompt: str, *, arm: str = "P0") -> PolicyBundle:
     """Compile only authoritative system text; response/trace are not accepted."""
     events = parse_events(prompt, "prompt")
     systems = [event for event in events if event.role == "system" and event.kind == "text"]
-    source_text = "".join(prompt[e.source.start:e.source.end] for e in systems)
-    digest = hashlib.sha256(source_text.encode("utf-8")).hexdigest()
+    regions = [(event_index, start, end) for event_index, event in enumerate(systems)
+               for start, end in _policy_regions(prompt, event)]
+    digest, _ = policy_source_identity(prompt)
     rules: list[PolicyRule] = []
     coverage: list[CoverageItem] = []
-    for event_index, event in enumerate(systems):
-        for segment_index, (start, end) in enumerate(_segments(prompt, event.source.start, event.source.end)):
+    for event_index, region_start, region_end in regions:
+        for segment_index, (start, end) in enumerate(_segments(prompt, region_start, region_end)):
             segment_id = f"s{event_index}_{segment_index}"
             segment_text = prompt[start:end]
             matched: list[str] = []
