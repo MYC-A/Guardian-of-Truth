@@ -60,3 +60,16 @@ def test_no_contextual_unsupported_gold_never_claims_unsupported_recall():
     result = summarize([case], [{"case_id": "c0", "prediction": prediction}])
     assert result["unsupported_claim_recall"] == "NOT_ESTABLISHED_NO_CONTEXTUAL_GOLD"
     assert result["relation_types"]["directed_edge_accuracy"] == "NOT_ESTABLISHED_NO_DIRECTED_GOLD"
+
+
+def test_claim_runner_direct_entrypoint_loads_without_network():
+    import os
+    from pathlib import Path
+    import subprocess
+    import sys
+    root = Path(__file__).resolve().parents[1]
+    environment = dict(os.environ)
+    environment["PYTHONPATH"] = str(root / "src")
+    result = subprocess.run([sys.executable, "-B", str(root / "scripts/evaluate_vnext_claims.py"), "--help"],
+        cwd=root, env=environment, capture_output=True)
+    assert result.returncode == 0

@@ -7,7 +7,13 @@ import json
 from pathlib import Path
 import re
 import subprocess
+import sys
 import time
+
+# Direct "python scripts/..." puts scripts/, not repository root, on sys.path.
+ROOT = Path(__file__).resolve().parents[1]
+if str(ROOT) not in sys.path:
+    sys.path.insert(0, str(ROOT))
 
 from guardian_truth.cycle2.claims import (claim_messages, load_claim_arm_contract,
     model_claim_proposal, response_spans)
@@ -22,7 +28,6 @@ from guardian_truth.vnext.semantic import ChatSemanticBackend
 from scripts.vnext_claim_scoring import RULES, summarize
 
 
-ROOT = Path(__file__).resolve().parents[1]
 FIELD_TASKS = {"claim_disposition": ("disposition",), "claim_kind": ("kind",),
     "claim_actor": ("actor",), "claim_predicate": ("predicate",),
     "claim_object_entities": ("object", "entity_refs"), "claim_modality_polarity": ("modality", "polarity"),
