@@ -28,14 +28,26 @@ closed-universe boundary; separate Goal/Plan parser; conditional version/hash-bo
 T1 and grounded nontrusted T2; indexed Binder retaining duplicate-name ambiguity.
 These are implementations with unit tests, NOT established model semantic gains.
 
-Full project test command: `python -m pytest tests -q`: 727 passed, including
-the frozen T1 result-integrity check.
+Full project test command: `python -m pytest tests -q`: 773 passed, including
+the frozen T1 result-integrity check. Proof/decision subset: 46 passed.
+Machine-readable unit/integrity checkpoint: `outputs/vnext/checkpoint_checks_v1.json`
+at implementation commit `694c32d`: zero integrity errors, protected incumbent HEADs
+unchanged, no API requests. This is not a model-semantic or blind evaluation result.
 Frozen offline T1 stage: 16/16 applicable cases exact; two missing-contract cases
 NOT_APPLICABLE_T1; false no-effect=0; false causal action confirmation=0.
 Real-world tool generalization and downstream gain remain NOT_ESTABLISHED.
 
-Remaining: temporal/causal proof primitives, independent certificates,
-core/escalation/adapters; all model semantic stage evaluations, stage integration,
+New proof/decision checkpoint: six typed evidence primitives, four-valued implication
+and exhaustive world aggregation; independent certificate checker with source
+reconstruction and all-world checks; certificate-gated Core decisions and structured
+diagnostics; separate audit/safety/competition adapters; three-step bounded
+post-UNRESOLVED escalation preserving trusted observations/contracts and admitted
+meanings. ERROR under empirical Phi carries conditional semantic assumptions;
+NO_ERROR additionally needs provable semantic closure and completeness.
+See `PROOF_BOUNDARIES.md` and `CORE_DECISION_BOUNDARIES.md` for exact limits.
+
+Remaining: full semantic-frontend/operational-grounding/Core orchestration;
+all model semantic stage evaluations, stage integration,
 regression and dev-only ablations;
 candidate freeze; fresh gate; sealed blind predictions/gold join; all result JSON,
 certificate JSONL, failure audit, result documents, final manifest and final decision.
@@ -44,3 +56,5 @@ The 23 requirement rows remain unverified until their authoritative evidence exi
 Checkpoint commits: protocol `8e9c3fb`; types/ledger `8e87649`; Claim Graph
 `e69a406`; T1/T2 `9e0b2f4`; policy/Goal `f0fb124`; indexed Binder `f562c8b`;
 T1 evaluator `8d2c532`; T1 pre-prediction freeze `af2e3ee`.
+Proof/certificate engine `3b36b5d`; certificate-gated decisions/escalation/adapters
+`694c32d`. No stage/prompt/configuration in frozen T1 v1 was changed.
