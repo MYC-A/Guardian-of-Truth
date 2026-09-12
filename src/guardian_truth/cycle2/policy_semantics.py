@@ -14,6 +14,7 @@ STRUCTURAL_FIELDS = (
     "actor",
     "regulated_kind",
     "facet",
+    "target_clauses",
     "relation",
     "condition_literals",
     "exception_literals",
@@ -101,12 +102,17 @@ def _validate_structure(value: Any) -> None:
     if not _keys(value, set(STRUCTURAL_FIELDS)):
         raise ValueError("invalid structural gold")
     if any(not isinstance(value[key], str) for key in STRUCTURAL_FIELDS
-           if key not in {"condition_literals", "exception_literals"}):
+           if key not in {"target_clauses", "condition_literals", "exception_literals"}):
         raise ValueError("invalid structural scalar")
     for key in ("condition_literals", "exception_literals"):
         if (not isinstance(value[key], list)
                 or any(not isinstance(item, str) or not item for item in value[key])):
             raise ValueError("invalid structural literals")
+    if (not isinstance(value["target_clauses"], list) or not value["target_clauses"]
+            or any(not isinstance(clause, list) or not clause
+                   or any(not isinstance(item, str) or not item for item in clause)
+                   for clause in value["target_clauses"])):
+        raise ValueError("invalid structural target clauses")
 
 
 def validate_program(value: Any, atoms: frozenset[str]) -> None:

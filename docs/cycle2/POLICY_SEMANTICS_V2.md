@@ -15,8 +15,8 @@ identified as such in every case.
 ## Three independent scoring levels
 
 1. **Structural accuracy** scores modality, actor, regulated kind, facet,
-   relation, condition, exception, temporal, identity, provenance, and
-   quantification separately.
+   relation, typed target clauses, condition, exception, temporal, identity,
+   provenance, and quantification separately.
 2. **Behavioral semantic accuracy** executes a candidate program on at least
    four frozen distinguishing worlds per case. This is the primary semantic
    metric.

@@ -42,15 +42,34 @@ def spec(identifier, family, policies, gold_structure, violation=(), permission=
          source_ref="manual:cycle2-policy-v1"):
     if len(policies) != 4:
         raise ValueError("every semantic seed requires four frozen variants")
+    program = {
+        "violation_clauses": [list(row) for row in violation],
+        "permission_clauses": [list(row) for row in permission],
+    }
+    condition_atoms = {item[1:] if item.startswith("!") else item
+                       for item in gold_structure["condition_literals"]}
+    exception_atoms = {item[1:] if item.startswith("!") else item
+                       for item in gold_structure["exception_literals"]}
+    source_clauses = program["permission_clauses"] or program["violation_clauses"]
+    targets = []
+    for clause in source_clauses:
+        target = []
+        for literal in clause:
+            atom = literal[1:] if literal.startswith("!") else literal
+            if atom in condition_atoms or atom in exception_atoms:
+                continue
+            target.append(atom)
+        if target and target not in targets:
+            targets.append(target)
+    if not targets:
+        raise ValueError("could not derive a typed target clause")
+    gold_structure = dict(gold_structure, target_clauses=targets)
     return {
         "id": identifier,
         "family": family,
         "policies": policies,
         "structure": gold_structure,
-        "program": {
-            "violation_clauses": [list(row) for row in violation],
-            "permission_clauses": [list(row) for row in permission],
-        },
+        "program": program,
         "source_ref": source_ref,
     }
 
