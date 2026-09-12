@@ -28,7 +28,8 @@ closed-universe boundary; separate Goal/Plan parser; conditional version/hash-bo
 T1 and grounded nontrusted T2; indexed Binder retaining duplicate-name ambiguity.
 These are implementations with unit tests, NOT established model semantic gains.
 
-Full project test command: `python -m pytest tests -q`: 726 passed.
+Full project test command: `python -m pytest tests -q`: 727 passed, including
+the frozen T1 result-integrity check.
 Frozen offline T1 stage: 16/16 applicable cases exact; two missing-contract cases
 NOT_APPLICABLE_T1; false no-effect=0; false causal action confirmation=0.
 Real-world tool generalization and downstream gain remain NOT_ESTABLISHED.
