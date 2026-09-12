@@ -53,27 +53,20 @@ def _sha256_json(value: Any) -> str:
     return hashlib.sha256(_canonical_json(value).encode("utf-8")).hexdigest()
 
 
-def render_guardian_input(model_view: Mapping[str, Any]) -> tuple[str, str]:
-    """Render an adapter model view without introducing benchmark labels.
-
-    The last native assistant event is rendered as the response.  Everything
-    else, including policy context and tool schemas, remains in the prompt.  A
-    diagnostic case without an assistant event has an empty response document.
-    """
+def _render_guardian_turn(model_view: Mapping[str, Any], response_index: int) -> tuple[str, str]:
+    """Render one assistant event against only its preceding native prefix."""
     view = deepcopy(dict(model_view))
     events = view.get("events", [])
     if not isinstance(events, list):
         raise ExternalEvaluationError("model_view.events must be an array")
-    response_index: int | None = None
     for index, event in enumerate(events):
         if not isinstance(event, Mapping):
             raise ExternalEvaluationError("model_view.events entries must be objects")
-        if event.get("role") == "assistant" or event.get("type") == "assistant_message":
-            response_index = index
-    if response_index is None:
-        raise ExternalEvaluationError("end-to-end case has no assistant response")
-    if response_index != len(events) - 1:
-        raise ExternalEvaluationError("native events after selected assistant response are unsupported")
+    if not 0 <= response_index < len(events):
+        raise ExternalEvaluationError("assistant response index is outside native events")
+    response_event = events[response_index]
+    if response_event.get("role") != "assistant" and response_event.get("type") != "assistant_message":
+        raise ExternalEvaluationError("selected response event is not assistant-authored")
 
     def content(event: Mapping[str, Any]) -> str:
         value = event.get("content", "")
@@ -111,7 +104,6 @@ def render_guardian_input(model_view: Mapping[str, Any]) -> tuple[str, str]:
         if residual:
             event_content = event_content + ("\n" if event_content else "") + _canonical_json(residual)
         parts.append(f"⟦{tag}⟧\n{event_content}")
-    response_event = events[response_index]
     response = content(response_event)
     residual = {key: value for key, value in response_event.items()
                 if key not in {"role", "type", "content"}}
@@ -120,6 +112,32 @@ def render_guardian_input(model_view: Mapping[str, Any]) -> tuple[str, str]:
     if not response.strip():
         raise ExternalEvaluationError("selected assistant response is empty")
     return "\n".join(parts), response
+
+
+def render_guardian_turns(model_view: Mapping[str, Any]) -> tuple[tuple[int, str, str], ...]:
+    """Render all assistant turns without exposing any future native event."""
+    events = model_view.get("events", [])
+    if not isinstance(events, list):
+        raise ExternalEvaluationError("model_view.events must be an array")
+    rendered = []
+    for index, event in enumerate(events):
+        if not isinstance(event, Mapping):
+            raise ExternalEvaluationError("model_view.events entries must be objects")
+        if event.get("role") == "assistant" or event.get("type") == "assistant_message":
+            rendered.append((index, *_render_guardian_turn(model_view, index)))
+    if not rendered:
+        raise ExternalEvaluationError("end-to-end case has no assistant response")
+    return tuple(rendered)
+
+
+def render_guardian_input(model_view: Mapping[str, Any]) -> tuple[str, str]:
+    """Compatibility helper requiring the final native event to be assistant-authored."""
+    turns = render_guardian_turns(model_view)
+    last_index, prompt, response = turns[-1]
+    events = model_view.get("events", [])
+    if last_index != len(events) - 1:
+        raise ExternalEvaluationError("native events after selected assistant response are unsupported")
+    return prompt, response
 
 
 def _safe_path(root: Path, relative_text: str) -> Path:
@@ -320,36 +338,61 @@ def _bfcl_diagnostic(
 
 def _run_detectors_blind(
     cases: Sequence[ExternalCase], detectors: Mapping[str, Detector]
-) -> tuple[list[dict[str, Any]], str]:
+) -> tuple[list[dict[str, Any]], list[dict[str, Any]], str]:
     predictions: list[dict[str, Any]] = []
+    rendered_cases = []
+    unsupported = []
+    for case_index, case in enumerate(cases):
+        model_view = case.model_view()
+        try:
+            turns = render_guardian_turns(model_view)
+        except ExternalEvaluationError as exc:
+            unsupported.append({
+                "case_index": case_index,
+                "source": model_view["source"],
+                "record_id": model_view["record_id"],
+                "reason": str(exc),
+                "model_view_sha256": _sha256_json(model_view),
+            })
+            continue
+        rendered_cases.append((case_index, model_view, turns))
     for detector_name in sorted(detectors):
         detector = detectors[detector_name]
-        for case_index, case in enumerate(cases):
-            model_view = case.model_view()
-            prompt, response = render_guardian_input(model_view)
-            detector_input = BlindDetectorInput(deepcopy(model_view), prompt, response)
-            try:
-                prediction = detector(detector_input)
-            except Exception as exc:  # callback failures cannot become abstentions silently
-                raise ExternalEvaluationError(
-                    f"detector {detector_name!r} failed for {case.record_id}"
-                ) from exc
-            if type(prediction) is not int or prediction not in (0, 1):
-                raise ExternalEvaluationError(
-                    f"detector {detector_name!r} returned a non-binary prediction"
-                )
+        for case_index, model_view, turns in rendered_cases:
+            turn_records = []
+            for event_index, prompt, response in turns:
+                detector_input = BlindDetectorInput(deepcopy(model_view), prompt, response)
+                try:
+                    turn_prediction = detector(detector_input)
+                except Exception as exc:  # callback failures cannot become abstentions silently
+                    raise ExternalEvaluationError(
+                        f"detector {detector_name!r} failed for {model_view['record_id']}"
+                    ) from exc
+                if type(turn_prediction) is not int or turn_prediction not in (0, 1):
+                    raise ExternalEvaluationError(
+                        f"detector {detector_name!r} returned a non-binary prediction"
+                    )
+                turn_records.append({
+                    "event_index": event_index,
+                    "prediction": turn_prediction,
+                    "rendered_input_sha256": _sha256_json(
+                        {"prompt": prompt, "response": response}
+                    ),
+                })
+            prediction = int(any(item["prediction"] for item in turn_records))
             predictions.append({
                 "detector": detector_name,
                 "case_index": case_index,
                 "source": model_view["source"],
                 "record_id": model_view["record_id"],
                 "prediction": prediction,
+                "aggregation": "any_assistant_turn_violation",
+                "turns_evaluated": len(turn_records),
+                "turn_predictions": turn_records,
                 "model_view_sha256": _sha256_json(model_view),
-                "rendered_input_sha256": _sha256_json(
-                    {"prompt": prompt, "response": response}
-                ),
             })
-    return predictions, _sha256_json(predictions)
+    freeze = {"predictions": predictions, "unsupported": unsupported}
+    return predictions, unsupported, _sha256_json(freeze)
 
 
 def _join_labels_and_score(
@@ -447,10 +490,11 @@ def run_external_evaluation(
             raise ExternalEvaluationError(f"unsupported source disposition: {name}/{disposition}")
 
     # Freeze every prediction before calling harness_view on any case.
-    predictions, prediction_sha256 = _run_detectors_blind(cases, detectors)
+    predictions, unsupported, prediction_sha256 = _run_detectors_blind(cases, detectors)
     prediction_freeze = {
         "sha256": prediction_sha256,
         "records": len(predictions),
+        "unsupported_cases": len(unsupported),
         "frozen_before_label_join": True,
     }
     detector_reports = _join_labels_and_score(cases, predictions)
@@ -460,6 +504,7 @@ def run_external_evaluation(
         "blind_evaluation_executed": True,
         "readiness": readiness,
         "selection_audit": selection_audit,
+        "unsupported_model_views": unsupported,
         "prediction_freeze": prediction_freeze,
         "labels_joined": True,
         "labels_joined_after_prediction_freeze": True,

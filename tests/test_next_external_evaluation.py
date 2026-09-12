@@ -171,3 +171,48 @@ def test_rendering_rejects_post_response_events_instead_of_reordering_them():
         assert "after selected assistant" in str(error)
     else:
         raise AssertionError("post-response events must fail closed")
+
+
+def test_unrenderable_case_is_audited_without_aborting_other_blind_cases(tmp_path):
+    path = tmp_path / "data.json"
+    unsupported = _tau_row("a", 0)
+    unsupported["traj"] = [
+        {"role": "system", "content": "Policy."},
+        {"role": "tool", "content": "no assistant turn"},
+    ]
+    supported = _tau_row("b", 1)
+    path.write_text(json.dumps([unsupported, supported]), encoding="utf-8")
+    result = run_external_evaluation(
+        {"sources": [_entry("tau-bench", "included_end_to_end", "data.json", 12)]},
+        source_roots={"tau-bench": tmp_path},
+        detectors={"zero": lambda payload: 0},
+        readiness_checker=_ready,
+    )
+    assert result["status"] == "completed"
+    assert result["prediction_freeze"]["records"] == 1
+    assert result["prediction_freeze"]["unsupported_cases"] == 1
+    assert result["unsupported_model_views"][0]["record_id"].endswith(":a:0")
+    assert "no assistant response" in result["unsupported_model_views"][0]["reason"]
+
+
+def test_trajectory_prediction_or_aggregates_all_assistant_turns(tmp_path):
+    path = tmp_path / "data.json"
+    row = _tau_row("a", 0)
+    row["traj"] = [
+        {"role": "system", "content": "Policy."},
+        {"role": "user", "content": "first"},
+        {"role": "assistant", "content": "safe"},
+        {"role": "tool", "content": "result"},
+        {"role": "assistant", "content": "bad claim"},
+        {"role": "tool", "content": "final tool result"},
+    ]
+    path.write_text(json.dumps([row]), encoding="utf-8")
+    result = run_external_evaluation(
+        {"sources": [_entry("tau-bench", "included_end_to_end", "data.json", 12)]},
+        source_roots={"tau-bench": tmp_path},
+        detectors={"d": lambda payload: int(payload.response == "bad claim")},
+        readiness_checker=_ready,
+    )
+    report = result["detectors"]["d"]["trajectory_proxy_metrics"]
+    assert report["tp"] == 1
+    assert result["prediction_freeze"]["records"] == 1

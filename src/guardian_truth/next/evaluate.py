@@ -15,6 +15,7 @@ import argparse
 from dataclasses import asdict
 import hashlib
 import json
+import os
 import platform
 import re
 from pathlib import Path
@@ -31,6 +32,8 @@ from guardian_truth.settings import load_env_file
 
 from .claims import extract_claims, extract_claims_with_coverage
 from .effects import load_human_contracts, schema_registry
+from .external_adapters import load_external_manifest
+from .external_evaluation import BlindDetectorInput, run_external_evaluation
 from .monitor import review as next_review
 from .model_tasks import propose_claims
 from .model_arms import (
@@ -588,9 +591,30 @@ def run_live_architectures(rows, provider: str, model: str | None, env_file: Pat
     }
 
 
-def run_external(rows) -> dict[str, Any]:
+def run_external(rows, external_root: Path | None = None) -> dict[str, Any]:
     del rows
-    return {"status": "not_run", "reason": "external adapters must be frozen before first labelled run"}
+    root = external_root or Path(os.environ.get("LOCALAPPDATA", ".")) / "guardian_truth_external"
+    roots = {
+        "ATFD": root / "atfd",
+        "tau-bench": root / "tau-bench",
+        "AgentDojo": root / "agentdojo",
+        "ToolSandbox": root / "ToolSandbox",
+        "BFCL": root / "gorilla",
+    }
+    manifest = load_external_manifest(Path("contracts/external_sources_v1.json"))
+    incumbent = Detector()
+
+    def x0(value: BlindDetectorInput) -> int:
+        return int(incumbent.review(value.prompt, value.response).status == "violation")
+
+    def x5(value: BlindDetectorInput) -> int:
+        return next_review(value.prompt, value.response).label
+
+    return run_external_evaluation(
+        manifest,
+        source_roots=roots,
+        detectors={"X0_CURRENT_V5_3": x0, "X5_PROPOSED_MIN": x5},
+    )
 
 
 def run_long(rows) -> dict[str, Any]:
@@ -628,6 +652,7 @@ def main(argv: list[str] | None = None) -> int:
     parser.add_argument("--max-domains", type=int, default=3)
     parser.add_argument("--policy-benchmark", type=Path,
                         default=Path("experiments/v8_typed_rules_benchmark_v3.json"))
+    parser.add_argument("--external-root", type=Path)
     args = parser.parse_args(argv)
     rows = _load(args.input) if args.stage not in {"model", "external", "long", "final"} else []
     if not 1 <= args.max_rows <= 1000:
@@ -636,7 +661,11 @@ def main(argv: list[str] | None = None) -> int:
         parser.error("--max-domains must be in [1, 100]")
     if args.live:
         load_env_file(args.env_file)
-    report = {"metadata": _metadata(args.input, args.stage), **RUNNERS[args.stage](rows)}
+    if args.stage == "external":
+        stage_report = run_external(rows, args.external_root)
+    else:
+        stage_report = RUNNERS[args.stage](rows)
+    report = {"metadata": _metadata(args.input, args.stage), **stage_report}
     if args.live and args.stage == "model":
         report["live_role_probe"] = run_live_model_roles(args.provider, args.model, args.env_file)
     elif args.live and args.stage == "policy":
