@@ -11,6 +11,8 @@ def load_env_file(path: Path | str = '.env') -> bool:
     allowed = {'GROQ_API_KEY', 'OPENROUTER_API_KEY', 'OPENROUTE_API_KEY',
                'GEMINI_API_KEY', 'GEMENI_API_KEY', 'OPENROUTER_MODEL',
                'OPENROUTE_MODEL', 'GEMINI_MODEL', 'GEMENI_MODEL',
+               'MISTRAL_API_KEY', 'mistral_api_key', 'MISTRAL_MODEL', 'mistral_model',
+               'CEREBRAS_API_KEY', 'cerebras_api_key', 'CEREBRAS_MODEL', 'cerebras_model',
                'GUARDIAN_API_KEY', 'GUARDIAN_MODEL', 'GUARDIAN_BASE_URL',
                'GUARDIAN_LOCAL_API_KEY', 'GUARDIAN_LOCAL_BASE_URL',
                'GUARDIAN_LLM_BASE_URL', 'GUARDIAN_LLM_MODEL', 'GUARDIAN_LLM_API_KEY_ENV',

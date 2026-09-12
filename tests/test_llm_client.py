@@ -101,6 +101,17 @@ class ChatClientTests(unittest.TestCase):
         self.assertNotIn('max_completion_tokens',request)
         self.assertNotIn('reasoning_effort',request)
 
+    def test_mistral_uses_documented_max_tokens_field(self):
+        os.environ['MISTRAL_API_KEY']='synthetic-mistral-key'
+        transport=FakeTransport(success())
+        client=ChatClient(ClientConfig(base_url='https://api.mistral.ai/v1',
+            model='mistral-small-latest',api_key_env='MISTRAL_API_KEY'),transport=transport)
+        client.complete(self.messages,reasoning_effort='low')
+        request=json.loads(transport.requests[0][0].data)
+        self.assertEqual(request['max_tokens'],2048)
+        self.assertEqual(request['reasoning_effort'],'low')
+        self.assertNotIn('max_completion_tokens',request)
+
     def test_missing_key_does_not_reach_transport(self):
         transport = FakeTransport(success())
         self.assert_category(ChatClient(ClientConfig(), transport=transport), "missing_api_key")

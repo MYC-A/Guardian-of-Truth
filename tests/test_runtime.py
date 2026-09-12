@@ -73,13 +73,16 @@ class RuntimeTests(unittest.TestCase):
         with tempfile.TemporaryDirectory() as folder, patch.dict(os.environ,{'GROQ_API_KEY':'process-value'}):
             path=Path(folder)/'.env'
             path.write_text('GROQ_API_KEY=file-value\nOPENROUTER_API_KEY=router-value\n'
-                            'GEMINI_API_KEY=gemini-value\nGUARDIAN_MODEL="local-model"\n'
+                            'GEMINI_API_KEY=gemini-value\ncerebras_api_key=cerebras-value\n'
+                            'mistral_api_key=mistral-value\nGUARDIAN_MODEL="local-model"\n'
                             'DANGEROUS=$(whoami)\n',encoding='utf-8')
             self.assertTrue(load_env_file(path))
             self.assertEqual(os.environ['GROQ_API_KEY'],'process-value')
             self.assertEqual(os.environ['GUARDIAN_MODEL'],'local-model')
             self.assertEqual(os.environ['OPENROUTER_API_KEY'],'router-value')
             self.assertEqual(os.environ['GEMINI_API_KEY'],'gemini-value')
+            self.assertEqual(os.environ['cerebras_api_key'],'cerebras-value')
+            self.assertEqual(os.environ['mistral_api_key'],'mistral-value')
             self.assertNotIn('DANGEROUS',os.environ)
 
     def test_local_switch_does_not_use_groq_credential(self):
@@ -116,6 +119,18 @@ class RuntimeTests(unittest.TestCase):
         self.assertEqual(router.semantic.client.config.api_key_env,'OPENROUTE_API_KEY')
         self.assertEqual(router.semantic.client.config.model,'vendor/alias')
         self.assertEqual(gemini.semantic.client.config.api_key_env,'GEMENI_API_KEY')
+
+    def test_mistral_and_cerebras_lowercase_keys_bind_to_their_own_hosts(self):
+        aliases={'mistral_api_key':'mistral-test','cerebras_api_key':'cerebras-test'}
+        with patch.dict(os.environ,aliases,clear=True):
+            mistral=make_detector(backend='mistral')
+            cerebras=make_detector(backend='cerebras')
+        self.assertEqual(mistral.semantic.client.config.base_url,'https://api.mistral.ai/v1')
+        self.assertEqual(mistral.semantic.client.config.api_key_env,'MISTRAL_API_KEY')
+        self.assertEqual(mistral.semantic.client.config.model,'mistral-small-latest')
+        self.assertEqual(cerebras.semantic.client.config.base_url,'https://api.cerebras.ai/v1')
+        self.assertEqual(cerebras.semantic.client.config.api_key_env,'CEREBRAS_API_KEY')
+        self.assertEqual(cerebras.semantic.client.config.model,'gpt-oss-120b')
 
     def test_decomposed_runtime_is_explicit_and_defaults_remain_one_shot(self):
         with patch.dict(os.environ,{},clear=True):

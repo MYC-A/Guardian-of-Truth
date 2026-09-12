@@ -14,12 +14,21 @@ REMOTE_PROVIDERS = {
     'openrouter': ('openrouter.ai', 'https://openrouter.ai/api/v1', 'OPENROUTER_API_KEY'),
     'gemini': ('generativelanguage.googleapis.com',
                'https://generativelanguage.googleapis.com/v1beta/openai', 'GEMINI_API_KEY'),
+    'mistral': ('api.mistral.ai', 'https://api.mistral.ai/v1', 'MISTRAL_API_KEY'),
+    'cerebras': ('api.cerebras.ai', 'https://api.cerebras.ai/v1', 'CEREBRAS_API_KEY'),
 }
 
 PROVIDER_ALIASES = {
     'openrouter': (('OPENROUTER_API_KEY','OPENROUTE_API_KEY'),
                    ('OPENROUTER_MODEL','OPENROUTE_MODEL')),
     'gemini': (('GEMINI_API_KEY','GEMENI_API_KEY'),('GEMINI_MODEL','GEMENI_MODEL')),
+    'mistral': (('MISTRAL_API_KEY','mistral_api_key'),('MISTRAL_MODEL','mistral_model')),
+    'cerebras': (('CEREBRAS_API_KEY','cerebras_api_key'),('CEREBRAS_MODEL','cerebras_model')),
+}
+
+PROVIDER_DEFAULT_MODELS = {
+    'mistral': 'mistral-small-latest',
+    'cerebras': 'gpt-oss-120b',
 }
 
 
@@ -43,7 +52,7 @@ def provider_config(config, backend, *, model=None, base_url=None):
     if urlsplit(endpoint).hostname != host:
         raise ConfigurationError()
     return replace(config,base_url=endpoint,api_key_env=key_env,
-                   model=model or configured_model or config.model)
+                   model=model or configured_model or PROVIDER_DEFAULT_MODELS.get(backend) or config.model)
 
 
 def make_detector(*, backend='none', mode='graph', model=None, base_url=None,
@@ -81,7 +90,7 @@ def make_detector(*, backend='none', mode='graph', model=None, base_url=None,
 
 
 def add_runtime_arguments(parser):
-    parser.add_argument('--backend', choices=('none','groq','openrouter','gemini','local'), default='none')
+    parser.add_argument('--backend', choices=('none','groq','openrouter','gemini','mistral','cerebras','local'), default='none')
     parser.add_argument('--mode', choices=('direct','graph','rlm'), default='graph')
     parser.add_argument('--model')
     parser.add_argument('--base-url')
