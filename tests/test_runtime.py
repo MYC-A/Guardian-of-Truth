@@ -140,6 +140,13 @@ class RuntimeTests(unittest.TestCase):
         self.assertEqual(detector.semantic.client.config.api_key_env,'NVIDIA_API_KEY')
         self.assertEqual(detector.semantic.client.config.model,'openai/gpt-oss-120b')
 
+    def test_tokenharbor_lowercase_key_is_bound_only_to_tokenharbor(self):
+        with patch.dict(os.environ,{'tokenharborai_api_key':'harbor-test'},clear=True):
+            detector=make_detector(backend='tokenharbor')
+        self.assertEqual(detector.semantic.client.config.base_url,'https://tokenharbor.ai/v1')
+        self.assertEqual(detector.semantic.client.config.api_key_env,'tokenharborai_api_key')
+        self.assertEqual(detector.semantic.client.config.model,'deepseek-v4-flash:free')
+
     def test_decomposed_runtime_is_explicit_and_defaults_remain_one_shot(self):
         with patch.dict(os.environ,{},clear=True):
             baseline=make_detector(backend='local')

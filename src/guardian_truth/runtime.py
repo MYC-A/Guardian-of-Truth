@@ -17,6 +17,7 @@ REMOTE_PROVIDERS = {
     'mistral': ('api.mistral.ai', 'https://api.mistral.ai/v1', 'MISTRAL_API_KEY'),
     'cerebras': ('api.cerebras.ai', 'https://api.cerebras.ai/v1', 'CEREBRAS_API_KEY'),
     'nvidia': ('integrate.api.nvidia.com', 'https://integrate.api.nvidia.com/v1', 'NVIDIA_API_KEY'),
+    'tokenharbor': ('tokenharbor.ai', 'https://tokenharbor.ai/v1', 'TOKENHARBOR_API_KEY'),
 }
 
 PROVIDER_ALIASES = {
@@ -26,12 +27,15 @@ PROVIDER_ALIASES = {
     'mistral': (('MISTRAL_API_KEY','mistral_api_key'),('MISTRAL_MODEL','mistral_model')),
     'cerebras': (('CEREBRAS_API_KEY','cerebras_api_key'),('CEREBRAS_MODEL','cerebras_model')),
     'nvidia': (('NVIDIA_API_KEY','nvidia_api_key'),('NVIDIA_MODEL','nvidia_model')),
+    'tokenharbor': (('TOKENHARBOR_API_KEY','tokenharborai_api_key'),
+                    ('TOKENHARBOR_MODEL','tokenharborai_model')),
 }
 
 PROVIDER_DEFAULT_MODELS = {
     'mistral': 'mistral-small-latest',
     'cerebras': 'gpt-oss-120b',
     'nvidia': 'openai/gpt-oss-120b',
+    'tokenharbor': 'deepseek-v4-flash:free',
 }
 
 
@@ -93,7 +97,7 @@ def make_detector(*, backend='none', mode='graph', model=None, base_url=None,
 
 
 def add_runtime_arguments(parser):
-    parser.add_argument('--backend', choices=('none','groq','openrouter','gemini','mistral','cerebras','nvidia','local'), default='none')
+    parser.add_argument('--backend', choices=('none','groq','openrouter','gemini','mistral','cerebras','nvidia','tokenharbor','local'), default='none')
     parser.add_argument('--mode', choices=('direct','graph','rlm'), default='graph')
     parser.add_argument('--model')
     parser.add_argument('--base-url')

@@ -272,7 +272,9 @@ class ChatClient:
         try:
             hostname = urlsplit(self.config.base_url).hostname
             openrouter = hostname == 'openrouter.ai'
-            uses_max_tokens = openrouter or hostname in {'api.mistral.ai', 'integrate.api.nvidia.com'}
+            uses_max_tokens = openrouter or hostname in {
+                'api.mistral.ai', 'integrate.api.nvidia.com', 'tokenharbor.ai',
+            }
             payload = {
                 "model": self.config.model,
                 "messages": messages,

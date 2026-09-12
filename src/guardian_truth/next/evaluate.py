@@ -299,6 +299,7 @@ def run_model(rows) -> dict[str, Any]:
         "mistral": (("MISTRAL_API_KEY", "mistral_api_key"), "https://api.mistral.ai/v1"),
         "cerebras": (("CEREBRAS_API_KEY", "cerebras_api_key"), "https://api.cerebras.ai/v1"),
         "nvidia": (("NVIDIA_API_KEY", "nvidia_api_key"), "https://integrate.api.nvidia.com/v1"),
+        "tokenharbor": (("TOKENHARBOR_API_KEY", "tokenharborai_api_key"), "https://tokenharbor.ai/v1"),
         "local": (("GUARDIAN_LOCAL_API_KEY",), os.environ.get("GUARDIAN_LOCAL_BASE_URL", "http://127.0.0.1:8000/v1")),
     }
     return {"providers": {name: {"credential_env_candidates": envs,
@@ -308,22 +309,28 @@ def run_model(rows) -> dict[str, Any]:
 
 
 def _live_client(provider: str, model: str | None, env_file: Path,
-                 *, max_output_tokens: int) -> ChatClient:
+                 *, max_output_tokens: int, timeout_seconds: float = 60) -> ChatClient:
     load_env_file(env_file)
     if provider == "gemini" and not model:
         raise ValueError("Gemini requires an explicit provider-specific model")
     config = provider_config(ClientConfig.from_env(), provider, model=model)
     from dataclasses import replace
-    config = replace(config, max_output_tokens=max_output_tokens, max_retries=0, timeout_seconds=60)
+    config = replace(config, max_output_tokens=max_output_tokens, max_retries=0,
+                     timeout_seconds=timeout_seconds)
     client = ChatClient(config)
     client.validate_configuration()
     return client
 
 
-def run_live_model_roles(provider: str, model: str | None, env_file: Path) -> dict[str, Any]:
-    client = _live_client(provider, model, env_file, max_output_tokens=512)
-    cases, totals = [], {"attempts": 0, "successes": 0, "correct": 0}
-    for case_id, prompt, allowed, expected in MODEL_ROLE_CASES:
+def run_live_model_roles(provider: str, model: str | None, env_file: Path,
+                         *, max_cases: int = 4, timeout_seconds: float = 60) -> dict[str, Any]:
+    client = _live_client(provider, model, env_file, max_output_tokens=512,
+                          timeout_seconds=timeout_seconds)
+    cases, totals = [], {
+        "attempts": 0, "transport_successes": 0,
+        "validation_successes": 0, "correct": 0,
+    }
+    for case_id, prompt, allowed, expected in MODEL_ROLE_CASES[:max_cases]:
         schema = {"type": "object", "properties": {
             "answer": {"type": "string", "enum": list(allowed)}, "reason": {"type": "string"}},
             "required": ["answer", "reason"], "additionalProperties": False}
@@ -334,21 +341,35 @@ def run_live_model_roles(provider: str, model: str | None, env_file: Path) -> di
                 {"role": "system", "content": "You are a deterministic evidence verifier. Use only supplied text. Return JSON matching the schema."},
                 {"role": "user", "content": prompt},
             ], schema=schema, reasoning_effort="low")
+            totals["transport_successes"] += 1
+        except ChatClientError as error:
+            cases.append({"id": case_id, "transport_success": False,
+                          "validation_success": False, "correct": False,
+                          "error": error.category,
+                          "latency_ms": round((time.perf_counter() - started) * 1000, 1)})
+            continue
+        try:
             payload = json.loads(completion.content)
+            if (not isinstance(payload, dict) or set(payload) != {"answer", "reason"}
+                    or payload.get("answer") not in allowed
+                    or not isinstance(payload.get("reason"), str)):
+                raise ValueError("role response does not match local schema")
             correct = payload.get("answer") == expected
-            totals["successes"] += 1
+            totals["validation_successes"] += 1
             totals["correct"] += int(correct)
-            cases.append({"id": case_id, "success": True, "correct": correct,
+            cases.append({"id": case_id, "transport_success": True,
+                          "validation_success": True, "correct": correct,
                           "answer": payload.get("answer"),
                           "latency_ms": round((time.perf_counter() - started) * 1000, 1),
                           "returned_model": completion.model, "usage": completion.usage})
-        except (ChatClientError, ValueError, json.JSONDecodeError) as error:
-            cases.append({"id": case_id, "success": False,
-                          "error": getattr(error, "category", "validation"),
+        except (ValueError, json.JSONDecodeError):
+            cases.append({"id": case_id, "transport_success": True,
+                          "validation_success": False, "correct": False,
+                          "error": "validation",
                           "latency_ms": round((time.perf_counter() - started) * 1000, 1)})
     return {"provider": provider, "requested_model": model, "settings": {
         "temperature": 0, "strict_schema": True, "reasoning_effort": "low",
-        "max_output_tokens": 512, "retries": 0, "timeout_seconds": 60,
+        "max_output_tokens": 512, "retries": 0, "timeout_seconds": timeout_seconds,
     }, "summary": totals, "cases": cases,
         "credential": {"source": str(env_file), "values_serialized": False}}
 
@@ -627,12 +648,44 @@ def run_final(rows) -> dict[str, Any]:
     del rows
     root = Path("outputs/next")
     files = {}
-    for name in DEFAULT_OUTPUTS.values():
+    names = set(DEFAULT_OUTPUTS.values())
+    for pattern in (
+        "model_role_benchmark_*.json", "policy_model_run_*.json",
+        "claim_model_run*.json", "end_to_end_model_probe*.json",
+    ):
+        names.update(path.name for path in root.glob(pattern))
+    names.add("error_taxonomy.json")
+    for name in sorted(names):
         path = root / name
         if path.exists() and name != "final_manifest.json":
             files[name] = {"sha256": _sha256(path), "bytes": path.stat().st_size}
-    return {"artifacts": files, "winner": None,
-            "decision": "insufficient_evidence_until_frozen_internal_and_external_evaluations"}
+    winner = None
+    decision = "missing_internal_evaluation"
+    internal_path = root / "end_to_end_arms.json"
+    if internal_path.exists():
+        internal = json.loads(internal_path.read_text(encoding="utf-8"))
+        arms = internal.get("arms", {})
+        incumbent = arms.get("X0_CURRENT_V5_3")
+        candidate = arms.get("X5_PROPOSED_MIN")
+        if isinstance(incumbent, dict) and isinstance(candidate, dict):
+            candidate_wins = (
+                candidate.get("f1", 0) > incumbent.get("f1", 0)
+                and candidate.get("fp", 0) <= incumbent.get("fp", 0)
+                and candidate.get("tp", 0) >= incumbent.get("tp", 0)
+            )
+            winner = "X5_PROPOSED_MIN" if candidate_wins else "X0_CURRENT_V5_3"
+            decision = ("promote_frozen_candidate" if candidate_wins
+                        else "keep_incumbent_no_confirmed_gain")
+    return {
+        "artifacts": files,
+        "winner": winner,
+        "decision": decision,
+        "evidence_limits": [
+            "valid.parquet is development data",
+            "external trajectory outcome is not a turn-localized Guardian label",
+            "model probes with failed transport or validation are not quality scores",
+        ],
+    }
 
 
 RUNNERS = {"baseline": run_baseline, "policy": run_policy, "model": run_model,
@@ -646,7 +699,7 @@ def main(argv: list[str] | None = None) -> int:
     parser.add_argument("--input", type=Path, default=Path("valid.parquet"))
     parser.add_argument("--output", type=Path)
     parser.add_argument("--live", action="store_true")
-    parser.add_argument("--provider", choices=("groq", "openrouter", "gemini", "mistral", "cerebras", "nvidia", "local"), default="groq")
+    parser.add_argument("--provider", choices=("groq", "openrouter", "gemini", "mistral", "cerebras", "nvidia", "tokenharbor", "local"), default="groq")
     parser.add_argument("--model")
     parser.add_argument("--env-file", type=Path, default=Path(".env"))
     parser.add_argument("--max-rows", type=int, default=6)
@@ -654,12 +707,15 @@ def main(argv: list[str] | None = None) -> int:
     parser.add_argument("--policy-benchmark", type=Path,
                         default=Path("experiments/v8_typed_rules_benchmark_v3.json"))
     parser.add_argument("--external-root", type=Path)
+    parser.add_argument("--timeout-seconds", type=float, default=60)
     args = parser.parse_args(argv)
     rows = _load(args.input) if args.stage not in {"model", "external", "long", "final"} else []
     if not 1 <= args.max_rows <= 1000:
         parser.error("--max-rows must be in [1, 1000]")
     if not 1 <= args.max_domains <= 100:
         parser.error("--max-domains must be in [1, 100]")
+    if not 1 <= args.timeout_seconds <= 600:
+        parser.error("--timeout-seconds must be in [1, 600]")
     if args.live:
         load_env_file(args.env_file)
     if args.stage == "external":
@@ -668,7 +724,11 @@ def main(argv: list[str] | None = None) -> int:
         stage_report = RUNNERS[args.stage](rows)
     report = {"metadata": _metadata(args.input, args.stage), **stage_report}
     if args.live and args.stage == "model":
-        report["live_role_probe"] = run_live_model_roles(args.provider, args.model, args.env_file)
+        report["live_role_probe"] = run_live_model_roles(
+            args.provider, args.model, args.env_file,
+            max_cases=min(args.max_rows, len(MODEL_ROLE_CASES)),
+            timeout_seconds=args.timeout_seconds,
+        )
     elif args.live and args.stage == "policy":
         report["live_semantics_benchmark"] = run_live_policy_semantics(
             args.provider, args.model, args.env_file, args.policy_benchmark, args.max_rows,

@@ -3,7 +3,9 @@ from pathlib import Path
 from unittest.mock import patch
 
 from guardian_truth.llm_client import Completion
-from guardian_truth.next.evaluate import _query_input, run_live_architectures
+from guardian_truth.next.evaluate import (
+    _query_input, run_live_architectures, run_live_model_roles,
+)
 
 
 class InvalidSchemaClient:
@@ -43,3 +45,17 @@ def test_live_architecture_harness_separates_transport_from_local_validation():
         assert arm["validation_successes"] == 0
         assert arm["abstentions"] == 1
         assert arm["rows"][0]["error"] == "validation"
+
+
+def test_role_probe_separates_json_transport_from_exact_local_schema():
+    with patch("guardian_truth.next.evaluate._live_client", return_value=InvalidSchemaClient()):
+        report = run_live_model_roles("groq", None, Path("unused"), max_cases=1)
+    assert report["summary"] == {
+        "attempts": 1,
+        "transport_successes": 1,
+        "validation_successes": 0,
+        "correct": 0,
+    }
+    assert report["cases"][0]["transport_success"] is True
+    assert report["cases"][0]["validation_success"] is False
+    assert report["cases"][0]["error"] == "validation"

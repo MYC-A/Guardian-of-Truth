@@ -122,6 +122,16 @@ class ChatClientTests(unittest.TestCase):
         self.assertEqual(request['max_tokens'],2048)
         self.assertNotIn('max_completion_tokens',request)
 
+    def test_tokenharbor_uses_openai_compatible_max_tokens_field(self):
+        os.environ['TOKENHARBOR_API_KEY']='synthetic-tokenharbor-key'
+        transport=FakeTransport(success())
+        client=ChatClient(ClientConfig(base_url='https://tokenharbor.ai/v1',
+            model='deepseek-v4-flash:free',api_key_env='TOKENHARBOR_API_KEY'),transport=transport)
+        client.complete(self.messages)
+        request=json.loads(transport.requests[0][0].data)
+        self.assertEqual(request['max_tokens'],2048)
+        self.assertNotIn('max_completion_tokens',request)
+
     def test_missing_key_does_not_reach_transport(self):
         transport = FakeTransport(success())
         self.assert_category(ChatClient(ClientConfig(), transport=transport), "missing_api_key")
