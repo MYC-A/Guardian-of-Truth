@@ -12,7 +12,7 @@ from guardian_truth.llm_client import ChatClientError, Completion
 
 
 ROOT = Path(__file__).resolve().parents[1]
-CONTRACT = ROOT / "contracts" / "cycle2_model_gate_v1.json"
+CONTRACT = ROOT / "contracts" / "cycle2_model_gate_v2.json"
 
 
 class FakeClient:
@@ -54,6 +54,8 @@ class Cycle2ModelGateTests(unittest.TestCase):
     def test_contract_is_frozen_bounded_and_uses_one_schema(self):
         self.assertEqual(16, len(self.contract.cases))
         self.assertEqual(0, self.contract.request.max_retries)
+        self.assertEqual(180, self.contract.request.timeout_seconds)
+        self.assertEqual("none", self.contract.request.response_format_mode)
         self.assertGreaterEqual(len({case.family for case in self.contract.cases}), 4)
         schema = response_schema(self.contract)
         self.assertFalse(schema["additionalProperties"])

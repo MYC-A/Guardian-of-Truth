@@ -67,6 +67,7 @@ class ClientConfig:
     max_output_tokens: int = 2048
     max_retries: int = 2
     strict_schema: bool = True
+    response_format_mode: str = "auto"
 
     def __post_init__(self):
         _endpoint(self.base_url)
@@ -84,6 +85,8 @@ class ClientConfig:
         if type(self.max_retries) is not int or not 0 <= self.max_retries <= 8:
             raise ConfigurationError()
         if type(self.strict_schema) is not bool:
+            raise ConfigurationError()
+        if self.response_format_mode not in {"auto", "none"}:
             raise ConfigurationError()
 
     @classmethod
@@ -184,7 +187,7 @@ def _json_loads(value):
     return json.loads(value, parse_constant=_reject_constant, object_pairs_hook=_unique_object)
 
 
-def _parse_completion(body: bytes) -> Completion:
+def _parse_completion(body: bytes, *, require_json_object: bool = True) -> Completion:
     try:
         if len(body) > MAX_RESPONSE_BYTES:
             raise ValueError
@@ -203,7 +206,9 @@ def _parse_completion(body: bytes) -> Completion:
         if not isinstance(message, dict) or message.get("tool_calls") or message.get("refusal"):
             raise ValueError
         content = message.get("content")
-        if not isinstance(content, str) or not isinstance(_json_loads(content), dict):
+        if not isinstance(content, str):
+            raise ValueError
+        if require_json_object and not isinstance(_json_loads(content), dict):
             raise ValueError
         usage = payload.get("usage", {})
         if not isinstance(usage, dict):
@@ -280,8 +285,9 @@ class ChatClient:
                 "messages": messages,
                 "temperature": 0,
                 "stream": False,
-                "response_format": response_format,
             }
+            if self.config.response_format_mode == "auto":
+                payload["response_format"] = response_format
             payload["max_tokens" if uses_max_tokens else "max_completion_tokens"] = self.config.max_output_tokens
             if reasoning_effort is not None:
                 if openrouter:
@@ -319,7 +325,10 @@ class ChatClient:
                 raise ChatClientError("invalid_response")
             status = response.status
             if 200 <= status < 300:
-                return _parse_completion(response.body)
+                return _parse_completion(
+                    response.body,
+                    require_json_object=self.config.response_format_mode != "none",
+                )
             if status == 401:
                 raise ChatClientError("authentication")
             if status == 403:

@@ -52,6 +52,7 @@ class GateRequest:
     max_output_tokens: int
     max_retries: int
     interval_seconds: float
+    response_format_mode: str
 
 
 @dataclass(frozen=True)
@@ -112,7 +113,9 @@ def load_gate_contract(path: Path) -> GateContract:
     }
     if not _exact_keys(payload, expected):
         raise ValueError("invalid gate contract envelope")
-    if payload["schema_version"] != "guardian-cycle2-model-gate-v1":
+    if payload["schema_version"] not in {
+        "guardian-cycle2-model-gate-v1", "guardian-cycle2-model-gate-v2",
+    }:
         raise ValueError("unsupported gate contract")
     if payload["frozen_before_policy_benchmark"] is not True:
         raise ValueError("gate must be frozen before the policy benchmark")
@@ -122,6 +125,8 @@ def load_gate_contract(path: Path) -> GateContract:
         "temperature", "reasoning_effort", "timeout_seconds",
         "max_output_tokens", "max_retries", "interval_seconds",
     }
+    if payload["schema_version"].endswith("v2"):
+        request_keys.add("response_format_mode")
     if not _exact_keys(request, request_keys):
         raise ValueError("invalid request contract")
     if request["temperature"] != 0 or request["reasoning_effort"] not in {"low", "medium", "high"}:
@@ -130,6 +135,9 @@ def load_gate_contract(path: Path) -> GateContract:
         raise ValueError("invalid max output tokens")
     if request["max_retries"] != 0:
         raise ValueError("Cycle 2 gate requires zero hidden retries")
+    response_format_mode = request.get("response_format_mode", "auto")
+    if response_format_mode not in {"auto", "none"}:
+        raise ValueError("invalid response format mode")
     timeout = _ratio(request["timeout_seconds"], lower=0.001, upper=300.0)
     interval = _ratio(request["interval_seconds"], lower=0.0, upper=300.0)
 
@@ -178,6 +186,7 @@ def load_gate_contract(path: Path) -> GateContract:
             max_output_tokens=request["max_output_tokens"],
             max_retries=0,
             interval_seconds=interval,
+            response_format_mode=response_format_mode,
         ),
         thresholds=GateThresholds(
             minimum_attempts=thresholds["minimum_attempts"],
@@ -273,15 +282,20 @@ def evaluate_candidate(
         completion = None
         category = None
         try:
+            system = (
+                "Classify one Guardian semantic micro-task. Return only the required "
+                "structured object. Do not infer an unobserved effect or completion."
+            )
+            if contract.request.response_format_mode == "none":
+                vocabulary = ", ".join(contract.answer_vocabulary)
+                system += (
+                    " Return exactly one JSON object with exactly two string fields: "
+                    "case_id (copy CASE_ID exactly) and answer. The answer must be one of: "
+                    + vocabulary + "."
+                )
             completion = client.complete(
                 [
-                    {
-                        "role": "system",
-                        "content": (
-                            "Classify one Guardian semantic micro-task. Return only the required "
-                            "structured object. Do not infer an unobserved effect or completion."
-                        ),
-                    },
+                    {"role": "system", "content": system},
                     {"role": "user", "content": f"CASE_ID: {case.id}\nTASK: {case.prompt}"},
                 ],
                 schema=schema,
@@ -416,6 +430,7 @@ def build_gate_report(contract: GateContract, candidates: Iterable[dict]) -> dic
             "max_output_tokens": contract.request.max_output_tokens,
             "max_retries": contract.request.max_retries,
             "interval_seconds": contract.request.interval_seconds,
+            "response_format_mode": contract.request.response_format_mode,
             "response_schema_sha256": hashlib.sha256(
                 json.dumps(response_schema(contract), sort_keys=True, separators=(",", ":")).encode()
             ).hexdigest(),

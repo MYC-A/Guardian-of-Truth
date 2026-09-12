@@ -132,6 +132,18 @@ class ChatClientTests(unittest.TestCase):
         self.assertEqual(request['max_tokens'],2048)
         self.assertNotIn('max_completion_tokens',request)
 
+    def test_prompt_only_mode_omits_response_format_and_defers_schema_validation(self):
+        reply = success(choices=[{"finish_reason": "stop", "message": {"content": "plain text"}}])
+        client, transport, _ = self.client(reply, response_format_mode="none")
+        completion = client.complete(self.messages, schema={"type": "object"})
+        self.assertEqual("plain text", completion.content)
+        request = json.loads(transport.requests[0][0].data)
+        self.assertNotIn("response_format", request)
+
+    def test_invalid_response_format_mode_is_rejected(self):
+        with self.assertRaises(ConfigurationError):
+            ClientConfig(base_url="http://localhost:1234/v1", response_format_mode="maybe")
+
     def test_missing_key_does_not_reach_transport(self):
         transport = FakeTransport(success())
         self.assert_category(ChatClient(ClientConfig(), transport=transport), "missing_api_key")

@@ -24,7 +24,7 @@ from .policy_semantics import load_policy_dataset
 
 
 COMPROMISED_PROVIDERS = {"nvidia", "tokenharbor"}
-DEFAULT_CONTRACT = Path("contracts/cycle2_model_gate_v1.json")
+DEFAULT_CONTRACT = Path("contracts/cycle2_model_gate_v2.json")
 DEFAULT_OUTPUT = Path("outputs/cycle2/model_gate.json")
 DEFAULT_POLICY_CASES = Path("outputs/cycle2/policy_cases.json")
 DEFAULT_POLICY_OUTPUT = Path("outputs/cycle2/policy_results.json")
@@ -82,6 +82,7 @@ def _run_model_gate(args: argparse.Namespace) -> int:
             max_output_tokens=contract.request.max_output_tokens,
             max_retries=contract.request.max_retries,
             strict_schema=True,
+            response_format_mode=contract.request.response_format_mode,
         )
         try:
             config = provider_config(config, provider, model=model)
@@ -91,6 +92,7 @@ def _run_model_gate(args: argparse.Namespace) -> int:
                 max_output_tokens=contract.request.max_output_tokens,
                 max_retries=0,
                 strict_schema=True,
+                response_format_mode=contract.request.response_format_mode,
             )
             client = ChatClient(config)
             client.validate_configuration()
