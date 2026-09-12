@@ -19,6 +19,7 @@ from .model_gate import (
     evaluate_candidate,
     load_gate_contract,
 )
+from .claims import build_c0_claim_report, load_claim_dataset
 from .policy_arms import (
     blind_policy_cases,
     build_blocked_policy_report,
@@ -36,6 +37,8 @@ DEFAULT_POLICY_CASES = Path("outputs/cycle2/policy_cases.json")
 DEFAULT_POLICY_OUTPUT = Path("outputs/cycle2/policy_results.json")
 DEFAULT_POLICY_CONTRACT = Path("contracts/cycle2_policy_arms_v1.json")
 DEFAULT_POLICY_CHECKPOINT = Path("outputs/cycle2/policy_proposals_checkpoint.json")
+DEFAULT_CLAIM_CASES = Path("outputs/cycle2/claim_cases.json")
+DEFAULT_CLAIM_OUTPUT = Path("outputs/cycle2/claim_results.json")
 
 
 def _candidate(value: str) -> tuple[str, str]:
@@ -70,6 +73,10 @@ def _parser() -> argparse.ArgumentParser:
     policy.add_argument("--rotated-provider", action="append", default=[],
                         choices=sorted(COMPROMISED_PROVIDERS))
     policy.add_argument("--overwrite", action="store_true")
+    claims = sub.add_parser("claims-c0", help="evaluate the frozen deterministic blind claim arm")
+    claims.add_argument("--cases", type=Path, default=DEFAULT_CLAIM_CASES)
+    claims.add_argument("--output", type=Path, default=DEFAULT_CLAIM_OUTPUT)
+    claims.add_argument("--overwrite", action="store_true")
     return parser
 
 
@@ -230,6 +237,19 @@ def _run_policy(args: argparse.Namespace) -> int:
     return 0
 
 
+def _run_claims_c0(args: argparse.Namespace) -> int:
+    if args.output.exists() and not args.overwrite:
+        raise ValueError("refusing to overwrite an existing claim artifact")
+    dataset = load_claim_dataset(args.cases)
+    report = build_c0_claim_report(dataset)
+    report["created_utc"] = datetime.now(timezone.utc).replace(microsecond=0).isoformat().replace("+00:00", "Z")
+    args.output.parent.mkdir(parents=True, exist_ok=True)
+    args.output.write_text(json.dumps(report, ensure_ascii=False, indent=2) + "\n", encoding="utf-8")
+    print(json.dumps({"status": report["status"], "C0": report["arms"]["C0"],
+                      "output": str(args.output)}, ensure_ascii=False))
+    return 0
+
+
 def main(argv: list[str] | None = None) -> int:
     parser = _parser()
     args = parser.parse_args(argv)
@@ -238,6 +258,8 @@ def main(argv: list[str] | None = None) -> int:
             return _run_model_gate(args)
         if args.stage == "policy":
             return _run_policy(args)
+        if args.stage == "claims-c0":
+            return _run_claims_c0(args)
     except ValueError as error:
         parser.error(str(error))
     return 2
