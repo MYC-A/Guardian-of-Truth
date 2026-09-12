@@ -9,7 +9,7 @@ from __future__ import annotations
 import json
 
 from .ledger import EvidenceLedger, LedgerIndex
-from .proof_records import AbsenceScope, AtomKind, PrimitiveProof, ProofAtom, TimeMode
+from .proof_records import AbsenceScope, AtomKind, PrimitiveProof, ProofAtom, TimeMode, conjunction, negate
 from .tools import ContractRegistry, evaluate_t1
 from .types import EffectStatus, Reason, Truth
 
@@ -78,6 +78,8 @@ def prove_atom(atom: ProofAtom, ledger: EvidenceLedger, index: LedgerIndex,
         return PrimitiveProof(atom, Truth.UNKNOWN, (), (), reasons=(Reason.CLAIM_UNTYPED,))
     if atom.time_index < 0 or atom.time_index >= len(ledger.events):
         return PrimitiveProof(atom, Truth.UNKNOWN, (), (), reasons=(Reason.TIME_UNBOUND,))
+    if atom.kind is AtomKind.TARGET_CALL_MATCH:
+        return prove_target_call(atom, ledger)
     exact = index.search(entity=atom.entity, time_range=(0, atom.time_index))
     evidence = [item for eid in exact.event_ids for item in index.observations_by_event.get(eid, ())
                 if atom.entity in item.entity_refs and item.predicate == atom.predicate
@@ -144,3 +146,33 @@ def prove_atom(atom: ProofAtom, ledger: EvidenceLedger, index: LedgerIndex,
     if value is Truth.UNKNOWN and not reasons:
         reasons.append(Reason.EVIDENCE_INCOMPLETE)
     return PrimitiveProof(atom, value, tuple(dict.fromkeys(support)), tuple(dict.fromkeys(refute)), scope_id, tuple(reasons))
+
+
+def prove_target_call(atom: ProofAtom, ledger: EvidenceLedger) -> PrimitiveProof:
+    """Compare ONE source invocation. No result, contract or effect is inferred."""
+    event = ledger.events[atom.time_index]
+    if (event.kind != "call" or event.source.document != "response" or event.tool is None
+            or event.actor != atom.actor or event.actor == "unknown"
+            or atom.entity.key != "event_id" or atom.entity.namespace != "ledger"
+            or atom.entity.value != event.event_id
+            or atom.call_id is not None and atom.call_id != event.call_id):
+        return PrimitiveProof(atom, Truth.UNKNOWN, (), (), reasons=(Reason.ENTITY_UNBOUND,))
+    values = [Truth.TRUE if event.tool.name == atom.predicate else Truth.FALSE]
+    for constraint in atom.argument_constraints:
+        actual = event.payload
+        for key in constraint.path:
+            if not isinstance(actual, dict) or key not in actual:
+                values.append(Truth.UNKNOWN)
+                break
+            actual = actual[key]
+        else:
+            from .integrity import canonical
+            encoded = canonical(actual).decode("utf-8")
+            values.append(Truth.TRUE if encoded in constraint.allowed_json else Truth.FALSE)
+    value = conjunction(tuple(values))
+    if atom.expected_json == "false":
+        value = negate(value)
+    support = (event.event_id,) if value is Truth.TRUE else ()
+    refute = (event.event_id,) if value is Truth.FALSE else ()
+    return PrimitiveProof(atom, value, support, refute,
+        reasons=(Reason.EVIDENCE_INCOMPLETE,) if value is Truth.UNKNOWN else ())

@@ -10,6 +10,7 @@ from .binder import bind_claim
 from .integrity import digest
 from .ledger import EvidenceLedger, LedgerIndex
 from .normalize import normalize
+from .operational_records import OperationalChoice
 from .proof_evidence import prove_atom
 from .proof_records import ProofCertificate, ProofProblem, conjunction, disjunction, negate
 from .tools import ContractRegistry
@@ -38,6 +39,10 @@ class CertificateContext:
     hypotheses: tuple[EvaluationHypothesis, ...] = ()
     policy_text: str = ""
     goal_plan_text: str = ""
+    operational_choices: tuple[OperationalChoice, ...] = ()
+    tool_catalog: tuple[str, ...] = ()
+    # Explicit normative scope, not values mined from target arguments.
+    scopes_json: tuple[tuple[str, str], ...] = ()
 
 
 @dataclass(frozen=True)
@@ -84,6 +89,10 @@ def check_certificate(certificate: ProofCertificate, context: CertificateContext
     errors = []
     if certificate.version != "guardian-vnext-proof-v1" or certificate.status not in {CoreStatus.PROVED_ERROR, CoreStatus.PROVED_NO_ERROR}:
         return CertificateCheck(False, ("INVALID_CERTIFICATE_KIND",))
+    if (len({item.choice_id for item in context.operational_choices}) != len(context.operational_choices)
+            or len({hyp.hypothesis_id for hyp in context.hypotheses}) != len(context.hypotheses)
+            or len(dict(context.scopes_json)) != len(context.scopes_json)):
+        errors.append("DUPLICATED_CONTEXT_IDENTITY")
     hashes = {"source_sha256": digest(asdict(context)),
               "ledger_sha256": digest(asdict(ledger)), "problem_sha256": digest(asdict(problem)),
               "registry_sha256": digest([asdict(contract) for contract in registry.contracts])}
@@ -148,6 +157,13 @@ def check_certificate(certificate: ProofCertificate, context: CertificateContext
                             or obligation.atom.expected_json != ("false" if claim.polarity == "NEGATIVE" else "true")
                             or claim.kind in {ClaimKind.ACTION_COMPLETED, ClaimKind.CAUSAL_ATTRIBUTION} and claim.actor != obligation.atom.actor):
                         errors.append("CLAIM_TYPE_POLARITY_OR_ACTOR_MISMATCH:" + obligation.obligation_id)
+            elif any(item.choice_id == obligation.hypothesis_id for item in context.operational_choices):
+                choice = next(item for item in context.operational_choices if item.choice_id == obligation.hypothesis_id)
+                if (not operational_choice_valid(choice, context, ledger)
+                        or obligation.atom not in choice.atoms
+                        or obligation.must_be_true is not choice.must_be_true
+                        or obligation.conditions or obligation.claim_id is not None):
+                    errors.append("OPERATIONAL_OBLIGATION_NOT_GROUNDED:" + obligation.obligation_id)
             else:
                 hypothesis = next((item for item in context.hypotheses if item.hypothesis_id == obligation.hypothesis_id), None)
                 required_polarity = {"PROHIBITION": False, "REQUIREMENT": True, "PLAN_OBLIGATION": True}
@@ -183,4 +199,61 @@ def check_certificate(certificate: ProofCertificate, context: CertificateContext
                         and hypothesis.behavioral_relation in {"PROHIBITION", "REQUIREMENT", "PLAN_OBLIGATION"}
                         and not any(ob.hypothesis_id == hypothesis.hypothesis_id for ob in plan.obligations)):
                     errors.append("SAFETY_APPLICABLE_OBLIGATION_MISSING:" + hypothesis.hypothesis_id)
+        # Dropping one of several actual target calls is not an interpretation.
+        for choice in context.operational_choices:
+            if choice.choice_id in plan.choices:
+                actual_atoms = tuple(ob.atom for ob in plan.obligations if ob.hypothesis_id == choice.choice_id)
+                if len(actual_atoms) != len(choice.atoms) or set(actual_atoms) != set(choice.atoms):
+                    errors.append("OPERATIONAL_TARGET_CALL_COVERAGE_INCOMPLETE:" + choice.choice_id)
     return CertificateCheck(not errors, tuple(dict.fromkeys(errors)))
+
+
+def operational_choice_valid(choice: OperationalChoice, context: CertificateContext,
+                             ledger: EvidenceLedger) -> bool:
+    """Check the candidate's exact lowering, never pronounce its NL meaning true."""
+    import json
+    from .grounding import clause_ids, literal_grounded
+    from .integrity import canonical
+    from .proof_records import AtomKind, TimeMode
+    parent = next((hyp for hyp in context.hypotheses if hyp.hypothesis_id == choice.parent_hypothesis_id), None)
+    if parent is None or parent.actor != "assistant" or parent.conditions or parent.exceptions or parent.unresolved_terms:
+        return False
+    polarity = {"PROHIBITION": False, "REQUIREMENT": True, "PLAN_OBLIGATION": True}
+    if parent.behavioral_relation not in polarity or choice.must_be_true is not polarity[parent.behavioral_relation]:
+        return False
+    text = context.policy_text if parent.frontend == "policy" else context.goal_plan_text
+    if (not parent.grounding or any(span.document != parent.frontend or span.end > len(text) for span in parent.grounding)
+            or not choice.source_quotes or any(not quote or quote not in text for quote in choice.source_quotes)):
+        return False
+    try:
+        scope = json.loads(dict(context.scopes_json).get(parent.hypothesis_id, "{}"))
+    except (ValueError, TypeError):
+        return False
+    if not isinstance(scope, dict) or choice.covered_clauses != clause_ids(parent, scope):
+        return False
+    targets = tuple(event for event in ledger.events if event.kind == "call" and event.source.document == "response")
+    if not targets or len(choice.atoms) != len(targets):
+        return False
+    for atom, event in zip(choice.atoms, targets):
+        if (atom.kind is not AtomKind.TARGET_CALL_MATCH or atom.time_mode is not TimeMode.AT
+                or atom.time_index != event.index or atom.entity.key != "event_id" or atom.entity.namespace != "ledger"
+                or atom.entity.value != event.event_id or atom.call_id != event.call_id
+                or atom.actor != parent.actor or atom.expected_json != "true" or atom.predicate not in context.tool_catalog
+                or len(atom.argument_constraints) != len(choice.field_clause_ids)
+                or len(set(choice.field_clause_ids)) != len(choice.field_clause_ids)
+                or set(choice.field_clause_ids) != set(choice.covered_clauses) - {"action"}):
+            return False
+        for cid, check in zip(choice.field_clause_ids, atom.argument_constraints):
+            if not all(literal_grounded(value, choice.source_quotes) for value in check.allowed_json):
+                return False
+            if cid.startswith("scope:"):
+                values = scope.get(cid[6:])
+                values = values if isinstance(values, list) else [values]
+                if set(check.allowed_json) != {canonical(value).decode("utf-8") for value in values}:
+                    return False
+            elif cid == "resource":
+                if check.allowed_json != (canonical(parent.resource).decode("utf-8"),):
+                    return False
+            else:
+                return False
+    return True

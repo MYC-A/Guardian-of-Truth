@@ -46,7 +46,19 @@ meanings. ERROR under empirical Phi carries conditional semantic assumptions;
 NO_ERROR additionally needs provable semantic closure and completeness.
 See `PROOF_BOUNDARIES.md` and `CORE_DECISION_BOUNDARIES.md` for exact limits.
 
-Remaining: full semantic-frontend/operational-grounding/Core orchestration;
+Integrated core entry point: core.analyze now connects the frontends, operational
+invocation grounding, ledger/T1/T2, indexed factual bindings, all-world solver,
+certificate checker, bounded escalation and explicit product adapter. 31 new
+controlled integration tests pass. Exact wrong-call/argument witnesses validate;
+missing arguments, user actor substitutions, material unknown claims, unsupported
+conditions/effects, ambiguous mappings and world-budget overflow remain explicit.
+See CORE_INTEGRATION.md; general scalar/alias/causal lowering and automatic
+escalation callback construction remain partial, not established semantic gains.
+
+Current full project verification: 804 tests pass (the earlier checkpoint below
+still records its original 773-test snapshot unchanged).
+
+Remaining: general semantic lowering and automatic escalation orchestration;
 all model semantic stage evaluations, stage integration,
 regression and dev-only ablations;
 candidate freeze; fresh gate; sealed blind predictions/gold join; all result JSON,

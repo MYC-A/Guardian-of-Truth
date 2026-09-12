@@ -49,15 +49,17 @@ def main() -> int:
     protected_heads = {name: {"actual": git_head(ROOT.parent / directory), "expected": expected}
                        for name, (directory, expected) in protected.items()}
     checks = {"proof_and_decision_units": pytest_run(["tests/test_vnext_proofs.py", "tests/test_vnext_decision.py"]),
+              "frontend_core_units": pytest_run(["tests/test_vnext_core.py"]),
               "full_project_units": pytest_run(["tests"])}
     good = not integrity and all(item["actual"] == item["expected"] for item in protected_heads.values()) and all(item["exit_code"] == 0 for item in checks.values())
     report = {"schema_version": "guardian-vnext-unit-checkpoint-v1", "architecture_commit": git_head(ROOT),
         "status": "UNIT_AND_INTEGRITY_VALIDATED_ONLY" if good else "FAILED",
-        "scope": "unit tests and frozen-input integrity; not model semantics, full integration or blind gain",
+        "scope": "controlled frontend/core units and frozen-input integrity; not model semantic gains or blind evaluation",
         "test_checks": checks, "integrity_errors": integrity, "protected_heads": protected_heads,
         "protocol_manifest_sha256": file_digest(ROOT / "outputs/vnext/freeze_manifest.json"),
         "T1_stage_freeze_sha256": file_digest(ROOT / "outputs/vnext/tool_t1_freeze_v1.json"),
-        "api_requests": 0, "full_frontend_core_integration": "PENDING",
+        "api_requests": 0, "full_frontend_core_integration": "CONTROLLED_UNIT_INTEGRATION_V1",
+        "general_semantic_lowering": "PARTIAL_WITH_EXPLICIT_UNKNOWN",
         "model_semantic_stages": "NOT_RUN", "blind_end_to_end": "NOT_RUN"}
     write_new(output, report)
     print(json.dumps({"status": report["status"], "tests": checks, "integrity_errors": len(integrity), "api_requests": 0}))

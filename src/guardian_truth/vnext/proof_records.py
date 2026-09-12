@@ -9,6 +9,7 @@ from .types import CoreStatus, EntityRef, Reason, Truth
 
 
 class AtomKind(str, Enum):
+    TARGET_CALL_MATCH = "TARGET_CALL_MATCH"
     OBSERVED_STATE = "OBSERVED_STATE"
     RESULT_FIELD = "RESULT_FIELD"
     CALL_ATTEMPTED = "CALL_ATTEMPTED"
@@ -24,6 +25,23 @@ class TimeMode(str, Enum):
 
 
 @dataclass(frozen=True)
+class ArgumentConstraint:
+    """Exact argument membership, not an assertion about external state."""
+    path: tuple[str, ...]
+    allowed_json: tuple[str, ...]
+
+    def __post_init__(self):
+        from guardian_truth.parsing import decode_json
+        from .integrity import canonical
+        if not self.path or not all(isinstance(key, str) and key for key in self.path) or not self.allowed_json:
+            raise ValueError("explicit field path and nonempty allowed values required")
+        for encoded in self.allowed_json:
+            value, valid = decode_json(encoded)
+            if not valid or canonical(value).decode("utf-8") != encoded:
+                raise ValueError("canonical finite argument values required")
+
+
+@dataclass(frozen=True)
 class ProofAtom:
     atom_id: str
     kind: AtomKind
@@ -36,6 +54,7 @@ class ProofAtom:
     call_id: str | None = None
     effect_predicate: str | None = None
     effect_expected_json: str | None = None
+    argument_constraints: tuple[ArgumentConstraint, ...] = ()
 
     def __post_init__(self):
         from guardian_truth.parsing import decode_json
@@ -51,6 +70,10 @@ class ProofAtom:
             raise ValueError("latest observation is not an action or causality time mode")
         if self.kind is AtomKind.HISTORICAL_ACTION and self.time_mode is not TimeMode.THROUGH:
             raise ValueError("historical action is queried over history, not sampled state")
+        if self.kind is AtomKind.TARGET_CALL_MATCH and (self.time_mode is not TimeMode.AT or type(value) is not bool):
+            raise ValueError("target invocation comparison requires an exact event and Boolean expectation")
+        if self.argument_constraints and self.kind is not AtomKind.TARGET_CALL_MATCH:
+            raise ValueError("argument conditions cannot masquerade as business effects")
 
 
 @dataclass(frozen=True)

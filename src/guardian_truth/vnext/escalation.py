@@ -58,6 +58,16 @@ def check_monotonic_update(old: EscalationState, new: EscalationState) -> None:
     new_hypotheses = {hyp.hypothesis_id: canonical(asdict(hyp)) for hyp in new.context.hypotheses}
     if any(new_hypotheses.get(hid) != value for hid, value in old_hypotheses.items()):
         raise ValueError("escalation may not rewrite an admitted reading while retaining its identifier")
+    old_operational = {choice.choice_id: canonical(asdict(choice)) for choice in old.context.operational_choices}
+    new_operational = {choice.choice_id: canonical(asdict(choice)) for choice in new.context.operational_choices}
+    if any(new_operational.get(cid) != value for cid, value in old_operational.items()):
+        raise ValueError("escalation may not rewrite or drop an admitted operational binding")
+    if (any(dict(new.context.scopes_json).get(hid) != value for hid, value in old.context.scopes_json)
+            or not set(old.context.tool_catalog) <= set(new.context.tool_catalog)):
+        raise ValueError("escalation may not rewrite normative scope or remove admitted tool identities")
+    if (not new.context.policy_text.startswith(old.context.policy_text)
+            or not new.context.goal_plan_text.startswith(old.context.goal_plan_text)):
+        raise ValueError("escalation may append explicit context, not rewrite its normative source")
 
 
 def escalate(initial: EscalationState, callbacks: dict[EscalationStep, Callable[[EscalationState], EscalationState | None]], *,
