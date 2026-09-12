@@ -23,8 +23,8 @@ external trajectory proxy. Both samples are too small or label-misaligned to
 justify a universal zero-FP claim.
 
 UNRESOLVED: the internal sample still has 11 FN; P0 leaves 518/523 unique policy
-segments UNKNOWN; C0 covers only 5.33% of audited response spans; no live
-semantic arm achieved a stable full-corpus result.
+segments UNKNOWN; C0 covers only 5.33% of audited response spans. The full
+16-case semantic run was heavily rate-limited and no model arm beat P0.
 
 COST: the retained production arm is deterministic and makes no API calls.
 Live provider calls were bounded capability/contract probes. Exact monetary
@@ -38,7 +38,8 @@ WHAT WAS REJECTED:
 - X1 on current Groq route: representative full input was rejected as too large.
 - X3 as currently prompted: compaction fixed transport, but the returned answer
   failed exact local citation validation.
-- C1 and P1/P2/P3 for production: incomplete validation/transport reliability.
+- C1 and P1/P2/P3 for production: incomplete validation/transport reliability;
+  P1 reached 1/16 exact, P2 and P3 reached 0/16.
 - Mistral and Cerebras for this cycle: no successful generation under the
   frozen probes. NVIDIA DeepSeek/Kimi completed only 2/4 role probes each;
   NVIDIA Gemma completed 0/4; TokenHarbor transported 1/1 but validated 0/1.

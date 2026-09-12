@@ -652,7 +652,7 @@ def run_final(rows) -> dict[str, Any]:
         "error_taxonomy.json",
         "claim_model_run.json", "claim_model_run_openrouter.json",
         "end_to_end_model_probe_groq_x3_compact_v2.json",
-        "policy_model_run_groq_smoke.json", "policy_model_run_mistral.json",
+        "policy_model_run_groq_full.json", "policy_model_run_mistral.json",
         "policy_model_run_cerebras.json",
         "model_role_benchmark_mistral.json", "model_role_benchmark_cerebras.json",
         "model_role_benchmark_nvidia_deepseek.json",

@@ -83,8 +83,9 @@ Binary --> Evaluator : id,label
 
 ## Что не прошло production gate
 
-- P1/P2 дали лишь частично валидный двухслучайный live smoke; P3 не прошёл
-  transport gate. P4–P6 остались offline-механизмами без quality claim.
+- На полном 16-case live benchmark P0/P1/P2/P3 дали соответственно 6/1/0/0
+  exact semantic hits; model arms также не прошли reliability gate. Текущий
+  typed IR v1 отвергнут, P4–P6 остались offline-механизмами без quality claim.
 - T1 имеет только семь high-confidence контрактов; T2/T3 не оправданы без
   измеренного ceiling gain.
 - C1/C2 не достигли надёжного покрытия/валидации; C0 покрывает 5.33% spans.

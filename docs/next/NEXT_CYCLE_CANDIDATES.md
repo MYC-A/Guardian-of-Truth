@@ -10,7 +10,8 @@ novelty.
 2. Blind claim coverage benchmark. Freeze response-only span annotations across
    domains, then compare C0/C1/C2 on claim recall, type accuracy, and unsupported
    assertion precision. Do not evaluate only the nine patterns C0 already finds.
-3. Policy IR v2 driven by the frozen 16-case benchmark. Add relation and feature
+3. Policy IR v2 driven by the frozen 16-case benchmark. Typed IR v1 is rejected:
+   P2 scored 0/16 exact versus P1 1/16 and P0 6/16. Add relation and feature
    fields only where the current projection is structurally unable to represent
    gold. Run P1/P2 with a provider that first passes a repeated reliability gate;
    only then consider P4 candidate generation or P5 judging.

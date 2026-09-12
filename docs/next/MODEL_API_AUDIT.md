@@ -94,6 +94,9 @@ Observed from `/models`:
 Observed from generation:
 
 - Four of four schema calls succeeded and returned the expected enum.
+- In the later full 16-case policy experiment, capacity was not stable: P1/P2/P3
+  received 11/13/13 rate-limit errors respectively. Initial role success must
+  therefore not be interpreted as sustained throughput.
 - Total role-suite usage: 948 prompt, 766 completion, 1714 total tokens.
 - Estimated role-suite cost: approximately `$0.0006018`, based on catalog prices and excluding cache effects.
 - One later response exposed a dynamic snapshot of 1000 request limit / 997 remaining and 8000 token limit / 7616 remaining. These values are account- and time-dependent, so the manifest marks them as observations rather than contracts.

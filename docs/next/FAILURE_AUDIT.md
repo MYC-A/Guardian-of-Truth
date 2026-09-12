@@ -30,7 +30,8 @@ and claim-to-evidence relations.
   a failed call remains symmetric unless a contract proves otherwise.
 - Typed P2 can express modality, conditions, exceptions, time, identity, and
   quantification, but the current IR-to-benchmark projection lacks some relation
-  and feature dimensions. The two-case live smoke yielded no exact semantic hit.
+  and feature dimensions. On all 16 frozen cases it validated only 2 responses
+  and yielded no exact semantic hit; P1 yielded 1/16 and P0 yielded 6/16.
 
 ## Model and transport failures
 

@@ -20,9 +20,12 @@ localized Guardian error.
 
 - P0 compiled 5 of 523 unique policy segments; 518 remain UNKNOWN. Compilation
   is trace-independent, keyed by four policy hashes, with 42 cache hits.
-- A two-case frozen Groq semantic smoke showed working blind P1/P2 transport,
-  but only one valid response per arm and zero exact semantic matches. P3 had no
-  successful request. This is insufficient for a quality ranking.
+- The full frozen 16-case Groq comparison kept P1/P2 budgets equal. P0 was
+  schema-valid on 16/16 and semantically exact on 6/16. P1 direct transported and
+  validated 5/16, with 1/16 exact. P2 typed transported 3/16, validated 2/16,
+  and was exact on 0/16. P3 transported 1/16, validated 0/16, exact 0/16. Most
+  failures were rate limits. Under the predeclared simplicity rule, P1 >= P2 and
+  P1 is simpler, so typed IR v1 is rejected as the semantic frontend.
 - P4/P5/P6 candidate-pool, pairwise aggregation, semantic-mutant and
   distinguishing-world machinery is implemented and tested offline, but no
   live candidate pool passed the prerequisite P2 gate; no performance claim is
@@ -44,7 +47,8 @@ because the test measures assembly, not model understanding.
 
 ## Live model gates
 
-- Groq `openai/gpt-oss-120b`: 4/4 role smoke; current primary experiment route.
+- Groq `openai/gpt-oss-120b`: 4/4 initial role smoke, but the full policy run
+  was capacity-limited; still the most usable experiment route, not production.
 - OpenRouter Nex free: 4/4 role smoke, but claim runs were slow/truncated.
 - Gemini 3 Flash Preview: 2/4 role smoke.
 - Mistral: 0/4, rate-limited; policy P1/P2/P3 also rate-limited.
