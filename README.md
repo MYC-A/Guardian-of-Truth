@@ -17,6 +17,9 @@ python -m guardian_truth.next.evaluate policy --input valid.parquet
 python -m guardian_truth.next.evaluate tool --input valid.parquet
 python -m guardian_truth.next.evaluate claims --input valid.parquet
 python -m guardian_truth.next.evaluate internal --input valid.parquet
+python -m guardian_truth.next.evaluate long --input valid.parquet
+python -m guardian_truth.next.evaluate external --external-root <pinned-checkouts-root>
+python -m guardian_truth.next.evaluate final --input valid.parquet
 ```
 
 Live calls are always explicit. For example, a blind response-only claim probe:
@@ -26,8 +29,12 @@ python -m guardian_truth.next.evaluate claims --input valid.parquet --live `
   --provider groq --model openai/gpt-oss-120b --env-file .env --max-rows 6
 ```
 
-The provider receives neither reference labels nor explanations. Do not commit
-the env file; reports serialise environment variable names, never secret values.
+Supported explicit profiles are Groq, OpenRouter, Gemini, Mistral, Cerebras,
+NVIDIA NIM, TokenHarbor, and a loopback-only local OpenAI-compatible endpoint. The provider
+receives neither reference labels nor explanations. Do not commit env/key files;
+reports serialise environment variable names, never secret values. A file that
+contains a full SDK example is not a raw key file: extract the credential in
+memory and never pass the entire file as an HTTP header.
 
 Latest research cycle: the V9 underspecified-semantics safety kernel is
 implemented in shadow mode, but production integration is stopped. It passes
@@ -82,7 +89,7 @@ LLM-вызовов; это результат на изученном developmen
 - Ограниченный formal shadow: неисполняемый JSON из атомов/правил, корректные `IF`/`ONLY_IF`/`IFF`, открытый мир, точные цитаты и proof certificate.
 - Точный date-gate: явный запрет из SYSTEM + уникальная системная дата + последнее наблюдение той же сущности + соответствующий tool call.
 - Отдельный интерфейс `SemanticAnalyzer`; по умолчанию `NoSemanticAnalyzer`, без зависимостей от библиотек моделей. Ошибка подключённого модуля не отменяет точные проверки.
-- Клиент Groq, OpenRouter, Gemini OpenAI-compatible API или локального совместимого сервера: режимы `direct`, `graph`, `rlm`, ограниченное чтение и общий бюджет HTTP-попыток. Каждый удалённый профиль жёстко привязан к собственной переменной ключа.
+- Клиент Groq, OpenRouter, Gemini, Mistral, Cerebras, NVIDIA NIM, TokenHarbor OpenAI-compatible API или локального совместимого сервера: режимы `direct`, `graph`, `rlm`, ограниченное чтение и общий бюджет HTTP-попыток. Каждый удалённый профиль жёстко привязан к собственной переменной ключа.
 - Исполнитель явных декларативных правил из системного блока: даты, сравнения, принадлежность, исключения и неизвестность. Произвольная политика на естественном языке этим исполнителем не разбирается.
 - Планировщик явной модели состояния: ограниченный поиск, проверка каталога и аргументов, различение гарантированных в модели и условных исходов. [Границы применимости](docs/planning.md).
 - Контур группового сравнения моделей с отдельной калибровкой и фиксацией конфигурации до теста; подготовлен [резерв RAGTruth](docs/external_validation.md).

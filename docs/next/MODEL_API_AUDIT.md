@@ -19,6 +19,11 @@ Mistral and Cerebras are implemented as isolated provider profiles, but neither 
 
 NVIDIA NIM is also implemented, but the tested hosted routes fail the reliability/latency gate. DeepSeek V4 Flash and Kimi K3 each completed only two of four role tasks; Gemma 4 31B completed none. Keep NVIDIA as an optional slow-path research provider, not the default runtime.
 
+TokenHarbor is implemented without installing its optional Connect script. A
+direct `deepseek-v4-flash:free` probe reached the service twice, but both JSON
+responses failed the exact local response schema. It remains a transport option,
+not an admitted semantic arm.
+
 The local backend is not currently runnable: no compatible endpoint is listening and no NVIDIA/CUDA device was detected.
 
 ## Credential and configuration audit
@@ -66,6 +71,7 @@ Canonicalization is UTF-8 JSON with sorted keys, compact separators, and ASCII e
 | NVIDIA `deepseek-ai/deepseek-v4-flash-0731` | 2/4 | 2/4 attempted successes | 8756.7 ms | 9212.7 ms | 2× timeout |
 | NVIDIA `google/gemma-4-31b-it` | 0/4 | 0/4 | n/a | n/a | 4× timeout |
 | NVIDIA `moonshotai/kimi-k3` | 2/4 | 2/4 attempted successes | 47244.3 ms | 52975.8 ms | 2× timeout |
+| TokenHarbor `deepseek-v4-flash:free` | 0/1 valid (1/1 transport) | 0/1 | n/a | n/a | local schema rejection |
 
 The p95 values use nearest-rank over at most four observations. They describe this smoke run only and must not be treated as an SLO estimate.
 
@@ -178,6 +184,24 @@ Observed with three separate user-provided NVIDIA credentials and exactly four a
 - The `openai/gpt-oss-20b` credential was not benchmarked after its value was exposed by a local diagnostic exception; it must be rotated first.
 
 All successful responses passed the same local enum/schema contract used for other providers. The implementation uses NVIDIA's documented OpenAI-compatible `https://integrate.api.nvidia.com/v1/chat/completions` route and `max_tokens` field. Source: [NVIDIA NIM LLM API reference](https://docs.api.nvidia.com/nim/re/reference/llm-apis).
+
+### TokenHarbor
+
+Observed:
+
+- The direct OpenAI-compatible route returned an HTTP/JSON response in both
+  bounded one-case attempts (about 40.0 s and 10.3 s).
+- Neither response contained the exact required `answer`/`reason` envelope, so
+  validation success and semantic correctness are both 0/1 in the canonical
+  probe. Transport success is 1/1.
+- The returned model identifier omitted the routing suffix and was
+  `deepseek-v4-flash`.
+- No installer or `connect.ps1 | iex` command was executed.
+
+The implementation pins `https://tokenharbor.ai/v1` and reads only
+`TOKENHARBOR_API_KEY`/`tokenharborai_api_key`. The service documents Bearer auth,
+`/v1/chat/completions`, non-streaming output, and pass-through prompts for a
+specific model ID. Source: [TokenHarbor Chat API](https://tokenharbor.ai/docs/api/curl).
 
 ## Local endpoint and hardware
 

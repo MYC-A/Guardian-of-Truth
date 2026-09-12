@@ -8,8 +8,9 @@
 факт и не видит `label`/`explanation`.
 
 Текущий минимальный arm `X5_PROPOSED_MIN` реализован рядом с V5.3 в
-`guardian_truth.next`; V5.3 не изменён. Семантические arms и внешний blind test
-ещё не выполнены, поэтому победитель пока не выбран.
+`guardian_truth.next`; V5.3 не изменён. Frozen internal/external прогоны не
+показали прироста X5, поэтому production-победителем остался X0/V5.3, а эта
+схема сохраняется только как проверенный shadow-кандидат.
 
 ```plantuml
 @startuml
@@ -80,14 +81,18 @@ Binary --> Evaluator : id,label
    V5.3 как incumbent protection.
 7. `python -m guardian_truth.next.evaluate <stage>` воспроизводит каждый срез.
 
-## Что ещё должно пройти до production-решения
+## Что не прошло production gate
 
-- P1–P6: реальные policy arms на одинаковых frozen cases.
-- T1–T3: человеческие и модельные контракты эффектов с отдельной оценкой.
-- C1–C2: типизированное слепое извлечение claims и аудит покрытия.
-- X1–X4/X6, L0–L2: end-to-end и long-context сравнения при равном бюджете.
-- frozen external adapters и один полностью независимый источник.
-- paired confidence intervals, McNemar и hierarchical bootstrap по траекториям.
+- P1/P2 дали лишь частично валидный двухслучайный live smoke; P3 не прошёл
+  transport gate. P4–P6 остались offline-механизмами без quality claim.
+- T1 имеет только семь high-confidence контрактов; T2/T3 не оправданы без
+  измеренного ceiling gain.
+- C1/C2 не достигли надёжного покрытия/валидации; C0 покрывает 5.33% spans.
+- X4 и X5 совпали с X0; X1 оказался слишком большим, X3 не прошёл citation
+  validation, поэтому prerequisite для X6 отсутствует.
+- L0/L2 сохранили evidence, L1 top-k был отвергнут из-за silent omission.
+- External run выполнен, но trajectory reward не эквивалентен turn-localized
+  Guardian labels; независимый совместимый gold остаётся отсутствующим.
 
 Любая отсутствующая часть обозначается в machine-readable отчётах как
 `unavailable`/`not_run`, а не заполняется предполагаемыми результатами.

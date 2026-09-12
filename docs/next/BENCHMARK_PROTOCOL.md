@@ -66,9 +66,14 @@ python -m guardian_truth.next.evaluate policy --input valid.parquet
 python -m guardian_truth.next.evaluate tool --input valid.parquet
 python -m guardian_truth.next.evaluate claims --input valid.parquet
 python -m guardian_truth.next.evaluate internal --input valid.parquet
-python -m guardian_truth.next.evaluate external
+python -m guardian_truth.next.evaluate external --external-root <pinned-checkouts-root>
 python -m guardian_truth.next.evaluate final
 ```
 
 Не реализованные arms записываются как `unavailable`/`not_run`; это часть
 протокола, а не нулевой результат.
+
+Первый frozen external run уже выполнен. Поле
+`first_blind_run_occurred=true` теперь намеренно блокирует повторный запуск с
+тем же manifest. Новый detector, renderer, threshold или subset требует нового
+versioned manifest/cycle; историю текущего run переписывать нельзя.

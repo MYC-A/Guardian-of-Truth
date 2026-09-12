@@ -648,13 +648,18 @@ def run_final(rows) -> dict[str, Any]:
     del rows
     root = Path("outputs/next")
     files = {}
-    names = set(DEFAULT_OUTPUTS.values())
-    for pattern in (
-        "model_role_benchmark_*.json", "policy_model_run_*.json",
-        "claim_model_run*.json", "end_to_end_model_probe*.json",
-    ):
-        names.update(path.name for path in root.glob(pattern))
-    names.add("error_taxonomy.json")
+    names = set(DEFAULT_OUTPUTS.values()) | {
+        "error_taxonomy.json",
+        "claim_model_run.json", "claim_model_run_openrouter.json",
+        "end_to_end_model_probe_groq_x3_compact_v2.json",
+        "policy_model_run_groq_smoke.json", "policy_model_run_mistral.json",
+        "policy_model_run_cerebras.json",
+        "model_role_benchmark_mistral.json", "model_role_benchmark_cerebras.json",
+        "model_role_benchmark_nvidia_deepseek.json",
+        "model_role_benchmark_nvidia_gemma.json",
+        "model_role_benchmark_nvidia_kimi.json",
+        "model_role_benchmark_tokenharbor_deepseek.json",
+    }
     for name in sorted(names):
         path = root / name
         if path.exists() and name != "final_manifest.json":
