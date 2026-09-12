@@ -42,3 +42,30 @@ binding, nested qualifiers, distant definitions/exceptions, and cross-reference.
 
 The builder refuses to overwrite the frozen file. Any post-result change must
 create a new version and belongs to a later research cycle.
+
+## Frozen P0/P1/P2 result
+
+TokenHarbor completed all 104 P1 transports and 99/104 P2 transports. P1 yielded
+100 schema-valid outputs and 77 behaviorally correct meanings; P2 yielded 93
+schema-valid outputs and 61 correct meanings. Thus:
+
+| Arm | Reliability | Conditional semantic quality | Strict operational yield |
+|---|---:|---:|---:|
+| P0 | 1.0000 | 0.0096 | 0.0096 |
+| P1 direct rule | 0.9615 | 0.7700 | 0.7404 |
+| P2 typed IR + compiler | 0.8942 | 0.6559 | 0.5865 |
+
+The primary paired comparison contains 90 cases valid in both arms. P1 accuracy
+is `0.7778`, P2 accuracy is `0.6556`, and P2−P1 is `−0.1222` with case-bootstrap
+95% CI `[−0.2222, −0.0222]`. Discordance is 18 P1-only correct versus 7 P2-only
+correct; exact two-sided McNemar `p=0.0433`. Both are correct on 52 cases and both
+wrong on 13.
+
+This falsifies the Cycle 2 hypothesis that the current typed intermediate
+representation improves policy meaning with this admitted model and frozen
+compiler. It does not show that typed IR is universally inferior: P2 is better
+on necessary conditions, exceptions, negation scope, and cross-reference, but
+loses badly on permission, actor, action-name/effect, temporal definitions,
+freshness/provenance, and turn exclusivity. P3 is `NOT ESTABLISHED` because no
+second stronger model passed the same gate. No P2 repair is made after observing
+these results; candidate fixes belong to the next cycle.
