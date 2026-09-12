@@ -91,6 +91,24 @@ See GOAL_PLAN_V2_DEVELOPMENT.md for unimplemented grounding/certificate integrat
 and the required separate freeze before a v2 model evaluation. No blind labels
 were opened and no additional live request was started by these development tests.
 
+New Goal proof development checkpoint: the Goal-layer solver evaluates every
+structural clause in every supplied binding choice and certificate-gates ERROR.
+The independent checker imports neither solver nor formula compiler/evaluator;
+it reconstructs source/ledger and rechecks primitives, clauses and every world.
+Fresh-plan progress has a distinct source-protocol premise, never an LLM estimate
+or synthetic ledger effect. Only an explicitly trusted activation contract plus
+a complete empty prefix establishes the initial step/bounded noncompletion.
+Wrong first dispatch and skipped-step order pass independent witness validation.
+Without that contract, after intervening events or with incomplete source history,
+progress remains UNKNOWN. Goal-layer compliance is not full Core safety; this
+development format cannot certify NO_ERROR under empirical semantic coverage.
+Current full units: 939 passed, including 27 Goal proof/progress checks. All 100
+Claim Graph v1 source hashes remain unchanged. Fifteen of 41 claim cases were
+complete at this checkpoint; final predictions/seal/metrics are still pending.
+Remaining: semantic binding generation, documented source activation adaptation,
+single Core policy/claim/effect-world composition and authoritative safety closure;
+then separate v2 freeze/model evaluation. See GOAL_PROOF_V2_BOUNDARIES.md.
+
 Fresh development provider gate v1: 12/12 transport, schema and controlled
 semantic microtasks; latency p50 4860.504 ms, p95 6805.173 ms; 5354 reported
 tokens. A preceding connection smoke succeeded. Artifacts and per-case failure

@@ -47,8 +47,9 @@ requests and the ten-second start interval remain; no hidden retry is introduced
 
 - Ground plan progress, action meaning and scope applicability from actual source
   and evidence; unsupported business/action mappings must not be guessed.
-- Enumerate admitted goal/policy/binding worlds and integrate the new formula
-  language with an independent certificate checker, not merely the old solver.
+- The Goal-layer independent checker and all-choice solver now exist; see
+  GOAL_PROOF_V2_BOUNDARIES.md. Still compose them with policy/response-claim/effect
+  worlds in one independently checked Core problem, not merely the old solver.
 - Preserve all policy exceptions and open-vocabulary ambiguity.
 - Freeze the new frontend, prompts, schemas, proof format and scorer before any
   v2 model-stage evaluation. Keep v1 results and exact source provenance intact.
