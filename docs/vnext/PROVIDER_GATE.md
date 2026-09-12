@@ -24,3 +24,14 @@ denominators. Raw server errors and credentials are never serialized.
 No blind cases or gold files are opened. Passing this controlled development gate
 does not prove stage quality, blind performance, long-batch quota or safety.
 A fresh gate close to the eventual frozen blind candidate is still required.
+
+## Frozen development gate v1 result
+
+At implementation 97582647b37fafc973ee34778b4e3b9af93fea6e, all 12/12 requests
+passed transport, schema and their controlled semantic annotation: PASSED.
+Latency p50 = 4860.504 ms, p95 = 6805.173 ms; reported tokens = 5354.
+Cost remains NOT_AUDITED; zero blind cases were read.
+Source of truth: outputs/vnext/provider_gate_v1.json; immutable per-attempt
+records and its pre-request freeze are adjacent. Failure audit:
+outputs/vnext/provider_gate_failure_audit_v1.json, zero classified failures.
+No task/prompt/threshold was changed after observing these frozen results.

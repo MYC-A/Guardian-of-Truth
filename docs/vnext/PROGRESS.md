@@ -65,6 +65,12 @@ candidate freeze; fresh gate; sealed blind predictions/gold join; all result JSO
 certificate JSONL, failure audit, result documents, final manifest and final decision.
 The 23 requirement rows remain unverified until their authoritative evidence exists.
 
+Fresh development provider gate v1: 12/12 transport, schema and controlled
+semantic microtasks; latency p50 4860.504 ms, p95 6805.173 ms; 5354 reported
+tokens. A preceding connection smoke succeeded. Artifacts and per-case failure
+audit are immutable; no blind inputs or labels were opened. This is not stage
+quality or final blind admission evidence; see PROVIDER_GATE.md.
+
 Checkpoint commits: protocol `8e9c3fb`; types/ledger `8e87649`; Claim Graph
 `e69a406`; T1/T2 `9e0b2f4`; policy/Goal `f0fb124`; indexed Binder `f562c8b`;
 T1 evaluator `8d2c532`; T1 pre-prediction freeze `af2e3ee`.
