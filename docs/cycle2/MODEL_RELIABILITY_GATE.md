@@ -1,15 +1,17 @@
 # Model Reliability Gate
 
 Cycle 2 separates provider reliability from semantic quality before any P1/P2/P3
-comparison. The frozen gate contract is
-`contracts/cycle2_model_gate_v1.json`.
+comparison. The current frozen gate contract is
+`contracts/cycle2_model_gate_v2.json`. Version 2 keeps the same cases and
+admission thresholds, embeds the exact JSON shape and answer vocabulary in the
+system message, and omits the provider-side `response_format` extension.
 
 ## Predeclared protocol
 
 - 16 independent structured-output calls per provider/model;
 - six Guardian task families and one identical JSON schema for every call;
-- temperature `0`, reasoning effort `low`, 256 output tokens;
-- 45-second per-call timeout, five-second pacing, zero hidden retries;
+- temperature `0`, reasoning effort `low`, 512 output tokens;
+- 180-second per-call timeout, five-second pacing, zero hidden retries;
 - no policy-benchmark gold or expected gate answer enters a model prompt.
 
 The zero-retry policy is intentional: every logical case is exactly one HTTP
@@ -67,10 +69,17 @@ The frozen gate was executed without changing its schema or thresholds:
 | Provider/model | Attempts | Transport | Schema-valid | Semantic evaluated | Result |
 |---|---:|---:|---:|---:|---|
 | Groq / `openai/gpt-oss-120b` | 0 | 0 | 0 | 0 | local `INVALID_API_KEY`; not an available candidate |
-| TokenHarbor / `deepseek-v4-flash:free` | 16 | 0 | 0 | 0 | all 16 calls were sanitized `http_request` rejections |
+| TokenHarbor / `deepseek-v4-flash:free`, v1 | 16 | 0 | 0 | 0 | all 16 calls were sanitized `http_request` rejections |
+| TokenHarbor / `deepseek-v4-flash:free`, v2 first run | 16 | 1 | 1 | 1 correct | 15 sanitized `http_request` rejections; not admitted |
 
-TokenHarbor produced no 429, 5xx, or timeout in this run, but also no accepted
-structured-output request. Therefore its semantic quality is `null`, not zero.
-The rotated credential value was never serialized. Overall status is
-`EVALUATION_BLOCKED_BY_PROVIDER`, so no remote P1/P2/P3 call is permitted from
-this result.
+The v2 success proves that schema-in-prompt parsing works. The other outcomes
+remain transport failures, not semantic errors. A subsequent two-case diagnostic
+using the unchanged v2 payload returned HTTP 200 for both a previously rejected
+case and the previously successful case. This is evidence of transient route
+availability, but it does not retroactively admit the provider. The complete v2
+gate is repeated without changing cases, prompts, thresholds, or generation
+settings, and every observed run remains visible in Git history.
+
+The rotated credential value is never serialized. Until a complete run passes,
+overall status remains `EVALUATION_BLOCKED_BY_PROVIDER` and no remote P1/P2/P3
+call is permitted.
