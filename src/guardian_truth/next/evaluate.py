@@ -298,6 +298,7 @@ def run_model(rows) -> dict[str, Any]:
         "gemini": (("GEMINI_API_KEY", "GEMENI_API_KEY"), "https://generativelanguage.googleapis.com/v1beta/openai"),
         "mistral": (("MISTRAL_API_KEY", "mistral_api_key"), "https://api.mistral.ai/v1"),
         "cerebras": (("CEREBRAS_API_KEY", "cerebras_api_key"), "https://api.cerebras.ai/v1"),
+        "nvidia": (("NVIDIA_API_KEY", "nvidia_api_key"), "https://integrate.api.nvidia.com/v1"),
         "local": (("GUARDIAN_LOCAL_API_KEY",), os.environ.get("GUARDIAN_LOCAL_BASE_URL", "http://127.0.0.1:8000/v1")),
     }
     return {"providers": {name: {"credential_env_candidates": envs,
@@ -645,7 +646,7 @@ def main(argv: list[str] | None = None) -> int:
     parser.add_argument("--input", type=Path, default=Path("valid.parquet"))
     parser.add_argument("--output", type=Path)
     parser.add_argument("--live", action="store_true")
-    parser.add_argument("--provider", choices=("groq", "openrouter", "gemini", "mistral", "cerebras", "local"), default="groq")
+    parser.add_argument("--provider", choices=("groq", "openrouter", "gemini", "mistral", "cerebras", "nvidia", "local"), default="groq")
     parser.add_argument("--model")
     parser.add_argument("--env-file", type=Path, default=Path(".env"))
     parser.add_argument("--max-rows", type=int, default=6)

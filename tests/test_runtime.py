@@ -132,6 +132,14 @@ class RuntimeTests(unittest.TestCase):
         self.assertEqual(cerebras.semantic.client.config.api_key_env,'CEREBRAS_API_KEY')
         self.assertEqual(cerebras.semantic.client.config.model,'gpt-oss-120b')
 
+    def test_nvidia_key_is_bound_only_to_integrate_host(self):
+        with patch.dict(os.environ,{'NVIDIA_API_KEY':'nvidia-test'},clear=True):
+            detector=make_detector(backend='nvidia')
+        self.assertEqual(detector.semantic.client.config.base_url,
+                         'https://integrate.api.nvidia.com/v1')
+        self.assertEqual(detector.semantic.client.config.api_key_env,'NVIDIA_API_KEY')
+        self.assertEqual(detector.semantic.client.config.model,'openai/gpt-oss-120b')
+
     def test_decomposed_runtime_is_explicit_and_defaults_remain_one_shot(self):
         with patch.dict(os.environ,{},clear=True):
             baseline=make_detector(backend='local')

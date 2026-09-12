@@ -112,6 +112,16 @@ class ChatClientTests(unittest.TestCase):
         self.assertEqual(request['reasoning_effort'],'low')
         self.assertNotIn('max_completion_tokens',request)
 
+    def test_nvidia_uses_documented_max_tokens_field(self):
+        os.environ['NVIDIA_API_KEY']='synthetic-nvidia-key'
+        transport=FakeTransport(success())
+        client=ChatClient(ClientConfig(base_url='https://integrate.api.nvidia.com/v1',
+            model='openai/gpt-oss-120b',api_key_env='NVIDIA_API_KEY'),transport=transport)
+        client.complete(self.messages)
+        request=json.loads(transport.requests[0][0].data)
+        self.assertEqual(request['max_tokens'],2048)
+        self.assertNotIn('max_completion_tokens',request)
+
     def test_missing_key_does_not_reach_transport(self):
         transport = FakeTransport(success())
         self.assert_category(ChatClient(ClientConfig(), transport=transport), "missing_api_key")
