@@ -29,6 +29,11 @@ otherwise a matching permission clause yields `PERMITTED`, and the default is
 `NO_VIOLATION`. Clause and literal order can differ while behavior remains
 equivalent, so exact JSON equality is not required for semantic success.
 
+The typed IR has explicit OR-of-AND target clauses. A generic deterministic
+compiler combines them with condition, exception, relation and modality; a
+freeze test requires the compiled IR to reproduce every gold world for all 104
+cases. The compiler receives neither policy strings nor case identifiers.
+
 The benchmark includes the critical count distinction through worlds where
 add/delete operations carry `effect:passenger_count_changed`, while rename does
 not. It also includes `only if` direction, exception scope, actor/resource/facet,

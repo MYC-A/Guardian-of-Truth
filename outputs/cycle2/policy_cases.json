@@ -41,7 +41,7 @@
     "turn_call_cardinality",
     "turn_action_exclusivity"
   ],
-  "cases_sha256": "1441b6f83fe37c52b37bfbe1efaf39b78c9473433cb15820e84c79ca3e899c21",
+  "cases_sha256": "ad26c8e14668327da95b722287fcccc8cde3b06e7078a39d0f39662ab4aa8a9a",
   "cases": [
     {
       "id": "unavailable_information::0",
@@ -62,8 +62,10 @@
           "actor": "assistant",
           "regulated_kind": "INFORMATION",
           "facet": "availability",
-          "relation": "UNCONDITIONAL",
-          "condition_literals": [],
+          "relation": "ONLY_IF",
+          "condition_literals": [
+            "source:user_or_tool"
+          ],
           "exception_literals": [],
           "temporal": "NONE",
           "identity": "ANY",
@@ -72,8 +74,7 @@
           "target_clauses": [
             [
               "actor:assistant",
-              "action:provide_information",
-              "source:user_or_tool"
+              "action:provide_information"
             ]
           ]
         },
@@ -149,8 +150,10 @@
           "actor": "assistant",
           "regulated_kind": "INFORMATION",
           "facet": "availability",
-          "relation": "UNCONDITIONAL",
-          "condition_literals": [],
+          "relation": "ONLY_IF",
+          "condition_literals": [
+            "source:user_or_tool"
+          ],
           "exception_literals": [],
           "temporal": "NONE",
           "identity": "ANY",
@@ -159,8 +162,7 @@
           "target_clauses": [
             [
               "actor:assistant",
-              "action:provide_information",
-              "source:user_or_tool"
+              "action:provide_information"
             ]
           ]
         },
@@ -236,8 +238,10 @@
           "actor": "assistant",
           "regulated_kind": "INFORMATION",
           "facet": "availability",
-          "relation": "UNCONDITIONAL",
-          "condition_literals": [],
+          "relation": "ONLY_IF",
+          "condition_literals": [
+            "source:user_or_tool"
+          ],
           "exception_literals": [],
           "temporal": "NONE",
           "identity": "ANY",
@@ -246,8 +250,7 @@
           "target_clauses": [
             [
               "actor:assistant",
-              "action:provide_information",
-              "source:user_or_tool"
+              "action:provide_information"
             ]
           ]
         },
@@ -323,8 +326,10 @@
           "actor": "assistant",
           "regulated_kind": "INFORMATION",
           "facet": "availability",
-          "relation": "UNCONDITIONAL",
-          "condition_literals": [],
+          "relation": "ONLY_IF",
+          "condition_literals": [
+            "source:user_or_tool"
+          ],
           "exception_literals": [],
           "temporal": "NONE",
           "identity": "ANY",
@@ -333,8 +338,7 @@
           "target_clauses": [
             [
               "actor:assistant",
-              "action:provide_information",
-              "source:user_or_tool"
+              "action:provide_information"
             ]
           ]
         },
@@ -1427,9 +1431,9 @@
       "source_ref": "manual:cycle2-policy-v1",
       "policy": "If the account is frozen, the assistant must block outgoing transfers.",
       "atom_catalog": [
-        "action:allow_outgoing_transfer",
         "distractor:irrelevant",
-        "state:account_frozen"
+        "state:account_frozen",
+        "state:outgoing_transfers_blocked"
       ],
       "gold": {
         "structure": {
@@ -1448,7 +1452,7 @@
           "quantification": "ALL",
           "target_clauses": [
             [
-              "action:allow_outgoing_transfer"
+              "state:outgoing_transfers_blocked"
             ]
           ]
         },
@@ -1456,7 +1460,7 @@
           "violation_clauses": [
             [
               "state:account_frozen",
-              "action:allow_outgoing_transfer"
+              "!state:outgoing_transfers_blocked"
             ]
           ],
           "permission_clauses": []
@@ -1465,7 +1469,6 @@
           {
             "id": "frozen_blocks_transfer::0::w0",
             "facts": [
-              "action:allow_outgoing_transfer",
               "state:account_frozen"
             ],
             "expected": "VIOLATION",
@@ -1473,28 +1476,21 @@
           },
           {
             "id": "frozen_blocks_transfer::0::w1",
-            "facts": [
-              "action:allow_outgoing_transfer"
-            ],
+            "facts": [],
             "expected": "NO_VIOLATION",
             "distinguishes": "flips_violation_literal_0_state:account_frozen"
           },
           {
             "id": "frozen_blocks_transfer::0::w2",
             "facts": [
-              "state:account_frozen"
+              "state:account_frozen",
+              "state:outgoing_transfers_blocked"
             ],
             "expected": "NO_VIOLATION",
-            "distinguishes": "flips_violation_literal_0_action:allow_outgoing_transfer"
+            "distinguishes": "flips_violation_literal_0_state:outgoing_transfers_blocked"
           },
           {
             "id": "frozen_blocks_transfer::0::w3",
-            "facts": [],
-            "expected": "NO_VIOLATION",
-            "distinguishes": "empty_world"
-          },
-          {
-            "id": "frozen_blocks_transfer::0::w4",
             "facts": [
               "distractor:irrelevant"
             ],
@@ -1512,9 +1508,9 @@
       "source_ref": "frozen_blocks_transfer:minimal_pair",
       "policy": "A frozen account is sufficient to require blocking every outgoing transfer.",
       "atom_catalog": [
-        "action:allow_outgoing_transfer",
         "distractor:irrelevant",
-        "state:account_frozen"
+        "state:account_frozen",
+        "state:outgoing_transfers_blocked"
       ],
       "gold": {
         "structure": {
@@ -1533,7 +1529,7 @@
           "quantification": "ALL",
           "target_clauses": [
             [
-              "action:allow_outgoing_transfer"
+              "state:outgoing_transfers_blocked"
             ]
           ]
         },
@@ -1541,7 +1537,7 @@
           "violation_clauses": [
             [
               "state:account_frozen",
-              "action:allow_outgoing_transfer"
+              "!state:outgoing_transfers_blocked"
             ]
           ],
           "permission_clauses": []
@@ -1550,7 +1546,6 @@
           {
             "id": "frozen_blocks_transfer::1::w0",
             "facts": [
-              "action:allow_outgoing_transfer",
               "state:account_frozen"
             ],
             "expected": "VIOLATION",
@@ -1558,28 +1553,21 @@
           },
           {
             "id": "frozen_blocks_transfer::1::w1",
-            "facts": [
-              "action:allow_outgoing_transfer"
-            ],
+            "facts": [],
             "expected": "NO_VIOLATION",
             "distinguishes": "flips_violation_literal_0_state:account_frozen"
           },
           {
             "id": "frozen_blocks_transfer::1::w2",
             "facts": [
-              "state:account_frozen"
+              "state:account_frozen",
+              "state:outgoing_transfers_blocked"
             ],
             "expected": "NO_VIOLATION",
-            "distinguishes": "flips_violation_literal_0_action:allow_outgoing_transfer"
+            "distinguishes": "flips_violation_literal_0_state:outgoing_transfers_blocked"
           },
           {
             "id": "frozen_blocks_transfer::1::w3",
-            "facts": [],
-            "expected": "NO_VIOLATION",
-            "distinguishes": "empty_world"
-          },
-          {
-            "id": "frozen_blocks_transfer::1::w4",
             "facts": [
               "distractor:irrelevant"
             ],
@@ -1597,9 +1585,9 @@
       "source_ref": "frozen_blocks_transfer:paraphrase",
       "policy": "Whenever an account is frozen, do not allow an outgoing transfer.",
       "atom_catalog": [
-        "action:allow_outgoing_transfer",
         "distractor:irrelevant",
-        "state:account_frozen"
+        "state:account_frozen",
+        "state:outgoing_transfers_blocked"
       ],
       "gold": {
         "structure": {
@@ -1618,7 +1606,7 @@
           "quantification": "ALL",
           "target_clauses": [
             [
-              "action:allow_outgoing_transfer"
+              "state:outgoing_transfers_blocked"
             ]
           ]
         },
@@ -1626,7 +1614,7 @@
           "violation_clauses": [
             [
               "state:account_frozen",
-              "action:allow_outgoing_transfer"
+              "!state:outgoing_transfers_blocked"
             ]
           ],
           "permission_clauses": []
@@ -1635,7 +1623,6 @@
           {
             "id": "frozen_blocks_transfer::2::w0",
             "facts": [
-              "action:allow_outgoing_transfer",
               "state:account_frozen"
             ],
             "expected": "VIOLATION",
@@ -1643,28 +1630,21 @@
           },
           {
             "id": "frozen_blocks_transfer::2::w1",
-            "facts": [
-              "action:allow_outgoing_transfer"
-            ],
+            "facts": [],
             "expected": "NO_VIOLATION",
             "distinguishes": "flips_violation_literal_0_state:account_frozen"
           },
           {
             "id": "frozen_blocks_transfer::2::w2",
             "facts": [
-              "state:account_frozen"
+              "state:account_frozen",
+              "state:outgoing_transfers_blocked"
             ],
             "expected": "NO_VIOLATION",
-            "distinguishes": "flips_violation_literal_0_action:allow_outgoing_transfer"
+            "distinguishes": "flips_violation_literal_0_state:outgoing_transfers_blocked"
           },
           {
             "id": "frozen_blocks_transfer::2::w3",
-            "facts": [],
-            "expected": "NO_VIOLATION",
-            "distinguishes": "empty_world"
-          },
-          {
-            "id": "frozen_blocks_transfer::2::w4",
             "facts": [
               "distractor:irrelevant"
             ],
@@ -1682,9 +1662,9 @@
       "source_ref": "frozen_blocks_transfer:long_distance",
       "policy": "An account can have several states. Transfer details are defined elsewhere. If its state is frozen, outgoing transfers must be blocked.",
       "atom_catalog": [
-        "action:allow_outgoing_transfer",
         "distractor:irrelevant",
-        "state:account_frozen"
+        "state:account_frozen",
+        "state:outgoing_transfers_blocked"
       ],
       "gold": {
         "structure": {
@@ -1703,7 +1683,7 @@
           "quantification": "ALL",
           "target_clauses": [
             [
-              "action:allow_outgoing_transfer"
+              "state:outgoing_transfers_blocked"
             ]
           ]
         },
@@ -1711,7 +1691,7 @@
           "violation_clauses": [
             [
               "state:account_frozen",
-              "action:allow_outgoing_transfer"
+              "!state:outgoing_transfers_blocked"
             ]
           ],
           "permission_clauses": []
@@ -1720,7 +1700,6 @@
           {
             "id": "frozen_blocks_transfer::3::w0",
             "facts": [
-              "action:allow_outgoing_transfer",
               "state:account_frozen"
             ],
             "expected": "VIOLATION",
@@ -1728,28 +1707,21 @@
           },
           {
             "id": "frozen_blocks_transfer::3::w1",
-            "facts": [
-              "action:allow_outgoing_transfer"
-            ],
+            "facts": [],
             "expected": "NO_VIOLATION",
             "distinguishes": "flips_violation_literal_0_state:account_frozen"
           },
           {
             "id": "frozen_blocks_transfer::3::w2",
             "facts": [
-              "state:account_frozen"
+              "state:account_frozen",
+              "state:outgoing_transfers_blocked"
             ],
             "expected": "NO_VIOLATION",
-            "distinguishes": "flips_violation_literal_0_action:allow_outgoing_transfer"
+            "distinguishes": "flips_violation_literal_0_state:outgoing_transfers_blocked"
           },
           {
             "id": "frozen_blocks_transfer::3::w3",
-            "facts": [],
-            "expected": "NO_VIOLATION",
-            "distinguishes": "empty_world"
-          },
-          {
-            "id": "frozen_blocks_transfer::3::w4",
             "facts": [
               "distractor:irrelevant"
             ],
@@ -6392,6 +6364,10 @@
           "violation_clauses": [
             [
               "action:cancel_order",
+              "!state:order_pending"
+            ],
+            [
+              "action:cancel_order",
               "state:order_pending",
               "!identity:requester_owns_order"
             ],
@@ -6414,30 +6390,36 @@
           {
             "id": "nested_cancel::0::w0",
             "facts": [
-              "action:cancel_order",
-              "state:order_pending"
+              "action:cancel_order"
             ],
             "expected": "VIOLATION",
             "distinguishes": "satisfies_violation_clause_0"
           },
           {
             "id": "nested_cancel::0::w1",
-            "facts": [
-              "state:order_pending"
-            ],
+            "facts": [],
             "expected": "NO_VIOLATION",
             "distinguishes": "flips_violation_literal_0_action:cancel_order"
           },
           {
             "id": "nested_cancel::0::w2",
             "facts": [
-              "action:cancel_order"
+              "action:cancel_order",
+              "state:order_pending"
             ],
-            "expected": "NO_VIOLATION",
+            "expected": "VIOLATION",
             "distinguishes": "flips_violation_literal_0_state:order_pending"
           },
           {
             "id": "nested_cancel::0::w3",
+            "facts": [
+              "state:order_pending"
+            ],
+            "expected": "NO_VIOLATION",
+            "distinguishes": "flips_violation_literal_1_action:cancel_order"
+          },
+          {
+            "id": "nested_cancel::0::w4",
             "facts": [
               "action:cancel_order",
               "event:confirmation_before",
@@ -6448,7 +6430,7 @@
             "distinguishes": "satisfies_permission_clause_0"
           },
           {
-            "id": "nested_cancel::0::w4",
+            "id": "nested_cancel::0::w5",
             "facts": [
               "event:confirmation_before",
               "identity:requester_owns_order",
@@ -6458,20 +6440,14 @@
             "distinguishes": "flips_permission_literal_0_action:cancel_order"
           },
           {
-            "id": "nested_cancel::0::w5",
+            "id": "nested_cancel::0::w6",
             "facts": [
               "action:cancel_order",
               "event:confirmation_before",
               "identity:requester_owns_order"
             ],
-            "expected": "NO_VIOLATION",
+            "expected": "VIOLATION",
             "distinguishes": "flips_permission_literal_0_state:order_pending"
-          },
-          {
-            "id": "nested_cancel::0::w6",
-            "facts": [],
-            "expected": "NO_VIOLATION",
-            "distinguishes": "empty_world"
           },
           {
             "id": "nested_cancel::0::w7",
@@ -6525,6 +6501,10 @@
           "violation_clauses": [
             [
               "action:cancel_order",
+              "!state:order_pending"
+            ],
+            [
+              "action:cancel_order",
               "state:order_pending",
               "!identity:requester_owns_order"
             ],
@@ -6547,30 +6527,36 @@
           {
             "id": "nested_cancel::1::w0",
             "facts": [
-              "action:cancel_order",
-              "state:order_pending"
+              "action:cancel_order"
             ],
             "expected": "VIOLATION",
             "distinguishes": "satisfies_violation_clause_0"
           },
           {
             "id": "nested_cancel::1::w1",
-            "facts": [
-              "state:order_pending"
-            ],
+            "facts": [],
             "expected": "NO_VIOLATION",
             "distinguishes": "flips_violation_literal_0_action:cancel_order"
           },
           {
             "id": "nested_cancel::1::w2",
             "facts": [
-              "action:cancel_order"
+              "action:cancel_order",
+              "state:order_pending"
             ],
-            "expected": "NO_VIOLATION",
+            "expected": "VIOLATION",
             "distinguishes": "flips_violation_literal_0_state:order_pending"
           },
           {
             "id": "nested_cancel::1::w3",
+            "facts": [
+              "state:order_pending"
+            ],
+            "expected": "NO_VIOLATION",
+            "distinguishes": "flips_violation_literal_1_action:cancel_order"
+          },
+          {
+            "id": "nested_cancel::1::w4",
             "facts": [
               "action:cancel_order",
               "event:confirmation_before",
@@ -6581,7 +6567,7 @@
             "distinguishes": "satisfies_permission_clause_0"
           },
           {
-            "id": "nested_cancel::1::w4",
+            "id": "nested_cancel::1::w5",
             "facts": [
               "event:confirmation_before",
               "identity:requester_owns_order",
@@ -6591,20 +6577,14 @@
             "distinguishes": "flips_permission_literal_0_action:cancel_order"
           },
           {
-            "id": "nested_cancel::1::w5",
+            "id": "nested_cancel::1::w6",
             "facts": [
               "action:cancel_order",
               "event:confirmation_before",
               "identity:requester_owns_order"
             ],
-            "expected": "NO_VIOLATION",
+            "expected": "VIOLATION",
             "distinguishes": "flips_permission_literal_0_state:order_pending"
-          },
-          {
-            "id": "nested_cancel::1::w6",
-            "facts": [],
-            "expected": "NO_VIOLATION",
-            "distinguishes": "empty_world"
           },
           {
             "id": "nested_cancel::1::w7",
@@ -6658,6 +6638,10 @@
           "violation_clauses": [
             [
               "action:cancel_order",
+              "!state:order_pending"
+            ],
+            [
+              "action:cancel_order",
               "state:order_pending",
               "!identity:requester_owns_order"
             ],
@@ -6680,30 +6664,36 @@
           {
             "id": "nested_cancel::2::w0",
             "facts": [
-              "action:cancel_order",
-              "state:order_pending"
+              "action:cancel_order"
             ],
             "expected": "VIOLATION",
             "distinguishes": "satisfies_violation_clause_0"
           },
           {
             "id": "nested_cancel::2::w1",
-            "facts": [
-              "state:order_pending"
-            ],
+            "facts": [],
             "expected": "NO_VIOLATION",
             "distinguishes": "flips_violation_literal_0_action:cancel_order"
           },
           {
             "id": "nested_cancel::2::w2",
             "facts": [
-              "action:cancel_order"
+              "action:cancel_order",
+              "state:order_pending"
             ],
-            "expected": "NO_VIOLATION",
+            "expected": "VIOLATION",
             "distinguishes": "flips_violation_literal_0_state:order_pending"
           },
           {
             "id": "nested_cancel::2::w3",
+            "facts": [
+              "state:order_pending"
+            ],
+            "expected": "NO_VIOLATION",
+            "distinguishes": "flips_violation_literal_1_action:cancel_order"
+          },
+          {
+            "id": "nested_cancel::2::w4",
             "facts": [
               "action:cancel_order",
               "event:confirmation_before",
@@ -6714,7 +6704,7 @@
             "distinguishes": "satisfies_permission_clause_0"
           },
           {
-            "id": "nested_cancel::2::w4",
+            "id": "nested_cancel::2::w5",
             "facts": [
               "event:confirmation_before",
               "identity:requester_owns_order",
@@ -6724,20 +6714,14 @@
             "distinguishes": "flips_permission_literal_0_action:cancel_order"
           },
           {
-            "id": "nested_cancel::2::w5",
+            "id": "nested_cancel::2::w6",
             "facts": [
               "action:cancel_order",
               "event:confirmation_before",
               "identity:requester_owns_order"
             ],
-            "expected": "NO_VIOLATION",
+            "expected": "VIOLATION",
             "distinguishes": "flips_permission_literal_0_state:order_pending"
-          },
-          {
-            "id": "nested_cancel::2::w6",
-            "facts": [],
-            "expected": "NO_VIOLATION",
-            "distinguishes": "empty_world"
           },
           {
             "id": "nested_cancel::2::w7",
@@ -6791,6 +6775,10 @@
           "violation_clauses": [
             [
               "action:cancel_order",
+              "!state:order_pending"
+            ],
+            [
+              "action:cancel_order",
               "state:order_pending",
               "!identity:requester_owns_order"
             ],
@@ -6813,30 +6801,36 @@
           {
             "id": "nested_cancel::3::w0",
             "facts": [
-              "action:cancel_order",
-              "state:order_pending"
+              "action:cancel_order"
             ],
             "expected": "VIOLATION",
             "distinguishes": "satisfies_violation_clause_0"
           },
           {
             "id": "nested_cancel::3::w1",
-            "facts": [
-              "state:order_pending"
-            ],
+            "facts": [],
             "expected": "NO_VIOLATION",
             "distinguishes": "flips_violation_literal_0_action:cancel_order"
           },
           {
             "id": "nested_cancel::3::w2",
             "facts": [
-              "action:cancel_order"
+              "action:cancel_order",
+              "state:order_pending"
             ],
-            "expected": "NO_VIOLATION",
+            "expected": "VIOLATION",
             "distinguishes": "flips_violation_literal_0_state:order_pending"
           },
           {
             "id": "nested_cancel::3::w3",
+            "facts": [
+              "state:order_pending"
+            ],
+            "expected": "NO_VIOLATION",
+            "distinguishes": "flips_violation_literal_1_action:cancel_order"
+          },
+          {
+            "id": "nested_cancel::3::w4",
             "facts": [
               "action:cancel_order",
               "event:confirmation_before",
@@ -6847,7 +6841,7 @@
             "distinguishes": "satisfies_permission_clause_0"
           },
           {
-            "id": "nested_cancel::3::w4",
+            "id": "nested_cancel::3::w5",
             "facts": [
               "event:confirmation_before",
               "identity:requester_owns_order",
@@ -6857,20 +6851,14 @@
             "distinguishes": "flips_permission_literal_0_action:cancel_order"
           },
           {
-            "id": "nested_cancel::3::w5",
+            "id": "nested_cancel::3::w6",
             "facts": [
               "action:cancel_order",
               "event:confirmation_before",
               "identity:requester_owns_order"
             ],
-            "expected": "NO_VIOLATION",
+            "expected": "VIOLATION",
             "distinguishes": "flips_permission_literal_0_state:order_pending"
-          },
-          {
-            "id": "nested_cancel::3::w6",
-            "facts": [],
-            "expected": "NO_VIOLATION",
-            "distinguishes": "empty_world"
           },
           {
             "id": "nested_cancel::3::w7",
@@ -7976,7 +7964,7 @@
       "policy": "All passengers must fly the same flights in the same cabin.",
       "atom_catalog": [
         "distractor:irrelevant",
-        "state:any_passenger_different_flight_or_cabin",
+        "state:all_passengers_same_flight_and_cabin",
         "distractor:boundary_2"
       ],
       "gold": {
@@ -7994,14 +7982,14 @@
           "quantification": "ALL",
           "target_clauses": [
             [
-              "state:any_passenger_different_flight_or_cabin"
+              "state:all_passengers_same_flight_and_cabin"
             ]
           ]
         },
         "program": {
           "violation_clauses": [
             [
-              "state:any_passenger_different_flight_or_cabin"
+              "!state:all_passengers_same_flight_and_cabin"
             ]
           ],
           "permission_clauses": []
@@ -8009,24 +7997,24 @@
         "worlds": [
           {
             "id": "all_passengers_same_flights::0::w0",
-            "facts": [
-              "state:any_passenger_different_flight_or_cabin"
-            ],
+            "facts": [],
             "expected": "VIOLATION",
             "distinguishes": "satisfies_violation_clause_0"
           },
           {
             "id": "all_passengers_same_flights::0::w1",
-            "facts": [],
+            "facts": [
+              "state:all_passengers_same_flight_and_cabin"
+            ],
             "expected": "NO_VIOLATION",
-            "distinguishes": "flips_violation_literal_0_state:any_passenger_different_flight_or_cabin"
+            "distinguishes": "flips_violation_literal_0_state:all_passengers_same_flight_and_cabin"
           },
           {
             "id": "all_passengers_same_flights::0::w2",
             "facts": [
               "distractor:irrelevant"
             ],
-            "expected": "NO_VIOLATION",
+            "expected": "VIOLATION",
             "distinguishes": "irrelevant_distractor"
           },
           {
@@ -8034,7 +8022,7 @@
             "facts": [
               "distractor:boundary_2"
             ],
-            "expected": "NO_VIOLATION",
+            "expected": "VIOLATION",
             "distinguishes": "generated_boundary_world"
           }
         ]
@@ -8049,7 +8037,7 @@
       "policy": "Every passenger in a reservation is required to share both flights and cabin.",
       "atom_catalog": [
         "distractor:irrelevant",
-        "state:any_passenger_different_flight_or_cabin",
+        "state:all_passengers_same_flight_and_cabin",
         "distractor:boundary_2"
       ],
       "gold": {
@@ -8067,14 +8055,14 @@
           "quantification": "ALL",
           "target_clauses": [
             [
-              "state:any_passenger_different_flight_or_cabin"
+              "state:all_passengers_same_flight_and_cabin"
             ]
           ]
         },
         "program": {
           "violation_clauses": [
             [
-              "state:any_passenger_different_flight_or_cabin"
+              "!state:all_passengers_same_flight_and_cabin"
             ]
           ],
           "permission_clauses": []
@@ -8082,24 +8070,24 @@
         "worlds": [
           {
             "id": "all_passengers_same_flights::1::w0",
-            "facts": [
-              "state:any_passenger_different_flight_or_cabin"
-            ],
+            "facts": [],
             "expected": "VIOLATION",
             "distinguishes": "satisfies_violation_clause_0"
           },
           {
             "id": "all_passengers_same_flights::1::w1",
-            "facts": [],
+            "facts": [
+              "state:all_passengers_same_flight_and_cabin"
+            ],
             "expected": "NO_VIOLATION",
-            "distinguishes": "flips_violation_literal_0_state:any_passenger_different_flight_or_cabin"
+            "distinguishes": "flips_violation_literal_0_state:all_passengers_same_flight_and_cabin"
           },
           {
             "id": "all_passengers_same_flights::1::w2",
             "facts": [
               "distractor:irrelevant"
             ],
-            "expected": "NO_VIOLATION",
+            "expected": "VIOLATION",
             "distinguishes": "irrelevant_distractor"
           },
           {
@@ -8107,7 +8095,7 @@
             "facts": [
               "distractor:boundary_2"
             ],
-            "expected": "NO_VIOLATION",
+            "expected": "VIOLATION",
             "distinguishes": "generated_boundary_world"
           }
         ]
@@ -8122,7 +8110,7 @@
       "policy": "A single passenger assigned to a different flight violates the all-passengers rule.",
       "atom_catalog": [
         "distractor:irrelevant",
-        "state:any_passenger_different_flight_or_cabin",
+        "state:all_passengers_same_flight_and_cabin",
         "distractor:boundary_2"
       ],
       "gold": {
@@ -8140,14 +8128,14 @@
           "quantification": "ALL",
           "target_clauses": [
             [
-              "state:any_passenger_different_flight_or_cabin"
+              "state:all_passengers_same_flight_and_cabin"
             ]
           ]
         },
         "program": {
           "violation_clauses": [
             [
-              "state:any_passenger_different_flight_or_cabin"
+              "!state:all_passengers_same_flight_and_cabin"
             ]
           ],
           "permission_clauses": []
@@ -8155,24 +8143,24 @@
         "worlds": [
           {
             "id": "all_passengers_same_flights::2::w0",
-            "facts": [
-              "state:any_passenger_different_flight_or_cabin"
-            ],
+            "facts": [],
             "expected": "VIOLATION",
             "distinguishes": "satisfies_violation_clause_0"
           },
           {
             "id": "all_passengers_same_flights::2::w1",
-            "facts": [],
+            "facts": [
+              "state:all_passengers_same_flight_and_cabin"
+            ],
             "expected": "NO_VIOLATION",
-            "distinguishes": "flips_violation_literal_0_state:any_passenger_different_flight_or_cabin"
+            "distinguishes": "flips_violation_literal_0_state:all_passengers_same_flight_and_cabin"
           },
           {
             "id": "all_passengers_same_flights::2::w2",
             "facts": [
               "distractor:irrelevant"
             ],
-            "expected": "NO_VIOLATION",
+            "expected": "VIOLATION",
             "distinguishes": "irrelevant_distractor"
           },
           {
@@ -8180,7 +8168,7 @@
             "facts": [
               "distractor:boundary_2"
             ],
-            "expected": "NO_VIOLATION",
+            "expected": "VIOLATION",
             "distinguishes": "generated_boundary_world"
           }
         ]
@@ -8195,7 +8183,7 @@
       "policy": "A reservation contains passengers, flights, and cabin assignments. Individual names may differ. The universal constraint later requires all passengers to share the same flights and cabin.",
       "atom_catalog": [
         "distractor:irrelevant",
-        "state:any_passenger_different_flight_or_cabin",
+        "state:all_passengers_same_flight_and_cabin",
         "distractor:boundary_2"
       ],
       "gold": {
@@ -8213,14 +8201,14 @@
           "quantification": "ALL",
           "target_clauses": [
             [
-              "state:any_passenger_different_flight_or_cabin"
+              "state:all_passengers_same_flight_and_cabin"
             ]
           ]
         },
         "program": {
           "violation_clauses": [
             [
-              "state:any_passenger_different_flight_or_cabin"
+              "!state:all_passengers_same_flight_and_cabin"
             ]
           ],
           "permission_clauses": []
@@ -8228,24 +8216,24 @@
         "worlds": [
           {
             "id": "all_passengers_same_flights::3::w0",
-            "facts": [
-              "state:any_passenger_different_flight_or_cabin"
-            ],
+            "facts": [],
             "expected": "VIOLATION",
             "distinguishes": "satisfies_violation_clause_0"
           },
           {
             "id": "all_passengers_same_flights::3::w1",
-            "facts": [],
+            "facts": [
+              "state:all_passengers_same_flight_and_cabin"
+            ],
             "expected": "NO_VIOLATION",
-            "distinguishes": "flips_violation_literal_0_state:any_passenger_different_flight_or_cabin"
+            "distinguishes": "flips_violation_literal_0_state:all_passengers_same_flight_and_cabin"
           },
           {
             "id": "all_passengers_same_flights::3::w2",
             "facts": [
               "distractor:irrelevant"
             ],
-            "expected": "NO_VIOLATION",
+            "expected": "VIOLATION",
             "distinguishes": "irrelevant_distractor"
           },
           {
@@ -8253,7 +8241,7 @@
             "facts": [
               "distractor:boundary_2"
             ],
-            "expected": "NO_VIOLATION",
+            "expected": "VIOLATION",
             "distinguishes": "generated_boundary_world"
           }
         ]

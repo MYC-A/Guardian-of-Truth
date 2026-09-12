@@ -4,6 +4,7 @@ import unittest
 
 from guardian_truth.cycle2.policy_semantics import (
     STRUCTURAL_FIELDS,
+    compile_typed_structure,
     evaluate_program,
     load_policy_dataset,
     score_policy_candidate,
@@ -35,6 +36,13 @@ class Cycle2PolicySemanticsTests(unittest.TestCase):
                 self.assertGreaterEqual(len(case.worlds), 4)
                 for world in case.worlds:
                     self.assertEqual(world.expected, evaluate_program(case.program, world.facts))
+
+    def test_typed_structure_compiler_is_behaviorally_equivalent_for_every_case(self):
+        for case in self.dataset.cases:
+            with self.subTest(case=case.id):
+                compiled = compile_typed_structure(case.structure)
+                for world in case.worlds:
+                    self.assertEqual(world.expected, evaluate_program(compiled, world.facts))
 
     def test_behavioral_equivalence_does_not_require_json_clause_order(self):
         case = next(case for case in self.dataset.cases if len(case.program["violation_clauses"]) > 1)

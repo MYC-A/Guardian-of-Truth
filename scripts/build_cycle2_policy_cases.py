@@ -80,7 +80,8 @@ SPECS = (
         "Do not give the user information that neither the user nor a tool supplied.",
         "The assistant is prohibited from presenting unavailable information.",
         "Available information means content supplied by the user or tools. Several unrelated notes follow. The assistant must not provide information outside that definition.",
-    ), structure("PROHIBITION", "assistant", "INFORMATION", "availability", provenance="USER_OR_TOOL"),
+    ), structure("PROHIBITION", "assistant", "INFORMATION", "availability", "ONLY_IF",
+                 conditions=("source:user_or_tool",), provenance="USER_OR_TOOL"),
         violation=(("actor:assistant", "action:provide_information", "!source:user_or_tool"),),
         source_ref="valid.parquet:policy:739e118bf2c1"),
     spec("obtain_user_before_update", "requirement", (
@@ -119,7 +120,7 @@ SPECS = (
         "An account can have several states. Transfer details are defined elsewhere. If its state is frozen, outgoing transfers must be blocked.",
     ), structure("REQUIREMENT", "assistant", "STATE", "transfer_permission", "IF",
                  conditions=("state:account_frozen",), quantification="ALL"),
-        violation=(("state:account_frozen", "action:allow_outgoing_transfer"),)),
+        violation=(("state:account_frozen", "!state:outgoing_transfers_blocked"),)),
     spec("disclose_unless_consent", "exception_unless", (
         "Do not disclose the record unless the user consents.",
         "The record must remain undisclosed, except when the user has consented.",
@@ -247,7 +248,8 @@ SPECS = (
     ), structure("PERMISSION", "agent", "ACTION", "order", "IF_AND_ONLY_IF",
                  conditions=("state:order_pending", "identity:requester_owns_order", "event:confirmation_before"),
                  temporal="BEFORE", identity="SAME_ORDER_OWNER"),
-        violation=(("action:cancel_order", "state:order_pending", "!identity:requester_owns_order"),
+        violation=(("action:cancel_order", "!state:order_pending"),
+                   ("action:cancel_order", "state:order_pending", "!identity:requester_owns_order"),
                    ("action:cancel_order", "state:order_pending", "!event:confirmation_before")),
         permission=(("action:cancel_order", "state:order_pending", "identity:requester_owns_order", "event:confirmation_before"),)),
     spec("defined_update", "distant_definition", (
@@ -287,7 +289,7 @@ SPECS = (
         "A reservation contains passengers, flights, and cabin assignments. Individual names may differ. The universal constraint later requires all passengers to share the same flights and cabin.",
     ), structure("REQUIREMENT", "agent", "STATE", "passenger_itinerary", "UNCONDITIONAL",
                  identity="SAME_RESERVATION", quantification="ALL"),
-        violation=(("state:any_passenger_different_flight_or_cabin",),),
+        violation=(("!state:all_passengers_same_flight_and_cabin",),),
         source_ref="valid.parquet:policy:739e118bf2c1"),
     spec("one_tool_call", "turn_call_cardinality", (
         "You should only make one tool call at a time.",

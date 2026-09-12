@@ -68,6 +68,58 @@ def evaluate_program(program: Mapping[str, Any], facts: Iterable[str]) -> str:
     return "NO_VIOLATION"
 
 
+def _invert(literal: str) -> str:
+    return literal[1:] if literal.startswith("!") else "!" + literal
+
+
+def compile_typed_structure(structure: Mapping[str, Any]) -> dict[str, list[list[str]]]:
+    """Compile the typed IR without access to policy text or benchmark ids."""
+    _validate_structure(structure)
+    modality = structure["modality"]
+    relation = structure["relation"]
+    targets = [list(clause) for clause in structure["target_clauses"]]
+    conditions = list(structure["condition_literals"])
+    exceptions = list(structure["exception_literals"])
+    violation: list[list[str]] = []
+    permission: list[list[str]] = []
+
+    if modality == "PERMISSION":
+        permission = [target + conditions for target in targets]
+        if relation in {"ONLY_IF", "IF_AND_ONLY_IF"}:
+            violation = [target + [_invert(condition)]
+                         for target in targets for condition in conditions]
+    elif relation in {"ONLY_IF", "IF_AND_ONLY_IF"}:
+        violation = [target + [_invert(condition)]
+                     for target in targets for condition in conditions]
+    elif relation == "UNLESS":
+        violation = [target + [_invert(exception)]
+                     for target in targets for exception in exceptions]
+    elif modality == "REQUIREMENT" and relation in {"IF", "DURING"}:
+        if any(len(target) != 1 for target in targets):
+            raise ValueError("conditional requirement target must be atomic")
+        violation = [conditions + [_invert(target[0])] for target in targets]
+    elif modality == "REQUIREMENT" and relation == "UNCONDITIONAL":
+        if any(len(target) != 1 for target in targets):
+            raise ValueError("unconditional requirement target must be atomic")
+        violation = [[_invert(target[0])] for target in targets]
+    elif modality == "PROHIBITION" and relation in {
+        "UNCONDITIONAL", "IF", "DURING", "AND_NOT_EACH",
+    }:
+        violation = [target + conditions + [_invert(item) for item in exceptions]
+                     for target in targets]
+    else:
+        raise ValueError("typed structure relation is not compilable")
+
+    def unique(rows):
+        result = []
+        for row in rows:
+            if row not in result:
+                result.append(row)
+        return result
+
+    return {"violation_clauses": unique(violation), "permission_clauses": unique(permission)}
+
+
 @dataclass(frozen=True)
 class PolicyWorld:
     id: str
