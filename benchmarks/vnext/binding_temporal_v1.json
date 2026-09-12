@@ -1,0 +1,573 @@
+{
+  "schema_version": "guardian-vnext-stage-benchmark-v1",
+  "version": 1,
+  "stage": "binding_temporal",
+  "role": "CONTROLLED_DEVELOPMENT_EXTENSION",
+  "annotation_basis": "explicit controlled minimal-pair annotations; tool gold checked by executable reference",
+  "frozen_before_component_implementation": true,
+  "cases_sha256": "18a10a4bc6c0ed3f355ee1f036d900fdccae9699a84978120461b786449c50fc",
+  "cases": [
+    {
+      "case_id": "bind:action_undo:0",
+      "family": "action_undo",
+      "input": {
+        "events": [
+          "archive",
+          "unarchive"
+        ],
+        "claim": "never archived",
+        "variant": 0
+      },
+      "gold": {
+        "verdict": "PROVED_ERROR",
+        "preserve_ambiguity": false,
+        "causal_support": null,
+        "complete_search": true
+      }
+    },
+    {
+      "case_id": "bind:repeated:0",
+      "family": "repeated",
+      "input": {
+        "events": [
+          "archive",
+          "archive"
+        ],
+        "claim": "archived twice",
+        "variant": 0
+      },
+      "gold": {
+        "verdict": "PROVED_NO_ERROR",
+        "preserve_ambiguity": false,
+        "causal_support": null,
+        "complete_search": true
+      }
+    },
+    {
+      "case_id": "bind:duplicate_names:0",
+      "family": "duplicate_names",
+      "input": {
+        "events": [
+          "Q-101 name=Alex",
+          "Q-102 name=Alex"
+        ],
+        "claim": "Alex archived",
+        "variant": 0
+      },
+      "gold": {
+        "verdict": "UNRESOLVED",
+        "preserve_ambiguity": true,
+        "causal_support": null,
+        "complete_search": true
+      }
+    },
+    {
+      "case_id": "bind:rename_alias:0",
+      "family": "rename_alias",
+      "input": {
+        "events": [
+          "Q-101 name=Alex",
+          "Q-101 name=Blair"
+        ],
+        "claim": "Blair previously named Alex",
+        "variant": 0
+      },
+      "gold": {
+        "verdict": "PROVED_NO_ERROR",
+        "preserve_ambiguity": false,
+        "causal_support": null,
+        "complete_search": true
+      }
+    },
+    {
+      "case_id": "bind:stale_state:0",
+      "family": "stale_state",
+      "input": {
+        "events": [
+          "archived=true at 0",
+          "archived=false at 1"
+        ],
+        "claim": "archived now",
+        "variant": 0
+      },
+      "gold": {
+        "verdict": "PROVED_ERROR",
+        "preserve_ambiguity": false,
+        "causal_support": null,
+        "complete_search": true
+      }
+    },
+    {
+      "case_id": "bind:user_mutation:0",
+      "family": "user_mutation",
+      "input": {
+        "events": [
+          "user archive Q-101"
+        ],
+        "claim": "I archived Q-101",
+        "variant": 0
+      },
+      "gold": {
+        "verdict": "UNRESOLVED",
+        "preserve_ambiguity": false,
+        "causal_support": null,
+        "complete_search": true
+      }
+    },
+    {
+      "case_id": "bind:timeout:0",
+      "family": "timeout",
+      "input": {
+        "events": [
+          "assistant archive timeout"
+        ],
+        "claim": "archive completed",
+        "variant": 0
+      },
+      "gold": {
+        "verdict": "UNRESOLVED",
+        "preserve_ambiguity": true,
+        "causal_support": null,
+        "complete_search": true
+      }
+    },
+    {
+      "case_id": "bind:late_observation:0",
+      "family": "late_observation",
+      "input": {
+        "events": [
+          "restore timeout",
+          "GET exists=true"
+        ],
+        "claim": "restore caused existence",
+        "variant": 0
+      },
+      "gold": {
+        "verdict": "UNRESOLVED",
+        "preserve_ambiguity": false,
+        "causal_support": false,
+        "complete_search": true
+      }
+    },
+    {
+      "case_id": "bind:actor:0",
+      "family": "actor",
+      "input": {
+        "events": [
+          "user archive confirmed"
+        ],
+        "claim": "assistant archive confirmed",
+        "variant": 0
+      },
+      "gold": {
+        "verdict": "PROVED_ERROR",
+        "preserve_ambiguity": false,
+        "causal_support": null,
+        "complete_search": true
+      }
+    },
+    {
+      "case_id": "bind:intent:0",
+      "family": "intent",
+      "input": {
+        "events": [
+          "assistant intends archive"
+        ],
+        "claim": "assistant archive completed",
+        "variant": 0
+      },
+      "gold": {
+        "verdict": "UNRESOLVED",
+        "preserve_ambiguity": false,
+        "causal_support": null,
+        "complete_search": true
+      }
+    },
+    {
+      "case_id": "bind:truncated:0",
+      "family": "truncated",
+      "input": {
+        "events": [
+          "GET truncated result"
+        ],
+        "claim": "no records exist",
+        "variant": 0
+      },
+      "gold": {
+        "verdict": "UNRESOLVED",
+        "preserve_ambiguity": false,
+        "causal_support": null,
+        "complete_search": false
+      }
+    },
+    {
+      "case_id": "bind:same_final_state:0",
+      "family": "same_final_state",
+      "input": {
+        "events": [
+          "archive A timeout",
+          "archive B confirmed"
+        ],
+        "claim": "A caused archive",
+        "variant": 0
+      },
+      "gold": {
+        "verdict": "UNRESOLVED",
+        "preserve_ambiguity": true,
+        "causal_support": false,
+        "complete_search": true
+      }
+    },
+    {
+      "case_id": "bind:identity_scoped:0",
+      "family": "identity_scoped",
+      "input": {
+        "events": [
+          "archive Q-101 confirmed"
+        ],
+        "claim": "Q-102 archived",
+        "variant": 0
+      },
+      "gold": {
+        "verdict": "UNRESOLVED",
+        "preserve_ambiguity": false,
+        "causal_support": null,
+        "complete_search": true
+      }
+    },
+    {
+      "case_id": "bind:historical:0",
+      "family": "historical",
+      "input": {
+        "events": [
+          "delete Q-101 confirmed",
+          "restore Q-101 confirmed"
+        ],
+        "claim": "Q-101 never deleted",
+        "variant": 0
+      },
+      "gold": {
+        "verdict": "PROVED_ERROR",
+        "preserve_ambiguity": false,
+        "causal_support": null,
+        "complete_search": true
+      }
+    },
+    {
+      "case_id": "bind:correlation:0",
+      "family": "correlation",
+      "input": {
+        "events": [
+          "archive timeout",
+          "GET archived=true"
+        ],
+        "claim": "archive caused state",
+        "variant": 0
+      },
+      "gold": {
+        "verdict": "UNRESOLVED",
+        "preserve_ambiguity": false,
+        "causal_support": false,
+        "complete_search": true
+      }
+    },
+    {
+      "case_id": "bind:retrieval_miss:0",
+      "family": "retrieval_miss",
+      "input": {
+        "events": [
+          "partial search returned empty"
+        ],
+        "claim": "no relevant event exists",
+        "variant": 0
+      },
+      "gold": {
+        "verdict": "UNRESOLVED",
+        "preserve_ambiguity": false,
+        "causal_support": null,
+        "complete_search": false
+      }
+    },
+    {
+      "case_id": "bind:action_undo:1",
+      "family": "action_undo",
+      "input": {
+        "events": [
+          "archive",
+          "unarchive"
+        ],
+        "claim": "never archived",
+        "variant": 1
+      },
+      "gold": {
+        "verdict": "PROVED_ERROR",
+        "preserve_ambiguity": false,
+        "causal_support": null,
+        "complete_search": true
+      }
+    },
+    {
+      "case_id": "bind:repeated:1",
+      "family": "repeated",
+      "input": {
+        "events": [
+          "archive",
+          "archive"
+        ],
+        "claim": "archived twice",
+        "variant": 1
+      },
+      "gold": {
+        "verdict": "PROVED_NO_ERROR",
+        "preserve_ambiguity": false,
+        "causal_support": null,
+        "complete_search": true
+      }
+    },
+    {
+      "case_id": "bind:duplicate_names:1",
+      "family": "duplicate_names",
+      "input": {
+        "events": [
+          "Q-101 name=Alex",
+          "Q-102 name=Alex"
+        ],
+        "claim": "Alex archived",
+        "variant": 1
+      },
+      "gold": {
+        "verdict": "UNRESOLVED",
+        "preserve_ambiguity": true,
+        "causal_support": null,
+        "complete_search": true
+      }
+    },
+    {
+      "case_id": "bind:rename_alias:1",
+      "family": "rename_alias",
+      "input": {
+        "events": [
+          "Q-101 name=Alex",
+          "Q-101 name=Blair"
+        ],
+        "claim": "Blair previously named Alex",
+        "variant": 1
+      },
+      "gold": {
+        "verdict": "PROVED_NO_ERROR",
+        "preserve_ambiguity": false,
+        "causal_support": null,
+        "complete_search": true
+      }
+    },
+    {
+      "case_id": "bind:stale_state:1",
+      "family": "stale_state",
+      "input": {
+        "events": [
+          "archived=true at 0",
+          "archived=false at 1"
+        ],
+        "claim": "archived now",
+        "variant": 1
+      },
+      "gold": {
+        "verdict": "PROVED_ERROR",
+        "preserve_ambiguity": false,
+        "causal_support": null,
+        "complete_search": true
+      }
+    },
+    {
+      "case_id": "bind:user_mutation:1",
+      "family": "user_mutation",
+      "input": {
+        "events": [
+          "user archive Q-101"
+        ],
+        "claim": "I archived Q-101",
+        "variant": 1
+      },
+      "gold": {
+        "verdict": "UNRESOLVED",
+        "preserve_ambiguity": false,
+        "causal_support": null,
+        "complete_search": true
+      }
+    },
+    {
+      "case_id": "bind:timeout:1",
+      "family": "timeout",
+      "input": {
+        "events": [
+          "assistant archive timeout"
+        ],
+        "claim": "archive completed",
+        "variant": 1
+      },
+      "gold": {
+        "verdict": "UNRESOLVED",
+        "preserve_ambiguity": true,
+        "causal_support": null,
+        "complete_search": true
+      }
+    },
+    {
+      "case_id": "bind:late_observation:1",
+      "family": "late_observation",
+      "input": {
+        "events": [
+          "restore timeout",
+          "GET exists=true"
+        ],
+        "claim": "restore caused existence",
+        "variant": 1
+      },
+      "gold": {
+        "verdict": "UNRESOLVED",
+        "preserve_ambiguity": false,
+        "causal_support": false,
+        "complete_search": true
+      }
+    },
+    {
+      "case_id": "bind:actor:1",
+      "family": "actor",
+      "input": {
+        "events": [
+          "user archive confirmed"
+        ],
+        "claim": "assistant archive confirmed",
+        "variant": 1
+      },
+      "gold": {
+        "verdict": "PROVED_ERROR",
+        "preserve_ambiguity": false,
+        "causal_support": null,
+        "complete_search": true
+      }
+    },
+    {
+      "case_id": "bind:intent:1",
+      "family": "intent",
+      "input": {
+        "events": [
+          "assistant intends archive"
+        ],
+        "claim": "assistant archive completed",
+        "variant": 1
+      },
+      "gold": {
+        "verdict": "UNRESOLVED",
+        "preserve_ambiguity": false,
+        "causal_support": null,
+        "complete_search": true
+      }
+    },
+    {
+      "case_id": "bind:truncated:1",
+      "family": "truncated",
+      "input": {
+        "events": [
+          "GET truncated result"
+        ],
+        "claim": "no records exist",
+        "variant": 1
+      },
+      "gold": {
+        "verdict": "UNRESOLVED",
+        "preserve_ambiguity": false,
+        "causal_support": null,
+        "complete_search": false
+      }
+    },
+    {
+      "case_id": "bind:same_final_state:1",
+      "family": "same_final_state",
+      "input": {
+        "events": [
+          "archive A timeout",
+          "archive B confirmed"
+        ],
+        "claim": "A caused archive",
+        "variant": 1
+      },
+      "gold": {
+        "verdict": "UNRESOLVED",
+        "preserve_ambiguity": true,
+        "causal_support": false,
+        "complete_search": true
+      }
+    },
+    {
+      "case_id": "bind:identity_scoped:1",
+      "family": "identity_scoped",
+      "input": {
+        "events": [
+          "archive Q-101 confirmed"
+        ],
+        "claim": "Q-102 archived",
+        "variant": 1
+      },
+      "gold": {
+        "verdict": "UNRESOLVED",
+        "preserve_ambiguity": false,
+        "causal_support": null,
+        "complete_search": true
+      }
+    },
+    {
+      "case_id": "bind:historical:1",
+      "family": "historical",
+      "input": {
+        "events": [
+          "delete Q-101 confirmed",
+          "restore Q-101 confirmed"
+        ],
+        "claim": "Q-101 never deleted",
+        "variant": 1
+      },
+      "gold": {
+        "verdict": "PROVED_ERROR",
+        "preserve_ambiguity": false,
+        "causal_support": null,
+        "complete_search": true
+      }
+    },
+    {
+      "case_id": "bind:correlation:1",
+      "family": "correlation",
+      "input": {
+        "events": [
+          "archive timeout",
+          "GET archived=true"
+        ],
+        "claim": "archive caused state",
+        "variant": 1
+      },
+      "gold": {
+        "verdict": "UNRESOLVED",
+        "preserve_ambiguity": false,
+        "causal_support": false,
+        "complete_search": true
+      }
+    },
+    {
+      "case_id": "bind:retrieval_miss:1",
+      "family": "retrieval_miss",
+      "input": {
+        "events": [
+          "partial search returned empty"
+        ],
+        "claim": "no relevant event exists",
+        "variant": 1
+      },
+      "gold": {
+        "verdict": "UNRESOLVED",
+        "preserve_ambiguity": false,
+        "causal_support": null,
+        "complete_search": false
+      }
+    }
+  ]
+}
