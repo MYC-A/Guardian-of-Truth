@@ -1,9 +1,10 @@
 # Policy Semantics V2
 
-The Cycle 2 benchmark freezes 96 `Natural Language Policy → meaning` cases in
+The Cycle 2 benchmark freezes 104 `Natural Language Policy → meaning` cases in
 `outputs/cycle2/policy_cases.json`. It contains four variants for each of 24
-required semantic families: an external fragment or controlled seed, a minimal
-pair, a paraphrase, and a long-distance formulation.
+required semantic families plus two incumbent-control families: an external
+fragment or controlled seed, a minimal pair, a paraphrase, and a long-distance
+formulation.
 
 The external fragments are regression seeds copied from the policy regions of
 `valid.parquet`; neither task labels nor reference explanations were read by the

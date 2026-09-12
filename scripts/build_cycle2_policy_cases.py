@@ -15,7 +15,8 @@ REQUIRED_FAMILIES = (
     "before_after", "until_during", "freshness", "provenance", "cardinality",
     "same_different_entity", "source_recipient", "negation_scope",
     "nested_qualifier", "distant_definition", "distant_exception",
-    "cross_reference", "quantification",
+    "cross_reference", "quantification", "turn_call_cardinality",
+    "turn_action_exclusivity",
 )
 
 
@@ -268,6 +269,24 @@ SPECS = (
     ), structure("REQUIREMENT", "agent", "STATE", "passenger_itinerary", "UNCONDITIONAL",
                  identity="SAME_RESERVATION", quantification="ALL"),
         violation=(("state:any_passenger_different_flight_or_cabin",),),
+        source_ref="valid.parquet:policy:739e118bf2c1"),
+    spec("one_tool_call", "turn_call_cardinality", (
+        "You should only make one tool call at a time.",
+        "A single assistant turn may contain at most one tool call.",
+        "Do not issue two tool calls in the same turn.",
+        "Tools are invoked by structured calls. Calls from earlier turns do not count here. In one assistant turn, the assistant may make no more than one tool call.",
+    ), structure("PROHIBITION", "assistant", "ACTION", "tool_call_count", "UNCONDITIONAL",
+                 quantification="AT_MOST_1_PER_TURN"),
+        violation=(("turn:tool_call_count_gt_1",),),
+        source_ref="valid.parquet:policy:739e118bf2c1"),
+    spec("message_xor_tool", "turn_action_exclusivity", (
+        "If you make a tool call, you should not respond to the user simultaneously.",
+        "An assistant turn must not contain both user-facing text and a tool call.",
+        "Choose either a message or a tool call in one turn, never both.",
+        "A message is user-facing text; a tool call is a structured action. Other event types are described separately. For each assistant turn, message and tool call are mutually exclusive.",
+    ), structure("PROHIBITION", "assistant", "ACTION", "turn_channels", "AND_NOT_EACH",
+                 identity="SAME_TURN", quantification="NOT_BOTH"),
+        violation=(("turn:has_message", "turn:has_tool_call"),),
         source_ref="valid.parquet:policy:739e118bf2c1"),
 )
 

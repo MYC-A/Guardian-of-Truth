@@ -20,8 +20,8 @@ class Cycle2PolicySemanticsTests(unittest.TestCase):
         cls.dataset = load_policy_dataset(CASES)
 
     def test_frozen_dataset_has_required_scope_and_source_mix(self):
-        self.assertEqual(96, len(self.dataset.cases))
-        self.assertEqual(24, len({case.family for case in self.dataset.cases}))
+        self.assertEqual(104, len(self.dataset.cases))
+        self.assertEqual(26, len({case.family for case in self.dataset.cases}))
         self.assertEqual(
             {"external_or_seed", "minimal_pair", "paraphrase", "long_distance"},
             {case.variant for case in self.dataset.cases},
