@@ -7,9 +7,12 @@ import hashlib
 import json
 from pathlib import Path
 import re
-from typing import Any, Iterable, Mapping
+import time
+from typing import Any, Callable, Iterable, Mapping, Protocol
 
+from guardian_truth.llm_client import ChatClientError, Completion
 from guardian_truth.next.claims import extract_claims_with_coverage
+from guardian_truth.parsing import parse_events
 
 
 KINDS = {
@@ -27,6 +30,26 @@ KIND_MAP = {
     "fact": "FACT",
     "absence": "ABSENCE",
 }
+SOURCES = {"ASSISTANT", "USER", "SYSTEM", "TOOL", "UNSPECIFIED"}
+SENTENCE = re.compile(r"[^\n.!?]+(?:[.!?]+|$)")
+
+
+class CompletionClient(Protocol):
+    def complete(self, messages: list[dict], *, schema: dict | None = None,
+                 reasoning_effort: str | None = None) -> Completion: ...
+
+
+@dataclass(frozen=True)
+class ClaimArmContract:
+    digest: str
+    timeout_seconds: float
+    max_output_tokens: int
+    interval_seconds: float
+    reasoning_effort: str
+    response_format_mode: str
+    arm_order: tuple[str, ...]
+    c1_system: str
+    c2_system: str
 
 
 @dataclass(frozen=True)
@@ -57,6 +80,27 @@ class ClaimDataset:
     digest: str
     cases_digest: str
     cases: tuple[ClaimCase, ...]
+
+
+def load_claim_arm_contract(path: Path) -> ClaimArmContract:
+    raw = path.read_bytes()
+    value = json.loads(raw.decode("utf-8"))
+    request = value.get("request", {}) if isinstance(value, dict) else {}
+    if (not isinstance(value, dict)
+            or value.get("schema_version") != "guardian-cycle2-claim-arms-v1"
+            or value.get("frozen_before_model_predictions") is not True
+            or value.get("arm_order") != ["C1", "C2"]
+            or set(value.get("kind_vocabulary", [])) != KINDS
+            or set(value.get("source_vocabulary", [])) != SOURCES
+            or request.get("temperature") != 0 or request.get("max_retries") != 0
+            or request.get("response_format_mode") != "none"):
+        raise ValueError("invalid claim arm contract")
+    return ClaimArmContract(
+        hashlib.sha256(raw).hexdigest(), float(request["timeout_seconds"]),
+        int(request["max_output_tokens"]), float(request["interval_seconds"]),
+        request["reasoning_effort"], request["response_format_mode"], ("C1", "C2"),
+        value["C1_system"], value["C2_system"],
+    )
 
 
 def load_claim_dataset(path: Path) -> ClaimDataset:
@@ -117,6 +161,187 @@ def load_claim_dataset(path: Path) -> ClaimDataset:
 def blind_claim_cases(dataset: ClaimDataset) -> tuple[dict, ...]:
     """The only semantic model input is the candidate response."""
     return tuple({"case_id": case.id, "response": case.response} for case in dataset.cases)
+
+
+def response_spans(response: str) -> list[dict]:
+    """Boundary-only decomposition derived from the response, never from gold."""
+    spans = []
+    for event in parse_events(response, "response"):
+        if event.role != "assistant" or event.kind != "text":
+            continue
+        for match in SENTENCE.finditer(event.text):
+            if not match.group().strip():
+                continue
+            start, end = event.source.start + match.start(), event.source.start + match.end()
+            spans.append({"span_id": f"s{len(spans)}", "start": start, "end": end,
+                          "text": response[start:end]})
+    return spans
+
+
+def claim_schema(case_id: str, arm: str, spans: list[dict]) -> dict:
+    properties = {
+        "kind": {"type": "string", "enum": sorted(KINDS)},
+        "entities": {"type": "array", "items": {"type": "string"}, "uniqueItems": True},
+        "times": {"type": "array", "items": {"type": "string"}, "uniqueItems": True},
+        "source": {"type": "string", "enum": sorted(SOURCES)},
+    }
+    if arm == "C1":
+        properties = {
+            "start": {"type": "integer", "minimum": 0},
+            "end": {"type": "integer", "minimum": 1},
+            **properties,
+        }
+        required = ["start", "end", "kind", "entities", "times", "source"]
+    else:
+        properties = {
+            "span_id": {"type": "string", "enum": [span["span_id"] for span in spans]},
+            **properties,
+        }
+        required = ["span_id", "kind", "entities", "times", "source"]
+    item = {"type": "object", "properties": properties, "required": required,
+            "additionalProperties": False}
+    return {
+        "type": "object",
+        "properties": {
+            "case_id": {"type": "string", "const": case_id},
+            "spans": {"type": "array", "items": item},
+        },
+        "required": ["case_id", "spans"],
+        "additionalProperties": False,
+    }
+
+
+def claim_messages(case: Mapping[str, str], arm: str,
+                   contract: ClaimArmContract) -> tuple[list[dict], dict, list[dict]]:
+    if set(case) != {"case_id", "response"} or arm not in {"C1", "C2"}:
+        raise ValueError("invalid blind claim input")
+    spans = response_spans(case["response"])
+    schema = claim_schema(case["case_id"], arm, spans)
+    system = contract.c1_system if arm == "C1" else contract.c2_system
+    payload: dict[str, Any] = {"case_id": case["case_id"], "response": case["response"]}
+    if arm == "C2":
+        payload["span_inventory"] = spans
+    prompt = (json.dumps(payload, ensure_ascii=False, separators=(",", ":"))
+              + "\nOUTPUT_JSON_SCHEMA: "
+              + json.dumps(schema, ensure_ascii=False, separators=(",", ":")))
+    return ([{"role": "system", "content": system}, {"role": "user", "content": prompt}],
+            schema, spans)
+
+
+def _strict_object(text: str) -> dict:
+    def unique(pairs):
+        result = {}
+        for key, value in pairs:
+            if key in result:
+                raise ValueError("duplicate key")
+            result[key] = value
+        return result
+    value = json.loads(text, object_pairs_hook=unique,
+                       parse_constant=lambda _: (_ for _ in ()).throw(ValueError("non-finite")))
+    if not isinstance(value, dict):
+        raise ValueError("not an object")
+    return value
+
+
+def _safe_usage(value: Mapping[str, Any]) -> dict[str, int]:
+    return {key: item for key in ("prompt_tokens", "completion_tokens", "total_tokens")
+            if type((item := value.get(key))) is int and item >= 0}
+
+
+def model_claim_proposal(client: CompletionClient, case: Mapping[str, str], arm: str,
+                         contract: ClaimArmContract, *,
+                         clock: Callable[[], float] = time.monotonic) -> dict:
+    messages, schema, inventory = claim_messages(case, arm, contract)
+    started = clock()
+    base = {
+        "case_id": case["case_id"], "arm": arm, "transport_status": "ERROR",
+        "schema_status": "NOT_EVALUATED", "claims": [], "coverage": [],
+        "error_category": None, "served_model": None, "usage": {},
+        "latency_ms": 0.0, "prompt_visible": False, "history_visible": False,
+        "evidence_visible": False, "label_visible": False,
+    }
+    try:
+        completion = client.complete(messages, schema=schema, reasoning_effort=contract.reasoning_effort)
+    except ChatClientError as error:
+        base.update({"error_category": error.category,
+                     "latency_ms": round(max(0.0, clock() - started) * 1000, 3)})
+        return base
+    base.update({
+        "transport_status": "SUCCESS", "schema_status": "INVALID",
+        "served_model": completion.model, "usage": _safe_usage(completion.usage),
+        "latency_ms": round(max(0.0, clock() - started) * 1000, 3),
+    })
+    try:
+        value = _strict_object(completion.content)
+        if set(value) != {"case_id", "spans"} or value["case_id"] != case["case_id"] or not isinstance(value["spans"], list):
+            raise ValueError("invalid claim envelope")
+        by_span = {span["span_id"]: span for span in inventory}
+        normalized = []
+        seen = set()
+        for item in value["spans"]:
+            required = ({"start", "end", "kind", "entities", "times", "source"}
+                        if arm == "C1" else {"span_id", "kind", "entities", "times", "source"})
+            if not isinstance(item, dict) or set(item) != required:
+                raise ValueError("invalid claim span fields")
+            if item["kind"] not in KINDS or item["source"] not in SOURCES:
+                raise ValueError("claim vocabulary violation")
+            if (not isinstance(item["entities"], list) or not isinstance(item["times"], list)
+                    or any(not isinstance(text, str) for text in [*item["entities"], *item["times"]])
+                    or len(item["entities"]) != len(set(item["entities"]))
+                    or len(item["times"]) != len(set(item["times"]))):
+                raise ValueError("invalid entity/time arrays")
+            if arm == "C1":
+                start, end = item["start"], item["end"]
+                if type(start) is not int or type(end) is not int or not 0 <= start < end <= len(case["response"]):
+                    raise ValueError("invalid response offsets")
+                key = (start, end)
+            else:
+                if item["span_id"] not in by_span:
+                    raise ValueError("unknown span id")
+                span = by_span[item["span_id"]]
+                start, end = span["start"], span["end"]
+                key = item["span_id"]
+            if key in seen:
+                raise ValueError("duplicate span")
+            seen.add(key)
+            normalized.append({"start": start, "end": end, "kind": item["kind"],
+                               "entities": item["entities"], "times": item["times"],
+                               "source": item["source"]})
+        if arm == "C2" and seen != set(by_span):
+            raise ValueError("incomplete C2 span inventory")
+        claims = [item for item in normalized if item["kind"] in CLAIM_KINDS]
+        coverage = [{"start": item["start"], "end": item["end"],
+                     "status": "CLAIM" if item["kind"] in CLAIM_KINDS else "NON_VERIFIABLE"}
+                    for item in normalized]
+        base.update({"schema_status": "VALID", "claims": claims, "coverage": coverage})
+    except (ValueError, TypeError, UnicodeError, RecursionError):
+        pass
+    return base
+
+
+def run_model_claim_arms(client: CompletionClient, cases: Iterable[Mapping[str, str]],
+                         contract: ClaimArmContract, *, existing: Iterable[dict] = (),
+                         checkpoint: Callable[[list[dict]], None] | None = None,
+                         clock: Callable[[], float] = time.monotonic,
+                         sleep: Callable[[float], None] = time.sleep) -> list[dict]:
+    rows = list(existing)
+    completed = {(row.get("case_id"), row.get("arm")) for row in rows}
+    last_start: float | None = None
+    for case in cases:
+        for arm in contract.arm_order:
+            if (case["case_id"], arm) in completed:
+                continue
+            now = clock()
+            if last_start is not None:
+                remaining = contract.interval_seconds - (now - last_start)
+                if remaining > 0:
+                    sleep(remaining)
+            last_start = clock()
+            rows.append(model_claim_proposal(client, case, arm, contract, clock=clock))
+            completed.add((case["case_id"], arm))
+            if checkpoint:
+                checkpoint(rows)
+    return rows
 
 
 def c0_proposals(dataset: ClaimDataset) -> list[dict]:
@@ -223,5 +448,28 @@ def build_c0_claim_report(dataset: ClaimDataset) -> dict[str, Any]:
         "proposal_freeze_sha256": hashlib.sha256(canonical.encode("utf-8")).hexdigest(),
         "arms": {"C0": score_claim_proposals(dataset, proposals, "C0")},
         "unavailable_arms": {"C1": "NOT_RUN", "C2": "NOT_RUN"},
+        "proposals": proposals,
+    }
+
+
+def build_claim_report(dataset: ClaimDataset, contract: ClaimArmContract,
+                       model_proposals: Iterable[dict]) -> dict[str, Any]:
+    proposals = [*c0_proposals(dataset), *model_proposals]
+    expected = {(case.id, arm) for case in dataset.cases for arm in ("C0", "C1", "C2")}
+    actual = {(row.get("case_id"), row.get("arm")) for row in proposals}
+    if actual != expected or len(proposals) != len(expected):
+        raise ValueError("claim proposals incomplete or duplicated")
+    canonical = json.dumps(proposals, ensure_ascii=False, sort_keys=True, separators=(",", ":"))
+    return {
+        "schema_version": "guardian-cycle2-claim-results-v1",
+        "status": "COMPLETED",
+        "benchmark_sha256": dataset.digest,
+        "cases_sha256": dataset.cases_digest,
+        "claim_arm_contract_sha256": contract.digest,
+        "extractor_input": "candidate_response_only",
+        "gold_visible_to_proposal_stage": False,
+        "proposals_frozen_before_gold_join": True,
+        "proposal_freeze_sha256": hashlib.sha256(canonical.encode("utf-8")).hexdigest(),
+        "arms": {arm: score_claim_proposals(dataset, proposals, arm) for arm in ("C0", "C1", "C2")},
         "proposals": proposals,
     }

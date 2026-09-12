@@ -1,0 +1,34 @@
+{
+  "schema_version": "guardian-cycle2-claim-arms-v1",
+  "frozen_before_model_predictions": true,
+  "request": {
+    "temperature": 0,
+    "reasoning_effort": "low",
+    "timeout_seconds": 180,
+    "max_output_tokens": 2048,
+    "max_retries": 0,
+    "interval_seconds": 5,
+    "response_format_mode": "none"
+  },
+  "arm_order": ["C1", "C2"],
+  "kind_vocabulary": [
+    "ACTION_COMPLETED",
+    "ACTION_FAILED",
+    "STATE",
+    "ATTRIBUTION",
+    "INTENT",
+    "REFUSAL",
+    "FACT",
+    "ABSENCE",
+    "PERMISSION",
+    "OTHER_VERIFIABLE",
+    "NON_VERIFIABLE"
+  ],
+  "source_vocabulary": ["ASSISTANT", "USER", "SYSTEM", "TOOL", "UNSPECIFIED"],
+  "C1_system": "Read only the candidate RESPONSE. Extract every sentence or independent clause as an exact character span and type it. Do not use or infer any prompt, history, policy, evidence, tool result, or benchmark label. Completed and failed actions, state, attribution, intent, refusal, fact, absence, permission, and other externally checkable assertions are claims. Questions, requests, greetings, empathy, wishes, and bare list markers are NON_VERIFIABLE. Preserve exact entity and time mentions and identify the explicitly attributed source. Never silently drop a difficult declarative clause. Return only the exact JSON object requested by the user.",
+  "C2_system": "Read only the candidate RESPONSE and its deterministic span inventory. This is a map stage: return exactly one typed record for every supplied span_id, without adding, deleting, merging, or splitting spans. Do not use or infer any prompt, history, policy, evidence, tool result, or benchmark label. Distinguish completed from failed action, state from intent, absence from refusal, and attribution from an unqualified fact. Questions, requests, greetings, empathy, wishes, and bare list markers are NON_VERIFIABLE. Preserve exact entity and time mentions and identify only an explicitly attributed source. Return only the exact JSON object requested by the user.",
+  "comparison": {
+    "primary_span_matching": "exact_offsets",
+    "model_output_valid_only_if_complete_C2_inventory": true
+  }
+}

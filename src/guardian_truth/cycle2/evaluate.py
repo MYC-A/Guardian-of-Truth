@@ -5,6 +5,7 @@ from __future__ import annotations
 import argparse
 from dataclasses import replace
 from datetime import datetime, timezone
+import hashlib
 import json
 from pathlib import Path
 import sys
@@ -19,7 +20,14 @@ from .model_gate import (
     evaluate_candidate,
     load_gate_contract,
 )
-from .claims import build_c0_claim_report, load_claim_dataset
+from .claims import (
+    blind_claim_cases,
+    build_c0_claim_report,
+    build_claim_report,
+    load_claim_arm_contract,
+    load_claim_dataset,
+    run_model_claim_arms,
+)
 from .policy_arms import (
     blind_policy_cases,
     build_blocked_policy_report,
@@ -39,6 +47,8 @@ DEFAULT_POLICY_CONTRACT = Path("contracts/cycle2_policy_arms_v1.json")
 DEFAULT_POLICY_CHECKPOINT = Path("outputs/cycle2/policy_proposals_checkpoint.json")
 DEFAULT_CLAIM_CASES = Path("outputs/cycle2/claim_cases.json")
 DEFAULT_CLAIM_OUTPUT = Path("outputs/cycle2/claim_results.json")
+DEFAULT_CLAIM_CONTRACT = Path("contracts/cycle2_claim_arms_v1.json")
+DEFAULT_CLAIM_CHECKPOINT = Path("outputs/cycle2/claim_proposals_checkpoint.json")
 
 
 def _candidate(value: str) -> tuple[str, str]:
@@ -77,6 +87,18 @@ def _parser() -> argparse.ArgumentParser:
     claims.add_argument("--cases", type=Path, default=DEFAULT_CLAIM_CASES)
     claims.add_argument("--output", type=Path, default=DEFAULT_CLAIM_OUTPUT)
     claims.add_argument("--overwrite", action="store_true")
+    claim_live = sub.add_parser("claims", help="run frozen C1/C2 response-only claim arms")
+    claim_live.add_argument("--cases", type=Path, default=DEFAULT_CLAIM_CASES)
+    claim_live.add_argument("--model-gate", type=Path, default=DEFAULT_OUTPUT)
+    claim_live.add_argument("--arm-contract", type=Path, default=DEFAULT_CLAIM_CONTRACT)
+    claim_live.add_argument("--checkpoint", type=Path, default=DEFAULT_CLAIM_CHECKPOINT)
+    claim_live.add_argument("--output", type=Path, default=DEFAULT_CLAIM_OUTPUT)
+    claim_live.add_argument("--env-file", type=Path, required=True)
+    claim_live.add_argument("--provider", choices=tuple(REMOTE_PROVIDERS), required=True)
+    claim_live.add_argument("--model", required=True)
+    claim_live.add_argument("--rotated-provider", action="append", default=[],
+                            choices=sorted(COMPROMISED_PROVIDERS))
+    claim_live.add_argument("--overwrite", action="store_true")
     return parser
 
 
@@ -250,6 +272,70 @@ def _run_claims_c0(args: argparse.Namespace) -> int:
     return 0
 
 
+def _run_claims(args: argparse.Namespace) -> int:
+    if args.output.exists() and not args.overwrite:
+        raise ValueError("refusing to overwrite an existing claim artifact")
+    if not args.env_file.is_file():
+        raise ValueError("explicit env file does not exist")
+    dataset = load_claim_dataset(args.cases)
+    contract = load_claim_arm_contract(args.arm_contract)
+    gate = _read_json(args.model_gate)
+    candidate = f"{args.provider}={args.model}"
+    if not gate.get("policy_benchmark_permitted") or candidate not in gate.get("admitted_candidates", []):
+        raise ValueError("selected provider/model was not admitted by the reliability gate")
+    if args.provider in COMPROMISED_PROVIDERS and args.provider not in set(args.rotated_provider):
+        raise ValueError("rotation attestation required for selected provider")
+    load_env_file(args.env_file)
+    config = provider_config(ClientConfig(), args.provider, model=args.model)
+    config = replace(
+        config, timeout_seconds=contract.timeout_seconds,
+        max_output_tokens=contract.max_output_tokens, max_retries=0,
+        strict_schema=True, response_format_mode=contract.response_format_mode,
+    )
+    client = ChatClient(config)
+    client.validate_configuration()
+    existing = []
+    if args.checkpoint.exists():
+        checkpoint = _read_json(args.checkpoint)
+        if (checkpoint.get("schema_version") != "guardian-cycle2-claim-proposals-v1"
+                or checkpoint.get("cases_sha256") != dataset.cases_digest
+                or checkpoint.get("claim_arm_contract_sha256") != contract.digest
+                or not isinstance(checkpoint.get("proposals"), list)):
+            raise ValueError("claim checkpoint does not match frozen inputs")
+        existing = checkpoint["proposals"]
+
+    def save_checkpoint(rows):
+        payload = {
+            "schema_version": "guardian-cycle2-claim-proposals-v1",
+            "cases_sha256": dataset.cases_digest,
+            "claim_arm_contract_sha256": contract.digest,
+            "gold_serialized": False,
+            "proposals": rows,
+        }
+        args.checkpoint.parent.mkdir(parents=True, exist_ok=True)
+        args.checkpoint.write_text(json.dumps(payload, ensure_ascii=False, indent=2) + "\n", encoding="utf-8")
+        latest = rows[-1]
+        print(json.dumps({
+            "completed": len(rows), "total": len(dataset.cases) * 2,
+            "case_id": latest["case_id"], "arm": latest["arm"],
+            "transport_status": latest["transport_status"],
+            "schema_status": latest["schema_status"],
+        }, ensure_ascii=False), flush=True)
+
+    proposals = run_model_claim_arms(
+        client, blind_claim_cases(dataset), contract, existing=existing,
+        checkpoint=save_checkpoint,
+    )
+    report = build_claim_report(dataset, contract, proposals)
+    report["model_gate_sha256"] = hashlib.sha256(args.model_gate.read_bytes()).hexdigest()
+    report["created_utc"] = datetime.now(timezone.utc).replace(microsecond=0).isoformat().replace("+00:00", "Z")
+    args.output.parent.mkdir(parents=True, exist_ok=True)
+    args.output.write_text(json.dumps(report, ensure_ascii=False, indent=2) + "\n", encoding="utf-8")
+    print(json.dumps({"status": report["status"], "arms": report["arms"],
+                      "output": str(args.output)}, ensure_ascii=False))
+    return 0
+
+
 def main(argv: list[str] | None = None) -> int:
     parser = _parser()
     args = parser.parse_args(argv)
@@ -260,6 +346,8 @@ def main(argv: list[str] | None = None) -> int:
             return _run_policy(args)
         if args.stage == "claims-c0":
             return _run_claims_c0(args)
+        if args.stage == "claims":
+            return _run_claims(args)
     except ValueError as error:
         parser.error(str(error))
     return 2
