@@ -8,8 +8,10 @@ SYSTEM-текста плюс имя arm. Повторная запись с те
 считается ошибкой.
 
 Структура закрыта (`PolicyRule`, `CoverageItem`), словарь значений открыт. Всё,
-что не поддержано точным компилятором, получает `unknown`, а не угадывается.
+что не поддержано точным компилятором, получает `UNKNOWN`, а не угадывается.
 Coverage ledger содержит запись для каждого непустого структурного сегмента.
+P0 использует `RULE`, `CONTEXT`, `UNKNOWN`; semantic arms обязаны дополнить
+`DEFINITION`, `CONDITION`, `EXCEPTION`, `REFERENCE`, `IRRELEVANT`, `UNSUPPORTED`.
 
 ## Arms
 

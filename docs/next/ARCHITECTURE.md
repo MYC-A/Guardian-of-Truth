@@ -67,7 +67,7 @@ Binary --> Evaluator : id,label
 ## Реализованный минимальный путь
 
 1. `policy.compile_policy` сегментирует весь SYSTEM-текст, каждому сегменту
-   назначает `compiled` либо `unknown`, компилирует только узкие точные шаблоны и
+   назначает явный coverage status, компилирует только узкие точные шаблоны и
    хеширует только policy context.
 2. `normalize.normalize_trace` детерминированно разделяет текст, вызовы и
    результаты; `build_evidence` создаёт append-only записи.

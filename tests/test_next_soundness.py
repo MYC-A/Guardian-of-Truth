@@ -1,7 +1,11 @@
 import unittest
+import json
+import tempfile
+from pathlib import Path
 
-from guardian_truth.next.binder import bind_claim
-from guardian_truth.next.claims import extract_claims
+from guardian_truth.next.binder import bind_claim, bind_claim_candidates
+from guardian_truth.next.claims import extract_claims, extract_claims_with_coverage
+from guardian_truth.next.effects import load_human_contracts
 from guardian_truth.next.logic import conjunction, disjunction, negate
 from guardian_truth.next.normalize import build_evidence, normalize_trace
 from guardian_truth.next.policy import compile_policy
@@ -29,7 +33,9 @@ class PolicySoundnessTests(unittest.TestCase):
     def test_all_system_segments_have_coverage_records(self):
         bundle = compile_policy(SYSTEM)
         self.assertTrue(bundle.coverage)
-        self.assertTrue(all(item.status in {"compiled", "unknown"} for item in bundle.coverage))
+        self.assertEqual(len(bundle.segments), len(bundle.coverage))
+        self.assertTrue(all(item.text for item in bundle.segments))
+        self.assertTrue(all(item.status in {"RULE", "CONTEXT", "UNKNOWN"} for item in bundle.coverage))
 
 
 class EvidenceBoundaryTests(unittest.TestCase):
@@ -84,6 +90,37 @@ class EvidenceBoundaryTests(unittest.TestCase):
                                    EvidenceStatus.CONFIRMED, Span("prompt", 0, 1))]
         self.assertEqual(FourValue.UNKNOWN, bind_claim(claim, evidence).status)
 
+    def test_multiple_entity_bindings_are_preserved_when_they_change_status(self):
+        claim = Claim("c", ClaimKind.ACTION, "assistant", "cancel", True,
+                      Span("response", 0, 1))
+        evidence = [
+            EvidenceRecord("e1", "x", "call", "effect_confirmed", "cancel",
+                           EvidenceStatus.CONFIRMED, Span("prompt", 0, 1),
+                           (("order_id", "A"),)),
+            EvidenceRecord("e2", "y", "call", "call_attempted", "cancel",
+                           EvidenceStatus.ATTEMPTED, Span("prompt", 1, 2),
+                           (("order_id", "B"),)),
+        ]
+        result = bind_claim_candidates(claim, evidence)
+        self.assertEqual(2, len(result.candidates))
+        self.assertTrue(result.requires_resolution)
+        self.assertEqual(FourValue.UNKNOWN, result.stable_status)
+
+    def test_human_contract_registry_requires_t1_provenance(self):
+        row = {"tool": "update", "guaranteed_effects": ["update"], "possible_effects": [],
+               "failure_no_effect": "unknown", "reads": [], "writes": ["line"],
+               "entity_fields": ["line_id"], "freshness": "result_event",
+               "idempotent": "unknown", "provenance": "schema_only",
+               "tool_version": "v1", "inputs": ["line_id"], "preconditions": [],
+               "success_predicate": ["success=true"], "entity_key_mapping": {"line_id": "line"},
+               "provenance_transform": "preserve", "evidence_source": "DOC_EXPLICIT"}
+        with tempfile.TemporaryDirectory() as directory:
+            path = Path(directory) / "contracts.json"
+            path.write_text(json.dumps({"schema_version": "guardian-tool-effects-v1",
+                                        "contracts": [row]}), encoding="utf-8")
+            with self.assertRaises(ValueError):
+                load_human_contracts(path)
+
 
 class ClaimBoundaryTests(unittest.TestCase):
     def test_extractor_is_blind_and_distinguishes_intent(self):
@@ -98,6 +135,15 @@ class ClaimBoundaryTests(unittest.TestCase):
         claim = extract_claims("⟦ASSISTANT⟧\nЯ не нашёл других вариантов.")[0]
         binding = bind_claim(claim, [])
         self.assertEqual(FourValue.UNKNOWN, binding.status)
+
+    def test_unextracted_declarative_sentence_is_visible_as_unknown(self):
+        result = extract_claims_with_coverage("⟦ASSISTANT⟧\nСтоимость составляет 708 долларов.")
+        self.assertFalse(result.claims)
+        self.assertEqual(["UNKNOWN"], [item.status for item in result.coverage])
+
+    def test_question_is_explicitly_non_verifiable(self):
+        result = extract_claims_with_coverage("⟦ASSISTANT⟧\nПодтвердите изменение?")
+        self.assertEqual(["NON_VERIFIABLE"], [item.status for item in result.coverage])
 
 
 class FourValuedLogicTests(unittest.TestCase):

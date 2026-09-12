@@ -2,6 +2,8 @@
 
 from __future__ import annotations
 
+from dataclasses import dataclass
+
 from .records import Binding, Claim, ClaimKind, EvidenceRecord, EvidenceStatus, FourValue
 
 
@@ -46,3 +48,41 @@ def bind_claim(claim: Claim, evidence: list[EvidenceRecord]) -> Binding:
 
 def bind_claims(claims: list[Claim], evidence: list[EvidenceRecord]) -> list[Binding]:
     return [bind_claim(claim, evidence) for claim in claims]
+
+
+@dataclass(frozen=True)
+class BindingCandidate:
+    """One compatible entity scope; alternatives are never silently collapsed."""
+
+    entities: tuple[tuple[str, object], ...]
+    binding: Binding
+
+
+@dataclass(frozen=True)
+class BindingSet:
+    claim_id: str
+    candidates: tuple[BindingCandidate, ...]
+    stable_status: FourValue
+    requires_resolution: bool
+
+
+def bind_claim_candidates(claim: Claim, evidence: list[EvidenceRecord]) -> BindingSet:
+    wanted = _entity_map(claim.entities)
+    scopes = []
+    for item in evidence:
+        actual = _entity_map(item.entities)
+        if all(actual.get(key) == value for key, value in wanted.items()):
+            scope = tuple(sorted(item.entities))
+            if scope not in scopes:
+                scopes.append(scope)
+    if not scopes:
+        binding = bind_claim(claim, evidence)
+        return BindingSet(claim.id, (BindingCandidate(claim.entities, binding),),
+                          binding.status, False)
+    candidates = []
+    for scope in scopes:
+        scoped_evidence = [item for item in evidence if tuple(sorted(item.entities)) == scope]
+        candidates.append(BindingCandidate(scope, bind_claim(claim, scoped_evidence)))
+    statuses = {item.binding.status for item in candidates}
+    stable = next(iter(statuses)) if len(statuses) == 1 else FourValue.UNKNOWN
+    return BindingSet(claim.id, tuple(candidates), stable, len(statuses) != 1)

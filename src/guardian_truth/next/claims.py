@@ -6,7 +6,7 @@ import re
 
 from guardian_truth.parsing import parse_events
 
-from .records import Claim, ClaimKind, Span
+from .records import Claim, ClaimCoverageItem, ClaimExtraction, ClaimKind, Span
 
 
 _SENTENCE = re.compile(r"[^\n.!?]+(?:[.!?]+|$)")
@@ -44,10 +44,15 @@ def _entities(text: str) -> tuple[tuple[str, str], ...]:
     return tuple(sorted({(m.group("key"), m.group("value")) for m in _ENTITY.finditer(text)}))
 
 
-def extract_claims(response: str) -> list[Claim]:
+_REQUEST = re.compile(r"^(?:пожалуйста|уточните|сообщите|подтвердите|please|tell me|confirm)\b", re.IGNORECASE)
+_SOCIAL = re.compile(r"^(?:спасибо|благодарю|понимаю|сочувствую|thank you|i understand)\b", re.IGNORECASE)
+
+
+def extract_claims_with_coverage(response: str) -> ClaimExtraction:
     """Extract conservative high-value claims without prompt, labels, or trace."""
     events = parse_events(response, "response")
     claims: list[Claim] = []
+    coverage: list[ClaimCoverageItem] = []
     for event in events:
         if event.role != "assistant" or event.kind != "text":
             continue
@@ -57,6 +62,7 @@ def extract_claims(response: str) -> list[Claim]:
                 continue
             absolute = Span("response", event.source.start + match.start(), event.source.start + match.end())
             entities = _entities(text)
+            before = len(claims)
             completed = _COMPLETED_RU.search(text) or _COMPLETED_EN.search(text)
             if completed:
                 claims.append(Claim(
@@ -69,8 +75,7 @@ def extract_claims(response: str) -> list[Claim]:
                     modality="completed",
                     entities=entities,
                 ))
-                continue
-            if _INTENT.search(text):
+            elif _INTENT.search(text):
                 claims.append(Claim(
                     id=f"claim:{len(claims)}",
                     kind=ClaimKind.INTENT,
@@ -81,8 +86,7 @@ def extract_claims(response: str) -> list[Claim]:
                     modality="intent",
                     entities=entities,
                 ))
-                continue
-            if _REFUSAL.search(text):
+            elif _REFUSAL.search(text):
                 claims.append(Claim(
                     id=f"claim:{len(claims)}",
                     kind=ClaimKind.REFUSAL,
@@ -92,8 +96,7 @@ def extract_claims(response: str) -> list[Claim]:
                     source=absolute,
                     entities=entities,
                 ))
-                continue
-            if _ABSENCE.search(text):
+            elif _ABSENCE.search(text):
                 claims.append(Claim(
                     id=f"claim:{len(claims)}",
                     kind=ClaimKind.ABSENCE,
@@ -103,4 +106,17 @@ def extract_claims(response: str) -> list[Claim]:
                     source=absolute,
                     entities=entities,
                 ))
-    return claims
+            created = tuple(claim.id for claim in claims[before:])
+            if created:
+                coverage.append(ClaimCoverageItem(absolute, "CLAIM", "typed_deterministic_match", created))
+            elif text.endswith("?") or _REQUEST.search(text):
+                coverage.append(ClaimCoverageItem(absolute, "NON_VERIFIABLE", "question_or_request"))
+            elif _SOCIAL.search(text):
+                coverage.append(ClaimCoverageItem(absolute, "NON_VERIFIABLE", "social_language"))
+            else:
+                coverage.append(ClaimCoverageItem(absolute, "UNKNOWN", "declarative_semantics_not_extracted"))
+    return ClaimExtraction(tuple(claims), tuple(coverage), "C0_deterministic_blind")
+
+
+def extract_claims(response: str) -> list[Claim]:
+    return list(extract_claims_with_coverage(response).claims)

@@ -6,8 +6,9 @@ explanation закрыты. Это предотвращает подгонку �
 
 Минимальная схема различает `action`, `state`, `attribution`, `intent`,
 `refusal`, `fact`, `absence`. Текущий C0 точно выделяет ограниченное множество
-явных intent/completed/refusal/absence формулировок; остальные предложения
-остаются непокрытыми и не интерпретируются как безопасные.
+явных intent/completed/refusal/absence формулировок. Каждое предложение получает
+coverage status `CLAIM`, `NON_VERIFIABLE` или `UNKNOWN`; неудобная декларативная
+фраза не исчезает и не интерпретируется как безопасная.
 
 Binder сохраняет все entity keys. Completed action требует explicit effect
 confirmation; attempted/failed call недостаточен. Absence требует completeness

@@ -11,7 +11,7 @@ from pathlib import Path
 from guardian_truth.checks import CURRENT_DATE, EXCLUSIVE_ACTION, ONE_CALL
 from guardian_truth.parsing import parse_events
 
-from .records import CoverageItem, PolicyBundle, PolicyRule, Span
+from .records import CoverageItem, PolicyBundle, PolicyRule, PolicySegment, Span
 
 
 COMPILER_VERSION = "p0-structural-v1"
@@ -43,6 +43,20 @@ def _segments(text: str, start: int, end: int) -> list[tuple[int, int]]:
     return result
 
 
+def _segment_kind(value: str) -> tuple[str, int | None]:
+    stripped = value.lstrip()
+    heading = re.match(r"^(#{1,6})\s+", stripped)
+    if heading:
+        return "HEADING", len(heading.group(1))
+    if re.match(r"^(?:[-*]|\d+[.)])\s+", stripped):
+        return "LIST_ITEM", None
+    if stripped.startswith("|") and "|" in stripped[1:]:
+        return "TABLE", None
+    if re.match(r"^\[\^?[^]]+\]", stripped):
+        return "FOOTNOTE", None
+    return "PARAGRAPH", None
+
+
 def _policy_regions(prompt: str, event) -> list[tuple[int, int]]:
     """Exclude tool schemas when explicit instruction/policy blocks exist."""
     matches = list(_POLICY_BLOCK.finditer(event.text))
@@ -70,10 +84,22 @@ def compile_policy(prompt: str, *, arm: str = "P0") -> PolicyBundle:
     digest, _ = policy_source_identity(prompt)
     rules: list[PolicyRule] = []
     coverage: list[CoverageItem] = []
-    for event_index, region_start, region_end in regions:
+    segments: list[PolicySegment] = []
+    for region_index, (event_index, region_start, region_end) in enumerate(regions):
+        heading_stack: list[tuple[int, str]] = []
         for segment_index, (start, end) in enumerate(_segments(prompt, region_start, region_end)):
-            segment_id = f"s{event_index}_{segment_index}"
+            segment_id = f"s{event_index}_{region_index}_{segment_index}"
             segment_text = prompt[start:end]
+            kind, heading_level = _segment_kind(segment_text)
+            if heading_level is not None:
+                while heading_stack and heading_stack[-1][0] >= heading_level:
+                    heading_stack.pop()
+                parent_id = heading_stack[-1][1] if heading_stack else None
+                heading_stack.append((heading_level, segment_id))
+            else:
+                parent_id = heading_stack[-1][1] if heading_stack else None
+            segments.append(PolicySegment(segment_id, _span(start, end), kind, segment_text,
+                                          len(segments), parent_id, heading_level))
             matched: list[str] = []
             for name, pattern, predicate, obj in (
                 ("one_call", ONE_CALL, "max_tool_calls", 1),
@@ -100,13 +126,15 @@ def compile_policy(prompt: str, *, arm: str = "P0") -> PolicyBundle:
             coverage.append(CoverageItem(
                 segment_id=segment_id,
                 span=_span(start, end),
-                status="compiled" if matched else "unknown",
+                status=("CONTEXT" if matched and all(rule_id.endswith(":current_date") for rule_id in matched)
+                        else "RULE" if matched else "UNKNOWN"),
                 reason="exact_supported_pattern" if matched else "open_vocabulary_not_compiled",
                 rule_ids=tuple(matched),
             ))
     return PolicyBundle(
         version=COMPILER_VERSION,
         source_hash=digest,
+        segments=tuple(segments),
         rules=tuple(rules),
         coverage=tuple(coverage),
         compiler_arm=arm,

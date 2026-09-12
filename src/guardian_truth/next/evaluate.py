@@ -28,13 +28,15 @@ from guardian_truth.llm_client import ChatClient, ChatClientError, ClientConfig
 from guardian_truth.runtime import provider_config
 from guardian_truth.settings import load_env_file
 
-from .claims import extract_claims
-from .effects import schema_registry
+from .claims import extract_claims, extract_claims_with_coverage
+from .effects import load_human_contracts, schema_registry
 from .monitor import review as next_review
 from .model_tasks import propose_claims
+from .long_context import evaluate_long_context
 from .normalize import build_evidence, normalize_trace
 from .policy import compile_policy, policy_source_identity
-from .statistics import hierarchical_bootstrap_delta, mcnemar_exact
+from .statistics import binary_metrics, hierarchical_bootstrap_delta, mcnemar_exact, selective_metrics
+from .vigil import review as vigil_review
 
 
 DEFAULT_OUTPUTS = {
@@ -45,6 +47,7 @@ DEFAULT_OUTPUTS = {
     "claims": "claim_arms.json",
     "internal": "end_to_end_arms.json",
     "external": "external_results.json",
+    "long": "long_context_arms.json",
     "final": "final_manifest.json",
 }
 
@@ -80,18 +83,7 @@ def _git(*args: str) -> str | None:
 
 
 def _metrics(labels: list[int], predictions: list[int]) -> dict[str, Any]:
-    tp = sum(y == 1 and p == 1 for y, p in zip(labels, predictions))
-    fp = sum(y == 0 and p == 1 for y, p in zip(labels, predictions))
-    fn = sum(y == 1 and p == 0 for y, p in zip(labels, predictions))
-    tn = sum(y == 0 and p == 0 for y, p in zip(labels, predictions))
-    precision = tp / (tp + fp) if tp + fp else 0.0
-    recall = tp / (tp + fn) if tp + fn else 0.0
-    return {
-        "n": len(labels), "tp": tp, "fp": fp, "fn": fn, "tn": tn,
-        "precision": precision, "recall": recall,
-        "f1": 2 * precision * recall / (precision + recall) if precision + recall else 0.0,
-        "accuracy": (tp + tn) / len(labels) if labels else 0.0,
-    }
+    return binary_metrics(labels, predictions)
 
 
 def _metadata(input_path: Path, stage: str) -> dict[str, Any]:
@@ -152,13 +144,25 @@ def run_policy(rows) -> dict[str, Any]:
             bundle = compile_policy(row["prompt"], arm="P0")
             cache[identity] = bundle
         bundles.append(bundle)
+    unique_bundles = list(cache.values())
+    statuses = ("RULE", "DEFINITION", "CONDITION", "EXCEPTION", "REFERENCE",
+                "CONTEXT", "IRRELEVANT", "UNKNOWN", "UNSUPPORTED")
     return {"arms": {"P0_CURRENT_EXACT": {
         "examples": len(bundles),
         "unique_policy_hashes": len({item.source_hash for item in bundles}),
-        "rules": sum(len(item.rules) for item in bundles),
-        "segments": sum(len(item.coverage) for item in bundles),
-        "compiled_segments": sum(c.status == "compiled" for item in bundles for c in item.coverage),
-        "unknown_segments": sum(c.status == "unknown" for item in bundles for c in item.coverage),
+        "runtime_rule_instances": sum(len(item.rules) for item in bundles),
+        "runtime_segment_instances": sum(len(item.coverage) for item in bundles),
+        "unique_rules": sum(len(item.rules) for item in unique_bundles),
+        "unique_segments": sum(len(item.coverage) for item in unique_bundles),
+        "compiled_unique_segments": sum(
+            c.status not in {"UNKNOWN", "UNSUPPORTED"}
+            for item in unique_bundles for c in item.coverage),
+        "coverage_statuses": {
+            status: sum(c.status == status for item in unique_bundles for c in item.coverage)
+            for status in statuses
+        },
+        "unknown_unique_segments": sum(
+            c.status == "UNKNOWN" for item in unique_bundles for c in item.coverage),
         "trace_independent": all(item.trace_independent for item in bundles),
         "compiled_once_unique_layouts": len(cache),
         "cache_hits": cache_hits,
@@ -169,48 +173,96 @@ def run_policy(rows) -> dict[str, Any]:
 def run_tool(rows) -> dict[str, Any]:
     registries = [schema_registry(row["prompt"]) for row in rows]
     contracts = [contract for registry in registries for contract in registry.values()]
-    return {"arms": {"T0_SCHEMA_NAME": {
+    arms = {"T0_SCHEMA_NAME": {
         "examples": len(rows),
         "contracts": len(contracts),
         "unique_tools": len({contract.tool for contract in contracts}),
         "guaranteed_effects": sum(len(contract.guaranteed_effects) for contract in contracts),
         "failure_no_effect_true": sum(contract.failure_no_effect.value == "true" for contract in contracts),
         "note": "Input schemas do not establish effects.",
-    }}, "unavailable_arms": ["T1_HUMAN_GOLD", "T2_LLM", "T3_DOCS_TRACES_TESTS"]}
+    }}
+    contract_path = Path("contracts/tool_effects_v1.json")
+    unavailable = ["T2_LLM", "T3_DOCS_TRACES_TESTS"]
+    if contract_path.exists():
+        human = load_human_contracts(contract_path)
+        ledgers = [build_evidence(normalize_trace(row["prompt"], row["response"]), human)
+                   for row in rows]
+        arms["T1_HUMAN_REVIEWED_SUBSET"] = {
+            "registry": str(contract_path), "registry_sha256": _sha256(contract_path),
+            "contracts": len(human),
+            "read_only_contracts": sum(not item.writes for item in human.values()),
+            "write_contracts": sum(bool(item.writes) for item in human.values()),
+            "confirmed_effect_records": sum(
+                item.status.value == "confirmed" and item.predicate == "effect_confirmed"
+                for ledger in ledgers for item in ledger),
+            "confirmed_no_effect_records": sum(
+                item.status.value == "confirmed" and item.predicate == "no_effect"
+                for ledger in ledgers for item in ledger),
+            "scope": "high-confidence subset; not full gold registry",
+        }
+    else:
+        unavailable.insert(0, "T1_HUMAN_GOLD")
+    return {"arms": arms, "unavailable_arms": unavailable}
 
 
 def run_claims(rows) -> dict[str, Any]:
-    extracted, bindings = 0, {}
+    extracted, bindings, coverage_counts = 0, {}, {}
     per_example = []
     for row in rows:
-        claims = extract_claims(row["response"])
+        extraction = extract_claims_with_coverage(row["response"])
+        claims = list(extraction.claims)
         evidence = build_evidence(normalize_trace(row["prompt"], row["response"]))
         from .binder import bind_claims
         bound = bind_claims(claims, evidence)
         extracted += len(claims)
         for item in bound:
             bindings[item.status.value] = bindings.get(item.status.value, 0) + 1
+        for item in extraction.coverage:
+            coverage_counts[item.status] = coverage_counts.get(item.status, 0) + 1
         per_example.append({"id": row["id"], "claims": len(claims),
                             "kinds": [item.kind.value for item in claims]})
     return {"arms": {"C0_DETERMINISTIC_BLIND": {
         "examples": len(rows), "claims": extracted, "binding_statuses": bindings,
+        "coverage_statuses": coverage_counts,
+        "claim_span_coverage": coverage_counts.get("CLAIM", 0) / sum(coverage_counts.values())
+            if coverage_counts else 0.0,
         "prompt_visible_to_extractor": False, "per_example": per_example,
     }}, "unavailable_arms": ["C1_LOCAL_TYPED", "C2_STRONG_TYPED"]}
 
 
 def run_internal(rows) -> dict[str, Any]:
     baseline = run_baseline(rows)["arms"]["X0_CURRENT_V5_3"]
+    contract_path = Path("contracts/tool_effects_v1.json")
+    contracts = load_human_contracts(contract_path) if contract_path.exists() else None
 
     def predict(prompt, response):
-        result = next_review(prompt, response)
+        result = next_review(prompt, response, contracts=contracts)
         return result.label, {"status": result.status.value, "used_fallback": result.used_fallback,
+                              "internal_verdict": result.internal_verdict,
+                              "binary_mapping_version": result.binary_mapping_version,
                               "claims": len(result.claims), "evidence": len(result.evidence)}
     proposed = _evaluate_arm(rows, predict)
+    proposed["selective"] = selective_metrics(
+        [int(row["label"]) for row in rows], proposed["predictions"],
+        [trace["internal_verdict"] for trace in proposed["traces"]],
+    )
+    def predict_vigil(prompt, response):
+        result = vigil_review(prompt, response)
+        return result.label, {
+            "status": result.status,
+            "used_fallback": result.used_fallback,
+            "observed_vocabulary": len(result.observed_vocabulary),
+            "selected_policy_segments": len(result.selected_segment_ids),
+            "selected_rules": len(result.selected_rule_ids),
+            "diagnostics": list(result.diagnostics),
+        }
+    vigil = _evaluate_arm(rows, predict_vigil)
     labels = [int(row["label"]) for row in rows]
     incumbent_predictions = baseline["predictions"]
     candidate_predictions = proposed["predictions"]
     groups = [str(row["id"]).split("::")[0] for row in rows]
-    return {"arms": {"X0_CURRENT_V5_3": baseline, "X5_PROPOSED_MIN": proposed},
+    return {"arms": {"X0_CURRENT_V5_3": baseline, "X4_VIGIL_LIKE": vigil,
+                     "X5_PROPOSED_MIN": proposed},
             "comparison": {"delta_f1": proposed["f1"] - baseline["f1"],
                            "delta_fp": proposed["fp"] - baseline["fp"],
                            "delta_fn": proposed["fn"] - baseline["fn"],
@@ -220,7 +272,7 @@ def run_internal(rows) -> dict[str, Any]:
                                samples=2000, seed=0,
                            )},
             "unavailable_arms": ["X1_HOLISTIC_STRONG", "X2_HOLISTIC_LOCAL",
-                                  "X3_QUERY_CONDITIONED", "X4_VIGIL_LIKE", "X6_SLOW_PATH"]}
+                                  "X3_QUERY_CONDITIONED", "X6_SLOW_PATH"]}
 
 
 def run_model(rows) -> dict[str, Any]:
@@ -323,6 +375,11 @@ def run_external(rows) -> dict[str, Any]:
     return {"status": "not_run", "reason": "external adapters must be frozen before first labelled run"}
 
 
+def run_long(rows) -> dict[str, Any]:
+    del rows
+    return evaluate_long_context()
+
+
 def run_final(rows) -> dict[str, Any]:
     del rows
     root = Path("outputs/next")
@@ -337,7 +394,7 @@ def run_final(rows) -> dict[str, Any]:
 
 RUNNERS = {"baseline": run_baseline, "policy": run_policy, "model": run_model,
            "tool": run_tool, "claims": run_claims, "internal": run_internal,
-           "external": run_external, "final": run_final}
+           "external": run_external, "long": run_long, "final": run_final}
 
 
 def main(argv: list[str] | None = None) -> int:
@@ -352,7 +409,7 @@ def main(argv: list[str] | None = None) -> int:
     parser.add_argument("--max-rows", type=int, default=6)
     parser.add_argument("--max-domains", type=int, default=3)
     args = parser.parse_args(argv)
-    rows = _load(args.input) if args.stage not in {"model", "external", "final"} else []
+    rows = _load(args.input) if args.stage not in {"model", "external", "long", "final"} else []
     if not 1 <= args.max_rows <= 1000:
         parser.error("--max-rows must be in [1, 1000]")
     if not 1 <= args.max_domains <= 100:

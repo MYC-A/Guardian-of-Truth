@@ -17,11 +17,32 @@ def binary_metrics(labels: list[int], predictions: list[int]) -> dict[str, float
     fn = sum(y == 1 and p == 0 for y, p in zip(labels, predictions))
     precision = tp / (tp + fp) if tp + fp else 0.0
     recall = tp / (tp + fn) if tp + fn else 0.0
+    fpr = fp / (fp + tn) if fp + tn else 0.0
+    fnr = fn / (fn + tp) if fn + tp else 0.0
     return {"n": len(labels), "tp": tp, "tn": tn, "fp": fp, "fn": fn,
             "precision": precision, "recall": recall,
             "f1": 2 * precision * recall / (precision + recall) if precision + recall else 0.0,
             "accuracy": (tp + tn) / len(labels) if labels else 0.0,
-            "fpr": fp / (fp + tn) if fp + tn else 0.0}
+            "fpr": fpr, "fnr": fnr, "balanced_error": (fpr + fnr) / 2}
+
+
+def selective_metrics(labels: list[int], predictions: list[int], statuses: list[str]) -> dict[str, float | int]:
+    if not (len(labels) == len(predictions) == len(statuses)):
+        raise ValueError("aligned inputs required")
+    determinate_names = {"PROVED_ERROR", "PROVED_NO_ERROR"}
+    selected = [index for index, status in enumerate(statuses) if status in determinate_names]
+    wrong = sum(predictions[index] != labels[index] for index in selected)
+    return {
+        "coverage": len(selected) / len(labels) if labels else 0.0,
+        "selective_risk": wrong / len(selected) if selected else None,
+        "confident_wrong": wrong,
+        "unresolved": sum(status == "UNRESOLVED" for status in statuses),
+        "unresolved_rate": sum(status == "UNRESOLVED" for status in statuses) / len(statuses)
+            if statuses else 0.0,
+        "inconsistent": sum(status == "INCONSISTENT" for status in statuses),
+        "inconsistent_rate": sum(status == "INCONSISTENT" for status in statuses) / len(statuses)
+            if statuses else 0.0,
+    }
 
 
 def mcnemar_exact(labels: list[int], incumbent: list[int], candidate: list[int]) -> dict[str, float | int]:

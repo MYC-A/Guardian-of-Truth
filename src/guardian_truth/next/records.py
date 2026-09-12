@@ -39,6 +39,29 @@ class ClaimKind(str, Enum):
     ABSENCE = "absence"
 
 
+class PolicyModality(str, Enum):
+    """Normative force of a policy meaning, independent of any trace."""
+
+    PERMISSION = "permission"
+    PROHIBITION = "prohibition"
+    REQUIREMENT = "requirement"
+    DEFINITION = "definition"
+    CONTEXT = "context"
+
+
+class RegulatedKind(str, Enum):
+    ACTION = "action"
+    STATE = "state"
+    INFORMATION = "information"
+    OUTCOME = "outcome"
+
+
+class SemanticUncertainty(str, Enum):
+    CERTAIN = "certain"
+    AMBIGUOUS = "ambiguous"
+    UNSUPPORTED = "unsupported"
+
+
 @dataclass(frozen=True)
 class Span:
     document: str
@@ -56,6 +79,17 @@ class CoverageItem:
 
 
 @dataclass(frozen=True)
+class PolicySegment:
+    id: str
+    span: Span
+    kind: str
+    text: str
+    ordinal: int
+    parent_id: str | None = None
+    heading_level: int | None = None
+
+
+@dataclass(frozen=True)
 class PolicyRule:
     id: str
     kind: str
@@ -69,9 +103,87 @@ class PolicyRule:
 
 
 @dataclass(frozen=True)
+class PolicySubject:
+    """Actor or role regulated by a policy; not a bound trace entity."""
+
+    kind: str
+    identifier: str
+
+
+@dataclass(frozen=True)
+class RegulatedMatter:
+    """Natural semantic target, deliberately not a solver proposition."""
+
+    kind: RegulatedKind
+    predicate: str
+    object: str
+
+
+@dataclass(frozen=True)
+class SemanticQualifier:
+    """A source-grounded condition or exception attached to a meaning."""
+
+    text: str
+    source: Span
+
+
+@dataclass(frozen=True)
+class TemporalConstraint:
+    relation: str
+    anchor: str = ""
+    duration: str = ""
+
+
+@dataclass(frozen=True)
+class IdentityConstraint:
+    entity_type: str
+    key: str
+    relation: str
+    value: str
+
+
+@dataclass(frozen=True)
+class PolicyQuantification:
+    kind: str
+    amount: int | None = None
+
+
+@dataclass(frozen=True)
+class PolicyProvenance:
+    source: Span
+    quote: str
+    occurrence: int
+    extractor: str
+
+
+@dataclass(frozen=True)
+class PolicyMeaning:
+    """Trace-independent semantic interpretation proposed for policy text.
+
+    It contains no truth value, evidence identifier, solver predicate, or final
+    verdict.  Compilation from this semantic IR into executable obligations is
+    a separate, deterministic boundary.
+    """
+
+    id: str
+    modality: PolicyModality
+    subject: PolicySubject
+    regulated: RegulatedMatter
+    conditions: tuple[SemanticQualifier, ...]
+    exceptions: tuple[SemanticQualifier, ...]
+    temporal: TemporalConstraint
+    identity_constraints: tuple[IdentityConstraint, ...]
+    quantification: PolicyQuantification
+    uncertainty: SemanticUncertainty
+    unsupported_reason: str
+    provenance: PolicyProvenance
+
+
+@dataclass(frozen=True)
 class PolicyBundle:
     version: str
     source_hash: str
+    segments: tuple[PolicySegment, ...]
     rules: tuple[PolicyRule, ...]
     coverage: tuple[CoverageItem, ...]
     compiler_arm: str
@@ -81,6 +193,10 @@ class PolicyBundle:
 @dataclass(frozen=True)
 class ToolEffectContract:
     tool: str
+    tool_version: str = "unknown"
+    inputs: tuple[str, ...] = ()
+    preconditions: tuple[str, ...] = ()
+    success_predicate: tuple[str, ...] = ()
     guaranteed_effects: tuple[str, ...] = ()
     possible_effects: tuple[str, ...] = ()
     failure_no_effect: FourValue = FourValue.UNKNOWN
@@ -89,6 +205,9 @@ class ToolEffectContract:
     entity_fields: tuple[str, ...] = ()
     freshness: str = "unknown"
     idempotent: FourValue = FourValue.UNKNOWN
+    entity_key_mapping: tuple[tuple[str, str], ...] = ()
+    provenance_transform: str = "preserve"
+    evidence_source: str = "SCHEMA_EXPLICIT"
     provenance: str = "schema_only"
 
 
@@ -134,6 +253,21 @@ class Claim:
 
 
 @dataclass(frozen=True)
+class ClaimCoverageItem:
+    span: Span
+    status: str
+    reason: str
+    claim_ids: tuple[str, ...] = ()
+
+
+@dataclass(frozen=True)
+class ClaimExtraction:
+    claims: tuple[Claim, ...]
+    coverage: tuple[ClaimCoverageItem, ...]
+    extractor: str
+
+
+@dataclass(frozen=True)
 class Binding:
     claim_id: str
     evidence_ids: tuple[str, ...]
@@ -162,6 +296,8 @@ class MonitorResult:
     bindings: list[Binding] = field(default_factory=list)
     propositions: list[PropositionResult] = field(default_factory=list)
     diagnostics: list[str] = field(default_factory=list)
+    internal_verdict: str = "UNRESOLVED"
+    binary_mapping_version: str = "strict-v1"
 
     def to_dict(self) -> dict[str, Any]:
         return asdict(self)
