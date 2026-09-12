@@ -72,6 +72,12 @@ scoring; per-case failure audit and GOAL_PLAN_RESULTS.md precede any repair.
 This contradicts readiness of the current large Goal/Plan frontend/lowering,
 not the full architecture objective. Semantic/schema causes remain explicit.
 Current full project units: 825 passed, including five new claim-scoring checks.
+Latest full verification: 828 passed after immutable Goal/Plan artifact checks
+and direct claim-runner entrypoint validation. Unit/integrity checkpoint v5
+records implementation 60cabfa, zero frozen-input errors and unchanged incumbents.
+Claim Graph v1 fixed C2/vNext comparison is now RUNNING on all 41 extension cases.
+Its first complete case has valid C2 schema and zero narrow-pass failures.
+Final metrics/gold join are pending; no semantic gain is inferred from that case.
 
 Fresh development provider gate v1: 12/12 transport, schema and controlled
 semantic microtasks; latency p50 4860.504 ms, p95 6805.173 ms; 5354 reported
