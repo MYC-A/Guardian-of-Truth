@@ -13,16 +13,19 @@ from .types import EntityRef, LedgerEvent, Span, ToolIdentity
 ATTR = re.compile(r'\b([A-Za-z_][A-Za-z0-9_]*)="([^"\n]*)"')
 
 
-def explicit_entities(payload) -> tuple[EntityRef, ...]:
+def explicit_entities(payload, *, source_namespace: str = "unscoped") -> tuple[EntityRef, ...]:
     """Only exact source IDs/names; no semantic resolution or guessed aliases."""
     found = []
 
     def visit(value, prefix=""):
         if isinstance(value, dict):
+            ids = [(key, item) for key, item in sorted(value.items())
+                   if (key == "id" or key.endswith("_id")) and type(item) in {str, int}]
+            name_namespace = "source:" + canonical(ids).decode("utf-8") if ids else source_namespace + ":" + prefix
             for key, item in sorted(value.items()):
                 path = prefix + key
                 if (key in {"id", "name"} or key.endswith("_id")) and type(item) in {str, int}:
-                    found.append(EntityRef(path, str(item)))
+                    found.append(EntityRef(path, str(item), name_namespace if key == "name" else "source"))
                 if isinstance(item, (dict, list)):
                     visit(item, path + ".")
         elif isinstance(value, list):
@@ -85,7 +88,7 @@ def normalize(prompt: str, response: str, *, tool_identities: tuple[ToolIdentity
                                  parsed.kind, Span(parsed.source.document, parsed.source.start, parsed.source.end),
                                  raw, payload_json, tool, call_id, candidates, requestor,
                                  attributes.get("timestamp") or attributes.get("time") or attributes.get("created_at"),
-                                 explicit_entities(parsed.value) if parsed.json_valid else (), issue))
+                                 explicit_entities(parsed.value, source_namespace=eid) if parsed.json_valid else (), issue))
     return tuple(events)
 
 

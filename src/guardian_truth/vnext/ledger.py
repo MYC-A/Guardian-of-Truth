@@ -140,6 +140,24 @@ class LedgerIndex:
         self.times = tuple(event.index for event in ledger.events)
         self.event_ids = tuple(event.event_id for event in ledger.events)
         self.positions = MappingProxyType({event.event_id: event.index for event in ledger.events})
+        self.events_by_id = MappingProxyType({event.event_id: event for event in ledger.events})
+        self.events_by_call = MappingProxyType({cid: tuple(self.events_by_id[eid] for eid in ids)
+                                               for cid, ids in self.indexes["call"].items()})
+        obs_by_event, effects_by_entity = defaultdict(list), defaultdict(list)
+        for observation in ledger.observations:
+            obs_by_event[observation.event_id].append(observation)
+        for effect in ledger.effects:
+            effects_by_entity[effect.entity].append(effect)
+        self.observations_by_event = MappingProxyType({eid: tuple(items) for eid, items in obs_by_event.items()})
+        self.effects_by_entity = MappingProxyType({entity: tuple(items) for entity, items in effects_by_entity.items()})
+        value_entities = defaultdict(set)
+        for event in ledger.events:
+            for entity in event.entity_refs:
+                value_entities[entity.value].add(entity)
+        for effect in ledger.effects:
+            value_entities[effect.entity.value].add(effect.entity)
+        self.value_entities = MappingProxyType({value: tuple(sorted(entities, key=lambda e: (e.namespace, e.key, e.value)))
+                                              for value, entities in value_entities.items()})
 
     def search(self, *, entity: EntityRef | None = None, actor: str | None = None,
                tool: str | None = None, call: str | None = None, source: str | None = None,

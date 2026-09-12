@@ -88,7 +88,7 @@ def test_timestamp_and_nested_entity_ids_are_preserved_not_interpreted():
     event = normalize(text, "")[0]
     assert event.timestamp == "2026-01-01"
     assert EntityRef("nested.entity_id", "7") in event.entity_refs
-    assert EntityRef("name", "Alex") in event.entity_refs
+    assert any(entity.key == "name" and entity.value == "Alex" for entity in event.entity_refs)
 
 
 def test_claim_intent_and_attempt_do_not_become_observed_business_effects():
