@@ -7,8 +7,8 @@ from collections import defaultdict
 from dataclasses import dataclass
 from types import MappingProxyType
 
-from .integrity import canonical
-from .types import EntityRef, LedgerEvent, Observation
+from .integrity import canonical, digest
+from .types import EffectRecord, EntityRef, LedgerEvent, Observation
 
 
 @dataclass(frozen=True)
@@ -39,7 +39,7 @@ def observations(events: tuple[LedgerEvent, ...]) -> tuple[Observation, ...]:
             continue
         for path, value in flatten(event.payload):
             if path:
-                rows.append(Observation(f"obs:{event.event_id}:{len(rows)}", event.event_id, event.index,
+                rows.append(Observation(f"obs:{event.event_id}:{digest(path)}", event.event_id, event.index,
                                         event.actor, ".".join(path), canonical(value).decode("utf-8"),
                                         event.source, event.entity_refs, call_id=event.call_id))
     return tuple(rows)
@@ -52,6 +52,7 @@ class EvidenceLedger:
     # Completeness is relative to the supplied trace, never all external reality.
     history_complete: bool = False
     completeness_basis: str | None = None
+    effects: tuple[EffectRecord, ...] = ()
 
     def __post_init__(self):
         if self.history_complete and not self.completeness_basis:
@@ -66,6 +67,12 @@ class EvidenceLedger:
             event = events_by_id.get(item.event_id)
             if event is None or event.index != item.index or event.kind != "result":
                 raise ValueError("observation must reference actual result")
+        if self.observations != observations(self.events):
+            raise ValueError("observation fields must be exactly reconstructed from source results")
+        for effect in self.effects:
+            event = events_by_id.get(effect.event_id)
+            if event is None or event.kind != "result" or event.call_id != effect.call_id:
+                raise ValueError("effect must reference an identity-matched result")
 
     @classmethod
     def from_events(cls, events: tuple[LedgerEvent, ...], *, history_complete=False, completeness_basis=None):
@@ -75,7 +82,7 @@ class EvidenceLedger:
         # New snapshot shares immutable old events; caller cannot rewrite prefix.
         combined = self.events + events
         return EvidenceLedger(combined, self.observations + observations(events),
-                              False, None)  # extending invalidates the old complete-history certificate
+                              False, None, self.effects)  # extending invalidates old complete-history certificate
 
     def history(self, entity: EntityRef) -> tuple[LedgerEvent, ...]:
         return tuple(event for event in self.events if entity in event.entity_refs)
@@ -108,9 +115,8 @@ class EvidenceLedger:
     def results_of(self, call_id: str) -> tuple[LedgerEvent, ...]:
         return tuple(event for event in self.events if event.kind == "result" and event.call_id == call_id)
 
-    def effects_of(self, event_id: str) -> tuple:
-        # Observed fields are not business effects. Versioned T1 layer attaches effects separately.
-        return ()
+    def effects_of(self, event_id: str) -> tuple[EffectRecord, ...]:
+        return tuple(effect for effect in self.effects if effect.event_id == event_id)
 
 
 class LedgerIndex:

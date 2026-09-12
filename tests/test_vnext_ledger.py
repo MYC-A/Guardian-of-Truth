@@ -103,6 +103,13 @@ def test_failure_and_not_found_are_observed_fields_not_no_effect_or_absence():
     assert ledger.effects_of("e1") == ()
 
 
+def test_forged_observation_cannot_enter_ledger():
+    ledger = EvidenceLedger.from_events(normalize(call() + result(), ""))
+    forged = replace(ledger.observations[0], value_json='"invented"')
+    with pytest.raises(ValueError, match="reconstructed"):
+        replace(ledger, observations=(forged,) + ledger.observations[1:])
+
+
 def test_append_preserves_old_snapshot_and_invalidates_completeness():
     initial = normalize(call() + result(), "")
     ledger = EvidenceLedger.from_events(initial, history_complete=True, completeness_basis="explicit complete supplied prefix")

@@ -159,6 +159,20 @@ class TypedClaim:
 
 
 @dataclass(frozen=True)
+class EffectRecord:
+    effect_id: str
+    event_id: str
+    call_id: str | None
+    entity: EntityRef
+    predicate: str
+    value_json: str
+    status: EffectStatus
+    contract_sha256: str | None
+    provenance: str
+    causal_action_confirmed: bool = False
+
+
+@dataclass(frozen=True)
 class ClaimRelation:
     subject_claim_id: str
     relation: str
@@ -190,6 +204,8 @@ class SemanticCoverage:
     challenger_alternatives: tuple[str, ...] = ()
 
     def __post_init__(self):
+        if type(self.enumeration_complete) is not bool:
+            raise ValueError("enumeration completeness must be explicit Boolean")
         if self.status is CoverageStatus.PROVABLY_CLOSED and (
                 not self.universe_source or not self.enumeration_complete or self.unresolved_terms):
             raise ValueError("closed semantics requires authoritative universe and complete enumeration")
