@@ -70,15 +70,56 @@ def render_guardian_input(model_view: Mapping[str, Any]) -> tuple[str, str]:
             raise ExternalEvaluationError("model_view.events entries must be objects")
         if event.get("role") == "assistant" or event.get("type") == "assistant_message":
             response_index = index
-    response_event: Mapping[str, Any] | None = None
-    if response_index is not None:
-        response_event = events[response_index]
-        view["events"] = events[:response_index] + events[response_index + 1 :]
-    prompt = _canonical_json({"external_guardian_input": view})
-    response = _canonical_json(
-        {"external_guardian_response": response_event} if response_event is not None else {}
-    )
-    return prompt, response
+    if response_index is None:
+        raise ExternalEvaluationError("end-to-end case has no assistant response")
+    if response_index != len(events) - 1:
+        raise ExternalEvaluationError("native events after selected assistant response are unsupported")
+
+    def content(event: Mapping[str, Any]) -> str:
+        value = event.get("content", "")
+        return value if isinstance(value, str) else _canonical_json(value)
+
+    context = view.get("context", {})
+    context = context if isinstance(context, Mapping) else {}
+    policy = context.get("policy")
+    if not isinstance(policy, str) or not policy.strip():
+        system_parts = [content(event) for event in events
+                        if event.get("role") == "system" or event.get("type") == "system"]
+        policy = "\n\n".join(part for part in system_parts if part.strip())
+    if not policy.strip():
+        raise ExternalEvaluationError("end-to-end case has no policy text")
+
+    parts = [f"⟦SYSTEM⟧\n<policy>{policy}</policy>"]
+    schemas = view.get("tool_schemas", [])
+    if schemas:
+        parts.append("[AVAILABLE TOOLS]\n" + _canonical_json(schemas) + "\n[/AVAILABLE TOOLS]")
+    role_tags = {
+        "user": "USER", "user_message": "USER",
+        "assistant": "ASSISTANT", "assistant_message": "ASSISTANT",
+        "tool": "TOOL", "tool_call": "ASSISTANT", "tool_result": "TOOL",
+    }
+    for event in events[:response_index]:
+        role = event.get("role") or event.get("type")
+        if role == "system":
+            continue
+        tag = role_tags.get(str(role))
+        if tag is None:
+            raise ExternalEvaluationError(f"unsupported native event role/type: {role}")
+        event_content = content(event)
+        residual = {key: value for key, value in event.items()
+                    if key not in {"role", "type", "content"}}
+        if residual:
+            event_content = event_content + ("\n" if event_content else "") + _canonical_json(residual)
+        parts.append(f"⟦{tag}⟧\n{event_content}")
+    response_event = events[response_index]
+    response = content(response_event)
+    residual = {key: value for key, value in response_event.items()
+                if key not in {"role", "type", "content"}}
+    if residual:
+        response = response + ("\n" if response else "") + _canonical_json(residual)
+    if not response.strip():
+        raise ExternalEvaluationError("selected assistant response is empty")
+    return "\n".join(parts), response
 
 
 def _safe_path(root: Path, relative_text: str) -> Path:

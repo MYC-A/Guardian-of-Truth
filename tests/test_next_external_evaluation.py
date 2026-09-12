@@ -30,6 +30,7 @@ def _tau_row(task_id, reward, trial=0):
         "trial": trial,
         "reward": reward,
         "traj": [
+            {"role": "system", "content": "Complete only supported tasks."},
             {"role": "user", "content": f"request-{task_id}"},
             {"role": "assistant", "content": "done"},
         ],
@@ -150,3 +151,23 @@ def test_static_toolsandbox_bfcl_diagnostics_and_agentdojo_unavailable(tmp_path)
     assert bfcl["parameter_properties"] == 1
     assert bfcl["guardian_label_equivalence"] is False
     assert result["unavailable_sources"]["AgentDojo"]["executed"] is False
+
+
+def test_rendering_rejects_post_response_events_instead_of_reordering_them():
+    from guardian_truth.next.external_evaluation import (
+        ExternalEvaluationError, render_guardian_input,
+    )
+    view = {
+        "source": "test", "record_id": "r", "tool_schemas": [], "context": {},
+        "events": [
+            {"role": "system", "content": "Policy."},
+            {"role": "assistant", "content": "done"},
+            {"role": "tool", "content": "late result"},
+        ],
+    }
+    try:
+        render_guardian_input(view)
+    except ExternalEvaluationError as error:
+        assert "after selected assistant" in str(error)
+    else:
+        raise AssertionError("post-response events must fail closed")

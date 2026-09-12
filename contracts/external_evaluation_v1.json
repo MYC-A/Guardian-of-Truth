@@ -1,0 +1,41 @@
+{
+  "schema_version": "guardian-next-external-evaluation-v1",
+  "cycle": "guardian-next-from-v5_3",
+  "source_manifest": "contracts/external_sources_v1.json",
+  "readiness_gate": "all freeze fields and every pinned snapshot must verify before selected artifacts are opened",
+  "arms": [
+    {
+      "id": "X0_CURRENT_V5_3",
+      "implementation": "guardian_truth.pipeline:Detector",
+      "model_calls": false
+    },
+    {
+      "id": "X5_PROPOSED_MIN",
+      "implementation": "guardian_truth.next.monitor:review",
+      "model_calls": false
+    }
+  ],
+  "end_to_end_rendering": {
+    "response": "last non-empty assistant event",
+    "prompt": "native context policy followed by all native events preceding the response event",
+    "system_policy_precedence": "native context policy, otherwise concatenated native system events",
+    "tool_schema_handling": "canonical JSON in an AVAILABLE TOOLS prompt section",
+    "unsupported": "no non-empty assistant event or no policy text"
+  },
+  "label_boundary": {
+    "detector_input": ["source", "record_id", "events", "tool_schemas", "context"],
+    "forbidden_detector_fields": ["label", "label_provenance", "target_event_indices", "failure_categories"],
+    "join_stage": "after canonical prediction JSON and sha256 are frozen"
+  },
+  "metrics": {
+    "binary": ["tp", "fp", "fn", "tn", "precision", "recall", "f1", "accuracy", "fpr", "fnr", "balanced_error"],
+    "pairing": ["exact_mcnemar", "hierarchical_bootstrap_f1_by_group"],
+    "abstention_mapping": 0,
+    "trajectory_label_status": "proxy_non_equivalent_to_localized_guardian_error"
+  },
+  "diagnostics": {
+    "ToolSandbox": "static AST enumeration only; never import or execute source modules",
+    "BFCL": "tool schema shape/coverage only; never infer a Guardian failure label",
+    "AgentDojo": "document unavailable native recorded traces; do not synthesize them"
+  }
+}
