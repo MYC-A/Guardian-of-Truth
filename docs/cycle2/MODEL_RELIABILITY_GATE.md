@@ -80,6 +80,16 @@ availability, but it does not retroactively admit the provider. The complete v2
 gate is repeated without changing cases, prompts, thresholds, or generation
 settings, and every observed run remains visible in Git history.
 
-The rotated credential value is never serialized. Until a complete run passes,
-overall status remains `EVALUATION_BLOCKED_BY_PROVIDER` and no remote P1/P2/P3
-call is permitted.
+The rotated credential value is never serialized. This first v2 result remained
+`EVALUATION_BLOCKED_BY_PROVIDER`; it did not itself authorize model arms.
+
+## Admission result
+
+The unchanged v2 contract was then repeated sequentially after the two-case
+route diagnostic. TokenHarbor completed 16/16 transports, produced 16/16
+schema-valid objects, and answered 14/16 semantic micro-tasks correctly.
+Reliability is therefore `1.0`, conditional semantic quality is `0.875`, and
+strict operational yield is `0.875`; median latency was 6159 ms and p95 was
+34214 ms. `deepseek-v4-flash:free` is admitted for P1/P2. Groq remains locally
+unavailable and was not called. This admission does not establish P3 because no
+second stronger/reasoning candidate passed the same gate.
