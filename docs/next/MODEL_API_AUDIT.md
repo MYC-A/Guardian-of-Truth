@@ -15,6 +15,10 @@ Use OpenRouter `nex-agi/nex-n2.5-mini:free` only as a zero-cost comparison or fa
 
 Use Gemini `gemini-3-flash-preview` only as a strong experimental policy arm until reliability is measured on a larger repeated sample. It was much slower and returned two server errors in four identical role probes. Gemini also needs an explicit model setting; the current environment does not provide one.
 
+Mistral and Cerebras are implemented as isolated provider profiles, but neither is admitted to an evaluation arm in this cycle. Mistral authenticated for model discovery and then returned rate-limit errors for every role and policy request. Cerebras rejected model discovery and its bounded chat probes; this is recorded as unavailability, not model-quality evidence.
+
+NVIDIA NIM is also implemented, but the tested hosted routes fail the reliability/latency gate. DeepSeek V4 Flash and Kimi K3 each completed only two of four role tasks; Gemma 4 31B completed none. Keep NVIDIA as an optional slow-path research provider, not the default runtime.
+
 The local backend is not currently runnable: no compatible endpoint is listening and no NVIDIA/CUDA device was detected.
 
 ## Credential and configuration audit
@@ -28,7 +32,7 @@ The new worktree had none of the provider variables in its process environment a
 - `GUARDIAN_BASE_URL`
 - `OPENROUTE_MODEL`
 
-The `OPENROUTE_*` and `GEMENI_*` misspellings are accepted by the current alias logic. A lowercase `cerebras_api_key` name was also present, but neither the dotenv allow-list nor runtime implements a Cerebras provider. It was not used.
+The `OPENROUTE_*` and `GEMENI_*` misspellings are accepted by the current alias logic. The later environment also contains lowercase `mistral_api_key` and `cerebras_api_key`; both lowercase names and their conventional uppercase aliases are now accepted. Each profile is pinned to its own hostname and credential. Secret values, lengths, and fingerprints remain absent from every artifact.
 
 A separate ignored `.env` contained `GROQ_API_KEY`, but that value contained non-ASCII characters. The client rejects such a credential before network access. The usable Groq credential came from the other ignored env file.
 
@@ -57,6 +61,11 @@ Canonicalization is UTF-8 JSON with sorted keys, compact separators, and ASCII e
 | OpenRouter `google/gemma-4-31b-it:free` | 0/4 | 0/4 | n/a | n/a | 4× rate limit |
 | OpenRouter `nex-agi/nex-n2.5-mini:free` | 4/4 | 4/4 | 1746.8 ms | 2074.3 ms | none |
 | Gemini `gemini-3-flash-preview` | 2/4 | 2/4 attempted successes | 12114.0 ms | 12507.6 ms | 2× server error |
+| Mistral `mistral-small-latest` | 0/4 | 0/4 | n/a | n/a | 4× rate limit |
+| Cerebras `gpt-oss-120b` | 0/4 | 0/4 | n/a | n/a | 4× request rejection |
+| NVIDIA `deepseek-ai/deepseek-v4-flash-0731` | 2/4 | 2/4 attempted successes | 8756.7 ms | 9212.7 ms | 2× timeout |
+| NVIDIA `google/gemma-4-31b-it` | 0/4 | 0/4 | n/a | n/a | 4× timeout |
+| NVIDIA `moonshotai/kimi-k3` | 2/4 | 2/4 attempted successes | 47244.3 ms | 52975.8 ms | 2× timeout |
 
 The p95 values use nearest-rank over at most four observations. They describe this smoke run only and must not be treated as an SLO estimate.
 
@@ -137,6 +146,39 @@ Documented by Google:
 
 Sources: [OpenAI compatibility](https://ai.google.dev/gemini-api/docs/openai), [Gemini 3](https://ai.google.dev/gemini-api/docs/gemini-3), [rate limits](https://ai.google.dev/gemini-api/docs/rate-limits), [structured output](https://ai.google.dev/gemini-api/docs/structured-output), [pricing](https://ai.google.dev/gemini-api/docs/pricing).
 
+### Mistral
+
+Observed:
+
+- Model discovery returned HTTP 200 and included `mistral-small-latest`.
+- All four frozen role probes returned `rate_limit` before a schema-valid answer.
+- In a one-case policy-semantics run with matched P1/P2 budgets, P1, P2, and P3 all returned `rate_limit`.
+- These failures measure current account capacity only. They are not zero semantic scores for the model.
+
+The implementation uses Mistral's OpenAI-compatible `https://api.mistral.ai/v1` endpoint and its documented `max_tokens` request field. Sources: [API reference](https://docs.mistral.ai/api), [structured output](https://docs.mistral.ai/studio/conversations/structured-output/custom).
+
+### Cerebras
+
+Observed:
+
+- Model discovery returned HTTP 403.
+- All four frozen role probes were rejected before a valid structured response.
+- In a one-case policy-semantics run with matched P1/P2 budgets, P1, P2, and P3 were rejected at the request layer.
+- This is a transport/request result, not a semantic model failure.
+
+The profile uses the documented `https://api.cerebras.ai/v1` endpoint and defaults to `gpt-oss-120b`. Sources: [chat completions](https://inference-docs.cerebras.ai/api-reference/chat-completions), [public models](https://inference-docs.cerebras.ai/api-reference/models/public-models), [rate limits](https://inference-docs.cerebras.ai/support/rate-limits).
+
+### NVIDIA NIM
+
+Observed with three separate user-provided NVIDIA credentials and exactly four attempts per model, no retries, 60-second timeout:
+
+- `deepseek-ai/deepseek-v4-flash-0731`: two correct schema-valid responses in 8.30–9.21 seconds, then two timeouts.
+- `google/gemma-4-31b-it`: four timeouts.
+- `moonshotai/kimi-k3`: two timeouts followed by two correct schema-valid responses in 41.51–52.98 seconds.
+- The `openai/gpt-oss-20b` credential was not benchmarked after its value was exposed by a local diagnostic exception; it must be rotated first.
+
+All successful responses passed the same local enum/schema contract used for other providers. The implementation uses NVIDIA's documented OpenAI-compatible `https://integrate.api.nvidia.com/v1/chat/completions` route and `max_tokens` field. Source: [NVIDIA NIM LLM API reference](https://docs.api.nvidia.com/nim/re/reference/llm-apis).
+
 ## Local endpoint and hardware
 
 Observed:
@@ -159,7 +201,7 @@ The following gaps should be fixed before a large model experiment:
 - Local response validation proves only that content is a JSON object; it does not independently validate the supplied JSON Schema.
 - Error bodies are intentionally discarded, which is safe but makes provider incompatibilities difficult to diagnose. Record sanitized provider error code/type separately.
 - Latency, attempt count, rate-limit headers, requested/returned model, normalized usage, and estimated cost are not first-class transport records.
-- Provider request capabilities should live in an explicit registry. The current code chooses `max_tokens` only for OpenRouter and `max_completion_tokens` for every other provider.
+- Provider request capabilities should live in an explicit registry. The current code handles the documented Mistral/OpenRouter `max_tokens` difference, but other request-shape differences are still encoded as conditionals.
 - Retry uses bounded delay but no jitter.
 - OpenRouter free-model usage fields cannot be trusted without normalization.
 - A catalog listing is not proof that generation is available; the Gemini 2.5 and configured OpenRouter results demonstrate this directly.
