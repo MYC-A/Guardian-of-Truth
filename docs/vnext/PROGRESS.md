@@ -79,6 +79,18 @@ Claim Graph v1 fixed C2/vNext comparison is now RUNNING on all 41 extension case
 Its first complete case has valid C2 schema and zero narrow-pass failures.
 Final metrics/gold join are pending; no semantic gain is inferred from that case.
 
+Post-audit Goal/Plan v2 development now adds exact source-ID inventory, nine
+bounded semantic tasks, separate plan/order/scope/conditional clause records,
+four-valued formula lowering and value-free JSON/schema diagnostics. It does not
+alter the currently running Claim Graph v1 implementation or its prompts.
+Current full unit verification: 912 passed, including 84 new v2 development
+checks. Read-only verification of all 100 Claim Graph v1 frozen source hashes
+found zero mismatches. Eight of 41 claim cases were complete at this checkpoint;
+the job remains live, and no final comparison score or semantic gain is inferred.
+See GOAL_PLAN_V2_DEVELOPMENT.md for unimplemented grounding/certificate integration
+and the required separate freeze before a v2 model evaluation. No blind labels
+were opened and no additional live request was started by these development tests.
+
 Fresh development provider gate v1: 12/12 transport, schema and controlled
 semantic microtasks; latency p50 4860.504 ms, p95 6805.173 ms; 5354 reported
 tokens. A preceding connection smoke succeeded. Artifacts and per-case failure
