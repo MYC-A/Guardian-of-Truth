@@ -8,7 +8,7 @@ def test_binary_failure_taxonomy():
 
 
 def test_x5_upstream_unknowns_are_nonexclusive():
-    row = {"telemetry": {
+    row = {"used_fallback": True, "telemetry": {
         "n_policy_rules": 0,
         "n_unknown_policy_segments": 1,
         "n_claims": 1,
@@ -18,5 +18,6 @@ def test_x5_upstream_unknowns_are_nonexclusive():
         "solver_status": "UNRESOLVED",
     }}
     assert _x5_components(row) == [
-        "POLICY_SEMANTICS", "CLAIM_EXTRACTION", "TOOL_EFFECTS", "BINDING",
+        "POLICY_MEANING", "POLICY_COMPILATION", "CLAIM_EXTRACTION", "TOOL_EFFECT",
+        "BINDING", "BINARY_ADAPTER",
     ]

@@ -8,6 +8,13 @@ from typing import Any, Mapping
 from .external import ExternalDataset
 
 
+FAILURE_COMPONENTS = (
+    "POLICY_MEANING", "POLICY_COMPILATION", "CLAIM_EXTRACTION", "TOOL_EFFECT",
+    "TRACE_NORMALIZATION", "BINDING", "SOLVER", "BINARY_ADAPTER", "OPEN_SEMANTICS",
+    "DATASET_MISMATCH", "OTHER",
+)
+
+
 def _failure_type(gold: int, prediction: int) -> str | None:
     if gold == prediction:
         return None
@@ -17,17 +24,21 @@ def _failure_type(gold: int, prediction: int) -> str | None:
 def _x5_components(row: Mapping[str, Any]) -> list[str]:
     telemetry = row.get("telemetry", {})
     components = []
-    if telemetry.get("n_policy_rules", 0) == 0 or telemetry.get("n_unknown_policy_segments", 0):
-        components.append("POLICY_SEMANTICS")
+    if telemetry.get("n_unknown_policy_segments", 0):
+        components.append("POLICY_MEANING")
+    if telemetry.get("n_policy_rules", 0) == 0:
+        components.append("POLICY_COMPILATION")
     if telemetry.get("n_claims", 0) == 0 or telemetry.get("n_unknown_claim_spans", 0):
         components.append("CLAIM_EXTRACTION")
     if telemetry.get("n_unknown_tools", 0):
-        components.append("TOOL_EFFECTS")
+        components.append("TOOL_EFFECT")
     if telemetry.get("n_claims", 0) and telemetry.get("n_candidate_bindings", 0) == 0:
         components.append("BINDING")
     if telemetry.get("solver_status") in {"UNRESOLVED", "INCONSISTENT"} and not components:
         components.append("SOLVER")
-    return components or ["DECISION"]
+    if row.get("used_fallback"):
+        components.append("BINARY_ADAPTER")
+    return components or ["OTHER"]
 
 
 def build_failure_taxonomy(dataset: ExternalDataset,
@@ -95,5 +106,6 @@ def build_failure_taxonomy(dataset: ExternalDataset,
         "predictions_sha256": prediction_artifact["predictions_sha256"],
         "gold_joined_only_after_prediction_freeze": True,
         "component_attribution_is_nonexclusive_diagnostic": True,
+        "component_vocabulary": list(FAILURE_COMPONENTS),
         "arms": output,
     }
