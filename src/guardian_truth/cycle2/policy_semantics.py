@@ -289,3 +289,34 @@ def score_policy_candidate(case: PolicyCase, structure: Mapping[str, Any], progr
         "exact_representation": structure == case.structure and normalized_program == gold_program,
         "worlds": world_rows,
     }
+
+
+def score_policy_program(case: PolicyCase, program: Mapping[str, Any]) -> dict:
+    """Score a direct formal rule without pretending that it supplied typed IR."""
+    validate_program(program, frozenset(case.atom_catalog))
+    world_rows = []
+    for world in case.worlds:
+        predicted = evaluate_program(program, world.facts)
+        world_rows.append({
+            "world_id": world.id,
+            "expected": world.expected,
+            "predicted": predicted,
+            "correct": predicted == world.expected,
+        })
+    behavioral_accuracy = sum(row["correct"] for row in world_rows) / len(world_rows)
+    normalized = {
+        key: [list(clause) for clause in program[key]]
+        for key in ("violation_clauses", "permission_clauses")
+    }
+    gold = {
+        key: [list(clause) for clause in case.program[key]]
+        for key in ("violation_clauses", "permission_clauses")
+    }
+    return {
+        "structural_fields": {field: None for field in STRUCTURAL_FIELDS},
+        "structural_accuracy": None,
+        "behavioral_accuracy": behavioral_accuracy,
+        "behavioral_semantic_correct": behavioral_accuracy == 1.0,
+        "exact_representation": normalized == gold,
+        "worlds": world_rows,
+    }
