@@ -8,6 +8,7 @@ from datetime import datetime, timezone
 import hashlib
 import json
 from pathlib import Path
+import subprocess
 import sys
 
 from guardian_truth.llm_client import ChatClient, ChatClientError, ClientConfig
@@ -28,6 +29,14 @@ from .claims import (
     load_claim_dataset,
     run_model_claim_arms,
 )
+from .e2e import (
+    build_e2e_report,
+    freeze_external_predictions,
+    load_e2e_contract,
+    offline_proposals,
+    run_x1,
+)
+from .external import blind_external_case, load_external_dataset
 from .policy_arms import (
     blind_policy_cases,
     build_blocked_policy_report,
@@ -49,6 +58,12 @@ DEFAULT_CLAIM_CASES = Path("outputs/cycle2/claim_cases.json")
 DEFAULT_CLAIM_OUTPUT = Path("outputs/cycle2/claim_results.json")
 DEFAULT_CLAIM_CONTRACT = Path("contracts/cycle2_claim_arms_v1.json")
 DEFAULT_CLAIM_CHECKPOINT = Path("outputs/cycle2/claim_proposals_checkpoint.json")
+DEFAULT_EXTERNAL_MANIFEST = Path("outputs/cycle2/external_manifest.json")
+DEFAULT_E2E_CONTRACT = Path("contracts/cycle2_e2e_arms_v1.json")
+DEFAULT_EXTERNAL_CHECKPOINT = Path("outputs/cycle2/external_x1_checkpoint.json")
+DEFAULT_EXTERNAL_PREDICTIONS = Path("outputs/cycle2/external_predictions.json")
+DEFAULT_E2E_OUTPUT = Path("outputs/cycle2/e2e_results.json")
+DEFAULT_DISAGREEMENT_OUTPUT = Path("outputs/cycle2/disagreement_matrix.json")
 
 
 def _candidate(value: str) -> tuple[str, str]:
@@ -99,6 +114,21 @@ def _parser() -> argparse.ArgumentParser:
     claim_live.add_argument("--rotated-provider", action="append", default=[],
                             choices=sorted(COMPROMISED_PROVIDERS))
     claim_live.add_argument("--overwrite", action="store_true")
+    external = sub.add_parser("external", help="run frozen external X0/X1/X4/X5/G1 arms")
+    external.add_argument("--manifest", type=Path, default=DEFAULT_EXTERNAL_MANIFEST)
+    external.add_argument("--e2e-contract", type=Path, default=DEFAULT_E2E_CONTRACT)
+    external.add_argument("--model-gate", type=Path, default=DEFAULT_OUTPUT)
+    external.add_argument("--checkpoint", type=Path, default=DEFAULT_EXTERNAL_CHECKPOINT)
+    external.add_argument("--predictions", type=Path, default=DEFAULT_EXTERNAL_PREDICTIONS)
+    external.add_argument("--e2e-output", type=Path, default=DEFAULT_E2E_OUTPUT)
+    external.add_argument("--disagreement-output", type=Path, default=DEFAULT_DISAGREEMENT_OUTPUT)
+    external.add_argument("--t1-contracts", type=Path, default=Path("contracts/tool_effects_v1.json"))
+    external.add_argument("--env-file", type=Path, required=True)
+    external.add_argument("--provider", choices=tuple(REMOTE_PROVIDERS), required=True)
+    external.add_argument("--model", required=True)
+    external.add_argument("--rotated-provider", action="append", default=[],
+                          choices=sorted(COMPROMISED_PROVIDERS))
+    external.add_argument("--overwrite", action="store_true")
     return parser
 
 
@@ -178,6 +208,14 @@ def _read_json(path: Path) -> dict:
     if not isinstance(value, dict):
         raise ValueError(f"invalid required artifact: {path}")
     return value
+
+
+def _git_commit() -> str:
+    """Return the exact committed implementation under evaluation."""
+    result = subprocess.run(
+        ["git", "rev-parse", "HEAD"], check=True, capture_output=True, text=True,
+    )
+    return result.stdout.strip()
 
 
 def _run_policy(args: argparse.Namespace) -> int:
@@ -336,6 +374,83 @@ def _run_claims(args: argparse.Namespace) -> int:
     return 0
 
 
+def _run_external(args: argparse.Namespace) -> int:
+    targets = (args.predictions, args.e2e_output, args.disagreement_output)
+    if any(path.exists() for path in targets) and not args.overwrite:
+        raise ValueError("refusing to overwrite an existing external artifact")
+    if not args.env_file.is_file():
+        raise ValueError("explicit env file does not exist")
+    dataset = load_external_dataset(args.manifest)
+    contract = load_e2e_contract(args.e2e_contract)
+    gate = _read_json(args.model_gate)
+    candidate = f"{args.provider}={args.model}"
+    if candidate not in gate.get("admitted_candidates", []):
+        raise ValueError("selected external model was not admitted")
+    if args.provider in COMPROMISED_PROVIDERS and args.provider not in set(args.rotated_provider):
+        raise ValueError("rotation attestation required for selected provider")
+    load_env_file(args.env_file)
+    config = provider_config(ClientConfig(), args.provider, model=args.model)
+    config = replace(
+        config, timeout_seconds=contract.timeout_seconds,
+        max_output_tokens=contract.max_output_tokens, max_retries=0,
+        strict_schema=True, response_format_mode=contract.response_format_mode,
+    )
+    client = ChatClient(config)
+    client.validate_configuration()
+    existing = []
+    if args.checkpoint.exists():
+        checkpoint = _read_json(args.checkpoint)
+        if (checkpoint.get("schema_version") != "guardian-cycle2-external-x1-v1"
+                or checkpoint.get("cases_sha256") != dataset.cases_digest
+                or checkpoint.get("e2e_contract_sha256") != contract.digest
+                or not isinstance(checkpoint.get("proposals"), list)):
+            raise ValueError("external checkpoint does not match frozen inputs")
+        existing = checkpoint["proposals"]
+
+    def save_checkpoint(rows):
+        payload = {
+            "schema_version": "guardian-cycle2-external-x1-v1",
+            "cases_sha256": dataset.cases_digest,
+            "e2e_contract_sha256": contract.digest,
+            "gold_serialized": False,
+            "proposals": rows,
+        }
+        args.checkpoint.parent.mkdir(parents=True, exist_ok=True)
+        args.checkpoint.write_text(json.dumps(payload, ensure_ascii=False, indent=2) + "\n", encoding="utf-8")
+        latest = rows[-1]
+        print(json.dumps({"completed": len(rows), "total": len(dataset.cases),
+                          "case_id": latest["case_id"],
+                          "transport_status": latest["transport_status"],
+                          "schema_status": latest["schema_status"]}, ensure_ascii=False), flush=True)
+
+    x1 = run_x1(
+        client, (blind_external_case(case) for case in dataset.cases), contract,
+        existing=existing, checkpoint=save_checkpoint,
+    )
+    offline = offline_proposals(
+        dataset, t1_contract_path=args.t1_contracts if args.t1_contracts.is_file() else None,
+    )
+    predictions = freeze_external_predictions(dataset, offline, x1, contract)
+    predictions.update({
+        "model_gate_sha256": hashlib.sha256(args.model_gate.read_bytes()).hexdigest(),
+        "guardian_commit": _git_commit(),
+        "created_utc": datetime.now(timezone.utc).replace(microsecond=0).isoformat().replace("+00:00", "Z"),
+    })
+    report, matrix = build_e2e_report(dataset, predictions, contract)
+    report["created_utc"] = predictions["created_utc"]
+    matrix["cases_sha256"] = dataset.cases_digest
+    matrix["created_utc"] = predictions["created_utc"]
+    for path, payload in ((args.predictions, predictions), (args.e2e_output, report),
+                          (args.disagreement_output, matrix)):
+        path.parent.mkdir(parents=True, exist_ok=True)
+        path.write_text(json.dumps(payload, ensure_ascii=False, indent=2) + "\n", encoding="utf-8")
+    print(json.dumps({"status": report["status"],
+                      "strict_F1": {arm: values["strict_binary_with_declared_fallback"]["F1"]
+                                    for arm, values in report["arms"].items()},
+                      "outputs": [str(path) for path in targets]}, ensure_ascii=False))
+    return 0
+
+
 def main(argv: list[str] | None = None) -> int:
     parser = _parser()
     args = parser.parse_args(argv)
@@ -348,6 +463,8 @@ def main(argv: list[str] | None = None) -> int:
             return _run_claims_c0(args)
         if args.stage == "claims":
             return _run_claims(args)
+        if args.stage == "external":
+            return _run_external(args)
     except ValueError as error:
         parser.error(str(error))
     return 2
