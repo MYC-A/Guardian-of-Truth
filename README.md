@@ -1,5 +1,20 @@
 # Guardian of Truth
 
+## Cycle 2 decision
+
+Cycle 2 starts from exact commit `bbd58ef` on branch
+`experiment/guardian-cycle2-from-bbd58ef`; the production and Cycle 1 worktrees
+remain untouched. The current decision is **keep production V5.3 unchanged**.
+The strongest positive component result is the response-only C2 claim pipeline:
+deterministic span inventory followed by an LLM typed map reaches span recall
+0.8163 and precision 0.9449. The current typed policy IR, X5 end-to-end path,
+and exact G1 formula did not earn promotion. External X1 quality remains not
+established because only 2/100 calls completed successfully.
+
+Start with the [Cycle 2 final decision](docs/cycle2/FINAL_DECISION.md),
+[end-to-end results](docs/cycle2/END_TO_END_RESULTS.md), and
+[next-cycle candidates](docs/cycle2/NEXT_CYCLE_CANDIDATES.md).
+
 ## Guardian Next experimental branch
 
 This branch starts from frozen V5.3 commit
