@@ -65,6 +65,14 @@ candidate freeze; fresh gate; sealed blind predictions/gold join; all result JSO
 certificate JSONL, failure audit, result documents, final manifest and final decision.
 The 23 requirement rows remain unverified until their authoritative evidence exists.
 
+Frozen Goal/Plan development v1 completed: all 22 rows (11 independent semantic
+inputs), 22/22 transport, 15/22 schema-valid, 22/22 unresolved, zero definitive
+certificates, zero downstream binary gain over X0. Predictions were sealed before
+scoring; per-case failure audit and GOAL_PLAN_RESULTS.md precede any repair.
+This contradicts readiness of the current large Goal/Plan frontend/lowering,
+not the full architecture objective. Semantic/schema causes remain explicit.
+Current full project units: 825 passed, including five new claim-scoring checks.
+
 Fresh development provider gate v1: 12/12 transport, schema and controlled
 semantic microtasks; latency p50 4860.504 ms, p95 6805.173 ms; 5354 reported
 tokens. A preceding connection smoke succeeded. Artifacts and per-case failure
