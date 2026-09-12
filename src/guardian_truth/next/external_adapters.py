@@ -11,6 +11,7 @@ from __future__ import annotations
 
 from copy import deepcopy
 from dataclasses import asdict, dataclass
+import ast
 import hashlib
 import json
 from pathlib import Path
@@ -89,6 +90,17 @@ class ExternalCase:
 
     def to_audit_dict(self) -> dict[str, Any]:
         return asdict(self)
+
+
+@dataclass(frozen=True)
+class ToolSchemaDiagnostic:
+    source: str
+    source_revision: str
+    artifact_path: str
+    source_sha256: str
+    functions: tuple[dict[str, Any], ...]
+    evaluation_scope: str = "TOOL_SCHEMA_OOD_ONLY"
+    label: None = None
 
 
 def _require_mapping(value: Any, field: str) -> Mapping[str, Any]:
@@ -395,6 +407,49 @@ def adapt_toolsandbox(record: Mapping[str, Any], *, artifact_path: str) -> Exter
     )
 
 
+def _decorator_name(node: ast.expr) -> str | None:
+    if isinstance(node, ast.Call):
+        return _decorator_name(node.func)
+    if isinstance(node, ast.Name):
+        return node.id
+    if isinstance(node, ast.Attribute):
+        return node.attr
+    return None
+
+
+def inspect_toolsandbox_tool_source(source_text: str, *, artifact_path: str) -> ToolSchemaDiagnostic:
+    """Statically enumerate registered tools; never import or execute source."""
+    if not isinstance(source_text, str):
+        raise ExternalAdapterError("ToolSandbox source must be text")
+    try:
+        tree = ast.parse(source_text, filename=artifact_path)
+    except SyntaxError as exc:
+        raise ExternalAdapterError(f"invalid ToolSandbox Python source: {artifact_path}") from exc
+    functions = []
+    for node in tree.body:
+        if not isinstance(node, (ast.FunctionDef, ast.AsyncFunctionDef)):
+            continue
+        decorators = {_decorator_name(item) for item in node.decorator_list}
+        if "register_as_tool" not in decorators or node.name.startswith("_"):
+            continue
+        arguments = [item.arg for item in (*node.args.posonlyargs, *node.args.args, *node.args.kwonlyargs)]
+        docstring = ast.get_docstring(node, clean=False) or ""
+        functions.append({
+            "name": node.name,
+            "arguments": arguments,
+            "is_async": isinstance(node, ast.AsyncFunctionDef),
+            "docstring_sha256": hashlib.sha256(docstring.encode("utf-8")).hexdigest(),
+        })
+    functions.sort(key=lambda item: item["name"])
+    return ToolSchemaDiagnostic(
+        source="ToolSandbox",
+        source_revision=PINNED_SOURCES["ToolSandbox"]["commit"],
+        artifact_path=artifact_path,
+        source_sha256=hashlib.sha256(source_text.encode("utf-8")).hexdigest(),
+        functions=tuple(functions),
+    )
+
+
 def adapt_bfcl(record: Mapping[str, Any], *, artifact_path: str) -> ExternalCase:
     """Preserve one BFCL row for independent tool/capability OOD diagnostics."""
     record = _require_mapping(record, "record")
@@ -540,10 +595,19 @@ def external_readiness(
     source_reports = []
     for entry in manifest.get("sources", []):
         source_blockers = []
+        disposition = entry.get("run_disposition")
+        allowed_dispositions = {
+            "included_end_to_end", "included_diagnostic", "documented_unavailable"
+        }
+        if disposition not in allowed_dispositions:
+            source_blockers.append("run disposition is not frozen")
         if not entry.get("selected_files"):
             source_blockers.append("selected_files is empty")
-        if entry.get("license_review") != "accepted_for_evaluation":
-            source_blockers.append("license review is not accepted_for_evaluation")
+        if entry.get("license_review") not in {
+            "accepted_for_local_evaluation",
+            "accepted_for_local_evaluation_no_redistribution",
+        }:
+            source_blockers.append("license review is not accepted for local evaluation")
         if entry.get("adapter_status") != "implemented_tested":
             source_blockers.append("adapter is not implemented_tested")
         if entry.get("subset_policy_status") != "frozen":
@@ -553,15 +617,32 @@ def external_readiness(
         if entry.get("split_policy_status") != "frozen_grouped":
             source_blockers.append("grouped split policy is not frozen")
         budget = entry.get("sample_budget")
-        if type(budget) is not int or budget < 1:
+        if disposition == "documented_unavailable":
+            if budget != 0:
+                source_blockers.append("unavailable source sample budget must be zero")
+        elif type(budget) is not int or budget < 1:
             source_blockers.append("sample budget is not frozen")
+        availability = entry.get("artifact_availability_status")
+        expected_availability = {
+            "included_end_to_end": {"native_artifacts_present"},
+            "included_diagnostic": {"native_artifacts_present", "diagnostic_source_ready"},
+            "documented_unavailable": {"documented_no_recorded_artifact"},
+        }
+        if disposition in expected_availability and availability not in expected_availability[disposition]:
+            source_blockers.append("artifact availability does not match run disposition")
         if source_roots is None or entry.get("name") not in source_roots:
             source_blockers.append("local pinned snapshot was not verified")
         else:
             snapshot = verify_source_snapshot(entry, source_roots[entry["name"]])
             source_blockers.extend(snapshot["blockers"])
         blockers.extend(f"{entry.get('name')}: {item}" for item in source_blockers)
-        source_reports.append({"name": entry.get("name"), "ready": not source_blockers, "blockers": source_blockers})
+        source_reports.append({
+            "name": entry.get("name"),
+            "disposition": disposition,
+            "ready": not source_blockers,
+            "runnable": not source_blockers and disposition != "documented_unavailable",
+            "blockers": source_blockers,
+        })
     return {
         "schema_version": "guardian-next-external-readiness-v1",
         "manifest_sha256": _canonical_hash(manifest),

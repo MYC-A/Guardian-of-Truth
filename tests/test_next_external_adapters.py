@@ -12,6 +12,7 @@ from guardian_truth.next.external_adapters import (
     adapt_tau_bench,
     adapt_toolsandbox,
     external_readiness,
+    inspect_toolsandbox_tool_source,
     load_external_manifest,
     verify_source_snapshot,
 )
@@ -152,6 +153,17 @@ def test_toolsandbox_is_diagnostic_and_never_gets_inferred_label():
     assert "similarity" not in json.dumps(case.model_view())
 
 
+def test_toolsandbox_source_inspection_is_static_and_emits_no_source_text(tmp_path):
+    marker = tmp_path / "must_not_exist"
+    source = f'''\nraise RuntimeError("must not execute")\n@register_as_tool(visible_to=(RoleType.AGENT,))\ndef remove_contact(person_id: str) -> None:\n    """Remove a contact."""\n    open({str(marker)!r}, "w").write("executed")\n'''
+    diagnostic = inspect_toolsandbox_tool_source(source, artifact_path="tool_sandbox/tools/contact.py")
+    assert not marker.exists()
+    assert diagnostic.label is None
+    assert diagnostic.functions[0]["name"] == "remove_contact"
+    assert diagnostic.functions[0]["arguments"] == ["person_id"]
+    assert "Remove a contact" not in json.dumps(diagnostic.functions)
+
+
 def test_bfcl_is_independent_schema_diagnostic_not_fake_trajectory():
     record = {
         "id": "multi_turn_base_0",
@@ -177,8 +189,9 @@ def test_manifest_is_pinned_but_fail_closed_until_every_freeze_is_complete(tmp_p
     assert report["safe_to_run_blind"] is False
     assert report["blind_evaluation_executed"] is False
     assert len(report["sources"]) == 5
-    assert all(not source["ready"] for source in report["sources"])
-    assert any("selected_files is empty" in item for item in report["blockers"])
+    assert any(not source["ready"] for source in report["sources"])
+    assert any("guardian_freeze" in item or "evaluation_freeze" in item
+               for item in report["blockers"])
 
     changed = json.loads(manifest_path.read_text(encoding="utf-8"))
     changed["sources"][0]["commit"] = "0" * 40
