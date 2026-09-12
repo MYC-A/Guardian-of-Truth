@@ -58,5 +58,19 @@ python -m guardian_truth.cycle2.evaluate model-gate `
 
 The machine-readable result is `outputs/cycle2/model_gate.json`. If no candidate
 passes, its status is `EVALUATION_BLOCKED_BY_PROVIDER` and the P1/P2/P3 runner
-must refuse to start. At this commit the protocol is implemented and frozen;
-no Cycle 2 remote gate has yet been executed.
+must refuse to start.
+
+## Observed Cycle 2 run
+
+The frozen gate was executed without changing its schema or thresholds:
+
+| Provider/model | Attempts | Transport | Schema-valid | Semantic evaluated | Result |
+|---|---:|---:|---:|---:|---|
+| Groq / `openai/gpt-oss-120b` | 0 | 0 | 0 | 0 | local `INVALID_API_KEY`; not an available candidate |
+| TokenHarbor / `deepseek-v4-flash:free` | 16 | 0 | 0 | 0 | all 16 calls were sanitized `http_request` rejections |
+
+TokenHarbor produced no 429, 5xx, or timeout in this run, but also no accepted
+structured-output request. Therefore its semantic quality is `null`, not zero.
+The rotated credential value was never serialized. Overall status is
+`EVALUATION_BLOCKED_BY_PROVIDER`, so no remote P1/P2/P3 call is permitted from
+this result.

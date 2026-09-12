@@ -145,6 +145,16 @@ class RuntimeTests(unittest.TestCase):
             detector=make_detector(backend='tokenharbor')
         self.assertEqual(detector.semantic.client.config.base_url,'https://tokenharbor.ai/v1')
         self.assertEqual(detector.semantic.client.config.api_key_env,'tokenharborai_api_key')
+
+    def test_rotated_tokenharbor_alias_has_priority_over_exposed_alias(self):
+        values = {
+            'tokenharborai_api_key_new': 'rotated-test-key',
+            'tokenharborai_api_key': 'old-test-key',
+        }
+        with patch.dict(os.environ, values, clear=True):
+            detector = make_detector(backend='tokenharbor')
+        self.assertEqual(detector.semantic.client.config.api_key_env,
+                         'tokenharborai_api_key_new')
         self.assertEqual(detector.semantic.client.config.model,'deepseek-v4-flash:free')
 
     def test_decomposed_runtime_is_explicit_and_defaults_remain_one_shot(self):

@@ -15,6 +15,7 @@ def load_env_file(path: Path | str = '.env') -> bool:
                'CEREBRAS_API_KEY', 'cerebras_api_key', 'CEREBRAS_MODEL', 'cerebras_model',
                'NVIDIA_API_KEY', 'nvidia_api_key', 'NVIDIA_MODEL', 'nvidia_model',
                'TOKENHARBOR_API_KEY', 'tokenharborai_api_key',
+               'TOKENHARBOR_API_KEY_NEW', 'tokenharborai_api_key_new',
                'TOKENHARBOR_MODEL', 'tokenharborai_model',
                'GUARDIAN_API_KEY', 'GUARDIAN_MODEL', 'GUARDIAN_BASE_URL',
                'GUARDIAN_LOCAL_API_KEY', 'GUARDIAN_LOCAL_BASE_URL',

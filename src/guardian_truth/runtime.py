@@ -27,7 +27,8 @@ PROVIDER_ALIASES = {
     'mistral': (('MISTRAL_API_KEY','mistral_api_key'),('MISTRAL_MODEL','mistral_model')),
     'cerebras': (('CEREBRAS_API_KEY','cerebras_api_key'),('CEREBRAS_MODEL','cerebras_model')),
     'nvidia': (('NVIDIA_API_KEY','nvidia_api_key'),('NVIDIA_MODEL','nvidia_model')),
-    'tokenharbor': (('TOKENHARBOR_API_KEY','tokenharborai_api_key'),
+    'tokenharbor': (('TOKENHARBOR_API_KEY_NEW','tokenharborai_api_key_new',
+                     'TOKENHARBOR_API_KEY','tokenharborai_api_key'),
                     ('TOKENHARBOR_MODEL','tokenharborai_model')),
 }
 
