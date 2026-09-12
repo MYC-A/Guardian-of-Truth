@@ -317,4 +317,5 @@ def test_unknown_material_response_span_blocks_known_plan_violation():
     assert len(output.claim_graph.claims) == 1
     assert output.claim_graph.claims[0].disposition.value == "UNKNOWN_SEMANTICS"
     assert output.result.status is CoreStatus.UNRESOLVED
+    assert output.result.diagnostics.blocked_claims == ("s0",)
     assert output.result.certificate is None

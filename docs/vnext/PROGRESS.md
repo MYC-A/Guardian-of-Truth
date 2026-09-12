@@ -55,7 +55,7 @@ conditions/effects, ambiguous mappings and world-budget overflow remain explicit
 See CORE_INTEGRATION.md; general scalar/alias/causal lowering and automatic
 escalation callback construction remain partial, not established semantic gains.
 
-Current full project verification: 804 tests pass (the earlier checkpoint below
+Current full project verification: 809 tests pass (the earlier checkpoint above
 still records its original 773-test snapshot unchanged).
 
 Remaining: general semantic lowering and automatic escalation orchestration;

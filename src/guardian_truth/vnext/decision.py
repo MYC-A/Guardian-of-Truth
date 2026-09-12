@@ -10,7 +10,7 @@ from .ledger import EvidenceLedger
 from .proof_records import ProofCertificate, ProofProblem, WorldProof
 from .solver import make_certificate, solve
 from .tools import ContractRegistry
-from .types import CoreStatus, Diagnostics, Reason, Truth
+from .types import CoreStatus, Diagnostics, Disposition, Reason, Truth
 
 
 @dataclass(frozen=True)
@@ -48,6 +48,8 @@ def decide(problem: ProofProblem, ledger: EvidenceLedger, registry: ContractRegi
                      if primitive.value is Truth.UNKNOWN}
     blocked_claims = tuple(dict.fromkeys(obligation.claim_id for world in problem.worlds for obligation in world.obligations
                           if obligation.claim_id is not None and obligation.atom.atom_id in blocked_atoms))
+    blocked_claims = tuple(dict.fromkeys((*blocked_claims,
+        *(claim.claim_id for claim in context.claims if claim.disposition is Disposition.UNKNOWN_SEMANTICS))))
     blocked_hypotheses = tuple(dict.fromkeys(obligation.hypothesis_id for world in problem.worlds
                                for obligation in world.obligations if world.unresolved_reasons
                                or obligation.atom.atom_id in blocked_atoms))
