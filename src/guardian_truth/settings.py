@@ -17,6 +17,8 @@ def load_env_file(path: Path | str = '.env') -> bool:
                'TOKENHARBOR_API_KEY', 'tokenharborai_api_key',
                'TOKENHARBOR_API_KEY_NEW', 'tokenharborai_api_key_new',
                'TOKENHARBOR_MODEL', 'tokenharborai_model',
+               'BAI_API_KEY', 'B_AI_API_KEY', 'b_ai_api_key',
+               'BAI_MODEL', 'B_AI_MODEL', 'b_ai_model',
                'GUARDIAN_API_KEY', 'GUARDIAN_MODEL', 'GUARDIAN_BASE_URL',
                'GUARDIAN_LOCAL_API_KEY', 'GUARDIAN_LOCAL_BASE_URL',
                'GUARDIAN_LLM_BASE_URL', 'GUARDIAN_LLM_MODEL', 'GUARDIAN_LLM_API_KEY_ENV',

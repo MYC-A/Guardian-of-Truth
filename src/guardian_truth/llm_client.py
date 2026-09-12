@@ -279,6 +279,7 @@ class ChatClient:
             openrouter = hostname == 'openrouter.ai'
             uses_max_tokens = openrouter or hostname in {
                 'api.mistral.ai', 'integrate.api.nvidia.com', 'tokenharbor.ai',
+                'api.b.ai',
             }
             payload = {
                 "model": self.config.model,

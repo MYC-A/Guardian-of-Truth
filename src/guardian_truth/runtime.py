@@ -18,9 +18,12 @@ REMOTE_PROVIDERS = {
     'cerebras': ('api.cerebras.ai', 'https://api.cerebras.ai/v1', 'CEREBRAS_API_KEY'),
     'nvidia': ('integrate.api.nvidia.com', 'https://integrate.api.nvidia.com/v1', 'NVIDIA_API_KEY'),
     'tokenharbor': ('tokenharbor.ai', 'https://tokenharbor.ai/v1', 'TOKENHARBOR_API_KEY'),
+    'bai': ('api.b.ai', 'https://api.b.ai/v1', 'BAI_API_KEY'),
 }
 
 PROVIDER_ALIASES = {
+    'bai': (('BAI_API_KEY', 'B_AI_API_KEY', 'b_ai_api_key'),
+            ('BAI_MODEL', 'B_AI_MODEL', 'b_ai_model')),
     'openrouter': (('OPENROUTER_API_KEY','OPENROUTE_API_KEY'),
                    ('OPENROUTER_MODEL','OPENROUTE_MODEL')),
     'gemini': (('GEMINI_API_KEY','GEMENI_API_KEY'),('GEMINI_MODEL','GEMENI_MODEL')),
@@ -33,6 +36,7 @@ PROVIDER_ALIASES = {
 }
 
 PROVIDER_DEFAULT_MODELS = {
+    'bai': 'qwen3.8-flash',
     'mistral': 'mistral-small-latest',
     'cerebras': 'gpt-oss-120b',
     'nvidia': 'openai/gpt-oss-120b',
@@ -98,7 +102,7 @@ def make_detector(*, backend='none', mode='graph', model=None, base_url=None,
 
 
 def add_runtime_arguments(parser):
-    parser.add_argument('--backend', choices=('none','groq','openrouter','gemini','mistral','cerebras','nvidia','tokenharbor','local'), default='none')
+    parser.add_argument('--backend', choices=('none', *REMOTE_PROVIDERS, 'local'), default='none')
     parser.add_argument('--mode', choices=('direct','graph','rlm'), default='graph')
     parser.add_argument('--model')
     parser.add_argument('--base-url')
