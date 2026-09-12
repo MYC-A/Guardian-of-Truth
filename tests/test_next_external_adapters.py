@@ -181,7 +181,7 @@ def test_bfcl_is_independent_schema_diagnostic_not_fake_trajectory():
     assert case.model_view()["context"]["initial_config"] == record["initial_config"]
 
 
-def test_manifest_is_pinned_but_fail_closed_until_every_freeze_is_complete(tmp_path):
+def test_manifest_is_frozen_but_fail_closed_without_verified_local_snapshots(tmp_path):
     manifest_path = ROOT / "contracts" / "external_sources_v1.json"
     manifest = load_external_manifest(manifest_path)
     report = external_readiness(manifest)
@@ -190,7 +190,7 @@ def test_manifest_is_pinned_but_fail_closed_until_every_freeze_is_complete(tmp_p
     assert report["blind_evaluation_executed"] is False
     assert len(report["sources"]) == 5
     assert any(not source["ready"] for source in report["sources"])
-    assert any("guardian_freeze" in item or "evaluation_freeze" in item
+    assert any("local pinned snapshot was not verified" in item
                for item in report["blockers"])
 
     changed = json.loads(manifest_path.read_text(encoding="utf-8"))
