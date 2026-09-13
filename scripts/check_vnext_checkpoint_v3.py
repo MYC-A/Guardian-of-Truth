@@ -1,5 +1,6 @@
 """Record actual read-only unit/integrity checks and stage artifact availability."""
 
+import argparse
 import json
 from pathlib import Path
 import re
@@ -18,6 +19,11 @@ def head(directory):
 
 
 def main():
+    parser = argparse.ArgumentParser(description=__doc__)
+    parser.add_argument('--version', required=True)
+    args = parser.parse_args()
+    if not re.fullmatch(r'v[1-9][0-9]*', args.version):
+        raise ValueError('safe new checkpoint version required')
     output = ROOT / 'outputs/vnext'
     manifest = json.loads((output / 'freeze_manifest.json').read_text(encoding='utf-8'))
     errors = verify_files(ROOT, manifest['frozen_input_sha256']) + verify_files(ROOT, manifest['regression_input_sha256'])
@@ -51,7 +57,7 @@ def main():
         'integrity_errors': errors, 'protected_heads': protected, 'model_stages': stages,
         'api_requests': 0, 'blind_gold_read': False, 'whole_core_blind_end_to_end': 'NOT_RUN',
         'supersedes_scope_label': 'v10 ran pytest tests -q (1053 tests); this checkpoint records unrestricted discovery with its exact command; original receipt preserved'}
-    write_new(output / 'checkpoint_checks_v11.json', report)
+    write_new(output / ('checkpoint_checks_' + args.version + '.json'), report)
     print(json.dumps({'status': report['status'], 'tests_passed': report['full_project_units']['passed'],
         'integrity_errors': len(errors), 'api_requests': 0}))
     return 0 if good else 1

@@ -171,6 +171,18 @@ are still pending. See POLICY_PROGRAM_V2_BOUNDARIES.md. Twenty-seven controlled
 frontend/wire/scoring tests pass; full project verification is 1059 passed,
 not model quality or end-to-end gain. Frozen Goal/T2 source is unchanged.
 
+Factual invocation v3 now connects original source, the deterministic C2 graph,
+source-owned identity/field indexes, value-aware narrow meanings and independently
+rechecked primitive receipts. It preserves numeric/scalar types, all compatible
+record/result alternatives and original span dispositions. Target-forged roles
+or TOOL results do not create evidence; USER/ASSISTANT source attribution is not
+interchanged. Receipts certify conditional exact-field evidence, never current
+state/completion/causality or a whole-Core verdict. Fifty new controlled checks
+pass; full project verification is 1109 passed. See
+FACTUAL_INVOCATION_V3_BOUNDARIES.md for missing joint Core/certificate composition
+and source-adapter limitations. No frozen model-stage source was edited, no
+parallel API batch was started and no blind gold was opened.
+
 Checkpoint commits: protocol `8e9c3fb`; types/ledger `8e87649`; Claim Graph
 `e69a406`; T1/T2 `9e0b2f4`; policy/Goal `f0fb124`; indexed Binder `f562c8b`;
 T1 evaluator `8d2c532`; T1 pre-prediction freeze `af2e3ee`.
