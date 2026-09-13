@@ -33,6 +33,20 @@ The general `core.py` still imports `goals.parse_goal_plan`, not Goal v3.
 `external_factual_runtime_v6.py` explicitly excludes Goal/Policy composition.
 No Goal v3 + Core integrated verdict or external holdout result exists.
 
+The current v3 solver also labels **every** `PROVED_ERROR` world as
+`PROVED_OUT_OF_SCOPE`. That conflates an action's relation to the goal with a
+separate explicit prerequisite violation: a status read can be goal-aligned
+while still violating a required identity check. The existing 36-case gold
+annotates alignment on only 10 cases, so its 10/10 alignment score does not
+test this distinction. The new benchmark must score alignment and obligation
+status as separate axes; this is a recorded code/design gap, not a silent fix
+to the sealed offline baseline.
+The fixture query primitives distinguish an attempted call from a qualifying
+result field but do not yet represent an independently confirmed business
+effect, free-text intent versus completion, or current versus historical
+state as general Goal facts. These are missing Goal-only semantic axes, not
+passing invariants inferred from the 36-case result.
+
 ## Document/code divergence
 
 `GOAL_PLAN_V3_DESIGN.md` specifies an open-vocabulary, source-grounded
