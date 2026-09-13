@@ -20,10 +20,12 @@ class ExternalFactualAnalysisV6:
 
 
 def analyze_external_factual_v6(case, snapshots, registry, methods, backend, *, declared_goal_actor,
-        history_complete=False, completeness_basis=None):
+        declared_plan_actor="unknown", history_complete=False, completeness_basis=None):
     views = make_external_source_views_v6(case, declared_goal_actor=declared_goal_actor,
+        declared_plan_actor=declared_plan_actor,
         history_complete=history_complete, completeness_basis=completeness_basis)
     valid = validate_external_source_views_v6(views, case, declared_goal_actor=declared_goal_actor,
+        declared_plan_actor=declared_plan_actor,
         history_complete=history_complete, completeness_basis=completeness_basis)
     if not valid:
         raise ValueError("original source projection does not replay")

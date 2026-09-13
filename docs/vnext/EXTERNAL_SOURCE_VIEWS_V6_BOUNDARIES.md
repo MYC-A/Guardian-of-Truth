@@ -26,8 +26,11 @@ unknown source authority and cannot become SYSTEM instructions. Unknown authorit
 blocks history closure, even if the caller supplied a complete-history premise.
 
 The caller must state the authority of the declared-goal input: user, system or
-unknown. This is an auditable application premise, not something inferred from
-words such as SYSTEM in the goal. Declared-plan text does not make order mandatory.
+unknown. Plan provenance is separate: USER, SYSTEM, ASSISTANT or UNKNOWN; absent
+an explicit plan-source premise, it defaults to UNKNOWN. A plan adjacent to a
+USER goal does not inherit USER authority. These are auditable application
+premises, not inferred from words such as SYSTEM inside either text. Even a
+USER-authored list does not, by itself, make its order mandatory.
 Source-derived argument signatures are preserved separately and do not supply
 business semantics or actual provider schema hashes. Agent-authored provider,
 version and schema-hash fields in action payloads cannot select a trusted T1

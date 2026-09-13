@@ -32,6 +32,7 @@ class ExternalSourceViewsV6:
     target_call_identity: ToolIdentity | None
     signature_catalog_json: str
     declared_goal_actor: str
+    declared_plan_actor: str
     limitations: tuple[str, ...] = LIMITATIONS
     scope: str = "EXPLICIT_SOURCE_FORMAT_PROJECTION_NOT_SEMANTIC_AUTHORITY_OR_CORE_VERDICT"
 
@@ -48,7 +49,8 @@ def _tool(action):
     return ToolIdentity(name)
 
 
-def make_external_source_views_v6(case, *, declared_goal_actor, history_complete=False, completeness_basis=None):
+def make_external_source_views_v6(case, *, declared_goal_actor, declared_plan_actor="unknown",
+        history_complete=False, completeness_basis=None):
     """Adapt a label-free external format, requiring explicit authority premises.
 
     This does not read a dataset, choose cases, localize a drift step or access
@@ -60,6 +62,8 @@ def make_external_source_views_v6(case, *, declared_goal_actor, history_complete
         raise ValueError("exact label-free external source fields required")
     if declared_goal_actor not in {"user", "system", "unknown"}:
         raise ValueError("explicit source declaration authority required")
+    if declared_plan_actor not in {"user", "system", "assistant", "unknown"}:
+        raise ValueError("explicit plan-source authority or conservative unknown required")
     if (type(history_complete) is not bool
             or history_complete and (not isinstance(completeness_basis, str) or not completeness_basis)):
         raise ValueError("complete relevant history requires an explicit source premise")
@@ -85,7 +89,8 @@ def make_external_source_views_v6(case, *, declared_goal_actor, history_complete
         frames.append(SourceFrame(span, span, actor, kind, tool, transport, requestor))
         prompt += body + "\n"
 
-    append(canonical(normative).decode(), declared_goal_actor)
+    append(canonical({"declared_goal": normative["declared_goal"]}).decode(), declared_goal_actor)
+    append(canonical({"declared_plan": normative["declared_plan"]}).decode(), declared_plan_actor)
     for index, step in enumerate(history):
         if (not isinstance(step, dict) or set(step) - {"index", "thought", "action", "observation"}
                 or step.get("index") != index or type(step.get("index")) is not int):
@@ -120,6 +125,7 @@ def make_external_source_views_v6(case, *, declared_goal_actor, history_complete
         span = Span("response", 0, len(thought))
         text_frames += (SourceFrame(span, span, "assistant", "text"),)
     source_hash = digest({"case": case, "declared_goal_actor": declared_goal_actor,
+        "declared_plan_actor": declared_plan_actor,
         "history_complete": history_complete, "completeness_basis": completeness_basis})
     provenance = "application external source-format projection sha256=" + source_hash + "; original step association supplies pairing"
     text_envelope = SourceEnvelope(prompt, thought, text_frames, "external-source-views", "v6-text", provenance,
@@ -132,15 +138,17 @@ def make_external_source_views_v6(case, *, declared_goal_actor, history_complete
     action_envelope = SourceEnvelope(prompt, action_response, action_frames, "external-source-views", "v6-action", provenance,
         history_complete, completeness_basis)
     return ExternalSourceViewsV6(source_hash, text_envelope, action_envelope, canonical(action).decode(), action_span,
-        identity, canonical(signatures).decode(), declared_goal_actor)
+        identity, canonical(signatures).decode(), declared_goal_actor, declared_plan_actor)
 
 
-def validate_external_source_views_v6(views, case, *, declared_goal_actor, history_complete=False, completeness_basis=None):
+def validate_external_source_views_v6(views, case, *, declared_goal_actor, declared_plan_actor="unknown",
+        history_complete=False, completeness_basis=None):
     """Replay source projection only; never validate NL meaning or a verdict."""
     if not isinstance(views, ExternalSourceViewsV6):
         return False
     try:
         return views == make_external_source_views_v6(case, declared_goal_actor=declared_goal_actor,
+            declared_plan_actor=declared_plan_actor,
             history_complete=history_complete, completeness_basis=completeness_basis)
     except (ValueError, TypeError):
         return False
