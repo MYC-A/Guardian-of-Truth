@@ -57,8 +57,9 @@ promises, attempted calls, tool names or late state observations.
 
 ## Exact remaining integration work
 
-- Generate and retain operational meaning/binding candidates with narrow semantic
-  tasks, grounding them against declared sources and real schemas/fields.
+- Operational interface/literal-path binding generation is now connected through
+  goal_invocation_v2. Extend it to nonliteral scope, conditional propositions and
+  later progress; see GOAL_BINDING_V2_BOUNDARIES.md for the supported boundaries.
 - Supply activation contracts only from documented original source protocols or
   explicit user declarations. Do not invent one to match benchmark gold.
 - Compose this Goal subsystem with policy, typed response claims, effect choices

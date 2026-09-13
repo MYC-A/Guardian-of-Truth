@@ -115,6 +115,28 @@ tokens. A preceding connection smoke succeeded. Artifacts and per-case failure
 audit are immutable; no blind inputs or labels were opened. This is not stage
 quality or final blind admission evidence; see PROVIDER_GATE.md.
 
+Latest continuation: Claim Graph v1 finished all 41 cases, with sealed predictions,
+100 archived frozen source files and immutable original/detailed failure audits.
+Both span detectors achieved F1 1.0 on fully annotated cases. The shared typed
+gain gate failed; unavailable C2 fields and exact-surface-form limitations remain
+explicit. Native transport was 409/410, all 409 received payloads schema-valid.
+See CLAIM_GRAPH_RESULTS.md. This is controlled development, not blind evidence.
+
+Goal v2 now has narrow source-owned operational binding generation and an
+explicit-backend invocation entry point. Multiple permitted tools in one meaning
+remain a set, distinct alternatives remain exhaustive worlds. No-plan GOAL
+conformance does not imply completed goal; no fresh activation is inferred.
+Extra proposition grounding, nonliteral scope, later progress, authoritative
+closure and single Core composition remain incomplete. See
+GOAL_BINDING_V2_BOUNDARIES.md. No new live requests or blind gold reads were made
+by these implementation/audit checks.
+Full project verification at this continuation: 968 tests passed; read-only
+verification of all 100 Claim Graph v1 frozen source hashes found zero errors.
+The new native Goal v2 stage runner freezes committed implementation and exact
+request hashes, persists safe schema diagnostics, seals all predictions before
+controlled gold scoring and produces per-case failure taxonomy. It uses no
+invented activation contract; Goal-layer metrics are not reported as full Core.
+
 Checkpoint commits: protocol `8e9c3fb`; types/ledger `8e87649`; Claim Graph
 `e69a406`; T1/T2 `9e0b2f4`; policy/Goal `f0fb124`; indexed Binder `f562c8b`;
 T1 evaluator `8d2c532`; T1 pre-prediction freeze `af2e3ee`.

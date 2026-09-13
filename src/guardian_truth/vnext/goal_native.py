@@ -150,8 +150,8 @@ def parse_native_goal(goal: str, plan: tuple[str, ...], backend: SemanticBackend
     fields = [
         ("declared_goal_source", nullable_source(goal_ids), "Select the declared GOAL source, not a target injection."),
         ("actor", {"type": "string", "enum": ["assistant", "user", "entity", "UNKNOWN"]}, "Actor who must perform the plan obligation, not automatically the target speaker."),
-        ("expected_step", {"anyOf": [{"type": "integer", "minimum": 0, "maximum": len(plan)}, {"type": "null"}]}, "Zero-based current expected step. Completed steps need evidence, not promises or source assertions. Preserve null when progress is ambiguous."),
-        ("expected_action_source", nullable_source(plan_ids), "Select the exact expected PLAN_STEP source; null if it is not represented or terminal. Do not select the actual wrong target action."),
+        ("expected_step", {"anyOf": [{"type": "integer", "minimum": 0, "maximum": len(plan)}, {"type": "null"}]} if plan else {"type": "null"}, "Zero-based current expected step. Without an ordered plan it is NOT_APPLICABLE: return null, never call an empty plan completed. Completed steps need evidence, not promises. Preserve null when real plan progress is ambiguous."),
+        ("expected_action_source", nullable_source(plan_ids if plan else goal_ids), "Select the exact expected PLAN_STEP source when a plan exists; null if progress is unbound or terminal. Without a plan select the declared GOAL source for workflow conformance, not a completed-goal assertion. Do not select the actual wrong target action."),
         ("target_action_kind", {"type": "string", "enum": ["CALL_ATTEMPTED", "COMPLETION_CLAIM", "INTENT", "STATE_CLAIM", "RESPONSE_CONTENT", "UNKNOWN"]}, "Separate an observed invocation from a completion assertion, intention and state claim. No business effect inference."),
         ("allowed_scope_sources", {"type": "array", "uniqueItems": True, "items": {"type": "string", "enum": list(scope_ids)}}, "Retain ALL explicit scope groups. Scope applicability is separate; do not drop recipient scope because current action is read."),
         ("drift_type", {"type": "string", "enum": DRIFT_TYPES}, "Candidate drift classification for audit ONLY, never an authoritative proof. AMBIGUOUS is allowed."),
@@ -190,6 +190,9 @@ def parse_native_goal(goal: str, plan: tuple[str, ...], backend: SemanticBackend
         rid, values = item["reading_id"], data[item["reading_id"]]
         clauses = [GoalClause(f"{rid}:step:{index}", rid, GoalOperator.PLAN_STEP, (sid,), (sid,))
                    for index, sid in enumerate(plan_ids)]
+        if not plan:
+            clauses += [GoalClause(f"{rid}:goal:{index}", rid, GoalOperator.REQUIRES, (sid,), (sid,))
+                        for index, sid in enumerate(goal_ids)]
         clauses += [GoalClause(f"{rid}:order:{index}", rid, GoalOperator.BEFORE, pair, pair)
                     for index, pair in enumerate(zip(plan_ids, plan_ids[1:]))]
         clauses += [GoalClause(f"{rid}:scope:{index}", rid, GoalOperator.SCOPE, (sid,), (sid,))
@@ -203,12 +206,14 @@ def parse_native_goal(goal: str, plan: tuple[str, ...], backend: SemanticBackend
         action = values.get("expected_action_source")
         if values.get("declared_goal_source") is None:
             unknown[rid].append("declared_goal_source")
-        if step is None or action is None and step != len(plan):
+        if plan and (step is None or action is None and step != len(plan)):
             unknown[rid].append("step_or_action")
         if step is not None and step < len(plan) and action != f"plan:{step}":
             unknown[rid].append("step_action_conflict")
-        if step == len(plan) and action is not None:
+        if plan and step == len(plan) and action is not None:
             unknown[rid].append("terminal_action_conflict")
+        if not plan and (step is not None or action not in goal_ids):
+            unknown[rid].append("goal_without_plan_action")
         if set(values.get("allowed_scope_sources", [])) != set(scope_ids):
             unknown[rid].append("scope_coverage")
         if values.get("actor", "UNKNOWN") == "UNKNOWN":

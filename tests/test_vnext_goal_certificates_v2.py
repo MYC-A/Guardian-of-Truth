@@ -5,6 +5,7 @@ import pytest
 
 from guardian_truth.vnext import goal_certificate_v2
 from guardian_truth.vnext.goal_certificate_v2 import check_goal_certificate, checked_clause_value
+from guardian_truth.vnext.goal_call_membership_v2 import GoalCallMembershipAtom
 from guardian_truth.vnext.goal_native import GoalClause, GoalOperator, NativeGoalParse, NativeGoalReading, source_inventory
 from guardian_truth.vnext.goal_proof_records_v2 import GoalBindingChoice, GoalProofContext, GoalRoleBinding
 from guardian_truth.vnext.goal_progress_v2 import PlanActivation, PlanProgressAtom, PlanProgressKind, prove_plan_progress
@@ -35,10 +36,12 @@ def fixture(path="/secret", *, predicates=("read",), complete=True, plan=()):
     text, sources = source_inventory(goal, plan, scope)
     clauses = tuple(GoalClause(f"r0:step:{i}", "r0", GoalOperator.PLAN_STEP, (f"plan:{i}",), (f"plan:{i}",))
                     for i in range(len(plan)))
+    if not plan:
+        clauses += (GoalClause("r0:goal:0", "r0", GoalOperator.REQUIRES, ("goal:0",), ("goal:0",)),)
     clauses += (GoalClause("r0:scope:0", "r0", GoalOperator.SCOPE, ("scope:0",), ("scope:0",)),
                 GoalClause("r0:extra:0", "r0", GoalOperator.NO_EXTRA_CONSTRAINT, ("goal:0",), ()))
     reading = NativeGoalReading("r0", "scope applies to the proposed read interface", ("goal:0", "scope:0"),
-        "goal:0", "assistant", 0, "plan:0" if plan else None, "CALL_ATTEMPTED", ("scope:0",),
+        "goal:0", "assistant", 0 if plan else None, "plan:0" if plan else "goal:0", "CALL_ATTEMPTED", ("scope:0",),
         "SCOPE_EXPANSION", clauses, ())
     parsed = NativeGoalParse(text, sources, (reading,), SemanticCoverage(CoverageStatus.EMPIRICALLY_COVERED, None, False), ())
     choices = []
@@ -49,6 +52,9 @@ def fixture(path="/secret", *, predicates=("read",), complete=True, plan=()):
             argument_constraints=(ArgumentConstraint(("path",), ('"/report"', '"/appendix"')),))
         bindings = (GoalRoleBinding("scope:0", "scope_applicable", applicability, ("scope:0",)),
                     GoalRoleBinding("scope:0", "scope_compliant", compliance, ("scope:0",)))
+        if not plan:
+            bindings += (GoalRoleBinding("goal:0", "proposition", GoalCallMembershipAtom(f"goal:{index}", "goal:0",
+                entity, "assistant", target.index, target.call_id, ("read",)), ("goal:0",)),)
         choices.append(GoalBindingChoice(f"binding:{index}", "r0", bindings))
     context = GoalProofContext(goal, plan, encoded_scope, prompt, response, metadata, parsed, tuple(choices),
                                "frozen supplied empirical meaning choices; not NL completeness", complete)
@@ -171,7 +177,7 @@ def test_checker_does_not_import_solver_compiler_or_formula_evaluator():
 def test_independent_checker_matches_compiler_on_actual_primitive_bindings(operator):
     from guardian_truth.vnext.goal_formula import compile_goal_clause, evaluate_compiled_clause
     context, ledger = fixture()
-    first, second = context.choices[0].bindings
+    first, second = context.choices[0].bindings[:2]
     bindings = {("goal:0", "proposition"): replace(first, source_id="goal:0"),
                 ("scope:0", "proposition"): second}
     primitives = {binding.atom.atom_id: prove_atom(binding.atom, ledger, LedgerIndex(ledger), REGISTRY)

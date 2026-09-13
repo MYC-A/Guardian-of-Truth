@@ -3,6 +3,7 @@
 from dataclasses import dataclass
 
 from .goal_native import NativeGoalParse
+from .goal_call_membership_v2 import GoalCallMembershipAtom, GoalCallMembershipProof
 from .goal_progress_v2 import PlanActivation, PlanProgressAtom, PlanProgressProof
 from .proof_records import AbsenceScope, PrimitiveProof, ProofAtom
 from .types import CoreStatus, Reason, ToolIdentity, Truth
@@ -12,7 +13,7 @@ from .types import CoreStatus, Reason, ToolIdentity, Truth
 class GoalRoleBinding:
     source_id: str
     role: str
-    atom: ProofAtom | PlanProgressAtom
+    atom: ProofAtom | PlanProgressAtom | GoalCallMembershipAtom
     meaning_source_ids: tuple[str, ...]
 
 
@@ -45,7 +46,7 @@ class GoalWorldProof:
     choice_id: str
     reading_id: str
     clause_safety: tuple[tuple[str, Truth], ...]
-    primitives: tuple[PrimitiveProof | PlanProgressProof, ...]
+    primitives: tuple[PrimitiveProof | PlanProgressProof | GoalCallMembershipProof, ...]
     error_value: Truth
 
 

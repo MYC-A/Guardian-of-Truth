@@ -8,6 +8,7 @@ from dataclasses import dataclass
 from enum import Enum
 
 from .goal_native import GoalClause, GoalOperator
+from .goal_call_membership_v2 import GoalCallMembershipAtom
 from .goal_progress_v2 import PlanProgressAtom, PlanProgressKind
 from .proof_records import AtomKind, ProofAtom, TimeMode, conjunction, disjunction, negate
 from .types import CoverageStatus, Truth
@@ -26,7 +27,7 @@ class FormulaOperator(str, Enum):
 class GoalFormula:
     operator: FormulaOperator
     children: tuple["GoalFormula", ...] = ()
-    atom: ProofAtom | PlanProgressAtom | None = None
+    atom: ProofAtom | PlanProgressAtom | GoalCallMembershipAtom | None = None
 
     def __post_init__(self):
         if not isinstance(self.operator, FormulaOperator):
@@ -35,7 +36,7 @@ class GoalFormula:
                    FormulaOperator.NOT: 1, FormulaOperator.IMPLIES: 2}
         if self.operator in arities and len(self.children) != arities[self.operator]:
             raise ValueError("invalid formula arity")
-        if (self.operator is FormulaOperator.ATOM) != isinstance(self.atom, (ProofAtom, PlanProgressAtom)):
+        if (self.operator is FormulaOperator.ATOM) != isinstance(self.atom, (ProofAtom, PlanProgressAtom, GoalCallMembershipAtom)):
             raise ValueError("only leaf formulas carry typed proof atoms")
         if any(not isinstance(child, GoalFormula) for child in self.children):
             raise ValueError("typed formula children required")
@@ -62,7 +63,7 @@ def compile_goal_clause(clause, bindings):
 
     def leaf(source, role):
         atom = bindings.get((source, role))
-        if not isinstance(atom, (ProofAtom, PlanProgressAtom)):
+        if not isinstance(atom, (ProofAtom, PlanProgressAtom, GoalCallMembershipAtom)):
             missing.append(f"unbound:{source}:{role}")
             return unknown
         return GoalFormula(FormulaOperator.ATOM, atom=atom)
@@ -93,9 +94,10 @@ def compile_goal_clause(clause, bindings):
         prior_is_completion = (isinstance(previous.atom, ProofAtom)
             and previous.atom.kind in {AtomKind.ACTION_COMPLETED, AtomKind.HISTORICAL_ACTION}) or (
             isinstance(previous.atom, PlanProgressAtom) and previous.atom.kind is PlanProgressKind.COMPLETED_STEP)
-        if (not prior_is_completion or not isinstance(current.atom, ProofAtom)
-                or current.atom.kind not in {AtomKind.CALL_ATTEMPTED, AtomKind.TARGET_CALL_MATCH}
-                or current.atom.time_mode is not TimeMode.AT
+        current_is_attempt = isinstance(current.atom, GoalCallMembershipAtom) or (
+            isinstance(current.atom, ProofAtom) and current.atom.kind in {AtomKind.CALL_ATTEMPTED, AtomKind.TARGET_CALL_MATCH}
+            and current.atom.time_mode is TimeMode.AT)
+        if (not prior_is_completion or not current_is_attempt
                 or previous.atom.actor != current.atom.actor
                 or previous.atom.time_index >= current.atom.time_index):
             missing.append("unproved_order_binding")

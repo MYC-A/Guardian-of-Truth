@@ -5,6 +5,7 @@ from dataclasses import asdict
 from .goal_certificate_v2 import check_goal_certificate
 from .goal_formula import compile_goal_clause, evaluate_compiled_clause
 from .goal_grounding_v2 import goal_context_errors
+from .goal_call_membership_v2 import GoalCallMembershipAtom, prove_call_membership
 from .goal_progress_v2 import PlanProgressAtom, prove_plan_progress
 from .goal_proof_records_v2 import ASSUMPTIONS, GoalLayerDecision, GoalProofCertificate, GoalWorldProof
 from .integrity import digest
@@ -28,6 +29,8 @@ def decide_goal_layer(context, ledger, registry, *, max_worlds=4096):
         reading = readings[choice.reading_id]
         primitives = tuple(prove_plan_progress(binding.atom, context, ledger)
                            if isinstance(binding.atom, PlanProgressAtom)
+                           else prove_call_membership(binding.atom, ledger)
+                           if isinstance(binding.atom, GoalCallMembershipAtom)
                            else prove_atom(binding.atom, ledger, index, registry, context.absence_scopes)
                            for binding in choice.bindings)
         by_atom = {primitive.atom.atom_id: primitive for primitive in primitives}

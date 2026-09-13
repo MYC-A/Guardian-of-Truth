@@ -3,11 +3,12 @@
 import json
 
 from .goal_native import GoalOperator, source_inventory
+from .goal_call_membership_v2 import GoalCallMembershipAtom, prove_call_membership
 from .goal_progress_v2 import PlanProgressAtom, PlanProgressKind, prove_plan_progress
 from .integrity import canonical
 from .normalize import normalize
 from .proof_evidence import effect_is_verified
-from .proof_records import AtomKind, TimeMode
+from .proof_records import AtomKind, ProofAtom, TimeMode
 from .ledger import LedgerIndex
 from .types import CoverageStatus, Truth
 
@@ -48,21 +49,26 @@ def goal_context_errors(context, ledger, registry):
                 or reading.declared_goal_source not in by_source
                 or by_source[reading.declared_goal_source].kind != "GOAL"):
             errors.append("UNGROUNDED_OR_UNKNOWN_READING")
-        if (reading.expected_step is None or type(reading.expected_step) is not int
+        plan_step_conflict = bool(context.ordered_plan) and (reading.expected_step is None or type(reading.expected_step) is not int
                 or not 0 <= reading.expected_step <= len(context.ordered_plan)
                 or reading.expected_action_source != (f"plan:{reading.expected_step}"
-                    if reading.expected_step < len(context.ordered_plan) else None)
-                or reading.actor not in {"assistant", "user", "entity"}):
+                    if reading.expected_step < len(context.ordered_plan) else None))
+        no_plan_conflict = not context.ordered_plan and (reading.expected_step is not None
+                or reading.expected_action_source != reading.declared_goal_source)
+        if plan_step_conflict or no_plan_conflict or reading.actor not in {"assistant", "user", "entity"}:
             errors.append("READING_STEP_ACTION_OR_ACTOR_CONFLICT")
         structural = []
         plan_ids = [source.source_id for source in sources if source.kind == "PLAN_STEP"]
         scope_ids = [source.source_id for source in sources if source.kind == "SCOPE"]
         structural += [(GoalOperator.PLAN_STEP, (sid,), (sid,)) for sid in plan_ids]
+        if not context.ordered_plan:
+            structural += [(GoalOperator.REQUIRES, (source.source_id,), (source.source_id,))
+                           for source in sources if source.kind == "GOAL"]
         structural += [(GoalOperator.BEFORE, pair, pair) for pair in zip(plan_ids, plan_ids[1:])]
         structural += [(GoalOperator.SCOPE, (sid,), (sid,)) for sid in scope_ids]
         actual = [(clause.operator, clause.source_ids, clause.operands) for clause in reading.clauses
                   if any(clause.clause_id.startswith(reading.reading_id + suffix)
-                         for suffix in (":step:", ":order:", ":scope:"))]
+                         for suffix in (":step:", ":goal:", ":order:", ":scope:"))]
         if actual != structural or len({clause.clause_id for clause in reading.clauses}) != len(reading.clauses):
             errors.append("PLAN_ORDER_OR_SCOPE_CLAUSES_DROPPED_OR_CHANGED")
         if any(clause.reading_id != reading.reading_id or not clause.source_ids
@@ -90,6 +96,14 @@ def goal_context_errors(context, ledger, registry):
                         or prove_plan_progress(atom, context, ledger).value is Truth.UNKNOWN):
                     errors.append("PLAN_PROGRESS_NOT_ESTABLISHED")
                 continue
+            if isinstance(atom, GoalCallMembershipAtom):
+                expected_source = {"scope_applicable": "SCOPE", "proposition": "GOAL"}.get(binding.role, "PLAN_STEP")
+                if (binding.role not in {"scope_applicable", "step_satisfied", "current_attempt", "proposition"}
+                        or source.kind != expected_source or atom.source_id != binding.source_id
+                        or atom.actor != reading.actor or any(name not in catalog for name in atom.allowed_tools)
+                        or prove_call_membership(atom, ledger).value is Truth.UNKNOWN):
+                    errors.append("INVOCATION_MEMBERSHIP_BINDING_MISMATCH")
+                continue
             if atom.kind is AtomKind.TARGET_CALL_MATCH and atom.predicate not in catalog:
                 errors.append("UNDECLARED_INVOCATION_INTERFACE")
             if binding.role in {"scope_applicable", "scope_compliant", "current_attempt", "step_satisfied"}:
@@ -103,11 +117,16 @@ def goal_context_errors(context, ledger, registry):
                     errors.append("INVALID_SCOPE_APPLICABILITY")
             if binding.role == "scope_compliant":
                 applicable = bound.get((binding.source_id, "scope_applicable"))
+                applicability_matches = applicable is not None and (
+                    (isinstance(applicable.atom, GoalCallMembershipAtom) and target is not None and target.tool is not None
+                        and atom.predicate == target.tool.name and atom.actor == applicable.atom.actor
+                        and atom.time_index == applicable.atom.time_index and atom.call_id == applicable.atom.call_id)
+                    or (isinstance(applicable.atom, ProofAtom)
+                        and (atom.predicate, atom.actor, atom.time_index, atom.call_id)
+                        == (applicable.atom.predicate, applicable.atom.actor, applicable.atom.time_index, applicable.atom.call_id)))
                 if (source.kind != "SCOPE" or len(atom.argument_constraints) != 1
                         or set(atom.argument_constraints[0].allowed_json) != set(source.allowed_json)
-                        or applicable is None
-                        or (atom.predicate, atom.actor, atom.time_index, atom.call_id)
-                        != (applicable.atom.predicate, applicable.atom.actor, applicable.atom.time_index, applicable.atom.call_id)):
+                        or not applicability_matches):
                     errors.append("LITERAL_SCOPE_BINDING_MISMATCH")
             if binding.role == "active_step":
                 # A reported field alone cannot establish real plan progress.

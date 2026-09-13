@@ -5,12 +5,13 @@ from dataclasses import asdict
 from .certificates import CertificateCheck
 from .goal_grounding_v2 import goal_context_errors
 from .goal_native import GoalOperator
+from .goal_call_membership_v2 import GoalCallMembershipAtom, prove_call_membership
 from .goal_progress_v2 import PlanProgressAtom, PlanProgressKind, prove_plan_progress
 from .goal_proof_records_v2 import ASSUMPTIONS
 from .integrity import digest
 from .ledger import LedgerIndex
 from .proof_evidence import prove_atom
-from .proof_records import AtomKind, TimeMode, conjunction, disjunction, negate
+from .proof_records import AtomKind, ProofAtom, TimeMode, conjunction, disjunction, negate
 from .types import CoreStatus, Truth
 
 
@@ -45,10 +46,11 @@ def checked_clause_value(clause, bindings, primitives):
     if op is GoalOperator.BEFORE:
         earlier, later = (bindings[key].atom for key in needed)
         prior_valid = (isinstance(earlier, PlanProgressAtom) and earlier.kind is PlanProgressKind.COMPLETED_STEP) or (
-            not isinstance(earlier, PlanProgressAtom) and earlier.kind in {AtomKind.ACTION_COMPLETED, AtomKind.HISTORICAL_ACTION})
-        if (not prior_valid or isinstance(later, PlanProgressAtom)
-                or later.kind not in {AtomKind.CALL_ATTEMPTED, AtomKind.TARGET_CALL_MATCH}
-                or later.time_mode is not TimeMode.AT or earlier.actor != later.actor
+            isinstance(earlier, ProofAtom) and earlier.kind in {AtomKind.ACTION_COMPLETED, AtomKind.HISTORICAL_ACTION})
+        current_valid = isinstance(later, GoalCallMembershipAtom) or (
+            isinstance(later, ProofAtom) and later.kind in {AtomKind.CALL_ATTEMPTED, AtomKind.TARGET_CALL_MATCH}
+            and later.time_mode is TimeMode.AT)
+        if (not prior_valid or not current_valid or earlier.actor != later.actor
                 or earlier.time_index >= later.time_index):
             return Truth.UNKNOWN
         return implies(leaf(ids[1], "current_attempt"), leaf(ids[0], "prior_completion"))
@@ -89,6 +91,8 @@ def check_goal_certificate(certificate, context, ledger, registry):
             errors.append("WORLD_READING_MISMATCH")
         expected_primitives = tuple(prove_plan_progress(binding.atom, context, ledger)
                                     if isinstance(binding.atom, PlanProgressAtom)
+                                    else prove_call_membership(binding.atom, ledger)
+                                    if isinstance(binding.atom, GoalCallMembershipAtom)
                                     else prove_atom(binding.atom, ledger, index, registry, context.absence_scopes)
                                     for binding in choice.bindings)
         if proof.primitives != expected_primitives:
