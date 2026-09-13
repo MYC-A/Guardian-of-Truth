@@ -37,9 +37,10 @@ reported as native end-to-end understanding. Reference results must be independe
 of the candidate prover. Missing new primitives get a new implementation version
 only after these source inputs/reference rules are frozen. Run genuine native
 regression/end-to-end comparisons separately, with sealed predictions before gold.
-# Source-backed v2 extension
 
-An independent executable fixture and 34 typed-query cases are prepared separately
+## Source-backed v2 extension
+
+An independent executable fixture and 34 typed-query cases are frozen separately
 in `binding_temporal_v2.spec.json`. Reference validation passes 34/34; this is not
 a candidate result. Eight reference/projection checks pass. The protocol is
 [BINDING_TEMPORAL_V2_PROTOCOL.md](BINDING_TEMPORAL_V2_PROTOCOL.md).
