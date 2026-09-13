@@ -1,0 +1,429 @@
+{
+  "case_id": "obtain_user_before_update::2",
+  "configuration_sha256": "8ab1c29d5c2e4747ec410049227f69ae1a048ce8b32e951a59ce17bbcf475317",
+  "prediction": {
+    "native": {
+      "hypotheses": [
+        {
+          "hypothesis_id": "policy-program:h0",
+          "basis": "The word 'then' establishes a prerequisite condition: updating the booking is permitted only after the user id has been obtained. The sequential 'then' functions as a conditional gate.",
+          "program": {
+            "violation_clauses": [
+              [
+                "action:update_booking",
+                "!event:user_id_obtained"
+              ]
+            ],
+            "permission_clauses": [
+              [
+                "action:update_booking",
+                "event:user_id_obtained"
+              ]
+            ]
+          },
+          "source_spans": [
+            {
+              "document": "policy",
+              "start": 0,
+              "end": 44
+            }
+          ],
+          "unresolved_terms": [
+            "temporal ordering enforced vs. merely recommended",
+            "scope of 'obtain' (must it be successful?)"
+          ]
+        },
+        {
+          "hypothesis_id": "policy-program:h1",
+          "basis": "The imperative structure 'Obtain… then update…' imposes an obligation to perform both steps. The agent must obtain the user id AND must update the booking; failing either is a violation.",
+          "program": {
+            "violation_clauses": [
+              [
+                "!event:user_id_obtained"
+              ],
+              [
+                "!action:update_booking"
+              ]
+            ],
+            "permission_clauses": [
+              [
+                "event:user_id_obtained",
+                "action:update_booking"
+              ]
+            ]
+          },
+          "source_spans": [
+            {
+              "document": "policy",
+              "start": 0,
+              "end": 44
+            }
+          ],
+          "unresolved_terms": [
+            "whether both obligations are independent or the second is conditional on the first",
+            "whether 'update' implies success or just attempt"
+          ]
+        },
+        {
+          "hypothesis_id": "policy-program:h2",
+          "basis": "The 'then' is read as a pure temporal sequencing marker without conditional dependency: the update booking action is always permitted, but it should occur after the user_id_obtained event in time. Violation is only about wrong ordering, not about absence.",
+          "program": {
+            "violation_clauses": [
+              [
+                "action:update_booking",
+                "!event:user_id_obtained"
+              ]
+            ],
+            "permission_clauses": [
+              [
+                "action:update_booking"
+              ],
+              [
+                "event:user_id_obtained"
+              ]
+            ]
+          },
+          "source_spans": [
+            {
+              "document": "policy",
+              "start": 0,
+              "end": 44
+            }
+          ],
+          "unresolved_terms": [
+            "whether absence of user_id_obtained is truly permitted or just not the focus of the violation",
+            "how temporal ordering is evaluated vs. logical dependency"
+          ]
+        },
+        {
+          "hypothesis_id": "policy-program:h3",
+          "basis": "The imperative 'Obtain… then update…' is read as granting permission for both actions independently, with 'then' functioning as a non-binding advisory suggestion about preferred order. No enforcement exists: neither performing out of order nor omitting either action constitutes a violation.",
+          "program": {
+            "violation_clauses": [],
+            "permission_clauses": [
+              [
+                "event:user_id_obtained"
+              ],
+              [
+                "action:update_booking"
+              ]
+            ]
+          },
+          "source_spans": [
+            {
+              "document": "policy",
+              "start": 0,
+              "end": 44
+            }
+          ],
+          "unresolved_terms": [
+            "whether 'then' carries any deontic force or is purely discourse-level advice"
+          ]
+        },
+        {
+          "hypothesis_id": "policy-program:h4",
+          "basis": "The policy imposes both a conjunctive obligation (both steps must occur) AND a strict ordering constraint (update must not precede obtaining). Violations arise from failing to obtain, failing to update, or updating before obtaining. This combines the obligation reading with the ordering reading into a single stricter policy.",
+          "program": {
+            "violation_clauses": [
+              [
+                "!event:user_id_obtained"
+              ],
+              [
+                "!action:update_booking"
+              ],
+              [
+                "action:update_booking",
+                "!event:user_id_obtained"
+              ]
+            ],
+            "permission_clauses": [
+              [
+                "event:user_id_obtained",
+                "action:update_booking"
+              ]
+            ]
+          },
+          "source_spans": [
+            {
+              "document": "policy",
+              "start": 0,
+              "end": 44
+            }
+          ],
+          "unresolved_terms": [
+            "whether the ordering constraint is absolute or merely a default preference within the obligation"
+          ]
+        }
+      ],
+      "coverage": {
+        "status": "OPEN_SEMANTICS",
+        "universe_source": null,
+        "enumeration_complete": false,
+        "unresolved_terms": [
+          "temporal ordering enforcement mechanism",
+          "success vs. attempt semantics of 'obtain' and 'update'",
+          "whether the two steps are independent obligations or a single conditional workflow",
+          "temporal ordering enforced vs. merely recommended",
+          "scope of 'obtain' (must it be successful?)",
+          "whether both obligations are independent or the second is conditional on the first",
+          "whether 'update' implies success or just attempt",
+          "whether absence of user_id_obtained is truly permitted or just not the focus of the violation",
+          "how temporal ordering is evaluated vs. logical dependency",
+          "actor identity and authority scope",
+          "whether 'then' is temporal, conditional, or advisory",
+          "whether additional unspecified preconditions exist beyond user_id_obtained",
+          "whether 'then' carries any deontic force or is purely discourse-level advice",
+          "whether the ordering constraint is absolute or merely a default preference within the obligation"
+        ],
+        "discarded_hypotheses": [],
+        "challenger_alternatives": [
+          "policy-program:h3",
+          "policy-program:h4"
+        ]
+      },
+      "failures": [],
+      "empirical_hypotheses": [
+        {
+          "hypothesis_id": "policy-program:h0",
+          "basis": "The word 'then' establishes a prerequisite condition: updating the booking is permitted only after the user id has been obtained. The sequential 'then' functions as a conditional gate.",
+          "program": {
+            "violation_clauses": [
+              [
+                "action:update_booking",
+                "!event:user_id_obtained"
+              ]
+            ],
+            "permission_clauses": [
+              [
+                "action:update_booking",
+                "event:user_id_obtained"
+              ]
+            ]
+          },
+          "source_spans": [
+            {
+              "document": "policy",
+              "start": 0,
+              "end": 44
+            }
+          ],
+          "unresolved_terms": [
+            "temporal ordering enforced vs. merely recommended",
+            "scope of 'obtain' (must it be successful?)"
+          ]
+        },
+        {
+          "hypothesis_id": "policy-program:h1",
+          "basis": "The imperative structure 'Obtain… then update…' imposes an obligation to perform both steps. The agent must obtain the user id AND must update the booking; failing either is a violation.",
+          "program": {
+            "violation_clauses": [
+              [
+                "!event:user_id_obtained"
+              ],
+              [
+                "!action:update_booking"
+              ]
+            ],
+            "permission_clauses": [
+              [
+                "event:user_id_obtained",
+                "action:update_booking"
+              ]
+            ]
+          },
+          "source_spans": [
+            {
+              "document": "policy",
+              "start": 0,
+              "end": 44
+            }
+          ],
+          "unresolved_terms": [
+            "whether both obligations are independent or the second is conditional on the first",
+            "whether 'update' implies success or just attempt"
+          ]
+        },
+        {
+          "hypothesis_id": "policy-program:h2",
+          "basis": "The 'then' is read as a pure temporal sequencing marker without conditional dependency: the update booking action is always permitted, but it should occur after the user_id_obtained event in time. Violation is only about wrong ordering, not about absence.",
+          "program": {
+            "violation_clauses": [
+              [
+                "action:update_booking",
+                "!event:user_id_obtained"
+              ]
+            ],
+            "permission_clauses": [
+              [
+                "action:update_booking"
+              ],
+              [
+                "event:user_id_obtained"
+              ]
+            ]
+          },
+          "source_spans": [
+            {
+              "document": "policy",
+              "start": 0,
+              "end": 44
+            }
+          ],
+          "unresolved_terms": [
+            "whether absence of user_id_obtained is truly permitted or just not the focus of the violation",
+            "how temporal ordering is evaluated vs. logical dependency"
+          ]
+        },
+        {
+          "hypothesis_id": "policy-program:h3",
+          "basis": "The imperative 'Obtain… then update…' is read as granting permission for both actions independently, with 'then' functioning as a non-binding advisory suggestion about preferred order. No enforcement exists: neither performing out of order nor omitting either action constitutes a violation.",
+          "program": {
+            "violation_clauses": [],
+            "permission_clauses": [
+              [
+                "event:user_id_obtained"
+              ],
+              [
+                "action:update_booking"
+              ]
+            ]
+          },
+          "source_spans": [
+            {
+              "document": "policy",
+              "start": 0,
+              "end": 44
+            }
+          ],
+          "unresolved_terms": [
+            "whether 'then' carries any deontic force or is purely discourse-level advice"
+          ]
+        },
+        {
+          "hypothesis_id": "policy-program:h4",
+          "basis": "The policy imposes both a conjunctive obligation (both steps must occur) AND a strict ordering constraint (update must not precede obtaining). Violations arise from failing to obtain, failing to update, or updating before obtaining. This combines the obligation reading with the ordering reading into a single stricter policy.",
+          "program": {
+            "violation_clauses": [
+              [
+                "!event:user_id_obtained"
+              ],
+              [
+                "!action:update_booking"
+              ],
+              [
+                "action:update_booking",
+                "!event:user_id_obtained"
+              ]
+            ],
+            "permission_clauses": [
+              [
+                "event:user_id_obtained",
+                "action:update_booking"
+              ]
+            ]
+          },
+          "source_spans": [
+            {
+              "document": "policy",
+              "start": 0,
+              "end": 44
+            }
+          ],
+          "unresolved_terms": [
+            "whether the ordering constraint is absolute or merely a default preference within the obligation"
+          ]
+        }
+      ]
+    },
+    "fixed_p1": {
+      "case_id": "obtain_user_before_update::2",
+      "arm": "P1",
+      "transport_status": "SUCCESS",
+      "schema_status": "VALID",
+      "semantic_status": "PENDING_GOLD_JOIN",
+      "representation_status": "SUPPORTED",
+      "error_category": null,
+      "prediction": {
+        "structure": null,
+        "program": {
+          "violation_clauses": [
+            [
+              "action:update_booking",
+              "!event:user_id_obtained"
+            ]
+          ],
+          "permission_clauses": [
+            [
+              "action:update_booking",
+              "event:user_id_obtained"
+            ]
+          ]
+        }
+      },
+      "source_coverage": 1.0,
+      "served_model": "qwen3.8-flash",
+      "latency_ms": 7247.951,
+      "usage": {
+        "prompt_tokens": 388,
+        "completion_tokens": 232,
+        "total_tokens": 620
+      }
+    }
+  },
+  "native_request_telemetry": [
+    {
+      "backend_version": "diagnostic-semantic-v2",
+      "task": "policy_program_hypotheses_v2",
+      "input_sha256": "7e45bde241580e148aaa00b06461c20db96cb1d8ff5cabf333f19e8cad64fa8c",
+      "prompt_sha256": "4bc71eeabdffe7dcc77111776cd99ea128a526bee2c9c6f36cfed22d8fa64167",
+      "schema_sha256": "df57a28b51f180dc35a54b74fb4adc2a72f4c905fe0f90ad3cf39d84e56615a8",
+      "served_model": "qwen3.8-flash",
+      "usage": {
+        "prompt_tokens": 548,
+        "completion_tokens": 1034,
+        "total_tokens": 1582
+      },
+      "latency_ms": 28242.869,
+      "transport_status": "SUCCESS",
+      "schema_status": "VALID",
+      "schema_issues": [],
+      "error_category": null
+    },
+    {
+      "backend_version": "diagnostic-semantic-v2",
+      "task": "policy_program_missing_reading_v2",
+      "input_sha256": "842d81f70ce5ab89c8bf494a3ba46cb81b301d3a5e6496551c9bf507f0509b40",
+      "prompt_sha256": "b598ac0b331284db0e118712dd9bd6c4fbb5d9d4de7d6e364ba36c55ba5ab0d9",
+      "schema_sha256": "df57a28b51f180dc35a54b74fb4adc2a72f4c905fe0f90ad3cf39d84e56615a8",
+      "served_model": "qwen3.8-flash",
+      "usage": {
+        "prompt_tokens": 829,
+        "completion_tokens": 3160,
+        "total_tokens": 3989
+      },
+      "latency_ms": 67423.19,
+      "transport_status": "SUCCESS",
+      "schema_status": "VALID",
+      "schema_issues": [],
+      "error_category": null
+    }
+  ],
+  "p1_request_telemetry": [
+    {
+      "task": "fixed_p1_wire",
+      "prompt_sha256": "97a3a1f72d24dd84f79bc1b95ffce88e1e6f026110d70a4724d63af2f9d2344e",
+      "schema_sha256": "5197fe7c05313af44c9d4008b06a6cf8774a65fab97e82f815aee81fdbf9f20c",
+      "transport_status": "SUCCESS",
+      "schema_status": "VALID",
+      "schema_issues": [],
+      "error_category": null,
+      "served_model": "qwen3.8-flash",
+      "usage": {
+        "prompt_tokens": 388,
+        "completion_tokens": 232,
+        "total_tokens": 620
+      },
+      "latency_ms": 7246.165
+    }
+  ]
+}
