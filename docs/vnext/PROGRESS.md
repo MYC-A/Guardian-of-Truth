@@ -147,6 +147,16 @@ started. At this checkpoint three Goal cases are complete. The second case has
 two schema failures diagnosed as JSON_INVALID, not assumed semantic errors or
 truncation. Native Goal v2 code/prompts remain unchanged while that job runs.
 
+Source-owned identity development adds provider/system-scoped stable IDs,
+record-group-preserving aliases, temporal full/partial snapshot handling and
+name/time/entity-event indexes. Scoped result-field primitives compare typed
+JSON without mixing different records, preserve binding alternatives/BOTH and
+do not claim current state or causality. Thirty-four new controlled tests cover
+duplicates, renames, namespaces, user-role rejection, incomplete source and
+2000-record candidate/lookup behavior. Main Core/source-adapter/certificate
+integration remains pending; see IDENTITY_BINDING_V2_BOUNDARIES.md. These new
+modules are unused by the frozen Goal/T2 versions; no frozen source was edited.
+
 Checkpoint commits: protocol `8e9c3fb`; types/ledger `8e87649`; Claim Graph
 `e69a406`; T1/T2 `9e0b2f4`; policy/Goal `f0fb124`; indexed Binder `f562c8b`;
 T1 evaluator `8d2c532`; T1 pre-prediction freeze `af2e3ee`.
