@@ -1,0 +1,34 @@
+{
+  "schema_version": "guardian-binding-scaling-spec-v1",
+  "scope": "CONTROLLED_SOURCE_EVENT_SCALING_NOT_NATIVE_OR_BLIND_CORE",
+  "candidate": "frozen binding_temporal_v2 / temporal queries v4",
+  "source_reference": "benchmarks/vnext/binding_fixture_reference_v2.py",
+  "authority": "explicit independent executable fixture only; not real-provider semantics",
+  "sizes": [100, 1000, 10000],
+  "templates": [
+    {
+      "id": "state-id",
+      "generator": "initial snapshot + (event_count - 4) assistant text events + final full read",
+      "text_body": "An assistant assertion is not an observed tool fact.",
+      "query": {"kind": "FIELD_AT_LAST_READ", "entity": {"mode": "id", "value": "Q-701"}, "field": "exists", "expected": true},
+      "expected": {"truth": "TRUE", "binding_count": 1, "searched_event_count": 1}
+    },
+    {
+      "id": "state-name",
+      "generator": "initial snapshot + (event_count - 4) assistant text events + final full read",
+      "text_body": "An assistant assertion is not an observed tool fact.",
+      "query": {"kind": "FIELD_AT_LAST_READ", "entity": {"mode": "name", "value": "Alex"}, "field": "exists", "expected": true},
+      "expected": {"truth": "TRUE", "binding_count": 1, "searched_event_count": 1}
+    },
+    {
+      "id": "mutation-count",
+      "generator": "initial snapshot + ((event_count - 4) / 2) archive call/result pairs + final full read",
+      "tool_version": "v1",
+      "query": {"kind": "METHOD_COMPLETION_COUNT", "entity": {"mode": "id", "value": "Q-701"}, "operation": "archive", "expected": 1},
+      "expected": {"truth": "TRUE", "binding_count": 1, "method_call_count": "(event_count - 4) / 2", "searched_event_count": "event_count - 4"}
+    }
+  ],
+  "freeze_before": "source execution and all timed candidate runs; no new candidate fixes",
+  "report": "nine rows; exact event/candidate/record counts; index-query/replay times separately; full scoped certificates; no transport/schema or Core accuracy claims",
+  "after_report": "audit every row and source-level cost limits before any next-version optimization"
+}
