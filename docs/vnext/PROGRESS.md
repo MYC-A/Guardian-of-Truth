@@ -156,6 +156,8 @@ duplicates, renames, namespaces, user-role rejection, incomplete source and
 2000-record candidate/lookup behavior. Main Core/source-adapter/certificate
 integration remains pending; see IDENTITY_BINDING_V2_BOUNDARIES.md. These new
 modules are unused by the frozen Goal/T2 versions; no frozen source was edited.
+Latest complete project verification after the source-owned identity tests:
+1026 passed. This is unit behavior only, not stage or end-to-end semantic gain.
 
 Checkpoint commits: protocol `8e9c3fb`; types/ledger `8e87649`; Claim Graph
 `e69a406`; T1/T2 `9e0b2f4`; policy/Goal `f0fb124`; indexed Binder `f562c8b`;

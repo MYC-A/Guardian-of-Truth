@@ -145,7 +145,8 @@ def test_unbound_time_and_duplicate_contracts_fail_explicitly():
 
 def test_result_shaped_user_event_does_not_establish_a_tool_identity_observation():
     source = ledger({'items': [{'id': 'id-1', 'name': 'Alex'}]})
-    source = replace(source, events=(source.events[0], replace(source.events[1], actor='user')))
+    source = EvidenceLedger.from_events((source.events[0], replace(source.events[1], actor='user')),
+        history_complete=source.history_complete, completeness_basis=source.completeness_basis)
     result = IdentityAliasIndex(source, (DECLARATION,)).resolve('Alex')
     assert not result.entities and not result.searched_source_complete
     assert 'result_identity_role_untrusted' in result.unresolved_terms
