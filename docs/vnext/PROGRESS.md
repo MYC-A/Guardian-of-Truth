@@ -137,6 +137,16 @@ request hashes, persists safe schema diagnostics, seals all predictions before
 controlled gold scoring and produces per-case failure taxonomy. It uses no
 invented activation contract; Goal-layer metrics are not reported as full Core.
 
+Independent T2 stage implementation now adds an input-only fixture adapter,
+raw/accepted proposal audit, exact known-true candidate metrics and actual
+primitive-prover boundary checks for state/completion/causality with untrusted
+effects. Twenty-four new controlled tests pass; current full project units are
+992. See T2_STAGE_PROTOCOL_V1.md. The T2 network phase has not started and must
+wait for the active Goal v2 process to terminate; no concurrent API batch was
+started. At this checkpoint three Goal cases are complete. The second case has
+two schema failures diagnosed as JSON_INVALID, not assumed semantic errors or
+truncation. Native Goal v2 code/prompts remain unchanged while that job runs.
+
 Checkpoint commits: protocol `8e9c3fb`; types/ledger `8e87649`; Claim Graph
 `e69a406`; T1/T2 `9e0b2f4`; policy/Goal `f0fb124`; indexed Binder `f562c8b`;
 T1 evaluator `8d2c532`; T1 pre-prediction freeze `af2e3ee`.
