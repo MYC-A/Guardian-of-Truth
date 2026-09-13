@@ -1,0 +1,91 @@
+{
+  "messages": [
+    {
+      "role": "system",
+      "content": "Read only the candidate RESPONSE and its deterministic span inventory. This is a map stage: return exactly one typed record for every supplied span_id, without adding, deleting, merging, or splitting spans. Do not use or infer any prompt, history, policy, evidence, tool result, or benchmark label. Distinguish completed from failed action, state from intent, absence from refusal, and attribution from an unqualified fact. Questions, requests, greetings, empathy, wishes, and bare list markers are NON_VERIFIABLE. Preserve exact entity and time mentions and identify only an explicitly attributed source. Return only the exact JSON object requested by the user."
+    },
+    {
+      "role": "user",
+      "content": "{\"case_id\":\"cg:refusal:0\",\"response\":\"I cannot archive item R-71 because this tool is unavailable.\",\"span_inventory\":[{\"span_id\":\"s0\",\"start\":0,\"end\":60,\"text\":\"I cannot archive item R-71 because this tool is unavailable.\"}]}\nOUTPUT_JSON_SCHEMA: {\"type\":\"object\",\"properties\":{\"case_id\":{\"type\":\"string\",\"const\":\"cg:refusal:0\"},\"spans\":{\"type\":\"array\",\"items\":{\"type\":\"object\",\"properties\":{\"span_id\":{\"type\":\"string\",\"enum\":[\"s0\"]},\"kind\":{\"type\":\"string\",\"enum\":[\"ABSENCE\",\"ACTION_COMPLETED\",\"ACTION_FAILED\",\"ATTRIBUTION\",\"FACT\",\"INTENT\",\"NON_VERIFIABLE\",\"OTHER_VERIFIABLE\",\"PERMISSION\",\"REFUSAL\",\"STATE\"]},\"entities\":{\"type\":\"array\",\"items\":{\"type\":\"string\"},\"uniqueItems\":true},\"times\":{\"type\":\"array\",\"items\":{\"type\":\"string\"},\"uniqueItems\":true},\"source\":{\"type\":\"string\",\"enum\":[\"ASSISTANT\",\"SYSTEM\",\"TOOL\",\"UNSPECIFIED\",\"USER\"]}},\"required\":[\"span_id\",\"kind\",\"entities\",\"times\",\"source\"],\"additionalProperties\":false}}},\"required\":[\"case_id\",\"spans\"],\"additionalProperties\":false}"
+    }
+  ],
+  "schema": {
+    "type": "object",
+    "properties": {
+      "case_id": {
+        "type": "string",
+        "const": "cg:refusal:0"
+      },
+      "spans": {
+        "type": "array",
+        "items": {
+          "type": "object",
+          "properties": {
+            "span_id": {
+              "type": "string",
+              "enum": [
+                "s0"
+              ]
+            },
+            "kind": {
+              "type": "string",
+              "enum": [
+                "ABSENCE",
+                "ACTION_COMPLETED",
+                "ACTION_FAILED",
+                "ATTRIBUTION",
+                "FACT",
+                "INTENT",
+                "NON_VERIFIABLE",
+                "OTHER_VERIFIABLE",
+                "PERMISSION",
+                "REFUSAL",
+                "STATE"
+              ]
+            },
+            "entities": {
+              "type": "array",
+              "items": {
+                "type": "string"
+              },
+              "uniqueItems": true
+            },
+            "times": {
+              "type": "array",
+              "items": {
+                "type": "string"
+              },
+              "uniqueItems": true
+            },
+            "source": {
+              "type": "string",
+              "enum": [
+                "ASSISTANT",
+                "SYSTEM",
+                "TOOL",
+                "UNSPECIFIED",
+                "USER"
+              ]
+            }
+          },
+          "required": [
+            "span_id",
+            "kind",
+            "entities",
+            "times",
+            "source"
+          ],
+          "additionalProperties": false
+        }
+      }
+    },
+    "required": [
+      "case_id",
+      "spans"
+    ],
+    "additionalProperties": false
+  },
+  "prompt_sha256": "bb28d0d6cf6336355fe606b6a51db021477fcc01f975690e04004f9f4e591a8d",
+  "schema_sha256": "c05b4261e5380497a413b9ea075ebdb2da071da8156c4a2d5156e6869809a80e",
+  "configuration_sha256": "db77c3bdf4538772bfe078a363d0fb0f9f633cca6bfd01f1801d6d1d177b02cb"
+}

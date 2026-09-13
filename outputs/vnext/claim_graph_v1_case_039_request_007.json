@@ -1,0 +1,62 @@
+{
+  "configuration_sha256": "db77c3bdf4538772bfe078a363d0fb0f9f633cca6bfd01f1801d6d1d177b02cb",
+  "ordinal": 7,
+  "task": "claim_source",
+  "payload": {
+    "span_inventory": [
+      {
+        "span_id": "s0",
+        "text": "I archived R-81."
+      },
+      {
+        "span_id": "s1",
+        "text": " It is now archived because of that call."
+      }
+    ],
+    "unknown_convention": "UNKNOWN for uncertain strings; null for uncertain explicit causality",
+    "entity_convention": "entity_refs must be exact strings explicitly present in response; do not invent IDs",
+    "task_instructions": "Return the attributed source(s), not automatically the speaker. ASSISTANT is an unattributed assistant claim; USER for 'you said'; TOOL for 'tool reports'; SYSTEM for an explicit system citation. Use explicitly named sources if present; UNKNOWN when attribution is unresolved.",
+    "task_scope": "Interpret only this field/pass. Keep actor, intent, observed state and causality distinct."
+  },
+  "schema": {
+    "type": "object",
+    "additionalProperties": false,
+    "required": [
+      "spans"
+    ],
+    "properties": {
+      "spans": {
+        "type": "array",
+        "items": {
+          "type": "object",
+          "additionalProperties": false,
+          "required": [
+            "span_id",
+            "source_refs"
+          ],
+          "properties": {
+            "span_id": {
+              "type": "string",
+              "enum": [
+                "s0",
+                "s1"
+              ]
+            },
+            "source_refs": {
+              "type": "array",
+              "items": {
+                "type": "string"
+              },
+              "uniqueItems": true
+            }
+          }
+        },
+        "minItems": 2,
+        "maxItems": 2
+      }
+    }
+  },
+  "input_sha256": "f7c5247d6a3b59b89e38ba6d32f6450e2e9109e6ca48458a7a31a66af66d6186",
+  "schema_sha256": "070dcb78b80292714fbf542c77d283f365ca8266c05d90c87a7b25dde87f2f9f",
+  "prompt_sha256": "3405c4028ef4563b61e84366a044a760bf5322d0a77a64d1898a6b63c3bd72b8"
+}

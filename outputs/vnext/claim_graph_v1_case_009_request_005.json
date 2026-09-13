@@ -1,0 +1,72 @@
+{
+  "configuration_sha256": "db77c3bdf4538772bfe078a363d0fb0f9f633cca6bfd01f1801d6d1d177b02cb",
+  "ordinal": 5,
+  "task": "claim_modality_polarity",
+  "payload": {
+    "span_inventory": [
+      {
+        "span_id": "s0",
+        "text": "Done: item R-71 archived."
+      }
+    ],
+    "unknown_convention": "UNKNOWN for uncertain strings; null for uncertain explicit causality",
+    "entity_convention": "entity_refs must be exact strings explicitly present in response; do not invent IDs",
+    "task_instructions": "Separate asserted, reported, intended, possible, inability and permission. Negation changes polarity, not certainty. 'Perhaps' is POSSIBLE, 'will' is INTENT, 'tool reports' is REPORTED. Unknown is not negative.",
+    "task_scope": "Interpret only this field/pass. Keep actor, intent, observed state and causality distinct."
+  },
+  "schema": {
+    "type": "object",
+    "additionalProperties": false,
+    "required": [
+      "spans"
+    ],
+    "properties": {
+      "spans": {
+        "type": "array",
+        "items": {
+          "type": "object",
+          "additionalProperties": false,
+          "required": [
+            "span_id",
+            "modality",
+            "polarity"
+          ],
+          "properties": {
+            "span_id": {
+              "type": "string",
+              "enum": [
+                "s0"
+              ]
+            },
+            "modality": {
+              "type": "string",
+              "enum": [
+                "ASSERTED",
+                "INTENT",
+                "POSSIBLE",
+                "REPORTED",
+                "INABILITY",
+                "PERMISSION",
+                "UNKNOWN",
+                "UNSPECIFIED"
+              ]
+            },
+            "polarity": {
+              "type": "string",
+              "enum": [
+                "POSITIVE",
+                "NEGATIVE",
+                "UNKNOWN"
+              ]
+            }
+          }
+        },
+        "minItems": 1,
+        "maxItems": 1
+      }
+    }
+  },
+  "input_sha256": "319e75298e9f8de4c8bc51aad2fd63436c9e4e62a51ce68d9caab339502b085b",
+  "schema_sha256": "e71eb5864cbc658e8b0327c56cb2979046be2ca64d380e0ccd287af097e73237",
+  "prompt_sha256": "c032875a246f890e07da4a62fac1a7731670f5c541f3909b467b777c0da123aa"
+}

@@ -1,0 +1,79 @@
+{
+  "configuration_sha256": "db77c3bdf4538772bfe078a363d0fb0f9f633cca6bfd01f1801d6d1d177b02cb",
+  "ordinal": 8,
+  "task": "claim_relations",
+  "payload": {
+    "span_inventory": [
+      {
+        "span_id": "s0",
+        "text": "The tool reports that item R-73 is archived."
+      }
+    ],
+    "unknown_convention": "UNKNOWN for uncertain strings; null for uncertain explicit causality",
+    "entity_convention": "entity_refs must be exact strings explicitly present in response; do not invent IDs",
+    "task_instructions": "Return only claim-to-claim relations explicitly supported by the response. Pronouns may refer_to another claim; claimed causation is causes, not proof. Cite deterministic grounding_span_ids. Empty relations is allowed. No self-relations or guessed causal links.",
+    "task_scope": "Interpret only this field/pass. Keep actor, intent, observed state and causality distinct."
+  },
+  "schema": {
+    "type": "object",
+    "additionalProperties": false,
+    "required": [
+      "relations"
+    ],
+    "properties": {
+      "relations": {
+        "type": "array",
+        "items": {
+          "type": "object",
+          "additionalProperties": false,
+          "required": [
+            "subject",
+            "relation",
+            "object",
+            "grounding_span_ids"
+          ],
+          "properties": {
+            "subject": {
+              "type": "string",
+              "enum": [
+                "s0"
+              ]
+            },
+            "object": {
+              "type": "string",
+              "enum": [
+                "s0"
+              ]
+            },
+            "relation": {
+              "type": "string",
+              "enum": [
+                "refers_to",
+                "causes",
+                "supports",
+                "contradicts",
+                "same_entity",
+                "same_event"
+              ]
+            },
+            "grounding_span_ids": {
+              "type": "array",
+              "items": {
+                "type": "string",
+                "enum": [
+                  "s0"
+                ]
+              },
+              "minItems": 1,
+              "uniqueItems": true
+            }
+          }
+        },
+        "uniqueItems": true
+      }
+    }
+  },
+  "input_sha256": "2a1213e939f6c344a1ae8e0c039272f04b30b40c2252e181b478985ed49775e7",
+  "schema_sha256": "ee18bfbdc280efe1a0bbd91f40e2ad29a17e4113c09013252d1af52cc928344f",
+  "prompt_sha256": "fde800ac8161aa6602309a1816a83a57f735b8a07faf8278b1c41ef8dc1b82e2"
+}

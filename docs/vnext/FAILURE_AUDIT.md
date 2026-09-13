@@ -20,6 +20,15 @@ source-grounding rejection are distinct from transport. See GOAL_PLAN_RESULTS.md
 
 Suggested repairs are next-version candidates only. No frozen v1 result,
 prompt, benchmark or decision mapping was modified after the result.
-Claim, policy, T2/binding semantic stages, dev ablations and blind failure audit
+Policy, T2/binding semantic stages, dev ablations and blind failure audit
 are still pending. Definitive-error/no-error correctness is not inferred from
 binary fallbacks, and missing results are not replaced with theoretical gains.
+
+Claim Graph v1 is now complete: all 41 controlled rows audited, 35 CLAIM_TYPING,
+three CAUSAL_REASONING and one TRANSPORT (overlapping components). The detailed
+immutable audit records 92 eligible exact-field mismatches and one failed narrow
+request. Exact annotation mismatch is not adjudicated semantic inequivalence;
+predicate inflection/object surface-form differences are explicit examples.
+The frozen shared typed-gain gate failed although span detection passed.
+See CLAIM_GRAPH_RESULTS.md and claim_graph_v1_detailed_audit.json. No v1 prompt,
+scoring rule, benchmark or result was repaired after the gold join.

@@ -1,0 +1,60 @@
+{
+  "configuration_sha256": "db77c3bdf4538772bfe078a363d0fb0f9f633cca6bfd01f1801d6d1d177b02cb",
+  "ordinal": 9,
+  "task": "claim_explicit_causality",
+  "payload": {
+    "span_inventory": [
+      {
+        "span_id": "s0",
+        "text": "You said item R-71 is archived."
+      }
+    ],
+    "unknown_convention": "UNKNOWN for uncertain strings; null for uncertain explicit causality",
+    "entity_convention": "entity_refs must be exact strings explicitly present in response; do not invent IDs",
+    "task_instructions": "For every span say whether it explicitly attributes a state/outcome to a causal event (true), does not do so (false), or is ambiguous (null). 'Is archived' alone is false; 'my call made it archived' is true. This does not establish real causality.",
+    "task_scope": "Interpret only this field/pass. Keep actor, intent, observed state and causality distinct."
+  },
+  "schema": {
+    "type": "object",
+    "additionalProperties": false,
+    "required": [
+      "spans"
+    ],
+    "properties": {
+      "spans": {
+        "type": "array",
+        "items": {
+          "type": "object",
+          "additionalProperties": false,
+          "required": [
+            "span_id",
+            "explicit_causality"
+          ],
+          "properties": {
+            "span_id": {
+              "type": "string",
+              "enum": [
+                "s0"
+              ]
+            },
+            "explicit_causality": {
+              "anyOf": [
+                {
+                  "type": "boolean"
+                },
+                {
+                  "type": "null"
+                }
+              ]
+            }
+          }
+        },
+        "minItems": 1,
+        "maxItems": 1
+      }
+    }
+  },
+  "input_sha256": "e89335e60c8bc21d8359d6e1212e44d2fc4faaf4476ccf617077bbb571991166",
+  "schema_sha256": "591f0ff5a2d0ef007a0cb0527973e73854aebc735dee51096019396945d50790",
+  "prompt_sha256": "47f542d83242971c47302b1f07240229eff44426e0a35c55e4b3193860ecc029"
+}

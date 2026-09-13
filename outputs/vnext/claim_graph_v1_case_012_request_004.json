@@ -1,0 +1,61 @@
+{
+  "configuration_sha256": "db77c3bdf4538772bfe078a363d0fb0f9f633cca6bfd01f1801d6d1d177b02cb",
+  "ordinal": 4,
+  "task": "claim_object_entities",
+  "payload": {
+    "span_inventory": [
+      {
+        "span_id": "s0",
+        "text": "Perhaps item R-71 is archived."
+      }
+    ],
+    "unknown_convention": "UNKNOWN for uncertain strings; null for uncertain explicit causality",
+    "entity_convention": "entity_refs must be exact strings explicitly present in response; do not invent IDs",
+    "task_instructions": "Return the object and all explicitly mentioned entity strings. Do not invent IDs, merge same-name entities, or resolve pronouns to guessed identifiers. Empty entity_refs is allowed for genuinely unspecified entities; use object UNKNOWN for unresolved objects.",
+    "task_scope": "Interpret only this field/pass. Keep actor, intent, observed state and causality distinct."
+  },
+  "schema": {
+    "type": "object",
+    "additionalProperties": false,
+    "required": [
+      "spans"
+    ],
+    "properties": {
+      "spans": {
+        "type": "array",
+        "items": {
+          "type": "object",
+          "additionalProperties": false,
+          "required": [
+            "span_id",
+            "object",
+            "entity_refs"
+          ],
+          "properties": {
+            "span_id": {
+              "type": "string",
+              "enum": [
+                "s0"
+              ]
+            },
+            "object": {
+              "type": "string"
+            },
+            "entity_refs": {
+              "type": "array",
+              "items": {
+                "type": "string"
+              },
+              "uniqueItems": true
+            }
+          }
+        },
+        "minItems": 1,
+        "maxItems": 1
+      }
+    }
+  },
+  "input_sha256": "2133b4fdae3b74250957e87bbe271747f4e0b9a71ccd741679ad6214425d86f9",
+  "schema_sha256": "decacb99292a6d4ffe38e31b0e6816f821f15fc4a3b5d88b4888e0e15eb55d1e",
+  "prompt_sha256": "8968c13e45897f9667d6c320e654fe2084aff9f8bc0b7e438e75b5d7260dfd5d"
+}

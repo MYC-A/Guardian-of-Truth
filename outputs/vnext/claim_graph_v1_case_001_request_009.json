@@ -1,0 +1,60 @@
+{
+  "configuration_sha256": "db77c3bdf4538772bfe078a363d0fb0f9f633cca6bfd01f1801d6d1d177b02cb",
+  "ordinal": 9,
+  "task": "claim_explicit_causality",
+  "payload": {
+    "span_inventory": [
+      {
+        "span_id": "s0",
+        "text": "I archived item R-71."
+      }
+    ],
+    "unknown_convention": "UNKNOWN for uncertain strings; null for uncertain explicit causality",
+    "entity_convention": "entity_refs must be exact strings explicitly present in response; do not invent IDs",
+    "task_instructions": "For every span say whether it explicitly attributes a state/outcome to a causal event (true), does not do so (false), or is ambiguous (null). 'Is archived' alone is false; 'my call made it archived' is true. This does not establish real causality.",
+    "task_scope": "Interpret only this field/pass. Keep actor, intent, observed state and causality distinct."
+  },
+  "schema": {
+    "type": "object",
+    "additionalProperties": false,
+    "required": [
+      "spans"
+    ],
+    "properties": {
+      "spans": {
+        "type": "array",
+        "items": {
+          "type": "object",
+          "additionalProperties": false,
+          "required": [
+            "span_id",
+            "explicit_causality"
+          ],
+          "properties": {
+            "span_id": {
+              "type": "string",
+              "enum": [
+                "s0"
+              ]
+            },
+            "explicit_causality": {
+              "anyOf": [
+                {
+                  "type": "boolean"
+                },
+                {
+                  "type": "null"
+                }
+              ]
+            }
+          }
+        },
+        "minItems": 1,
+        "maxItems": 1
+      }
+    }
+  },
+  "input_sha256": "af6d11e1786f7826d0740f61710d8fc8a51091ece8c57e884d7e9ec5567466bd",
+  "schema_sha256": "591f0ff5a2d0ef007a0cb0527973e73854aebc735dee51096019396945d50790",
+  "prompt_sha256": "260d589feb895aa01cb25f58d686950cdaaf7d1e1b7e0f18b459e4e4609bd136"
+}

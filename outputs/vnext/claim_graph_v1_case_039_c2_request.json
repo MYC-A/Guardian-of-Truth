@@ -1,0 +1,92 @@
+{
+  "messages": [
+    {
+      "role": "system",
+      "content": "Read only the candidate RESPONSE and its deterministic span inventory. This is a map stage: return exactly one typed record for every supplied span_id, without adding, deleting, merging, or splitting spans. Do not use or infer any prompt, history, policy, evidence, tool result, or benchmark label. Distinguish completed from failed action, state from intent, absence from refusal, and attribution from an unqualified fact. Questions, requests, greetings, empathy, wishes, and bare list markers are NON_VERIFIABLE. Preserve exact entity and time mentions and identify only an explicitly attributed source. Return only the exact JSON object requested by the user."
+    },
+    {
+      "role": "user",
+      "content": "{\"case_id\":\"cg:claim_relation:0\",\"response\":\"I archived R-81. It is now archived because of that call.\",\"span_inventory\":[{\"span_id\":\"s0\",\"start\":0,\"end\":16,\"text\":\"I archived R-81.\"},{\"span_id\":\"s1\",\"start\":16,\"end\":57,\"text\":\" It is now archived because of that call.\"}]}\nOUTPUT_JSON_SCHEMA: {\"type\":\"object\",\"properties\":{\"case_id\":{\"type\":\"string\",\"const\":\"cg:claim_relation:0\"},\"spans\":{\"type\":\"array\",\"items\":{\"type\":\"object\",\"properties\":{\"span_id\":{\"type\":\"string\",\"enum\":[\"s0\",\"s1\"]},\"kind\":{\"type\":\"string\",\"enum\":[\"ABSENCE\",\"ACTION_COMPLETED\",\"ACTION_FAILED\",\"ATTRIBUTION\",\"FACT\",\"INTENT\",\"NON_VERIFIABLE\",\"OTHER_VERIFIABLE\",\"PERMISSION\",\"REFUSAL\",\"STATE\"]},\"entities\":{\"type\":\"array\",\"items\":{\"type\":\"string\"},\"uniqueItems\":true},\"times\":{\"type\":\"array\",\"items\":{\"type\":\"string\"},\"uniqueItems\":true},\"source\":{\"type\":\"string\",\"enum\":[\"ASSISTANT\",\"SYSTEM\",\"TOOL\",\"UNSPECIFIED\",\"USER\"]}},\"required\":[\"span_id\",\"kind\",\"entities\",\"times\",\"source\"],\"additionalProperties\":false}}},\"required\":[\"case_id\",\"spans\"],\"additionalProperties\":false}"
+    }
+  ],
+  "schema": {
+    "type": "object",
+    "properties": {
+      "case_id": {
+        "type": "string",
+        "const": "cg:claim_relation:0"
+      },
+      "spans": {
+        "type": "array",
+        "items": {
+          "type": "object",
+          "properties": {
+            "span_id": {
+              "type": "string",
+              "enum": [
+                "s0",
+                "s1"
+              ]
+            },
+            "kind": {
+              "type": "string",
+              "enum": [
+                "ABSENCE",
+                "ACTION_COMPLETED",
+                "ACTION_FAILED",
+                "ATTRIBUTION",
+                "FACT",
+                "INTENT",
+                "NON_VERIFIABLE",
+                "OTHER_VERIFIABLE",
+                "PERMISSION",
+                "REFUSAL",
+                "STATE"
+              ]
+            },
+            "entities": {
+              "type": "array",
+              "items": {
+                "type": "string"
+              },
+              "uniqueItems": true
+            },
+            "times": {
+              "type": "array",
+              "items": {
+                "type": "string"
+              },
+              "uniqueItems": true
+            },
+            "source": {
+              "type": "string",
+              "enum": [
+                "ASSISTANT",
+                "SYSTEM",
+                "TOOL",
+                "UNSPECIFIED",
+                "USER"
+              ]
+            }
+          },
+          "required": [
+            "span_id",
+            "kind",
+            "entities",
+            "times",
+            "source"
+          ],
+          "additionalProperties": false
+        }
+      }
+    },
+    "required": [
+      "case_id",
+      "spans"
+    ],
+    "additionalProperties": false
+  },
+  "prompt_sha256": "e969ee23f07fde252ac61584a2a888032d82d59f26d52d1e5dac924361c212fc",
+  "schema_sha256": "beb1346c896bd4ec29d5c27470fa3aa2514a2f395133a9c230a9b84f8c28f555",
+  "configuration_sha256": "db77c3bdf4538772bfe078a363d0fb0f9f633cca6bfd01f1801d6d1d177b02cb"
+}

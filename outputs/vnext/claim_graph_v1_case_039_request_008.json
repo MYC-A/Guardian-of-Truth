@@ -1,0 +1,86 @@
+{
+  "configuration_sha256": "db77c3bdf4538772bfe078a363d0fb0f9f633cca6bfd01f1801d6d1d177b02cb",
+  "ordinal": 8,
+  "task": "claim_relations",
+  "payload": {
+    "span_inventory": [
+      {
+        "span_id": "s0",
+        "text": "I archived R-81."
+      },
+      {
+        "span_id": "s1",
+        "text": " It is now archived because of that call."
+      }
+    ],
+    "unknown_convention": "UNKNOWN for uncertain strings; null for uncertain explicit causality",
+    "entity_convention": "entity_refs must be exact strings explicitly present in response; do not invent IDs",
+    "task_instructions": "Return only claim-to-claim relations explicitly supported by the response. Pronouns may refer_to another claim; claimed causation is causes, not proof. Cite deterministic grounding_span_ids. Empty relations is allowed. No self-relations or guessed causal links.",
+    "task_scope": "Interpret only this field/pass. Keep actor, intent, observed state and causality distinct."
+  },
+  "schema": {
+    "type": "object",
+    "additionalProperties": false,
+    "required": [
+      "relations"
+    ],
+    "properties": {
+      "relations": {
+        "type": "array",
+        "items": {
+          "type": "object",
+          "additionalProperties": false,
+          "required": [
+            "subject",
+            "relation",
+            "object",
+            "grounding_span_ids"
+          ],
+          "properties": {
+            "subject": {
+              "type": "string",
+              "enum": [
+                "s0",
+                "s1"
+              ]
+            },
+            "object": {
+              "type": "string",
+              "enum": [
+                "s0",
+                "s1"
+              ]
+            },
+            "relation": {
+              "type": "string",
+              "enum": [
+                "refers_to",
+                "causes",
+                "supports",
+                "contradicts",
+                "same_entity",
+                "same_event"
+              ]
+            },
+            "grounding_span_ids": {
+              "type": "array",
+              "items": {
+                "type": "string",
+                "enum": [
+                  "s0",
+                  "s1"
+                ]
+              },
+              "minItems": 1,
+              "uniqueItems": true
+            }
+          }
+        },
+        "uniqueItems": true
+      }
+    }
+  },
+  "input_sha256": "046e844652e62961940458fc5150229b85183c9ac7c2b25ead3057d578635db2",
+  "schema_sha256": "81f1e0a335c11c2e311302172296b394104ee3ab89df1ee6227d617c6ed3bb06",
+  "prompt_sha256": "a5297ff556110b95535fa33b9a6db7bd3981b9f5e8d43097d428795a235c7664"
+}

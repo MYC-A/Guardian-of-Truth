@@ -1,0 +1,66 @@
+{
+  "configuration_sha256": "db77c3bdf4538772bfe078a363d0fb0f9f633cca6bfd01f1801d6d1d177b02cb",
+  "ordinal": 4,
+  "task": "claim_object_entities",
+  "payload": {
+    "span_inventory": [
+      {
+        "span_id": "s0",
+        "text": "I archived R-81."
+      },
+      {
+        "span_id": "s1",
+        "text": " It is now archived because of that call."
+      }
+    ],
+    "unknown_convention": "UNKNOWN for uncertain strings; null for uncertain explicit causality",
+    "entity_convention": "entity_refs must be exact strings explicitly present in response; do not invent IDs",
+    "task_instructions": "Return the object and all explicitly mentioned entity strings. Do not invent IDs, merge same-name entities, or resolve pronouns to guessed identifiers. Empty entity_refs is allowed for genuinely unspecified entities; use object UNKNOWN for unresolved objects.",
+    "task_scope": "Interpret only this field/pass. Keep actor, intent, observed state and causality distinct."
+  },
+  "schema": {
+    "type": "object",
+    "additionalProperties": false,
+    "required": [
+      "spans"
+    ],
+    "properties": {
+      "spans": {
+        "type": "array",
+        "items": {
+          "type": "object",
+          "additionalProperties": false,
+          "required": [
+            "span_id",
+            "object",
+            "entity_refs"
+          ],
+          "properties": {
+            "span_id": {
+              "type": "string",
+              "enum": [
+                "s0",
+                "s1"
+              ]
+            },
+            "object": {
+              "type": "string"
+            },
+            "entity_refs": {
+              "type": "array",
+              "items": {
+                "type": "string"
+              },
+              "uniqueItems": true
+            }
+          }
+        },
+        "minItems": 2,
+        "maxItems": 2
+      }
+    }
+  },
+  "input_sha256": "876a2e9e32a36d70d5fe2b620809863e04bf11fcf078ef354a3eb5f76510498b",
+  "schema_sha256": "87c6d346f7d427065a016728dd7a23d713d7b9fddecc530ef24a1ee5bc6790ba",
+  "prompt_sha256": "fc0f29f87baf087e67b50a6153bfe316e2fb08bb0e1a80c584f3151d41d3ed9f"
+}
