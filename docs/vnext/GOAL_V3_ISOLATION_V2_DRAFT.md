@@ -19,6 +19,17 @@ independent of explicit obligations, retains four-valued conflicts, allows
 an independent violation to survive irrelevant UNKNOWN, and returns only a
 **candidate**, never a certificate. It still needs a trusted USER-text
 authority adapter and cannot justify any definitive Core result on its own.
+The first source-replay prototype is
+`src/guardian_truth/vnext/goal_v3_user_authority_v2.py`. It recognizes only
+an exact, single trusted USER-message fragment that literally forbids a
+named tool call, binds that name/entity to a versioned current assistant
+tool call, and emits a replayable prohibition certificate. It abstains on
+paraphrases, exceptions, quotes, multiple messages and mismatched actors.
+This can certify a narrow independent ERROR witness, including a forbidden
+attempt whose tool outcome is failure. It does **not** prove general goal
+alignment, obligations, safe NO_ERROR, or arbitrary natural-language
+entailment; those remain outstanding. The caller must supply the actual
+trusted transcript/tool catalog, not model-supplied text masquerading as it.
 
 ## Target and failure hypothesis
 
@@ -118,6 +129,20 @@ runs as one batch with no per-request agent polling. If the chosen provider
 cannot expose reliable usage or enforce an acceptable budget, select a
 different provider **before** freeze or keep the run offline; do not change
 provider mid-experiment.
+
+## Provider candidate, not yet frozen or called
+
+The current candidate is Groq's `qwen/qwen3.8-27b` in JSON Object Mode,
+using the existing `GROQ_API_KEY` transport path, one request at a time and
+`max_completion_tokens` capped in the request. The [official Groq reasoning
+reference](https://console.groq.com/docs/reasoning) says this model supports
+`reasoning_effort=none`, and the [API reference](https://console.groq.com/docs/api-reference)
+currently says `none` is its default. The [official rate-limit page](https://console.groq.com/docs/rate-limits)
+lists free-plan limits for the model, but the organization's actual limits
+can differ. None of this proves the user's key has access or that reported
+usage will be small. V2 must freeze the exact payload and retain the
+after-each-case usage circuit; no exploratory model call is allowed before
+the complete v2 freeze.
 
 ## Outstanding items before v2 can be frozen
 
