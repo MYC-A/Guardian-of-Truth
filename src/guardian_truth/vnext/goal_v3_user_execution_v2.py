@@ -33,7 +33,8 @@ def _history_valid(source):
     return (all(isinstance(value, str) and value for value in ids)
         and len(set(ids)) == len(ids) and type(source.get("history_complete")) is bool
         and type(source.get("session_complete")) is bool
-        and all(event.get("actor") in {"assistant", "user", "tool"}
+        and all(isinstance(event.get("actor"), str)
+            and event["actor"] in {"assistant", "user", "tool"}
             and isinstance(event.get("kind"), str)
             and type(event.get("before_target")) is bool
             and (event.get("kind") not in {"call", "result"}

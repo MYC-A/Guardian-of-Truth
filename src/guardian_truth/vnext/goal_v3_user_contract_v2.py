@@ -110,7 +110,11 @@ def parse_user_contract_v2(source) -> UserContractV2 | None:
                 or not cap["provider"] or not isinstance(cap.get("version"), str) or not cap["version"]):
             return None
         bindings.append((name, cap["provider"], cap["version"]))
-    return UserContractV2("guardian-goal-v3-user-contract-v2", digest(source), mid,
+    try:
+        source_digest = digest(source)
+    except (TypeError, ValueError):
+        return None
+    return UserContractV2("guardian-goal-v3-user-contract-v2", source_digest, mid,
         goal.group("field"), entity, goal.start(), goal.end(), goal.group(),
         tuple(clauses), tuple(bindings))
 

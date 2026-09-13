@@ -162,8 +162,17 @@ the complete v2 freeze.
 
 ## Outstanding items before v2 can be frozen
 
-The fresh corpus and gold, exact validator semantics, accepted behavioral
-equivalences, certificate replay tests, provider/model/configuration, full
+Independent certificate replay for the exact USER fragment is implemented
+and tested; see [scope and limitations](GOAL_V3_USER_CERTIFICATES_V2.md).
+It does not establish arbitrary USER-language authority or real trace
+authentication, and cannot by itself qualify v2 for a general Goal-layer KEEP.
+
+The fresh 60-case corpus, authored gold, and tested behavioral scorer are
+implemented as drafts; see [benchmark and scoring](GOAL_V3_ISOLATION_V2_BENCHMARK_AND_SCORING.md).
+They remain development-aware mechanism tests, not a blind holdout.
+
+Final validator semantics, serialized receipt integration,
+provider/model/configuration, full
 numeric S2 gates, and token-accounting check are **not yet implemented**.
 No v2 API calls should be made until those items are committed, tested and
 sealed. The v1 result remains the only measured external Goal-only candidate
