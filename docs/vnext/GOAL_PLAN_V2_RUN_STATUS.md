@@ -22,6 +22,21 @@ Full project units: 968 passed. Protocol, regression inputs, trusted T1 sources,
 Production, Cycle1 and Cycle2 heads are unchanged. Checkpoint v9 corrects only
 v8's T1 report filename reference, preserving both unit snapshots.
 
+Latest execution checkpoint: the same process (session 99992) is confirmed live
+with 14 of 22 cases complete, through `gp:reordered_step:1`. Completed case and
+request/result receipts are committed independently of the final prediction seal.
+No final v2 report exists yet; no final semantic metrics are inferred. The exact
+113 frozen source files have been archived before further development. Source
+hashes remain unchanged. A later unit/integrity checkpoint records 1059 passed
+under `python -m pytest -q`, zero integrity errors and unchanged protected heads.
+Checkpoint v10's narrower `pytest tests -q` receipt (1053) is preserved and its
+scope clarified by v11; neither is a model-stage result.
+
+The 104-case observed-dev Policy program comparison is independently frozen,
+NOT_RUN. Its native requests and exact P1 semantic baseline share one throttle;
+no parallel API batch has been started. T2 remains frozen and NOT_RUN, next only
+after this Goal process terminates and its full report/failure audit is complete.
+
 Next: finish and audit this v2 report before any v3 prompt/source repair;
 then complete policy/T2/binding model stages, general Core integration,
 development regressions/ablations and the separately frozen blind evaluation.
