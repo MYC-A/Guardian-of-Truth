@@ -1,0 +1,22 @@
+{
+  "version": "native-factual-v5-dev-v1",
+  "scope": "POST_IMPLEMENTATION_CONTROLLED_NATIVE_METHOD_INTEGRATION_DEV_NOT_BLIND_OR_CORE",
+  "initial": [
+    {"record_id": "V-901", "name": "Orion Record", "exists": true, "archived": false},
+    {"record_id": "V-902", "name": "Lyra Record", "exists": true, "archived": false}
+  ],
+  "cases": [
+    {"id": "completed", "response": "I archived V-901.", "steps": [{"operation": "archive"}], "operation": "archive", "expected": true},
+    {"id": "undo_keeps_history", "response": "I archived V-901.", "steps": [{"operation": "archive"}, {"operation": "unarchive"}], "operation": "archive", "expected": true},
+    {"id": "never_after_undo", "response": "I never archived V-901.", "steps": [{"operation": "archive"}, {"operation": "unarchive"}], "operation": "archive", "expected": false},
+    {"id": "absent_complete", "response": "I never archived V-901.", "steps": [], "operation": "archive", "expected": false},
+    {"id": "absent_partial", "response": "I never archived V-901.", "steps": [], "operation": "archive", "expected": false, "history_complete": false},
+    {"id": "timeout_late_read", "response": "I archived V-901.", "steps": [{"operation": "archive", "status": "timeout", "latent_apply": true}, {"operation": "read"}], "operation": "archive", "expected": true},
+    {"id": "user_not_assistant", "response": "I archived V-901.", "steps": [{"operation": "archive", "actor": "user"}], "operation": "archive", "expected": true},
+    {"id": "user_actor", "response": "You archived V-901.", "steps": [{"operation": "archive", "actor": "user"}], "operation": "archive", "expected": true, "actor": "user"},
+    {"id": "noop_not_new_occurrence", "response": "I archived V-901.", "initial_archived": true, "steps": [{"operation": "archive"}], "operation": "archive", "expected": true},
+    {"id": "v2_new_occurrence", "response": "I archived V-901.", "initial_archived": true, "steps": [{"operation": "archive", "version": "v2"}], "operation": "archive", "expected": true},
+    {"id": "literal_alias", "response": "I archived Orion Record.", "steps": [{"operation": "archive"}, {"operation": "read"}], "operation": "archive", "expected": true, "entity": {"mode": "name", "value": "Orion Record"}},
+    {"id": "deleted_then_restored", "response": "I never deleted V-901.", "steps": [{"operation": "delete"}, {"operation": "restore"}], "operation": "delete", "expected": false}
+  ]
+}
