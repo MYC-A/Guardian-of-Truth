@@ -49,8 +49,19 @@ whole-Core downstream gain are NOT_ESTABLISHED by this dataset. Wrong benchmark
 world behavior is not, by itself, an adjudication that a reading is unreasonable.
 The authoritative closed/open Phi extension remains a separate required stage.
 
-Model status: NOT_RUN. Do not start this runner while Goal v2 or T2 has an active
-API process. The sequence is Goal report/audit, then T2, then Policy regression.
-Twenty-seven new controlled frontend/wire/scoring tests pass; full project
-verification at this implementation checkpoint is 1059 passed. These are unit
-results, not model quality or end-to-end gain. Nothing is promoted.
+Model status: RUN_COMPLETED_SEALED_NOT_PROMOTED. The 104/104 case regression
+completed on B.AI qwen3.8-flash across resumed sessions; predictions were
+sealed before benchmark-world scoring and the joined report is
+`outputs/vnext/policy_programs_v1_results.json`. Native telemetry: 208 requests,
+195 transport successes, 12 requests retained UNKNOWN remote capture after
+interrupted processes and were never resent. P1 telemetry: 104 requests, 104
+transport successes. Conditional results: fixed P1 30/50 valid-schema cases
+behaviorally correct (0.6); native candidates 59/285 correct (0.207 per
+candidate), any-candidate case accuracy 0.45, all-candidate case accuracy 0.0,
+strict operational all-correct yield 0.0. The paired subset (29 cases with full
+native eligibility and valid P1) shows native minus P1 delta -0.5517, so the
+multi-program native arm does not beat the frozen P1 baseline on this observed
+development regression. This is not blind evidence, not a whole-Core gain and
+not a promotion; the runner is now immutable. Full reasonable-interpretation
+recall, unsupported-interpretation rate, billing cost and the closed Phi
+extension remain NOT_ESTABLISHED.

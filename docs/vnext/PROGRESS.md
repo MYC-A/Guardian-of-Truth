@@ -285,3 +285,18 @@ Checkpoint commits: protocol `8e9c3fb`; types/ledger `8e87649`; Claim Graph
 T1 evaluator `8d2c532`; T1 pre-prediction freeze `af2e3ee`.
 Proof/certificate engine `3b36b5d`; certificate-gated decisions/escalation/adapters
 `694c32d`. No stage/prompt/configuration in frozen T1 v1 was changed.
+
+The Policy program regression is now complete: all 104 frozen cases ran on
+B.AI qwen3.8-flash and predictions were sealed before benchmark-world scoring
+(`policy_programs_v1_prediction_seal.json`, gold_joined false). Transport
+retained 299/312 successes and 12 UNKNOWN remote captures from interrupted
+processes; none were resent, and the runner is now immutable. On the conditional
+semantic subsets the fixed P1 baseline is correct on 30/50 valid-schema cases
+(0.6) while the native multi-program arm reaches 0.45 any-candidate case
+accuracy, 0.0 all-candidate accuracy and 0.207 per-candidate accuracy; the
+paired 29-case delta is -0.5517 in favor of P1. The native arm is therefore
+recorded as not beating the incumbent baseline on this observed development
+regression; nothing is promoted and whole-Core/blind gains remain unclaimed.
+Boundaries and telemetry are documented in
+`docs/vnext/POLICY_PROGRAM_V2_BOUNDARIES.md`.
+
