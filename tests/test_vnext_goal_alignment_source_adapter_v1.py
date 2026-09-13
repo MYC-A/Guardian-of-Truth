@@ -5,7 +5,7 @@ from pathlib import Path
 
 import pytest
 
-from guardian_truth.vnext.integrity import digest
+from guardian_truth.vnext.integrity import digest, file_digest
 
 from benchmarks.vnext.goal_alignment_source_adapter_v1 import project_goal_alignment_source
 
@@ -69,3 +69,14 @@ def test_history_template_expansion_preserves_actor_and_source_order():
 def test_unknown_case_field_fails_closed_before_candidate_request():
     with pytest.raises(ValueError, match="unknown case fields"):
         project_goal_alignment_source(specification(), {"reference_v2": {"status": "PROVED_ERROR"}})
+
+
+def test_source_projection_inventory_is_frozen_before_v3_inference():
+    freeze = json.loads((ROOT / "outputs/vnext/goal_alignment_v3_source_projection_v1_freeze.json").read_text(encoding="utf-8"))
+    assert freeze["adapter_sha256"] == file_digest(ROOT / "benchmarks/vnext/goal_alignment_source_adapter_v1.py")
+    assert freeze["spec_sha256"] == file_digest(ROOT / "benchmarks/vnext/goal_alignment_v3_mechanisms_v1.spec.json")
+    rows = [{"case_id": case["id"], "source_sha256": project_goal_alignment_source(specification(), case)["source_sha256"]}
+            for case in specification()["cases"]]
+    assert freeze["case_source_hashes"] == rows
+    assert freeze["case_source_inventory_sha256"] == digest(rows)
+    assert freeze["model_requests"] == 0 and freeze["v3_predictions"] == "NOT_RUN"

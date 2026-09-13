@@ -14,8 +14,11 @@ completeness. Assistant plans remain separate from SYSTEM obligations.
 Case ID, family, reference status/alignment and `meaning_universe` annotation
 are excluded even when present in the benchmark file. Unknown case fields fail
 closed. Changing an answer label leaves the projected input hash unchanged;
-changing a source premise changes it. Five local tests cover all 36 projections,
+changing a source premise changes it. Six local tests cover all 36 projections,
 gold isolation, replacement permission, event order and unknown-field rejection.
+The 36 per-case input hashes, adapter hash and specification hash are pinned in
+`outputs/vnext/goal_alignment_v3_source_projection_v1_freeze.json` before any
+v3 inference. This is an input freeze, not a prediction or result seal.
 
 The `authorization_universe_closed_by_system` field is a controlled fixture
 premise only: its false value follows the explicit `open_permission` replacement
