@@ -299,6 +299,14 @@ certificate, document-agreement or promotion proof. Four synthetic gate tests
 pass. The single Policy process PID 13520 is confirmed live and reached 74/104;
 no Goal v3 implementation, new API batch or blind evaluation has started.
 
+A separate read-only Policy v1 artifact-chain auditor is ready. It verifies
+all frozen source/input hashes, every persisted physical request/response and
+case telemetry link, exact 104-case inventory, prediction seal, report and audit
+links, and recalculates the frozen benchmark metrics. Three tests pass; the
+actual audit reports NOT_RUN_OR_INCOMPLETE while the single live Policy process
+is around 75/104. The audit will establish artifact integrity, not unrestricted
+NL correctness or whole-Core gain. No frozen Policy code or v2 Goal code changed.
+
 Checkpoint commits: protocol `8e9c3fb`; types/ledger `8e87649`; Claim Graph
 `e69a406`; T1/T2 `9e0b2f4`; policy/Goal `f0fb124`; indexed Binder `f562c8b`;
 T1 evaluator `8d2c532`; T1 pre-prediction freeze `af2e3ee`.
