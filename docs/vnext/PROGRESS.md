@@ -240,6 +240,20 @@ are not whole-Core certificates. The full report and per-case audit explicitly
 retain native/Core/blind limitations and cached name/alias linear-scan costs.
 No API requests, frozen old source changes or blind labels were involved.
 
+The explicit scaling supplement now covers 100/1000/10000 **events**, not just
+many entities: all nine controlled runs and primitive receipts pass. At 10000
+events all 4998 matching method calls/9996 result-call events are retained. Index
+query/build and independent receipt cost are reported separately; the count
+receipt replay dominates at 9.075 s. No native/Core performance claim is made.
+
+Native factual v5 now builds C2 once, routes attribution to source fields and
+unqualified completed/absence claims to candidate source-method meanings and
+all historical-ID/alias bindings, then actual T1/temporal proofs and independent
+native source receipts. Nineteen controlled-backend checks pass. Model inference,
+joint all-world policy/goal/certificate composition and blind gains remain pending.
+Qualified count/time/causality and unsupported codecs remain explicit UNKNOWN.
+Goal v2 is immutable; v3 is still deferred until Policy finishes and is audited.
+
 Checkpoint commits: protocol `8e9c3fb`; types/ledger `8e87649`; Claim Graph
 `e69a406`; T1/T2 `9e0b2f4`; policy/Goal `f0fb124`; indexed Binder `f562c8b`;
 T1 evaluator `8d2c532`; T1 pre-prediction freeze `af2e3ee`.

@@ -76,3 +76,22 @@ NL extraction improvement, production gain or blind accuracy is claimed.
 
 The 26 primitive development checks use separate entity IDs. Three artifact tests
 verify complete prediction sealing, all 130 archived source bytes and audit scope.
+
+## Actual event-count scaling supplement
+
+`binding_scaling_v1_results.json` freezes and scores nine runs: field-ID,
+field-name and mutation-count at **100 / 1000 / 10000 actual ledger events**.
+All nine truth/binding/candidate-count/receipt checks pass, with full per-case
+audit before any optimization. This is different from the prior 2002-entity test.
+
+At 10000 events, exact field-ID query time **0.1556 ms**, source/index build
+**209.3268 ms**, independent receipt construction/recheck **504.4204 ms**,
+total **713.9028 ms**. Mutation count keeps **4998** call occurrences and **9996**
+call/result events: query **278.1902 ms**, build **524.6863 ms**, receipt replay
+**9075.043 ms**, total **9877.9195 ms**. No top-k truncation was used.
+
+These are single-run measured stage timings on explicit executable fixtures,
+not population latency, native model throughput or a general complexity theorem.
+The replay cost and linear name/alias scans remain documented optimization targets;
+old candidate and result bytes are unchanged. Two artifact checks verify all nine
+seals, source hashes and actual counts. No API/whole-Core certificate is involved.
