@@ -159,6 +159,18 @@ modules are unused by the frozen Goal/T2 versions; no frozen source was edited.
 Latest complete project verification after the source-owned identity tests:
 1026 passed. This is unit behavior only, not stage or end-to-end semantic gain.
 
+New P1-like Policy development preserves several grounded behavioral programs
+and a separate challenger, without P2 parsing or confidence voting. Missing
+atoms remain UNKNOWN; finite schemas do not close meaning. The separate
+104-case observed-dev runner retains exact P1 semantic prompts/validation and
+declares its common transport-envelope changes. Native and baseline requests
+share a single throttle/quota stream; predictions are sealed before world
+scoring. Model phase remains NOT_RUN while Goal v2 is active, with T2 next in
+sequence. Joint Core atom grounding/certificates and the closed/open Phi stage
+are still pending. See POLICY_PROGRAM_V2_BOUNDARIES.md. Twenty-seven controlled
+frontend/wire/scoring tests pass; full project verification is 1059 passed,
+not model quality or end-to-end gain. Frozen Goal/T2 source is unchanged.
+
 Checkpoint commits: protocol `8e9c3fb`; types/ledger `8e87649`; Claim Graph
 `e69a406`; T1/T2 `9e0b2f4`; policy/Goal `f0fb124`; indexed Binder `f562c8b`;
 T1 evaluator `8d2c532`; T1 pre-prediction freeze `af2e3ee`.
