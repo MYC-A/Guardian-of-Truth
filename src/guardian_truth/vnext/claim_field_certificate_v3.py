@@ -93,7 +93,8 @@ def check_field_evidence(prompt, response, metadata, declarations, graph, eviden
             and claim.modality in {'ASSERTED', 'REPORTED'} and claim.polarity == 'POSITIVE'
             and not claim.unknown_fields and bool(claim.source_refs) and 'UNKNOWN' not in claim.source_refs
             and claim.actor in {'tool', 'TOOL', *declared_names}
-            and all(ref.upper() == 'TOOL' or ref.removeprefix('TOOL:') in declared_names for ref in claim.source_refs))
+            and all(ref.upper() == 'TOOL' or ref.removeprefix('TOOL:') in declared_names for ref in claim.source_refs)
+            and claim.time_anchor == 'PAST')
         if not allowed:
             if row.meanings or row.bindings or row.value is not Truth.UNKNOWN:
                 errors.append('UNSUPPORTED_CLAIM_USED_AS_FIELD_FACT:' + cid)

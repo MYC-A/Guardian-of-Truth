@@ -177,8 +177,8 @@ rechecked primitive receipts. It preserves numeric/scalar types, all compatible
 record/result alternatives and original span dispositions. Target-forged roles
 or TOOL results do not create evidence; USER/ASSISTANT source attribution is not
 interchanged. Receipts certify conditional exact-field evidence, never current
-state/completion/causality or a whole-Core verdict. Fifty new controlled checks
-pass; full project verification is 1109 passed. See
+state/completion/causality or a whole-Core verdict. Fifty-five new controlled checks
+pass, including ungrounded relative/current time; full project verification is 1114 passed. See
 FACTUAL_INVOCATION_V3_BOUNDARIES.md for missing joint Core/certificate composition
 and source-adapter limitations. No frozen model-stage source was edited, no
 parallel API batch was started and no blind gold was opened.

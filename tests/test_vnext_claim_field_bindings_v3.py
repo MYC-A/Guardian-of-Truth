@@ -181,3 +181,12 @@ def test_long_trace_indexes_one_named_record_without_top_k_or_unrelated_record_s
     result = prove('Tool reported price 42 for name-42.', source, entity_refs=('name-42',))
     assert result.value is Truth.TRUE
     assert result.searched_record_count == len(result.bindings) == 1
+
+
+@pytest.mark.parametrize('time', ['YESTERDAY', 'NOW', 'FUTURE', 'event:1', None])
+def test_exact_field_agreement_does_not_fabricate_an_ungrounded_time_or_freshness(time):
+    backend = Backend()
+    result = prove('Tool reported price 42 for Alex.', index([{'id': 'a', 'name': 'Alex', 'price': 42}]),
+        backend=backend, time_anchor=time)
+    assert result.value is Truth.UNKNOWN and not backend.calls
+    assert Reason.TIME_UNBOUND in result.reasons

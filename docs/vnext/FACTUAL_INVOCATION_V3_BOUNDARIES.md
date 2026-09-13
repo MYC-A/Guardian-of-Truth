@@ -23,7 +23,9 @@ Candidate lookup uses name and stable-ID indexes. All compatible declared
 identities and result events are retained, not top-k or a convenient latest row.
 Different entities' values are never flattened together. Incomplete source,
 missing identities/fields, different candidate values and unresolved material
-meaning remain explicit. The layer supports positive TOOL-result attribution;
+meaning remain explicit. The layer supports positive, unspecific-past
+TOOL-result attribution; dates, NOW/freshness and ungrounded event references
+remain TIME_UNBOUND rather than being inferred from equal field values.
 current state, completion, causality, negative attribution and other kinds are
 retained as unsupported/unknown rather than given the same proof requirements.
 Non-verifiable spans retain their original disposition without becoming a
@@ -48,9 +50,9 @@ An agreement value is conditional evidence under retained mappings, not proof
 of unrestricted NL meaning or full safety. Existing certificate formats are not
 silently widened to accept these new primitives.
 
-Fifty controlled tests cover the new invocation/binding/checker/role behavior,
+Fifty-five controlled tests cover the new invocation/binding/checker/role/time behavior,
 including 2000 records with a one-record indexed candidate lookup. Full project
-verification at this checkpoint: `python -m pytest -q`, 1109 passed. These are
+verification at this checkpoint: `python -m pytest -q`, 1114 passed. These are
 unit/runtime checks, not a frozen model benchmark or end-to-end improvement.
 
 Remaining: attach the independently checked field primitives to the joint Core

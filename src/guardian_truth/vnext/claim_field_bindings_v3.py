@@ -178,6 +178,10 @@ def interpret_claim_result_field(response, claim, index, backend, *, before_inde
     if (claim.actor not in {'tool', 'TOOL', *declared_names}
             or any(ref.upper() != 'TOOL' and ref.removeprefix('TOOL:') not in declared_names for ref in claim.source_refs)):
         return _unknown(claim, reason=Reason.SOURCE_UNBOUND)
+    if claim.time_anchor != 'PAST':
+        # This pass does not ground dates, relative times, freshness or the
+        # existence of a result at the current target moment.
+        return _unknown(claim, reason=Reason.TIME_UNBOUND)
     literals = target_literals(response, claim)
     groups, paths, complete, searched, entity_count = index.candidates(claim, response, before_index)
     if not groups:
