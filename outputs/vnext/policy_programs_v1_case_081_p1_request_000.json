@@ -1,0 +1,74 @@
+{
+  "configuration_sha256": "8ab1c29d5c2e4747ec410049227f69ae1a048ce8b32e951a59ce17bbcf475317",
+  "ordinal": 0,
+  "messages": [
+    {
+      "role": "system",
+      "content": "Translate one natural-language POLICY directly into a final Boolean policy program over only the supplied ATOMS. Each inner array is a conjunction, the outer array is OR, and !atom means negation. violation_clauses describe exactly when the policy is violated; permission_clauses describe explicit permission. Preserve actor, resource, identity, source, temporal, exception, necessary-versus-sufficient, and cardinality distinctions. Do not infer completion or effects from an action name. Return only the exact JSON object requested by the user."
+    },
+    {
+      "role": "user",
+      "content": "CASE_ID: defined_update::1\nPOLICY: Here 'database change' covers flight, baggage, cabin, and passenger edits; every such change requires prior confirmation.\nATOMS: [\"action:baggage_edit\", \"action:passenger_information_edit\", \"distractor:irrelevant\", \"event:confirmation_before\"]\nOUTPUT_JSON_SCHEMA: {\"type\":\"object\",\"properties\":{\"case_id\":{\"type\":\"string\",\"const\":\"defined_update::1\"},\"violation_clauses\":{\"type\":\"array\",\"items\":{\"type\":\"array\",\"items\":{\"type\":\"string\",\"enum\":[\"action:baggage_edit\",\"action:passenger_information_edit\",\"distractor:irrelevant\",\"event:confirmation_before\",\"!action:baggage_edit\",\"!action:passenger_information_edit\",\"!distractor:irrelevant\",\"!event:confirmation_before\"]},\"minItems\":1,\"uniqueItems\":true}},\"permission_clauses\":{\"type\":\"array\",\"items\":{\"type\":\"array\",\"items\":{\"type\":\"string\",\"enum\":[\"action:baggage_edit\",\"action:passenger_information_edit\",\"distractor:irrelevant\",\"event:confirmation_before\",\"!action:baggage_edit\",\"!action:passenger_information_edit\",\"!distractor:irrelevant\",\"!event:confirmation_before\"]},\"minItems\":1,\"uniqueItems\":true}}},\"required\":[\"case_id\",\"violation_clauses\",\"permission_clauses\"],\"additionalProperties\":false}"
+    }
+  ],
+  "schema": {
+    "type": "object",
+    "properties": {
+      "case_id": {
+        "type": "string",
+        "const": "defined_update::1"
+      },
+      "violation_clauses": {
+        "type": "array",
+        "items": {
+          "type": "array",
+          "items": {
+            "type": "string",
+            "enum": [
+              "action:baggage_edit",
+              "action:passenger_information_edit",
+              "distractor:irrelevant",
+              "event:confirmation_before",
+              "!action:baggage_edit",
+              "!action:passenger_information_edit",
+              "!distractor:irrelevant",
+              "!event:confirmation_before"
+            ]
+          },
+          "minItems": 1,
+          "uniqueItems": true
+        }
+      },
+      "permission_clauses": {
+        "type": "array",
+        "items": {
+          "type": "array",
+          "items": {
+            "type": "string",
+            "enum": [
+              "action:baggage_edit",
+              "action:passenger_information_edit",
+              "distractor:irrelevant",
+              "event:confirmation_before",
+              "!action:baggage_edit",
+              "!action:passenger_information_edit",
+              "!distractor:irrelevant",
+              "!event:confirmation_before"
+            ]
+          },
+          "minItems": 1,
+          "uniqueItems": true
+        }
+      }
+    },
+    "required": [
+      "case_id",
+      "violation_clauses",
+      "permission_clauses"
+    ],
+    "additionalProperties": false
+  },
+  "reasoning_effort": "low",
+  "prompt_sha256": "6796fdb63ab0592c89f7bed874f5dcc0a03c1dda9a3a82506dc46171afa93f7e",
+  "schema_sha256": "f1ee67af58c6eb9f282299d6b5dbaa61e434efde32d055c9e4ac6d9a59f7807d"
+}
