@@ -1,0 +1,70 @@
+{
+  "configuration_sha256": "8ab1c29d5c2e4747ec410049227f69ae1a048ce8b32e951a59ce17bbcf475317",
+  "ordinal": 0,
+  "messages": [
+    {
+      "role": "system",
+      "content": "Translate one natural-language POLICY directly into a final Boolean policy program over only the supplied ATOMS. Each inner array is a conjunction, the outer array is OR, and !atom means negation. violation_clauses describe exactly when the policy is violated; permission_clauses describe explicit permission. Preserve actor, resource, identity, source, temporal, exception, necessary-versus-sufficient, and cardinality distinctions. Do not infer completion or effects from an action name. Return only the exact JSON object requested by the user."
+    },
+    {
+      "role": "user",
+      "content": "CASE_ID: observed_provenance::3\nPOLICY: delete_file can succeed or fail. An attempted call is recorded separately. A completion claim is permitted only when a successful result confirms deletion.\nATOMS: [\"claim:file_deleted\", \"distractor:irrelevant\", \"evidence:successful_delete_result\"]\nOUTPUT_JSON_SCHEMA: {\"type\":\"object\",\"properties\":{\"case_id\":{\"type\":\"string\",\"const\":\"observed_provenance::3\"},\"violation_clauses\":{\"type\":\"array\",\"items\":{\"type\":\"array\",\"items\":{\"type\":\"string\",\"enum\":[\"claim:file_deleted\",\"distractor:irrelevant\",\"evidence:successful_delete_result\",\"!claim:file_deleted\",\"!distractor:irrelevant\",\"!evidence:successful_delete_result\"]},\"minItems\":1,\"uniqueItems\":true}},\"permission_clauses\":{\"type\":\"array\",\"items\":{\"type\":\"array\",\"items\":{\"type\":\"string\",\"enum\":[\"claim:file_deleted\",\"distractor:irrelevant\",\"evidence:successful_delete_result\",\"!claim:file_deleted\",\"!distractor:irrelevant\",\"!evidence:successful_delete_result\"]},\"minItems\":1,\"uniqueItems\":true}}},\"required\":[\"case_id\",\"violation_clauses\",\"permission_clauses\"],\"additionalProperties\":false}"
+    }
+  ],
+  "schema": {
+    "type": "object",
+    "properties": {
+      "case_id": {
+        "type": "string",
+        "const": "observed_provenance::3"
+      },
+      "violation_clauses": {
+        "type": "array",
+        "items": {
+          "type": "array",
+          "items": {
+            "type": "string",
+            "enum": [
+              "claim:file_deleted",
+              "distractor:irrelevant",
+              "evidence:successful_delete_result",
+              "!claim:file_deleted",
+              "!distractor:irrelevant",
+              "!evidence:successful_delete_result"
+            ]
+          },
+          "minItems": 1,
+          "uniqueItems": true
+        }
+      },
+      "permission_clauses": {
+        "type": "array",
+        "items": {
+          "type": "array",
+          "items": {
+            "type": "string",
+            "enum": [
+              "claim:file_deleted",
+              "distractor:irrelevant",
+              "evidence:successful_delete_result",
+              "!claim:file_deleted",
+              "!distractor:irrelevant",
+              "!evidence:successful_delete_result"
+            ]
+          },
+          "minItems": 1,
+          "uniqueItems": true
+        }
+      }
+    },
+    "required": [
+      "case_id",
+      "violation_clauses",
+      "permission_clauses"
+    ],
+    "additionalProperties": false
+  },
+  "reasoning_effort": "low",
+  "prompt_sha256": "e6d8985017dc9054924302021d59c070eb5a9da437b892e4c36739fdcdaa91a6",
+  "schema_sha256": "602d9b05a3f4f3256c8d8294bc27c6a145502756a1ba4e2af879d41733cd4fd9"
+}

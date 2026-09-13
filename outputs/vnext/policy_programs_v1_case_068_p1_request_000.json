@@ -1,0 +1,70 @@
+{
+  "configuration_sha256": "8ab1c29d5c2e4747ec410049227f69ae1a048ce8b32e951a59ce17bbcf475317",
+  "ordinal": 0,
+  "messages": [
+    {
+      "role": "system",
+      "content": "Translate one natural-language POLICY directly into a final Boolean policy program over only the supplied ATOMS. Each inner array is a conjunction, the outer array is OR, and !atom means negation. violation_clauses describe exactly when the policy is violated; permission_clauses describe explicit permission. Preserve actor, resource, identity, source, temporal, exception, necessary-versus-sufficient, and cardinality distinctions. Do not infer completion or effects from an action name. Return only the exact JSON object requested by the user."
+    },
+    {
+      "role": "user",
+      "content": "CASE_ID: owner_recipient::0\nPOLICY: Send account details only to the verified owner of that same account.\nATOMS: [\"action:send_account_details\", \"distractor:irrelevant\", \"identity:recipient_owns_source\"]\nOUTPUT_JSON_SCHEMA: {\"type\":\"object\",\"properties\":{\"case_id\":{\"type\":\"string\",\"const\":\"owner_recipient::0\"},\"violation_clauses\":{\"type\":\"array\",\"items\":{\"type\":\"array\",\"items\":{\"type\":\"string\",\"enum\":[\"action:send_account_details\",\"distractor:irrelevant\",\"identity:recipient_owns_source\",\"!action:send_account_details\",\"!distractor:irrelevant\",\"!identity:recipient_owns_source\"]},\"minItems\":1,\"uniqueItems\":true}},\"permission_clauses\":{\"type\":\"array\",\"items\":{\"type\":\"array\",\"items\":{\"type\":\"string\",\"enum\":[\"action:send_account_details\",\"distractor:irrelevant\",\"identity:recipient_owns_source\",\"!action:send_account_details\",\"!distractor:irrelevant\",\"!identity:recipient_owns_source\"]},\"minItems\":1,\"uniqueItems\":true}}},\"required\":[\"case_id\",\"violation_clauses\",\"permission_clauses\"],\"additionalProperties\":false}"
+    }
+  ],
+  "schema": {
+    "type": "object",
+    "properties": {
+      "case_id": {
+        "type": "string",
+        "const": "owner_recipient::0"
+      },
+      "violation_clauses": {
+        "type": "array",
+        "items": {
+          "type": "array",
+          "items": {
+            "type": "string",
+            "enum": [
+              "action:send_account_details",
+              "distractor:irrelevant",
+              "identity:recipient_owns_source",
+              "!action:send_account_details",
+              "!distractor:irrelevant",
+              "!identity:recipient_owns_source"
+            ]
+          },
+          "minItems": 1,
+          "uniqueItems": true
+        }
+      },
+      "permission_clauses": {
+        "type": "array",
+        "items": {
+          "type": "array",
+          "items": {
+            "type": "string",
+            "enum": [
+              "action:send_account_details",
+              "distractor:irrelevant",
+              "identity:recipient_owns_source",
+              "!action:send_account_details",
+              "!distractor:irrelevant",
+              "!identity:recipient_owns_source"
+            ]
+          },
+          "minItems": 1,
+          "uniqueItems": true
+        }
+      }
+    },
+    "required": [
+      "case_id",
+      "violation_clauses",
+      "permission_clauses"
+    ],
+    "additionalProperties": false
+  },
+  "reasoning_effort": "low",
+  "prompt_sha256": "b9e6c8d16eff1aeee0a8801f6862d814b741694b4f8bc35d2188b9da3a3204db",
+  "schema_sha256": "593b094b5a9da19736e5762097577da41b10855956eabdd6baa56a9a24fb8b47"
+}

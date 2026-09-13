@@ -1,0 +1,70 @@
+{
+  "configuration_sha256": "8ab1c29d5c2e4747ec410049227f69ae1a048ce8b32e951a59ce17bbcf475317",
+  "ordinal": 0,
+  "messages": [
+    {
+      "role": "system",
+      "content": "Translate one natural-language POLICY directly into a final Boolean policy program over only the supplied ATOMS. Each inner array is a conjunction, the outer array is OR, and !atom means negation. violation_clauses describe exactly when the policy is violated; permission_clauses describe explicit permission. Preserve actor, resource, identity, source, temporal, exception, necessary-versus-sufficient, and cardinality distinctions. Do not infer completion or effects from an action name. Return only the exact JSON object requested by the user."
+    },
+    {
+      "role": "user",
+      "content": "CASE_ID: fresh_balance::3\nPOLICY: Balance reads are observations. Debits may change the balance. In the reporting section, current balance requires a read fresher than every successful debit.\nATOMS: [\"claim:current_balance\", \"distractor:irrelevant\", \"evidence:fresh_after_latest_write\"]\nOUTPUT_JSON_SCHEMA: {\"type\":\"object\",\"properties\":{\"case_id\":{\"type\":\"string\",\"const\":\"fresh_balance::3\"},\"violation_clauses\":{\"type\":\"array\",\"items\":{\"type\":\"array\",\"items\":{\"type\":\"string\",\"enum\":[\"claim:current_balance\",\"distractor:irrelevant\",\"evidence:fresh_after_latest_write\",\"!claim:current_balance\",\"!distractor:irrelevant\",\"!evidence:fresh_after_latest_write\"]},\"minItems\":1,\"uniqueItems\":true}},\"permission_clauses\":{\"type\":\"array\",\"items\":{\"type\":\"array\",\"items\":{\"type\":\"string\",\"enum\":[\"claim:current_balance\",\"distractor:irrelevant\",\"evidence:fresh_after_latest_write\",\"!claim:current_balance\",\"!distractor:irrelevant\",\"!evidence:fresh_after_latest_write\"]},\"minItems\":1,\"uniqueItems\":true}}},\"required\":[\"case_id\",\"violation_clauses\",\"permission_clauses\"],\"additionalProperties\":false}"
+    }
+  ],
+  "schema": {
+    "type": "object",
+    "properties": {
+      "case_id": {
+        "type": "string",
+        "const": "fresh_balance::3"
+      },
+      "violation_clauses": {
+        "type": "array",
+        "items": {
+          "type": "array",
+          "items": {
+            "type": "string",
+            "enum": [
+              "claim:current_balance",
+              "distractor:irrelevant",
+              "evidence:fresh_after_latest_write",
+              "!claim:current_balance",
+              "!distractor:irrelevant",
+              "!evidence:fresh_after_latest_write"
+            ]
+          },
+          "minItems": 1,
+          "uniqueItems": true
+        }
+      },
+      "permission_clauses": {
+        "type": "array",
+        "items": {
+          "type": "array",
+          "items": {
+            "type": "string",
+            "enum": [
+              "claim:current_balance",
+              "distractor:irrelevant",
+              "evidence:fresh_after_latest_write",
+              "!claim:current_balance",
+              "!distractor:irrelevant",
+              "!evidence:fresh_after_latest_write"
+            ]
+          },
+          "minItems": 1,
+          "uniqueItems": true
+        }
+      }
+    },
+    "required": [
+      "case_id",
+      "violation_clauses",
+      "permission_clauses"
+    ],
+    "additionalProperties": false
+  },
+  "reasoning_effort": "low",
+  "prompt_sha256": "39a255fd558fc8a17a9c6c17f305f01f24d377cbefc80c4e0c5b88a82b75865c",
+  "schema_sha256": "c713fda395bb402646e3c78dc2eb99c369ef3743eb70e80587f6f29351bd59b4"
+}

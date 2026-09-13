@@ -1,0 +1,74 @@
+{
+  "configuration_sha256": "8ab1c29d5c2e4747ec410049227f69ae1a048ce8b32e951a59ce17bbcf475317",
+  "ordinal": 0,
+  "messages": [
+    {
+      "role": "system",
+      "content": "Translate one natural-language POLICY directly into a final Boolean policy program over only the supplied ATOMS. Each inner array is a conjunction, the outer array is OR, and !atom means negation. violation_clauses describe exactly when the policy is violated; permission_clauses describe explicit permission. Preserve actor, resource, identity, source, temporal, exception, necessary-versus-sufficient, and cardinality distinctions. Do not infer completion or effects from an action name. Return only the exact JSON object requested by the user."
+    },
+    {
+      "role": "user",
+      "content": "CASE_ID: not_both_channels::1\nPOLICY: For one alert, sending email alone or SMS alone is allowed, but their conjunction is prohibited.\nATOMS: [\"action:send_email\", \"action:send_sms\", \"distractor:irrelevant\", \"identity:same_alert\"]\nOUTPUT_JSON_SCHEMA: {\"type\":\"object\",\"properties\":{\"case_id\":{\"type\":\"string\",\"const\":\"not_both_channels::1\"},\"violation_clauses\":{\"type\":\"array\",\"items\":{\"type\":\"array\",\"items\":{\"type\":\"string\",\"enum\":[\"action:send_email\",\"action:send_sms\",\"distractor:irrelevant\",\"identity:same_alert\",\"!action:send_email\",\"!action:send_sms\",\"!distractor:irrelevant\",\"!identity:same_alert\"]},\"minItems\":1,\"uniqueItems\":true}},\"permission_clauses\":{\"type\":\"array\",\"items\":{\"type\":\"array\",\"items\":{\"type\":\"string\",\"enum\":[\"action:send_email\",\"action:send_sms\",\"distractor:irrelevant\",\"identity:same_alert\",\"!action:send_email\",\"!action:send_sms\",\"!distractor:irrelevant\",\"!identity:same_alert\"]},\"minItems\":1,\"uniqueItems\":true}}},\"required\":[\"case_id\",\"violation_clauses\",\"permission_clauses\"],\"additionalProperties\":false}"
+    }
+  ],
+  "schema": {
+    "type": "object",
+    "properties": {
+      "case_id": {
+        "type": "string",
+        "const": "not_both_channels::1"
+      },
+      "violation_clauses": {
+        "type": "array",
+        "items": {
+          "type": "array",
+          "items": {
+            "type": "string",
+            "enum": [
+              "action:send_email",
+              "action:send_sms",
+              "distractor:irrelevant",
+              "identity:same_alert",
+              "!action:send_email",
+              "!action:send_sms",
+              "!distractor:irrelevant",
+              "!identity:same_alert"
+            ]
+          },
+          "minItems": 1,
+          "uniqueItems": true
+        }
+      },
+      "permission_clauses": {
+        "type": "array",
+        "items": {
+          "type": "array",
+          "items": {
+            "type": "string",
+            "enum": [
+              "action:send_email",
+              "action:send_sms",
+              "distractor:irrelevant",
+              "identity:same_alert",
+              "!action:send_email",
+              "!action:send_sms",
+              "!distractor:irrelevant",
+              "!identity:same_alert"
+            ]
+          },
+          "minItems": 1,
+          "uniqueItems": true
+        }
+      }
+    },
+    "required": [
+      "case_id",
+      "violation_clauses",
+      "permission_clauses"
+    ],
+    "additionalProperties": false
+  },
+  "reasoning_effort": "low",
+  "prompt_sha256": "d7922efe440804b41bdad22f6cf3c71b250e4e360050b44c3290810ac3d1f517",
+  "schema_sha256": "061529cba97100a81eb8e181fec400e8da3b826edf401aa66f1d4c85be170495"
+}

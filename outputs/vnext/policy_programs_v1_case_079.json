@@ -1,0 +1,447 @@
+{
+  "case_id": "nested_cancel::3",
+  "configuration_sha256": "8ab1c29d5c2e4747ec410049227f69ae1a048ce8b32e951a59ce17bbcf475317",
+  "prediction": {
+    "native": {
+      "hypotheses": [
+        {
+          "hypothesis_id": "policy-program:h0",
+          "basis": "The rule states cancellation is permitted only when all three conditions hold simultaneously: the order is pending, the requester owns it, and confirmation preceded the action. Missing any one condition constitutes a violation.",
+          "program": {
+            "violation_clauses": [
+              [
+                "action:cancel_order",
+                "!state:order_pending"
+              ],
+              [
+                "action:cancel_order",
+                "!identity:requester_owns_order"
+              ],
+              [
+                "action:cancel_order",
+                "!event:confirmation_before"
+              ]
+            ],
+            "permission_clauses": [
+              [
+                "action:cancel_order",
+                "state:order_pending",
+                "identity:requester_owns_order",
+                "event:confirmation_before"
+              ]
+            ]
+          },
+          "source_spans": [
+            {
+              "document": "policy",
+              "start": 145,
+              "end": 223
+            }
+          ],
+          "unresolved_terms": [
+            "explicit confirmation (what constitutes 'explicit' is undefined)"
+          ]
+        },
+        {
+          "hypothesis_id": "policy-program:h1",
+          "basis": "The phrase 'a pending order' restricts the rule's applicability to orders in pending state. Non-pending orders fall outside the scope entirely, making state a hard gate: if the order is not pending, no cancellation is permitted regardless of ownership or confirmation.",
+          "program": {
+            "violation_clauses": [
+              [
+                "action:cancel_order",
+                "!state:order_pending"
+              ],
+              [
+                "action:cancel_order",
+                "state:order_pending",
+                "!identity:requester_owns_order"
+              ],
+              [
+                "action:cancel_order",
+                "state:order_pending",
+                "!event:confirmation_before"
+              ]
+            ],
+            "permission_clauses": [
+              [
+                "action:cancel_order",
+                "state:order_pending",
+                "identity:requester_owns_order",
+                "event:confirmation_before"
+              ]
+            ]
+          },
+          "source_spans": [
+            {
+              "document": "policy",
+              "start": 145,
+              "end": 223
+            },
+            {
+              "document": "policy",
+              "start": 0,
+              "end": 27
+            }
+          ],
+          "unresolved_terms": [
+            "what happens to non-pending orders (out of scope vs. prohibited)"
+          ]
+        },
+        {
+          "hypothesis_id": "policy-program:h2",
+          "basis": "'After explicit confirmation' imposes a temporal ordering: confirmation must precede the cancellation action. This is a sequencing constraint, not merely a boolean co-presence. The event must occur before the action, not just be true at the time of action.",
+          "program": {
+            "violation_clauses": [
+              [
+                "action:cancel_order",
+                "!event:confirmation_before"
+              ],
+              [
+                "action:cancel_order",
+                "state:order_pending",
+                "identity:requester_owns_order",
+                "!event:confirmation_before"
+              ]
+            ],
+            "permission_clauses": [
+              [
+                "action:cancel_order",
+                "event:confirmation_before",
+                "state:order_pending",
+                "identity:requester_owns_order"
+              ]
+            ]
+          },
+          "source_spans": [
+            {
+              "document": "policy",
+              "start": 145,
+              "end": 223
+            },
+            {
+              "document": "policy",
+              "start": 70,
+              "end": 116
+            }
+          ],
+          "unresolved_terms": [
+            "how far in advance confirmation must occur",
+            "whether confirmation can be revoked"
+          ]
+        },
+        {
+          "hypothesis_id": "policy-program:h3",
+          "basis": "'Only by its owner' establishes an exclusive identity permission: no actor other than the order's owner may cancel, even if the order is pending and confirmation exists. This makes identity a necessary and exclusive gate on the actor.",
+          "program": {
+            "violation_clauses": [
+              [
+                "action:cancel_order",
+                "!identity:requester_owns_order"
+              ],
+              [
+                "action:cancel_order",
+                "!identity:requester_owns_order",
+                "state:order_pending",
+                "event:confirmation_before"
+              ]
+            ],
+            "permission_clauses": [
+              [
+                "action:cancel_order",
+                "identity:requester_owns_order",
+                "state:order_pending",
+                "event:confirmation_before"
+              ]
+            ]
+          },
+          "source_spans": [
+            {
+              "document": "policy",
+              "start": 145,
+              "end": 223
+            },
+            {
+              "document": "policy",
+              "start": 29,
+              "end": 68
+            }
+          ],
+          "unresolved_terms": [
+            "whether ownership can transfer mid-lifecycle",
+            "what 'binds' implies about mutability"
+          ]
+        }
+      ],
+      "coverage": {
+        "status": "OPEN_SEMANTICS",
+        "universe_source": null,
+        "enumeration_complete": false,
+        "unresolved_terms": [
+          "explicit confirmation (criteria for 'explicit' undefined)",
+          "scope of non-pending orders",
+          "temporal window for confirmation",
+          "mutability of ownership binding",
+          "explicit confirmation (what constitutes 'explicit' is undefined)",
+          "what happens to non-pending orders (out of scope vs. prohibited)",
+          "how far in advance confirmation must occur",
+          "whether confirmation can be revoked",
+          "whether ownership can transfer mid-lifecycle",
+          "what 'binds' implies about mutability"
+        ],
+        "discarded_hypotheses": [],
+        "challenger_alternatives": []
+      },
+      "failures": [
+        [
+          "policy_program_missing_reading_v2",
+          "TRANSPORT_ERROR"
+        ]
+      ],
+      "empirical_hypotheses": [
+        {
+          "hypothesis_id": "policy-program:h0",
+          "basis": "The rule states cancellation is permitted only when all three conditions hold simultaneously: the order is pending, the requester owns it, and confirmation preceded the action. Missing any one condition constitutes a violation.",
+          "program": {
+            "violation_clauses": [
+              [
+                "action:cancel_order",
+                "!state:order_pending"
+              ],
+              [
+                "action:cancel_order",
+                "!identity:requester_owns_order"
+              ],
+              [
+                "action:cancel_order",
+                "!event:confirmation_before"
+              ]
+            ],
+            "permission_clauses": [
+              [
+                "action:cancel_order",
+                "state:order_pending",
+                "identity:requester_owns_order",
+                "event:confirmation_before"
+              ]
+            ]
+          },
+          "source_spans": [
+            {
+              "document": "policy",
+              "start": 145,
+              "end": 223
+            }
+          ],
+          "unresolved_terms": [
+            "explicit confirmation (what constitutes 'explicit' is undefined)"
+          ]
+        },
+        {
+          "hypothesis_id": "policy-program:h1",
+          "basis": "The phrase 'a pending order' restricts the rule's applicability to orders in pending state. Non-pending orders fall outside the scope entirely, making state a hard gate: if the order is not pending, no cancellation is permitted regardless of ownership or confirmation.",
+          "program": {
+            "violation_clauses": [
+              [
+                "action:cancel_order",
+                "!state:order_pending"
+              ],
+              [
+                "action:cancel_order",
+                "state:order_pending",
+                "!identity:requester_owns_order"
+              ],
+              [
+                "action:cancel_order",
+                "state:order_pending",
+                "!event:confirmation_before"
+              ]
+            ],
+            "permission_clauses": [
+              [
+                "action:cancel_order",
+                "state:order_pending",
+                "identity:requester_owns_order",
+                "event:confirmation_before"
+              ]
+            ]
+          },
+          "source_spans": [
+            {
+              "document": "policy",
+              "start": 145,
+              "end": 223
+            },
+            {
+              "document": "policy",
+              "start": 0,
+              "end": 27
+            }
+          ],
+          "unresolved_terms": [
+            "what happens to non-pending orders (out of scope vs. prohibited)"
+          ]
+        },
+        {
+          "hypothesis_id": "policy-program:h2",
+          "basis": "'After explicit confirmation' imposes a temporal ordering: confirmation must precede the cancellation action. This is a sequencing constraint, not merely a boolean co-presence. The event must occur before the action, not just be true at the time of action.",
+          "program": {
+            "violation_clauses": [
+              [
+                "action:cancel_order",
+                "!event:confirmation_before"
+              ],
+              [
+                "action:cancel_order",
+                "state:order_pending",
+                "identity:requester_owns_order",
+                "!event:confirmation_before"
+              ]
+            ],
+            "permission_clauses": [
+              [
+                "action:cancel_order",
+                "event:confirmation_before",
+                "state:order_pending",
+                "identity:requester_owns_order"
+              ]
+            ]
+          },
+          "source_spans": [
+            {
+              "document": "policy",
+              "start": 145,
+              "end": 223
+            },
+            {
+              "document": "policy",
+              "start": 70,
+              "end": 116
+            }
+          ],
+          "unresolved_terms": [
+            "how far in advance confirmation must occur",
+            "whether confirmation can be revoked"
+          ]
+        },
+        {
+          "hypothesis_id": "policy-program:h3",
+          "basis": "'Only by its owner' establishes an exclusive identity permission: no actor other than the order's owner may cancel, even if the order is pending and confirmation exists. This makes identity a necessary and exclusive gate on the actor.",
+          "program": {
+            "violation_clauses": [
+              [
+                "action:cancel_order",
+                "!identity:requester_owns_order"
+              ],
+              [
+                "action:cancel_order",
+                "!identity:requester_owns_order",
+                "state:order_pending",
+                "event:confirmation_before"
+              ]
+            ],
+            "permission_clauses": [
+              [
+                "action:cancel_order",
+                "identity:requester_owns_order",
+                "state:order_pending",
+                "event:confirmation_before"
+              ]
+            ]
+          },
+          "source_spans": [
+            {
+              "document": "policy",
+              "start": 145,
+              "end": 223
+            },
+            {
+              "document": "policy",
+              "start": 29,
+              "end": 68
+            }
+          ],
+          "unresolved_terms": [
+            "whether ownership can transfer mid-lifecycle",
+            "what 'binds' implies about mutability"
+          ]
+        }
+      ]
+    },
+    "fixed_p1": {
+      "case_id": "nested_cancel::3",
+      "arm": "P1",
+      "transport_status": "SUCCESS",
+      "schema_status": "INVALID",
+      "semantic_status": "PENDING_GOLD_JOIN",
+      "representation_status": "NOT_EVALUATED",
+      "error_category": null,
+      "prediction": null,
+      "source_coverage": 1.0,
+      "served_model": "qwen3.8-flash",
+      "latency_ms": 11959.07,
+      "usage": {
+        "prompt_tokens": 474,
+        "completion_tokens": 453,
+        "total_tokens": 927
+      }
+    }
+  },
+  "native_request_telemetry": [
+    {
+      "backend_version": "diagnostic-semantic-v2",
+      "task": "policy_program_hypotheses_v2",
+      "input_sha256": "063975a40226d58fddac97f09da8a4472277970a45d001e96d6e22262e370c06",
+      "prompt_sha256": "ab49d7ae671d161f8427a6131077641c77f9934437736274ec4b7f2d2c1bf476",
+      "schema_sha256": "8aaa0ceb2fa2b463712faf9b075dfb5462b10a47a3741d15c03ec46425fe5f84",
+      "served_model": "qwen3.8-flash",
+      "usage": {
+        "prompt_tokens": 636,
+        "completion_tokens": 1494,
+        "total_tokens": 2130
+      },
+      "latency_ms": 37606.975,
+      "transport_status": "SUCCESS",
+      "schema_status": "VALID",
+      "schema_issues": [],
+      "error_category": null
+    },
+    {
+      "task": "policy_program_missing_reading_v2",
+      "transport_status": "ERROR",
+      "schema_status": "NOT_EVALUATED",
+      "error_category": "abandoned_request_capture",
+      "usage": {},
+      "latency_ms": 0,
+      "input_sha256": "5b25a0a0cc97f5aad23456b906052ada41d55807153ec4da3e334b3863d3fbb8",
+      "schema_sha256": "8aaa0ceb2fa2b463712faf9b075dfb5462b10a47a3741d15c03ec46425fe5f84",
+      "prompt_sha256": "ea4beabf98b0d8c4239080fcc26c75dec0e7f839df85846a355c62cb81850b80",
+      "served_model": null,
+      "remote_outcome": "UNKNOWN_NO_AUTOMATIC_RETRY"
+    }
+  ],
+  "p1_request_telemetry": [
+    {
+      "task": "fixed_p1_wire",
+      "prompt_sha256": "1ba8b25645cef24fceaedc75daf24d216b3280e89659a2a108d46c0259f3c9ac",
+      "schema_sha256": "1e226490a381978d397a889309b8de90546c4e2881c812aa8f64923a730f4497",
+      "transport_status": "SUCCESS",
+      "schema_status": "INVALID",
+      "schema_issues": [
+        {
+          "code": "JSON_INVALID",
+          "path": "",
+          "expected_type": null,
+          "actual_type": null
+        }
+      ],
+      "error_category": null,
+      "served_model": "qwen3.8-flash",
+      "usage": {
+        "prompt_tokens": 474,
+        "completion_tokens": 453,
+        "total_tokens": 927
+      },
+      "latency_ms": 11958.38
+    }
+  ]
+}

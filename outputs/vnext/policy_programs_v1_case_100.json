@@ -1,0 +1,260 @@
+{
+  "case_id": "message_xor_tool::0",
+  "configuration_sha256": "8ab1c29d5c2e4747ec410049227f69ae1a048ce8b32e951a59ce17bbcf475317",
+  "prediction": {
+    "native": {
+      "hypotheses": [
+        {
+          "hypothesis_id": "policy-program:h0",
+          "basis": "The policy establishes a conditional prohibition: making a tool call (antecedent) forbids simultaneously sending a message to the user (consequent). Violation occurs when both actions co-occur in the same turn.",
+          "program": {
+            "violation_clauses": [
+              [
+                "turn:has_tool_call",
+                "turn:has_message"
+              ]
+            ],
+            "permission_clauses": [
+              [
+                "turn:has_tool_call",
+                "!turn:has_message"
+              ],
+              [
+                "!turn:has_tool_call",
+                "turn:has_message"
+              ],
+              [
+                "!turn:has_tool_call",
+                "!turn:has_message"
+              ]
+            ]
+          },
+          "source_spans": [
+            {
+              "document": "policy",
+              "start": 0,
+              "end": 75
+            }
+          ],
+          "unresolved_terms": [
+            "simultaneously (scope: same turn vs. same instant)"
+          ]
+        },
+        {
+          "hypothesis_id": "policy-program:h1",
+          "basis": "The word 'should not' can be read as an obligation waiver ('you are not required to') rather than a prohibition ('you must not'). Under this reading, making a tool call releases the agent from any duty to respond to the user, but does not forbid responding. No violation is possible from this policy alone; it only removes an obligation.",
+          "program": {
+            "violation_clauses": [],
+            "permission_clauses": [
+              [
+                "turn:has_tool_call",
+                "turn:has_message"
+              ],
+              [
+                "turn:has_tool_call",
+                "!turn:has_message"
+              ],
+              [
+                "!turn:has_tool_call",
+                "turn:has_message"
+              ],
+              [
+                "!turn:has_tool_call",
+                "!turn:has_message"
+              ]
+            ]
+          },
+          "source_spans": [
+            {
+              "document": "policy",
+              "start": 0,
+              "end": 75
+            }
+          ],
+          "unresolved_terms": [
+            "should not (prohibition vs. obligation waiver)"
+          ]
+        }
+      ],
+      "coverage": {
+        "status": "OPEN_SEMANTICS",
+        "universe_source": null,
+        "enumeration_complete": false,
+        "unresolved_terms": [
+          "simultaneously",
+          "respond to the user",
+          "simultaneously (scope: same turn vs. same instant)",
+          "respond to the user (does this include all messages or only user-directed replies?)",
+          "simultaneously (whether sequential within-turn actions also violate)",
+          "should not (prohibition vs. obligation waiver)",
+          "simultaneously (same-instant vs. same-turn)",
+          "respond to the user (subset of has_message?)",
+          "turn granularity (sequential sub-actions within a turn)"
+        ],
+        "discarded_hypotheses": [],
+        "challenger_alternatives": [
+          "policy-program:h1"
+        ]
+      },
+      "failures": [],
+      "empirical_hypotheses": [
+        {
+          "hypothesis_id": "policy-program:h0",
+          "basis": "The policy establishes a conditional prohibition: making a tool call (antecedent) forbids simultaneously sending a message to the user (consequent). Violation occurs when both actions co-occur in the same turn.",
+          "program": {
+            "violation_clauses": [
+              [
+                "turn:has_tool_call",
+                "turn:has_message"
+              ]
+            ],
+            "permission_clauses": [
+              [
+                "turn:has_tool_call",
+                "!turn:has_message"
+              ],
+              [
+                "!turn:has_tool_call",
+                "turn:has_message"
+              ],
+              [
+                "!turn:has_tool_call",
+                "!turn:has_message"
+              ]
+            ]
+          },
+          "source_spans": [
+            {
+              "document": "policy",
+              "start": 0,
+              "end": 75
+            }
+          ],
+          "unresolved_terms": [
+            "simultaneously (scope: same turn vs. same instant)"
+          ]
+        },
+        {
+          "hypothesis_id": "policy-program:h1",
+          "basis": "The word 'should not' can be read as an obligation waiver ('you are not required to') rather than a prohibition ('you must not'). Under this reading, making a tool call releases the agent from any duty to respond to the user, but does not forbid responding. No violation is possible from this policy alone; it only removes an obligation.",
+          "program": {
+            "violation_clauses": [],
+            "permission_clauses": [
+              [
+                "turn:has_tool_call",
+                "turn:has_message"
+              ],
+              [
+                "turn:has_tool_call",
+                "!turn:has_message"
+              ],
+              [
+                "!turn:has_tool_call",
+                "turn:has_message"
+              ],
+              [
+                "!turn:has_tool_call",
+                "!turn:has_message"
+              ]
+            ]
+          },
+          "source_spans": [
+            {
+              "document": "policy",
+              "start": 0,
+              "end": 75
+            }
+          ],
+          "unresolved_terms": [
+            "should not (prohibition vs. obligation waiver)"
+          ]
+        }
+      ]
+    },
+    "fixed_p1": {
+      "case_id": "message_xor_tool::0",
+      "arm": "P1",
+      "transport_status": "SUCCESS",
+      "schema_status": "VALID",
+      "semantic_status": "PENDING_GOLD_JOIN",
+      "representation_status": "SUPPORTED",
+      "error_category": null,
+      "prediction": {
+        "structure": null,
+        "program": {
+          "violation_clauses": [
+            [
+              "turn:has_tool_call",
+              "turn:has_message"
+            ]
+          ],
+          "permission_clauses": []
+        }
+      },
+      "source_coverage": 1.0,
+      "served_model": "qwen3.8-flash",
+      "latency_ms": 8609.271,
+      "usage": {
+        "prompt_tokens": 391,
+        "completion_tokens": 420,
+        "total_tokens": 811
+      }
+    }
+  },
+  "native_request_telemetry": [
+    {
+      "backend_version": "diagnostic-semantic-v2",
+      "task": "policy_program_hypotheses_v2",
+      "input_sha256": "d949bc5893ba5c3e0447124c5bd84fb6a78a491804f5daaa9e1296f363c9ed8b",
+      "prompt_sha256": "6a58ebd20f536ea85b117af95e9128a23d906fde1c82a5b5678853b7544d4df5",
+      "schema_sha256": "46c041d1c08a0318291f62554b8ad7a5eadd5a6df40baedb43339648327f24b2",
+      "served_model": "qwen3.8-flash",
+      "usage": {
+        "prompt_tokens": 553,
+        "completion_tokens": 916,
+        "total_tokens": 1469
+      },
+      "latency_ms": 15623.294,
+      "transport_status": "SUCCESS",
+      "schema_status": "VALID",
+      "schema_issues": [],
+      "error_category": null
+    },
+    {
+      "backend_version": "diagnostic-semantic-v2",
+      "task": "policy_program_missing_reading_v2",
+      "input_sha256": "2ca35125e89fe7fe3d51e654433f995a43409eb7441b5cfcd79b34c5b622e495",
+      "prompt_sha256": "33e9b267b426ae8095b60c93b21cc57e0d69f753a03ee7b8f78a833bd05054a4",
+      "schema_sha256": "46c041d1c08a0318291f62554b8ad7a5eadd5a6df40baedb43339648327f24b2",
+      "served_model": "qwen3.8-flash",
+      "usage": {
+        "prompt_tokens": 696,
+        "completion_tokens": 3232,
+        "total_tokens": 3928
+      },
+      "latency_ms": 66136.285,
+      "transport_status": "SUCCESS",
+      "schema_status": "VALID",
+      "schema_issues": [],
+      "error_category": null
+    }
+  ],
+  "p1_request_telemetry": [
+    {
+      "task": "fixed_p1_wire",
+      "prompt_sha256": "1c45e2603ad3fc88ca81138b5f163ef9a5a856f567b18031c042103cb095421b",
+      "schema_sha256": "fdf0a23180d3d396503e4249cf808e614fedfdce895a6c172866f16599102358",
+      "transport_status": "SUCCESS",
+      "schema_status": "VALID",
+      "schema_issues": [],
+      "error_category": null,
+      "served_model": "qwen3.8-flash",
+      "usage": {
+        "prompt_tokens": 391,
+        "completion_tokens": 420,
+        "total_tokens": 811
+      },
+      "latency_ms": 8608.549
+    }
+  ]
+}

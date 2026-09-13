@@ -1,0 +1,476 @@
+{
+  "case_id": "one_tool_call::3",
+  "configuration_sha256": "8ab1c29d5c2e4747ec410049227f69ae1a048ce8b32e951a59ce17bbcf475317",
+  "prediction": {
+    "native": {
+      "hypotheses": [
+        {
+          "hypothesis_id": "policy-program:h0",
+          "basis": "The policy sets a hard cap of one tool call per assistant turn. The violation condition is exceeding that cap within a single turn. The statements about structured calls and earlier turns are clarifying/background context that do not themselves constitute permission or violation conditions.",
+          "program": {
+            "violation_clauses": [
+              [
+                "turn:tool_call_count_gt_1"
+              ]
+            ],
+            "permission_clauses": [
+              [
+                "!turn:tool_call_count_gt_1"
+              ]
+            ]
+          },
+          "source_spans": [
+            {
+              "document": "policy",
+              "start": 83,
+              "end": 156
+            }
+          ],
+          "unresolved_terms": [
+            "structured calls",
+            "earlier turns"
+          ]
+        },
+        {
+          "hypothesis_id": "policy-program:h1",
+          "basis": "The per-turn cap applies only when the boundary condition (current-turn scope) is satisfied. Under this reading, the violation requires both the count exceeding one AND the boundary qualifier being active, treating distractor:boundary_2 as a necessary co-condition rather than pure background.",
+          "program": {
+            "violation_clauses": [
+              [
+                "turn:tool_call_count_gt_1",
+                "distractor:boundary_2"
+              ]
+            ],
+            "permission_clauses": [
+              [
+                "!turn:tool_call_count_gt_1"
+              ],
+              [
+                "!distractor:boundary_2"
+              ]
+            ]
+          },
+          "source_spans": [
+            {
+              "document": "policy",
+              "start": 39,
+              "end": 82
+            },
+            {
+              "document": "policy",
+              "start": 83,
+              "end": 156
+            }
+          ],
+          "unresolved_terms": [
+            "earlier turns",
+            "do not count here"
+          ]
+        },
+        {
+          "hypothesis_id": "policy-program:h2",
+          "basis": "The prohibition is on unstructured or cross-turn invocation as well as multi-call turns. Under this reading, the 'structured calls' requirement is a precondition: only structured calls are considered, and exceeding one per turn is the violation. The distractor:irrelevant atom encodes the structured-call precondition.",
+          "program": {
+            "violation_clauses": [
+              [
+                "turn:tool_call_count_gt_1",
+                "distractor:irrelevant"
+              ]
+            ],
+            "permission_clauses": [
+              [
+                "!turn:tool_call_count_gt_1"
+              ],
+              [
+                "!distractor:irrelevant"
+              ]
+            ]
+          },
+          "source_spans": [
+            {
+              "document": "policy",
+              "start": 0,
+              "end": 38
+            },
+            {
+              "document": "policy",
+              "start": 83,
+              "end": 156
+            }
+          ],
+          "unresolved_terms": [
+            "structured calls"
+          ]
+        },
+        {
+          "hypothesis_id": "policy-program:h3",
+          "basis": "The policy is read as a compound rule: (a) calls must be structured, (b) only current-turn calls count, and (c) at most one call per turn. All three conditions must hold for compliance; any single breach is a violation. This treats all three atoms as co-equal conditions rather than distractors.",
+          "program": {
+            "violation_clauses": [
+              [
+                "turn:tool_call_count_gt_1"
+              ],
+              [
+                "distractor:boundary_2"
+              ],
+              [
+                "distractor:irrelevant"
+              ]
+            ],
+            "permission_clauses": [
+              [
+                "!turn:tool_call_count_gt_1",
+                "!distractor:boundary_2",
+                "!distractor:irrelevant"
+              ]
+            ]
+          },
+          "source_spans": [
+            {
+              "document": "policy",
+              "start": 0,
+              "end": 38
+            },
+            {
+              "document": "policy",
+              "start": 39,
+              "end": 82
+            },
+            {
+              "document": "policy",
+              "start": 83,
+              "end": 156
+            }
+          ],
+          "unresolved_terms": [
+            "structured calls",
+            "earlier turns",
+            "do not count here"
+          ]
+        },
+        {
+          "hypothesis_id": "policy-program:h4",
+          "basis": "The sentence 'Tools are invoked by structured calls' establishes that only structured calls are counted toward the per-turn cap. Unstructured calls are exempt and do not contribute to the count. Under this reading, a violation occurs only when the count exceeds one AND the calls are structured (i.e., distractor:irrelevant is false, meaning the call is NOT irrelevant/unstructured). If calls are unstructured, they simply don't register against the limit.",
+          "program": {
+            "violation_clauses": [
+              [
+                "turn:tool_call_count_gt_1",
+                "!distractor:irrelevant"
+              ]
+            ],
+            "permission_clauses": [
+              [
+                "!turn:tool_call_count_gt_1"
+              ],
+              [
+                "distractor:irrelevant"
+              ]
+            ]
+          },
+          "source_spans": [
+            {
+              "document": "policy",
+              "start": 0,
+              "end": 38
+            },
+            {
+              "document": "policy",
+              "start": 83,
+              "end": 156
+            }
+          ],
+          "unresolved_terms": [
+            "What constitutes a 'structured call' versus unstructured is undefined in the policy text."
+          ]
+        }
+      ],
+      "coverage": {
+        "status": "OPEN_SEMANTICS",
+        "universe_source": null,
+        "enumeration_complete": false,
+        "unresolved_terms": [
+          "structured calls",
+          "earlier turns",
+          "do not count here",
+          "The policy does not define whether zero calls in a turn is compliant or whether some minimum is expected.",
+          "The relationship between 'earlier turns do not count here' and the counting mechanism is ambiguous: it could mean a reset, an exemption, or a scoping rule.",
+          "What constitutes a 'structured call' versus unstructured is undefined in the policy text."
+        ],
+        "discarded_hypotheses": [],
+        "challenger_alternatives": [
+          "policy-program:h4"
+        ]
+      },
+      "failures": [],
+      "empirical_hypotheses": [
+        {
+          "hypothesis_id": "policy-program:h0",
+          "basis": "The policy sets a hard cap of one tool call per assistant turn. The violation condition is exceeding that cap within a single turn. The statements about structured calls and earlier turns are clarifying/background context that do not themselves constitute permission or violation conditions.",
+          "program": {
+            "violation_clauses": [
+              [
+                "turn:tool_call_count_gt_1"
+              ]
+            ],
+            "permission_clauses": [
+              [
+                "!turn:tool_call_count_gt_1"
+              ]
+            ]
+          },
+          "source_spans": [
+            {
+              "document": "policy",
+              "start": 83,
+              "end": 156
+            }
+          ],
+          "unresolved_terms": [
+            "structured calls",
+            "earlier turns"
+          ]
+        },
+        {
+          "hypothesis_id": "policy-program:h1",
+          "basis": "The per-turn cap applies only when the boundary condition (current-turn scope) is satisfied. Under this reading, the violation requires both the count exceeding one AND the boundary qualifier being active, treating distractor:boundary_2 as a necessary co-condition rather than pure background.",
+          "program": {
+            "violation_clauses": [
+              [
+                "turn:tool_call_count_gt_1",
+                "distractor:boundary_2"
+              ]
+            ],
+            "permission_clauses": [
+              [
+                "!turn:tool_call_count_gt_1"
+              ],
+              [
+                "!distractor:boundary_2"
+              ]
+            ]
+          },
+          "source_spans": [
+            {
+              "document": "policy",
+              "start": 39,
+              "end": 82
+            },
+            {
+              "document": "policy",
+              "start": 83,
+              "end": 156
+            }
+          ],
+          "unresolved_terms": [
+            "earlier turns",
+            "do not count here"
+          ]
+        },
+        {
+          "hypothesis_id": "policy-program:h2",
+          "basis": "The prohibition is on unstructured or cross-turn invocation as well as multi-call turns. Under this reading, the 'structured calls' requirement is a precondition: only structured calls are considered, and exceeding one per turn is the violation. The distractor:irrelevant atom encodes the structured-call precondition.",
+          "program": {
+            "violation_clauses": [
+              [
+                "turn:tool_call_count_gt_1",
+                "distractor:irrelevant"
+              ]
+            ],
+            "permission_clauses": [
+              [
+                "!turn:tool_call_count_gt_1"
+              ],
+              [
+                "!distractor:irrelevant"
+              ]
+            ]
+          },
+          "source_spans": [
+            {
+              "document": "policy",
+              "start": 0,
+              "end": 38
+            },
+            {
+              "document": "policy",
+              "start": 83,
+              "end": 156
+            }
+          ],
+          "unresolved_terms": [
+            "structured calls"
+          ]
+        },
+        {
+          "hypothesis_id": "policy-program:h3",
+          "basis": "The policy is read as a compound rule: (a) calls must be structured, (b) only current-turn calls count, and (c) at most one call per turn. All three conditions must hold for compliance; any single breach is a violation. This treats all three atoms as co-equal conditions rather than distractors.",
+          "program": {
+            "violation_clauses": [
+              [
+                "turn:tool_call_count_gt_1"
+              ],
+              [
+                "distractor:boundary_2"
+              ],
+              [
+                "distractor:irrelevant"
+              ]
+            ],
+            "permission_clauses": [
+              [
+                "!turn:tool_call_count_gt_1",
+                "!distractor:boundary_2",
+                "!distractor:irrelevant"
+              ]
+            ]
+          },
+          "source_spans": [
+            {
+              "document": "policy",
+              "start": 0,
+              "end": 38
+            },
+            {
+              "document": "policy",
+              "start": 39,
+              "end": 82
+            },
+            {
+              "document": "policy",
+              "start": 83,
+              "end": 156
+            }
+          ],
+          "unresolved_terms": [
+            "structured calls",
+            "earlier turns",
+            "do not count here"
+          ]
+        },
+        {
+          "hypothesis_id": "policy-program:h4",
+          "basis": "The sentence 'Tools are invoked by structured calls' establishes that only structured calls are counted toward the per-turn cap. Unstructured calls are exempt and do not contribute to the count. Under this reading, a violation occurs only when the count exceeds one AND the calls are structured (i.e., distractor:irrelevant is false, meaning the call is NOT irrelevant/unstructured). If calls are unstructured, they simply don't register against the limit.",
+          "program": {
+            "violation_clauses": [
+              [
+                "turn:tool_call_count_gt_1",
+                "!distractor:irrelevant"
+              ]
+            ],
+            "permission_clauses": [
+              [
+                "!turn:tool_call_count_gt_1"
+              ],
+              [
+                "distractor:irrelevant"
+              ]
+            ]
+          },
+          "source_spans": [
+            {
+              "document": "policy",
+              "start": 0,
+              "end": 38
+            },
+            {
+              "document": "policy",
+              "start": 83,
+              "end": 156
+            }
+          ],
+          "unresolved_terms": [
+            "What constitutes a 'structured call' versus unstructured is undefined in the policy text."
+          ]
+        }
+      ]
+    },
+    "fixed_p1": {
+      "case_id": "one_tool_call::3",
+      "arm": "P1",
+      "transport_status": "SUCCESS",
+      "schema_status": "VALID",
+      "semantic_status": "PENDING_GOLD_JOIN",
+      "representation_status": "SUPPORTED",
+      "error_category": null,
+      "prediction": {
+        "structure": null,
+        "program": {
+          "violation_clauses": [
+            [
+              "turn:tool_call_count_gt_1"
+            ]
+          ],
+          "permission_clauses": [
+            [
+              "!turn:tool_call_count_gt_1"
+            ]
+          ]
+        }
+      },
+      "source_coverage": 1.0,
+      "served_model": "qwen3.8-flash",
+      "latency_ms": 4943.766,
+      "usage": {
+        "prompt_tokens": 437,
+        "completion_tokens": 270,
+        "total_tokens": 707
+      }
+    }
+  },
+  "native_request_telemetry": [
+    {
+      "backend_version": "diagnostic-semantic-v2",
+      "task": "policy_program_hypotheses_v2",
+      "input_sha256": "a6588aef0b60a6d622800c9edc81f5b0b1cefbb6a8c1a835a9304b9ccedfa9b1",
+      "prompt_sha256": "9f0556e192845b40704c22f65635a32a59123cd4e4e3e2d73ec42bc9473d2921",
+      "schema_sha256": "2c7e3072f39421ae328214b08a98f4c533631e2de688ddeb4ea62e099d7142fb",
+      "served_model": "qwen3.8-flash",
+      "usage": {
+        "prompt_tokens": 599,
+        "completion_tokens": 1188,
+        "total_tokens": 1787
+      },
+      "latency_ms": 22156.988,
+      "transport_status": "SUCCESS",
+      "schema_status": "VALID",
+      "schema_issues": [],
+      "error_category": null
+    },
+    {
+      "backend_version": "diagnostic-semantic-v2",
+      "task": "policy_program_missing_reading_v2",
+      "input_sha256": "3215fb25c0cb7b2ffb5a51f1a845d215812f819bc3ffff97f319310642b9a3db",
+      "prompt_sha256": "38abb93a84a78527b9c14793df02cc92a26327747da54781c3fd2660b2c4a786",
+      "schema_sha256": "2c7e3072f39421ae328214b08a98f4c533631e2de688ddeb4ea62e099d7142fb",
+      "served_model": "qwen3.8-flash",
+      "usage": {
+        "prompt_tokens": 1074,
+        "completion_tokens": 1678,
+        "total_tokens": 2752
+      },
+      "latency_ms": 32927.064,
+      "transport_status": "SUCCESS",
+      "schema_status": "VALID",
+      "schema_issues": [],
+      "error_category": null
+    }
+  ],
+  "p1_request_telemetry": [
+    {
+      "task": "fixed_p1_wire",
+      "prompt_sha256": "542c0e2899ec1f52cbf2bb4606ac7eeffe4cb1a72f29bd8742fd7e0cb11761ac",
+      "schema_sha256": "404d2632304a82e4c850c94b6b11a7ed84020587c9a396416aaf71b13071c48d",
+      "transport_status": "SUCCESS",
+      "schema_status": "VALID",
+      "schema_issues": [],
+      "error_category": null,
+      "served_model": "qwen3.8-flash",
+      "usage": {
+        "prompt_tokens": 437,
+        "completion_tokens": 270,
+        "total_tokens": 707
+      },
+      "latency_ms": 4943.067
+    }
+  ]
+}

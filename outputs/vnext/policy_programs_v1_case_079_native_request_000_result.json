@@ -1,0 +1,27 @@
+{
+  "request_sha256": "3403e47cd1eb2369c496f79fae2876fa81c766e529af9c49113f90a57002fbd3",
+  "proposal": {
+    "payload_json": "{\"interpretations\":[{\"basis\":\"The rule states cancellation is permitted only when all three conditions hold simultaneously: the order is pending, the requester owns it, and confirmation preceded the action. Missing any one condition constitutes a violation.\",\"permission_clauses\":[[\"action:cancel_order\",\"state:order_pending\",\"identity:requester_owns_order\",\"event:confirmation_before\"]],\"source_quotes\":[\"a pending order may be cancelled only by its owner after explicit confirmation\"],\"unresolved_terms\":[\"explicit confirmation (what constitutes 'explicit' is undefined)\"],\"violation_clauses\":[[\"action:cancel_order\",\"!state:order_pending\"],[\"action:cancel_order\",\"!identity:requester_owns_order\"],[\"action:cancel_order\",\"!event:confirmation_before\"]]},{\"basis\":\"The phrase 'a pending order' restricts the rule's applicability to orders in pending state. Non-pending orders fall outside the scope entirely, making state a hard gate: if the order is not pending, no cancellation is permitted regardless of ownership or confirmation.\",\"permission_clauses\":[[\"action:cancel_order\",\"state:order_pending\",\"identity:requester_owns_order\",\"event:confirmation_before\"]],\"source_quotes\":[\"a pending order may be cancelled only by its owner after explicit confirmation\",\"Pending is one order status\"],\"unresolved_terms\":[\"what happens to non-pending orders (out of scope vs. prohibited)\"],\"violation_clauses\":[[\"action:cancel_order\",\"!state:order_pending\"],[\"action:cancel_order\",\"state:order_pending\",\"!identity:requester_owns_order\"],[\"action:cancel_order\",\"state:order_pending\",\"!event:confirmation_before\"]]},{\"basis\":\"'After explicit confirmation' imposes a temporal ordering: confirmation must precede the cancellation action. This is a sequencing constraint, not merely a boolean co-presence. The event must occur before the action, not just be true at the time of action.\",\"permission_clauses\":[[\"action:cancel_order\",\"event:confirmation_before\",\"state:order_pending\",\"identity:requester_owns_order\"]],\"source_quotes\":[\"a pending order may be cancelled only by its owner after explicit confirmation\",\"Confirmation concerns the cancellation details\"],\"unresolved_terms\":[\"how far in advance confirmation must occur\",\"whether confirmation can be revoked\"],\"violation_clauses\":[[\"action:cancel_order\",\"!event:confirmation_before\"],[\"action:cancel_order\",\"state:order_pending\",\"identity:requester_owns_order\",\"!event:confirmation_before\"]]},{\"basis\":\"'Only by its owner' establishes an exclusive identity permission: no actor other than the order's owner may cancel, even if the order is pending and confirmation exists. This makes identity a necessary and exclusive gate on the actor.\",\"permission_clauses\":[[\"action:cancel_order\",\"identity:requester_owns_order\",\"state:order_pending\",\"event:confirmation_before\"]],\"source_quotes\":[\"a pending order may be cancelled only by its owner after explicit confirmation\",\"Ownership binds a requester to an order\"],\"unresolved_terms\":[\"whether ownership can transfer mid-lifecycle\",\"what 'binds' implies about mutability\"],\"violation_clauses\":[[\"action:cancel_order\",\"!identity:requester_owns_order\"],[\"action:cancel_order\",\"!identity:requester_owns_order\",\"state:order_pending\",\"event:confirmation_before\"]]}],\"unresolved_terms\":[\"explicit confirmation (criteria for 'explicit' undefined)\",\"scope of non-pending orders\",\"temporal window for confirmation\",\"mutability of ownership binding\"]}",
+    "transport_status": "SUCCESS",
+    "schema_status": "VALID",
+    "error_category": null
+  },
+  "telemetry": {
+    "backend_version": "diagnostic-semantic-v2",
+    "task": "policy_program_hypotheses_v2",
+    "input_sha256": "063975a40226d58fddac97f09da8a4472277970a45d001e96d6e22262e370c06",
+    "prompt_sha256": "ab49d7ae671d161f8427a6131077641c77f9934437736274ec4b7f2d2c1bf476",
+    "schema_sha256": "8aaa0ceb2fa2b463712faf9b075dfb5462b10a47a3741d15c03ec46425fe5f84",
+    "served_model": "qwen3.8-flash",
+    "usage": {
+      "prompt_tokens": 636,
+      "completion_tokens": 1494,
+      "total_tokens": 2130
+    },
+    "latency_ms": 37606.975,
+    "transport_status": "SUCCESS",
+    "schema_status": "VALID",
+    "schema_issues": [],
+    "error_category": null
+  }
+}
