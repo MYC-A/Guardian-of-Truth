@@ -40,15 +40,18 @@ def main():
             ('production', 'Guardian of Truth', manifest['baseline_commits']['X0']),
             ('Cycle1', 'Guardian of Truth Next', manifest['baseline_commits']['Cycle1']),
             ('Cycle2', 'Guardian of Truth Cycle2', manifest['cycle2_base']))}
-    units = subprocess.run([sys.executable, '-m', 'pytest', 'tests', '-q'], cwd=ROOT, capture_output=True, text=True)
+    command = [sys.executable, '-m', 'pytest', '-q']
+    units = subprocess.run(command, cwd=ROOT, capture_output=True, text=True)
     matches = re.findall(r'(\d+) passed', units.stdout)
     good = not errors and units.returncode == 0 and all(row['actual'] == row['expected'] for row in protected.values())
     report = {'schema_version': 'guardian-vnext-unit-checkpoint-v3', 'architecture_commit': head(ROOT),
         'status': 'UNIT_AND_INTEGRITY_VALIDATED_ONLY' if good else 'FAILED',
-        'full_project_units': {'exit_code': units.returncode, 'passed': int(matches[-1]) if matches else 0},
+        'full_project_units': {'command': ['python', '-m', 'pytest', '-q'], 'exit_code': units.returncode,
+            'passed': int(matches[-1]) if matches else 0},
         'integrity_errors': errors, 'protected_heads': protected, 'model_stages': stages,
-        'api_requests': 0, 'blind_gold_read': False, 'whole_core_blind_end_to_end': 'NOT_RUN'}
-    write_new(output / 'checkpoint_checks_v10.json', report)
+        'api_requests': 0, 'blind_gold_read': False, 'whole_core_blind_end_to_end': 'NOT_RUN',
+        'supersedes_scope_label': 'v10 ran pytest tests -q (1053 tests); this checkpoint records unrestricted discovery with its exact command; original receipt preserved'}
+    write_new(output / 'checkpoint_checks_v11.json', report)
     print(json.dumps({'status': report['status'], 'tests_passed': report['full_project_units']['passed'],
         'integrity_errors': len(errors), 'api_requests': 0}))
     return 0 if good else 1
