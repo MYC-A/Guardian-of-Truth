@@ -8,9 +8,15 @@ The downstream report accepts only already joined, case-unique, status-consisten
 0/1 paired records after an external runner verifies the full prediction seal.
 It reports each confusion matrix, F1/recall/FPR, balanced error, genuine Core
 resolution, fallback rate, coverage, unresolved reasons, per-verdict certificate
-counts/rates (null if no such verdict), category confusion, confidently wrong definitive cases and exact
+counts/rates (null if no such verdict), category confusion, confidently wrong
+definitive cases and exact
 two-sided McNemar. The competition binary mapping is validated: ERROR=1,
 NO_ERROR=0, UNRESOLVED=0, INCONSISTENT=1. A fallback is never a safety proof.
+Claimed definitive status and independently certified resolution are counted
+separately. Missing/invalid certificate cases are listed, and the headline Core
+resolution rate includes only `certificate_valid=true` rows. The external runner
+must actually invoke an independent checker; this statistics module never
+validates a proof by trusting the status field.
 
 The paired hierarchical bootstrap defaults to 5000 draws and seed 260913:
 resample trajectory groups, then cases inside every selected group. Each sampled

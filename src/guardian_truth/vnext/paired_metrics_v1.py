@@ -136,6 +136,7 @@ def summarize_paired_outcomes(rows, *, draws=5000, seed=260913):
         by_category[row.category].append(row)
     status = Counter(row.core_status for row in rows)
     definite = [row for row in rows if row.core_status in {CoreStatus.PROVED_ERROR.value, CoreStatus.PROVED_NO_ERROR.value}]
+    certified = [row for row in definite if row.certificate_present and row.certificate_valid is True]
     certificate = {}
     for kind in (CoreStatus.PROVED_ERROR.value, CoreStatus.PROVED_NO_ERROR.value):
         matching = [row for row in definite if row.core_status == kind]
@@ -148,7 +149,11 @@ def summarize_paired_outcomes(rows, *, draws=5000, seed=260913):
         "case_count": len(rows), "x0": x0, "vnext": candidate,
         "delta": {metric: candidate[metric] - x0[metric] if candidate[metric] is not None and x0[metric] is not None else None
             for metric in ("F1", "recall", "false_positive_rate")},
-        "core_status_distribution": dict(status), "core_resolution_rate": len(definite) / len(rows),
+        "core_status_distribution": dict(status),
+        "claimed_definitive_count": len(definite), "claimed_core_resolution_rate": len(definite) / len(rows),
+        "certified_definitive_count": len(certified), "core_resolution_rate": len(certified) / len(rows),
+        "uncertified_definitive_case_ids": [row.case_id for row in definite
+            if not row.certificate_present or row.certificate_valid is not True],
         "fallback_count": sum(row.used_fallback for row in rows),
         "semantic_coverage_distribution": dict(Counter(row.coverage for row in rows)),
         "unresolved_reason_distribution": dict(Counter(reason for row in rows

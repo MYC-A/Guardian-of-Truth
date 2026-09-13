@@ -21,6 +21,8 @@ def test_confusion_and_unresolved_rate_are_reported_together():
     assert report["vnext"]["TP"] == report["vnext"]["FP"] == report["vnext"]["FN"] == report["vnext"]["TN"] == 1
     assert report["vnext"]["F1"] == .5 and report["vnext"]["balanced_error"] == .5
     assert report["core_resolution_rate"] == .5 and report["fallback_count"] == 2
+    assert report["claimed_core_resolution_rate"] == .5
+    assert report["uncertified_definitive_case_ids"] == []
     assert report["confident_wrong_case_ids"] == ["n2"]
     assert report["certificate_validation_by_verdict"]["PROVED_ERROR"] == {"definite": 2, "present": 2, "valid": 2,
         "validation_rate_all_definite": 1, "validation_rate_present": 1}
@@ -81,3 +83,15 @@ def test_undefined_baseline_metric_does_not_create_numeric_delta():
     assert report["delta"]["recall"] is None
     assert report["delta"]["F1"] is None
     assert report["paired_bootstrap"]["delta_intervals"]["F1"]["CI95"] is None
+
+
+def test_uncertified_claimed_verdict_cannot_inflate_genuine_core_resolution():
+    rows = (row("bad", 1, 0, 1, status="PROVED_ERROR", certificate=True, valid=False),
+        row("unknown", 0, 0, 0))
+    report = summarize_paired_outcomes(rows, draws=10)
+    assert report["claimed_definitive_count"] == 1
+    assert report["certified_definitive_count"] == 0
+    assert report["claimed_core_resolution_rate"] == .5
+    assert report["core_resolution_rate"] == 0
+    assert report["uncertified_definitive_case_ids"] == ["bad"]
+    assert report["certificate_validation_by_verdict"]["PROVED_ERROR"]["validation_rate_all_definite"] == 0
