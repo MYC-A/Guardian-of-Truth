@@ -1,0 +1,393 @@
+{
+  "case_id": "count_effect_operations::3",
+  "configuration_sha256": "8ab1c29d5c2e4747ec410049227f69ae1a048ce8b32e951a59ce17bbcf475317",
+  "prediction": {
+    "native": {
+      "hypotheses": [
+        {
+          "hypothesis_id": "policy-program:h0",
+          "basis": "The policy states a general prohibition: any operation whose effect changes passenger count is prohibited. Name mutation is explicitly noted as allowed (mutable attributes) and does not trigger the count rule. Add and delete are identified as operations that alter membership (and thus count), making them prohibited under this rule.",
+          "program": {
+            "violation_clauses": [
+              [
+                "effect:passenger_count_changed"
+              ]
+            ],
+            "permission_clauses": [
+              [
+                "!effect:passenger_count_changed"
+              ]
+            ]
+          },
+          "source_spans": [
+            {
+              "document": "policy",
+              "start": 84,
+              "end": 171
+            },
+            {
+              "document": "policy",
+              "start": 0,
+              "end": 39
+            },
+            {
+              "document": "policy",
+              "start": 40,
+              "end": 83
+            }
+          ],
+          "unresolved_terms": [
+            "count rule (named but defined inline; scope of 'any operation' left open)",
+            "membership (not formally defined beyond add/delete context)"
+          ]
+        },
+        {
+          "hypothesis_id": "policy-program:h1",
+          "basis": "The phrase 'Under the count rule' can be read as introducing a boundary condition: the prohibition on count-changing operations only applies when a specific threshold or boundary is crossed. Operations that change count without meeting this boundary condition would be permitted. This narrows the scope of the prohibition compared to the existing reading where any count change triggers it.",
+          "program": {
+            "violation_clauses": [
+              [
+                "effect:passenger_count_changed",
+                "distractor:boundary_2"
+              ]
+            ],
+            "permission_clauses": [
+              [
+                "!effect:passenger_count_changed"
+              ],
+              [
+                "!distractor:boundary_2"
+              ]
+            ]
+          },
+          "source_spans": [
+            {
+              "document": "policy",
+              "start": 84,
+              "end": 171
+            }
+          ],
+          "unresolved_terms": [
+            "What constitutes the boundary condition under the count rule"
+          ]
+        },
+        {
+          "hypothesis_id": "policy-program:h2",
+          "basis": "The policy distinguishes between operations that 'alter membership' (add and delete) and the general prohibition on 'any operation whose effect changes passenger count.' This distinction could imply that some operations are irrelevant to the count rule's purpose (e.g., they change count as an incidental side effect unrelated to membership). Such irrelevant operations would be exempt from the prohibition.",
+          "program": {
+            "violation_clauses": [
+              [
+                "effect:passenger_count_changed",
+                "!distractor:irrelevant"
+              ]
+            ],
+            "permission_clauses": [
+              [
+                "!effect:passenger_count_changed"
+              ],
+              [
+                "distractor:irrelevant"
+              ]
+            ]
+          },
+          "source_spans": [
+            {
+              "document": "policy",
+              "start": 40,
+              "end": 83
+            },
+            {
+              "document": "policy",
+              "start": 84,
+              "end": 171
+            }
+          ],
+          "unresolved_terms": [
+            "What makes an operation irrelevant to the count rule"
+          ]
+        },
+        {
+          "hypothesis_id": "policy-program:h3",
+          "basis": "The count rule prohibition could be read as applying only when the operation's primary effect is count change, not when count change is a secondary or derived effect. Operations whose primary effect is something else (marked as irrelevant to count) but which incidentally change count would be permitted. This creates a permission for distractor:irrelevant operations even when they change count.",
+          "program": {
+            "violation_clauses": [
+              [
+                "effect:passenger_count_changed"
+              ]
+            ],
+            "permission_clauses": [
+              [
+                "!effect:passenger_count_changed"
+              ],
+              [
+                "distractor:irrelevant"
+              ]
+            ]
+          },
+          "source_spans": [
+            {
+              "document": "policy",
+              "start": 84,
+              "end": 171
+            },
+            {
+              "document": "policy",
+              "start": 0,
+              "end": 39
+            }
+          ],
+          "unresolved_terms": [
+            "How to distinguish primary effect from incidental count change"
+          ]
+        }
+      ],
+      "coverage": {
+        "status": "OPEN_SEMANTICS",
+        "universe_source": null,
+        "enumeration_complete": false,
+        "unresolved_terms": [
+          "boundary_2 (distractor atom with no policy anchor)",
+          "irrelevant (distractor atom with no policy anchor)",
+          "scope of 'any operation' beyond add/delete",
+          "relationship between 'alter membership' and 'changes passenger count'",
+          "count rule (named but defined inline; scope of 'any operation' left open)",
+          "membership (not formally defined beyond add/delete context)",
+          "whether 'alter membership' and 'changes passenger count' are coextensive or membership has a broader meaning",
+          "whether name mutation is a permission or merely a factual statement about mutability",
+          "Whether 'under the count rule' scopes the prohibition or merely identifies the rule",
+          "What boundary conditions apply to the count rule",
+          "Whether 'irrelevant' operations are exempt from count-based prohibition",
+          "What constitutes the boundary condition under the count rule",
+          "What makes an operation irrelevant to the count rule",
+          "How to distinguish primary effect from incidental count change"
+        ],
+        "discarded_hypotheses": [],
+        "challenger_alternatives": [
+          "policy-program:h1",
+          "policy-program:h2",
+          "policy-program:h3"
+        ]
+      },
+      "failures": [],
+      "empirical_hypotheses": [
+        {
+          "hypothesis_id": "policy-program:h0",
+          "basis": "The policy states a general prohibition: any operation whose effect changes passenger count is prohibited. Name mutation is explicitly noted as allowed (mutable attributes) and does not trigger the count rule. Add and delete are identified as operations that alter membership (and thus count), making them prohibited under this rule.",
+          "program": {
+            "violation_clauses": [
+              [
+                "effect:passenger_count_changed"
+              ]
+            ],
+            "permission_clauses": [
+              [
+                "!effect:passenger_count_changed"
+              ]
+            ]
+          },
+          "source_spans": [
+            {
+              "document": "policy",
+              "start": 84,
+              "end": 171
+            },
+            {
+              "document": "policy",
+              "start": 0,
+              "end": 39
+            },
+            {
+              "document": "policy",
+              "start": 40,
+              "end": 83
+            }
+          ],
+          "unresolved_terms": [
+            "count rule (named but defined inline; scope of 'any operation' left open)",
+            "membership (not formally defined beyond add/delete context)"
+          ]
+        },
+        {
+          "hypothesis_id": "policy-program:h1",
+          "basis": "The phrase 'Under the count rule' can be read as introducing a boundary condition: the prohibition on count-changing operations only applies when a specific threshold or boundary is crossed. Operations that change count without meeting this boundary condition would be permitted. This narrows the scope of the prohibition compared to the existing reading where any count change triggers it.",
+          "program": {
+            "violation_clauses": [
+              [
+                "effect:passenger_count_changed",
+                "distractor:boundary_2"
+              ]
+            ],
+            "permission_clauses": [
+              [
+                "!effect:passenger_count_changed"
+              ],
+              [
+                "!distractor:boundary_2"
+              ]
+            ]
+          },
+          "source_spans": [
+            {
+              "document": "policy",
+              "start": 84,
+              "end": 171
+            }
+          ],
+          "unresolved_terms": [
+            "What constitutes the boundary condition under the count rule"
+          ]
+        },
+        {
+          "hypothesis_id": "policy-program:h2",
+          "basis": "The policy distinguishes between operations that 'alter membership' (add and delete) and the general prohibition on 'any operation whose effect changes passenger count.' This distinction could imply that some operations are irrelevant to the count rule's purpose (e.g., they change count as an incidental side effect unrelated to membership). Such irrelevant operations would be exempt from the prohibition.",
+          "program": {
+            "violation_clauses": [
+              [
+                "effect:passenger_count_changed",
+                "!distractor:irrelevant"
+              ]
+            ],
+            "permission_clauses": [
+              [
+                "!effect:passenger_count_changed"
+              ],
+              [
+                "distractor:irrelevant"
+              ]
+            ]
+          },
+          "source_spans": [
+            {
+              "document": "policy",
+              "start": 40,
+              "end": 83
+            },
+            {
+              "document": "policy",
+              "start": 84,
+              "end": 171
+            }
+          ],
+          "unresolved_terms": [
+            "What makes an operation irrelevant to the count rule"
+          ]
+        },
+        {
+          "hypothesis_id": "policy-program:h3",
+          "basis": "The count rule prohibition could be read as applying only when the operation's primary effect is count change, not when count change is a secondary or derived effect. Operations whose primary effect is something else (marked as irrelevant to count) but which incidentally change count would be permitted. This creates a permission for distractor:irrelevant operations even when they change count.",
+          "program": {
+            "violation_clauses": [
+              [
+                "effect:passenger_count_changed"
+              ]
+            ],
+            "permission_clauses": [
+              [
+                "!effect:passenger_count_changed"
+              ],
+              [
+                "distractor:irrelevant"
+              ]
+            ]
+          },
+          "source_spans": [
+            {
+              "document": "policy",
+              "start": 84,
+              "end": 171
+            },
+            {
+              "document": "policy",
+              "start": 0,
+              "end": 39
+            }
+          ],
+          "unresolved_terms": [
+            "How to distinguish primary effect from incidental count change"
+          ]
+        }
+      ]
+    },
+    "fixed_p1": {
+      "case_id": "count_effect_operations::3",
+      "arm": "P1",
+      "transport_status": "SUCCESS",
+      "schema_status": "INVALID",
+      "semantic_status": "PENDING_GOLD_JOIN",
+      "representation_status": "NOT_EVALUATED",
+      "error_category": null,
+      "prediction": null,
+      "source_coverage": 1.0,
+      "served_model": "qwen3.8-flash",
+      "latency_ms": 9800.094,
+      "usage": {
+        "prompt_tokens": 423,
+        "completion_tokens": 350,
+        "total_tokens": 773
+      }
+    }
+  },
+  "native_request_telemetry": [
+    {
+      "backend_version": "diagnostic-semantic-v2",
+      "task": "policy_program_hypotheses_v2",
+      "input_sha256": "39469c94967cd401feab493859532170ed76e1b78893d5247c201f9843d34c98",
+      "prompt_sha256": "197f115d5761d1f07a5a2d2886b061e38009b2fcfa5fef4f4a622948fede5337",
+      "schema_sha256": "36f73731aa0aee3cd7f8dbf8a7f80650ee392d72872c983040f646db2c7b420a",
+      "served_model": "qwen3.8-flash",
+      "usage": {
+        "prompt_tokens": 586,
+        "completion_tokens": 1736,
+        "total_tokens": 2322
+      },
+      "latency_ms": 46638.844,
+      "transport_status": "SUCCESS",
+      "schema_status": "VALID",
+      "schema_issues": [],
+      "error_category": null
+    },
+    {
+      "backend_version": "diagnostic-semantic-v2",
+      "task": "policy_program_missing_reading_v2",
+      "input_sha256": "42a3773ed32c0f54fef132fdca3ad5c036c23b2d511261f1a5bcf06b0c66e996",
+      "prompt_sha256": "a4533cd44daafb1e020a73d3317e7b5ab2c38060722a91d5c3dd1ea6a1739140",
+      "schema_sha256": "36f73731aa0aee3cd7f8dbf8a7f80650ee392d72872c983040f646db2c7b420a",
+      "served_model": "qwen3.8-flash",
+      "usage": {
+        "prompt_tokens": 710,
+        "completion_tokens": 2168,
+        "total_tokens": 2878
+      },
+      "latency_ms": 57280.862,
+      "transport_status": "SUCCESS",
+      "schema_status": "VALID",
+      "schema_issues": [],
+      "error_category": null
+    }
+  ],
+  "p1_request_telemetry": [
+    {
+      "task": "fixed_p1_wire",
+      "prompt_sha256": "868387c75d887d3180530d1399a6f3b0e77bf18cc13a216456d0213e7d59c3cb",
+      "schema_sha256": "4784ca1a7db0e45617ec7174e11c02894cd129f60f964f2b6d29999014560b5e",
+      "transport_status": "SUCCESS",
+      "schema_status": "INVALID",
+      "schema_issues": [
+        {
+          "code": "JSON_INVALID",
+          "path": "",
+          "expected_type": null,
+          "actual_type": null
+        }
+      ],
+      "error_category": null,
+      "served_model": "qwen3.8-flash",
+      "usage": {
+        "prompt_tokens": 423,
+        "completion_tokens": 350,
+        "total_tokens": 773
+      },
+      "latency_ms": 9798.507
+    }
+  ]
+}

@@ -1,0 +1,438 @@
+{
+  "case_id": "confirm_before_database::3",
+  "configuration_sha256": "8ab1c29d5c2e4747ec410049227f69ae1a048ce8b32e951a59ce17bbcf475317",
+  "prediction": {
+    "native": {
+      "hypotheses": [
+        {
+          "hypothesis_id": "policy-program:h0",
+          "basis": "The phrase 'both must occur before a booking-database update' is read as a direct temporal precondition: confirmation and details listing must each precede the update action. 'Several unrelated rules' is treated as contextual framing with no operative effect on the constraint itself.",
+          "program": {
+            "violation_clauses": [
+              [
+                "action:update_database",
+                "!event:confirmation_before"
+              ],
+              [
+                "action:update_database",
+                "!event:details_listed_before"
+              ]
+            ],
+            "permission_clauses": [
+              [
+                "action:update_database",
+                "event:confirmation_before",
+                "event:details_listed_before"
+              ]
+            ]
+          },
+          "source_spans": [
+            {
+              "document": "policy",
+              "start": 120,
+              "end": 168
+            },
+            {
+              "document": "policy",
+              "start": 53,
+              "end": 87
+            },
+            {
+              "document": "policy",
+              "start": 0,
+              "end": 51
+            }
+          ],
+          "unresolved_terms": [
+            "several unrelated rules",
+            "explicit yes",
+            "summary of the intended change"
+          ]
+        },
+        {
+          "hypothesis_id": "policy-program:h1",
+          "basis": "'After several unrelated rules' is read as a temporal activation condition: the constraint only applies once those unrelated rules (represented by distractor:irrelevant) have been processed. Before that point, the update may proceed without both events.",
+          "program": {
+            "violation_clauses": [
+              [
+                "action:update_database",
+                "!event:confirmation_before",
+                "distractor:irrelevant"
+              ],
+              [
+                "action:update_database",
+                "!event:details_listed_before",
+                "distractor:irrelevant"
+              ]
+            ],
+            "permission_clauses": [
+              [
+                "action:update_database",
+                "event:confirmation_before",
+                "event:details_listed_before",
+                "distractor:irrelevant"
+              ],
+              [
+                "action:update_database",
+                "!distractor:irrelevant"
+              ]
+            ]
+          },
+          "source_spans": [
+            {
+              "document": "policy",
+              "start": 89,
+              "end": 168
+            }
+          ],
+          "unresolved_terms": [
+            "several unrelated rules",
+            "explicit yes",
+            "summary of the intended change",
+            "after"
+          ]
+        },
+        {
+          "hypothesis_id": "policy-program:h2",
+          "basis": "'After several unrelated rules' is read as making distractor:irrelevant a direct conjunctive precondition for the update, on equal footing with the two events. The update is permitted only when all three conditions hold simultaneously, and a violation occurs if any one is missing. This differs from reading 1 (which treats the phrase as non-operative framing) and reading 2 (which treats distractor:irrelevant as an activation gate that, when absent, frees the update from the event requirements).",
+          "program": {
+            "violation_clauses": [
+              [
+                "action:update_database",
+                "!event:confirmation_before"
+              ],
+              [
+                "action:update_database",
+                "!event:details_listed_before"
+              ],
+              [
+                "action:update_database",
+                "!distractor:irrelevant"
+              ]
+            ],
+            "permission_clauses": [
+              [
+                "action:update_database",
+                "event:confirmation_before",
+                "event:details_listed_before",
+                "distractor:irrelevant"
+              ]
+            ]
+          },
+          "source_spans": [
+            {
+              "document": "policy",
+              "start": 89,
+              "end": 169
+            }
+          ],
+          "unresolved_terms": [
+            "whether 'after several unrelated rules' modifies the events' validity window or the update's preconditions"
+          ]
+        },
+        {
+          "hypothesis_id": "policy-program:h3",
+          "basis": "'After several unrelated rules' is read as delimiting the scope of the prohibition: the two-event requirement only generates a violation once the unrelated rules have been processed. Before that point, no clause (permission or violation) addresses the update, leaving it unconstrained rather than explicitly permitted. This contrasts with reading 2, which positively permits the update before the rules; here the pre-rule case is simply outside the rule's jurisdiction.",
+          "program": {
+            "violation_clauses": [
+              [
+                "action:update_database",
+                "!event:confirmation_before",
+                "distractor:irrelevant"
+              ],
+              [
+                "action:update_database",
+                "!event:details_listed_before",
+                "distractor:irrelevant"
+              ]
+            ],
+            "permission_clauses": [
+              [
+                "action:update_database",
+                "event:confirmation_before",
+                "event:details_listed_before",
+                "distractor:irrelevant"
+              ]
+            ]
+          },
+          "source_spans": [
+            {
+              "document": "policy",
+              "start": 89,
+              "end": 169
+            }
+          ],
+          "unresolved_terms": [
+            "whether 'unconstrained' and 'permitted' are behaviorally equivalent for the system's enforcement logic"
+          ]
+        }
+      ],
+      "coverage": {
+        "status": "OPEN_SEMANTICS",
+        "universe_source": null,
+        "enumeration_complete": false,
+        "unresolved_terms": [
+          "several unrelated rules",
+          "explicit yes",
+          "summary of the intended change",
+          "after",
+          "whether 'both' in the policy refers to the defined terms (action details and confirmation) or to some other pair",
+          "whether 'a booking-database update' scopes the constraint per-update or to the first update only",
+          "whether 'after several unrelated rules' modifies the events' validity window or the update's preconditions",
+          "whether 'unconstrained' and 'permitted' are behaviorally equivalent for the system's enforcement logic"
+        ],
+        "discarded_hypotheses": [],
+        "challenger_alternatives": [
+          "policy-program:h2",
+          "policy-program:h3"
+        ]
+      },
+      "failures": [],
+      "empirical_hypotheses": [
+        {
+          "hypothesis_id": "policy-program:h0",
+          "basis": "The phrase 'both must occur before a booking-database update' is read as a direct temporal precondition: confirmation and details listing must each precede the update action. 'Several unrelated rules' is treated as contextual framing with no operative effect on the constraint itself.",
+          "program": {
+            "violation_clauses": [
+              [
+                "action:update_database",
+                "!event:confirmation_before"
+              ],
+              [
+                "action:update_database",
+                "!event:details_listed_before"
+              ]
+            ],
+            "permission_clauses": [
+              [
+                "action:update_database",
+                "event:confirmation_before",
+                "event:details_listed_before"
+              ]
+            ]
+          },
+          "source_spans": [
+            {
+              "document": "policy",
+              "start": 120,
+              "end": 168
+            },
+            {
+              "document": "policy",
+              "start": 53,
+              "end": 87
+            },
+            {
+              "document": "policy",
+              "start": 0,
+              "end": 51
+            }
+          ],
+          "unresolved_terms": [
+            "several unrelated rules",
+            "explicit yes",
+            "summary of the intended change"
+          ]
+        },
+        {
+          "hypothesis_id": "policy-program:h1",
+          "basis": "'After several unrelated rules' is read as a temporal activation condition: the constraint only applies once those unrelated rules (represented by distractor:irrelevant) have been processed. Before that point, the update may proceed without both events.",
+          "program": {
+            "violation_clauses": [
+              [
+                "action:update_database",
+                "!event:confirmation_before",
+                "distractor:irrelevant"
+              ],
+              [
+                "action:update_database",
+                "!event:details_listed_before",
+                "distractor:irrelevant"
+              ]
+            ],
+            "permission_clauses": [
+              [
+                "action:update_database",
+                "event:confirmation_before",
+                "event:details_listed_before",
+                "distractor:irrelevant"
+              ],
+              [
+                "action:update_database",
+                "!distractor:irrelevant"
+              ]
+            ]
+          },
+          "source_spans": [
+            {
+              "document": "policy",
+              "start": 89,
+              "end": 168
+            }
+          ],
+          "unresolved_terms": [
+            "several unrelated rules",
+            "explicit yes",
+            "summary of the intended change",
+            "after"
+          ]
+        },
+        {
+          "hypothesis_id": "policy-program:h2",
+          "basis": "'After several unrelated rules' is read as making distractor:irrelevant a direct conjunctive precondition for the update, on equal footing with the two events. The update is permitted only when all three conditions hold simultaneously, and a violation occurs if any one is missing. This differs from reading 1 (which treats the phrase as non-operative framing) and reading 2 (which treats distractor:irrelevant as an activation gate that, when absent, frees the update from the event requirements).",
+          "program": {
+            "violation_clauses": [
+              [
+                "action:update_database",
+                "!event:confirmation_before"
+              ],
+              [
+                "action:update_database",
+                "!event:details_listed_before"
+              ],
+              [
+                "action:update_database",
+                "!distractor:irrelevant"
+              ]
+            ],
+            "permission_clauses": [
+              [
+                "action:update_database",
+                "event:confirmation_before",
+                "event:details_listed_before",
+                "distractor:irrelevant"
+              ]
+            ]
+          },
+          "source_spans": [
+            {
+              "document": "policy",
+              "start": 89,
+              "end": 169
+            }
+          ],
+          "unresolved_terms": [
+            "whether 'after several unrelated rules' modifies the events' validity window or the update's preconditions"
+          ]
+        },
+        {
+          "hypothesis_id": "policy-program:h3",
+          "basis": "'After several unrelated rules' is read as delimiting the scope of the prohibition: the two-event requirement only generates a violation once the unrelated rules have been processed. Before that point, no clause (permission or violation) addresses the update, leaving it unconstrained rather than explicitly permitted. This contrasts with reading 2, which positively permits the update before the rules; here the pre-rule case is simply outside the rule's jurisdiction.",
+          "program": {
+            "violation_clauses": [
+              [
+                "action:update_database",
+                "!event:confirmation_before",
+                "distractor:irrelevant"
+              ],
+              [
+                "action:update_database",
+                "!event:details_listed_before",
+                "distractor:irrelevant"
+              ]
+            ],
+            "permission_clauses": [
+              [
+                "action:update_database",
+                "event:confirmation_before",
+                "event:details_listed_before",
+                "distractor:irrelevant"
+              ]
+            ]
+          },
+          "source_spans": [
+            {
+              "document": "policy",
+              "start": 89,
+              "end": 169
+            }
+          ],
+          "unresolved_terms": [
+            "whether 'unconstrained' and 'permitted' are behaviorally equivalent for the system's enforcement logic"
+          ]
+        }
+      ]
+    },
+    "fixed_p1": {
+      "case_id": "confirm_before_database::3",
+      "arm": "P1",
+      "transport_status": "SUCCESS",
+      "schema_status": "INVALID",
+      "semantic_status": "PENDING_GOLD_JOIN",
+      "representation_status": "NOT_EVALUATED",
+      "error_category": null,
+      "prediction": null,
+      "source_coverage": 1.0,
+      "served_model": "qwen3.8-flash",
+      "latency_ms": 11595.501,
+      "usage": {
+        "prompt_tokens": 434,
+        "completion_tokens": 533,
+        "total_tokens": 967
+      }
+    }
+  },
+  "native_request_telemetry": [
+    {
+      "backend_version": "diagnostic-semantic-v2",
+      "task": "policy_program_hypotheses_v2",
+      "input_sha256": "77a37be69123c356e45e554935ac76e84d15c6a88d3d34757318c84072f0aa15",
+      "prompt_sha256": "a5ba2cc1edbb6062b026edd2e676d50d7762174c826cf5f5b549d178632ef1c7",
+      "schema_sha256": "c58651e155b5aeefef1bdc1b87418dc057a4bcd52d997be7e5fbbdc054738ce4",
+      "served_model": "qwen3.8-flash",
+      "usage": {
+        "prompt_tokens": 595,
+        "completion_tokens": 1077,
+        "total_tokens": 1672
+      },
+      "latency_ms": 22733.771,
+      "transport_status": "SUCCESS",
+      "schema_status": "VALID",
+      "schema_issues": [],
+      "error_category": null
+    },
+    {
+      "backend_version": "diagnostic-semantic-v2",
+      "task": "policy_program_missing_reading_v2",
+      "input_sha256": "20ba40d007f39b52a679aa73d03a0858dba3cec706af3faa05acc16b7c50dbc6",
+      "prompt_sha256": "e6b45dd19132477631e0d99c3ea7d313d8cb78f6186fc071bb7c33ce5c924b9e",
+      "schema_sha256": "c58651e155b5aeefef1bdc1b87418dc057a4bcd52d997be7e5fbbdc054738ce4",
+      "served_model": "qwen3.8-flash",
+      "usage": {
+        "prompt_tokens": 871,
+        "completion_tokens": 3015,
+        "total_tokens": 3886
+      },
+      "latency_ms": 52993.798,
+      "transport_status": "SUCCESS",
+      "schema_status": "VALID",
+      "schema_issues": [],
+      "error_category": null
+    }
+  ],
+  "p1_request_telemetry": [
+    {
+      "task": "fixed_p1_wire",
+      "prompt_sha256": "5b75afe44b5f64ad93fa02ecfe45d66ae86efd0e70498f88bf62b4816fb95092",
+      "schema_sha256": "99d3b546dc99b153c91120dc28698ae7814af343550d3d1d1060d46cf9f60f09",
+      "transport_status": "SUCCESS",
+      "schema_status": "INVALID",
+      "schema_issues": [
+        {
+          "code": "JSON_INVALID",
+          "path": "",
+          "expected_type": null,
+          "actual_type": null
+        }
+      ],
+      "error_category": null,
+      "served_model": "qwen3.8-flash",
+      "usage": {
+        "prompt_tokens": 434,
+        "completion_tokens": 533,
+        "total_tokens": 967
+      },
+      "latency_ms": 11593.794
+    }
+  ]
+}

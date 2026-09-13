@@ -1,0 +1,420 @@
+{
+  "case_id": "confirm_before_database::0",
+  "configuration_sha256": "8ab1c29d5c2e4747ec410049227f69ae1a048ce8b32e951a59ce17bbcf475317",
+  "prediction": {
+    "native": {
+      "hypotheses": [
+        {
+          "hypothesis_id": "policy-program:h0",
+          "basis": "The policy states both listing details and obtaining confirmation as conjunctive prerequisites before any database update. Missing either one constitutes a violation. The 'and' connects two required events that must both precede the action.",
+          "program": {
+            "violation_clauses": [
+              [
+                "action:update_database",
+                "!event:details_listed_before"
+              ],
+              [
+                "action:update_database",
+                "!event:confirmation_before"
+              ]
+            ],
+            "permission_clauses": [
+              [
+                "action:update_database",
+                "event:details_listed_before",
+                "event:confirmation_before"
+              ]
+            ]
+          },
+          "source_spans": [
+            {
+              "document": "policy",
+              "start": 60,
+              "end": 130
+            }
+          ],
+          "unresolved_terms": [
+            "explicit",
+            "user"
+          ]
+        },
+        {
+          "hypothesis_id": "policy-program:h1",
+          "basis": "The word 'Before' combined with the sequential phrasing 'list the action details and obtain explicit user confirmation' implies a temporal chain: details must be listed, then confirmation obtained, then the update performed. The ordering between the two prerequisite events is itself a requirement.",
+          "program": {
+            "violation_clauses": [
+              [
+                "action:update_database",
+                "!event:details_listed_before"
+              ],
+              [
+                "action:update_database",
+                "!event:confirmation_before"
+              ],
+              [
+                "action:update_database",
+                "event:confirmation_before",
+                "!event:details_listed_before"
+              ]
+            ],
+            "permission_clauses": [
+              [
+                "action:update_database",
+                "event:details_listed_before",
+                "event:confirmation_before"
+              ]
+            ]
+          },
+          "source_spans": [
+            {
+              "document": "policy",
+              "start": 0,
+              "end": 130
+            }
+          ],
+          "unresolved_terms": [
+            "explicit",
+            "user",
+            "temporal ordering between details_listed and confirmation"
+          ]
+        },
+        {
+          "hypothesis_id": "policy-program:h2",
+          "basis": "The policy frames the update as conditionally permitted only when both prerequisites hold; absent them, the update is prohibited by default. This is a permission-gated model rather than a violation-punishment model: the action is not allowed unless the gate opens.",
+          "program": {
+            "violation_clauses": [
+              [
+                "action:update_database",
+                "!event:details_listed_before"
+              ],
+              [
+                "action:update_database",
+                "!event:confirmation_before"
+              ],
+              [
+                "action:update_database",
+                "!event:details_listed_before",
+                "!event:confirmation_before"
+              ]
+            ],
+            "permission_clauses": [
+              [
+                "action:update_database",
+                "event:details_listed_before",
+                "event:confirmation_before"
+              ]
+            ]
+          },
+          "source_spans": [
+            {
+              "document": "policy",
+              "start": 0,
+              "end": 130
+            }
+          ],
+          "unresolved_terms": [
+            "explicit",
+            "user"
+          ]
+        },
+        {
+          "hypothesis_id": "policy-program:h3",
+          "basis": "The phrase 'you must list the action details and obtain explicit user confirmation' creates an affirmative, unconditional duty that exists independently of whether the database update is actually performed. Under this reading, failing to list details or failing to obtain confirmation is itself a violation regardless of whether 'action:update_database' ever occurs. The update permission is a secondary consequence of fulfilling the primary obligation, not the other way around. This differs from the permission-gate model where absence of the action means no violation can arise.",
+          "program": {
+            "violation_clauses": [
+              [
+                "!event:details_listed_before"
+              ],
+              [
+                "!event:confirmation_before"
+              ]
+            ],
+            "permission_clauses": [
+              [
+                "action:update_database",
+                "event:details_listed_before",
+                "event:confirmation_before"
+              ]
+            ]
+          },
+          "source_spans": [
+            {
+              "document": "policy",
+              "start": 60,
+              "end": 130
+            },
+            {
+              "document": "policy",
+              "start": 0,
+              "end": 58
+            }
+          ],
+          "unresolved_terms": [
+            "whether the unconditional duty applies when no update is ever intended or attempted",
+            "whether 'must' creates a standing obligation or only a conditional one triggered by intent to act"
+          ]
+        }
+      ],
+      "coverage": {
+        "status": "OPEN_SEMANTICS",
+        "universe_source": null,
+        "enumeration_complete": false,
+        "unresolved_terms": [
+          "explicit",
+          "user",
+          "booking database",
+          "any (cardinality scope)",
+          "temporal ordering between details_listed and confirmation",
+          "any (cardinality: per-action vs per-session)",
+          "booking database (resource scope)",
+          "whether 'booking database' restricts the policy scope to a specific resource or is synonymous with the generic 'database' atom",
+          "whether 'list the action details' requires a specific format or level of detail",
+          "whether the unconditional duty applies when no update is ever intended or attempted",
+          "whether 'must' creates a standing obligation or only a conditional one triggered by intent to act",
+          "what degree of directness or unambiguity constitutes 'explicit'",
+          "whether the atom 'event:confirmation_before' should be interpreted as already encoding the explicitness requirement or as a weaker event",
+          "whether 'any actions' implies per-action prerequisites or a single gate for a batch",
+          "temporal proximity required between confirmation event and the specific action instance"
+        ],
+        "discarded_hypotheses": [],
+        "challenger_alternatives": [
+          "policy-program:h3"
+        ]
+      },
+      "failures": [],
+      "empirical_hypotheses": [
+        {
+          "hypothesis_id": "policy-program:h0",
+          "basis": "The policy states both listing details and obtaining confirmation as conjunctive prerequisites before any database update. Missing either one constitutes a violation. The 'and' connects two required events that must both precede the action.",
+          "program": {
+            "violation_clauses": [
+              [
+                "action:update_database",
+                "!event:details_listed_before"
+              ],
+              [
+                "action:update_database",
+                "!event:confirmation_before"
+              ]
+            ],
+            "permission_clauses": [
+              [
+                "action:update_database",
+                "event:details_listed_before",
+                "event:confirmation_before"
+              ]
+            ]
+          },
+          "source_spans": [
+            {
+              "document": "policy",
+              "start": 60,
+              "end": 130
+            }
+          ],
+          "unresolved_terms": [
+            "explicit",
+            "user"
+          ]
+        },
+        {
+          "hypothesis_id": "policy-program:h1",
+          "basis": "The word 'Before' combined with the sequential phrasing 'list the action details and obtain explicit user confirmation' implies a temporal chain: details must be listed, then confirmation obtained, then the update performed. The ordering between the two prerequisite events is itself a requirement.",
+          "program": {
+            "violation_clauses": [
+              [
+                "action:update_database",
+                "!event:details_listed_before"
+              ],
+              [
+                "action:update_database",
+                "!event:confirmation_before"
+              ],
+              [
+                "action:update_database",
+                "event:confirmation_before",
+                "!event:details_listed_before"
+              ]
+            ],
+            "permission_clauses": [
+              [
+                "action:update_database",
+                "event:details_listed_before",
+                "event:confirmation_before"
+              ]
+            ]
+          },
+          "source_spans": [
+            {
+              "document": "policy",
+              "start": 0,
+              "end": 130
+            }
+          ],
+          "unresolved_terms": [
+            "explicit",
+            "user",
+            "temporal ordering between details_listed and confirmation"
+          ]
+        },
+        {
+          "hypothesis_id": "policy-program:h2",
+          "basis": "The policy frames the update as conditionally permitted only when both prerequisites hold; absent them, the update is prohibited by default. This is a permission-gated model rather than a violation-punishment model: the action is not allowed unless the gate opens.",
+          "program": {
+            "violation_clauses": [
+              [
+                "action:update_database",
+                "!event:details_listed_before"
+              ],
+              [
+                "action:update_database",
+                "!event:confirmation_before"
+              ],
+              [
+                "action:update_database",
+                "!event:details_listed_before",
+                "!event:confirmation_before"
+              ]
+            ],
+            "permission_clauses": [
+              [
+                "action:update_database",
+                "event:details_listed_before",
+                "event:confirmation_before"
+              ]
+            ]
+          },
+          "source_spans": [
+            {
+              "document": "policy",
+              "start": 0,
+              "end": 130
+            }
+          ],
+          "unresolved_terms": [
+            "explicit",
+            "user"
+          ]
+        },
+        {
+          "hypothesis_id": "policy-program:h3",
+          "basis": "The phrase 'you must list the action details and obtain explicit user confirmation' creates an affirmative, unconditional duty that exists independently of whether the database update is actually performed. Under this reading, failing to list details or failing to obtain confirmation is itself a violation regardless of whether 'action:update_database' ever occurs. The update permission is a secondary consequence of fulfilling the primary obligation, not the other way around. This differs from the permission-gate model where absence of the action means no violation can arise.",
+          "program": {
+            "violation_clauses": [
+              [
+                "!event:details_listed_before"
+              ],
+              [
+                "!event:confirmation_before"
+              ]
+            ],
+            "permission_clauses": [
+              [
+                "action:update_database",
+                "event:details_listed_before",
+                "event:confirmation_before"
+              ]
+            ]
+          },
+          "source_spans": [
+            {
+              "document": "policy",
+              "start": 60,
+              "end": 130
+            },
+            {
+              "document": "policy",
+              "start": 0,
+              "end": 58
+            }
+          ],
+          "unresolved_terms": [
+            "whether the unconditional duty applies when no update is ever intended or attempted",
+            "whether 'must' creates a standing obligation or only a conditional one triggered by intent to act"
+          ]
+        }
+      ]
+    },
+    "fixed_p1": {
+      "case_id": "confirm_before_database::0",
+      "arm": "P1",
+      "transport_status": "SUCCESS",
+      "schema_status": "INVALID",
+      "semantic_status": "PENDING_GOLD_JOIN",
+      "representation_status": "NOT_EVALUATED",
+      "error_category": null,
+      "prediction": null,
+      "source_coverage": 1.0,
+      "served_model": "qwen3.8-flash",
+      "latency_ms": 8505.73,
+      "usage": {
+        "prompt_tokens": 425,
+        "completion_tokens": 294,
+        "total_tokens": 719
+      }
+    }
+  },
+  "native_request_telemetry": [
+    {
+      "backend_version": "diagnostic-semantic-v2",
+      "task": "policy_program_hypotheses_v2",
+      "input_sha256": "00b5cf1bb6b3b6c6a1edd988bf73d262475bbf9b59b9c3fa692a77e21fe6c90a",
+      "prompt_sha256": "8e8fc377f48324fc96803a3817c7bc6c18aa49e9c60c07a79c58858ae6ec7dc6",
+      "schema_sha256": "c58651e155b5aeefef1bdc1b87418dc057a4bcd52d997be7e5fbbdc054738ce4",
+      "served_model": "qwen3.8-flash",
+      "usage": {
+        "prompt_tokens": 586,
+        "completion_tokens": 1845,
+        "total_tokens": 2431
+      },
+      "latency_ms": 33851.445,
+      "transport_status": "SUCCESS",
+      "schema_status": "VALID",
+      "schema_issues": [],
+      "error_category": null
+    },
+    {
+      "backend_version": "diagnostic-semantic-v2",
+      "task": "policy_program_missing_reading_v2",
+      "input_sha256": "65f61059dab805c78caf5eec2f7f62ff0ec3d0d2b01827ca10aa326a6dba28a4",
+      "prompt_sha256": "df3130383b45769fd52fd79b4d782101ea356cc1f91a77c848606df4cb01f325",
+      "schema_sha256": "c58651e155b5aeefef1bdc1b87418dc057a4bcd52d997be7e5fbbdc054738ce4",
+      "served_model": "qwen3.8-flash",
+      "usage": {
+        "prompt_tokens": 968,
+        "completion_tokens": 3177,
+        "total_tokens": 4145
+      },
+      "latency_ms": 61312.36,
+      "transport_status": "SUCCESS",
+      "schema_status": "VALID",
+      "schema_issues": [],
+      "error_category": null
+    }
+  ],
+  "p1_request_telemetry": [
+    {
+      "task": "fixed_p1_wire",
+      "prompt_sha256": "2537d192f9082c6a5905b1b9333468d7b7311df185dd6dfb3aff84328694bc91",
+      "schema_sha256": "8cd39cb5dabf8e40f77e85eb7680b4e69cfd11f23c87de72af8a29eec19c4ce6",
+      "transport_status": "SUCCESS",
+      "schema_status": "INVALID",
+      "schema_issues": [
+        {
+          "code": "JSON_INVALID",
+          "path": "",
+          "expected_type": null,
+          "actual_type": null
+        }
+      ],
+      "error_category": null,
+      "served_model": "qwen3.8-flash",
+      "usage": {
+        "prompt_tokens": 425,
+        "completion_tokens": 294,
+        "total_tokens": 719
+      },
+      "latency_ms": 8504.061
+    }
+  ]
+}
