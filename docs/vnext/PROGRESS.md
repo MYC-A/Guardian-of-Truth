@@ -231,6 +231,15 @@ not the joint Core or a model score. Public counterexample replay and exact
 remaining source-authentication/adapter boundaries are documented in
 SOURCE_ENVELOPE_V4_BOUNDARIES.md. All frozen Goal/T2/Policy source stays unchanged.
 
+Source-backed binding v2 is now completed separately from the under-grounded
+symbolic v1. Its 34 typed-query predictions are sealed before scoring: 34/34
+truth/binding/completeness, 12 expected UNKNOWN preserved, both ambiguous name
+bindings retained, zero false forced bindings and zero unsupported causal proofs.
+All 34 independent typed receipts validate (22 definite primitive results); these
+are not whole-Core certificates. The full report and per-case audit explicitly
+retain native/Core/blind limitations and cached name/alias linear-scan costs.
+No API requests, frozen old source changes or blind labels were involved.
+
 Checkpoint commits: protocol `8e9c3fb`; types/ledger `8e87649`; Claim Graph
 `e69a406`; T1/T2 `9e0b2f4`; policy/Goal `f0fb124`; indexed Binder `f562c8b`;
 T1 evaluator `8d2c532`; T1 pre-prediction freeze `af2e3ee`.

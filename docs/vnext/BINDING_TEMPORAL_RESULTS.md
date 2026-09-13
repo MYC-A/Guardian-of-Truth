@@ -1,8 +1,8 @@
 # Binding / temporal / causal stage
 
-Status: NOT_RUN. Binder/temporal stage metrics and whole-Core gain are
-NOT_ESTABLISHED. Unit tests on existing source-owned indexes/primitives are not
-a substitute for the frozen adversarial evaluation.
+Current status: source-backed typed v2 stage COMPLETE; symbolic v1 NOT_RUN.
+Native frontend integration, whole-Core resolution/certificates and end-to-end
+gain remain NOT_ESTABLISHED. Original v1 inputs/annotations stay unchanged.
 
 ## Frozen v1 source-sufficiency audit
 
@@ -44,4 +44,35 @@ An independent executable fixture and 34 typed-query cases are frozen separately
 in `binding_temporal_v2.spec.json`. Reference validation passes 34/34; this is not
 a candidate result. Eight reference/projection checks pass. The protocol is
 [BINDING_TEMPORAL_V2_PROTOCOL.md](BINDING_TEMPORAL_V2_PROTOCOL.md).
-Candidate implementation/evaluation and native semantic integration remain NOT_RUN.
+This preimplementation reference milestone is superseded by the completed
+candidate experiment below. Native semantic integration remains NOT_RUN.
+
+## Completed frozen typed v2 experiment
+
+Implementation `09badb8`; `binding_temporal_v2_freeze.json` pins 130 executable
+sources, byte-archived in `binding_temporal_v2_source_archive.json`. Full 34-case
+predictions were persisted and sealed before the reference-scoring join.
+Machine source of truth: `binding_temporal_v2_results.json`; complete per-case
+audit: `binding_temporal_v2_failure_audit.json`.
+
+- Typed truth correct: **34/34**; bindings and scoped completeness: **34/34** each.
+- TRUE 14, FALSE 8, UNKNOWN 12. All twelve expected UNKNOWN remain explicit.
+- Ambiguous identities retained: **2/2**; false forced binding: **0**.
+- Five causal cases; one positive causal proof, no false/unsupported causal proof.
+  Observed source-scoped precision 1/1 is NOT evidence of broad causal reliability.
+- Independent typed receipts: **34/34** valid, including **22/22** definite
+  primitive results. These are NOT whole-Core ERROR/NO_ERROR certificates.
+- Runtime p50 **4.0983 ms**, p95 **471.35235 ms**. Two 2002-record sources each
+  preserve 4004 observations across two snapshots; complete source/index/replay
+  runtime **1336.2599 / 1378.1544 ms**, with **1 / 0** target bindings.
+- API requests/tokens **0**; provider transport/schema/cost NOT_APPLICABLE.
+
+Per-case semantic failure taxonomy is empty for this controlled stage. The audit
+separately records expected uncertainty, remaining native/Core boundaries and
+performance limits. ID/field and method queries use indexes, but name/alias-history
+branches still scan cached alias observations. Any optimization gets a new version,
+not an edit of these frozen sources/results. No real-provider guarantees, native
+NL extraction improvement, production gain or blind accuracy is claimed.
+
+The 26 primitive development checks use separate entity IDs. Three artifact tests
+verify complete prediction sealing, all 130 archived source bytes and audit scope.
