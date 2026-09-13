@@ -1,0 +1,263 @@
+{
+  "case_id": "message_xor_tool::2",
+  "configuration_sha256": "8ab1c29d5c2e4747ec410049227f69ae1a048ce8b32e951a59ce17bbcf475317",
+  "prediction": {
+    "native": {
+      "hypotheses": [
+        {
+          "hypothesis_id": "policy-program:h0",
+          "basis": "The policy uses 'choose either...or' which implies an exclusive selection requirement, and 'never both' reinforces the prohibition. Together they form a strict XOR: exactly one of message or tool call must be present in a turn, and having neither violates the imperative 'choose'.",
+          "program": {
+            "violation_clauses": [
+              [
+                "turn:has_message",
+                "turn:has_tool_call"
+              ],
+              [
+                "!turn:has_message",
+                "!turn:has_tool_call"
+              ]
+            ],
+            "permission_clauses": [
+              [
+                "turn:has_message",
+                "!turn:has_tool_call"
+              ],
+              [
+                "!turn:has_message",
+                "turn:has_tool_call"
+              ]
+            ]
+          },
+          "source_spans": [
+            {
+              "document": "policy",
+              "start": 0,
+              "end": 63
+            }
+          ],
+          "unresolved_terms": [
+            "whether 'choose' imposes an active-selection obligation beyond mere presence"
+          ]
+        },
+        {
+          "hypothesis_id": "policy-program:h1",
+          "basis": "The operative constraint is 'never both', which is a prohibition. 'Choose either...or' is read permissively as granting the option of one or the other without mandating that one must appear. Having neither is therefore not a violation.",
+          "program": {
+            "violation_clauses": [
+              [
+                "turn:has_message",
+                "turn:has_tool_call"
+              ]
+            ],
+            "permission_clauses": [
+              [
+                "!turn:has_message"
+              ],
+              [
+                "!turn:has_tool_call"
+              ]
+            ]
+          },
+          "source_spans": [
+            {
+              "document": "policy",
+              "start": 52,
+              "end": 63
+            },
+            {
+              "document": "policy",
+              "start": 0,
+              "end": 38
+            }
+          ],
+          "unresolved_terms": [
+            "whether 'choose' is imperative (must pick) or permissive (may pick)"
+          ]
+        }
+      ],
+      "coverage": {
+        "status": "OPEN_SEMANTICS",
+        "universe_source": null,
+        "enumeration_complete": false,
+        "unresolved_terms": [
+          "whether 'choose' is imperative or permissive",
+          "whether 'one turn' scopes the constraint to a single turn or implies a broader pattern",
+          "whether 'choose' imposes an active-selection obligation beyond mere presence",
+          "whether 'choose' is imperative (must pick) or permissive (may pick)"
+        ],
+        "discarded_hypotheses": [],
+        "challenger_alternatives": []
+      },
+      "failures": [
+        [
+          "policy_program_missing_reading_v2",
+          "TRANSPORT_ERROR"
+        ]
+      ],
+      "empirical_hypotheses": [
+        {
+          "hypothesis_id": "policy-program:h0",
+          "basis": "The policy uses 'choose either...or' which implies an exclusive selection requirement, and 'never both' reinforces the prohibition. Together they form a strict XOR: exactly one of message or tool call must be present in a turn, and having neither violates the imperative 'choose'.",
+          "program": {
+            "violation_clauses": [
+              [
+                "turn:has_message",
+                "turn:has_tool_call"
+              ],
+              [
+                "!turn:has_message",
+                "!turn:has_tool_call"
+              ]
+            ],
+            "permission_clauses": [
+              [
+                "turn:has_message",
+                "!turn:has_tool_call"
+              ],
+              [
+                "!turn:has_message",
+                "turn:has_tool_call"
+              ]
+            ]
+          },
+          "source_spans": [
+            {
+              "document": "policy",
+              "start": 0,
+              "end": 63
+            }
+          ],
+          "unresolved_terms": [
+            "whether 'choose' imposes an active-selection obligation beyond mere presence"
+          ]
+        },
+        {
+          "hypothesis_id": "policy-program:h1",
+          "basis": "The operative constraint is 'never both', which is a prohibition. 'Choose either...or' is read permissively as granting the option of one or the other without mandating that one must appear. Having neither is therefore not a violation.",
+          "program": {
+            "violation_clauses": [
+              [
+                "turn:has_message",
+                "turn:has_tool_call"
+              ]
+            ],
+            "permission_clauses": [
+              [
+                "!turn:has_message"
+              ],
+              [
+                "!turn:has_tool_call"
+              ]
+            ]
+          },
+          "source_spans": [
+            {
+              "document": "policy",
+              "start": 52,
+              "end": 63
+            },
+            {
+              "document": "policy",
+              "start": 0,
+              "end": 38
+            }
+          ],
+          "unresolved_terms": [
+            "whether 'choose' is imperative (must pick) or permissive (may pick)"
+          ]
+        }
+      ]
+    },
+    "fixed_p1": {
+      "case_id": "message_xor_tool::2",
+      "arm": "P1",
+      "transport_status": "SUCCESS",
+      "schema_status": "VALID",
+      "semantic_status": "PENDING_GOLD_JOIN",
+      "representation_status": "SUPPORTED",
+      "error_category": null,
+      "prediction": {
+        "structure": null,
+        "program": {
+          "violation_clauses": [
+            [
+              "turn:has_message",
+              "turn:has_tool_call"
+            ]
+          ],
+          "permission_clauses": [
+            [
+              "turn:has_message",
+              "!turn:has_tool_call"
+            ],
+            [
+              "!turn:has_message",
+              "turn:has_tool_call"
+            ]
+          ]
+        }
+      },
+      "source_coverage": 1.0,
+      "served_model": "qwen3.8-flash",
+      "latency_ms": 9856.472,
+      "usage": {
+        "prompt_tokens": 390,
+        "completion_tokens": 309,
+        "total_tokens": 699
+      }
+    }
+  },
+  "native_request_telemetry": [
+    {
+      "backend_version": "diagnostic-semantic-v2",
+      "task": "policy_program_hypotheses_v2",
+      "input_sha256": "62c63ac72e3a9016845375f33d439dbc63aa1c332d9a328bf680d44eb7b544b7",
+      "prompt_sha256": "1e78da05f535eb953fabe0a1148c69ef022c3b3420eca418f9d80105b8ac52d1",
+      "schema_sha256": "46c041d1c08a0318291f62554b8ad7a5eadd5a6df40baedb43339648327f24b2",
+      "served_model": "qwen3.8-flash",
+      "usage": {
+        "prompt_tokens": 552,
+        "completion_tokens": 1247,
+        "total_tokens": 1799
+      },
+      "latency_ms": 22317.319,
+      "transport_status": "SUCCESS",
+      "schema_status": "VALID",
+      "schema_issues": [],
+      "error_category": null
+    },
+    {
+      "backend_version": "diagnostic-semantic-v2",
+      "task": "policy_program_missing_reading_v2",
+      "input_sha256": "8caf0e1a642194481fa531309dcd939cb932eb3e90c2a08ba190b4a78dd78f48",
+      "prompt_sha256": "196fe00fe5f5e58af9b3f02806428e0f9f781fd119d6da5f7cd570459bc0fdd7",
+      "schema_sha256": "46c041d1c08a0318291f62554b8ad7a5eadd5a6df40baedb43339648327f24b2",
+      "served_model": null,
+      "usage": {},
+      "latency_ms": 117336.934,
+      "transport_status": "ERROR",
+      "schema_status": "NOT_EVALUATED",
+      "schema_issues": [],
+      "error_category": "truncated"
+    }
+  ],
+  "p1_request_telemetry": [
+    {
+      "task": "fixed_p1_wire",
+      "prompt_sha256": "38cb12ea9d1903a2e9446ff1159507a3024029189a30fd5d6773502506bed6dd",
+      "schema_sha256": "ef33a7f510cbb52f7f9ad129b729e53fd0bd69e3e92d4f62faf908ec24654fa6",
+      "transport_status": "SUCCESS",
+      "schema_status": "VALID",
+      "schema_issues": [],
+      "error_category": null,
+      "served_model": "qwen3.8-flash",
+      "usage": {
+        "prompt_tokens": 390,
+        "completion_tokens": 309,
+        "total_tokens": 699
+      },
+      "latency_ms": 9854.85
+    }
+  ]
+}

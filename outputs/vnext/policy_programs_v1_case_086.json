@@ -1,0 +1,320 @@
+{
+  "case_id": "insurance_exception::2",
+  "configuration_sha256": "8ab1c29d5c2e4747ec410049227f69ae1a048ce8b32e951a59ce17bbcf475317",
+  "prediction": {
+    "native": {
+      "hypotheses": [
+        {
+          "hypothesis_id": "policy-program:h0",
+          "basis": "The policy states that a health reason by itself is insufficient to trigger the refund exception; travel insurance must also be present. This reads as a conjunction requirement: both reason:health_or_weather AND state:insurance_active must hold for the refund to be permitted.",
+          "program": {
+            "violation_clauses": [
+              [
+                "reason:health_or_weather",
+                "!state:insurance_active",
+                "action:issue_full_refund"
+              ]
+            ],
+            "permission_clauses": [
+              [
+                "reason:health_or_weather",
+                "state:insurance_active",
+                "action:issue_full_refund"
+              ]
+            ]
+          },
+          "source_spans": [
+            {
+              "document": "policy",
+              "start": 0,
+              "end": 85
+            }
+          ],
+          "unresolved_terms": [
+            "refund exception",
+            "travel insurance",
+            "alone"
+          ]
+        },
+        {
+          "hypothesis_id": "policy-program:h1",
+          "basis": "The policy emphasizes insurance as a necessary gatekeeper: without active insurance, no refund may be issued even if a health reason is present. The violation is framed from the absence-of-insurance side rather than the presence-of-health-reason side.",
+          "program": {
+            "violation_clauses": [
+              [
+                "!state:insurance_active",
+                "action:issue_full_refund"
+              ]
+            ],
+            "permission_clauses": [
+              [
+                "state:insurance_active",
+                "reason:health_or_weather",
+                "action:issue_full_refund"
+              ]
+            ]
+          },
+          "source_spans": [
+            {
+              "document": "policy",
+              "start": 60,
+              "end": 84
+            },
+            {
+              "document": "policy",
+              "start": 0,
+              "end": 59
+            }
+          ],
+          "unresolved_terms": [
+            "refund exception",
+            "travel insurance",
+            "alone"
+          ]
+        },
+        {
+          "hypothesis_id": "policy-program:h2",
+          "basis": "The phrase 'does not trigger the refund exception without travel insurance' can be read as identifying insurance as the operative sufficient condition for the refund exception, with the health reason serving merely as the contextual trigger being discussed rather than a co-required condition. Under this reading, having active insurance alone permits the full refund, and the health reason is not an independent necessary condition.",
+          "program": {
+            "violation_clauses": [
+              [
+                "!state:insurance_active",
+                "action:issue_full_refund"
+              ]
+            ],
+            "permission_clauses": [
+              [
+                "state:insurance_active",
+                "action:issue_full_refund"
+              ]
+            ]
+          },
+          "source_spans": [
+            {
+              "document": "policy",
+              "start": 0,
+              "end": 85
+            }
+          ],
+          "unresolved_terms": [
+            "whether 'alone' modifies the sufficiency of health reason or the sufficiency of insurance",
+            "whether other refund paths exist outside this exception"
+          ]
+        }
+      ],
+      "coverage": {
+        "status": "OPEN_SEMANTICS",
+        "universe_source": null,
+        "enumeration_complete": false,
+        "unresolved_terms": [
+          "refund exception",
+          "travel insurance",
+          "alone",
+          "whether 'alone' scopes over health-reason sufficiency or over insurance necessity",
+          "whether other refund paths exist outside the health-reason exception",
+          "whether the policy fully specifies when refund IS permitted or only when it is NOT",
+          "whether 'alone' modifies the sufficiency of health reason or the sufficiency of insurance",
+          "whether other refund paths exist outside this exception",
+          "what other refund paths exist and whether they have their own constraints",
+          "whether 'exception' implies a default rule that still applies when the exception is unavailable"
+        ],
+        "discarded_hypotheses": [],
+        "challenger_alternatives": [
+          "policy-program:h2"
+        ]
+      },
+      "failures": [],
+      "empirical_hypotheses": [
+        {
+          "hypothesis_id": "policy-program:h0",
+          "basis": "The policy states that a health reason by itself is insufficient to trigger the refund exception; travel insurance must also be present. This reads as a conjunction requirement: both reason:health_or_weather AND state:insurance_active must hold for the refund to be permitted.",
+          "program": {
+            "violation_clauses": [
+              [
+                "reason:health_or_weather",
+                "!state:insurance_active",
+                "action:issue_full_refund"
+              ]
+            ],
+            "permission_clauses": [
+              [
+                "reason:health_or_weather",
+                "state:insurance_active",
+                "action:issue_full_refund"
+              ]
+            ]
+          },
+          "source_spans": [
+            {
+              "document": "policy",
+              "start": 0,
+              "end": 85
+            }
+          ],
+          "unresolved_terms": [
+            "refund exception",
+            "travel insurance",
+            "alone"
+          ]
+        },
+        {
+          "hypothesis_id": "policy-program:h1",
+          "basis": "The policy emphasizes insurance as a necessary gatekeeper: without active insurance, no refund may be issued even if a health reason is present. The violation is framed from the absence-of-insurance side rather than the presence-of-health-reason side.",
+          "program": {
+            "violation_clauses": [
+              [
+                "!state:insurance_active",
+                "action:issue_full_refund"
+              ]
+            ],
+            "permission_clauses": [
+              [
+                "state:insurance_active",
+                "reason:health_or_weather",
+                "action:issue_full_refund"
+              ]
+            ]
+          },
+          "source_spans": [
+            {
+              "document": "policy",
+              "start": 60,
+              "end": 84
+            },
+            {
+              "document": "policy",
+              "start": 0,
+              "end": 59
+            }
+          ],
+          "unresolved_terms": [
+            "refund exception",
+            "travel insurance",
+            "alone"
+          ]
+        },
+        {
+          "hypothesis_id": "policy-program:h2",
+          "basis": "The phrase 'does not trigger the refund exception without travel insurance' can be read as identifying insurance as the operative sufficient condition for the refund exception, with the health reason serving merely as the contextual trigger being discussed rather than a co-required condition. Under this reading, having active insurance alone permits the full refund, and the health reason is not an independent necessary condition.",
+          "program": {
+            "violation_clauses": [
+              [
+                "!state:insurance_active",
+                "action:issue_full_refund"
+              ]
+            ],
+            "permission_clauses": [
+              [
+                "state:insurance_active",
+                "action:issue_full_refund"
+              ]
+            ]
+          },
+          "source_spans": [
+            {
+              "document": "policy",
+              "start": 0,
+              "end": 85
+            }
+          ],
+          "unresolved_terms": [
+            "whether 'alone' modifies the sufficiency of health reason or the sufficiency of insurance",
+            "whether other refund paths exist outside this exception"
+          ]
+        }
+      ]
+    },
+    "fixed_p1": {
+      "case_id": "insurance_exception::2",
+      "arm": "P1",
+      "transport_status": "SUCCESS",
+      "schema_status": "VALID",
+      "semantic_status": "PENDING_GOLD_JOIN",
+      "representation_status": "SUPPORTED",
+      "error_category": null,
+      "prediction": {
+        "structure": null,
+        "program": {
+          "violation_clauses": [
+            [
+              "action:issue_full_refund",
+              "reason:health_or_weather",
+              "!state:insurance_active"
+            ]
+          ],
+          "permission_clauses": [
+            [
+              "action:issue_full_refund",
+              "reason:health_or_weather",
+              "state:insurance_active"
+            ]
+          ]
+        }
+      },
+      "source_coverage": 1.0,
+      "served_model": "qwen3.8-flash",
+      "latency_ms": 7402.26,
+      "usage": {
+        "prompt_tokens": 425,
+        "completion_tokens": 388,
+        "total_tokens": 813
+      }
+    }
+  },
+  "native_request_telemetry": [
+    {
+      "backend_version": "diagnostic-semantic-v2",
+      "task": "policy_program_hypotheses_v2",
+      "input_sha256": "8fc71a79405b04a895ceaf02326ad673d9a90c230ea2ede4b7e0feb34fda5b3c",
+      "prompt_sha256": "c60725041156891a7370c85762e4f4ec59317bd695eb318a662823108c77554d",
+      "schema_sha256": "9c0880481be80107ac6f686f02d490e723f70b8f60e596ed13bf05f520f81f38",
+      "served_model": "qwen3.8-flash",
+      "usage": {
+        "prompt_tokens": 588,
+        "completion_tokens": 898,
+        "total_tokens": 1486
+      },
+      "latency_ms": 15546.189,
+      "transport_status": "SUCCESS",
+      "schema_status": "VALID",
+      "schema_issues": [],
+      "error_category": null
+    },
+    {
+      "backend_version": "diagnostic-semantic-v2",
+      "task": "policy_program_missing_reading_v2",
+      "input_sha256": "417d71437660c042289a962f8e45080027352ace150f6c6ff92c053ef80b48df",
+      "prompt_sha256": "d75a7b2038bbd3e76c5e075ed36d41bf5b547f41fc56bdae9b4c9f0f7c134d2f",
+      "schema_sha256": "9c0880481be80107ac6f686f02d490e723f70b8f60e596ed13bf05f520f81f38",
+      "served_model": "qwen3.8-flash",
+      "usage": {
+        "prompt_tokens": 824,
+        "completion_tokens": 2156,
+        "total_tokens": 2980
+      },
+      "latency_ms": 40957.279,
+      "transport_status": "SUCCESS",
+      "schema_status": "VALID",
+      "schema_issues": [],
+      "error_category": null
+    }
+  ],
+  "p1_request_telemetry": [
+    {
+      "task": "fixed_p1_wire",
+      "prompt_sha256": "cc6f5e9b1bdacf624a828172bd4a9860ba787722fbf493f304783b0e3b7a4eb2",
+      "schema_sha256": "2fe27a99021bfd9831d610c5dc4a142a4cfed92f8dea6af433fb719aba96bdb3",
+      "transport_status": "SUCCESS",
+      "schema_status": "VALID",
+      "schema_issues": [],
+      "error_category": null,
+      "served_model": "qwen3.8-flash",
+      "usage": {
+        "prompt_tokens": 425,
+        "completion_tokens": 388,
+        "total_tokens": 813
+      },
+      "latency_ms": 7400.626
+    }
+  ]
+}
