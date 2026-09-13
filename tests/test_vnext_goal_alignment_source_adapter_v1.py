@@ -51,7 +51,10 @@ def test_open_permission_replaces_restrictive_system_source_not_tool_catalog():
         "text": spec["obligation_templates"]["open_permission"],
         "source_id": "fixture:system:obligation:0"}]
     assert source["capability_contract"]["authorization_universe_closed_by_system"] is False
-    assert "cancel_shipment" in source["capability_contract"]["explicit_fixture_catalog_not_real_provider_schema"]
+    catalog = source["capability_contract"]["explicit_fixture_interfaces_not_real_provider_schema"]
+    assert catalog["cancel_shipment"]["operation_class"] == "ACTION_ATTEMPT"
+    assert catalog["fetch_shipment"]["operation_class"] == "READ"
+    assert "ATTEMPT_FORBIDDEN" not in json.dumps(source)
 
 
 def test_history_template_expansion_preserves_actor_and_source_order():

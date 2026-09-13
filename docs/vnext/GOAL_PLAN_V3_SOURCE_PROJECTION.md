@@ -19,8 +19,9 @@ gold isolation, replacement permission, event order and unknown-field rejection.
 
 The `authorization_universe_closed_by_system` field is a controlled fixture
 premise only: its false value follows the explicit `open_permission` replacement
-source. Capability metadata is **not** a real provider schema, T1 contract or
-business-effect observation. An `ATTEMPT_FORBIDDEN` fixture annotation must not
-independently override the replacement SYSTEM permission text. The v3 frontend
+source. The fixture's `ATTEMPT_FORBIDDEN` reference shorthand is deliberately
+reduced to `ACTION_ATTEMPT` in the interface catalog, so it cannot silently
+override that replacement SYSTEM text. Capability metadata is **not** a real
+provider schema, T1 contract or business-effect observation. The v3 frontend
 and independent checker still need to establish applicability and preserve
 unknown meaning/guards. No model request or v3 outcome is claimed here.

@@ -16,6 +16,22 @@ SOURCE_CASE_KEYS = frozenset({
 NON_SOURCE_KEYS = frozenset({"id", "family", "reference", "meaning_universe"})
 
 
+def _interface_catalog(capabilities):
+    """Expose operation shape, not the fixture's reference authorization tag."""
+    catalog = {}
+    for name, capability in capabilities.items():
+        item = deepcopy(capability)
+        kind = item.pop("kind")
+        if kind == "READ":
+            item["operation_class"] = "READ"
+        elif kind in {"ATTEMPT", "ATTEMPT_FORBIDDEN"}:
+            item["operation_class"] = "ACTION_ATTEMPT"
+        else:
+            raise ValueError("unknown fixture operation kind")
+        catalog[name] = item
+    return catalog
+
+
 def _expand_event(value, templates, seen=()):
     if isinstance(value, str):
         value = {"extends": value}
@@ -47,7 +63,8 @@ def project_goal_alignment_source(spec, case):
     templates = spec["event_templates"]
     obligations = spec["obligation_templates"]
     selected = case.get("obligations", ())
-    if not isinstance(selected, (list, tuple)) or len(selected) != len(set(selected)):
+    if (not isinstance(selected, (list, tuple)) or any(not isinstance(name, str) for name in selected)
+            or len(selected) != len(set(selected))):
         raise ValueError("unique selected source obligations required")
     if set(selected) - set(obligations):
         raise ValueError("selected obligation has no source text")
@@ -76,7 +93,7 @@ def project_goal_alignment_source(spec, case):
         "system_messages": system,
         "capability_contract": {
             "version": fixture["capability_contract_version"],
-            "explicit_fixture_catalog_not_real_provider_schema": deepcopy(fixture["capabilities"]),
+            "explicit_fixture_interfaces_not_real_provider_schema": _interface_catalog(fixture["capabilities"]),
             "authorization_universe_closed_by_system": not open_permission,
         },
         "assistant_plan": deepcopy(case.get("assistant_plan", [])),
