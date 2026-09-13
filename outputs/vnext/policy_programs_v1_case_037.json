@@ -1,0 +1,370 @@
+{
+  "case_id": "tool_name_not_effect::1",
+  "configuration_sha256": "8ab1c29d5c2e4747ec410049227f69ae1a048ce8b32e951a59ce17bbcf475317",
+  "prediction": {
+    "native": {
+      "hypotheses": [
+        {
+          "hypothesis_id": "policy-program:h0",
+          "basis": "An update_profile attempt (event:update_attempted) must not be treated as equivalent to a state change claim (claim:state_changed) unless independently confirmed. The policy forbids conflating the attempt with the outcome.",
+          "program": {
+            "violation_clauses": [
+              [
+                "event:update_attempted",
+                "!evidence:effect_confirmed",
+                "claim:state_changed"
+              ]
+            ],
+            "permission_clauses": [
+              [
+                "event:update_attempted",
+                "!claim:state_changed"
+              ],
+              [
+                "evidence:effect_confirmed",
+                "claim:state_changed"
+              ]
+            ]
+          },
+          "source_spans": [
+            {
+              "document": "policy",
+              "start": 0,
+              "end": 75
+            }
+          ],
+          "unresolved_terms": [
+            "observed",
+            "separately"
+          ]
+        },
+        {
+          "hypothesis_id": "policy-program:h1",
+          "basis": "An update_profile attempt and an observed profile update are distinct event types; the presence of one does not entail the other. Treating them as interchangeable violates the separation requirement.",
+          "program": {
+            "violation_clauses": [
+              [
+                "event:update_attempted",
+                "evidence:effect_confirmed",
+                "!claim:state_changed"
+              ],
+              [
+                "event:update_attempted",
+                "!evidence:effect_confirmed",
+                "claim:state_changed"
+              ]
+            ],
+            "permission_clauses": [
+              [
+                "event:update_attempted",
+                "!evidence:effect_confirmed",
+                "!claim:state_changed"
+              ],
+              [
+                "evidence:effect_confirmed",
+                "claim:state_changed",
+                "!event:update_attempted"
+              ],
+              [
+                "event:update_attempted",
+                "evidence:effect_confirmed",
+                "claim:state_changed"
+              ]
+            ]
+          },
+          "source_spans": [
+            {
+              "document": "policy",
+              "start": 0,
+              "end": 75
+            }
+          ],
+          "unresolved_terms": [
+            "observed",
+            "separately",
+            "profile"
+          ]
+        },
+        {
+          "hypothesis_id": "policy-program:h2",
+          "basis": "The policy requires that update attempts be logged and evaluated independently from confirmed updates; suppressing or merging the two categories (e.g., discarding an attempt because no effect was confirmed, or inferring an attempt from a confirmed effect) violates the separation.",
+          "program": {
+            "violation_clauses": [
+              [
+                "!event:update_attempted",
+                "evidence:effect_confirmed",
+                "claim:state_changed"
+              ],
+              [
+                "event:update_attempted",
+                "!evidence:effect_confirmed",
+                "!claim:state_changed",
+                "distractor:irrelevant"
+              ]
+            ],
+            "permission_clauses": [
+              [
+                "event:update_attempted",
+                "!evidence:effect_confirmed",
+                "!claim:state_changed"
+              ],
+              [
+                "evidence:effect_confirmed",
+                "claim:state_changed",
+                "event:update_attempted"
+              ]
+            ]
+          },
+          "source_spans": [
+            {
+              "document": "policy",
+              "start": 0,
+              "end": 75
+            }
+          ],
+          "unresolved_terms": [
+            "separately",
+            "observed"
+          ]
+        }
+      ],
+      "coverage": {
+        "status": "OPEN_SEMANTICS",
+        "universe_source": null,
+        "enumeration_complete": false,
+        "unresolved_terms": [
+          "observed",
+          "separately",
+          "profile"
+        ],
+        "discarded_hypotheses": [],
+        "challenger_alternatives": []
+      },
+      "failures": [
+        [
+          "policy_program_missing_reading_v2",
+          "SCHEMA_ERROR"
+        ]
+      ],
+      "empirical_hypotheses": [
+        {
+          "hypothesis_id": "policy-program:h0",
+          "basis": "An update_profile attempt (event:update_attempted) must not be treated as equivalent to a state change claim (claim:state_changed) unless independently confirmed. The policy forbids conflating the attempt with the outcome.",
+          "program": {
+            "violation_clauses": [
+              [
+                "event:update_attempted",
+                "!evidence:effect_confirmed",
+                "claim:state_changed"
+              ]
+            ],
+            "permission_clauses": [
+              [
+                "event:update_attempted",
+                "!claim:state_changed"
+              ],
+              [
+                "evidence:effect_confirmed",
+                "claim:state_changed"
+              ]
+            ]
+          },
+          "source_spans": [
+            {
+              "document": "policy",
+              "start": 0,
+              "end": 75
+            }
+          ],
+          "unresolved_terms": [
+            "observed",
+            "separately"
+          ]
+        },
+        {
+          "hypothesis_id": "policy-program:h1",
+          "basis": "An update_profile attempt and an observed profile update are distinct event types; the presence of one does not entail the other. Treating them as interchangeable violates the separation requirement.",
+          "program": {
+            "violation_clauses": [
+              [
+                "event:update_attempted",
+                "evidence:effect_confirmed",
+                "!claim:state_changed"
+              ],
+              [
+                "event:update_attempted",
+                "!evidence:effect_confirmed",
+                "claim:state_changed"
+              ]
+            ],
+            "permission_clauses": [
+              [
+                "event:update_attempted",
+                "!evidence:effect_confirmed",
+                "!claim:state_changed"
+              ],
+              [
+                "evidence:effect_confirmed",
+                "claim:state_changed",
+                "!event:update_attempted"
+              ],
+              [
+                "event:update_attempted",
+                "evidence:effect_confirmed",
+                "claim:state_changed"
+              ]
+            ]
+          },
+          "source_spans": [
+            {
+              "document": "policy",
+              "start": 0,
+              "end": 75
+            }
+          ],
+          "unresolved_terms": [
+            "observed",
+            "separately",
+            "profile"
+          ]
+        },
+        {
+          "hypothesis_id": "policy-program:h2",
+          "basis": "The policy requires that update attempts be logged and evaluated independently from confirmed updates; suppressing or merging the two categories (e.g., discarding an attempt because no effect was confirmed, or inferring an attempt from a confirmed effect) violates the separation.",
+          "program": {
+            "violation_clauses": [
+              [
+                "!event:update_attempted",
+                "evidence:effect_confirmed",
+                "claim:state_changed"
+              ],
+              [
+                "event:update_attempted",
+                "!evidence:effect_confirmed",
+                "!claim:state_changed",
+                "distractor:irrelevant"
+              ]
+            ],
+            "permission_clauses": [
+              [
+                "event:update_attempted",
+                "!evidence:effect_confirmed",
+                "!claim:state_changed"
+              ],
+              [
+                "evidence:effect_confirmed",
+                "claim:state_changed",
+                "event:update_attempted"
+              ]
+            ]
+          },
+          "source_spans": [
+            {
+              "document": "policy",
+              "start": 0,
+              "end": 75
+            }
+          ],
+          "unresolved_terms": [
+            "separately",
+            "observed"
+          ]
+        }
+      ]
+    },
+    "fixed_p1": {
+      "case_id": "tool_name_not_effect::1",
+      "arm": "P1",
+      "transport_status": "SUCCESS",
+      "schema_status": "INVALID",
+      "semantic_status": "PENDING_GOLD_JOIN",
+      "representation_status": "NOT_EVALUATED",
+      "error_category": null,
+      "prediction": null,
+      "source_coverage": 1.0,
+      "served_model": "qwen3.8-flash",
+      "latency_ms": 17438.891,
+      "usage": {
+        "prompt_tokens": 422,
+        "completion_tokens": 593,
+        "total_tokens": 1015
+      }
+    }
+  },
+  "native_request_telemetry": [
+    {
+      "backend_version": "diagnostic-semantic-v2",
+      "task": "policy_program_hypotheses_v2",
+      "input_sha256": "e20eda0fb767a2cea16961f044a2287371bb1bb0a6a55914715b50cde3d0a725",
+      "prompt_sha256": "54022a4342df6efabc2cfa164477e0f4923d3352bf53e4c1ab3833fd575c00e0",
+      "schema_sha256": "02b183a4c7ea44a2f008f76e781666d20c9be1c24d30bde2e0f784dcb64f77b1",
+      "served_model": "qwen3.8-flash",
+      "usage": {
+        "prompt_tokens": 582,
+        "completion_tokens": 1659,
+        "total_tokens": 2241
+      },
+      "latency_ms": 43653.406,
+      "transport_status": "SUCCESS",
+      "schema_status": "VALID",
+      "schema_issues": [],
+      "error_category": null
+    },
+    {
+      "backend_version": "diagnostic-semantic-v2",
+      "task": "policy_program_missing_reading_v2",
+      "input_sha256": "3323708b4da78a555cbf6043237e2b771ecde83abfa5e2988c97c878dc0f244a",
+      "prompt_sha256": "52aeac56e6c7a24058609a6e085575b1c04003f219688863ec67c2ae58a24296",
+      "schema_sha256": "02b183a4c7ea44a2f008f76e781666d20c9be1c24d30bde2e0f784dcb64f77b1",
+      "served_model": "qwen3.8-flash",
+      "usage": {
+        "prompt_tokens": 1006,
+        "completion_tokens": 2292,
+        "total_tokens": 3298
+      },
+      "latency_ms": 50353.916,
+      "transport_status": "SUCCESS",
+      "schema_status": "INVALID",
+      "schema_issues": [
+        {
+          "code": "DUPLICATE_ITEMS",
+          "path": "/interpretations/0/permission_clauses/0",
+          "expected_type": null,
+          "actual_type": null
+        },
+        {
+          "code": "DUPLICATE_ITEMS",
+          "path": "/interpretations/2/permission_clauses/0",
+          "expected_type": null,
+          "actual_type": null
+        }
+      ],
+      "error_category": null
+    }
+  ],
+  "p1_request_telemetry": [
+    {
+      "task": "fixed_p1_wire",
+      "prompt_sha256": "5f4f6281e07737c1544b7fb6ba2f83d8e5446e2742dcf3bbec32906e248e1592",
+      "schema_sha256": "d619134eb72f1a41beae70346ffab9a60c17526939ae7fe92afb42317b23bfb7",
+      "transport_status": "SUCCESS",
+      "schema_status": "INVALID",
+      "schema_issues": [
+        {
+          "code": "JSON_INVALID",
+          "path": "",
+          "expected_type": null,
+          "actual_type": null
+        }
+      ],
+      "error_category": null,
+      "served_model": "qwen3.8-flash",
+      "usage": {
+        "prompt_tokens": 422,
+        "completion_tokens": 593,
+        "total_tokens": 1015
+      },
+      "latency_ms": 17436.866
+    }
+  ]
+}

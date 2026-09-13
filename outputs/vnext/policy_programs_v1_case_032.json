@@ -1,0 +1,490 @@
+{
+  "case_id": "passenger_count_facet::0",
+  "configuration_sha256": "8ab1c29d5c2e4747ec410049227f69ae1a048ce8b32e951a59ce17bbcf475317",
+  "prediction": {
+    "native": {
+      "hypotheses": [
+        {
+          "hypothesis_id": "policy-program:h0",
+          "basis": "The policy permits modification of passenger attributes/details while explicitly prohibiting changes to the passenger count. The prohibition clause maps to effect:passenger_count_changed as the violation condition.",
+          "program": {
+            "violation_clauses": [
+              [
+                "effect:passenger_count_changed"
+              ]
+            ],
+            "permission_clauses": [
+              [
+                "!effect:passenger_count_changed"
+              ]
+            ]
+          },
+          "source_spans": [
+            {
+              "document": "policy",
+              "start": 0,
+              "end": 30
+            },
+            {
+              "document": "policy",
+              "start": 35,
+              "end": 73
+            }
+          ],
+          "unresolved_terms": [
+            "modify passengers (scope of permitted attribute changes undefined)"
+          ]
+        },
+        {
+          "hypothesis_id": "policy-program:h1",
+          "basis": "The policy draws a boundary (boundary_2) between modifying passenger records (permitted) and modifying the aggregate count (forbidden). Crossing the boundary into count changes constitutes a violation.",
+          "program": {
+            "violation_clauses": [
+              [
+                "distractor:boundary_2",
+                "effect:passenger_count_changed"
+              ]
+            ],
+            "permission_clauses": [
+              [
+                "!distractor:boundary_2"
+              ]
+            ]
+          },
+          "source_spans": [
+            {
+              "document": "policy",
+              "start": 9,
+              "end": 73
+            }
+          ],
+          "unresolved_terms": [
+            "what constitutes crossing boundary_2",
+            "modify passengers (scope undefined)"
+          ]
+        },
+        {
+          "hypothesis_id": "policy-program:h2",
+          "basis": "The permission clause 'can modify passengers' is read as a general permission that is then narrowed by the exception 'cannot modify the number of passengers.' The violation is specifically the count change; all other passenger modifications remain permitted.",
+          "program": {
+            "violation_clauses": [
+              [
+                "effect:passenger_count_changed"
+              ]
+            ],
+            "permission_clauses": [
+              [
+                "!effect:passenger_count_changed",
+                "!distractor:irrelevant"
+              ]
+            ]
+          },
+          "source_spans": [
+            {
+              "document": "policy",
+              "start": 0,
+              "end": 73
+            }
+          ],
+          "unresolved_terms": [
+            "modify passengers (scope undefined)",
+            "whether distractor:irrelevant applies to non-count modifications"
+          ]
+        },
+        {
+          "hypothesis_id": "policy-program:h3",
+          "basis": "The prohibition 'cannot modify the number of passengers' is read as a conditional prohibition that only applies when the modification is also irrelevant to the core task. Under this reading, a relevant count change would be permitted, while an irrelevant count change is the violation. This changes obligations by making the relevance of the modification a necessary condition for the prohibition to trigger.",
+          "program": {
+            "violation_clauses": [
+              [
+                "effect:passenger_count_changed",
+                "distractor:irrelevant"
+              ]
+            ],
+            "permission_clauses": [
+              [
+                "!effect:passenger_count_changed"
+              ],
+              [
+                "distractor:irrelevant"
+              ]
+            ]
+          },
+          "source_spans": [
+            {
+              "document": "policy",
+              "start": 35,
+              "end": 73
+            },
+            {
+              "document": "policy",
+              "start": 9,
+              "end": 30
+            }
+          ],
+          "unresolved_terms": [
+            "what makes a modification 'irrelevant' to the task"
+          ]
+        },
+        {
+          "hypothesis_id": "policy-program:h4",
+          "basis": "The boundary_2 atom is read as a permission gate that narrows the scope of permitted modifications, but crossing the boundary alone does not constitute a violation — only the count change does. This differs from the existing boundary reading (reading 2) where boundary_2 is part of the violation condition. Here, boundary_2 limits what is permitted without creating an independent obligation.",
+          "program": {
+            "violation_clauses": [
+              [
+                "effect:passenger_count_changed"
+              ]
+            ],
+            "permission_clauses": [
+              [
+                "!distractor:boundary_2",
+                "!effect:passenger_count_changed"
+              ]
+            ]
+          },
+          "source_spans": [
+            {
+              "document": "policy",
+              "start": 9,
+              "end": 30
+            },
+            {
+              "document": "policy",
+              "start": 35,
+              "end": 73
+            }
+          ],
+          "unresolved_terms": [
+            "what the boundary specifically delineates"
+          ]
+        },
+        {
+          "hypothesis_id": "policy-program:h5",
+          "basis": "The permission 'can modify passengers' is read as an exhaustive (closed-world) permission: only modifications that do not change the count are permitted, and anything outside this permission — including irrelevant modifications or boundary crossings — is treated as a violation. This changes obligations by making all non-permitted actions violations rather than merely unauthorized.",
+          "program": {
+            "violation_clauses": [
+              [
+                "effect:passenger_count_changed"
+              ],
+              [
+                "distractor:irrelevant"
+              ],
+              [
+                "distractor:boundary_2"
+              ]
+            ],
+            "permission_clauses": [
+              [
+                "!effect:passenger_count_changed"
+              ]
+            ]
+          },
+          "source_spans": [
+            {
+              "document": "policy",
+              "start": 9,
+              "end": 73
+            }
+          ],
+          "unresolved_terms": [
+            "whether closed-world reasoning is appropriate for this policy"
+          ]
+        }
+      ],
+      "coverage": {
+        "status": "OPEN_SEMANTICS",
+        "universe_source": null,
+        "enumeration_complete": false,
+        "unresolved_terms": [
+          "modify passengers (scope of permitted attribute changes undefined)",
+          "whether distractor:irrelevant has any role in this policy",
+          "what constitutes crossing boundary_2",
+          "modify passengers (scope undefined)",
+          "whether distractor:irrelevant applies to non-count modifications",
+          "actor identity scope",
+          "time or cardinality constraints on modifications",
+          "provenance of the modification request",
+          "what makes a modification 'irrelevant' to the task",
+          "what the boundary specifically delineates",
+          "whether closed-world reasoning is appropriate for this policy"
+        ],
+        "discarded_hypotheses": [],
+        "challenger_alternatives": [
+          "policy-program:h3",
+          "policy-program:h4",
+          "policy-program:h5"
+        ]
+      },
+      "failures": [],
+      "empirical_hypotheses": [
+        {
+          "hypothesis_id": "policy-program:h0",
+          "basis": "The policy permits modification of passenger attributes/details while explicitly prohibiting changes to the passenger count. The prohibition clause maps to effect:passenger_count_changed as the violation condition.",
+          "program": {
+            "violation_clauses": [
+              [
+                "effect:passenger_count_changed"
+              ]
+            ],
+            "permission_clauses": [
+              [
+                "!effect:passenger_count_changed"
+              ]
+            ]
+          },
+          "source_spans": [
+            {
+              "document": "policy",
+              "start": 0,
+              "end": 30
+            },
+            {
+              "document": "policy",
+              "start": 35,
+              "end": 73
+            }
+          ],
+          "unresolved_terms": [
+            "modify passengers (scope of permitted attribute changes undefined)"
+          ]
+        },
+        {
+          "hypothesis_id": "policy-program:h1",
+          "basis": "The policy draws a boundary (boundary_2) between modifying passenger records (permitted) and modifying the aggregate count (forbidden). Crossing the boundary into count changes constitutes a violation.",
+          "program": {
+            "violation_clauses": [
+              [
+                "distractor:boundary_2",
+                "effect:passenger_count_changed"
+              ]
+            ],
+            "permission_clauses": [
+              [
+                "!distractor:boundary_2"
+              ]
+            ]
+          },
+          "source_spans": [
+            {
+              "document": "policy",
+              "start": 9,
+              "end": 73
+            }
+          ],
+          "unresolved_terms": [
+            "what constitutes crossing boundary_2",
+            "modify passengers (scope undefined)"
+          ]
+        },
+        {
+          "hypothesis_id": "policy-program:h2",
+          "basis": "The permission clause 'can modify passengers' is read as a general permission that is then narrowed by the exception 'cannot modify the number of passengers.' The violation is specifically the count change; all other passenger modifications remain permitted.",
+          "program": {
+            "violation_clauses": [
+              [
+                "effect:passenger_count_changed"
+              ]
+            ],
+            "permission_clauses": [
+              [
+                "!effect:passenger_count_changed",
+                "!distractor:irrelevant"
+              ]
+            ]
+          },
+          "source_spans": [
+            {
+              "document": "policy",
+              "start": 0,
+              "end": 73
+            }
+          ],
+          "unresolved_terms": [
+            "modify passengers (scope undefined)",
+            "whether distractor:irrelevant applies to non-count modifications"
+          ]
+        },
+        {
+          "hypothesis_id": "policy-program:h3",
+          "basis": "The prohibition 'cannot modify the number of passengers' is read as a conditional prohibition that only applies when the modification is also irrelevant to the core task. Under this reading, a relevant count change would be permitted, while an irrelevant count change is the violation. This changes obligations by making the relevance of the modification a necessary condition for the prohibition to trigger.",
+          "program": {
+            "violation_clauses": [
+              [
+                "effect:passenger_count_changed",
+                "distractor:irrelevant"
+              ]
+            ],
+            "permission_clauses": [
+              [
+                "!effect:passenger_count_changed"
+              ],
+              [
+                "distractor:irrelevant"
+              ]
+            ]
+          },
+          "source_spans": [
+            {
+              "document": "policy",
+              "start": 35,
+              "end": 73
+            },
+            {
+              "document": "policy",
+              "start": 9,
+              "end": 30
+            }
+          ],
+          "unresolved_terms": [
+            "what makes a modification 'irrelevant' to the task"
+          ]
+        },
+        {
+          "hypothesis_id": "policy-program:h4",
+          "basis": "The boundary_2 atom is read as a permission gate that narrows the scope of permitted modifications, but crossing the boundary alone does not constitute a violation — only the count change does. This differs from the existing boundary reading (reading 2) where boundary_2 is part of the violation condition. Here, boundary_2 limits what is permitted without creating an independent obligation.",
+          "program": {
+            "violation_clauses": [
+              [
+                "effect:passenger_count_changed"
+              ]
+            ],
+            "permission_clauses": [
+              [
+                "!distractor:boundary_2",
+                "!effect:passenger_count_changed"
+              ]
+            ]
+          },
+          "source_spans": [
+            {
+              "document": "policy",
+              "start": 9,
+              "end": 30
+            },
+            {
+              "document": "policy",
+              "start": 35,
+              "end": 73
+            }
+          ],
+          "unresolved_terms": [
+            "what the boundary specifically delineates"
+          ]
+        },
+        {
+          "hypothesis_id": "policy-program:h5",
+          "basis": "The permission 'can modify passengers' is read as an exhaustive (closed-world) permission: only modifications that do not change the count are permitted, and anything outside this permission — including irrelevant modifications or boundary crossings — is treated as a violation. This changes obligations by making all non-permitted actions violations rather than merely unauthorized.",
+          "program": {
+            "violation_clauses": [
+              [
+                "effect:passenger_count_changed"
+              ],
+              [
+                "distractor:irrelevant"
+              ],
+              [
+                "distractor:boundary_2"
+              ]
+            ],
+            "permission_clauses": [
+              [
+                "!effect:passenger_count_changed"
+              ]
+            ]
+          },
+          "source_spans": [
+            {
+              "document": "policy",
+              "start": 9,
+              "end": 73
+            }
+          ],
+          "unresolved_terms": [
+            "whether closed-world reasoning is appropriate for this policy"
+          ]
+        }
+      ]
+    },
+    "fixed_p1": {
+      "case_id": "passenger_count_facet::0",
+      "arm": "P1",
+      "transport_status": "SUCCESS",
+      "schema_status": "INVALID",
+      "semantic_status": "PENDING_GOLD_JOIN",
+      "representation_status": "NOT_EVALUATED",
+      "error_category": null,
+      "prediction": null,
+      "source_coverage": 1.0,
+      "served_model": "qwen3.8-flash",
+      "latency_ms": 12924.986,
+      "usage": {
+        "prompt_tokens": 411,
+        "completion_tokens": 458,
+        "total_tokens": 869
+      }
+    }
+  },
+  "native_request_telemetry": [
+    {
+      "backend_version": "diagnostic-semantic-v2",
+      "task": "policy_program_hypotheses_v2",
+      "input_sha256": "0a99c5f1adabb3faaab4ab2658763fa0da1768a2db900d8f41d2635f52e3dc57",
+      "prompt_sha256": "d5770fa6e217a714abd6d632467e5485a1621d2d840b9771a0ecc122ba5ea1ed",
+      "schema_sha256": "36f73731aa0aee3cd7f8dbf8a7f80650ee392d72872c983040f646db2c7b420a",
+      "served_model": "qwen3.8-flash",
+      "usage": {
+        "prompt_tokens": 570,
+        "completion_tokens": 841,
+        "total_tokens": 1411
+      },
+      "latency_ms": 17290.245,
+      "transport_status": "SUCCESS",
+      "schema_status": "VALID",
+      "schema_issues": [],
+      "error_category": null
+    },
+    {
+      "backend_version": "diagnostic-semantic-v2",
+      "task": "policy_program_missing_reading_v2",
+      "input_sha256": "576f3e5e32444450831078e91501ea291b9a54c0ada07642595d7a01db721075",
+      "prompt_sha256": "223ee40a9d76cda2f2ea6d691b00c94ac48a816717756dcca62d44605186d299",
+      "schema_sha256": "36f73731aa0aee3cd7f8dbf8a7f80650ee392d72872c983040f646db2c7b420a",
+      "served_model": "qwen3.8-flash",
+      "usage": {
+        "prompt_tokens": 833,
+        "completion_tokens": 2673,
+        "total_tokens": 3506
+      },
+      "latency_ms": 55423.575,
+      "transport_status": "SUCCESS",
+      "schema_status": "VALID",
+      "schema_issues": [],
+      "error_category": null
+    }
+  ],
+  "p1_request_telemetry": [
+    {
+      "task": "fixed_p1_wire",
+      "prompt_sha256": "6548df1feaccaed1b19d3c6e8c758e4788b89f34a9ae509cf870b61e53290348",
+      "schema_sha256": "8b61b745d2c9544aef9f1218efd5ccf946d83f0bc1bfd338d5bd50850fe81926",
+      "transport_status": "SUCCESS",
+      "schema_status": "INVALID",
+      "schema_issues": [
+        {
+          "code": "JSON_INVALID",
+          "path": "",
+          "expected_type": null,
+          "actual_type": null
+        }
+      ],
+      "error_category": null,
+      "served_model": "qwen3.8-flash",
+      "usage": {
+        "prompt_tokens": 411,
+        "completion_tokens": 458,
+        "total_tokens": 869
+      },
+      "latency_ms": 12923.83
+    }
+  ]
+}

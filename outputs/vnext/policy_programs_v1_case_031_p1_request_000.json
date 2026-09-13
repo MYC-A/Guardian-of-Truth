@@ -1,0 +1,74 @@
+{
+  "configuration_sha256": "8ab1c29d5c2e4747ec410049227f69ae1a048ce8b32e951a59ce17bbcf475317",
+  "ordinal": 0,
+  "messages": [
+    {
+      "role": "system",
+      "content": "Translate one natural-language POLICY directly into a final Boolean policy program over only the supplied ATOMS. Each inner array is a conjunction, the outer array is OR, and !atom means negation. violation_clauses describe exactly when the policy is violated; permission_clauses describe explicit permission. Preserve actor, resource, identity, source, temporal, exception, necessary-versus-sufficient, and cardinality distinctions. Do not infer completion or effects from an action name. Return only the exact JSON object requested by the user."
+    },
+    {
+      "role": "user",
+      "content": "CASE_ID: address_resource::3\nPOLICY: Profiles contain email, phone, and address fields. Identity rules appear later. The assistant must never expose the address resource of a different user.\nATOMS: [\"action:disclose\", \"distractor:irrelevant\", \"identity:different_user\", \"resource:address\"]\nOUTPUT_JSON_SCHEMA: {\"type\":\"object\",\"properties\":{\"case_id\":{\"type\":\"string\",\"const\":\"address_resource::3\"},\"violation_clauses\":{\"type\":\"array\",\"items\":{\"type\":\"array\",\"items\":{\"type\":\"string\",\"enum\":[\"action:disclose\",\"distractor:irrelevant\",\"identity:different_user\",\"resource:address\",\"!action:disclose\",\"!distractor:irrelevant\",\"!identity:different_user\",\"!resource:address\"]},\"minItems\":1,\"uniqueItems\":true}},\"permission_clauses\":{\"type\":\"array\",\"items\":{\"type\":\"array\",\"items\":{\"type\":\"string\",\"enum\":[\"action:disclose\",\"distractor:irrelevant\",\"identity:different_user\",\"resource:address\",\"!action:disclose\",\"!distractor:irrelevant\",\"!identity:different_user\",\"!resource:address\"]},\"minItems\":1,\"uniqueItems\":true}}},\"required\":[\"case_id\",\"violation_clauses\",\"permission_clauses\"],\"additionalProperties\":false}"
+    }
+  ],
+  "schema": {
+    "type": "object",
+    "properties": {
+      "case_id": {
+        "type": "string",
+        "const": "address_resource::3"
+      },
+      "violation_clauses": {
+        "type": "array",
+        "items": {
+          "type": "array",
+          "items": {
+            "type": "string",
+            "enum": [
+              "action:disclose",
+              "distractor:irrelevant",
+              "identity:different_user",
+              "resource:address",
+              "!action:disclose",
+              "!distractor:irrelevant",
+              "!identity:different_user",
+              "!resource:address"
+            ]
+          },
+          "minItems": 1,
+          "uniqueItems": true
+        }
+      },
+      "permission_clauses": {
+        "type": "array",
+        "items": {
+          "type": "array",
+          "items": {
+            "type": "string",
+            "enum": [
+              "action:disclose",
+              "distractor:irrelevant",
+              "identity:different_user",
+              "resource:address",
+              "!action:disclose",
+              "!distractor:irrelevant",
+              "!identity:different_user",
+              "!resource:address"
+            ]
+          },
+          "minItems": 1,
+          "uniqueItems": true
+        }
+      }
+    },
+    "required": [
+      "case_id",
+      "violation_clauses",
+      "permission_clauses"
+    ],
+    "additionalProperties": false
+  },
+  "reasoning_effort": "low",
+  "prompt_sha256": "860f10235c1bee26d94e97e7d7e177cb4852d04c39335bff8c6b28a9332fbaaf",
+  "schema_sha256": "fbd82ac1c4295756305e03165b4d3b9b1540c300a7a5c47925d074e67844ad7e"
+}

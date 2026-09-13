@@ -1,6 +1,9 @@
 # Native factual v5 integration experiment v1
 
-Status: PREPARED_NOT_RUN. Twelve explicit executable-fixture traces test the real
+Status: FROZEN_NOT_RUN. Candidate commit:
+`f36bdf54fecd90c2cfc9829ef2fef7b804a9b690`; source/config/input freeze:
+`outputs/vnext/native_factual_v5_dev_v1_freeze.json`. No model requests have
+been admitted for this experiment. Twelve explicit executable-fixture traces test the real
 C2 ten-pass frontend, source method-meaning pass, exhaustive entity binding,
 T1 history queries and independent native receipts together. This is a
 post-implementation controlled development benchmark, not a blind holdout, a

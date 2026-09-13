@@ -254,6 +254,22 @@ joint all-world policy/goal/certificate composition and blind gains remain pendi
 Qualified count/time/causality and unsupported codecs remain explicit UNKNOWN.
 Goal v2 is immutable; v3 is still deferred until Policy finishes and is audited.
 
+Native factual v5 now has a separate frozen twelve-case executable-source dev
+integration experiment at candidate f36bdf54fecd90c2cfc9829ef2fef7b804a9b690.
+Four protocol/source checks pass; no model predictions or whole-Core gains are
+claimed. Network admission requires the complete preceding Policy report and
+linked 104-case audit. A pre-inference source check excludes a retired-name query
+whose latest-alias reference differs from native historical alias semantics.
+
+The old Policy session handle is unavailable and no matching Python process was
+found. Its immutable runner is resumed as session 70770, replaying 39 completed
+cases; an admitted request without captured result becomes explicit remote
+UNKNOWN and is never resent. Progress reached 42/104 at this checkpoint; this is
+not a terminal report or inferred liveness guarantee. Full unrestricted discovery
+now passes 1227 tests, with zero recorded old frozen-source integrity errors and
+unchanged protected heads (checkpoint_checks_v19.json). Whole-Core/blind and Goal
+v3 implementation remain pending.
+
 Checkpoint commits: protocol `8e9c3fb`; types/ledger `8e87649`; Claim Graph
 `e69a406`; T1/T2 `9e0b2f4`; policy/Goal `f0fb124`; indexed Binder `f562c8b`;
 T1 evaluator `8d2c532`; T1 pre-prediction freeze `af2e3ee`.
