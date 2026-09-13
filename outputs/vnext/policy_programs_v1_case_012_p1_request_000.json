@@ -1,0 +1,70 @@
+{
+  "configuration_sha256": "8ab1c29d5c2e4747ec410049227f69ae1a048ce8b32e951a59ce17bbcf475317",
+  "ordinal": 0,
+  "messages": [
+    {
+      "role": "system",
+      "content": "Translate one natural-language POLICY directly into a final Boolean policy program over only the supplied ATOMS. Each inner array is a conjunction, the outer array is OR, and !atom means negation. violation_clauses describe exactly when the policy is violated; permission_clauses describe explicit permission. Preserve actor, resource, identity, source, temporal, exception, necessary-versus-sufficient, and cardinality distinctions. Do not infer completion or effects from an action name. Return only the exact JSON object requested by the user."
+    },
+    {
+      "role": "user",
+      "content": "CASE_ID: cancel_pending_only::0\nPOLICY: An order can only be cancelled if its status is 'pending'.\nATOMS: [\"action:cancel_order\", \"distractor:irrelevant\", \"state:order_pending\"]\nOUTPUT_JSON_SCHEMA: {\"type\":\"object\",\"properties\":{\"case_id\":{\"type\":\"string\",\"const\":\"cancel_pending_only::0\"},\"violation_clauses\":{\"type\":\"array\",\"items\":{\"type\":\"array\",\"items\":{\"type\":\"string\",\"enum\":[\"action:cancel_order\",\"distractor:irrelevant\",\"state:order_pending\",\"!action:cancel_order\",\"!distractor:irrelevant\",\"!state:order_pending\"]},\"minItems\":1,\"uniqueItems\":true}},\"permission_clauses\":{\"type\":\"array\",\"items\":{\"type\":\"array\",\"items\":{\"type\":\"string\",\"enum\":[\"action:cancel_order\",\"distractor:irrelevant\",\"state:order_pending\",\"!action:cancel_order\",\"!distractor:irrelevant\",\"!state:order_pending\"]},\"minItems\":1,\"uniqueItems\":true}}},\"required\":[\"case_id\",\"violation_clauses\",\"permission_clauses\"],\"additionalProperties\":false}"
+    }
+  ],
+  "schema": {
+    "type": "object",
+    "properties": {
+      "case_id": {
+        "type": "string",
+        "const": "cancel_pending_only::0"
+      },
+      "violation_clauses": {
+        "type": "array",
+        "items": {
+          "type": "array",
+          "items": {
+            "type": "string",
+            "enum": [
+              "action:cancel_order",
+              "distractor:irrelevant",
+              "state:order_pending",
+              "!action:cancel_order",
+              "!distractor:irrelevant",
+              "!state:order_pending"
+            ]
+          },
+          "minItems": 1,
+          "uniqueItems": true
+        }
+      },
+      "permission_clauses": {
+        "type": "array",
+        "items": {
+          "type": "array",
+          "items": {
+            "type": "string",
+            "enum": [
+              "action:cancel_order",
+              "distractor:irrelevant",
+              "state:order_pending",
+              "!action:cancel_order",
+              "!distractor:irrelevant",
+              "!state:order_pending"
+            ]
+          },
+          "minItems": 1,
+          "uniqueItems": true
+        }
+      }
+    },
+    "required": [
+      "case_id",
+      "violation_clauses",
+      "permission_clauses"
+    ],
+    "additionalProperties": false
+  },
+  "reasoning_effort": "low",
+  "prompt_sha256": "f0fc2e828f02d379c5a11d7b86928a90a751ad2580e3b73bafc2a859eeb9aa43",
+  "schema_sha256": "7a726e7e800ad47e31fa8ee28f8fb4f7087327475ca809590707ba6659bcd050"
+}

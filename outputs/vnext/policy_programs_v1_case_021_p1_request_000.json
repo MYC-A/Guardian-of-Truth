@@ -1,0 +1,70 @@
+{
+  "configuration_sha256": "8ab1c29d5c2e4747ec410049227f69ae1a048ce8b32e951a59ce17bbcf475317",
+  "ordinal": 0,
+  "messages": [
+    {
+      "role": "system",
+      "content": "Translate one natural-language POLICY directly into a final Boolean policy program over only the supplied ATOMS. Each inner array is a conjunction, the outer array is OR, and !atom means negation. violation_clauses describe exactly when the policy is violated; permission_clauses describe explicit permission. Preserve actor, resource, identity, source, temporal, exception, necessary-versus-sufficient, and cardinality distinctions. Do not infer completion or effects from an action name. Return only the exact JSON object requested by the user."
+    },
+    {
+      "role": "user",
+      "content": "CASE_ID: disclose_unless_consent::1\nPOLICY: The record must remain undisclosed, except when the user has consented.\nATOMS: [\"action:disclose_record\", \"distractor:irrelevant\", \"state:user_consented\"]\nOUTPUT_JSON_SCHEMA: {\"type\":\"object\",\"properties\":{\"case_id\":{\"type\":\"string\",\"const\":\"disclose_unless_consent::1\"},\"violation_clauses\":{\"type\":\"array\",\"items\":{\"type\":\"array\",\"items\":{\"type\":\"string\",\"enum\":[\"action:disclose_record\",\"distractor:irrelevant\",\"state:user_consented\",\"!action:disclose_record\",\"!distractor:irrelevant\",\"!state:user_consented\"]},\"minItems\":1,\"uniqueItems\":true}},\"permission_clauses\":{\"type\":\"array\",\"items\":{\"type\":\"array\",\"items\":{\"type\":\"string\",\"enum\":[\"action:disclose_record\",\"distractor:irrelevant\",\"state:user_consented\",\"!action:disclose_record\",\"!distractor:irrelevant\",\"!state:user_consented\"]},\"minItems\":1,\"uniqueItems\":true}}},\"required\":[\"case_id\",\"violation_clauses\",\"permission_clauses\"],\"additionalProperties\":false}"
+    }
+  ],
+  "schema": {
+    "type": "object",
+    "properties": {
+      "case_id": {
+        "type": "string",
+        "const": "disclose_unless_consent::1"
+      },
+      "violation_clauses": {
+        "type": "array",
+        "items": {
+          "type": "array",
+          "items": {
+            "type": "string",
+            "enum": [
+              "action:disclose_record",
+              "distractor:irrelevant",
+              "state:user_consented",
+              "!action:disclose_record",
+              "!distractor:irrelevant",
+              "!state:user_consented"
+            ]
+          },
+          "minItems": 1,
+          "uniqueItems": true
+        }
+      },
+      "permission_clauses": {
+        "type": "array",
+        "items": {
+          "type": "array",
+          "items": {
+            "type": "string",
+            "enum": [
+              "action:disclose_record",
+              "distractor:irrelevant",
+              "state:user_consented",
+              "!action:disclose_record",
+              "!distractor:irrelevant",
+              "!state:user_consented"
+            ]
+          },
+          "minItems": 1,
+          "uniqueItems": true
+        }
+      }
+    },
+    "required": [
+      "case_id",
+      "violation_clauses",
+      "permission_clauses"
+    ],
+    "additionalProperties": false
+  },
+  "reasoning_effort": "low",
+  "prompt_sha256": "0d01c8bd41d916629060495dc712338a45d29229fdb80a69497aaa1497a1a770",
+  "schema_sha256": "b58c41a39b8cfcaffae67a6d20353c0bd34a8b1c3be9c320510252295fb2b07f"
+}

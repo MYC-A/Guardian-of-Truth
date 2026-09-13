@@ -1,0 +1,360 @@
+{
+  "case_id": "lift_after_payment::2",
+  "configuration_sha256": "8ab1c29d5c2e4747ec410049227f69ae1a048ce8b32e951a59ce17bbcf475317",
+  "prediction": {
+    "native": {
+      "hypotheses": [
+        {
+          "hypothesis_id": "policy-program:h0",
+          "basis": "'Only after' is read as a strict necessary condition: payment must be satisfied before permission to lift exists. Lifting without payment is the sole violation; with payment, permission is granted (though other unstated conditions may also apply).",
+          "program": {
+            "violation_clauses": [
+              [
+                "action:lift_suspension",
+                "!state:all_overdue_paid"
+              ]
+            ],
+            "permission_clauses": [
+              [
+                "action:lift_suspension",
+                "state:all_overdue_paid"
+              ]
+            ]
+          },
+          "source_spans": [
+            {
+              "document": "policy",
+              "start": 0,
+              "end": 74
+            }
+          ],
+          "unresolved_terms": [
+            "whether other conditions beyond payment may also be required for permission",
+            "who the actor is",
+            "which suspension is referenced",
+            "what counts as 'paid' (full, partial, cleared)"
+          ]
+        },
+        {
+          "hypothesis_id": "policy-program:h1",
+          "basis": "'Only after' is read as a biconditional: payment is both necessary and sufficient for permission. The word 'only' restricts the permission gateway exclusively to the payment state, implying no other path to permission exists and payment alone guarantees it.",
+          "program": {
+            "violation_clauses": [
+              [
+                "action:lift_suspension",
+                "!state:all_overdue_paid"
+              ],
+              [
+                "!action:lift_suspension",
+                "state:all_overdue_paid"
+              ]
+            ],
+            "permission_clauses": [
+              [
+                "action:lift_suspension",
+                "state:all_overdue_paid"
+              ]
+            ]
+          },
+          "source_spans": [
+            {
+              "document": "policy",
+              "start": 0,
+              "end": 74
+            }
+          ],
+          "unresolved_terms": [
+            "whether 'only after' truly implies sufficiency or merely exclusivity of the condition",
+            "whether the second violation clause (not lifting after payment) is a genuine obligation or merely a permissive statement"
+          ]
+        },
+        {
+          "hypothesis_id": "policy-program:h2",
+          "basis": "The policy is read as creating only a positive permission gate, not a prohibition. 'Permitted only after' restricts when permission exists but does not itself declare a violation for acting outside that window. Lifting before payment is unauthorized by this policy, but the policy does not generate a violation clause — it is silent on the pre-payment case, leaving it to other rules or to default status.",
+          "program": {
+            "violation_clauses": [],
+            "permission_clauses": [
+              [
+                "action:lift_suspension",
+                "state:all_overdue_paid"
+              ]
+            ]
+          },
+          "source_spans": [
+            {
+              "document": "policy",
+              "start": 0,
+              "end": 74
+            }
+          ],
+          "unresolved_terms": [
+            "whether absence of permission constitutes a violation or merely a lack of authorization"
+          ]
+        },
+        {
+          "hypothesis_id": "policy-program:h3",
+          "basis": "'Only after' is read as a one-time temporal trigger rather than a persistent state condition: once the payment event has occurred, the permission is permanently unlocked regardless of whether the state later reverts (e.g., new overdue bills appear). The condition is on the history of the state, not its current value at the time of lifting. With the available atoms this cannot be fully expressed; the closest encoding treats the permission as unconditional once triggered, which collapses to an unconditional permission clause.",
+          "program": {
+            "violation_clauses": [],
+            "permission_clauses": [
+              [
+                "action:lift_suspension"
+              ]
+            ]
+          },
+          "source_spans": [
+            {
+              "document": "policy",
+              "start": 26,
+              "end": 73
+            }
+          ],
+          "unresolved_terms": [
+            "whether 'only after' refers to a persistent state condition or a one-time temporal trigger",
+            "how to represent historical state satisfaction with current-state atoms"
+          ]
+        }
+      ],
+      "coverage": {
+        "status": "OPEN_SEMANTICS",
+        "universe_source": null,
+        "enumeration_complete": false,
+        "unresolved_terms": [
+          "actor identity",
+          "specific suspension reference",
+          "definition of 'paid' (full vs partial)",
+          "temporal scope of 'after'",
+          "whether other permission conditions exist",
+          "distractor:irrelevant has no role in this policy",
+          "whether other conditions beyond payment may also be required for permission",
+          "who the actor is",
+          "which suspension is referenced",
+          "what counts as 'paid' (full, partial, cleared)",
+          "whether 'only after' truly implies sufficiency or merely exclusivity of the condition",
+          "whether the second violation clause (not lifting after payment) is a genuine obligation or merely a permissive statement",
+          "the temporal ordering is not representable in the supplied atom catalog",
+          "whether 'after' means immediately after or any time after",
+          "whether the state must persist or just the event must have occurred",
+          "whether the suspension itself is a separate state not captured in atoms",
+          "whether 'lifting the suspension' and 'the suspension' refer to the same or different objects",
+          "whether 'permitted' denotes strong authorization or mere absence of prohibition",
+          "whether 'only after' encodes a persistent state condition, a one-time trigger, or a strict temporal ordering",
+          "whether the policy creates standalone violations or only scopes permissions",
+          "whether absence of permission constitutes a violation or merely a lack of authorization",
+          "whether 'only after' refers to a persistent state condition or a one-time temporal trigger",
+          "how to represent historical state satisfaction with current-state atoms",
+          "temporal precedence vs. state condition distinction",
+          "event history representation"
+        ],
+        "discarded_hypotheses": [],
+        "challenger_alternatives": [
+          "policy-program:h2",
+          "policy-program:h3"
+        ]
+      },
+      "failures": [],
+      "empirical_hypotheses": [
+        {
+          "hypothesis_id": "policy-program:h0",
+          "basis": "'Only after' is read as a strict necessary condition: payment must be satisfied before permission to lift exists. Lifting without payment is the sole violation; with payment, permission is granted (though other unstated conditions may also apply).",
+          "program": {
+            "violation_clauses": [
+              [
+                "action:lift_suspension",
+                "!state:all_overdue_paid"
+              ]
+            ],
+            "permission_clauses": [
+              [
+                "action:lift_suspension",
+                "state:all_overdue_paid"
+              ]
+            ]
+          },
+          "source_spans": [
+            {
+              "document": "policy",
+              "start": 0,
+              "end": 74
+            }
+          ],
+          "unresolved_terms": [
+            "whether other conditions beyond payment may also be required for permission",
+            "who the actor is",
+            "which suspension is referenced",
+            "what counts as 'paid' (full, partial, cleared)"
+          ]
+        },
+        {
+          "hypothesis_id": "policy-program:h1",
+          "basis": "'Only after' is read as a biconditional: payment is both necessary and sufficient for permission. The word 'only' restricts the permission gateway exclusively to the payment state, implying no other path to permission exists and payment alone guarantees it.",
+          "program": {
+            "violation_clauses": [
+              [
+                "action:lift_suspension",
+                "!state:all_overdue_paid"
+              ],
+              [
+                "!action:lift_suspension",
+                "state:all_overdue_paid"
+              ]
+            ],
+            "permission_clauses": [
+              [
+                "action:lift_suspension",
+                "state:all_overdue_paid"
+              ]
+            ]
+          },
+          "source_spans": [
+            {
+              "document": "policy",
+              "start": 0,
+              "end": 74
+            }
+          ],
+          "unresolved_terms": [
+            "whether 'only after' truly implies sufficiency or merely exclusivity of the condition",
+            "whether the second violation clause (not lifting after payment) is a genuine obligation or merely a permissive statement"
+          ]
+        },
+        {
+          "hypothesis_id": "policy-program:h2",
+          "basis": "The policy is read as creating only a positive permission gate, not a prohibition. 'Permitted only after' restricts when permission exists but does not itself declare a violation for acting outside that window. Lifting before payment is unauthorized by this policy, but the policy does not generate a violation clause — it is silent on the pre-payment case, leaving it to other rules or to default status.",
+          "program": {
+            "violation_clauses": [],
+            "permission_clauses": [
+              [
+                "action:lift_suspension",
+                "state:all_overdue_paid"
+              ]
+            ]
+          },
+          "source_spans": [
+            {
+              "document": "policy",
+              "start": 0,
+              "end": 74
+            }
+          ],
+          "unresolved_terms": [
+            "whether absence of permission constitutes a violation or merely a lack of authorization"
+          ]
+        },
+        {
+          "hypothesis_id": "policy-program:h3",
+          "basis": "'Only after' is read as a one-time temporal trigger rather than a persistent state condition: once the payment event has occurred, the permission is permanently unlocked regardless of whether the state later reverts (e.g., new overdue bills appear). The condition is on the history of the state, not its current value at the time of lifting. With the available atoms this cannot be fully expressed; the closest encoding treats the permission as unconditional once triggered, which collapses to an unconditional permission clause.",
+          "program": {
+            "violation_clauses": [],
+            "permission_clauses": [
+              [
+                "action:lift_suspension"
+              ]
+            ]
+          },
+          "source_spans": [
+            {
+              "document": "policy",
+              "start": 26,
+              "end": 73
+            }
+          ],
+          "unresolved_terms": [
+            "whether 'only after' refers to a persistent state condition or a one-time temporal trigger",
+            "how to represent historical state satisfaction with current-state atoms"
+          ]
+        }
+      ]
+    },
+    "fixed_p1": {
+      "case_id": "lift_after_payment::2",
+      "arm": "P1",
+      "transport_status": "SUCCESS",
+      "schema_status": "VALID",
+      "semantic_status": "PENDING_GOLD_JOIN",
+      "representation_status": "SUPPORTED",
+      "error_category": null,
+      "prediction": {
+        "structure": null,
+        "program": {
+          "violation_clauses": [
+            [
+              "action:lift_suspension",
+              "!state:all_overdue_paid"
+            ]
+          ],
+          "permission_clauses": [
+            [
+              "action:lift_suspension",
+              "state:all_overdue_paid"
+            ]
+          ]
+        }
+      },
+      "source_coverage": 1.0,
+      "served_model": "qwen3.8-flash",
+      "latency_ms": 10187.352,
+      "usage": {
+        "prompt_tokens": 404,
+        "completion_tokens": 276,
+        "total_tokens": 680
+      }
+    }
+  },
+  "native_request_telemetry": [
+    {
+      "backend_version": "diagnostic-semantic-v2",
+      "task": "policy_program_hypotheses_v2",
+      "input_sha256": "e98e7d127cdaf1f20bc0cb58d28efd8673278f12902c3097273aad1b2c3709f3",
+      "prompt_sha256": "eeb0bc5296e453d85c30fb5fc9b3d6a7e356839bbf0b2b977deb3080a62adcbc",
+      "schema_sha256": "b6c47e67fa62aa7c4e54dcd6e8154b0d0774ca44cc1905fd5f12032948174da1",
+      "served_model": "qwen3.8-flash",
+      "usage": {
+        "prompt_tokens": 566,
+        "completion_tokens": 2331,
+        "total_tokens": 2897
+      },
+      "latency_ms": 37746.697,
+      "transport_status": "SUCCESS",
+      "schema_status": "VALID",
+      "schema_issues": [],
+      "error_category": null
+    },
+    {
+      "backend_version": "diagnostic-semantic-v2",
+      "task": "policy_program_missing_reading_v2",
+      "input_sha256": "2a214e76a9c2253480a1e4a49188a49c6a0f2ff1f24a543481277a0dfe01ffca",
+      "prompt_sha256": "9b2cc5587b84cbd59ed776b136e8b56498e7663df333edb51241daa98cd7f7a4",
+      "schema_sha256": "b6c47e67fa62aa7c4e54dcd6e8154b0d0774ca44cc1905fd5f12032948174da1",
+      "served_model": "qwen3.8-flash",
+      "usage": {
+        "prompt_tokens": 805,
+        "completion_tokens": 4182,
+        "total_tokens": 4987
+      },
+      "latency_ms": 116400.629,
+      "transport_status": "SUCCESS",
+      "schema_status": "VALID",
+      "schema_issues": [],
+      "error_category": null
+    }
+  ],
+  "p1_request_telemetry": [
+    {
+      "task": "fixed_p1_wire",
+      "prompt_sha256": "cf72e6c9bb3dd5b5c81a7d4eee675efc2c3b91178c84e1b3dc2fe72633b9862e",
+      "schema_sha256": "658d20f8697236f877da0d3eaaf30f2430b8b2b53765382867d284e089cc16e5",
+      "transport_status": "SUCCESS",
+      "schema_status": "VALID",
+      "schema_issues": [],
+      "error_category": null,
+      "served_model": "qwen3.8-flash",
+      "usage": {
+        "prompt_tokens": 404,
+        "completion_tokens": 276,
+        "total_tokens": 680
+      },
+      "latency_ms": 10185.74
+    }
+  ]
+}
