@@ -8,7 +8,7 @@ import argparse
 import json
 from pathlib import Path
 
-from guardian_truth.vnext.integrity import digest, file_digest, prediction_seal, verify_files
+from guardian_truth.vnext.integrity import digest, file_digest, prediction_seal, verify_files, write_new
 
 
 ROOT = Path(__file__).resolve().parents[1]
@@ -104,5 +104,9 @@ def audit_receipts_v2(output, root, stage):
 if __name__ == "__main__":
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument("--stage", choices=("S1", "S2", "S3"), required=True)
+    parser.add_argument("--save", action="store_true", help="save a new immutable audit receipt")
     args = parser.parse_args()
-    print(json.dumps(audit_receipts_v2(OUT, ROOT, args.stage), ensure_ascii=False))
+    report = audit_receipts_v2(OUT, ROOT, args.stage)
+    if args.save:
+        write_new(OUT / ("goal_v3_isolation_v2_" + args.stage + "_independent_receipt_audit.json"), report)
+    print(json.dumps({key: value for key, value in report.items() if key != "physical_artifact_sha256"}, ensure_ascii=False))
