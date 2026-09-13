@@ -8,7 +8,7 @@ of the frozen v1 experiment. Missing/invalid capture earns no accuracy credit.
 
 from collections import Counter, defaultdict
 
-from .goal_v3_user_certificates_v2 import check_user_certificate_v2
+from .goal_v3_user_certificates_v2 import certificate_from_payload_v2, check_user_certificate_v2
 from .goal_v3_user_contract_v2 import parse_user_contract_v2
 from .integrity import digest
 
@@ -89,8 +89,13 @@ def score_case_v2(case_id, source, expected, prediction, metadata):
         "actor_correct": None if expected["expected_evidence_actor"] is None else
             usable and actual.get("evidence_actor") == expected["expected_evidence_actor"],
         "reference_correct": usable and _references_valid(source, actual),
+        "world_consistency_correct": usable and ("grounding" not in prediction or
+            isinstance(prediction["grounding"], dict)
+            and prediction["grounding"].get("summary_world_consistent") is True),
     }
     certificate = prediction.get("certificate")
+    if isinstance(certificate, dict):
+        certificate = certificate_from_payload_v2(certificate, source)
     verified = check_user_certificate_v2(certificate, source)[0] if certificate is not None else False
     # A valid receipt for a different model claim must not confer authority.
     if verified:
@@ -112,6 +117,7 @@ def score_case_v2(case_id, source, expected, prediction, metadata):
         "transported": transported, "raw_schema_valid": transported and telemetry.get("raw_schema_valid") is True,
         "postrepair_schema_valid": bool(usable), "certified_definitive": bool(verified),
         "certified_correct": bool(verified and behavioral),
+        "unsafe_certified_definitive": bool(verified and status != expected["expected_status"]),
         "unsafe_definitive": bool(wrong_definitive), "unsafe_unknown_definitive": bool(unsafe_unknown),
         "no_mandatory_order_case": no_mandatory,
         "false_mandatory_plan": bool(usable and no_mandatory and status == "PROVED_ERROR"
@@ -158,6 +164,7 @@ def summarize_v2(rows):
             for row in rows) / len(rows),
         "certified_resolution_rate": rate("certified_definitive"),
         "correct_certified_resolution_rate": rate("certified_correct"),
+        "unsafe_certified_definitive_rate": rate("unsafe_certified_definitive"),
         "pair_complete_count": len(complete),
         "pair_correct_count": sum(all(row["behavioral_correct"] for row in members) for members in complete),
         "pair_correct_rate": sum(all(row["behavioral_correct"] for row in members) for members in complete) / len(complete)

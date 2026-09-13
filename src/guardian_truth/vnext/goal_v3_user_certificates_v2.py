@@ -13,7 +13,7 @@ from .goal_v3_semantics_v2 import (
     GoalAlignmentV2, GoalCandidateDecisionV2, GoalLocalStatusV2, GoalWorldResultV2,
 )
 from .goal_v3_user_contract_v2 import parse_user_contract_v2
-from .integrity import digest
+from .integrity import canonical, digest
 from .types import Truth
 
 
@@ -220,3 +220,25 @@ def check_user_certificate_v2(certificate, source):
     if certificate != replayed:
         return False, ("CERTIFICATE_REPLAY_MISMATCH",)
     return True, ()
+
+
+def certificate_from_payload_v2(payload, source):
+    """Load serialized receipts only by exact independent source replay.
+
+    Do not coerce JSON truth strings/booleans or trust a serialized certified
+    flag. Construct DTOs from replayed source, then compare the entire payload.
+    Extra keys, omitted evidence and modified outcomes cannot survive loading.
+    """
+    if not isinstance(payload, dict):
+        return None
+    replay = _replay(source)
+    if replay is None:
+        return None
+    expected = issue_user_certificate_v2(source, replay[1])
+    if expected is None:
+        return None
+    try:
+        matched = canonical(payload) == canonical(asdict(expected))
+    except (TypeError, ValueError):
+        return None
+    return expected if matched else None

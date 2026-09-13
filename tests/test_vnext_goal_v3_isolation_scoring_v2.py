@@ -6,6 +6,7 @@ from dataclasses import replace
 import pytest
 
 from guardian_truth.vnext.goal_v3_isolation_scoring_v2 import score_case_v2, summarize_v2
+from guardian_truth.vnext.goal_v3_isolation_frontend_v2 import certificate_payload_v2
 from guardian_truth.vnext.goal_v3_user_certificates_v2 import issue_user_certificate_v2
 from guardian_truth.vnext.goal_v3_user_execution_v2 import evaluate_user_source_v2
 from guardian_truth.vnext.integrity import digest
@@ -53,6 +54,9 @@ def test_real_source_replay_required_even_for_behaviorally_correct_synthetic_cla
     candidate = evaluate_user_source_v2(row["source"])[1]
     pred["certificate"] = issue_user_certificate_v2(row["source"], candidate)
     assert scored(row, pred)["certified_correct"]
+    serialized = deepcopy(pred)
+    serialized["certificate"] = certificate_payload_v2(pred["certificate"])
+    assert scored(row, serialized)["certified_correct"]
     pred["certificate"] = replace(pred["certificate"], source_sha256="0" * 64)
     assert not scored(row, pred)["certified_definitive"]
 
@@ -115,6 +119,14 @@ def test_missing_pointer_invented_event_and_duplicate_normalized_rule_fail():
     pred = prediction(row)
     pred["proposal"]["rule_outcomes"]["user:0:clause:2"] = "SATISFIED"
     assert not scored(row, pred)["obligation_correct"]
+
+
+def test_runner_world_disagreement_prevents_behavioral_accuracy_credit():
+    row = CORPUS["build_cases"]()[0]
+    pred = prediction(row)
+    pred["grounding"] = {"summary_world_consistent": False, "diagnostics": ["SUMMARY_WORLD_DISAGREEMENT"]}
+    assert scored(row, pred)["status_correct"]
+    assert not scored(row, pred)["behavioral_correct"]
 
 
 def test_false_plan_and_future_violation_are_distinct_from_independent_errors():

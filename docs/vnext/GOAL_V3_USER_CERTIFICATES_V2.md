@@ -61,7 +61,8 @@ and intent do not establish successful effects.
 
 ## Still required before freeze
 
-Fresh 24-pair/12-stress corpus and independent behavioral gold; final compact
-candidate schema and prompt; behavioral equivalences and scorer; numeric
-coverage/S2/S3 gates; provider configuration; staged runner and artifact
-seal. No external inference is authorized by completion of this checker.
+The fresh 24-pair/12-stress corpus, authored behavioral gold, compact
+multi-world schema/prompt, scorer/equivalences, serialized replay and numeric
+core/stress gates are now implemented offline. Final provider configuration,
+staged runner and complete artifact freeze/seal remain. No external inference
+is authorized by completion of this checker.

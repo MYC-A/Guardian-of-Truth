@@ -61,7 +61,8 @@ does not prove entailment. Model proposal correctness, candidate resolution,
 independently certified local resolution, and correctly certified behavior
 are separate metrics. Fake `certified=true` JSON is not a receipt. A valid
 receipt for a different status/alignment/entity/actor cannot authorize the
-proposal. Serialized receipt loading remains a runner integration task.
+proposal. Serialized receipt loading now independently replays the source
+and compares the entire canonical payload; durable runner wiring remains.
 
 Invalid transport/schema capture earns no accuracy or UNKNOWN-preservation
 credit. Candidate abstention remains distinct from transport abstention.
@@ -77,8 +78,10 @@ measured external model accuracy result.
 
 ## Before external execution
 
-Still required: final schema/prompt, source-to-candidate integration and
-serialized receipt replay; numeric S2/S3 safety/coverage gates; staged runner,
+Typed schema/prompt, multi-world candidate integration, serialized receipt
+replay and numeric S2/S3 gates are implemented offline; see
+[frontend and gates](GOAL_V3_ISOLATION_V2_FRONTEND_AND_GATES.md).
+Still required: staged runner,
 physical-request usage accounting and retry capture; complete committed
 inference freeze and prediction seal before opening gold for scoring.
 Historical v1 scoring, stage gate and results must remain immutable.
