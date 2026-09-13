@@ -1,0 +1,456 @@
+{
+  "case_id": "nested_cancel::2",
+  "configuration_sha256": "8ab1c29d5c2e4747ec410049227f69ae1a048ce8b32e951a59ce17bbcf475317",
+  "prediction": {
+    "native": {
+      "hypotheses": [
+        {
+          "hypothesis_id": "policy-program:h0",
+          "basis": "The policy is a prohibition: cancel_order is forbidden for pending orders when at least one of (owner identity, explicit confirmation) is absent. The 'either...or' is inclusive OR over the missing conditions.",
+          "program": {
+            "violation_clauses": [
+              [
+                "action:cancel_order",
+                "state:order_pending",
+                "!identity:requester_owns_order"
+              ],
+              [
+                "action:cancel_order",
+                "state:order_pending",
+                "!event:confirmation_before"
+              ]
+            ],
+            "permission_clauses": [
+              [
+                "action:cancel_order",
+                "state:order_pending",
+                "identity:requester_owns_order",
+                "event:confirmation_before"
+              ]
+            ]
+          },
+          "source_spans": [
+            {
+              "document": "policy",
+              "start": 0,
+              "end": 93
+            }
+          ],
+          "unresolved_terms": [
+            "explicit",
+            "pending (only mapped to state:order_pending; other states undefined)"
+          ]
+        },
+        {
+          "hypothesis_id": "policy-program:h1",
+          "basis": "The policy could be read as a single compound prohibition where the missing condition must be evaluated as a disjunction at the moment of the cancel attempt. This distinguishes it from a reading where identity and confirmation are independent preconditions checked sequentially.",
+          "program": {
+            "violation_clauses": [
+              [
+                "action:cancel_order",
+                "state:order_pending",
+                "!identity:requester_owns_order",
+                "!event:confirmation_before"
+              ],
+              [
+                "action:cancel_order",
+                "state:order_pending",
+                "!identity:requester_owns_order"
+              ],
+              [
+                "action:cancel_order",
+                "state:order_pending",
+                "!event:confirmation_before"
+              ]
+            ],
+            "permission_clauses": [
+              [
+                "action:cancel_order",
+                "state:order_pending",
+                "identity:requester_owns_order",
+                "event:confirmation_before"
+              ]
+            ]
+          },
+          "source_spans": [
+            {
+              "document": "policy",
+              "start": 0,
+              "end": 93
+            }
+          ],
+          "unresolved_terms": [
+            "explicit",
+            "timing of evaluation (before or during cancel attempt)"
+          ]
+        },
+        {
+          "hypothesis_id": "policy-program:h2",
+          "basis": "The phrase 'either...or' is interpreted as exclusive disjunction (XOR). The prohibition applies only when exactly one of the two conditions (owner identity, explicit confirmation) is missing. When both are missing simultaneously, the exclusive-or condition is not satisfied, so the prohibition does not fire — paradoxically permitting cancellation in the worst-case scenario.",
+          "program": {
+            "violation_clauses": [
+              [
+                "action:cancel_order",
+                "state:order_pending",
+                "!identity:requester_owns_order",
+                "event:confirmation_before"
+              ],
+              [
+                "action:cancel_order",
+                "state:order_pending",
+                "identity:requester_owns_order",
+                "!event:confirmation_before"
+              ]
+            ],
+            "permission_clauses": [
+              [
+                "action:cancel_order",
+                "state:order_pending",
+                "identity:requester_owns_order",
+                "event:confirmation_before"
+              ],
+              [
+                "action:cancel_order",
+                "state:order_pending",
+                "!identity:requester_owns_order",
+                "!event:confirmation_before"
+              ]
+            ]
+          },
+          "source_spans": [
+            {
+              "document": "policy",
+              "start": 35,
+              "end": 92
+            }
+          ],
+          "unresolved_terms": [
+            "whether 'either...or' in policy language conventionally means inclusive or exclusive disjunction"
+          ]
+        },
+        {
+          "hypothesis_id": "policy-program:h3",
+          "basis": "The word 'missing' is parsed as scoping over the entire disjunction: '(owner identity or explicit confirmation) is missing' means the disjunction itself is false, i.e., BOTH conditions must be absent for the prohibition to apply. Under this reading, if at least one of identity or confirmation is present, cancellation is permitted even though the other is missing.",
+          "program": {
+            "violation_clauses": [
+              [
+                "action:cancel_order",
+                "state:order_pending",
+                "!identity:requester_owns_order",
+                "!event:confirmation_before"
+              ]
+            ],
+            "permission_clauses": [
+              [
+                "action:cancel_order",
+                "state:order_pending",
+                "identity:requester_owns_order",
+                "event:confirmation_before"
+              ],
+              [
+                "action:cancel_order",
+                "state:order_pending",
+                "identity:requester_owns_order",
+                "!event:confirmation_before"
+              ],
+              [
+                "action:cancel_order",
+                "state:order_pending",
+                "!identity:requester_owns_order",
+                "event:confirmation_before"
+              ]
+            ]
+          },
+          "source_spans": [
+            {
+              "document": "policy",
+              "start": 35,
+              "end": 92
+            }
+          ],
+          "unresolved_terms": [
+            "whether 'either' modifies the noun phrase as a disjunction or acts as a focus particle on the predicate 'is missing'"
+          ]
+        }
+      ],
+      "coverage": {
+        "status": "OPEN_SEMANTICS",
+        "universe_source": null,
+        "enumeration_complete": false,
+        "unresolved_terms": [
+          "explicit (qualifier on confirmation)",
+          "what constitutes 'missing' vs merely unverified",
+          "behavior for non-pending order states",
+          "provenance of identity/confirmation signals",
+          "explicit",
+          "pending (only mapped to state:order_pending; other states undefined)",
+          "behavior for non-pending orders",
+          "cancellation of orders in terminal states",
+          "timing of evaluation (before or during cancel attempt)",
+          "temporal evaluation point of 'missing' (at action time vs. pre-action state)",
+          "whether 'pending' is a precondition or a co-occurring state with the action",
+          "whether the policy is exhaustive (only these conditions matter) or non-exhaustive (other prohibitions may apply)",
+          "whether 'either...or' in policy language conventionally means inclusive or exclusive disjunction",
+          "whether 'either' modifies the noun phrase as a disjunction or acts as a focus particle on the predicate 'is missing'"
+        ],
+        "discarded_hypotheses": [],
+        "challenger_alternatives": [
+          "policy-program:h2",
+          "policy-program:h3"
+        ]
+      },
+      "failures": [],
+      "empirical_hypotheses": [
+        {
+          "hypothesis_id": "policy-program:h0",
+          "basis": "The policy is a prohibition: cancel_order is forbidden for pending orders when at least one of (owner identity, explicit confirmation) is absent. The 'either...or' is inclusive OR over the missing conditions.",
+          "program": {
+            "violation_clauses": [
+              [
+                "action:cancel_order",
+                "state:order_pending",
+                "!identity:requester_owns_order"
+              ],
+              [
+                "action:cancel_order",
+                "state:order_pending",
+                "!event:confirmation_before"
+              ]
+            ],
+            "permission_clauses": [
+              [
+                "action:cancel_order",
+                "state:order_pending",
+                "identity:requester_owns_order",
+                "event:confirmation_before"
+              ]
+            ]
+          },
+          "source_spans": [
+            {
+              "document": "policy",
+              "start": 0,
+              "end": 93
+            }
+          ],
+          "unresolved_terms": [
+            "explicit",
+            "pending (only mapped to state:order_pending; other states undefined)"
+          ]
+        },
+        {
+          "hypothesis_id": "policy-program:h1",
+          "basis": "The policy could be read as a single compound prohibition where the missing condition must be evaluated as a disjunction at the moment of the cancel attempt. This distinguishes it from a reading where identity and confirmation are independent preconditions checked sequentially.",
+          "program": {
+            "violation_clauses": [
+              [
+                "action:cancel_order",
+                "state:order_pending",
+                "!identity:requester_owns_order",
+                "!event:confirmation_before"
+              ],
+              [
+                "action:cancel_order",
+                "state:order_pending",
+                "!identity:requester_owns_order"
+              ],
+              [
+                "action:cancel_order",
+                "state:order_pending",
+                "!event:confirmation_before"
+              ]
+            ],
+            "permission_clauses": [
+              [
+                "action:cancel_order",
+                "state:order_pending",
+                "identity:requester_owns_order",
+                "event:confirmation_before"
+              ]
+            ]
+          },
+          "source_spans": [
+            {
+              "document": "policy",
+              "start": 0,
+              "end": 93
+            }
+          ],
+          "unresolved_terms": [
+            "explicit",
+            "timing of evaluation (before or during cancel attempt)"
+          ]
+        },
+        {
+          "hypothesis_id": "policy-program:h2",
+          "basis": "The phrase 'either...or' is interpreted as exclusive disjunction (XOR). The prohibition applies only when exactly one of the two conditions (owner identity, explicit confirmation) is missing. When both are missing simultaneously, the exclusive-or condition is not satisfied, so the prohibition does not fire — paradoxically permitting cancellation in the worst-case scenario.",
+          "program": {
+            "violation_clauses": [
+              [
+                "action:cancel_order",
+                "state:order_pending",
+                "!identity:requester_owns_order",
+                "event:confirmation_before"
+              ],
+              [
+                "action:cancel_order",
+                "state:order_pending",
+                "identity:requester_owns_order",
+                "!event:confirmation_before"
+              ]
+            ],
+            "permission_clauses": [
+              [
+                "action:cancel_order",
+                "state:order_pending",
+                "identity:requester_owns_order",
+                "event:confirmation_before"
+              ],
+              [
+                "action:cancel_order",
+                "state:order_pending",
+                "!identity:requester_owns_order",
+                "!event:confirmation_before"
+              ]
+            ]
+          },
+          "source_spans": [
+            {
+              "document": "policy",
+              "start": 35,
+              "end": 92
+            }
+          ],
+          "unresolved_terms": [
+            "whether 'either...or' in policy language conventionally means inclusive or exclusive disjunction"
+          ]
+        },
+        {
+          "hypothesis_id": "policy-program:h3",
+          "basis": "The word 'missing' is parsed as scoping over the entire disjunction: '(owner identity or explicit confirmation) is missing' means the disjunction itself is false, i.e., BOTH conditions must be absent for the prohibition to apply. Under this reading, if at least one of identity or confirmation is present, cancellation is permitted even though the other is missing.",
+          "program": {
+            "violation_clauses": [
+              [
+                "action:cancel_order",
+                "state:order_pending",
+                "!identity:requester_owns_order",
+                "!event:confirmation_before"
+              ]
+            ],
+            "permission_clauses": [
+              [
+                "action:cancel_order",
+                "state:order_pending",
+                "identity:requester_owns_order",
+                "event:confirmation_before"
+              ],
+              [
+                "action:cancel_order",
+                "state:order_pending",
+                "identity:requester_owns_order",
+                "!event:confirmation_before"
+              ],
+              [
+                "action:cancel_order",
+                "state:order_pending",
+                "!identity:requester_owns_order",
+                "event:confirmation_before"
+              ]
+            ]
+          },
+          "source_spans": [
+            {
+              "document": "policy",
+              "start": 35,
+              "end": 92
+            }
+          ],
+          "unresolved_terms": [
+            "whether 'either' modifies the noun phrase as a disjunction or acts as a focus particle on the predicate 'is missing'"
+          ]
+        }
+      ]
+    },
+    "fixed_p1": {
+      "case_id": "nested_cancel::2",
+      "arm": "P1",
+      "transport_status": "SUCCESS",
+      "schema_status": "INVALID",
+      "semantic_status": "PENDING_GOLD_JOIN",
+      "representation_status": "NOT_EVALUATED",
+      "error_category": null,
+      "prediction": null,
+      "source_coverage": 1.0,
+      "served_model": "qwen3.8-flash",
+      "latency_ms": 7836.381,
+      "usage": {
+        "prompt_tokens": 450,
+        "completion_tokens": 369,
+        "total_tokens": 819
+      }
+    }
+  },
+  "native_request_telemetry": [
+    {
+      "backend_version": "diagnostic-semantic-v2",
+      "task": "policy_program_hypotheses_v2",
+      "input_sha256": "37acca5053475cadbc5694337ad2a064c47421dba671d53564d2672228b9dba3",
+      "prompt_sha256": "726282ef8b6975a926c7e7faeeca07f8435c0b40c94f7e4a25550c16ea847299",
+      "schema_sha256": "8aaa0ceb2fa2b463712faf9b075dfb5462b10a47a3741d15c03ec46425fe5f84",
+      "served_model": "qwen3.8-flash",
+      "usage": {
+        "prompt_tokens": 612,
+        "completion_tokens": 1167,
+        "total_tokens": 1779
+      },
+      "latency_ms": 19384.764,
+      "transport_status": "SUCCESS",
+      "schema_status": "VALID",
+      "schema_issues": [],
+      "error_category": null
+    },
+    {
+      "backend_version": "diagnostic-semantic-v2",
+      "task": "policy_program_missing_reading_v2",
+      "input_sha256": "d66cc3e0cdc88d75563928fcc12ad171dbdfbec990fdb219a3fdd009f3e2abc7",
+      "prompt_sha256": "e2b199dae701516e495c345054c4081927980b6078587a0001fe931e2cd314ae",
+      "schema_sha256": "8aaa0ceb2fa2b463712faf9b075dfb5462b10a47a3741d15c03ec46425fe5f84",
+      "served_model": "qwen3.8-flash",
+      "usage": {
+        "prompt_tokens": 906,
+        "completion_tokens": 1561,
+        "total_tokens": 2467
+      },
+      "latency_ms": 27798.883,
+      "transport_status": "SUCCESS",
+      "schema_status": "VALID",
+      "schema_issues": [],
+      "error_category": null
+    }
+  ],
+  "p1_request_telemetry": [
+    {
+      "task": "fixed_p1_wire",
+      "prompt_sha256": "605b17da363ae03590f33d941fada32f43fe690070fc61c9850d5c7de2acf8dd",
+      "schema_sha256": "ac6629d659371e25a50bc7aee375942af9887f59c81bf8251e863d44b6dac55e",
+      "transport_status": "SUCCESS",
+      "schema_status": "INVALID",
+      "schema_issues": [
+        {
+          "code": "JSON_INVALID",
+          "path": "",
+          "expected_type": null,
+          "actual_type": null
+        }
+      ],
+      "error_category": null,
+      "served_model": "qwen3.8-flash",
+      "usage": {
+        "prompt_tokens": 450,
+        "completion_tokens": 369,
+        "total_tokens": 819
+      },
+      "latency_ms": 7834.429
+    }
+  ]
+}

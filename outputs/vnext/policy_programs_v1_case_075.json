@@ -1,0 +1,286 @@
+{
+  "case_id": "not_both_channels::3",
+  "configuration_sha256": "8ab1c29d5c2e4747ec410049227f69ae1a048ce8b32e951a59ce17bbcf475317",
+  "prediction": {
+    "native": {
+      "hypotheses": [
+        {
+          "hypothesis_id": "policy-program:h0",
+          "basis": "The policy explicitly states the restriction negates joint use of email and SMS, not each channel individually. 'Either may carry an alert' establishes individual permission; 'negates their joint use' establishes the prohibition as applying to the conjunction of both actions occurring together.",
+          "program": {
+            "violation_clauses": [
+              [
+                "action:send_email",
+                "action:send_sms"
+              ]
+            ],
+            "permission_clauses": [
+              [
+                "action:send_email",
+                "!action:send_sms"
+              ],
+              [
+                "action:send_sms",
+                "!action:send_email"
+              ],
+              [
+                "!action:send_email",
+                "!action:send_sms"
+              ]
+            ]
+          },
+          "source_spans": [
+            {
+              "document": "policy",
+              "start": 41,
+              "end": 66
+            },
+            {
+              "document": "policy",
+              "start": 68,
+              "end": 151
+            }
+          ],
+          "unresolved_terms": [
+            "section N"
+          ]
+        },
+        {
+          "hypothesis_id": "policy-program:h1",
+          "basis": "The phrase 'their joint use' in context of 'Either may carry an alert' could be read as restricting the simultaneous use of both channels for the same alert specifically, leaving cross-channel use for different alerts unaddressed by this restriction.",
+          "program": {
+            "violation_clauses": [
+              [
+                "action:send_email",
+                "action:send_sms",
+                "identity:same_alert"
+              ]
+            ],
+            "permission_clauses": [
+              [
+                "action:send_email",
+                "!action:send_sms"
+              ],
+              [
+                "action:send_sms",
+                "!action:send_email"
+              ],
+              [
+                "action:send_email",
+                "action:send_sms",
+                "!identity:same_alert"
+              ]
+            ]
+          },
+          "source_spans": [
+            {
+              "document": "policy",
+              "start": 41,
+              "end": 66
+            },
+            {
+              "document": "policy",
+              "start": 68,
+              "end": 151
+            }
+          ],
+          "unresolved_terms": [
+            "section N"
+          ]
+        }
+      ],
+      "coverage": {
+        "status": "OPEN_SEMANTICS",
+        "universe_source": null,
+        "enumeration_complete": false,
+        "unresolved_terms": [
+          "section N"
+        ],
+        "discarded_hypotheses": [],
+        "challenger_alternatives": []
+      },
+      "failures": [
+        [
+          "policy_program_missing_reading_v2",
+          "TRANSPORT_ERROR"
+        ]
+      ],
+      "empirical_hypotheses": [
+        {
+          "hypothesis_id": "policy-program:h0",
+          "basis": "The policy explicitly states the restriction negates joint use of email and SMS, not each channel individually. 'Either may carry an alert' establishes individual permission; 'negates their joint use' establishes the prohibition as applying to the conjunction of both actions occurring together.",
+          "program": {
+            "violation_clauses": [
+              [
+                "action:send_email",
+                "action:send_sms"
+              ]
+            ],
+            "permission_clauses": [
+              [
+                "action:send_email",
+                "!action:send_sms"
+              ],
+              [
+                "action:send_sms",
+                "!action:send_email"
+              ],
+              [
+                "!action:send_email",
+                "!action:send_sms"
+              ]
+            ]
+          },
+          "source_spans": [
+            {
+              "document": "policy",
+              "start": 41,
+              "end": 66
+            },
+            {
+              "document": "policy",
+              "start": 68,
+              "end": 151
+            }
+          ],
+          "unresolved_terms": [
+            "section N"
+          ]
+        },
+        {
+          "hypothesis_id": "policy-program:h1",
+          "basis": "The phrase 'their joint use' in context of 'Either may carry an alert' could be read as restricting the simultaneous use of both channels for the same alert specifically, leaving cross-channel use for different alerts unaddressed by this restriction.",
+          "program": {
+            "violation_clauses": [
+              [
+                "action:send_email",
+                "action:send_sms",
+                "identity:same_alert"
+              ]
+            ],
+            "permission_clauses": [
+              [
+                "action:send_email",
+                "!action:send_sms"
+              ],
+              [
+                "action:send_sms",
+                "!action:send_email"
+              ],
+              [
+                "action:send_email",
+                "action:send_sms",
+                "!identity:same_alert"
+              ]
+            ]
+          },
+          "source_spans": [
+            {
+              "document": "policy",
+              "start": 41,
+              "end": 66
+            },
+            {
+              "document": "policy",
+              "start": 68,
+              "end": 151
+            }
+          ],
+          "unresolved_terms": [
+            "section N"
+          ]
+        }
+      ]
+    },
+    "fixed_p1": {
+      "case_id": "not_both_channels::3",
+      "arm": "P1",
+      "transport_status": "SUCCESS",
+      "schema_status": "VALID",
+      "semantic_status": "PENDING_GOLD_JOIN",
+      "representation_status": "SUPPORTED",
+      "error_category": null,
+      "prediction": {
+        "structure": null,
+        "program": {
+          "violation_clauses": [
+            [
+              "action:send_email",
+              "action:send_sms"
+            ]
+          ],
+          "permission_clauses": [
+            [
+              "action:send_email",
+              "!action:send_sms"
+            ],
+            [
+              "!action:send_email",
+              "action:send_sms"
+            ]
+          ]
+        }
+      },
+      "source_coverage": 1.0,
+      "served_model": "qwen3.8-flash",
+      "latency_ms": 6526.263,
+      "usage": {
+        "prompt_tokens": 427,
+        "completion_tokens": 274,
+        "total_tokens": 701
+      }
+    }
+  },
+  "native_request_telemetry": [
+    {
+      "backend_version": "diagnostic-semantic-v2",
+      "task": "policy_program_hypotheses_v2",
+      "input_sha256": "5b3ff99d631910933768b9b9a618cb8e1e19ad567769048715a0388e52f66077",
+      "prompt_sha256": "9d838a2e0dbe7711eb1a81f4282b03e737ae59b3f9474554f5daa90efe58c171",
+      "schema_sha256": "f72c79d1f5305480edd9873c0c5fcf3397a0e85eb50356e9f51f431c2fa4f991",
+      "served_model": "qwen3.8-flash",
+      "usage": {
+        "prompt_tokens": 588,
+        "completion_tokens": 1047,
+        "total_tokens": 1635
+      },
+      "latency_ms": 18207.045,
+      "transport_status": "SUCCESS",
+      "schema_status": "VALID",
+      "schema_issues": [],
+      "error_category": null
+    },
+    {
+      "backend_version": "diagnostic-semantic-v2",
+      "task": "policy_program_missing_reading_v2",
+      "input_sha256": "17ef2dc8ac525ac8ed6ffda6e3d3f36e4970a523362d3ea3441bec6308ea90b5",
+      "prompt_sha256": "86cc49374629a82df7c2b8d24aa4fc41fbdb8e477df7dbf72b502579f7598cb6",
+      "schema_sha256": "f72c79d1f5305480edd9873c0c5fcf3397a0e85eb50356e9f51f431c2fa4f991",
+      "served_model": null,
+      "usage": {},
+      "latency_ms": 112353.786,
+      "transport_status": "ERROR",
+      "schema_status": "NOT_EVALUATED",
+      "schema_issues": [],
+      "error_category": "truncated"
+    }
+  ],
+  "p1_request_telemetry": [
+    {
+      "task": "fixed_p1_wire",
+      "prompt_sha256": "a715d00495d96bd893d21c3fd56c96e950b64b3170ca7f58b6875091b250785a",
+      "schema_sha256": "ee22458d9ed905ac88b4d1b210902d72a2afb9fd03c69c62c6aef05c2466bda3",
+      "transport_status": "SUCCESS",
+      "schema_status": "VALID",
+      "schema_issues": [],
+      "error_category": null,
+      "served_model": "qwen3.8-flash",
+      "usage": {
+        "prompt_tokens": 427,
+        "completion_tokens": 274,
+        "total_tokens": 701
+      },
+      "latency_ms": 6524.543
+    }
+  ]
+}
