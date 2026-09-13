@@ -299,6 +299,14 @@ certificate, document-agreement or promotion proof. Four synthetic gate tests
 pass. The single Policy process PID 13520 is confirmed live and reached 74/104;
 no Goal v3 implementation, new API batch or blind evaluation has started.
 
+The required `claim_graph_results.json` and `tool_semantics_results.json` now
+summarize only their already sealed controlled-development source reports, with
+source/audit hashes retained. Claim span gate passes but shared typed-gain gate
+fails; T2 known-true recall is 1/4 and full candidate precision is not
+established. Both summaries explicitly mark downstream Core gain NOT_RUN and
+zero blind-case reads. They are derivative machine artifacts, not fresh stage
+evaluations or a promotion decision.
+
 A separate read-only Policy v1 artifact-chain auditor is ready. It verifies
 all frozen source/input hashes, every persisted physical request/response and
 case telemetry link, exact 104-case inventory, prediction seal, report and audit
