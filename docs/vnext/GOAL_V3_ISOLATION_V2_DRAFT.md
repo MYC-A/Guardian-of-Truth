@@ -7,6 +7,12 @@ high provider-reported token usage. This draft is a separate hypothesis and
 must not be described as preregistered until benchmark, implementation,
 prompt/schema, scorer, gates and provider configuration are committed and
 hashed before the first v2 request.
+The standalone pure gate prototype is
+`src/guardian_truth/vnext/goal_v3_isolation_stage_gates_v2.py`; it is tested
+offline but **not wired to a v2 runner or frozen**. It checks pair-gate
+reachability, stage usability and a fail-closed reported-token circuit after
+each captured case; one oversized provider response can still overshoot the
+ceiling, so this is not a hard billing cap.
 
 ## Target and failure hypothesis
 
