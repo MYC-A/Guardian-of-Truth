@@ -220,6 +220,17 @@ from an unterminated/unescaped source body that creates a false SYSTEM event in
 the legacy marker parser. This remaining boundary is documented before repair;
 no frozen source was changed. See GOAL_V3_REFERENCE_AND_SOURCE_AUDIT_V1.md.
 
+New source envelope v4 replaces body-marker role inference only in its separate
+explicit-adapter input path. It validates original offsets/metadata/framing,
+blocks malformed JSON observations and incomplete/unknown-role history closure,
+retains every ambiguous full-identity call binding and preserves target ASSISTANT
+provenance. Its actual T1/scoped-field compatibility is tested. A runnable new
+field entry point connects the envelope, C2, record indexes and independent v4
+receipts with no implicit client. Thirty-two controlled checks pass; this is
+not the joint Core or a model score. Public counterexample replay and exact
+remaining source-authentication/adapter boundaries are documented in
+SOURCE_ENVELOPE_V4_BOUNDARIES.md. All frozen Goal/T2/Policy source stays unchanged.
+
 Checkpoint commits: protocol `8e9c3fb`; types/ledger `8e87649`; Claim Graph
 `e69a406`; T1/T2 `9e0b2f4`; policy/Goal `f0fb124`; indexed Binder `f562c8b`;
 T1 evaluator `8d2c532`; T1 pre-prediction freeze `af2e3ee`.
