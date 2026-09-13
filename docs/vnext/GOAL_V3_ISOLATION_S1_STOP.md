@@ -41,6 +41,10 @@ both-members-correct metric. Even if all other cases were perfect, the 48-case
 core could score at most **12/24 = 50% correct pairs**, below the frozen 90%
 gate (at least 22/24). S3 admission and KEEP are mathematically impossible
 under this v1 scorer.
+The independent offline replay in
+`outputs/vnext/goal_v3_isolation_v1_S1_bound_audit.json` verifies the freeze,
+prediction seal, scored metrics, 12 distinct failed pairs and this upper
+bound without making any API request.
 
 The run was stopped at the S1 boundary after the user raised token-spend
 concerns and this deterministic futility bound was established. **This stop
