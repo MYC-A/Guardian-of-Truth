@@ -270,6 +270,16 @@ now passes 1227 tests, with zero recorded old frozen-source integrity errors and
 unchanged protected heads (checkpoint_checks_v19.json). Whole-Core/blind and Goal
 v3 implementation remain pending.
 
+External source views v6 and their runnable native factual adapter now separate
+original target assertions from attempted-call argument data. Twelve synthetic
+source/runtime checks pass: role markers remain literal, source step pairing is
+preserved, unknown versions cannot acquire a contract via agent-authored metadata,
+and the actual ten-pass C2 runtime never sees target argument strings as factual
+assertions. No dataset, blind gold or API request is accessed by this component.
+The caller must supply declared-goal authority and any completeness premise;
+non-call environment observations stay UNKNOWN-source, never SYSTEM. Goal/Policy
+all-world composition and lowering non-call action assertions are still pending.
+
 Checkpoint commits: protocol `8e9c3fb`; types/ledger `8e87649`; Claim Graph
 `e69a406`; T1/T2 `9e0b2f4`; policy/Goal `f0fb124`; indexed Binder `f562c8b`;
 T1 evaluator `8d2c532`; T1 pre-prediction freeze `af2e3ee`.
