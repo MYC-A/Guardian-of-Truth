@@ -36,7 +36,7 @@ def score_case(case_id, source, expected, prediction, metadata):
         raise ValueError("Goal-only source/proposal lineage mismatch")
     telemetry = prediction.get("telemetry", {})
     proposal = prediction.get("proposal")
-    grounding = prediction.get("grounding", {})
+    grounding = prediction.get("grounding") or {}
     transported = telemetry.get("transport_status") == "SUCCESS"
     raw_schema = transported and telemetry.get("raw_schema_valid") is True
     repaired_schema = transported and telemetry.get("postrepair_schema_valid") is True

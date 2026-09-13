@@ -55,6 +55,15 @@ def test_forged_source_hash_cannot_be_scored():
         score_case("P01:a", INPUTS[0]["source"], GOLD["P01:a"], row, INVENTORY[0])
 
 
+def test_failed_transport_is_scored_as_unresolved_not_crash():
+    row = prediction("P01:a")
+    row.update(proposal=None, grounding=None, telemetry={"transport_status": "ERROR",
+        "postrepair_schema_valid": False, "raw_schema_valid": False})
+    result = score_case("P01:a", INPUTS[0]["source"], GOLD["P01:a"], row, INVENTORY[0])
+    assert result["candidate_status"] == "UNRESOLVED"
+    assert result["transported"] is False
+
+
 def test_smoke_early_stop_is_exact_predeclared_boundary():
     summary = {"attempted_cases": 12, "postrepair_schema_valid": 9, "status_correct": 12,
         "unsafe_definitive": 0}
