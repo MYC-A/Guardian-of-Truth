@@ -13,6 +13,12 @@ offline but **not wired to a v2 runner or frozen**. It checks pair-gate
 reachability, stage usability and a fail-closed reported-token circuit after
 each captured case; one oversized provider response can still overshoot the
 ceiling, so this is not a hard billing cap.
+The separate typed calculus prototype is
+`src/guardian_truth/vnext/goal_v3_semantics_v2.py`. It keeps alignment
+independent of explicit obligations, retains four-valued conflicts, allows
+an independent violation to survive irrelevant UNKNOWN, and returns only a
+**candidate**, never a certificate. It still needs a trusted USER-text
+authority adapter and cannot justify any definitive Core result on its own.
 
 ## Target and failure hypothesis
 
@@ -96,7 +102,7 @@ behavioral scorer used for this calculation must itself be frozen and
 audited for field-equivalence ambiguity first.
 
 Add an ex-ante provider-usage gate at S1: require reported usage to be
-present and total reported tokens ≤ 24,000 for the 12 cases; otherwise stop
+present and total reported tokens < 24,000 for the 12 cases; otherwise stop
 as `BUDGET_STOP`, distinct from a semantic REJECT. The specific ceiling is a
 cost-control assumption, not a measured quality threshold. Pin a maximum
 per-request output setting and verify the client serializes it for the
