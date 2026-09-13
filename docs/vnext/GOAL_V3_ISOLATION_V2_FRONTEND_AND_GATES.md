@@ -56,10 +56,11 @@ a zero-certificate system from qualifying on safety alone. The incorrect
 definitive gate includes ERROR on gold NO_ERROR and NO_ERROR on gold ERROR,
 not just unsafe resolution of unknowns.
 
-Existing S1 schema/status/safety, pair-futility and reported-token gates
-remain in force. S1 is 12 distinct pairs; S2 is the other 36 core cases.
-The after-case 24,000 reported-token circuit is not a strict spending cap:
-one response can overshoot it. Missing usage stops further requests.
+S1 schema/status/safety and pair-futility gates remain in force. S1 is
+12 distinct pairs; S2 is the other 36 core cases. The user's prefreeze
+update disables reported-token ceiling enforcement and increases the output
+allowance to 2,048. Missing usage still stops further requests as an accounting
+integrity failure. Historical frozen v1 is unchanged.
 
 Stress's ≥80% behavioral signal is reported separately. Failure records a
 readiness blocker; it does not retroactively change a passed core result.

@@ -4,7 +4,7 @@ This module does not change the frozen v1 scorer or its results. It is not a
 v2 preregistration until the complete v2 experiment is committed and sealed.
 """
 
-from dataclasses import dataclass
+from dataclasses import dataclass, replace
 import math
 from typing import Sequence
 
@@ -62,6 +62,16 @@ def budget_after_case(physical_records: Sequence[dict], *,
     return BudgetDecisionV2(total, len(physical_records), True, None)
 
 
+def experiment_budget_v2(records, *, ceiling, enforce_token_ceiling):
+    """User-relaxed prefreeze cost policy; missing usage still fails closed."""
+    if type(enforce_token_ceiling) is not bool:
+        raise ValueError("explicit token ceiling enforcement flag required")
+    decision = budget_after_case(records, ceiling=ceiling)
+    if not enforce_token_ceiling and decision.stop_reason == "TOKEN_CEILING_REACHED":
+        return replace(decision, admit_next_request=True, stop_reason=None)
+    return decision
+
+
 @dataclass(frozen=True)
 class SmokeDecisionV2:
     verdict: str
@@ -73,13 +83,15 @@ class SmokeDecisionV2:
     budget: BudgetDecisionV2
 
 
-def smoke_decision(rows: Sequence[dict], physical_records: Sequence[dict]) -> SmokeDecisionV2:
+def smoke_decision(rows: Sequence[dict], physical_records: Sequence[dict], *,
+                   enforce_token_ceiling=True) -> SmokeDecisionV2:
     """Preregisterable S1 rule; never open gold before a stage prediction seal."""
     if (any(not isinstance(row, dict) for row in rows)
             or len(physical_records) < len(rows)
             or len(physical_records) > 2 * len(rows)):
         raise ValueError("one or two captured physical requests required per scored case")
-    budget = budget_after_case(physical_records)
+    budget = experiment_budget_v2(physical_records, ceiling=S1_REPORTED_TOKEN_CEILING,
+        enforce_token_ceiling=enforce_token_ceiling)
     required = math.ceil(CORE_PAIR_RATE * CORE_PAIRS)
     if len(rows) > S1_CASES:
         raise ValueError("S1 contains more than 12 cases")

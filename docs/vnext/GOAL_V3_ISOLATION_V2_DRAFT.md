@@ -148,6 +148,12 @@ provider mid-experiment.
 
 ## Provider candidate, not yet frozen or called
 
+Prefreeze user update: external-model tokens need not be conserved.
+The v2 runner now uses a 2,048-token output allowance and disables the
+earlier reported-token ceiling enforcement. Accounting remains mandatory;
+missing usage is still an integrity stop. This changes only the unsealed
+v2 proposal, not any historical frozen experiment or result.
+
 The current candidate is Groq's `qwen/qwen3.8-27b` in JSON Object Mode,
 using the existing `GROQ_API_KEY` transport path, one request at a time and
 `max_completion_tokens` capped in the request. The [official Groq reasoning
@@ -174,8 +180,10 @@ They remain development-aware mechanism tests, not a blind holdout.
 Typed multi-world frontend/schema/prompt, serialized receipt replay and
 numeric core/stress gates are now implemented and tested offline; see
 [frontend and gates](GOAL_V3_ISOLATION_V2_FRONTEND_AND_GATES.md).
-Runner integration, final provider/model/configuration, freeze artifacts,
-and physical token-accounting check are **not yet complete**.
+The durable serial runner, physical capture/retry/accounting and staged
+seal-before-gold replay are implemented and tested offline; see
+[run protocol](GOAL_V3_ISOLATION_V2_RUN_PROTOCOL.md).
+Final launch verification and complete freeze artifacts are **not yet complete**.
 No v2 API calls should be made until those items are committed, tested and
 sealed. The v1 result remains the only measured external Goal-only candidate
 evidence so far.
