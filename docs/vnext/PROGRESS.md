@@ -211,6 +211,15 @@ hash-checked, including the original fixture reference. The frozen Policy proces
 (session 61614) is verified live, with its first case complete; it remains the
 only API job. No frozen source has been edited and no blind gold opened.
 
+Independent preimplementation shipment-fixture reference now validates all 36
+frozen status expectations and excludes labels/IDs/families from its execution.
+It pins explicit source-premise hashes and rejects contract changes; six reference
+tests pass. This is not Goal v3 inference or whole-Core evaluation. A separate
+public synthetic source counterexample distinguishes safe escaped valid JSON
+from an unterminated/unescaped source body that creates a false SYSTEM event in
+the legacy marker parser. This remaining boundary is documented before repair;
+no frozen source was changed. See GOAL_V3_REFERENCE_AND_SOURCE_AUDIT_V1.md.
+
 Checkpoint commits: protocol `8e9c3fb`; types/ledger `8e87649`; Claim Graph
 `e69a406`; T1/T2 `9e0b2f4`; policy/Goal `f0fb124`; indexed Binder `f562c8b`;
 T1 evaluator `8d2c532`; T1 pre-prediction freeze `af2e3ee`.
