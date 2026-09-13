@@ -64,3 +64,34 @@ does not silently replace the implementation behind these v1 results.
 Latency p50=14383.362 ms, p95=18214.728 ms; reported tokens=37173.
 Cost NOT_AUDITED. The earlier simple provider gate did not establish reliability
 for this larger multi-hypothesis schema. Blind admission is NOT_ESTABLISHED.
+
+## Native v2 — separately completed experiment
+
+Source: `outputs/vnext/goal_plan_v2_results.json`; implementation
+`a9150076a445d7cf86eac70500aa259f058a9209`. All 22 predictions were sealed before
+scoring; 113 frozen sources have an exact byte archive. v1 results above are unchanged.
+
+| Field | Exact candidate accuracy | All-candidate case accuracy |
+| --- | --- | --- |
+| Declared goal source | 58/77 = 0.7532 | 12/20 = 0.6000 |
+| Expected step | 48/81 = 0.5926 | 8/21 = 0.3810 |
+| Expected action source | 29/81 = 0.3580 | 2/21 = 0.0952 |
+| Allowed scope sources | 74/81 = 0.9136 | 18/21 = 0.8571 |
+| Drift type | 24/77 = 0.3117 | 0/20 = 0 |
+
+Conditional denominators exclude failures of the relevant narrow field task,
+not all cases with any failed request. Expected-step matches are annotation
+proxies, not evidence of active plan progress. v1 field metrics have different
+definitions and must not be treated as directly interchangeable.
+
+Goal-layer: 22/22 UNRESOLVED; zero definitive verdicts/certificates; validation
+rates null. Transport=190/190; schema=176/190; tokens=361883; cost NOT_AUDITED;
+latency p50=14123.487 ms, p95=39617.261 ms. Diagnostic binary TP=0, FP=0, FN=18,
+TN=2, F1=0, identical to X0 on 20 annotated cases; unresolved=100%.
+
+Full audit precedes next-version fixes: GOAL_PLAN_SEMANTICS affects 22 cases,
+EVIDENCE_COMPLETENESS 21, SCHEMA 12 (overlapping). Extra-constraint requests cause
+11 of 14 schema failures. Supplementary receipt audit: 19 raw declared-goal nulls,
+zero parser-changed values. No parser-loss/truncation cause is asserted. No fresh
+activation fabricated, no blind gold read, no downstream gain established.
+Goal v3 is a separate hypothesis in GOAL_PLAN_V3_DESIGN.md; v2 remains frozen.

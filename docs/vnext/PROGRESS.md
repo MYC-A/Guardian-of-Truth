@@ -183,6 +183,24 @@ FACTUAL_INVOCATION_V3_BOUNDARIES.md for missing joint Core/certificate compositi
 and source-adapter limitations. No frozen model-stage source was edited, no
 parallel API batch was started and no blind gold was opened.
 
+Completed native Goal v2 now has all 22 predictions sealed before scoring and
+full original/supplementary failure audits. Result: 22 UNRESOLVED, no definitive
+certificates; 190/190 transport and 176/190 schema-valid requests. Frozen v2
+implementation/inputs/results remain untouched. T2 v1 subsequently completed
+18/18 transport/schema-valid cases: known-true candidate recall 1/4, zero unsafe
+trusted candidates out of 19 and zero ledger/primitive-prover pollution. Neither
+stage establishes whole-Core gain. Three artifact checks validate these full
+seals, source hashes, audit linkage and unchanged outcomes.
+
+The user supplies a new Goal v3 hypothesis: goal authorization and genuinely
+mandatory restrictions, not one assumed plan; independently decisive violations
+may prove ERROR despite unrelated unknowns, but never an unknown decisive guard
+or an interpretation-dependent violation selected pessimistically. Primary-source
+review of SOP-Bench/AgentCore and component reuse audit are recorded in
+GOAL_PLAN_V3_DESIGN.md. v3 is not implemented/evaluated yet; freeze fresh mechanism
+checks before implementation, then freeze architecture before inference. The
+already frozen Policy stage precedes v3 implementation. No blind labels opened.
+
 Checkpoint commits: protocol `8e9c3fb`; types/ledger `8e87649`; Claim Graph
 `e69a406`; T1/T2 `9e0b2f4`; policy/Goal `f0fb124`; indexed Binder `f562c8b`;
 T1 evaluator `8d2c532`; T1 pre-prediction freeze `af2e3ee`.

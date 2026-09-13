@@ -1,6 +1,6 @@
 # Tool semantics — first partial frozen result
 
-Status: T1_COMPLETE_T2_NOT_RUN. Role: controlled development extension, NOT blind
+Status: T1_COMPLETE_T2_COMPLETE. Role: controlled development extension, NOT blind
 evidence or real-world contract coverage.
 
 Source of truth: `outputs/vnext/tool_t1_results_v1.json`; predictions
@@ -22,7 +22,24 @@ Predictions were persisted and hashed before development gold join. Per-case fai
 classification is in the result JSON. No applicable T1 failures were observed.
 No post-result changes to the evaluated T1 logic belong to this result version.
 
-T2 model stage: NOT_RUN. T2 grounding/promotion rejection has unit tests, but effect
-recall/precision, UNKNOWN behavior and semantic gains are NOT_ESTABLISHED.
-Downstream value, unseen real-world tools and full tool-stage admission are also
-NOT_ESTABLISHED. These small fixture results do not justify production promotion.
+## T2 v1 — separately completed candidate experiment
+
+Source: `outputs/vnext/tool_t2_v1_results.json`; implementation
+`1a5bdba9606adf0d7e4cbbea4efeb26164525e20`. All 18 predictions were sealed before
+reference scoring. Inputs include independently documented fixture semantics and
+declared prior state; this is not real-provider contract validation.
+
+Transport=18/18, schema=18/18. Known-true candidate recall=1/4 (25%); restricted
+positive reference precision=1/8 (12.5%). Full candidate precision is NOT_ESTABLISHED:
+unknown reference states remain unadjudicated, not false. Three grounding
+rejections are retained in the raw/accepted audit. Aggregate statuses:
+AMBIGUOUS_EFFECT=9, UNKNOWN_EFFECT=9; neither status is a trusted fact.
+
+Unsafe trusted candidates=0/19; ledger pollution=0 cases; false state/completion/
+causal support=0 in actual primitive probes with no T1 authority. This proves the
+tested trust boundary, not downstream usefulness or guaranteed arbitrary-tool
+behavior. Candidate recall is weak and does not justify promotion.
+
+Latency p50=11983.532 ms, p95=14819.903 ms; tokens=22052; cost NOT_AUDITED.
+Full per-case taxonomy: `tool_t2_v1_failure_audit.json`. Downstream value and
+unseen real-world tool coverage remain NOT_ESTABLISHED.

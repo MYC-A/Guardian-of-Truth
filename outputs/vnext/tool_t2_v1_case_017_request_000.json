@@ -1,0 +1,69 @@
+{
+  "configuration_sha256": "d7c367f5f413c833947da11eecfdb4697c1b924a1212ed3ad583fef21af909a4",
+  "ordinal": 0,
+  "task": "tool_conditional_effect_hypotheses",
+  "payload": {
+    "tool_identity": {
+      "name": "fixture.archive",
+      "provider": "vnext-fixture",
+      "version": "v1",
+      "schema_sha256": "26e82bfd35a2e1929d736a81aac96dd6eb0b1bf7dc10eab4ed3ff141b3deb194"
+    },
+    "schema": {
+      "record_id": "string"
+    },
+    "arguments": {
+      "record_id": "Q-92"
+    },
+    "result": {
+      "status": "completed"
+    },
+    "authoritative_docs": "\"\"\"Authoritative executable fixture, NOT an inferred real-world tool contract.\n\narchive v1 guarantees archived state only for completed, or noop when the prior\nstate was archived. Timeout/failure need not have no effect. Accepted is not\ncompleted. Incompatible version/schema cannot borrow this contract.\n\"\"\"\n\n\ndef reference_effect(case: dict) -> tuple[str, bool | None]:\n    if case[\"contract_version\"] is None:\n        return \"POSSIBLE_EFFECT\", None\n    if case[\"version\"] != case[\"contract_version\"] or case[\"schema_identity\"] != \"exact\":\n        return \"UNKNOWN_EFFECT\", None\n    status = case[\"result\"][\"status\"]\n    if status == \"completed\" or (status == \"noop\" and case[\"prior_archived\"] is True):\n        return \"TRUSTED_EFFECT\", True\n    if status in {\"partial\", \"accepted\"}:\n        return \"POSSIBLE_EFFECT\", None\n    return \"UNKNOWN_EFFECT\", None\n\nDECLARED_FIXTURE_INPUTS: {\"arguments\":{\"record_id\":\"Q-92\"},\"authoritative_source\":\"benchmarks/vnext/tool_reference_v1.py\",\"contract_version\":null,\"prior_archived\":false,\"provider\":\"vnext-fixture\",\"result\":{\"status\":\"completed\"},\"schema_identity\":\"exact\",\"tool\":\"fixture.archive\",\"version\":\"v1\"}",
+    "instructions": "Propose at most four conditional candidate effects. These are NEVER observed facts or guaranteed effects. Ground entity field in actual arguments and cited result fields in actual result. Return empty hypotheses for unknown."
+  },
+  "schema": {
+    "type": "object",
+    "additionalProperties": false,
+    "required": [
+      "hypotheses"
+    ],
+    "properties": {
+      "hypotheses": {
+        "type": "array",
+        "maxItems": 4,
+        "items": {
+          "type": "object",
+          "additionalProperties": false,
+          "required": [
+            "argument_entity_field",
+            "predicate",
+            "value_json",
+            "result_grounding_fields"
+          ],
+          "properties": {
+            "argument_entity_field": {
+              "type": "string"
+            },
+            "predicate": {
+              "type": "string"
+            },
+            "value_json": {
+              "type": "string"
+            },
+            "result_grounding_fields": {
+              "type": "array",
+              "minItems": 1,
+              "items": {
+                "type": "string"
+              },
+              "uniqueItems": true
+            }
+          }
+        }
+      }
+    }
+  },
+  "input_sha256": "95f2381344d97d1f95b692576bd55318bc38820f50d42b969e8bf03b77508068",
+  "schema_sha256": "d1e5d4e00c91c1b8d146097bd24b0a7a8b0fae5b0f0542067b8e3f5b8b1f20a8",
+  "prompt_sha256": "8a244f2a40388a85a835acb019b6819acffbe95abcd4e35b7b835a3a63f5df43"
+}

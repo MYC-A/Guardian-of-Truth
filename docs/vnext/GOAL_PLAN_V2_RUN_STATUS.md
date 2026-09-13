@@ -1,4 +1,24 @@
-# Native Goal/Plan v2 — running checkpoint, not final results
+# Native Goal/Plan v2 — completed frozen experiment
+
+Current authoritative status: COMPLETE, NOT_PROMOTED. Session 99992 terminated
+successfully. All 22 cases (11 distinct semantic inputs) are predicted and sealed;
+`goal_plan_v2_results.json` and its full failure audit exist. Goal-layer status is
+22/22 UNRESOLVED, zero definitive verdicts and null certificate validation rates.
+Transport=190/190; schema=176/190; tokens=361883; cost NOT_AUDITED.
+Latency p50=14123.487 ms, p95=39617.261 ms.
+
+The supplementary receipt audit finds 19 raw null declared-goal proposals and
+ZERO parser-changed declared-goal values. Fourteen schema-invalid requests affect
+twelve cases; eleven are extra-constraint tasks. No fresh activation was invented.
+Diagnostic binary on 20 annotated cases: TP=0, FP=0, FN=18, TN=2, F1=0,
+identical to fixed X0; fallback zero is not proof of safety.
+
+All 113 frozen sources, v2 inputs, prompts and results remain unchanged. T2 v1
+subsequently completed 18/18 cases. The frozen Policy stage is next. Goal v3 is
+a separate hypothesis described in GOAL_PLAN_V3_DESIGN.md, implemented after
+the planned Policy stage and its audit. Full Core/blind evaluation remains pending.
+
+## Historical running checkpoints (superseded by completion above)
 
 Implementation: `a9150076a445d7cf86eac70500aa259f058a9209`.
 Freeze: `outputs/vnext/goal_plan_v2_freeze.json`.
