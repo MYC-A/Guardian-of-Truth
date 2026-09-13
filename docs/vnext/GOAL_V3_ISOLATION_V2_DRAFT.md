@@ -30,6 +30,22 @@ attempt whose tool outcome is failure. It does **not** prove general goal
 alignment, obligations, safe NO_ERROR, or arbitrary natural-language
 entailment; those remain outstanding. The caller must supply the actual
 trusted transcript/tool catalog, not model-supplied text masquerading as it.
+`goal_v3_user_contract_v2.py` now parses a complete USER-contract fragment
+with literal desired outcome, allowed tool sets, auxiliary permission,
+forbidden attempts, required earlier attempts/true results, fresh-result
+conditions and session-end effect obligations. Unknown suffixes, exceptions
+and extra messages cause whole-message abstention.
+`goal_v3_user_execution_v2.py` binds those rules to source-only event IDs,
+entity/provider/version, actor/requestor, freshness and effect contracts.
+It retains all eligible boolean results (TRUE/FALSE conflicts become BOTH),
+does not make missing guards FALSE, and proves missing attempts only under
+an explicitly complete trusted prefix. Alignment needs trusted catalog
+`goal_fields` for direct support; USER tool permission alone cannot establish
+that a tool produces the desired outcome. These fields are controlled-source
+semantics, **not inferred from tool names**. Its results still remain local
+candidates: an independent certificate checker and real trace adapter are
+not implemented. The new full parser is separate from the first literal
+prohibition certificate and does not silently broaden its authority scope.
 
 ## Target and failure hypothesis
 
