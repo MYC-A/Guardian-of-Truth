@@ -52,3 +52,13 @@ def test_t2_candidate_quality_is_separate_from_trust_boundary():
     assert report["known_true_candidate_recall"]["rate"] == 0.25
     assert report["unsafe_trusted_effects"] == {"count": 0, "candidates": 19, "rate": 0.0}
     assert report["ledger_pollution_cases"] == report["false_state_action_causal_support"] == 0
+
+
+def test_t2_exact_source_archive_preserves_all_114_files():
+    freeze, archive = read("tool_t2_v1_freeze.json"), read("tool_t2_v1_source_archive.json")
+    assert archive["freeze_sha256"] == file_digest(OUTPUT / "tool_t2_v1_freeze.json")
+    assert archive["architecture_commit"] == freeze["architecture_commit"]
+    assert set(archive["sources"]) == set(freeze["source_sha256"])
+    assert len(archive["sources"]) == 114
+    for path, expected in freeze["source_sha256"].items():
+        assert hashlib.sha256(base64.b64decode(archive["sources"][path]["bytes_base64"], validate=True)).hexdigest() == expected

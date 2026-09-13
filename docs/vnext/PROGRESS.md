@@ -201,6 +201,16 @@ GOAL_PLAN_V3_DESIGN.md. v3 is not implemented/evaluated yet; freeze fresh mechan
 checks before implementation, then freeze architecture before inference. The
 already frozen Policy stage precedes v3 implementation. No blind labels opened.
 
+Preimplementation Goal v3 mechanism specification now contains 36 controlled
+cases with explicit fixture SYSTEM premises and separate reference expectations.
+Four structural/reference-link checks pass; these are not a model evaluation
+or independent adjudication of the expected statuses. The specification has a
+separate no-API freeze command; architecture/inference freeze is still pending.
+All 114 frozen T2 executable source files are byte-archived and independently
+hash-checked, including the original fixture reference. The frozen Policy process
+(session 61614) is verified live, with its first case complete; it remains the
+only API job. No frozen source has been edited and no blind gold opened.
+
 Checkpoint commits: protocol `8e9c3fb`; types/ledger `8e87649`; Claim Graph
 `e69a406`; T1/T2 `9e0b2f4`; policy/Goal `f0fb124`; indexed Binder `f562c8b`;
 T1 evaluator `8d2c532`; T1 pre-prediction freeze `af2e3ee`.
