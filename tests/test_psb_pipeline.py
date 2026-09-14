@@ -77,7 +77,7 @@ class FakeBackend:
         is_repair = "previous_output" in payload
         if not is_repair and payload.get("policy_text") == FakeBackend.break_policy:
             return Proposal(None, "SUCCESS", "INVALID")
-        if task == psb.PSB_PARSE_TASK:
+        if task in (psb.PSB_PARSE_TASK, psb.PSB_REPAIR_TASK):
             base = FakeBackend.graph_by_policy.get(payload.get("policy_text"))
             if base is None:  # synthetic smoke payload (non-benchmark)
                 value = {"nodes": [corpus._regulated("n1", ["action:enter_crane_cab"]),
