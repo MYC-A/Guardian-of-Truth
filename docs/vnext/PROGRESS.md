@@ -368,3 +368,33 @@ POLICY_LIMITATION_CONFIRMED - integrate with the documented limitation (H0
 frontend; parser errors to be absorbed downstream by abstention / UNKNOWN /
 certificates / independent witnesses and measured end-to-end). Full record:
 docs/vnext/PSB_RESULTS.md.
+
+GRS experiment (policy_grs_stage_a_v1, 2026-09-15): the single authorized
+reopening of standalone Policy research after the PSB stop rule - a
+principally different decomposition (grounded semantic inventory -> LLM
+synthesizes rules ONLY from closed inventory IDs in a small typed DSL ->
+deterministic validator -> compiler into the same frozen v3 program space).
+Preregistered docs/vnext/GRS_PREREG_GATES_V1.json before any inference:
+arms A0 (frozen H0, byte-identical chain C-ALR -> PHV1 -> PSB,
+machine-verified) vs A1 (oracle-inventory GRS, diagnostic ceiling); 56 NEW
+gold-by-construction cases (15 cohorts, 8-gram-disjoint from
+V4+V5+PHV1+PSB, 11 capacity cases, empty-gold control with catalog-wide
+world surface); Stage B (grounder end-to-end, 72 further fresh cases)
+authorized only on PASS_STAGE_A; seals before gold join; no judges; one
+frozen syntactic repair re-ask per case. STAGE A RESULT (machine-verified):
+A0 39/56 = 69.64% vs A1 49/56 = 87.50% (+17.86pp, McNemar p = 0.0414,
+Newcombe CI [+3.6, +31.6]); capacity 27.3% -> 81.8%; per-clause divergence
+cohorts 0% -> 100% (condition+exception, per-clause actors, separate
+modalities); binding micro-F1 0.848 -> 0.942; invented permission 21.4% ->
+0%; unsupported semantic leaves and hallucination attempts: ZERO (closed
+vocabulary held absolutely); AST validity 91.07% (< gate 95%); NL prose
+66.67% (< gate 75%); H0-correct regressions 12.82% (> gate 10%). GATES: 3
+of 6 failed -> frozen verdict REJECT_GRS_COMPOSITION; Stage B NOT run
+(runner machine-refuses freeze-b; verified). Failure audit (deterministic):
+all 5 regressions are ONE systematic repair-resistant DSL serialization
+slip (omitted RULE(...) wrapper), plus 2 composition errors on the hardest
+multi-clause cases; zero semantic-invention errors. TERMINAL DECISION per
+protocol sections 60-61: STOP standalone Policy research permanently (flat
+H0 -> PSB graph -> GRS all tested; H0 stays the only promotion-grade
+frontend); next stage is integration/composition with the documented
+limitations. Full record: docs/vnext/GRS_RESULTS.md.
