@@ -650,11 +650,12 @@ _register("empty_gold_control", [
 
 def build_grs_stage_b_benchmark() -> list[PolicyGRSCase]:
     """Build the frozen GRS Stage B prospective corpus (72 cases).  Novelty
-    surface: V4 + V5 + PHV1 + PSB + the GRS Stage A corpus."""
+    surface: V4 + V5 + PHV1 + PSB + the GRS Stage A corpus; case IDs carry
+    a b_ prefix so the two GRS namespaces never collide."""
     dev_ngrams = development_text_ngrams()
     for case in build_grs_stage_a_benchmark():
         dev_ngrams |= _word_ngrams(case.policy)
-    return build_grs_cases(ENTRIES_B, dev_ngrams, COHORT_PLAN_B)
+    return build_grs_cases(ENTRIES_B, dev_ngrams, COHORT_PLAN_B, id_prefix='b_')
 
 
 def benchmark_grs_stage_b_document(cases: list[PolicyGRSCase]) -> dict:

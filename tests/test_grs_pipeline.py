@@ -226,8 +226,9 @@ def test_compiler_semantics_parity():
     assert len(alternatives) == 2 and len(alternatives[1]) == 0
     assert dropped[0]['reason'] == 'UNKNOWN_ATTACHMENT'
     # single-rule composition equals the v3 verdict (H0 scoring continuity)
-    program = grs.compile_dsl(
-        "RULESET(RULE(PERMIT, F1, WHEN(F2), EXCEPT(F3)))", inv)[0][0]
+    alternatives, _dropped = grs.compile_dsl(
+        "RULESET(RULE(PERMIT, F1, WHEN(F2), EXCEPT(F3)))", inv)
+    program = alternatives[0][0]
     for facts in (set(), {'action:pour', 'state:fridge_unlocked'},
                   {'action:pour', 'state:fridge_unlocked', 'state:door_alarmed'}):
         assert psb.composed_verdict([program], facts) == \

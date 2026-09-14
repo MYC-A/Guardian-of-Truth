@@ -692,7 +692,8 @@ def _evidence_sufficiency(gold_dsl: str, inventory: dict, case_key: str) -> None
 def build_grs_cases(entries, dev_ngrams: set, cohort_plan: dict,
                     seen_texts: set | None = None,
                     seen_ngrams: set | None = None,
-                    required_detections: dict | None = None) -> list[PolicyGRSCase]:
+                    required_detections: dict | None = None,
+                    id_prefix: str = '') -> list[PolicyGRSCase]:
     """Shared gold-by-construction builder for GRS corpora (Stage A and the
     Stage B prospective corpus import this).  Machine checks: inventory
     well-formedness, gold self-score, discriminating worlds, oracle evidence
@@ -782,7 +783,7 @@ def build_grs_cases(entries, dev_ngrams: set, cohort_plan: dict,
             catalog_atoms = set(all_facts) | set(distractors)
             catalog_atoms.add(f"distractor:{key}")
             case = PolicyGRSCase(
-                case_id=f"{cohort}::{key}", cohort=cohort, style=style,
+                case_id=f"{cohort}::{id_prefix}{key}", cohort=cohort, style=style,
                 policy=text, atom_catalog=tuple(sorted(catalog_atoms)),
                 oracle_inventory=inventory, gold_dsl=materialized,
                 admissible_program_sets=admissible_sets,
