@@ -1,0 +1,284 @@
+{
+  "schema_version": "guardian-vnext-grs-prereg-v1",
+  "study": "GRS_V1",
+  "title": "GRS - Grounded Rule Synthesis: the final standalone Policy frontend experiment",
+  "status": "FROZEN_NOT_RUN",
+  "frozen_utc_rule": "freeze phase stamps the actual UTC time; this document is committed before the first inference request of the cycle",
+  "context": {
+    "h0_v5_recovered": "136/142 = 95.77% machine-verified on the controlled dev distribution (C-ALR reimpl)",
+    "phv1_prospective": "59/80 = 73.75% machine-verified prospective holdout; REOPEN_POLICY_RESEARCH; now development data",
+    "psb_causal": "H0 54.55% vs PSB 72.73% on binding-heavy cases; diagnosis supported but candidate not promotable (validity 84.09% < 90% floor; 29.2% H0-correct regressions); POLICY_LIMITATION_CONFIRMED; STOP standalone Policy research",
+    "reopen_justification": "GRS tests a PRINCIPALLY different decomposition (closed leaf vocabulary + composition-only LLM role in a small typed DSL), not an optimization of already-viewed holdout performance; the PSB stop rule closed the structural-graph line, this opens the grounded-synthesis line exactly once"
+  },
+  "main_hypothesis": "The dominant error mode of current Policy frontends arises because one LLM call is simultaneously responsible for semantic grounding and structural composition. If factual leaves are grounded in advance and closed (every leaf is a machine-validated inventory reference) while the LLM only synthesizes structure over those leaves in a small typed DSL, compositional Policy parsing becomes substantially more accurate and less hallucination-prone.",
+  "falsifiable_sub_questions": {
+    "Q1_composition_ceiling": "can the LLM reliably synthesize a correct compositional rule when the grounded inventory is correct (Stage A)?",
+    "Q2_closed_vocabulary": "does a closed leaf vocabulary eliminate hallucinated semantic content (validator-guaranteed zero unsupported leaves in compiled programs)?",
+    "Q3_dsl_vs_graph": "does the compact DSL transfer better than the PSB graph (AST validity vs PSB 84.09%)?",
+    "Q4_attachments": "are per-clause modality/actor/condition attachments fixed?",
+    "Q5_capacity": "what is the accuracy on H0-unrepresentable cases?",
+    "Q6_bottleneck": "where is the bottleneck after Stage B: grounding or composition (A1 vs B1 gap)?",
+    "Q7_regressions": "how large is the H0-correct regression rate (PSB failed here at 29.2%)?",
+    "Q8_unknown_gaming": "is safety achieved only through mass UNKNOWN (resolved coverage gate)?",
+    "Q9_cost": "is the two-stage architecture worth its extra requests/tokens/latency?",
+    "Q10_integration": "is GRS sufficient for Policy integration?"
+  },
+  "pipeline": "Stage A (oracle): POLICY_TEXT + correct grounded inventory -> ONE synthesizer call -> DSL AST -> deterministic validator -> compiler -> v3 program sets. Stage B (end-to-end): POLICY_TEXT + atom catalog -> grounder -> grounded inventory -> same frozen synthesizer -> validator -> compiler.",
+  "dsl_freeze": {
+    "grammar": "RULESET( rule* ); rule := RULE( modality , target , gate* ) | ONE_OF( RULE(...) , RULE(...) ); modality := PERMIT | PROHIBIT | REQUIRE; target := ref | TOGETHER( ref+ ) | SEPARATE( ref+ ); gate := WHEN( boolexpr ) | ONLY_WHEN( boolexpr ) | IFF( boolexpr ) | EXCEPT( boolexpr ) | BEFORE( boolexpr ) | AFTER( boolexpr ) | ACTOR( ref ) | ONLY_ACTOR( ref ) | IDENTITY( ref ) | PROVENANCE( ref ) | UNKNOWN_RELATION( boolexpr ) | UNKNOWN_ATTACHMENT( ref ); boolexpr := leaf | AND( leaf+ ) | OR( leaf+ ); leaf := ref | NOT( ref )",
+    "type_rules": [
+      "target refs: ACTION or STATE facts only",
+      "WHEN/ONLY_WHEN/IFF/EXCEPT leaves: ACTION, STATE or EVENT facts",
+      "BEFORE/AFTER leaves: EVENT facts only",
+      "ACTOR/ONLY_ACTOR: ACTOR facts; IDENTITY: IDENTITY facts; PROVENANCE: PROVENANCE facts",
+      "markers (M#/R#) are never rule references",
+      "at most one gate of each kind per rule; at most one relation gate; at most one temporal gate; REQUIRE with EXCEPT plus a relation/temporal gate is outside the frozen envelope",
+      "condition-contributing boolexprs must share their top-level combinator",
+      "at most one ONE_OF per ruleset; exactly two rule alternatives"
+    ],
+    "unknown_semantics": "UNKNOWN_RELATION / UNKNOWN_ATTACHMENT gates drop the containing rule (recorded as unresolved); they are abstention, never a silent semantic repair; empty RULESET() asserts the text regulates nothing",
+    "one_of_scoring": "a ONE_OF prediction is behaviorally correct iff EVERY alternative reproduces acceptable gold verdicts on every frozen world (hedging fails unless both readings are genuinely admissible)",
+    "compiler": "deterministic mapping into the SAME v3 program space (policy_v3_benchmark) with field-for-field parity to the frozen PSB compiler (relation precedence REQUIRE+EXCEPT->UNLESS, IFF->IF_AND_ONLY_IF, ONLY_WHEN/ONLY_ACTOR/IDENTITY/PROVENANCE->ONLY_IF, otherwise gated->IF, else UNCONDITIONAL; BEFORE negates event literals; composed verdict VIOLATION > PERMITTED > NO_VIOLATION)",
+    "implementation": "src/guardian_truth/vnext/policy_grs.py"
+  },
+  "inventory_freeze": {
+    "fact_fields": [
+      "id",
+      "kind",
+      "atom",
+      "span"
+    ],
+    "marker_fields": [
+      "id",
+      "kind",
+      "value",
+      "span"
+    ],
+    "fact_kinds": [
+      "ACTION",
+      "STATE",
+      "EVENT",
+      "ACTOR",
+      "IDENTITY",
+      "PROVENANCE"
+    ],
+    "marker_values": {
+      "MODAL_MARKER": [
+        "PERMIT",
+        "PROHIBIT",
+        "REQUIRE"
+      ],
+      "RELATION_MARKER": [
+        "IF",
+        "ONLY_IF",
+        "IFF",
+        "UNLESS",
+        "BEFORE",
+        "AFTER"
+      ]
+    },
+    "neutral_ids": "F# for facts, M# for modality markers, R# for relation markers, assigned in order of first appearance in the policy text; IDs never encode semantic roles",
+    "no_attachment_info": "inventories contain primitives and surface markers ONLY; any field expressing roles, attachments or clause membership is forbidden and machine-rejected",
+    "span_rule": "every span must be an exact substring of the policy text (machine-validated)",
+    "oracle_consistency_machine_checks": [
+      "every gold DSL placeholder has an inventory fact",
+      "every gold rule modality has at least one matching MODAL_MARKER in the inventory",
+      "every gold relation gate (WHEN->IF, ONLY_WHEN->ONLY_IF, IFF->IFF, EXCEPT->UNLESS, BEFORE->BEFORE, AFTER->AFTER) has at least one matching RELATION_MARKER (checked on the primary admissible reading)",
+      "every inventory marker is used by at least one gold rule in the primary admissible reading (no orphan or contradicting markers)"
+    ]
+  },
+  "validator_freeze": {
+    "powers": [
+      "reject",
+      "type-check",
+      "canonical ordering",
+      "structural deduplication of identical programs"
+    ],
+    "forbidden": [
+      "changing IF to UNLESS",
+      "changing PERMIT to PROHIBIT",
+      "attaching orphan conditions",
+      "inventing missing nodes",
+      "any semantic repair"
+    ],
+    "guarantee": "unsupported semantic leaf rate in compiled programs = 0 by construction; attempts are counted separately (unknown-reference attempts, out-of-grammar operator attempts, free-text leaf attempts)"
+  },
+  "grounder_freeze_stage_b": {
+    "input": "POLICY_TEXT + ATOM_CATALOG (same catalog the H0 arm sees, distractors included)",
+    "output": "facts (catalog atoms with exact spans) + markers (closed value vocabulary)",
+    "abstention": "atoms the grounder cannot confidently ground are omitted (UNKNOWN/OMIT); guessing is forbidden",
+    "forbidden": "deciding roles, attachments, clause membership or necessity - that is the synthesizer's task",
+    "constraint": "atoms chosen ONLY from ATOM_CATALOG; never invented (schema + trusted post-validation)",
+    "calls": "1 grounder call + at most 1 syntactic repair re-ask per case"
+  },
+  "arms": {
+    "A0_B0": "frozen H0 flat single-parse frontend, byte-identical to the C-ALR -> PHV1 -> PSB chain (parse task, repair task, structure schema, config, system instruction)",
+    "A1": "oracle-inventory GRS: correct grounded inventory + one synthesizer call + deterministic validator + compiler (diagnostic upper bound, NOT a deployable candidate)",
+    "B1": "end-to-end GRS: grounder -> grounded inventory -> same frozen synthesizer -> validator -> compiler"
+  },
+  "stage_a": {
+    "purpose": "composition ceiling under a correct grounded inventory",
+    "benchmark": "NEW causal corpus, 56 cases, gold by construction; not PSB corpus, not PHV1 corpus; frozen before predictions",
+    "composition": {
+      "simple_controls": 4,
+      "condition": 4,
+      "exception": 4,
+      "condition_plus_exception": 4,
+      "if_vs_only_if": 4,
+      "modality": 3,
+      "scope_togetherness": 5,
+      "separate_clauses_modalities": 4,
+      "per_clause_actors": 4,
+      "temporal": 4,
+      "provenance_identity": 2,
+      "negation": 4,
+      "multi_axis": 6,
+      "nl_prose_stress": 3,
+      "empty_gold_control": 1
+    },
+    "freshness": "zero shared word 8-grams with every V4, V5, PHV1 and PSB policy text; zero internal duplicates; fresh domains, entities and constructions; no lexical rewrites of PHV1/PSB failures",
+    "gold_per_case": [
+      "policy text",
+      "grounded inventory",
+      "gold DSL ruleset",
+      "compiled admissible program sets",
+      "worlds",
+      "family/cohort",
+      "capacity flag (h0_representable by merge equivalence)"
+    ],
+    "model_sees": "policy text + oracle inventory + DSL grammar (never the gold DSL, never admissible sets, never worlds)",
+    "repair_rule": "at most one frozen syntactic repair re-ask per case (transport failure / schema invalid / DSL parse or validation failure), carrying the machine error only; never for valid-but-wrong answers",
+    "gates": {
+      "a1_behavioral_gte": 0.85,
+      "a1_ast_validity_gte": 0.95,
+      "a1_capacity_subset_gte": 0.75,
+      "a1_nl_stress_gte": 0.75,
+      "a1_h0_correct_regression_rate_lte": 0.1,
+      "a1_minus_a0_pp_gte": 0.1
+    },
+    "pass_rule": "ALL gates must pass",
+    "fail_verdict": "REJECT_GRS_COMPOSITION",
+    "fail_meaning": "even with correct grounded facts, constrained DSL synthesis is not reliable enough; STOP standalone Policy research permanently; do not run Stage B",
+    "pass_verdict": "PASS_STAGE_A",
+    "delta_scope": "overall accuracy OR the preregistered structural subset (every cohort except simple_controls and empty_gold_control)"
+  },
+  "stage_b": {
+    "precondition": "Stage A verdict == PASS_STAGE_A (machine-checked; freeze-b refuses otherwise)",
+    "benchmark": "NEW prospective corpus, 72 cases, gold by construction, frozen before predictions; never reuses Stage A cases as confirmatory data",
+    "composition": {
+      "simple_controls": 6,
+      "condition": 5,
+      "exception": 5,
+      "condition_plus_exception": 5,
+      "if_vs_only_if": 5,
+      "modality": 4,
+      "multi_target_together": 3,
+      "separate_clauses_modalities": 6,
+      "per_clause_actors": 5,
+      "scope_togetherness": 4,
+      "temporal": 5,
+      "provenance_identity": 3,
+      "negation": 5,
+      "multi_axis": 6,
+      "nl_prose_stress": 4,
+      "empty_gold_control": 1
+    },
+    "freshness": "zero shared word 8-grams with V4, V5, PHV1, PSB and the GRS Stage A corpus; zero internal duplicates",
+    "gold_separation": "gold inventories and gold DSLs frozen separately from candidate predictions; grounder predictions and synthesizer predictions sealed before gold join",
+    "grounder_metrics": [
+      "atom precision",
+      "atom recall",
+      "marker precision",
+      "marker recall",
+      "span grounding (exact-substring validity rate)",
+      "invented atom attempts (rejected by catalog validation)",
+      "wrong atom extractions",
+      "missed gold atoms"
+    ],
+    "synthesizer_conditional_metrics": "behavioral correctness conditional on the grounder inventory being rule-sufficient (all gold-DSL atoms present) and clean (no non-gold atoms); reported alongside overall end-to-end correctness to separate grounding failure from composition failure",
+    "end_to_end_metrics": [
+      "behavioral correctness",
+      "AST validity",
+      "UNKNOWN-drop rate",
+      "unsafe permission rate (PERMITTED where no admissible gold verdict is PERMITTED)",
+      "condition/exception attachment (binding triples micro-F1)",
+      "multi-clause correctness",
+      "capacity correctness",
+      "simple-control correctness",
+      "NL stress correctness",
+      "resolved coverage"
+    ],
+    "resolved_coverage_definition": "fraction of cases whose final prediction parsed, validated and compiled with zero rules dropped via UNKNOWN_* gates (empty RULESET() counts as resolved: it is a definite no-regulation claim, not abstention)",
+    "gates": {
+      "b1_behavioral_gte": 0.85,
+      "b1_simple_subset_gte": 0.95,
+      "b1_structural_subset_gte": 0.8,
+      "b1_capacity_subset_gte": 0.7,
+      "b1_nl_stress_gte": 0.75,
+      "b1_unsafe_permission_rate_lte": 0.02,
+      "b1_resolved_coverage_gte": 0.75,
+      "b1_ast_validity_gte": 0.95,
+      "b1_h0_correct_regression_rate_lte": 0.1,
+      "unsupported_semantic_leaf_rate_eq": 0
+    },
+    "paired_comparison": "B1 vs frozen B0 (H0) on the same benchmark; exact two-sided McNemar; Newcombe paired CI; corrections, regressions, delta, p; regression gate <= 10% of H0-correct cases",
+    "pass_verdict": "PROMOTE_GRS_TO_INTEGRATION",
+    "pass_meaning": "GRS is the new best Policy frontend candidate; next stage is composition (Goal + Policy + Binder + Evidence + Temporal/Effects + Core), NOT another standalone Policy optimization cycle",
+    "fail_verdict": "GRS_GROUNDING_BOTTLENECK",
+    "fail_meaning": "composition architecture is good but inventory acquisition remains the bottleneck; STOP standalone Policy research (no deterministic grounding fix is preregistered; GRS-v2/v3 cycles are forbidden)"
+  },
+  "efficiency_metrics": [
+    "requests per case",
+    "tokens per case",
+    "median and p95 latency",
+    "repair rate",
+    "per arm and per stage"
+  ],
+  "failure_taxonomy": [
+    "GROUNDING_MISS",
+    "GROUNDING_WRONG_ATOM",
+    "GROUNDING_WRONG_SPAN",
+    "DSL_INVALID",
+    "UNKNOWN_REFERENCE",
+    "TYPE_ERROR",
+    "MODALITY_ERROR",
+    "ATTACHMENT_ERROR",
+    "CONDITION_EXCEPTION_ERROR",
+    "SCOPE_ERROR",
+    "TEMPORAL_ERROR",
+    "ACTOR_ERROR",
+    "MULTI_CLAUSE_ERROR",
+    "REPRESENTATION_GAP",
+    "OTHER"
+  ],
+  "taxonomy_basis": "deterministic typed-field and triple diffs vs the gold program sets and gold inventories; no LLM judge; computed only after seal + score",
+  "prohibitions": [
+    "no LLM judge, critic, challenger, verifier or self-consistency anywhere in the pipeline",
+    "no multi-program generation: ONE_OF is local (one per ruleset, exactly two alternatives), never N complete policy programs",
+    "no semantic repair of any kind; at most one frozen syntactic repair re-ask per stage per case with machine error only",
+    "same model class and provider as H0/PHV1/PSB (bai / qwen3.8-flash); no architecture-plus-capacity confound",
+    "no PSB graph generation by the synthesizer (compact DSL only)",
+    "no flat-slot coercion of the DSL back into a single modality/condition/exception structure",
+    "no adaptive changes after the first semantic request: no new grammar operator, inventory field, prompt semantic instruction, heuristic or atom rule",
+    "PHV1 and PSB corpora are development data only; Stage A cases are never Stage B confirmatory data",
+    "scoring is deterministic and gold-joined only after seals",
+    "abandoned request captures are never resent"
+  ],
+  "seal_discipline": {
+    "per_stage": [
+      "prediction sha256",
+      "case ids sha256",
+      "gold_joined = false before scoring"
+    ],
+    "stage_a_seals": [
+      "A0 predictions",
+      "A1 predictions"
+    ],
+    "stage_b_seals": [
+      "B0 predictions",
+      "B1 grounder predictions",
+      "B1 synthesizer predictions"
+    ]
+  },
+  "hard_stop": "This is the final standalone Policy experiment: Stage A fail -> STOP; Stage A pass + Stage B fail -> STOP; Stage B pass -> integration. No GRS-v2/v3, no new graph format, no new verifier, no mutation catalog."
+}
