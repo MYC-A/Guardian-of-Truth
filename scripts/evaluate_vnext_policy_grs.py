@@ -881,7 +881,7 @@ def _hallucination_totals(rows_by_case, cases, inventory_of, out=None,
         if out is not None and prefix is not None and arm is not None:
             index = [c.case_id for c in cases].index(case.case_id)
             for result_path in sorted(out.glob(
-                    f'{prefix}_{arm}_case_{index:03d}_request_*_result.json')):
+                    f'{prefix}_{arm}_{index:03d}_request_*_result.json')):
                 artifact = json.loads(result_path.read_text(encoding='utf-8'))
                 payload_json = (artifact.get('proposal') or {}).get('payload_json')
                 if payload_json is None:
