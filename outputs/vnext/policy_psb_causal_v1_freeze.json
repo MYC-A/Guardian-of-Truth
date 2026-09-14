@@ -1,0 +1,159 @@
+{
+  "schema_version": "guardian-vnext-psb-freeze-v1",
+  "study": "PSB_CAUSAL_V1",
+  "prereg": "docs/vnext/PSB_PREREG_GATES_V1.json",
+  "architecture_commit": "7d055caac8c112186e3caa616476c9cafc9706bd",
+  "h0_identity": {
+    "parse_task_sha256": "0b56f7a25c521110fb54ef1e39b0930c37655188fda0914b9bc02606f2cb4476",
+    "repair_task_sha256": "b3cc0e29ba258fbf7df878d895331bec573839e083330cbfe7a964fcc08a5cfe",
+    "structure_schema_sha256": "fc3b3ee2bed89acaa59688fb0b42e0f56be1db8370263200cdc21c323c2af54e",
+    "definition": {
+      "provider": "bai",
+      "model": "qwen3.8-flash",
+      "timeout_seconds": 180,
+      "max_output_tokens": 2048,
+      "max_retries": 0,
+      "response_format_mode": "none",
+      "interval_seconds": 10,
+      "temperature": 0,
+      "reasoning_effort": "low",
+      "random_seed": 260914,
+      "escalation_steps": 0,
+      "max_requests_per_case_h0": 2,
+      "max_requests_per_mutation": 2,
+      "max_admitted_patches_per_case": 2,
+      "one_patch_per_field": true,
+      "quota_stop": [
+        "TWO_CONSECUTIVE_RATE_LIMITS",
+        "THREE_CONSECUTIVE_TRANSPORT_ERRORS",
+        "LAST_16_TRANSPORT_BELOW_90_PERCENT"
+      ]
+    },
+    "definition_sha256": "d7316e6f2f260c991ba6b0474aa9d20da0e0d5fc8ddc06621c08a982ad763361",
+    "system_instruction": "guardian_truth.vnext.semantic.SYSTEM (persisted per request)",
+    "input_contract": "payload {'policy_text': str, 'atom_catalog': [str]}",
+    "repair_rule": "exactly one machine-validation-triggered repair re-ask (transport failure / schema invalid / compile failure); never for schema-valid wrong answers",
+    "retry_policy": "client max_retries=0; no invisible retries; abandoned request captures are never resent",
+    "behavioral_evaluator": "psb.composed_verdict over compiled program sets (v3.evaluate_v3_program per clause)",
+    "case_correct_definition": "the arm's compiled program set composes a verdict on EVERY frozen world that belongs to the acceptable set (composed verdicts of the admissible gold program sets)"
+  },
+  "h0_continuity": {
+    "phv1_freeze_path": "outputs/vnext/policy_phv1_holdout_v1_freeze.json",
+    "phv1_freeze_sha256": "0ce94f9a623c3db9935adb553ad46e7a14c55c6eff83d6ac306310ac98d9392d",
+    "phv1_architecture_commit": "12bec0b74479cb9b82744cd9516b93080ce8c8f6",
+    "parse_task_match": true,
+    "repair_task_match": true,
+    "structure_schema_match": true,
+    "definition_match": true
+  },
+  "psb_identity": {
+    "psb_parse_task_sha256": "182a3a2ef0b985d33ea4144c4cc7d64e77016c2666e3a3a77763281a7c8de822",
+    "psb_repair_task_sha256": "8ada6e7774bb8f55dbff54b3cc7d356635d6effb8462480528768dd9c701177c",
+    "psb_schema_sha256": "25f1d432804f993bf2ac2b7d9da60fbba04307c571ffe938ad2a8d3aa440efc9",
+    "compiler": "psb.compile_psb_graph (deterministic; gate off for H1, on for H2 from the same sealed parse)",
+    "permission_evidence": "psb.positive_permission_evidence (frozen marker classes; text-level; class-based, not benchmark-specific strings)",
+    "representation": "typed attachment graph: nodes REGULATED/MODALITY/CONDITION/EXCEPTION/ACTOR/QUALIFIER; edges REGULATES/ACTIVATES/EXEMPTS/ACTOR_OF/QUALIFIES/SOURCE_OF/PRECEDES/FOLLOWS; polarity via literal \"!\" prefix"
+  },
+  "definition": {
+    "provider": "bai",
+    "model": "qwen3.8-flash",
+    "timeout_seconds": 180,
+    "max_output_tokens": 2048,
+    "max_retries": 0,
+    "response_format_mode": "none",
+    "interval_seconds": 10,
+    "temperature": 0,
+    "reasoning_effort": "low",
+    "random_seed": 260914,
+    "escalation_steps": 0,
+    "max_requests_per_case_h0": 2,
+    "max_requests_per_mutation": 2,
+    "max_admitted_patches_per_case": 2,
+    "one_patch_per_field": true,
+    "quota_stop": [
+      "TWO_CONSECUTIVE_RATE_LIMITS",
+      "THREE_CONSECUTIVE_TRANSPORT_ERRORS",
+      "LAST_16_TRANSPORT_BELOW_90_PERCENT"
+    ]
+  },
+  "definition_sha256": "d7316e6f2f260c991ba6b0474aa9d20da0e0d5fc8ddc06621c08a982ad763361",
+  "gates": {
+    "H1": {
+      "binding_aggregate_micro_f1_gte": 0.85,
+      "behavioral_h1_minus_h0_gte_pp": 0.1,
+      "h0_correct_regression_rate_lte": 0.05
+    },
+    "H2": {
+      "invented_permission_case_rate_lte": 0.02,
+      "permission_clause_precision_gte": 0.95,
+      "behavioral_h2_gte_behavioral_h1": true
+    },
+    "primary_candidate": {
+      "behavioral_h2_minus_h0_gte_pp": 0.15
+    },
+    "validity_floor": {
+      "schema_compile_validity_gte": 0.9
+    }
+  },
+  "prereg_sha256": "2b1c4cdbf699854f5b263e32a662c039009a6348ce73483a036c43f2ad1129dc",
+  "case_ids": [
+    "exception::e01",
+    "exception::e02",
+    "exception::e03",
+    "exception::e04",
+    "exception::e05",
+    "exception::e06",
+    "exception::e07",
+    "exception::e08",
+    "multi_axis::x01",
+    "multi_axis::x02",
+    "multi_axis::x03",
+    "multi_axis::x04",
+    "multi_axis::x05",
+    "multi_axis::x06",
+    "multi_axis::x07",
+    "multi_axis::x08",
+    "multiclause::m01",
+    "multiclause::m02",
+    "multiclause::m03",
+    "multiclause::m04",
+    "multiclause::m05",
+    "multiclause::m06",
+    "multiclause::m07",
+    "multiclause::m08",
+    "permission_evidence::p01",
+    "permission_evidence::p02",
+    "permission_evidence::p03",
+    "permission_evidence::p04",
+    "permission_evidence::p05",
+    "permission_evidence::p06",
+    "permission_evidence::p07",
+    "permission_evidence::p08",
+    "relation::r01",
+    "relation::r02",
+    "relation::r03",
+    "relation::r04",
+    "relation::r05",
+    "relation::r06",
+    "relation::r07",
+    "relation::r08",
+    "relation::r09",
+    "relation::r10",
+    "relation::r11",
+    "relation::r12"
+  ],
+  "case_input_sha256": "1006384b233455f28abe073dfdf23642e598343916b52d7027212e3f60ac7a3a",
+  "benchmark_sha256": "fdd252be68ad47321561c1b5bb38263b3de1b1bddbadb4fff7dc0d86b7dd002f",
+  "gold_graph_sha256": "62f1c49c4f72787165924e231f1346a6c7f1b8f550e9eafe4dcd06ce77e3f364",
+  "gold_frozen_before_predictions": true,
+  "gold_joined": false,
+  "source_sha256": {
+    "src/guardian_truth/vnext/policy_psb.py": "1deff612512026678806b4159b3e4c26f5cde5eb6a63f8cbec42c247a39debc2",
+    "src/guardian_truth/vnext/policy_psb_causal_benchmark.py": "ff3f091e72d0a360bce962c43199b92f5650405a0b8faf3e530efcb2b0fc70c8",
+    "src/guardian_truth/vnext/policy_v3_benchmark.py": "35a88f158744680e8db6604f5370276253ef3f2f2f0347407eddb6785af9f217",
+    "scripts/evaluate_vnext_c_alr_reimpl.py": "14f5c5492c12b30b7fe83dbe43d5e5709d20b8ee0e91d06e241ca58b5e2d68e4",
+    "scripts/evaluate_vnext_policy_psb.py": "28fd382d9c879ac378076b7f5a93d564c045d725cdfe1c53222257ca1647329e"
+  },
+  "prompt_hash_policy": "exact payload/messages/schema persisted before every physical request",
+  "frozen_utc": "2026-09-14T19:01:39.738177+00:00"
+}

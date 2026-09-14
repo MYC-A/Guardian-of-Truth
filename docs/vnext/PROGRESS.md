@@ -337,3 +337,34 @@ permission invariant does not generalize to unseen phrasings; the dominant
 residual class is relation binding (9/21), then multi-axis composition (6/21).
 The viewed holdout is now development data; any repaired candidate requires a
 new holdout. Full record: docs/vnext/PHV1_RESULTS.md.
+
+PSB causal experiment (policy_psb_causal_v1, 2026-09-15): the LAST standalone
+Policy architecture cycle after PHV1 (per protocol: no V8/V9/V10, hard stop
+afterwards). Preregistered docs/vnext/PSB_PREREG_GATES_V1.json before any
+inference: arms H0 (frozen flat, byte-identical chain C-ALR -> PHV1 -> PSB,
+machine-verified) vs H1 (typed attachment graph: 6 node types, 8 edge types,
+explicit polarity, deterministic per-clause compilation into the same v3
+program space) vs H2 (the same sealed parse compiled with the frozen
+positive-evidence permission gate); 44 fresh gold-by-construction
+binding-heavy cases (8-gram-disjoint from V4+V5+PHV1; 32 H0-representable by
+merge-equivalence + 12 capacity cases; machine-checked binding
+discriminability); one synthetic smoke per schema; both arms sealed before
+gold join; no judges. RESULT (corrected rescoring; one disclosed post-seal
+fix of the paired-statistics counter, seals/gold untouched): H0 24/44 =
+54.55%, H1 = H2 32/44 = 72.73% (+18.2pp, McNemar p=0.134, Newcombe CI
+[+0.0, +35.0]; corrections 15 : regressions 7 = 29.2% of H0-correct);
+binding micro-F1 0.820 -> 0.856 (CONDITION 0.706 -> 0.863, ACTOR 0.714 ->
+0.833, CLAUSE 0.865 -> 0.891); capacity subset 0% -> 75%; exception cohort
+62.5% -> 100%; multi-clause 0% -> 87.5%; multi-axis 75% -> 50%; validity H0
+95.45% vs PSB 84.09% (7 model-side graph-format assimilation failures);
+invented permission 22.73% -> 0% at H1 (structured extraction alone; the H2
+gate fired once, clause precision 0.95 -> 1.00, behaviorally inert).
+GATES: H1 binding PASS, behavioral PASS, regression FAIL (29.2% > 5%);
+H2 all PASS (supported-but-redundant); primary +18.2pp >= 15pp numerically
+passed but promotion requires H1 AND H2; frozen verdict field
+INFRASTRUCTURE_FAILURE (validity floor 0.841 < 0.90). TERMINAL DECISION per
+protocol section 62: STOP standalone Policy research; no final holdout;
+POLICY_LIMITATION_CONFIRMED - integrate with the documented limitation (H0
+frontend; parser errors to be absorbed downstream by abstention / UNKNOWN /
+certificates / independent witnesses and measured end-to-end). Full record:
+docs/vnext/PSB_RESULTS.md.
