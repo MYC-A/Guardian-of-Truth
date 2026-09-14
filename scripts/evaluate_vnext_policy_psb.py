@@ -463,9 +463,11 @@ def _invented_permission(per_world):
 def _paired(a_results, b_results, cases):
     """Discordant counts for a vs b (a = candidate, b = baseline)."""
     corrections = sum(1 for case in cases
-                      if not b_results[case.case_id] and a_results[case.case_id])
+                      if not b_results[case.case_id]['correct']
+                      and a_results[case.case_id]['correct'])
     regressions = sum(1 for case in cases
-                      if b_results[case.case_id] and not a_results[case.case_id])
+                      if b_results[case.case_id]['correct']
+                      and not a_results[case.case_id]['correct'])
     return corrections, regressions
 
 
