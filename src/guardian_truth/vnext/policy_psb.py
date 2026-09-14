@@ -544,13 +544,16 @@ TRIPLE_CLASSES = ("MODALITY", "CONDITION", "EXCEPTION", "ACTOR",
 
 def canonical_triples_graph(graph) -> set:
     """Canonical attachment triples (class, payload, target_atoms) of a PSB
-    graph. PRECEDES literals are canonicalized to their compiled negated
-    form so polarity is part of the CONDITION payload."""
+    graph, canonicalized to COMPILED form: all condition literals attached
+    to one REGULATED node (ACTIVATES/FOLLOWS as-is, PRECEDES negated) merge
+    into a single CONDITION payload, exactly as compile_psb_graph does, so
+    graph triples and flat-program triples live in the same space."""
     if not isinstance(graph, dict):
         return set()
     by_id = {node.get("id"): node for node in graph.get("nodes", [])
              if isinstance(node, dict)}
     triples = set()
+    conditions_by_target: dict[str, set] = {}
     for rid, node in by_id.items():
         if node.get("type") != "REGULATED":
             continue
@@ -567,19 +570,14 @@ def canonical_triples_graph(graph) -> set:
             continue
         atoms = frozenset(target.get("atoms") or [])
         source = by_id.get(src) or {}
-        if etype == "REGULATES":
-            triples.add(("MODALITY", frozenset([source.get("value")]), atoms))
-        elif etype == "ACTIVATES":
-            triples.add(("CONDITION", frozenset(source.get("literals") or []),
-                         atoms))
-        elif etype == "FOLLOWS":
-            triples.add(("CONDITION", frozenset(source.get("literals") or []),
-                         atoms))
+        if etype in ("ACTIVATES", "FOLLOWS"):
+            conditions_by_target.setdefault(dst, set()).update(
+                source.get("literals") or [])
         elif etype == "PRECEDES":
-            triples.add(("CONDITION",
-                         frozenset("!" + lit
-                                   for lit in source.get("literals") or []),
-                         atoms))
+            conditions_by_target.setdefault(dst, set()).update(
+                "!" + lit for lit in source.get("literals") or [])
+        elif etype == "REGULATES":
+            triples.add(("MODALITY", frozenset([source.get("value")]), atoms))
         elif etype == "EXEMPTS":
             triples.add(("EXCEPTION", frozenset(source.get("literals") or []),
                          atoms))
@@ -593,6 +591,11 @@ def canonical_triples_graph(graph) -> set:
         elif etype == "SOURCE_OF":
             triples.add(("QUALIFIER_PROVENANCE",
                          frozenset([source.get("value")]), atoms))
+    for dst, literals in conditions_by_target.items():
+        target = by_id.get(dst) or {}
+        atoms = frozenset(target.get("atoms") or [])
+        if literals and atoms:
+            triples.add(("CONDITION", frozenset(literals), atoms))
     return triples
 
 
