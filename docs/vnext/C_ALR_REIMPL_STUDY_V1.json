@@ -1,0 +1,126 @@
+{
+ "schema": "guardian-vnext-c-alr-reimpl-study-v1",
+ "experiment": "policy_c_alr_reimpl_v1",
+ "registered_utc_date": "2026-09-14",
+ "registered_before": "any inference request of this study (0 requests sent at registration time)",
+
+ "lineage": {
+  "historical_cycle": "C_ALR (C_ALR_CYCLE_PROTOCOL.md / C_ALR_PREREG_GATES_V1.json)",
+  "why_new_registration": "The historical sealed V5/V6 per-case artifacts are physically lost (absence-attested bundle in download/policy_v6_c_alr_handoff/). Historical numbers (C 78.1%, B4 84.7%) are user-reported claims, never machine-verified here. This study is a NEW, separately registered reimplementation experiment: it produces its own machine-verified result for the current hybrid architecture and is NOT numerically comparable to the historical cycle.",
+  "deviations_declared": [
+   "benchmark = recovered policy_v5_benchmark.py (verbatim recovered source, 142 cases, gold by construction) instead of a fresh V7; V7 construction was gated on a Stage A that is impossible without the lost sealed data",
+   "mutation catalog = policy_v3_benchmark.MUTATION_CATALOG_V1 (15 typed mutations on relation/condition_mode/exception_mode/target_clauses/temporal/condition_literals), the catalog for THIS representation; the historical 10-type catalog addressed the lost V6 structure vocabulary (modality/attachment fields). Lineage: relation flips correspond to historical IF_TO_ONLY_IF/ONLY_IF_TO_IF; clause merge/split to scope_attachment; actor swap to ACTOR_BEARER_SWAP; coordination flips to exception/condition attachment.",
+   "H0 is a conservative single-parse primary (one LLM parse, deterministic fence/transport repair), an Arm-C-class reimplementation, not the historical frozen Arm C code",
+   "no ambiguity sets: phi_H is a single patched structure; a case is behaviorally correct iff phi_H matches an admissible gold reading on all worlds",
+   "Stage A' (STOP gate) runs on THIS study's freshly sealed H0 predictions + gold instead of historical sealed V6"
+  ]
+ },
+
+ "benchmark": {
+  "module": "src/guardian_truth/vnext/policy_v5_benchmark.py (verbatim recovered source, committed 2f64d9c)",
+  "engine": "src/guardian_truth/vnext/policy_v3_benchmark.py (deterministic reimplementation, frozen by git before freeze)",
+  "build_seed": 260915,
+  "case_count": 142,
+  "composition": "94 unambiguous (62 designated positive-support traps) + 48 ambiguous (both readings admissible)",
+  "model_inputs": "policy text + atom_catalog ONLY; models never see structures, worlds, expected verdicts, or labels",
+  "gold": "admissible_structures compiled to programs; behavioral scoring via score_candidate_structure against the case world surface (both readings acceptable for ambiguous cases)"
+ },
+
+ "arms": {
+  "H0": "conservative single-parse primary: one LLM parse request per case; exactly ONE deterministic repair re-ask allowed when the first attempt has transport_status != SUCCESS OR provider-schema INVALID OR structure compile failure; max 2 requests per case; any remaining failure leaves phi_c null and the case incorrect. No mutations, no verifier.",
+  "H1": "ablation: phi_c + ALL structurally-applicable catalog mutations verified by the span-grounded verifier + admitted patches",
+  "H2": "main candidate: phi_c + risk-gated subset of mutations (deterministic surface triggers, frozen below) verified by the same span-grounded verifier + admitted patches. H2 shares H0's primary verbatim (no re-parse)."
+ },
+
+ "verifier": {
+  "calls": "exactly one LLM request per (case, mutation); the same one-repair rule as H0 applies (max 2 requests per mutation); a second failure yields the conservative default INSUFFICIENT_SUPPORT",
+  "verdicts": ["SUPPORTED", "CONTRADICTED", "INSUFFICIENT_SUPPORT"],
+  "supported_requires": "source_span quoted verbatim (machine-checked, whitespace-normalized substring of the policy text) + short justification; SUPPORTED without a verbatim span is machine-downgraded to INSUFFICIENT_SUPPORT with reason SPAN_NOT_VERBATIM",
+  "insufficient_by_rule": "'nothing contradicts it', 'this reading is possible', silence, or restating the change are never support; permission/exclusivity mutations need positive textual evidence",
+  "never": ["full reparse", "new slot cards", "new complete programs", "new actions/entities", "changes outside the inspected mutation", "unrestricted alternative interpretations", "final Guardian verdicts", "trajectory/history access", "gold access"]
+ },
+
+ "patch_policy": {
+  "order": "admitted patches apply in mutation-catalog order",
+  "conflicts": "at most ONE admitted patch per target field; at most 2 admitted patches per case",
+  "default": "CONTRADICTED or INSUFFICIENT_SUPPORT or machine-downgraded -> phi_H keeps phi_c on that field"
+ },
+
+ "risk_gate_triggers_frozen": {
+  "relation": ["only", "unless", "if", "when", "where", "while", "once", "after", "before", "until", "solely", "exclusively", "reserved"],
+  "condition_mode": ["and", "or", "either", "both", "neither", "nor", "any", "all"],
+  "exception_mode": ["and", "or", "either", "both", "neither", "nor", "any", "all"],
+  "target_clauses": ["and", "same", "together", "one", "single", "both", "separate"],
+  "temporal": ["before", "after", "once", "until", "while"],
+  "condition_literals": ["only", "except", "but", "rests with", "sits with", "no one"],
+  "rule": "H2 verifies a mutation only when the policy text (lowercased) contains at least one trigger of that mutation's axis; H1 verifies every structurally-applicable mutation; trigger matching is deterministic substring search"
+ },
+
+ "stage_a_prime_stop_gate": {
+  "runs_after": "H0 predictions are sealed (all 142 cases), before any verifier request",
+  "llm_use": "NONE_ALLOWED",
+  "classification": "for each H0-wrong case: typed-field diff phi_c vs each admissible gold structure restricted to the frozen catalog; a gold path needing only catalog mutations, at most 2, whose patched program is behaviorally correct, marks the case LOCAL_PATCH_RECOVERABLE; otherwise REQUIRES_GLOBAL_REPARSE; phi_c null -> REQUIRES_GLOBAL_REPARSE",
+  "oracle_gain": "share of LOCAL_PATCH_RECOVERABLE among all 142 cases",
+  "stop_if": "recoverable corpus share < 0.05 OR oracle gain < 0.04",
+  "on_stop": "REJECT_EARLY: no verifier request is ever sent; H0 remains the baseline result of this study"
+ },
+
+ "gates": {
+  "primary": {
+   "h2_minus_h0_pp_gte": 0.04,
+   "paired_exact_mcnemar_p_lt": 0.05,
+   "underpowered_fallback": "two-sided 95% paired CI (Newcombe score interval on discordant pairs) excludes 0 AND lower bound >= +1.5 pp"
+  },
+  "safety": {
+   "correction_precision_gte": 0.75,
+   "c_correct_regression_rate_lte": 0.03,
+   "mutation_admission_precision_gte": 0.90,
+   "unsupported_alternative_rate_lte": 0.05
+  },
+  "efficiency": {
+   "median_extra_verifier_calls_per_case_lte": 2,
+   "p95_extra_verifier_calls_per_case_lte": 4,
+   "extra_tokens_vs_h0_multiple_lte": 2.0
+  },
+  "thresholds_source": "identical to C_ALR_PREREG_GATES_V1.json V7 gates; frozen here before the first external call of this study"
+ },
+
+ "verdicts": {
+  "KEEP": "primary AND safety AND efficiency gates all pass on H2 vs H0",
+  "REVISE": "primary passes but any safety or efficiency gate fails",
+  "REJECT": "primary gate fails",
+  "REJECT_EARLY": "Stage A' STOP triggered"
+ },
+
+ "provider": {
+  "backend": "bai",
+  "model": "qwen3.8-flash",
+  "timeout_seconds": 180,
+  "max_output_tokens": 2048,
+  "max_retries": 0,
+  "response_format_mode": "none",
+  "interval_seconds": 10,
+  "temperature": 0,
+  "reasoning_effort": "low",
+  "provider_gate": "outputs/vnext/provider_gate_v1.json PASSED (12/12) reused as transport sanity evidence"
+ },
+
+ "freeze_checklist": [
+  "all study sources committed to git before freeze (policy_v3_benchmark.py, policy_v5_benchmark.py, runner, tests, this file)",
+  "benchmark document written with cases_sha256 at freeze; predictions sealed before gold join",
+  "task prompts and output schemas digested into the freeze record",
+  "quota stop rules: TWO_CONSECUTIVE_RATE_LIMITS / THREE_CONSECUTIVE_TRANSPORT_ERRORS / LAST_16_TRANSPORT_BELOW_90_PERCENT",
+  "resumable per-case persisted requests; abandoned request captures are never re-sent"
+ ],
+
+ "metrics": [
+  "behavioral accuracy H0/H1/H2",
+  "paired discordant pairs and exact McNemar (two-sided) H2 vs H0 and H1 vs H0",
+  "Correction Precision = C_wrong_to_H_right / (C_wrong_to_H_right + C_right_to_H_wrong)",
+  "regression rate on C-correct cases",
+  "mutation admission precision (admitted patches whose field value matches an admissible gold structure)",
+  "unsupported alternative rate (cases with a non-gold-consistent admitted patch)",
+  "verifier calls per case (median, p95), tokens, latency, schema validity",
+  "per-family deltas vs H0"
+ ]
+}
