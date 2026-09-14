@@ -316,7 +316,7 @@ def _run_parse_case(delegate, out: Path, freeze: dict, index: int, case, live: l
     if proposal.transport_status != 'SUCCESS' or proposal.schema_status != 'VALID':
         status, error = 'parse_failed', (proposal.error_category or proposal.schema_status)
     else:
-        value = json.loads(proposal.value)
+        value = proposal.value
         try:
             compile_value(value)
             status = 'ok'
@@ -331,7 +331,7 @@ def _run_parse_case(delegate, out: Path, freeze: dict, index: int, case, live: l
         records = list(backend.records)
         if repair.transport_status == 'SUCCESS' and repair.schema_status == 'VALID':
             try:
-                value = json.loads(repair.value)
+                value = repair.value
                 compile_value(value)
                 status, error = 'ok_repaired', None
             except (ValueError, TypeError) as failure:
