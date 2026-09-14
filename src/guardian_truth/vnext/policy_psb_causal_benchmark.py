@@ -625,6 +625,20 @@ def _perturb_polarity_flip(programs):
     return out
 
 
+def _perturb_modality_flip(programs):
+    """Flip the modality of the first program to a different value."""
+    out = []
+    for index, program in enumerate(programs):
+        for value in ("PERMISSION", "PROHIBITION", "REQUIREMENT"):
+            if value != program["modality"]:
+                flipped = dict(program)
+                flipped["modality"] = value
+                out.append([p if i != index else flipped
+                            for i, p in enumerate(programs)])
+        break
+    return out
+
+
 def _perturb_clause_merge(programs):
     if len(programs) < 2:
         return []
@@ -646,6 +660,7 @@ _PERTURBATIONS = {
     "actor_move": _perturb_actor_move,
     "gate_move": _perturb_gate_move,
     "polarity_flip": _perturb_polarity_flip,
+    "modality_flip": _perturb_modality_flip,
     "clause_merge": _perturb_clause_merge,
 }
 
@@ -675,6 +690,8 @@ def _required_detections(cohort: str, programs) -> list:
             required.append("strength_flip")
         required.append("condition_exception_swap")
         return required
+    if cohort == "permission_evidence_controls":
+        return ["modality_flip"]
     return []
 
 
