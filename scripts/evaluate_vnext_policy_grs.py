@@ -332,9 +332,10 @@ def _make_delegate():
     return delegate, live
 
 
-def _smoke_common(delegate, out: Path, freeze: dict, prefix: str):
+def _smoke_common(delegate, out: Path, freeze: dict, prefix: str, live: list):
     backend = PersistedSemanticBackend(delegate, out, f'{prefix}_smoke',
-                                       configuration_sha256=digest(freeze))
+                                       configuration_sha256=digest(freeze),
+                                       live_records=live)
     h0 = backend.propose(PARSE_TASK,
                          {'policy_text': SMOKE_POLICY_H0,
                           'atom_catalog': SMOKE_CATALOG_H0},
@@ -354,7 +355,7 @@ def phase_smoke_a(env_file, root: Path, out: Path) -> int:
         return 0
     load_env_file(env_file)
     delegate, live = _make_delegate()
-    h0, synth, backend = _smoke_common(delegate, out, freeze, PREFIX_A)
+    h0, synth, backend = _smoke_common(delegate, out, freeze, PREFIX_A, live)
     smoke = {'schema_version': 'guardian-vnext-grs-smoke-a-v1',
              'purpose': 'synthetic non-benchmark schema/provider smoke BEFORE '
                         'the first semantic request (one H0 schema request, '
