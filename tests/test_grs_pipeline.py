@@ -498,6 +498,25 @@ def test_stage_b_pipeline_end_to_end(pipeline, monkeypatch):
     out = pipeline
     assert runner.phase_freeze_b(REPO, out) == 0
     bench_b = json.loads((out / f"{runner.PREFIX_B}_benchmark.json").read_text())
+    # repopulate the stub maps with Stage B gold (plumbing-only stubs)
+    for row in bench_b["cases"]:
+        FakeBackend.dsl_by_policy[row["policy"]] = row["gold_dsl"]
+        FakeBackend.ground_by_policy[row["policy"]] = _stub_ground(
+            row["oracle_inventory"])
+        programs = row["admissible_program_sets"][0]
+        if programs:
+            FakeBackend.flat_by_policy[row["policy"]] = programs[0]
+        else:
+            FakeBackend.flat_by_policy[row["policy"]] = {
+                "modality": "PERMISSION", "relation": "IF",
+                "target_clauses": [[sorted(row["atom_catalog"])[0]]],
+                "condition_literals": [], "exception_literals": [],
+                "condition_mode": "ALL", "exception_mode": "ALL",
+                "temporal": "NONE", "actor": "assistant",
+                "regulated_kind": "ACTION", "facet": "primary",
+                "identity": "ANY", "provenance": "ANY", "quantification": "ALL"}
+    FakeBackend.break_a0_policy = None
+    FakeBackend.break_a1_policy = None
     FakeBackend.break_ground_policy = bench_b["cases"][3]["policy"]
     assert runner.phase_smoke_b(None, REPO, out) == 0
     assert runner.phase_run_b0(None, REPO, out, minutes=60) == 0
