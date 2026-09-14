@@ -27,6 +27,16 @@ Usage:
   python3 scripts/build_v6_sealed_bundle.py --repo <repo> [--v6-prefix policy_v6]
       [--v5-prefix policy_v5] --out-root <dir>
   python3 scripts/build_v6_sealed_bundle.py --selftest --out-root <dir>
+  python3 scripts/build_v6_sealed_bundle.py --absence-attested --repo <repo>
+      [--captures-dir DIR] --out-root <dir> [--skip-stage-a-probe] [--emit-manifest]
+  python3 scripts/build_v6_sealed_bundle.py --selftest-absence --out-root <dir>
+
+The --absence-attested mode emits a contract-complete v6_sealed_bundle.json whose
+case_count is 0 and whose sealed data fields are the literal NOT_RECORDED: an
+honest, machine-attested record that the sealed artifacts are absent, usable to
+carry the contract and the evidence to another environment. It never fabricates
+sealed content and expresses no KEEP/REJECT verdict (Stage A refuses such a
+bundle by design, which the mode records as a probe).
 """
 from __future__ import annotations
 
@@ -35,14 +45,26 @@ import hashlib
 import json
 import re
 import shutil
+import subprocess
 import sys
 from pathlib import Path
 
 REPO = Path(__file__).resolve().parents[1]
+SCRIPT_DIR = Path(__file__).resolve().parent
 sys.path.insert(0, str(REPO / "scripts"))
+sys.path.insert(0, str(SCRIPT_DIR))
 from c_alr_stage_a import catalog_fields, field_diff  # noqa: E402  (deterministic shared logic)
 
-PREREG = REPO / "docs/vnext/C_ALR_PREREG_GATES_V1.json"
+_PREREG_CANDIDATES = [
+    REPO / "docs/vnext/C_ALR_PREREG_GATES_V1.json",   # repo layout
+    SCRIPT_DIR / "C_ALR_PREREG_GATES_V1.json",          # handoff-kit layout
+]
+PREREG = next((p for p in _PREREG_CANDIDATES if p.exists()), _PREREG_CANDIDATES[0])
+_STAGE_A_CANDIDATES = [
+    REPO / "scripts/c_alr_stage_a.py",                 # repo layout
+    SCRIPT_DIR / "c_alr_stage_a.py",                   # handoff-kit layout
+]
+STAGE_A_SCRIPT = next((p for p in _STAGE_A_CANDIDATES if p.exists()), _STAGE_A_CANDIDATES[0])
 NOT_RECORDED = "NOT_RECORDED"
 C_ARM_KEYS = ("arm_c", "arm_a")
 B4_ARM_KEYS = ("arm_b245", "arm_b24", "arm_b4")
@@ -305,6 +327,277 @@ def admission_aggregates(preds: list, results: dict, cases_by_id: dict) -> dict:
     }
 
 
+# --------------------------------------------------------- absence-attested mode
+
+LS_LINE = re.compile(
+    r"^-(?P<perm>\S+)\s+(?P<links>\d+)\s+(?P<owner>\S+)\s+(?P<group>\S+)\s+"
+    r"(?P<size>\d+)\s+(?P<month>[A-Z][a-z]{2})\s+(?P<day>\d{1,2})\s+"
+    r"(?P<time>[\d:]+)\s+(?P<name>\S+)$"
+)
+SEALED_BASENAMES = ("predictions.json", "results.json", "failure_audit.json",
+                    "prediction_seal.json", "freeze.json", "gates.json", "cases.json",
+                    "post_hoc_adjudication.json")
+NOT_COMPUTABLE = "NOT_COMPUTABLE_NO_SEALED_CASES"
+
+
+def parse_ls_inventory(capture_paths: list) -> dict:
+    """Deterministic parse of `ls -l` lines inside verbatim session tool-result
+    captures. Only lines that structurally match an ls listing count; tool-result
+    line-number prefixes are stripped. Returns {name: {bytes, recorded_mtime,
+    seen_in}} sorted by name. Pure function of capture content."""
+    files: dict = {}
+    for cap in capture_paths:
+        if not cap.exists():
+            continue
+        text = cap.read_text(encoding="utf-8", errors="replace")
+        for raw in text.splitlines():
+            line = raw.strip()
+            line = re.sub(r"^\s*\d+[\u2192:]\s*", "", line)
+            m = LS_LINE.match(line)
+            if not m:
+                continue
+            name = m.group("name")
+            rec = {"bytes": int(m.group("size")),
+                   "recorded_mtime": f"{m.group('month')} {m.group('day')} {m.group('time')}"}
+            if name in files:
+                if name not in files[name]["seen_in"]:
+                    files[name]["seen_in"].append(cap.name)
+            else:
+                files[name] = {**rec, "seen_in": [cap.name]}
+    return dict(sorted(files.items()))
+
+
+def summarize_inventory(files: dict, prefix: str) -> dict:
+    """Machine-verified inventory summary for one experiment prefix, derived
+    ONLY from parsed capture evidence. No guesses: anything not in the capture
+    listing is simply absent from the counts."""
+    cat: dict = {}
+    case_ids = set()
+    bare_case_files = 0
+    sealed = {}
+    for name, rec in files.items():
+        if not name.startswith(prefix + "_"):
+            continue
+        rest = name[len(prefix) + 1:]
+        m = re.match(r"case_(\d+)(?:_(.*))?\.json$", rest)
+        if m:
+            case_ids.add(int(m.group(1)))
+            tail = m.group(2) or ""
+            if tail:
+                kind = re.sub(r"_result$", "", tail)
+                kind = re.sub(r"(?:_\d+)+$", "", kind)
+                cat[kind] = cat.get(kind, 0) + 1
+            else:
+                bare_case_files += 1
+            continue
+        if rest in SEALED_BASENAMES:
+            sealed[rest] = {"bytes": rec["bytes"],
+                            "recorded_mtime": rec["recorded_mtime"]}
+    return {
+        "prefix": prefix,
+        "distinct_case_ids": len(case_ids),
+        "bare_case_file_count": bare_case_files,
+        "case_id_range": [min(case_ids), max(case_ids)] if case_ids else [],
+        "per_case_artifact_counts": dict(sorted(cat.items())),
+        "sealed_files_recorded_in_inventory": sealed,
+        "evidence_basis": "deterministic parse of verbatim ls listings in the surviving session tool-result captures",
+    }
+
+
+def machine_search_record(repo: Path, captures_dir: Path) -> dict:
+    """Live machine verification (performed at emission time, recorded as data):
+    where the sealed V5/V6 artifacts were searched and what was found."""
+    rec: dict = {"repo": str(repo)}
+    glob_hits: dict = {}
+    for pattern in ("policy_v4*.json", "policy_v5*.json", "policy_v6*.json"):
+        found = sorted(p.name for p in (repo / "outputs/vnext").glob(pattern))
+        glob_hits[pattern] = len(found)
+        if found:
+            glob_hits[pattern + "_names"] = found[:20]
+    bench_hits = {p.name: True for p in (repo / "benchmarks/vnext").glob("policy_v[456]_cases.json")}
+    rec["repo_outputs_vnext_glob"] = glob_hits
+    rec["repo_benchmarks_cases_present"] = bench_hits or "none"
+    try:
+        head = subprocess.run(["git", "-C", str(repo), "rev-parse", "HEAD"],
+                              capture_output=True, text=True, timeout=30)
+        rec["git_head"] = head.stdout.strip() if head.returncode == 0 else "NOT_A_GIT_REPO"
+        log = subprocess.run(["git", "-C", str(repo), "log", "--all", "--name-only",
+                              "--pretty=format:", "--", "outputs/vnext"],
+                             capture_output=True, text=True, timeout=60)
+        names = sorted({l.strip() for l in log.stdout.splitlines()
+                        if re.search(r"policy_v[456]_", l.strip())})
+        rec["git_all_refs_policy_v456_files_ever_committed"] = names or []
+    except Exception as e:  # noqa: BLE001 - recorded, never guessed
+        rec["git_head"] = f"NOT_RECORDED ({e.__class__.__name__})"
+    for up in (repo / "upload", repo.parent / "upload"):
+        rec[f"upload:{up}"] = {"exists": up.exists(),
+                                "file_count": (len(list(up.iterdir())) if up.exists() else 0)}
+    caps = sorted(captures_dir.glob("*.txt")) if captures_dir.exists() else []
+    rec["captures"] = {
+        "path": str(captures_dir),
+        "exists": captures_dir.exists(),
+        "files": [{"file": c.name, "sha256": sha256_of(c), "bytes": c.stat().st_size}
+                  for c in caps],
+    }
+    return rec
+
+
+def stage_a_probe(bundle_path: Path, prereg_path: Path) -> dict:
+    """Run the Stage A tool against the emitted absence bundle and record its
+    behavior as machine data. Expected: refusal (exit 2) because cases is empty.
+    The record itself expresses no verdict."""
+    cmd = [sys.executable, str(STAGE_A_SCRIPT),
+           "--bundle", str(bundle_path), "--prereg", str(prereg_path)]
+    try:
+        proc = subprocess.run(cmd, capture_output=True, text=True, timeout=120)
+        return {
+            "invoked": "c_alr_stage_a.py --bundle v6_sealed_bundle.json --prereg <frozen gates>",
+            "exit_code": proc.returncode,
+            "stderr_tail": proc.stderr.strip()[-400:],
+            "expected_behavior": "refusal with exit code 2: validate_bundle requires a non-empty cases list",
+            "interpretation": "Stage A correctly refuses to evaluate an absence-attested bundle; the STOP/KEEP/REJECT decision belongs to real sealed per-case data only",
+        }
+    except Exception as e:  # noqa: BLE001
+        return {"invoked": "c_alr_stage_a.py", "error": f"{e.__class__.__name__}: {e}",
+                "note": "probe failed to run; refusal behavior documented in validate_bundle"}
+
+
+def user_reported_claims() -> dict:
+    """The V5/V6 numbers quoted in the conversation/protocol doc - carried as
+    clearly-labelled UNVERIFIED claims, never as facts."""
+    return {
+        "source": "docs/vnext/C_ALR_CYCLE_PROTOCOL.md section 1 (user-reported, pending machine re-verification)",
+        "verification_status": "UNVERIFIED_USER_REPORTED_NO_ARTIFACT",
+        "v5": {"C_accuracy": 0.781, "B4_accuracy": 0.847, "delta_pp": 6.8,
+               "mcnemar_p": 0.093, "n_cases": 142},
+        "v6": {"B4_minus_C_pp": -1.65, "mcnemar_p": 0.84, "n_cases": "NOT_RECORDED"},
+        "admission_claims": {
+            "precision_conditional_on_correct_primary": 0.93,
+            "false_admissions_downstream_of_wrong_slot_primary": "6_of_7"},
+        "disclaimer": ("conversation-level claims in this environment; NOT machine-verified because the "
+                       "sealed artifacts are lost; must not be used as facts until re-verified against "
+                       "restored artifacts (recovered/session_scripts/verify_v5_artifacts_v6cycle.py)"),
+    }
+
+
+def write_kit_manifest(kit_root: Path) -> int:
+    """Freeze manifest over the whole kit (sha256 per file, sorted paths)."""
+    entries = []
+    for p in sorted(kit_root.rglob("*")):
+        if (p.is_file() and p.name != "MANIFEST.sha256"
+                and "__pycache__" not in p.parts and not p.name.endswith(".pyc")):
+            entries.append((str(p.relative_to(kit_root)), sha256_of(p)))
+    (kit_root / "MANIFEST.sha256").write_text(
+        "\n".join(f"{h}  {rel}" for rel, h in entries) + "\n", encoding="utf-8")
+    return len(entries)
+
+
+def build_absence_attested(repo: Path, out_root: Path, captures_dir: Path,
+                           run_probe: bool = True, emit_manifest: bool = False) -> dict:
+    search_rec = machine_search_record(repo, captures_dir)
+    inv_files = parse_ls_inventory(sorted(captures_dir.glob("*.txt"))) \
+        if captures_dir.exists() else {}
+    inventories = {p: summarize_inventory(inv_files, p) for p in ("policy_v4", "policy_v5")}
+    inventories["policy_v6"] = {
+        "files_in_surviving_inventories": sum(1 for n in inv_files if n.startswith("policy_v6")),
+        "note": ("surviving ls inventories were captured 2026-09-13 15:52 and 18:08; the V6 run "
+                 "postdates them (recovered decompose_v6_failures.py references policy_v6 artifacts); "
+                 "no policy_v6 file was ever inventoried, committed, or pushed"),
+    }
+    machine_aggs = {
+        "n_cases": 0,
+        "C_accuracy": NOT_COMPUTABLE,
+        "B4_accuracy": NOT_COMPUTABLE,
+        "quadrants": {"status": NOT_COMPUTABLE,
+                      "counts": {"C_correct_B4_correct": 0, "C_correct_B4_wrong": 0,
+                                 "C_wrong_B4_correct": 0, "C_wrong_B4_wrong": 0}},
+        "b4_error_stage_attribution": NOT_COMPUTABLE,
+        "admission_precision_overall": NOT_RECORDED,
+        "admission_precision_conditional_on_correct_primary": NOT_RECORDED,
+        "c_errors_recoverable_by_1_local_mutation": NOT_COMPUTABLE,
+        "c_errors_recoverable_by_le2_local_mutations": NOT_COMPUTABLE,
+        "status_reason": ("sealed V5/V6 per-case prediction/result files are absent from this "
+                         "environment (see provenance.absence_evidence); aggregates stay "
+                         "NOT_RECORDED/NOT_COMPUTABLE rather than guessed"),
+    }
+    bundle = {
+        "schema": "guardian-vnext-policy-v6-sealed-bundle-v1",
+        "bundle_status": "ABSENCE_ATTESTED_NOT_SEALED",
+        "experiment": "policy_v6 (guardian-vnext policy semantics)",
+        "benchmark_name": "NOT_RECORDED (benchmark module lost with the previous sandbox; see provenance.absence_evidence)",
+        "case_count": 0,
+        "cases": [],
+        "provenance": {
+            "source_repo": str(repo),
+            "absence_evidence": search_rec,
+            "inventories_from_captures": inventories,
+            "honesty_rules": ["no LLM", "no new semantic judgments", "no gold edits",
+                              "no post-hoc prediction changes", "NOT_RECORDED instead of guesses"],
+        },
+        "user_reported_claims_UNVERIFIED": user_reported_claims(),
+        "machine_aggregates": machine_aggs,
+        "stage_a_compatibility": {
+            "expected_behavior": "scripts/c_alr_stage_a.py refuses this bundle (empty cases) with exit code 2 by design",
+            "note": "the STOP/KEEP/REJECT decision is only valid on real sealed per-case data",
+        },
+        "verdict_note": ("NO KEEP/REJECT conclusion: this absence-attested bundle carries zero sealed "
+                         "cases; no verdict is derivable or expressed"),
+        "rebuild_instructions": {
+            "restore_verbatim_then_rebuild": [
+                "benchmarks/vnext/policy_v6_cases.json (gold, frozen_before_predictions=true)",
+                "outputs/vnext/policy_v6_predictions.json (sealed predictions)",
+                "outputs/vnext/policy_v6_results.json (sealed results + mutation ledger)",
+                "outputs/vnext/policy_v6_prediction_seal.json",
+                "outputs/vnext/policy_v6_failure_audit.json (if it existed)",
+            ],
+            "command": "python3 builder/build_v6_sealed_bundle.py --repo <repo> --out-root <dir> [--v5-prefix policy_v5]",
+            "sealed_mode_behavior": "refuses (exit 2) until the sealed files exist verbatim at canonical paths",
+        },
+    }
+    bundle_path = out_root / "v6_sealed_bundle.json"
+    bundle_path.write_text(json.dumps(bundle, ensure_ascii=False, indent=1) + "\n",
+                           encoding="utf-8")
+
+    aggregates = {
+        "schema": "guardian-vnext-policy-v6-absence-attested-aggregates-v1",
+        "bundle_file": "v6_sealed_bundle.json",
+        "bundle_sha256": sha256_of(bundle_path),
+        "behavioral_aggregates": machine_aggs,
+        "inventory_evidence": inventories,
+        "machine_search_record": search_rec,
+        "user_reported_claims_UNVERIFIED": user_reported_claims(),
+        "verdict_note": ("NO KEEP/REJECT: no verdict is derivable from absent sealed artifacts; "
+                         "Stage A refusal on this bundle is the correct terminal behavior of the "
+                         "preregistered cycle in this environment"),
+    }
+    if run_probe:
+        aggregates["stage_a_probe"] = stage_a_probe(bundle_path, PREREG)
+    (out_root / "machine_verified_aggregates.json").write_text(
+        json.dumps(aggregates, ensure_ascii=False, indent=1) + "\n", encoding="utf-8")
+    if emit_manifest:
+        n = write_kit_manifest(out_root)
+        print(f"kit manifest written: {n} files")
+    return bundle
+
+
+def synth_absence_fixture(root: Path) -> Path:
+    """Explicitly SYNTHETIC fixture for the absence selftest: an empty repo tree
+    plus a tiny synthetic capture containing SYNTHETIC ls lines."""
+    (root / "outputs/vnext").mkdir(parents=True, exist_ok=True)
+    (root / "benchmarks/vnext").mkdir(parents=True, exist_ok=True)
+    cap = root / "synthetic_capture.txt"
+    cap.write_text(
+        "-rw-rw-r-- 1 z z  4208 Sep 13 16:18 policy_v5_case_000.json\n"
+        "-rw-rw-r-- 1 z z  3669 Sep 13 16:17 policy_v5_case_000_arm_a.json\n"
+        "-rw-rw-r-- 1 z z  801 Sep 13 16:17 policy_v5_case_000_arm_a_result.json\n"
+        "-rw-rw-r-- 1 z z  9173 Sep 13 16:17 policy_v5_case_000_arm_b24.json\n"
+        "-rw-rw-r-- 1 z z  3774 Sep 13 16:18 policy_v5_case_000_arm_b24_adm_00.json\n"
+        "-rw-rw-r-- 1 z z  443 Sep 13 17:52 policy_v5_prediction_seal.json\n"
+        "-rw-rw-r-- 1 z z  750862 Sep 13 17:52 policy_v5_predictions.json\n",
+        encoding="utf-8")
+    return cap.parent
+
+
 def collect_supporting(repo: Path, prefixes: list, out_root: Path) -> list:
     copied = []
     sup = out_root / "supporting_files"
@@ -486,10 +779,43 @@ def main() -> None:
     ap.add_argument("--out-root", default="/home/z/my-project/download/policy_v6_c_alr_handoff")
     ap.add_argument("--selftest", action="store_true",
                     help="run on an explicitly SYNTHETIC fixture (never real data)")
+    ap.add_argument("--absence-attested", action="store_true",
+                    help="emit a contract-complete, machine-attested ABSENCE bundle "
+                         "(case_count=0, sealed fields NOT_RECORDED) instead of refusing; "
+                         "no KEEP/REJECT expressed")
+    ap.add_argument("--captures-dir", default="/tmp/my-project/tool-results",
+                    help="session tool-result captures used as verbatim inventory evidence")
+    ap.add_argument("--skip-stage-a-probe", action="store_true",
+                    help="do not subprocess-run c_alr_stage_a.py against the absence bundle")
+    ap.add_argument("--emit-manifest", action="store_true",
+                    help="write MANIFEST.sha256 over the whole out-root (kit layout)")
+    ap.add_argument("--selftest-absence", action="store_true",
+                    help="absence mode on an explicitly SYNTHETIC fixture (never real data)")
     args = ap.parse_args()
 
     out_root = Path(args.out_root)
     out_root.mkdir(parents=True, exist_ok=True)
+    if args.selftest_absence:
+        fixture = Path("/tmp/c_alr_absence_selftest_repo")
+        if fixture.exists():
+            shutil.rmtree(fixture)
+        captures = synth_absence_fixture(fixture)
+        bundle = build_absence_attested(fixture, out_root, captures,
+                                        run_probe=not args.skip_stage_a_probe,
+                                        emit_manifest=args.emit_manifest)
+        print(f"absence selftest bundle emitted: case_count={bundle['case_count']} "
+              f"status={bundle['bundle_status']}")
+        return
+    if args.absence_attested:
+        repo = Path(args.repo)
+        bundle = build_absence_attested(repo, out_root, Path(args.captures_dir),
+                                        run_probe=not args.skip_stage_a_probe,
+                                        emit_manifest=args.emit_manifest)
+        aggs = bundle["machine_aggregates"]
+        print(f"built v6_sealed_bundle.json (ABSENCE_ATTESTED_NOT_SEALED): "
+              f"case_count={bundle['case_count']}, C_acc={aggs['C_accuracy']}, "
+              f"B4_acc={aggs['B4_accuracy']}, no KEEP/REJECT expressed")
+        return
     if args.selftest:
         fixture = Path("/tmp/c_alr_bundle_selftest_repo")
         if fixture.exists():
