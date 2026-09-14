@@ -1518,7 +1518,11 @@ def _classify_arm_case(case, row, arm, compiled, valid, ground_state=None):
             return 'GROUNDING_WRONG_ATOM'
     if not valid or compiled is None:
         return 'REPRESENTATION_GAP'
-    labels = _diff_label(compiled[0] if compiled else None,
+    if arm in ('a0', 'b0'):
+        pred_list = compiled  # already a flat program list
+    else:
+        pred_list = compiled[0] if compiled else None
+    labels = _diff_label(pred_list,
                          list(case.admissible_program_sets[0]))
     return labels[0]
 
