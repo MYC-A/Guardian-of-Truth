@@ -317,3 +317,23 @@ AND_NOT_EACH+scope). Machine-verified conclusion: the C-ALR hybrid
 parser remains the baseline; the error classes that remain require
 representation-level changes, not local patches. Full record:
 docs/vnext/C_ALR_REIMPL_STUDY_V1_BOUNDARIES.md.
+
+
+PHV1 prospective frozen holdout (policy_phv1_holdout_v1, 2026-09-14): one
+validation cycle of the UNCHANGED frozen H0 (byte-identical prompt/schema/config
+to the sealed C-ALR run, continuity machine-verified at freeze) on 80 NEW
+gold-by-construction policy texts (20 simple / 20 structural / 20 multi-axis /
+12 NL stress / 8 ambiguity; 8-gram-disjoint from V4+V5; preregistered gates in
+docs/vnext/PHV1_PREREG_GATES_V1.json frozen before inference; corpus gold frozen
+and hashed before the first request; one synthetic transport smoke before the
+first semantic request; predictions sealed before gold join; no judges, no
+mutation catalog, 0 verifier requests). RESULT: overall behavioral accuracy
+59/80 = 73.75% (Wilson 95% CI [63.18%, 82.14%]), validity 79/80 = 98.75%,
+simple 95.0%, structural aggregate 72.5%, NL stress 50.0% (family collapse),
+ambiguity 62.5%, invented explicit permission 10.0% (safety breach).
+Preregistered verdict: REOPEN_POLICY_RESEARCH - the controlled-distribution
+95.77% is predominantly an in-development-distribution effect; the conservative
+permission invariant does not generalize to unseen phrasings; the dominant
+residual class is relation binding (9/21), then multi-axis composition (6/21).
+The viewed holdout is now development data; any repaired candidate requires a
+new holdout. Full record: docs/vnext/PHV1_RESULTS.md.
