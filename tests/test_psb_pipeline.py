@@ -155,8 +155,14 @@ def test_corpus_composition_gold_novelty_representability():
         assert not (ngrams(case.policy) & old), f"novelty: {case.case_id}"
         assert not (ngrams(case.policy) & seen), f"internal dup: {case.case_id}"
         seen |= ngrams(case.policy)
-    # binding discriminability: every case separates at least one perturbation
+    # binding discriminability: every non-empty-gold case separates at least
+    # one perturbation; the empty-gold control has non-empty witness worlds
     for case in cases:
+        if not case.admissible_program_sets[0]:
+            assert any(case.worlds) and any(w["facts"] for w in case.worlds), \
+                f"empty-gold case needs witness worlds: {case.case_id}"
+            assert all(w["expected"] == "NO_VIOLATION" for w in case.worlds)
+            continue
         report = corpus.binding_detection_report(case.admissible_program_sets,
                                                   case.worlds)
         assert any(entry["detected"] for entry in report.values()), \
