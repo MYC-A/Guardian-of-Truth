@@ -69,7 +69,6 @@ PREFIX_A = 'policy_grs_stage_a_v1'
 PREFIX_B = 'policy_grs_stage_b_v1'
 PREREG_DOC = 'docs/vnext/GRS_PREREG_GATES_V1.json'
 PSB_FREEZE_PATH = 'outputs/vnext/policy_psb_causal_v1_freeze.json'
-STAGE_A_RESULTS_PATH = 'outputs/vnext/policy_grs_stage_a_v1_results.json'
 
 SOURCES = [
     'src/guardian_truth/vnext/policy_grs.py',
@@ -1109,7 +1108,7 @@ def phase_freeze_b(root: Path, out: Path) -> int:
     bench_path = out / f'{PREFIX_B}_benchmark.json'
     if freeze_path.exists():
         raise FileExistsError('stage B freeze already exists')
-    results_path = root / STAGE_A_RESULTS_PATH
+    results_path = out / f'{PREFIX_A}_results.json'
     results = json.loads(results_path.read_text(encoding='utf-8'))
     if results['verdict'] != 'PASS_STAGE_A':
         raise ValueError(f'Stage B refused: Stage A verdict is '
@@ -1347,7 +1346,7 @@ def phase_score_b(root: Path, out: Path) -> int:
                                  'regression_pass', 'unsupported_leaf_pass'))
     verdict = ('PROMOTE_GRS_TO_INTEGRATION' if gate_eval['all_pass']
                else 'GRS_GROUNDING_BOTTLENECK')
-    stage_a_results = json.loads((root / STAGE_A_RESULTS_PATH).read_text(encoding='utf-8'))
+    stage_a_results = json.loads((out / f'{PREFIX_A}_results.json').read_text(encoding='utf-8'))
     a1_accuracy = stage_a_results['primary_metric']['a1']['accuracy']
     efficiency = {'b0': _efficiency(out, PREFIX_B, 'b0', n),
                   'b1': _efficiency(out, PREFIX_B, 'b1', n)}

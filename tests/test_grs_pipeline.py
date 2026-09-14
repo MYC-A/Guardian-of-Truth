@@ -538,12 +538,9 @@ def test_freeze_b_refuses_when_stage_a_rejected(tmp_path, monkeypatch):
     out = tmp_path / "grs_reject"
     out.mkdir()
     assert runner.phase_freeze_a(REPO, out) == 0
-    # point STAGE_A_RESULTS_PATH at a doctored REJECT verdict (test-only)
-    results = json.loads((out / f"{runner.PREFIX_A}_results.json").read_text()) \
-        if (out / f"{runner.PREFIX_A}_results.json").exists() else {"verdict": "PASS_STAGE_A"}
-    results["verdict"] = "REJECT_GRS_COMPOSITION"
-    doctored = out / "doctored_stage_a_results.json"
-    doctored.write_text(json.dumps(results), encoding="utf-8")
-    monkeypatch.setattr(runner, "STAGE_A_RESULTS_PATH", str(doctored))
+    # doctored REJECT verdict (test-only): freeze-b must refuse
+    results = {"verdict": "REJECT_GRS_COMPOSITION"}
+    (out / f"{runner.PREFIX_A}_results.json").write_text(json.dumps(results),
+                                                         encoding="utf-8")
     with pytest.raises(ValueError):
         runner.phase_freeze_b(REPO, out)
