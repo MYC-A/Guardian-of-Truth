@@ -300,3 +300,20 @@ regression; nothing is promoted and whole-Core/blind gains remain unclaimed.
 Boundaries and telemetry are documented in
 `docs/vnext/POLICY_PROGRAM_V2_BOUNDARIES.md`.
 
+
+C-ALR reimplementation study (policy_c_alr_reimpl_v1, 2026-09-14): preregistered
+at commit 377a7856 before any call (docs/vnext/C_ALR_REIMPL_STUDY_V1.json), run
+on the recovered V5 benchmark (142 cases, sealed gold, blind inputs) with
+bai/qwen3.8-flash. H0 conservative single-parse primary: 136/142 = 95.77%
+behavioral accuracy, 142/142 valid structures (1 via the registered one-shot
+repair), 143 requests total, predictions sealed before gold join. Stage A prime
+deterministic STOP gate: 0 of 6 residual errors are reachable by the frozen
+mutation catalog (recoverable share 0.000 < 0.05, oracle gain 0.0 pp < 4) ->
+REJECT_EARLY; ZERO verifier requests sent per the frozen stop rule. Deterministic
+failure audit: 2x UNLESS-exceptions-placed-as-conditions, 1x condition-negation
+flip, 1x modality-only (permission/obligation), 2x multi-axis (provenance,
+AND_NOT_EACH+scope). Machine-verified conclusion: the C-ALR hybrid
+(local-mutation admission) cannot improve on H0 on this data; the conservative
+parser remains the baseline; the error classes that remain require
+representation-level changes, not local patches. Full record:
+docs/vnext/C_ALR_REIMPL_STUDY_V1_BOUNDARIES.md.

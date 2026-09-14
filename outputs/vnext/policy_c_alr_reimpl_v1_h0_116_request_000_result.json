@@ -1,0 +1,27 @@
+{
+  "request_sha256": "7f3a744c34f471c26764e53c5137a37883c33caa6c004167c17d2dfbdfc58722",
+  "proposal": {
+    "payload_json": "{\"actor\":\"assistant\",\"condition_literals\":[\"event:fire_alarm_sounded\",\"event:gas_detector_sounded\"],\"condition_mode\":\"ANY\",\"exception_literals\":[],\"exception_mode\":\"ALL\",\"modality\":\"REQUIREMENT\",\"relation\":\"IF\",\"target_clauses\":[[\"action:abandon_level\"]],\"temporal\":\"NONE\"}",
+    "transport_status": "SUCCESS",
+    "schema_status": "VALID",
+    "error_category": null
+  },
+  "telemetry": {
+    "backend_version": "diagnostic-semantic-v2",
+    "task": "Parse ONE workplace policy into exactly ONE typed semantic structure.\nField rules:\n- modality: PERMISSION (the text grants or allows), PROHIBITION (the text forbids or bars), REQUIREMENT (the text obliges).\n- relation: how the regulated act is gated.\n  IF: when the conditions hold the act is licensed/obligated/forbidden; when they do not hold the text stays silent (NOT a violation, and NOT permission).\n  ONLY_IF: exclusive - the act is licensed ONLY under the conditions; doing it without them is a VIOLATION.\n  IF_AND_ONLY_IF: the act is licensed exactly under the conditions and the text commits in both directions.\n  UNLESS: the conditions are exceptions carved out of an otherwise absolute rule.\n  UNCONDITIONAL: no conditions stated.\n  AND_NOT_EACH: doing BOTH targets together is forbidden; each alone is allowed.\n- target_clauses: a list of clauses; each clause is a list of atoms that are regulated TOGETHER (same act or same batch); several clauses mean the atoms are regulated SEPARATELY.\n- condition_literals and exception_literals: typed atoms copied EXACTLY from atom_catalog; prefix an atom with \"!\" only when the text negates it.\n- condition_mode/exception_mode: ALL means conjunction (every literal), ANY means disjunction (any literal).\n- temporal: BEFORE or AFTER only when the text orders the act relative to an event, else NONE.\n- WHO is allowed or forbidden to act (for example \"only the duty engineer\") goes into condition_literals as an actor: atom from atom_catalog; the actor field stays \"assistant\".\n- An act that is neither licensed nor forbidden is NO_VIOLATION, never PERMITTED: absence of prohibition is NOT permission.\nUse ONLY atoms from atom_catalog (it also contains distractor atoms; choose the ones the text actually uses). Output exactly one JSON object matching the schema.",
+    "input_sha256": "afddf1eca0c2ddfb684a3538e78836afd30c91c0d2ef3db2e5c7269e13c6bf4e",
+    "prompt_sha256": "493b5a1f8663d9d7316c53070f1208ac8e207d1eb7ed6572133eb4df831b0485",
+    "schema_sha256": "fc3b3ee2bed89acaa59688fb0b42e0f56be1db8370263200cdc21c323c2af54e",
+    "served_model": "qwen3.8-flash",
+    "usage": {
+      "prompt_tokens": 797,
+      "completion_tokens": 830,
+      "total_tokens": 1627
+    },
+    "latency_ms": 19667.71,
+    "transport_status": "SUCCESS",
+    "schema_status": "VALID",
+    "schema_issues": [],
+    "error_category": null
+  }
+}
