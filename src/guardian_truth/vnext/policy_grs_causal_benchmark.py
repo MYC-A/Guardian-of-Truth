@@ -751,7 +751,9 @@ def build_grs_cases(entries, dev_ngrams: set, cohort_plan: dict,
             if dropped:
                 raise ValueError(f"{cohort}::{key}: gold rules dropped: {dropped}")
             admissible_sets = tuple(tuple(programs) for programs in alternatives)
-            worlds = grs_worlds(admissible_sets)
+            catalog_atoms = set(all_facts) | set(distractors)
+            catalog_atoms.add(f"distractor:{key}")
+            worlds = grs_worlds(admissible_sets, sorted(catalog_atoms))
             correct, _per = grs_score_prediction(alternatives, worlds,
                                                  admissible_sets)
             if not correct:
@@ -780,8 +782,6 @@ def build_grs_cases(entries, dev_ngrams: set, cohort_plan: dict,
                 raise ValueError(f"internal text duplication: {cohort}::{key}")
             seen_texts.add(text)
             seen_ngrams |= ngrams
-            catalog_atoms = set(all_facts) | set(distractors)
-            catalog_atoms.add(f"distractor:{key}")
             case = PolicyGRSCase(
                 case_id=f"{cohort}::{id_prefix}{key}", cohort=cohort, style=style,
                 policy=text, atom_catalog=tuple(sorted(catalog_atoms)),

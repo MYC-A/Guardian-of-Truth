@@ -428,15 +428,21 @@ def pipeline(tmp_path, monkeypatch):
     return out
 
 
-def _expected_a0_correct():
-    cases = corpus_a.build_grs_stage_a_benchmark()
+def _expected_a0_correct(cases=None):
+    cases = cases or corpus_a.build_grs_stage_a_benchmark()
     total = 0
     for case in cases:
         programs = list(case.admissible_program_sets[0])
         if not programs:
-            total += 0  # H0 is forced to regulate something -> fails empty gold
-            continue
-        compiled = v3.compile_v3_structure(dict(programs[0]))
+            # empty-gold control: the H0 stub is forced to regulate catalog[0]
+            stub = {"modality": "PERMISSION", "relation": "IF",
+                    "target_clauses": [[sorted(case.atom_catalog)[0]]],
+                    "condition_literals": [], "exception_literals": [],
+                    "condition_mode": "ALL", "exception_mode": "ALL",
+                    "temporal": "NONE", "actor": "assistant"}
+            compiled = v3.compile_v3_structure(stub)
+        else:
+            compiled = v3.compile_v3_structure(dict(programs[0]))
         ok, _ = psb.score_program_set([compiled], case.worlds,
                                       case.admissible_program_sets)
         total += ok
@@ -525,17 +531,7 @@ def test_stage_b_pipeline_end_to_end(pipeline, monkeypatch):
 
 
 def _expected_b0_correct():
-    cases = corpus_b.build_grs_stage_b_benchmark()
-    total = 0
-    for case in cases:
-        programs = list(case.admissible_program_sets[0])
-        if not programs:
-            continue
-        compiled = v3.compile_v3_structure(dict(programs[0]))
-        ok, _ = psb.score_program_set([compiled], case.worlds,
-                                      case.admissible_program_sets)
-        total += ok
-    return total
+    return _expected_a0_correct(corpus_b.build_grs_stage_b_benchmark())
 
 
 def test_freeze_b_refuses_when_stage_a_rejected(tmp_path, monkeypatch):

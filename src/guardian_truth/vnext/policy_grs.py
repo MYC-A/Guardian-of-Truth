@@ -823,5 +823,17 @@ def grs_score_prediction(alternatives, worlds, admissible_sets) -> tuple[bool, l
     return correct, per_world
 
 
-def grs_worlds(admissible_sets) -> list:
+def grs_worlds(admissible_sets, atom_catalog=None) -> list:
+    """World surface for a gold program set.  Non-empty golds use the
+    combined PSB surface.  EMPTY gold sets (texts that regulate nothing) get
+    single-atom worlds over the full supplied atom catalog (distractors
+    included): a prediction that regulates ANY catalog atom is then exposed
+    as VIOLATION/PERMITTED where the gold expects NO_VIOLATION."""
+    every_program = [program for admissible in admissible_sets
+                     for program in admissible]
+    if not every_program:
+        worlds = [{"facts": [], "expected": "NO_VIOLATION"}]
+        for atom in sorted(set(atom_catalog or [])):
+            worlds.append({"facts": [atom], "expected": "NO_VIOLATION"})
+        return worlds
     return generate_worlds_for_sets(admissible_sets)
