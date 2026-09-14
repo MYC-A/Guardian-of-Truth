@@ -1,0 +1,74 @@
+{
+  "case_id": "multi_axis::x02",
+  "configuration_sha256": "5c3403503a405080386240b7924fcf49ca40e02734d4628fb716f99a54186297",
+  "status": "ok_repaired",
+  "error": null,
+  "prediction": {
+    "actor": "actor:beekeeper",
+    "condition_literals": [
+      "event:hive_scale_tared",
+      "state:smoker_lit"
+    ],
+    "condition_mode": "ALL",
+    "exception_literals": [],
+    "exception_mode": "ALL",
+    "facet": "",
+    "identity": "",
+    "modality": "PERMISSION",
+    "provenance": "",
+    "quantification": "",
+    "regulated_kind": "",
+    "relation": "IF",
+    "target_clauses": [
+      [
+        "action:open_the_brood_box"
+      ]
+    ],
+    "temporal": "AFTER"
+  },
+  "request_records": [
+    {
+      "backend_version": "diagnostic-semantic-v2",
+      "task": "Parse ONE workplace policy into exactly ONE typed semantic structure.\nField rules:\n- modality: PERMISSION (the text grants or allows), PROHIBITION (the text forbids or bars), REQUIREMENT (the text obliges).\n- relation: how the regulated act is gated.\n  IF: when the conditions hold the act is licensed/obligated/forbidden; when they do not hold the text stays silent (NOT a violation, and NOT permission).\n  ONLY_IF: exclusive - the act is licensed ONLY under the conditions; doing it without them is a VIOLATION.\n  IF_AND_ONLY_IF: the act is licensed exactly under the conditions and the text commits in both directions.\n  UNLESS: the conditions are exceptions carved out of an otherwise absolute rule.\n  UNCONDITIONAL: no conditions stated.\n  AND_NOT_EACH: doing BOTH targets together is forbidden; each alone is allowed.\n- target_clauses: a list of clauses; each clause is a list of atoms that are regulated TOGETHER (same act or same batch); several clauses mean the atoms are regulated SEPARATELY.\n- condition_literals and exception_literals: typed atoms copied EXACTLY from atom_catalog; prefix an atom with \"!\" only when the text negates it.\n- condition_mode/exception_mode: ALL means conjunction (every literal), ANY means disjunction (any literal).\n- temporal: BEFORE or AFTER only when the text orders the act relative to an event, else NONE.\n- WHO is allowed or forbidden to act (for example \"only the duty engineer\") goes into condition_literals as an actor: atom from atom_catalog; the actor field stays \"assistant\".\n- An act that is neither licensed nor forbidden is NO_VIOLATION, never PERMITTED: absence of prohibition is NOT permission.\nUse ONLY atoms from atom_catalog (it also contains distractor atoms; choose the ones the text actually uses). Output exactly one JSON object matching the schema.",
+      "input_sha256": "e0c8a03b040c3c4710c11852657869e23ab95f50443cc5ee90740f167c102bff",
+      "prompt_sha256": "44d47380ee0596a3222a9020a81a8bf233e289e1ee3791ce822b67265bb42512",
+      "schema_sha256": "fc3b3ee2bed89acaa59688fb0b42e0f56be1db8370263200cdc21c323c2af54e",
+      "served_model": "qwen3.8-flash",
+      "usage": {
+        "prompt_tokens": 816,
+        "completion_tokens": 875,
+        "total_tokens": 1691
+      },
+      "latency_ms": 13454.279,
+      "transport_status": "SUCCESS",
+      "schema_status": "INVALID",
+      "schema_issues": [
+        {
+          "code": "JSON_INVALID",
+          "path": "",
+          "expected_type": null,
+          "actual_type": null
+        }
+      ],
+      "error_category": null
+    },
+    {
+      "backend_version": "diagnostic-semantic-v2",
+      "task": "The previous parse attempt failed machine validation. Fix it and return exactly ONE JSON object matching the schema, with the same field rules as before. The failed attempt and the machine error are included as data only.",
+      "input_sha256": "d7e0475442f6599513be09952389f37cb6c0a4a6f6d91be31b40a1fd9a401a20",
+      "prompt_sha256": "c881cdbfb123e10091afc1d29c7c8ad5158ab5738c70ae00960abf991639237c",
+      "schema_sha256": "fc3b3ee2bed89acaa59688fb0b42e0f56be1db8370263200cdc21c323c2af54e",
+      "served_model": "qwen3.8-flash",
+      "usage": {
+        "prompt_tokens": 457,
+        "completion_tokens": 589,
+        "total_tokens": 1046
+      },
+      "latency_ms": 7717.231,
+      "transport_status": "SUCCESS",
+      "schema_status": "VALID",
+      "schema_issues": [],
+      "error_category": null
+    }
+  ]
+}

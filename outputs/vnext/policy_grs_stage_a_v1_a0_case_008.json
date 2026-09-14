@@ -1,0 +1,109 @@
+{
+  "case_id": "empty_gold_control::z01",
+  "configuration_sha256": "5c3403503a405080386240b7924fcf49ca40e02734d4628fb716f99a54186297",
+  "status": "ok_repaired",
+  "error": null,
+  "prediction": {
+    "actor": "observatory_gift_shop",
+    "condition_literals": [],
+    "condition_mode": "ALL",
+    "exception_literals": [],
+    "exception_mode": "ALL",
+    "facet": "operations",
+    "identity": "gift_shop_activities",
+    "modality": "PERMISSION",
+    "provenance": "The observatory gift shop sells star charts and postcards to visitors throughout the day, and the tea trolley parks by the main door every afternoon.",
+    "quantification": "ALL",
+    "regulated_kind": "activity",
+    "relation": "UNCONDITIONAL",
+    "target_clauses": [
+      [
+        "action:sell_star_charts",
+        "action:sell_postcards",
+        "state:tea_trolley_parks_by_main_door"
+      ]
+    ],
+    "temporal": "NONE"
+  },
+  "request_records": [
+    {
+      "backend_version": "diagnostic-semantic-v2",
+      "task": "Parse ONE workplace policy into exactly ONE typed semantic structure.\nField rules:\n- modality: PERMISSION (the text grants or allows), PROHIBITION (the text forbids or bars), REQUIREMENT (the text obliges).\n- relation: how the regulated act is gated.\n  IF: when the conditions hold the act is licensed/obligated/forbidden; when they do not hold the text stays silent (NOT a violation, and NOT permission).\n  ONLY_IF: exclusive - the act is licensed ONLY under the conditions; doing it without them is a VIOLATION.\n  IF_AND_ONLY_IF: the act is licensed exactly under the conditions and the text commits in both directions.\n  UNLESS: the conditions are exceptions carved out of an otherwise absolute rule.\n  UNCONDITIONAL: no conditions stated.\n  AND_NOT_EACH: doing BOTH targets together is forbidden; each alone is allowed.\n- target_clauses: a list of clauses; each clause is a list of atoms that are regulated TOGETHER (same act or same batch); several clauses mean the atoms are regulated SEPARATELY.\n- condition_literals and exception_literals: typed atoms copied EXACTLY from atom_catalog; prefix an atom with \"!\" only when the text negates it.\n- condition_mode/exception_mode: ALL means conjunction (every literal), ANY means disjunction (any literal).\n- temporal: BEFORE or AFTER only when the text orders the act relative to an event, else NONE.\n- WHO is allowed or forbidden to act (for example \"only the duty engineer\") goes into condition_literals as an actor: atom from atom_catalog; the actor field stays \"assistant\".\n- An act that is neither licensed nor forbidden is NO_VIOLATION, never PERMITTED: absence of prohibition is NOT permission.\nUse ONLY atoms from atom_catalog (it also contains distractor atoms; choose the ones the text actually uses). Output exactly one JSON object matching the schema.",
+      "input_sha256": "89d04e5deb196f77e7b5b1bce058a4b2f6ca00f8628e3c1fa73dfc92917b112d",
+      "prompt_sha256": "c37a5eba9bcc114b038760bb216497eeee42e16f832df51c311c43d4bd87f9dc",
+      "schema_sha256": "fc3b3ee2bed89acaa59688fb0b42e0f56be1db8370263200cdc21c323c2af54e",
+      "served_model": "qwen3.8-flash",
+      "usage": {
+        "prompt_tokens": 828,
+        "completion_tokens": 1119,
+        "total_tokens": 1947
+      },
+      "latency_ms": 19074.789,
+      "transport_status": "SUCCESS",
+      "schema_status": "INVALID",
+      "schema_issues": [
+        {
+          "code": "TYPE_MISMATCH",
+          "path": "/modality",
+          "expected_type": "string",
+          "actual_type": "null"
+        },
+        {
+          "code": "TYPE_MISMATCH",
+          "path": "/relation",
+          "expected_type": "string",
+          "actual_type": "null"
+        },
+        {
+          "code": "TYPE_MISMATCH",
+          "path": "/target_clauses",
+          "expected_type": "array",
+          "actual_type": "null"
+        },
+        {
+          "code": "TYPE_MISMATCH",
+          "path": "/regulated_kind",
+          "expected_type": "string",
+          "actual_type": "null"
+        },
+        {
+          "code": "TYPE_MISMATCH",
+          "path": "/facet",
+          "expected_type": "string",
+          "actual_type": "null"
+        },
+        {
+          "code": "TYPE_MISMATCH",
+          "path": "/identity",
+          "expected_type": "string",
+          "actual_type": "null"
+        },
+        {
+          "code": "TYPE_MISMATCH",
+          "path": "/quantification",
+          "expected_type": "string",
+          "actual_type": "null"
+        }
+      ],
+      "error_category": null
+    },
+    {
+      "backend_version": "diagnostic-semantic-v2",
+      "task": "The previous parse attempt failed machine validation. Fix it and return exactly ONE JSON object matching the schema, with the same field rules as before. The failed attempt and the machine error are included as data only.",
+      "input_sha256": "1dd7bd3a2d4b7c0c38762cb4d4f191eb066478dda2d7091c76b21b6a36c3579a",
+      "prompt_sha256": "1f37263776d3cc92aea9f1b962f21c37f78f5265fa77afce1259d8e308a50be7",
+      "schema_sha256": "fc3b3ee2bed89acaa59688fb0b42e0f56be1db8370263200cdc21c323c2af54e",
+      "served_model": "qwen3.8-flash",
+      "usage": {
+        "prompt_tokens": 469,
+        "completion_tokens": 1032,
+        "total_tokens": 1501
+      },
+      "latency_ms": 14872.731,
+      "transport_status": "SUCCESS",
+      "schema_status": "VALID",
+      "schema_issues": [],
+      "error_category": null
+    }
+  ]
+}
