@@ -386,7 +386,8 @@ def phase_smoke_b(env_file, root: Path, out: Path) -> int:
     load_env_file(env_file)
     delegate, live = _make_delegate()
     backend = PersistedSemanticBackend(delegate, out, f'{PREFIX_B}_smoke',
-                                       configuration_sha256=digest(freeze))
+                                       configuration_sha256=digest(freeze),
+                                       live_records=live)
     h0 = backend.propose(PARSE_TASK,
                          {'policy_text': SMOKE_POLICY_H0,
                           'atom_catalog': SMOKE_CATALOG_H0},
