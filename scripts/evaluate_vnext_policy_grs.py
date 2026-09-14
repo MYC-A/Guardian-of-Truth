@@ -437,7 +437,8 @@ def _run_single_arm_case(delegate, out: Path, freeze: dict, index: int, case,
     stem = f'{PREFIX_A}_{arm}_{index:03d}' if arm in ('a0', 'a1') \
         else f'{PREFIX_B}_{arm}_{index:03d}'
     backend = PersistedSemanticBackend(delegate, out, stem,
-                                        configuration_sha256=digest(freeze))
+                                        configuration_sha256=digest(freeze),
+                                        live_records=live)
     proposal = backend.propose(task, payload, schema)
     records = list(backend.records)
     value, status, error = None, None, None
@@ -626,7 +627,8 @@ def _run_b1_case(delegate, out: Path, freeze: dict, index: int, case, live: list
     -> synthesizer over the GROUNDER inventory (1 call + repair)."""
     stem = f'{PREFIX_B}_b1_{index:03d}'
     backend = PersistedSemanticBackend(delegate, out, stem,
-                                        configuration_sha256=digest(freeze))
+                                        configuration_sha256=digest(freeze),
+                                        live_records=live)
     ground_payload = {'policy_text': case.policy,
                       'atom_catalog': list(case.atom_catalog)}
     proposal = backend.propose(grs.GRS_GROUND_TASK, ground_payload, grs.GRS_GROUND_SCHEMA)
