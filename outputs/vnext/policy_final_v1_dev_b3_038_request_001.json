@@ -1,0 +1,55 @@
+{
+  "configuration_sha256": "7adac4b2945e02bfab5fc2377d0b2cfbb7bb302e3badc9af60a9e428cd24085f",
+  "ordinal": 1,
+  "task": "The previous DSL attempt failed machine validation. Fix it and return exactly ONE JSON object {\"dsl\": \"...\"} following the same frozen grammar, type rules and core invariant as before (every fact leaf must be an inventory fact ID; the outer RULE(...) wrapper may be omitted). The failed attempt and the machine error are included as data only.",
+  "payload": {
+    "policy_text": "Locker keys may be held only under the holder's own identity.",
+    "inventory": {
+      "facts": [
+        {
+          "id": "F1",
+          "kind": "ACTION",
+          "atom": "action:hold_locker_key",
+          "span": "held"
+        },
+        {
+          "id": "F2",
+          "kind": "IDENTITY",
+          "atom": "identity:own_name",
+          "span": "the holder's own identity"
+        }
+      ],
+      "markers": [
+        {
+          "id": "M1",
+          "kind": "MODAL_MARKER",
+          "value": "PERMIT",
+          "span": "may"
+        },
+        {
+          "id": "R2",
+          "kind": "RELATION_MARKER",
+          "value": "ONLY_IF",
+          "span": "only"
+        }
+      ]
+    },
+    "previous_output": "{\"dsl\":\"RULESET(RULE(PERMIT, F1, ONLY_WHEN(F2)))\"}",
+    "machine_error": "TYPE_ERROR: ONLY_WHEN leaf F2 has kind IDENTITY; allowed ('ACTION', 'STATE', 'EVENT')"
+  },
+  "schema": {
+    "type": "object",
+    "properties": {
+      "dsl": {
+        "type": "string"
+      }
+    },
+    "required": [
+      "dsl"
+    ],
+    "additionalProperties": false
+  },
+  "input_sha256": "7fccadefb2be6b8641293442c71ec3c5b3693ac49a736ae95e692507c1ee36c2",
+  "schema_sha256": "1dc9e78f000bf3c08eadf966f3cb56b56581c1d064dc72368bdae5b69b22a904",
+  "prompt_sha256": "a94b7aea9b11fe3380e24d2e9ca10dc83f4eb9f366c9673fb0161af5c343a8af"
+}

@@ -1,0 +1,27 @@
+{
+  "request_sha256": "dd683bb89923593d677d5156fe61bfac72d6d2ee89f12f56ed0f8619b2357c39",
+  "proposal": {
+    "payload_json": "{\"dsl\":\"RULESET(RULE(PROHIBIT, F3, AFTER(F1), ACTOR(F2)))\"}",
+    "transport_status": "SUCCESS",
+    "schema_status": "VALID",
+    "error_category": null
+  },
+  "telemetry": {
+    "backend_version": "diagnostic-semantic-v2",
+    "task": "Synthesize ONE policy ruleset in the DSL below. You receive POLICY_TEXT and INVENTORY: grounded semantic items with neutral IDs (F# facts with kind/atom/span; M# modality markers and R# relation markers with value/span).\nCORE INVARIANT: every fact leaf in your ruleset MUST be an inventory fact ID (F#). You may NOT invent facts, atoms, entities or predicates. Markers (M#/R#) are evidence for your choices but are never rule references. You decide ONLY how the grounded facts compose: how many rules exist, each rule's modality, target shape, gates, condition vs exception roles, actors, temporal order, AND/OR, together/separate.\nDSL GRAMMAR (frozen; uppercase operators, refs are inventory IDs):\nRULESET( rule [, rule]* ) - zero or more rules; RULESET() means the text regulates nothing.\nrule := RULE( modality , target [, gate]* ) | ONE_OF( RULE(...) , RULE(...) ) - ONE_OF ONLY for genuine local ambiguity between exactly two readings of ONE rule; at most one ONE_OF per ruleset.\nPERMISSIVE SURFACE RULE: the outer RULE(...) wrapper of a rule may be omitted - bare rule contents (modality, target, gates) may appear directly inside RULESET(...) separated by commas; a trusted deterministic canonicalizer wraps them (e.g. RULESET(PERMIT, F3, WHEN(F1)) is accepted and canonicalized to RULESET(RULE(PERMIT, F3, WHEN(F1)))). Every other part of the grammar is strict.\nmodality := PERMIT | PROHIBIT | REQUIRE\ntarget := ref | TOGETHER( ref [, ref]* ) | SEPARATE( ref [, ref]* )\ngate := WHEN( boolexpr ) | ONLY_WHEN( boolexpr ) | IFF( boolexpr ) | EXCEPT( boolexpr ) | BEFORE( boolexpr ) | AFTER( boolexpr ) | ACTOR( ref ) | ONLY_ACTOR( ref ) | IDENTITY( ref ) | PROVENANCE( ref ) | UNKNOWN_RELATION( boolexpr ) | UNKNOWN_ATTACHMENT( ref )\nboolexpr := leaf | AND( leaf [, leaf]* ) | OR( leaf [, leaf]* )\nleaf := ref | NOT( ref )\nWorked example (illustrative only; never reuse its atoms): POLICY 'If the night fridge is unlocked, bar staff may pour samples, unless the cellar door is alarmed.' INVENTORY F1=ACTION action:pour_samples 'pour samples', F2=STATE state:night_fridge_unlocked 'the night fridge is unlocked', F3=STATE state:cellar_door_alarmed 'the cellar door is alarmed', F4=ACTOR actor:bar_staff 'bar staff', M1=MODAL_MARKER PERMIT 'may', R1=RELATION_MARKER IF 'If', R2=RELATION_MARKER UNLESS 'unless' -> RULESET(RULE(PERMIT, F1, WHEN(F2), EXCEPT(F3), ACTOR(F4))).\nOutput exactly one JSON object: {\"dsl\": \"<your ruleset>\"}.",
+    "input_sha256": "5f43c13b81a350b07adafaf240afb4e8890e6d512441c3dbfb53b73c721857c9",
+    "prompt_sha256": "4feb7dc5c26919cbe381fdff50e69545504648c40a33dff15ed8312ec748c770",
+    "schema_sha256": "1dc9e78f000bf3c08eadf966f3cb56b56581c1d064dc72368bdae5b69b22a904",
+    "served_model": "qwen3.8-flash",
+    "usage": {
+      "prompt_tokens": 958,
+      "completion_tokens": 254,
+      "total_tokens": 1212
+    },
+    "latency_ms": 5367.07,
+    "transport_status": "SUCCESS",
+    "schema_status": "VALID",
+    "schema_issues": [],
+    "error_category": null
+  }
+}

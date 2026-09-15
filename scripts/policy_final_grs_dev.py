@@ -79,6 +79,9 @@ DEV_EMISSION_CRITERIA = {
     'h0_correct_regression_rate_lte': 0.10,
 }
 
+SUPERSEDED_RUNNER_SHA256 = None
+CURRENT_RUNNER_SHA256 = None
+
 SMOKE_POLICY = 'Late-shift porters may refill the hydration station, unless the duty log is sealed.'
 SMOKE_CATALOG = ['action:refill_hydration_station', 'state:duty_log_sealed',
                  'actor:assistant', 'distractor:smoke_case']
@@ -138,7 +141,15 @@ def _load_sealed_arm(arm):
 
 def _load_devfreeze():
     freeze = json.loads(DEVFREEZE_PATH.read_text(encoding='utf-8'))
-    for name, expected in freeze['source_sha256'].items():
+    source_checks = dict(freeze['source_sha256'])
+    # disclosed supersession: this runner's own hash may drift for post-seal
+    # scoring fixes (predictions/seals/freeze untouched); every other frozen
+    # source must still match byte-exactly. The freeze dict itself is NEVER
+    # mutated here - seals hash it.
+    global SUPERSEDED_RUNNER_SHA256, CURRENT_RUNNER_SHA256
+    SUPERSEDED_RUNNER_SHA256 = source_checks.pop('scripts/policy_final_grs_dev.py', None)
+    CURRENT_RUNNER_SHA256 = file_digest(ROOT / 'scripts/policy_final_grs_dev.py')
+    for name, expected in source_checks.items():
         if file_digest(ROOT / name) != expected:
             raise ValueError(f'dev freeze source mismatch: {name}')
     _, cases = _load_dev_corpus()
@@ -689,15 +700,17 @@ def _compile_dev_arm(arm, row, case):
         elif arm == 'b3':
             alternatives, _, _ = em.compile_b3(prediction['dsl'],
                                                case.oracle_inventory)
-        elif arm == 'e2e':
+        elif arm in ('e2e', 'e2ecanon'):
             ground_inventory = prediction.get('ground_inventory')
             synth = prediction.get('synth')
             if not ground_inventory or synth is None:
                 return None
-            if prediction.get('boundary') == 'b2':
-                alternatives, _, _ = em.compile_b2(synth, ground_inventory)
-            else:
+            if row.get('boundary') == 'b3':
                 alternatives, _, _ = em.compile_b3(synth['dsl'], ground_inventory)
+            elif row.get('boundary') == 'b1canon':
+                alternatives, _, _ = em.compile_b3(synth['dsl'], ground_inventory)
+            else:
+                alternatives, _, _ = em.compile_b2(synth, ground_inventory)
         else:
             raise ValueError(f'unknown arm {arm}')
         return alternatives
@@ -874,7 +887,7 @@ def _hallucinate_arm(arm):
             elif arm == 'b3':
                 counts = grs.hallucination_attempts(raw.get('dsl', ''),
                                                     case.oracle_inventory)
-            elif arm == 'e2e':
+            elif arm in ('e2e', 'e2ecanon'):
                 synth = raw.get('synth')
                 inventory = raw.get('ground_inventory') or {'facts': [], 'markers': []}
                 if synth is None:
@@ -894,19 +907,183 @@ def _hallucinate_arm(arm):
 
 def _efficiency(arm):
     records = []
-    for path in sorted(OUT.glob(f'{PREFIX}_{arm}_[0-9][0-9][0-9]_request_*.json')):
+    for path in sorted(OUT.glob(f'{PREFIX}_{arm}_[0-9][0-9][0-9]_request_*_result.json')):
         records.append(json.loads(path.read_text(encoding='utf-8')))
     if not records:
         return None
-    latencies = [r.get('latency_seconds') for r in records
-                 if isinstance(r.get('latency_seconds'), (int, float))]
-    tokens = sum(r.get('total_tokens') or 0 for r in records)
+    latencies = [(r.get('telemetry') or {}).get('latency_ms') for r in records]
+    latencies = [x / 1000 for x in latencies if isinstance(x, (int, float))]
+    tokens = 0
+    for r in records:
+        usage = (r.get('telemetry') or {}).get('usage') or {}
+        if isinstance(usage.get('total_tokens'), int):
+            tokens += usage['total_tokens']
+        else:
+            tokens += (usage.get('prompt_tokens') or 0) \
+                + (usage.get('completion_tokens') or 0)
     return {'requests': len(records), 'tokens': tokens,
             'median_latency_s': round(percentile(latencies, 50), 2) if latencies else None}
 
 
+
+
+def phase_freeze_dev2() -> int:
+    """Second dev freeze: the e2e-canon arm (frozen B1 synthesis prompt +
+    deterministic canonicalizer over the SEALED grounder outputs), added
+    after e2e(B2) dev results, BEFORE any final-holdout inference. This is
+    a development-phase decision artifact only."""
+    path2 = OUT / 'policy_final_v1_devfreeze2.json'
+    if path2.exists():
+        print(json.dumps({'status': 'DEVFREEZE2_ALREADY_DONE'}))
+        return 0
+    commit = _commit_clean(ROOT)
+    freeze, cases = _load_devfreeze()
+    ground_rows = json.loads((OUT / f'{PREFIX}_ground_predictions.json')
+                             .read_text(encoding='utf-8'))
+    sealed = json.loads((OUT / f'{SEALED_PREFIX}_freeze.json').read_text(encoding='utf-8'))
+    freeze2 = {
+        'schema_version': 'guardian-vnext-policy-final-devfreeze2-v1',
+        'purpose': 'dev-phase freeze of the e2e-canon boundary (frozen B1 '
+                   'synthesis prompt + deterministic canonicalizer) over the '
+                   'sealed dev grounder outputs; added after e2e(B2) dev '
+                   'scoring, before any final-holdout inference',
+        'architecture_commit': commit,
+        'b1_prompt_continuity': {
+            'synth_task_sha256': digest(grs.GRS_SYNTH_TASK),
+            'sealed_grs_synth_task_match': digest(grs.GRS_SYNTH_TASK)
+            == sealed['grs_identity']['synth_task_sha256'],
+            'repair_task_sha256': digest(grs.GRS_SYNTH_REPAIR_TASK),
+            'dsl_schema_sha256': digest(grs.GRS_DSL_SCHEMA),
+        },
+        'canonicalizer_sha256': file_digest(
+            ROOT / 'src/guardian_truth/vnext/policy_grs_emission.py'),
+        'ground_predictions_sha256': digest(ground_rows),
+        'ground_seal_sha256': file_digest(
+            OUT / f'{PREFIX}_ground_prediction_seal.json'),
+        'case_ids': freeze['case_ids'],
+        'model': MODEL, 'provider': PROVIDER,
+        'source_sha256': {
+            'src/guardian_truth/vnext/policy_grs.py': file_digest(
+                ROOT / 'src/guardian_truth/vnext/policy_grs.py'),
+            'src/guardian_truth/vnext/policy_grs_emission.py': file_digest(
+                ROOT / 'src/guardian_truth/vnext/policy_grs_emission.py'),
+            'scripts/policy_final_grs_dev.py': file_digest(
+                ROOT / 'scripts/policy_final_grs_dev.py'),
+        },
+    }
+    write_new(path2, freeze2)
+    print(json.dumps({'status': 'DEV_FROZEN2', 'architecture_commit': commit}))
+    return 0
+
+
+def _load_devfreeze2():
+    freeze2 = json.loads((OUT / 'policy_final_v1_devfreeze2.json')
+                         .read_text(encoding='utf-8'))
+    for name, expected in freeze2['source_sha256'].items():
+        if name == 'scripts/policy_final_grs_dev.py':
+            continue  # disclosed supersession pattern (scoring fixes)
+        if file_digest(ROOT / name) != expected:
+            raise ValueError(f'devfreeze2 source mismatch: {name}')
+    ground_rows = json.loads((OUT / f'{PREFIX}_ground_predictions.json')
+                             .read_text(encoding='utf-8'))
+    if freeze2['ground_predictions_sha256'] != digest(ground_rows):
+        raise ValueError('ground predictions changed after devfreeze2')
+    _, cases = _load_devfreeze()
+    if freeze2['case_ids'] != [case.case_id for case in cases]:
+        raise ValueError('devfreeze2 case identity mismatch')
+    return freeze2, cases, {r['case_id']: r for r in ground_rows}
+
+
+def phase_run_e2e_canon(env_file, minutes: float) -> int:
+    """e2e-canon: frozen B1 synthesis prompt over the SEALED grounded
+    inventories, compiled via strict-parse + deterministic canonicalizer."""
+    freeze2, cases, ground_rows = _load_devfreeze2()
+    if not (OUT / f'{PREFIX}_smoke.json').exists():
+        print(json.dumps({'status': 'NO_SMOKE'}))
+        return 2
+    rows_path = OUT / f'{PREFIX}_e2ecanon_predictions.json'
+    if rows_path.exists():
+        print(json.dumps({'status': 'ALREADY_SEALED', 'arm': 'e2ecanon'}))
+        return 0
+    load_env_file(env_file)
+    delegate, live = _make_delegate()
+    started = time.monotonic()
+    rows = []
+    for index, case in enumerate(cases):
+        row_path = OUT / f'{PREFIX}_e2ecanon_case_{index:03d}.json'
+        if row_path.exists():
+            row = json.loads(row_path.read_text(encoding='utf-8'))
+            if row['case_id'] != case.case_id \
+                    or row['configuration_sha256'] != digest(freeze2):
+                raise ValueError('cached e2ecanon case changed')
+            rows.append(row)
+            continue
+        ground_row = ground_rows[case.case_id]
+        inventory = None
+        try:
+            inventory = grs_runner._postvalidate_ground(
+                ground_row['prediction'], case.policy, case.atom_catalog)
+        except (grs.GRSInvalid, ValueError, TypeError):
+            pass
+        if inventory is None:
+            row = {'case_id': case.case_id,
+                   'configuration_sha256': digest(freeze2),
+                   'boundary': 'b1canon', 'ground_status': 'ground_failed',
+                   'synth_status': None, 'status': 'ground_failed',
+                   'error': ground_row.get('error'),
+                   'prediction': {'ground': ground_row['prediction'],
+                                  'ground_inventory': None, 'synth': None},
+                   'request_records': []}
+            write_new(row_path, row)
+            rows.append(row)
+            continue
+
+        def compile_value(value, _inv=inventory):
+            if not isinstance(value, dict) or not isinstance(value.get('dsl'), str):
+                raise em.EmissionInvalid('B3_INVALID: dsl field must be a string')
+            em.compile_b3(value['dsl'], _inv)
+
+        row = _run_one_case(delegate, OUT, freeze2, index, case, live,
+                            'e2ecanon', grs.GRS_SYNTH_TASK, grs.GRS_DSL_SCHEMA,
+                            grs.GRS_SYNTH_REPAIR_TASK,
+                            {'policy_text': case.policy, 'inventory': inventory},
+                            compile_value)
+        row['boundary'] = 'b1canon'
+        row['ground_status'] = 'ok'
+        row['synth_status'] = row['status']
+        row['prediction'] = {'ground': ground_row['prediction'],
+                             'ground_inventory': inventory,
+                             'synth': row['prediction']}
+        write_new(row_path, row)
+        rows.append(row)
+        print(json.dumps({'arm': 'e2ecanon', 'completed': len(rows),
+                          'total': len(cases), 'case_id': case.case_id,
+                          'status': row['status']}), flush=True)
+        if time.monotonic() - started > minutes * 60:
+            print(json.dumps({'status': 'PARTIAL_TIME_BUDGET', 'arm': 'e2ecanon',
+                              'completed': len(rows), 'total': len(cases)}),
+                  flush=True)
+            return 3
+    prediction_rows = [{'case_id': r['case_id'], 'prediction': r['prediction'],
+                        'status': r['status'], 'boundary': r['boundary'],
+                        'ground_status': r['ground_status'],
+                        'synth_status': r['synth_status']} for r in rows]
+    write_new(rows_path, prediction_rows)
+    seal = prediction_seal(prediction_rows, [c.case_id for c in cases],
+                           architecture_commit=freeze2['architecture_commit'],
+                           configuration_sha256=digest(freeze2))
+    write_new(OUT / f'{PREFIX}_e2ecanon_prediction_seal.json', seal)
+    print(json.dumps({'status': 'SEALED', 'arm': 'e2ecanon', 'cases': len(rows),
+                      'ok': sum(r['status'].startswith('ok') for r in rows)}),
+          flush=True)
+    return 0
+
+
 def phase_score_dev() -> int:
     freeze, cases = _load_devfreeze()
+    freeze2 = None
+    if (OUT / 'policy_final_v1_devfreeze2.json').exists():
+        freeze2, _, _ = _load_devfreeze2()
     h0_map = _h0_correct(cases)
     b1_rows = _load_sealed_arm('a1')
 
@@ -914,6 +1091,13 @@ def phase_score_dev() -> int:
               'stage': 'B_emission_refinement_development',
               'prospective_claim': None,
               'dev_emission_criteria': freeze['dev_emission_criteria'],
+              'post_seal_corrections': {
+                  'note': 'scoring-only fixes after all dev arms were sealed '
+                          '(e2e boundary flag read from the row level, canon '
+                          'summary key); predictions, seals and the dev '
+                          'freeze are untouched',
+                  'frozen_runner_sha256': SUPERSEDED_RUNNER_SHA256,
+                  'current_runner_sha256': CURRENT_RUNNER_SHA256},
               'arms': {}}
 
     # sealed B1 baseline
@@ -951,17 +1135,28 @@ def phase_score_dev() -> int:
         canon = json.loads(canon_path.read_text(encoding='utf-8'))
         report['arms']['B3_replay_canonicalizer'] = canon
 
+    def _summary_entry(data):
+        if 'metrics' in data and 'semantic_preservation_audit' in data:
+            data = data['metrics']
+        return {'validity': data.get('validity'),
+                'accuracy': data.get('accuracy'),
+                'hallucination': data.get('hallucination_attempts'),
+                'regressions': (data.get('regression_vs_h0') or {}).get('regressions')}
+
     # live arms
-    for arm in ('b2', 'b3', 'e2e'):
+    for arm in ('b2', 'b3', 'e2e', 'e2ecanon'):
         rows_path = OUT / f'{PREFIX}_{arm}_predictions.json'
         if not rows_path.exists():
             continue
         seal = json.loads((OUT / f'{PREFIX}_{arm}_prediction_seal.json')
                           .read_text(encoding='utf-8'))
         rows = json.loads(rows_path.read_text(encoding='utf-8'))
+        if arm == 'e2ecanon' and freeze2 is None:
+            raise ValueError('e2ecanon arm scored without devfreeze2')
+        seal_freeze = freeze2 if arm == 'e2ecanon' else freeze
         expected = prediction_seal(rows, [c.case_id for c in cases],
-                                   architecture_commit=freeze['architecture_commit'],
-                                   configuration_sha256=digest(freeze))
+                                   architecture_commit=seal_freeze['architecture_commit'],
+                                   configuration_sha256=digest(seal_freeze))
         if seal != expected:
             raise ValueError(f'{arm} dev seal invalid')
         rows_by_case = {r['case_id']: r for r in rows}
@@ -981,6 +1176,10 @@ def phase_score_dev() -> int:
             boundary, info = _selected_boundary()
             entry['boundary'] = boundary
             entry['boundary_selection_info'] = info
+        if arm == 'e2ecanon':
+            grounded_ok = sum(1 for r in rows if r.get('ground_status', '').startswith('ok'))
+            entry['resolved_coverage'] = round(grounded_ok / len(cases), 4)
+            entry['boundary'] = 'b1canon (frozen B1 prompt + canonicalizer)'
         report['arms'][arm] = entry
 
     # grounder-only metrics (inventory quality vs oracle)
@@ -1013,17 +1212,13 @@ def phase_score_dev() -> int:
         }
 
     write_new(DEVREPORT_PATH, report)
-    summary = {arm: {'validity': data.get('validity'),
-                     'accuracy': data.get('accuracy'),
-                     'hallucination': data.get('hallucination_attempts'),
-                     'regressions': (data.get('regression_vs_h0') or {}).get('regressions')}
-               for arm, data in report['arms'].items()}
+    summary = {arm: _summary_entry(data) for arm, data in report['arms'].items()}
     print(json.dumps({'status': 'DEV_SCORED', 'arms': summary}, indent=1))
     return 0
 
 
 def phase_status() -> int:
-    arms = ['b2', 'b3', 'ground', 'e2e']
+    arms = ['b2', 'b3', 'ground', 'e2e', 'e2ecanon']
     state = {}
     for arm in arms:
         rows = sorted(OUT.glob(f'{PREFIX}_{arm}_case_[0-9][0-9][0-9].json'))
@@ -1057,6 +1252,10 @@ def main() -> int:
         return phase_run_ground(args.env_file, args.minutes)
     if args.phase == 'run-e2e':
         return phase_run_e2e(args.env_file, args.minutes)
+    if args.phase == 'freeze-dev2':
+        return phase_freeze_dev2()
+    if args.phase == 'run-e2e-canon':
+        return phase_run_e2e_canon(args.env_file, args.minutes)
     if args.phase == 'score-dev':
         return phase_score_dev()
     if args.phase == 'status':

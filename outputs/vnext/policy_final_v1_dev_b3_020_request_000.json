@@ -1,0 +1,71 @@
+{
+  "configuration_sha256": "7adac4b2945e02bfab5fc2377d0b2cfbb7bb302e3badc9af60a9e428cd24085f",
+  "ordinal": 0,
+  "task": "Synthesize ONE policy ruleset in the DSL below. You receive POLICY_TEXT and INVENTORY: grounded semantic items with neutral IDs (F# facts with kind/atom/span; M# modality markers and R# relation markers with value/span).\nCORE INVARIANT: every fact leaf in your ruleset MUST be an inventory fact ID (F#). You may NOT invent facts, atoms, entities or predicates. Markers (M#/R#) are evidence for your choices but are never rule references. You decide ONLY how the grounded facts compose: how many rules exist, each rule's modality, target shape, gates, condition vs exception roles, actors, temporal order, AND/OR, together/separate.\nDSL GRAMMAR (frozen; uppercase operators, refs are inventory IDs):\nRULESET( rule [, rule]* ) - zero or more rules; RULESET() means the text regulates nothing.\nrule := RULE( modality , target [, gate]* ) | ONE_OF( RULE(...) , RULE(...) ) - ONE_OF ONLY for genuine local ambiguity between exactly two readings of ONE rule; at most one ONE_OF per ruleset.\nPERMISSIVE SURFACE RULE: the outer RULE(...) wrapper of a rule may be omitted - bare rule contents (modality, target, gates) may appear directly inside RULESET(...) separated by commas; a trusted deterministic canonicalizer wraps them (e.g. RULESET(PERMIT, F3, WHEN(F1)) is accepted and canonicalized to RULESET(RULE(PERMIT, F3, WHEN(F1)))). Every other part of the grammar is strict.\nmodality := PERMIT | PROHIBIT | REQUIRE\ntarget := ref | TOGETHER( ref [, ref]* ) | SEPARATE( ref [, ref]* )\ngate := WHEN( boolexpr ) | ONLY_WHEN( boolexpr ) | IFF( boolexpr ) | EXCEPT( boolexpr ) | BEFORE( boolexpr ) | AFTER( boolexpr ) | ACTOR( ref ) | ONLY_ACTOR( ref ) | IDENTITY( ref ) | PROVENANCE( ref ) | UNKNOWN_RELATION( boolexpr ) | UNKNOWN_ATTACHMENT( ref )\nboolexpr := leaf | AND( leaf [, leaf]* ) | OR( leaf [, leaf]* )\nleaf := ref | NOT( ref )\nWorked example (illustrative only; never reuse its atoms): POLICY 'If the night fridge is unlocked, bar staff may pour samples, unless the cellar door is alarmed.' INVENTORY F1=ACTION action:pour_samples 'pour samples', F2=STATE state:night_fridge_unlocked 'the night fridge is unlocked', F3=STATE state:cellar_door_alarmed 'the cellar door is alarmed', F4=ACTOR actor:bar_staff 'bar staff', M1=MODAL_MARKER PERMIT 'may', R1=RELATION_MARKER IF 'If', R2=RELATION_MARKER UNLESS 'unless' -> RULESET(RULE(PERMIT, F1, WHEN(F2), EXCEPT(F3), ACTOR(F4))).\nOutput exactly one JSON object: {\"dsl\": \"<your ruleset>\"}.",
+  "payload": {
+    "policy_text": "While the visiting surgeon is scrubbed, porters must not wheel the sterile trolley through the west corridor, except when the charge nurse escorts it.",
+    "inventory": {
+      "facts": [
+        {
+          "id": "F1",
+          "kind": "STATE",
+          "atom": "state:visiting_surgeon_scrubbed",
+          "span": "the visiting surgeon is scrubbed"
+        },
+        {
+          "id": "F2",
+          "kind": "ACTOR",
+          "atom": "actor:porter",
+          "span": "porters"
+        },
+        {
+          "id": "F3",
+          "kind": "ACTION",
+          "atom": "action:wheel_trolley_through_west_corridor",
+          "span": "wheel the sterile trolley through the west corridor"
+        },
+        {
+          "id": "F4",
+          "kind": "STATE",
+          "atom": "state:charge_nurse_escorts",
+          "span": "the charge nurse escorts it"
+        }
+      ],
+      "markers": [
+        {
+          "id": "R1",
+          "kind": "RELATION_MARKER",
+          "value": "IF",
+          "span": "While"
+        },
+        {
+          "id": "M2",
+          "kind": "MODAL_MARKER",
+          "value": "PROHIBIT",
+          "span": "must not"
+        },
+        {
+          "id": "R3",
+          "kind": "RELATION_MARKER",
+          "value": "UNLESS",
+          "span": "except when"
+        }
+      ]
+    }
+  },
+  "schema": {
+    "type": "object",
+    "properties": {
+      "dsl": {
+        "type": "string"
+      }
+    },
+    "required": [
+      "dsl"
+    ],
+    "additionalProperties": false
+  },
+  "input_sha256": "c6598b9e1a6d3945717181ceab3e11246bab60c121171fdfe226b90964f5eea7",
+  "schema_sha256": "1dc9e78f000bf3c08eadf966f3cb56b56581c1d064dc72368bdae5b69b22a904",
+  "prompt_sha256": "1ae6218a49dcaf5de64784c7cdeb1c17ebf901f24f3006c348267ebbf4752e54"
+}
