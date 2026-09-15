@@ -1,0 +1,73 @@
+{
+  "schema_version": "guardian-vnext-e2e-v1-prereg",
+  "registered_before_any_fresh_inference": true,
+  "experiment": "GUARDIAN OF TRUTH E2E V1 (spec: upload/Pasted Content_1789496168906.txt)",
+  "assembly_branch": "experiment/guardian-e2e-v1",
+  "baseline_commit": "8b0d13c1147531f4513d084ed99dc7133bfdcc92",
+  "arms": {
+    "E0": "Policy=H0, Goal=Conservative",
+    "E1": "Policy=GRS, Goal=Conservative",
+    "E2": "Policy=H0, Goal=RuleFrames+E5",
+    "E3": "Policy=GRS, Goal=RuleFrames+E5",
+    "E4": "Policy={H0,GRS} retained, Goal={Conservative,RuleFrames} retained"
+  },
+  "primary_metric": "correct_definitive_coverage",
+  "primary_comparisons": ["E1_vs_E0", "E2_vs_E0", "E3_vs_E0", "E4_vs_E3", "E4_vs_E0"],
+  "gates": {
+    "hard_invariants": {
+      "uncertified_definitive_eq": 0,
+      "role_authority_escalation_eq": 0,
+      "user_to_assistant_definitive_attribution_eq": 0,
+      "false_forced_unique_identity_eq": 0,
+      "failed_call_as_trusted_effect_eq": 0,
+      "later_observation_as_causality_eq": 0,
+      "certificate_mutation_tests_pct": 100,
+      "predictions_sealed_before_gold_pct": 100
+    },
+    "promotion": {
+      "primary_metric": "correct_definitive_coverage",
+      "e4_vs_e0_cdc_gain_pp_gte": 5.0,
+      "best_arm_unsafe_definitive_rate_lte": 0.05,
+      "e4_false_certified_no_error_not_above_e0": true,
+      "proved_error_recall_min": 0.5,
+      "mcnemar_p_lt": 0.05
+    }
+  },
+  "decision_machine": {
+    "PROMOTE_MULTI_FRONTEND_E2E": "E4 passes all promotion gates AND beats E3 on correct-definitive coverage without unsafe-definitive regression",
+    "PROMOTE_SINGLETON_E2E": "some singleton arm (E1/E2/E3) passes all promotion gates while E4 does not",
+    "KEEP_CONSERVATIVE_E2E": "no arm passes the promotion gates but E0 achieves correct-definitive coverage >= 0.5 with unsafe-definitive rate <= 0.05",
+    "E2E_LIMITATION_CONFIRMED": "no arm achieves correct-definitive coverage >= 0.5 at unsafe-definitive rate <= 0.05"
+  },
+  "corpus": {
+    "builder": "src/guardian_truth/vnext/e2e/fresh_corpus_v1.py",
+    "annotation_basis": "CONSTRUCTION_FROM_TEMPLATES_NOT_MODEL_LABELS",
+    "novelty": "zero shared word-8-grams with V4+V5+PHV1+PSB+GRS-A+GRS-B+policy-final corpora",
+    "gold_isolation": "gold lives in the corpus module and the sealed benchmark; prediction execution never reads it"
+  },
+  "provider": {"provider": "bai", "model": "qwen3.8-flash", "temperature": 0,
+               "reasoning_effort": "low", "max_retries": 0,
+               "repair_policy": "exactly one pre-registered transport/format repair re-ask per request slot",
+               "t2": false, "escalation": "OFF for all arms"},
+  "seal_discipline": {
+    "per_request_artifacts": "outputs/vnext/e2e_v1_requests (write-once, resumable)",
+    "per_case_outputs": "outputs/vnext/e2e_v1_semantic_outputs (sealed before compose)",
+    "per_arm_predictions": "outputs/vnext/e2e_v1_{arm}_predictions.json (sealed with gold_joined=false before scoring)",
+    "scorer": "deterministic; refuses unsealed or incomplete predictions"
+  },
+  "bug_protocol": {
+    "classes": ["REPORTING_ONLY", "SCORER_ONLY", "INTEGRATION_EXECUTION", "SEMANTIC_BEHAVIOR"],
+    "rule": "SEMANTIC_BEHAVIOR bugs are recorded, never quietly fixed and re-run; the terminal decision accounts for them"
+  },
+  "prohibitions_after_freeze": [
+    "no new policy frontend or goal architecture",
+    "no prompt/schema changes",
+    "no semantic retries or adaptive escalation",
+    "no corpus edits (the builder hash is frozen)",
+    "no gate redefinition",
+    "no post-hoc verdict reinterpretation"
+  ],
+  "terminal_decision_labels": ["PROMOTE_MULTI_FRONTEND_E2E", "PROMOTE_SINGLETON_E2E",
+                                "KEEP_CONSERVATIVE_E2E", "E2E_LIMITATION_CONFIRMED"],
+  "hard_stop": "After the terminal decision, standalone E2E V1 research stops."
+}
