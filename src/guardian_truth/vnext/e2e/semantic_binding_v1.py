@@ -95,9 +95,15 @@ BINDING_TASK = (
     "- OUTCOME propositions (goal): serving_tools = tools whose invocation "
     "SERVES the outcome (retrieves the wanted information, performs the "
     "wanted change). If several tools serve it, list them all (allowed "
-    "alternatives). action_servable=false only for purely informational "
-    "outcomes no tool serves. Add argument_checks only to pin a specific "
-    "entity/value the user named.\n"
+    "alternatives). action_servable=false ONLY for purely informational "
+    "outcomes that NO tool call can ever serve (for example 'greet the "
+    "user'); any outcome about retrieving, changing, cancelling, refunding "
+    "or approving something IS action-servable and must name its serving "
+    "tools. Add argument_checks only to pin a specific entity/value the "
+    "user named.\n"
+    "- level: ATTEMPT for actions that are done by invoking the tool (reads, "
+    "checks, cancellations, updates); COMPLETED only when the action "
+    "REQUIRES a confirmed successful result to count as done.\n"
     "RULES: choose tools ONLY from TOOL_CATALOG names. Choose argument paths "
     "ONLY from keys that exist in the tool's schema or in an actual call in "
     "the TRAJECTORY. Observation paths must exist in an actual result payload "
@@ -213,6 +219,11 @@ class SemanticBindingFrontend:
                                                    tuple(checks), bool(item["action_servable"]), quotes))
                 if not item["serving_tools"] and item["action_servable"]:
                     failures.append(f"{unit_id}:action_servable_without_tools")
+                if not item["serving_tools"] and not item["action_servable"]:
+                    # a genuinely informational outcome (no tool can serve it):
+                    # a legitimate no-obligation binding, never 'unbound'
+                    outcome_pairs.append((unit_id, (OutcomeBinding(
+                        unit_id, (), BindingLevel.ATTEMPT, (), False, quotes),)))
                 # merge multi-tool proposals into one ANY_OF candidate when all validate
                 if outcomes:
                     tools = tuple(dict.fromkeys(tool for outcome in outcomes for tool in outcome.serving_tools))

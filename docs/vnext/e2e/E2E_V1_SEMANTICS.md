@@ -49,6 +49,11 @@ trajectory evidence:
 - `match` = `TARGET_CALL_MATCH` per target call (attempt level) with the
   binding's argument checks.  `presence_only` checks prove FALSE when the
   field is absent (the action IS the setting of the field; §126).
+  Policy prohibitions evaluate at ATTEMPT level (the invocation IS the
+  regulated action in the frozen v3 static space); effect-level policy
+  prohibitions are outside the E2E V1 envelope — the GOAL axis carries
+  effect-level user prohibitions (target_level EFFECT).  The binding's
+  level field is advisory and recorded in the audit.
 - Gate/exception state literals → `OBSERVED_STATE` atoms (LATEST_OBSERVATION
   at the call index, entity from the target call's argument at the binding's
   entity_path).  Event literals → `CALL_ATTEMPTED` (THROUGH end).
