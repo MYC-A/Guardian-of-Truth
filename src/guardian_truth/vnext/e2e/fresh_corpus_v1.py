@@ -765,7 +765,7 @@ def build_fresh_corpus() -> list[CorpusCase]:
             f"nl_stress_{i}", "nl_stress",
             policy=policy_text, user_text=user_text, history=history,
             calls=(_call(tool_call[0], tool_call[1], "t0"),),
-            response=f"{sid} is handled.",
+            response="Sure, happy to help!",
             policy_universe=(closure((program("REQUIREMENT", "UNCONDITIONAL",
                                               ("action:verify_sender",)),))
                              if i == 0 else
