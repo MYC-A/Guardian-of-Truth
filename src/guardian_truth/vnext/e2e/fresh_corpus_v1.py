@@ -23,7 +23,7 @@ from dataclasses import dataclass, field
 
 from ..types import CoreStatus
 from .source_adapter_v1 import E2ECaseSources, E2EPolicyClosure, TrajectoryEvent
-from .goal_types_v1 import GoalContract, SourceText
+from .goal_types_v1 import SourceText
 
 # ------------------------------------------------------------------ helpers
 
@@ -100,9 +100,11 @@ def closure(programs, source_id="authoritative-closure"):
     return E2EPolicyClosure(source_id, tuple(programs))
 
 
-def goal_closure(frames=(), source_ids=("user:0",)):
-    return GoalContract("goal:closure", "authoritative", tuple(source_ids),
-                        tuple(frames), (), ())
+def goal_closure(kinds=("DESIRED_OUTCOME",)):
+    """Authoritative goal closure: the material frame KINDS the user request
+    creates (kind-level closure premise, spec sections 101-102/153)."""
+    from .source_adapter_v1 import E2EGoalClosure
+    return E2EGoalClosure("authoritative-goal-closure", tuple(kinds))
 
 
 def contract(name, *, guarantees=(), no_effect_on_failure=False):

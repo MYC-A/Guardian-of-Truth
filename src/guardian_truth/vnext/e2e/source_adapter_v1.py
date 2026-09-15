@@ -45,6 +45,23 @@ class E2EPolicyClosure:
 
 
 @dataclass(frozen=True)
+class E2EGoalClosure:
+    """Authoritative goal closure (spec sections 101-102, 153): the material
+    frame KINDS the user request creates.  A kind-level completeness premise —
+    never a reading replacement."""
+
+    source_id: str
+    frame_kinds: tuple[str, ...]
+
+    def __post_init__(self):
+        if not self.source_id or not self.frame_kinds:
+            raise ValueError("explicit closure identity and frame kinds required")
+        if any(kind not in {"DESIRED_OUTCOME", "PROHIBITION", "OBLIGATION"}
+               for kind in self.frame_kinds):
+            raise ValueError("closure declares obligation-bearing frame kinds only")
+
+
+@dataclass(frozen=True)
 class TrajectoryEvent:
     """One structured trajectory event (trusted metadata + body)."""
 

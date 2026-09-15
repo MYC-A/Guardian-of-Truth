@@ -221,6 +221,12 @@ def default_binding(overrides=None):
                                                "expected_json": '"frozen"',
                                                "entity_path": ["order_id"]},
                                "entity_path": ["order_id"], "quotes": ["frozen"]},
+        "goal:goal:conservative:f0:content": {"kind": "OUTCOME",
+                                               "tools": ["cancel_order", "get_status"],
+                                               "quotes": ["cancel", "status"]},
+        "goal:goal:rule_frames:f0:content": {"kind": "OUTCOME",
+                                              "tools": ["cancel_order", "get_status"],
+                                              "quotes": ["cancel", "status"]},
     }
     if overrides:
         units.update(overrides)
@@ -430,13 +436,24 @@ class TestAnalyzeE2E:
     def test_closed_safe_proved_no_error(self):
         """Closed semantic policy + closed goal contract + complete history +
         bound claims (none material here) -> PROVED_NO_ERROR (spec section 153)."""
-        from guardian_truth.vnext.e2e.goal_types_v1 import GoalContract
+        from guardian_truth.vnext.e2e.source_adapter_v1 import E2EGoalClosure
         program = simple_program()
         case = make_case(calls=(CALL_STATUS,), history_complete=True,
                          policy_universe=make_universe(program),
-                         goal_closure=GoalContract("goal:closure", "authoritative",
-                                                   ("user:0",), (), (), ()))
-        backend = ScriptedBackend(h0_structure=program, binding_units=default_binding())
+                         goal_closure=E2EGoalClosure("test:goal-closure",
+                                                      ("DESIRED_OUTCOME",)))
+        user_text = case.user_sources[0].text
+        goal_response = _goal_frames_response(
+            user_text, [{"id": "f1", "kind": "DESIRED_OUTCOME",
+                         "content": "show the status"}])
+        units = default_binding({
+            "goal:goal:conservative:f0:content": {"kind": "OUTCOME",
+                                                   "tools": ["get_status"], "quotes": ["status"]},
+            "goal:goal:rule_frames:f0:content": {"kind": "OUTCOME",
+                                                  "tools": ["get_status"], "quotes": ["status"]},
+        })
+        backend = ScriptedBackend(h0_structure=program, goal_frames=goal_response,
+                                  binding_units=units)
         output, _ = run_arm(case, backend, arm="E0")
         assert output.result.status is CoreStatus.PROVED_NO_ERROR
         assert output.result.certificate_check.valid
@@ -445,12 +462,12 @@ class TestAnalyzeE2E:
     def test_closure_ablation_history_incomplete_unresolved(self):
         """Spec section 154: the same closed-safe case with incomplete history
         must become UNRESOLVED, never NO_ERROR."""
-        from guardian_truth.vnext.e2e.goal_types_v1 import GoalContract
+        from guardian_truth.vnext.e2e.source_adapter_v1 import E2EGoalClosure
         program = simple_program()
         case = make_case(calls=(CALL_STATUS,), history_complete=False,
                          policy_universe=make_universe(program),
-                         goal_closure=GoalContract("goal:closure", "authoritative",
-                                                   ("user:0",), (), (), ()))
+                         goal_closure=E2EGoalClosure("test:goal-closure",
+                                                      ("DESIRED_OUTCOME",)))
         backend = ScriptedBackend(h0_structure=program, binding_units=default_binding())
         output, _ = run_arm(case, backend, arm="E0")
         assert output.result.status is CoreStatus.UNRESOLVED
@@ -516,15 +533,20 @@ class TestLoweringV3Equivalence:
 
     def _run(self, program, calls, history, response="Done.", binding_overrides=None,
              history_complete=True, closure=True):
-        from guardian_truth.vnext.e2e.goal_types_v1 import GoalContract
+        from guardian_truth.vnext.e2e.source_adapter_v1 import E2EGoalClosure
         case = make_case(calls=calls, history=history, response_text=response,
                          history_complete=history_complete,
                          policy_universe=make_universe(program, policy_text=_policy_text(program)) if closure else None,
-                         goal_closure=GoalContract("goal:closure", "authoritative",
-                                                   ("user:0",), (), (), ()) if closure else None,
+                         goal_closure=E2EGoalClosure("test:goal-closure",
+                                                      ("DESIRED_OUTCOME",)) if closure else None,
                          policy=_policy_text(program))
+        user_text = case.user_sources[0].text
+        quote = user_text[8:30].strip() or "request"
+        goal_response = _goal_frames_response(
+            user_text, [{"id": "f1", "kind": "DESIRED_OUTCOME", "content": quote}])
         units = default_binding(binding_overrides or {})
-        backend = ScriptedBackend(h0_structure=program, binding_units=units)
+        backend = ScriptedBackend(h0_structure=program, goal_frames=goal_response,
+                                  binding_units=units)
         output, _ = run_arm(case, backend, arm="E0")
         return output
 

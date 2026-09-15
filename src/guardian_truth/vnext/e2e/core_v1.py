@@ -404,15 +404,20 @@ def _universe_covers(policy_comp: PolicyComposition, sources: E2ECaseSources) ->
 
 
 def _goal_closure_covers(goal_comp, sources: E2ECaseSources) -> bool:
-    """Goal closure premise: an authoritative goal contract is supplied and
-    every retained contract is behaviorally identical to it (spec §153)."""
+    """Goal closure premise (spec sections 101-102, 153): an authoritative
+    goal contract is supplied and every retained contract's OBLIGATION-BEARING
+    frame-kind multiset matches it.  The comparison is at the frame-kind
+    level: the closure enumerates the material goal structure (which kinds of
+    obligations the user's request creates); the proof-level obligation
+    identity still comes from the E5-grounded frontend frames (spec section
+    102: closure is a completeness premise, never a reading replacement)."""
     closure = sources.goal_closure
     if closure is None:
         return False
-    from .goal_composition_v1 import _obligation_surface
-    try:
-        closure_surface = _obligation_surface(closure)
-    except Exception:
-        return False
-    return all(_obligation_surface(contract) == closure_surface
-               for contract in goal_comp.contracts)
+    from .goal_composition_v1 import OBLIGATION_KINDS
+
+    def kinds(contract):
+        return tuple(sorted(frame.kind.value for frame in contract.frames
+                            if frame.kind in OBLIGATION_KINDS))
+    closure_kinds = tuple(sorted(closure.frame_kinds))
+    return all(kinds(contract) == closure_kinds for contract in goal_comp.contracts)
