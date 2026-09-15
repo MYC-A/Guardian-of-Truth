@@ -138,6 +138,25 @@ def _decode_literal(encoded: str):
     return value, canonical(value).decode("utf-8") == encoded
 
 
+def _coerce_literal(token: str):
+    """Deterministic format repair for bare value tokens: a bare word becomes
+    its canonical JSON string; a bare number stays a number.  Returns the
+    canonical encoding or None.  (Transport-format normalization, spec
+    section 33: canonical serialization; never a semantic rewrite.)"""
+    token = token.strip()
+    if not token:
+        return None
+    try:
+        value = json.loads(token)
+        if isinstance(value, (dict, list)):
+            return None
+        return canonical(value).decode("utf-8")
+    except (ValueError, TypeError):
+        if any(ch.isspace() for ch in token):
+            return None
+        return canonical(token).decode("utf-8")
+
+
 def _path_exists_in_schema(schema: dict, path: tuple[str, ...]) -> bool:
     """Path existence in a tool schema.  Accepts both JSON-schema form
     ({'properties': {...}}) and the flat corpus form ({'field': 'type'}) — a
@@ -282,8 +301,15 @@ class SemanticBindingFrontend:
                 for encoded in check["allowed_json"]:
                     value, ok = _decode_literal(encoded)
                     if not ok:
-                        failures.append(f"{unit_id}:noncanonical_literal")
-                        continue
+                        repaired = _coerce_literal(encoded)
+                        if repaired is None:
+                            failures.append(f"{unit_id}:noncanonical_literal")
+                            continue
+                        encoded = repaired
+                        value, ok = _decode_literal(encoded)
+                        if not ok:
+                            failures.append(f"{unit_id}:noncanonical_literal")
+                            continue
                     if not presence and not _literal_in_quote(value, quotes + tuple(normative_texts.values())):
                         failures.append(f"{unit_id}:literal_not_grounded")
                         continue

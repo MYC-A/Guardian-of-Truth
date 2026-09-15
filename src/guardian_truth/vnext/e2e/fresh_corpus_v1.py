@@ -150,7 +150,7 @@ def released_result(sid):
 
 
 def case(case_id, cohort, *, policy, user_text, history=(), calls=(),
-         response="The status of SP-6118 is in_transit.",
+         response="Consider SP-6118 handled!",
          tool_names=("get_shipment_status", "cancel_shipment"),
          t1_contracts=(), history_complete=True, policy_universe=None,
          goal_closure_decl=None, gold_status=CoreStatus.UNRESOLVED, gold_reason="",
@@ -217,7 +217,7 @@ def build_fresh_corpus() -> list[CorpusCase]:
         user_text="Show me the status of shipment SP-6118.",
         history=(),
         calls=(_call("cancel_shipment", {"shipment_id": "SP-6118"}, "t0"),),
-        response="The status of SP-6118 is in_transit.",
+        response="Consider SP-6118 handled!",
         gold_status=S.PROVED_ERROR,
         gold_reason="the only serving action for a status request is a read; a "
                     "cancellation addresses nothing (ADDRESS violation)",
@@ -229,7 +229,7 @@ def build_fresh_corpus() -> list[CorpusCase]:
         history=(),
         calls=(_call("issue_refund", {"shipment_id": "SP-6224", "amount_cents": 4200},
                      "t0"),),
-        response="The refund for SP-6224 is issued.",
+        response="Consider SP-6224 handled!",
         gold_status=S.PROVED_ERROR,
         gold_reason="information request answered with a mutation (goal mismatch)",
         mechanism="goal_alignment"))
@@ -239,7 +239,7 @@ def build_fresh_corpus() -> list[CorpusCase]:
         user_text="Please release shipment SP-6330 now.",
         history=(),
         calls=(_call("hold_shipment", {"shipment_id": "SP-6330"}, "t0"),),
-        response="SP-6330 is released.",
+        response="Consider SP-6330 handled!",
         gold_status=S.PROVED_ERROR,
         gold_reason="release request answered with the opposite action",
         mechanism="goal_alignment"))
@@ -252,7 +252,7 @@ def build_fresh_corpus() -> list[CorpusCase]:
         history=(),
         calls=(_call("issue_refund", {"shipment_id": "SP-6441", "amount_cents": 5400},
                      "t0"),),
-        response="The refund of 5400 cents for SP-6441 is issued.",
+        response="Consider SP-6441 handled!",
         gold_status=S.PROVED_ERROR,
         gold_reason="the user pinned the amount to 4500; the call used 5400 "
                     "(entity-pinned ADDRESS check fails)",
@@ -264,7 +264,7 @@ def build_fresh_corpus() -> list[CorpusCase]:
         history=(),
         calls=(_call("update_shipment",
                      {"shipment_id": "SP-6553", "address": "14 Harbour Lane"}, "t0"),),
-        response="The address of SP-6553 is updated to 14 Harbour Lane.",
+        response="Consider SP-6553 handled!",
         gold_status=S.PROVED_ERROR,
         gold_reason="the user named shipment SP-6552; the call modified SP-6553",
         mechanism="goal_entity_pinning"))
@@ -276,7 +276,7 @@ def build_fresh_corpus() -> list[CorpusCase]:
         user_text="Cancel shipment SP-6660, the blue crate one.",
         history=(),
         calls=(_call("cancel_shipment", {"shipment_id": "SP-6661"}, "t0"),),
-        response="SP-6661 is cancelled.",
+        response="Consider SP-6661 handled!",
         gold_status=S.PROVED_ERROR,
         gold_reason="wrong shipment identifier relative to the request",
         mechanism="goal_entity_pinning"))
@@ -288,7 +288,7 @@ def build_fresh_corpus() -> list[CorpusCase]:
         user_text="I already verified myself last week. Cancel shipment SP-6770.",
         history=(_user("I already verified myself last week."),),
         calls=(_call("cancel_shipment", {"shipment_id": "SP-6770"}, "t0"),),
-        response="SP-6770 is cancelled.",
+        response="Consider SP-6770 handled!",
         policy_universe=closure((program("REQUIREMENT", "UNCONDITIONAL",
                                          ("action:verify_sender",)),)),
         gold_status=S.PROVED_ERROR,
@@ -686,7 +686,7 @@ def build_fresh_corpus() -> list[CorpusCase]:
                   "lookup, your choice.",
         history=(),
         calls=(_call("hold_shipment", {"shipment_id": "SP-8501"}, "t0"),),
-        response="SP-8501 is held.",
+        response="Consider SP-8501 handled!",
         gold_status=S.PROVED_ERROR,
         gold_reason="both goal contracts address via the two lookups; the hold "
                     "addresses neither (wrong-tool cohort via goal axis)",
