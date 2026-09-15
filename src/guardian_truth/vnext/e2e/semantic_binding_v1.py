@@ -130,6 +130,10 @@ def _decode_literal(encoded: str):
 
 
 def _path_exists_in_schema(schema: dict, path: tuple[str, ...]) -> bool:
+    """Path existence in a tool schema.  Accepts both JSON-schema form
+    ({'properties': {...}}) and the flat corpus form ({'field': 'type'}) — a
+    declared optional field exists even when a particular call omits it
+    (spec section 87: missing argument != undeclared field)."""
     node = schema
     for key in path:
         if not isinstance(node, dict):
@@ -138,6 +142,11 @@ def _path_exists_in_schema(schema: dict, path: tuple[str, ...]) -> bool:
             node = node["properties"][key]
         elif key in node.get("required", []):
             node = {}
+        elif ("properties" not in node and "required" not in node
+                and "items" not in node and not isinstance(node.get("additionalProperties"), dict)
+                and key in node):
+            # flat corpus form: {'field': 'type'} or {'field': {...}}
+            node = node[key] if isinstance(node[key], dict) else {}
         elif isinstance(node.get("additionalProperties"), dict):
             node = node["additionalProperties"]
         elif isinstance(node.get("items"), dict):

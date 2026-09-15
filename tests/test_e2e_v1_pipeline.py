@@ -32,8 +32,8 @@ from guardian_truth.vnext.policy_grs import (GRS_DSL_SCHEMA, GRS_GROUND_REPAIR_T
 from guardian_truth.vnext.policy_v3_benchmark import (compile_v3_structure,
                                                       evaluate_v3_program)
 from guardian_truth.vnext.semantic import Proposal
-from guardian_truth.vnext.tools import (ContractRegistry, EffectSpec, FieldCondition,
-                                        TrustedContract)
+from guardian_truth.vnext.tools import (ConditionalGuarantee, ContractRegistry,
+                                        EffectSpec, FieldCondition, TrustedContract)
 from guardian_truth.vnext.types import CoreStatus, EvaluationHypothesis, Truth
 from guardian_truth.vnext import policy_v3_benchmark as v3
 
@@ -882,3 +882,140 @@ class TestGoalAxis:
         # REQUIREMENT verify_identity: the target-call sentinel encoding only
         # counts ASSISTANT response calls; the user text proves nothing
         assert output.result.status is CoreStatus.PROVED_ERROR
+
+
+# --------------------------------------------------- cross-layer spec cases
+
+class TestCrossLayerSpecCases:
+    def test_section_126_seat_and_passengers(self):
+        """Policy forbids modifying the passenger count; the user asks for a
+        seat change; the call does BOTH.  The passenger field presence check
+        proves the forbidden action inside a goal-aligned call (spec 126)."""
+        policy = "Do not modify the number of passengers on a booking."
+        user_text = "Change my seat from 12A to 14C."
+        program = simple_program(targets=("action:modify_passenger_count",))
+        units = {
+            "action:modify_passenger_count": {
+                "tool": "update_booking", "unit_kind": "ACTION",
+                "checks": [{"path": ["passengers"], "allowed_json": ["0"],
+                            "presence_only": True, "quote": "number of passengers"}],
+                "quotes": ["passengers"]},
+            "goal:goal:conservative:f0:content": {
+                "kind": "OUTCOME", "tools": ["update_booking"], "quotes": ["seat"]},
+            "goal:goal:rule_frames:f0:content": {
+                "kind": "OUTCOME", "tools": ["update_booking"], "quotes": ["seat"]},
+        }
+        goal_response = _goal_frames_response(
+            user_text, [{"id": "f1", "kind": "DESIRED_OUTCOME",
+                         "content": "Change my seat", "serving": ["update_booking"]}])
+        booking_call = TrajectoryEvent("call", tool="update_booking",
+                                        arguments={"seat": "14C", "passengers": 3},
+                                        call_id="t0", actor="ASSISTANT")
+        case = make_case(policy=policy, user_text=user_text, calls=(booking_call,),
+                         history_complete=True,
+                         catalog=("action:modify_passenger_count",),
+                         schemas=(("update_booking", {"seat": "string", "passengers": "integer"}),))
+        backend = ScriptedBackend(h0_structure=program, goal_frames=goal_response,
+                                  binding_units=units)
+        output, _ = run_arm(case, backend, arm="E0")
+        assert output.result.status is CoreStatus.PROVED_ERROR
+        assert output.result.certificate_check.valid
+
+    def test_section_126_seat_only_is_safe(self):
+        """The same policy with a seat-only call: the passengers field is
+        absent, the presence check proves FALSE -> the forbidden action did
+        not happen -> no violation."""
+        policy = "Do not modify the number of passengers on a booking."
+        user_text = "Change my seat from 12A to 14C."
+        program = simple_program(targets=("action:modify_passenger_count",))
+        units = {
+            "action:modify_passenger_count": {
+                "tool": "update_booking", "unit_kind": "ACTION",
+                "checks": [{"path": ["passengers"], "allowed_json": ["0"],
+                            "presence_only": True, "quote": "number of passengers"}],
+                "quotes": ["passengers"]},
+        }
+        booking_call = TrajectoryEvent("call", tool="update_booking",
+                                        arguments={"seat": "14C"},
+                                        call_id="t0", actor="ASSISTANT")
+        case = make_case(policy=policy, user_text=user_text, calls=(booking_call,),
+                         history_complete=True,
+                         catalog=("action:modify_passenger_count",),
+                         schemas=(("update_booking", {"seat": "string", "passengers": "integer"}),))
+        backend = ScriptedBackend(h0_structure=program, binding_units=units)
+        output, _ = run_arm(case, backend, arm="E0")
+        # no violation provable, no closure -> UNRESOLVED (safe direction)
+        assert output.result.status is CoreStatus.UNRESOLVED
+
+    def _delete_contract(self):
+        from guardian_truth.vnext.tools import ToolIdentity
+        from guardian_truth.vnext import normalize as _normalize
+        schema = {"name": "delete_order", "arguments": {"order_id": "string"}}
+        identity = _normalize.tool_identity("delete_order", schema, provider="test",
+                                             version="1.0.0")  # noqa: F841
+        return TrustedContract(
+            identity=identity,
+            preconditions=(),
+            reads=(),
+            writes=("orders",),
+            guarantees=(ConditionalGuarantee(
+                conditions=(FieldCondition("result", ("status",), '"SUCCESS"'),),
+                effects=(EffectSpec("order_id", "deleted", "true", True),)),),
+            possible_effects=(),
+            no_effect_conditions=(FieldCondition("result", ("status",), '"FAILURE"'),),
+            failure_semantics="NO_EFFECT_ON_FAILURE", freshness="UNKNOWN",
+            idempotence="UNKNOWN", provenance="controlled test contract")
+
+    def test_section_127_false_success_claim(self):
+        """delete_order FAILED; assistant asserts completion naming the tool.
+        The ACTION_COMPLETED claim (predicate = the tool name, the baseline
+        claim-evidence channel convention) is REFUTED by the trusted no-effect
+        contract -> PROVED_ERROR (spec section 127 / 2.10).  A pure-NL verb
+        claim ('was deleted') cannot connect to the tool channel and stays
+        UNRESOLVED — documented E2E V1 envelope."""
+        policy = "Handle booking changes carefully."
+        response = "Done, I ran delete_order for order 19."
+        # claim graph: one ACTION_COMPLETED claim about order 19
+        backend_claims = {
+            "claim_disposition": {"disposition": "VERIFIABLE_TYPED"},
+            "claim_kind": {"kind": "ACTION_COMPLETED"},
+            "claim_actor": {"actor": "assistant"},
+            "claim_predicate": {"predicate": "delete_order"},
+            "claim_object_entities": {"object": "order 19", "entity_refs": ["19"]},
+            "claim_modality_polarity": {"polarity": "POSITIVE", "modality": "ASSERTED"},
+            "claim_time": {"time_anchor": "NOW"},
+            "claim_source": {"source_refs": ["ASSISTANT"]},
+            "claim_explicit_causality": {"explicit_causality": False},
+        }
+
+        class ClaimBackend(ScriptedBackend):
+            def propose(self, task, payload, schema):
+                if task.startswith("claim_") and task != "claim_relations":
+                    spans = payload["span_inventory"]
+                    return Proposal(encoded({"spans": [
+                        {"span_id": span["span_id"],
+                         **{key: value for key, value in backend_claims[task].items()}}
+                        for span in spans]}), "SUCCESS", "VALID")
+                return super().propose(task, payload, schema)
+
+        history = (
+            TrajectoryEvent("call", tool="delete_order", arguments={"order_id": "19"},
+                            call_id="h0", actor="ASSISTANT",
+                            provider="test", version="1.0.0"),
+            TrajectoryEvent("result", tool="delete_order", call_id="h0",
+                            requestor="ASSISTANT", provider="test", version="1.0.0",
+                            payload={"order_id": "19", "status": "FAILURE"}),
+        )
+        case = make_case(policy=policy, calls=(), history=history,
+                         response_text=response, history_complete=True,
+                         catalog=("action:delete_order",),
+                         schemas=(("delete_order", {"order_id": "string"}),),
+                         contracts=(self._delete_contract(),))
+        backend = ClaimBackend(h0_structure=simple_program(
+            modality="PERMISSION", relation="UNCONDITIONAL",
+            targets=("action:delete_order",)),
+            binding_units={"action:delete_order": {
+                "tool": "delete_order", "unit_kind": "ACTION", "quotes": ["deleted"]}})
+        output, _ = run_arm(case, backend, arm="E0")
+        assert output.result.status is CoreStatus.PROVED_ERROR
+        assert output.result.certificate_check.valid

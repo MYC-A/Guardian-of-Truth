@@ -56,6 +56,8 @@ class TrajectoryEvent:
     call_id: str | None = None
     requestor: str | None = None    # ASSISTANT | USER for results
     actor: str | None = None        # ASSISTANT | USER for calls
+    provider: str | None = None     # trusted tool identity attributes
+    version: str | None = None      # (must match the T1 contract identity)
 
 
 @dataclass(frozen=True)
@@ -111,6 +113,10 @@ def _render_event(event: TrajectoryEvent) -> str:
     if event.kind == "call":
         actor = (event.actor or "ASSISTANT").upper()
         header = f"⟦{actor}_TOOL_CALL name=\"{event.tool}\""
+        if event.provider:
+            header += f" provider=\"{event.provider}\""
+        if event.version:
+            header += f" version=\"{event.version}\""
         if event.call_id:
             header += f" call_id=\"{event.call_id}\""
         header += "⟧"
@@ -118,10 +124,14 @@ def _render_event(event: TrajectoryEvent) -> str:
         return header + "\n" + canonical(event.arguments or {}).decode("utf-8")
     if event.kind == "result":
         header = f"⟦TOOL_RESULT name=\"{event.tool}\""
+        if event.provider:
+            header += f" provider=\"{event.provider}\""
+        if event.version:
+            header += f" version=\"{event.version}\""
         if event.call_id:
             header += f" call_id=\"{event.call_id}\""
         if event.requestor:
-            header += f" requestor=\"{event.requestor.upper()}\""
+            header += f" requestor=\"{event.requestor.lower()}\""
         header += "⟧"
         from ..integrity import canonical
         return header + "\n" + canonical(event.payload or {}).decode("utf-8")
