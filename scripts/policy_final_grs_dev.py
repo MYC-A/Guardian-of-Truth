@@ -922,7 +922,7 @@ def _efficiency(arm):
             tokens += (usage.get('prompt_tokens') or 0) \
                 + (usage.get('completion_tokens') or 0)
     return {'requests': len(records), 'tokens': tokens,
-            'median_latency_s': round(percentile(latencies, 50), 2) if latencies else None}
+            'median_latency_s': round(percentile(latencies, 0.5), 2) if latencies else None}
 
 
 
