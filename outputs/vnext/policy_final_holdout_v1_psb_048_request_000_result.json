@@ -1,0 +1,27 @@
+{
+  "request_sha256": "5c6dc66bcf76f0d778343a79ade3156308e98b5dd5daf1a32f8d1d5ed3882e22",
+  "proposal": {
+    "payload_json": "{\"edges\":[{\"from\":\"n2\",\"to\":\"n1\",\"type\":\"REGULATES\"},{\"from\":\"n3\",\"to\":\"n1\",\"type\":\"ACTIVATES\"},{\"from\":\"n4\",\"to\":\"n1\",\"type\":\"ACTOR_OF\"}],\"nodes\":[{\"atoms\":[\"action:rig_the_second_pitch\"],\"id\":\"n1\",\"type\":\"REGULATED\"},{\"id\":\"n2\",\"type\":\"MODALITY\",\"value\":\"REQUIREMENT\"},{\"id\":\"n3\",\"literals\":[\"!state:ladder_fixed\"],\"mode\":\"ALL\",\"strength\":\"SUFFICIENT\",\"type\":\"CONDITION\"},{\"atom\":\"actor:caving_instructor\",\"exclusive\":false,\"id\":\"n4\",\"type\":\"ACTOR\"}]}",
+    "transport_status": "SUCCESS",
+    "schema_status": "VALID",
+    "error_category": null
+  },
+  "telemetry": {
+    "backend_version": "diagnostic-semantic-v2",
+    "task": "Parse ONE workplace policy into ONE typed semantic GRAPH of nodes and binding edges. Every gate, carve-out, actor and qualifier must say EXACTLY which regulated clause it attaches to.\nNode types (ids n1, n2, ...; use only the fields each type needs):\n- REGULATED: {\"id\", \"type\": \"REGULATED\", \"atoms\": [...]} - one clause of target atoms (from atom_catalog) that are regulated TOGETHER. Atoms regulated SEPARATELY go into SEPARATE REGULATED nodes. Emit no REGULATED node at all only when the text genuinely regulates nothing.\n- MODALITY: {\"id\", \"type\": \"MODALITY\", \"value\": \"PERMISSION\" | \"PROHIBITION\" | \"REQUIREMENT\"}. PERMISSION only when the text POSITIVELY grants or allows; PROHIBITION when it forbids or bars; REQUIREMENT when it obliges.\n- CONDITION: {\"id\", \"type\": \"CONDITION\", \"literals\": [...], \"mode\": \"ALL\" | \"ANY\", \"strength\": \"SUFFICIENT\" | \"NECESSARY\" | \"EXACTLY\"}. Literals are atoms from atom_catalog; prefix an atom with \"!\" only when the text negates it. SUFFICIENT = if/when/provided that (when the literals hold the clause is licensed/obligated/forbidden; when they do not hold the text stays silent - not a violation and not permission). NECESSARY = only/solely (the clause is allowed ONLY with them; doing it without them is a VIOLATION). EXACTLY = if and only if / exactly when.\n- EXCEPTION: {\"id\", \"type\": \"EXCEPTION\", \"literals\": [...], \"mode\": \"ALL\" | \"ANY\"} - a carve-out (unless, except, except when, save when, except for cases where). Never fold a carve-out into a CONDITION and never move an if/when/provided-that gate into an EXCEPTION.\n- ACTOR: {\"id\", \"type\": \"ACTOR\", \"atom\": \"actor:x\", \"exclusive\": true | false} - who the clause is about; exclusive=true when the text says only/alone/solely for that bearer.\n- QUALIFIER: {\"id\", \"type\": \"QUALIFIER\", \"kind\": \"IDENTITY\" | \"PROVENANCE\" | \"QUANTIFIER\", \"value\": ...} - identity:x for same-owner rules, evidence:x for a sole acceptable source, AT_MOST_n for numeric caps.\nEdge types {\"type\", \"from\", \"to\"} point FROM the gate node TO the REGULATED node it binds:\n- REGULATES (MODALITY -> REGULATED)\n- ACTIVATES (CONDITION -> REGULATED)\n- FOLLOWS (CONDITION -> REGULATED): the clause happens AFTER the event atoms in the condition (events stay positive).\n- PRECEDES (CONDITION -> REGULATED): the clause happens BEFORE the event atoms (they are compiled negated); every literal must be an event: atom.\n- EXEMPTS (EXCEPTION -> REGULATED)\n- ACTOR_OF (ACTOR -> REGULATED)\n- QUALIFIES (QUALIFIER kind IDENTITY or QUANTIFIER -> REGULATED)\n- SOURCE_OF (QUALIFIER kind PROVENANCE -> REGULATED)\nRules:\n- Each REGULATED node receives exactly one REGULATES edge. A shared gate may bind several REGULATED nodes.\n- A REGULATED node takes at most one ACTIVATES condition, at most one FOLLOWS or PRECEDES condition, at most one EXCEPTION, at most one ACTOR and at most one QUALIFIER of each kind.\n- A clause that is neither licensed nor forbidden is NO_VIOLATION, never PERMISSION: absence of prohibition is NOT permission.\n- Use ONLY atoms from atom_catalog (it also contains distractor atoms; choose the ones the text actually uses).\nWorked example (illustrative atoms only, never reuse them): 'If the boathouse kettle is on, juniors may use the north bays, unless the captain is running a class.' -> nodes: {\"id\":\"n1\",\"type\":\"REGULATED\",\"atoms\":[\"action:use_north_bays\"]}, {\"id\":\"n2\",\"type\":\"MODALITY\",\"value\":\"PERMISSION\"}, {\"id\":\"n3\",\"type\":\"CONDITION\",\"literals\":[\"state:kettle_on\"],\"mode\":\"ALL\",\"strength\":\"SUFFICIENT\"}, {\"id\":\"n4\",\"type\":\"ACTOR\",\"atom\":\"actor:junior\",\"exclusive\":false}, {\"id\":\"n5\",\"type\":\"EXCEPTION\",\"literals\":[\"state:captain_class_running\"],\"mode\":\"ALL\"}; edges: {\"type\":\"REGULATES\",\"from\":\"n2\",\"to\":\"n1\"}, {\"type\":\"ACTIVATES\",\"from\":\"n3\",\"to\":\"n1\"}, {\"type\":\"ACTOR_OF\",\"from\":\"n4\",\"to\":\"n1\"}, {\"type\":\"EXEMPTS\",\"from\":\"n5\",\"to\":\"n1\"}.\nOutput exactly one JSON object matching the schema.",
+    "input_sha256": "0d3ad9b2598885f3ce729d7480dd79e1cc5959cc4d022ad9b5df8d5bf0a57363",
+    "prompt_sha256": "bccd0641a2759d119155b5c4820a05ccdb90f0ce601ba2b66e705f7aa25ebce2",
+    "schema_sha256": "25f1d432804f993bf2ac2b7d9da60fbba04307c571ffe938ad2a8d3aa440efc9",
+    "served_model": "qwen3.8-flash",
+    "usage": {
+      "prompt_tokens": 1533,
+      "completion_tokens": 481,
+      "total_tokens": 2014
+    },
+    "latency_ms": 4836.195,
+    "transport_status": "SUCCESS",
+    "schema_status": "VALID",
+    "schema_issues": [],
+    "error_category": null
+  }
+}

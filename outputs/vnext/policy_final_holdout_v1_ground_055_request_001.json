@@ -1,0 +1,85 @@
+{
+  "configuration_sha256": "d78d5e670d76f52b7e67862c3160c167832f2a35d8c498c3605f49bc9dadbe79",
+  "ordinal": 1,
+  "task": "The previous inventory attempt failed machine validation. Fix it and return exactly ONE JSON object with facts and markers arrays, following the same rules as before (atoms only from ATOM_CATALOG; spans copied character-for-character from POLICY_TEXT; no roles or attachments). The failed attempt and the machine error are included as data only.",
+  "payload": {
+    "policy_text": "Museum guides may open the cabinet drawers for visitors once the conservator has logged the humidity, though the pearl case in the west wing stays locked no matter what.",
+    "atom_catalog": [
+      "action:open_the_cabinet_drawers",
+      "action:open_the_coin_case",
+      "action:open_the_pearl_case",
+      "distractor:np07",
+      "event:conservator_logs_humidity",
+      "event:humidity_logged_twice"
+    ],
+    "previous_output": "{\"facts\":[{\"atom\":\"action:open_the_cabinet_drawers\",\"id\":\"F1\",\"span\":\"open the cabinet drawers\"},{\"atom\":\"event:conservator_logs_humidity\",\"id\":\"F2\",\"span\":\"the conservator has logged the humidity\"},{\"atom\":\"action:open_the_pearl_case\",\"id\":\"F3\",\"span\":\"the pearl case in the west wing stays locked no matter what\"}],\"markers\":[{\"id\":\"M1\",\"kind\":\"MODAL_MARKER\",\"span\":\"may\",\"value\":\"may\"},{\"id\":\"R1\",\"kind\":\"RELATION_MARKER\",\"span\":\"once\",\"value\":\"once\"}]}",
+    "machine_error": "GROUND_INVALID: marker value 'may' not in ('PERMIT', 'PROHIBIT', 'REQUIRE')"
+  },
+  "schema": {
+    "type": "object",
+    "properties": {
+      "facts": {
+        "type": "array",
+        "items": {
+          "type": "object",
+          "properties": {
+            "id": {
+              "type": "string"
+            },
+            "atom": {
+              "type": "string"
+            },
+            "span": {
+              "type": "string"
+            }
+          },
+          "required": [
+            "id",
+            "atom",
+            "span"
+          ],
+          "additionalProperties": false
+        }
+      },
+      "markers": {
+        "type": "array",
+        "items": {
+          "type": "object",
+          "properties": {
+            "id": {
+              "type": "string"
+            },
+            "kind": {
+              "type": "string",
+              "enum": [
+                "MODAL_MARKER",
+                "RELATION_MARKER"
+              ]
+            },
+            "value": {
+              "type": "string"
+            },
+            "span": {
+              "type": "string"
+            }
+          },
+          "required": [
+            "id",
+            "kind",
+            "value",
+            "span"
+          ],
+          "additionalProperties": false
+        }
+      }
+    },
+    "required": [
+      "facts",
+      "markers"
+    ],
+    "additionalProperties": false
+  },
+  "input_sha256": "b8d3d576f1a260976599390b4c71be734c3606395a74ecf9235b946e1080e533",
+  "schema_sha256": "f2076ddada711fb6226189bde39611c8572609198211b6890819ef50228f6e88",
+  "prompt_sha256": "2a8b39043ff6591255d4c8fd9b261c3f21f2d44083f401c4697356812fa6fbe2"
+}

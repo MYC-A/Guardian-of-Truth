@@ -1,0 +1,144 @@
+{
+  "configuration_sha256": "d78d5e670d76f52b7e67862c3160c167832f2a35d8c498c3605f49bc9dadbe79",
+  "ordinal": 1,
+  "task": "The previous graph attempt failed machine validation. Fix it and return exactly ONE JSON object with nodes and edges matching the schema, following the same rules as before. The failed attempt and the machine error are included as data only.",
+  "payload": {
+    "policy_text": "Fuel claims must be supported by till receipts issued by the forecourt itself.",
+    "atom_catalog": [
+      "action:submit_fuel_claims",
+      "action:submit_tool_claims",
+      "distractor:p01",
+      "evidence:forecourt_till_receipts",
+      "evidence:handwritten_notes"
+    ],
+    "previous_output": null,
+    "machine_error": "INVALID"
+  },
+  "schema": {
+    "type": "object",
+    "properties": {
+      "nodes": {
+        "type": "array",
+        "items": {
+          "type": "object",
+          "properties": {
+            "id": {
+              "type": "string",
+              "minLength": 1
+            },
+            "type": {
+              "type": "string",
+              "enum": [
+                "REGULATED",
+                "MODALITY",
+                "CONDITION",
+                "EXCEPTION",
+                "ACTOR",
+                "QUALIFIER"
+              ]
+            },
+            "atoms": {
+              "type": "array",
+              "minItems": 1,
+              "items": {
+                "type": "string"
+              }
+            },
+            "value": {
+              "type": "string",
+              "enum": [
+                "PERMISSION",
+                "PROHIBITION",
+                "REQUIREMENT",
+                "IDENTITY",
+                "PROVENANCE",
+                "QUANTIFIER"
+              ]
+            },
+            "literals": {
+              "type": "array",
+              "items": {
+                "type": "string"
+              }
+            },
+            "mode": {
+              "type": "string",
+              "enum": [
+                "ALL",
+                "ANY"
+              ]
+            },
+            "strength": {
+              "type": "string",
+              "enum": [
+                "SUFFICIENT",
+                "NECESSARY",
+                "EXACTLY"
+              ]
+            },
+            "atom": {
+              "type": "string"
+            },
+            "kind": {
+              "type": "string",
+              "enum": [
+                "IDENTITY",
+                "PROVENANCE",
+                "QUANTIFIER"
+              ]
+            },
+            "exclusive": {
+              "type": "boolean"
+            }
+          },
+          "required": [
+            "id",
+            "type"
+          ],
+          "additionalProperties": false
+        }
+      },
+      "edges": {
+        "type": "array",
+        "items": {
+          "type": "object",
+          "properties": {
+            "type": {
+              "type": "string",
+              "enum": [
+                "REGULATES",
+                "ACTIVATES",
+                "EXEMPTS",
+                "ACTOR_OF",
+                "QUALIFIES",
+                "SOURCE_OF",
+                "PRECEDES",
+                "FOLLOWS"
+              ]
+            },
+            "from": {
+              "type": "string"
+            },
+            "to": {
+              "type": "string"
+            }
+          },
+          "required": [
+            "type",
+            "from",
+            "to"
+          ],
+          "additionalProperties": false
+        }
+      }
+    },
+    "required": [
+      "nodes",
+      "edges"
+    ],
+    "additionalProperties": false
+  },
+  "input_sha256": "6a542c7591b719410d6fb2ff97e65b3da3aa64c73ce0d882079f87ee6f505f03",
+  "schema_sha256": "25f1d432804f993bf2ac2b7d9da60fbba04307c571ffe938ad2a8d3aa440efc9",
+  "prompt_sha256": "ec6d0cae7ba752e1e35279e719e14eda8acdc8b9c05ea6b9f5c7d9ecf599b161"
+}

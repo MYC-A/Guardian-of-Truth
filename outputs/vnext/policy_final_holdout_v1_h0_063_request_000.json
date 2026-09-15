@@ -1,0 +1,113 @@
+{
+  "configuration_sha256": "d78d5e670d76f52b7e67862c3160c167832f2a35d8c498c3605f49bc9dadbe79",
+  "ordinal": 0,
+  "task": "Parse ONE workplace policy into exactly ONE typed semantic structure.\nField rules:\n- modality: PERMISSION (the text grants or allows), PROHIBITION (the text forbids or bars), REQUIREMENT (the text obliges).\n- relation: how the regulated act is gated.\n  IF: when the conditions hold the act is licensed/obligated/forbidden; when they do not hold the text stays silent (NOT a violation, and NOT permission).\n  ONLY_IF: exclusive - the act is licensed ONLY under the conditions; doing it without them is a VIOLATION.\n  IF_AND_ONLY_IF: the act is licensed exactly under the conditions and the text commits in both directions.\n  UNLESS: the conditions are exceptions carved out of an otherwise absolute rule.\n  UNCONDITIONAL: no conditions stated.\n  AND_NOT_EACH: doing BOTH targets together is forbidden; each alone is allowed.\n- target_clauses: a list of clauses; each clause is a list of atoms that are regulated TOGETHER (same act or same batch); several clauses mean the atoms are regulated SEPARATELY.\n- condition_literals and exception_literals: typed atoms copied EXACTLY from atom_catalog; prefix an atom with \"!\" only when the text negates it.\n- condition_mode/exception_mode: ALL means conjunction (every literal), ANY means disjunction (any literal).\n- temporal: BEFORE or AFTER only when the text orders the act relative to an event, else NONE.\n- WHO is allowed or forbidden to act (for example \"only the duty engineer\") goes into condition_literals as an actor: atom from atom_catalog; the actor field stays \"assistant\".\n- An act that is neither licensed nor forbidden is NO_VIOLATION, never PERMITTED: absence of prohibition is NOT permission.\nUse ONLY atoms from atom_catalog (it also contains distractor atoms; choose the ones the text actually uses). Output exactly one JSON object matching the schema.",
+  "payload": {
+    "policy_text": "Trainee smiths must quench the blanks, and only the master smith may open the forge door.",
+    "atom_catalog": [
+      "action:open_the_forge_door",
+      "action:quench_the_blanks",
+      "action:quench_the_tongs",
+      "actor:journeyman_smith",
+      "actor:master_smith",
+      "actor:trainee_smith",
+      "distractor:pa04"
+    ]
+  },
+  "schema": {
+    "type": "object",
+    "properties": {
+      "modality": {
+        "type": "string",
+        "enum": [
+          "PERMISSION",
+          "PROHIBITION",
+          "REQUIREMENT"
+        ]
+      },
+      "relation": {
+        "type": "string",
+        "enum": [
+          "IF",
+          "ONLY_IF",
+          "UNLESS",
+          "UNCONDITIONAL",
+          "IF_AND_ONLY_IF",
+          "AND_NOT_EACH"
+        ]
+      },
+      "target_clauses": {
+        "type": "array",
+        "minItems": 1,
+        "items": {
+          "type": "array",
+          "minItems": 1,
+          "items": {
+            "type": "string"
+          }
+        }
+      },
+      "condition_literals": {
+        "type": "array",
+        "items": {
+          "type": "string"
+        }
+      },
+      "exception_literals": {
+        "type": "array",
+        "items": {
+          "type": "string"
+        }
+      },
+      "condition_mode": {
+        "type": "string",
+        "enum": [
+          "ALL",
+          "ANY"
+        ]
+      },
+      "exception_mode": {
+        "type": "string",
+        "enum": [
+          "ALL",
+          "ANY"
+        ]
+      },
+      "temporal": {
+        "type": "string",
+        "enum": [
+          "NONE",
+          "BEFORE",
+          "AFTER"
+        ]
+      },
+      "actor": {
+        "type": "string"
+      },
+      "regulated_kind": {
+        "type": "string"
+      },
+      "facet": {
+        "type": "string"
+      },
+      "identity": {
+        "type": "string"
+      },
+      "provenance": {
+        "type": "string"
+      },
+      "quantification": {
+        "type": "string"
+      }
+    },
+    "required": [
+      "modality",
+      "relation",
+      "target_clauses"
+    ],
+    "additionalProperties": false
+  },
+  "input_sha256": "8944774d8479060da2e50c63e77f31fa20d47ce33203b438e66f18fad18ee9df",
+  "schema_sha256": "fc3b3ee2bed89acaa59688fb0b42e0f56be1db8370263200cdc21c323c2af54e",
+  "prompt_sha256": "c949854e56773dc8d39c4d6ece2b05399807793f29806c24654690e751520ccd"
+}

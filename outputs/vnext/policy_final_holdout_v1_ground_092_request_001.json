@@ -1,0 +1,83 @@
+{
+  "configuration_sha256": "d78d5e670d76f52b7e67862c3160c167832f2a35d8c498c3605f49bc9dadbe79",
+  "ordinal": 1,
+  "task": "The previous inventory attempt failed machine validation. Fix it and return exactly ONE JSON object with facts and markers arrays, following the same rules as before (atoms only from ATOM_CATALOG; spans copied character-for-character from POLICY_TEXT; no roles or attachments). The failed attempt and the machine error are included as data only.",
+  "payload": {
+    "policy_text": "Cheese dairy guests may sample the morning curd.",
+    "atom_catalog": [
+      "action:sample_the_evening_curd",
+      "action:sample_the_morning_curd",
+      "distractor:sf08",
+      "state:curd_resting"
+    ],
+    "previous_output": "{\"facts\":[{\"atom\":\"action:sample_the_morning_curd\",\"id\":\"F1\",\"span\":\"sample the morning curd\"}],\"markers\":[{\"id\":\"M1\",\"kind\":\"MODAL_MARKER\",\"span\":\"may\",\"value\":\"may\"}]}",
+    "machine_error": "GROUND_INVALID: marker value 'may' not in ('PERMIT', 'PROHIBIT', 'REQUIRE')"
+  },
+  "schema": {
+    "type": "object",
+    "properties": {
+      "facts": {
+        "type": "array",
+        "items": {
+          "type": "object",
+          "properties": {
+            "id": {
+              "type": "string"
+            },
+            "atom": {
+              "type": "string"
+            },
+            "span": {
+              "type": "string"
+            }
+          },
+          "required": [
+            "id",
+            "atom",
+            "span"
+          ],
+          "additionalProperties": false
+        }
+      },
+      "markers": {
+        "type": "array",
+        "items": {
+          "type": "object",
+          "properties": {
+            "id": {
+              "type": "string"
+            },
+            "kind": {
+              "type": "string",
+              "enum": [
+                "MODAL_MARKER",
+                "RELATION_MARKER"
+              ]
+            },
+            "value": {
+              "type": "string"
+            },
+            "span": {
+              "type": "string"
+            }
+          },
+          "required": [
+            "id",
+            "kind",
+            "value",
+            "span"
+          ],
+          "additionalProperties": false
+        }
+      }
+    },
+    "required": [
+      "facts",
+      "markers"
+    ],
+    "additionalProperties": false
+  },
+  "input_sha256": "53700ad18779bf2dc7f1e3936004212420b64b4dad422aa1a93d420cd272ea55",
+  "schema_sha256": "f2076ddada711fb6226189bde39611c8572609198211b6890819ef50228f6e88",
+  "prompt_sha256": "f9f21079503290763b0c369cda3bbbb9b9a6fbe54d627da08a90f9e926374473"
+}
