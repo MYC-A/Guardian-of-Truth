@@ -40,6 +40,7 @@ from guardian_truth.vnext.integrity import digest, file_digest, prediction_seal,
 from guardian_truth.vnext.experiment import PersistedSemanticBackend, ProviderPause
 from guardian_truth.vnext.semantic_v2 import DiagnosticSemanticBackend
 
+sys.path.insert(0, str(ROOT))
 import scripts.evaluate_vnext_c_alr_reimpl as c_alr  # frozen H0 definitions
 from guardian_truth.vnext import policy_grs as grs   # frozen GRS definitions
 from guardian_truth.vnext.e2e import core_v1, fresh_corpus_v1
