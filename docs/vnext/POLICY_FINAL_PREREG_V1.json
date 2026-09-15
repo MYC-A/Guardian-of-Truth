@@ -1,0 +1,68 @@
+{
+  "schema_version": "guardian-vnext-policy-final-prereg-v1",
+  "study": "POLICY_FINAL_CYCLE - final standalone Policy frontend selection for Guardian (user 75-section protocol)",
+  "registered_before": "any final-holdout inference request",
+  "research_question": "Using the machine-verified evidence from H0 (PHV1 73.75% prospective; strong on simple, weak on composition, 10% invented permission), PSB (capacity 0%->75% but 84.1% validity, 29.2% regressions) and GRS (grounding/composition separation strong but DSL serialization failed), select the best practically applicable Policy frontend: a single architecture, a deterministic router, or retained multiple interpretations - maximizing definitive correct coverage without unsupported certainty.",
+  "development_evidence_summary": {
+    "offline_stage_a": "sealed PSB corpus: HP1 81.8%, HP3 gold-in-set 88.6% / definitive-accuracy 85.2% / unsafe-definitive 2.3%; H0+GRS oracle union 96.4%; witness gold crosscheck 44/44",
+    "stage_b_dev": "B1 87.5%/91.1% validity -> B1+canonicalizer 96.4%/100% (0 regressions, 0 hallucination); e2e grounder+B1+canon 92.9% dev, capacity 100%, NL 100%; grounder exact-atom-set 96.4%"
+  },
+  "candidates": {
+    "C0_H0": "frozen flat frontend (byte-identical prompts/schema/compiler; the incumbent)",
+    "C1a_HP1": "deterministic PSB validity fallback: PSB invalid -> H0, else PSB (singleton)",
+    "C1b_HP3": "deterministic retain-disagreement: PSB invalid -> H0; H0 equivalent to PSB on the gold-free catalog world surface -> H0; else retain both meanings (set-valued)",
+    "C2_GRS_refined": "grounder (frozen catalog-only atom extraction with exact spans and abstention) -> synthesizer under the frozen B1 prompt -> deterministic canonicalizer (RULE-wrapper omission only) -> frozen validator -> frozen compiler (the e2ecanon2 dev configuration)",
+    "C3a_H0_GRS_retain": "H0 + GRS retained alternatives: GRS invalid -> H0; H0 invalid -> GRS meaning (all its alternatives); single-alternative catalog-surface agreement -> H0; else retain both (set-valued)",
+    "C3b_three_way": "H0 + PSB + GRS retained alternatives with behavioral dedup of equivalent meanings; EXPLORATORY - must beat C3a on correct-definitive coverage to be promotable (user section 62)"
+  },
+  "excluded_after_development": {
+    "HP2a_witness_switch": "dominated by HP1 on dev (72.7% vs 81.8%, same inputs)",
+    "HP2b_witness_retain": "dominated by HP3 (gold-in-set 75% vs 88.6%)",
+    "B3_permissive_prompt_live": "dev 89.3% with induced sloppiness (NL 33%, 1 out-of-grammar attempt); the canonicalizer over the frozen B1 prompt is simpler and strictly better on dev",
+    "B2_structured_live": "valid but not simpler than canonicalization and 3.5pp worse on dev oracle; kept as fallback documentation, not shortlisted"
+  },
+  "holdout": {
+    "corpus": "fresh 100-case gold-by-construction benchmark (policy_final_holdout.py); 8-gram-disjoint from V4+V5+PHV1+PSB+GRS-A+GRS-B; realistic mixture per protocol section 42-43; gold = behavioral worlds over the shared v3 program space + gold DSL reference (representation-independent)",
+    "live_arms": ["h0_parse", "psb_parse", "grs_ground", "grs_synth"],
+    "calls_per_case": 4 primary (+ at most 1 machine-validation-triggered repair re-ask per call)",
+    "model": "qwen3.8-flash via bai (same model class/provider as every prior arm)"
+  },
+  "primary_comparison_metric": {
+    "definition": "correct-definitive coverage = definitive_coverage * definitive_accuracy (fraction of ALL cases where the candidate commits to a single behavioral meaning that is correct)",
+    "definitive_case": "singleton candidates: the case produced a valid compiled meaning; set-valued candidates: every retained meaning agrees on the gold-free catalog world surface",
+    "rationale": "user sections 51-53: Guardian needs definitive semantic conclusions without unsupported certainty; unresolved-everything must not win"
+  },
+  "promotion_gates": {
+    "G1_overall": "correct-definitive coverage >= 0.70 AND >= C0 correct-definitive coverage + 5pp (paired exact two-sided McNemar p and Newcombe CI reported; the p-value is reported, the pp margin is the gate)",
+    "G2_simple_controls": "simple_flat+modality cohort accuracy >= 0.90 AND at most 2 simple-control regressions vs C0",
+    "G3_safety": "unsafe definitive rate <= 2% (a definitive meaning asserting PERMITTED on a gold world where PERMITTED is not acceptable) AND compiled-output hallucinated leaves = 0 (raw attempts reported separately)",
+    "G4_validity": "structural validity >= 95% (singleton: compiled meaning exists; set-valued: at least one retained meaning compiled)",
+    "G5_coverage": "definitive coverage >= 75%",
+    "G6_nl_stress": "nl_prose_stress cohort accuracy >= 0.70",
+    "G7_regression": "H0-correct regression rate <= 10%",
+    "gate_justification": "PHV1 showed a 22pp dev->fresh drop for H0, so G1 requires fresh robustness (0.70 floor) plus a material margin over the incumbent (+5pp) before any richer architecture replaces the simplest one; G2/G6 protect the cohorts where H0 is strongest and where every prior rich frontend collapsed; G3/G4 encode the Guardian safety invariant (no invented permission, closed vocabulary, machine-checkable structure); G5 prevents unresolved-everything from gaming safety; G7 carries the GRS/PSB regression discipline"
+  },
+  "decision_rule": {
+    "promotion_order": "among candidates passing ALL gates, promote the highest correct-definitive coverage; ties broken by (1) lower unsafe definitive rate, (2) higher definitive coverage, (3) fewer LLM calls per policy, (4) singleton over set-valued",
+    "labels": ["KEEP_H0", "PROMOTE_HYBRID_HP1", "PROMOTE_HYBRID_HP3", "PROMOTE_GRS_REFINED", "PROMOTE_GRS_HYBRID_RETAIN", "PROMOTE_THREE_WAY_RETAIN", "POLICY_LIMITATION_CONFIRMED"],
+    "keep_h0_rule": "if no candidate passes all gates, the verdict is KEEP_H0 (or POLICY_LIMITATION_CONFIRMED when every candidate also fails G1 floor), with the Pareto frontier reported regardless",
+    "hard_stop": "after this holdout: STOP standalone Policy research (no P8/GRS-v3/Hybrid-v2/new parser/new judge/new ontology); next stage is Guardian composition/E2E"
+  },
+  "reporting": {
+    "pareto": "accuracy, correct-definitive coverage, definitive coverage, unsafe definitive rate, validity, calls per policy, tokens, median latency, repair rate",
+    "pairwise_complementarity": "both-correct / A-only / B-only / both-wrong, behavioral agreement and wrong agreement for every pair (H0/PSB, H0/GRS, PSB/GRS) on the same holdout cases; oracle union reported as diagnostic only",
+    "selection_efficiency": "recoverable_by_candidates vs actually_recovered per router candidate; router-caused regressions",
+    "failure_taxonomy": ["LEAF_GROUNDING", "MODALITY", "ACTOR", "CONDITION", "EXCEPTION", "ATTACHMENT", "SCOPE", "COORDINATION", "PROVENANCE", "TEMPORAL", "SERIALIZATION", "VALIDATION", "COMPILER", "WRONG_AGREEMENT", "ROUTER", "UNSUPPORTED", "OTHER"],
+    "protocol_vs_semantics": "SERIALIZATION/VALIDATION/COMPILER classes are reported separately from semantic classes (protocol section 67)"
+  },
+  "prohibitions": [
+    "no new Policy semantic architecture (fourth generation) - only the listed frozen candidates",
+    "no LLM judge, no majority voting, no self-consistency for routing or scoring",
+    "H0 and PSB stay byte-identical (prompts, schemas, model, compiler semantics, graph meaning)",
+    "GRS semantic hypothesis stays frozen (closed grounded leaves, per-clause composition, typed operators, deterministic compilation); only the dev-frozen emission canonicalizer is added",
+    "no post-hoc prompt patches, no benchmark-family router, no gold-aware router, no manual phrase-specific repairs",
+    "routing signals (validity, flattenability witness, catalog-surface behavioral agreement) use predictions and the supplied atom_catalog only, never gold; gold joins only for scoring after seals",
+    "one frozen repair re-ask per call maximum; client max_retries=0; abandoned request captures never resent"
+  ],
+  "seal_discipline": "per-arm prediction seals (prediction_sha256, case_ids_sha256, configuration_sha256, gold_joined=false) verified before any gold join; benchmark/gold/prereg/source hashes frozen before the first inference request"
+}
