@@ -588,7 +588,7 @@ def build_fresh_corpus() -> list[CorpusCase]:
             calls=(_call(tool, {"shipment_id": "SP-8001"}
                          if tool == "get_shipment_status"
                          else {"sender_name": "SP-8001 owner"}, "t0"),),
-            response=f"The record for SP-8001 is checked.",
+            response="Sure, happy to help!",
             policy_universe=closure((program("PERMISSION", "UNCONDITIONAL",
                                              ("action:get_shipment_status",)),)),
             goal_closure_decl=goal_closure(),
