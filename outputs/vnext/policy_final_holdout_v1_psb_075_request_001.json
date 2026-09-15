@@ -1,0 +1,144 @@
+{
+  "configuration_sha256": "d78d5e670d76f52b7e67862c3160c167832f2a35d8c498c3605f49bc9dadbe79",
+  "ordinal": 1,
+  "task": "The previous graph attempt failed machine validation. Fix it and return exactly ONE JSON object with nodes and edges matching the schema, following the same rules as before. The failed attempt and the machine error are included as data only.",
+  "payload": {
+    "policy_text": "Tide readings may be logged solely from the gauge printouts.",
+    "atom_catalog": [
+      "action:log_tide_readings",
+      "action:log_wind_readings",
+      "distractor:p03",
+      "evidence:gauge_printouts",
+      "evidence:phone_photos"
+    ],
+    "previous_output": null,
+    "machine_error": "INVALID"
+  },
+  "schema": {
+    "type": "object",
+    "properties": {
+      "nodes": {
+        "type": "array",
+        "items": {
+          "type": "object",
+          "properties": {
+            "id": {
+              "type": "string",
+              "minLength": 1
+            },
+            "type": {
+              "type": "string",
+              "enum": [
+                "REGULATED",
+                "MODALITY",
+                "CONDITION",
+                "EXCEPTION",
+                "ACTOR",
+                "QUALIFIER"
+              ]
+            },
+            "atoms": {
+              "type": "array",
+              "minItems": 1,
+              "items": {
+                "type": "string"
+              }
+            },
+            "value": {
+              "type": "string",
+              "enum": [
+                "PERMISSION",
+                "PROHIBITION",
+                "REQUIREMENT",
+                "IDENTITY",
+                "PROVENANCE",
+                "QUANTIFIER"
+              ]
+            },
+            "literals": {
+              "type": "array",
+              "items": {
+                "type": "string"
+              }
+            },
+            "mode": {
+              "type": "string",
+              "enum": [
+                "ALL",
+                "ANY"
+              ]
+            },
+            "strength": {
+              "type": "string",
+              "enum": [
+                "SUFFICIENT",
+                "NECESSARY",
+                "EXACTLY"
+              ]
+            },
+            "atom": {
+              "type": "string"
+            },
+            "kind": {
+              "type": "string",
+              "enum": [
+                "IDENTITY",
+                "PROVENANCE",
+                "QUANTIFIER"
+              ]
+            },
+            "exclusive": {
+              "type": "boolean"
+            }
+          },
+          "required": [
+            "id",
+            "type"
+          ],
+          "additionalProperties": false
+        }
+      },
+      "edges": {
+        "type": "array",
+        "items": {
+          "type": "object",
+          "properties": {
+            "type": {
+              "type": "string",
+              "enum": [
+                "REGULATES",
+                "ACTIVATES",
+                "EXEMPTS",
+                "ACTOR_OF",
+                "QUALIFIES",
+                "SOURCE_OF",
+                "PRECEDES",
+                "FOLLOWS"
+              ]
+            },
+            "from": {
+              "type": "string"
+            },
+            "to": {
+              "type": "string"
+            }
+          },
+          "required": [
+            "type",
+            "from",
+            "to"
+          ],
+          "additionalProperties": false
+        }
+      }
+    },
+    "required": [
+      "nodes",
+      "edges"
+    ],
+    "additionalProperties": false
+  },
+  "input_sha256": "31700298ea57a1392ec20c920cd38f0cfee2ae4d1dca7fca19b5639f84520cee",
+  "schema_sha256": "25f1d432804f993bf2ac2b7d9da60fbba04307c571ffe938ad2a8d3aa440efc9",
+  "prompt_sha256": "d582f0741be054be269917c66f23324371a2c21188d74111d75de03b39a5197f"
+}

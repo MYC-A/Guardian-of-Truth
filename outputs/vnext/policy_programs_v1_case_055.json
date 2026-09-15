@@ -6,35 +6,7 @@
       "hypotheses": [
         {
           "hypothesis_id": "policy-program:h0",
-          "basis": "The policy scopes the freshness obligation to 'the reporting section,' implying that outside that scope, claiming current balance without fresh evidence is not a violation. This creates a permission zone absent from the standard reading.",
-          "program": {
-            "violation_clauses": [
-              [
-                "claim:current_balance",
-                "!evidence:fresh_after_latest_write"
-              ]
-            ],
-            "permission_clauses": [
-              [
-                "claim:current_balance"
-              ]
-            ]
-          },
-          "source_spans": [
-            {
-              "document": "policy",
-              "start": 63,
-              "end": 157
-            }
-          ],
-          "unresolved_terms": [
-            "reporting section boundary",
-            "what constitutes being inside vs outside the reporting section"
-          ]
-        },
-        {
-          "hypothesis_id": "policy-program:h1",
-          "basis": "The policy says 'fresher than every successful debit,' but the available atom is 'fresher_after_latest_write.' If non-debit writes (credits, adjustments) exist, then a read could be fresher than the latest debit but not the latest write. The obligation may be weaker than what the atom captures, meaning some claims flagged as violations under the atom are actually compliant.",
+          "basis": "The policy establishes a temporal freshness requirement as a necessary condition: a claim of current_balance in the reporting section is only valid when supported by evidence that a read occurred after every successful debit. Without that evidence, the claim is impermissible.",
           "program": {
             "violation_clauses": [
               [
@@ -54,21 +26,17 @@
               "document": "policy",
               "start": 89,
               "end": 156
-            },
-            {
-              "document": "policy",
-              "start": 32,
-              "end": 61
             }
           ],
           "unresolved_terms": [
-            "whether non-debit writes exist that could be later than the latest successful debit",
-            "relationship between 'latest write' and 'every successful debit'"
+            "reporting section boundary",
+            "definition of successful",
+            "what constitutes a read"
           ]
         },
         {
-          "hypothesis_id": "policy-program:h2",
-          "basis": "'Requires' establishes a necessary condition (only-if), not a sufficient one. Fresh evidence alone does not grant permission to claim current balance; additional unstated conditions may apply. This means satisfying the evidence atom does not automatically make a claim permissible.",
+          "hypothesis_id": "policy-program:h1",
+          "basis": "The freshness constraint is scope-limited to the reporting section. Outside that context, the policy does not impose the same evidence requirement on balance claims, creating a contextual exception to the general rule.",
           "program": {
             "violation_clauses": [
               [
@@ -76,7 +44,52 @@
                 "!evidence:fresh_after_latest_write"
               ]
             ],
-            "permission_clauses": []
+            "permission_clauses": [
+              [
+                "claim:current_balance",
+                "evidence:fresh_after_latest_write"
+              ],
+              [
+                "claim:current_balance"
+              ]
+            ]
+          },
+          "source_spans": [
+            {
+              "document": "policy",
+              "start": 63,
+              "end": 156
+            }
+          ],
+          "unresolved_terms": [
+            "what defines the reporting section boundary",
+            "whether other sections have different requirements"
+          ]
+        },
+        {
+          "hypothesis_id": "policy-program:h2",
+          "basis": "The policy's phrase 'current balance requires a read fresher than every successful debit' is interpreted as a biconditional (if and only if), meaning that the presence of such a read is both necessary and sufficient for the claim to be valid. This contrasts with the existing readings which treat it only as a necessary condition (implication), allowing for the possibility that other factors could invalidate the claim even with the correct read, or that the claim is invalid without the read.",
+          "program": {
+            "violation_clauses": [
+              [
+                "claim:current_balance",
+                "!evidence:fresh_after_latest_write"
+              ],
+              [
+                "!claim:current_balance",
+                "evidence:fresh_after_latest_write"
+              ]
+            ],
+            "permission_clauses": [
+              [
+                "claim:current_balance",
+                "evidence:fresh_after_latest_write"
+              ],
+              [
+                "evidence:fresh_after_latest_write",
+                "claim:current_balance"
+              ]
+            ]
           },
           "source_spans": [
             {
@@ -86,8 +99,44 @@
             }
           ],
           "unresolved_terms": [
-            "whether other conditions beyond freshness are needed to authorize a current_balance claim",
-            "what those additional conditions might be"
+            "sufficiency of freshness for validity"
+          ]
+        },
+        {
+          "hypothesis_id": "policy-program:h3",
+          "basis": "The policy distinguishes between 'reads' (observations) and 'debits' (changes). This reading interprets 'requires a read fresher than every successful debit' as a prohibition on making the claim if any debit has occurred since the last read, effectively treating the state of 'post-debit' as a violation condition regardless of whether a new read has been attempted or completed. It focuses on the temporal ordering of events rather than the evidentiary status.",
+          "program": {
+            "violation_clauses": [
+              [
+                "claim:current_balance",
+                "!evidence:fresh_after_latest_write"
+              ],
+              [
+                "claim:current_balance",
+                "distractor:irrelevant"
+              ]
+            ],
+            "permission_clauses": [
+              [
+                "claim:current_balance",
+                "evidence:fresh_after_latest_write"
+              ]
+            ]
+          },
+          "source_spans": [
+            {
+              "document": "policy",
+              "start": 32,
+              "end": 61
+            },
+            {
+              "document": "policy",
+              "start": 89,
+              "end": 156
+            }
+          ],
+          "unresolved_terms": [
+            "behavioral impact of 'may change' vs 'does change'"
           ]
         }
       ],
@@ -96,60 +145,36 @@
         "universe_source": null,
         "enumeration_complete": false,
         "unresolved_terms": [
+          "definition of reporting section",
+          "criteria for successful debit",
+          "temporal ordering semantics for concurrent operations",
+          "whether the policy applies to all actors or specific roles",
           "reporting section boundary",
-          "whether non-debit writes exist",
-          "additional conditions for permission beyond freshness",
-          "what constitutes being inside vs outside the reporting section",
-          "whether non-debit writes exist that could be later than the latest successful debit",
-          "relationship between 'latest write' and 'every successful debit'",
-          "whether other conditions beyond freshness are needed to authorize a current_balance claim",
-          "what those additional conditions might be"
+          "definition of successful",
+          "what constitutes a read",
+          "what defines the reporting section boundary",
+          "whether other sections have different requirements",
+          "what distinguishes successful from unsuccessful debits",
+          "whether concurrent debits affect ordering",
+          "definition of 'reporting section'",
+          "sufficiency of freshness for validity",
+          "behavioral impact of 'may change'",
+          "temporal scope of 'every'",
+          "behavioral impact of 'may change' vs 'does change'",
+          "definition of 'reporting section' boundaries",
+          "temporal scope of 'every' in relation to 'current'"
         ],
         "discarded_hypotheses": [],
         "challenger_alternatives": [
-          "policy-program:h0",
-          "policy-program:h1",
-          "policy-program:h2"
+          "policy-program:h2",
+          "policy-program:h3"
         ]
       },
-      "failures": [
-        [
-          "policy_program_hypotheses_v2",
-          "SCHEMA_ERROR"
-        ]
-      ],
+      "failures": [],
       "empirical_hypotheses": [
         {
           "hypothesis_id": "policy-program:h0",
-          "basis": "The policy scopes the freshness obligation to 'the reporting section,' implying that outside that scope, claiming current balance without fresh evidence is not a violation. This creates a permission zone absent from the standard reading.",
-          "program": {
-            "violation_clauses": [
-              [
-                "claim:current_balance",
-                "!evidence:fresh_after_latest_write"
-              ]
-            ],
-            "permission_clauses": [
-              [
-                "claim:current_balance"
-              ]
-            ]
-          },
-          "source_spans": [
-            {
-              "document": "policy",
-              "start": 63,
-              "end": 157
-            }
-          ],
-          "unresolved_terms": [
-            "reporting section boundary",
-            "what constitutes being inside vs outside the reporting section"
-          ]
-        },
-        {
-          "hypothesis_id": "policy-program:h1",
-          "basis": "The policy says 'fresher than every successful debit,' but the available atom is 'fresher_after_latest_write.' If non-debit writes (credits, adjustments) exist, then a read could be fresher than the latest debit but not the latest write. The obligation may be weaker than what the atom captures, meaning some claims flagged as violations under the atom are actually compliant.",
+          "basis": "The policy establishes a temporal freshness requirement as a necessary condition: a claim of current_balance in the reporting section is only valid when supported by evidence that a read occurred after every successful debit. Without that evidence, the claim is impermissible.",
           "program": {
             "violation_clauses": [
               [
@@ -169,21 +194,17 @@
               "document": "policy",
               "start": 89,
               "end": 156
-            },
-            {
-              "document": "policy",
-              "start": 32,
-              "end": 61
             }
           ],
           "unresolved_terms": [
-            "whether non-debit writes exist that could be later than the latest successful debit",
-            "relationship between 'latest write' and 'every successful debit'"
+            "reporting section boundary",
+            "definition of successful",
+            "what constitutes a read"
           ]
         },
         {
-          "hypothesis_id": "policy-program:h2",
-          "basis": "'Requires' establishes a necessary condition (only-if), not a sufficient one. Fresh evidence alone does not grant permission to claim current balance; additional unstated conditions may apply. This means satisfying the evidence atom does not automatically make a claim permissible.",
+          "hypothesis_id": "policy-program:h1",
+          "basis": "The freshness constraint is scope-limited to the reporting section. Outside that context, the policy does not impose the same evidence requirement on balance claims, creating a contextual exception to the general rule.",
           "program": {
             "violation_clauses": [
               [
@@ -191,7 +212,52 @@
                 "!evidence:fresh_after_latest_write"
               ]
             ],
-            "permission_clauses": []
+            "permission_clauses": [
+              [
+                "claim:current_balance",
+                "evidence:fresh_after_latest_write"
+              ],
+              [
+                "claim:current_balance"
+              ]
+            ]
+          },
+          "source_spans": [
+            {
+              "document": "policy",
+              "start": 63,
+              "end": 156
+            }
+          ],
+          "unresolved_terms": [
+            "what defines the reporting section boundary",
+            "whether other sections have different requirements"
+          ]
+        },
+        {
+          "hypothesis_id": "policy-program:h2",
+          "basis": "The policy's phrase 'current balance requires a read fresher than every successful debit' is interpreted as a biconditional (if and only if), meaning that the presence of such a read is both necessary and sufficient for the claim to be valid. This contrasts with the existing readings which treat it only as a necessary condition (implication), allowing for the possibility that other factors could invalidate the claim even with the correct read, or that the claim is invalid without the read.",
+          "program": {
+            "violation_clauses": [
+              [
+                "claim:current_balance",
+                "!evidence:fresh_after_latest_write"
+              ],
+              [
+                "!claim:current_balance",
+                "evidence:fresh_after_latest_write"
+              ]
+            ],
+            "permission_clauses": [
+              [
+                "claim:current_balance",
+                "evidence:fresh_after_latest_write"
+              ],
+              [
+                "evidence:fresh_after_latest_write",
+                "claim:current_balance"
+              ]
+            ]
           },
           "source_spans": [
             {
@@ -201,8 +267,44 @@
             }
           ],
           "unresolved_terms": [
-            "whether other conditions beyond freshness are needed to authorize a current_balance claim",
-            "what those additional conditions might be"
+            "sufficiency of freshness for validity"
+          ]
+        },
+        {
+          "hypothesis_id": "policy-program:h3",
+          "basis": "The policy distinguishes between 'reads' (observations) and 'debits' (changes). This reading interprets 'requires a read fresher than every successful debit' as a prohibition on making the claim if any debit has occurred since the last read, effectively treating the state of 'post-debit' as a violation condition regardless of whether a new read has been attempted or completed. It focuses on the temporal ordering of events rather than the evidentiary status.",
+          "program": {
+            "violation_clauses": [
+              [
+                "claim:current_balance",
+                "!evidence:fresh_after_latest_write"
+              ],
+              [
+                "claim:current_balance",
+                "distractor:irrelevant"
+              ]
+            ],
+            "permission_clauses": [
+              [
+                "claim:current_balance",
+                "evidence:fresh_after_latest_write"
+              ]
+            ]
+          },
+          "source_spans": [
+            {
+              "document": "policy",
+              "start": 32,
+              "end": 61
+            },
+            {
+              "document": "policy",
+              "start": 89,
+              "end": 156
+            }
+          ],
+          "unresolved_terms": [
+            "behavioral impact of 'may change' vs 'does change'"
           ]
         }
       ]
@@ -234,11 +336,11 @@
       },
       "source_coverage": 1.0,
       "served_model": "qwen3.8-flash",
-      "latency_ms": 11738.191,
+      "latency_ms": 9421.788,
       "usage": {
         "prompt_tokens": 412,
-        "completion_tokens": 385,
-        "total_tokens": 797
+        "completion_tokens": 382,
+        "total_tokens": 794
       }
     }
   },
@@ -252,35 +354,28 @@
       "served_model": "qwen3.8-flash",
       "usage": {
         "prompt_tokens": 576,
-        "completion_tokens": 1453,
-        "total_tokens": 2029
+        "completion_tokens": 1154,
+        "total_tokens": 1730
       },
-      "latency_ms": 40193.006,
+      "latency_ms": 32103.233,
       "transport_status": "SUCCESS",
-      "schema_status": "INVALID",
-      "schema_issues": [
-        {
-          "code": "JSON_INVALID",
-          "path": "",
-          "expected_type": null,
-          "actual_type": null
-        }
-      ],
+      "schema_status": "VALID",
+      "schema_issues": [],
       "error_category": null
     },
     {
       "backend_version": "diagnostic-semantic-v2",
       "task": "policy_program_missing_reading_v2",
-      "input_sha256": "aaa2bd0914588a30139a3f0ed1c8bf919c3f0b81e798157603c7b7548c7161a9",
-      "prompt_sha256": "8b9ce79c97252bf9b3828c1ef08500165b10f41de29acb02b2d69bb66c45a431",
+      "input_sha256": "91f307eda734c58dbb0b6218b7b153dee904ba9039319837b9f38efe51dd63df",
+      "prompt_sha256": "4c5fff504780c88051fcf51038fd63496147d8319b3e459d7fc7cfa54040ab72",
       "schema_sha256": "375056ff34624f9ac510670941b7bc43ed53408e899f96f0989b8c033b378134",
       "served_model": "qwen3.8-flash",
       "usage": {
-        "prompt_tokens": 610,
-        "completion_tokens": 1446,
-        "total_tokens": 2056
+        "prompt_tokens": 789,
+        "completion_tokens": 4863,
+        "total_tokens": 5652
       },
-      "latency_ms": 42459.124,
+      "latency_ms": 86996.103,
       "transport_status": "SUCCESS",
       "schema_status": "VALID",
       "schema_issues": [],
@@ -299,10 +394,10 @@
       "served_model": "qwen3.8-flash",
       "usage": {
         "prompt_tokens": 412,
-        "completion_tokens": 385,
-        "total_tokens": 797
+        "completion_tokens": 382,
+        "total_tokens": 794
       },
-      "latency_ms": 11736.114
+      "latency_ms": 9421.069
     }
   ]
 }

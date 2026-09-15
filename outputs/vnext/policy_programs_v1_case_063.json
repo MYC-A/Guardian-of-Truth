@@ -6,7 +6,7 @@
       "hypotheses": [
         {
           "hypothesis_id": "policy-program:h0",
-          "basis": "The policy states a hard maximum cardinality of three gift cards per reservation, making any count exceeding three a violation condition.",
+          "basis": "The policy imposes a hard prohibition on exceeding three gift cards per reservation. Violation occurs when gift_card_count_gt_3; compliance requires three or fewer gift cards.",
           "program": {
             "violation_clauses": [
               [
@@ -27,103 +27,29 @@
             }
           ],
           "unresolved_terms": [
-            "several payment methods",
-            "Credit-card rules differ"
+            "credit-card rules differ",
+            "several payment methods"
           ]
         },
         {
           "hypothesis_id": "policy-program:h1",
-          "basis": "The policy defines a permission boundary at exactly three gift cards; the state gift_card_count_gt_3 marks the disallowed region beyond that boundary, and distractor:boundary_2 may represent the boundary threshold itself as a distinct semantic unit.",
+          "basis": "The phrase 'maximum cardinality is three' defines an inclusive upper bound (≤3). A boundary interpretation at 2 (distractor:boundary_2) would incorrectly treat three gift cards as a violation, contradicting the text. The correct reading keeps violation strictly at gt_3.",
           "program": {
             "violation_clauses": [
               [
                 "state:gift_card_count_gt_3"
-              ],
-              [
-                "distractor:boundary_2",
-                "state:gift_card_count_gt_3"
-              ]
-            ],
-            "permission_clauses": [
-              [
-                "!state:gift_card_count_gt_3"
-              ],
-              [
-                "!distractor:boundary_2",
-                "!state:gift_card_count_gt_3"
-              ]
-            ]
-          },
-          "source_spans": [
-            {
-              "document": "policy",
-              "start": 77,
-              "end": 155
-            },
-            {
-              "document": "policy",
-              "start": 0,
-              "end": 50
-            }
-          ],
-          "unresolved_terms": [
-            "Credit-card rules differ",
-            "boundary_2 semantics"
-          ]
-        },
-        {
-          "hypothesis_id": "policy-program:h2",
-          "basis": "The sentence 'Credit-card rules differ' introduces a precondition for the gift-card maximum to apply. Interpreting distractor:boundary_2 as representing the condition 'credit-card rules differ', the violation of the three-card maximum is only triggered when that condition holds. If credit-card rules do NOT differ, the gift-card limit is not in force.",
-          "program": {
-            "violation_clauses": [
-              [
-                "distractor:boundary_2",
-                "state:gift_card_count_gt_3"
-              ]
-            ],
-            "permission_clauses": [
-              [
-                "!state:gift_card_count_gt_3"
-              ],
-              [
-                "!distractor:boundary_2"
-              ]
-            ]
-          },
-          "source_spans": [
-            {
-              "document": "policy",
-              "start": 51,
-              "end": 76
-            },
-            {
-              "document": "policy",
-              "start": 77,
-              "end": 155
-            }
-          ],
-          "unresolved_terms": [
-            "what constitutes 'credit-card rules differ'",
-            "whether the condition is necessary or merely descriptive"
-          ]
-        },
-        {
-          "hypothesis_id": "policy-program:h3",
-          "basis": "The phrase 'per reservation' scopes the maximum to a single reservation instance. Interpreting distractor:boundary_2 as the reservation boundary (start or end of a reservation), the count resets at each boundary. A violation occurs only when the count exceeds three WITHIN a reservation (not at a boundary reset point), meaning boundary_2 negates the violation.",
-          "program": {
-            "violation_clauses": [
-              [
-                "state:gift_card_count_gt_3",
-                "!distractor:boundary_2"
-              ]
-            ],
-            "permission_clauses": [
-              [
-                "!state:gift_card_count_gt_3"
               ],
               [
                 "distractor:boundary_2"
               ]
+            ],
+            "permission_clauses": [
+              [
+                "!state:gift_card_count_gt_3"
+              ],
+              [
+                "!distractor:boundary_2"
+              ]
             ]
           },
           "source_spans": [
@@ -134,17 +60,76 @@
             }
           ],
           "unresolved_terms": [
-            "what defines a reservation boundary",
-            "whether 'per reservation' implies reset semantics"
+            "credit-card rules differ",
+            "several payment methods"
+          ]
+        },
+        {
+          "hypothesis_id": "policy-program:h2",
+          "basis": "The phrase 'For gift cards specifically' introduces a scoping/applicability condition. If the gift-card rule is irrelevant to the reservation context (distractor:irrelevant), the prohibition does not bind. Violation requires both exceeding the count AND the rule being relevant — irrelevance is an exemption.",
+          "program": {
+            "violation_clauses": [
+              [
+                "state:gift_card_count_gt_3",
+                "!distractor:irrelevant"
+              ]
+            ],
+            "permission_clauses": [
+              [
+                "!state:gift_card_count_gt_3"
+              ],
+              [
+                "distractor:irrelevant"
+              ]
+            ]
+          },
+          "source_spans": [
+            {
+              "document": "policy",
+              "start": 77,
+              "end": 155
+            }
+          ],
+          "unresolved_terms": [
+            "what makes the gift-card rule irrelevant in context"
+          ]
+        },
+        {
+          "hypothesis_id": "policy-program:h3",
+          "basis": "A reading where the operative threshold is fully captured by boundary_2 (the state at count=2). States beyond that (gt_3) are consequences of the boundary condition, not independent violation triggers. The rule's behavioral content is that reaching the boundary is already a violation; gt_3 adds no new obligation boundary.",
+          "program": {
+            "violation_clauses": [
+              [
+                "distractor:boundary_2"
+              ]
+            ],
+            "permission_clauses": [
+              [
+                "!distractor:boundary_2"
+              ]
+            ]
+          },
+          "source_spans": [
+            {
+              "document": "policy",
+              "start": 106,
+              "end": 154
+            }
+          ],
+          "unresolved_terms": [
+            "whether boundary_2 represents count=2 or count>=2"
           ]
         },
         {
           "hypothesis_id": "policy-program:h4",
-          "basis": "The opening sentence 'A reservation may contain several payment methods' grants a general permission. Interpreting distractor:irrelevant as representing this general multi-payment-method permission, this reading asserts that the general permission does NOT override or extend the gift-card-specific maximum. Permission requires both that the gift-card count is within limits AND that the general multi-method permission is not being invoked to circumvent the gift-card cap.",
+          "basis": "If the gift-card rule is irrelevant to the reservation, compliance cannot be established — the absence of an applicable rule is itself treated as a violation of the obligation framework. Violation occurs either when the count is exceeded OR when the rule is irrelevant (cannot be satisfied).",
           "program": {
             "violation_clauses": [
               [
                 "state:gift_card_count_gt_3"
+              ],
+              [
+                "distractor:irrelevant"
               ]
             ],
             "permission_clauses": [
@@ -157,18 +142,12 @@
           "source_spans": [
             {
               "document": "policy",
-              "start": 0,
-              "end": 50
-            },
-            {
-              "document": "policy",
               "start": 77,
               "end": 155
             }
           ],
           "unresolved_terms": [
-            "whether 'several payment methods' creates any interaction with the gift-card cap",
-            "whether distractor:irrelevant truly represents the multi-method permission"
+            "whether irrelevance constitutes a compliance failure or a vacuous satisfaction"
           ]
         }
       ],
@@ -177,21 +156,15 @@
         "universe_source": null,
         "enumeration_complete": false,
         "unresolved_terms": [
-          "Credit-card rules differ",
+          "credit-card rules differ",
           "several payment methods",
-          "distractor:irrelevant",
-          "distractor:boundary_2",
-          "boundary_2 semantics",
-          "several",
-          "whether 'credit-card rules differ' is a condition or a statement of fact",
-          "the exact scope of 'per reservation' (reset vs. aggregate)",
-          "whether the multi-payment-method permission interacts with the gift-card maximum",
-          "what constitutes 'credit-card rules differ'",
-          "whether the condition is necessary or merely descriptive",
-          "what defines a reservation boundary",
-          "whether 'per reservation' implies reset semantics",
-          "whether 'several payment methods' creates any interaction with the gift-card cap",
-          "whether distractor:irrelevant truly represents the multi-method permission"
+          "maximum cardinality inclusive vs exclusive boundary",
+          "what constitutes 'irrelevant' in the gift-card rule context",
+          "whether boundary_2 means count=2 or count>=2",
+          "whether 'Credit-card rules differ' creates an exception or merely notes separate rules",
+          "what makes the gift-card rule irrelevant in context",
+          "whether boundary_2 represents count=2 or count>=2",
+          "whether irrelevance constitutes a compliance failure or a vacuous satisfaction"
         ],
         "discarded_hypotheses": [],
         "challenger_alternatives": [
@@ -204,7 +177,7 @@
       "empirical_hypotheses": [
         {
           "hypothesis_id": "policy-program:h0",
-          "basis": "The policy states a hard maximum cardinality of three gift cards per reservation, making any count exceeding three a violation condition.",
+          "basis": "The policy imposes a hard prohibition on exceeding three gift cards per reservation. Violation occurs when gift_card_count_gt_3; compliance requires three or fewer gift cards.",
           "program": {
             "violation_clauses": [
               [
@@ -225,103 +198,29 @@
             }
           ],
           "unresolved_terms": [
-            "several payment methods",
-            "Credit-card rules differ"
+            "credit-card rules differ",
+            "several payment methods"
           ]
         },
         {
           "hypothesis_id": "policy-program:h1",
-          "basis": "The policy defines a permission boundary at exactly three gift cards; the state gift_card_count_gt_3 marks the disallowed region beyond that boundary, and distractor:boundary_2 may represent the boundary threshold itself as a distinct semantic unit.",
+          "basis": "The phrase 'maximum cardinality is three' defines an inclusive upper bound (≤3). A boundary interpretation at 2 (distractor:boundary_2) would incorrectly treat three gift cards as a violation, contradicting the text. The correct reading keeps violation strictly at gt_3.",
           "program": {
             "violation_clauses": [
               [
                 "state:gift_card_count_gt_3"
-              ],
-              [
-                "distractor:boundary_2",
-                "state:gift_card_count_gt_3"
-              ]
-            ],
-            "permission_clauses": [
-              [
-                "!state:gift_card_count_gt_3"
-              ],
-              [
-                "!distractor:boundary_2",
-                "!state:gift_card_count_gt_3"
-              ]
-            ]
-          },
-          "source_spans": [
-            {
-              "document": "policy",
-              "start": 77,
-              "end": 155
-            },
-            {
-              "document": "policy",
-              "start": 0,
-              "end": 50
-            }
-          ],
-          "unresolved_terms": [
-            "Credit-card rules differ",
-            "boundary_2 semantics"
-          ]
-        },
-        {
-          "hypothesis_id": "policy-program:h2",
-          "basis": "The sentence 'Credit-card rules differ' introduces a precondition for the gift-card maximum to apply. Interpreting distractor:boundary_2 as representing the condition 'credit-card rules differ', the violation of the three-card maximum is only triggered when that condition holds. If credit-card rules do NOT differ, the gift-card limit is not in force.",
-          "program": {
-            "violation_clauses": [
-              [
-                "distractor:boundary_2",
-                "state:gift_card_count_gt_3"
-              ]
-            ],
-            "permission_clauses": [
-              [
-                "!state:gift_card_count_gt_3"
-              ],
-              [
-                "!distractor:boundary_2"
-              ]
-            ]
-          },
-          "source_spans": [
-            {
-              "document": "policy",
-              "start": 51,
-              "end": 76
-            },
-            {
-              "document": "policy",
-              "start": 77,
-              "end": 155
-            }
-          ],
-          "unresolved_terms": [
-            "what constitutes 'credit-card rules differ'",
-            "whether the condition is necessary or merely descriptive"
-          ]
-        },
-        {
-          "hypothesis_id": "policy-program:h3",
-          "basis": "The phrase 'per reservation' scopes the maximum to a single reservation instance. Interpreting distractor:boundary_2 as the reservation boundary (start or end of a reservation), the count resets at each boundary. A violation occurs only when the count exceeds three WITHIN a reservation (not at a boundary reset point), meaning boundary_2 negates the violation.",
-          "program": {
-            "violation_clauses": [
-              [
-                "state:gift_card_count_gt_3",
-                "!distractor:boundary_2"
-              ]
-            ],
-            "permission_clauses": [
-              [
-                "!state:gift_card_count_gt_3"
               ],
               [
                 "distractor:boundary_2"
               ]
+            ],
+            "permission_clauses": [
+              [
+                "!state:gift_card_count_gt_3"
+              ],
+              [
+                "!distractor:boundary_2"
+              ]
             ]
           },
           "source_spans": [
@@ -332,17 +231,76 @@
             }
           ],
           "unresolved_terms": [
-            "what defines a reservation boundary",
-            "whether 'per reservation' implies reset semantics"
+            "credit-card rules differ",
+            "several payment methods"
+          ]
+        },
+        {
+          "hypothesis_id": "policy-program:h2",
+          "basis": "The phrase 'For gift cards specifically' introduces a scoping/applicability condition. If the gift-card rule is irrelevant to the reservation context (distractor:irrelevant), the prohibition does not bind. Violation requires both exceeding the count AND the rule being relevant — irrelevance is an exemption.",
+          "program": {
+            "violation_clauses": [
+              [
+                "state:gift_card_count_gt_3",
+                "!distractor:irrelevant"
+              ]
+            ],
+            "permission_clauses": [
+              [
+                "!state:gift_card_count_gt_3"
+              ],
+              [
+                "distractor:irrelevant"
+              ]
+            ]
+          },
+          "source_spans": [
+            {
+              "document": "policy",
+              "start": 77,
+              "end": 155
+            }
+          ],
+          "unresolved_terms": [
+            "what makes the gift-card rule irrelevant in context"
+          ]
+        },
+        {
+          "hypothesis_id": "policy-program:h3",
+          "basis": "A reading where the operative threshold is fully captured by boundary_2 (the state at count=2). States beyond that (gt_3) are consequences of the boundary condition, not independent violation triggers. The rule's behavioral content is that reaching the boundary is already a violation; gt_3 adds no new obligation boundary.",
+          "program": {
+            "violation_clauses": [
+              [
+                "distractor:boundary_2"
+              ]
+            ],
+            "permission_clauses": [
+              [
+                "!distractor:boundary_2"
+              ]
+            ]
+          },
+          "source_spans": [
+            {
+              "document": "policy",
+              "start": 106,
+              "end": 154
+            }
+          ],
+          "unresolved_terms": [
+            "whether boundary_2 represents count=2 or count>=2"
           ]
         },
         {
           "hypothesis_id": "policy-program:h4",
-          "basis": "The opening sentence 'A reservation may contain several payment methods' grants a general permission. Interpreting distractor:irrelevant as representing this general multi-payment-method permission, this reading asserts that the general permission does NOT override or extend the gift-card-specific maximum. Permission requires both that the gift-card count is within limits AND that the general multi-method permission is not being invoked to circumvent the gift-card cap.",
+          "basis": "If the gift-card rule is irrelevant to the reservation, compliance cannot be established — the absence of an applicable rule is itself treated as a violation of the obligation framework. Violation occurs either when the count is exceeded OR when the rule is irrelevant (cannot be satisfied).",
           "program": {
             "violation_clauses": [
               [
                 "state:gift_card_count_gt_3"
+              ],
+              [
+                "distractor:irrelevant"
               ]
             ],
             "permission_clauses": [
@@ -355,18 +313,12 @@
           "source_spans": [
             {
               "document": "policy",
-              "start": 0,
-              "end": 50
-            },
-            {
-              "document": "policy",
               "start": 77,
               "end": 155
             }
           ],
           "unresolved_terms": [
-            "whether 'several payment methods' creates any interaction with the gift-card cap",
-            "whether distractor:irrelevant truly represents the multi-method permission"
+            "whether irrelevance constitutes a compliance failure or a vacuous satisfaction"
           ]
         }
       ]
@@ -396,11 +348,11 @@
       },
       "source_coverage": 1.0,
       "served_model": "qwen3.8-flash",
-      "latency_ms": 8878.267,
+      "latency_ms": 6346.413,
       "usage": {
         "prompt_tokens": 434,
-        "completion_tokens": 373,
-        "total_tokens": 807
+        "completion_tokens": 252,
+        "total_tokens": 686
       }
     }
   },
@@ -414,10 +366,10 @@
       "served_model": "qwen3.8-flash",
       "usage": {
         "prompt_tokens": 594,
-        "completion_tokens": 1385,
-        "total_tokens": 1979
+        "completion_tokens": 1215,
+        "total_tokens": 1809
       },
-      "latency_ms": 26473.405,
+      "latency_ms": 30364.927,
       "transport_status": "SUCCESS",
       "schema_status": "VALID",
       "schema_issues": [],
@@ -426,16 +378,16 @@
     {
       "backend_version": "diagnostic-semantic-v2",
       "task": "policy_program_missing_reading_v2",
-      "input_sha256": "37c31830c82374582b0a5ff9f3cd7294c769bd373b0a57df9546e644d9300d94",
-      "prompt_sha256": "268c952fcca655a7f0976fe89dffbdfca93c8a22b99b59a57b88a01acf126871",
+      "input_sha256": "02ac8ebfbfda37a0e9c1c4e5cdeb45c50b5e4db5530cd674916a058cefeb9a12",
+      "prompt_sha256": "fb217ef85f6b48c4586a344c5e537f1d5dffe101d428f6ad3593d676d7d6ff7c",
       "schema_sha256": "97573049fbeffc03aac36b2f78a5aad19e107067dd0a00401548c6d5c821061d",
       "served_model": "qwen3.8-flash",
       "usage": {
-        "prompt_tokens": 809,
-        "completion_tokens": 2119,
-        "total_tokens": 2928
+        "prompt_tokens": 810,
+        "completion_tokens": 3786,
+        "total_tokens": 4596
       },
-      "latency_ms": 33559.864,
+      "latency_ms": 65826.38,
       "transport_status": "SUCCESS",
       "schema_status": "VALID",
       "schema_issues": [],
@@ -454,10 +406,10 @@
       "served_model": "qwen3.8-flash",
       "usage": {
         "prompt_tokens": 434,
-        "completion_tokens": 373,
-        "total_tokens": 807
+        "completion_tokens": 252,
+        "total_tokens": 686
       },
-      "latency_ms": 8876.358
+      "latency_ms": 6345.688
     }
   ]
 }

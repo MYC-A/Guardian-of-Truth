@@ -1,0 +1,110 @@
+{
+  "configuration_sha256": "2119683d6242a7c1fc1ff4dfb4106400f6d5d41d22624b06bde015490172338f",
+  "ordinal": 0,
+  "task": "Parse ONE workplace policy into exactly ONE typed semantic structure.\nField rules:\n- modality: PERMISSION (the text grants or allows), PROHIBITION (the text forbids or bars), REQUIREMENT (the text obliges).\n- relation: how the regulated act is gated.\n  IF: when the conditions hold the act is licensed/obligated/forbidden; when they do not hold the text stays silent (NOT a violation, and NOT permission).\n  ONLY_IF: exclusive - the act is licensed ONLY under the conditions; doing it without them is a VIOLATION.\n  IF_AND_ONLY_IF: the act is licensed exactly under the conditions and the text commits in both directions.\n  UNLESS: the conditions are exceptions carved out of an otherwise absolute rule.\n  UNCONDITIONAL: no conditions stated.\n  AND_NOT_EACH: doing BOTH targets together is forbidden; each alone is allowed.\n- target_clauses: a list of clauses; each clause is a list of atoms that are regulated TOGETHER (same act or same batch); several clauses mean the atoms are regulated SEPARATELY.\n- condition_literals and exception_literals: typed atoms copied EXACTLY from atom_catalog; prefix an atom with \"!\" only when the text negates it.\n- condition_mode/exception_mode: ALL means conjunction (every literal), ANY means disjunction (any literal).\n- temporal: BEFORE or AFTER only when the text orders the act relative to an event, else NONE.\n- WHO is allowed or forbidden to act (for example \"only the duty engineer\") goes into condition_literals as an actor: atom from atom_catalog; the actor field stays \"assistant\".\n- An act that is neither licensed nor forbidden is NO_VIOLATION, never PERMITTED: absence of prohibition is NOT permission.\nUse ONLY atoms from atom_catalog (it also contains distractor atoms; choose the ones the text actually uses). Output exactly one JSON object matching the schema.",
+  "payload": {
+    "policy_text": "The cage stays locked unless the animal handler or the attending vet is present.",
+    "atom_catalog": [
+      "action:unlock_cage",
+      "distractor:stress_trap_exception_ste5",
+      "state:animal_handler_present",
+      "state:attending_vet_present"
+    ]
+  },
+  "schema": {
+    "type": "object",
+    "properties": {
+      "modality": {
+        "type": "string",
+        "enum": [
+          "PERMISSION",
+          "PROHIBITION",
+          "REQUIREMENT"
+        ]
+      },
+      "relation": {
+        "type": "string",
+        "enum": [
+          "IF",
+          "ONLY_IF",
+          "UNLESS",
+          "UNCONDITIONAL",
+          "IF_AND_ONLY_IF",
+          "AND_NOT_EACH"
+        ]
+      },
+      "target_clauses": {
+        "type": "array",
+        "minItems": 1,
+        "items": {
+          "type": "array",
+          "minItems": 1,
+          "items": {
+            "type": "string"
+          }
+        }
+      },
+      "condition_literals": {
+        "type": "array",
+        "items": {
+          "type": "string"
+        }
+      },
+      "exception_literals": {
+        "type": "array",
+        "items": {
+          "type": "string"
+        }
+      },
+      "condition_mode": {
+        "type": "string",
+        "enum": [
+          "ALL",
+          "ANY"
+        ]
+      },
+      "exception_mode": {
+        "type": "string",
+        "enum": [
+          "ALL",
+          "ANY"
+        ]
+      },
+      "temporal": {
+        "type": "string",
+        "enum": [
+          "NONE",
+          "BEFORE",
+          "AFTER"
+        ]
+      },
+      "actor": {
+        "type": "string"
+      },
+      "regulated_kind": {
+        "type": "string"
+      },
+      "facet": {
+        "type": "string"
+      },
+      "identity": {
+        "type": "string"
+      },
+      "provenance": {
+        "type": "string"
+      },
+      "quantification": {
+        "type": "string"
+      }
+    },
+    "required": [
+      "modality",
+      "relation",
+      "target_clauses"
+    ],
+    "additionalProperties": false
+  },
+  "input_sha256": "dafed57d24585c942d9c554a9f6bec460bc07cc2e9d9ac1858c43c9b7a39e34e",
+  "schema_sha256": "fc3b3ee2bed89acaa59688fb0b42e0f56be1db8370263200cdc21c323c2af54e",
+  "prompt_sha256": "f6acabc44c236f190924c1c98049516cceb459e705377317e5189e72c5026ab0"
+}

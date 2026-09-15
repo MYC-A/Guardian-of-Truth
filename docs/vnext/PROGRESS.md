@@ -330,3 +330,125 @@ Checkpoint commits: protocol `8e9c3fb`; types/ledger `8e87649`; Claim Graph
 T1 evaluator `8d2c532`; T1 pre-prediction freeze `af2e3ee`.
 Proof/certificate engine `3b36b5d`; certificate-gated decisions/escalation/adapters
 `694c32d`. No stage/prompt/configuration in frozen T1 v1 was changed.
+
+The Policy program regression is now complete: all 104 frozen cases ran on
+B.AI qwen3.8-flash and predictions were sealed before benchmark-world scoring
+(`policy_programs_v1_prediction_seal.json`, gold_joined false). Transport
+retained 299/312 successes and 12 UNKNOWN remote captures from interrupted
+processes; none were resent, and the runner is now immutable. On the conditional
+semantic subsets the fixed P1 baseline is correct on 30/50 valid-schema cases
+(0.6) while the native multi-program arm reaches 0.45 any-candidate case
+accuracy, 0.0 all-candidate accuracy and 0.207 per-candidate accuracy; the
+paired 29-case delta is -0.5517 in favor of P1. The native arm is therefore
+recorded as not beating the incumbent baseline on this observed development
+regression; nothing is promoted and whole-Core/blind gains remain unclaimed.
+Boundaries and telemetry are documented in
+`docs/vnext/POLICY_PROGRAM_V2_BOUNDARIES.md`.
+
+
+C-ALR reimplementation study (policy_c_alr_reimpl_v1, 2026-09-14): preregistered
+at commit 377a7856 before any call (docs/vnext/C_ALR_REIMPL_STUDY_V1.json), run
+on the recovered V5 benchmark (142 cases, sealed gold, blind inputs) with
+bai/qwen3.8-flash. H0 conservative single-parse primary: 136/142 = 95.77%
+behavioral accuracy, 142/142 valid structures (1 via the registered one-shot
+repair), 143 requests total, predictions sealed before gold join. Stage A prime
+deterministic STOP gate: 0 of 6 residual errors are reachable by the frozen
+mutation catalog (recoverable share 0.000 < 0.05, oracle gain 0.0 pp < 4) ->
+REJECT_EARLY; ZERO verifier requests sent per the frozen stop rule. Deterministic
+failure audit: 2x UNLESS-exceptions-placed-as-conditions, 1x condition-negation
+flip, 1x modality-only (permission/obligation), 2x multi-axis (provenance,
+AND_NOT_EACH+scope). Machine-verified conclusion: the C-ALR hybrid
+(local-mutation admission) cannot improve on H0 on this data; the conservative
+parser remains the baseline; the error classes that remain require
+representation-level changes, not local patches. Full record:
+docs/vnext/C_ALR_REIMPL_STUDY_V1_BOUNDARIES.md.
+
+
+PHV1 prospective frozen holdout (policy_phv1_holdout_v1, 2026-09-14): one
+validation cycle of the UNCHANGED frozen H0 (byte-identical prompt/schema/config
+to the sealed C-ALR run, continuity machine-verified at freeze) on 80 NEW
+gold-by-construction policy texts (20 simple / 20 structural / 20 multi-axis /
+12 NL stress / 8 ambiguity; 8-gram-disjoint from V4+V5; preregistered gates in
+docs/vnext/PHV1_PREREG_GATES_V1.json frozen before inference; corpus gold frozen
+and hashed before the first request; one synthetic transport smoke before the
+first semantic request; predictions sealed before gold join; no judges, no
+mutation catalog, 0 verifier requests). RESULT: overall behavioral accuracy
+59/80 = 73.75% (Wilson 95% CI [63.18%, 82.14%]), validity 79/80 = 98.75%,
+simple 95.0%, structural aggregate 72.5%, NL stress 50.0% (family collapse),
+ambiguity 62.5%, invented explicit permission 10.0% (safety breach).
+Preregistered verdict: REOPEN_POLICY_RESEARCH - the controlled-distribution
+95.77% is predominantly an in-development-distribution effect; the conservative
+permission invariant does not generalize to unseen phrasings; the dominant
+residual class is relation binding (9/21), then multi-axis composition (6/21).
+The viewed holdout is now development data; any repaired candidate requires a
+new holdout. Full record: docs/vnext/PHV1_RESULTS.md.
+
+PSB causal experiment (policy_psb_causal_v1, 2026-09-15): the LAST standalone
+Policy architecture cycle after PHV1 (per protocol: no V8/V9/V10, hard stop
+afterwards). Preregistered docs/vnext/PSB_PREREG_GATES_V1.json before any
+inference: arms H0 (frozen flat, byte-identical chain C-ALR -> PHV1 -> PSB,
+machine-verified) vs H1 (typed attachment graph: 6 node types, 8 edge types,
+explicit polarity, deterministic per-clause compilation into the same v3
+program space) vs H2 (the same sealed parse compiled with the frozen
+positive-evidence permission gate); 44 fresh gold-by-construction
+binding-heavy cases (8-gram-disjoint from V4+V5+PHV1; 32 H0-representable by
+merge-equivalence + 12 capacity cases; machine-checked binding
+discriminability); one synthetic smoke per schema; both arms sealed before
+gold join; no judges. RESULT (corrected rescoring; one disclosed post-seal
+fix of the paired-statistics counter, seals/gold untouched): H0 24/44 =
+54.55%, H1 = H2 32/44 = 72.73% (+18.2pp, McNemar p=0.134, Newcombe CI
+[+0.0, +35.0]; corrections 15 : regressions 7 = 29.2% of H0-correct);
+binding micro-F1 0.820 -> 0.856 (CONDITION 0.706 -> 0.863, ACTOR 0.714 ->
+0.833, CLAUSE 0.865 -> 0.891); capacity subset 0% -> 75%; exception cohort
+62.5% -> 100%; multi-clause 0% -> 87.5%; multi-axis 75% -> 50%; validity H0
+95.45% vs PSB 84.09% (7 model-side graph-format assimilation failures);
+invented permission 22.73% -> 0% at H1 (structured extraction alone; the H2
+gate fired once, clause precision 0.95 -> 1.00, behaviorally inert).
+GATES: H1 binding PASS, behavioral PASS, regression FAIL (29.2% > 5%);
+H2 all PASS (supported-but-redundant); primary +18.2pp >= 15pp numerically
+passed but promotion requires H1 AND H2; frozen verdict field
+INFRASTRUCTURE_FAILURE (validity floor 0.841 < 0.90). TERMINAL DECISION per
+protocol section 62: STOP standalone Policy research; no final holdout;
+POLICY_LIMITATION_CONFIRMED - integrate with the documented limitation (H0
+frontend; parser errors to be absorbed downstream by abstention / UNKNOWN /
+certificates / independent witnesses and measured end-to-end). Full record:
+docs/vnext/PSB_RESULTS.md.
+
+GRS experiment (policy_grs_stage_a_v1, 2026-09-15): the single authorized
+reopening of standalone Policy research after the PSB stop rule - a
+principally different decomposition (grounded semantic inventory -> LLM
+synthesizes rules ONLY from closed inventory IDs in a small typed DSL ->
+deterministic validator -> compiler into the same frozen v3 program space).
+Preregistered docs/vnext/GRS_PREREG_GATES_V1.json before any inference:
+arms A0 (frozen H0, byte-identical chain C-ALR -> PHV1 -> PSB,
+machine-verified) vs A1 (oracle-inventory GRS, diagnostic ceiling); 56 NEW
+gold-by-construction cases (15 cohorts, 8-gram-disjoint from
+V4+V5+PHV1+PSB, 11 capacity cases, empty-gold control with catalog-wide
+world surface); Stage B (grounder end-to-end, 72 further fresh cases)
+authorized only on PASS_STAGE_A; seals before gold join; no judges; one
+frozen syntactic repair re-ask per case. STAGE A RESULT (machine-verified):
+A0 39/56 = 69.64% vs A1 49/56 = 87.50% (+17.86pp, McNemar p = 0.0414,
+Newcombe CI [+3.6, +31.6]); capacity 27.3% -> 81.8%; per-clause divergence
+cohorts 0% -> 100% (condition+exception, per-clause actors, separate
+modalities); binding micro-F1 0.848 -> 0.942; invented permission 21.4% ->
+0%; unsupported semantic leaves and hallucination attempts: ZERO (closed
+vocabulary held absolutely); AST validity 91.07% (< gate 95%); NL prose
+66.67% (< gate 75%); H0-correct regressions 12.82% (> gate 10%). GATES: 3
+of 6 failed -> frozen verdict REJECT_GRS_COMPOSITION; Stage B NOT run
+(runner machine-refuses freeze-b; verified). Failure audit (deterministic):
+all 5 regressions are ONE systematic repair-resistant DSL serialization
+slip (omitted RULE(...) wrapper), plus 2 composition errors on the hardest
+multi-clause cases; zero semantic-invention errors. TERMINAL DECISION per
+protocol sections 60-61: STOP standalone Policy research permanently (flat
+H0 -> PSB graph -> GRS all tested; H0 stays the only promotion-grade
+frontend); next stage is integration/composition with the documented
+limitations. Full record: docs/vnext/GRS_RESULTS.md.
+
+## POLICY_FINAL_CYCLE (final standalone Policy frontend selection) — RUN COMPLETED, SEALED, VERDICT KEEP_H0
+
+- Stage A offline audit (zero new LLM calls, sealed artifacts only): H0/PSB complementarity 17/7/15/5, oracle union 88.6%; HP1 81.8%, HP3 gold-in-set 88.6% / def-acc 85.2% / unsafe-def 2.3%; H0/GRS oracle union 96.4%, HG3 gold-in-set 96.4% with 100% definitive accuracy on dev; behavioral flattenability witness reproduces the frozen h0_representable flags 44/44 (incl. the separate-REQUIREMENT-merge subtlety).
+- Stage B dev (GRS Stage A corpus as development data only): deterministic canonicalizer recovers all 5 DSL-invalid sealed outputs (validity 100%, accuracy 96.4%, zero regressions, identity 51/51 — format correction is not semantic correction); live arms B2 92.9%/100%, B3 89.3%, e2e(B2) 92.9%, e2ecanon2 (grounder + frozen B1 prompt + canonicalizer) 92.9% with capacity/NL 100% and zero hallucination; boundary selected = frozen B1 prompt + canonicalizer (simplest successful). One disclosed run invalidation (runner closure bug) with fresh re-run under devfreeze2b.
+- Fresh final holdout: 100 new cases, 8-gram-disjoint from all six prior corpora, frozen at commit 08142ac with byte-identity continuity to every sealed predecessor; 4 live arms (h0/psb/ground/synth), 447 requests, all sealed before gold join.
+- MACHINE-VERIFIED RESULT (verdict per frozen prereg gates): KEEP_H0. C2 GRS-refined passes 6/7 gates and fails only G7 (H0-correct regression 15% > 10%): cdc 0.81 vs 0.60 (+21pp, McNemar p=0.0011, Newcombe CI [+10.1,+31.5]), capacity 65.7% vs 8.6%, NL 71.4% vs 42.9%, unsafe-definitive 2% vs 14%, simple 100%, validity 99%, zero hallucinated leaves, 2 calls/policy. PSB collapses on active-voice texts (54/83 errors = invented ACTOR nodes with non-catalog atoms accepted by the frozen compiler); all H0+PSB hybrids inherit it. Retention trades coverage for accuracy (C3a 59% cov × 91.5% acc; three-way unresolved 83%).
+- C2 residual failure modes (named, semantic): negation-in-condition slips (4, incl. both unsafe cases), REQUIRE separate-vs-together conjunction shape (3), grounder atom misses (2).
+- TERMINAL per the preregistered hard stop: standalone Policy research ENDS (no P8/GRS-v3/Hybrid-v2/new parser/judge/ontology). H0 remains the promotion-grade frontend under the frozen gates; GRS-refined is recorded on the Pareto frontier as the significantly-more-accurate/safer alternative carrying three named limits. Next stage: Guardian Composition / E2E.

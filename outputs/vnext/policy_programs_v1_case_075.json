@@ -6,7 +6,171 @@
       "hypotheses": [
         {
           "hypothesis_id": "policy-program:h0",
-          "basis": "The policy explicitly states the restriction negates joint use of email and SMS, not each channel individually. 'Either may carry an alert' establishes individual permission; 'negates their joint use' establishes the prohibition as applying to the conjunction of both actions occurring together.",
+          "basis": "The policy explicitly states the restriction negates 'joint use' of email and SMS, meaning the conjunction (both together) is prohibited, while each individually remains permitted. 'Either may carry an alert' confirms standalone permission for each channel.",
+          "program": {
+            "violation_clauses": [
+              [
+                "action:send_email",
+                "action:send_sms"
+              ]
+            ],
+            "permission_clauses": [
+              [
+                "action:send_email"
+              ],
+              [
+                "action:send_sms"
+              ]
+            ]
+          },
+          "source_spans": [
+            {
+              "document": "policy",
+              "start": 68,
+              "end": 152
+            },
+            {
+              "document": "policy",
+              "start": 41,
+              "end": 67
+            }
+          ],
+          "unresolved_terms": [
+            "section N"
+          ]
+        },
+        {
+          "hypothesis_id": "policy-program:h1",
+          "basis": "The phrase 'their joint use' combined with 'carry an alert' may scope the prohibition specifically to using both channels for the same alert instance, rather than any simultaneous use regardless of alert identity.",
+          "program": {
+            "violation_clauses": [
+              [
+                "action:send_email",
+                "action:send_sms",
+                "identity:same_alert"
+              ]
+            ],
+            "permission_clauses": [
+              [
+                "action:send_email"
+              ],
+              [
+                "action:send_sms"
+              ],
+              [
+                "action:send_email",
+                "identity:same_alert"
+              ],
+              [
+                "action:send_sms",
+                "identity:same_alert"
+              ]
+            ]
+          },
+          "source_spans": [
+            {
+              "document": "policy",
+              "start": 68,
+              "end": 152
+            },
+            {
+              "document": "policy",
+              "start": 41,
+              "end": 67
+            }
+          ],
+          "unresolved_terms": [
+            "section N"
+          ]
+        },
+        {
+          "hypothesis_id": "policy-program:h2",
+          "basis": "The policy states 'Either may carry an alert', which can be interpreted as a mutual exclusion constraint (XOR). This reading suggests that for any given alert, you can use Email or SMS, but not both, and potentially not neither if the alert must be sent. The restriction negates 'joint use' specifically for the purpose of carrying an alert.",
+          "program": {
+            "violation_clauses": [
+              [
+                "action:send_email",
+                "action:send_sms"
+              ],
+              [
+                "!action:send_email",
+                "!action:send_sms",
+                "identity:same_alert"
+              ]
+            ],
+            "permission_clauses": [
+              [
+                "action:send_email",
+                "!action:send_sms"
+              ],
+              [
+                "action:send_sms",
+                "!action:send_email"
+              ]
+            ]
+          },
+          "source_spans": [
+            {
+              "document": "policy",
+              "start": 41,
+              "end": 67
+            },
+            {
+              "document": "policy",
+              "start": 68,
+              "end": 152
+            }
+          ],
+          "unresolved_terms": [
+            "Does 'Either' imply that at least one must be used for an alert to be considered 'carried'?"
+          ]
+        },
+        {
+          "hypothesis_id": "policy-program:h3",
+          "basis": "The phrase 'not each channel individually' implies that the restriction applies to the *combination* of channels in a specific context, but 'joint use' might be defined temporally or functionally. This reading suggests that using both channels is permitted as long as they are not used for the *same* alert instance (identity:same_alert), effectively making the prohibition specific to redundant alerting.",
+          "program": {
+            "violation_clauses": [
+              [
+                "action:send_email",
+                "action:send_sms",
+                "identity:same_alert"
+              ]
+            ],
+            "permission_clauses": [
+              [
+                "action:send_email",
+                "action:send_sms",
+                "!identity:same_alert"
+              ],
+              [
+                "action:send_email",
+                "!action:send_sms"
+              ],
+              [
+                "action:send_sms",
+                "!action:send_email"
+              ]
+            ]
+          },
+          "source_spans": [
+            {
+              "document": "policy",
+              "start": 68,
+              "end": 152
+            },
+            {
+              "document": "policy",
+              "start": 41,
+              "end": 67
+            }
+          ],
+          "unresolved_terms": [
+            "What constitutes 'joint use' if not simultaneous sending for the same alert?"
+          ]
+        },
+        {
+          "hypothesis_id": "policy-program:h4",
+          "basis": "This reading interprets 'joint use' as a general prohibition on using both channels together for any purpose, while 'Either may carry an alert' simply establishes that both channels are valid for alerts individually. This creates a stricter rule where using both channels at all is a violation, regardless of alert identity.",
           "program": {
             "violation_clauses": [
               [
@@ -22,70 +186,23 @@
               [
                 "action:send_sms",
                 "!action:send_email"
-              ],
-              [
-                "!action:send_email",
-                "!action:send_sms"
               ]
             ]
           },
           "source_spans": [
             {
               "document": "policy",
-              "start": 41,
-              "end": 66
+              "start": 68,
+              "end": 152
             },
             {
               "document": "policy",
-              "start": 68,
-              "end": 151
-            }
-          ],
-          "unresolved_terms": [
-            "section N"
-          ]
-        },
-        {
-          "hypothesis_id": "policy-program:h1",
-          "basis": "The phrase 'their joint use' in context of 'Either may carry an alert' could be read as restricting the simultaneous use of both channels for the same alert specifically, leaving cross-channel use for different alerts unaddressed by this restriction.",
-          "program": {
-            "violation_clauses": [
-              [
-                "action:send_email",
-                "action:send_sms",
-                "identity:same_alert"
-              ]
-            ],
-            "permission_clauses": [
-              [
-                "action:send_email",
-                "!action:send_sms"
-              ],
-              [
-                "action:send_sms",
-                "!action:send_email"
-              ],
-              [
-                "action:send_email",
-                "action:send_sms",
-                "!identity:same_alert"
-              ]
-            ]
-          },
-          "source_spans": [
-            {
-              "document": "policy",
               "start": 41,
-              "end": 66
-            },
-            {
-              "document": "policy",
-              "start": 68,
-              "end": 151
+              "end": 67
             }
           ],
           "unresolved_terms": [
-            "section N"
+            "Does 'joint use' apply across different alerts or just within a single transaction?"
           ]
         }
       ],
@@ -94,21 +211,190 @@
         "universe_source": null,
         "enumeration_complete": false,
         "unresolved_terms": [
-          "section N"
+          "section N",
+          "Definition of 'joint use' (temporal vs logical)",
+          "Scope of 'Either' (inclusive vs exclusive)",
+          "Impact of 'identity:same_alert' on 'joint use'",
+          "Does 'Either' imply that at least one must be used for an alert to be considered 'carried'?",
+          "What constitutes 'joint use' if not simultaneous sending for the same alert?",
+          "Does 'joint use' apply across different alerts or just within a single transaction?"
         ],
         "discarded_hypotheses": [],
-        "challenger_alternatives": []
-      },
-      "failures": [
-        [
-          "policy_program_missing_reading_v2",
-          "TRANSPORT_ERROR"
+        "challenger_alternatives": [
+          "policy-program:h2",
+          "policy-program:h3",
+          "policy-program:h4"
         ]
-      ],
+      },
+      "failures": [],
       "empirical_hypotheses": [
         {
           "hypothesis_id": "policy-program:h0",
-          "basis": "The policy explicitly states the restriction negates joint use of email and SMS, not each channel individually. 'Either may carry an alert' establishes individual permission; 'negates their joint use' establishes the prohibition as applying to the conjunction of both actions occurring together.",
+          "basis": "The policy explicitly states the restriction negates 'joint use' of email and SMS, meaning the conjunction (both together) is prohibited, while each individually remains permitted. 'Either may carry an alert' confirms standalone permission for each channel.",
+          "program": {
+            "violation_clauses": [
+              [
+                "action:send_email",
+                "action:send_sms"
+              ]
+            ],
+            "permission_clauses": [
+              [
+                "action:send_email"
+              ],
+              [
+                "action:send_sms"
+              ]
+            ]
+          },
+          "source_spans": [
+            {
+              "document": "policy",
+              "start": 68,
+              "end": 152
+            },
+            {
+              "document": "policy",
+              "start": 41,
+              "end": 67
+            }
+          ],
+          "unresolved_terms": [
+            "section N"
+          ]
+        },
+        {
+          "hypothesis_id": "policy-program:h1",
+          "basis": "The phrase 'their joint use' combined with 'carry an alert' may scope the prohibition specifically to using both channels for the same alert instance, rather than any simultaneous use regardless of alert identity.",
+          "program": {
+            "violation_clauses": [
+              [
+                "action:send_email",
+                "action:send_sms",
+                "identity:same_alert"
+              ]
+            ],
+            "permission_clauses": [
+              [
+                "action:send_email"
+              ],
+              [
+                "action:send_sms"
+              ],
+              [
+                "action:send_email",
+                "identity:same_alert"
+              ],
+              [
+                "action:send_sms",
+                "identity:same_alert"
+              ]
+            ]
+          },
+          "source_spans": [
+            {
+              "document": "policy",
+              "start": 68,
+              "end": 152
+            },
+            {
+              "document": "policy",
+              "start": 41,
+              "end": 67
+            }
+          ],
+          "unresolved_terms": [
+            "section N"
+          ]
+        },
+        {
+          "hypothesis_id": "policy-program:h2",
+          "basis": "The policy states 'Either may carry an alert', which can be interpreted as a mutual exclusion constraint (XOR). This reading suggests that for any given alert, you can use Email or SMS, but not both, and potentially not neither if the alert must be sent. The restriction negates 'joint use' specifically for the purpose of carrying an alert.",
+          "program": {
+            "violation_clauses": [
+              [
+                "action:send_email",
+                "action:send_sms"
+              ],
+              [
+                "!action:send_email",
+                "!action:send_sms",
+                "identity:same_alert"
+              ]
+            ],
+            "permission_clauses": [
+              [
+                "action:send_email",
+                "!action:send_sms"
+              ],
+              [
+                "action:send_sms",
+                "!action:send_email"
+              ]
+            ]
+          },
+          "source_spans": [
+            {
+              "document": "policy",
+              "start": 41,
+              "end": 67
+            },
+            {
+              "document": "policy",
+              "start": 68,
+              "end": 152
+            }
+          ],
+          "unresolved_terms": [
+            "Does 'Either' imply that at least one must be used for an alert to be considered 'carried'?"
+          ]
+        },
+        {
+          "hypothesis_id": "policy-program:h3",
+          "basis": "The phrase 'not each channel individually' implies that the restriction applies to the *combination* of channels in a specific context, but 'joint use' might be defined temporally or functionally. This reading suggests that using both channels is permitted as long as they are not used for the *same* alert instance (identity:same_alert), effectively making the prohibition specific to redundant alerting.",
+          "program": {
+            "violation_clauses": [
+              [
+                "action:send_email",
+                "action:send_sms",
+                "identity:same_alert"
+              ]
+            ],
+            "permission_clauses": [
+              [
+                "action:send_email",
+                "action:send_sms",
+                "!identity:same_alert"
+              ],
+              [
+                "action:send_email",
+                "!action:send_sms"
+              ],
+              [
+                "action:send_sms",
+                "!action:send_email"
+              ]
+            ]
+          },
+          "source_spans": [
+            {
+              "document": "policy",
+              "start": 68,
+              "end": 152
+            },
+            {
+              "document": "policy",
+              "start": 41,
+              "end": 67
+            }
+          ],
+          "unresolved_terms": [
+            "What constitutes 'joint use' if not simultaneous sending for the same alert?"
+          ]
+        },
+        {
+          "hypothesis_id": "policy-program:h4",
+          "basis": "This reading interprets 'joint use' as a general prohibition on using both channels together for any purpose, while 'Either may carry an alert' simply establishes that both channels are valid for alerts individually. This creates a stricter rule where using both channels at all is a violation, regardless of alert identity.",
           "program": {
             "violation_clauses": [
               [
@@ -124,70 +410,23 @@
               [
                 "action:send_sms",
                 "!action:send_email"
-              ],
-              [
-                "!action:send_email",
-                "!action:send_sms"
               ]
             ]
           },
           "source_spans": [
             {
               "document": "policy",
-              "start": 41,
-              "end": 66
+              "start": 68,
+              "end": 152
             },
             {
               "document": "policy",
-              "start": 68,
-              "end": 151
-            }
-          ],
-          "unresolved_terms": [
-            "section N"
-          ]
-        },
-        {
-          "hypothesis_id": "policy-program:h1",
-          "basis": "The phrase 'their joint use' in context of 'Either may carry an alert' could be read as restricting the simultaneous use of both channels for the same alert specifically, leaving cross-channel use for different alerts unaddressed by this restriction.",
-          "program": {
-            "violation_clauses": [
-              [
-                "action:send_email",
-                "action:send_sms",
-                "identity:same_alert"
-              ]
-            ],
-            "permission_clauses": [
-              [
-                "action:send_email",
-                "!action:send_sms"
-              ],
-              [
-                "action:send_sms",
-                "!action:send_email"
-              ],
-              [
-                "action:send_email",
-                "action:send_sms",
-                "!identity:same_alert"
-              ]
-            ]
-          },
-          "source_spans": [
-            {
-              "document": "policy",
               "start": 41,
-              "end": 66
-            },
-            {
-              "document": "policy",
-              "start": 68,
-              "end": 151
+              "end": 67
             }
           ],
           "unresolved_terms": [
-            "section N"
+            "Does 'joint use' apply across different alerts or just within a single transaction?"
           ]
         }
       ]
@@ -196,38 +435,18 @@
       "case_id": "not_both_channels::3",
       "arm": "P1",
       "transport_status": "SUCCESS",
-      "schema_status": "VALID",
+      "schema_status": "INVALID",
       "semantic_status": "PENDING_GOLD_JOIN",
-      "representation_status": "SUPPORTED",
+      "representation_status": "NOT_EVALUATED",
       "error_category": null,
-      "prediction": {
-        "structure": null,
-        "program": {
-          "violation_clauses": [
-            [
-              "action:send_email",
-              "action:send_sms"
-            ]
-          ],
-          "permission_clauses": [
-            [
-              "action:send_email",
-              "!action:send_sms"
-            ],
-            [
-              "!action:send_email",
-              "action:send_sms"
-            ]
-          ]
-        }
-      },
+      "prediction": null,
       "source_coverage": 1.0,
       "served_model": "qwen3.8-flash",
-      "latency_ms": 6526.263,
+      "latency_ms": 21191.786,
       "usage": {
         "prompt_tokens": 427,
-        "completion_tokens": 274,
-        "total_tokens": 701
+        "completion_tokens": 870,
+        "total_tokens": 1297
       }
     }
   },
@@ -241,10 +460,10 @@
       "served_model": "qwen3.8-flash",
       "usage": {
         "prompt_tokens": 588,
-        "completion_tokens": 1047,
-        "total_tokens": 1635
+        "completion_tokens": 808,
+        "total_tokens": 1396
       },
-      "latency_ms": 18207.045,
+      "latency_ms": 12102.668,
       "transport_status": "SUCCESS",
       "schema_status": "VALID",
       "schema_issues": [],
@@ -253,16 +472,20 @@
     {
       "backend_version": "diagnostic-semantic-v2",
       "task": "policy_program_missing_reading_v2",
-      "input_sha256": "17ef2dc8ac525ac8ed6ffda6e3d3f36e4970a523362d3ea3441bec6308ea90b5",
-      "prompt_sha256": "86cc49374629a82df7c2b8d24aa4fc41fbdb8e477df7dbf72b502579f7598cb6",
+      "input_sha256": "52556496f240b4a4ddb40e1c18a0c1fef2c0cbada46d57e4769f3f3188fcf530",
+      "prompt_sha256": "8176df02ebc12195f7e163e3bfabb005abf4ffdffa56e4210e286f99ff50066a",
       "schema_sha256": "f72c79d1f5305480edd9873c0c5fcf3397a0e85eb50356e9f51f431c2fa4f991",
-      "served_model": null,
-      "usage": {},
-      "latency_ms": 112353.786,
-      "transport_status": "ERROR",
-      "schema_status": "NOT_EVALUATED",
+      "served_model": "qwen3.8-flash",
+      "usage": {
+        "prompt_tokens": 808,
+        "completion_tokens": 4957,
+        "total_tokens": 5765
+      },
+      "latency_ms": 116518.379,
+      "transport_status": "SUCCESS",
+      "schema_status": "VALID",
       "schema_issues": [],
-      "error_category": "truncated"
+      "error_category": null
     }
   ],
   "p1_request_telemetry": [
@@ -271,16 +494,23 @@
       "prompt_sha256": "a715d00495d96bd893d21c3fd56c96e950b64b3170ca7f58b6875091b250785a",
       "schema_sha256": "ee22458d9ed905ac88b4d1b210902d72a2afb9fd03c69c62c6aef05c2466bda3",
       "transport_status": "SUCCESS",
-      "schema_status": "VALID",
-      "schema_issues": [],
+      "schema_status": "INVALID",
+      "schema_issues": [
+        {
+          "code": "JSON_INVALID",
+          "path": "",
+          "expected_type": null,
+          "actual_type": null
+        }
+      ],
       "error_category": null,
       "served_model": "qwen3.8-flash",
       "usage": {
         "prompt_tokens": 427,
-        "completion_tokens": 274,
-        "total_tokens": 701
+        "completion_tokens": 870,
+        "total_tokens": 1297
       },
-      "latency_ms": 6524.543
+      "latency_ms": 21189.079
     }
   ]
 }

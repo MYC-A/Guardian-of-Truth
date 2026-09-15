@@ -6,7 +6,7 @@
       "hypotheses": [
         {
           "hypothesis_id": "policy-program:h0",
-          "basis": "The policy sets an upper bound of one tool call per assistant turn. Violation occurs when the count exceeds one; permission holds when the count is at most one.",
+          "basis": "The policy sets a hard upper bound on tool calls per assistant turn. 'At most one' means any count exceeding 1 is a violation. The prohibition is absolute for the violation condition.",
           "program": {
             "violation_clauses": [
               [
@@ -27,8 +27,30 @@
             }
           ],
           "unresolved_terms": [
-            "assistant turn (what constitutes a single turn boundary)",
-            "tool call (what counts as a tool call invocation)"
+            "distractor:irrelevant",
+            "distractor:boundary_2"
+          ]
+        },
+        {
+          "hypothesis_id": "policy-program:h1",
+          "basis": "The word 'may' establishes a permission ceiling (what is allowed) rather than an explicit prohibition (what is forbidden). Under this reading, the policy grants permission for at most one tool call per turn but does not itself define a violation condition. Enforcement of exceeding the permission would require an additional rule. This changes obligations because the policy alone does not create a prohibition — only a permission boundary.",
+          "program": {
+            "violation_clauses": [],
+            "permission_clauses": [
+              [
+                "!turn:tool_call_count_gt_1"
+              ]
+            ]
+          },
+          "source_spans": [
+            {
+              "document": "policy",
+              "start": 24,
+              "end": 57
+            }
+          ],
+          "unresolved_terms": [
+            "whether exceeding the permission ceiling constitutes a violation absent an explicit prohibition clause"
           ]
         }
       ],
@@ -37,19 +59,20 @@
         "universe_source": null,
         "enumeration_complete": false,
         "unresolved_terms": [
-          "assistant turn (what constitutes a single turn boundary)",
-          "tool call (what counts as a tool call invocation)",
+          "distractor:irrelevant",
           "distractor:boundary_2",
-          "distractor:irrelevant"
+          "whether exceeding the permission ceiling constitutes a violation absent an explicit prohibition clause"
         ],
         "discarded_hypotheses": [],
-        "challenger_alternatives": []
+        "challenger_alternatives": [
+          "policy-program:h1"
+        ]
       },
       "failures": [],
       "empirical_hypotheses": [
         {
           "hypothesis_id": "policy-program:h0",
-          "basis": "The policy sets an upper bound of one tool call per assistant turn. Violation occurs when the count exceeds one; permission holds when the count is at most one.",
+          "basis": "The policy sets a hard upper bound on tool calls per assistant turn. 'At most one' means any count exceeding 1 is a violation. The prohibition is absolute for the violation condition.",
           "program": {
             "violation_clauses": [
               [
@@ -70,8 +93,30 @@
             }
           ],
           "unresolved_terms": [
-            "assistant turn (what constitutes a single turn boundary)",
-            "tool call (what counts as a tool call invocation)"
+            "distractor:irrelevant",
+            "distractor:boundary_2"
+          ]
+        },
+        {
+          "hypothesis_id": "policy-program:h1",
+          "basis": "The word 'may' establishes a permission ceiling (what is allowed) rather than an explicit prohibition (what is forbidden). Under this reading, the policy grants permission for at most one tool call per turn but does not itself define a violation condition. Enforcement of exceeding the permission would require an additional rule. This changes obligations because the policy alone does not create a prohibition — only a permission boundary.",
+          "program": {
+            "violation_clauses": [],
+            "permission_clauses": [
+              [
+                "!turn:tool_call_count_gt_1"
+              ]
+            ]
+          },
+          "source_spans": [
+            {
+              "document": "policy",
+              "start": 24,
+              "end": 57
+            }
+          ],
+          "unresolved_terms": [
+            "whether exceeding the permission ceiling constitutes a violation absent an explicit prohibition clause"
           ]
         }
       ]
@@ -101,11 +146,11 @@
       },
       "source_coverage": 1.0,
       "served_model": "qwen3.8-flash",
-      "latency_ms": 5998.754,
+      "latency_ms": 4427.111,
       "usage": {
         "prompt_tokens": 417,
-        "completion_tokens": 277,
-        "total_tokens": 694
+        "completion_tokens": 245,
+        "total_tokens": 662
       }
     }
   },
@@ -119,10 +164,10 @@
       "served_model": "qwen3.8-flash",
       "usage": {
         "prompt_tokens": 579,
-        "completion_tokens": 648,
-        "total_tokens": 1227
+        "completion_tokens": 1077,
+        "total_tokens": 1656
       },
-      "latency_ms": 12242.413,
+      "latency_ms": 19813.673,
       "transport_status": "SUCCESS",
       "schema_status": "VALID",
       "schema_issues": [],
@@ -131,16 +176,16 @@
     {
       "backend_version": "diagnostic-semantic-v2",
       "task": "policy_program_missing_reading_v2",
-      "input_sha256": "3b327fdf70b3addc5aff2b456f855896596cbafcb2a70b4d977781f8f94ab2f2",
-      "prompt_sha256": "7587d3fd4a9158f3724f1feb610cb3de356c54a8f037db54c92339264ab6a02d",
+      "input_sha256": "c23f93e7e1b90704ed57d5a1a6f53a9d1bf4463c6f7636697437fd31d0bdb8ec",
+      "prompt_sha256": "2b5b88b4916f0db6bba8cf406ea9e4df3727704329f26e5b6890dba4b671efb9",
       "schema_sha256": "2c7e3072f39421ae328214b08a98f4c533631e2de688ddeb4ea62e099d7142fb",
       "served_model": "qwen3.8-flash",
       "usage": {
-        "prompt_tokens": 682,
-        "completion_tokens": 1345,
-        "total_tokens": 2027
+        "prompt_tokens": 687,
+        "completion_tokens": 1754,
+        "total_tokens": 2441
       },
-      "latency_ms": 26269.04,
+      "latency_ms": 35730.0,
       "transport_status": "SUCCESS",
       "schema_status": "VALID",
       "schema_issues": [],
@@ -159,10 +204,10 @@
       "served_model": "qwen3.8-flash",
       "usage": {
         "prompt_tokens": 417,
-        "completion_tokens": 277,
-        "total_tokens": 694
+        "completion_tokens": 245,
+        "total_tokens": 662
       },
-      "latency_ms": 5996.954
+      "latency_ms": 4426.392
     }
   ]
 }

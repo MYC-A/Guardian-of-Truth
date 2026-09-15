@@ -6,13 +6,9 @@
       "hypotheses": [
         {
           "hypothesis_id": "policy-program:h0",
-          "basis": "Standard reading: 'both ownership and confirmation are necessary before cancellation' establishes three joint necessary preconditions (pending state, ownership, confirmation) that must all hold for cancellation to be permitted. Violation occurs when cancellation proceeds with any one missing.",
+          "basis": "The word 'necessary' indicates only-if direction: cancellation requires ownership and confirmation as prerequisites, but does not guarantee sufficiency. 'For a pending order' is treated as an additional necessary condition within the same scope. Violations occur when cancel_order happens while any required condition is absent.",
           "program": {
             "violation_clauses": [
-              [
-                "action:cancel_order",
-                "!state:order_pending"
-              ],
               [
                 "action:cancel_order",
                 "!identity:requester_owns_order"
@@ -20,13 +16,17 @@
               [
                 "action:cancel_order",
                 "!event:confirmation_before"
+              ],
+              [
+                "action:cancel_order",
+                "!state:order_pending"
               ]
             ],
             "permission_clauses": [
               [
-                "state:order_pending",
                 "identity:requester_owns_order",
-                "event:confirmation_before"
+                "event:confirmation_before",
+                "state:order_pending"
               ]
             ]
           },
@@ -43,30 +43,29 @@
             }
           ],
           "unresolved_terms": [
-            "whether 'pending' is a precondition on the order or a scoping qualifier for the rule"
+            "sufficiency of the listed conditions",
+            "whether other unstated conditions may also be necessary"
           ]
         },
         {
           "hypothesis_id": "policy-program:h1",
-          "basis": "'For a pending order' is read as a scoping/domain qualifier that restricts the rule's applicability to pending orders only. The actual necessary conditions for cancellation within that scope are ownership and confirmation. Non-pending orders are outside the rule's jurisdiction.",
+          "basis": "'For a pending order' is read as a scope qualifier limiting the policy's applicability rather than a checkable condition. Within that scope, ownership and confirmation are necessary. Non-pending orders fall outside the policy entirely, so their cancellation is neither permitted nor prohibited by this rule.",
           "program": {
             "violation_clauses": [
               [
                 "action:cancel_order",
-                "state:order_pending",
                 "!identity:requester_owns_order"
               ],
               [
                 "action:cancel_order",
-                "state:order_pending",
                 "!event:confirmation_before"
               ]
             ],
             "permission_clauses": [
               [
-                "state:order_pending",
                 "identity:requester_owns_order",
-                "event:confirmation_before"
+                "event:confirmation_before",
+                "state:order_pending"
               ]
             ]
           },
@@ -83,57 +82,26 @@
             }
           ],
           "unresolved_terms": [
-            "what governs cancellation of non-pending orders"
+            "policy treatment of non-pending order cancellations",
+            "whether scope qualifier or condition is intended"
           ]
         },
         {
           "hypothesis_id": "policy-program:h2",
-          "basis": "The policy states what is 'necessary' for cancellation to be permitted, but does not explicitly prohibit cancellation when conditions are absent. 'Necessary' defines a permission pathway, not a prohibition. Cancellation without these conditions is simply 'not permitted by this rule' rather than 'forbidden by this rule.'",
-          "program": {
-            "violation_clauses": [],
-            "permission_clauses": [
-              [
-                "action:cancel_order",
-                "state:order_pending",
-                "identity:requester_owns_order",
-                "event:confirmation_before"
-              ]
-            ]
-          },
-          "source_spans": [
-            {
-              "document": "policy",
-              "start": 21,
-              "end": 86
-            }
-          ],
-          "unresolved_terms": [
-            "whether 'necessary' implies prohibition of the negation or merely absence of permission"
-          ]
-        },
-        {
-          "hypothesis_id": "policy-program:h3",
-          "basis": "'For a pending order' scopes the rule's conditions to pending orders and, by contrast, positively permits cancellation of non-pending orders without requiring ownership or confirmation. The qualifier is read as creating a default permission for the complement case.",
+          "basis": "The phrase 'necessary before cancellation' for pending orders could impose a positive obligation to ensure ownership and confirmation are established whenever an order is in pending state, independent of whether cancellation is attempted. The violation is the state-of-affairs deficiency (pending order lacking required conditions) rather than the action of canceling without them.",
           "program": {
             "violation_clauses": [
               [
-                "action:cancel_order",
                 "state:order_pending",
                 "!identity:requester_owns_order"
               ],
               [
-                "action:cancel_order",
                 "state:order_pending",
                 "!event:confirmation_before"
               ]
             ],
             "permission_clauses": [
               [
-                "action:cancel_order",
-                "!state:order_pending"
-              ],
-              [
-                "action:cancel_order",
                 "state:order_pending",
                 "identity:requester_owns_order",
                 "event:confirmation_before"
@@ -148,7 +116,46 @@
             }
           ],
           "unresolved_terms": [
-            "whether the complement of the scope qualifier creates a positive permission or merely leaves the case ungoverned"
+            "whether the obligation is discharged by the mere presence of conditions or requires active verification",
+            "who bears the obligation (system vs. requester)"
+          ]
+        },
+        {
+          "hypothesis_id": "policy-program:h3",
+          "basis": "The policy scopes its constraint to 'a pending order,' which could be read as implicitly permitting cancellation of non-pending orders without any ownership or confirmation requirement. Unlike the existing scope-qualifier reading that leaves non-pending cancellations unaddressed, this reading actively permits them, changing the default from 'no rule applies' to 'cancellation is allowed.'",
+          "program": {
+            "violation_clauses": [
+              [
+                "action:cancel_order",
+                "state:order_pending",
+                "!identity:requester_owns_order"
+              ],
+              [
+                "action:cancel_order",
+                "state:order_pending",
+                "!event:confirmation_before"
+              ]
+            ],
+            "permission_clauses": [
+              [
+                "!state:order_pending"
+              ],
+              [
+                "state:order_pending",
+                "identity:requester_owns_order",
+                "event:confirmation_before"
+              ]
+            ]
+          },
+          "source_spans": [
+            {
+              "document": "policy",
+              "start": 0,
+              "end": 87
+            }
+          ],
+          "unresolved_terms": [
+            "whether 'for a pending order' is an exclusive scope limiter (only pending orders are constrained) or an inclusive one (pending orders are at least constrained, others may have other rules)"
           ]
         }
       ],
@@ -157,17 +164,22 @@
         "universe_source": null,
         "enumeration_complete": false,
         "unresolved_terms": [
-          "whether 'pending' is a precondition or a scope qualifier",
-          "whether 'before' means before request or before execution",
-          "whether the three conditions are jointly sufficient or merely necessary",
-          "whether 'pending' is a precondition on the order or a scoping qualifier for the rule",
-          "what governs cancellation of non-pending orders",
-          "whether 'before' refers to before the request or before the execution of cancellation",
-          "whether additional sufficient conditions exist beyond the three named",
-          "whether 'necessary' entails prohibition or only defines permission",
-          "whether scoping qualifier 'for a pending order' creates positive permission for non-pending cases",
-          "whether 'necessary' implies prohibition of the negation or merely absence of permission",
-          "whether the complement of the scope qualifier creates a positive permission or merely leaves the case ungoverned"
+          "whether listed conditions are sufficient or merely necessary",
+          "temporal semantics of 'before'",
+          "scope of 'For a pending order' as qualifier vs condition",
+          "other potential unstated conditions",
+          "sufficiency of the listed conditions",
+          "whether other unstated conditions may also be necessary",
+          "policy treatment of non-pending order cancellations",
+          "whether scope qualifier or condition is intended",
+          "whether 'before' modifies the conditions or the action",
+          "temporal window for confirmation to count as 'before'",
+          "whether 'necessary' implies sufficiency when all listed conditions are met",
+          "who is the actor responsible for ensuring conditions are met",
+          "whether 'before' establishes strict temporal precedence or a state-at-time-of-action requirement",
+          "whether the obligation is discharged by the mere presence of conditions or requires active verification",
+          "who bears the obligation (system vs. requester)",
+          "whether 'for a pending order' is an exclusive scope limiter (only pending orders are constrained) or an inclusive one (pending orders are at least constrained, others may have other rules)"
         ],
         "discarded_hypotheses": [],
         "challenger_alternatives": [
@@ -179,13 +191,9 @@
       "empirical_hypotheses": [
         {
           "hypothesis_id": "policy-program:h0",
-          "basis": "Standard reading: 'both ownership and confirmation are necessary before cancellation' establishes three joint necessary preconditions (pending state, ownership, confirmation) that must all hold for cancellation to be permitted. Violation occurs when cancellation proceeds with any one missing.",
+          "basis": "The word 'necessary' indicates only-if direction: cancellation requires ownership and confirmation as prerequisites, but does not guarantee sufficiency. 'For a pending order' is treated as an additional necessary condition within the same scope. Violations occur when cancel_order happens while any required condition is absent.",
           "program": {
             "violation_clauses": [
-              [
-                "action:cancel_order",
-                "!state:order_pending"
-              ],
               [
                 "action:cancel_order",
                 "!identity:requester_owns_order"
@@ -193,13 +201,17 @@
               [
                 "action:cancel_order",
                 "!event:confirmation_before"
+              ],
+              [
+                "action:cancel_order",
+                "!state:order_pending"
               ]
             ],
             "permission_clauses": [
               [
-                "state:order_pending",
                 "identity:requester_owns_order",
-                "event:confirmation_before"
+                "event:confirmation_before",
+                "state:order_pending"
               ]
             ]
           },
@@ -216,30 +228,29 @@
             }
           ],
           "unresolved_terms": [
-            "whether 'pending' is a precondition on the order or a scoping qualifier for the rule"
+            "sufficiency of the listed conditions",
+            "whether other unstated conditions may also be necessary"
           ]
         },
         {
           "hypothesis_id": "policy-program:h1",
-          "basis": "'For a pending order' is read as a scoping/domain qualifier that restricts the rule's applicability to pending orders only. The actual necessary conditions for cancellation within that scope are ownership and confirmation. Non-pending orders are outside the rule's jurisdiction.",
+          "basis": "'For a pending order' is read as a scope qualifier limiting the policy's applicability rather than a checkable condition. Within that scope, ownership and confirmation are necessary. Non-pending orders fall outside the policy entirely, so their cancellation is neither permitted nor prohibited by this rule.",
           "program": {
             "violation_clauses": [
               [
                 "action:cancel_order",
-                "state:order_pending",
                 "!identity:requester_owns_order"
               ],
               [
                 "action:cancel_order",
-                "state:order_pending",
                 "!event:confirmation_before"
               ]
             ],
             "permission_clauses": [
               [
-                "state:order_pending",
                 "identity:requester_owns_order",
-                "event:confirmation_before"
+                "event:confirmation_before",
+                "state:order_pending"
               ]
             ]
           },
@@ -256,57 +267,26 @@
             }
           ],
           "unresolved_terms": [
-            "what governs cancellation of non-pending orders"
+            "policy treatment of non-pending order cancellations",
+            "whether scope qualifier or condition is intended"
           ]
         },
         {
           "hypothesis_id": "policy-program:h2",
-          "basis": "The policy states what is 'necessary' for cancellation to be permitted, but does not explicitly prohibit cancellation when conditions are absent. 'Necessary' defines a permission pathway, not a prohibition. Cancellation without these conditions is simply 'not permitted by this rule' rather than 'forbidden by this rule.'",
-          "program": {
-            "violation_clauses": [],
-            "permission_clauses": [
-              [
-                "action:cancel_order",
-                "state:order_pending",
-                "identity:requester_owns_order",
-                "event:confirmation_before"
-              ]
-            ]
-          },
-          "source_spans": [
-            {
-              "document": "policy",
-              "start": 21,
-              "end": 86
-            }
-          ],
-          "unresolved_terms": [
-            "whether 'necessary' implies prohibition of the negation or merely absence of permission"
-          ]
-        },
-        {
-          "hypothesis_id": "policy-program:h3",
-          "basis": "'For a pending order' scopes the rule's conditions to pending orders and, by contrast, positively permits cancellation of non-pending orders without requiring ownership or confirmation. The qualifier is read as creating a default permission for the complement case.",
+          "basis": "The phrase 'necessary before cancellation' for pending orders could impose a positive obligation to ensure ownership and confirmation are established whenever an order is in pending state, independent of whether cancellation is attempted. The violation is the state-of-affairs deficiency (pending order lacking required conditions) rather than the action of canceling without them.",
           "program": {
             "violation_clauses": [
               [
-                "action:cancel_order",
                 "state:order_pending",
                 "!identity:requester_owns_order"
               ],
               [
-                "action:cancel_order",
                 "state:order_pending",
                 "!event:confirmation_before"
               ]
             ],
             "permission_clauses": [
               [
-                "action:cancel_order",
-                "!state:order_pending"
-              ],
-              [
-                "action:cancel_order",
                 "state:order_pending",
                 "identity:requester_owns_order",
                 "event:confirmation_before"
@@ -321,7 +301,46 @@
             }
           ],
           "unresolved_terms": [
-            "whether the complement of the scope qualifier creates a positive permission or merely leaves the case ungoverned"
+            "whether the obligation is discharged by the mere presence of conditions or requires active verification",
+            "who bears the obligation (system vs. requester)"
+          ]
+        },
+        {
+          "hypothesis_id": "policy-program:h3",
+          "basis": "The policy scopes its constraint to 'a pending order,' which could be read as implicitly permitting cancellation of non-pending orders without any ownership or confirmation requirement. Unlike the existing scope-qualifier reading that leaves non-pending cancellations unaddressed, this reading actively permits them, changing the default from 'no rule applies' to 'cancellation is allowed.'",
+          "program": {
+            "violation_clauses": [
+              [
+                "action:cancel_order",
+                "state:order_pending",
+                "!identity:requester_owns_order"
+              ],
+              [
+                "action:cancel_order",
+                "state:order_pending",
+                "!event:confirmation_before"
+              ]
+            ],
+            "permission_clauses": [
+              [
+                "!state:order_pending"
+              ],
+              [
+                "state:order_pending",
+                "identity:requester_owns_order",
+                "event:confirmation_before"
+              ]
+            ]
+          },
+          "source_spans": [
+            {
+              "document": "policy",
+              "start": 0,
+              "end": 87
+            }
+          ],
+          "unresolved_terms": [
+            "whether 'for a pending order' is an exclusive scope limiter (only pending orders are constrained) or an inclusive one (pending orders are at least constrained, others may have other rules)"
           ]
         }
       ]
@@ -330,35 +349,18 @@
       "case_id": "nested_cancel::1",
       "arm": "P1",
       "transport_status": "SUCCESS",
-      "schema_status": "VALID",
+      "schema_status": "INVALID",
       "semantic_status": "PENDING_GOLD_JOIN",
-      "representation_status": "SUPPORTED",
+      "representation_status": "NOT_EVALUATED",
       "error_category": null,
-      "prediction": {
-        "structure": null,
-        "program": {
-          "violation_clauses": [
-            [
-              "action:cancel_order",
-              "state:order_pending",
-              "!identity:requester_owns_order"
-            ],
-            [
-              "action:cancel_order",
-              "state:order_pending",
-              "!event:confirmation_before"
-            ]
-          ],
-          "permission_clauses": []
-        }
-      },
+      "prediction": null,
       "source_coverage": 1.0,
       "served_model": "qwen3.8-flash",
-      "latency_ms": 10242.965,
+      "latency_ms": 9500.674,
       "usage": {
         "prompt_tokens": 448,
-        "completion_tokens": 556,
-        "total_tokens": 1004
+        "completion_tokens": 413,
+        "total_tokens": 861
       }
     }
   },
@@ -372,10 +374,10 @@
       "served_model": "qwen3.8-flash",
       "usage": {
         "prompt_tokens": 610,
-        "completion_tokens": 1530,
-        "total_tokens": 2140
+        "completion_tokens": 1488,
+        "total_tokens": 2098
       },
-      "latency_ms": 29218.821,
+      "latency_ms": 37778.415,
       "transport_status": "SUCCESS",
       "schema_status": "VALID",
       "schema_issues": [],
@@ -384,16 +386,16 @@
     {
       "backend_version": "diagnostic-semantic-v2",
       "task": "policy_program_missing_reading_v2",
-      "input_sha256": "e24356fdef229a8d22c7a8172b523ba633c7ac09d1b7932345b7a2f90e6272e4",
-      "prompt_sha256": "c6c2ed4ab84d787a6f1eb16346f2bf55ab065da3d75829a499d80ab83622a9e7",
+      "input_sha256": "6b63e49deaae1a93d1da1118a229e1783fc998a9202b5b5e28beba983e5f454e",
+      "prompt_sha256": "46872a55ac4edd4c91744b641341d13101526dba790e804416d97843994f9e7e",
       "schema_sha256": "8aaa0ceb2fa2b463712faf9b075dfb5462b10a47a3741d15c03ec46425fe5f84",
       "served_model": "qwen3.8-flash",
       "usage": {
-        "prompt_tokens": 881,
-        "completion_tokens": 3351,
-        "total_tokens": 4232
+        "prompt_tokens": 885,
+        "completion_tokens": 2708,
+        "total_tokens": 3593
       },
-      "latency_ms": 66720.777,
+      "latency_ms": 75205.08,
       "transport_status": "SUCCESS",
       "schema_status": "VALID",
       "schema_issues": [],
@@ -406,16 +408,23 @@
       "prompt_sha256": "ba03f5411ce3ba505ff80a79ed21f85fae428e5dbf4becdac3a14cd7dc852781",
       "schema_sha256": "8f65ca557f04c043857cca16c5d1a6fae1d52de4616b17e24166be8f66f76ef9",
       "transport_status": "SUCCESS",
-      "schema_status": "VALID",
-      "schema_issues": [],
+      "schema_status": "INVALID",
+      "schema_issues": [
+        {
+          "code": "JSON_INVALID",
+          "path": "",
+          "expected_type": null,
+          "actual_type": null
+        }
+      ],
       "error_category": null,
       "served_model": "qwen3.8-flash",
       "usage": {
         "prompt_tokens": 448,
-        "completion_tokens": 556,
-        "total_tokens": 1004
+        "completion_tokens": 413,
+        "total_tokens": 861
       },
-      "latency_ms": 10241.158
+      "latency_ms": 9499.697
     }
   ]
 }

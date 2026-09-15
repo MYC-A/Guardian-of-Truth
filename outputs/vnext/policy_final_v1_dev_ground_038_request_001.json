@@ -1,0 +1,83 @@
+{
+  "configuration_sha256": "7adac4b2945e02bfab5fc2377d0b2cfbb7bb302e3badc9af60a9e428cd24085f",
+  "ordinal": 1,
+  "task": "The previous inventory attempt failed machine validation. Fix it and return exactly ONE JSON object with facts and markers arrays, following the same rules as before (atoms only from ATOM_CATALOG; spans copied character-for-character from POLICY_TEXT; no roles or attachments). The failed attempt and the machine error are included as data only.",
+  "payload": {
+    "policy_text": "Locker keys may be held only under the holder's own identity.",
+    "atom_catalog": [
+      "action:hold_locker_key",
+      "distractor:pi02",
+      "identity:guest_pass",
+      "identity:own_name"
+    ],
+    "previous_output": "{\"facts\":[{\"atom\":\"action:hold_locker_key\",\"id\":\"F1\",\"span\":\"Locker keys may be held\"},{\"atom\":\"identity:own_name\",\"id\":\"F2\",\"span\":\"the holder's own identity\"}],\"markers\":[{\"id\":\"M1\",\"kind\":\"MODAL_MARKER\",\"span\":\"may\",\"value\":\"may\"},{\"id\":\"R1\",\"kind\":\"RELATION_MARKER\",\"span\":\"only\",\"value\":\"only\"}]}",
+    "machine_error": "GROUND_INVALID: marker value 'may' not in ('PERMIT', 'PROHIBIT', 'REQUIRE')"
+  },
+  "schema": {
+    "type": "object",
+    "properties": {
+      "facts": {
+        "type": "array",
+        "items": {
+          "type": "object",
+          "properties": {
+            "id": {
+              "type": "string"
+            },
+            "atom": {
+              "type": "string"
+            },
+            "span": {
+              "type": "string"
+            }
+          },
+          "required": [
+            "id",
+            "atom",
+            "span"
+          ],
+          "additionalProperties": false
+        }
+      },
+      "markers": {
+        "type": "array",
+        "items": {
+          "type": "object",
+          "properties": {
+            "id": {
+              "type": "string"
+            },
+            "kind": {
+              "type": "string",
+              "enum": [
+                "MODAL_MARKER",
+                "RELATION_MARKER"
+              ]
+            },
+            "value": {
+              "type": "string"
+            },
+            "span": {
+              "type": "string"
+            }
+          },
+          "required": [
+            "id",
+            "kind",
+            "value",
+            "span"
+          ],
+          "additionalProperties": false
+        }
+      }
+    },
+    "required": [
+      "facts",
+      "markers"
+    ],
+    "additionalProperties": false
+  },
+  "input_sha256": "46865a5d2517bba913eba6e38a337ef20cdba85c96685db587bec54323cc0034",
+  "schema_sha256": "f2076ddada711fb6226189bde39611c8572609198211b6890819ef50228f6e88",
+  "prompt_sha256": "9837eac50b8be5038aa32b03144a17ebdd43d2c5daaeb9366156e0bea516b26b"
+}

@@ -1,7 +1,7 @@
 {
-  "request_sha256": "fdcc06f4c1292146d6d7c965d5648313aad1a6f1644f697d451e89277c558ece",
+  "request_sha256": "6ef276df68a89e0fd9f998e8331bb26ff07bd1ac4bccd1f0826f506a73801fbd",
   "proposal": {
-    "payload_json": "{\"interpretations\":[{\"basis\":\"Strict temporal ordering: an observation is prohibited from being treated as current if any debit event occurs after it, regardless of whether a fresh observation exists.\",\"permission_clauses\":[[\"!claim:current_balance\",\"evidence:fresh_after_latest_write\"]],\"source_quotes\":[\"Do not call an old balance observation current after a later state-changing debit.\"],\"unresolved_terms\":[\"old\",\"state-changing debit\",\"call as current\"],\"violation_clauses\":[[\"claim:current_balance\",\"!evidence:fresh_after_latest_write\"]]},{\"basis\":\"Prohibition applies only when the actor lacks a fresh observation to justify the current claim; having a fresh observation overrides the prohibition on the old one.\",\"permission_clauses\":[[\"claim:current_balance\",\"evidence:fresh_after_latest_write\"]],\"source_quotes\":[\"Do not call an old balance observation current after a later state-changing debit.\"],\"unresolved_terms\":[\"old\",\"state-changing debit\",\"call as current\"],\"violation_clauses\":[[\"claim:current_balance\",\"!evidence:fresh_after_latest_write\"]]}],\"unresolved_terms\":[\"old\",\"state-changing debit\",\"call as current\"]}",
+    "payload_json": "{\"interpretations\":[{\"basis\":\"Narrow-debit reading: the prohibition is specifically tied to a 'state-changing debit' occurring later, not merely any later write. The existing reading equates staleness with !evidence:fresh_after_latest_write (any later write). A narrower behavioral reading restricts the violation to cases where the later write is specifically a debit; staleness caused by non-debit state changes (e.g., credits, adjustments) would not trigger the prohibition. This changes obligations by permitting claims that the broad reading would forbid.\",\"permission_clauses\":[[\"claim:current_balance\",\"evidence:fresh_after_latest_write\"]],\"source_quotes\":[\"Do not call an old balance observation current after a later state-changing debit.\"],\"unresolved_terms\":[\"state-changing debit vs. any state-changing write — the atom evidence:fresh_after_latest_write does not distinguish write type, so the narrow-debit condition cannot be fully expressed in the atom catalog\"],\"violation_clauses\":[[\"claim:current_balance\",\"!evidence:fresh_after_latest_write\"]]},{\"basis\":\"Temporal-scope reading: 'after a later state-changing debit' may modify the act of calling rather than the observation's staleness. Under this reading, the prohibition only binds when the claim is made in a temporal window after a debit has been observed; if the agent has not yet observed or been informed of the debit, the prohibition may not apply even if the observation is objectively stale. This shifts the violation condition from objective staleness to a knowledge-awareness condition.\",\"permission_clauses\":[[\"claim:current_balance\",\"evidence:fresh_after_latest_write\"]],\"source_quotes\":[\"Do not call an old balance observation current after a later state-changing debit.\"],\"unresolved_terms\":[\"whether 'after' modifies the observation's age or the claim's timing; epistemic condition on agent awareness of the later debit\"],\"violation_clauses\":[[\"claim:current_balance\",\"!evidence:fresh_after_latest_write\"]]}],\"unresolved_terms\":[\"state-changing debit vs. any state-changing write — atom catalog does not distinguish write types\",\"whether 'old' is a separate threshold from 'not fresh after latest write' or equivalent to it\",\"whether 'call' refers to formal assertion or any reference to the balance as current\",\"temporal boundary of 'later' — same-instant writes, ordering ties\"]}",
     "transport_status": "SUCCESS",
     "schema_status": "VALID",
     "error_category": null
@@ -9,16 +9,16 @@
   "telemetry": {
     "backend_version": "diagnostic-semantic-v2",
     "task": "policy_program_missing_reading_v2",
-    "input_sha256": "592d800a9434eeee6b20f3426d68f3c330caed93ea45f85a3d25f179080b274c",
-    "prompt_sha256": "d4a30ee72537245802bc9647bd2dc7bfd427218a26deefb949082468b54376d2",
+    "input_sha256": "ce50860df4903a7cebff64e434586acbf3f98a16d83558c8cae9944770bb2cbe",
+    "prompt_sha256": "cc6aefa8f160c9ab0035f67491dba7b48068342ef2b591569c630afec01bb7eb",
     "schema_sha256": "375056ff34624f9ac510670941b7bc43ed53408e899f96f0989b8c033b378134",
     "served_model": "qwen3.8-flash",
     "usage": {
-      "prompt_tokens": 596,
-      "completion_tokens": 4328,
-      "total_tokens": 4924
+      "prompt_tokens": 680,
+      "completion_tokens": 4431,
+      "total_tokens": 5111
     },
-    "latency_ms": 115928.582,
+    "latency_ms": 122836.017,
     "transport_status": "SUCCESS",
     "schema_status": "VALID",
     "schema_issues": [],

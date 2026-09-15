@@ -1,0 +1,190 @@
+{
+  "schema_version": "guardian-vnext-psb-prereg-v1",
+  "study": "PSB - Policy Structural Binding: one final narrow architectural cycle after PHV1",
+  "preregistered_utc_rule": "frozen before the first causal inference request; the runner freeze phase machine-verifies this file hash and refuses on any post-freeze edit",
+  "status_lifecycle": ["FROZEN_NOT_RUN", "SMOKE_OK", "ARMS_SEALED", "SCORED", "AUDITED"],
+
+  "context": {
+    "phv1_status": "PHV1 (59/80 = 73.75% prospective) is DEVELOPMENT EVIDENCE from this point on; it may inform hypothesis, taxonomy and architecture design, and may never serve as confirmatory data for the PSB candidate",
+    "machine_verified_baselines": {
+      "h0_v5_recovered": "136/142 = 95.77% (controlled dev distribution, sealed)",
+      "phv1_prospective": "59/80 = 73.75%, Wilson 95% CI [63.18%, 82.14%] (prospective frozen holdout, sealed)"
+    },
+    "phv1_failure_profile": "relation 9/21, multi_axis 6/21, negation_polarity 2, scope_shape 2, modality 1, representation_gap 1; invented explicit permission 8/80 = 10% (all eight are condition-dropping under exceptive constructions: the IF gate was folded into a UNLESS relation while the permission marker was textually present)"
+  },
+
+  "hypotheses": {
+    "H_struct": "Current H0 generalizes poorly not because local semantic atoms are universally unreliable, but because the flat single-structure representation fails to preserve attachment relations (which condition, exception, actor, modality, qualifier or provenance binds to which regulated content) under natural-language complexity. Falsifiable prediction: H1 (explicit typed attachment graph + deterministic compilation, same model, same atom contract) raises behavioral case correctness by >= 10 pp over H0 on the causal benchmark AND achieves pooled binding micro-F1 >= 0.85 AND regresses on at most 5% of H0-correct cases.",
+    "H_perm": "Explicit PERMISSION should only survive compilation when positively licensed by the policy text. Falsifiable prediction: H2 (H1 compilation + frozen positive-evidence permission gate applied to the SAME single parse) has invented-permission case rate <= 2%, permission clause precision >= 95%, and behavioral accuracy >= H1."
+  },
+
+  "arms": {
+    "H0": "frozen current H0, byte-identical (PARSE_TASK, REPAIR_TASK, STRUCTURE_SCHEMA, CONFIG imported from scripts/evaluate_vnext_c_alr_reimpl.py; freeze phase machine-verifies continuity against the sealed PHV1 freeze)",
+    "H1": "H0-class semantic extraction (same model, same provider, same atom_catalog contract) into an explicit typed attachment GRAPH + deterministic compilation to a per-clause behavioral program set; NO permission gate",
+    "H2": "H1 with the frozen positive-evidence permission gate applied deterministically at compilation time to the SAME single H1 parse (one PSB request per case; H1 and H2 are two compilations of one prediction, so the gate effect is causally isolated from extraction variance)"
+  },
+
+  "prohibitions": [
+    "no C-ALR mutation verifier, challenger, judge, multi-program Phi, self-consistency or any LLM-based adjudication anywhere in this cycle",
+    "no model or provider switch (bai / qwen3.8-flash exactly as frozen in CONFIG); model-capacity experiments are out of scope",
+    "no whole-policy alternatives: exactly one primary structural graph per case; local genuine ambiguity is representable locally but multiple complete programs are never generated",
+    "the permission gate must be formulated by linguistic class (frozen marker list below); adding exact string rules observed in benchmark failures is forbidden",
+    "no semantic changes after the first causal inference; only preregistered transport-level fixes are permitted (none anticipated)",
+    "PHV1, V4, V5 and the causal benchmark are development data and are never used as confirmatory cases for the PSB candidate",
+    "failure audit only after seal + score; deterministic typed-field diffs only, no LLM judge",
+    "no Policy V8/V9/V10: this is the last standalone Policy architecture experiment; after it, STOP and integrate regardless of outcome"
+  ],
+
+  "causal_benchmark": {
+    "size": 44,
+    "composition": {
+      "relation_attachment": 12,
+      "exception_vs_condition": 8,
+      "multiclause_modality_actor": 8,
+      "permission_evidence_controls": 8,
+      "multiaxis_controls": 8
+    },
+    "freshness": "new texts, fresh domains, fresh entities, fresh syntax, fresh clause orderings, fresh surface modality; not lexical rewrites of PHV1 failures; machine-checked: zero shared word 8-grams with every V4, V5 and PHV1 policy text; zero internal duplicate texts",
+    "gold_by_construction": {
+      "frozen_before_predictions": true,
+      "per_case": ["policy", "atom_catalog (with distractors)", "semantic nodes", "semantic edges (the gold graph)", "compiled admissible program set(s)", "behavioral worlds", "cohort", "family", "axes"],
+      "annotation_basis": "CONSTRUCTION_FROM_TEMPLATES_NOT_MODEL_LABELS"
+    },
+    "worlds": "deterministic combined-surface generation over the union of gold program surfaces (target/condition/exception fact patterns crossed), each world carrying the composed verdict of the admissible gold set; per-case machine check that the cohort-defining misbinding (condition<->exception swap, gate moved between sibling clauses, modality or actor swap between clauses, strength flip) changes composed verdicts on at least one frozen world",
+    "envelope": "per regulated clause: one modality, at most one plain condition node, at most one temporal (PRECEDES/FOLLOWS) condition node, at most one exception node, at most one actor, at most one qualifier of each kind; REQUIREMENT clauses never combine a condition node with an exception node (same envelope the V4/V5/PHV1 gold space already enforced); one case in the permission cohort has an empty gold program set (text regulates nothing)"
+  },
+
+  "representation_freeze": {
+    "node_types": {
+      "REGULATED": "fields: atoms (>=1 catalog atoms regulated TOGETHER; separate nodes = regulated separately)",
+      "MODALITY": "fields: value in {PERMISSION, PROHIBITION, REQUIREMENT}",
+      "CONDITION": "fields: literals (catalog atoms, '!' prefix ONLY as the explicit NEGATIVE polarity marker), mode in {ALL, ANY}, strength in {SUFFICIENT (if/when/provided that), NECESSARY (only/solely), EXACTLY (if and only if)}",
+      "EXCEPTION": "fields: literals, mode; a carve-out (unless/except/save when); condition-hood and exception-hood are first-class distinct node types and may never be merged",
+      "ACTOR": "fields: atom (actor:x), exclusive (boolean; true when the text says only/alone/reserved for that bearer)",
+      "QUALIFIER": "fields: kind in {IDENTITY, PROVENANCE, QUANTIFIER}, value (identity:x | evidence:x | AT_MOST_n)"
+    },
+    "edge_types": {
+      "REGULATES": "MODALITY -> REGULATED (exactly one per REGULATED node)",
+      "ACTIVATES": "CONDITION -> REGULATED (plain gate; literals keep their own polarity)",
+      "FOLLOWS": "CONDITION -> REGULATED (clause happens AFTER the event atoms; literals positive, temporal compiled AFTER)",
+      "PRECEDES": "CONDITION -> REGULATED (clause happens BEFORE the event atoms; literals compiled negated, temporal BEFORE; all literals must be event: atoms)",
+      "EXEMPTS": "EXCEPTION -> REGULATED",
+      "ACTOR_OF": "ACTOR -> REGULATED (actor atom joins that clause's condition literals)",
+      "QUALIFIES": "QUALIFIER kind IDENTITY or QUANTIFIER -> REGULATED",
+      "SOURCE_OF": "QUALIFIER kind PROVENANCE -> REGULATED (evidence atom joins that clause's condition literals; provenance compiled TOOL_RESULT)"
+    },
+    "cardinality_rules": "per REGULATED node: exactly one REGULATES; at most one ACTIVATES condition; at most one PRECEDES-or-FOLLOWS condition (both present with different modes is invalid; PRECEDES and FOLLOWS together are invalid); at most one EXEMPTS; at most one ACTOR_OF; at most one QUALIFIES per kind; at most one SOURCE_OF. A gate node may bind several REGULATED nodes (shared gates).",
+    "polarity_encoding": "literal = optional '!' (NEGATIVE) + catalog atom (POSITIVE); polarity is an explicit syntactic field of the literal, never baked into a free-form atom name",
+    "compilation": {
+      "modality": "from the REGULATES edge",
+      "relation_derivation": "REQUIREMENT with exception and no condition -> UNLESS; else EXACTLY strength -> IF_AND_ONLY_IF; else NECESSARY strength or exclusive actor -> ONLY_IF; else any condition node -> IF; else UNCONDITIONAL. PROHIBITION/PERMISSION with exceptions and no condition compile to UNCONDITIONAL + exception literals (behaviorally identical to UNLESS for these modalities; matches the V4/V5/PHV1 gold convention)",
+      "condition_literals": "ACTIVATES literals + temporal-condition literals (FOLLOWS positive, PRECEDES '!'-prefixed) + actor atom + identity value + evidence value, sorted, deduplicated; condition_mode from the condition node(s) (must agree when both plain and temporal nodes attach; ALL when no condition node carries literals)",
+      "carried_fields": "temporal (BEFORE/AFTER from PRECEDES/FOLLOWS), identity (IDENTITY qualifier value), provenance (TOOL_RESULT when SOURCE_OF attaches), quantification (QUANTIFIER value); actor field stays 'assistant' exactly as in the frozen H0 contract",
+      "together_vs_separate": "atoms in one REGULATED node = regulated together (one multi-atom target clause); separate REGULATED nodes = regulated separately (AND_NOT_EACH-style togetherness needs no special relation: it IS clause grouping)"
+    },
+    "composed_verdict": "VIOLATION if any per-clause program yields VIOLATION, else PERMITTED if any yields PERMITTED, else NO_VIOLATION; a single-program set composes to exactly the v3 verdict (H0 scoring continuity)",
+    "conservative_invariant": "NO_VIOLATION is not PERMITTED; absence of prohibition is never positive authorization; an empty graph (text regulates nothing) composes to NO_VIOLATION on every world"
+  },
+
+  "permission_gate_freeze": {
+    "applies_to": "every compiled clause program with modality PERMISSION, in arm H2 only",
+    "semantics": "if the policy text carries NO frozen positive-permission evidence marker, the PERMISSION clause is REJECTED (dropped from the compiled program set) and recorded as rejected_permission_clause; it is never automatically remapped to another modality; the ungoverned content composes to NO_VIOLATION (UNKNOWN / no explicit permission)",
+    "evidence_marker_classes": {
+      "MAY": "the modal 'may', not followed by 'not' within two tokens, and not preceded by a negator (no/nobody/no one/nothing/none/neither/nor/never/cannot) within the current clause segment",
+      "PERMISSIVE_PREDICATE": "be-forms (is/are/am/be/been/being/was/were) followed by permitted/allowed/entitled/free/authorised/authorized, optionally 'to', not preceded by a negator within the current clause segment",
+      "PERMISSION_GRANTED": "'permission is granted/given' or 'grants/grant permission', not preceded by a negator within the current clause segment",
+      "AUTHORIZATION_ALLOWS": "'authorisation/authorization/licence/license allows/permits/covers', not preceded by a negator within the current clause segment",
+      "RESERVED_ALLOCATION": "'is/are reserved to/for', not preceded by a negator within the current clause segment",
+      "OPEN_TO": "'it is open to', not preceded by a negator within the current clause segment",
+      "CAN_EXCLUSIVE": "'can' in an exclusivity context ('only ... can' or 'can ... only' within one clause segment) - a bare descriptive 'can' is NOT evidence"
+    },
+    "not_evidence": "absence of prohibition; absence of requirement; physical possibility; descriptive 'can'/'is able to' without normative force; NO_VIOLATION anywhere",
+    "scope_limitation": "detection is text-level by design (frozen, deterministic, class-based); clause-level span attribution is NOT part of this mechanism and is reported as NOT TESTED"
+  },
+
+  "metrics": {
+    "primary": "behavioral case correctness: the arm's compiled program set composes a verdict on every frozen world that belongs to the acceptable set (composed verdicts of the admissible gold sets) on every world",
+    "binding_attachment": "canonical attachment triples (class, payload, target_atoms): MODALITY (value), CONDITION (literal set, with '!' polarity as compiled), EXCEPTION (literal set), ACTOR (atom), QUALIFIER_IDENTITY/QUALIFIER_PROVENANCE/QUALIFIER_QUANTIFIER (value), CLAUSE (atom set = scope/togetherness). Per class: micro precision, recall, F1 pooled over all cases. Aggregate binding accuracy = micro-F1 pooled over ALL triple classes. H0 graphs are projected canonically from the flat structure (every gate attaches to every target clause = the formal statement of global attachment; actor/identity/evidence literals are split out of condition_literals; quantification from the quantification field; the inert identity/provenance string fields are ignored)",
+    "permission_metrics": {
+      "permission_clause_precision": "predicted PERMISSION clauses whose atom set matches a gold PERMISSION clause / all predicted PERMISSION clauses (pre-gate structures for H0/H1; post-gate survivors for H2)",
+      "permission_clause_recall": "matched gold PERMISSION clauses / all gold PERMISSION clauses; missed_explicit_permission_rate = 1 - recall",
+      "invented_permission_case_rate": "cases where the arm's composed verdict is PERMITTED on some frozen world while NO admissible gold composition yields PERMITTED on that world (PHV1-compatible verdict-level definition; this is the gated quantity)"
+    },
+    "multiaxis": "full-case behavioral correctness restricted to the multi-axis cohort (all axes correct simultaneously, not field-wise)",
+    "regression": "H0 correct -> candidate wrong, per candidate; rate over H0-correct cases",
+    "correction_precision": "baseline_wrong->candidate_right / (baseline_wrong->candidate_right + baseline_right->candidate_wrong), reported for H1-vs-H0, H2-vs-H0 and H2-vs-H1",
+    "statistics": "exact two-sided McNemar on discordant pairs for H1 vs H0, H2 vs H1, H2 vs H0 with corrections:regressions reported explicitly; Wilson 95% CI per arm; Newcombe paired CI for each delta",
+    "validity": "schema/compile validity per arm (parse ok or ok_repaired over 44); informational floor 0.90 - below it the run is an INFRASTRUCTURE_FAILURE, not a scientific result"
+  },
+
+  "causal_gates": {
+    "H1": {
+      "binding_aggregate_micro_f1_gte": 0.85,
+      "behavioral_h1_minus_h0_gte_pp": 0.10,
+      "h0_correct_regression_rate_lte": 0.05
+    },
+    "H2": {
+      "invented_permission_case_rate_lte": 0.02,
+      "permission_clause_precision_gte": 0.95,
+      "behavioral_h2_gte_behavioral_h1": true
+    },
+    "primary_candidate": {
+      "behavioral_h2_minus_h0_gte_pp": 0.15
+    },
+    "validity_floor": {
+      "schema_compile_validity_gte": 0.90
+    }
+  },
+
+  "decisions": {
+    "H1_hypothesis_supported": "H1 gates all pass",
+    "H2_hypothesis_supported": "H2 gates all pass",
+    "PROMOTE_TO_NEW_HOLDOUT": "H1 supported AND H2 supported AND primary candidate gate passes (H2 >= H0 + 15 pp)",
+    "REJECT_STRUCTURAL_BINDING_HYPOTHESIS": "H1 gates fail (relation binding is not the dominant generalization cause, or explicit attachment does not fix it)",
+    "REJECT_PERMISSION_GATE_HYPOTHESIS": "H1 supported but H2 gates fail",
+    "HYPOTHESES_SUPPORTED_CANDIDATE_NOT_PROMOTED": "H1 and H2 supported but H2 < H0 + 15 pp: no new holdout, STOP standalone Policy research, integrate with the documented best-available frontend",
+    "REJECT_BOTH": "H1 and H2 both fail: STOP standalone Policy research, integrate with documented Policy limitation",
+    "overclaim_rule": "even on a full causal pass the only permitted verdict is PROMOTE_TO_NEW_HOLDOUT; 'Policy solved' may never be claimed"
+  },
+
+  "final_holdout_conditional": {
+    "runs_only_if": "PROMOTE_TO_NEW_HOLDOUT",
+    "candidate": "PSB-H2 frozen exactly as run in the causal experiment (prompt, schema, compiler, gate, model, retry); any change makes it a different candidate and is forbidden",
+    "arm": "PSB-H2 only (single arm; absolute gates)",
+    "size": 88,
+    "composition": {
+      "simple": 18,
+      "structural_single_axis": 20,
+      "multiaxis": 16,
+      "nl_stress": 12,
+      "ambiguity": 8,
+      "permission_traps": 14
+    },
+    "freshness": "zero shared word 8-grams with every V4, V5, PHV1 and causal-benchmark policy text; fresh domains; confirmatory cases never drawn from any development corpus",
+    "gates": {
+      "overall_behavioral_accuracy_gte": 0.85,
+      "simple_gte": 0.95,
+      "structural_gte": 0.85,
+      "nl_stress_gte": 0.75,
+      "invented_permission_case_rate_lte": 0.02,
+      "schema_compile_validity_gte": 0.98,
+      "family_floor": {"applies_to_families_with_n_at_least": 8, "behavioral_accuracy_gte": 0.60}
+    },
+    "outcomes": {
+      "PROMOTE_TO_INTEGRATION": "all final gates pass: STOP standalone Policy research; Policy + Goal + Binder + Evidence + Temporal/Effects + Core proceed to composition/E2E",
+      "POLICY_LIMITATION_CONFIRMED": "any final gate fails: NO further architecture generation; fix 'Policy semantic frontend remains imperfect' and proceed anyway to controlled integration/E2E, where the end-to-end effect of the parser error rate (after abstention, UNKNOWN, certificates, independent witnesses) is measured systematically"
+    }
+  },
+
+  "discipline": {
+    "smoke": "before the first semantic request: one synthetic non-benchmark case through the H0 schema AND one through the PSB schema (transport + schema path only)",
+    "seal": "per arm, before any gold join: prediction_sha256, case_ids_sha256, gold_joined=false",
+    "parse_policy": "exactly one parse per case per arm schema (+ at most one machine-validation-triggered repair re-ask: transport failure, schema invalid or compile failure - never for schema-valid wrong answers); no judge, no critic, no ensemble, no self-consistency",
+    "transport": "client max_retries=0 (no invisible retries); abandoned request captures are never resent; quota stops per CONFIG",
+    "during_inference": "only transport/schema/status facts are inspected; semantic inspection begins only after seal + score",
+    "inference_logging": "per-case persisted requests with full payload/telemetry, resumable, byte-stable on rerun",
+    "historical_separation": "Arm C ~78.1% (user-reported, absence-attested), H0-V5 95.77% (machine-verified controlled), PHV1 73.75% (machine-verified prospective) and this cycle's numbers are reported as separate implementation/distribution results, never as one learning curve"
+  },
+
+  "report_discipline": ["MEASURED", "SUPPORTED", "REJECTED", "POST-HOC", "NOT TESTED"]
+}

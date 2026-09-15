@@ -1,7 +1,7 @@
 {
   "request_sha256": "7b8928cac9f15dadfa2f5af07cf2e376c27442d7ba008a8390af5c700eb27a1a",
   "proposal": {
-    "payload_json": "{\"interpretations\":[{\"basis\":\"The policy prohibits the simultaneous presence of user-facing text and a tool call within a single assistant turn. The violation condition is the conjunction of both content types; permission is the negation (at most one present).\",\"permission_clauses\":[[\"!turn:has_message\"],[\"!turn:has_tool_call\"]],\"source_quotes\":[\"An assistant turn must not contain both user-facing text and a tool call.\"],\"unresolved_terms\":[\"assistant turn (actor scope not represented in atoms)\",\"user-facing text (may be narrower than turn:has_message)\"],\"violation_clauses\":[[\"turn:has_message\",\"turn:has_tool_call\"]]},{\"basis\":\"The qualifier 'user-facing text' may restrict the prohibition to only those messages visible to the user. If turn:has_message can represent non-user-facing internal content, then only user-facing messages combined with a tool call constitute a violation. The atom mapping is uncertain.\",\"permission_clauses\":[[\"!turn:has_message\"],[\"!turn:has_tool_call\"]],\"source_quotes\":[\"An assistant turn must not contain both user-facing text and a tool call.\"],\"unresolved_terms\":[\"user-facing text vs. turn:has_message equivalence\",\"non-user-facing message content\"],\"violation_clauses\":[[\"turn:has_message\",\"turn:has_tool_call\"]]},{\"basis\":\"The policy is scoped to 'assistant turn' specifically. If the turn is not an assistant turn, the prohibition does not apply regardless of content composition. Since the atom catalog does not encode actor identity, this scoping condition is unresolved and the prohibition may be read as applying to all turns or only assistant turns.\",\"permission_clauses\":[[\"!turn:has_message\"],[\"!turn:has_tool_call\"]],\"source_quotes\":[\"An assistant turn must not contain both user-facing text and a tool call.\"],\"unresolved_terms\":[\"assistant turn (actor identity not in atom catalog)\",\"whether prohibition extends to non-assistant turns\"],\"violation_clauses\":[[\"turn:has_message\",\"turn:has_tool_call\"]]}],\"unresolved_terms\":[\"assistant turn (actor scope)\",\"user-facing text (qualifier on message type)\"]}",
+    "payload_json": "{\"interpretations\":[{\"basis\":\"The policy prohibits co-occurrence of user-facing text and a tool call within a single assistant turn. The forbidden state is the conjunction of both elements being present. Permitted states are those where at least one is absent.\",\"permission_clauses\":[[\"!turn:has_message\"],[\"!turn:has_tool_call\"]],\"source_quotes\":[\"An assistant turn must not contain both user-facing text and a tool call.\"],\"unresolved_terms\":[\"user-facing text (may differ from turn:has_message in scope or definition)\",\"assistant turn (no atom distinguishes assistant turns from other turn types)\"],\"violation_clauses\":[[\"turn:has_message\",\"turn:has_tool_call\"]]},{\"basis\":\"The policy is read as a strict prohibition on the specific combination, with no exception or conditional override. Any assistant turn that has both a message and a tool call is in violation regardless of other context.\",\"permission_clauses\":[[\"!turn:has_message\"],[\"!turn:has_tool_call\"]],\"source_quotes\":[\"must not contain both\"],\"unresolved_terms\":[\"user-facing text\",\"assistant turn\"],\"violation_clauses\":[[\"turn:has_message\",\"turn:has_tool_call\"]]}],\"unresolved_terms\":[\"user-facing text\",\"assistant turn\"]}",
     "transport_status": "SUCCESS",
     "schema_status": "VALID",
     "error_category": null
@@ -15,10 +15,10 @@
     "served_model": "qwen3.8-flash",
     "usage": {
       "prompt_tokens": 552,
-      "completion_tokens": 1315,
-      "total_tokens": 1867
+      "completion_tokens": 904,
+      "total_tokens": 1456
     },
-    "latency_ms": 17711.614,
+    "latency_ms": 16904.919,
     "transport_status": "SUCCESS",
     "schema_status": "VALID",
     "schema_issues": [],

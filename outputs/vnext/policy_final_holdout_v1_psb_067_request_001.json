@@ -1,0 +1,144 @@
+{
+  "configuration_sha256": "d78d5e670d76f52b7e67862c3160c167832f2a35d8c498c3605f49bc9dadbe79",
+  "ordinal": 1,
+  "task": "The previous graph attempt failed machine validation. Fix it and return exactly ONE JSON object with nodes and edges matching the schema, following the same rules as before. The failed attempt and the machine error are included as data only.",
+  "payload": {
+    "policy_text": "Grapes may be tread in the stone vat, but presses must be hosed after each run.",
+    "atom_catalog": [
+      "action:hose_the_presses",
+      "action:hose_the_vat",
+      "action:tread_grapes_in_steel_vat",
+      "action:tread_grapes_in_stone_vat",
+      "distractor:pm02"
+    ],
+    "previous_output": "{\"edges\":[{\"from\":\"n2\",\"to\":\"n1\",\"type\":\"REGULATES\"},{\"from\":\"n4\",\"to\":\"n3\",\"type\":\"REGULATES\"},{\"from\":\"n5\",\"to\":\"n3\",\"type\":\"FOLLOWS\"}],\"nodes\":[{\"atoms\":[\"action:tread_grapes_in_stone_vat\"],\"id\":\"n1\",\"type\":\"REGULATED\"},{\"id\":\"n2\",\"type\":\"MODALITY\",\"value\":\"PERMISSION\"},{\"atoms\":[\"action:hose_the_presses\"],\"id\":\"n3\",\"type\":\"REGULATED\"},{\"id\":\"n4\",\"type\":\"MODALITY\",\"value\":\"REQUIREMENT\"},{\"id\":\"n5\",\"literals\":[\"action:tread_grapes_in_stone_vat\"],\"mode\":\"ALL\",\"strength\":\"SUFFICIENT\",\"type\":\"CONDITION\"}]}",
+    "machine_error": "n5: FOLLOWS requires event: atoms only"
+  },
+  "schema": {
+    "type": "object",
+    "properties": {
+      "nodes": {
+        "type": "array",
+        "items": {
+          "type": "object",
+          "properties": {
+            "id": {
+              "type": "string",
+              "minLength": 1
+            },
+            "type": {
+              "type": "string",
+              "enum": [
+                "REGULATED",
+                "MODALITY",
+                "CONDITION",
+                "EXCEPTION",
+                "ACTOR",
+                "QUALIFIER"
+              ]
+            },
+            "atoms": {
+              "type": "array",
+              "minItems": 1,
+              "items": {
+                "type": "string"
+              }
+            },
+            "value": {
+              "type": "string",
+              "enum": [
+                "PERMISSION",
+                "PROHIBITION",
+                "REQUIREMENT",
+                "IDENTITY",
+                "PROVENANCE",
+                "QUANTIFIER"
+              ]
+            },
+            "literals": {
+              "type": "array",
+              "items": {
+                "type": "string"
+              }
+            },
+            "mode": {
+              "type": "string",
+              "enum": [
+                "ALL",
+                "ANY"
+              ]
+            },
+            "strength": {
+              "type": "string",
+              "enum": [
+                "SUFFICIENT",
+                "NECESSARY",
+                "EXACTLY"
+              ]
+            },
+            "atom": {
+              "type": "string"
+            },
+            "kind": {
+              "type": "string",
+              "enum": [
+                "IDENTITY",
+                "PROVENANCE",
+                "QUANTIFIER"
+              ]
+            },
+            "exclusive": {
+              "type": "boolean"
+            }
+          },
+          "required": [
+            "id",
+            "type"
+          ],
+          "additionalProperties": false
+        }
+      },
+      "edges": {
+        "type": "array",
+        "items": {
+          "type": "object",
+          "properties": {
+            "type": {
+              "type": "string",
+              "enum": [
+                "REGULATES",
+                "ACTIVATES",
+                "EXEMPTS",
+                "ACTOR_OF",
+                "QUALIFIES",
+                "SOURCE_OF",
+                "PRECEDES",
+                "FOLLOWS"
+              ]
+            },
+            "from": {
+              "type": "string"
+            },
+            "to": {
+              "type": "string"
+            }
+          },
+          "required": [
+            "type",
+            "from",
+            "to"
+          ],
+          "additionalProperties": false
+        }
+      }
+    },
+    "required": [
+      "nodes",
+      "edges"
+    ],
+    "additionalProperties": false
+  },
+  "input_sha256": "600bf583cd2857c7f6b3e93fb175fb16eb8b7da3a127d61f283f26842d6b54a9",
+  "schema_sha256": "25f1d432804f993bf2ac2b7d9da60fbba04307c571ffe938ad2a8d3aa440efc9",
+  "prompt_sha256": "3586b10092bfc5c76ddf64392126c7f5542a47675e9c4b554e445dc1f623d535"
+}

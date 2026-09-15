@@ -6,7 +6,7 @@
       "hypotheses": [
         {
           "hypothesis_id": "policy-program:h0",
-          "basis": "Each individual update action (baggage_edit, passenger_information_edit) is a member of the UPDATE category and requires its own preceding confirmation event. The phrase 'Before an UPDATE' is read distributively over each action instance.",
+          "basis": "Section A defines UPDATE to include editing baggage and updating passenger information. Section H states 'Before an UPDATE, obtain explicit confirmation,' which functions as a prerequisite condition: the update actions are permitted only when confirmation has been obtained beforehand.",
           "program": {
             "violation_clauses": [
               [
@@ -20,19 +20,19 @@
             ],
             "permission_clauses": [
               [
-                "event:confirmation_before",
-                "action:baggage_edit"
+                "action:baggage_edit",
+                "event:confirmation_before"
               ],
               [
-                "event:confirmation_before",
-                "action:passenger_information_edit"
+                "action:passenger_information_edit",
+                "event:confirmation_before"
               ]
             ]
           },
           "source_spans": [
             {
               "document": "policy",
-              "start": 195,
+              "start": 183,
               "end": 242
             },
             {
@@ -45,75 +45,82 @@
             "booking",
             "modifying flights",
             "changing cabin class",
-            "explicit",
-            "what constitutes sufficient confirmation"
+            "explicit"
           ]
         },
         {
           "hypothesis_id": "policy-program:h1",
-          "basis": "The rule 'Before an UPDATE, obtain explicit confirmation' is interpreted as a collective or existential requirement for a session or transaction containing multiple UPDATE actions. Only the first UPDATE requires a preceding confirmation event; subsequent UPDATEs in the same context are permitted without a new confirmation.",
+          "basis": "Section B is described as containing unrelated service rules, represented by distractor:irrelevant. This interpretation asserts that Section B content neither creates exceptions to nor modifies the confirmation requirement in Section H. The confirmation-before rule applies to UPDATE actions independently of Section B.",
           "program": {
             "violation_clauses": [
               [
-                "!event:confirmation_before",
-                "action:baggage_edit"
+                "action:baggage_edit",
+                "!event:confirmation_before"
               ],
               [
-                "!event:confirmation_before",
-                "action:passenger_information_edit"
+                "action:passenger_information_edit",
+                "!event:confirmation_before"
+              ],
+              [
+                "distractor:irrelevant",
+                "action:baggage_edit",
+                "!event:confirmation_before"
+              ],
+              [
+                "distractor:irrelevant",
+                "action:passenger_information_edit",
+                "!event:confirmation_before"
               ]
             ],
             "permission_clauses": [
               [
-                "event:confirmation_before",
-                "action:baggage_edit"
+                "action:baggage_edit",
+                "event:confirmation_before"
               ],
               [
-                "event:confirmation_before",
-                "action:passenger_information_edit"
-              ],
-              [
-                "!event:confirmation_before",
-                "action:baggage_edit"
-              ],
-              [
-                "!event:confirmation_before",
-                "action:passenger_information_edit"
+                "action:passenger_information_edit",
+                "event:confirmation_before"
               ]
             ]
           },
           "source_spans": [
             {
               "document": "policy",
-              "start": 195,
+              "start": 139,
+              "end": 182
+            },
+            {
+              "document": "policy",
+              "start": 183,
               "end": 242
             }
           ],
           "unresolved_terms": [
-            "session/transaction scope",
-            "definition of 'an UPDATE' (instance vs. event)"
+            "what Section B contains",
+            "whether Section B could ever create an exception"
           ]
         },
         {
           "hypothesis_id": "policy-program:h2",
-          "basis": "The term 'UPDATE' in Section H is interpreted restrictively as referring only to 'booking' or 'modifying flights' (the primary booking actions), excluding 'editing baggage' and 'changing passenger information' from the confirmation requirement despite their inclusion in the Section A definition. This creates a distinction between core booking updates and ancillary data updates.",
+          "basis": "Section H states 'Before an UPDATE, obtain explicit confirmation.' This is grammatically an imperative creating an obligation to perform confirmation. The violation is the omission of confirmation itself (failure to obtain it), not the commission of the action. The existing readings model the violation as 'action AND NOT confirmation_before,' requiring the action to occur for a violation. Under this reading, the absence of confirmation is the violation in the context of an UPDATE, independent of whether the action is ultimately performed. This changes behavior: an agent who contemplates an UPDATE but never performs it could still violate the policy by failing to obtain confirmation.",
           "program": {
-            "violation_clauses": [],
+            "violation_clauses": [
+              [
+                "!event:confirmation_before"
+              ]
+            ],
             "permission_clauses": [
               [
-                "action:baggage_edit"
+                "action:baggage_edit",
+                "event:confirmation_before"
               ],
               [
-                "action:passenger_information_edit"
+                "action:passenger_information_edit",
+                "event:confirmation_before"
               ]
             ]
           },
           "source_spans": [
-            {
-              "document": "policy",
-              "start": 24,
-              "end": 138
-            },
             {
               "document": "policy",
               "start": 195,
@@ -121,7 +128,36 @@
             }
           ],
           "unresolved_terms": [
-            "scope of 'UPDATE' in Section H vs Section A"
+            "What constitutes 'contemplating' an UPDATE for the obligation to trigger",
+            "Whether the obligation persists if the UPDATE is abandoned before execution"
+          ]
+        },
+        {
+          "hypothesis_id": "policy-program:h3",
+          "basis": "Section H states 'Before an UPDATE, obtain explicit confirmation.' This establishes confirmation as a necessary precondition for the action but does not state that confirmation is sufficient for permission. The existing readings include permission_clauses granting permission when confirmation is present (action AND confirmation_before → permitted). However, the policy text only imposes a prerequisite; it does not say 'if confirmation is obtained, the action is permitted.' Other requirements (not in scope of these atoms) could still block the action even with confirmation. This reading removes the permission grant, making confirmation necessary but not sufficient.",
+          "program": {
+            "violation_clauses": [
+              [
+                "action:baggage_edit",
+                "!event:confirmation_before"
+              ],
+              [
+                "action:passenger_information_edit",
+                "!event:confirmation_before"
+              ]
+            ],
+            "permission_clauses": []
+          },
+          "source_spans": [
+            {
+              "document": "policy",
+              "start": 195,
+              "end": 242
+            }
+          ],
+          "unresolved_terms": [
+            "Whether other unstated requirements could block the action even after confirmation is obtained",
+            "The full set of conditions under which an UPDATE is permitted"
           ]
         }
       ],
@@ -134,34 +170,33 @@
           "modifying flights",
           "changing cabin class",
           "explicit",
-          "who provides confirmation",
-          "temporal scope of a single confirmation",
-          "whether confirmation is necessary and sufficient or only necessary",
-          "Section B content and potential interactions",
-          "what constitutes sufficient confirmation",
-          "whether confirmation_before constitutes full permission or only removes this specific prohibition",
-          "who must give the confirmation",
-          "what form the confirmation must take",
-          "scope of 'a session' or interaction",
-          "whether new updates after a time gap require re-confirmation",
-          "temporal boundary of a single confirmation",
-          "what Section B actually contains",
-          "whether Section B rules could interact with Section H in practice",
-          "session/transaction scope",
-          "definition of 'an UPDATE' (instance vs. event)",
-          "scope of 'UPDATE' in Section H vs Section A"
+          "temporal scope of 'before'",
+          "who must obtain confirmation",
+          "Section B content details",
+          "whether Section B can create exceptions",
+          "what Section B contains",
+          "whether Section B could ever create an exception",
+          "whether unrepresented UPDATE types share the same confirmation requirement",
+          "Whether 'explicit confirmation' has a defined form or channel",
+          "Whether the confirmation obligation applies per-action or per-session",
+          "The temporal window implied by 'before' (immediately before vs. any prior time)",
+          "Whether Section B's 'unrelated service rules' could interact with Section H in ways not captured by the distractor atom",
+          "What constitutes 'contemplating' an UPDATE for the obligation to trigger",
+          "Whether the obligation persists if the UPDATE is abandoned before execution",
+          "Whether other unstated requirements could block the action even after confirmation is obtained",
+          "The full set of conditions under which an UPDATE is permitted"
         ],
         "discarded_hypotheses": [],
         "challenger_alternatives": [
-          "policy-program:h1",
-          "policy-program:h2"
+          "policy-program:h2",
+          "policy-program:h3"
         ]
       },
       "failures": [],
       "empirical_hypotheses": [
         {
           "hypothesis_id": "policy-program:h0",
-          "basis": "Each individual update action (baggage_edit, passenger_information_edit) is a member of the UPDATE category and requires its own preceding confirmation event. The phrase 'Before an UPDATE' is read distributively over each action instance.",
+          "basis": "Section A defines UPDATE to include editing baggage and updating passenger information. Section H states 'Before an UPDATE, obtain explicit confirmation,' which functions as a prerequisite condition: the update actions are permitted only when confirmation has been obtained beforehand.",
           "program": {
             "violation_clauses": [
               [
@@ -175,19 +210,19 @@
             ],
             "permission_clauses": [
               [
-                "event:confirmation_before",
-                "action:baggage_edit"
+                "action:baggage_edit",
+                "event:confirmation_before"
               ],
               [
-                "event:confirmation_before",
-                "action:passenger_information_edit"
+                "action:passenger_information_edit",
+                "event:confirmation_before"
               ]
             ]
           },
           "source_spans": [
             {
               "document": "policy",
-              "start": 195,
+              "start": 183,
               "end": 242
             },
             {
@@ -200,75 +235,82 @@
             "booking",
             "modifying flights",
             "changing cabin class",
-            "explicit",
-            "what constitutes sufficient confirmation"
+            "explicit"
           ]
         },
         {
           "hypothesis_id": "policy-program:h1",
-          "basis": "The rule 'Before an UPDATE, obtain explicit confirmation' is interpreted as a collective or existential requirement for a session or transaction containing multiple UPDATE actions. Only the first UPDATE requires a preceding confirmation event; subsequent UPDATEs in the same context are permitted without a new confirmation.",
+          "basis": "Section B is described as containing unrelated service rules, represented by distractor:irrelevant. This interpretation asserts that Section B content neither creates exceptions to nor modifies the confirmation requirement in Section H. The confirmation-before rule applies to UPDATE actions independently of Section B.",
           "program": {
             "violation_clauses": [
               [
-                "!event:confirmation_before",
-                "action:baggage_edit"
+                "action:baggage_edit",
+                "!event:confirmation_before"
               ],
               [
-                "!event:confirmation_before",
-                "action:passenger_information_edit"
+                "action:passenger_information_edit",
+                "!event:confirmation_before"
+              ],
+              [
+                "distractor:irrelevant",
+                "action:baggage_edit",
+                "!event:confirmation_before"
+              ],
+              [
+                "distractor:irrelevant",
+                "action:passenger_information_edit",
+                "!event:confirmation_before"
               ]
             ],
             "permission_clauses": [
               [
-                "event:confirmation_before",
-                "action:baggage_edit"
+                "action:baggage_edit",
+                "event:confirmation_before"
               ],
               [
-                "event:confirmation_before",
-                "action:passenger_information_edit"
-              ],
-              [
-                "!event:confirmation_before",
-                "action:baggage_edit"
-              ],
-              [
-                "!event:confirmation_before",
-                "action:passenger_information_edit"
+                "action:passenger_information_edit",
+                "event:confirmation_before"
               ]
             ]
           },
           "source_spans": [
             {
               "document": "policy",
-              "start": 195,
+              "start": 139,
+              "end": 182
+            },
+            {
+              "document": "policy",
+              "start": 183,
               "end": 242
             }
           ],
           "unresolved_terms": [
-            "session/transaction scope",
-            "definition of 'an UPDATE' (instance vs. event)"
+            "what Section B contains",
+            "whether Section B could ever create an exception"
           ]
         },
         {
           "hypothesis_id": "policy-program:h2",
-          "basis": "The term 'UPDATE' in Section H is interpreted restrictively as referring only to 'booking' or 'modifying flights' (the primary booking actions), excluding 'editing baggage' and 'changing passenger information' from the confirmation requirement despite their inclusion in the Section A definition. This creates a distinction between core booking updates and ancillary data updates.",
+          "basis": "Section H states 'Before an UPDATE, obtain explicit confirmation.' This is grammatically an imperative creating an obligation to perform confirmation. The violation is the omission of confirmation itself (failure to obtain it), not the commission of the action. The existing readings model the violation as 'action AND NOT confirmation_before,' requiring the action to occur for a violation. Under this reading, the absence of confirmation is the violation in the context of an UPDATE, independent of whether the action is ultimately performed. This changes behavior: an agent who contemplates an UPDATE but never performs it could still violate the policy by failing to obtain confirmation.",
           "program": {
-            "violation_clauses": [],
+            "violation_clauses": [
+              [
+                "!event:confirmation_before"
+              ]
+            ],
             "permission_clauses": [
               [
-                "action:baggage_edit"
+                "action:baggage_edit",
+                "event:confirmation_before"
               ],
               [
-                "action:passenger_information_edit"
+                "action:passenger_information_edit",
+                "event:confirmation_before"
               ]
             ]
           },
           "source_spans": [
-            {
-              "document": "policy",
-              "start": 24,
-              "end": 138
-            },
             {
               "document": "policy",
               "start": 195,
@@ -276,7 +318,36 @@
             }
           ],
           "unresolved_terms": [
-            "scope of 'UPDATE' in Section H vs Section A"
+            "What constitutes 'contemplating' an UPDATE for the obligation to trigger",
+            "Whether the obligation persists if the UPDATE is abandoned before execution"
+          ]
+        },
+        {
+          "hypothesis_id": "policy-program:h3",
+          "basis": "Section H states 'Before an UPDATE, obtain explicit confirmation.' This establishes confirmation as a necessary precondition for the action but does not state that confirmation is sufficient for permission. The existing readings include permission_clauses granting permission when confirmation is present (action AND confirmation_before → permitted). However, the policy text only imposes a prerequisite; it does not say 'if confirmation is obtained, the action is permitted.' Other requirements (not in scope of these atoms) could still block the action even with confirmation. This reading removes the permission grant, making confirmation necessary but not sufficient.",
+          "program": {
+            "violation_clauses": [
+              [
+                "action:baggage_edit",
+                "!event:confirmation_before"
+              ],
+              [
+                "action:passenger_information_edit",
+                "!event:confirmation_before"
+              ]
+            ],
+            "permission_clauses": []
+          },
+          "source_spans": [
+            {
+              "document": "policy",
+              "start": 195,
+              "end": 242
+            }
+          ],
+          "unresolved_terms": [
+            "Whether other unstated requirements could block the action even after confirmation is obtained",
+            "The full set of conditions under which an UPDATE is permitted"
           ]
         }
       ]
@@ -292,11 +363,11 @@
       "prediction": null,
       "source_coverage": 1.0,
       "served_model": "qwen3.8-flash",
-      "latency_ms": 9789.291,
+      "latency_ms": 9292.511,
       "usage": {
         "prompt_tokens": 453,
-        "completion_tokens": 480,
-        "total_tokens": 933
+        "completion_tokens": 473,
+        "total_tokens": 926
       }
     }
   },
@@ -310,10 +381,10 @@
       "served_model": "qwen3.8-flash",
       "usage": {
         "prompt_tokens": 616,
-        "completion_tokens": 2089,
-        "total_tokens": 2705
+        "completion_tokens": 1545,
+        "total_tokens": 2161
       },
-      "latency_ms": 43335.731,
+      "latency_ms": 20981.58,
       "transport_status": "SUCCESS",
       "schema_status": "VALID",
       "schema_issues": [],
@@ -322,16 +393,16 @@
     {
       "backend_version": "diagnostic-semantic-v2",
       "task": "policy_program_missing_reading_v2",
-      "input_sha256": "63719cb34d651551993ce6238e76885325606e03ad34ee3f8795826cb63cbf63",
-      "prompt_sha256": "327b4fbf874c62b192544384123824edb0c63ea5e33ace76143f2348a13bf87c",
+      "input_sha256": "e8f36d74eb6156d757d012e3e9551eea47e55abd95e7199f4c5794d8cebaf2c6",
+      "prompt_sha256": "c235c27edfc2686f78dc260d57f922ce10716f224ca015e342036cefff625a60",
       "schema_sha256": "84fcee4cb544e84897553c79bd3576a50eb26c555d01e3811caad7afba090037",
       "served_model": "qwen3.8-flash",
       "usage": {
-        "prompt_tokens": 760,
-        "completion_tokens": 4642,
-        "total_tokens": 5402
+        "prompt_tokens": 916,
+        "completion_tokens": 3006,
+        "total_tokens": 3922
       },
-      "latency_ms": 74121.881,
+      "latency_ms": 51753.006,
       "transport_status": "SUCCESS",
       "schema_status": "VALID",
       "schema_issues": [],
@@ -357,10 +428,10 @@
       "served_model": "qwen3.8-flash",
       "usage": {
         "prompt_tokens": 453,
-        "completion_tokens": 480,
-        "total_tokens": 933
+        "completion_tokens": 473,
+        "total_tokens": 926
       },
-      "latency_ms": 9787.627
+      "latency_ms": 9291.783
     }
   ]
 }

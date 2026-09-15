@@ -6,7 +6,7 @@
       "hypotheses": [
         {
           "hypothesis_id": "policy-program:h0",
-          "basis": "The policy establishes that the two-of-four verification rule is a necessary condition for accessing customer data; a single identity value does not satisfy the threshold.",
+          "basis": "The policy establishes two-of-four verification as a necessary condition for customer data access. The statement that one identity value is 'insufficient' means that without meeting the two-of-four threshold, access is prohibited. This is a strict gating rule.",
           "program": {
             "violation_clauses": [
               [
@@ -30,55 +30,9 @@
           ],
           "unresolved_terms": [
             "identity value",
-            "referenced"
-          ]
-        },
-        {
-          "hypothesis_id": "policy-program:h1",
-          "basis": "The policy states that one identity value is insufficient under the two-of-four rule, which can be read as creating only a prohibition (you must not access without meeting the threshold) without affirmatively granting permission when the threshold IS met. Meeting two-of-four may be necessary but not sufficient; other conditions could still gate access. The existing reading conflates the prohibition with a permission grant.",
-          "program": {
-            "violation_clauses": [
-              [
-                "action:access_customer_data",
-                "!state:two_of_four_verified"
-              ]
-            ],
-            "permission_clauses": []
-          },
-          "source_spans": [
-            {
-              "document": "policy",
-              "start": 0,
-              "end": 86
-            }
-          ],
-          "unresolved_terms": [
-            "whether two-of-four verification is sufficient for access or merely necessary",
-            "whether other conditions beyond two-of-four must also be met to grant permission"
-          ]
-        },
-        {
-          "hypothesis_id": "policy-program:h2",
-          "basis": "The policy can be read as establishing only what is permitted (access requires two-of-four verification) without itself creating a violation clause. The prohibition on accessing without verification might derive from a separate rule, not from this statement. This reading treats the policy as a permission-granting rule rather than a prohibition-imposing rule.",
-          "program": {
-            "violation_clauses": [],
-            "permission_clauses": [
-              [
-                "action:access_customer_data",
-                "state:two_of_four_verified"
-              ]
-            ]
-          },
-          "source_spans": [
-            {
-              "document": "policy",
-              "start": 0,
-              "end": 86
-            }
-          ],
-          "unresolved_terms": [
-            "whether the insufficiency statement itself constitutes a prohibition or merely defines the boundary of a permission",
-            "whether violation consequences are specified elsewhere"
+            "referenced",
+            "two-of-four verification rule",
+            "four factors"
           ]
         }
       ],
@@ -89,25 +43,22 @@
         "unresolved_terms": [
           "identity value",
           "referenced",
-          "whether the policy applies only when the two-of-four rule is 'referenced' in a specific context",
-          "whether 'one identity value' is narrower than the general condition '!state:two_of_four_verified' (e.g., zero values or three values might be treated differently)",
-          "the actor, resource, and time scope of the obligation",
-          "whether two-of-four verification is sufficient for access or merely necessary",
-          "whether other conditions beyond two-of-four must also be met to grant permission",
-          "whether the insufficiency statement itself constitutes a prohibition or merely defines the boundary of a permission",
-          "whether violation consequences are specified elsewhere"
+          "two-of-four verification rule",
+          "four factors"
         ],
         "discarded_hypotheses": [],
-        "challenger_alternatives": [
-          "policy-program:h1",
-          "policy-program:h2"
-        ]
+        "challenger_alternatives": []
       },
-      "failures": [],
+      "failures": [
+        [
+          "policy_program_missing_reading_v2",
+          "TRANSPORT_ERROR"
+        ]
+      ],
       "empirical_hypotheses": [
         {
           "hypothesis_id": "policy-program:h0",
-          "basis": "The policy establishes that the two-of-four verification rule is a necessary condition for accessing customer data; a single identity value does not satisfy the threshold.",
+          "basis": "The policy establishes two-of-four verification as a necessary condition for customer data access. The statement that one identity value is 'insufficient' means that without meeting the two-of-four threshold, access is prohibited. This is a strict gating rule.",
           "program": {
             "violation_clauses": [
               [
@@ -131,55 +82,9 @@
           ],
           "unresolved_terms": [
             "identity value",
-            "referenced"
-          ]
-        },
-        {
-          "hypothesis_id": "policy-program:h1",
-          "basis": "The policy states that one identity value is insufficient under the two-of-four rule, which can be read as creating only a prohibition (you must not access without meeting the threshold) without affirmatively granting permission when the threshold IS met. Meeting two-of-four may be necessary but not sufficient; other conditions could still gate access. The existing reading conflates the prohibition with a permission grant.",
-          "program": {
-            "violation_clauses": [
-              [
-                "action:access_customer_data",
-                "!state:two_of_four_verified"
-              ]
-            ],
-            "permission_clauses": []
-          },
-          "source_spans": [
-            {
-              "document": "policy",
-              "start": 0,
-              "end": 86
-            }
-          ],
-          "unresolved_terms": [
-            "whether two-of-four verification is sufficient for access or merely necessary",
-            "whether other conditions beyond two-of-four must also be met to grant permission"
-          ]
-        },
-        {
-          "hypothesis_id": "policy-program:h2",
-          "basis": "The policy can be read as establishing only what is permitted (access requires two-of-four verification) without itself creating a violation clause. The prohibition on accessing without verification might derive from a separate rule, not from this statement. This reading treats the policy as a permission-granting rule rather than a prohibition-imposing rule.",
-          "program": {
-            "violation_clauses": [],
-            "permission_clauses": [
-              [
-                "action:access_customer_data",
-                "state:two_of_four_verified"
-              ]
-            ]
-          },
-          "source_spans": [
-            {
-              "document": "policy",
-              "start": 0,
-              "end": 86
-            }
-          ],
-          "unresolved_terms": [
-            "whether the insufficiency statement itself constitutes a prohibition or merely defines the boundary of a permission",
-            "whether violation consequences are specified elsewhere"
+            "referenced",
+            "two-of-four verification rule",
+            "four factors"
           ]
         }
       ]
@@ -195,11 +100,11 @@
       "prediction": null,
       "source_coverage": 1.0,
       "served_model": "qwen3.8-flash",
-      "latency_ms": 7727.78,
+      "latency_ms": 6357.449,
       "usage": {
         "prompt_tokens": 399,
-        "completion_tokens": 334,
-        "total_tokens": 733
+        "completion_tokens": 310,
+        "total_tokens": 709
       }
     }
   },
@@ -213,32 +118,27 @@
       "served_model": "qwen3.8-flash",
       "usage": {
         "prompt_tokens": 561,
-        "completion_tokens": 795,
-        "total_tokens": 1356
+        "completion_tokens": 1129,
+        "total_tokens": 1690
       },
-      "latency_ms": 15502.172,
+      "latency_ms": 19621.519,
       "transport_status": "SUCCESS",
       "schema_status": "VALID",
       "schema_issues": [],
       "error_category": null
     },
     {
-      "backend_version": "diagnostic-semantic-v2",
       "task": "policy_program_missing_reading_v2",
-      "input_sha256": "9e810c2cf33c0c0c3d424c52bc2ef781b986f621f9b6c3e0f5c9a3454122c6b1",
-      "prompt_sha256": "c98ef73d4a76f3c92a86d3cfb459beb999edf13dfb6cc2eb3ec6387bdf1a2c74",
+      "transport_status": "ERROR",
+      "schema_status": "NOT_EVALUATED",
+      "error_category": "abandoned_request_capture",
+      "usage": {},
+      "latency_ms": 0,
+      "input_sha256": "417ca1e061a0d6ce4213f2df127a6ee229edbff60778140f9e04a593d97bf3ad",
       "schema_sha256": "1bb83e2b91ca692a4e4246b7bfa520b74dd956f5e31c1686f5200e9f675a540d",
-      "served_model": "qwen3.8-flash",
-      "usage": {
-        "prompt_tokens": 668,
-        "completion_tokens": 2841,
-        "total_tokens": 3509
-      },
-      "latency_ms": 56464.496,
-      "transport_status": "SUCCESS",
-      "schema_status": "VALID",
-      "schema_issues": [],
-      "error_category": null
+      "prompt_sha256": "2b7aa192a8e47bd084a3909bcf6033385dd6b4cad3f8240e5542863d3ed020fa",
+      "served_model": null,
+      "remote_outcome": "UNKNOWN_NO_AUTOMATIC_RETRY"
     }
   ],
   "p1_request_telemetry": [
@@ -260,10 +160,10 @@
       "served_model": "qwen3.8-flash",
       "usage": {
         "prompt_tokens": 399,
-        "completion_tokens": 334,
-        "total_tokens": 733
+        "completion_tokens": 310,
+        "total_tokens": 709
       },
-      "latency_ms": 7725.173
+      "latency_ms": 6356.614
     }
   ]
 }

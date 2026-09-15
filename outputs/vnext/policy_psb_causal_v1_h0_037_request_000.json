@@ -1,0 +1,110 @@
+{
+  "configuration_sha256": "4d57047ddcfcc3a6334a41824a7ae5dc357d33737d6573f52ccadc55c6f8af8f",
+  "ordinal": 0,
+  "task": "Parse ONE workplace policy into exactly ONE typed semantic structure.\nField rules:\n- modality: PERMISSION (the text grants or allows), PROHIBITION (the text forbids or bars), REQUIREMENT (the text obliges).\n- relation: how the regulated act is gated.\n  IF: when the conditions hold the act is licensed/obligated/forbidden; when they do not hold the text stays silent (NOT a violation, and NOT permission).\n  ONLY_IF: exclusive - the act is licensed ONLY under the conditions; doing it without them is a VIOLATION.\n  IF_AND_ONLY_IF: the act is licensed exactly under the conditions and the text commits in both directions.\n  UNLESS: the conditions are exceptions carved out of an otherwise absolute rule.\n  UNCONDITIONAL: no conditions stated.\n  AND_NOT_EACH: doing BOTH targets together is forbidden; each alone is allowed.\n- target_clauses: a list of clauses; each clause is a list of atoms that are regulated TOGETHER (same act or same batch); several clauses mean the atoms are regulated SEPARATELY.\n- condition_literals and exception_literals: typed atoms copied EXACTLY from atom_catalog; prefix an atom with \"!\" only when the text negates it.\n- condition_mode/exception_mode: ALL means conjunction (every literal), ANY means disjunction (any literal).\n- temporal: BEFORE or AFTER only when the text orders the act relative to an event, else NONE.\n- WHO is allowed or forbidden to act (for example \"only the duty engineer\") goes into condition_literals as an actor: atom from atom_catalog; the actor field stays \"assistant\".\n- An act that is neither licensed nor forbidden is NO_VIOLATION, never PERMITTED: absence of prohibition is NOT permission.\nUse ONLY atoms from atom_catalog (it also contains distractor atoms; choose the ones the text actually uses). Output exactly one JSON object matching the schema.",
+  "payload": {
+    "policy_text": "Whenever the drag line snaps or the pit winch overheats, the pit floor is closed to everyone.",
+    "atom_catalog": [
+      "action:enter_pit_floor",
+      "distractor:r06",
+      "event:drag_line_snapped",
+      "event:pit_winch_overheated"
+    ]
+  },
+  "schema": {
+    "type": "object",
+    "properties": {
+      "modality": {
+        "type": "string",
+        "enum": [
+          "PERMISSION",
+          "PROHIBITION",
+          "REQUIREMENT"
+        ]
+      },
+      "relation": {
+        "type": "string",
+        "enum": [
+          "IF",
+          "ONLY_IF",
+          "UNLESS",
+          "UNCONDITIONAL",
+          "IF_AND_ONLY_IF",
+          "AND_NOT_EACH"
+        ]
+      },
+      "target_clauses": {
+        "type": "array",
+        "minItems": 1,
+        "items": {
+          "type": "array",
+          "minItems": 1,
+          "items": {
+            "type": "string"
+          }
+        }
+      },
+      "condition_literals": {
+        "type": "array",
+        "items": {
+          "type": "string"
+        }
+      },
+      "exception_literals": {
+        "type": "array",
+        "items": {
+          "type": "string"
+        }
+      },
+      "condition_mode": {
+        "type": "string",
+        "enum": [
+          "ALL",
+          "ANY"
+        ]
+      },
+      "exception_mode": {
+        "type": "string",
+        "enum": [
+          "ALL",
+          "ANY"
+        ]
+      },
+      "temporal": {
+        "type": "string",
+        "enum": [
+          "NONE",
+          "BEFORE",
+          "AFTER"
+        ]
+      },
+      "actor": {
+        "type": "string"
+      },
+      "regulated_kind": {
+        "type": "string"
+      },
+      "facet": {
+        "type": "string"
+      },
+      "identity": {
+        "type": "string"
+      },
+      "provenance": {
+        "type": "string"
+      },
+      "quantification": {
+        "type": "string"
+      }
+    },
+    "required": [
+      "modality",
+      "relation",
+      "target_clauses"
+    ],
+    "additionalProperties": false
+  },
+  "input_sha256": "f9a9211e91e85c8a31559f16faee82a549465b449d96a23f3ba578dec4abbe09",
+  "schema_sha256": "fc3b3ee2bed89acaa59688fb0b42e0f56be1db8370263200cdc21c323c2af54e",
+  "prompt_sha256": "ab5a7b46f44c556552c7041ee6406d989d2c17306a67beb0c0239b42cc159f49"
+}

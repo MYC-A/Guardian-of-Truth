@@ -1,0 +1,68 @@
+{
+  "case_id": "relation::r01",
+  "configuration_sha256": "4d57047ddcfcc3a6334a41824a7ae5dc357d33737d6573f52ccadc55c6f8af8f",
+  "status": "ok_repaired",
+  "error": null,
+  "prediction": {
+    "actor": "actor:member",
+    "condition_literals": [
+      "event:kiln_timer_sounded"
+    ],
+    "condition_mode": "ALL",
+    "exception_literals": [],
+    "exception_mode": "ALL",
+    "modality": "PERMISSION",
+    "relation": "IF",
+    "target_clauses": [
+      [
+        "action:use_glaze_room"
+      ]
+    ],
+    "temporal": "BEFORE"
+  },
+  "request_records": [
+    {
+      "backend_version": "diagnostic-semantic-v2",
+      "task": "Parse ONE workplace policy into exactly ONE typed semantic structure.\nField rules:\n- modality: PERMISSION (the text grants or allows), PROHIBITION (the text forbids or bars), REQUIREMENT (the text obliges).\n- relation: how the regulated act is gated.\n  IF: when the conditions hold the act is licensed/obligated/forbidden; when they do not hold the text stays silent (NOT a violation, and NOT permission).\n  ONLY_IF: exclusive - the act is licensed ONLY under the conditions; doing it without them is a VIOLATION.\n  IF_AND_ONLY_IF: the act is licensed exactly under the conditions and the text commits in both directions.\n  UNLESS: the conditions are exceptions carved out of an otherwise absolute rule.\n  UNCONDITIONAL: no conditions stated.\n  AND_NOT_EACH: doing BOTH targets together is forbidden; each alone is allowed.\n- target_clauses: a list of clauses; each clause is a list of atoms that are regulated TOGETHER (same act or same batch); several clauses mean the atoms are regulated SEPARATELY.\n- condition_literals and exception_literals: typed atoms copied EXACTLY from atom_catalog; prefix an atom with \"!\" only when the text negates it.\n- condition_mode/exception_mode: ALL means conjunction (every literal), ANY means disjunction (any literal).\n- temporal: BEFORE or AFTER only when the text orders the act relative to an event, else NONE.\n- WHO is allowed or forbidden to act (for example \"only the duty engineer\") goes into condition_literals as an actor: atom from atom_catalog; the actor field stays \"assistant\".\n- An act that is neither licensed nor forbidden is NO_VIOLATION, never PERMITTED: absence of prohibition is NOT permission.\nUse ONLY atoms from atom_catalog (it also contains distractor atoms; choose the ones the text actually uses). Output exactly one JSON object matching the schema.",
+      "input_sha256": "6057449781d6f7ef7ccdca055a299fde2e59fc0a0cb274f2dc99b64c39e32162",
+      "prompt_sha256": "e310e0a98fc1847795de948573c33f328441e225f4f1ab1d70954faab89b6aa3",
+      "schema_sha256": "fc3b3ee2bed89acaa59688fb0b42e0f56be1db8370263200cdc21c323c2af54e",
+      "served_model": "qwen3.8-flash",
+      "usage": {
+        "prompt_tokens": 802,
+        "completion_tokens": 548,
+        "total_tokens": 1350
+      },
+      "latency_ms": 7079.135,
+      "transport_status": "SUCCESS",
+      "schema_status": "INVALID",
+      "schema_issues": [
+        {
+          "code": "JSON_INVALID",
+          "path": "",
+          "expected_type": null,
+          "actual_type": null
+        }
+      ],
+      "error_category": null
+    },
+    {
+      "backend_version": "diagnostic-semantic-v2",
+      "task": "The previous parse attempt failed machine validation. Fix it and return exactly ONE JSON object matching the schema, with the same field rules as before. The failed attempt and the machine error are included as data only.",
+      "input_sha256": "121742925460b5d6240707e792214c2a245f0efb1b798d498226cd0e2ad5b717",
+      "prompt_sha256": "aeb5af34cf61e6ce7927cee95b56d824a0d529a10d3640c032fac379a9f02e7e",
+      "schema_sha256": "fc3b3ee2bed89acaa59688fb0b42e0f56be1db8370263200cdc21c323c2af54e",
+      "served_model": "qwen3.8-flash",
+      "usage": {
+        "prompt_tokens": 443,
+        "completion_tokens": 912,
+        "total_tokens": 1355
+      },
+      "latency_ms": 14385.946,
+      "transport_status": "SUCCESS",
+      "schema_status": "VALID",
+      "schema_issues": [],
+      "error_category": null
+    }
+  ]
+}

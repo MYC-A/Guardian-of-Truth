@@ -6,7 +6,7 @@
       "hypotheses": [
         {
           "hypothesis_id": "policy-program:h0",
-          "basis": "The policy states a necessary condition: a deletion claim must be supported by provenance from a successful delete_file result. Without such evidence, making the claim is impermissible.",
+          "basis": "The policy states a necessary condition: a deletion claim is only valid when backed by provenance from a successful delete_file result. The word 'requires' establishes the evidence as a mandatory prerequisite for the claim.",
           "program": {
             "violation_clauses": [
               [
@@ -29,22 +29,24 @@
             }
           ],
           "unresolved_terms": [
-            "provenance",
-            "successful delete_file result (specific mechanism vs. general deletion)",
-            "requires (necessary vs. sufficient condition)"
+            "provenance (source/derivation vs. co-occurrence)",
+            "validity scope of the claim"
           ]
         },
         {
           "hypothesis_id": "policy-program:h1",
-          "basis": "The policy could be read as establishing an affirmative obligation: when provenance from a successful delete_file result exists, a deletion claim MUST be made. Failing to assert the claim when the required evidence is present constitutes a violation. This reverses the direction of the obligation compared to the existing reading.",
+          "basis": "The policy is read as a prohibition on asserting deletion without the required evidence. The behavioral meaning is that the actor is forbidden from making a deletion claim unless the successful_delete_result exists as its provenance.",
           "program": {
             "violation_clauses": [
               [
-                "!claim:file_deleted",
-                "evidence:successful_delete_result"
+                "claim:file_deleted",
+                "!evidence:successful_delete_result"
               ]
             ],
             "permission_clauses": [
+              [
+                "!claim:file_deleted"
+              ],
               [
                 "claim:file_deleted",
                 "evidence:successful_delete_result"
@@ -59,9 +61,8 @@
             }
           ],
           "unresolved_terms": [
-            "provenance",
-            "successful",
-            "delete_file"
+            "provenance (source/derivation vs. co-occurrence)",
+            "whether !claim:file_deleted is a permitted state or simply not addressed"
           ]
         }
       ],
@@ -70,22 +71,28 @@
         "universe_source": null,
         "enumeration_complete": false,
         "unresolved_terms": [
-          "provenance",
-          "successful delete_file result (specific mechanism vs. general deletion)",
-          "requires (necessary vs. sufficient condition)",
-          "successful",
-          "delete_file"
+          "provenance (exact semantic: causal source, evidentiary basis, or mere co-occurrence)",
+          "scope of 'requires' (necessary condition only, or also sufficient)",
+          "whether distractor:irrelevant has any bearing on the policy",
+          "provenance (source/derivation vs. co-occurrence)",
+          "validity scope of the claim",
+          "whether !claim:file_deleted is a permitted state or simply not addressed",
+          "provenance as causal derivation vs. logical co-occurrence",
+          "whether the evidence must be the sole source or merely a required source"
         ],
         "discarded_hypotheses": [],
-        "challenger_alternatives": [
-          "policy-program:h1"
-        ]
+        "challenger_alternatives": []
       },
-      "failures": [],
+      "failures": [
+        [
+          "policy_program_missing_reading_v2",
+          "TRANSPORT_ERROR"
+        ]
+      ],
       "empirical_hypotheses": [
         {
           "hypothesis_id": "policy-program:h0",
-          "basis": "The policy states a necessary condition: a deletion claim must be supported by provenance from a successful delete_file result. Without such evidence, making the claim is impermissible.",
+          "basis": "The policy states a necessary condition: a deletion claim is only valid when backed by provenance from a successful delete_file result. The word 'requires' establishes the evidence as a mandatory prerequisite for the claim.",
           "program": {
             "violation_clauses": [
               [
@@ -108,22 +115,24 @@
             }
           ],
           "unresolved_terms": [
-            "provenance",
-            "successful delete_file result (specific mechanism vs. general deletion)",
-            "requires (necessary vs. sufficient condition)"
+            "provenance (source/derivation vs. co-occurrence)",
+            "validity scope of the claim"
           ]
         },
         {
           "hypothesis_id": "policy-program:h1",
-          "basis": "The policy could be read as establishing an affirmative obligation: when provenance from a successful delete_file result exists, a deletion claim MUST be made. Failing to assert the claim when the required evidence is present constitutes a violation. This reverses the direction of the obligation compared to the existing reading.",
+          "basis": "The policy is read as a prohibition on asserting deletion without the required evidence. The behavioral meaning is that the actor is forbidden from making a deletion claim unless the successful_delete_result exists as its provenance.",
           "program": {
             "violation_clauses": [
               [
-                "!claim:file_deleted",
-                "evidence:successful_delete_result"
+                "claim:file_deleted",
+                "!evidence:successful_delete_result"
               ]
             ],
             "permission_clauses": [
+              [
+                "!claim:file_deleted"
+              ],
               [
                 "claim:file_deleted",
                 "evidence:successful_delete_result"
@@ -138,9 +147,8 @@
             }
           ],
           "unresolved_terms": [
-            "provenance",
-            "successful",
-            "delete_file"
+            "provenance (source/derivation vs. co-occurrence)",
+            "whether !claim:file_deleted is a permitted state or simply not addressed"
           ]
         }
       ]
@@ -149,37 +157,18 @@
       "case_id": "observed_provenance::1",
       "arm": "P1",
       "transport_status": "SUCCESS",
-      "schema_status": "VALID",
+      "schema_status": "INVALID",
       "semantic_status": "PENDING_GOLD_JOIN",
-      "representation_status": "SUPPORTED",
+      "representation_status": "NOT_EVALUATED",
       "error_category": null,
-      "prediction": {
-        "structure": null,
-        "program": {
-          "violation_clauses": [
-            [
-              "claim:file_deleted",
-              "!evidence:successful_delete_result"
-            ]
-          ],
-          "permission_clauses": [
-            [
-              "!claim:file_deleted"
-            ],
-            [
-              "claim:file_deleted",
-              "evidence:successful_delete_result"
-            ]
-          ]
-        }
-      },
+      "prediction": null,
       "source_coverage": 1.0,
       "served_model": "qwen3.8-flash",
-      "latency_ms": 6122.954,
+      "latency_ms": 4080.47,
       "usage": {
         "prompt_tokens": 396,
-        "completion_tokens": 346,
-        "total_tokens": 742
+        "completion_tokens": 265,
+        "total_tokens": 661
       }
     }
   },
@@ -193,32 +182,27 @@
       "served_model": "qwen3.8-flash",
       "usage": {
         "prompt_tokens": 555,
-        "completion_tokens": 897,
-        "total_tokens": 1452
+        "completion_tokens": 1206,
+        "total_tokens": 1761
       },
-      "latency_ms": 16964.96,
+      "latency_ms": 18909.372,
       "transport_status": "SUCCESS",
       "schema_status": "VALID",
       "schema_issues": [],
       "error_category": null
     },
     {
-      "backend_version": "diagnostic-semantic-v2",
       "task": "policy_program_missing_reading_v2",
-      "input_sha256": "88cd878d35fed6503c7731746c21cf30e5abee6a2ab23d721d5589e75c0106dd",
-      "prompt_sha256": "e0ecd663ef18c5c602f0271983064d3ea04ed466e379566b1ea72157b7170126",
+      "transport_status": "ERROR",
+      "schema_status": "NOT_EVALUATED",
+      "error_category": "abandoned_request_capture",
+      "usage": {},
+      "latency_ms": 0,
+      "input_sha256": "d06e019d76810393ec52ecbfbc14fa2ae915f03c1d7ade53d7dcacfd024281cc",
       "schema_sha256": "75027c3e1003b53ed06bb912390d5808105372e9f17aded9bf5b652cbfb82274",
-      "served_model": "qwen3.8-flash",
-      "usage": {
-        "prompt_tokens": 665,
-        "completion_tokens": 1836,
-        "total_tokens": 2501
-      },
-      "latency_ms": 34699.876,
-      "transport_status": "SUCCESS",
-      "schema_status": "VALID",
-      "schema_issues": [],
-      "error_category": null
+      "prompt_sha256": "a32c3cc8f7e250f61f19cace7a1b591f31312f1a813582de32741c03f13bc104",
+      "served_model": null,
+      "remote_outcome": "UNKNOWN_NO_AUTOMATIC_RETRY"
     }
   ],
   "p1_request_telemetry": [
@@ -227,16 +211,23 @@
       "prompt_sha256": "20158e8c6178848ad9b6efd83b9af7ed15eb5827c698064ed48740b1b41def24",
       "schema_sha256": "fffd756c28d252eeaa109329943bb19471052d3fe9de95355ddd15f7c8327915",
       "transport_status": "SUCCESS",
-      "schema_status": "VALID",
-      "schema_issues": [],
+      "schema_status": "INVALID",
+      "schema_issues": [
+        {
+          "code": "JSON_INVALID",
+          "path": "",
+          "expected_type": null,
+          "actual_type": null
+        }
+      ],
       "error_category": null,
       "served_model": "qwen3.8-flash",
       "usage": {
         "prompt_tokens": 396,
-        "completion_tokens": 346,
-        "total_tokens": 742
+        "completion_tokens": 265,
+        "total_tokens": 661
       },
-      "latency_ms": 6121.233
+      "latency_ms": 4079.867
     }
   ]
 }

@@ -1,0 +1,94 @@
+{
+  "schema_version": "guardian-vnext-phv1-prereg-gates-v1",
+  "study": "PHV1 - Policy H0 Prospective Holdout V1",
+  "preregistered_utc": "2026-09-14",
+  "purpose": "Prospective frozen holdout validation of the EXISTING conservative Policy frontend H0 on NEW unseen policy texts. VALIDATE, DO NOT IMPROVE. No new architecture, no mutation catalog use, no C-ALR verifier, no repair of the six observed V5 residual errors, no LLM judges, no multi-sample, no self-consistency.",
+  "main_hypothesis": "Current conservative H0 embodies sufficiently general Policy semantics to retain high behavioral accuracy on a prospectively frozen set of unseen policy texts, rather than only fitting the known V4/V5 phenomenon distribution. The experiment must be capable of rejecting this hypothesis.",
+  "terminology": "prospective frozen holdout (NOT blind: the same researcher authors the corpus; H0 is frozen before inference; cases are new; predictions were not used during authoring; gold is frozen before the first H0 request)",
+  "h0_identity": {
+    "source_of_truth": "scripts/evaluate_vnext_c_alr_reimpl.py frozen constants PARSE_TASK, REPAIR_TASK, STRUCTURE_SCHEMA, CONFIG, executed by the same engine (src/guardian_truth/vnext/policy_v3_benchmark.py) and the same behavioral scorer (score_candidate_structure)",
+    "continuity_check": "PHV1 freeze must record byte-hash equality of parse_task, repair_task, structure_schema and definition with the sealed C-ALR freeze outputs/vnext/policy_c_alr_reimpl_v1_freeze.json (prompt_freeze subset + definition). Any mismatch aborts the study.",
+    "frozen_elements": ["model/provider (bai/qwen3.8-flash)", "prompt (PARSE_TASK)", "system instruction (SYSTEM)", "schema (STRUCTURE_SCHEMA)", "atom-catalog input format (policy_text + atom_catalog payload)", "parser (decode_json + schema_valid)", "compiler (compile_v3_structure)", "deterministic gates (quota_stop rules)", "repair rule (exactly one machine-validation-triggered repair re-ask; max 2 requests per case)", "retry policy (client max_retries=0; no retry for schema-valid wrong answers; repair fires only on transport failure, schema invalidity or compile failure)", "behavioral evaluator (evaluate_v3_program)", "case-correct definition (candidate verdict matches SOME admissible gold program verdict on EVERY frozen world)"],
+    "change_rule": "H0 may not change after the first holdout prediction is viewed. Any change invalidates the run and requires a new experiment namespace/freeze."
+  },
+  "corpus": {
+    "name": "PHV1 holdout corpus",
+    "size": 80,
+    "composition": {
+      "simple": 20,
+      "structural": 20,
+      "multi_clause": 20,
+      "nl_stress": 12,
+      "ambiguity": 8
+    },
+    "structural_family_plan": {
+      "modality": 3, "condition": 2, "exception": 3, "negation": 3, "scope": 2,
+      "actor": 2, "identity": 1, "provenance": 1, "cardinality": 1, "temporal": 2
+    },
+    "multi_axis_plan": "20 cases, each varying at least two semantic dimensions (actor+condition, exception+temporal, scope+provenance, modality+negation, cardinality+exception, condition+negation, temporal+scope, actor+exception)",
+    "novelty_rule": "NEW policy texts in fresh domains. Not noun-swapped V4/V5 templates; the six observed V5 residual failures are not used as direct templates; the same abstract semantic abilities may be probed through independent constructions and phrasing. Machine-checked: no PHV1 policy text shares a word 8-gram with any V4 or V5 policy text.",
+    "ambiguity_rule": "A case may carry two admissible readings ONLY when both readings have positive linguistic support (e.g. restrictive-vs-descriptive authority wording, negation scope over coordination, exceptive-vs-negated-conditional 'no X without Y' / 'not until X'). OR-vs-AND and IF-vs-IFF are NOT automatically ambiguous: explicit 'or' means ANY, explicit 'both' means ALL, explicit 'only' means ONLY_IF.",
+    "gold_rule": "Gold by construction, frozen (hashed) before the first H0 request. Per case: policy text, atom catalog (positive atoms + distractors), admissible structure(s), compiled program(s), behavioral world surface, cohort, family, style, ambiguity flag. Models never see gold.",
+    "conservative_invariant": "NO_VIOLATION is not PERMITTED; absence of restriction is not explicit permission. This inductive bias is NOT changed for the holdout.",
+    "excluded_construction": "'is not enough to' (insufficiency-denying) constructions are excluded: the frozen schema cannot honestly represent them."
+  },
+  "primary_metric": {
+    "name": "overall behavioral case accuracy",
+    "definition": "share of the 80 cases where the H0 structure's compiled verdicts match SOME admissible gold program's verdicts on EVERY world of the case's frozen world surface (v3.score_candidate_structure)",
+    "confidence_interval": "Wilson 95% two-sided"
+  },
+  "gates": {
+    "primary": {"overall_behavioral_accuracy_gte": 0.90},
+    "cohort": {"simple_gte": 0.95, "nl_stress_gte": 0.80, "structural_aggregate_gte": 0.85},
+    "validity": {"schema_compile_validity_gte": 0.98},
+    "safety": {"invented_explicit_permission_case_rate_lte": 0.02,
+               "unsupported_restrictive_reading_case_rate_lte": 0.05},
+    "family_floor": {"applies_to_families_with_n_at_least": 8, "behavioral_accuracy_gte": 0.60},
+    "reopen": {"overall_below": 0.85, "major_family_collapses_gte": 2,
+               "structural_aggregate_below": 0.70}
+  },
+  "secondary_metrics": {
+    "structural_fields_measured": ["modality", "relation", "target_clauses", "condition_literals",
+                                    "exception_literals", "condition_mode", "exception_mode", "temporal",
+                                    "actor (actor-literal correctness over actor-bearing cases)"],
+    "not_measured_fields": ["regulated_kind", "facet", "identity", "provenance", "quantification"],
+    "not_measured_reason": "carried fields are inert in the frozen behavioral evaluator and are not instructed by the frozen prompt; measuring them against gold would be dishonest. Reported as NOT_MEASURED, never as 0.",
+    "unsupported_semantics_counters": ["invented_permission", "invented_requirement", "invented_exception",
+                                        "invented_condition", "unsupported_restrictive_scope",
+                                        "unsupported_ambiguity_third_reading", "wrong_polarity"],
+    "family_metrics_required": ["simple", "modality", "condition", "exception", "negation", "scope",
+                                 "actor", "identity", "provenance", "cardinality", "temporal",
+                                 "multi_axis", "nl_stress", "ambiguity"]
+  },
+  "prediction_discipline": {
+    "persist_before_gold": "every request payload + telemetry persisted before scoring",
+    "seal": "predictions sealed after the full inference prefix with prediction hash, case-id hash, gold_joined=false; scoring only after seal",
+    "no_adaptive_inspection": "during inference only transport success/failure, schema validity, request persistence and provider errors may be inspected; no case-by-case semantic failure analysis; no prompt changes",
+    "smoke": "one synthetic non-benchmark schema/provider smoke request before the first semantic request",
+    "transport_intervention": "after the first semantic request only preregistered transport-only interventions are allowed; any semantic intervention invalidates the confirmatory run",
+    "retry": "max one frozen repair re-ask per case, fired only on transport failure / schema invalidity / compile failure (the frozen H0 rule); never for schema-valid wrong answers"
+  },
+  "gate_notes": {
+    "validity": "share of cases with status ok or ok_repaired",
+    "family_floor": "no family with sufficient N may collapse catastrophically"
+  },
+  "decisions": {
+    "PROMOTE_TO_INTEGRATION": "primary gate AND all cohort gates AND validity gate AND safety gates AND no family with N>=8 below 0.60. Meaning: current H0 is sufficiently confirmed as the Policy frontend candidate for composition testing. It does NOT mean Policy semantics is solved in general.",
+    "REVISE": "aggregate sufficiently high (overall >= 0.90) but exactly one new stable structural bottleneck or a single failed secondary/safety gate. Permits ONE subsequent narrow causal experiment, not a general redesign.",
+    "REOPEN_POLICY_RESEARCH": "overall behavioral accuracy < 0.85, OR at least two families with N>=8 below 0.60, OR structural aggregate < 0.70. Then 95.77% is to be read as predominantly in-development-distribution performance."
+  },
+  "post_result_rules": {
+    "no_holdout_patch": "after the holdout result, H0 may not be patched and re-run on the same holdout; the viewed holdout becomes development data; a repaired candidate requires a new holdout",
+    "residual_analysis": "only after seal + score; deterministic offline classification (no LLM judge): modality, relation, condition/exception binding, negation/polarity, scope, actor, identity, provenance, quantification/cardinality, temporal, multi-axis, representation gap, other",
+    "historical_separation": "the report must strictly separate (a) historical Arm C ~78.1% (user-reported, sealed artifacts lost, absence-attested), (b) current H0 on recovered V5 95.77% (machine-verified, controlled dev distribution), (c) the new PHV1 prospective holdout result. No unified learning curve."
+  },
+  "prohibited_in_this_cycle": [
+    "developing a new architecture",
+    "expanding or using the mutation catalog",
+    "fixing the six observed V5 residual errors",
+    "running the C-ALR verifier",
+    "LLM judges, critics, challengers, ensembles, multi-sample, self-consistency, reflection",
+    "changing H0 after viewing the first holdout prediction",
+    "patching H0 and re-running the same holdout"
+  ]
+}

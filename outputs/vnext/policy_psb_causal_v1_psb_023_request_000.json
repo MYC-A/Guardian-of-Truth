@@ -1,0 +1,145 @@
+{
+  "configuration_sha256": "4d57047ddcfcc3a6334a41824a7ae5dc357d33737d6573f52ccadc55c6f8af8f",
+  "ordinal": 0,
+  "task": "Parse ONE workplace policy into ONE typed semantic GRAPH of nodes and binding edges. Every gate, carve-out, actor and qualifier must say EXACTLY which regulated clause it attaches to.\nNode types (ids n1, n2, ...; use only the fields each type needs):\n- REGULATED: {\"id\", \"type\": \"REGULATED\", \"atoms\": [...]} - one clause of target atoms (from atom_catalog) that are regulated TOGETHER. Atoms regulated SEPARATELY go into SEPARATE REGULATED nodes. Emit no REGULATED node at all only when the text genuinely regulates nothing.\n- MODALITY: {\"id\", \"type\": \"MODALITY\", \"value\": \"PERMISSION\" | \"PROHIBITION\" | \"REQUIREMENT\"}. PERMISSION only when the text POSITIVELY grants or allows; PROHIBITION when it forbids or bars; REQUIREMENT when it obliges.\n- CONDITION: {\"id\", \"type\": \"CONDITION\", \"literals\": [...], \"mode\": \"ALL\" | \"ANY\", \"strength\": \"SUFFICIENT\" | \"NECESSARY\" | \"EXACTLY\"}. Literals are atoms from atom_catalog; prefix an atom with \"!\" only when the text negates it. SUFFICIENT = if/when/provided that (when the literals hold the clause is licensed/obligated/forbidden; when they do not hold the text stays silent - not a violation and not permission). NECESSARY = only/solely (the clause is allowed ONLY with them; doing it without them is a VIOLATION). EXACTLY = if and only if / exactly when.\n- EXCEPTION: {\"id\", \"type\": \"EXCEPTION\", \"literals\": [...], \"mode\": \"ALL\" | \"ANY\"} - a carve-out (unless, except, except when, save when, except for cases where). Never fold a carve-out into a CONDITION and never move an if/when/provided-that gate into an EXCEPTION.\n- ACTOR: {\"id\", \"type\": \"ACTOR\", \"atom\": \"actor:x\", \"exclusive\": true | false} - who the clause is about; exclusive=true when the text says only/alone/solely for that bearer.\n- QUALIFIER: {\"id\", \"type\": \"QUALIFIER\", \"kind\": \"IDENTITY\" | \"PROVENANCE\" | \"QUANTIFIER\", \"value\": ...} - identity:x for same-owner rules, evidence:x for a sole acceptable source, AT_MOST_n for numeric caps.\nEdge types {\"type\", \"from\", \"to\"} point FROM the gate node TO the REGULATED node it binds:\n- REGULATES (MODALITY -> REGULATED)\n- ACTIVATES (CONDITION -> REGULATED)\n- FOLLOWS (CONDITION -> REGULATED): the clause happens AFTER the event atoms in the condition (events stay positive).\n- PRECEDES (CONDITION -> REGULATED): the clause happens BEFORE the event atoms (they are compiled negated); every literal must be an event: atom.\n- EXEMPTS (EXCEPTION -> REGULATED)\n- ACTOR_OF (ACTOR -> REGULATED)\n- QUALIFIES (QUALIFIER kind IDENTITY or QUANTIFIER -> REGULATED)\n- SOURCE_OF (QUALIFIER kind PROVENANCE -> REGULATED)\nRules:\n- Each REGULATED node receives exactly one REGULATES edge. A shared gate may bind several REGULATED nodes.\n- A REGULATED node takes at most one ACTIVATES condition, at most one FOLLOWS or PRECEDES condition, at most one EXCEPTION, at most one ACTOR and at most one QUALIFIER of each kind.\n- A clause that is neither licensed nor forbidden is NO_VIOLATION, never PERMISSION: absence of prohibition is NOT permission.\n- Use ONLY atoms from atom_catalog (it also contains distractor atoms; choose the ones the text actually uses).\nWorked example (illustrative atoms only, never reuse them): 'If the boathouse kettle is on, juniors may use the north bays, unless the captain is running a class.' -> nodes: {\"id\":\"n1\",\"type\":\"REGULATED\",\"atoms\":[\"action:use_north_bays\"]}, {\"id\":\"n2\",\"type\":\"MODALITY\",\"value\":\"PERMISSION\"}, {\"id\":\"n3\",\"type\":\"CONDITION\",\"literals\":[\"state:kettle_on\"],\"mode\":\"ALL\",\"strength\":\"SUFFICIENT\"}, {\"id\":\"n4\",\"type\":\"ACTOR\",\"atom\":\"actor:junior\",\"exclusive\":false}, {\"id\":\"n5\",\"type\":\"EXCEPTION\",\"literals\":[\"state:captain_class_running\"],\"mode\":\"ALL\"}; edges: {\"type\":\"REGULATES\",\"from\":\"n2\",\"to\":\"n1\"}, {\"type\":\"ACTIVATES\",\"from\":\"n3\",\"to\":\"n1\"}, {\"type\":\"ACTOR_OF\",\"from\":\"n4\",\"to\":\"n1\"}, {\"type\":\"EXEMPTS\",\"from\":\"n5\",\"to\":\"n1\"}.\nOutput exactly one JSON object matching the schema.",
+  "payload": {
+    "policy_text": "When the barometer is falling, the winch launch is off limits to cadets; instructors may keep launching until dusk.",
+    "atom_catalog": [
+      "action:keep_launching",
+      "action:take_winch_launch",
+      "actor:assistant",
+      "actor:cadet",
+      "actor:instructor",
+      "distractor:m08",
+      "event:dusk",
+      "state:barometer_falling"
+    ]
+  },
+  "schema": {
+    "type": "object",
+    "properties": {
+      "nodes": {
+        "type": "array",
+        "items": {
+          "type": "object",
+          "properties": {
+            "id": {
+              "type": "string",
+              "minLength": 1
+            },
+            "type": {
+              "type": "string",
+              "enum": [
+                "REGULATED",
+                "MODALITY",
+                "CONDITION",
+                "EXCEPTION",
+                "ACTOR",
+                "QUALIFIER"
+              ]
+            },
+            "atoms": {
+              "type": "array",
+              "minItems": 1,
+              "items": {
+                "type": "string"
+              }
+            },
+            "value": {
+              "type": "string",
+              "enum": [
+                "PERMISSION",
+                "PROHIBITION",
+                "REQUIREMENT",
+                "IDENTITY",
+                "PROVENANCE",
+                "QUANTIFIER"
+              ]
+            },
+            "literals": {
+              "type": "array",
+              "items": {
+                "type": "string"
+              }
+            },
+            "mode": {
+              "type": "string",
+              "enum": [
+                "ALL",
+                "ANY"
+              ]
+            },
+            "strength": {
+              "type": "string",
+              "enum": [
+                "SUFFICIENT",
+                "NECESSARY",
+                "EXACTLY"
+              ]
+            },
+            "atom": {
+              "type": "string"
+            },
+            "kind": {
+              "type": "string",
+              "enum": [
+                "IDENTITY",
+                "PROVENANCE",
+                "QUANTIFIER"
+              ]
+            },
+            "exclusive": {
+              "type": "boolean"
+            }
+          },
+          "required": [
+            "id",
+            "type"
+          ],
+          "additionalProperties": false
+        }
+      },
+      "edges": {
+        "type": "array",
+        "items": {
+          "type": "object",
+          "properties": {
+            "type": {
+              "type": "string",
+              "enum": [
+                "REGULATES",
+                "ACTIVATES",
+                "EXEMPTS",
+                "ACTOR_OF",
+                "QUALIFIES",
+                "SOURCE_OF",
+                "PRECEDES",
+                "FOLLOWS"
+              ]
+            },
+            "from": {
+              "type": "string"
+            },
+            "to": {
+              "type": "string"
+            }
+          },
+          "required": [
+            "type",
+            "from",
+            "to"
+          ],
+          "additionalProperties": false
+        }
+      }
+    },
+    "required": [
+      "nodes",
+      "edges"
+    ],
+    "additionalProperties": false
+  },
+  "input_sha256": "270f8f3ba86ec4425483a04ee9b085ad43d5800c60b409c1da3e1a4d6bd50dbb",
+  "schema_sha256": "25f1d432804f993bf2ac2b7d9da60fbba04307c571ffe938ad2a8d3aa440efc9",
+  "prompt_sha256": "f07d6d73abfb40f40de0e9a5a8074d8d2980aeeba91b4d67e749fb693b8ebf6a"
+}

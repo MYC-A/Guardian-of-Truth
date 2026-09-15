@@ -6,7 +6,7 @@
       "hypotheses": [
         {
           "hypothesis_id": "policy-program:h0",
-          "basis": "The prohibition is on the conjunction of both actions occurring under the identity condition. The violation is the simultaneous presence of send_email, send_sms, and same_alert. Permission is granted to any subset of these literals being absent.",
+          "basis": "The policy prohibits the conjunction of sending an email and sending an SMS when the identity condition (same alert) holds. Violation requires all three atoms simultaneously true.",
           "program": {
             "violation_clauses": [
               [
@@ -17,48 +17,16 @@
             ],
             "permission_clauses": [
               [
-                "!action:send_email"
-              ],
-              [
-                "!action:send_sms"
-              ],
-              [
-                "!identity:same_alert"
-              ]
-            ]
-          },
-          "source_spans": [
-            {
-              "document": "policy",
-              "start": 14,
-              "end": 71
-            }
-          ],
-          "unresolved_terms": [
-            "whether the prohibition applies retroactively if both were sent before the policy was acknowledged"
-          ]
-        },
-        {
-          "hypothesis_id": "policy-program:h1",
-          "basis": "The policy restricts channel selection per alert: for any single alert, at most one of {email, SMS} may be sent. This reads as a per-alert cardinality constraint rather than a global conjunction ban.",
-          "program": {
-            "violation_clauses": [
-              [
                 "action:send_email",
-                "action:send_sms",
-                "identity:same_alert"
-              ]
-            ],
-            "permission_clauses": [
-              [
-                "!action:send_email",
-                "identity:same_alert"
-              ],
-              [
                 "!action:send_sms",
                 "identity:same_alert"
               ],
               [
+                "!action:send_email",
+                "action:send_sms",
+                "identity:same_alert"
+              ],
+              [
                 "action:send_email",
                 "action:send_sms",
                 "!identity:same_alert"
@@ -68,17 +36,17 @@
           "source_spans": [
             {
               "document": "policy",
-              "start": 14,
-              "end": 71
+              "start": 0,
+              "end": 72
             }
           ],
           "unresolved_terms": [
-            "whether sending email for alert A and SMS for alert B is unrestricted"
+            "Definition of 'same alert' — whether it refers to the same alert ID, same alert content, or same triggering event"
           ]
         },
         {
-          "hypothesis_id": "policy-program:h2",
-          "basis": "The phrase 'must not send both' is read as a prohibition on the complete combination only; individual actions (email alone, SMS alone) are implicitly permitted without further qualification.",
+          "hypothesis_id": "policy-program:h1",
+          "basis": "The 'same alert' identity acts as a scoping qualifier: the prohibition is per-alert, meaning for any single alert the assistant may use at most one notification channel. If the actions target different alerts, the prohibition does not apply.",
           "program": {
             "violation_clauses": [
               [
@@ -90,33 +58,41 @@
             "permission_clauses": [
               [
                 "action:send_email",
-                "!action:send_sms"
+                "!action:send_sms",
+                "identity:same_alert"
               ],
               [
+                "!action:send_email",
                 "action:send_sms",
-                "!action:send_email"
+                "identity:same_alert"
               ],
               [
                 "action:send_email",
                 "action:send_sms",
                 "!identity:same_alert"
+              ],
+              [
+                "!action:send_email",
+                "!action:send_sms",
+                "identity:same_alert"
               ]
             ]
           },
           "source_spans": [
             {
               "document": "policy",
-              "start": 14,
-              "end": 71
+              "start": 0,
+              "end": 72
             }
           ],
           "unresolved_terms": [
-            "whether 'the same alert' requires an explicit alert identifier to be resolved"
+            "Whether 'same alert' is a resource identity or a provenance link",
+            "Whether the prohibition is absolute or allows a fallback channel selection"
           ]
         },
         {
-          "hypothesis_id": "policy-program:h3",
-          "basis": "The phrase 'for the same alert' is read as descriptive scene-setting context rather than a logical condition that must be satisfied for the prohibition to trigger. The core prohibition is on sending both channels simultaneously regardless of alert identity. This makes identity:same_alert irrelevant to the violation condition, creating a stricter global ban.",
+          "hypothesis_id": "policy-program:h2",
+          "basis": "The phrase 'for the same alert' is a descriptive contextual frame identifying the operational domain, not a logical condition that can be independently false. The prohibition is therefore unconditional on the action pair: the assistant must never send both email and SMS, regardless of whether the identity condition is explicitly satisfied.",
           "program": {
             "violation_clauses": [
               [
@@ -136,17 +112,17 @@
           "source_spans": [
             {
               "document": "policy",
-              "start": 14,
-              "end": 52
+              "start": 0,
+              "end": 72
             }
           ],
           "unresolved_terms": [
-            "whether 'for the same alert' is a logical precondition or merely contextual framing"
+            "whether 'for the same alert' can ever be false in the operational context"
           ]
         },
         {
-          "hypothesis_id": "policy-program:h4",
-          "basis": "'Must not send both' is read as an exclusive-or (XOR) requirement rather than a NAND prohibition. Under XOR, the policy not only forbids sending both channels but also requires that exactly one be sent per alert. This adds a positive obligation (at least one channel must be used) that is absent from all existing readings, which treat the policy as purely prohibitive.",
+          "hypothesis_id": "policy-program:h3",
+          "basis": "'Must not send both' is read as an exclusive-channel mandate: for any given alert the assistant must use exactly one notification channel. This makes the 'neither' case (no notification sent for an alert that requires one) a violation of the implied positive obligation to notify via a single channel, in addition to the 'both' case.",
           "program": {
             "violation_clauses": [
               [
@@ -167,11 +143,13 @@
                 "identity:same_alert"
               ],
               [
-                "action:send_sms",
                 "!action:send_email",
+                "action:send_sms",
                 "identity:same_alert"
               ],
               [
+                "action:send_email",
+                "action:send_sms",
                 "!identity:same_alert"
               ]
             ]
@@ -179,12 +157,56 @@
           "source_spans": [
             {
               "document": "policy",
-              "start": 14,
-              "end": 71
+              "start": 0,
+              "end": 72
             }
           ],
           "unresolved_terms": [
-            "whether 'must not send both' implies a positive obligation to send at least one channel"
+            "whether the policy implies a positive obligation to notify at all"
+          ]
+        },
+        {
+          "hypothesis_id": "policy-program:h4",
+          "basis": "The prohibition applies only when the email and SMS are sent in the same response or handling turn. 'Both' is read as requiring simultaneity: sequential notifications across different turns (even for the same alert) do not constitute sending 'both' at once.",
+          "program": {
+            "violation_clauses": [
+              [
+                "action:send_email",
+                "action:send_sms",
+                "identity:same_alert"
+              ]
+            ],
+            "permission_clauses": [
+              [
+                "!action:send_email",
+                "identity:same_alert"
+              ],
+              [
+                "!action:send_sms",
+                "identity:same_alert"
+              ],
+              [
+                "action:send_email",
+                "action:send_sms",
+                "!identity:same_alert"
+              ],
+              [
+                "!action:send_email",
+                "!action:send_sms",
+                "identity:same_alert"
+              ]
+            ]
+          },
+          "source_spans": [
+            {
+              "document": "policy",
+              "start": 14,
+              "end": 52
+            }
+          ],
+          "unresolved_terms": [
+            "what constitutes 'the same' turn or response",
+            "whether sequential same-alert notifications across turns are permitted"
           ]
         }
       ],
@@ -193,19 +215,23 @@
         "universe_source": null,
         "enumeration_complete": false,
         "unresolved_terms": [
-          "whether the policy applies to future actions only or also retroactively",
-          "whether 'same alert' requires a formal identifier or allows semantic equivalence",
-          "whether the prohibition is absolute or can be overridden by a higher-priority instruction",
-          "whether the prohibition applies retroactively if both were sent before the policy was acknowledged",
-          "whether sending email for alert A and SMS for alert B is unrestricted",
-          "whether 'the same alert' requires an explicit alert identifier to be resolved",
-          "whether 'for the same alert' functions as a logical condition or contextual scope",
-          "whether 'must not send both' is purely prohibitive (NAND) or implies exclusive selection (XOR)",
-          "whether 'for the same alert' is a logical precondition or merely contextual framing",
-          "whether 'must not send both' implies a positive obligation to send at least one channel"
+          "Definition of 'same alert'",
+          "Whether 'must not' implies a hard prohibition or a preference/soft constraint",
+          "Scope of 'the assistant' — single actor or any system component",
+          "Definition of 'same alert' — whether it refers to the same alert ID, same alert content, or same triggering event",
+          "Whether 'same alert' is a resource identity or a provenance link",
+          "Whether the prohibition is absolute or allows a fallback channel selection",
+          "whether 'for the same alert' is a logical condition or descriptive context",
+          "whether the policy implies a positive obligation to notify",
+          "what constitutes simultaneity or a single handling episode",
+          "whether 'for the same alert' can ever be false in the operational context",
+          "whether the policy implies a positive obligation to notify at all",
+          "what constitutes 'the same' turn or response",
+          "whether sequential same-alert notifications across turns are permitted"
         ],
         "discarded_hypotheses": [],
         "challenger_alternatives": [
+          "policy-program:h2",
           "policy-program:h3",
           "policy-program:h4"
         ]
@@ -214,7 +240,7 @@
       "empirical_hypotheses": [
         {
           "hypothesis_id": "policy-program:h0",
-          "basis": "The prohibition is on the conjunction of both actions occurring under the identity condition. The violation is the simultaneous presence of send_email, send_sms, and same_alert. Permission is granted to any subset of these literals being absent.",
+          "basis": "The policy prohibits the conjunction of sending an email and sending an SMS when the identity condition (same alert) holds. Violation requires all three atoms simultaneously true.",
           "program": {
             "violation_clauses": [
               [
@@ -225,48 +251,16 @@
             ],
             "permission_clauses": [
               [
-                "!action:send_email"
-              ],
-              [
-                "!action:send_sms"
-              ],
-              [
-                "!identity:same_alert"
-              ]
-            ]
-          },
-          "source_spans": [
-            {
-              "document": "policy",
-              "start": 14,
-              "end": 71
-            }
-          ],
-          "unresolved_terms": [
-            "whether the prohibition applies retroactively if both were sent before the policy was acknowledged"
-          ]
-        },
-        {
-          "hypothesis_id": "policy-program:h1",
-          "basis": "The policy restricts channel selection per alert: for any single alert, at most one of {email, SMS} may be sent. This reads as a per-alert cardinality constraint rather than a global conjunction ban.",
-          "program": {
-            "violation_clauses": [
-              [
                 "action:send_email",
-                "action:send_sms",
-                "identity:same_alert"
-              ]
-            ],
-            "permission_clauses": [
-              [
-                "!action:send_email",
-                "identity:same_alert"
-              ],
-              [
                 "!action:send_sms",
                 "identity:same_alert"
               ],
               [
+                "!action:send_email",
+                "action:send_sms",
+                "identity:same_alert"
+              ],
+              [
                 "action:send_email",
                 "action:send_sms",
                 "!identity:same_alert"
@@ -276,17 +270,17 @@
           "source_spans": [
             {
               "document": "policy",
-              "start": 14,
-              "end": 71
+              "start": 0,
+              "end": 72
             }
           ],
           "unresolved_terms": [
-            "whether sending email for alert A and SMS for alert B is unrestricted"
+            "Definition of 'same alert' — whether it refers to the same alert ID, same alert content, or same triggering event"
           ]
         },
         {
-          "hypothesis_id": "policy-program:h2",
-          "basis": "The phrase 'must not send both' is read as a prohibition on the complete combination only; individual actions (email alone, SMS alone) are implicitly permitted without further qualification.",
+          "hypothesis_id": "policy-program:h1",
+          "basis": "The 'same alert' identity acts as a scoping qualifier: the prohibition is per-alert, meaning for any single alert the assistant may use at most one notification channel. If the actions target different alerts, the prohibition does not apply.",
           "program": {
             "violation_clauses": [
               [
@@ -298,33 +292,41 @@
             "permission_clauses": [
               [
                 "action:send_email",
-                "!action:send_sms"
+                "!action:send_sms",
+                "identity:same_alert"
               ],
               [
+                "!action:send_email",
                 "action:send_sms",
-                "!action:send_email"
+                "identity:same_alert"
               ],
               [
                 "action:send_email",
                 "action:send_sms",
                 "!identity:same_alert"
+              ],
+              [
+                "!action:send_email",
+                "!action:send_sms",
+                "identity:same_alert"
               ]
             ]
           },
           "source_spans": [
             {
               "document": "policy",
-              "start": 14,
-              "end": 71
+              "start": 0,
+              "end": 72
             }
           ],
           "unresolved_terms": [
-            "whether 'the same alert' requires an explicit alert identifier to be resolved"
+            "Whether 'same alert' is a resource identity or a provenance link",
+            "Whether the prohibition is absolute or allows a fallback channel selection"
           ]
         },
         {
-          "hypothesis_id": "policy-program:h3",
-          "basis": "The phrase 'for the same alert' is read as descriptive scene-setting context rather than a logical condition that must be satisfied for the prohibition to trigger. The core prohibition is on sending both channels simultaneously regardless of alert identity. This makes identity:same_alert irrelevant to the violation condition, creating a stricter global ban.",
+          "hypothesis_id": "policy-program:h2",
+          "basis": "The phrase 'for the same alert' is a descriptive contextual frame identifying the operational domain, not a logical condition that can be independently false. The prohibition is therefore unconditional on the action pair: the assistant must never send both email and SMS, regardless of whether the identity condition is explicitly satisfied.",
           "program": {
             "violation_clauses": [
               [
@@ -344,17 +346,17 @@
           "source_spans": [
             {
               "document": "policy",
-              "start": 14,
-              "end": 52
+              "start": 0,
+              "end": 72
             }
           ],
           "unresolved_terms": [
-            "whether 'for the same alert' is a logical precondition or merely contextual framing"
+            "whether 'for the same alert' can ever be false in the operational context"
           ]
         },
         {
-          "hypothesis_id": "policy-program:h4",
-          "basis": "'Must not send both' is read as an exclusive-or (XOR) requirement rather than a NAND prohibition. Under XOR, the policy not only forbids sending both channels but also requires that exactly one be sent per alert. This adds a positive obligation (at least one channel must be used) that is absent from all existing readings, which treat the policy as purely prohibitive.",
+          "hypothesis_id": "policy-program:h3",
+          "basis": "'Must not send both' is read as an exclusive-channel mandate: for any given alert the assistant must use exactly one notification channel. This makes the 'neither' case (no notification sent for an alert that requires one) a violation of the implied positive obligation to notify via a single channel, in addition to the 'both' case.",
           "program": {
             "violation_clauses": [
               [
@@ -375,11 +377,13 @@
                 "identity:same_alert"
               ],
               [
-                "action:send_sms",
                 "!action:send_email",
+                "action:send_sms",
                 "identity:same_alert"
               ],
               [
+                "action:send_email",
+                "action:send_sms",
                 "!identity:same_alert"
               ]
             ]
@@ -387,12 +391,56 @@
           "source_spans": [
             {
               "document": "policy",
-              "start": 14,
-              "end": 71
+              "start": 0,
+              "end": 72
             }
           ],
           "unresolved_terms": [
-            "whether 'must not send both' implies a positive obligation to send at least one channel"
+            "whether the policy implies a positive obligation to notify at all"
+          ]
+        },
+        {
+          "hypothesis_id": "policy-program:h4",
+          "basis": "The prohibition applies only when the email and SMS are sent in the same response or handling turn. 'Both' is read as requiring simultaneity: sequential notifications across different turns (even for the same alert) do not constitute sending 'both' at once.",
+          "program": {
+            "violation_clauses": [
+              [
+                "action:send_email",
+                "action:send_sms",
+                "identity:same_alert"
+              ]
+            ],
+            "permission_clauses": [
+              [
+                "!action:send_email",
+                "identity:same_alert"
+              ],
+              [
+                "!action:send_sms",
+                "identity:same_alert"
+              ],
+              [
+                "action:send_email",
+                "action:send_sms",
+                "!identity:same_alert"
+              ],
+              [
+                "!action:send_email",
+                "!action:send_sms",
+                "identity:same_alert"
+              ]
+            ]
+          },
+          "source_spans": [
+            {
+              "document": "policy",
+              "start": 14,
+              "end": 52
+            }
+          ],
+          "unresolved_terms": [
+            "what constitutes 'the same' turn or response",
+            "whether sequential same-alert notifications across turns are permitted"
           ]
         }
       ]
@@ -420,11 +468,11 @@
       },
       "source_coverage": 1.0,
       "served_model": "qwen3.8-flash",
-      "latency_ms": 6083.133,
+      "latency_ms": 4377.859,
       "usage": {
         "prompt_tokens": 414,
-        "completion_tokens": 264,
-        "total_tokens": 678
+        "completion_tokens": 165,
+        "total_tokens": 579
       }
     }
   },
@@ -438,10 +486,10 @@
       "served_model": "qwen3.8-flash",
       "usage": {
         "prompt_tokens": 575,
-        "completion_tokens": 1214,
-        "total_tokens": 1789
+        "completion_tokens": 1497,
+        "total_tokens": 2072
       },
-      "latency_ms": 20640.461,
+      "latency_ms": 29994.5,
       "transport_status": "SUCCESS",
       "schema_status": "VALID",
       "schema_issues": [],
@@ -450,16 +498,16 @@
     {
       "backend_version": "diagnostic-semantic-v2",
       "task": "policy_program_missing_reading_v2",
-      "input_sha256": "e704115b2028b3d26c9bd5e0882e2fbb742780b03a44ef0dcbb89cee7c187d59",
-      "prompt_sha256": "f16aa1a8ef39e3b7e2cd8694841048576359884c3d672c213008acfb3a89c734",
+      "input_sha256": "3d6a23611a798e52a1d8611293a81abe9f258438eb7026d094e0f6bb270574d0",
+      "prompt_sha256": "dde67bd5011e024380eba19c35c3f604c6ce55edc309703d6c1394ac3c0f3f06",
       "schema_sha256": "f72c79d1f5305480edd9873c0c5fcf3397a0e85eb50356e9f51f431c2fa4f991",
       "served_model": "qwen3.8-flash",
       "usage": {
-        "prompt_tokens": 923,
-        "completion_tokens": 3091,
-        "total_tokens": 4014
+        "prompt_tokens": 866,
+        "completion_tokens": 4153,
+        "total_tokens": 5019
       },
-      "latency_ms": 55802.239,
+      "latency_ms": 49487.229,
       "transport_status": "SUCCESS",
       "schema_status": "VALID",
       "schema_issues": [],
@@ -478,10 +526,10 @@
       "served_model": "qwen3.8-flash",
       "usage": {
         "prompt_tokens": 414,
-        "completion_tokens": 264,
-        "total_tokens": 678
+        "completion_tokens": 165,
+        "total_tokens": 579
       },
-      "latency_ms": 6081.565
+      "latency_ms": 4377.144
     }
   ]
 }

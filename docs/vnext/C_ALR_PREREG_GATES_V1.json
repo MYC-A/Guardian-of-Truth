@@ -1,0 +1,75 @@
+{
+ "schema": "guardian-vnext-c-alr-prereg-v1",
+ "cycle": "C_ALR",
+ "registered_at": "2026-09-14",
+ "registered_before": "any Stage A decomposition, stage attribution, recoverability classification or oracle computation on sealed V5/V6 artifacts",
+ "registration_context": "No Stage A computation has been executed anywhere in this environment at registration time. Sealed V5/V6 artifacts are not yet present here; gates are frozen before their arrival.",
+
+ "stage_a_stop_gates": {
+  "rule": "STOP / hybrid not justified if ANY of the following holds after Stage A on sealed V6",
+  "recoverable_c_errors_corpus_share_lt": 0.05,
+  "oracle_gain_lt_pp": 0.04,
+  "on_stop": "REJECT_EARLY: do not build C-ALR, do not build V7, Arm C remains integration baseline"
+ },
+
+ "stage_a_rules": {
+  "llm_use": "NONE_ALLOWED",
+  "manual_rescoring_after_result_viewing": "FORBIDDEN",
+  "attribution_source": "sealed B4 stage logs only; if logs absent -> UNATTRIBUTED_NO_LOGS",
+  "classification_of_recoverability": "deterministic typed-field diff phi_C vs gold restricted to the frozen mutation catalog; catalog-coverage rule: ALL differences mappable to catalog mutation types AND at most 2 mutations per case -> LOCAL_PATCH_RECOVERABLE, otherwise REQUIRES_GLOBAL_REPARSE; missing field-level representations -> UNCERTAIN; missing gold -> NOT_RECOVERABLE",
+  "max_local_mutations_per_case": 2
+ },
+
+ "v7_primary_gates": {
+  "h2_behavioral_accuracy_minus_c_pp_gte": 0.04,
+  "paired_exact_mcnemar_h2_vs_c_p_lt": 0.05,
+  "underpowered_fallback_registered_now": "two-sided 95% paired CI for H2-C excludes 0 AND its lower bound >= +1.5 pp; this fallback is fixed now and may not be changed after V7 results",
+  "note": "raw percentage delta alone is never sufficient proof"
+ },
+
+ "v7_safety_gates": {
+  "mutation_admission_precision_gte": 0.90,
+  "unsupported_alternative_rate_lte": 0.05,
+  "false_ambiguity_rate_lte": 0.10,
+  "c_correct_case_regression_rate_lte": 0.03,
+  "correction_precision_gte": 0.75,
+  "mean_semantic_worlds_or_local_variants_lte": 1.3,
+  "hard_requirement": "net recoveries must significantly exceed regressions; improvement bought by destroying simple C-correct cases (e.g. +10 hard corrections vs -8 simple regressions) is NOT a KEEP even with positive aggregate delta"
+ },
+
+ "v7_efficiency_gates": {
+  "median_extra_llm_verifier_calls_lte": 2,
+  "p95_extra_llm_verifier_calls_lte": 4,
+  "extra_tokens_vs_c_multiple_lte": 2.0,
+  "note": "exact budget values are frozen defaults registered before any V7 inference; user may amend only BEFORE the first V7 external call, never after"
+ },
+
+ "forbidden_mechanisms": {
+  "multi_whole_policy_readings_phi": true,
+  "full_sapc_slot_card_primary": true,
+  "c_b4_voting_or_majority_judge": true,
+  "verifier_full_reparse_or_new_slots_or_new_program_or_new_entities": true,
+  "verifier_unrestricted_alternative_interpretation": true,
+  "verifier_final_guardian_verdict": true,
+  "verifier_trajectory_history_or_world_state_access": true,
+  "multi_agent_debate_self_consistency_challenger_critic_whole_policy_judge": true,
+  "risk_detector_trained_on_gold_v6_case_ids": true,
+  "semantic_prompt_or_mutation_rule_changes_after_smoke": true
+ },
+
+ "verdicts": ["KEEP", "REVISE", "REJECT", "REJECT_EARLY"],
+
+ "mutation_catalog_frozen_v1": {
+  "IF_TO_ONLY_IF": {"field": "modality"},
+  "ONLY_IF_TO_IF": {"field": "modality"},
+  "SCOPE_ATTACHMENT_A_TO_B": {"field": "scope_attachment"},
+  "EXCEPTION_ATTACHMENT_A_TO_B": {"field": "exception_attachment"},
+  "ACTOR_BEARER_SWAP": {"field": "actor"},
+  "BEFORE_TO_AFTER": {"field": "temporal"},
+  "UNTIL_TO_DURING": {"field": "temporal"},
+  "ANY_TO_ALL": {"field": "quantification"},
+  "ONE_OF_TO_ALL_OF": {"field": "quantification"},
+  "CLAUSE_MERGE_TO_SPLIT": {"field": "target_clauses"},
+  "note": "mutation is a hypothesis to test, never automatically a supported interpretation; admission requires positive exact-span textual evidence"
+ }
+}

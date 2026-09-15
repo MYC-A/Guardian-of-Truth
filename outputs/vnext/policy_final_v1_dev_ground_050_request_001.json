@@ -1,0 +1,82 @@
+{
+  "configuration_sha256": "7adac4b2945e02bfab5fc2377d0b2cfbb7bb302e3badc9af60a9e428cd24085f",
+  "ordinal": 1,
+  "task": "The previous inventory attempt failed machine validation. Fix it and return exactly ONE JSON object with facts and markers arrays, following the same rules as before (atoms only from ATOM_CATALOG; spans copied character-for-character from POLICY_TEXT; no roles or attachments). The failed attempt and the machine error are included as data only.",
+  "payload": {
+    "policy_text": "Members of the astronomy club may borrow the portable telescope.",
+    "atom_catalog": [
+      "action:borrow_the_fixed_mount_camera",
+      "action:borrow_the_portable_telescope",
+      "distractor:s03"
+    ],
+    "previous_output": "{\"facts\":[{\"atom\":\"action:borrow_the_portable_telescope\",\"id\":\"F1\",\"span\":\"borrow the portable telescope\"}],\"markers\":[{\"id\":\"M1\",\"kind\":\"MODAL_MARKER\",\"span\":\"may\",\"value\":\"may\"}]}",
+    "machine_error": "GROUND_INVALID: marker value 'may' not in ('PERMIT', 'PROHIBIT', 'REQUIRE')"
+  },
+  "schema": {
+    "type": "object",
+    "properties": {
+      "facts": {
+        "type": "array",
+        "items": {
+          "type": "object",
+          "properties": {
+            "id": {
+              "type": "string"
+            },
+            "atom": {
+              "type": "string"
+            },
+            "span": {
+              "type": "string"
+            }
+          },
+          "required": [
+            "id",
+            "atom",
+            "span"
+          ],
+          "additionalProperties": false
+        }
+      },
+      "markers": {
+        "type": "array",
+        "items": {
+          "type": "object",
+          "properties": {
+            "id": {
+              "type": "string"
+            },
+            "kind": {
+              "type": "string",
+              "enum": [
+                "MODAL_MARKER",
+                "RELATION_MARKER"
+              ]
+            },
+            "value": {
+              "type": "string"
+            },
+            "span": {
+              "type": "string"
+            }
+          },
+          "required": [
+            "id",
+            "kind",
+            "value",
+            "span"
+          ],
+          "additionalProperties": false
+        }
+      }
+    },
+    "required": [
+      "facts",
+      "markers"
+    ],
+    "additionalProperties": false
+  },
+  "input_sha256": "53f9899db2589cd41d37018df62c00ba9a484ae95ec19b1daf47a43010513803",
+  "schema_sha256": "f2076ddada711fb6226189bde39611c8572609198211b6890819ef50228f6e88",
+  "prompt_sha256": "5fdbe571256559d02e0b0f96cdfabeb79a068d75292d1aae5da9bd02aa1ecabb"
+}

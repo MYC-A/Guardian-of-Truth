@@ -6,7 +6,7 @@
       "hypotheses": [
         {
           "hypothesis_id": "policy-program:h0",
-          "basis": "The policy prohibits making a current-balance claim when the supporting evidence was observed before the latest debit (i.e., not fresh after the latest write). A claim is only permitted when backed by evidence fresh after the latest write.",
+          "basis": "Direct prohibition reading: the policy forbids making a current-balance claim when the supporting evidence predates the newest debit (i.e., is not fresh after the latest write). The subject of the prohibition is the claim act itself.",
           "program": {
             "violation_clauses": [
               [
@@ -15,6 +15,9 @@
               ]
             ],
             "permission_clauses": [
+              [
+                "!claim:current_balance"
+              ],
               [
                 "claim:current_balance",
                 "evidence:fresh_after_latest_write"
@@ -29,49 +32,24 @@
             }
           ],
           "unresolved_terms": [
-            "newest debit vs latest write equivalence",
-            "whether 'cannot support' means prohibition or invalidity"
+            "newest debit vs latest write (a debit may be a subset of writes)",
+            "balance observation vs evidence (mapping assumed)"
           ]
         },
         {
           "hypothesis_id": "policy-program:h1",
-          "basis": "The policy renders stale evidence (observations before the newest debit) globally invalid for any purpose, not merely for current-balance claims. The phrase 'is stale' predicates a property of the evidence itself, independent of whether a claim is made.",
+          "basis": "Conditional permission reading: the policy grants permission to assert a current-balance claim only if the evidence is fresh after the latest write. Staleness of evidence is the sole disqualifying condition for the claim.",
           "program": {
             "violation_clauses": [
               [
+                "claim:current_balance",
                 "!evidence:fresh_after_latest_write"
               ]
             ],
             "permission_clauses": [
               [
-                "evidence:fresh_after_latest_write"
-              ]
-            ]
-          },
-          "source_spans": [
-            {
-              "document": "policy",
-              "start": 0,
-              "end": 59
-            }
-          ],
-          "unresolved_terms": [
-            "scope of 'stale' beyond current-balance claims",
-            "whether non-claim uses of stale evidence are also prohibited"
-          ]
-        },
-        {
-          "hypothesis_id": "policy-program:h2",
-          "basis": "The policy defines a necessary condition for a valid current-balance claim but does not impose a prohibition. A claim made with stale evidence is void/unsupported rather than a violation; the actor incurs no obligation breach but the claim simply does not count.",
-          "program": {
-            "violation_clauses": [],
-            "permission_clauses": [
-              [
                 "claim:current_balance",
                 "evidence:fresh_after_latest_write"
-              ],
-              [
-                "!claim:current_balance"
               ]
             ]
           },
@@ -83,7 +61,8 @@
             }
           ],
           "unresolved_terms": [
-            "whether 'cannot support' creates an obligation or merely a validity condition"
+            "newest debit vs latest write",
+            "whether other conditions beyond freshness could also disqualify a claim"
           ]
         }
       ],
@@ -92,32 +71,26 @@
         "universe_source": null,
         "enumeration_complete": false,
         "unresolved_terms": [
-          "equivalence between 'newest debit' and 'latest write'",
-          "whether 'cannot support' denotes prohibition or invalidity",
-          "scope of staleness beyond current-balance claims",
-          "newest debit vs latest write equivalence",
-          "whether 'cannot support' means prohibition or invalidity",
-          "scope of 'stale' beyond current-balance claims",
-          "whether non-claim uses of stale evidence are also prohibited",
-          "whether 'cannot support' creates an obligation or merely a validity condition"
+          "newest debit vs latest write — a debit is a specific transaction type; latest write could include non-debit writes",
+          "balance observation vs evidence — the policy refers to an observation; the atom refers to evidence freshness",
+          "newest debit vs latest write (a debit may be a subset of writes)",
+          "balance observation vs evidence (mapping assumed)",
+          "newest debit vs latest write",
+          "whether other conditions beyond freshness could also disqualify a claim"
         ],
         "discarded_hypotheses": [],
-        "challenger_alternatives": [
-          "policy-program:h0",
-          "policy-program:h1",
-          "policy-program:h2"
-        ]
+        "challenger_alternatives": []
       },
       "failures": [
         [
-          "policy_program_hypotheses_v2",
+          "policy_program_missing_reading_v2",
           "SCHEMA_ERROR"
         ]
       ],
       "empirical_hypotheses": [
         {
           "hypothesis_id": "policy-program:h0",
-          "basis": "The policy prohibits making a current-balance claim when the supporting evidence was observed before the latest debit (i.e., not fresh after the latest write). A claim is only permitted when backed by evidence fresh after the latest write.",
+          "basis": "Direct prohibition reading: the policy forbids making a current-balance claim when the supporting evidence predates the newest debit (i.e., is not fresh after the latest write). The subject of the prohibition is the claim act itself.",
           "program": {
             "violation_clauses": [
               [
@@ -126,6 +99,9 @@
               ]
             ],
             "permission_clauses": [
+              [
+                "!claim:current_balance"
+              ],
               [
                 "claim:current_balance",
                 "evidence:fresh_after_latest_write"
@@ -140,49 +116,24 @@
             }
           ],
           "unresolved_terms": [
-            "newest debit vs latest write equivalence",
-            "whether 'cannot support' means prohibition or invalidity"
+            "newest debit vs latest write (a debit may be a subset of writes)",
+            "balance observation vs evidence (mapping assumed)"
           ]
         },
         {
           "hypothesis_id": "policy-program:h1",
-          "basis": "The policy renders stale evidence (observations before the newest debit) globally invalid for any purpose, not merely for current-balance claims. The phrase 'is stale' predicates a property of the evidence itself, independent of whether a claim is made.",
+          "basis": "Conditional permission reading: the policy grants permission to assert a current-balance claim only if the evidence is fresh after the latest write. Staleness of evidence is the sole disqualifying condition for the claim.",
           "program": {
             "violation_clauses": [
               [
+                "claim:current_balance",
                 "!evidence:fresh_after_latest_write"
               ]
             ],
             "permission_clauses": [
               [
-                "evidence:fresh_after_latest_write"
-              ]
-            ]
-          },
-          "source_spans": [
-            {
-              "document": "policy",
-              "start": 0,
-              "end": 59
-            }
-          ],
-          "unresolved_terms": [
-            "scope of 'stale' beyond current-balance claims",
-            "whether non-claim uses of stale evidence are also prohibited"
-          ]
-        },
-        {
-          "hypothesis_id": "policy-program:h2",
-          "basis": "The policy defines a necessary condition for a valid current-balance claim but does not impose a prohibition. A claim made with stale evidence is void/unsupported rather than a violation; the actor incurs no obligation breach but the claim simply does not count.",
-          "program": {
-            "violation_clauses": [],
-            "permission_clauses": [
-              [
                 "claim:current_balance",
                 "evidence:fresh_after_latest_write"
-              ],
-              [
-                "!claim:current_balance"
               ]
             ]
           },
@@ -194,7 +145,8 @@
             }
           ],
           "unresolved_terms": [
-            "whether 'cannot support' creates an obligation or merely a validity condition"
+            "newest debit vs latest write",
+            "whether other conditions beyond freshness could also disqualify a claim"
           ]
         }
       ]
@@ -226,11 +178,11 @@
       },
       "source_coverage": 1.0,
       "served_model": "qwen3.8-flash",
-      "latency_ms": 6545.48,
+      "latency_ms": 17764.091,
       "usage": {
         "prompt_tokens": 402,
-        "completion_tokens": 361,
-        "total_tokens": 763
+        "completion_tokens": 288,
+        "total_tokens": 690
       }
     }
   },
@@ -244,10 +196,28 @@
       "served_model": "qwen3.8-flash",
       "usage": {
         "prompt_tokens": 566,
-        "completion_tokens": 2411,
-        "total_tokens": 2977
+        "completion_tokens": 1131,
+        "total_tokens": 1697
       },
-      "latency_ms": 61361.809,
+      "latency_ms": 21022.523,
+      "transport_status": "SUCCESS",
+      "schema_status": "VALID",
+      "schema_issues": [],
+      "error_category": null
+    },
+    {
+      "backend_version": "diagnostic-semantic-v2",
+      "task": "policy_program_missing_reading_v2",
+      "input_sha256": "c50973faa663982c5c0fd3213d95a475b431b19ae3456a6f34264ea864b47036",
+      "prompt_sha256": "23095debebb5e521e97c5b5eca354b45f025a0f87fad75daf557023fc2659b1d",
+      "schema_sha256": "375056ff34624f9ac510670941b7bc43ed53408e899f96f0989b8c033b378134",
+      "served_model": "qwen3.8-flash",
+      "usage": {
+        "prompt_tokens": 783,
+        "completion_tokens": 4277,
+        "total_tokens": 5060
+      },
+      "latency_ms": 66413.076,
       "transport_status": "SUCCESS",
       "schema_status": "INVALID",
       "schema_issues": [
@@ -258,24 +228,6 @@
           "actual_type": null
         }
       ],
-      "error_category": null
-    },
-    {
-      "backend_version": "diagnostic-semantic-v2",
-      "task": "policy_program_missing_reading_v2",
-      "input_sha256": "7838ad133996552e49120049218ace3a335e50c9cc3f07c0811dc303cdce6c12",
-      "prompt_sha256": "91da92ae0b255400deb8ff64ca0ae661448d84f406a9b90e7433410106472eb6",
-      "schema_sha256": "375056ff34624f9ac510670941b7bc43ed53408e899f96f0989b8c033b378134",
-      "served_model": "qwen3.8-flash",
-      "usage": {
-        "prompt_tokens": 600,
-        "completion_tokens": 1666,
-        "total_tokens": 2266
-      },
-      "latency_ms": 45103.162,
-      "transport_status": "SUCCESS",
-      "schema_status": "VALID",
-      "schema_issues": [],
       "error_category": null
     }
   ],
@@ -291,10 +243,10 @@
       "served_model": "qwen3.8-flash",
       "usage": {
         "prompt_tokens": 402,
-        "completion_tokens": 361,
-        "total_tokens": 763
+        "completion_tokens": 288,
+        "total_tokens": 690
       },
-      "latency_ms": 6543.549
+      "latency_ms": 17763.442
     }
   ]
 }

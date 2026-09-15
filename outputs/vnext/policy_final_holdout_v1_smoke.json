@@ -1,0 +1,98 @@
+{
+  "schema_version": "guardian-vnext-policy-final-smoke-v1",
+  "purpose": "synthetic non-benchmark schema/provider smoke BEFORE the first holdout semantic request (four arms)",
+  "payloads_are_benchmark_cases": false,
+  "scored": false,
+  "arms": {
+    "h0": {
+      "transport": "SUCCESS",
+      "schema": "VALID"
+    },
+    "psb": {
+      "transport": "SUCCESS",
+      "schema": "VALID"
+    },
+    "ground": {
+      "transport": "SUCCESS",
+      "schema": "VALID"
+    },
+    "synth": {
+      "transport": "SUCCESS",
+      "schema": "VALID"
+    }
+  },
+  "telemetry": [
+    {
+      "backend_version": "diagnostic-semantic-v2",
+      "task": "Parse ONE workplace policy into exactly ONE typed semantic structure.\nField rules:\n- modality: PERMISSION (the text grants or allows), PROHIBITION (the text forbids or bars), REQUIREMENT (the text obliges).\n- relation: how the regulated act is gated.\n  IF: when the conditions hold the act is licensed/obligated/forbidden; when they do not hold the text stays silent (NOT a violation, and NOT permission).\n  ONLY_IF: exclusive - the act is licensed ONLY under the conditions; doing it without them is a VIOLATION.\n  IF_AND_ONLY_IF: the act is licensed exactly under the conditions and the text commits in both directions.\n  UNLESS: the conditions are exceptions carved out of an otherwise absolute rule.\n  UNCONDITIONAL: no conditions stated.\n  AND_NOT_EACH: doing BOTH targets together is forbidden; each alone is allowed.\n- target_clauses: a list of clauses; each clause is a list of atoms that are regulated TOGETHER (same act or same batch); several clauses mean the atoms are regulated SEPARATELY.\n- condition_literals and exception_literals: typed atoms copied EXACTLY from atom_catalog; prefix an atom with \"!\" only when the text negates it.\n- condition_mode/exception_mode: ALL means conjunction (every literal), ANY means disjunction (any literal).\n- temporal: BEFORE or AFTER only when the text orders the act relative to an event, else NONE.\n- WHO is allowed or forbidden to act (for example \"only the duty engineer\") goes into condition_literals as an actor: atom from atom_catalog; the actor field stays \"assistant\".\n- An act that is neither licensed nor forbidden is NO_VIOLATION, never PERMITTED: absence of prohibition is NOT permission.\nUse ONLY atoms from atom_catalog (it also contains distractor atoms; choose the ones the text actually uses). Output exactly one JSON object matching the schema.",
+      "input_sha256": "5443e8541a6f9bd1d8a0e7dfbdb3d53a2004949f78c8cc20a8676b789d6543d6",
+      "prompt_sha256": "117fea9aef45cb1d7f64d74b7d2d3b872741439cb3475826dd115a720ac116ca",
+      "schema_sha256": "fc3b3ee2bed89acaa59688fb0b42e0f56be1db8370263200cdc21c323c2af54e",
+      "served_model": "qwen3.8-flash",
+      "usage": {
+        "prompt_tokens": 786,
+        "completion_tokens": 419,
+        "total_tokens": 1205
+      },
+      "latency_ms": 7314.545,
+      "transport_status": "SUCCESS",
+      "schema_status": "VALID",
+      "schema_issues": [],
+      "error_category": null
+    },
+    {
+      "backend_version": "diagnostic-semantic-v2",
+      "task": "Parse ONE workplace policy into ONE typed semantic GRAPH of nodes and binding edges. Every gate, carve-out, actor and qualifier must say EXACTLY which regulated clause it attaches to.\nNode types (ids n1, n2, ...; use only the fields each type needs):\n- REGULATED: {\"id\", \"type\": \"REGULATED\", \"atoms\": [...]} - one clause of target atoms (from atom_catalog) that are regulated TOGETHER. Atoms regulated SEPARATELY go into SEPARATE REGULATED nodes. Emit no REGULATED node at all only when the text genuinely regulates nothing.\n- MODALITY: {\"id\", \"type\": \"MODALITY\", \"value\": \"PERMISSION\" | \"PROHIBITION\" | \"REQUIREMENT\"}. PERMISSION only when the text POSITIVELY grants or allows; PROHIBITION when it forbids or bars; REQUIREMENT when it obliges.\n- CONDITION: {\"id\", \"type\": \"CONDITION\", \"literals\": [...], \"mode\": \"ALL\" | \"ANY\", \"strength\": \"SUFFICIENT\" | \"NECESSARY\" | \"EXACTLY\"}. Literals are atoms from atom_catalog; prefix an atom with \"!\" only when the text negates it. SUFFICIENT = if/when/provided that (when the literals hold the clause is licensed/obligated/forbidden; when they do not hold the text stays silent - not a violation and not permission). NECESSARY = only/solely (the clause is allowed ONLY with them; doing it without them is a VIOLATION). EXACTLY = if and only if / exactly when.\n- EXCEPTION: {\"id\", \"type\": \"EXCEPTION\", \"literals\": [...], \"mode\": \"ALL\" | \"ANY\"} - a carve-out (unless, except, except when, save when, except for cases where). Never fold a carve-out into a CONDITION and never move an if/when/provided-that gate into an EXCEPTION.\n- ACTOR: {\"id\", \"type\": \"ACTOR\", \"atom\": \"actor:x\", \"exclusive\": true | false} - who the clause is about; exclusive=true when the text says only/alone/solely for that bearer.\n- QUALIFIER: {\"id\", \"type\": \"QUALIFIER\", \"kind\": \"IDENTITY\" | \"PROVENANCE\" | \"QUANTIFIER\", \"value\": ...} - identity:x for same-owner rules, evidence:x for a sole acceptable source, AT_MOST_n for numeric caps.\nEdge types {\"type\", \"from\", \"to\"} point FROM the gate node TO the REGULATED node it binds:\n- REGULATES (MODALITY -> REGULATED)\n- ACTIVATES (CONDITION -> REGULATED)\n- FOLLOWS (CONDITION -> REGULATED): the clause happens AFTER the event atoms in the condition (events stay positive).\n- PRECEDES (CONDITION -> REGULATED): the clause happens BEFORE the event atoms (they are compiled negated); every literal must be an event: atom.\n- EXEMPTS (EXCEPTION -> REGULATED)\n- ACTOR_OF (ACTOR -> REGULATED)\n- QUALIFIES (QUALIFIER kind IDENTITY or QUANTIFIER -> REGULATED)\n- SOURCE_OF (QUALIFIER kind PROVENANCE -> REGULATED)\nRules:\n- Each REGULATED node receives exactly one REGULATES edge. A shared gate may bind several REGULATED nodes.\n- A REGULATED node takes at most one ACTIVATES condition, at most one FOLLOWS or PRECEDES condition, at most one EXCEPTION, at most one ACTOR and at most one QUALIFIER of each kind.\n- A clause that is neither licensed nor forbidden is NO_VIOLATION, never PERMISSION: absence of prohibition is NOT permission.\n- Use ONLY atoms from atom_catalog (it also contains distractor atoms; choose the ones the text actually uses).\nWorked example (illustrative atoms only, never reuse them): 'If the boathouse kettle is on, juniors may use the north bays, unless the captain is running a class.' -> nodes: {\"id\":\"n1\",\"type\":\"REGULATED\",\"atoms\":[\"action:use_north_bays\"]}, {\"id\":\"n2\",\"type\":\"MODALITY\",\"value\":\"PERMISSION\"}, {\"id\":\"n3\",\"type\":\"CONDITION\",\"literals\":[\"state:kettle_on\"],\"mode\":\"ALL\",\"strength\":\"SUFFICIENT\"}, {\"id\":\"n4\",\"type\":\"ACTOR\",\"atom\":\"actor:junior\",\"exclusive\":false}, {\"id\":\"n5\",\"type\":\"EXCEPTION\",\"literals\":[\"state:captain_class_running\"],\"mode\":\"ALL\"}; edges: {\"type\":\"REGULATES\",\"from\":\"n2\",\"to\":\"n1\"}, {\"type\":\"ACTIVATES\",\"from\":\"n3\",\"to\":\"n1\"}, {\"type\":\"ACTOR_OF\",\"from\":\"n4\",\"to\":\"n1\"}, {\"type\":\"EXEMPTS\",\"from\":\"n5\",\"to\":\"n1\"}.\nOutput exactly one JSON object matching the schema.",
+      "input_sha256": "6084bac81ddf95e57b91c16ceee1f267014f3a79a6bd0cc0c0224c761306a65a",
+      "prompt_sha256": "88a9ec6dc33038d3e23b00d27ef8eb1fb8be70a4aa5105f14fb862d9ef8e437a",
+      "schema_sha256": "25f1d432804f993bf2ac2b7d9da60fbba04307c571ffe938ad2a8d3aa440efc9",
+      "served_model": "qwen3.8-flash",
+      "usage": {
+        "prompt_tokens": 1527,
+        "completion_tokens": 517,
+        "total_tokens": 2044
+      },
+      "latency_ms": 9152.713,
+      "transport_status": "SUCCESS",
+      "schema_status": "VALID",
+      "schema_issues": [],
+      "error_category": null
+    },
+    {
+      "backend_version": "diagnostic-semantic-v2",
+      "task": "Extract the grounded semantic inventory of ONE policy text. You receive POLICY_TEXT and ATOM_CATALOG (typed atoms; it also contains distractor atoms the text does not use).\nExtract:\n1. FACTS: every catalog atom the text actually uses, each with its exact supporting span copied character-for-character from POLICY_TEXT. Choose atoms ONLY from ATOM_CATALOG; never invent or modify atom strings. If you cannot confidently ground an atom, omit it - do not guess.\n2. MARKERS: surface cues present in the text:\n- modality markers: PERMIT (may, can, is allowed to, is permitted to, is free to), PROHIBIT (must not, may not, cannot, is forbidden, is barred, is not allowed, never, do not), REQUIRE (must, shall, has to, is required to, is to be).\n- relation markers: IF (if, when, whenever, while, provided that, so long as), ONLY_IF (only when, only if, only while, only with, only for, solely), IFF (exactly when, if and only if), UNLESS (unless, except, except when, save when, apart from), BEFORE (before), AFTER (after, once).\nRules:\n- span must be an exact substring of POLICY_TEXT.\n- do NOT decide roles or attachments (which fact is a condition, exception or target, or which clause a gate belongs to) - that is NOT your task.\n- assign fact IDs F1, F2, ... in order of first appearance in the text; marker IDs M1.. for modality markers and R1.. for relation markers in order of first appearance.\nOutput exactly one JSON object: {\"facts\": [{\"id\", \"atom\", \"span\"}...], \"markers\": [{\"id\", \"kind\", \"value\", \"span\"}...]} (empty arrays allowed; kind is MODAL_MARKER or RELATION_MARKER).",
+      "input_sha256": "a57640dea35fd05a5b26d4cbbf9913b456148127e08b37d864b7291934dbf62a",
+      "prompt_sha256": "4143e0fea9342b97ce4aa3e238b173c40aae21626b97bb1913fe499ded1c0851",
+      "schema_sha256": "f2076ddada711fb6226189bde39611c8572609198211b6890819ef50228f6e88",
+      "served_model": "qwen3.8-flash",
+      "usage": {
+        "prompt_tokens": 710,
+        "completion_tokens": 438,
+        "total_tokens": 1148
+      },
+      "latency_ms": 7269.386,
+      "transport_status": "SUCCESS",
+      "schema_status": "VALID",
+      "schema_issues": [],
+      "error_category": null
+    },
+    {
+      "backend_version": "diagnostic-semantic-v2",
+      "task": "Synthesize ONE policy ruleset in the frozen DSL below. You receive POLICY_TEXT and INVENTORY: grounded semantic items with neutral IDs (F# facts with kind/atom/span; M# modality markers and R# relation markers with value/span).\nCORE INVARIANT: every fact leaf in your ruleset MUST be an inventory fact ID (F#). You may NOT invent facts, atoms, entities or predicates. Markers (M#/R#) are evidence for your choices but are never rule references. You decide ONLY how the grounded facts compose: how many rules exist, each rule's modality, target shape, gates, condition vs exception roles, actors, temporal order, AND/OR, together/separate.\nDSL GRAMMAR (frozen; uppercase operators, refs are inventory IDs):\nRULESET( rule [, rule]* ) - zero or more rules; RULESET() means the text regulates nothing.\nrule := RULE( modality , target [, gate]* ) | ONE_OF( RULE(...) , RULE(...) ) - ONE_OF ONLY for genuine local ambiguity between exactly two readings of ONE rule; at most one ONE_OF per ruleset.\nmodality := PERMIT | PROHIBIT | REQUIRE\ntarget := ref | TOGETHER( ref [, ref]* ) | SEPARATE( ref [, ref]* )\ngate := WHEN( boolexpr ) | ONLY_WHEN( boolexpr ) | IFF( boolexpr ) | EXCEPT( boolexpr ) | BEFORE( boolexpr ) | AFTER( boolexpr ) | ACTOR( ref ) | ONLY_ACTOR( ref ) | IDENTITY( ref ) | PROVENANCE( ref ) | UNKNOWN_RELATION( boolexpr ) | UNKNOWN_ATTACHMENT( ref )\nboolexpr := leaf | AND( leaf [, leaf]* ) | OR( leaf [, leaf]* )\nleaf := ref | NOT( ref )\nOPERATOR MEANINGS:\n- PERMIT: the text positively grants or allows. PROHIBIT: the text forbids or bars. REQUIRE: the text obliges. An act that is neither licensed nor forbidden is NO_VIOLATION, never permission: absence of prohibition is NOT permission.\n- WHEN(c): the rule applies while c holds (sufficient gate: if/when/whenever/while/provided that). ONLY_WHEN(c): the rule applies ONLY under c (necessary gate: only/only when/only with/only for; outside c a PERMIT/REQUIRE target done anyway is a VIOLATION). IFF(c): exactly under c (if and only if / exactly when).\n- EXCEPT(c): carve-out (unless/except/save when); never fold a carve-out into WHEN and never move an if/when gate into EXCEPT.\n- BEFORE(e)/AFTER(e): the target happens before/after event e (e must be an EVENT fact).\n- ACTOR(f): the rule is about that actor. ONLY_ACTOR(f): exclusively that actor (only X / no one but X).\n- IDENTITY(f): same-owner/identity constraint (identity fact). PROVENANCE(f): sole acceptable evidence source (evidence fact).\n- TOGETHER(a,b): the atoms are regulated as ONE joint act. SEPARATE(a,b): the atoms are regulated as independent acts within this rule.\n- NOT(f): the fact does not hold.\n- UNKNOWN_RELATION(c)/UNKNOWN_ATTACHMENT(f): use ONLY when the relation or the attachment is genuinely undeterminable; the rule is then dropped as unresolved and hurts coverage. Do not use them as a default.\nTYPE RULES (machine-validated; violations are rejected):\n- target refs: ACTION or STATE facts only. WHEN/ONLY_WHEN/IFF/EXCEPT leaves: ACTION, STATE or EVENT facts. BEFORE/AFTER leaves: EVENT facts only. ACTOR/ONLY_ACTOR: ACTOR facts. IDENTITY: IDENTITY facts. PROVENANCE: PROVENANCE facts.\n- at most one gate of each kind per rule; at most one relation gate (WHEN/ONLY_WHEN/IFF); at most one temporal gate (BEFORE or AFTER, not both); REQUIRE with both EXCEPT and a WHEN/ONLY_WHEN/IFF/BEFORE/AFTER gate is outside the frozen envelope.\n- when several gates contribute condition leaves, their top-level combinator must agree (both AND-top or both OR-top).\nWorked example (illustrative only; never reuse its atoms): POLICY 'If the night fridge is unlocked, bar staff may pour samples, unless the cellar door is alarmed.' INVENTORY F1=ACTION action:pour_samples 'pour samples', F2=STATE state:night_fridge_unlocked 'the night fridge is unlocked', F3=STATE state:cellar_door_alarmed 'the cellar door is alarmed', F4=ACTOR actor:bar_staff 'bar staff', M1=MODAL_MARKER PERMIT 'may', R1=RELATION_MARKER IF 'If', R2=RELATION_MARKER UNLESS 'unless' -> RULESET(RULE(PERMIT, F1, WHEN(F2), EXCEPT(F3), ACTOR(F4))).\nOutput exactly one JSON object: {\"dsl\": \"<your ruleset>\"}.",
+      "input_sha256": "9ffc4da0d3caa8384938ba988abd373e0645d4ad0e4fdc0e3e240599185a369e",
+      "prompt_sha256": "68a5c8cdbd477416425cb31036a134dbfc4bb9accf6d91637123d319ad284a40",
+      "schema_sha256": "1dc9e78f000bf3c08eadf966f3cb56b56581c1d064dc72368bdae5b69b22a904",
+      "served_model": "qwen3.8-flash",
+      "usage": {
+        "prompt_tokens": 1371,
+        "completion_tokens": 350,
+        "total_tokens": 1721
+      },
+      "latency_ms": 4910.034,
+      "transport_status": "SUCCESS",
+      "schema_status": "VALID",
+      "schema_issues": [],
+      "error_category": null
+    }
+  ]
+}

@@ -1,0 +1,47 @@
+{
+  "case_id": "condition::c03",
+  "configuration_sha256": "5c3403503a405080386240b7924fcf49ca40e02734d4628fb716f99a54186297",
+  "status": "compile_failed_after_repair",
+  "error": "DSL_INVALID: expected 'RULE', got 'PERMIT'",
+  "prediction": {
+    "dsl": "RULESET(PERMIT, F3, WHEN(F1), ACTOR(F2))"
+  },
+  "request_records": [
+    {
+      "backend_version": "diagnostic-semantic-v2",
+      "task": "Synthesize ONE policy ruleset in the frozen DSL below. You receive POLICY_TEXT and INVENTORY: grounded semantic items with neutral IDs (F# facts with kind/atom/span; M# modality markers and R# relation markers with value/span).\nCORE INVARIANT: every fact leaf in your ruleset MUST be an inventory fact ID (F#). You may NOT invent facts, atoms, entities or predicates. Markers (M#/R#) are evidence for your choices but are never rule references. You decide ONLY how the grounded facts compose: how many rules exist, each rule's modality, target shape, gates, condition vs exception roles, actors, temporal order, AND/OR, together/separate.\nDSL GRAMMAR (frozen; uppercase operators, refs are inventory IDs):\nRULESET( rule [, rule]* ) - zero or more rules; RULESET() means the text regulates nothing.\nrule := RULE( modality , target [, gate]* ) | ONE_OF( RULE(...) , RULE(...) ) - ONE_OF ONLY for genuine local ambiguity between exactly two readings of ONE rule; at most one ONE_OF per ruleset.\nmodality := PERMIT | PROHIBIT | REQUIRE\ntarget := ref | TOGETHER( ref [, ref]* ) | SEPARATE( ref [, ref]* )\ngate := WHEN( boolexpr ) | ONLY_WHEN( boolexpr ) | IFF( boolexpr ) | EXCEPT( boolexpr ) | BEFORE( boolexpr ) | AFTER( boolexpr ) | ACTOR( ref ) | ONLY_ACTOR( ref ) | IDENTITY( ref ) | PROVENANCE( ref ) | UNKNOWN_RELATION( boolexpr ) | UNKNOWN_ATTACHMENT( ref )\nboolexpr := leaf | AND( leaf [, leaf]* ) | OR( leaf [, leaf]* )\nleaf := ref | NOT( ref )\nOPERATOR MEANINGS:\n- PERMIT: the text positively grants or allows. PROHIBIT: the text forbids or bars. REQUIRE: the text obliges. An act that is neither licensed nor forbidden is NO_VIOLATION, never permission: absence of prohibition is NOT permission.\n- WHEN(c): the rule applies while c holds (sufficient gate: if/when/whenever/while/provided that). ONLY_WHEN(c): the rule applies ONLY under c (necessary gate: only/only when/only with/only for; outside c a PERMIT/REQUIRE target done anyway is a VIOLATION). IFF(c): exactly under c (if and only if / exactly when).\n- EXCEPT(c): carve-out (unless/except/save when); never fold a carve-out into WHEN and never move an if/when gate into EXCEPT.\n- BEFORE(e)/AFTER(e): the target happens before/after event e (e must be an EVENT fact).\n- ACTOR(f): the rule is about that actor. ONLY_ACTOR(f): exclusively that actor (only X / no one but X).\n- IDENTITY(f): same-owner/identity constraint (identity fact). PROVENANCE(f): sole acceptable evidence source (evidence fact).\n- TOGETHER(a,b): the atoms are regulated as ONE joint act. SEPARATE(a,b): the atoms are regulated as independent acts within this rule.\n- NOT(f): the fact does not hold.\n- UNKNOWN_RELATION(c)/UNKNOWN_ATTACHMENT(f): use ONLY when the relation or the attachment is genuinely undeterminable; the rule is then dropped as unresolved and hurts coverage. Do not use them as a default.\nTYPE RULES (machine-validated; violations are rejected):\n- target refs: ACTION or STATE facts only. WHEN/ONLY_WHEN/IFF/EXCEPT leaves: ACTION, STATE or EVENT facts. BEFORE/AFTER leaves: EVENT facts only. ACTOR/ONLY_ACTOR: ACTOR facts. IDENTITY: IDENTITY facts. PROVENANCE: PROVENANCE facts.\n- at most one gate of each kind per rule; at most one relation gate (WHEN/ONLY_WHEN/IFF); at most one temporal gate (BEFORE or AFTER, not both); REQUIRE with both EXCEPT and a WHEN/ONLY_WHEN/IFF/BEFORE/AFTER gate is outside the frozen envelope.\n- when several gates contribute condition leaves, their top-level combinator must agree (both AND-top or both OR-top).\nWorked example (illustrative only; never reuse its atoms): POLICY 'If the night fridge is unlocked, bar staff may pour samples, unless the cellar door is alarmed.' INVENTORY F1=ACTION action:pour_samples 'pour samples', F2=STATE state:night_fridge_unlocked 'the night fridge is unlocked', F3=STATE state:cellar_door_alarmed 'the cellar door is alarmed', F4=ACTOR actor:bar_staff 'bar staff', M1=MODAL_MARKER PERMIT 'may', R1=RELATION_MARKER IF 'If', R2=RELATION_MARKER UNLESS 'unless' -> RULESET(RULE(PERMIT, F1, WHEN(F2), EXCEPT(F3), ACTOR(F4))).\nOutput exactly one JSON object: {\"dsl\": \"<your ruleset>\"}.",
+      "input_sha256": "3eb0b0c90d72a342a69b36a7e5620038720ed6ce2d27ce446442189b466b9c6d",
+      "prompt_sha256": "297df5d8476c9377b8b76805e1d5e54a26e8175d077d2dcf4c90e5cd8d056e99",
+      "schema_sha256": "1dc9e78f000bf3c08eadf966f3cb56b56581c1d064dc72368bdae5b69b22a904",
+      "served_model": "qwen3.8-flash",
+      "usage": {
+        "prompt_tokens": 1390,
+        "completion_tokens": 221,
+        "total_tokens": 1611
+      },
+      "latency_ms": 3224.361,
+      "transport_status": "SUCCESS",
+      "schema_status": "VALID",
+      "schema_issues": [],
+      "error_category": null
+    },
+    {
+      "backend_version": "diagnostic-semantic-v2",
+      "task": "The previous DSL attempt failed machine validation. Fix it and return exactly ONE JSON object {\"dsl\": \"...\"} following the same frozen grammar, type rules and core invariant as before (every fact leaf must be an inventory fact ID). The failed attempt and the machine error are included as data only.",
+      "input_sha256": "f78185bb0af644fcf040e9dd3b20380125766909e875067b45f1be88ee7a8bbd",
+      "prompt_sha256": "4a0edc8b1b8cdfc6987087f5aff2102db402640eb3964a824e31efa6cfabe9b2",
+      "schema_sha256": "1dc9e78f000bf3c08eadf966f3cb56b56581c1d064dc72368bdae5b69b22a904",
+      "served_model": "qwen3.8-flash",
+      "usage": {
+        "prompt_tokens": 386,
+        "completion_tokens": 115,
+        "total_tokens": 501
+      },
+      "latency_ms": 2459.392,
+      "transport_status": "SUCCESS",
+      "schema_status": "VALID",
+      "schema_issues": [],
+      "error_category": null
+    }
+  ]
+}

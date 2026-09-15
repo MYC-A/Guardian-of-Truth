@@ -6,16 +6,13 @@
       "hypotheses": [
         {
           "hypothesis_id": "policy-program:h0",
-          "basis": "The policy establishes a default prohibition on issuing refunds, with a single exception requiring both active travel insurance AND a health or weather cancellation reason. 'Covers' is read as requiring the insurance to be active and the cancellation reason to fall within health or weather.",
+          "basis": "The 'except when' clause is read as a mandatory obligation rather than a mere permission: when the exception condition is met, issuing a refund is required, not just allowed. This changes obligations because an agent who has active insurance covering a health/weather cancellation but does not issue a refund would be in violation.",
           "program": {
             "violation_clauses": [
               [
-                "action:issue_full_refund",
-                "!state:insurance_active"
-              ],
-              [
-                "action:issue_full_refund",
-                "!reason:health_or_weather"
+                "!action:issue_full_refund",
+                "state:insurance_active",
+                "reason:health_or_weather"
               ]
             ],
             "permission_clauses": [
@@ -34,50 +31,31 @@
             }
           ],
           "unresolved_terms": [
-            "covers: does it mean the insurance policy's terms explicitly list health/weather as covered reasons, or merely that insurance is active at time of cancellation?",
-            "non-refundable: does this prohibit all refund actions or specifically full refunds?",
-            "health or weather: inclusive or exclusive disjunction between health and weather?"
+            "whether 'except when' imposes a duty to refund or merely lifts the prohibition"
           ]
         },
         {
           "hypothesis_id": "policy-program:h1",
-          "basis": "The phrase 'travel insurance covers a health or weather cancellation' is read as a single compound condition where 'covers' modifies the relationship between insurance and the reason — implying the insurance must be active (state:insurance_active) and the cancellation must be for a health or weather reason (reason:health_or_weather). The default 'non-refundable' is a strict prohibition on issuing refunds in all other cases, with no partial or conditional permissions.",
+          "basis": "The word 'covers' introduces a scope condition stricter than mere activation: insurance must specifically cover the cancellation type, not just be active. Under this reading, state:insurance_active alone is insufficient even when reason:health_or_weather holds, because the policy requires that the insurance 'covers' that particular cancellation. This could mean refunds remain prohibited even when insurance is active and reason is health/weather, if coverage scope is not confirmed.",
           "program": {
             "violation_clauses": [
               [
                 "action:issue_full_refund",
-                "!state:insurance_active",
-                "!reason:health_or_weather"
-              ],
-              [
-                "action:issue_full_refund",
                 "state:insurance_active",
-                "!reason:health_or_weather"
-              ],
-              [
-                "action:issue_full_refund",
-                "!state:insurance_active",
                 "reason:health_or_weather"
               ]
             ],
-            "permission_clauses": [
-              [
-                "action:issue_full_refund",
-                "state:insurance_active",
-                "reason:health_or_weather"
-              ]
-            ]
+            "permission_clauses": []
           },
           "source_spans": [
             {
               "document": "policy",
-              "start": 0,
-              "end": 96
+              "start": 27,
+              "end": 95
             }
           ],
           "unresolved_terms": [
-            "covers: whether the insurance product must explicitly name health/weather as covered perils or whether any active insurance suffices when the reason is health/weather",
-            "non-refundable: scope — does this bar only full refunds or all refund-like actions?"
+            "what 'covers' requires beyond insurance being active (coverage scope, policy terms, claim approval)"
           ]
         }
       ],
@@ -86,37 +64,34 @@
         "universe_source": null,
         "enumeration_complete": false,
         "unresolved_terms": [
-          "covers: semantic scope of insurance 'covering' a reason — policy terms vs. mere active status",
-          "non-refundable: whether this prohibits all refunds or only full refunds",
-          "health or weather: disjunction type (inclusive vs exclusive) and whether partial health+weather events qualify",
-          "covers: does it mean the insurance policy's terms explicitly list health/weather as covered reasons, or merely that insurance is active at time of cancellation?",
-          "non-refundable: does this prohibit all refund actions or specifically full refunds?",
-          "health or weather: inclusive or exclusive disjunction between health and weather?",
-          "covers: whether the insurance product must explicitly name health/weather as covered perils or whether any active insurance suffices when the reason is health/weather",
-          "non-refundable: scope — does this bar only full refunds or all refund-like actions?"
+          "whether 'except when' creates a mandatory obligation or a permissive exception",
+          "what 'covers' requires beyond state:insurance_active (scope of coverage)",
+          "whether 'non-refundable' prohibits all refunds or only full refunds",
+          "whether 'except when' imposes a duty to refund or merely lifts the prohibition",
+          "what 'covers' requires beyond insurance being active (coverage scope, policy terms, claim approval)"
         ],
         "discarded_hypotheses": [],
-        "challenger_alternatives": []
+        "challenger_alternatives": [
+          "policy-program:h0",
+          "policy-program:h1"
+        ]
       },
       "failures": [
         [
-          "policy_program_missing_reading_v2",
+          "policy_program_hypotheses_v2",
           "SCHEMA_ERROR"
         ]
       ],
       "empirical_hypotheses": [
         {
           "hypothesis_id": "policy-program:h0",
-          "basis": "The policy establishes a default prohibition on issuing refunds, with a single exception requiring both active travel insurance AND a health or weather cancellation reason. 'Covers' is read as requiring the insurance to be active and the cancellation reason to fall within health or weather.",
+          "basis": "The 'except when' clause is read as a mandatory obligation rather than a mere permission: when the exception condition is met, issuing a refund is required, not just allowed. This changes obligations because an agent who has active insurance covering a health/weather cancellation but does not issue a refund would be in violation.",
           "program": {
             "violation_clauses": [
               [
-                "action:issue_full_refund",
-                "!state:insurance_active"
-              ],
-              [
-                "action:issue_full_refund",
-                "!reason:health_or_weather"
+                "!action:issue_full_refund",
+                "state:insurance_active",
+                "reason:health_or_weather"
               ]
             ],
             "permission_clauses": [
@@ -135,50 +110,31 @@
             }
           ],
           "unresolved_terms": [
-            "covers: does it mean the insurance policy's terms explicitly list health/weather as covered reasons, or merely that insurance is active at time of cancellation?",
-            "non-refundable: does this prohibit all refund actions or specifically full refunds?",
-            "health or weather: inclusive or exclusive disjunction between health and weather?"
+            "whether 'except when' imposes a duty to refund or merely lifts the prohibition"
           ]
         },
         {
           "hypothesis_id": "policy-program:h1",
-          "basis": "The phrase 'travel insurance covers a health or weather cancellation' is read as a single compound condition where 'covers' modifies the relationship between insurance and the reason — implying the insurance must be active (state:insurance_active) and the cancellation must be for a health or weather reason (reason:health_or_weather). The default 'non-refundable' is a strict prohibition on issuing refunds in all other cases, with no partial or conditional permissions.",
+          "basis": "The word 'covers' introduces a scope condition stricter than mere activation: insurance must specifically cover the cancellation type, not just be active. Under this reading, state:insurance_active alone is insufficient even when reason:health_or_weather holds, because the policy requires that the insurance 'covers' that particular cancellation. This could mean refunds remain prohibited even when insurance is active and reason is health/weather, if coverage scope is not confirmed.",
           "program": {
             "violation_clauses": [
               [
                 "action:issue_full_refund",
-                "!state:insurance_active",
-                "!reason:health_or_weather"
-              ],
-              [
-                "action:issue_full_refund",
                 "state:insurance_active",
-                "!reason:health_or_weather"
-              ],
-              [
-                "action:issue_full_refund",
-                "!state:insurance_active",
                 "reason:health_or_weather"
               ]
             ],
-            "permission_clauses": [
-              [
-                "action:issue_full_refund",
-                "state:insurance_active",
-                "reason:health_or_weather"
-              ]
-            ]
+            "permission_clauses": []
           },
           "source_spans": [
             {
               "document": "policy",
-              "start": 0,
-              "end": 96
+              "start": 27,
+              "end": 95
             }
           ],
           "unresolved_terms": [
-            "covers: whether the insurance product must explicitly name health/weather as covered perils or whether any active insurance suffices when the reason is health/weather",
-            "non-refundable: scope — does this bar only full refunds or all refund-like actions?"
+            "what 'covers' requires beyond insurance being active (coverage scope, policy terms, claim approval)"
           ]
         }
       ]
@@ -194,11 +150,11 @@
       "prediction": null,
       "source_coverage": 1.0,
       "served_model": "qwen3.8-flash",
-      "latency_ms": 9343.358,
+      "latency_ms": 6663.466,
       "usage": {
         "prompt_tokens": 429,
-        "completion_tokens": 427,
-        "total_tokens": 856
+        "completion_tokens": 343,
+        "total_tokens": 772
       }
     }
   },
@@ -212,28 +168,10 @@
       "served_model": "qwen3.8-flash",
       "usage": {
         "prompt_tokens": 592,
-        "completion_tokens": 1651,
-        "total_tokens": 2243
+        "completion_tokens": 1377,
+        "total_tokens": 1969
       },
-      "latency_ms": 28762.571,
-      "transport_status": "SUCCESS",
-      "schema_status": "VALID",
-      "schema_issues": [],
-      "error_category": null
-    },
-    {
-      "backend_version": "diagnostic-semantic-v2",
-      "task": "policy_program_missing_reading_v2",
-      "input_sha256": "66aca31ab63ef9ee6d19349dbe35caa2a210ed5171629fb599df473c53694b8f",
-      "prompt_sha256": "2c4ddb7a4ccb17c5dc288548458aef71e31f5fe368620c5f4db00d64063f97ce",
-      "schema_sha256": "9c0880481be80107ac6f686f02d490e723f70b8f60e596ed13bf05f520f81f38",
-      "served_model": "qwen3.8-flash",
-      "usage": {
-        "prompt_tokens": 922,
-        "completion_tokens": 3486,
-        "total_tokens": 4408
-      },
-      "latency_ms": 64847.5,
+      "latency_ms": 27070.339,
       "transport_status": "SUCCESS",
       "schema_status": "INVALID",
       "schema_issues": [
@@ -244,6 +182,24 @@
           "actual_type": null
         }
       ],
+      "error_category": null
+    },
+    {
+      "backend_version": "diagnostic-semantic-v2",
+      "task": "policy_program_missing_reading_v2",
+      "input_sha256": "78b2c8c46e81ee66fa0c1e6863b3536b1ebe27adceb1bdd7b4e0ae5b622044f9",
+      "prompt_sha256": "1479333893becc784447f40a908efb3077758888ad535d1a54548f27b9afe61d",
+      "schema_sha256": "9c0880481be80107ac6f686f02d490e723f70b8f60e596ed13bf05f520f81f38",
+      "served_model": "qwen3.8-flash",
+      "usage": {
+        "prompt_tokens": 626,
+        "completion_tokens": 1412,
+        "total_tokens": 2038
+      },
+      "latency_ms": 29631.11,
+      "transport_status": "SUCCESS",
+      "schema_status": "VALID",
+      "schema_issues": [],
       "error_category": null
     }
   ],
@@ -266,10 +222,10 @@
       "served_model": "qwen3.8-flash",
       "usage": {
         "prompt_tokens": 429,
-        "completion_tokens": 427,
-        "total_tokens": 856
+        "completion_tokens": 343,
+        "total_tokens": 772
       },
-      "latency_ms": 9341.603
+      "latency_ms": 6662.278
     }
   ]
 }

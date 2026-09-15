@@ -1,0 +1,61 @@
+{
+  "configuration_sha256": "5c3403503a405080386240b7924fcf49ca40e02734d4628fb716f99a54186297",
+  "ordinal": 1,
+  "task": "The previous DSL attempt failed machine validation. Fix it and return exactly ONE JSON object {\"dsl\": \"...\"} following the same frozen grammar, type rules and core invariant as before (every fact leaf must be an inventory fact ID). The failed attempt and the machine error are included as data only.",
+  "payload": {
+    "policy_text": "Provided the silo gauge does not read empty, workers may run the grain lift.",
+    "inventory": {
+      "facts": [
+        {
+          "id": "F1",
+          "kind": "STATE",
+          "atom": "state:silo_gauge_empty",
+          "span": "the silo gauge does not read empty"
+        },
+        {
+          "id": "F2",
+          "kind": "ACTOR",
+          "atom": "actor:worker",
+          "span": "workers"
+        },
+        {
+          "id": "F3",
+          "kind": "ACTION",
+          "atom": "action:run_the_grain_lift",
+          "span": "run the grain lift"
+        }
+      ],
+      "markers": [
+        {
+          "id": "R1",
+          "kind": "RELATION_MARKER",
+          "value": "IF",
+          "span": "Provided"
+        },
+        {
+          "id": "M2",
+          "kind": "MODAL_MARKER",
+          "value": "PERMIT",
+          "span": "may"
+        }
+      ]
+    },
+    "previous_output": "{\"dsl\":\"RULE(PERMIT, F3, WHEN(NOT(F1)), ACTOR(F2))\"}",
+    "machine_error": "DSL_INVALID: expected 'RULESET', got 'RULE'"
+  },
+  "schema": {
+    "type": "object",
+    "properties": {
+      "dsl": {
+        "type": "string"
+      }
+    },
+    "required": [
+      "dsl"
+    ],
+    "additionalProperties": false
+  },
+  "input_sha256": "76ede145faf87f9728359a7a65babb225268d899b80537f5d2826405494d5a80",
+  "schema_sha256": "1dc9e78f000bf3c08eadf966f3cb56b56581c1d064dc72368bdae5b69b22a904",
+  "prompt_sha256": "583919d0449792bb6f50530b1ff027d559f3f797d5b61ab44725929498de3434"
+}

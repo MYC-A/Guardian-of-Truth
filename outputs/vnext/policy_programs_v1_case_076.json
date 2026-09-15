@@ -3,270 +3,30 @@
   "configuration_sha256": "8ab1c29d5c2e4747ec410049227f69ae1a048ce8b32e951a59ce17bbcf475317",
   "prediction": {
     "native": {
-      "hypotheses": [
-        {
-          "hypothesis_id": "policy-program:h0",
-          "basis": "Reading 'only if' as establishing necessary conditions that include the pending state itself. Under this reading, ANY cancellation (regardless of order state) must satisfy all three conditions: pending, owned, and confirmed. Cancelling a non-pending order is a violation of this rule.",
-          "program": {
-            "violation_clauses": [
-              [
-                "action:cancel_order",
-                "!state:order_pending"
-              ],
-              [
-                "action:cancel_order",
-                "!identity:requester_owns_order"
-              ],
-              [
-                "action:cancel_order",
-                "!event:confirmation_before"
-              ]
-            ],
-            "permission_clauses": [
-              [
-                "state:order_pending",
-                "identity:requester_owns_order",
-                "event:confirmation_before"
-              ]
-            ]
-          },
-          "source_spans": [
-            {
-              "document": "policy",
-              "start": 0,
-              "end": 106
-            }
-          ],
-          "unresolved_terms": [
-            "explicitly — degree of explicitness not defined",
-            "has confirmed — whether confirmation must be a discrete prior event or a persisting state"
-          ]
-        },
-        {
-          "hypothesis_id": "policy-program:h1",
-          "basis": "Reading 'If an order is pending' as a scope filter that limits which orders this rule governs. Non-pending orders fall outside the rule's domain entirely, so cancelling them is neither permitted nor prohibited by this policy. Within scope (pending orders), ownership and confirmation are necessary conditions.",
-          "program": {
-            "violation_clauses": [
-              [
-                "action:cancel_order",
-                "state:order_pending",
-                "!identity:requester_owns_order"
-              ],
-              [
-                "action:cancel_order",
-                "state:order_pending",
-                "!event:confirmation_before"
-              ]
-            ],
-            "permission_clauses": [
-              [
-                "state:order_pending",
-                "identity:requester_owns_order",
-                "event:confirmation_before"
-              ]
-            ]
-          },
-          "source_spans": [
-            {
-              "document": "policy",
-              "start": 0,
-              "end": 106
-            }
-          ],
-          "unresolved_terms": [
-            "explicitly — degree of explicitness not defined",
-            "has confirmed — whether confirmation must be a discrete prior event or a persisting state",
-            "scope of non-pending orders — governed by other rules or unregulated?"
-          ]
-        },
-        {
-          "hypothesis_id": "policy-program:h2",
-          "basis": "Reading 'only if' as a biconditional (if and only if), creating an affirmative obligation: when an order is pending, owned by the requester, and cancellation has been confirmed, the system MUST cancel it. Failure to cancel under these conditions is a violation, not merely a permitted non-action.",
-          "program": {
-            "violation_clauses": [
-              [
-                "action:cancel_order",
-                "state:order_pending",
-                "!identity:requester_owns_order"
-              ],
-              [
-                "action:cancel_order",
-                "state:order_pending",
-                "!event:confirmation_before"
-              ],
-              [
-                "state:order_pending",
-                "identity:requester_owns_order",
-                "event:confirmation_before",
-                "!action:cancel_order"
-              ]
-            ],
-            "permission_clauses": [
-              [
-                "state:order_pending",
-                "identity:requester_owns_order",
-                "event:confirmation_before"
-              ]
-            ]
-          },
-          "source_spans": [
-            {
-              "document": "policy",
-              "start": 0,
-              "end": 106
-            }
-          ],
-          "unresolved_terms": [
-            "only if — whether it encodes a strict necessary condition or a biconditional obligation",
-            "explicitly — degree of explicitness not defined",
-            "has confirmed — whether confirmation must be a discrete prior event or a persisting state"
-          ]
-        }
-      ],
+      "hypotheses": [],
       "coverage": {
         "status": "OPEN_SEMANTICS",
         "universe_source": null,
         "enumeration_complete": false,
-        "unresolved_terms": [
-          "explicitly — degree of explicitness not defined",
-          "has confirmed — whether confirmation must be a discrete prior event or a persisting state",
-          "only if — necessary condition vs biconditional",
-          "scope of non-pending orders — governed by other rules or unregulated?",
-          "only if — whether it encodes a strict necessary condition or a biconditional obligation"
-        ],
+        "unresolved_terms": [],
         "discarded_hypotheses": [],
-        "challenger_alternatives": [
-          "policy-program:h0",
-          "policy-program:h1",
-          "policy-program:h2"
-        ]
+        "challenger_alternatives": []
       },
       "failures": [
         [
           "policy_program_hypotheses_v2",
           "SCHEMA_ERROR"
+        ],
+        [
+          "policy_program_missing_reading_v2",
+          "SCHEMA_ERROR"
+        ],
+        [
+          "policy_program_inventory",
+          "POLICY_NO_INTERPRETATION"
         ]
       ],
-      "empirical_hypotheses": [
-        {
-          "hypothesis_id": "policy-program:h0",
-          "basis": "Reading 'only if' as establishing necessary conditions that include the pending state itself. Under this reading, ANY cancellation (regardless of order state) must satisfy all three conditions: pending, owned, and confirmed. Cancelling a non-pending order is a violation of this rule.",
-          "program": {
-            "violation_clauses": [
-              [
-                "action:cancel_order",
-                "!state:order_pending"
-              ],
-              [
-                "action:cancel_order",
-                "!identity:requester_owns_order"
-              ],
-              [
-                "action:cancel_order",
-                "!event:confirmation_before"
-              ]
-            ],
-            "permission_clauses": [
-              [
-                "state:order_pending",
-                "identity:requester_owns_order",
-                "event:confirmation_before"
-              ]
-            ]
-          },
-          "source_spans": [
-            {
-              "document": "policy",
-              "start": 0,
-              "end": 106
-            }
-          ],
-          "unresolved_terms": [
-            "explicitly — degree of explicitness not defined",
-            "has confirmed — whether confirmation must be a discrete prior event or a persisting state"
-          ]
-        },
-        {
-          "hypothesis_id": "policy-program:h1",
-          "basis": "Reading 'If an order is pending' as a scope filter that limits which orders this rule governs. Non-pending orders fall outside the rule's domain entirely, so cancelling them is neither permitted nor prohibited by this policy. Within scope (pending orders), ownership and confirmation are necessary conditions.",
-          "program": {
-            "violation_clauses": [
-              [
-                "action:cancel_order",
-                "state:order_pending",
-                "!identity:requester_owns_order"
-              ],
-              [
-                "action:cancel_order",
-                "state:order_pending",
-                "!event:confirmation_before"
-              ]
-            ],
-            "permission_clauses": [
-              [
-                "state:order_pending",
-                "identity:requester_owns_order",
-                "event:confirmation_before"
-              ]
-            ]
-          },
-          "source_spans": [
-            {
-              "document": "policy",
-              "start": 0,
-              "end": 106
-            }
-          ],
-          "unresolved_terms": [
-            "explicitly — degree of explicitness not defined",
-            "has confirmed — whether confirmation must be a discrete prior event or a persisting state",
-            "scope of non-pending orders — governed by other rules or unregulated?"
-          ]
-        },
-        {
-          "hypothesis_id": "policy-program:h2",
-          "basis": "Reading 'only if' as a biconditional (if and only if), creating an affirmative obligation: when an order is pending, owned by the requester, and cancellation has been confirmed, the system MUST cancel it. Failure to cancel under these conditions is a violation, not merely a permitted non-action.",
-          "program": {
-            "violation_clauses": [
-              [
-                "action:cancel_order",
-                "state:order_pending",
-                "!identity:requester_owns_order"
-              ],
-              [
-                "action:cancel_order",
-                "state:order_pending",
-                "!event:confirmation_before"
-              ],
-              [
-                "state:order_pending",
-                "identity:requester_owns_order",
-                "event:confirmation_before",
-                "!action:cancel_order"
-              ]
-            ],
-            "permission_clauses": [
-              [
-                "state:order_pending",
-                "identity:requester_owns_order",
-                "event:confirmation_before"
-              ]
-            ]
-          },
-          "source_spans": [
-            {
-              "document": "policy",
-              "start": 0,
-              "end": 106
-            }
-          ],
-          "unresolved_terms": [
-            "only if — whether it encodes a strict necessary condition or a biconditional obligation",
-            "explicitly — degree of explicitness not defined",
-            "has confirmed — whether confirmation must be a discrete prior event or a persisting state"
-          ]
-        }
-      ]
+      "empirical_hypotheses": []
     },
     "fixed_p1": {
       "case_id": "nested_cancel::0",
@@ -279,11 +39,11 @@
       "prediction": null,
       "source_coverage": 1.0,
       "served_model": "qwen3.8-flash",
-      "latency_ms": 9491.314,
+      "latency_ms": 7639.69,
       "usage": {
         "prompt_tokens": 454,
-        "completion_tokens": 440,
-        "total_tokens": 894
+        "completion_tokens": 399,
+        "total_tokens": 853
       }
     }
   },
@@ -297,10 +57,10 @@
       "served_model": "qwen3.8-flash",
       "usage": {
         "prompt_tokens": 616,
-        "completion_tokens": 2951,
-        "total_tokens": 3567
+        "completion_tokens": 1298,
+        "total_tokens": 1914
       },
-      "latency_ms": 45592.375,
+      "latency_ms": 32039.306,
       "transport_status": "SUCCESS",
       "schema_status": "INVALID",
       "schema_issues": [
@@ -322,13 +82,20 @@
       "served_model": "qwen3.8-flash",
       "usage": {
         "prompt_tokens": 650,
-        "completion_tokens": 2902,
-        "total_tokens": 3552
+        "completion_tokens": 2399,
+        "total_tokens": 3049
       },
-      "latency_ms": 52636.535,
+      "latency_ms": 60615.94,
       "transport_status": "SUCCESS",
-      "schema_status": "VALID",
-      "schema_issues": [],
+      "schema_status": "INVALID",
+      "schema_issues": [
+        {
+          "code": "JSON_INVALID",
+          "path": "",
+          "expected_type": null,
+          "actual_type": null
+        }
+      ],
       "error_category": null
     }
   ],
@@ -351,10 +118,10 @@
       "served_model": "qwen3.8-flash",
       "usage": {
         "prompt_tokens": 454,
-        "completion_tokens": 440,
-        "total_tokens": 894
+        "completion_tokens": 399,
+        "total_tokens": 853
       },
-      "latency_ms": 9489.345
+      "latency_ms": 7638.925
     }
   ]
 }

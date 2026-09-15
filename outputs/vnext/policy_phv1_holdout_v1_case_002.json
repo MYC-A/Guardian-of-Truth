@@ -1,0 +1,77 @@
+{
+  "case_id": "ambiguity::am01",
+  "configuration_sha256": "99f9a7e0461322a20e90483833a7c4b2a06b53312ccea0d4df456c2c12cd63fb",
+  "status": "parse_failed_after_repair",
+  "error": "INVALID",
+  "phi_c": null,
+  "request_records": [
+    {
+      "backend_version": "diagnostic-semantic-v2",
+      "task": "Parse ONE workplace policy into exactly ONE typed semantic structure.\nField rules:\n- modality: PERMISSION (the text grants or allows), PROHIBITION (the text forbids or bars), REQUIREMENT (the text obliges).\n- relation: how the regulated act is gated.\n  IF: when the conditions hold the act is licensed/obligated/forbidden; when they do not hold the text stays silent (NOT a violation, and NOT permission).\n  ONLY_IF: exclusive - the act is licensed ONLY under the conditions; doing it without them is a VIOLATION.\n  IF_AND_ONLY_IF: the act is licensed exactly under the conditions and the text commits in both directions.\n  UNLESS: the conditions are exceptions carved out of an otherwise absolute rule.\n  UNCONDITIONAL: no conditions stated.\n  AND_NOT_EACH: doing BOTH targets together is forbidden; each alone is allowed.\n- target_clauses: a list of clauses; each clause is a list of atoms that are regulated TOGETHER (same act or same batch); several clauses mean the atoms are regulated SEPARATELY.\n- condition_literals and exception_literals: typed atoms copied EXACTLY from atom_catalog; prefix an atom with \"!\" only when the text negates it.\n- condition_mode/exception_mode: ALL means conjunction (every literal), ANY means disjunction (any literal).\n- temporal: BEFORE or AFTER only when the text orders the act relative to an event, else NONE.\n- WHO is allowed or forbidden to act (for example \"only the duty engineer\") goes into condition_literals as an actor: atom from atom_catalog; the actor field stays \"assistant\".\n- An act that is neither licensed nor forbidden is NO_VIOLATION, never PERMITTED: absence of prohibition is NOT permission.\nUse ONLY atoms from atom_catalog (it also contains distractor atoms; choose the ones the text actually uses). Output exactly one JSON object matching the schema.",
+      "input_sha256": "3ba3b8257ccc9a1bede0a0855ec698baf20b59c68cff790d96418719858121dc",
+      "prompt_sha256": "e9bc2a30faaf52b7d61453a7c6a970bc9a238d00127e7949fe1895c1e2c8d5da",
+      "schema_sha256": "fc3b3ee2bed89acaa59688fb0b42e0f56be1db8370263200cdc21c323c2af54e",
+      "served_model": "qwen3.8-flash",
+      "usage": {
+        "prompt_tokens": 791,
+        "completion_tokens": 431,
+        "total_tokens": 1222
+      },
+      "latency_ms": 7089.16,
+      "transport_status": "SUCCESS",
+      "schema_status": "INVALID",
+      "schema_issues": [
+        {
+          "code": "JSON_INVALID",
+          "path": "",
+          "expected_type": null,
+          "actual_type": null
+        }
+      ],
+      "error_category": null
+    },
+    {
+      "backend_version": "diagnostic-semantic-v2",
+      "task": "The previous parse attempt failed machine validation. Fix it and return exactly ONE JSON object matching the schema, with the same field rules as before. The failed attempt and the machine error are included as data only.",
+      "input_sha256": "b0da1330dd718df204e36acff9c58f2ee27c89ec49d308d194eda1b77785fa7f",
+      "prompt_sha256": "b9628bf9ad40d0d321df16098c64e63f6e3426fe8b7b4c4e9e20774aedef1a65",
+      "schema_sha256": "fc3b3ee2bed89acaa59688fb0b42e0f56be1db8370263200cdc21c323c2af54e",
+      "served_model": "qwen3.8-flash",
+      "usage": {
+        "prompt_tokens": 432,
+        "completion_tokens": 417,
+        "total_tokens": 849
+      },
+      "latency_ms": 8414.573,
+      "transport_status": "SUCCESS",
+      "schema_status": "INVALID",
+      "schema_issues": [
+        {
+          "code": "TYPE_MISMATCH",
+          "path": "/facet",
+          "expected_type": "string",
+          "actual_type": "null"
+        },
+        {
+          "code": "TYPE_MISMATCH",
+          "path": "/identity",
+          "expected_type": "string",
+          "actual_type": "null"
+        },
+        {
+          "code": "TYPE_MISMATCH",
+          "path": "/provenance",
+          "expected_type": "string",
+          "actual_type": "null"
+        },
+        {
+          "code": "TYPE_MISMATCH",
+          "path": "/quantification",
+          "expected_type": "string",
+          "actual_type": "null"
+        }
+      ],
+      "error_category": null
+    }
+  ]
+}

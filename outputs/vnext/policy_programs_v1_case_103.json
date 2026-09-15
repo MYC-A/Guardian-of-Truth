@@ -3,30 +3,268 @@
   "configuration_sha256": "8ab1c29d5c2e4747ec410049227f69ae1a048ce8b32e951a59ce17bbcf475317",
   "prediction": {
     "native": {
-      "hypotheses": [],
+      "hypotheses": [
+        {
+          "hypothesis_id": "policy-program:h0",
+          "basis": "Standard logical reading of 'mutually exclusive' as ¬(A ∧ B): message and tool call cannot co-occur, but a turn may have neither.",
+          "program": {
+            "violation_clauses": [
+              [
+                "turn:has_message",
+                "turn:has_tool_call"
+              ]
+            ],
+            "permission_clauses": [
+              [
+                "!turn:has_message"
+              ],
+              [
+                "!turn:has_tool_call"
+              ],
+              [
+                "!turn:has_message",
+                "!turn:has_tool_call"
+              ]
+            ]
+          },
+          "source_spans": [
+            {
+              "document": "policy",
+              "start": 111,
+              "end": 181
+            }
+          ],
+          "unresolved_terms": [
+            "Whether 'mutually exclusive' in this policy context is intended as logical non-conjunction or as exclusive-or",
+            "Scope of 'Other event types are described separately' relative to the mutual exclusivity constraint"
+          ]
+        },
+        {
+          "hypothesis_id": "policy-program:h1",
+          "basis": "Colloquial reading of 'mutually exclusive' as XOR (exactly one): a turn must have precisely one of message or tool call, and having neither is also a violation.",
+          "program": {
+            "violation_clauses": [
+              [
+                "turn:has_message",
+                "turn:has_tool_call"
+              ],
+              [
+                "!turn:has_message",
+                "!turn:has_tool_call"
+              ]
+            ],
+            "permission_clauses": [
+              [
+                "turn:has_message",
+                "!turn:has_tool_call"
+              ],
+              [
+                "!turn:has_message",
+                "turn:has_tool_call"
+              ]
+            ]
+          },
+          "source_spans": [
+            {
+              "document": "policy",
+              "start": 111,
+              "end": 181
+            }
+          ],
+          "unresolved_terms": [
+            "Whether 'mutually exclusive' is intended to also impose an existence requirement",
+            "Whether a turn with only distractor:irrelevant satisfies the existence requirement"
+          ]
+        },
+        {
+          "hypothesis_id": "policy-program:h2",
+          "basis": "Reading that 'Other event types are described separately' scopes the mutual exclusivity to only message and tool call, leaving distractor:irrelevant unconstrained by this policy.",
+          "program": {
+            "violation_clauses": [
+              [
+                "turn:has_message",
+                "turn:has_tool_call"
+              ]
+            ],
+            "permission_clauses": [
+              [
+                "!turn:has_message"
+              ],
+              [
+                "!turn:has_tool_call"
+              ],
+              [
+                "!turn:has_message",
+                "!turn:has_tool_call"
+              ],
+              [
+                "distractor:irrelevant"
+              ]
+            ]
+          },
+          "source_spans": [
+            {
+              "document": "policy",
+              "start": 67,
+              "end": 110
+            },
+            {
+              "document": "policy",
+              "start": 111,
+              "end": 181
+            }
+          ],
+          "unresolved_terms": [
+            "What 'described separately' means for obligations on distractor:irrelevant",
+            "Whether distractor:irrelevant can co-occur with message or tool call under this reading"
+          ]
+        }
+      ],
       "coverage": {
         "status": "OPEN_SEMANTICS",
         "universe_source": null,
         "enumeration_complete": false,
-        "unresolved_terms": [],
+        "unresolved_terms": [
+          "Precise logical force of 'mutually exclusive' (non-conjunction vs. exclusive-or)",
+          "Obligations governing 'other event types' referenced by 'described separately'",
+          "Whether 'assistant turn' includes turns with no message and no tool call",
+          "Whether 'mutually exclusive' in this policy context is intended as logical non-conjunction or as exclusive-or",
+          "Scope of 'Other event types are described separately' relative to the mutual exclusivity constraint",
+          "Whether 'mutually exclusive' is intended to also impose an existence requirement",
+          "Whether a turn with only distractor:irrelevant satisfies the existence requirement",
+          "What 'described separately' means for obligations on distractor:irrelevant",
+          "Whether distractor:irrelevant can co-occur with message or tool call under this reading"
+        ],
         "discarded_hypotheses": [],
-        "challenger_alternatives": []
+        "challenger_alternatives": [
+          "policy-program:h0",
+          "policy-program:h1",
+          "policy-program:h2"
+        ]
       },
       "failures": [
         [
           "policy_program_hypotheses_v2",
           "SCHEMA_ERROR"
-        ],
-        [
-          "policy_program_missing_reading_v2",
-          "SCHEMA_ERROR"
-        ],
-        [
-          "policy_program_inventory",
-          "POLICY_NO_INTERPRETATION"
         ]
       ],
-      "empirical_hypotheses": []
+      "empirical_hypotheses": [
+        {
+          "hypothesis_id": "policy-program:h0",
+          "basis": "Standard logical reading of 'mutually exclusive' as ¬(A ∧ B): message and tool call cannot co-occur, but a turn may have neither.",
+          "program": {
+            "violation_clauses": [
+              [
+                "turn:has_message",
+                "turn:has_tool_call"
+              ]
+            ],
+            "permission_clauses": [
+              [
+                "!turn:has_message"
+              ],
+              [
+                "!turn:has_tool_call"
+              ],
+              [
+                "!turn:has_message",
+                "!turn:has_tool_call"
+              ]
+            ]
+          },
+          "source_spans": [
+            {
+              "document": "policy",
+              "start": 111,
+              "end": 181
+            }
+          ],
+          "unresolved_terms": [
+            "Whether 'mutually exclusive' in this policy context is intended as logical non-conjunction or as exclusive-or",
+            "Scope of 'Other event types are described separately' relative to the mutual exclusivity constraint"
+          ]
+        },
+        {
+          "hypothesis_id": "policy-program:h1",
+          "basis": "Colloquial reading of 'mutually exclusive' as XOR (exactly one): a turn must have precisely one of message or tool call, and having neither is also a violation.",
+          "program": {
+            "violation_clauses": [
+              [
+                "turn:has_message",
+                "turn:has_tool_call"
+              ],
+              [
+                "!turn:has_message",
+                "!turn:has_tool_call"
+              ]
+            ],
+            "permission_clauses": [
+              [
+                "turn:has_message",
+                "!turn:has_tool_call"
+              ],
+              [
+                "!turn:has_message",
+                "turn:has_tool_call"
+              ]
+            ]
+          },
+          "source_spans": [
+            {
+              "document": "policy",
+              "start": 111,
+              "end": 181
+            }
+          ],
+          "unresolved_terms": [
+            "Whether 'mutually exclusive' is intended to also impose an existence requirement",
+            "Whether a turn with only distractor:irrelevant satisfies the existence requirement"
+          ]
+        },
+        {
+          "hypothesis_id": "policy-program:h2",
+          "basis": "Reading that 'Other event types are described separately' scopes the mutual exclusivity to only message and tool call, leaving distractor:irrelevant unconstrained by this policy.",
+          "program": {
+            "violation_clauses": [
+              [
+                "turn:has_message",
+                "turn:has_tool_call"
+              ]
+            ],
+            "permission_clauses": [
+              [
+                "!turn:has_message"
+              ],
+              [
+                "!turn:has_tool_call"
+              ],
+              [
+                "!turn:has_message",
+                "!turn:has_tool_call"
+              ],
+              [
+                "distractor:irrelevant"
+              ]
+            ]
+          },
+          "source_spans": [
+            {
+              "document": "policy",
+              "start": 67,
+              "end": 110
+            },
+            {
+              "document": "policy",
+              "start": 111,
+              "end": 181
+            }
+          ],
+          "unresolved_terms": [
+            "What 'described separately' means for obligations on distractor:irrelevant",
+            "Whether distractor:irrelevant can co-occur with message or tool call under this reading"
+          ]
+        }
+      ]
     },
     "fixed_p1": {
       "case_id": "message_xor_tool::3",
@@ -39,11 +277,11 @@
       "prediction": null,
       "source_coverage": 1.0,
       "served_model": "qwen3.8-flash",
-      "latency_ms": 6528.396,
+      "latency_ms": 12041.668,
       "usage": {
         "prompt_tokens": 410,
-        "completion_tokens": 415,
-        "total_tokens": 825
+        "completion_tokens": 668,
+        "total_tokens": 1078
       }
     }
   },
@@ -57,10 +295,10 @@
       "served_model": "qwen3.8-flash",
       "usage": {
         "prompt_tokens": 572,
-        "completion_tokens": 1318,
-        "total_tokens": 1890
+        "completion_tokens": 1620,
+        "total_tokens": 2192
       },
-      "latency_ms": 23438.336,
+      "latency_ms": 23938.246,
       "transport_status": "SUCCESS",
       "schema_status": "INVALID",
       "schema_issues": [
@@ -82,20 +320,13 @@
       "served_model": "qwen3.8-flash",
       "usage": {
         "prompt_tokens": 606,
-        "completion_tokens": 1724,
-        "total_tokens": 2330
+        "completion_tokens": 1369,
+        "total_tokens": 1975
       },
-      "latency_ms": 32010.234,
+      "latency_ms": 22252.546,
       "transport_status": "SUCCESS",
-      "schema_status": "INVALID",
-      "schema_issues": [
-        {
-          "code": "ADDITIONAL_PROPERTIES",
-          "path": "",
-          "expected_type": null,
-          "actual_type": null
-        }
-      ],
+      "schema_status": "VALID",
+      "schema_issues": [],
       "error_category": null
     }
   ],
@@ -118,10 +349,10 @@
       "served_model": "qwen3.8-flash",
       "usage": {
         "prompt_tokens": 410,
-        "completion_tokens": 415,
-        "total_tokens": 825
+        "completion_tokens": 668,
+        "total_tokens": 1078
       },
-      "latency_ms": 6526.561
+      "latency_ms": 12040.711
     }
   ]
 }

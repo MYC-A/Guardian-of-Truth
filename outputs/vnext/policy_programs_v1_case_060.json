@@ -6,7 +6,7 @@
       "hypotheses": [
         {
           "hypothesis_id": "policy-program:h0",
-          "basis": "The policy prohibits exceeding three gift cards per reservation; the violation condition is directly captured by state:gift_card_count_gt_3.",
+          "basis": "The policy sets an inclusive upper bound of three gift cards per reservation. Violation occurs when the count strictly exceeds three; permission covers counts of zero through three.",
           "program": {
             "violation_clauses": [
               [
@@ -28,8 +28,92 @@
           ],
           "unresolved_terms": [
             "reservation",
-            "use",
-            "gift card"
+            "gift card",
+            "use"
+          ]
+        },
+        {
+          "hypothesis_id": "policy-program:h1",
+          "basis": "The modal 'can' in 'Each reservation can use at most three gift cards' may express a system capability or blocking constraint rather than a policy prohibition. Under this reading, attempting to use more than three is simply not possible (the action is prevented), so no violation state arises from exceeding the limit—only the permitted state is defined.",
+          "program": {
+            "violation_clauses": [],
+            "permission_clauses": [
+              [
+                "!state:gift_card_count_gt_3"
+              ]
+            ]
+          },
+          "source_spans": [
+            {
+              "document": "policy",
+              "start": 0,
+              "end": 50
+            }
+          ],
+          "unresolved_terms": [
+            "distinction between blocked action and policy violation",
+            "enforcement mechanism"
+          ]
+        },
+        {
+          "hypothesis_id": "policy-program:h2",
+          "basis": "Violation may require both the count exceeding three AND an additional detection or boundary condition (e.g., the system has flagged the reservation). Under this reading, exceeding the limit without the boundary condition being met does not constitute a violation.",
+          "program": {
+            "violation_clauses": [
+              [
+                "state:gift_card_count_gt_3",
+                "distractor:boundary_2"
+              ]
+            ],
+            "permission_clauses": [
+              [
+                "!state:gift_card_count_gt_3"
+              ],
+              [
+                "!distractor:boundary_2"
+              ]
+            ]
+          },
+          "source_spans": [
+            {
+              "document": "policy",
+              "start": 0,
+              "end": 50
+            }
+          ],
+          "unresolved_terms": [
+            "nature of boundary_2 condition",
+            "whether detection is required for violation"
+          ]
+        },
+        {
+          "hypothesis_id": "policy-program:h3",
+          "basis": "The boundary condition 'at most three' might be read disjunctively with an alternative violation trigger: either exceeding three gift cards OR meeting some other boundary condition constitutes a violation. This expands the violation set beyond the existing reading.",
+          "program": {
+            "violation_clauses": [
+              [
+                "state:gift_card_count_gt_3"
+              ],
+              [
+                "distractor:boundary_2"
+              ]
+            ],
+            "permission_clauses": [
+              [
+                "!state:gift_card_count_gt_3",
+                "!distractor:boundary_2"
+              ]
+            ]
+          },
+          "source_spans": [
+            {
+              "document": "policy",
+              "start": 0,
+              "end": 50
+            }
+          ],
+          "unresolved_terms": [
+            "what boundary_2 represents as an independent violation trigger"
           ]
         }
       ],
@@ -39,19 +123,29 @@
         "enumeration_complete": false,
         "unresolved_terms": [
           "reservation",
-          "use",
           "gift card",
-          "at most three (boundary inclusive vs exclusive)",
-          "can (permission vs obligation vs capability)"
+          "use",
+          "definition of 'gift card'",
+          "per-reservation vs cumulative interpretation",
+          "enforcement vs prohibition distinction",
+          "distinction between blocked action and policy violation",
+          "enforcement mechanism",
+          "nature of boundary_2 condition",
+          "whether detection is required for violation",
+          "what boundary_2 represents as an independent violation trigger"
         ],
         "discarded_hypotheses": [],
-        "challenger_alternatives": []
+        "challenger_alternatives": [
+          "policy-program:h1",
+          "policy-program:h2",
+          "policy-program:h3"
+        ]
       },
       "failures": [],
       "empirical_hypotheses": [
         {
           "hypothesis_id": "policy-program:h0",
-          "basis": "The policy prohibits exceeding three gift cards per reservation; the violation condition is directly captured by state:gift_card_count_gt_3.",
+          "basis": "The policy sets an inclusive upper bound of three gift cards per reservation. Violation occurs when the count strictly exceeds three; permission covers counts of zero through three.",
           "program": {
             "violation_clauses": [
               [
@@ -73,8 +167,92 @@
           ],
           "unresolved_terms": [
             "reservation",
-            "use",
-            "gift card"
+            "gift card",
+            "use"
+          ]
+        },
+        {
+          "hypothesis_id": "policy-program:h1",
+          "basis": "The modal 'can' in 'Each reservation can use at most three gift cards' may express a system capability or blocking constraint rather than a policy prohibition. Under this reading, attempting to use more than three is simply not possible (the action is prevented), so no violation state arises from exceeding the limit—only the permitted state is defined.",
+          "program": {
+            "violation_clauses": [],
+            "permission_clauses": [
+              [
+                "!state:gift_card_count_gt_3"
+              ]
+            ]
+          },
+          "source_spans": [
+            {
+              "document": "policy",
+              "start": 0,
+              "end": 50
+            }
+          ],
+          "unresolved_terms": [
+            "distinction between blocked action and policy violation",
+            "enforcement mechanism"
+          ]
+        },
+        {
+          "hypothesis_id": "policy-program:h2",
+          "basis": "Violation may require both the count exceeding three AND an additional detection or boundary condition (e.g., the system has flagged the reservation). Under this reading, exceeding the limit without the boundary condition being met does not constitute a violation.",
+          "program": {
+            "violation_clauses": [
+              [
+                "state:gift_card_count_gt_3",
+                "distractor:boundary_2"
+              ]
+            ],
+            "permission_clauses": [
+              [
+                "!state:gift_card_count_gt_3"
+              ],
+              [
+                "!distractor:boundary_2"
+              ]
+            ]
+          },
+          "source_spans": [
+            {
+              "document": "policy",
+              "start": 0,
+              "end": 50
+            }
+          ],
+          "unresolved_terms": [
+            "nature of boundary_2 condition",
+            "whether detection is required for violation"
+          ]
+        },
+        {
+          "hypothesis_id": "policy-program:h3",
+          "basis": "The boundary condition 'at most three' might be read disjunctively with an alternative violation trigger: either exceeding three gift cards OR meeting some other boundary condition constitutes a violation. This expands the violation set beyond the existing reading.",
+          "program": {
+            "violation_clauses": [
+              [
+                "state:gift_card_count_gt_3"
+              ],
+              [
+                "distractor:boundary_2"
+              ]
+            ],
+            "permission_clauses": [
+              [
+                "!state:gift_card_count_gt_3",
+                "!distractor:boundary_2"
+              ]
+            ]
+          },
+          "source_spans": [
+            {
+              "document": "policy",
+              "start": 0,
+              "end": 50
+            }
+          ],
+          "unresolved_terms": [
+            "what boundary_2 represents as an independent violation trigger"
           ]
         }
       ]
@@ -100,11 +278,11 @@
       },
       "source_coverage": 1.0,
       "served_model": "qwen3.8-flash",
-      "latency_ms": 7299.172,
+      "latency_ms": 6842.01,
       "usage": {
         "prompt_tokens": 417,
-        "completion_tokens": 230,
-        "total_tokens": 647
+        "completion_tokens": 257,
+        "total_tokens": 674
       }
     }
   },
@@ -118,10 +296,10 @@
       "served_model": "qwen3.8-flash",
       "usage": {
         "prompt_tokens": 577,
-        "completion_tokens": 1003,
-        "total_tokens": 1580
+        "completion_tokens": 1048,
+        "total_tokens": 1625
       },
-      "latency_ms": 20653.185,
+      "latency_ms": 24957.696,
       "transport_status": "SUCCESS",
       "schema_status": "VALID",
       "schema_issues": [],
@@ -130,16 +308,16 @@
     {
       "backend_version": "diagnostic-semantic-v2",
       "task": "policy_program_missing_reading_v2",
-      "input_sha256": "708c90ce9c10d8e74e54be7b29f368bb219d7a24e4eff22b555027aca79d387f",
-      "prompt_sha256": "58149759844db0a7733b90dd66f5c54b23a608e0e286f04bd800198e164f1d3b",
+      "input_sha256": "a9f07a9fdf5ab74cacec7f94437af6c6d4ebdd81e25c43d30bf6a75a4078be28",
+      "prompt_sha256": "4b762e14bb19bde5a7ee9c7e346ec7854e7244fdb619226b5d95cd529c415b7c",
       "schema_sha256": "97573049fbeffc03aac36b2f78a5aad19e107067dd0a00401548c6d5c821061d",
       "served_model": "qwen3.8-flash",
       "usage": {
-        "prompt_tokens": 673,
-        "completion_tokens": 1290,
-        "total_tokens": 1963
+        "prompt_tokens": 679,
+        "completion_tokens": 2260,
+        "total_tokens": 2939
       },
-      "latency_ms": 25246.561,
+      "latency_ms": 60545.88,
       "transport_status": "SUCCESS",
       "schema_status": "VALID",
       "schema_issues": [],
@@ -158,10 +336,10 @@
       "served_model": "qwen3.8-flash",
       "usage": {
         "prompt_tokens": 417,
-        "completion_tokens": 230,
-        "total_tokens": 647
+        "completion_tokens": 257,
+        "total_tokens": 674
       },
-      "latency_ms": 7297.283
+      "latency_ms": 6841.274
     }
   ]
 }

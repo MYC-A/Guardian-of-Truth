@@ -6,7 +6,7 @@
       "hypotheses": [
         {
           "hypothesis_id": "policy-program:h0",
-          "basis": "The policy requires evidence of a successful delete result before one may claim a file was deleted. An attempt alone is insufficient to support the claim.",
+          "basis": "The policy prohibits asserting that a file was deleted (claim:file_deleted) unless there is evidence of a successful delete result (evidence:successful_delete_result). A delete attempt alone does not constitute an observed deletion, so the claim must be gated by the evidence atom.",
           "program": {
             "violation_clauses": [
               [
@@ -29,19 +29,18 @@
             }
           ],
           "unresolved_terms": [
-            "delete attempt",
-            "observed deletion",
-            "convert"
+            "delete attempt (not directly represented as an atom; mapped to absence of evidence:successful_delete_result)",
+            "observed deletion (mapped to evidence:successful_delete_result)",
+            "convert (the act of treating an attempt as an observation)"
           ]
         },
         {
           "hypothesis_id": "policy-program:h1",
-          "basis": "The policy is a prohibition: the absence of successful-delete evidence means the claim must not be made. This frames the rule as a blanket prohibition on unsupported deletion claims rather than a conditional permission.",
+          "basis": "The policy 'Do not convert a delete attempt into an observed deletion' could be read as an unconditional prohibition on claim:file_deleted. Under this reading, the only evidence available (evidence:successful_delete_result) inherently represents the result of a delete attempt, so it can never legitimately ground the claim. The obligation is absolute: never assert deletion regardless of what evidence exists.",
           "program": {
             "violation_clauses": [
               [
-                "claim:file_deleted",
-                "!evidence:successful_delete_result"
+                "claim:file_deleted"
               ]
             ],
             "permission_clauses": [
@@ -58,66 +57,26 @@
             }
           ],
           "unresolved_terms": [
-            "delete attempt",
-            "observed deletion",
-            "convert"
+            "whether evidence:successful_delete_result always represents an attempt-derived result or could come from independent observation"
           ]
         },
         {
           "hypothesis_id": "policy-program:h2",
-          "basis": "Irrelevant content (such as a mere mention of an attempt) cannot substitute for evidence of a successful delete result. The distractor atom represents the 'attempt' that must not be treated as proof of deletion.",
+          "basis": "The policy prohibits the specific act of 'converting' — using evidence:successful_delete_result (which may itself be the output of a delete attempt) as the basis for claim:file_deleted. Under this reading, the presence of that evidence alongside the claim is the violation, because it represents the prohibited conversion from attempt-result to observed-deletion. The claim is only safe when that particular evidence is absent (e.g., the claim rests on other grounds or is not made).",
           "program": {
             "violation_clauses": [
               [
                 "claim:file_deleted",
-                "!evidence:successful_delete_result",
-                "distractor:irrelevant"
+                "evidence:successful_delete_result"
               ]
             ],
             "permission_clauses": [
-              [
-                "claim:file_deleted",
-                "evidence:successful_delete_result"
-              ],
               [
                 "!claim:file_deleted"
-              ]
-            ]
-          },
-          "source_spans": [
-            {
-              "document": "policy",
-              "start": 0,
-              "end": 58
-            }
-          ],
-          "unresolved_terms": [
-            "delete attempt",
-            "observed deletion",
-            "convert"
-          ]
-        },
-        {
-          "hypothesis_id": "policy-program:h3",
-          "basis": "The policy specifically prohibits claiming deletion when an attempt has been made but no successful result is observed. The violation is triggered by the combination of the attempt (distractor:irrelevant) being present alongside the claim without evidence — distinguishing the 'attempt-as-proof' scenario from a general absence-of-evidence scenario. The permission clause allows the claim when evidence exists, regardless of whether an attempt also exists.",
-          "program": {
-            "violation_clauses": [
+              ],
               [
-                "claim:file_deleted",
-                "distractor:irrelevant",
                 "!evidence:successful_delete_result"
               ]
-            ],
-            "permission_clauses": [
-              [
-                "claim:file_deleted",
-                "evidence:successful_delete_result"
-              ],
-              [
-                "!claim:file_deleted",
-                "!evidence:successful_delete_result",
-                "!distractor:irrelevant"
-              ]
             ]
           },
           "source_spans": [
@@ -128,87 +87,8 @@
             }
           ],
           "unresolved_terms": [
-            "convert",
-            "observed"
-          ]
-        },
-        {
-          "hypothesis_id": "policy-program:h4",
-          "basis": "The policy is a meta-prohibition on the conversion operation itself: the attempt (distractor:irrelevant) must never be reclassified or treated as equivalent to evidence (evidence:successful_delete_result). The violation occurs when the claim is made and the only justification available is the attempt — i.e., the attempt is being used as if it were evidence. This frames the rule as prohibiting a specific inference step rather than a general evidence requirement.",
-          "program": {
-            "violation_clauses": [
-              [
-                "claim:file_deleted",
-                "distractor:irrelevant",
-                "!evidence:successful_delete_result"
-              ],
-              [
-                "claim:file_deleted",
-                "!evidence:successful_delete_result",
-                "distractor:irrelevant"
-              ]
-            ],
-            "permission_clauses": [
-              [
-                "claim:file_deleted",
-                "evidence:successful_delete_result"
-              ],
-              [
-                "!claim:file_deleted",
-                "distractor:irrelevant"
-              ]
-            ]
-          },
-          "source_spans": [
-            {
-              "document": "policy",
-              "start": 0,
-              "end": 58
-            }
-          ],
-          "unresolved_terms": [
-            "convert",
-            "observed",
-            "delete attempt"
-          ]
-        },
-        {
-          "hypothesis_id": "policy-program:h5",
-          "basis": "The policy prohibits the claim when an attempt is the sole basis, but does not prohibit the claim merely because an attempt exists alongside valid evidence. The behavioral distinction is that the presence of an attempt is not itself disqualifying — only its use as a substitute for evidence is. This means the violation requires the attempt to be the operative justification (present while evidence is absent), not merely co-present with the claim.",
-          "program": {
-            "violation_clauses": [
-              [
-                "claim:file_deleted",
-                "!evidence:successful_delete_result",
-                "distractor:irrelevant"
-              ]
-            ],
-            "permission_clauses": [
-              [
-                "claim:file_deleted",
-                "evidence:successful_delete_result",
-                "distractor:irrelevant"
-              ],
-              [
-                "claim:file_deleted",
-                "evidence:successful_delete_result",
-                "!distractor:irrelevant"
-              ],
-              [
-                "!claim:file_deleted"
-              ]
-            ]
-          },
-          "source_spans": [
-            {
-              "document": "policy",
-              "start": 0,
-              "end": 58
-            }
-          ],
-          "unresolved_terms": [
-            "convert",
-            "observed"
+            "whether 'convert' implies the evidence must be the proximate cause of the claim or merely co-present",
+            "whether other evidence sources could independently license the claim"
           ]
         }
       ],
@@ -220,20 +100,26 @@
           "delete attempt",
           "observed deletion",
           "convert",
-          "observed"
+          "delete attempt (not directly represented as an atom; mapped to absence of evidence:successful_delete_result)",
+          "observed deletion (mapped to evidence:successful_delete_result)",
+          "convert (the act of treating an attempt as an observation)",
+          "whether evidence:successful_delete_result always originates from a delete attempt or could come from independent verification",
+          "the actor or process that performs the 'conversion'",
+          "whether evidence:successful_delete_result always represents an attempt-derived result or could come from independent observation",
+          "whether 'convert' implies the evidence must be the proximate cause of the claim or merely co-present",
+          "whether other evidence sources could independently license the claim"
         ],
         "discarded_hypotheses": [],
         "challenger_alternatives": [
-          "policy-program:h3",
-          "policy-program:h4",
-          "policy-program:h5"
+          "policy-program:h1",
+          "policy-program:h2"
         ]
       },
       "failures": [],
       "empirical_hypotheses": [
         {
           "hypothesis_id": "policy-program:h0",
-          "basis": "The policy requires evidence of a successful delete result before one may claim a file was deleted. An attempt alone is insufficient to support the claim.",
+          "basis": "The policy prohibits asserting that a file was deleted (claim:file_deleted) unless there is evidence of a successful delete result (evidence:successful_delete_result). A delete attempt alone does not constitute an observed deletion, so the claim must be gated by the evidence atom.",
           "program": {
             "violation_clauses": [
               [
@@ -256,19 +142,18 @@
             }
           ],
           "unresolved_terms": [
-            "delete attempt",
-            "observed deletion",
-            "convert"
+            "delete attempt (not directly represented as an atom; mapped to absence of evidence:successful_delete_result)",
+            "observed deletion (mapped to evidence:successful_delete_result)",
+            "convert (the act of treating an attempt as an observation)"
           ]
         },
         {
           "hypothesis_id": "policy-program:h1",
-          "basis": "The policy is a prohibition: the absence of successful-delete evidence means the claim must not be made. This frames the rule as a blanket prohibition on unsupported deletion claims rather than a conditional permission.",
+          "basis": "The policy 'Do not convert a delete attempt into an observed deletion' could be read as an unconditional prohibition on claim:file_deleted. Under this reading, the only evidence available (evidence:successful_delete_result) inherently represents the result of a delete attempt, so it can never legitimately ground the claim. The obligation is absolute: never assert deletion regardless of what evidence exists.",
           "program": {
             "violation_clauses": [
               [
-                "claim:file_deleted",
-                "!evidence:successful_delete_result"
+                "claim:file_deleted"
               ]
             ],
             "permission_clauses": [
@@ -285,66 +170,26 @@
             }
           ],
           "unresolved_terms": [
-            "delete attempt",
-            "observed deletion",
-            "convert"
+            "whether evidence:successful_delete_result always represents an attempt-derived result or could come from independent observation"
           ]
         },
         {
           "hypothesis_id": "policy-program:h2",
-          "basis": "Irrelevant content (such as a mere mention of an attempt) cannot substitute for evidence of a successful delete result. The distractor atom represents the 'attempt' that must not be treated as proof of deletion.",
+          "basis": "The policy prohibits the specific act of 'converting' — using evidence:successful_delete_result (which may itself be the output of a delete attempt) as the basis for claim:file_deleted. Under this reading, the presence of that evidence alongside the claim is the violation, because it represents the prohibited conversion from attempt-result to observed-deletion. The claim is only safe when that particular evidence is absent (e.g., the claim rests on other grounds or is not made).",
           "program": {
             "violation_clauses": [
               [
                 "claim:file_deleted",
-                "!evidence:successful_delete_result",
-                "distractor:irrelevant"
+                "evidence:successful_delete_result"
               ]
             ],
             "permission_clauses": [
-              [
-                "claim:file_deleted",
-                "evidence:successful_delete_result"
-              ],
               [
                 "!claim:file_deleted"
-              ]
-            ]
-          },
-          "source_spans": [
-            {
-              "document": "policy",
-              "start": 0,
-              "end": 58
-            }
-          ],
-          "unresolved_terms": [
-            "delete attempt",
-            "observed deletion",
-            "convert"
-          ]
-        },
-        {
-          "hypothesis_id": "policy-program:h3",
-          "basis": "The policy specifically prohibits claiming deletion when an attempt has been made but no successful result is observed. The violation is triggered by the combination of the attempt (distractor:irrelevant) being present alongside the claim without evidence — distinguishing the 'attempt-as-proof' scenario from a general absence-of-evidence scenario. The permission clause allows the claim when evidence exists, regardless of whether an attempt also exists.",
-          "program": {
-            "violation_clauses": [
+              ],
               [
-                "claim:file_deleted",
-                "distractor:irrelevant",
                 "!evidence:successful_delete_result"
               ]
-            ],
-            "permission_clauses": [
-              [
-                "claim:file_deleted",
-                "evidence:successful_delete_result"
-              ],
-              [
-                "!claim:file_deleted",
-                "!evidence:successful_delete_result",
-                "!distractor:irrelevant"
-              ]
             ]
           },
           "source_spans": [
@@ -355,87 +200,8 @@
             }
           ],
           "unresolved_terms": [
-            "convert",
-            "observed"
-          ]
-        },
-        {
-          "hypothesis_id": "policy-program:h4",
-          "basis": "The policy is a meta-prohibition on the conversion operation itself: the attempt (distractor:irrelevant) must never be reclassified or treated as equivalent to evidence (evidence:successful_delete_result). The violation occurs when the claim is made and the only justification available is the attempt — i.e., the attempt is being used as if it were evidence. This frames the rule as prohibiting a specific inference step rather than a general evidence requirement.",
-          "program": {
-            "violation_clauses": [
-              [
-                "claim:file_deleted",
-                "distractor:irrelevant",
-                "!evidence:successful_delete_result"
-              ],
-              [
-                "claim:file_deleted",
-                "!evidence:successful_delete_result",
-                "distractor:irrelevant"
-              ]
-            ],
-            "permission_clauses": [
-              [
-                "claim:file_deleted",
-                "evidence:successful_delete_result"
-              ],
-              [
-                "!claim:file_deleted",
-                "distractor:irrelevant"
-              ]
-            ]
-          },
-          "source_spans": [
-            {
-              "document": "policy",
-              "start": 0,
-              "end": 58
-            }
-          ],
-          "unresolved_terms": [
-            "convert",
-            "observed",
-            "delete attempt"
-          ]
-        },
-        {
-          "hypothesis_id": "policy-program:h5",
-          "basis": "The policy prohibits the claim when an attempt is the sole basis, but does not prohibit the claim merely because an attempt exists alongside valid evidence. The behavioral distinction is that the presence of an attempt is not itself disqualifying — only its use as a substitute for evidence is. This means the violation requires the attempt to be the operative justification (present while evidence is absent), not merely co-present with the claim.",
-          "program": {
-            "violation_clauses": [
-              [
-                "claim:file_deleted",
-                "!evidence:successful_delete_result",
-                "distractor:irrelevant"
-              ]
-            ],
-            "permission_clauses": [
-              [
-                "claim:file_deleted",
-                "evidence:successful_delete_result",
-                "distractor:irrelevant"
-              ],
-              [
-                "claim:file_deleted",
-                "evidence:successful_delete_result",
-                "!distractor:irrelevant"
-              ],
-              [
-                "!claim:file_deleted"
-              ]
-            ]
-          },
-          "source_spans": [
-            {
-              "document": "policy",
-              "start": 0,
-              "end": 58
-            }
-          ],
-          "unresolved_terms": [
-            "convert",
-            "observed"
+            "whether 'convert' implies the evidence must be the proximate cause of the claim or merely co-present",
+            "whether other evidence sources could independently license the claim"
           ]
         }
       ]
@@ -451,11 +217,11 @@
       "prediction": null,
       "source_coverage": 1.0,
       "served_model": "qwen3.8-flash",
-      "latency_ms": 13988.22,
+      "latency_ms": 12494.083,
       "usage": {
         "prompt_tokens": 394,
-        "completion_tokens": 675,
-        "total_tokens": 1069
+        "completion_tokens": 548,
+        "total_tokens": 942
       }
     }
   },
@@ -469,10 +235,10 @@
       "served_model": "qwen3.8-flash",
       "usage": {
         "prompt_tokens": 553,
-        "completion_tokens": 1418,
-        "total_tokens": 1971
+        "completion_tokens": 793,
+        "total_tokens": 1346
       },
-      "latency_ms": 22565.217,
+      "latency_ms": 18333.442,
       "transport_status": "SUCCESS",
       "schema_status": "VALID",
       "schema_issues": [],
@@ -481,16 +247,16 @@
     {
       "backend_version": "diagnostic-semantic-v2",
       "task": "policy_program_missing_reading_v2",
-      "input_sha256": "456948a1bb3a2b5ef5bbc2ba6ad96227d8fc31e1ea8d563b92dd18bc970745c1",
-      "prompt_sha256": "f5110824d940e3af559e906316b853ab97f5d67c9278f175bc9eec5bf242d527",
+      "input_sha256": "acc14caa7f2de2fb1e028f07786b17aad2963a77406485aa6d63d08f105a443e",
+      "prompt_sha256": "a2fc03b329e1b6c7c08d9e6a303e9c198a4e97541712582174488eb32cd83e47",
       "schema_sha256": "75027c3e1003b53ed06bb912390d5808105372e9f17aded9bf5b652cbfb82274",
       "served_model": "qwen3.8-flash",
       "usage": {
-        "prompt_tokens": 830,
-        "completion_tokens": 1611,
-        "total_tokens": 2441
+        "prompt_tokens": 683,
+        "completion_tokens": 1511,
+        "total_tokens": 2194
       },
-      "latency_ms": 33045.878,
+      "latency_ms": 43508.59,
       "transport_status": "SUCCESS",
       "schema_status": "VALID",
       "schema_issues": [],
@@ -516,10 +282,10 @@
       "served_model": "qwen3.8-flash",
       "usage": {
         "prompt_tokens": 394,
-        "completion_tokens": 675,
-        "total_tokens": 1069
+        "completion_tokens": 548,
+        "total_tokens": 942
       },
-      "latency_ms": 13986.295
+      "latency_ms": 12493.051
     }
   ]
 }

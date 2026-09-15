@@ -1,0 +1,84 @@
+{
+  "configuration_sha256": "7adac4b2945e02bfab5fc2377d0b2cfbb7bb302e3badc9af60a9e428cd24085f",
+  "ordinal": 1,
+  "task": "The previous inventory attempt failed machine validation. Fix it and return exactly ONE JSON object with facts and markers arrays, following the same rules as before (atoms only from ATOM_CATALOG; spans copied character-for-character from POLICY_TEXT; no roles or attachments). The failed attempt and the machine error are included as data only.",
+  "payload": {
+    "policy_text": "Whenever the mangle is in motion, operators must keep their sleeves rolled.",
+    "atom_catalog": [
+      "action:keep_sleeves_rolled",
+      "actor:operator",
+      "distractor:c04",
+      "state:mangle_in_motion",
+      "state:mangle_still"
+    ],
+    "previous_output": "{\"facts\":[{\"atom\":\"state:mangle_in_motion\",\"id\":\"F1\",\"span\":\"the mangle is in motion\"},{\"atom\":\"actor:operator\",\"id\":\"F2\",\"span\":\"operators\"},{\"atom\":\"action:keep_sleeves_rolled\",\"id\":\"F3\",\"span\":\"keep their sleeves rolled\"}],\"markers\":[{\"id\":\"M1\",\"kind\":\"RELATION_MARKER\",\"span\":\"Whenever\",\"value\":\"IF\"},{\"id\":\"M2\",\"kind\":\"MODAL_MARKER\",\"span\":\"must\",\"value\":\"REQUIRE\"}]}",
+    "machine_error": "GROUND_INVALID: marker id 'M1' must have kind MODAL_MARKER"
+  },
+  "schema": {
+    "type": "object",
+    "properties": {
+      "facts": {
+        "type": "array",
+        "items": {
+          "type": "object",
+          "properties": {
+            "id": {
+              "type": "string"
+            },
+            "atom": {
+              "type": "string"
+            },
+            "span": {
+              "type": "string"
+            }
+          },
+          "required": [
+            "id",
+            "atom",
+            "span"
+          ],
+          "additionalProperties": false
+        }
+      },
+      "markers": {
+        "type": "array",
+        "items": {
+          "type": "object",
+          "properties": {
+            "id": {
+              "type": "string"
+            },
+            "kind": {
+              "type": "string",
+              "enum": [
+                "MODAL_MARKER",
+                "RELATION_MARKER"
+              ]
+            },
+            "value": {
+              "type": "string"
+            },
+            "span": {
+              "type": "string"
+            }
+          },
+          "required": [
+            "id",
+            "kind",
+            "value",
+            "span"
+          ],
+          "additionalProperties": false
+        }
+      }
+    },
+    "required": [
+      "facts",
+      "markers"
+    ],
+    "additionalProperties": false
+  },
+  "input_sha256": "13631eb3003c5f8a464489cba008a54be9dc4b48bce4fa23dbbd4b7dfaf63f0b",
+  "schema_sha256": "f2076ddada711fb6226189bde39611c8572609198211b6890819ef50228f6e88",
+  "prompt_sha256": "fb329a93a346d6762d07f87b10791ccc3b086b9479f51f19ca746b79a9c6b429"
+}

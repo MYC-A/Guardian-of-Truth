@@ -1,0 +1,6712 @@
+{
+  "schema_version": "guardian-vnext-policy-psb-causal-v1",
+  "prereg": "docs/vnext/PSB_PREREG_GATES_V1.json",
+  "frozen_before_predictions": true,
+  "annotation_basis": "CONSTRUCTION_FROM_TEMPLATES_NOT_MODEL_LABELS",
+  "cohorts": {
+    "relation_attachment": 12,
+    "exception_vs_condition": 8,
+    "multiclause_modality_actor": 8,
+    "permission_evidence_controls": 8,
+    "multiaxis_controls": 8
+  },
+  "cases_sha256": "bb36bca2eaab24ea5e9bf38ba318622c9b6904d1f5e630349210ae9ea8f883f8",
+  "cases": [
+    {
+      "case_id": "exception::e01",
+      "cohort": "exception_vs_condition",
+      "family": "exception",
+      "style": "controlled",
+      "policy": "Cycle helmets are worn on the pump track at all times, except during the toddler hour.",
+      "atom_catalog": [
+        "distractor:e01",
+        "state:cycle_helmet_worn_on_pump_track",
+        "state:toddler_hour"
+      ],
+      "gold_graph": {
+        "nodes": [
+          {
+            "id": "n1",
+            "type": "REGULATED",
+            "atoms": [
+              "state:cycle_helmet_worn_on_pump_track"
+            ]
+          },
+          {
+            "id": "n2",
+            "type": "MODALITY",
+            "value": "REQUIREMENT"
+          },
+          {
+            "id": "n3",
+            "type": "EXCEPTION",
+            "literals": [
+              "state:toddler_hour"
+            ],
+            "mode": "ALL"
+          }
+        ],
+        "edges": [
+          {
+            "type": "REGULATES",
+            "from": "n2",
+            "to": "n1"
+          },
+          {
+            "type": "EXEMPTS",
+            "from": "n3",
+            "to": "n1"
+          }
+        ]
+      },
+      "admissible_program_sets": [
+        [
+          {
+            "modality": "REQUIREMENT",
+            "relation": "UNLESS",
+            "target_clauses": [
+              [
+                "state:cycle_helmet_worn_on_pump_track"
+              ]
+            ],
+            "condition_literals": [],
+            "condition_mode": "ALL",
+            "exception_literals": [
+              "state:toddler_hour"
+            ],
+            "exception_mode": "ALL",
+            "temporal": "NONE",
+            "actor": "assistant",
+            "regulated_kind": "ACTION",
+            "facet": "primary",
+            "identity": "ANY",
+            "provenance": "ANY",
+            "quantification": "ALL"
+          }
+        ]
+      ],
+      "worlds": [
+        {
+          "facts": [
+            "state:cycle_helmet_worn_on_pump_track"
+          ],
+          "expected": "NO_VIOLATION"
+        },
+        {
+          "facts": [
+            "state:cycle_helmet_worn_on_pump_track",
+            "state:toddler_hour"
+          ],
+          "expected": "NO_VIOLATION"
+        },
+        {
+          "facts": [],
+          "expected": "VIOLATION"
+        },
+        {
+          "facts": [
+            "state:toddler_hour"
+          ],
+          "expected": "NO_VIOLATION"
+        }
+      ],
+      "axes": [
+        "exception",
+        "modality"
+      ],
+      "h0_representable": true
+    },
+    {
+      "case_id": "exception::e02",
+      "cohort": "exception_vs_condition",
+      "family": "exception",
+      "style": "controlled",
+      "policy": "Photography is banned inside the print room, except for cases where the curator has signed a shoot pass.",
+      "atom_catalog": [
+        "action:photograph_inside_print_room",
+        "distractor:e02",
+        "state:curator_signed_shoot_pass"
+      ],
+      "gold_graph": {
+        "nodes": [
+          {
+            "id": "n1",
+            "type": "REGULATED",
+            "atoms": [
+              "action:photograph_inside_print_room"
+            ]
+          },
+          {
+            "id": "n2",
+            "type": "MODALITY",
+            "value": "PROHIBITION"
+          },
+          {
+            "id": "n3",
+            "type": "EXCEPTION",
+            "literals": [
+              "state:curator_signed_shoot_pass"
+            ],
+            "mode": "ALL"
+          }
+        ],
+        "edges": [
+          {
+            "type": "REGULATES",
+            "from": "n2",
+            "to": "n1"
+          },
+          {
+            "type": "EXEMPTS",
+            "from": "n3",
+            "to": "n1"
+          }
+        ]
+      },
+      "admissible_program_sets": [
+        [
+          {
+            "modality": "PROHIBITION",
+            "relation": "UNCONDITIONAL",
+            "target_clauses": [
+              [
+                "action:photograph_inside_print_room"
+              ]
+            ],
+            "condition_literals": [],
+            "condition_mode": "ALL",
+            "exception_literals": [
+              "state:curator_signed_shoot_pass"
+            ],
+            "exception_mode": "ALL",
+            "temporal": "NONE",
+            "actor": "assistant",
+            "regulated_kind": "ACTION",
+            "facet": "primary",
+            "identity": "ANY",
+            "provenance": "ANY",
+            "quantification": "ALL"
+          }
+        ]
+      ],
+      "worlds": [
+        {
+          "facts": [
+            "action:photograph_inside_print_room"
+          ],
+          "expected": "VIOLATION"
+        },
+        {
+          "facts": [
+            "action:photograph_inside_print_room",
+            "state:curator_signed_shoot_pass"
+          ],
+          "expected": "PERMITTED"
+        },
+        {
+          "facts": [],
+          "expected": "NO_VIOLATION"
+        },
+        {
+          "facts": [
+            "state:curator_signed_shoot_pass"
+          ],
+          "expected": "NO_VIOLATION"
+        }
+      ],
+      "axes": [
+        "exception"
+      ],
+      "h0_representable": true
+    },
+    {
+      "case_id": "exception::e03",
+      "cohort": "exception_vs_condition",
+      "family": "exception",
+      "style": "controlled",
+      "policy": "Provided that the cash sheet does not show red, the tuck hatch may stay open.",
+      "atom_catalog": [
+        "action:keep_tuck_hatch_open",
+        "distractor:e03",
+        "state:cash_sheet_shows_red"
+      ],
+      "gold_graph": {
+        "nodes": [
+          {
+            "id": "n1",
+            "type": "REGULATED",
+            "atoms": [
+              "action:keep_tuck_hatch_open"
+            ]
+          },
+          {
+            "id": "n2",
+            "type": "MODALITY",
+            "value": "PERMISSION"
+          },
+          {
+            "id": "n3",
+            "type": "CONDITION",
+            "literals": [
+              "!state:cash_sheet_shows_red"
+            ],
+            "mode": "ALL",
+            "strength": "SUFFICIENT"
+          }
+        ],
+        "edges": [
+          {
+            "type": "REGULATES",
+            "from": "n2",
+            "to": "n1"
+          },
+          {
+            "type": "ACTIVATES",
+            "from": "n3",
+            "to": "n1"
+          }
+        ]
+      },
+      "admissible_program_sets": [
+        [
+          {
+            "modality": "PERMISSION",
+            "relation": "IF",
+            "target_clauses": [
+              [
+                "action:keep_tuck_hatch_open"
+              ]
+            ],
+            "condition_literals": [
+              "!state:cash_sheet_shows_red"
+            ],
+            "condition_mode": "ALL",
+            "exception_literals": [],
+            "exception_mode": "ALL",
+            "temporal": "NONE",
+            "actor": "assistant",
+            "regulated_kind": "ACTION",
+            "facet": "primary",
+            "identity": "ANY",
+            "provenance": "ANY",
+            "quantification": "ALL"
+          }
+        ]
+      ],
+      "worlds": [
+        {
+          "facts": [
+            "action:keep_tuck_hatch_open",
+            "state:cash_sheet_shows_red"
+          ],
+          "expected": "NO_VIOLATION"
+        },
+        {
+          "facts": [
+            "action:keep_tuck_hatch_open"
+          ],
+          "expected": "PERMITTED"
+        },
+        {
+          "facts": [
+            "state:cash_sheet_shows_red"
+          ],
+          "expected": "NO_VIOLATION"
+        },
+        {
+          "facts": [],
+          "expected": "NO_VIOLATION"
+        }
+      ],
+      "axes": [
+        "condition",
+        "negation"
+      ],
+      "h0_representable": true
+    },
+    {
+      "case_id": "exception::e04",
+      "cohort": "exception_vs_condition",
+      "family": "exception",
+      "style": "controlled",
+      "policy": "Do not key up the community transmitter unless the duty log has been countersigned.",
+      "atom_catalog": [
+        "action:key_up_community_transmitter",
+        "distractor:e04",
+        "state:duty_log_countersigned"
+      ],
+      "gold_graph": {
+        "nodes": [
+          {
+            "id": "n1",
+            "type": "REGULATED",
+            "atoms": [
+              "action:key_up_community_transmitter"
+            ]
+          },
+          {
+            "id": "n2",
+            "type": "MODALITY",
+            "value": "PROHIBITION"
+          },
+          {
+            "id": "n3",
+            "type": "EXCEPTION",
+            "literals": [
+              "state:duty_log_countersigned"
+            ],
+            "mode": "ALL"
+          }
+        ],
+        "edges": [
+          {
+            "type": "REGULATES",
+            "from": "n2",
+            "to": "n1"
+          },
+          {
+            "type": "EXEMPTS",
+            "from": "n3",
+            "to": "n1"
+          }
+        ]
+      },
+      "admissible_program_sets": [
+        [
+          {
+            "modality": "PROHIBITION",
+            "relation": "UNCONDITIONAL",
+            "target_clauses": [
+              [
+                "action:key_up_community_transmitter"
+              ]
+            ],
+            "condition_literals": [],
+            "condition_mode": "ALL",
+            "exception_literals": [
+              "state:duty_log_countersigned"
+            ],
+            "exception_mode": "ALL",
+            "temporal": "NONE",
+            "actor": "assistant",
+            "regulated_kind": "ACTION",
+            "facet": "primary",
+            "identity": "ANY",
+            "provenance": "ANY",
+            "quantification": "ALL"
+          }
+        ]
+      ],
+      "worlds": [
+        {
+          "facts": [
+            "action:key_up_community_transmitter"
+          ],
+          "expected": "VIOLATION"
+        },
+        {
+          "facts": [
+            "action:key_up_community_transmitter",
+            "state:duty_log_countersigned"
+          ],
+          "expected": "PERMITTED"
+        },
+        {
+          "facts": [],
+          "expected": "NO_VIOLATION"
+        },
+        {
+          "facts": [
+            "state:duty_log_countersigned"
+          ],
+          "expected": "NO_VIOLATION"
+        }
+      ],
+      "axes": [
+        "exception"
+      ],
+      "h0_representable": true
+    },
+    {
+      "case_id": "exception::e05",
+      "cohort": "exception_vs_condition",
+      "family": "exception",
+      "style": "controlled",
+      "policy": "Apart from a declared emergency, the side door stays locked at all times.",
+      "atom_catalog": [
+        "action:unlock_side_door",
+        "distractor:e05",
+        "state:declared_emergency"
+      ],
+      "gold_graph": {
+        "nodes": [
+          {
+            "id": "n1",
+            "type": "REGULATED",
+            "atoms": [
+              "action:unlock_side_door"
+            ]
+          },
+          {
+            "id": "n2",
+            "type": "MODALITY",
+            "value": "PROHIBITION"
+          },
+          {
+            "id": "n3",
+            "type": "EXCEPTION",
+            "literals": [
+              "state:declared_emergency"
+            ],
+            "mode": "ALL"
+          }
+        ],
+        "edges": [
+          {
+            "type": "REGULATES",
+            "from": "n2",
+            "to": "n1"
+          },
+          {
+            "type": "EXEMPTS",
+            "from": "n3",
+            "to": "n1"
+          }
+        ]
+      },
+      "admissible_program_sets": [
+        [
+          {
+            "modality": "PROHIBITION",
+            "relation": "UNCONDITIONAL",
+            "target_clauses": [
+              [
+                "action:unlock_side_door"
+              ]
+            ],
+            "condition_literals": [],
+            "condition_mode": "ALL",
+            "exception_literals": [
+              "state:declared_emergency"
+            ],
+            "exception_mode": "ALL",
+            "temporal": "NONE",
+            "actor": "assistant",
+            "regulated_kind": "ACTION",
+            "facet": "primary",
+            "identity": "ANY",
+            "provenance": "ANY",
+            "quantification": "ALL"
+          }
+        ]
+      ],
+      "worlds": [
+        {
+          "facts": [
+            "action:unlock_side_door"
+          ],
+          "expected": "VIOLATION"
+        },
+        {
+          "facts": [
+            "action:unlock_side_door",
+            "state:declared_emergency"
+          ],
+          "expected": "PERMITTED"
+        },
+        {
+          "facts": [],
+          "expected": "NO_VIOLATION"
+        },
+        {
+          "facts": [
+            "state:declared_emergency"
+          ],
+          "expected": "NO_VIOLATION"
+        }
+      ],
+      "axes": [
+        "exception"
+      ],
+      "h0_representable": true
+    },
+    {
+      "case_id": "exception::e06",
+      "cohort": "exception_vs_condition",
+      "family": "exception",
+      "style": "controlled",
+      "policy": "The drag store is out of bounds while drill bookings are posted, unless the quartermaster or her deputy clears the visit.",
+      "atom_catalog": [
+        "action:visit_drag_store",
+        "distractor:e06",
+        "state:deputy_clears_visit",
+        "state:drill_bookings_posted",
+        "state:quartermaster_clears_visit"
+      ],
+      "gold_graph": {
+        "nodes": [
+          {
+            "id": "n1",
+            "type": "REGULATED",
+            "atoms": [
+              "action:visit_drag_store"
+            ]
+          },
+          {
+            "id": "n2",
+            "type": "MODALITY",
+            "value": "PROHIBITION"
+          },
+          {
+            "id": "n3",
+            "type": "CONDITION",
+            "literals": [
+              "state:drill_bookings_posted"
+            ],
+            "mode": "ALL",
+            "strength": "SUFFICIENT"
+          },
+          {
+            "id": "n4",
+            "type": "EXCEPTION",
+            "literals": [
+              "state:quartermaster_clears_visit",
+              "state:deputy_clears_visit"
+            ],
+            "mode": "ANY"
+          }
+        ],
+        "edges": [
+          {
+            "type": "REGULATES",
+            "from": "n2",
+            "to": "n1"
+          },
+          {
+            "type": "ACTIVATES",
+            "from": "n3",
+            "to": "n1"
+          },
+          {
+            "type": "EXEMPTS",
+            "from": "n4",
+            "to": "n1"
+          }
+        ]
+      },
+      "admissible_program_sets": [
+        [
+          {
+            "modality": "PROHIBITION",
+            "relation": "IF",
+            "target_clauses": [
+              [
+                "action:visit_drag_store"
+              ]
+            ],
+            "condition_literals": [
+              "state:drill_bookings_posted"
+            ],
+            "condition_mode": "ALL",
+            "exception_literals": [
+              "state:deputy_clears_visit",
+              "state:quartermaster_clears_visit"
+            ],
+            "exception_mode": "ANY",
+            "temporal": "NONE",
+            "actor": "assistant",
+            "regulated_kind": "ACTION",
+            "facet": "primary",
+            "identity": "ANY",
+            "provenance": "ANY",
+            "quantification": "ALL"
+          }
+        ]
+      ],
+      "worlds": [
+        {
+          "facts": [
+            "action:visit_drag_store"
+          ],
+          "expected": "NO_VIOLATION"
+        },
+        {
+          "facts": [
+            "action:visit_drag_store",
+            "state:deputy_clears_visit"
+          ],
+          "expected": "NO_VIOLATION"
+        },
+        {
+          "facts": [
+            "action:visit_drag_store",
+            "state:quartermaster_clears_visit"
+          ],
+          "expected": "NO_VIOLATION"
+        },
+        {
+          "facts": [
+            "action:visit_drag_store",
+            "state:deputy_clears_visit",
+            "state:quartermaster_clears_visit"
+          ],
+          "expected": "NO_VIOLATION"
+        },
+        {
+          "facts": [
+            "action:visit_drag_store",
+            "state:drill_bookings_posted"
+          ],
+          "expected": "VIOLATION"
+        },
+        {
+          "facts": [
+            "action:visit_drag_store",
+            "state:deputy_clears_visit",
+            "state:drill_bookings_posted"
+          ],
+          "expected": "PERMITTED"
+        },
+        {
+          "facts": [
+            "action:visit_drag_store",
+            "state:drill_bookings_posted",
+            "state:quartermaster_clears_visit"
+          ],
+          "expected": "PERMITTED"
+        },
+        {
+          "facts": [
+            "action:visit_drag_store",
+            "state:deputy_clears_visit",
+            "state:drill_bookings_posted",
+            "state:quartermaster_clears_visit"
+          ],
+          "expected": "PERMITTED"
+        },
+        {
+          "facts": [],
+          "expected": "NO_VIOLATION"
+        },
+        {
+          "facts": [
+            "state:deputy_clears_visit"
+          ],
+          "expected": "NO_VIOLATION"
+        },
+        {
+          "facts": [
+            "state:quartermaster_clears_visit"
+          ],
+          "expected": "NO_VIOLATION"
+        },
+        {
+          "facts": [
+            "state:deputy_clears_visit",
+            "state:quartermaster_clears_visit"
+          ],
+          "expected": "NO_VIOLATION"
+        },
+        {
+          "facts": [
+            "state:drill_bookings_posted"
+          ],
+          "expected": "NO_VIOLATION"
+        },
+        {
+          "facts": [
+            "state:deputy_clears_visit",
+            "state:drill_bookings_posted"
+          ],
+          "expected": "NO_VIOLATION"
+        },
+        {
+          "facts": [
+            "state:drill_bookings_posted",
+            "state:quartermaster_clears_visit"
+          ],
+          "expected": "NO_VIOLATION"
+        },
+        {
+          "facts": [
+            "state:deputy_clears_visit",
+            "state:drill_bookings_posted",
+            "state:quartermaster_clears_visit"
+          ],
+          "expected": "NO_VIOLATION"
+        }
+      ],
+      "axes": [
+        "condition",
+        "exception"
+      ],
+      "h0_representable": true
+    },
+    {
+      "case_id": "exception::e07",
+      "cohort": "exception_vs_condition",
+      "family": "exception",
+      "style": "controlled",
+      "policy": "Members' dinghies may be launched whenever the slip light is not showing red, except when the warden posts a closure notice.",
+      "atom_catalog": [
+        "action:launch_members_dinghy",
+        "actor:assistant",
+        "distractor:e07",
+        "state:slip_light_showing_red",
+        "state:warden_posts_closure_notice"
+      ],
+      "gold_graph": {
+        "nodes": [
+          {
+            "id": "n1",
+            "type": "REGULATED",
+            "atoms": [
+              "action:launch_members_dinghy"
+            ]
+          },
+          {
+            "id": "n2",
+            "type": "MODALITY",
+            "value": "PERMISSION"
+          },
+          {
+            "id": "n3",
+            "type": "CONDITION",
+            "literals": [
+              "!state:slip_light_showing_red"
+            ],
+            "mode": "ALL",
+            "strength": "SUFFICIENT"
+          },
+          {
+            "id": "n4",
+            "type": "EXCEPTION",
+            "literals": [
+              "state:warden_posts_closure_notice"
+            ],
+            "mode": "ALL"
+          }
+        ],
+        "edges": [
+          {
+            "type": "REGULATES",
+            "from": "n2",
+            "to": "n1"
+          },
+          {
+            "type": "ACTIVATES",
+            "from": "n3",
+            "to": "n1"
+          },
+          {
+            "type": "EXEMPTS",
+            "from": "n4",
+            "to": "n1"
+          }
+        ]
+      },
+      "admissible_program_sets": [
+        [
+          {
+            "modality": "PERMISSION",
+            "relation": "IF",
+            "target_clauses": [
+              [
+                "action:launch_members_dinghy"
+              ]
+            ],
+            "condition_literals": [
+              "!state:slip_light_showing_red"
+            ],
+            "condition_mode": "ALL",
+            "exception_literals": [
+              "state:warden_posts_closure_notice"
+            ],
+            "exception_mode": "ALL",
+            "temporal": "NONE",
+            "actor": "assistant",
+            "regulated_kind": "ACTION",
+            "facet": "primary",
+            "identity": "ANY",
+            "provenance": "ANY",
+            "quantification": "ALL"
+          }
+        ]
+      ],
+      "worlds": [
+        {
+          "facts": [
+            "action:launch_members_dinghy",
+            "state:slip_light_showing_red"
+          ],
+          "expected": "NO_VIOLATION"
+        },
+        {
+          "facts": [
+            "action:launch_members_dinghy",
+            "state:slip_light_showing_red",
+            "state:warden_posts_closure_notice"
+          ],
+          "expected": "NO_VIOLATION"
+        },
+        {
+          "facts": [
+            "action:launch_members_dinghy"
+          ],
+          "expected": "PERMITTED"
+        },
+        {
+          "facts": [
+            "action:launch_members_dinghy",
+            "state:warden_posts_closure_notice"
+          ],
+          "expected": "NO_VIOLATION"
+        },
+        {
+          "facts": [
+            "state:slip_light_showing_red"
+          ],
+          "expected": "NO_VIOLATION"
+        },
+        {
+          "facts": [
+            "state:slip_light_showing_red",
+            "state:warden_posts_closure_notice"
+          ],
+          "expected": "NO_VIOLATION"
+        },
+        {
+          "facts": [],
+          "expected": "NO_VIOLATION"
+        },
+        {
+          "facts": [
+            "state:warden_posts_closure_notice"
+          ],
+          "expected": "NO_VIOLATION"
+        }
+      ],
+      "axes": [
+        "condition",
+        "exception",
+        "negation"
+      ],
+      "h0_representable": true
+    },
+    {
+      "case_id": "exception::e08",
+      "cohort": "exception_vs_condition",
+      "family": "exception",
+      "style": "controlled",
+      "policy": "Unless the meter reads zero, the amp rack must be powered down between sets.",
+      "atom_catalog": [
+        "distractor:e08",
+        "state:amp_rack_powered_down_between_sets",
+        "state:meter_reads_amber",
+        "state:meter_reads_zero"
+      ],
+      "gold_graph": {
+        "nodes": [
+          {
+            "id": "n1",
+            "type": "REGULATED",
+            "atoms": [
+              "state:amp_rack_powered_down_between_sets"
+            ]
+          },
+          {
+            "id": "n2",
+            "type": "MODALITY",
+            "value": "REQUIREMENT"
+          },
+          {
+            "id": "n3",
+            "type": "EXCEPTION",
+            "literals": [
+              "state:meter_reads_zero"
+            ],
+            "mode": "ALL"
+          }
+        ],
+        "edges": [
+          {
+            "type": "REGULATES",
+            "from": "n2",
+            "to": "n1"
+          },
+          {
+            "type": "EXEMPTS",
+            "from": "n3",
+            "to": "n1"
+          }
+        ]
+      },
+      "admissible_program_sets": [
+        [
+          {
+            "modality": "REQUIREMENT",
+            "relation": "UNLESS",
+            "target_clauses": [
+              [
+                "state:amp_rack_powered_down_between_sets"
+              ]
+            ],
+            "condition_literals": [],
+            "condition_mode": "ALL",
+            "exception_literals": [
+              "state:meter_reads_zero"
+            ],
+            "exception_mode": "ALL",
+            "temporal": "NONE",
+            "actor": "assistant",
+            "regulated_kind": "ACTION",
+            "facet": "primary",
+            "identity": "ANY",
+            "provenance": "ANY",
+            "quantification": "ALL"
+          }
+        ]
+      ],
+      "worlds": [
+        {
+          "facts": [
+            "state:amp_rack_powered_down_between_sets"
+          ],
+          "expected": "NO_VIOLATION"
+        },
+        {
+          "facts": [
+            "state:amp_rack_powered_down_between_sets",
+            "state:meter_reads_zero"
+          ],
+          "expected": "NO_VIOLATION"
+        },
+        {
+          "facts": [],
+          "expected": "VIOLATION"
+        },
+        {
+          "facts": [
+            "state:meter_reads_zero"
+          ],
+          "expected": "NO_VIOLATION"
+        }
+      ],
+      "axes": [
+        "exception"
+      ],
+      "h0_representable": true
+    },
+    {
+      "case_id": "multi_axis::x01",
+      "cohort": "multiaxis_controls",
+      "family": "multi_axis",
+      "style": "controlled",
+      "policy": "Duty pilots who have filed a flight plan may enter the hangar mezzanine, except when the foam drill is running.",
+      "atom_catalog": [
+        "action:enter_hangar_mezzanine",
+        "actor:assistant",
+        "actor:duty_pilot",
+        "distractor:x01",
+        "state:flight_plan_filed",
+        "state:foam_drill_running"
+      ],
+      "gold_graph": {
+        "nodes": [
+          {
+            "id": "n1",
+            "type": "REGULATED",
+            "atoms": [
+              "action:enter_hangar_mezzanine"
+            ]
+          },
+          {
+            "id": "n2",
+            "type": "MODALITY",
+            "value": "PERMISSION"
+          },
+          {
+            "id": "n3",
+            "type": "ACTOR",
+            "atom": "actor:duty_pilot",
+            "exclusive": false
+          },
+          {
+            "id": "n4",
+            "type": "CONDITION",
+            "literals": [
+              "state:flight_plan_filed"
+            ],
+            "mode": "ALL",
+            "strength": "SUFFICIENT"
+          },
+          {
+            "id": "n5",
+            "type": "EXCEPTION",
+            "literals": [
+              "state:foam_drill_running"
+            ],
+            "mode": "ALL"
+          }
+        ],
+        "edges": [
+          {
+            "type": "REGULATES",
+            "from": "n2",
+            "to": "n1"
+          },
+          {
+            "type": "ACTOR_OF",
+            "from": "n3",
+            "to": "n1"
+          },
+          {
+            "type": "ACTIVATES",
+            "from": "n4",
+            "to": "n1"
+          },
+          {
+            "type": "EXEMPTS",
+            "from": "n5",
+            "to": "n1"
+          }
+        ]
+      },
+      "admissible_program_sets": [
+        [
+          {
+            "modality": "PERMISSION",
+            "relation": "IF",
+            "target_clauses": [
+              [
+                "action:enter_hangar_mezzanine"
+              ]
+            ],
+            "condition_literals": [
+              "actor:duty_pilot",
+              "state:flight_plan_filed"
+            ],
+            "condition_mode": "ALL",
+            "exception_literals": [
+              "state:foam_drill_running"
+            ],
+            "exception_mode": "ALL",
+            "temporal": "NONE",
+            "actor": "assistant",
+            "regulated_kind": "ACTION",
+            "facet": "primary",
+            "identity": "ANY",
+            "provenance": "ANY",
+            "quantification": "ALL"
+          }
+        ]
+      ],
+      "worlds": [
+        {
+          "facts": [
+            "action:enter_hangar_mezzanine"
+          ],
+          "expected": "NO_VIOLATION"
+        },
+        {
+          "facts": [
+            "action:enter_hangar_mezzanine",
+            "state:foam_drill_running"
+          ],
+          "expected": "NO_VIOLATION"
+        },
+        {
+          "facts": [
+            "action:enter_hangar_mezzanine",
+            "actor:duty_pilot"
+          ],
+          "expected": "NO_VIOLATION"
+        },
+        {
+          "facts": [
+            "action:enter_hangar_mezzanine",
+            "actor:duty_pilot",
+            "state:foam_drill_running"
+          ],
+          "expected": "NO_VIOLATION"
+        },
+        {
+          "facts": [
+            "action:enter_hangar_mezzanine",
+            "state:flight_plan_filed"
+          ],
+          "expected": "NO_VIOLATION"
+        },
+        {
+          "facts": [
+            "action:enter_hangar_mezzanine",
+            "state:flight_plan_filed",
+            "state:foam_drill_running"
+          ],
+          "expected": "NO_VIOLATION"
+        },
+        {
+          "facts": [
+            "action:enter_hangar_mezzanine",
+            "actor:duty_pilot",
+            "state:flight_plan_filed"
+          ],
+          "expected": "PERMITTED"
+        },
+        {
+          "facts": [
+            "action:enter_hangar_mezzanine",
+            "actor:duty_pilot",
+            "state:flight_plan_filed",
+            "state:foam_drill_running"
+          ],
+          "expected": "NO_VIOLATION"
+        },
+        {
+          "facts": [],
+          "expected": "NO_VIOLATION"
+        },
+        {
+          "facts": [
+            "state:foam_drill_running"
+          ],
+          "expected": "NO_VIOLATION"
+        },
+        {
+          "facts": [
+            "actor:duty_pilot"
+          ],
+          "expected": "NO_VIOLATION"
+        },
+        {
+          "facts": [
+            "actor:duty_pilot",
+            "state:foam_drill_running"
+          ],
+          "expected": "NO_VIOLATION"
+        },
+        {
+          "facts": [
+            "state:flight_plan_filed"
+          ],
+          "expected": "NO_VIOLATION"
+        },
+        {
+          "facts": [
+            "state:flight_plan_filed",
+            "state:foam_drill_running"
+          ],
+          "expected": "NO_VIOLATION"
+        },
+        {
+          "facts": [
+            "actor:duty_pilot",
+            "state:flight_plan_filed"
+          ],
+          "expected": "NO_VIOLATION"
+        },
+        {
+          "facts": [
+            "actor:duty_pilot",
+            "state:flight_plan_filed",
+            "state:foam_drill_running"
+          ],
+          "expected": "NO_VIOLATION"
+        }
+      ],
+      "axes": [
+        "actor",
+        "condition",
+        "exception"
+      ],
+      "h0_representable": true
+    },
+    {
+      "case_id": "multi_axis::x02",
+      "cohort": "multiaxis_controls",
+      "family": "multi_axis",
+      "style": "controlled",
+      "policy": "Once the pasteurisation cycle has finished, the cream vats may be opened, unless the thermostat reads amber.",
+      "atom_catalog": [
+        "action:open_cream_vats",
+        "distractor:x02",
+        "event:pasteurisation_cycle_finished",
+        "state:thermostat_reads_amber"
+      ],
+      "gold_graph": {
+        "nodes": [
+          {
+            "id": "n1",
+            "type": "REGULATED",
+            "atoms": [
+              "action:open_cream_vats"
+            ]
+          },
+          {
+            "id": "n2",
+            "type": "MODALITY",
+            "value": "PERMISSION"
+          },
+          {
+            "id": "n3",
+            "type": "CONDITION",
+            "literals": [
+              "event:pasteurisation_cycle_finished"
+            ],
+            "mode": "ALL",
+            "strength": "SUFFICIENT"
+          },
+          {
+            "id": "n4",
+            "type": "EXCEPTION",
+            "literals": [
+              "state:thermostat_reads_amber"
+            ],
+            "mode": "ALL"
+          }
+        ],
+        "edges": [
+          {
+            "type": "REGULATES",
+            "from": "n2",
+            "to": "n1"
+          },
+          {
+            "type": "FOLLOWS",
+            "from": "n3",
+            "to": "n1"
+          },
+          {
+            "type": "EXEMPTS",
+            "from": "n4",
+            "to": "n1"
+          }
+        ]
+      },
+      "admissible_program_sets": [
+        [
+          {
+            "modality": "PERMISSION",
+            "relation": "IF",
+            "target_clauses": [
+              [
+                "action:open_cream_vats"
+              ]
+            ],
+            "condition_literals": [
+              "event:pasteurisation_cycle_finished"
+            ],
+            "condition_mode": "ALL",
+            "exception_literals": [
+              "state:thermostat_reads_amber"
+            ],
+            "exception_mode": "ALL",
+            "temporal": "AFTER",
+            "actor": "assistant",
+            "regulated_kind": "ACTION",
+            "facet": "primary",
+            "identity": "ANY",
+            "provenance": "ANY",
+            "quantification": "ALL"
+          }
+        ]
+      ],
+      "worlds": [
+        {
+          "facts": [
+            "action:open_cream_vats"
+          ],
+          "expected": "NO_VIOLATION"
+        },
+        {
+          "facts": [
+            "action:open_cream_vats",
+            "state:thermostat_reads_amber"
+          ],
+          "expected": "NO_VIOLATION"
+        },
+        {
+          "facts": [
+            "action:open_cream_vats",
+            "event:pasteurisation_cycle_finished"
+          ],
+          "expected": "PERMITTED"
+        },
+        {
+          "facts": [
+            "action:open_cream_vats",
+            "event:pasteurisation_cycle_finished",
+            "state:thermostat_reads_amber"
+          ],
+          "expected": "NO_VIOLATION"
+        },
+        {
+          "facts": [],
+          "expected": "NO_VIOLATION"
+        },
+        {
+          "facts": [
+            "state:thermostat_reads_amber"
+          ],
+          "expected": "NO_VIOLATION"
+        },
+        {
+          "facts": [
+            "event:pasteurisation_cycle_finished"
+          ],
+          "expected": "NO_VIOLATION"
+        },
+        {
+          "facts": [
+            "event:pasteurisation_cycle_finished",
+            "state:thermostat_reads_amber"
+          ],
+          "expected": "NO_VIOLATION"
+        }
+      ],
+      "axes": [
+        "temporal",
+        "exception"
+      ],
+      "h0_representable": true
+    },
+    {
+      "case_id": "multi_axis::x03",
+      "cohort": "multiaxis_controls",
+      "family": "multi_axis",
+      "style": "controlled",
+      "policy": "Figures for the gate count and the locker tally come from the turnstile log alone, each on its own form.",
+      "atom_catalog": [
+        "claim:gate_count",
+        "claim:locker_tally",
+        "distractor:x03",
+        "evidence:turnstile_log"
+      ],
+      "gold_graph": {
+        "nodes": [
+          {
+            "id": "n1",
+            "type": "REGULATED",
+            "atoms": [
+              "claim:gate_count"
+            ]
+          },
+          {
+            "id": "n2",
+            "type": "REGULATED",
+            "atoms": [
+              "claim:locker_tally"
+            ]
+          },
+          {
+            "id": "n3",
+            "type": "MODALITY",
+            "value": "REQUIREMENT"
+          },
+          {
+            "id": "n4",
+            "type": "QUALIFIER",
+            "kind": "PROVENANCE",
+            "value": "evidence:turnstile_log"
+          }
+        ],
+        "edges": [
+          {
+            "type": "REGULATES",
+            "from": "n3",
+            "to": "n1"
+          },
+          {
+            "type": "REGULATES",
+            "from": "n3",
+            "to": "n2"
+          },
+          {
+            "type": "SOURCE_OF",
+            "from": "n4",
+            "to": "n1"
+          },
+          {
+            "type": "SOURCE_OF",
+            "from": "n4",
+            "to": "n2"
+          }
+        ]
+      },
+      "admissible_program_sets": [
+        [
+          {
+            "modality": "REQUIREMENT",
+            "relation": "ONLY_IF",
+            "target_clauses": [
+              [
+                "claim:gate_count"
+              ]
+            ],
+            "condition_literals": [
+              "evidence:turnstile_log"
+            ],
+            "condition_mode": "ALL",
+            "exception_literals": [],
+            "exception_mode": "ALL",
+            "temporal": "NONE",
+            "actor": "assistant",
+            "regulated_kind": "ACTION",
+            "facet": "primary",
+            "identity": "ANY",
+            "provenance": "TOOL_RESULT",
+            "quantification": "ALL"
+          },
+          {
+            "modality": "REQUIREMENT",
+            "relation": "ONLY_IF",
+            "target_clauses": [
+              [
+                "claim:locker_tally"
+              ]
+            ],
+            "condition_literals": [
+              "evidence:turnstile_log"
+            ],
+            "condition_mode": "ALL",
+            "exception_literals": [],
+            "exception_mode": "ALL",
+            "temporal": "NONE",
+            "actor": "assistant",
+            "regulated_kind": "ACTION",
+            "facet": "primary",
+            "identity": "ANY",
+            "provenance": "TOOL_RESULT",
+            "quantification": "ALL"
+          }
+        ]
+      ],
+      "worlds": [
+        {
+          "facts": [
+            "claim:gate_count"
+          ],
+          "expected": "VIOLATION"
+        },
+        {
+          "facts": [
+            "claim:gate_count",
+            "evidence:turnstile_log"
+          ],
+          "expected": "NO_VIOLATION"
+        },
+        {
+          "facts": [
+            "claim:locker_tally"
+          ],
+          "expected": "VIOLATION"
+        },
+        {
+          "facts": [
+            "claim:locker_tally",
+            "evidence:turnstile_log"
+          ],
+          "expected": "NO_VIOLATION"
+        },
+        {
+          "facts": [
+            "claim:gate_count",
+            "claim:locker_tally"
+          ],
+          "expected": "VIOLATION"
+        },
+        {
+          "facts": [
+            "claim:gate_count",
+            "claim:locker_tally",
+            "evidence:turnstile_log"
+          ],
+          "expected": "NO_VIOLATION"
+        },
+        {
+          "facts": [],
+          "expected": "NO_VIOLATION"
+        },
+        {
+          "facts": [
+            "evidence:turnstile_log"
+          ],
+          "expected": "NO_VIOLATION"
+        }
+      ],
+      "axes": [
+        "provenance",
+        "scope"
+      ],
+      "h0_representable": true
+    },
+    {
+      "case_id": "multi_axis::x04",
+      "cohort": "multiaxis_controls",
+      "family": "multi_axis",
+      "style": "controlled",
+      "policy": "No more than three storm lanterns per raft on the night crossing, save when the trip lead okays a fourth.",
+      "atom_catalog": [
+        "AT_MOST_3",
+        "distractor:x04",
+        "state:lanterns_per_raft_gt_3",
+        "state:trip_lead_okays_fourth"
+      ],
+      "gold_graph": {
+        "nodes": [
+          {
+            "id": "n1",
+            "type": "REGULATED",
+            "atoms": [
+              "state:lanterns_per_raft_gt_3"
+            ]
+          },
+          {
+            "id": "n2",
+            "type": "MODALITY",
+            "value": "PROHIBITION"
+          },
+          {
+            "id": "n3",
+            "type": "EXCEPTION",
+            "literals": [
+              "state:trip_lead_okays_fourth"
+            ],
+            "mode": "ALL"
+          },
+          {
+            "id": "n4",
+            "type": "QUALIFIER",
+            "kind": "QUANTIFIER",
+            "value": "AT_MOST_3"
+          }
+        ],
+        "edges": [
+          {
+            "type": "REGULATES",
+            "from": "n2",
+            "to": "n1"
+          },
+          {
+            "type": "EXEMPTS",
+            "from": "n3",
+            "to": "n1"
+          },
+          {
+            "type": "QUALIFIES",
+            "from": "n4",
+            "to": "n1"
+          }
+        ]
+      },
+      "admissible_program_sets": [
+        [
+          {
+            "modality": "PROHIBITION",
+            "relation": "UNCONDITIONAL",
+            "target_clauses": [
+              [
+                "state:lanterns_per_raft_gt_3"
+              ]
+            ],
+            "condition_literals": [],
+            "condition_mode": "ALL",
+            "exception_literals": [
+              "state:trip_lead_okays_fourth"
+            ],
+            "exception_mode": "ALL",
+            "temporal": "NONE",
+            "actor": "assistant",
+            "regulated_kind": "ACTION",
+            "facet": "primary",
+            "identity": "ANY",
+            "provenance": "ANY",
+            "quantification": "AT_MOST_3"
+          }
+        ]
+      ],
+      "worlds": [
+        {
+          "facts": [
+            "state:lanterns_per_raft_gt_3"
+          ],
+          "expected": "VIOLATION"
+        },
+        {
+          "facts": [
+            "state:lanterns_per_raft_gt_3",
+            "state:trip_lead_okays_fourth"
+          ],
+          "expected": "PERMITTED"
+        },
+        {
+          "facts": [],
+          "expected": "NO_VIOLATION"
+        },
+        {
+          "facts": [
+            "state:trip_lead_okays_fourth"
+          ],
+          "expected": "NO_VIOLATION"
+        }
+      ],
+      "axes": [
+        "cardinality",
+        "exception"
+      ],
+      "h0_representable": true
+    },
+    {
+      "case_id": "multi_axis::x05",
+      "cohort": "multiaxis_controls",
+      "family": "multi_axis",
+      "style": "controlled",
+      "policy": "Provided the wind meter is not in the red zone, the balcony telescope may be used after dark.",
+      "atom_catalog": [
+        "action:use_balcony_telescope",
+        "distractor:x05",
+        "state:after_dark",
+        "state:wind_meter_red_zone"
+      ],
+      "gold_graph": {
+        "nodes": [
+          {
+            "id": "n1",
+            "type": "REGULATED",
+            "atoms": [
+              "action:use_balcony_telescope"
+            ]
+          },
+          {
+            "id": "n2",
+            "type": "MODALITY",
+            "value": "PERMISSION"
+          },
+          {
+            "id": "n3",
+            "type": "CONDITION",
+            "literals": [
+              "!state:wind_meter_red_zone",
+              "state:after_dark"
+            ],
+            "mode": "ALL",
+            "strength": "SUFFICIENT"
+          }
+        ],
+        "edges": [
+          {
+            "type": "REGULATES",
+            "from": "n2",
+            "to": "n1"
+          },
+          {
+            "type": "ACTIVATES",
+            "from": "n3",
+            "to": "n1"
+          }
+        ]
+      },
+      "admissible_program_sets": [
+        [
+          {
+            "modality": "PERMISSION",
+            "relation": "IF",
+            "target_clauses": [
+              [
+                "action:use_balcony_telescope"
+              ]
+            ],
+            "condition_literals": [
+              "!state:wind_meter_red_zone",
+              "state:after_dark"
+            ],
+            "condition_mode": "ALL",
+            "exception_literals": [],
+            "exception_mode": "ALL",
+            "temporal": "NONE",
+            "actor": "assistant",
+            "regulated_kind": "ACTION",
+            "facet": "primary",
+            "identity": "ANY",
+            "provenance": "ANY",
+            "quantification": "ALL"
+          }
+        ]
+      ],
+      "worlds": [
+        {
+          "facts": [
+            "action:use_balcony_telescope",
+            "state:wind_meter_red_zone"
+          ],
+          "expected": "NO_VIOLATION"
+        },
+        {
+          "facts": [
+            "action:use_balcony_telescope"
+          ],
+          "expected": "NO_VIOLATION"
+        },
+        {
+          "facts": [
+            "action:use_balcony_telescope",
+            "state:after_dark"
+          ],
+          "expected": "PERMITTED"
+        },
+        {
+          "facts": [
+            "state:wind_meter_red_zone"
+          ],
+          "expected": "NO_VIOLATION"
+        },
+        {
+          "facts": [],
+          "expected": "NO_VIOLATION"
+        },
+        {
+          "facts": [
+            "state:after_dark"
+          ],
+          "expected": "NO_VIOLATION"
+        }
+      ],
+      "axes": [
+        "negation",
+        "condition"
+      ],
+      "h0_representable": true
+    },
+    {
+      "case_id": "multi_axis::x06",
+      "cohort": "multiaxis_controls",
+      "family": "multi_axis",
+      "style": "controlled",
+      "policy": "Writing the tank figures into the board book is not optional whenever the hatch is open.",
+      "atom_catalog": [
+        "distractor:x06",
+        "state:hatch_open",
+        "state:tank_figures_written_in_board_book"
+      ],
+      "gold_graph": {
+        "nodes": [
+          {
+            "id": "n1",
+            "type": "REGULATED",
+            "atoms": [
+              "state:tank_figures_written_in_board_book"
+            ]
+          },
+          {
+            "id": "n2",
+            "type": "MODALITY",
+            "value": "REQUIREMENT"
+          },
+          {
+            "id": "n3",
+            "type": "CONDITION",
+            "literals": [
+              "state:hatch_open"
+            ],
+            "mode": "ALL",
+            "strength": "SUFFICIENT"
+          }
+        ],
+        "edges": [
+          {
+            "type": "REGULATES",
+            "from": "n2",
+            "to": "n1"
+          },
+          {
+            "type": "ACTIVATES",
+            "from": "n3",
+            "to": "n1"
+          }
+        ]
+      },
+      "admissible_program_sets": [
+        [
+          {
+            "modality": "REQUIREMENT",
+            "relation": "IF",
+            "target_clauses": [
+              [
+                "state:tank_figures_written_in_board_book"
+              ]
+            ],
+            "condition_literals": [
+              "state:hatch_open"
+            ],
+            "condition_mode": "ALL",
+            "exception_literals": [],
+            "exception_mode": "ALL",
+            "temporal": "NONE",
+            "actor": "assistant",
+            "regulated_kind": "ACTION",
+            "facet": "primary",
+            "identity": "ANY",
+            "provenance": "ANY",
+            "quantification": "ALL"
+          }
+        ]
+      ],
+      "worlds": [
+        {
+          "facts": [
+            "state:tank_figures_written_in_board_book"
+          ],
+          "expected": "NO_VIOLATION"
+        },
+        {
+          "facts": [
+            "state:hatch_open",
+            "state:tank_figures_written_in_board_book"
+          ],
+          "expected": "NO_VIOLATION"
+        },
+        {
+          "facts": [],
+          "expected": "NO_VIOLATION"
+        },
+        {
+          "facts": [
+            "state:hatch_open"
+          ],
+          "expected": "VIOLATION"
+        }
+      ],
+      "axes": [
+        "modality",
+        "negation"
+      ],
+      "h0_representable": true
+    },
+    {
+      "case_id": "multi_axis::x07",
+      "cohort": "multiaxis_controls",
+      "family": "multi_axis",
+      "style": "controlled",
+      "policy": "Before the auction opens, the paddle cards and the bidder sheets are counted, each on its own tray.",
+      "atom_catalog": [
+        "action:count_bidder_sheets",
+        "action:count_paddle_cards",
+        "distractor:x07",
+        "event:auction_opens"
+      ],
+      "gold_graph": {
+        "nodes": [
+          {
+            "id": "n1",
+            "type": "REGULATED",
+            "atoms": [
+              "action:count_paddle_cards"
+            ]
+          },
+          {
+            "id": "n2",
+            "type": "REGULATED",
+            "atoms": [
+              "action:count_bidder_sheets"
+            ]
+          },
+          {
+            "id": "n3",
+            "type": "MODALITY",
+            "value": "REQUIREMENT"
+          },
+          {
+            "id": "n4",
+            "type": "CONDITION",
+            "literals": [
+              "event:auction_opens"
+            ],
+            "mode": "ALL",
+            "strength": "SUFFICIENT"
+          }
+        ],
+        "edges": [
+          {
+            "type": "REGULATES",
+            "from": "n3",
+            "to": "n1"
+          },
+          {
+            "type": "REGULATES",
+            "from": "n3",
+            "to": "n2"
+          },
+          {
+            "type": "PRECEDES",
+            "from": "n4",
+            "to": "n1"
+          },
+          {
+            "type": "PRECEDES",
+            "from": "n4",
+            "to": "n2"
+          }
+        ]
+      },
+      "admissible_program_sets": [
+        [
+          {
+            "modality": "REQUIREMENT",
+            "relation": "IF",
+            "target_clauses": [
+              [
+                "action:count_paddle_cards"
+              ]
+            ],
+            "condition_literals": [
+              "!event:auction_opens"
+            ],
+            "condition_mode": "ALL",
+            "exception_literals": [],
+            "exception_mode": "ALL",
+            "temporal": "BEFORE",
+            "actor": "assistant",
+            "regulated_kind": "ACTION",
+            "facet": "primary",
+            "identity": "ANY",
+            "provenance": "ANY",
+            "quantification": "ALL"
+          },
+          {
+            "modality": "REQUIREMENT",
+            "relation": "IF",
+            "target_clauses": [
+              [
+                "action:count_bidder_sheets"
+              ]
+            ],
+            "condition_literals": [
+              "!event:auction_opens"
+            ],
+            "condition_mode": "ALL",
+            "exception_literals": [],
+            "exception_mode": "ALL",
+            "temporal": "BEFORE",
+            "actor": "assistant",
+            "regulated_kind": "ACTION",
+            "facet": "primary",
+            "identity": "ANY",
+            "provenance": "ANY",
+            "quantification": "ALL"
+          }
+        ]
+      ],
+      "worlds": [
+        {
+          "facts": [
+            "action:count_paddle_cards",
+            "event:auction_opens"
+          ],
+          "expected": "NO_VIOLATION"
+        },
+        {
+          "facts": [
+            "action:count_paddle_cards"
+          ],
+          "expected": "VIOLATION"
+        },
+        {
+          "facts": [
+            "action:count_bidder_sheets",
+            "event:auction_opens"
+          ],
+          "expected": "NO_VIOLATION"
+        },
+        {
+          "facts": [
+            "action:count_bidder_sheets"
+          ],
+          "expected": "VIOLATION"
+        },
+        {
+          "facts": [
+            "action:count_bidder_sheets",
+            "action:count_paddle_cards",
+            "event:auction_opens"
+          ],
+          "expected": "NO_VIOLATION"
+        },
+        {
+          "facts": [
+            "action:count_bidder_sheets",
+            "action:count_paddle_cards"
+          ],
+          "expected": "NO_VIOLATION"
+        },
+        {
+          "facts": [
+            "event:auction_opens"
+          ],
+          "expected": "NO_VIOLATION"
+        },
+        {
+          "facts": [],
+          "expected": "VIOLATION"
+        }
+      ],
+      "axes": [
+        "temporal",
+        "scope"
+      ],
+      "h0_representable": false
+    },
+    {
+      "case_id": "multi_axis::x08",
+      "cohort": "multiaxis_controls",
+      "family": "multi_axis",
+      "style": "controlled",
+      "policy": "Stewards may park behind the members' pavilion, except on concert nights.",
+      "atom_catalog": [
+        "action:park_behind_members_pavilion",
+        "actor:assistant",
+        "actor:steward",
+        "distractor:x08",
+        "state:concert_night"
+      ],
+      "gold_graph": {
+        "nodes": [
+          {
+            "id": "n1",
+            "type": "REGULATED",
+            "atoms": [
+              "action:park_behind_members_pavilion"
+            ]
+          },
+          {
+            "id": "n2",
+            "type": "MODALITY",
+            "value": "PERMISSION"
+          },
+          {
+            "id": "n3",
+            "type": "ACTOR",
+            "atom": "actor:steward",
+            "exclusive": false
+          },
+          {
+            "id": "n4",
+            "type": "EXCEPTION",
+            "literals": [
+              "state:concert_night"
+            ],
+            "mode": "ALL"
+          }
+        ],
+        "edges": [
+          {
+            "type": "REGULATES",
+            "from": "n2",
+            "to": "n1"
+          },
+          {
+            "type": "ACTOR_OF",
+            "from": "n3",
+            "to": "n1"
+          },
+          {
+            "type": "EXEMPTS",
+            "from": "n4",
+            "to": "n1"
+          }
+        ]
+      },
+      "admissible_program_sets": [
+        [
+          {
+            "modality": "PERMISSION",
+            "relation": "IF",
+            "target_clauses": [
+              [
+                "action:park_behind_members_pavilion"
+              ]
+            ],
+            "condition_literals": [
+              "actor:steward"
+            ],
+            "condition_mode": "ALL",
+            "exception_literals": [
+              "state:concert_night"
+            ],
+            "exception_mode": "ALL",
+            "temporal": "NONE",
+            "actor": "assistant",
+            "regulated_kind": "ACTION",
+            "facet": "primary",
+            "identity": "ANY",
+            "provenance": "ANY",
+            "quantification": "ALL"
+          }
+        ]
+      ],
+      "worlds": [
+        {
+          "facts": [
+            "action:park_behind_members_pavilion"
+          ],
+          "expected": "NO_VIOLATION"
+        },
+        {
+          "facts": [
+            "action:park_behind_members_pavilion",
+            "state:concert_night"
+          ],
+          "expected": "NO_VIOLATION"
+        },
+        {
+          "facts": [
+            "action:park_behind_members_pavilion",
+            "actor:steward"
+          ],
+          "expected": "PERMITTED"
+        },
+        {
+          "facts": [
+            "action:park_behind_members_pavilion",
+            "actor:steward",
+            "state:concert_night"
+          ],
+          "expected": "NO_VIOLATION"
+        },
+        {
+          "facts": [],
+          "expected": "NO_VIOLATION"
+        },
+        {
+          "facts": [
+            "state:concert_night"
+          ],
+          "expected": "NO_VIOLATION"
+        },
+        {
+          "facts": [
+            "actor:steward"
+          ],
+          "expected": "NO_VIOLATION"
+        },
+        {
+          "facts": [
+            "actor:steward",
+            "state:concert_night"
+          ],
+          "expected": "NO_VIOLATION"
+        }
+      ],
+      "axes": [
+        "actor",
+        "exception"
+      ],
+      "h0_representable": true
+    },
+    {
+      "case_id": "multiclause::m01",
+      "cohort": "multiclause_modality_actor",
+      "family": "multiclause",
+      "style": "controlled",
+      "policy": "Nurses may top up the syrup dispenser; only the pharmacist may unlock the drug cupboard.",
+      "atom_catalog": [
+        "action:top_up_syrup_dispenser",
+        "action:unlock_drug_cupboard",
+        "actor:assistant",
+        "actor:nurse",
+        "actor:pharmacist",
+        "distractor:m01"
+      ],
+      "gold_graph": {
+        "nodes": [
+          {
+            "id": "n1",
+            "type": "REGULATED",
+            "atoms": [
+              "action:top_up_syrup_dispenser"
+            ]
+          },
+          {
+            "id": "n2",
+            "type": "REGULATED",
+            "atoms": [
+              "action:unlock_drug_cupboard"
+            ]
+          },
+          {
+            "id": "n3",
+            "type": "MODALITY",
+            "value": "PERMISSION"
+          },
+          {
+            "id": "n4",
+            "type": "ACTOR",
+            "atom": "actor:nurse",
+            "exclusive": false
+          },
+          {
+            "id": "n5",
+            "type": "ACTOR",
+            "atom": "actor:pharmacist",
+            "exclusive": true
+          }
+        ],
+        "edges": [
+          {
+            "type": "REGULATES",
+            "from": "n3",
+            "to": "n1"
+          },
+          {
+            "type": "REGULATES",
+            "from": "n3",
+            "to": "n2"
+          },
+          {
+            "type": "ACTOR_OF",
+            "from": "n4",
+            "to": "n1"
+          },
+          {
+            "type": "ACTOR_OF",
+            "from": "n5",
+            "to": "n2"
+          }
+        ]
+      },
+      "admissible_program_sets": [
+        [
+          {
+            "modality": "PERMISSION",
+            "relation": "IF",
+            "target_clauses": [
+              [
+                "action:top_up_syrup_dispenser"
+              ]
+            ],
+            "condition_literals": [
+              "actor:nurse"
+            ],
+            "condition_mode": "ALL",
+            "exception_literals": [],
+            "exception_mode": "ALL",
+            "temporal": "NONE",
+            "actor": "assistant",
+            "regulated_kind": "ACTION",
+            "facet": "primary",
+            "identity": "ANY",
+            "provenance": "ANY",
+            "quantification": "ALL"
+          },
+          {
+            "modality": "PERMISSION",
+            "relation": "ONLY_IF",
+            "target_clauses": [
+              [
+                "action:unlock_drug_cupboard"
+              ]
+            ],
+            "condition_literals": [
+              "actor:pharmacist"
+            ],
+            "condition_mode": "ALL",
+            "exception_literals": [],
+            "exception_mode": "ALL",
+            "temporal": "NONE",
+            "actor": "assistant",
+            "regulated_kind": "ACTION",
+            "facet": "primary",
+            "identity": "ANY",
+            "provenance": "ANY",
+            "quantification": "ALL"
+          }
+        ]
+      ],
+      "worlds": [
+        {
+          "facts": [
+            "action:top_up_syrup_dispenser"
+          ],
+          "expected": "NO_VIOLATION"
+        },
+        {
+          "facts": [
+            "action:top_up_syrup_dispenser",
+            "actor:nurse"
+          ],
+          "expected": "PERMITTED"
+        },
+        {
+          "facts": [
+            "action:top_up_syrup_dispenser",
+            "actor:pharmacist"
+          ],
+          "expected": "NO_VIOLATION"
+        },
+        {
+          "facts": [
+            "action:top_up_syrup_dispenser",
+            "actor:nurse",
+            "actor:pharmacist"
+          ],
+          "expected": "PERMITTED"
+        },
+        {
+          "facts": [
+            "action:unlock_drug_cupboard"
+          ],
+          "expected": "VIOLATION"
+        },
+        {
+          "facts": [
+            "action:unlock_drug_cupboard",
+            "actor:nurse"
+          ],
+          "expected": "VIOLATION"
+        },
+        {
+          "facts": [
+            "action:unlock_drug_cupboard",
+            "actor:pharmacist"
+          ],
+          "expected": "PERMITTED"
+        },
+        {
+          "facts": [
+            "action:unlock_drug_cupboard",
+            "actor:nurse",
+            "actor:pharmacist"
+          ],
+          "expected": "PERMITTED"
+        },
+        {
+          "facts": [
+            "action:top_up_syrup_dispenser",
+            "action:unlock_drug_cupboard"
+          ],
+          "expected": "VIOLATION"
+        },
+        {
+          "facts": [
+            "action:top_up_syrup_dispenser",
+            "action:unlock_drug_cupboard",
+            "actor:nurse"
+          ],
+          "expected": "VIOLATION"
+        },
+        {
+          "facts": [
+            "action:top_up_syrup_dispenser",
+            "action:unlock_drug_cupboard",
+            "actor:pharmacist"
+          ],
+          "expected": "PERMITTED"
+        },
+        {
+          "facts": [
+            "action:top_up_syrup_dispenser",
+            "action:unlock_drug_cupboard",
+            "actor:nurse",
+            "actor:pharmacist"
+          ],
+          "expected": "PERMITTED"
+        },
+        {
+          "facts": [],
+          "expected": "NO_VIOLATION"
+        },
+        {
+          "facts": [
+            "actor:nurse"
+          ],
+          "expected": "NO_VIOLATION"
+        },
+        {
+          "facts": [
+            "actor:pharmacist"
+          ],
+          "expected": "NO_VIOLATION"
+        },
+        {
+          "facts": [
+            "actor:nurse",
+            "actor:pharmacist"
+          ],
+          "expected": "NO_VIOLATION"
+        }
+      ],
+      "axes": [
+        "modality",
+        "actor"
+      ],
+      "h0_representable": false
+    },
+    {
+      "case_id": "multiclause::m02",
+      "cohort": "multiclause_modality_actor",
+      "family": "multiclause",
+      "style": "controlled",
+      "policy": "Trainees must log every pool session, and trainees may not enter the filter gallery.",
+      "atom_catalog": [
+        "action:enter_filter_gallery",
+        "actor:assistant",
+        "actor:trainee",
+        "distractor:m02",
+        "state:pool_sessions_logged"
+      ],
+      "gold_graph": {
+        "nodes": [
+          {
+            "id": "n1",
+            "type": "REGULATED",
+            "atoms": [
+              "state:pool_sessions_logged"
+            ]
+          },
+          {
+            "id": "n2",
+            "type": "REGULATED",
+            "atoms": [
+              "action:enter_filter_gallery"
+            ]
+          },
+          {
+            "id": "n3",
+            "type": "MODALITY",
+            "value": "REQUIREMENT"
+          },
+          {
+            "id": "n4",
+            "type": "MODALITY",
+            "value": "PROHIBITION"
+          },
+          {
+            "id": "n5",
+            "type": "ACTOR",
+            "atom": "actor:trainee",
+            "exclusive": false
+          }
+        ],
+        "edges": [
+          {
+            "type": "REGULATES",
+            "from": "n3",
+            "to": "n1"
+          },
+          {
+            "type": "REGULATES",
+            "from": "n4",
+            "to": "n2"
+          },
+          {
+            "type": "ACTOR_OF",
+            "from": "n5",
+            "to": "n1"
+          },
+          {
+            "type": "ACTOR_OF",
+            "from": "n5",
+            "to": "n2"
+          }
+        ]
+      },
+      "admissible_program_sets": [
+        [
+          {
+            "modality": "REQUIREMENT",
+            "relation": "IF",
+            "target_clauses": [
+              [
+                "state:pool_sessions_logged"
+              ]
+            ],
+            "condition_literals": [
+              "actor:trainee"
+            ],
+            "condition_mode": "ALL",
+            "exception_literals": [],
+            "exception_mode": "ALL",
+            "temporal": "NONE",
+            "actor": "assistant",
+            "regulated_kind": "ACTION",
+            "facet": "primary",
+            "identity": "ANY",
+            "provenance": "ANY",
+            "quantification": "ALL"
+          },
+          {
+            "modality": "PROHIBITION",
+            "relation": "IF",
+            "target_clauses": [
+              [
+                "action:enter_filter_gallery"
+              ]
+            ],
+            "condition_literals": [
+              "actor:trainee"
+            ],
+            "condition_mode": "ALL",
+            "exception_literals": [],
+            "exception_mode": "ALL",
+            "temporal": "NONE",
+            "actor": "assistant",
+            "regulated_kind": "ACTION",
+            "facet": "primary",
+            "identity": "ANY",
+            "provenance": "ANY",
+            "quantification": "ALL"
+          }
+        ]
+      ],
+      "worlds": [
+        {
+          "facts": [
+            "state:pool_sessions_logged"
+          ],
+          "expected": "NO_VIOLATION"
+        },
+        {
+          "facts": [
+            "actor:trainee",
+            "state:pool_sessions_logged"
+          ],
+          "expected": "NO_VIOLATION"
+        },
+        {
+          "facts": [
+            "action:enter_filter_gallery"
+          ],
+          "expected": "NO_VIOLATION"
+        },
+        {
+          "facts": [
+            "action:enter_filter_gallery",
+            "actor:trainee"
+          ],
+          "expected": "VIOLATION"
+        },
+        {
+          "facts": [
+            "action:enter_filter_gallery",
+            "state:pool_sessions_logged"
+          ],
+          "expected": "NO_VIOLATION"
+        },
+        {
+          "facts": [
+            "action:enter_filter_gallery",
+            "actor:trainee",
+            "state:pool_sessions_logged"
+          ],
+          "expected": "VIOLATION"
+        },
+        {
+          "facts": [],
+          "expected": "NO_VIOLATION"
+        },
+        {
+          "facts": [
+            "actor:trainee"
+          ],
+          "expected": "VIOLATION"
+        }
+      ],
+      "axes": [
+        "modality",
+        "actor"
+      ],
+      "h0_representable": false
+    },
+    {
+      "case_id": "multiclause::m03",
+      "cohort": "multiclause_modality_actor",
+      "family": "multiclause",
+      "style": "controlled",
+      "policy": "The intern may fetch slides from the cold store; the intern must not touch the liquid-nitrogen dewar.",
+      "atom_catalog": [
+        "action:fetch_slides_from_cold_store",
+        "action:touch_liquid_nitrogen_dewar",
+        "actor:assistant",
+        "actor:intern",
+        "distractor:m03"
+      ],
+      "gold_graph": {
+        "nodes": [
+          {
+            "id": "n1",
+            "type": "REGULATED",
+            "atoms": [
+              "action:fetch_slides_from_cold_store"
+            ]
+          },
+          {
+            "id": "n2",
+            "type": "REGULATED",
+            "atoms": [
+              "action:touch_liquid_nitrogen_dewar"
+            ]
+          },
+          {
+            "id": "n3",
+            "type": "MODALITY",
+            "value": "PERMISSION"
+          },
+          {
+            "id": "n4",
+            "type": "MODALITY",
+            "value": "PROHIBITION"
+          },
+          {
+            "id": "n5",
+            "type": "ACTOR",
+            "atom": "actor:intern",
+            "exclusive": false
+          }
+        ],
+        "edges": [
+          {
+            "type": "REGULATES",
+            "from": "n3",
+            "to": "n1"
+          },
+          {
+            "type": "REGULATES",
+            "from": "n4",
+            "to": "n2"
+          },
+          {
+            "type": "ACTOR_OF",
+            "from": "n5",
+            "to": "n1"
+          },
+          {
+            "type": "ACTOR_OF",
+            "from": "n5",
+            "to": "n2"
+          }
+        ]
+      },
+      "admissible_program_sets": [
+        [
+          {
+            "modality": "PERMISSION",
+            "relation": "IF",
+            "target_clauses": [
+              [
+                "action:fetch_slides_from_cold_store"
+              ]
+            ],
+            "condition_literals": [
+              "actor:intern"
+            ],
+            "condition_mode": "ALL",
+            "exception_literals": [],
+            "exception_mode": "ALL",
+            "temporal": "NONE",
+            "actor": "assistant",
+            "regulated_kind": "ACTION",
+            "facet": "primary",
+            "identity": "ANY",
+            "provenance": "ANY",
+            "quantification": "ALL"
+          },
+          {
+            "modality": "PROHIBITION",
+            "relation": "IF",
+            "target_clauses": [
+              [
+                "action:touch_liquid_nitrogen_dewar"
+              ]
+            ],
+            "condition_literals": [
+              "actor:intern"
+            ],
+            "condition_mode": "ALL",
+            "exception_literals": [],
+            "exception_mode": "ALL",
+            "temporal": "NONE",
+            "actor": "assistant",
+            "regulated_kind": "ACTION",
+            "facet": "primary",
+            "identity": "ANY",
+            "provenance": "ANY",
+            "quantification": "ALL"
+          }
+        ]
+      ],
+      "worlds": [
+        {
+          "facts": [
+            "action:fetch_slides_from_cold_store"
+          ],
+          "expected": "NO_VIOLATION"
+        },
+        {
+          "facts": [
+            "action:fetch_slides_from_cold_store",
+            "actor:intern"
+          ],
+          "expected": "PERMITTED"
+        },
+        {
+          "facts": [
+            "action:touch_liquid_nitrogen_dewar"
+          ],
+          "expected": "NO_VIOLATION"
+        },
+        {
+          "facts": [
+            "action:touch_liquid_nitrogen_dewar",
+            "actor:intern"
+          ],
+          "expected": "VIOLATION"
+        },
+        {
+          "facts": [
+            "action:fetch_slides_from_cold_store",
+            "action:touch_liquid_nitrogen_dewar"
+          ],
+          "expected": "NO_VIOLATION"
+        },
+        {
+          "facts": [
+            "action:fetch_slides_from_cold_store",
+            "action:touch_liquid_nitrogen_dewar",
+            "actor:intern"
+          ],
+          "expected": "VIOLATION"
+        },
+        {
+          "facts": [],
+          "expected": "NO_VIOLATION"
+        },
+        {
+          "facts": [
+            "actor:intern"
+          ],
+          "expected": "NO_VIOLATION"
+        }
+      ],
+      "axes": [
+        "modality",
+        "actor"
+      ],
+      "h0_representable": false
+    },
+    {
+      "case_id": "multiclause::m04",
+      "cohort": "multiclause_modality_actor",
+      "family": "multiclause",
+      "style": "controlled",
+      "policy": "Only the senior falconer may hand-feed the display owls, and the falconers must wear gauntlets for every handling.",
+      "atom_catalog": [
+        "action:handfeed_display_owls",
+        "actor:assistant",
+        "actor:falconer",
+        "actor:senior_falconer",
+        "distractor:m04",
+        "state:gauntlets_worn_for_handling"
+      ],
+      "gold_graph": {
+        "nodes": [
+          {
+            "id": "n1",
+            "type": "REGULATED",
+            "atoms": [
+              "action:handfeed_display_owls"
+            ]
+          },
+          {
+            "id": "n2",
+            "type": "REGULATED",
+            "atoms": [
+              "state:gauntlets_worn_for_handling"
+            ]
+          },
+          {
+            "id": "n3",
+            "type": "MODALITY",
+            "value": "PERMISSION"
+          },
+          {
+            "id": "n4",
+            "type": "MODALITY",
+            "value": "REQUIREMENT"
+          },
+          {
+            "id": "n5",
+            "type": "ACTOR",
+            "atom": "actor:senior_falconer",
+            "exclusive": true
+          },
+          {
+            "id": "n6",
+            "type": "ACTOR",
+            "atom": "actor:falconer",
+            "exclusive": false
+          }
+        ],
+        "edges": [
+          {
+            "type": "REGULATES",
+            "from": "n3",
+            "to": "n1"
+          },
+          {
+            "type": "REGULATES",
+            "from": "n4",
+            "to": "n2"
+          },
+          {
+            "type": "ACTOR_OF",
+            "from": "n5",
+            "to": "n1"
+          },
+          {
+            "type": "ACTOR_OF",
+            "from": "n6",
+            "to": "n2"
+          }
+        ]
+      },
+      "admissible_program_sets": [
+        [
+          {
+            "modality": "PERMISSION",
+            "relation": "ONLY_IF",
+            "target_clauses": [
+              [
+                "action:handfeed_display_owls"
+              ]
+            ],
+            "condition_literals": [
+              "actor:senior_falconer"
+            ],
+            "condition_mode": "ALL",
+            "exception_literals": [],
+            "exception_mode": "ALL",
+            "temporal": "NONE",
+            "actor": "assistant",
+            "regulated_kind": "ACTION",
+            "facet": "primary",
+            "identity": "ANY",
+            "provenance": "ANY",
+            "quantification": "ALL"
+          },
+          {
+            "modality": "REQUIREMENT",
+            "relation": "IF",
+            "target_clauses": [
+              [
+                "state:gauntlets_worn_for_handling"
+              ]
+            ],
+            "condition_literals": [
+              "actor:falconer"
+            ],
+            "condition_mode": "ALL",
+            "exception_literals": [],
+            "exception_mode": "ALL",
+            "temporal": "NONE",
+            "actor": "assistant",
+            "regulated_kind": "ACTION",
+            "facet": "primary",
+            "identity": "ANY",
+            "provenance": "ANY",
+            "quantification": "ALL"
+          }
+        ]
+      ],
+      "worlds": [
+        {
+          "facts": [
+            "action:handfeed_display_owls"
+          ],
+          "expected": "VIOLATION"
+        },
+        {
+          "facts": [
+            "action:handfeed_display_owls",
+            "actor:falconer"
+          ],
+          "expected": "VIOLATION"
+        },
+        {
+          "facts": [
+            "action:handfeed_display_owls",
+            "actor:senior_falconer"
+          ],
+          "expected": "PERMITTED"
+        },
+        {
+          "facts": [
+            "action:handfeed_display_owls",
+            "actor:falconer",
+            "actor:senior_falconer"
+          ],
+          "expected": "VIOLATION"
+        },
+        {
+          "facts": [
+            "state:gauntlets_worn_for_handling"
+          ],
+          "expected": "NO_VIOLATION"
+        },
+        {
+          "facts": [
+            "actor:falconer",
+            "state:gauntlets_worn_for_handling"
+          ],
+          "expected": "NO_VIOLATION"
+        },
+        {
+          "facts": [
+            "actor:senior_falconer",
+            "state:gauntlets_worn_for_handling"
+          ],
+          "expected": "NO_VIOLATION"
+        },
+        {
+          "facts": [
+            "actor:falconer",
+            "actor:senior_falconer",
+            "state:gauntlets_worn_for_handling"
+          ],
+          "expected": "NO_VIOLATION"
+        },
+        {
+          "facts": [
+            "action:handfeed_display_owls",
+            "state:gauntlets_worn_for_handling"
+          ],
+          "expected": "VIOLATION"
+        },
+        {
+          "facts": [
+            "action:handfeed_display_owls",
+            "actor:falconer",
+            "state:gauntlets_worn_for_handling"
+          ],
+          "expected": "VIOLATION"
+        },
+        {
+          "facts": [
+            "action:handfeed_display_owls",
+            "actor:senior_falconer",
+            "state:gauntlets_worn_for_handling"
+          ],
+          "expected": "PERMITTED"
+        },
+        {
+          "facts": [
+            "action:handfeed_display_owls",
+            "actor:falconer",
+            "actor:senior_falconer",
+            "state:gauntlets_worn_for_handling"
+          ],
+          "expected": "PERMITTED"
+        },
+        {
+          "facts": [],
+          "expected": "NO_VIOLATION"
+        },
+        {
+          "facts": [
+            "actor:falconer"
+          ],
+          "expected": "VIOLATION"
+        },
+        {
+          "facts": [
+            "actor:senior_falconer"
+          ],
+          "expected": "NO_VIOLATION"
+        },
+        {
+          "facts": [
+            "actor:falconer",
+            "actor:senior_falconer"
+          ],
+          "expected": "VIOLATION"
+        }
+      ],
+      "axes": [
+        "modality",
+        "actor"
+      ],
+      "h0_representable": false
+    },
+    {
+      "case_id": "multiclause::m05",
+      "cohort": "multiclause_modality_actor",
+      "family": "multiclause",
+      "style": "controlled",
+      "policy": "Docents may open the butterfly house in the morning; horticulturists may enter the potting vault at any time.",
+      "atom_catalog": [
+        "action:enter_potting_vault",
+        "action:open_butterfly_house",
+        "actor:assistant",
+        "actor:docent",
+        "actor:horticulturist",
+        "distractor:m05",
+        "state:morning"
+      ],
+      "gold_graph": {
+        "nodes": [
+          {
+            "id": "n1",
+            "type": "REGULATED",
+            "atoms": [
+              "action:open_butterfly_house"
+            ]
+          },
+          {
+            "id": "n2",
+            "type": "REGULATED",
+            "atoms": [
+              "action:enter_potting_vault"
+            ]
+          },
+          {
+            "id": "n3",
+            "type": "MODALITY",
+            "value": "PERMISSION"
+          },
+          {
+            "id": "n4",
+            "type": "ACTOR",
+            "atom": "actor:docent",
+            "exclusive": false
+          },
+          {
+            "id": "n5",
+            "type": "ACTOR",
+            "atom": "actor:horticulturist",
+            "exclusive": false
+          },
+          {
+            "id": "n6",
+            "type": "CONDITION",
+            "literals": [
+              "state:morning"
+            ],
+            "mode": "ALL",
+            "strength": "SUFFICIENT"
+          }
+        ],
+        "edges": [
+          {
+            "type": "REGULATES",
+            "from": "n3",
+            "to": "n1"
+          },
+          {
+            "type": "REGULATES",
+            "from": "n3",
+            "to": "n2"
+          },
+          {
+            "type": "ACTOR_OF",
+            "from": "n4",
+            "to": "n1"
+          },
+          {
+            "type": "ACTOR_OF",
+            "from": "n5",
+            "to": "n2"
+          },
+          {
+            "type": "ACTIVATES",
+            "from": "n6",
+            "to": "n1"
+          }
+        ]
+      },
+      "admissible_program_sets": [
+        [
+          {
+            "modality": "PERMISSION",
+            "relation": "IF",
+            "target_clauses": [
+              [
+                "action:open_butterfly_house"
+              ]
+            ],
+            "condition_literals": [
+              "actor:docent",
+              "state:morning"
+            ],
+            "condition_mode": "ALL",
+            "exception_literals": [],
+            "exception_mode": "ALL",
+            "temporal": "NONE",
+            "actor": "assistant",
+            "regulated_kind": "ACTION",
+            "facet": "primary",
+            "identity": "ANY",
+            "provenance": "ANY",
+            "quantification": "ALL"
+          },
+          {
+            "modality": "PERMISSION",
+            "relation": "IF",
+            "target_clauses": [
+              [
+                "action:enter_potting_vault"
+              ]
+            ],
+            "condition_literals": [
+              "actor:horticulturist"
+            ],
+            "condition_mode": "ALL",
+            "exception_literals": [],
+            "exception_mode": "ALL",
+            "temporal": "NONE",
+            "actor": "assistant",
+            "regulated_kind": "ACTION",
+            "facet": "primary",
+            "identity": "ANY",
+            "provenance": "ANY",
+            "quantification": "ALL"
+          }
+        ]
+      ],
+      "worlds": [
+        {
+          "facts": [
+            "action:open_butterfly_house"
+          ],
+          "expected": "NO_VIOLATION"
+        },
+        {
+          "facts": [
+            "action:open_butterfly_house",
+            "actor:docent"
+          ],
+          "expected": "NO_VIOLATION"
+        },
+        {
+          "facts": [
+            "action:open_butterfly_house",
+            "actor:horticulturist"
+          ],
+          "expected": "NO_VIOLATION"
+        },
+        {
+          "facts": [
+            "action:open_butterfly_house",
+            "state:morning"
+          ],
+          "expected": "NO_VIOLATION"
+        },
+        {
+          "facts": [
+            "action:open_butterfly_house",
+            "actor:docent",
+            "actor:horticulturist",
+            "state:morning"
+          ],
+          "expected": "PERMITTED"
+        },
+        {
+          "facts": [
+            "action:enter_potting_vault"
+          ],
+          "expected": "NO_VIOLATION"
+        },
+        {
+          "facts": [
+            "action:enter_potting_vault",
+            "actor:docent"
+          ],
+          "expected": "NO_VIOLATION"
+        },
+        {
+          "facts": [
+            "action:enter_potting_vault",
+            "actor:horticulturist"
+          ],
+          "expected": "PERMITTED"
+        },
+        {
+          "facts": [
+            "action:enter_potting_vault",
+            "state:morning"
+          ],
+          "expected": "NO_VIOLATION"
+        },
+        {
+          "facts": [
+            "action:enter_potting_vault",
+            "actor:docent",
+            "actor:horticulturist",
+            "state:morning"
+          ],
+          "expected": "PERMITTED"
+        },
+        {
+          "facts": [
+            "action:enter_potting_vault",
+            "action:open_butterfly_house"
+          ],
+          "expected": "NO_VIOLATION"
+        },
+        {
+          "facts": [
+            "action:enter_potting_vault",
+            "action:open_butterfly_house",
+            "actor:docent"
+          ],
+          "expected": "NO_VIOLATION"
+        },
+        {
+          "facts": [
+            "action:enter_potting_vault",
+            "action:open_butterfly_house",
+            "actor:horticulturist"
+          ],
+          "expected": "PERMITTED"
+        },
+        {
+          "facts": [
+            "action:enter_potting_vault",
+            "action:open_butterfly_house",
+            "state:morning"
+          ],
+          "expected": "NO_VIOLATION"
+        },
+        {
+          "facts": [
+            "action:enter_potting_vault",
+            "action:open_butterfly_house",
+            "actor:docent",
+            "actor:horticulturist",
+            "state:morning"
+          ],
+          "expected": "PERMITTED"
+        },
+        {
+          "facts": [],
+          "expected": "NO_VIOLATION"
+        },
+        {
+          "facts": [
+            "actor:docent"
+          ],
+          "expected": "NO_VIOLATION"
+        },
+        {
+          "facts": [
+            "actor:horticulturist"
+          ],
+          "expected": "NO_VIOLATION"
+        },
+        {
+          "facts": [
+            "state:morning"
+          ],
+          "expected": "NO_VIOLATION"
+        },
+        {
+          "facts": [
+            "actor:docent",
+            "actor:horticulturist",
+            "state:morning"
+          ],
+          "expected": "NO_VIOLATION"
+        }
+      ],
+      "axes": [
+        "actor",
+        "condition"
+      ],
+      "h0_representable": false
+    },
+    {
+      "case_id": "multiclause::m06",
+      "cohort": "multiclause_modality_actor",
+      "family": "multiclause",
+      "style": "controlled",
+      "policy": "The night porter must patrol the sculpture gallery, and may not move the plinths.",
+      "atom_catalog": [
+        "action:move_plinths",
+        "action:patrol_sculpture_gallery",
+        "actor:assistant",
+        "actor:night_porter",
+        "distractor:m06"
+      ],
+      "gold_graph": {
+        "nodes": [
+          {
+            "id": "n1",
+            "type": "REGULATED",
+            "atoms": [
+              "action:patrol_sculpture_gallery"
+            ]
+          },
+          {
+            "id": "n2",
+            "type": "REGULATED",
+            "atoms": [
+              "action:move_plinths"
+            ]
+          },
+          {
+            "id": "n3",
+            "type": "MODALITY",
+            "value": "REQUIREMENT"
+          },
+          {
+            "id": "n4",
+            "type": "MODALITY",
+            "value": "PROHIBITION"
+          },
+          {
+            "id": "n5",
+            "type": "ACTOR",
+            "atom": "actor:night_porter",
+            "exclusive": false
+          }
+        ],
+        "edges": [
+          {
+            "type": "REGULATES",
+            "from": "n3",
+            "to": "n1"
+          },
+          {
+            "type": "REGULATES",
+            "from": "n4",
+            "to": "n2"
+          },
+          {
+            "type": "ACTOR_OF",
+            "from": "n5",
+            "to": "n1"
+          },
+          {
+            "type": "ACTOR_OF",
+            "from": "n5",
+            "to": "n2"
+          }
+        ]
+      },
+      "admissible_program_sets": [
+        [
+          {
+            "modality": "REQUIREMENT",
+            "relation": "IF",
+            "target_clauses": [
+              [
+                "action:patrol_sculpture_gallery"
+              ]
+            ],
+            "condition_literals": [
+              "actor:night_porter"
+            ],
+            "condition_mode": "ALL",
+            "exception_literals": [],
+            "exception_mode": "ALL",
+            "temporal": "NONE",
+            "actor": "assistant",
+            "regulated_kind": "ACTION",
+            "facet": "primary",
+            "identity": "ANY",
+            "provenance": "ANY",
+            "quantification": "ALL"
+          },
+          {
+            "modality": "PROHIBITION",
+            "relation": "IF",
+            "target_clauses": [
+              [
+                "action:move_plinths"
+              ]
+            ],
+            "condition_literals": [
+              "actor:night_porter"
+            ],
+            "condition_mode": "ALL",
+            "exception_literals": [],
+            "exception_mode": "ALL",
+            "temporal": "NONE",
+            "actor": "assistant",
+            "regulated_kind": "ACTION",
+            "facet": "primary",
+            "identity": "ANY",
+            "provenance": "ANY",
+            "quantification": "ALL"
+          }
+        ]
+      ],
+      "worlds": [
+        {
+          "facts": [
+            "action:patrol_sculpture_gallery"
+          ],
+          "expected": "NO_VIOLATION"
+        },
+        {
+          "facts": [
+            "action:patrol_sculpture_gallery",
+            "actor:night_porter"
+          ],
+          "expected": "NO_VIOLATION"
+        },
+        {
+          "facts": [
+            "action:move_plinths"
+          ],
+          "expected": "NO_VIOLATION"
+        },
+        {
+          "facts": [
+            "action:move_plinths",
+            "actor:night_porter"
+          ],
+          "expected": "VIOLATION"
+        },
+        {
+          "facts": [
+            "action:move_plinths",
+            "action:patrol_sculpture_gallery"
+          ],
+          "expected": "NO_VIOLATION"
+        },
+        {
+          "facts": [
+            "action:move_plinths",
+            "action:patrol_sculpture_gallery",
+            "actor:night_porter"
+          ],
+          "expected": "VIOLATION"
+        },
+        {
+          "facts": [],
+          "expected": "NO_VIOLATION"
+        },
+        {
+          "facts": [
+            "actor:night_porter"
+          ],
+          "expected": "VIOLATION"
+        }
+      ],
+      "axes": [
+        "modality",
+        "actor"
+      ],
+      "h0_representable": false
+    },
+    {
+      "case_id": "multiclause::m07",
+      "cohort": "multiclause_modality_actor",
+      "family": "multiclause",
+      "style": "controlled",
+      "policy": "Scribes may copy the index cards; the registrar alone may annotate the folios; nobody removes the vellum leaves.",
+      "atom_catalog": [
+        "action:annotate_folios",
+        "action:copy_index_cards",
+        "action:remove_vellum_leaves",
+        "actor:assistant",
+        "actor:registrar",
+        "actor:scribe",
+        "distractor:m07"
+      ],
+      "gold_graph": {
+        "nodes": [
+          {
+            "id": "n1",
+            "type": "REGULATED",
+            "atoms": [
+              "action:copy_index_cards"
+            ]
+          },
+          {
+            "id": "n2",
+            "type": "REGULATED",
+            "atoms": [
+              "action:annotate_folios"
+            ]
+          },
+          {
+            "id": "n3",
+            "type": "REGULATED",
+            "atoms": [
+              "action:remove_vellum_leaves"
+            ]
+          },
+          {
+            "id": "n4",
+            "type": "MODALITY",
+            "value": "PERMISSION"
+          },
+          {
+            "id": "n5",
+            "type": "MODALITY",
+            "value": "PROHIBITION"
+          },
+          {
+            "id": "n6",
+            "type": "ACTOR",
+            "atom": "actor:scribe",
+            "exclusive": false
+          },
+          {
+            "id": "n7",
+            "type": "ACTOR",
+            "atom": "actor:registrar",
+            "exclusive": true
+          }
+        ],
+        "edges": [
+          {
+            "type": "REGULATES",
+            "from": "n4",
+            "to": "n1"
+          },
+          {
+            "type": "REGULATES",
+            "from": "n4",
+            "to": "n2"
+          },
+          {
+            "type": "REGULATES",
+            "from": "n5",
+            "to": "n3"
+          },
+          {
+            "type": "ACTOR_OF",
+            "from": "n6",
+            "to": "n1"
+          },
+          {
+            "type": "ACTOR_OF",
+            "from": "n7",
+            "to": "n2"
+          }
+        ]
+      },
+      "admissible_program_sets": [
+        [
+          {
+            "modality": "PERMISSION",
+            "relation": "IF",
+            "target_clauses": [
+              [
+                "action:copy_index_cards"
+              ]
+            ],
+            "condition_literals": [
+              "actor:scribe"
+            ],
+            "condition_mode": "ALL",
+            "exception_literals": [],
+            "exception_mode": "ALL",
+            "temporal": "NONE",
+            "actor": "assistant",
+            "regulated_kind": "ACTION",
+            "facet": "primary",
+            "identity": "ANY",
+            "provenance": "ANY",
+            "quantification": "ALL"
+          },
+          {
+            "modality": "PERMISSION",
+            "relation": "ONLY_IF",
+            "target_clauses": [
+              [
+                "action:annotate_folios"
+              ]
+            ],
+            "condition_literals": [
+              "actor:registrar"
+            ],
+            "condition_mode": "ALL",
+            "exception_literals": [],
+            "exception_mode": "ALL",
+            "temporal": "NONE",
+            "actor": "assistant",
+            "regulated_kind": "ACTION",
+            "facet": "primary",
+            "identity": "ANY",
+            "provenance": "ANY",
+            "quantification": "ALL"
+          },
+          {
+            "modality": "PROHIBITION",
+            "relation": "UNCONDITIONAL",
+            "target_clauses": [
+              [
+                "action:remove_vellum_leaves"
+              ]
+            ],
+            "condition_literals": [],
+            "condition_mode": "ALL",
+            "exception_literals": [],
+            "exception_mode": "ALL",
+            "temporal": "NONE",
+            "actor": "assistant",
+            "regulated_kind": "ACTION",
+            "facet": "primary",
+            "identity": "ANY",
+            "provenance": "ANY",
+            "quantification": "ALL"
+          }
+        ]
+      ],
+      "worlds": [
+        {
+          "facts": [
+            "action:copy_index_cards"
+          ],
+          "expected": "NO_VIOLATION"
+        },
+        {
+          "facts": [
+            "action:copy_index_cards",
+            "actor:registrar"
+          ],
+          "expected": "NO_VIOLATION"
+        },
+        {
+          "facts": [
+            "action:copy_index_cards",
+            "actor:scribe"
+          ],
+          "expected": "PERMITTED"
+        },
+        {
+          "facts": [
+            "action:copy_index_cards",
+            "actor:registrar",
+            "actor:scribe"
+          ],
+          "expected": "PERMITTED"
+        },
+        {
+          "facts": [
+            "action:annotate_folios"
+          ],
+          "expected": "VIOLATION"
+        },
+        {
+          "facts": [
+            "action:annotate_folios",
+            "actor:registrar"
+          ],
+          "expected": "PERMITTED"
+        },
+        {
+          "facts": [
+            "action:annotate_folios",
+            "actor:scribe"
+          ],
+          "expected": "VIOLATION"
+        },
+        {
+          "facts": [
+            "action:annotate_folios",
+            "actor:registrar",
+            "actor:scribe"
+          ],
+          "expected": "PERMITTED"
+        },
+        {
+          "facts": [
+            "action:remove_vellum_leaves"
+          ],
+          "expected": "VIOLATION"
+        },
+        {
+          "facts": [
+            "action:remove_vellum_leaves",
+            "actor:registrar"
+          ],
+          "expected": "VIOLATION"
+        },
+        {
+          "facts": [
+            "action:remove_vellum_leaves",
+            "actor:scribe"
+          ],
+          "expected": "VIOLATION"
+        },
+        {
+          "facts": [
+            "action:remove_vellum_leaves",
+            "actor:registrar",
+            "actor:scribe"
+          ],
+          "expected": "VIOLATION"
+        },
+        {
+          "facts": [
+            "action:annotate_folios",
+            "action:copy_index_cards",
+            "action:remove_vellum_leaves"
+          ],
+          "expected": "VIOLATION"
+        },
+        {
+          "facts": [
+            "action:annotate_folios",
+            "action:copy_index_cards",
+            "action:remove_vellum_leaves",
+            "actor:registrar"
+          ],
+          "expected": "VIOLATION"
+        },
+        {
+          "facts": [
+            "action:annotate_folios",
+            "action:copy_index_cards",
+            "action:remove_vellum_leaves",
+            "actor:scribe"
+          ],
+          "expected": "VIOLATION"
+        },
+        {
+          "facts": [
+            "action:annotate_folios",
+            "action:copy_index_cards",
+            "action:remove_vellum_leaves",
+            "actor:registrar",
+            "actor:scribe"
+          ],
+          "expected": "VIOLATION"
+        },
+        {
+          "facts": [],
+          "expected": "NO_VIOLATION"
+        },
+        {
+          "facts": [
+            "actor:registrar"
+          ],
+          "expected": "NO_VIOLATION"
+        },
+        {
+          "facts": [
+            "actor:scribe"
+          ],
+          "expected": "NO_VIOLATION"
+        },
+        {
+          "facts": [
+            "actor:registrar",
+            "actor:scribe"
+          ],
+          "expected": "NO_VIOLATION"
+        }
+      ],
+      "axes": [
+        "modality",
+        "actor"
+      ],
+      "h0_representable": false
+    },
+    {
+      "case_id": "multiclause::m08",
+      "cohort": "multiclause_modality_actor",
+      "family": "multiclause",
+      "style": "controlled",
+      "policy": "When the barometer is falling, the winch launch is off limits to cadets; instructors may keep launching until dusk.",
+      "atom_catalog": [
+        "action:keep_launching",
+        "action:take_winch_launch",
+        "actor:assistant",
+        "actor:cadet",
+        "actor:instructor",
+        "distractor:m08",
+        "event:dusk",
+        "state:barometer_falling"
+      ],
+      "gold_graph": {
+        "nodes": [
+          {
+            "id": "n1",
+            "type": "REGULATED",
+            "atoms": [
+              "action:take_winch_launch"
+            ]
+          },
+          {
+            "id": "n2",
+            "type": "REGULATED",
+            "atoms": [
+              "action:keep_launching"
+            ]
+          },
+          {
+            "id": "n3",
+            "type": "MODALITY",
+            "value": "PROHIBITION"
+          },
+          {
+            "id": "n4",
+            "type": "MODALITY",
+            "value": "PERMISSION"
+          },
+          {
+            "id": "n5",
+            "type": "ACTOR",
+            "atom": "actor:cadet",
+            "exclusive": false
+          },
+          {
+            "id": "n6",
+            "type": "ACTOR",
+            "atom": "actor:instructor",
+            "exclusive": false
+          },
+          {
+            "id": "n7",
+            "type": "CONDITION",
+            "literals": [
+              "state:barometer_falling"
+            ],
+            "mode": "ALL",
+            "strength": "SUFFICIENT"
+          },
+          {
+            "id": "n8",
+            "type": "CONDITION",
+            "literals": [
+              "event:dusk"
+            ],
+            "mode": "ALL",
+            "strength": "SUFFICIENT"
+          }
+        ],
+        "edges": [
+          {
+            "type": "REGULATES",
+            "from": "n3",
+            "to": "n1"
+          },
+          {
+            "type": "REGULATES",
+            "from": "n4",
+            "to": "n2"
+          },
+          {
+            "type": "ACTOR_OF",
+            "from": "n5",
+            "to": "n1"
+          },
+          {
+            "type": "ACTOR_OF",
+            "from": "n6",
+            "to": "n2"
+          },
+          {
+            "type": "ACTIVATES",
+            "from": "n7",
+            "to": "n1"
+          },
+          {
+            "type": "PRECEDES",
+            "from": "n8",
+            "to": "n2"
+          }
+        ]
+      },
+      "admissible_program_sets": [
+        [
+          {
+            "modality": "PROHIBITION",
+            "relation": "IF",
+            "target_clauses": [
+              [
+                "action:take_winch_launch"
+              ]
+            ],
+            "condition_literals": [
+              "actor:cadet",
+              "state:barometer_falling"
+            ],
+            "condition_mode": "ALL",
+            "exception_literals": [],
+            "exception_mode": "ALL",
+            "temporal": "NONE",
+            "actor": "assistant",
+            "regulated_kind": "ACTION",
+            "facet": "primary",
+            "identity": "ANY",
+            "provenance": "ANY",
+            "quantification": "ALL"
+          },
+          {
+            "modality": "PERMISSION",
+            "relation": "IF",
+            "target_clauses": [
+              [
+                "action:keep_launching"
+              ]
+            ],
+            "condition_literals": [
+              "!event:dusk",
+              "actor:instructor"
+            ],
+            "condition_mode": "ALL",
+            "exception_literals": [],
+            "exception_mode": "ALL",
+            "temporal": "BEFORE",
+            "actor": "assistant",
+            "regulated_kind": "ACTION",
+            "facet": "primary",
+            "identity": "ANY",
+            "provenance": "ANY",
+            "quantification": "ALL"
+          }
+        ]
+      ],
+      "worlds": [
+        {
+          "facts": [
+            "action:take_winch_launch",
+            "event:dusk"
+          ],
+          "expected": "NO_VIOLATION"
+        },
+        {
+          "facts": [
+            "action:take_winch_launch"
+          ],
+          "expected": "NO_VIOLATION"
+        },
+        {
+          "facts": [
+            "action:take_winch_launch",
+            "actor:cadet"
+          ],
+          "expected": "NO_VIOLATION"
+        },
+        {
+          "facts": [
+            "action:take_winch_launch",
+            "actor:instructor"
+          ],
+          "expected": "NO_VIOLATION"
+        },
+        {
+          "facts": [
+            "action:take_winch_launch",
+            "state:barometer_falling"
+          ],
+          "expected": "NO_VIOLATION"
+        },
+        {
+          "facts": [
+            "action:take_winch_launch",
+            "actor:cadet",
+            "actor:instructor",
+            "state:barometer_falling"
+          ],
+          "expected": "VIOLATION"
+        },
+        {
+          "facts": [
+            "action:keep_launching",
+            "event:dusk"
+          ],
+          "expected": "NO_VIOLATION"
+        },
+        {
+          "facts": [
+            "action:keep_launching"
+          ],
+          "expected": "NO_VIOLATION"
+        },
+        {
+          "facts": [
+            "action:keep_launching",
+            "actor:cadet"
+          ],
+          "expected": "NO_VIOLATION"
+        },
+        {
+          "facts": [
+            "action:keep_launching",
+            "actor:instructor"
+          ],
+          "expected": "PERMITTED"
+        },
+        {
+          "facts": [
+            "action:keep_launching",
+            "state:barometer_falling"
+          ],
+          "expected": "NO_VIOLATION"
+        },
+        {
+          "facts": [
+            "action:keep_launching",
+            "actor:cadet",
+            "actor:instructor",
+            "state:barometer_falling"
+          ],
+          "expected": "PERMITTED"
+        },
+        {
+          "facts": [
+            "action:keep_launching",
+            "action:take_winch_launch",
+            "event:dusk"
+          ],
+          "expected": "NO_VIOLATION"
+        },
+        {
+          "facts": [
+            "action:keep_launching",
+            "action:take_winch_launch"
+          ],
+          "expected": "NO_VIOLATION"
+        },
+        {
+          "facts": [
+            "action:keep_launching",
+            "action:take_winch_launch",
+            "actor:cadet"
+          ],
+          "expected": "NO_VIOLATION"
+        },
+        {
+          "facts": [
+            "action:keep_launching",
+            "action:take_winch_launch",
+            "actor:instructor"
+          ],
+          "expected": "PERMITTED"
+        },
+        {
+          "facts": [
+            "action:keep_launching",
+            "action:take_winch_launch",
+            "state:barometer_falling"
+          ],
+          "expected": "NO_VIOLATION"
+        },
+        {
+          "facts": [
+            "action:keep_launching",
+            "action:take_winch_launch",
+            "actor:cadet",
+            "actor:instructor",
+            "state:barometer_falling"
+          ],
+          "expected": "VIOLATION"
+        },
+        {
+          "facts": [
+            "event:dusk"
+          ],
+          "expected": "NO_VIOLATION"
+        },
+        {
+          "facts": [],
+          "expected": "NO_VIOLATION"
+        },
+        {
+          "facts": [
+            "actor:cadet"
+          ],
+          "expected": "NO_VIOLATION"
+        },
+        {
+          "facts": [
+            "actor:instructor"
+          ],
+          "expected": "NO_VIOLATION"
+        },
+        {
+          "facts": [
+            "state:barometer_falling"
+          ],
+          "expected": "NO_VIOLATION"
+        },
+        {
+          "facts": [
+            "actor:cadet",
+            "actor:instructor",
+            "state:barometer_falling"
+          ],
+          "expected": "NO_VIOLATION"
+        }
+      ],
+      "axes": [
+        "modality",
+        "actor",
+        "condition",
+        "temporal"
+      ],
+      "h0_representable": false
+    },
+    {
+      "case_id": "permission_evidence::p01",
+      "cohort": "permission_evidence_controls",
+      "family": "permission_evidence",
+      "style": "controlled",
+      "policy": "The service lift can carry four adults at a squeeze. Passengers must face the doors while it moves.",
+      "atom_catalog": [
+        "action:carry_four_adults_in_service_lift",
+        "distractor:p01",
+        "state:passengers_face_doors",
+        "state:service_lift_moving"
+      ],
+      "gold_graph": {
+        "nodes": [
+          {
+            "id": "n1",
+            "type": "REGULATED",
+            "atoms": [
+              "state:passengers_face_doors"
+            ]
+          },
+          {
+            "id": "n2",
+            "type": "MODALITY",
+            "value": "REQUIREMENT"
+          },
+          {
+            "id": "n3",
+            "type": "CONDITION",
+            "literals": [
+              "state:service_lift_moving"
+            ],
+            "mode": "ALL",
+            "strength": "SUFFICIENT"
+          }
+        ],
+        "edges": [
+          {
+            "type": "REGULATES",
+            "from": "n2",
+            "to": "n1"
+          },
+          {
+            "type": "ACTIVATES",
+            "from": "n3",
+            "to": "n1"
+          }
+        ]
+      },
+      "admissible_program_sets": [
+        [
+          {
+            "modality": "REQUIREMENT",
+            "relation": "IF",
+            "target_clauses": [
+              [
+                "state:passengers_face_doors"
+              ]
+            ],
+            "condition_literals": [
+              "state:service_lift_moving"
+            ],
+            "condition_mode": "ALL",
+            "exception_literals": [],
+            "exception_mode": "ALL",
+            "temporal": "NONE",
+            "actor": "assistant",
+            "regulated_kind": "ACTION",
+            "facet": "primary",
+            "identity": "ANY",
+            "provenance": "ANY",
+            "quantification": "ALL"
+          }
+        ]
+      ],
+      "worlds": [
+        {
+          "facts": [
+            "state:passengers_face_doors"
+          ],
+          "expected": "NO_VIOLATION"
+        },
+        {
+          "facts": [
+            "state:passengers_face_doors",
+            "state:service_lift_moving"
+          ],
+          "expected": "NO_VIOLATION"
+        },
+        {
+          "facts": [],
+          "expected": "NO_VIOLATION"
+        },
+        {
+          "facts": [
+            "state:service_lift_moving"
+          ],
+          "expected": "VIOLATION"
+        }
+      ],
+      "axes": [
+        "modality"
+      ],
+      "h0_representable": true
+    },
+    {
+      "case_id": "permission_evidence::p02",
+      "cohort": "permission_evidence_controls",
+      "family": "permission_evidence",
+      "style": "controlled",
+      "policy": "Nothing in the harbour by-laws prevents early baiting of the lobster pots.",
+      "atom_catalog": [
+        "action:bait_lobster_pots_early",
+        "distractor:p02",
+        "state:bait_store_open",
+        "state:harbour_patrol_notified"
+      ],
+      "gold_graph": {
+        "nodes": [],
+        "edges": []
+      },
+      "admissible_program_sets": [
+        []
+      ],
+      "worlds": [
+        {
+          "facts": [],
+          "expected": "NO_VIOLATION"
+        },
+        {
+          "facts": [
+            "action:bait_lobster_pots_early"
+          ],
+          "expected": "NO_VIOLATION"
+        },
+        {
+          "facts": [
+            "action:bait_lobster_pots_early",
+            "state:harbour_patrol_notified"
+          ],
+          "expected": "NO_VIOLATION"
+        }
+      ],
+      "axes": [
+        "modality"
+      ],
+      "h0_representable": false
+    },
+    {
+      "case_id": "permission_evidence::p03",
+      "cohort": "permission_evidence_controls",
+      "family": "permission_evidence",
+      "style": "controlled",
+      "policy": "Bleach must never be mixed with ammonia at the cleaning bench.",
+      "atom_catalog": [
+        "action:dilute_bleach_at_cleaning_bench",
+        "action:mix_bleach_with_ammonia",
+        "distractor:p03"
+      ],
+      "gold_graph": {
+        "nodes": [
+          {
+            "id": "n1",
+            "type": "REGULATED",
+            "atoms": [
+              "action:mix_bleach_with_ammonia"
+            ]
+          },
+          {
+            "id": "n2",
+            "type": "MODALITY",
+            "value": "PROHIBITION"
+          }
+        ],
+        "edges": [
+          {
+            "type": "REGULATES",
+            "from": "n2",
+            "to": "n1"
+          }
+        ]
+      },
+      "admissible_program_sets": [
+        [
+          {
+            "modality": "PROHIBITION",
+            "relation": "UNCONDITIONAL",
+            "target_clauses": [
+              [
+                "action:mix_bleach_with_ammonia"
+              ]
+            ],
+            "condition_literals": [],
+            "condition_mode": "ALL",
+            "exception_literals": [],
+            "exception_mode": "ALL",
+            "temporal": "NONE",
+            "actor": "assistant",
+            "regulated_kind": "ACTION",
+            "facet": "primary",
+            "identity": "ANY",
+            "provenance": "ANY",
+            "quantification": "ALL"
+          }
+        ]
+      ],
+      "worlds": [
+        {
+          "facts": [
+            "action:mix_bleach_with_ammonia"
+          ],
+          "expected": "VIOLATION"
+        },
+        {
+          "facts": [],
+          "expected": "NO_VIOLATION"
+        }
+      ],
+      "axes": [
+        "modality"
+      ],
+      "h0_representable": true
+    },
+    {
+      "case_id": "permission_evidence::p04",
+      "cohort": "permission_evidence_controls",
+      "family": "permission_evidence",
+      "style": "controlled",
+      "policy": "Every hire punt is bailed and wiped down before the boat shed is locked.",
+      "atom_catalog": [
+        "distractor:p04",
+        "event:boat_shed_locked",
+        "state:hire_punt_bailed",
+        "state:hire_punt_wiped"
+      ],
+      "gold_graph": {
+        "nodes": [
+          {
+            "id": "n1",
+            "type": "REGULATED",
+            "atoms": [
+              "state:hire_punt_bailed",
+              "state:hire_punt_wiped"
+            ]
+          },
+          {
+            "id": "n2",
+            "type": "MODALITY",
+            "value": "REQUIREMENT"
+          },
+          {
+            "id": "n3",
+            "type": "CONDITION",
+            "literals": [
+              "event:boat_shed_locked"
+            ],
+            "mode": "ALL",
+            "strength": "SUFFICIENT"
+          }
+        ],
+        "edges": [
+          {
+            "type": "REGULATES",
+            "from": "n2",
+            "to": "n1"
+          },
+          {
+            "type": "PRECEDES",
+            "from": "n3",
+            "to": "n1"
+          }
+        ]
+      },
+      "admissible_program_sets": [
+        [
+          {
+            "modality": "REQUIREMENT",
+            "relation": "IF",
+            "target_clauses": [
+              [
+                "state:hire_punt_bailed",
+                "state:hire_punt_wiped"
+              ]
+            ],
+            "condition_literals": [
+              "!event:boat_shed_locked"
+            ],
+            "condition_mode": "ALL",
+            "exception_literals": [],
+            "exception_mode": "ALL",
+            "temporal": "BEFORE",
+            "actor": "assistant",
+            "regulated_kind": "ACTION",
+            "facet": "primary",
+            "identity": "ANY",
+            "provenance": "ANY",
+            "quantification": "ALL"
+          }
+        ]
+      ],
+      "worlds": [
+        {
+          "facts": [
+            "event:boat_shed_locked",
+            "state:hire_punt_bailed",
+            "state:hire_punt_wiped"
+          ],
+          "expected": "NO_VIOLATION"
+        },
+        {
+          "facts": [
+            "state:hire_punt_bailed",
+            "state:hire_punt_wiped"
+          ],
+          "expected": "NO_VIOLATION"
+        },
+        {
+          "facts": [
+            "event:boat_shed_locked",
+            "state:hire_punt_bailed"
+          ],
+          "expected": "NO_VIOLATION"
+        },
+        {
+          "facts": [
+            "state:hire_punt_bailed"
+          ],
+          "expected": "VIOLATION"
+        },
+        {
+          "facts": [
+            "event:boat_shed_locked",
+            "state:hire_punt_wiped"
+          ],
+          "expected": "NO_VIOLATION"
+        },
+        {
+          "facts": [
+            "state:hire_punt_wiped"
+          ],
+          "expected": "VIOLATION"
+        },
+        {
+          "facts": [
+            "event:boat_shed_locked"
+          ],
+          "expected": "NO_VIOLATION"
+        },
+        {
+          "facts": [],
+          "expected": "VIOLATION"
+        }
+      ],
+      "axes": [
+        "temporal",
+        "scope"
+      ],
+      "h0_representable": true
+    },
+    {
+      "case_id": "permission_evidence::p05",
+      "cohort": "permission_evidence_controls",
+      "family": "permission_evidence",
+      "style": "controlled",
+      "policy": "Members may moor their dinghies at the north pontoon.",
+      "atom_catalog": [
+        "action:moor_dinghy_at_north_pontoon",
+        "actor:assistant",
+        "actor:member",
+        "distractor:p05"
+      ],
+      "gold_graph": {
+        "nodes": [
+          {
+            "id": "n1",
+            "type": "REGULATED",
+            "atoms": [
+              "action:moor_dinghy_at_north_pontoon"
+            ]
+          },
+          {
+            "id": "n2",
+            "type": "MODALITY",
+            "value": "PERMISSION"
+          },
+          {
+            "id": "n3",
+            "type": "ACTOR",
+            "atom": "actor:member",
+            "exclusive": false
+          }
+        ],
+        "edges": [
+          {
+            "type": "REGULATES",
+            "from": "n2",
+            "to": "n1"
+          },
+          {
+            "type": "ACTOR_OF",
+            "from": "n3",
+            "to": "n1"
+          }
+        ]
+      },
+      "admissible_program_sets": [
+        [
+          {
+            "modality": "PERMISSION",
+            "relation": "IF",
+            "target_clauses": [
+              [
+                "action:moor_dinghy_at_north_pontoon"
+              ]
+            ],
+            "condition_literals": [
+              "actor:member"
+            ],
+            "condition_mode": "ALL",
+            "exception_literals": [],
+            "exception_mode": "ALL",
+            "temporal": "NONE",
+            "actor": "assistant",
+            "regulated_kind": "ACTION",
+            "facet": "primary",
+            "identity": "ANY",
+            "provenance": "ANY",
+            "quantification": "ALL"
+          }
+        ]
+      ],
+      "worlds": [
+        {
+          "facts": [
+            "action:moor_dinghy_at_north_pontoon"
+          ],
+          "expected": "NO_VIOLATION"
+        },
+        {
+          "facts": [
+            "action:moor_dinghy_at_north_pontoon",
+            "actor:member"
+          ],
+          "expected": "PERMITTED"
+        },
+        {
+          "facts": [],
+          "expected": "NO_VIOLATION"
+        },
+        {
+          "facts": [
+            "actor:member"
+          ],
+          "expected": "NO_VIOLATION"
+        }
+      ],
+      "axes": [
+        "modality",
+        "actor"
+      ],
+      "h0_representable": true
+    },
+    {
+      "case_id": "permission_evidence::p06",
+      "cohort": "permission_evidence_controls",
+      "family": "permission_evidence",
+      "style": "controlled",
+      "policy": "Season holders are entitled to use the clay courts outside peak hours.",
+      "atom_catalog": [
+        "action:use_clay_courts",
+        "actor:assistant",
+        "actor:season_holder",
+        "distractor:p06",
+        "state:outside_peak_hours"
+      ],
+      "gold_graph": {
+        "nodes": [
+          {
+            "id": "n1",
+            "type": "REGULATED",
+            "atoms": [
+              "action:use_clay_courts"
+            ]
+          },
+          {
+            "id": "n2",
+            "type": "MODALITY",
+            "value": "PERMISSION"
+          },
+          {
+            "id": "n3",
+            "type": "ACTOR",
+            "atom": "actor:season_holder",
+            "exclusive": false
+          },
+          {
+            "id": "n4",
+            "type": "CONDITION",
+            "literals": [
+              "state:outside_peak_hours"
+            ],
+            "mode": "ALL",
+            "strength": "SUFFICIENT"
+          }
+        ],
+        "edges": [
+          {
+            "type": "REGULATES",
+            "from": "n2",
+            "to": "n1"
+          },
+          {
+            "type": "ACTOR_OF",
+            "from": "n3",
+            "to": "n1"
+          },
+          {
+            "type": "ACTIVATES",
+            "from": "n4",
+            "to": "n1"
+          }
+        ]
+      },
+      "admissible_program_sets": [
+        [
+          {
+            "modality": "PERMISSION",
+            "relation": "IF",
+            "target_clauses": [
+              [
+                "action:use_clay_courts"
+              ]
+            ],
+            "condition_literals": [
+              "actor:season_holder",
+              "state:outside_peak_hours"
+            ],
+            "condition_mode": "ALL",
+            "exception_literals": [],
+            "exception_mode": "ALL",
+            "temporal": "NONE",
+            "actor": "assistant",
+            "regulated_kind": "ACTION",
+            "facet": "primary",
+            "identity": "ANY",
+            "provenance": "ANY",
+            "quantification": "ALL"
+          }
+        ]
+      ],
+      "worlds": [
+        {
+          "facts": [
+            "action:use_clay_courts"
+          ],
+          "expected": "NO_VIOLATION"
+        },
+        {
+          "facts": [
+            "action:use_clay_courts",
+            "actor:season_holder"
+          ],
+          "expected": "NO_VIOLATION"
+        },
+        {
+          "facts": [
+            "action:use_clay_courts",
+            "state:outside_peak_hours"
+          ],
+          "expected": "NO_VIOLATION"
+        },
+        {
+          "facts": [
+            "action:use_clay_courts",
+            "actor:season_holder",
+            "state:outside_peak_hours"
+          ],
+          "expected": "PERMITTED"
+        },
+        {
+          "facts": [],
+          "expected": "NO_VIOLATION"
+        },
+        {
+          "facts": [
+            "actor:season_holder"
+          ],
+          "expected": "NO_VIOLATION"
+        },
+        {
+          "facts": [
+            "state:outside_peak_hours"
+          ],
+          "expected": "NO_VIOLATION"
+        },
+        {
+          "facts": [
+            "actor:season_holder",
+            "state:outside_peak_hours"
+          ],
+          "expected": "NO_VIOLATION"
+        }
+      ],
+      "axes": [
+        "modality",
+        "actor",
+        "condition"
+      ],
+      "h0_representable": true
+    },
+    {
+      "case_id": "permission_evidence::p07",
+      "cohort": "permission_evidence_controls",
+      "family": "permission_evidence",
+      "style": "controlled",
+      "policy": "Adjusting the loom dwell is reserved to the master weaver.",
+      "atom_catalog": [
+        "action:adjust_loom_dwell",
+        "actor:assistant",
+        "actor:master_weaver",
+        "distractor:p07"
+      ],
+      "gold_graph": {
+        "nodes": [
+          {
+            "id": "n1",
+            "type": "REGULATED",
+            "atoms": [
+              "action:adjust_loom_dwell"
+            ]
+          },
+          {
+            "id": "n2",
+            "type": "MODALITY",
+            "value": "PERMISSION"
+          },
+          {
+            "id": "n3",
+            "type": "ACTOR",
+            "atom": "actor:master_weaver",
+            "exclusive": true
+          }
+        ],
+        "edges": [
+          {
+            "type": "REGULATES",
+            "from": "n2",
+            "to": "n1"
+          },
+          {
+            "type": "ACTOR_OF",
+            "from": "n3",
+            "to": "n1"
+          }
+        ]
+      },
+      "admissible_program_sets": [
+        [
+          {
+            "modality": "PERMISSION",
+            "relation": "ONLY_IF",
+            "target_clauses": [
+              [
+                "action:adjust_loom_dwell"
+              ]
+            ],
+            "condition_literals": [
+              "actor:master_weaver"
+            ],
+            "condition_mode": "ALL",
+            "exception_literals": [],
+            "exception_mode": "ALL",
+            "temporal": "NONE",
+            "actor": "assistant",
+            "regulated_kind": "ACTION",
+            "facet": "primary",
+            "identity": "ANY",
+            "provenance": "ANY",
+            "quantification": "ALL"
+          }
+        ]
+      ],
+      "worlds": [
+        {
+          "facts": [
+            "action:adjust_loom_dwell"
+          ],
+          "expected": "VIOLATION"
+        },
+        {
+          "facts": [
+            "action:adjust_loom_dwell",
+            "actor:master_weaver"
+          ],
+          "expected": "PERMITTED"
+        },
+        {
+          "facts": [],
+          "expected": "NO_VIOLATION"
+        },
+        {
+          "facts": [
+            "actor:master_weaver"
+          ],
+          "expected": "NO_VIOLATION"
+        }
+      ],
+      "axes": [
+        "modality",
+        "actor"
+      ],
+      "h0_representable": true
+    },
+    {
+      "case_id": "permission_evidence::p08",
+      "cohort": "permission_evidence_controls",
+      "family": "permission_evidence",
+      "style": "controlled",
+      "policy": "Juniors may use the bouldering wall during staffed hours; the roof ladder is out of bounds to everyone.",
+      "atom_catalog": [
+        "action:climb_roof_ladder",
+        "action:use_bouldering_wall",
+        "actor:assistant",
+        "actor:junior",
+        "distractor:p08",
+        "state:staffed_hours"
+      ],
+      "gold_graph": {
+        "nodes": [
+          {
+            "id": "n1",
+            "type": "REGULATED",
+            "atoms": [
+              "action:use_bouldering_wall"
+            ]
+          },
+          {
+            "id": "n2",
+            "type": "REGULATED",
+            "atoms": [
+              "action:climb_roof_ladder"
+            ]
+          },
+          {
+            "id": "n3",
+            "type": "MODALITY",
+            "value": "PERMISSION"
+          },
+          {
+            "id": "n4",
+            "type": "MODALITY",
+            "value": "PROHIBITION"
+          },
+          {
+            "id": "n5",
+            "type": "ACTOR",
+            "atom": "actor:junior",
+            "exclusive": false
+          },
+          {
+            "id": "n6",
+            "type": "CONDITION",
+            "literals": [
+              "state:staffed_hours"
+            ],
+            "mode": "ALL",
+            "strength": "SUFFICIENT"
+          }
+        ],
+        "edges": [
+          {
+            "type": "REGULATES",
+            "from": "n3",
+            "to": "n1"
+          },
+          {
+            "type": "REGULATES",
+            "from": "n4",
+            "to": "n2"
+          },
+          {
+            "type": "ACTOR_OF",
+            "from": "n5",
+            "to": "n1"
+          },
+          {
+            "type": "ACTIVATES",
+            "from": "n6",
+            "to": "n1"
+          }
+        ]
+      },
+      "admissible_program_sets": [
+        [
+          {
+            "modality": "PERMISSION",
+            "relation": "IF",
+            "target_clauses": [
+              [
+                "action:use_bouldering_wall"
+              ]
+            ],
+            "condition_literals": [
+              "actor:junior",
+              "state:staffed_hours"
+            ],
+            "condition_mode": "ALL",
+            "exception_literals": [],
+            "exception_mode": "ALL",
+            "temporal": "NONE",
+            "actor": "assistant",
+            "regulated_kind": "ACTION",
+            "facet": "primary",
+            "identity": "ANY",
+            "provenance": "ANY",
+            "quantification": "ALL"
+          },
+          {
+            "modality": "PROHIBITION",
+            "relation": "UNCONDITIONAL",
+            "target_clauses": [
+              [
+                "action:climb_roof_ladder"
+              ]
+            ],
+            "condition_literals": [],
+            "condition_mode": "ALL",
+            "exception_literals": [],
+            "exception_mode": "ALL",
+            "temporal": "NONE",
+            "actor": "assistant",
+            "regulated_kind": "ACTION",
+            "facet": "primary",
+            "identity": "ANY",
+            "provenance": "ANY",
+            "quantification": "ALL"
+          }
+        ]
+      ],
+      "worlds": [
+        {
+          "facts": [
+            "action:use_bouldering_wall"
+          ],
+          "expected": "NO_VIOLATION"
+        },
+        {
+          "facts": [
+            "action:use_bouldering_wall",
+            "actor:junior"
+          ],
+          "expected": "NO_VIOLATION"
+        },
+        {
+          "facts": [
+            "action:use_bouldering_wall",
+            "state:staffed_hours"
+          ],
+          "expected": "NO_VIOLATION"
+        },
+        {
+          "facts": [
+            "action:use_bouldering_wall",
+            "actor:junior",
+            "state:staffed_hours"
+          ],
+          "expected": "PERMITTED"
+        },
+        {
+          "facts": [
+            "action:climb_roof_ladder"
+          ],
+          "expected": "VIOLATION"
+        },
+        {
+          "facts": [
+            "action:climb_roof_ladder",
+            "actor:junior"
+          ],
+          "expected": "VIOLATION"
+        },
+        {
+          "facts": [
+            "action:climb_roof_ladder",
+            "state:staffed_hours"
+          ],
+          "expected": "VIOLATION"
+        },
+        {
+          "facts": [
+            "action:climb_roof_ladder",
+            "actor:junior",
+            "state:staffed_hours"
+          ],
+          "expected": "VIOLATION"
+        },
+        {
+          "facts": [
+            "action:climb_roof_ladder",
+            "action:use_bouldering_wall"
+          ],
+          "expected": "VIOLATION"
+        },
+        {
+          "facts": [
+            "action:climb_roof_ladder",
+            "action:use_bouldering_wall",
+            "actor:junior"
+          ],
+          "expected": "VIOLATION"
+        },
+        {
+          "facts": [
+            "action:climb_roof_ladder",
+            "action:use_bouldering_wall",
+            "state:staffed_hours"
+          ],
+          "expected": "VIOLATION"
+        },
+        {
+          "facts": [
+            "action:climb_roof_ladder",
+            "action:use_bouldering_wall",
+            "actor:junior",
+            "state:staffed_hours"
+          ],
+          "expected": "VIOLATION"
+        },
+        {
+          "facts": [],
+          "expected": "NO_VIOLATION"
+        },
+        {
+          "facts": [
+            "actor:junior"
+          ],
+          "expected": "NO_VIOLATION"
+        },
+        {
+          "facts": [
+            "state:staffed_hours"
+          ],
+          "expected": "NO_VIOLATION"
+        },
+        {
+          "facts": [
+            "actor:junior",
+            "state:staffed_hours"
+          ],
+          "expected": "NO_VIOLATION"
+        }
+      ],
+      "axes": [
+        "modality",
+        "actor",
+        "condition"
+      ],
+      "h0_representable": false
+    },
+    {
+      "case_id": "relation::r01",
+      "cohort": "relation_attachment",
+      "family": "relation",
+      "style": "controlled",
+      "policy": "So long as the kiln timer has not sounded, members may keep using the glaze room.",
+      "atom_catalog": [
+        "action:use_glaze_room",
+        "actor:assistant",
+        "actor:member",
+        "distractor:r01",
+        "event:kiln_timer_sounded"
+      ],
+      "gold_graph": {
+        "nodes": [
+          {
+            "id": "n1",
+            "type": "REGULATED",
+            "atoms": [
+              "action:use_glaze_room"
+            ]
+          },
+          {
+            "id": "n2",
+            "type": "MODALITY",
+            "value": "PERMISSION"
+          },
+          {
+            "id": "n3",
+            "type": "CONDITION",
+            "literals": [
+              "!event:kiln_timer_sounded"
+            ],
+            "mode": "ALL",
+            "strength": "SUFFICIENT"
+          },
+          {
+            "id": "n4",
+            "type": "ACTOR",
+            "atom": "actor:member",
+            "exclusive": false
+          }
+        ],
+        "edges": [
+          {
+            "type": "REGULATES",
+            "from": "n2",
+            "to": "n1"
+          },
+          {
+            "type": "ACTIVATES",
+            "from": "n3",
+            "to": "n1"
+          },
+          {
+            "type": "ACTOR_OF",
+            "from": "n4",
+            "to": "n1"
+          }
+        ]
+      },
+      "admissible_program_sets": [
+        [
+          {
+            "modality": "PERMISSION",
+            "relation": "IF",
+            "target_clauses": [
+              [
+                "action:use_glaze_room"
+              ]
+            ],
+            "condition_literals": [
+              "!event:kiln_timer_sounded",
+              "actor:member"
+            ],
+            "condition_mode": "ALL",
+            "exception_literals": [],
+            "exception_mode": "ALL",
+            "temporal": "NONE",
+            "actor": "assistant",
+            "regulated_kind": "ACTION",
+            "facet": "primary",
+            "identity": "ANY",
+            "provenance": "ANY",
+            "quantification": "ALL"
+          }
+        ]
+      ],
+      "worlds": [
+        {
+          "facts": [
+            "action:use_glaze_room",
+            "event:kiln_timer_sounded"
+          ],
+          "expected": "NO_VIOLATION"
+        },
+        {
+          "facts": [
+            "action:use_glaze_room"
+          ],
+          "expected": "NO_VIOLATION"
+        },
+        {
+          "facts": [
+            "action:use_glaze_room",
+            "actor:member"
+          ],
+          "expected": "PERMITTED"
+        },
+        {
+          "facts": [
+            "event:kiln_timer_sounded"
+          ],
+          "expected": "NO_VIOLATION"
+        },
+        {
+          "facts": [],
+          "expected": "NO_VIOLATION"
+        },
+        {
+          "facts": [
+            "actor:member"
+          ],
+          "expected": "NO_VIOLATION"
+        }
+      ],
+      "axes": [
+        "condition",
+        "negation"
+      ],
+      "h0_representable": true
+    },
+    {
+      "case_id": "relation::r02",
+      "cohort": "relation_attachment",
+      "family": "relation",
+      "style": "controlled",
+      "policy": "Freight may use the ferry slip only while the yard lamp shows green.",
+      "atom_catalog": [
+        "action:use_ferry_slip_for_freight",
+        "distractor:r02",
+        "state:yard_lamp_green"
+      ],
+      "gold_graph": {
+        "nodes": [
+          {
+            "id": "n1",
+            "type": "REGULATED",
+            "atoms": [
+              "action:use_ferry_slip_for_freight"
+            ]
+          },
+          {
+            "id": "n2",
+            "type": "MODALITY",
+            "value": "PERMISSION"
+          },
+          {
+            "id": "n3",
+            "type": "CONDITION",
+            "literals": [
+              "state:yard_lamp_green"
+            ],
+            "mode": "ALL",
+            "strength": "NECESSARY"
+          }
+        ],
+        "edges": [
+          {
+            "type": "REGULATES",
+            "from": "n2",
+            "to": "n1"
+          },
+          {
+            "type": "ACTIVATES",
+            "from": "n3",
+            "to": "n1"
+          }
+        ]
+      },
+      "admissible_program_sets": [
+        [
+          {
+            "modality": "PERMISSION",
+            "relation": "ONLY_IF",
+            "target_clauses": [
+              [
+                "action:use_ferry_slip_for_freight"
+              ]
+            ],
+            "condition_literals": [
+              "state:yard_lamp_green"
+            ],
+            "condition_mode": "ALL",
+            "exception_literals": [],
+            "exception_mode": "ALL",
+            "temporal": "NONE",
+            "actor": "assistant",
+            "regulated_kind": "ACTION",
+            "facet": "primary",
+            "identity": "ANY",
+            "provenance": "ANY",
+            "quantification": "ALL"
+          }
+        ]
+      ],
+      "worlds": [
+        {
+          "facts": [
+            "action:use_ferry_slip_for_freight"
+          ],
+          "expected": "VIOLATION"
+        },
+        {
+          "facts": [
+            "action:use_ferry_slip_for_freight",
+            "state:yard_lamp_green"
+          ],
+          "expected": "PERMITTED"
+        },
+        {
+          "facts": [],
+          "expected": "NO_VIOLATION"
+        },
+        {
+          "facts": [
+            "state:yard_lamp_green"
+          ],
+          "expected": "NO_VIOLATION"
+        }
+      ],
+      "axes": [
+        "relation"
+      ],
+      "h0_representable": true
+    },
+    {
+      "case_id": "relation::r03",
+      "cohort": "relation_attachment",
+      "family": "relation",
+      "style": "controlled",
+      "policy": "The clean-room hatch may stand open exactly while the external auditor is on site.",
+      "atom_catalog": [
+        "distractor:r03",
+        "state:cleanroom_hatch_open",
+        "state:external_auditor_on_site"
+      ],
+      "gold_graph": {
+        "nodes": [
+          {
+            "id": "n1",
+            "type": "REGULATED",
+            "atoms": [
+              "state:cleanroom_hatch_open"
+            ]
+          },
+          {
+            "id": "n2",
+            "type": "MODALITY",
+            "value": "PERMISSION"
+          },
+          {
+            "id": "n3",
+            "type": "CONDITION",
+            "literals": [
+              "state:external_auditor_on_site"
+            ],
+            "mode": "ALL",
+            "strength": "EXACTLY"
+          }
+        ],
+        "edges": [
+          {
+            "type": "REGULATES",
+            "from": "n2",
+            "to": "n1"
+          },
+          {
+            "type": "ACTIVATES",
+            "from": "n3",
+            "to": "n1"
+          }
+        ]
+      },
+      "admissible_program_sets": [
+        [
+          {
+            "modality": "PERMISSION",
+            "relation": "IF_AND_ONLY_IF",
+            "target_clauses": [
+              [
+                "state:cleanroom_hatch_open"
+              ]
+            ],
+            "condition_literals": [
+              "state:external_auditor_on_site"
+            ],
+            "condition_mode": "ALL",
+            "exception_literals": [],
+            "exception_mode": "ALL",
+            "temporal": "NONE",
+            "actor": "assistant",
+            "regulated_kind": "ACTION",
+            "facet": "primary",
+            "identity": "ANY",
+            "provenance": "ANY",
+            "quantification": "ALL"
+          }
+        ]
+      ],
+      "worlds": [
+        {
+          "facts": [
+            "state:cleanroom_hatch_open"
+          ],
+          "expected": "VIOLATION"
+        },
+        {
+          "facts": [
+            "state:cleanroom_hatch_open",
+            "state:external_auditor_on_site"
+          ],
+          "expected": "PERMITTED"
+        },
+        {
+          "facts": [],
+          "expected": "NO_VIOLATION"
+        },
+        {
+          "facts": [
+            "state:external_auditor_on_site"
+          ],
+          "expected": "NO_VIOLATION"
+        }
+      ],
+      "axes": [
+        "relation"
+      ],
+      "h0_representable": true
+    },
+    {
+      "case_id": "relation::r04",
+      "cohort": "relation_attachment",
+      "family": "relation",
+      "style": "controlled",
+      "policy": "Unless the standpipe is lagged against frost, the yard tap must be drained each evening.",
+      "atom_catalog": [
+        "distractor:r04",
+        "state:standpipe_lagged_against_frost",
+        "state:yard_tap_drained_each_evening"
+      ],
+      "gold_graph": {
+        "nodes": [
+          {
+            "id": "n1",
+            "type": "REGULATED",
+            "atoms": [
+              "state:yard_tap_drained_each_evening"
+            ]
+          },
+          {
+            "id": "n2",
+            "type": "MODALITY",
+            "value": "REQUIREMENT"
+          },
+          {
+            "id": "n3",
+            "type": "EXCEPTION",
+            "literals": [
+              "state:standpipe_lagged_against_frost"
+            ],
+            "mode": "ALL"
+          }
+        ],
+        "edges": [
+          {
+            "type": "REGULATES",
+            "from": "n2",
+            "to": "n1"
+          },
+          {
+            "type": "EXEMPTS",
+            "from": "n3",
+            "to": "n1"
+          }
+        ]
+      },
+      "admissible_program_sets": [
+        [
+          {
+            "modality": "REQUIREMENT",
+            "relation": "UNLESS",
+            "target_clauses": [
+              [
+                "state:yard_tap_drained_each_evening"
+              ]
+            ],
+            "condition_literals": [],
+            "condition_mode": "ALL",
+            "exception_literals": [
+              "state:standpipe_lagged_against_frost"
+            ],
+            "exception_mode": "ALL",
+            "temporal": "NONE",
+            "actor": "assistant",
+            "regulated_kind": "ACTION",
+            "facet": "primary",
+            "identity": "ANY",
+            "provenance": "ANY",
+            "quantification": "ALL"
+          }
+        ]
+      ],
+      "worlds": [
+        {
+          "facts": [
+            "state:yard_tap_drained_each_evening"
+          ],
+          "expected": "NO_VIOLATION"
+        },
+        {
+          "facts": [
+            "state:standpipe_lagged_against_frost",
+            "state:yard_tap_drained_each_evening"
+          ],
+          "expected": "NO_VIOLATION"
+        },
+        {
+          "facts": [],
+          "expected": "VIOLATION"
+        },
+        {
+          "facts": [
+            "state:standpipe_lagged_against_frost"
+          ],
+          "expected": "NO_VIOLATION"
+        }
+      ],
+      "axes": [
+        "exception"
+      ],
+      "h0_representable": true
+    },
+    {
+      "case_id": "relation::r05",
+      "cohort": "relation_attachment",
+      "family": "relation",
+      "style": "controlled",
+      "policy": "While the smoke test is running, the spray booth is out of bounds, except when the maintenance fitter carries a mask card.",
+      "atom_catalog": [
+        "action:enter_spray_booth",
+        "distractor:r05",
+        "state:maintenance_fitter_carries_mask_card",
+        "state:smoke_test_running"
+      ],
+      "gold_graph": {
+        "nodes": [
+          {
+            "id": "n1",
+            "type": "REGULATED",
+            "atoms": [
+              "action:enter_spray_booth"
+            ]
+          },
+          {
+            "id": "n2",
+            "type": "MODALITY",
+            "value": "PROHIBITION"
+          },
+          {
+            "id": "n3",
+            "type": "CONDITION",
+            "literals": [
+              "state:smoke_test_running"
+            ],
+            "mode": "ALL",
+            "strength": "SUFFICIENT"
+          },
+          {
+            "id": "n4",
+            "type": "EXCEPTION",
+            "literals": [
+              "state:maintenance_fitter_carries_mask_card"
+            ],
+            "mode": "ALL"
+          }
+        ],
+        "edges": [
+          {
+            "type": "REGULATES",
+            "from": "n2",
+            "to": "n1"
+          },
+          {
+            "type": "ACTIVATES",
+            "from": "n3",
+            "to": "n1"
+          },
+          {
+            "type": "EXEMPTS",
+            "from": "n4",
+            "to": "n1"
+          }
+        ]
+      },
+      "admissible_program_sets": [
+        [
+          {
+            "modality": "PROHIBITION",
+            "relation": "IF",
+            "target_clauses": [
+              [
+                "action:enter_spray_booth"
+              ]
+            ],
+            "condition_literals": [
+              "state:smoke_test_running"
+            ],
+            "condition_mode": "ALL",
+            "exception_literals": [
+              "state:maintenance_fitter_carries_mask_card"
+            ],
+            "exception_mode": "ALL",
+            "temporal": "NONE",
+            "actor": "assistant",
+            "regulated_kind": "ACTION",
+            "facet": "primary",
+            "identity": "ANY",
+            "provenance": "ANY",
+            "quantification": "ALL"
+          }
+        ]
+      ],
+      "worlds": [
+        {
+          "facts": [
+            "action:enter_spray_booth"
+          ],
+          "expected": "NO_VIOLATION"
+        },
+        {
+          "facts": [
+            "action:enter_spray_booth",
+            "state:maintenance_fitter_carries_mask_card"
+          ],
+          "expected": "NO_VIOLATION"
+        },
+        {
+          "facts": [
+            "action:enter_spray_booth",
+            "state:smoke_test_running"
+          ],
+          "expected": "VIOLATION"
+        },
+        {
+          "facts": [
+            "action:enter_spray_booth",
+            "state:maintenance_fitter_carries_mask_card",
+            "state:smoke_test_running"
+          ],
+          "expected": "PERMITTED"
+        },
+        {
+          "facts": [],
+          "expected": "NO_VIOLATION"
+        },
+        {
+          "facts": [
+            "state:maintenance_fitter_carries_mask_card"
+          ],
+          "expected": "NO_VIOLATION"
+        },
+        {
+          "facts": [
+            "state:smoke_test_running"
+          ],
+          "expected": "NO_VIOLATION"
+        },
+        {
+          "facts": [
+            "state:maintenance_fitter_carries_mask_card",
+            "state:smoke_test_running"
+          ],
+          "expected": "NO_VIOLATION"
+        }
+      ],
+      "axes": [
+        "condition",
+        "exception"
+      ],
+      "h0_representable": true
+    },
+    {
+      "case_id": "relation::r06",
+      "cohort": "relation_attachment",
+      "family": "relation",
+      "style": "controlled",
+      "policy": "Whenever the drag line snaps or the pit winch overheats, the pit floor is closed to everyone.",
+      "atom_catalog": [
+        "action:enter_pit_floor",
+        "distractor:r06",
+        "event:drag_line_snapped",
+        "event:pit_winch_overheated"
+      ],
+      "gold_graph": {
+        "nodes": [
+          {
+            "id": "n1",
+            "type": "REGULATED",
+            "atoms": [
+              "action:enter_pit_floor"
+            ]
+          },
+          {
+            "id": "n2",
+            "type": "MODALITY",
+            "value": "PROHIBITION"
+          },
+          {
+            "id": "n3",
+            "type": "CONDITION",
+            "literals": [
+              "event:drag_line_snapped",
+              "event:pit_winch_overheated"
+            ],
+            "mode": "ANY",
+            "strength": "SUFFICIENT"
+          }
+        ],
+        "edges": [
+          {
+            "type": "REGULATES",
+            "from": "n2",
+            "to": "n1"
+          },
+          {
+            "type": "ACTIVATES",
+            "from": "n3",
+            "to": "n1"
+          }
+        ]
+      },
+      "admissible_program_sets": [
+        [
+          {
+            "modality": "PROHIBITION",
+            "relation": "IF",
+            "target_clauses": [
+              [
+                "action:enter_pit_floor"
+              ]
+            ],
+            "condition_literals": [
+              "event:drag_line_snapped",
+              "event:pit_winch_overheated"
+            ],
+            "condition_mode": "ANY",
+            "exception_literals": [],
+            "exception_mode": "ALL",
+            "temporal": "NONE",
+            "actor": "assistant",
+            "regulated_kind": "ACTION",
+            "facet": "primary",
+            "identity": "ANY",
+            "provenance": "ANY",
+            "quantification": "ALL"
+          }
+        ]
+      ],
+      "worlds": [
+        {
+          "facts": [
+            "action:enter_pit_floor"
+          ],
+          "expected": "NO_VIOLATION"
+        },
+        {
+          "facts": [
+            "action:enter_pit_floor",
+            "event:drag_line_snapped"
+          ],
+          "expected": "VIOLATION"
+        },
+        {
+          "facts": [
+            "action:enter_pit_floor",
+            "event:pit_winch_overheated"
+          ],
+          "expected": "VIOLATION"
+        },
+        {
+          "facts": [
+            "action:enter_pit_floor",
+            "event:drag_line_snapped",
+            "event:pit_winch_overheated"
+          ],
+          "expected": "VIOLATION"
+        },
+        {
+          "facts": [],
+          "expected": "NO_VIOLATION"
+        },
+        {
+          "facts": [
+            "event:drag_line_snapped"
+          ],
+          "expected": "NO_VIOLATION"
+        },
+        {
+          "facts": [
+            "event:pit_winch_overheated"
+          ],
+          "expected": "NO_VIOLATION"
+        },
+        {
+          "facts": [
+            "event:drag_line_snapped",
+            "event:pit_winch_overheated"
+          ],
+          "expected": "NO_VIOLATION"
+        }
+      ],
+      "axes": [
+        "condition",
+        "quantifier"
+      ],
+      "h0_representable": true
+    },
+    {
+      "case_id": "relation::r07",
+      "cohort": "relation_attachment",
+      "family": "relation",
+      "style": "controlled",
+      "policy": "If the delivery van takes the late run, parcels are stacked in the steel cage; if it takes the early run, parcels wait on the shelf.",
+      "atom_catalog": [
+        "distractor:r07",
+        "state:parcels_stacked_in_steel_cage",
+        "state:parcels_wait_on_shelf",
+        "state:van_takes_early_run",
+        "state:van_takes_late_run"
+      ],
+      "gold_graph": {
+        "nodes": [
+          {
+            "id": "n1",
+            "type": "REGULATED",
+            "atoms": [
+              "state:parcels_stacked_in_steel_cage"
+            ]
+          },
+          {
+            "id": "n2",
+            "type": "REGULATED",
+            "atoms": [
+              "state:parcels_wait_on_shelf"
+            ]
+          },
+          {
+            "id": "n3",
+            "type": "MODALITY",
+            "value": "REQUIREMENT"
+          },
+          {
+            "id": "n4",
+            "type": "CONDITION",
+            "literals": [
+              "state:van_takes_late_run"
+            ],
+            "mode": "ALL",
+            "strength": "SUFFICIENT"
+          },
+          {
+            "id": "n5",
+            "type": "CONDITION",
+            "literals": [
+              "state:van_takes_early_run"
+            ],
+            "mode": "ALL",
+            "strength": "SUFFICIENT"
+          }
+        ],
+        "edges": [
+          {
+            "type": "REGULATES",
+            "from": "n3",
+            "to": "n1"
+          },
+          {
+            "type": "REGULATES",
+            "from": "n3",
+            "to": "n2"
+          },
+          {
+            "type": "ACTIVATES",
+            "from": "n4",
+            "to": "n1"
+          },
+          {
+            "type": "ACTIVATES",
+            "from": "n5",
+            "to": "n2"
+          }
+        ]
+      },
+      "admissible_program_sets": [
+        [
+          {
+            "modality": "REQUIREMENT",
+            "relation": "IF",
+            "target_clauses": [
+              [
+                "state:parcels_stacked_in_steel_cage"
+              ]
+            ],
+            "condition_literals": [
+              "state:van_takes_late_run"
+            ],
+            "condition_mode": "ALL",
+            "exception_literals": [],
+            "exception_mode": "ALL",
+            "temporal": "NONE",
+            "actor": "assistant",
+            "regulated_kind": "ACTION",
+            "facet": "primary",
+            "identity": "ANY",
+            "provenance": "ANY",
+            "quantification": "ALL"
+          },
+          {
+            "modality": "REQUIREMENT",
+            "relation": "IF",
+            "target_clauses": [
+              [
+                "state:parcels_wait_on_shelf"
+              ]
+            ],
+            "condition_literals": [
+              "state:van_takes_early_run"
+            ],
+            "condition_mode": "ALL",
+            "exception_literals": [],
+            "exception_mode": "ALL",
+            "temporal": "NONE",
+            "actor": "assistant",
+            "regulated_kind": "ACTION",
+            "facet": "primary",
+            "identity": "ANY",
+            "provenance": "ANY",
+            "quantification": "ALL"
+          }
+        ]
+      ],
+      "worlds": [
+        {
+          "facts": [
+            "state:parcels_stacked_in_steel_cage"
+          ],
+          "expected": "NO_VIOLATION"
+        },
+        {
+          "facts": [
+            "state:parcels_stacked_in_steel_cage",
+            "state:van_takes_early_run"
+          ],
+          "expected": "VIOLATION"
+        },
+        {
+          "facts": [
+            "state:parcels_stacked_in_steel_cage",
+            "state:van_takes_late_run"
+          ],
+          "expected": "NO_VIOLATION"
+        },
+        {
+          "facts": [
+            "state:parcels_stacked_in_steel_cage",
+            "state:van_takes_early_run",
+            "state:van_takes_late_run"
+          ],
+          "expected": "VIOLATION"
+        },
+        {
+          "facts": [
+            "state:parcels_wait_on_shelf"
+          ],
+          "expected": "NO_VIOLATION"
+        },
+        {
+          "facts": [
+            "state:parcels_wait_on_shelf",
+            "state:van_takes_early_run"
+          ],
+          "expected": "NO_VIOLATION"
+        },
+        {
+          "facts": [
+            "state:parcels_wait_on_shelf",
+            "state:van_takes_late_run"
+          ],
+          "expected": "VIOLATION"
+        },
+        {
+          "facts": [
+            "state:parcels_wait_on_shelf",
+            "state:van_takes_early_run",
+            "state:van_takes_late_run"
+          ],
+          "expected": "VIOLATION"
+        },
+        {
+          "facts": [
+            "state:parcels_stacked_in_steel_cage",
+            "state:parcels_wait_on_shelf"
+          ],
+          "expected": "NO_VIOLATION"
+        },
+        {
+          "facts": [
+            "state:parcels_stacked_in_steel_cage",
+            "state:parcels_wait_on_shelf",
+            "state:van_takes_early_run"
+          ],
+          "expected": "NO_VIOLATION"
+        },
+        {
+          "facts": [
+            "state:parcels_stacked_in_steel_cage",
+            "state:parcels_wait_on_shelf",
+            "state:van_takes_late_run"
+          ],
+          "expected": "NO_VIOLATION"
+        },
+        {
+          "facts": [
+            "state:parcels_stacked_in_steel_cage",
+            "state:parcels_wait_on_shelf",
+            "state:van_takes_early_run",
+            "state:van_takes_late_run"
+          ],
+          "expected": "NO_VIOLATION"
+        },
+        {
+          "facts": [],
+          "expected": "NO_VIOLATION"
+        },
+        {
+          "facts": [
+            "state:van_takes_early_run"
+          ],
+          "expected": "VIOLATION"
+        },
+        {
+          "facts": [
+            "state:van_takes_late_run"
+          ],
+          "expected": "VIOLATION"
+        },
+        {
+          "facts": [
+            "state:van_takes_early_run",
+            "state:van_takes_late_run"
+          ],
+          "expected": "VIOLATION"
+        }
+      ],
+      "axes": [
+        "condition",
+        "scope"
+      ],
+      "h0_representable": false
+    },
+    {
+      "case_id": "relation::r08",
+      "cohort": "relation_attachment",
+      "family": "relation",
+      "style": "controlled",
+      "policy": "While the visiting assessor is on site, the rooftop terrace and the tunnel wing are both closed to unescorted staff.",
+      "atom_catalog": [
+        "action:roam_rooftop_terrace_unescorted",
+        "action:roam_tunnel_wing_unescorted",
+        "distractor:r08",
+        "state:visiting_assessor_on_site"
+      ],
+      "gold_graph": {
+        "nodes": [
+          {
+            "id": "n1",
+            "type": "REGULATED",
+            "atoms": [
+              "action:roam_rooftop_terrace_unescorted"
+            ]
+          },
+          {
+            "id": "n2",
+            "type": "REGULATED",
+            "atoms": [
+              "action:roam_tunnel_wing_unescorted"
+            ]
+          },
+          {
+            "id": "n3",
+            "type": "MODALITY",
+            "value": "PROHIBITION"
+          },
+          {
+            "id": "n4",
+            "type": "CONDITION",
+            "literals": [
+              "state:visiting_assessor_on_site"
+            ],
+            "mode": "ALL",
+            "strength": "SUFFICIENT"
+          }
+        ],
+        "edges": [
+          {
+            "type": "REGULATES",
+            "from": "n3",
+            "to": "n1"
+          },
+          {
+            "type": "REGULATES",
+            "from": "n3",
+            "to": "n2"
+          },
+          {
+            "type": "ACTIVATES",
+            "from": "n4",
+            "to": "n1"
+          },
+          {
+            "type": "ACTIVATES",
+            "from": "n4",
+            "to": "n2"
+          }
+        ]
+      },
+      "admissible_program_sets": [
+        [
+          {
+            "modality": "PROHIBITION",
+            "relation": "IF",
+            "target_clauses": [
+              [
+                "action:roam_rooftop_terrace_unescorted"
+              ]
+            ],
+            "condition_literals": [
+              "state:visiting_assessor_on_site"
+            ],
+            "condition_mode": "ALL",
+            "exception_literals": [],
+            "exception_mode": "ALL",
+            "temporal": "NONE",
+            "actor": "assistant",
+            "regulated_kind": "ACTION",
+            "facet": "primary",
+            "identity": "ANY",
+            "provenance": "ANY",
+            "quantification": "ALL"
+          },
+          {
+            "modality": "PROHIBITION",
+            "relation": "IF",
+            "target_clauses": [
+              [
+                "action:roam_tunnel_wing_unescorted"
+              ]
+            ],
+            "condition_literals": [
+              "state:visiting_assessor_on_site"
+            ],
+            "condition_mode": "ALL",
+            "exception_literals": [],
+            "exception_mode": "ALL",
+            "temporal": "NONE",
+            "actor": "assistant",
+            "regulated_kind": "ACTION",
+            "facet": "primary",
+            "identity": "ANY",
+            "provenance": "ANY",
+            "quantification": "ALL"
+          }
+        ]
+      ],
+      "worlds": [
+        {
+          "facts": [
+            "action:roam_rooftop_terrace_unescorted"
+          ],
+          "expected": "NO_VIOLATION"
+        },
+        {
+          "facts": [
+            "action:roam_rooftop_terrace_unescorted",
+            "state:visiting_assessor_on_site"
+          ],
+          "expected": "VIOLATION"
+        },
+        {
+          "facts": [
+            "action:roam_tunnel_wing_unescorted"
+          ],
+          "expected": "NO_VIOLATION"
+        },
+        {
+          "facts": [
+            "action:roam_tunnel_wing_unescorted",
+            "state:visiting_assessor_on_site"
+          ],
+          "expected": "VIOLATION"
+        },
+        {
+          "facts": [
+            "action:roam_rooftop_terrace_unescorted",
+            "action:roam_tunnel_wing_unescorted"
+          ],
+          "expected": "NO_VIOLATION"
+        },
+        {
+          "facts": [
+            "action:roam_rooftop_terrace_unescorted",
+            "action:roam_tunnel_wing_unescorted",
+            "state:visiting_assessor_on_site"
+          ],
+          "expected": "VIOLATION"
+        },
+        {
+          "facts": [],
+          "expected": "NO_VIOLATION"
+        },
+        {
+          "facts": [
+            "state:visiting_assessor_on_site"
+          ],
+          "expected": "NO_VIOLATION"
+        }
+      ],
+      "axes": [
+        "condition",
+        "scope"
+      ],
+      "h0_representable": true
+    },
+    {
+      "case_id": "relation::r09",
+      "cohort": "relation_attachment",
+      "family": "relation",
+      "style": "controlled",
+      "policy": "Only when the river gauge is not showing amber may the orchard well be inspected.",
+      "atom_catalog": [
+        "action:inspect_orchard_well",
+        "distractor:r09",
+        "state:river_gauge_showing_amber"
+      ],
+      "gold_graph": {
+        "nodes": [
+          {
+            "id": "n1",
+            "type": "REGULATED",
+            "atoms": [
+              "action:inspect_orchard_well"
+            ]
+          },
+          {
+            "id": "n2",
+            "type": "MODALITY",
+            "value": "PERMISSION"
+          },
+          {
+            "id": "n3",
+            "type": "CONDITION",
+            "literals": [
+              "!state:river_gauge_showing_amber"
+            ],
+            "mode": "ALL",
+            "strength": "NECESSARY"
+          }
+        ],
+        "edges": [
+          {
+            "type": "REGULATES",
+            "from": "n2",
+            "to": "n1"
+          },
+          {
+            "type": "ACTIVATES",
+            "from": "n3",
+            "to": "n1"
+          }
+        ]
+      },
+      "admissible_program_sets": [
+        [
+          {
+            "modality": "PERMISSION",
+            "relation": "ONLY_IF",
+            "target_clauses": [
+              [
+                "action:inspect_orchard_well"
+              ]
+            ],
+            "condition_literals": [
+              "!state:river_gauge_showing_amber"
+            ],
+            "condition_mode": "ALL",
+            "exception_literals": [],
+            "exception_mode": "ALL",
+            "temporal": "NONE",
+            "actor": "assistant",
+            "regulated_kind": "ACTION",
+            "facet": "primary",
+            "identity": "ANY",
+            "provenance": "ANY",
+            "quantification": "ALL"
+          }
+        ]
+      ],
+      "worlds": [
+        {
+          "facts": [
+            "action:inspect_orchard_well",
+            "state:river_gauge_showing_amber"
+          ],
+          "expected": "VIOLATION"
+        },
+        {
+          "facts": [
+            "action:inspect_orchard_well"
+          ],
+          "expected": "PERMITTED"
+        },
+        {
+          "facts": [
+            "state:river_gauge_showing_amber"
+          ],
+          "expected": "NO_VIOLATION"
+        },
+        {
+          "facts": [],
+          "expected": "NO_VIOLATION"
+        }
+      ],
+      "axes": [
+        "relation",
+        "negation"
+      ],
+      "h0_representable": true
+    },
+    {
+      "case_id": "relation::r10",
+      "cohort": "relation_attachment",
+      "family": "relation",
+      "style": "controlled",
+      "policy": "Teaching-lab glassware never goes into the skip, save when the technician has logged it as scrap.",
+      "atom_catalog": [
+        "action:bin_teaching_lab_glassware",
+        "action:recycle_teaching_lab_glassware",
+        "distractor:r10",
+        "state:technician_logged_glassware_as_scrap"
+      ],
+      "gold_graph": {
+        "nodes": [
+          {
+            "id": "n1",
+            "type": "REGULATED",
+            "atoms": [
+              "action:bin_teaching_lab_glassware"
+            ]
+          },
+          {
+            "id": "n2",
+            "type": "MODALITY",
+            "value": "PROHIBITION"
+          },
+          {
+            "id": "n3",
+            "type": "EXCEPTION",
+            "literals": [
+              "state:technician_logged_glassware_as_scrap"
+            ],
+            "mode": "ALL"
+          }
+        ],
+        "edges": [
+          {
+            "type": "REGULATES",
+            "from": "n2",
+            "to": "n1"
+          },
+          {
+            "type": "EXEMPTS",
+            "from": "n3",
+            "to": "n1"
+          }
+        ]
+      },
+      "admissible_program_sets": [
+        [
+          {
+            "modality": "PROHIBITION",
+            "relation": "UNCONDITIONAL",
+            "target_clauses": [
+              [
+                "action:bin_teaching_lab_glassware"
+              ]
+            ],
+            "condition_literals": [],
+            "condition_mode": "ALL",
+            "exception_literals": [
+              "state:technician_logged_glassware_as_scrap"
+            ],
+            "exception_mode": "ALL",
+            "temporal": "NONE",
+            "actor": "assistant",
+            "regulated_kind": "ACTION",
+            "facet": "primary",
+            "identity": "ANY",
+            "provenance": "ANY",
+            "quantification": "ALL"
+          }
+        ]
+      ],
+      "worlds": [
+        {
+          "facts": [
+            "action:bin_teaching_lab_glassware"
+          ],
+          "expected": "VIOLATION"
+        },
+        {
+          "facts": [
+            "action:bin_teaching_lab_glassware",
+            "state:technician_logged_glassware_as_scrap"
+          ],
+          "expected": "PERMITTED"
+        },
+        {
+          "facts": [],
+          "expected": "NO_VIOLATION"
+        },
+        {
+          "facts": [
+            "state:technician_logged_glassware_as_scrap"
+          ],
+          "expected": "NO_VIOLATION"
+        }
+      ],
+      "axes": [
+        "exception"
+      ],
+      "h0_representable": true
+    },
+    {
+      "case_id": "relation::r11",
+      "cohort": "relation_attachment",
+      "family": "relation",
+      "style": "controlled",
+      "policy": "Once the dough has proved, the deck oven may be lit, provided the flue damper is open.",
+      "atom_catalog": [
+        "action:light_deck_oven",
+        "distractor:r11",
+        "event:dough_proved",
+        "state:flue_damper_open"
+      ],
+      "gold_graph": {
+        "nodes": [
+          {
+            "id": "n1",
+            "type": "REGULATED",
+            "atoms": [
+              "action:light_deck_oven"
+            ]
+          },
+          {
+            "id": "n2",
+            "type": "MODALITY",
+            "value": "PERMISSION"
+          },
+          {
+            "id": "n3",
+            "type": "CONDITION",
+            "literals": [
+              "event:dough_proved"
+            ],
+            "mode": "ALL",
+            "strength": "SUFFICIENT"
+          },
+          {
+            "id": "n4",
+            "type": "CONDITION",
+            "literals": [
+              "state:flue_damper_open"
+            ],
+            "mode": "ALL",
+            "strength": "SUFFICIENT"
+          }
+        ],
+        "edges": [
+          {
+            "type": "REGULATES",
+            "from": "n2",
+            "to": "n1"
+          },
+          {
+            "type": "FOLLOWS",
+            "from": "n3",
+            "to": "n1"
+          },
+          {
+            "type": "ACTIVATES",
+            "from": "n4",
+            "to": "n1"
+          }
+        ]
+      },
+      "admissible_program_sets": [
+        [
+          {
+            "modality": "PERMISSION",
+            "relation": "IF",
+            "target_clauses": [
+              [
+                "action:light_deck_oven"
+              ]
+            ],
+            "condition_literals": [
+              "event:dough_proved",
+              "state:flue_damper_open"
+            ],
+            "condition_mode": "ALL",
+            "exception_literals": [],
+            "exception_mode": "ALL",
+            "temporal": "AFTER",
+            "actor": "assistant",
+            "regulated_kind": "ACTION",
+            "facet": "primary",
+            "identity": "ANY",
+            "provenance": "ANY",
+            "quantification": "ALL"
+          }
+        ]
+      ],
+      "worlds": [
+        {
+          "facts": [
+            "action:light_deck_oven"
+          ],
+          "expected": "NO_VIOLATION"
+        },
+        {
+          "facts": [
+            "action:light_deck_oven",
+            "event:dough_proved"
+          ],
+          "expected": "NO_VIOLATION"
+        },
+        {
+          "facts": [
+            "action:light_deck_oven",
+            "state:flue_damper_open"
+          ],
+          "expected": "NO_VIOLATION"
+        },
+        {
+          "facts": [
+            "action:light_deck_oven",
+            "event:dough_proved",
+            "state:flue_damper_open"
+          ],
+          "expected": "PERMITTED"
+        },
+        {
+          "facts": [],
+          "expected": "NO_VIOLATION"
+        },
+        {
+          "facts": [
+            "event:dough_proved"
+          ],
+          "expected": "NO_VIOLATION"
+        },
+        {
+          "facts": [
+            "state:flue_damper_open"
+          ],
+          "expected": "NO_VIOLATION"
+        },
+        {
+          "facts": [
+            "event:dough_proved",
+            "state:flue_damper_open"
+          ],
+          "expected": "NO_VIOLATION"
+        }
+      ],
+      "axes": [
+        "temporal",
+        "condition"
+      ],
+      "h0_representable": true
+    },
+    {
+      "case_id": "relation::r12",
+      "cohort": "relation_attachment",
+      "family": "relation",
+      "style": "controlled",
+      "policy": "After hours, only bearers of the green fob may enter the relay room; the yellow fob opens nothing.",
+      "atom_catalog": [
+        "action:enter_relay_room_after_hours",
+        "distractor:r12",
+        "state:green_fob_bearer",
+        "state:yellow_fob_bearer"
+      ],
+      "gold_graph": {
+        "nodes": [
+          {
+            "id": "n1",
+            "type": "REGULATED",
+            "atoms": [
+              "action:enter_relay_room_after_hours"
+            ]
+          },
+          {
+            "id": "n2",
+            "type": "MODALITY",
+            "value": "PERMISSION"
+          },
+          {
+            "id": "n3",
+            "type": "CONDITION",
+            "literals": [
+              "state:green_fob_bearer"
+            ],
+            "mode": "ALL",
+            "strength": "NECESSARY"
+          }
+        ],
+        "edges": [
+          {
+            "type": "REGULATES",
+            "from": "n2",
+            "to": "n1"
+          },
+          {
+            "type": "ACTIVATES",
+            "from": "n3",
+            "to": "n1"
+          }
+        ]
+      },
+      "admissible_program_sets": [
+        [
+          {
+            "modality": "PERMISSION",
+            "relation": "ONLY_IF",
+            "target_clauses": [
+              [
+                "action:enter_relay_room_after_hours"
+              ]
+            ],
+            "condition_literals": [
+              "state:green_fob_bearer"
+            ],
+            "condition_mode": "ALL",
+            "exception_literals": [],
+            "exception_mode": "ALL",
+            "temporal": "NONE",
+            "actor": "assistant",
+            "regulated_kind": "ACTION",
+            "facet": "primary",
+            "identity": "ANY",
+            "provenance": "ANY",
+            "quantification": "ALL"
+          }
+        ]
+      ],
+      "worlds": [
+        {
+          "facts": [
+            "action:enter_relay_room_after_hours"
+          ],
+          "expected": "VIOLATION"
+        },
+        {
+          "facts": [
+            "action:enter_relay_room_after_hours",
+            "state:green_fob_bearer"
+          ],
+          "expected": "PERMITTED"
+        },
+        {
+          "facts": [],
+          "expected": "NO_VIOLATION"
+        },
+        {
+          "facts": [
+            "state:green_fob_bearer"
+          ],
+          "expected": "NO_VIOLATION"
+        }
+      ],
+      "axes": [
+        "relation"
+      ],
+      "h0_representable": true
+    }
+  ]
+}

@@ -1,0 +1,27 @@
+{
+  "request_sha256": "0430e20550233be9de728f56738fca1430a296276a0b83df59eee609e4631955",
+  "proposal": {
+    "payload_json": "{\"rules\":[{\"gates\":[{\"expr\":{\"not\":\"F1\"},\"op\":\"WHEN\"},{\"op\":\"ACTOR\",\"ref\":\"F2\"}],\"operator\":\"PROHIBIT\",\"target\":\"F3\"}]}",
+    "transport_status": "SUCCESS",
+    "schema_status": "VALID",
+    "error_category": null
+  },
+  "telemetry": {
+    "backend_version": "diagnostic-semantic-v2",
+    "task": "Synthesize ONE policy ruleset. You receive POLICY_TEXT and INVENTORY: grounded semantic items with neutral IDs (F# facts with kind/atom/span; M# modality markers and R# relation markers with value/span).\nCORE INVARIANT: every fact leaf in your rules MUST be an inventory fact ID (F#). You may NOT invent facts, atoms, entities or predicates. Markers (M#/R#) are evidence for your choices but are never rule references. You decide ONLY how the grounded facts compose: how many rules exist, each rule's modality, target shape, gates, condition vs exception roles, actors, temporal order, AND/OR, together/separate.\nOPERATOR MEANINGS:\n- PERMIT: the text positively grants or allows. PROHIBIT: the text forbids or bars. REQUIRE: the text obliges. An act that is neither licensed nor forbidden is NO_VIOLATION, never permission: absence of prohibition is NOT permission.\n- WHEN(c): the rule applies while c holds (sufficient gate: if/when/whenever/while/provided that). ONLY_WHEN(c): the rule applies ONLY under c (necessary gate: only/only when/only with/only for; outside c a PERMIT/REQUIRE target done anyway is a VIOLATION). IFF(c): exactly under c (if and only if / exactly when).\n- EXCEPT(c): carve-out (unless/except/save when); never fold a carve-out into WHEN and never move an if/when gate into EXCEPT.\n- BEFORE(e)/AFTER(e): the target happens before/after event e (e must be an EVENT fact).\n- ACTOR(f): the rule is about that actor. ONLY_ACTOR(f): exclusively that actor (only X / no one but X).\n- IDENTITY(f): same-owner/identity constraint (identity fact). PROVENANCE(f): sole acceptable evidence source (evidence fact).\n- TOGETHER(a,b): the atoms are regulated as ONE joint act. SEPARATE(a,b): the atoms are regulated as independent acts within this rule.\n- NOT(f): the fact does not hold.\n- UNKNOWN_RELATION(c)/UNKNOWN_ATTACHMENT(f): use ONLY when the relation or the attachment is genuinely undeterminable; the rule is then dropped as unresolved and hurts coverage. Do not use them as a default.\nTYPE RULES (machine-validated; violations are rejected):\n- target refs: ACTION or STATE facts only. WHEN/ONLY_WHEN/IFF/EXCEPT leaves: ACTION, STATE or EVENT facts. BEFORE/AFTER leaves: EVENT facts only. ACTOR/ONLY_ACTOR: ACTOR facts. IDENTITY: IDENTITY facts. PROVENANCE: PROVENANCE facts.\n- at most one gate of each kind per rule; at most one relation gate (WHEN/ONLY_WHEN/IFF); at most one temporal gate (BEFORE or AFTER, not both); REQUIRE with both EXCEPT and a WHEN/ONLY_WHEN/IFF/BEFORE/AFTER gate is outside the frozen envelope.\n- when several gates contribute condition leaves, their top-level combinator must agree (both AND-top or both OR-top).\nWorked example (illustrative only; never reuse its atoms): POLICY 'If the night fridge is unlocked, bar staff may pour samples, unless the cellar door is alarmed.' INVENTORY F1=ACTION action:pour_samples 'pour samples', F2=STATE state:night_fridge_unlocked 'the night fridge is unlocked', F3=STATE state:cellar_door_alarmed 'the cellar door is alarmed', F4=ACTOR actor:bar_staff 'bar staff', M1=MODAL_MARKER PERMIT 'may', R1=RELATION_MARKER IF 'If', R2=RELATION_MARKER UNLESS 'unless' -> rules=[{'operator':'PERMIT','target':'F1','gates':[{'op':'WHEN','expr':'F2'},{'op':'EXCEPT','expr':'F3'},{'op':'ACTOR','ref':'F4'}]}].\nOUTPUT FORMAT (a trusted deterministic assembler builds the canonical ruleset from your proposal; you never serialize DSL text):\nOutput exactly one JSON object {\"rules\": [rule, ...]} where each rule is either\n  {\"operator\": \"PERMIT\" | \"PROHIBIT\" | \"REQUIRE\",\n   \"target\": \"F3\" | {\"together\": [\"F1\", ...]} | {\"separate\": [\"F1\", ...]},\n   \"gates\": [gate, ...]}          # gates list optional (may be empty)\nor, ONLY for genuine local ambiguity between exactly two readings of ONE rule (at most one such element, at most two readings):\n  {\"one_of\": [rule, rule]}\ngate := {\"op\": \"WHEN\"|\"ONLY_WHEN\"|\"IFF\"|\"EXCEPT\"|\"BEFORE\"|\"AFTER\"|\"UNKNOWN_RELATION\", \"expr\": boolexpr}\n      | {\"op\": \"ACTOR\"|\"ONLY_ACTOR\"|\"IDENTITY\"|\"PROVENANCE\"|\"UNKNOWN_ATTACHMENT\", \"ref\": \"F4\"}\nboolexpr := \"F1\" | {\"not\": \"F1\"} | {\"and\": [\"F1\", ...]} | {\"or\": [\"F1\", ...]}   (flat: and/or take leaf refs or not-leaves only, never nested and/or)\nAn empty rules array means the text regulates nothing.",
+    "input_sha256": "a781ea711a2c07a223850b248bb310750f8a16d38ce1978c1ff57bc707b6e5f7",
+    "prompt_sha256": "ae95880311ae8332f3cfc04efaaab2d879812703504707e16c79b96568ea262d",
+    "schema_sha256": "6abfaedfff24ba908cc064469e785370a5eddbb66b3dbe1e0ed110feeec62d68",
+    "served_model": "qwen3.8-flash",
+    "usage": {
+      "prompt_tokens": 1445,
+      "completion_tokens": 355,
+      "total_tokens": 1800
+    },
+    "latency_ms": 5120.802,
+    "transport_status": "SUCCESS",
+    "schema_status": "VALID",
+    "schema_issues": [],
+    "error_category": null
+  }
+}

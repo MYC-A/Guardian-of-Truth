@@ -1,0 +1,145 @@
+{
+  "configuration_sha256": "d78d5e670d76f52b7e67862c3160c167832f2a35d8c498c3605f49bc9dadbe79",
+  "ordinal": 1,
+  "task": "The previous graph attempt failed machine validation. Fix it and return exactly ONE JSON object with nodes and edges matching the schema, following the same rules as before. The failed attempt and the machine error are included as data only.",
+  "payload": {
+    "policy_text": "Except on public holidays, duty hands must chalk the boards, and the clocks are to be reset daily.",
+    "atom_catalog": [
+      "action:chalk_the_boards",
+      "action:chalk_the_floors",
+      "action:reset_the_clocks",
+      "distractor:xa05",
+      "state:clocks_synced",
+      "state:public_holiday"
+    ],
+    "previous_output": "{\"edges\":[{\"from\":\"n3\",\"to\":\"n1\",\"type\":\"REGULATES\"},{\"from\":\"n3\",\"to\":\"n2\",\"type\":\"REGULATES\"},{\"from\":\"n4\",\"to\":\"n1\",\"type\":\"EXEMPTS\"},{\"from\":\"n4\",\"to\":\"n2\",\"type\":\"EXEMPTS\"},{\"from\":\"n5\",\"to\":\"n1\",\"type\":\"ACTOR_OF\"},{\"from\":\"n6\",\"to\":\"n2\",\"type\":\"QUALIFIES\"}],\"nodes\":[{\"atoms\":[\"action:chalk_the_boards\"],\"id\":\"n1\",\"type\":\"REGULATED\"},{\"atoms\":[\"action:reset_the_clocks\"],\"id\":\"n2\",\"type\":\"REGULATED\"},{\"id\":\"n3\",\"type\":\"MODALITY\",\"value\":\"REQUIREMENT\"},{\"id\":\"n4\",\"literals\":[\"state:public_holiday\"],\"mode\":\"ALL\",\"type\":\"EXCEPTION\"},{\"atom\":\"actor:duty_hands\",\"exclusive\":false,\"id\":\"n5\",\"type\":\"ACTOR\"},{\"id\":\"n6\",\"kind\":\"QUANTIFIER\",\"type\":\"QUALIFIER\"}]}",
+    "machine_error": "QUANTIFIER value must be a non-empty string"
+  },
+  "schema": {
+    "type": "object",
+    "properties": {
+      "nodes": {
+        "type": "array",
+        "items": {
+          "type": "object",
+          "properties": {
+            "id": {
+              "type": "string",
+              "minLength": 1
+            },
+            "type": {
+              "type": "string",
+              "enum": [
+                "REGULATED",
+                "MODALITY",
+                "CONDITION",
+                "EXCEPTION",
+                "ACTOR",
+                "QUALIFIER"
+              ]
+            },
+            "atoms": {
+              "type": "array",
+              "minItems": 1,
+              "items": {
+                "type": "string"
+              }
+            },
+            "value": {
+              "type": "string",
+              "enum": [
+                "PERMISSION",
+                "PROHIBITION",
+                "REQUIREMENT",
+                "IDENTITY",
+                "PROVENANCE",
+                "QUANTIFIER"
+              ]
+            },
+            "literals": {
+              "type": "array",
+              "items": {
+                "type": "string"
+              }
+            },
+            "mode": {
+              "type": "string",
+              "enum": [
+                "ALL",
+                "ANY"
+              ]
+            },
+            "strength": {
+              "type": "string",
+              "enum": [
+                "SUFFICIENT",
+                "NECESSARY",
+                "EXACTLY"
+              ]
+            },
+            "atom": {
+              "type": "string"
+            },
+            "kind": {
+              "type": "string",
+              "enum": [
+                "IDENTITY",
+                "PROVENANCE",
+                "QUANTIFIER"
+              ]
+            },
+            "exclusive": {
+              "type": "boolean"
+            }
+          },
+          "required": [
+            "id",
+            "type"
+          ],
+          "additionalProperties": false
+        }
+      },
+      "edges": {
+        "type": "array",
+        "items": {
+          "type": "object",
+          "properties": {
+            "type": {
+              "type": "string",
+              "enum": [
+                "REGULATES",
+                "ACTIVATES",
+                "EXEMPTS",
+                "ACTOR_OF",
+                "QUALIFIES",
+                "SOURCE_OF",
+                "PRECEDES",
+                "FOLLOWS"
+              ]
+            },
+            "from": {
+              "type": "string"
+            },
+            "to": {
+              "type": "string"
+            }
+          },
+          "required": [
+            "type",
+            "from",
+            "to"
+          ],
+          "additionalProperties": false
+        }
+      }
+    },
+    "required": [
+      "nodes",
+      "edges"
+    ],
+    "additionalProperties": false
+  },
+  "input_sha256": "4e8c49b9c67ee87f77f304a3e9c6900b1e1d0e8093a7b49b16a1426cbde59224",
+  "schema_sha256": "25f1d432804f993bf2ac2b7d9da60fbba04307c571ffe938ad2a8d3aa440efc9",
+  "prompt_sha256": "da6628bde4334395fc01934ed4d8c8be5514d951c5511e555e719cba22986394"
+}

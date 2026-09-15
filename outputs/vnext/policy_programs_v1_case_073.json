@@ -6,12 +6,57 @@
       "hypotheses": [
         {
           "hypothesis_id": "policy-program:h0",
-          "basis": "Exclusive-or reading: 'alone' means each channel is permitted only when the other is absent, creating an XOR constraint within one alert.",
+          "basis": "'For one alert' scopes as a per-alert constraint: for each alert independently, you may send email without SMS or SMS without email, but not both for the same alert. Doing nothing is permitted (not an obligation).",
           "program": {
             "violation_clauses": [
               [
                 "action:send_email",
                 "action:send_sms",
+                "identity:same_alert"
+              ]
+            ],
+            "permission_clauses": [
+              [
+                "action:send_email",
+                "!action:send_sms",
+                "identity:same_alert"
+              ],
+              [
+                "action:send_sms",
+                "!action:send_email",
+                "identity:same_alert"
+              ],
+              [
+                "!action:send_email",
+                "!action:send_sms",
+                "identity:same_alert"
+              ]
+            ]
+          },
+          "source_spans": [
+            {
+              "document": "policy",
+              "start": 0,
+              "end": 96
+            }
+          ],
+          "unresolved_terms": [
+            "whether 'for one alert' means per-alert or only-if-exactly-one-alert"
+          ]
+        },
+        {
+          "hypothesis_id": "policy-program:h1",
+          "basis": "The permission list 'email alone OR SMS alone is allowed' is read as exhaustive, creating an obligation to send exactly one channel per alert. Doing neither is a violation.",
+          "program": {
+            "violation_clauses": [
+              [
+                "action:send_email",
+                "action:send_sms",
+                "identity:same_alert"
+              ],
+              [
+                "!action:send_email",
+                "!action:send_sms",
                 "identity:same_alert"
               ]
             ],
@@ -33,26 +78,15 @@
               "document": "policy",
               "start": 15,
               "end": 58
-            },
-            {
-              "document": "policy",
-              "start": 64,
-              "end": 95
-            },
-            {
-              "document": "policy",
-              "start": 0,
-              "end": 13
             }
           ],
           "unresolved_terms": [
-            "whether 'alone' additionally excludes a third channel (not in catalog)",
-            "whether the prohibition is absolute or has exceptions"
+            "whether 'allowed' is exhaustive or non-exhaustive"
           ]
         },
         {
-          "hypothesis_id": "policy-program:h1",
-          "basis": "Prohibition-dominant reading: the core rule is the ban on conjunction; 'allowed' is merely the complement (residual permission). Doing nothing is also permitted.",
+          "hypothesis_id": "policy-program:h2",
+          "basis": "'For one alert' is a precondition: the rule only applies when there is exactly one alert. If multiple alerts exist, no constraint binds, so email+SMS across different alerts is permitted.",
           "program": {
             "violation_clauses": [
               [
@@ -63,9 +97,7 @@
             ],
             "permission_clauses": [
               [
-                "!action:send_email",
-                "!action:send_sms",
-                "identity:same_alert"
+                "!identity:same_alert"
               ],
               [
                 "action:send_email",
@@ -73,8 +105,13 @@
                 "identity:same_alert"
               ],
               [
-                "!action:send_email",
                 "action:send_sms",
+                "!action:send_email",
+                "identity:same_alert"
+              ],
+              [
+                "!action:send_email",
+                "!action:send_sms",
                 "identity:same_alert"
               ]
             ]
@@ -83,11 +120,58 @@
             {
               "document": "policy",
               "start": 0,
-              "end": 95
+              "end": 96
             }
           ],
           "unresolved_terms": [
-            "whether 'allowed' is an affirmative grant or merely the absence of prohibition"
+            "whether 'for one alert' is a precondition or a per-instance scoping"
+          ]
+        },
+        {
+          "hypothesis_id": "policy-program:h3",
+          "basis": "'Alone' means the sole action taken globally (exclusive of all other actions including distractors). So email+irrelevant violates 'email alone', and SMS+irrelevant violates 'SMS alone'.",
+          "program": {
+            "violation_clauses": [
+              [
+                "action:send_email",
+                "action:send_sms"
+              ],
+              [
+                "action:send_email",
+                "distractor:irrelevant"
+              ],
+              [
+                "action:send_sms",
+                "distractor:irrelevant"
+              ]
+            ],
+            "permission_clauses": [
+              [
+                "action:send_email",
+                "!action:send_sms",
+                "!distractor:irrelevant"
+              ],
+              [
+                "action:send_sms",
+                "!action:send_email",
+                "!distractor:irrelevant"
+              ],
+              [
+                "!action:send_email",
+                "!action:send_sms",
+                "!distractor:irrelevant"
+              ]
+            ]
+          },
+          "source_spans": [
+            {
+              "document": "policy",
+              "start": 15,
+              "end": 58
+            }
+          ],
+          "unresolved_terms": [
+            "whether 'alone' scopes over all actions or only over the mentioned channel pair"
           ]
         }
       ],
@@ -96,32 +180,83 @@
         "universe_source": null,
         "enumeration_complete": false,
         "unresolved_terms": [
-          "whether 'one alert' restricts scope to a single alert instance or applies per-alert in a multi-alert context",
-          "whether 'conjunction' means simultaneous sending or any overlap in time",
-          "whether the prohibition is a hard constraint or a soft guideline",
-          "whether 'alone' additionally excludes a third channel (not in catalog)",
-          "whether the prohibition is absolute or has exceptions",
-          "whether 'allowed' is an affirmative grant or merely the absence of prohibition",
-          "whether the two clauses (permission and prohibition) are logically independent or one entails the other"
+          "whether 'for one alert' is a per-alert scoping or a global precondition",
+          "whether 'allowed' is exhaustive (creating obligation) or non-exhaustive (mere permission)",
+          "whether 'alone' excludes all other actions or only the paired channel",
+          "whether identity:same_alert is required in all clauses or only in the violation clause",
+          "whether 'for one alert' means per-alert or only-if-exactly-one-alert",
+          "whether 'allowed' is exhaustive or non-exhaustive",
+          "whether 'for one alert' is a precondition or a per-instance scoping",
+          "whether 'alone' scopes over all actions or only over the mentioned channel pair"
         ],
         "discarded_hypotheses": [],
-        "challenger_alternatives": []
+        "challenger_alternatives": [
+          "policy-program:h0",
+          "policy-program:h1",
+          "policy-program:h2",
+          "policy-program:h3"
+        ]
       },
       "failures": [
         [
-          "policy_program_missing_reading_v2",
+          "policy_program_hypotheses_v2",
           "SCHEMA_ERROR"
         ]
       ],
       "empirical_hypotheses": [
         {
           "hypothesis_id": "policy-program:h0",
-          "basis": "Exclusive-or reading: 'alone' means each channel is permitted only when the other is absent, creating an XOR constraint within one alert.",
+          "basis": "'For one alert' scopes as a per-alert constraint: for each alert independently, you may send email without SMS or SMS without email, but not both for the same alert. Doing nothing is permitted (not an obligation).",
           "program": {
             "violation_clauses": [
               [
                 "action:send_email",
                 "action:send_sms",
+                "identity:same_alert"
+              ]
+            ],
+            "permission_clauses": [
+              [
+                "action:send_email",
+                "!action:send_sms",
+                "identity:same_alert"
+              ],
+              [
+                "action:send_sms",
+                "!action:send_email",
+                "identity:same_alert"
+              ],
+              [
+                "!action:send_email",
+                "!action:send_sms",
+                "identity:same_alert"
+              ]
+            ]
+          },
+          "source_spans": [
+            {
+              "document": "policy",
+              "start": 0,
+              "end": 96
+            }
+          ],
+          "unresolved_terms": [
+            "whether 'for one alert' means per-alert or only-if-exactly-one-alert"
+          ]
+        },
+        {
+          "hypothesis_id": "policy-program:h1",
+          "basis": "The permission list 'email alone OR SMS alone is allowed' is read as exhaustive, creating an obligation to send exactly one channel per alert. Doing neither is a violation.",
+          "program": {
+            "violation_clauses": [
+              [
+                "action:send_email",
+                "action:send_sms",
+                "identity:same_alert"
+              ],
+              [
+                "!action:send_email",
+                "!action:send_sms",
                 "identity:same_alert"
               ]
             ],
@@ -143,26 +278,15 @@
               "document": "policy",
               "start": 15,
               "end": 58
-            },
-            {
-              "document": "policy",
-              "start": 64,
-              "end": 95
-            },
-            {
-              "document": "policy",
-              "start": 0,
-              "end": 13
             }
           ],
           "unresolved_terms": [
-            "whether 'alone' additionally excludes a third channel (not in catalog)",
-            "whether the prohibition is absolute or has exceptions"
+            "whether 'allowed' is exhaustive or non-exhaustive"
           ]
         },
         {
-          "hypothesis_id": "policy-program:h1",
-          "basis": "Prohibition-dominant reading: the core rule is the ban on conjunction; 'allowed' is merely the complement (residual permission). Doing nothing is also permitted.",
+          "hypothesis_id": "policy-program:h2",
+          "basis": "'For one alert' is a precondition: the rule only applies when there is exactly one alert. If multiple alerts exist, no constraint binds, so email+SMS across different alerts is permitted.",
           "program": {
             "violation_clauses": [
               [
@@ -173,9 +297,7 @@
             ],
             "permission_clauses": [
               [
-                "!action:send_email",
-                "!action:send_sms",
-                "identity:same_alert"
+                "!identity:same_alert"
               ],
               [
                 "action:send_email",
@@ -183,8 +305,13 @@
                 "identity:same_alert"
               ],
               [
-                "!action:send_email",
                 "action:send_sms",
+                "!action:send_email",
+                "identity:same_alert"
+              ],
+              [
+                "!action:send_email",
+                "!action:send_sms",
                 "identity:same_alert"
               ]
             ]
@@ -193,11 +320,58 @@
             {
               "document": "policy",
               "start": 0,
-              "end": 95
+              "end": 96
             }
           ],
           "unresolved_terms": [
-            "whether 'allowed' is an affirmative grant or merely the absence of prohibition"
+            "whether 'for one alert' is a precondition or a per-instance scoping"
+          ]
+        },
+        {
+          "hypothesis_id": "policy-program:h3",
+          "basis": "'Alone' means the sole action taken globally (exclusive of all other actions including distractors). So email+irrelevant violates 'email alone', and SMS+irrelevant violates 'SMS alone'.",
+          "program": {
+            "violation_clauses": [
+              [
+                "action:send_email",
+                "action:send_sms"
+              ],
+              [
+                "action:send_email",
+                "distractor:irrelevant"
+              ],
+              [
+                "action:send_sms",
+                "distractor:irrelevant"
+              ]
+            ],
+            "permission_clauses": [
+              [
+                "action:send_email",
+                "!action:send_sms",
+                "!distractor:irrelevant"
+              ],
+              [
+                "action:send_sms",
+                "!action:send_email",
+                "!distractor:irrelevant"
+              ],
+              [
+                "!action:send_email",
+                "!action:send_sms",
+                "!distractor:irrelevant"
+              ]
+            ]
+          },
+          "source_spans": [
+            {
+              "document": "policy",
+              "start": 15,
+              "end": 58
+            }
+          ],
+          "unresolved_terms": [
+            "whether 'alone' scopes over all actions or only over the mentioned channel pair"
           ]
         }
       ]
@@ -213,11 +387,11 @@
       "prediction": null,
       "source_coverage": 1.0,
       "served_model": "qwen3.8-flash",
-      "latency_ms": 13076.237,
+      "latency_ms": 5373.732,
       "usage": {
         "prompt_tokens": 417,
-        "completion_tokens": 573,
-        "total_tokens": 990
+        "completion_tokens": 348,
+        "total_tokens": 765
       }
     }
   },
@@ -231,28 +405,10 @@
       "served_model": "qwen3.8-flash",
       "usage": {
         "prompt_tokens": 578,
-        "completion_tokens": 1908,
-        "total_tokens": 2486
+        "completion_tokens": 1719,
+        "total_tokens": 2297
       },
-      "latency_ms": 35126.469,
-      "transport_status": "SUCCESS",
-      "schema_status": "VALID",
-      "schema_issues": [],
-      "error_category": null
-    },
-    {
-      "backend_version": "diagnostic-semantic-v2",
-      "task": "policy_program_missing_reading_v2",
-      "input_sha256": "6fff26ce4435f48d6ff220cd468cdafb3c5cc582b428cdd202e989a31434320f",
-      "prompt_sha256": "dc4738438e5050a8e3292d767f585b923cb7229c7a38d909e3e14f060be89b17",
-      "schema_sha256": "f72c79d1f5305480edd9873c0c5fcf3397a0e85eb50356e9f51f431c2fa4f991",
-      "served_model": "qwen3.8-flash",
-      "usage": {
-        "prompt_tokens": 819,
-        "completion_tokens": 4113,
-        "total_tokens": 4932
-      },
-      "latency_ms": 70757.544,
+      "latency_ms": 38798.309,
       "transport_status": "SUCCESS",
       "schema_status": "INVALID",
       "schema_issues": [
@@ -263,6 +419,24 @@
           "actual_type": null
         }
       ],
+      "error_category": null
+    },
+    {
+      "backend_version": "diagnostic-semantic-v2",
+      "task": "policy_program_missing_reading_v2",
+      "input_sha256": "21b25c6d7299842bebb1fe9988bf75bae66643ff703b0c3670246e5b69aba1d6",
+      "prompt_sha256": "1daa565184197bb636437c5f51ee4d2048de8a9cc93bcd76b1cd1712e4037ed7",
+      "schema_sha256": "f72c79d1f5305480edd9873c0c5fcf3397a0e85eb50356e9f51f431c2fa4f991",
+      "served_model": "qwen3.8-flash",
+      "usage": {
+        "prompt_tokens": 612,
+        "completion_tokens": 1765,
+        "total_tokens": 2377
+      },
+      "latency_ms": 41392.931,
+      "transport_status": "SUCCESS",
+      "schema_status": "VALID",
+      "schema_issues": [],
       "error_category": null
     }
   ],
@@ -285,10 +459,10 @@
       "served_model": "qwen3.8-flash",
       "usage": {
         "prompt_tokens": 417,
-        "completion_tokens": 573,
-        "total_tokens": 990
+        "completion_tokens": 348,
+        "total_tokens": 765
       },
-      "latency_ms": 13074.397
+      "latency_ms": 5372.973
     }
   ]
 }

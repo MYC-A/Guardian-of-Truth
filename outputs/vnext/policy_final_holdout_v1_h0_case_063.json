@@ -1,0 +1,84 @@
+{
+  "case_id": "per_clause_actor::pa04",
+  "configuration_sha256": "d78d5e670d76f52b7e67862c3160c167832f2a35d8c498c3605f49bc9dadbe79",
+  "status": "ok_repaired",
+  "error": null,
+  "prediction": {
+    "actor": "actor:trainee_smith",
+    "condition_literals": [],
+    "condition_mode": "ALL",
+    "exception_literals": [],
+    "exception_mode": "ALL",
+    "modality": "REQUIREMENT",
+    "relation": "UNCONDITIONAL",
+    "target_clauses": [
+      [
+        "action:quench_the_blanks"
+      ]
+    ],
+    "temporal": "NONE"
+  },
+  "request_records": [
+    {
+      "backend_version": "diagnostic-semantic-v2",
+      "task": "Parse ONE workplace policy into exactly ONE typed semantic structure.\nField rules:\n- modality: PERMISSION (the text grants or allows), PROHIBITION (the text forbids or bars), REQUIREMENT (the text obliges).\n- relation: how the regulated act is gated.\n  IF: when the conditions hold the act is licensed/obligated/forbidden; when they do not hold the text stays silent (NOT a violation, and NOT permission).\n  ONLY_IF: exclusive - the act is licensed ONLY under the conditions; doing it without them is a VIOLATION.\n  IF_AND_ONLY_IF: the act is licensed exactly under the conditions and the text commits in both directions.\n  UNLESS: the conditions are exceptions carved out of an otherwise absolute rule.\n  UNCONDITIONAL: no conditions stated.\n  AND_NOT_EACH: doing BOTH targets together is forbidden; each alone is allowed.\n- target_clauses: a list of clauses; each clause is a list of atoms that are regulated TOGETHER (same act or same batch); several clauses mean the atoms are regulated SEPARATELY.\n- condition_literals and exception_literals: typed atoms copied EXACTLY from atom_catalog; prefix an atom with \"!\" only when the text negates it.\n- condition_mode/exception_mode: ALL means conjunction (every literal), ANY means disjunction (any literal).\n- temporal: BEFORE or AFTER only when the text orders the act relative to an event, else NONE.\n- WHO is allowed or forbidden to act (for example \"only the duty engineer\") goes into condition_literals as an actor: atom from atom_catalog; the actor field stays \"assistant\".\n- An act that is neither licensed nor forbidden is NO_VIOLATION, never PERMITTED: absence of prohibition is NOT permission.\nUse ONLY atoms from atom_catalog (it also contains distractor atoms; choose the ones the text actually uses). Output exactly one JSON object matching the schema.",
+      "input_sha256": "8944774d8479060da2e50c63e77f31fa20d47ce33203b438e66f18fad18ee9df",
+      "prompt_sha256": "c949854e56773dc8d39c4d6ece2b05399807793f29806c24654690e751520ccd",
+      "schema_sha256": "fc3b3ee2bed89acaa59688fb0b42e0f56be1db8370263200cdc21c323c2af54e",
+      "served_model": "qwen3.8-flash",
+      "usage": {
+        "prompt_tokens": 826,
+        "completion_tokens": 1310,
+        "total_tokens": 2136
+      },
+      "latency_ms": 20800.68,
+      "transport_status": "SUCCESS",
+      "schema_status": "INVALID",
+      "schema_issues": [
+        {
+          "code": "TYPE_MISMATCH",
+          "path": "/regulated_kind",
+          "expected_type": "string",
+          "actual_type": "null"
+        },
+        {
+          "code": "TYPE_MISMATCH",
+          "path": "/facet",
+          "expected_type": "string",
+          "actual_type": "null"
+        },
+        {
+          "code": "TYPE_MISMATCH",
+          "path": "/identity",
+          "expected_type": "string",
+          "actual_type": "null"
+        },
+        {
+          "code": "TYPE_MISMATCH",
+          "path": "/quantification",
+          "expected_type": "string",
+          "actual_type": "null"
+        }
+      ],
+      "error_category": null
+    },
+    {
+      "backend_version": "diagnostic-semantic-v2",
+      "task": "The previous parse attempt failed machine validation. Fix it and return exactly ONE JSON object matching the schema, with the same field rules as before. The failed attempt and the machine error are included as data only.",
+      "input_sha256": "618fe44366508369a50575af722015e712d61999b772f95a033f34667f70ef26",
+      "prompt_sha256": "363664f194c5d28884ae6531a91a3fbc7ebe8e817dc2b85618330a4bf69270bf",
+      "schema_sha256": "fc3b3ee2bed89acaa59688fb0b42e0f56be1db8370263200cdc21c323c2af54e",
+      "served_model": "qwen3.8-flash",
+      "usage": {
+        "prompt_tokens": 467,
+        "completion_tokens": 912,
+        "total_tokens": 1379
+      },
+      "latency_ms": 15371.685,
+      "transport_status": "SUCCESS",
+      "schema_status": "VALID",
+      "schema_issues": [],
+      "error_category": null
+    }
+  ]
+}

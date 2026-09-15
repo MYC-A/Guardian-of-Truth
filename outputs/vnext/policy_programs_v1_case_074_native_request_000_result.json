@@ -1,9 +1,9 @@
 {
   "request_sha256": "6a6b25c31781cad51949cc97ed7ea289812fd8877b35980f3d55860da05a52ea",
   "proposal": {
-    "payload_json": null,
+    "payload_json": "{\"interpretations\":[{\"basis\":\"The most direct reading: the policy prohibits the co-occurrence of both notification actions within the scope of a single alert identity. Violation requires both actions plus the same-alert identity; permission is exactly one channel per alert.\",\"permission_clauses\":[[\"action:send_email\",\"identity:same_alert\",\"!action:send_sms\"],[\"action:send_sms\",\"identity:same_alert\",\"!action:send_email\"]],\"source_quotes\":[\"Do not use both notification channels together for a single alert.\"],\"unresolved_terms\":[\"notification channels (mapped to send_email and send_sms by assumption)\",\"together (co-occurrence vs simultaneity)\"],\"violation_clauses\":[[\"action:send_email\",\"action:send_sms\",\"identity:same_alert\"]]},{\"basis\":\"Reading 'together' as temporal simultaneity rather than mere co-occurrence: the prohibition only applies if both channels fire at the same time for a single alert, leaving sequential use within the same alert potentially permissible.\",\"permission_clauses\":[[\"action:send_email\",\"identity:same_alert\",\"!action:send_sms\"],[\"action:send_sms\",\"identity:same_alert\",\"!action:send_email\"],[\"action:send_email\",\"action:send_sms\",\"identity:same_alert\"]],\"source_quotes\":[\"Do not use both notification channels together for a single alert.\"],\"unresolved_terms\":[\"together (simultaneous vs sequential within same alert)\",\"what constitutes 'together' temporally\"],\"violation_clauses\":[[\"action:send_email\",\"action:send_sms\",\"identity:same_alert\"]]},{\"basis\":\"Reading the prohibition as a strict at-most-one constraint: for any single alert, zero or one channel may be used, but never both. This explicitly permits the case of no notification at all for a given alert.\",\"permission_clauses\":[[\"!action:send_email\",\"!action:send_sms\",\"identity:same_alert\"],[\"action:send_email\",\"identity:same_alert\",\"!action:send_sms\"],[\"action:send_sms\",\"identity:same_alert\",\"!action:send_email\"]],\"source_quotes\":[\"Do not use both notification channels together for a single alert.\"],\"unresolved_terms\":[\"whether the policy mandates at least one notification or only restricts the combination\"],\"violation_clauses\":[[\"action:send_email\",\"action:send_sms\",\"identity:same_alert\"]]},{\"basis\":\"Reading 'for a single alert' as a scope limiter on the prohibition itself: the restriction binds only when both actions target the same alert identity. Different alerts may independently use different channels without violating the policy.\",\"permission_clauses\":[[\"action:send_email\",\"identity:same_alert\",\"!action:send_sms\"],[\"action:send_sms\",\"identity:same_alert\",\"!action:send_email\"],[\"action:send_email\",\"!identity:same_alert\",\"action:send_sms\"]],\"source_quotes\":[\"Do not use both notification channels together for a single alert.\"],\"unresolved_terms\":[\"whether identity:same_alert is a precondition or a binding constraint on the violation\"],\"violation_clauses\":[[\"action:send_email\",\"action:send_sms\",\"identity:same_alert\"]]}],\"unresolved_terms\":[\"notification channels (assumed to be email and SMS)\",\"together (co-occurrence vs simultaneity vs conjunction)\",\"whether at least one channel is required per alert\"]}",
     "transport_status": "SUCCESS",
-    "schema_status": "INVALID",
+    "schema_status": "VALID",
     "error_category": null
   },
   "telemetry": {
@@ -15,20 +15,13 @@
     "served_model": "qwen3.8-flash",
     "usage": {
       "prompt_tokens": 571,
-      "completion_tokens": 1821,
-      "total_tokens": 2392
+      "completion_tokens": 1554,
+      "total_tokens": 2125
     },
-    "latency_ms": 25693.384,
+    "latency_ms": 29974.704,
     "transport_status": "SUCCESS",
-    "schema_status": "INVALID",
-    "schema_issues": [
-      {
-        "code": "JSON_INVALID",
-        "path": "",
-        "expected_type": null,
-        "actual_type": null
-      }
-    ],
+    "schema_status": "VALID",
+    "schema_issues": [],
     "error_category": null
   }
 }

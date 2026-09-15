@@ -1,0 +1,110 @@
+{
+  "configuration_sha256": "2119683d6242a7c1fc1ff4dfb4106400f6d5d41d22624b06bde015490172338f",
+  "ordinal": 0,
+  "task": "Parse ONE workplace policy into exactly ONE typed semantic structure.\nField rules:\n- modality: PERMISSION (the text grants or allows), PROHIBITION (the text forbids or bars), REQUIREMENT (the text obliges).\n- relation: how the regulated act is gated.\n  IF: when the conditions hold the act is licensed/obligated/forbidden; when they do not hold the text stays silent (NOT a violation, and NOT permission).\n  ONLY_IF: exclusive - the act is licensed ONLY under the conditions; doing it without them is a VIOLATION.\n  IF_AND_ONLY_IF: the act is licensed exactly under the conditions and the text commits in both directions.\n  UNLESS: the conditions are exceptions carved out of an otherwise absolute rule.\n  UNCONDITIONAL: no conditions stated.\n  AND_NOT_EACH: doing BOTH targets together is forbidden; each alone is allowed.\n- target_clauses: a list of clauses; each clause is a list of atoms that are regulated TOGETHER (same act or same batch); several clauses mean the atoms are regulated SEPARATELY.\n- condition_literals and exception_literals: typed atoms copied EXACTLY from atom_catalog; prefix an atom with \"!\" only when the text negates it.\n- condition_mode/exception_mode: ALL means conjunction (every literal), ANY means disjunction (any literal).\n- temporal: BEFORE or AFTER only when the text orders the act relative to an event, else NONE.\n- WHO is allowed or forbidden to act (for example \"only the duty engineer\") goes into condition_literals as an actor: atom from atom_catalog; the actor field stays \"assistant\".\n- An act that is neither licensed nor forbidden is NO_VIOLATION, never PERMITTED: absence of prohibition is NOT permission.\nUse ONLY atoms from atom_catalog (it also contains distractor atoms; choose the ones the text actually uses). Output exactly one JSON object matching the schema.",
+  "payload": {
+    "policy_text": "Do not assign the corner suite when the wedding block is active or the penthouse floor is in rotation.",
+    "atom_catalog": [
+      "action:assign_corner_suite",
+      "distractor:ambiguous_prose_and_or_pao3",
+      "state:penthouse_in_rotation",
+      "state:wedding_block_active"
+    ]
+  },
+  "schema": {
+    "type": "object",
+    "properties": {
+      "modality": {
+        "type": "string",
+        "enum": [
+          "PERMISSION",
+          "PROHIBITION",
+          "REQUIREMENT"
+        ]
+      },
+      "relation": {
+        "type": "string",
+        "enum": [
+          "IF",
+          "ONLY_IF",
+          "UNLESS",
+          "UNCONDITIONAL",
+          "IF_AND_ONLY_IF",
+          "AND_NOT_EACH"
+        ]
+      },
+      "target_clauses": {
+        "type": "array",
+        "minItems": 1,
+        "items": {
+          "type": "array",
+          "minItems": 1,
+          "items": {
+            "type": "string"
+          }
+        }
+      },
+      "condition_literals": {
+        "type": "array",
+        "items": {
+          "type": "string"
+        }
+      },
+      "exception_literals": {
+        "type": "array",
+        "items": {
+          "type": "string"
+        }
+      },
+      "condition_mode": {
+        "type": "string",
+        "enum": [
+          "ALL",
+          "ANY"
+        ]
+      },
+      "exception_mode": {
+        "type": "string",
+        "enum": [
+          "ALL",
+          "ANY"
+        ]
+      },
+      "temporal": {
+        "type": "string",
+        "enum": [
+          "NONE",
+          "BEFORE",
+          "AFTER"
+        ]
+      },
+      "actor": {
+        "type": "string"
+      },
+      "regulated_kind": {
+        "type": "string"
+      },
+      "facet": {
+        "type": "string"
+      },
+      "identity": {
+        "type": "string"
+      },
+      "provenance": {
+        "type": "string"
+      },
+      "quantification": {
+        "type": "string"
+      }
+    },
+    "required": [
+      "modality",
+      "relation",
+      "target_clauses"
+    ],
+    "additionalProperties": false
+  },
+  "input_sha256": "89596e57cccb8c9a37845cc2d275bfe7f7a39b117f5dd094f272302dc26999f2",
+  "schema_sha256": "fc3b3ee2bed89acaa59688fb0b42e0f56be1db8370263200cdc21c323c2af54e",
+  "prompt_sha256": "c72d4d81fe69f2c1496df2377926f581662b3a81f0987a31f9d2f13dfab75b40"
+}
