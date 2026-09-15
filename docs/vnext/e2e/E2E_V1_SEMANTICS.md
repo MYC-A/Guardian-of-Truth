@@ -52,8 +52,16 @@ trajectory evidence:
 - Gate/exception state literals → `OBSERVED_STATE` atoms (LATEST_OBSERVATION
   at the call index, entity from the target call's argument at the binding's
   entity_path).  Event literals → `CALL_ATTEMPTED` (THROUGH end).
-  Actor literals are structural: `actor:assistant` holds by construction for
-  assistant target calls; other roles keep the rule unresolved.
+- Actor literals are STRUCTURAL (the binding pass supplies actor_role):
+  - role `assistant` (the acting agent holds this role): the condition is
+    satisfied by construction for assistant target calls and is dropped.
+  - role `user`/`other`: the rule governs a DIFFERENT actor.
+    PERMISSION/ONLY_IF/IFF (exclusive) shapes lower to a DIRECT prohibition of
+    the target action for assistant calls ("only X may" + the assistant did it
+    = violation); every other shape is INAPPLICABLE to assistant calls (no
+    obligations, audit record — USER_ACTION != ASSISTANT_ACTION).
+  The closure comparison drops actor:* literals from both sides (the actor
+  dimension is structural, not behavioral, at the trajectory level).
 - At-least-once (REQUIREMENT 'X must happen', goal obligations): the
   deterministic ledger scan finds a satisfying assistant call to X (with the
   argument checks) anywhere in history+target → satisfied, no obligation

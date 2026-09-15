@@ -34,12 +34,13 @@ TOOL_ARGUMENT_ITEMS = {"type": "object", "additionalProperties": False,
                    "quote": {"type": "string"}}}
 
 BINDING_ITEM = {"type": "object", "additionalProperties": False,
-    "required": ["unit_id", "unit_kind", "bindings", "serving_tools",
+    "required": ["unit_id", "unit_kind", "actor_role", "bindings", "serving_tools",
                  "action_servable", "quotes"],
     "properties": {
         "unit_id": {"type": "string"},
         "unit_kind": {"type": "string", "enum": ["ACTION", "STATE", "EVENT",
                      "ACTOR", "OUTCOME"]},
+        "actor_role": {"type": "string", "enum": ["assistant", "user", "other"]},
         "bindings": {"type": "array", "maxItems": 4, "items": {
             "type": "object", "additionalProperties": False,
             "required": ["tool", "level", "argument_checks", "observation",
@@ -86,9 +87,11 @@ BINDING_TASK = (
     "example ['order_id'] when the status belongs to a specific order); "
     "empty entity_path only when the state is not entity-scoped.\n"
     "- EVENT atoms: the tool call that realizes the event (level ATTEMPT).\n"
-    "- ACTOR atoms: the binding whose tool/actor_role realizes the actor; set "
-    "actor_role via the tool's own actor semantics if applicable, else leave "
-    "the binding minimal.\n"
+    "- ACTOR atoms: set actor_role to WHO this actor is in the trajectory: "
+    "'assistant' when the acting agent (the one making the tool calls) holds "
+    "this role, 'user' when the user does, 'other' when it is someone not "
+    "present as an actor in the trajectory. The bindings list may stay "
+    "empty for ACTOR units.\n"
     "- OUTCOME propositions (goal): serving_tools = tools whose invocation "
     "SERVES the outcome (retrieves the wanted information, performs the "
     "wanted change). If several tools serve it, list them all (allowed "
@@ -237,10 +240,11 @@ class SemanticBindingFrontend:
                     failures.append(f"{unit_id}:state_without_observation")
                     stats["candidates_rejected"] += 1
                     continue
+                actor_role = item.get("actor_role") if unit_kind == "ACTOR" else None
                 candidate = AtomBindingCandidate(unit_id, tool, level, tuple(checks),
                                                  observation,
                                                  binding["observation"]["tool"] if binding["observation"] else None,
-                                                 "assistant" if unit_kind == "ACTOR" else None,
+                                                 actor_role,
                                                  tuple(binding.get("entity_path", ())), quotes)
                 candidates.append(candidate)
                 stats["candidates_kept"] += 1

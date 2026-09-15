@@ -1019,3 +1019,58 @@ class TestCrossLayerSpecCases:
         output, _ = run_arm(case, backend, arm="E0")
         assert output.result.status is CoreStatus.PROVED_ERROR
         assert output.result.certificate_check.valid
+
+
+# ------------------------------------------------------ actor gate semantics
+
+class TestActorGates:
+    def test_only_other_actor_exclusive_violation(self):
+        """'Only the customs officer may approve' + the ASSISTANT approves ->
+        PROVED_ERROR (the exclusivity is violated by the non-officer)."""
+        policy = "Only the customs officer may approve an exception."
+        program = simple_program(modality="PERMISSION", relation="ONLY_IF",
+                                 targets=("action:approve_exception",),
+                                 conditions=("actor:customs_officer",))
+        units = default_binding({
+            "action:approve_exception": {"tool": "approve_exception",
+                                          "unit_kind": "ACTION", "quotes": ["approve"]},
+            "actor:customs_officer": {"tool": "approve_exception", "unit_kind": "ACTOR",
+                                       "actor_role": "other", "quotes": []},
+        })
+        approve_call = TrajectoryEvent("call", tool="approve_exception",
+                                        arguments={"shipment_id": "SP-1",
+                                                   "reason": "user asked"},
+                                        call_id="t0", actor="ASSISTANT")
+        case = make_case(policy=policy, user_text="Approve an exception for SP-1.",
+                         calls=(approve_call,), history_complete=True,
+                         catalog=("action:approve_exception", "actor:customs_officer"),
+                         schemas=(("approve_exception",
+                                   {"shipment_id": "string", "reason": "string"}),))
+        backend = ScriptedBackend(h0_structure=program, binding_units=units)
+        output, _ = run_arm(case, backend, arm="E0")
+        assert output.result.status is CoreStatus.PROVED_ERROR
+        assert output.result.certificate_check.valid
+
+    def test_other_actor_permission_inapplicable(self):
+        """'Depot clerks may consult' where the CLERK is a different actor from
+        the assistant -> permission not applicable to assistant calls: no
+        violation (and no closure -> UNRESOLVED)."""
+        policy = "Only depot clerks may consult the register."
+        program = simple_program(modality="PERMISSION", relation="ONLY_IF",
+                                 targets=("action:get_shipment_status",),
+                                 conditions=("actor:depot_clerk",))
+        units = default_binding({
+            "action:get_shipment_status": {"tool": "get_shipment_status",
+                                            "unit_kind": "ACTION", "quotes": ["status"]},
+            "actor:depot_clerk": {"tool": "get_shipment_status", "unit_kind": "ACTOR",
+                                   "actor_role": "assistant", "quotes": []},
+        })
+        case = make_case(policy=policy, user_text="Check SP-1.",
+                         calls=(CALL_STATUS,), history_complete=True,
+                         catalog=("action:get_shipment_status", "actor:depot_clerk"),
+                         schemas=(("get_shipment_status", {"order_id": "string"}),))
+        backend = ScriptedBackend(h0_structure=program, binding_units=units)
+        output, _ = run_arm(case, backend, arm="E0")
+        # assistant IS the depot clerk: exclusive permission satisfied... but no
+        # gate literal remains, so the rule lowers to no obligation -> safe
+        assert output.result.status is CoreStatus.UNRESOLVED

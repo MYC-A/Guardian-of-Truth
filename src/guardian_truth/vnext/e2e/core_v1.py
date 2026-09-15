@@ -357,6 +357,27 @@ def analyze_e2e_v1(sources: E2ECaseSources, semantic: E2ESemanticOutputs,
                               "target_calls": len(target_calls)})
 
 
+def _normalize_actor_programs(programs):
+    """Actor literals are handled STRUCTURALLY by the E2E lowering (assistant
+    target calls satisfy assistant-role actors; other actors make the rule
+    inapplicable or exclusive).  The closure comparison therefore drops
+    actor:* condition literals from both sides — the obligation-relevant
+    behavior is unchanged (documented in E2E_V1_SEMANTICS.md)."""
+    normalized = []
+    for program in programs:
+        program = dict(program)
+        program["condition_literals"] = sorted(
+            lit for lit in program.get("condition_literals", ())
+            if not lit.lstrip("!").startswith("actor:"))
+        if not program["condition_literals"]:
+            program["relation"] = {"ONLY_IF": "UNCONDITIONAL",
+                                   "IF_AND_ONLY_IF": "UNCONDITIONAL",
+                                   "IF": "UNCONDITIONAL"}.get(program["relation"],
+                                                              program["relation"])
+        normalized.append(program)
+    return tuple(normalized)
+
+
 def _universe_covers(policy_comp: PolicyComposition, sources: E2ECaseSources) -> bool:
     """Closure premise: every retained reading composes to exactly the
     authoritative closed program list's behavior on the combined
@@ -365,16 +386,19 @@ def _universe_covers(policy_comp: PolicyComposition, sources: E2ECaseSources) ->
     universe = sources.policy_universe
     if universe is None:
         return False
-    universe_programs = list(getattr(universe, "programs", ()) or ())
+    universe_programs = list(_normalize_actor_programs(
+        getattr(universe, "programs", ()) or ()))
     if not universe_programs:
         return False
     readings = list(policy_comp.readings)
     surface = _equivalence_surface(
-        [type("R", (), {"programs": tuple(universe_programs), "reading_id": "universe"})]
-        + readings, sources.atom_catalog)
+        [type("R", (), {"programs": universe_programs, "reading_id": "universe"})]
+        + [type("R", (), {"programs": _normalize_actor_programs(reading.programs),
+                          "reading_id": reading.reading_id}) for reading in readings],
+        sources.atom_catalog)
     universe_verdicts = _reading_verdicts(tuple(universe_programs), surface)
     for reading in readings:
-        if _reading_verdicts(reading.programs, surface) != universe_verdicts:
+        if _reading_verdicts(_normalize_actor_programs(reading.programs), surface) != universe_verdicts:
             return False
     return True
 

@@ -196,6 +196,9 @@ class _RuleLowering:
         self.unresolved: list[Reason] = []
         self.audit: list[tuple[str, str]] = []
         self.failures: list[str] = []
+        self.actor_exclusive = False
+        self.actor_inapplicable = False
+        self.actor_literal = None
 
     def _next_id(self) -> str:
         self.counter[0] += 1
@@ -217,8 +220,15 @@ class _RuleLowering:
             if kind == "actor":
                 role = candidates[0].actor_role if candidates else "assistant"
                 if role != "assistant":
-                    self.failures.append(f"{self.prefix}:{label}_actor_non_assistant:{atom_name}")
-                    ok = False
+                    # the constraint names a DIFFERENT actor than the assistant.
+                    # Exclusive shapes (ONLY_IF/IFF) make non-X actions violations;
+                    # applicability shapes make the rule inapplicable to assistant
+                    # calls (USER_ACTION != ASSISTANT_ACTION).
+                    self.actor_exclusive = (label == "gate"
+                                            and self.program["relation"] in
+                                            {"ONLY_IF", "IF_AND_ONLY_IF"})
+                    self.actor_inapplicable = not self.actor_exclusive
+                    self.actor_literal = atom_name
                 continue
             if not candidates:
                 self.failures.append(f"{self.prefix}:{label}_unbound:{atom_name}")
@@ -268,8 +278,20 @@ class _RuleLowering:
             self.failures.append(f"{self.prefix}:disjunctive_exception_unsupported")
             self.unresolved.append(Reason.POLICY_OPEN_SEMANTICS)
 
+        if self.actor_inapplicable or (self.actor_exclusive
+                                       and modality in {"PROHIBITION", "REQUIREMENT"}):
+            # the rule governs a DIFFERENT actor's actions; assistant target
+            # calls can neither satisfy nor violate it (recorded, not dropped)
+            self.failures.append(f"{self.prefix}:actor_inapplicable:{self.actor_literal}")
+            self.audit.append((self.prefix + ":actor-inapplicable",
+                               f"rule governed by non-assistant actor {self.actor_literal}"))
+            return tuple(self.obligations), tuple(dict.fromkeys(self.unresolved)), tuple(self.audit)
         for event in self.context.target_calls:
             gate_atoms, gate_ok = self._literal_atoms(conds, event, "gate")
+            if self.actor_exclusive:
+                # 'only X may ...' with X != assistant: every assistant
+                # occurrence of the target violates the exclusivity outright
+                gate_atoms = []
             exc_atoms, exc_ok = self._literal_atoms(excs, event, "exception")
             # exception atoms are DISARMERS: they must HOLD for the rule to be
             # switched off, so their expectation is the binding's positive value
@@ -326,6 +348,12 @@ class _RuleLowering:
                     self.failures.append(f"{self.prefix}:permission_gate_and_exception_unsupported")
                     self.unresolved.append(Reason.POLICY_OPEN_SEMANTICS)
                     return
+                if self.actor_exclusive:
+                    # 'only X may ...' with X != the assistant: the assistant
+                    # occurrence violates the exclusivity outright
+                    self._add(match, False, others,
+                              f"PERMIT-EXCLUSIVE-ACTOR {atom_name} @ {event['event_id']}")
+                    continue
                 for disarmer in gate_atoms:
                     self._add(disarmer, True, (*others, match),
                               f"PERMIT-EXCLUSIVE {atom_name} @ {event['event_id']}")
