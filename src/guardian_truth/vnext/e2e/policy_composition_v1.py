@@ -20,7 +20,7 @@ from typing import Callable
 
 from ..policy_grs import (GRSInvalid, compile_dsl, hallucination_attempts,
                           validate_inventory)
-from ..policy_grs_emission import EmissionInvalid, canonicalize_dsl
+from .policy_grs_emission_e2e_v1 import canonicalize_dsl_e2e
 from ..policy_psb import composed_verdict
 from ..policy_v3_benchmark import StructureInvalid, compile_v3_structure
 from ..semantic import SemanticBackend, schema_valid
@@ -180,10 +180,10 @@ def make_grs_frontend(ground_task: str, ground_schema: dict, ground_repair_task:
         try:
             alternatives, dropped = compile_dsl(dsl_text, inventory)
         except GRSInvalid:
-            # One frozen structure-preserving canonicalization pass (the final-cycle
-            # selected emission boundary), then the FROZEN validator again.
+            # The E2E V1 emission boundary: the frozen canonicalizer plus the
+            # missing-envelope repair, then the FROZEN validator again.
             try:
-                repaired, _audit = canonicalize_dsl(dsl_text)
+                repaired, _audit = canonicalize_dsl_e2e(dsl_text)
             except EmissionInvalid:
                 telemetry["stage"] = "synthesizer"
                 telemetry["dsl_error"] = "invalid_dsl_not_canonicalizable"

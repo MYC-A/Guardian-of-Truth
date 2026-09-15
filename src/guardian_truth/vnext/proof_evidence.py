@@ -158,6 +158,38 @@ def prove_atom(atom: ProofAtom, ledger: EvidenceLedger, index: LedgerIndex,
                     if refuted and len(refuted) == len(calls):
                         refute.extend(refuted)
             (support if expected else refute).extend(occurrences)
+    if (not support and not refute and expected
+            and atom.kind in {AtomKind.OBSERVED_STATE, AtomKind.ACTION_COMPLETED,
+                              AtomKind.HISTORICAL_ACTION}):
+        # E2E V1 additive trusted-effect-channel refutation: a state/completion
+        # claim about predicate P on entity E is REFUTED when every call on E
+        # that a versioned contract says would produce P (with the claimed
+        # value) provably produced nothing (trusted no-effect on failure).
+        # Without such contracts the claim stays UNKNOWN.
+        producers = [event for event in ledger.events[:atom.time_index + 1]
+                     if event.kind == "call" and atom.entity in event.entity_refs]
+        refuted = []
+        if producers:
+            for producer in producers:
+                results = [event for event in index.events_by_call.get(producer.call_id, ())
+                           if event.kind == "result" and event.index <= atom.time_index]
+                if len(results) != 1:
+                    refuted = []
+                    break
+                semantics = evaluate_t1(registry, producer, results[0])
+                contract = registry.lookup(producer.tool) if producer.tool else None
+                guarantees = contract.guarantees if contract else ()
+                produces = any(spec.predicate == atom.predicate
+                               and spec.value_json == atom.expected_json
+                               and spec.causal_action_confirmed
+                               for rule in guarantees for spec in rule.effects)
+                if produces and semantics.no_effect_proved:
+                    refuted.append(results[0].event_id)
+                elif produces and semantics.effects:
+                    refuted = []   # a producer succeeded: not a refutation
+                    break
+            if refuted and len(refuted) == len(producers):
+                refute.extend(refuted)
     scope_id = None
     if not support and not refute and atom.kind not in {AtomKind.OBSERVED_STATE, AtomKind.RESULT_FIELD, AtomKind.CAUSAL_ATTRIBUTION}:
         for scope in scopes:
