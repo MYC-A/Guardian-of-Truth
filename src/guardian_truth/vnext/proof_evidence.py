@@ -111,9 +111,13 @@ def prove_atom(atom: ProofAtom, ledger: EvidenceLedger, index: LedgerIndex,
         if type(expected) is not bool:
             reasons.append(Reason.CLAIM_UNTYPED)
         else:
+            # E2E V1 additive wildcard entity (namespace 'wildcard'): the atom
+            # matches by tool+actor over the whole ledger without entity scoping
+            # (entity-free at-least-once requirements).  Inert for baseline atoms.
+            entity_wildcard = atom.entity.namespace == "wildcard"
             calls = [index.events_by_id[eid] for eid in index.indexes["tool"].get(atom.predicate, ())
                      if index.events_by_id[eid].kind == "call"
-                     and atom.entity in index.events_by_id[eid].entity_refs
+                     and (entity_wildcard or atom.entity in index.events_by_id[eid].entity_refs)
                      and index.events_by_id[eid].actor == atom.actor
                      and index.positions[eid] <= atom.time_index
                      and (atom.kind is not AtomKind.CALL_ATTEMPTED or atom.time_mode is not TimeMode.AT or index.positions[eid] == atom.time_index)
@@ -134,6 +138,25 @@ def prove_atom(atom: ProofAtom, ledger: EvidenceLedger, index: LedgerIndex,
                                        and effect.predicate == atom.effect_predicate and effect.value_json == atom.effect_expected_json]
                     if not occurrences and Reason.CAUSALITY_UNPROVED not in reasons:
                         reasons.append(Reason.CAUSALITY_UNPROVED)
+                elif (not occurrences and expected and calls
+                        and atom.kind in {AtomKind.ACTION_COMPLETED, AtomKind.HISTORICAL_ACTION}):
+                    # E2E V1 additive trusted refutation (FAILED_CALL != SUCCESS,
+                    # spec section 2.9/2.10): when the action was attempted but
+                    # no trusted completion exists, an identity-paired result
+                    # whose versioned contract PROVES no-effect refutes the
+                    # completion claim.  Without such a contract the completion
+                    # stays UNKNOWN — a failure alone does not prove no-effect.
+                    refuted = []
+                    for call in calls:
+                        results = [event for event in index.events_by_call.get(call.call_id, ())
+                                   if event.kind == "result" and event.index <= atom.time_index]
+                        if len(results) != 1:
+                            continue
+                        semantics = evaluate_t1(registry, call, results[0])
+                        if semantics.no_effect_proved:
+                            refuted.append(results[0].event_id)
+                    if refuted and len(refuted) == len(calls):
+                        refute.extend(refuted)
             (support if expected else refute).extend(occurrences)
     scope_id = None
     if not support and not refute and atom.kind not in {AtomKind.OBSERVED_STATE, AtomKind.RESULT_FIELD, AtomKind.CAUSAL_ATTRIBUTION}:
@@ -160,13 +183,23 @@ def prove_target_call(atom: ProofAtom, ledger: EvidenceLedger) -> PrimitiveProof
     values = [Truth.TRUE if event.tool.name == atom.predicate else Truth.FALSE]
     for constraint in atom.argument_constraints:
         actual = event.payload
+        present = True
         for key in constraint.path:
             if not isinstance(actual, dict) or key not in actual:
-                values.append(Truth.UNKNOWN)
+                present = False
+                if constraint.presence_only:
+                    # E2E V1 presence semantics: the action IS the setting of
+                    # the field; absence proves the action did not happen.
+                    values.append(Truth.FALSE)
+                else:
+                    values.append(Truth.UNKNOWN)
                 break
             actual = actual[key]
         else:
             from .integrity import canonical
+            if constraint.presence_only:
+                values.append(Truth.TRUE)
+                continue
             encoded = canonical(actual).decode("utf-8")
             values.append(Truth.TRUE if encoded in constraint.allowed_json else Truth.FALSE)
     value = conjunction(tuple(values))

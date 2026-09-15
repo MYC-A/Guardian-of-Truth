@@ -26,15 +26,27 @@ class TimeMode(str, Enum):
 
 @dataclass(frozen=True)
 class ArgumentConstraint:
-    """Exact argument membership, not an assertion about external state."""
+    """Exact argument membership, not an assertion about external state.
+
+    presence_only (E2E V1 additive extension, default False preserves the
+    baseline semantics exactly): when True the constraint is satisfied by the
+    mere presence of the field path in the call arguments — the semantic
+    action IS the setting of that field — and the field being absent proves
+    the constraint FALSE (the action did not happen), never UNKNOWN.  When
+    False the baseline value-membership semantics applies (absent path ->
+    UNKNOWN, present path -> membership test).
+    """
     path: tuple[str, ...]
     allowed_json: tuple[str, ...]
+    presence_only: bool = False
 
     def __post_init__(self):
         from guardian_truth.parsing import decode_json
         from .integrity import canonical
         if not self.path or not all(isinstance(key, str) and key for key in self.path) or not self.allowed_json:
             raise ValueError("explicit field path and nonempty allowed values required")
+        if type(self.presence_only) is not bool:
+            raise ValueError("explicit presence flag required")
         for encoded in self.allowed_json:
             value, valid = decode_json(encoded)
             if not valid or canonical(value).decode("utf-8") != encoded:
