@@ -1,0 +1,59 @@
+{
+  "configuration_sha256": "2b7a4dc24afdbffa4fc12d559ec541b215c4ff31352319542afcea27ed9731c9",
+  "ordinal": 0,
+  "task": "Synthesize ONE policy ruleset in the frozen DSL below. You receive POLICY_TEXT and INVENTORY: grounded semantic items with neutral IDs (F# facts with kind/atom/span; M# modality markers and R# relation markers with value/span).\nCORE INVARIANT: every fact leaf in your ruleset MUST be an inventory fact ID (F#). You may NOT invent facts, atoms, entities or predicates. Markers (M#/R#) are evidence for your choices but are never rule references. You decide ONLY how the grounded facts compose: how many rules exist, each rule's modality, target shape, gates, condition vs exception roles, actors, temporal order, AND/OR, together/separate.\nDSL GRAMMAR (frozen; uppercase operators, refs are inventory IDs):\nRULESET( rule [, rule]* ) - zero or more rules; RULESET() means the text regulates nothing.\nrule := RULE( modality , target [, gate]* ) | ONE_OF( RULE(...) , RULE(...) ) - ONE_OF ONLY for genuine local ambiguity between exactly two readings of ONE rule; at most one ONE_OF per ruleset.\nmodality := PERMIT | PROHIBIT | REQUIRE\ntarget := ref | TOGETHER( ref [, ref]* ) | SEPARATE( ref [, ref]* )\ngate := WHEN( boolexpr ) | ONLY_WHEN( boolexpr ) | IFF( boolexpr ) | EXCEPT( boolexpr ) | BEFORE( boolexpr ) | AFTER( boolexpr ) | ACTOR( ref ) | ONLY_ACTOR( ref ) | IDENTITY( ref ) | PROVENANCE( ref ) | UNKNOWN_RELATION( boolexpr ) | UNKNOWN_ATTACHMENT( ref )\nboolexpr := leaf | AND( leaf [, leaf]* ) | OR( leaf [, leaf]* )\nleaf := ref | NOT( ref )\nOPERATOR MEANINGS:\n- PERMIT: the text positively grants or allows. PROHIBIT: the text forbids or bars. REQUIRE: the text obliges. An act that is neither licensed nor forbidden is NO_VIOLATION, never permission: absence of prohibition is NOT permission.\n- WHEN(c): the rule applies while c holds (sufficient gate: if/when/whenever/while/provided that). ONLY_WHEN(c): the rule applies ONLY under c (necessary gate: only/only when/only with/only for; outside c a PERMIT/REQUIRE target done anyway is a VIOLATION). IFF(c): exactly under c (if and only if / exactly when).\n- EXCEPT(c): carve-out (unless/except/save when); never fold a carve-out into WHEN and never move an if/when gate into EXCEPT.\n- BEFORE(e)/AFTER(e): the target happens before/after event e (e must be an EVENT fact).\n- ACTOR(f): the rule is about that actor. ONLY_ACTOR(f): exclusively that actor (only X / no one but X).\n- IDENTITY(f): same-owner/identity constraint (identity fact). PROVENANCE(f): sole acceptable evidence source (evidence fact).\n- TOGETHER(a,b): the atoms are regulated as ONE joint act. SEPARATE(a,b): the atoms are regulated as independent acts within this rule.\n- NOT(f): the fact does not hold.\n- UNKNOWN_RELATION(c)/UNKNOWN_ATTACHMENT(f): use ONLY when the relation or the attachment is genuinely undeterminable; the rule is then dropped as unresolved and hurts coverage. Do not use them as a default.\nTYPE RULES (machine-validated; violations are rejected):\n- target refs: ACTION or STATE facts only. WHEN/ONLY_WHEN/IFF/EXCEPT leaves: ACTION, STATE or EVENT facts. BEFORE/AFTER leaves: EVENT facts only. ACTOR/ONLY_ACTOR: ACTOR facts. IDENTITY: IDENTITY facts. PROVENANCE: PROVENANCE facts.\n- at most one gate of each kind per rule; at most one relation gate (WHEN/ONLY_WHEN/IFF); at most one temporal gate (BEFORE or AFTER, not both); REQUIRE with both EXCEPT and a WHEN/ONLY_WHEN/IFF/BEFORE/AFTER gate is outside the frozen envelope.\n- when several gates contribute condition leaves, their top-level combinator must agree (both AND-top or both OR-top).\nWorked example (illustrative only; never reuse its atoms): POLICY 'If the night fridge is unlocked, bar staff may pour samples, unless the cellar door is alarmed.' INVENTORY F1=ACTION action:pour_samples 'pour samples', F2=STATE state:night_fridge_unlocked 'the night fridge is unlocked', F3=STATE state:cellar_door_alarmed 'the cellar door is alarmed', F4=ACTOR actor:bar_staff 'bar staff', M1=MODAL_MARKER PERMIT 'may', R1=RELATION_MARKER IF 'If', R2=RELATION_MARKER UNLESS 'unless' -> RULESET(RULE(PERMIT, F1, WHEN(F2), EXCEPT(F3), ACTOR(F4))).\nOutput exactly one JSON object: {\"dsl\": \"<your ruleset>\"}.",
+  "payload": {
+    "policy_text": "Only when the compression unit is serviced may members use the ice bath.",
+    "inventory": {
+      "facts": [
+        {
+          "id": "F1",
+          "kind": "STATE",
+          "atom": "state:compression_unit_serviced",
+          "span": "the compression unit is serviced"
+        },
+        {
+          "id": "F2",
+          "kind": "ACTOR",
+          "atom": "actor:member",
+          "span": "members"
+        },
+        {
+          "id": "F3",
+          "kind": "ACTION",
+          "atom": "action:use_the_ice_bath",
+          "span": "use the ice bath"
+        }
+      ],
+      "markers": [
+        {
+          "id": "R1",
+          "kind": "RELATION_MARKER",
+          "value": "ONLY_IF",
+          "span": "Only when"
+        },
+        {
+          "id": "M1",
+          "kind": "MODAL_MARKER",
+          "value": "PERMIT",
+          "span": "may"
+        }
+      ]
+    }
+  },
+  "schema": {
+    "type": "object",
+    "properties": {
+      "dsl": {
+        "type": "string"
+      }
+    },
+    "required": [
+      "dsl"
+    ],
+    "additionalProperties": false
+  },
+  "input_sha256": "3d3b48d2e2b892de389796ec091bfa6007a9a6a9815beae2e9f0b12eae723c56",
+  "schema_sha256": "1dc9e78f000bf3c08eadf966f3cb56b56581c1d064dc72368bdae5b69b22a904",
+  "prompt_sha256": "bc04477d33beb408c933f9105aee25aaa179031ed7843d538c10d805e45dcee9"
+}

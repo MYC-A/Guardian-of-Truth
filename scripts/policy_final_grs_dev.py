@@ -700,14 +700,14 @@ def _compile_dev_arm(arm, row, case):
         elif arm == 'b3':
             alternatives, _, _ = em.compile_b3(prediction['dsl'],
                                                case.oracle_inventory)
-        elif arm in ('e2e', 'e2ecanon'):
+        elif arm in ('e2e', 'e2ecanon2'):
             ground_inventory = prediction.get('ground_inventory')
             synth = prediction.get('synth')
             if not ground_inventory or synth is None:
                 return None
             if row.get('boundary') == 'b3':
                 alternatives, _, _ = em.compile_b3(synth['dsl'], ground_inventory)
-            elif row.get('boundary') == 'b1canon':
+            elif row.get('boundary') in ('b1canon',):
                 alternatives, _, _ = em.compile_b3(synth['dsl'], ground_inventory)
             else:
                 alternatives, _, _ = em.compile_b2(synth, ground_inventory)
@@ -887,7 +887,7 @@ def _hallucinate_arm(arm):
             elif arm == 'b3':
                 counts = grs.hallucination_attempts(raw.get('dsl', ''),
                                                     case.oracle_inventory)
-            elif arm in ('e2e', 'e2ecanon'):
+            elif arm in ('e2e', 'e2ecanon2'):
                 synth = raw.get('synth')
                 inventory = raw.get('ground_inventory') or {'facts': [], 'markers': []}
                 if synth is None:
@@ -994,14 +994,76 @@ def _load_devfreeze2():
     return freeze2, cases, {r['case_id']: r for r in ground_rows}
 
 
-def phase_run_e2e_canon(env_file, minutes: float) -> int:
-    """e2e-canon: frozen B1 synthesis prompt over the SEALED grounded
-    inventories, compiled via strict-parse + deterministic canonicalizer."""
+
+
+def phase_freeze_dev2b() -> int:
+    """devfreeze2b: the e2ecanon2 arm - same frozen definition as devfreeze2
+    (frozen B1 synthesis prompt + deterministic canonicalizer over the
+    sealed grounder outputs), re-run fresh after the disclosed runner-bug
+    invalidation of the first e2ecanon attempt. Committed BEFORE the new
+    inference; development-phase artifact only."""
+    path2b = OUT / 'policy_final_v1_devfreeze2b.json'
+    if path2b.exists():
+        print(json.dumps({'status': 'DEVFREEZE2B_ALREADY_DONE'}))
+        return 0
+    commit = _commit_clean(ROOT)
     freeze2, cases, ground_rows = _load_devfreeze2()
+    freeze2b = {
+        'schema_version': 'guardian-vnext-policy-final-devfreeze2b-v1',
+        'supersedes': 'policy_final_v1_devfreeze2.json (same arm definition; '
+                      'first run invalidated by a runner bug, see '
+                      'policy_final_v1_dev_e2ecanon_INVALIDATED.json)',
+        'architecture_commit': commit,
+        'arm': 'e2ecanon2',
+        'definition': {
+            'synth_task_sha256': digest(grs.GRS_SYNTH_TASK),
+            'repair_task_sha256': digest(grs.GRS_SYNTH_REPAIR_TASK),
+            'dsl_schema_sha256': digest(grs.GRS_DSL_SCHEMA),
+            'compile_path': 'parse_b3 (strict frozen parse, then the frozen '
+                            'deterministic canonicalizer) + frozen validator '
+                            '+ frozen compiler',
+            'ground_inputs': 'sealed dev grounder rows (hash verified)',
+        },
+        'ground_predictions_sha256': freeze2['ground_predictions_sha256'],
+        'case_ids': freeze2['case_ids'],
+        'model': MODEL, 'provider': PROVIDER,
+        'source_sha256': {
+            'src/guardian_truth/vnext/policy_grs.py': file_digest(
+                ROOT / 'src/guardian_truth/vnext/policy_grs.py'),
+            'src/guardian_truth/vnext/policy_grs_emission.py': file_digest(
+                ROOT / 'src/guardian_truth/vnext/policy_grs_emission.py'),
+        },
+    }
+    write_new(path2b, freeze2b)
+    print(json.dumps({'status': 'DEV_FROZEN2B', 'architecture_commit': commit}))
+    return 0
+
+
+def _load_devfreeze2b():
+    freeze2b = json.loads((OUT / 'policy_final_v1_devfreeze2b.json')
+                          .read_text(encoding='utf-8'))
+    for name, expected in freeze2b['source_sha256'].items():
+        if file_digest(ROOT / name) != expected:
+            raise ValueError(f'devfreeze2b source mismatch: {name}')
+    ground_rows = json.loads((OUT / f'{PREFIX}_ground_predictions.json')
+                             .read_text(encoding='utf-8'))
+    if freeze2b['ground_predictions_sha256'] != digest(ground_rows):
+        raise ValueError('ground predictions changed after devfreeze2b')
+    _, cases = _load_devfreeze()
+    if freeze2b['case_ids'] != [case.case_id for case in cases]:
+        raise ValueError('devfreeze2b case identity mismatch')
+    return freeze2b, cases, {r['case_id']: r for r in ground_rows}
+
+
+def phase_run_e2e_canon(env_file, minutes: float) -> int:
+    """e2ecanon2: frozen B1 synthesis prompt over the SEALED grounded
+    inventories, compiled via strict-parse + deterministic canonicalizer
+    (fresh re-run after the disclosed invalidation of the first attempt)."""
+    freeze2, cases, ground_rows = _load_devfreeze2b()
     if not (OUT / f'{PREFIX}_smoke.json').exists():
         print(json.dumps({'status': 'NO_SMOKE'}))
         return 2
-    rows_path = OUT / f'{PREFIX}_e2ecanon_predictions.json'
+    rows_path = OUT / f'{PREFIX}_e2ecanon2_predictions.json'
     if rows_path.exists():
         print(json.dumps({'status': 'ALREADY_SEALED', 'arm': 'e2ecanon'}))
         return 0
@@ -1010,7 +1072,7 @@ def phase_run_e2e_canon(env_file, minutes: float) -> int:
     started = time.monotonic()
     rows = []
     for index, case in enumerate(cases):
-        row_path = OUT / f'{PREFIX}_e2ecanon_case_{index:03d}.json'
+        row_path = OUT / f'{PREFIX}_e2ecanon2_case_{index:03d}.json'
         if row_path.exists():
             row = json.loads(row_path.read_text(encoding='utf-8'))
             if row['case_id'] != case.case_id \
@@ -1038,13 +1100,13 @@ def phase_run_e2e_canon(env_file, minutes: float) -> int:
             rows.append(row)
             continue
 
-        def compile_value(value, _inv=inventory):
+        def compile_value(value, _case, _inv=inventory):
             if not isinstance(value, dict) or not isinstance(value.get('dsl'), str):
                 raise em.EmissionInvalid('B3_INVALID: dsl field must be a string')
             em.compile_b3(value['dsl'], _inv)
 
         row = _run_one_case(delegate, OUT, freeze2, index, case, live,
-                            'e2ecanon', grs.GRS_SYNTH_TASK, grs.GRS_DSL_SCHEMA,
+                            'e2ecanon2', grs.GRS_SYNTH_TASK, grs.GRS_DSL_SCHEMA,
                             grs.GRS_SYNTH_REPAIR_TASK,
                             {'policy_text': case.policy, 'inventory': inventory},
                             compile_value)
@@ -1056,11 +1118,11 @@ def phase_run_e2e_canon(env_file, minutes: float) -> int:
                              'synth': row['prediction']}
         write_new(row_path, row)
         rows.append(row)
-        print(json.dumps({'arm': 'e2ecanon', 'completed': len(rows),
+        print(json.dumps({'arm': 'e2ecanon2', 'completed': len(rows),
                           'total': len(cases), 'case_id': case.case_id,
                           'status': row['status']}), flush=True)
         if time.monotonic() - started > minutes * 60:
-            print(json.dumps({'status': 'PARTIAL_TIME_BUDGET', 'arm': 'e2ecanon',
+            print(json.dumps({'status': 'PARTIAL_TIME_BUDGET', 'arm': 'e2ecanon2',
                               'completed': len(rows), 'total': len(cases)}),
                   flush=True)
             return 3
@@ -1072,8 +1134,8 @@ def phase_run_e2e_canon(env_file, minutes: float) -> int:
     seal = prediction_seal(prediction_rows, [c.case_id for c in cases],
                            architecture_commit=freeze2['architecture_commit'],
                            configuration_sha256=digest(freeze2))
-    write_new(OUT / f'{PREFIX}_e2ecanon_prediction_seal.json', seal)
-    print(json.dumps({'status': 'SEALED', 'arm': 'e2ecanon', 'cases': len(rows),
+    write_new(OUT / f'{PREFIX}_e2ecanon2_prediction_seal.json', seal)
+    print(json.dumps({'status': 'SEALED', 'arm': 'e2ecanon2', 'cases': len(rows),
                       'ok': sum(r['status'].startswith('ok') for r in rows)}),
           flush=True)
     return 0
@@ -1082,8 +1144,10 @@ def phase_run_e2e_canon(env_file, minutes: float) -> int:
 def phase_score_dev() -> int:
     freeze, cases = _load_devfreeze()
     freeze2 = None
-    if (OUT / 'policy_final_v1_devfreeze2.json').exists():
-        freeze2, _, _ = _load_devfreeze2()
+    if (OUT / 'policy_final_v1_devfreeze2b.json').exists():
+        freeze2, _, _ = _load_devfreeze2b()
+    elif (OUT / 'policy_final_v1_devfreeze2.json').exists():
+        freeze2 = None  # superseded by devfreeze2b; e2ecanon2 uses 2b
     h0_map = _h0_correct(cases)
     b1_rows = _load_sealed_arm('a1')
 
@@ -1144,16 +1208,16 @@ def phase_score_dev() -> int:
                 'regressions': (data.get('regression_vs_h0') or {}).get('regressions')}
 
     # live arms
-    for arm in ('b2', 'b3', 'e2e', 'e2ecanon'):
+    for arm in ('b2', 'b3', 'e2e', 'e2ecanon2'):
         rows_path = OUT / f'{PREFIX}_{arm}_predictions.json'
         if not rows_path.exists():
             continue
         seal = json.loads((OUT / f'{PREFIX}_{arm}_prediction_seal.json')
                           .read_text(encoding='utf-8'))
         rows = json.loads(rows_path.read_text(encoding='utf-8'))
-        if arm == 'e2ecanon' and freeze2 is None:
-            raise ValueError('e2ecanon arm scored without devfreeze2')
-        seal_freeze = freeze2 if arm == 'e2ecanon' else freeze
+        if arm == 'e2ecanon2' and freeze2 is None:
+            raise ValueError('e2ecanon2 arm scored without devfreeze2')
+        seal_freeze = freeze2 if arm == 'e2ecanon2' else freeze
         expected = prediction_seal(rows, [c.case_id for c in cases],
                                    architecture_commit=seal_freeze['architecture_commit'],
                                    configuration_sha256=digest(seal_freeze))
@@ -1176,7 +1240,7 @@ def phase_score_dev() -> int:
             boundary, info = _selected_boundary()
             entry['boundary'] = boundary
             entry['boundary_selection_info'] = info
-        if arm == 'e2ecanon':
+        if arm == 'e2ecanon2':
             grounded_ok = sum(1 for r in rows if r.get('ground_status', '').startswith('ok'))
             entry['resolved_coverage'] = round(grounded_ok / len(cases), 4)
             entry['boundary'] = 'b1canon (frozen B1 prompt + canonicalizer)'
@@ -1218,7 +1282,7 @@ def phase_score_dev() -> int:
 
 
 def phase_status() -> int:
-    arms = ['b2', 'b3', 'ground', 'e2e', 'e2ecanon']
+    arms = ['b2', 'b3', 'ground', 'e2e', 'e2ecanon2']
     state = {}
     for arm in arms:
         rows = sorted(OUT.glob(f'{PREFIX}_{arm}_case_[0-9][0-9][0-9].json'))
@@ -1254,6 +1318,8 @@ def main() -> int:
         return phase_run_e2e(args.env_file, args.minutes)
     if args.phase == 'freeze-dev2':
         return phase_freeze_dev2()
+    if args.phase == 'freeze-dev2b':
+        return phase_freeze_dev2b()
     if args.phase == 'run-e2e-canon':
         return phase_run_e2e_canon(args.env_file, args.minutes)
     if args.phase == 'score-dev':
