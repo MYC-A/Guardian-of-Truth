@@ -1,0 +1,116 @@
+{
+  "schema_version": "guardian-vnext-policy-final-devfreeze-v1",
+  "purpose": "development-phase freeze of the GRS emission boundaries B2/B3 and the grounder e2e arm (final Policy cycle, user sections 29-36); NOT a prospective holdout",
+  "architecture_commit": "689e860e39582fb13231ab8ef5795a5de51c7008",
+  "sealed_grs_continuity": {
+    "grs_module_sha256": "b22d768ac9f3dfdd79cda9a4795c5d0a1beb4383bad22609e23bbe413938f2b4",
+    "sealed_architecture_commit": "01f8b2026465a5ee4828e445287809cef18d4016",
+    "case_ids_sha256": "757acc467353f11e949b523a14fa4c6f68f1231a43db9795d9d6a766d8c38d71"
+  },
+  "case_ids": [
+    "condition::c01",
+    "condition::c02",
+    "condition::c03",
+    "condition::c04",
+    "condition_plus_exception::ce01",
+    "condition_plus_exception::ce02",
+    "condition_plus_exception::ce03",
+    "condition_plus_exception::ce04",
+    "empty_gold_control::z01",
+    "exception::e01",
+    "exception::e02",
+    "exception::e03",
+    "exception::e04",
+    "if_vs_only_if::io01",
+    "if_vs_only_if::io02",
+    "if_vs_only_if::io03",
+    "if_vs_only_if::io04",
+    "modality::m01",
+    "modality::m02",
+    "modality::m03",
+    "multi_axis::x01",
+    "multi_axis::x02",
+    "multi_axis::x03",
+    "multi_axis::x04",
+    "multi_axis::x05",
+    "multi_axis::x06",
+    "negation::n01",
+    "negation::n02",
+    "negation::n03",
+    "negation::n04",
+    "nl_prose_stress::np01",
+    "nl_prose_stress::np02",
+    "nl_prose_stress::np03",
+    "per_clause_actors::pa01",
+    "per_clause_actors::pa02",
+    "per_clause_actors::pa03",
+    "per_clause_actors::pa04",
+    "provenance_identity::pi01",
+    "provenance_identity::pi02",
+    "scope_togetherness::sc01",
+    "scope_togetherness::sc02",
+    "scope_togetherness::sc03",
+    "scope_togetherness::sc04",
+    "scope_togetherness::sc05",
+    "separate_clauses_modalities::sm01",
+    "separate_clauses_modalities::sm02",
+    "separate_clauses_modalities::sm03",
+    "separate_clauses_modalities::sm04",
+    "simple_controls::s01",
+    "simple_controls::s02",
+    "simple_controls::s03",
+    "simple_controls::s04",
+    "temporal::tp01",
+    "temporal::tp02",
+    "temporal::tp03",
+    "temporal::tp04"
+  ],
+  "corpus": "GRS Stage A (development only; identity verified vs the sealed GRS freeze)",
+  "arms": {
+    "b2": {
+      "task_sha256": "61fff5c53760302a8ff912f8fd8fbdaaff649088892afb1d1f4dc2981d71cec7",
+      "repair_task_sha256": "144dd70f60040cf07414865b6855a3aec4853e7023a18d96fb92f9de02ceca6d",
+      "schema_sha256": "6abfaedfff24ba908cc064469e785370a5eddbb66b3dbe1e0ed110feeec62d68",
+      "assembler": "policy_grs_emission.assemble_b2 + frozen validate_ruleset_ast + frozen compile"
+    },
+    "b3": {
+      "task_sha256": "06eff8f5b9342fa7144718d7de2fc07feca3180622d329874fca0d722cdd136e",
+      "repair_task_sha256": "9765bba415826a1dbe110da08cf501fd423d28f42f40fafb6023e740c4056d68",
+      "schema_sha256": "1dc9e78f000bf3c08eadf966f3cb56b56581c1d064dc72368bdae5b69b22a904",
+      "canonicalizer": "policy_grs_emission.canonicalize_dsl (RULE-wrapper omission only) + frozen parser/validator/compiler"
+    },
+    "ground": {
+      "task_sha256": "524a50ce3710aee2b38040a8642e2d8b64abefaed55f98e516e2f04a56e5d8c3",
+      "repair_task_sha256": "e7d4e9a55cb15b0f8c55b12dd2b6bd40e5ada836d85962ebff5f6fa3784825bf",
+      "schema_sha256": "f2076ddada711fb6226189bde39611c8572609198211b6890819ef50228f6e88",
+      "postvalidation": "evaluate_vnext_policy_grs._postvalidate_ground (frozen)"
+    },
+    "e2e": {
+      "selection_rule": "B2 if B2 meets dev emission criteria else B3 if B3 meets them else SKIPPED",
+      "criteria": {
+        "validity_gte": 0.95,
+        "correctness_gte_sealed_b1": true,
+        "hallucination_attempts_eq": 0,
+        "h0_correct_regression_rate_lte": 0.1
+      }
+    }
+  },
+  "dev_emission_criteria": {
+    "validity_gte": 0.95,
+    "correctness_gte_sealed_b1": true,
+    "hallucination_attempts_eq": 0,
+    "h0_correct_regression_rate_lte": 0.1
+  },
+  "model": "qwen3.8-flash",
+  "provider": "bai",
+  "retry_policy": "one machine-validation-triggered repair re-ask per call; client max_retries=0; abandoned request captures never resent",
+  "source_sha256": {
+    "src/guardian_truth/vnext/policy_grs.py": "b22d768ac9f3dfdd79cda9a4795c5d0a1beb4383bad22609e23bbe413938f2b4",
+    "src/guardian_truth/vnext/policy_grs_emission.py": "6654c530c76fe027175d8f056b1b257eb5d99f81f9d600abd31f31919dfdf06c",
+    "src/guardian_truth/vnext/policy_grs_causal_benchmark.py": "6623f7d860f6b8625d9b9099943bb63acdde720bc6609ecbc300f6b2654f0676",
+    "src/guardian_truth/vnext/policy_v3_benchmark.py": "35a88f158744680e8db6604f5370276253ef3f2f2f0347407eddb6785af9f217",
+    "src/guardian_truth/vnext/policy_psb.py": "1deff612512026678806b4159b3e4c26f5cde5eb6a63f8cbec42c247a39debc2",
+    "scripts/evaluate_vnext_policy_grs.py": "6f53d300c9de3b088b6f644d757d907c0d225b8ea626c53d762d87a54040f628",
+    "scripts/policy_final_grs_dev.py": "b4acc0c21039bd370a4afd769cc14a788a9ce168ecf4422becca688c7ff268bb"
+  }
+}
