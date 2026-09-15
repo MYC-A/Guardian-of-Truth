@@ -452,3 +452,37 @@ limitations. Full record: docs/vnext/GRS_RESULTS.md.
 - MACHINE-VERIFIED RESULT (verdict per frozen prereg gates): KEEP_H0. C2 GRS-refined passes 6/7 gates and fails only G7 (H0-correct regression 15% > 10%): cdc 0.81 vs 0.60 (+21pp, McNemar p=0.0011, Newcombe CI [+10.1,+31.5]), capacity 65.7% vs 8.6%, NL 71.4% vs 42.9%, unsafe-definitive 2% vs 14%, simple 100%, validity 99%, zero hallucinated leaves, 2 calls/policy. PSB collapses on active-voice texts (54/83 errors = invented ACTOR nodes with non-catalog atoms accepted by the frozen compiler); all H0+PSB hybrids inherit it. Retention trades coverage for accuracy (C3a 59% cov × 91.5% acc; three-way unresolved 83%).
 - C2 residual failure modes (named, semantic): negation-in-condition slips (4, incl. both unsafe cases), REQUIRE separate-vs-together conjunction shape (3), grounder atom misses (2).
 - TERMINAL per the preregistered hard stop: standalone Policy research ENDS (no P8/GRS-v3/Hybrid-v2/new parser/judge/ontology). H0 remains the promotion-grade frontend under the frozen gates; GRS-refined is recorded on the Pareto frontier as the significantly-more-accurate/safer alternative carrying three named limits. Next stage: Guardian Composition / E2E.
+
+## E2E_COMPOSITION_V1 — PHASE 0 AUDIT COMPLETE; PHASE 1 BLOCKED ON GOAL-AXIS REQUIRED INPUTS
+
+- Integration baseline 8b0d13c confirmed as the remote experiment-branch tip;
+  local policy line (892093f) diverged at merge-base 6ab4af0. E2E assembly
+  branch experiment/guardian-e2e-v1 = merge a199252 (372 add/add conflicts in
+  policy_programs_v1 outputs resolved to the completed sealed run; PROGRESS.md
+  union-merged; external source views v6 declared_plan_actor retained from
+  baseline).
+- Test verification: baseline 1484P/6F, merged 1549P/6F; all failures are
+  freeze-manifest EOL drift (content-equivalence machine-proven over 28
+  manifests) or provider-env class; 4 pre-existing runner-script drifts are
+  the disclosed post-seal scorer fixes with seals untouched; 14 prediction
+  seals intact, gold_joined=false everywhere.
+- Component manifest + spec-103 audit produced
+  (E2E_COMPONENT_MANIFEST_V1.md, E2E_COMPOSITION_V1_PHASE0_AUDIT.md):
+  H0 (byte-identity chain C-ALR->PHV1->PSB->GRS->final) and GRS-refined
+  (grounder + frozen B1 + canonicalizer) imported with FRESH_MEASURED
+  evidence; all lower layers (T1 16/16, T2 18/18 nontrusted, Binding v2
+  34/34, Claim Graph v1 sealed, SourceEnvelope v4, External Source Views v6,
+  Factual v3/v5/v6, Scoped Result Evidence v2, Temporal v4) present and
+  test-covered; baseline gaps A-E confirmed in code.
+- BLOCKER (spec §6 provenance rule): the final Goal sweep artifacts —
+  Conservative Goal incumbent, FR1 (Rule Frames), E5 source recovery,
+  trusted frame assembler, sweep freeze/predictions/results — are NOT
+  present in this environment (exhaustive negative verification performed;
+  the repo goal line ends at the baseline commit with materially different
+  S1-scale results). Per spec §6/§30/§31 these cannot be rebuilt by
+  description; every E2E arm (E0-E4) requires a Goal frontend. Delivery
+  contract recorded in the manifest §G. Phase 1 (integration design) is not
+  started until the artifacts arrive or the user re-scopes the Goal axis.
+- External benchmarks located and reachable (ethz-spylab/agentdojo,
+  sierra-research/tau2-bench, apple/ToolSandbox, LiYu0524/ATbench);
+  adoption audits deferred to Phase 2. Zero LLM inference used in Phase 0.
