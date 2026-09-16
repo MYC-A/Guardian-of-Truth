@@ -13,6 +13,7 @@ from guardian_truth.parsing import parse_events
 
 from ..adapters import AdapterMode
 from ..tools import ContractRegistry
+from .backend_v1 import LiveBackendBlocked
 from .certificate_context_v1 import e2e_completeness_assumptions
 from .competition_adapter_v1 import CompetitionInput
 from .core_v1 import GuardianE2EV1
@@ -130,6 +131,8 @@ def run_mode(adapted_cases: list[CompetitionInput], backend, mode: str, progress
         try:
             analysis = guardian.analyze_e2e_v1(adapted.case)
             row = _analysis_row(adapted, mode, analysis, registry, time.monotonic() - started)
+        except LiveBackendBlocked:
+            raise
         except Exception as error:  # crashes are explicit UNRESOLVED, never verdicts
             row = _error_row(adapted, mode, error, time.monotonic() - started)
         rows.append(row)
@@ -143,12 +146,16 @@ def run_mode(adapted_cases: list[CompetitionInput], backend, mode: str, progress
 def write_predictions(rows: list[dict], path: Path) -> str:
     path.parent.mkdir(parents=True, exist_ok=True)
     with path.open("w", encoding="utf-8", newline="") as stream:
-        writer = csv.DictWriter(stream, fieldnames=["id", "label", "core_status",
-                                                    "certificate_valid", "used_fallback"])
+        writer = csv.DictWriter(stream, fieldnames=["id", "label"])
         writer.writeheader()
         for row in rows:
             writer.writerow({key: row[key] for key in writer.fieldnames})
     return hashlib.sha256(path.read_bytes()).hexdigest()
+
+
+def case_outcome(predicted: int, gold: int) -> str:
+    return {(1, 1): "TP", (1, 0): "FP", (0, 1): "FN", (0, 0): "TN"}[
+        (predicted, gold)]
 
 
 def score(rows: list[dict], gold: dict[str, int]) -> dict:
@@ -181,7 +188,7 @@ def score(rows: list[dict], gold: dict[str, int]) -> dict:
 
 
 def write_case_audit(adapted_cases: list[CompetitionInput], by_mode: dict[str, list[dict]],
-                     path: Path) -> None:
+                     path: Path, *, gold: dict[str, int] | None = None) -> None:
     mode_rows = {mode: {row["id"]: row for row in rows} for mode, rows in by_mode.items()}
     with path.open("w", encoding="utf-8") as stream:
         for adapted in adapted_cases:
@@ -211,6 +218,14 @@ def write_case_audit(adapted_cases: list[CompetitionInput], by_mode: dict[str, l
                 "manual_t1_required": None,
                 "manual_only_premises": [],
             }
+            if gold is not None:
+                expected = gold[case.case_id]
+                row["scoring"] = {"gold_label": expected,
+                                  "by_mode": {mode: {
+                                      "predicted_label": result["label"],
+                                      "outcome": case_outcome(result["label"], expected),
+                                      "correct": result["label"] == expected,
+                                  } for mode, result in modes.items()}}
             stream.write(json.dumps(row, ensure_ascii=False) + "\n")
 
 

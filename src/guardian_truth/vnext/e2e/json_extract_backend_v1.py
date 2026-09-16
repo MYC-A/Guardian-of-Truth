@@ -58,11 +58,13 @@ class JsonExtractBackend:
     """SemanticBackend protocol over a ChatClient with fence/prose stripping."""
 
     def __init__(self, client, *, interval_seconds: float = 10,
+                 reasoning_effort: str | None = "low",
                  checkpoint: Callable[[dict], None] | None = None,
                  clock: Callable[[], float] = time.monotonic,
                  sleep: Callable[[float], None] = time.sleep):
         self.client = client
         self.interval_seconds = interval_seconds
+        self.reasoning_effort = reasoning_effort
         self.checkpoint = checkpoint
         self.clock, self.sleep = clock, sleep
         self.last_start = None
@@ -84,7 +86,8 @@ class JsonExtractBackend:
                     self.sleep(delay)
             started = self.last_start = self.clock()
         try:
-            completion = self.client.complete(messages, schema=schema, reasoning_effort="low")
+            completion = self.client.complete(messages, schema=schema,
+                                              reasoning_effort=self.reasoning_effort)
             record["transport_status"] = "SUCCESS"
             record["served_model"] = completion.model
             record["usage"] = {key: value for key, value in

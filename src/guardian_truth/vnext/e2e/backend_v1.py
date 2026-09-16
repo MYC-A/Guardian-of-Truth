@@ -20,6 +20,14 @@ from ..integrity import canonical, digest
 from ..semantic import ChatSemanticBackend, Proposal
 
 
+class LiveBackendBlocked(RuntimeError):
+    """Transient external capacity failure: stop the run without cache poisoning."""
+
+    def __init__(self, category: str):
+        super().__init__(category)
+        self.category = category
+
+
 class E2ECachingBackend:
     """Caching + receipt-recording wrapper around a SemanticBackend.
 
@@ -30,11 +38,13 @@ class E2ECachingBackend:
     allowed registered syntax repair of the specification; no other repair,
     retry or rewrite is ever performed."""
 
-    def __init__(self, inner, *, cache_path: Path | None = None):
+    def __init__(self, inner, *, cache_path: Path | None = None,
+                 fail_fast_error_categories: tuple[str, ...] = ()):
         self.inner = inner
         self.cache_path = Path(cache_path) if cache_path else None
         self.cache: dict[str, dict] = {}
         self.receipts: list[dict] = []
+        self.fail_fast_error_categories = frozenset(fail_fast_error_categories)
         self.lock = threading.Lock()
         if self.cache_path and self.cache_path.exists():
             self.cache = json.loads(self.cache_path.read_text(encoding="utf-8"))
@@ -123,6 +133,8 @@ class E2ECachingBackend:
                                 record["schema_status"], record.get("error_category"))
         started = time.monotonic()
         proposal = self.inner.propose(task, payload, schema)
+        if proposal.error_category in self.fail_fast_error_categories:
+            raise LiveBackendBlocked(proposal.error_category)
         notes = ()
         if proposal.transport_status == "SUCCESS" and proposal.payload_json:
             value = json.loads(proposal.payload_json)
@@ -163,7 +175,9 @@ class E2ECachingBackend:
 def build_live_backend(*, interval_seconds: float = 0.5, env_path: Path | None = None,
                        cache_path: Path | None = None, provider: str = "bai",
                        model: str | None = None,
-                       api_key_env: str | None = None) -> E2ECachingBackend:
+                       api_key_env: str | None = None, max_output_tokens: int = 2048,
+                       reasoning_effort: str | None = "low",
+                       fail_fast_error_categories: tuple[str, ...] = ()) -> E2ECachingBackend:
     """Explicit compatible provider through Guardian's own ChatClient.
 
     The BAI endpoint rejects strict response_format schemas containing
@@ -177,12 +191,15 @@ def build_live_backend(*, interval_seconds: float = 0.5, env_path: Path | None =
     from ...llm_client import ChatClient, ClientConfig
     if env_path is not None:
         load_env_file(env_path)
-    config = provider_config(ClientConfig(response_format_mode="none", timeout_seconds=90.0),
+    config = provider_config(ClientConfig(response_format_mode="none", timeout_seconds=90.0,
+                                          max_output_tokens=max_output_tokens),
                              provider, model=model)
     if api_key_env is not None:
         config = replace(config, api_key_env=api_key_env)
     client = ChatClient(config)
     client.validate_configuration()
     from .json_extract_backend_v1 import JsonExtractBackend
-    inner = JsonExtractBackend(client, interval_seconds=interval_seconds)
-    return E2ECachingBackend(inner, cache_path=cache_path)
+    inner = JsonExtractBackend(client, interval_seconds=interval_seconds,
+                               reasoning_effort=reasoning_effort)
+    return E2ECachingBackend(inner, cache_path=cache_path,
+                             fail_fast_error_categories=fail_fast_error_categories)

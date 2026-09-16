@@ -1,5 +1,5 @@
 """One-call safe Groq diagnostic: never prints server text, prompt or credentials."""
-import argparse,hashlib,json
+import argparse,hashlib,json,re
 from dataclasses import replace
 from pathlib import Path
 from urllib.error import HTTPError
@@ -25,7 +25,7 @@ def safe_rate_headers(headers):
 def main():
     p=argparse.ArgumentParser();p.add_argument('--env-file',type=Path,required=True)
     p.add_argument('--provider',choices=('groq','openrouter','gemini'),default='groq')
-    p.add_argument('--model');args=p.parse_args()
+    p.add_argument('--model');p.add_argument('--max-output-tokens',type=int,default=2048);args=p.parse_args()
     load_env_file(args.env_file)
     row=read_rows(Path('valid.parquet'))[0]
     summary={}
@@ -58,6 +58,8 @@ def main():
                         if isinstance(message,str):
                             lowered=message.casefold(); summary['message_chars']=len(message)
                             summary['message_sha256']=hashlib.sha256(message.encode()).hexdigest()
+                            summary['message_numbers']=[int(value.replace(',','')) for value in
+                                re.findall(r'(?<![A-Za-z0-9])[0-9][0-9,]*(?![A-Za-z0-9])',message)][:12]
                             summary['message_flags']={word:word in lowered for word in
                                 ('json','schema','reason','token','failed','generation','input','valid','strict',
                                  'day','daily','minute','retry','limit','requested','used','quota',
@@ -88,7 +90,8 @@ def main():
     base=ClientConfig.from_env()
     selected_url=base.base_url if args.provider=='groq' else None
     config=provider_config(base,args.provider,model=args.model,base_url=selected_url)
-    client=ChatClient(replace(config,max_output_tokens=2048,max_retries=0,strict_schema=True),transport=transport)
+    client=ChatClient(replace(config,max_output_tokens=args.max_output_tokens,
+                              max_retries=0,strict_schema=True),transport=transport)
     try:
         completion=client.complete([{'role':'system','content':EXTRACTOR_INSTRUCTION},
                                     {'role':'user','content':json.dumps({'response':row['response']},ensure_ascii=False)}],

@@ -47,7 +47,13 @@ def main() -> None:
     parser.add_argument("--limit", type=int)
     parser.add_argument("--cache-mode", choices=("cold", "warm", "resume"), default="resume")
     parser.add_argument("--interval-seconds", type=float, default=0.5)
+    parser.add_argument("--max-output-tokens", type=int, default=1024)
+    parser.add_argument("--reasoning-effort", choices=("none", "low", "medium", "high"),
+                        default="none")
     args = parser.parse_args()
+    args.input = args.input.resolve()
+    args.output_dir = args.output_dir.resolve()
+    args.env_file = args.env_file.resolve()
 
     modes = [mode.strip() for mode in args.modes.split(",") if mode.strip()]
     if not modes or any(mode not in MODES for mode in modes):
@@ -57,7 +63,9 @@ def main() -> None:
         records = records[:args.limit]
     adapted = [adapt_competition_input(record) for record in records]
     args.output_dir.mkdir(parents=True, exist_ok=True)
-    run_tag = re.sub(r"[^A-Za-z0-9_.-]+", "_", f"{args.provider}__{args.model}")
+    run_tag = re.sub(r"[^A-Za-z0-9_.-]+", "_",
+                     f"{args.provider}__{args.model}__mot{args.max_output_tokens}"
+                     f"__reason-{args.reasoning_effort}")
     cache_path = args.output_dir / f"llm_cache__{run_tag}.json"
     if args.cache_mode == "cold" and cache_path.exists():
         parser.error("cold run requires an absent cache file")
@@ -66,13 +74,18 @@ def main() -> None:
     backend = build_live_backend(
         interval_seconds=args.interval_seconds,
         cache_path=cache_path if args.cache_mode != "cold" else None,
-        provider=args.provider, model=args.model, api_key_env=args.api_key_env)
+        provider=args.provider, model=args.model, api_key_env=args.api_key_env,
+        max_output_tokens=args.max_output_tokens,
+        reasoning_effort=None if args.reasoning_effort == "none" else args.reasoning_effort,
+        fail_fast_error_categories=("rate_limit", "insufficient_user_quota", "quota"))
     if args.cache_mode == "cold":
         backend.cache_path = cache_path
 
     input_sha256 = hashlib.sha256(canonical(records)).hexdigest()
     run_config = {"provider": args.provider, "model": args.model,
                   "api_key_env": args.api_key_env, "cache_mode": args.cache_mode,
+                  "max_output_tokens": args.max_output_tokens,
+                  "reasoning_effort": args.reasoning_effort,
                   "cache_path": str(cache_path.relative_to(ROOT)),
                   "input_sha256": input_sha256, "rows": len(records), "modes": modes}
     (args.output_dir / "run_config.json").write_text(
@@ -96,11 +109,22 @@ def main() -> None:
     metrics = {mode: score(rows, gold) for mode, rows in by_mode.items()}
     (args.output_dir / "metrics.json").write_text(
         json.dumps(metrics, ensure_ascii=False, indent=2), encoding="utf-8")
-    write_case_audit(adapted, by_mode, args.output_dir / "cases.jsonl")
+    write_case_audit(adapted, by_mode, args.output_dir / "cases.jsonl", gold=gold)
     write_premise_coverage(adapted, args.output_dir / "premise_coverage.csv")
-    iterations = [{"iteration": 0, "commit": "315bee335a467476732b47e1e7f412097222cd3b",
-                   "description": "frozen B4h-sound-v2 through minimal competition adapter",
-                   "metrics": metrics}]
+    iterations = [{
+        "iteration": 0,
+        "commit": "315bee335a467476732b47e1e7f412097222cd3b",
+        "root_cause": "BASELINE",
+        "hypothesis": "frozen B4h-sound-v2 through a lossless competition adapter",
+        "changed_files": ["competition_adapter_v1.py", "real_valid_v1.py",
+                          "evaluate_real_valid.py"],
+        "tests": ["tests/e2e", "tests/e2e_soundness"],
+        "metrics_before": None,
+        "metrics_after": metrics,
+        "corrections": [],
+        "regressions": [],
+        "decision": "BASELINE",
+    }]
     (args.output_dir / "iterations.json").write_text(
         json.dumps(iterations, ensure_ascii=False, indent=2), encoding="utf-8")
     backend.persist_receipts(args.output_dir / f"llm_receipts__{run_tag}.json")
