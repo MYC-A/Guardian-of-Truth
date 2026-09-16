@@ -437,8 +437,10 @@ suite: 46 passed, 0 xfail (the B05 xfail became a passing test).
 ### 6.5 Final freeze - B4h-sound-v2
 
 New explicit version (historical B4h at e7eb79c and the B4h-sound-v1 audit
-state at 5e4bc39 are NOT rewritten): B4h-sound-v2 = B4h-sound-v1 + SND-11.
-SND-01..SND-10 fixes are unchanged and re-verified. Frozen content: source
+state at 5e4bc39 are NOT rewritten): B4h-sound-v2 = B4h-sound-v1 + SND-11
+(final-verification content commit ebf2bc4). SND-01..SND-10 fixes are
+unchanged and re-verified. FINAL_FROZEN_COMMIT = the FINAL FREEZE
+B4h-sound-v2 commit recording this manifest on branch E2E-agent-2. Frozen content: source
 commit (this freeze commit), historical H0/GRS frontend hashes
 (HISTORICAL_PROVENANCE in policy_historical_v1.py), Conservative Goal, T1
 schema, state proof semantics (SND-01..SND-06, SND-08, SND-09, SND-11),
