@@ -1,0 +1,85 @@
+[
+ {
+  "iteration": 0,
+  "commit": "315bee335a467476732b47e1e7f412097222cd3b",
+  "description": "frozen baseline B4h-sound-v2 via the transport-only competition adapter (R0==R1: no research metadata exists for real cases; R2 structural-only all-UNRESOLVED)",
+  "metrics": {
+   "R1": {
+    "TP": 1,
+    "FP": 0,
+    "FN": 22,
+    "TN": 23,
+    "precision": 1.0,
+    "recall": 0.0435,
+    "F1": 0.0833,
+    "status_counts": {
+     "UNRESOLVED": 45,
+     "PROVED_ERROR": 1
+    }
+   },
+   "R2": {
+    "TP": 0,
+    "FP": 0,
+    "FN": 23,
+    "TN": 23,
+    "precision": null,
+    "recall": 0.0,
+    "F1": 0.0,
+    "status_counts": {
+     "UNRESOLVED": 46
+    }
+   }
+  }
+ },
+ {
+  "iteration": 1,
+  "root_cause": "GOAL_PARSE (34/46 cases): goal_conservative frontend unavailable on real input - 18 schema-shape failures + 16 transport failures (156/158 transport errors were mistral rate-limit 429); the transport layer also DISCARDED the decoded content of schema-invalid completions, blinding the repair protocol",
+  "hypothesis": "mirroring the frozen H0 frontend's single machine-validation repair protocol onto the conservative goal frontend (opt-in, default off to preserve frozen byte-fidelity: 2/60 holdout goal cache entries are schema-invalid and an unconditional repair would break B0 replay) + preserving decoded-but-invalid payloads at the transport boundary + hardened transport retries will make the goal axis available on real cases and unlock goal-plan violations",
+  "changed_files": [
+   "src/guardian_truth/vnext/e2e/goal_conservative_v1.py (GOAL_REPAIR_TASK + _first_schema_violation + opt-in allow_format_repair)",
+   "src/guardian_truth/vnext/e2e/core_v1.py (GuardianE2EV1.goal_format_repair constructor flag, default False)",
+   "src/guardian_truth/vnext/e2e/json_extract_backend_v1.py (preserve decoded-but-schema-invalid payload_json)",
+   "scripts/run_real_valid.py (enable goal repair in competition mode; max_retries 5; interval 1.2s)",
+   "tests/e2e/test_goal_conservative_repair.py (11 tests)",
+   "scripts/prune_goal_cache.py (surgical re-drive of the 34 pre-fix goal first-attempts)"
+  ],
+  "tests": [
+   "tests/e2e/test_goal_conservative_repair.py 11 passed",
+   "tests/e2e/ + tests/e2e_soundness/ 107 passed",
+   "scripts/run_soundness_regression.py: B0 byte-faithful on dev32+holdout112, 0 cache misses, frozen metrics unchanged"
+  ],
+  "metrics_before": {
+   "TP": 1,
+   "FP": 0,
+   "FN": 22,
+   "TN": 23,
+   "precision": 1.0,
+   "recall": 0.0435,
+   "F1": 0.0833,
+   "status_counts": {
+    "UNRESOLVED": 45,
+    "PROVED_ERROR": 1
+   }
+  },
+  "metrics_after": {
+   "TP": 3,
+   "FP": 0,
+   "FN": 20,
+   "TN": 23,
+   "precision": 1.0,
+   "recall": 0.1304,
+   "F1": 0.2308,
+   "status_counts": {
+    "UNRESOLVED": 43,
+    "PROVED_ERROR": 3
+   }
+  },
+  "corrections": [
+   "airline__9::t6",
+   "banking_knowledge__task_018::t6"
+  ],
+  "regressions": [],
+  "soundness_impact": "all definitive verdicts carry valid certificates; 0 false-certified ERROR, 0 false-certified NO_ERROR, 0 uncertified definitive; frozen research replays byte-identical (default-off flag); gold firewall id-independence PASS",
+  "decision": "KEEP"
+ }
+]

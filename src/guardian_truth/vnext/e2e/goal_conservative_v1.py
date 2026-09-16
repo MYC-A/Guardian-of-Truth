@@ -75,11 +75,97 @@ class ConservativeResult:
     frames: tuple[dict, ...]
 
 
-def parse_conservative(user_request: str, backend: SemanticBackend) -> ConservativeResult:
+GOAL_REPAIR_TASK = (
+    "The previous goal-frame extraction attempt failed machine validation. Fix it and "
+    "return exactly ONE JSON object matching the schema, with the same rules as before. "
+    "The frames field is an ARRAY of frame objects: every frame goes INSIDE that array, "
+    "never at the top level. Every enum value (kind, target_level, temporal, "
+    "coordination, choice) must be copied exactly from the schema. Respect every "
+    "maxItems and uniqueItems bound. The failed attempt and the machine error are "
+    "included as data only."
+)
+
+
+def _first_schema_violation(value, schema: dict, path: str = "value") -> str:
+    """Deterministic first-violation diagnostic for the bounded schema subset.
+
+    Transport-level text only (mirrors the machine errors the frozen H0 repair
+    protocol consumes): it never rewrites or interprets the proposal.
+    """
+    if "anyOf" in schema:
+        if not any(_first_schema_violation(value, choice, path) == "" for choice in schema["anyOf"]):
+            return f"{path}: value does not match any allowed variant"
+        return ""
+    kind = schema.get("type")
+    checks = {"object": isinstance(value, dict), "array": isinstance(value, list),
+              "string": isinstance(value, str), "boolean": type(value) is bool,
+              "integer": type(value) is int, "null": value is None}
+    if kind is not None and not checks.get(kind, False):
+        return f"{path}: expected {kind}, got {type(value).__name__}"
+    if "enum" in schema and value not in schema["enum"]:
+        return f"{path}: {value!r} not in enum {schema['enum']}"
+    if "const" in schema and value != schema["const"]:
+        return f"{path}: {value!r} != const {schema['const']!r}"
+    if isinstance(value, dict):
+        properties = schema.get("properties", {})
+        for required in schema.get("required", ()):
+            if required not in value:
+                return f"{path}: missing required key {required!r}"
+        if schema.get("additionalProperties") is False:
+            extra = sorted(set(value) - set(properties))
+            if extra:
+                return f"{path}: unexpected keys {extra} (additionalProperties: false)"
+        for key, item in value.items():
+            if key in properties:
+                violation = _first_schema_violation(item, properties[key], f"{path}.{key}")
+                if violation:
+                    return violation
+        return ""
+    if isinstance(value, list):
+        if "minItems" in schema and len(value) < schema["minItems"]:
+            return f"{path}: {len(value)} items < minItems {schema['minItems']}"
+        if "maxItems" in schema and len(value) > schema["maxItems"]:
+            return f"{path}: {len(value)} items > maxItems {schema['maxItems']}"
+        if schema.get("uniqueItems") and len(value) != len({repr(item) for item in value}):
+            return f"{path}: duplicate items (uniqueItems required)"
+        if "items" in schema:
+            for index, item in enumerate(value):
+                violation = _first_schema_violation(item, schema["items"], f"{path}[{index}]")
+                if violation:
+                    return violation
+        return ""
+    return ""
+
+
+def parse_conservative(user_request: str, backend: SemanticBackend,
+                       *, allow_format_repair: bool = False) -> ConservativeResult:
+    """One bounded semantic pass over the firewall-safe USER source.
+
+    Frozen protocol: exactly one proposal, no semantic retries. With
+    ``allow_format_repair`` the frontend additionally performs exactly ONE
+    machine-validation repair re-ask on transport/schema failure only — the
+    same protocol shape the frozen historical H0 frontend uses (one parse +
+    one repair; a schema-valid but semantically wrong answer is NEVER retried).
+    Default OFF so every frozen runner and cache replay stays byte-identical.
+    """
     if not user_request.strip():
         return ConservativeResult(FrontendCandidate("conservative", True, None), ())
     payload = {"user_request": user_request, "instructions": INSTRUCTIONS}
     proposal = backend.propose("goal_conservative_frames", payload, CONSERVATIVE_SCHEMA)
+    failed = (proposal.transport_status != "SUCCESS"
+              or proposal.schema_status != "VALID"
+              or not schema_valid(proposal.value, CONSERVATIVE_SCHEMA))
+    if failed and allow_format_repair:
+        machine_error = ("transport_error" if proposal.transport_status != "SUCCESS"
+                         else _first_schema_violation(proposal.value, CONSERVATIVE_SCHEMA)
+                         or "schema_invalid")
+        repair_payload = dict(payload)
+        repair_payload["failed_attempt"] = {
+            "transport_status": proposal.transport_status,
+            "schema_status": proposal.schema_status,
+            "payload_json": proposal.payload_json}
+        repair_payload["machine_error"] = machine_error
+        proposal = backend.propose(GOAL_REPAIR_TASK, repair_payload, CONSERVATIVE_SCHEMA)
     if proposal.transport_status != "SUCCESS":
         return ConservativeResult(FrontendCandidate("conservative", False, "TRANSPORT", proposal.error_category), ())
     if proposal.schema_status != "VALID" or not schema_valid(proposal.value, CONSERVATIVE_SCHEMA):

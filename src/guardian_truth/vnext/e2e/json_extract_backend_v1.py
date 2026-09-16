@@ -99,8 +99,18 @@ class JsonExtractBackend:
             value, valid_json = decode_json(extracted if extracted is not None else content)
             valid = valid_json and schema_valid(value, schema)
             record["schema_status"] = "VALID" if valid else "INVALID"
-            result = Proposal(canonical(value).decode("utf-8") if valid else None,
-                              "SUCCESS", record["schema_status"])
+            # Preserve the decoded-but-schema-invalid payload (transport form
+            # only): repair protocols quote the failed attempt verbatim, and a
+            # None payload_json forced every repair re-ask to work blind. The
+            # content is never treated as evidence while schema_status is
+            # INVALID - consumers gate on schema_status first.
+            if valid:
+                payload_json = canonical(value).decode("utf-8")
+            elif extracted is not None:
+                payload_json = extracted
+            else:
+                payload_json = None
+            result = Proposal(payload_json, "SUCCESS", record["schema_status"])
         except Exception as error:  # ChatClientError only in practice
             record["error_category"] = getattr(error, "category", "transport")
             result = Proposal(None, "ERROR", "NOT_EVALUATED", record["error_category"])

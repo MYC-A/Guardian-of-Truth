@@ -426,3 +426,62 @@ from the explicit tool catalog, the tool text schemas, or the observed trajector
 came exactly from this family. 6/23 need deep state/effect/temporal reasoning where
 trusted T1 is genuinely unavailable in competition mode (abstention is the sound
 answer there today).
+
+---
+
+## Fix iterations
+
+### ITERATION 1 — GOAL_PARSE robustness (root cause: goal frontend unavailable on 34/46 cases)
+
+2026-09-16/17. Root cause evidence: 18 SCHEMA + 16 TRANSPORT goal frontend failures; direct
+replay of failed calls showed wrong-output-shape failures of a 14B model against the
+strict bounded CONSERVATIVE_SCHEMA (kind="INFORMATION" enum confusion, frame object
+returned unwrapped, missing keys) and 156/158 transport errors were mistral rate-limit
+429s that exhausted the 2 configured retries; additionally the transport boundary
+DISCARDED the decoded content of schema-invalid completions (payload_json=None), so any
+repair re-ask ran blind with the useless machine error "expected object, got NoneType".
+
+Hypothesis: mirroring the frozen historical H0 frontend's single machine-validation
+repair protocol onto the goal frontend (opt-in `allow_format_repair`, default OFF —
+2/60 holdout goal cache entries are schema-invalid and an unconditional repair would
+break B0 byte-fidelity there) + preserving decoded-but-invalid payload content at the
+transport boundary + hardened transport retries (max_retries 5, interval 1.2s) makes
+the goal axis available on real input and unlocks goal-plan violations.
+
+Production change (minimal, general, mirrors an existing frozen mechanism):
+- `goal_conservative_v1.py`: `GOAL_REPAIR_TASK`, deterministic `_first_schema_violation`
+  diagnostic, opt-in one-shot repair in `parse_conservative` (a schema-valid-but-wrong
+  answer is never retried).
+- `core_v1.py`: `GuardianE2EV1(goal_format_repair=False)` constructor flag.
+- `json_extract_backend_v1.py`: preserve the decoded-but-schema-invalid payload
+  (transport form only; consumers still gate on schema_status).
+- `scripts/run_real_valid.py`: repair enabled in competition mode, transport hardened.
+- `scripts/prune_goal_cache.py`: surgical re-drive of exactly the 34 pre-fix goal
+  first-attempts (their cached records had lost the content the repair protocol needs).
+
+New tests: `tests/e2e/test_goal_conservative_repair.py` — 11 tests (single-call on
+success, repair recovers enum/transport failures, repair failure recorded not retried,
+default-off frozen behavior, quote-grounding gate still enforced, deterministic machine
+error, payload-content preservation at the transport boundary).
+
+Full 46-case rerun:
+
+| | TP | FP | FN | TN | Precision | Recall | F1 | statuses |
+|---|---:|---:|---:|---:|---:|---:|---:|---|
+| before | 1 | 0 | 22 | 23 | 1.000 | 0.0435 | 0.0833 | 45 UNRESOLVED + 1 PROVED_ERROR |
+| after | 3 | 0 | 20 | 23 | 1.000 | 0.1304 | **0.2308** | 43 UNRESOLVED + 3 PROVED_ERROR |
+
+Corrections: `airline__9::t6` (premature transfer while get_flight_status available),
+`banking_knowledge__task_018::t6` (premature transfer, obvious retry untried) — both
+UNRESOLVED→certified PROVED_ERROR, both gold=1 (goal-plan obligation violation path,
+exactly the mechanism that produced the baseline TP). Regressions: 0. Goal frontend
+availability: 12/46 → 34/46 cases. Soundness: all 3 definitive verdicts carry valid
+certificates; 0 false-certified anything; frozen research replays byte-identical
+(B0 byte-faithful both corpora, 0 cache misses, frozen metrics unchanged); e2e +
+soundness suites 107 passed; gold firewall id-independence PASS. Decision: **KEEP**.
+
+Data-quality finding (documented, NOT fixed — isolated 1/46, fixing it would be a
+case-specific patch): `telecom__mms_issue...break_app_sms_p::t10` contains an
+agent-voice turn wrapped in a `⟦USER⟧` marker ("Спасибо, Джон. Я нашёл ваш аккаунт…",
+"*Примечание: Я вижу, что у меня есть инструменты для удалённой диагностики…"),
+which pollutes the concatenated goal-firewall source for that case.

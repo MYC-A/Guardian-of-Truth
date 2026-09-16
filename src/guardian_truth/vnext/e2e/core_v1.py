@@ -81,7 +81,8 @@ class GuardianE2EV1:
                  arm: E2EArmConfig | None = None, max_worlds: int = 4096,
                  adapter_mode: AdapterMode = AdapterMode.AUDIT, enable_t2: bool = True,
                  oracle_policy: bool = False, oracle_goal: bool = False,
-                 semantics: E2ESemantics | None = None):
+                 semantics: E2ESemantics | None = None,
+                 goal_format_repair: bool = False):
         if type(max_worlds) is not int or max_worlds < 1:
             raise ValueError("positive material-world computation budget required")
         self.backend = backend
@@ -92,6 +93,7 @@ class GuardianE2EV1:
         self.enable_t2 = enable_t2
         self.oracle_policy = oracle_policy
         self.oracle_goal = oracle_goal
+        self.goal_format_repair = goal_format_repair
         # None = latest full cycle-3 semantics; the ablation arms inject the
         # frozen B0..B4 gates explicitly (SEMANTICS_ARMS).
         self.semantics = semantics if semantics is not None else FULL_SEMANTICS
@@ -354,7 +356,8 @@ class GuardianE2EV1:
         if self.oracle_goal and case.authoritative_goal_readings:
             return (contract_from_rows(case.authoritative_goal_readings, request),), ()
         if "conservative" in self.arm.goal_frontends:
-            conservative = parse_conservative(request, self.backend)
+            conservative = parse_conservative(request, self.backend,
+                                              allow_format_repair=self.goal_format_repair)
             if conservative.candidate.available:
                 contracts.append(conservative_frames_to_contract(conservative.frames, ()))
             else:

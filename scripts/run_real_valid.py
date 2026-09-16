@@ -173,11 +173,11 @@ def build_r1_backend(cache_path: Path):
     config = provider_config(ClientConfig(response_format_mode="none",
                                           timeout_seconds=120.0,
                                           max_output_tokens=2048,
-                                          max_retries=2), provider)
+                                          max_retries=int(os.environ.get("REAL_VALID_MAX_RETRIES", "5"))), provider)
     client = ChatClient(config)
     client.validate_configuration()
     inner = JsonExtractBackend(MistralCompatibleClient(client),
-                               interval_seconds=float(os.environ.get("REAL_VALID_INTERVAL", "1.0")))
+                               interval_seconds=float(os.environ.get("REAL_VALID_INTERVAL", "1.2")))
     return E2ECachingBackend(inner, cache_path=cache_path)
 
 
@@ -206,7 +206,8 @@ def run_case(case: E2ECaseInput, backend, adapter_mode: AdapterMode):
     arm = E2EArmConfig("B4h", ("h0_hist",), ("conservative",))
     guardian = GuardianE2EV1(backend, registry=registry_for(case), arm=arm,
                              max_worlds=4096, adapter_mode=adapter_mode,
-                             semantics=SEMANTICS_ARMS["B3"])
+                             semantics=SEMANTICS_ARMS["B3"],
+                             goal_format_repair=os.environ.get("REAL_VALID_GOAL_REPAIR", "1") == "1")
     started = time.time()
     try:
         analysis = guardian.analyze_e2e_v1(case)
