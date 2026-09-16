@@ -77,6 +77,23 @@ def _description(raw: str, name: str) -> str:
     return match.group(2).strip()
 
 
+def _source_dict(source: Source, prompt: str) -> dict:
+    return {"document": source.document, "start": source.start,
+            "end": source.end, "quote": prompt[source.start:source.end]}
+
+
+def _argument_declarations(fields: list[FieldSpec], prompt: str,
+                           prefix: tuple[str, ...] = ()) -> list[dict]:
+    declarations = []
+    for field in fields:
+        path = prefix + (field.name,)
+        declarations.append({"path": list(path), "kind": field.kind,
+                             "required": field.required, "enum": list(field.enum),
+                             "source": _source_dict(field.source, prompt)})
+        declarations.extend(_argument_declarations(field.children, prompt, path))
+    return declarations
+
+
 def adapt_competition_input(record: dict) -> CompetitionInput:
     """Accept only the official inference view: id, prompt and response."""
     if not isinstance(record, dict) or set(record) != {"id", "prompt", "response"}:
@@ -107,8 +124,12 @@ def adapt_competition_input(record: dict) -> CompetitionInput:
         schema_hash = digest(parameters)
         source_hash = digest(raw)
         description = _description(raw, name)
-        source = {"document": "prompt", "start": spec.source.start,
-                  "end": spec.source.end, "quote": raw}
+        source = _source_dict(spec.source, prompt)
+        description_source = None
+        if description:
+            relative = raw.find(description)
+            start = spec.source.start + relative
+            description_source = _source_dict(Source("prompt", start, start + len(description)), prompt)
         tool_schemas.append({"name": name, "description": description,
                              "parameters": parameters, "source": source})
         # These values identify this exact source declaration; they do not
@@ -117,6 +138,8 @@ def adapt_competition_input(record: dict) -> CompetitionInput:
                               "version": source_hash, "schema_sha256": schema_hash})
         declarations.append({"name": name, "description": description,
                              "schema_sha256": schema_hash, "source": source,
+                             "description_source": description_source,
+                             "arguments": _argument_declarations(spec.fields, prompt),
                              "schema_understood": spec.schema_understood})
 
     case = E2ECaseInput(

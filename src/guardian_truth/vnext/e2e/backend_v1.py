@@ -161,9 +161,10 @@ class E2ECachingBackend:
 
 
 def build_live_backend(*, interval_seconds: float = 0.5, env_path: Path | None = None,
-                       cache_path: Path | None = None, model: str | None = None,
+                       cache_path: Path | None = None, provider: str = "bai",
+                       model: str | None = None,
                        api_key_env: str | None = None) -> E2ECachingBackend:
-    """BAI provider (qwen3.8-flash) through Guardian's own ChatClient.
+    """Explicit compatible provider through Guardian's own ChatClient.
 
     The BAI endpoint rejects strict response_format schemas containing
     uniqueItems, so the provider runs with response_format_mode='none' (the
@@ -177,7 +178,7 @@ def build_live_backend(*, interval_seconds: float = 0.5, env_path: Path | None =
     if env_path is not None:
         load_env_file(env_path)
     config = provider_config(ClientConfig(response_format_mode="none", timeout_seconds=90.0),
-                             "bai", model=model)
+                             provider, model=model)
     if api_key_env is not None:
         config = replace(config, api_key_env=api_key_env)
     client = ChatClient(config)

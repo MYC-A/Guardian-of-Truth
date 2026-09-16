@@ -115,6 +115,14 @@ Conclusion before fixes: B4h-sound-v2 cannot be called directly as `analyze(prom
 - Conservative Goal: 0 hits / 46 misses. Each of the ten claim passes (`disposition`, `kind`, `modality_polarity`, `predicate`, `object_entities`, `time`, `source`, `actor`, `relations`, `explicit_causality`) had 0 hits / 24 misses for the 24 target responses containing text. Operational binding was not reachable with usable frontend readings in this fail-closed replay.
 - Interpretation: the old cache is not merely an optimization. It partially replays repeated policy/effect inputs but has zero coverage for the real target Goal/Claims inputs and cannot support unseen complete inference. This quantitatively confirms `CACHE_DEPENDENCY`; a live semantic backend (or a separately authorized local model) is required for the requested baseline.
 
+## 2026-09-16T21:48:00+03:00 — user-authorized Groq fallback preparation
+
+- After B.AI returned `insufficient_user_quota`, the user explicitly requested trying `GROQ_API_KEY` with either `openai/gpt-oss-120b` or `qwen/qwen3.8-27b`.
+- A models-list request sent no competition data and confirmed both exact model IDs are available to the supplied Groq account. `qwen/qwen3.8-27b` is selected first because it keeps the Qwen model family while testing a distinct provider; this is a provider fallback, not a claim that it is identical to the originally requested B.AI `qwen3.8-flash`.
+- The runner now binds provider, model, and credential-variable name explicitly. Cache, progress, and receipts are provider/model-scoped; prediction seals include provider/model/input hash, preventing cross-model cache contamination.
+- The saved `.env` value still contains a trailing non-ASCII `U+042D` character. The client rejects it locally as `invalid_api_key`; removing that character in-process proved the remaining credential valid, but the full run will use the saved value only after the user saves the correction. No public prompt/response has yet been sent to Groq.
+- Validation after provider generalization: 103/103 E2E+soundness tests and 7/7 focused adapter/firewall/provider tests passed.
+
 # T1 / tool-semantics audit
 
 ## 2026-09-16T21:18:00+03:00 — available source-grounded subset
@@ -125,6 +133,13 @@ Conclusion before fixes: B4h-sound-v2 cannot be called directly as `analyze(prom
 - `OBSERVED_TRAJECTORY`: prior calls, arguments, results, ordering, requestor, and exact values are present in the normalized ledger.
 - `NOT_AVAILABLE` or `MANUAL_ORACLE_ONLY`: authoritative freshness, reads/writes, result ownership beyond explicit fields, effect guarantee, completion/failure semantics beyond literal observations, state persistence, closure, and possible side effects.
 - No inference from a tool name or a bare `SUCCESS` value is promoted to a trusted business effect. The weakest structural/schema/policy proof remains usable without rich T1; missing effect premises remain unknown.
+
+## 2026-09-16T21:48:00+03:00 — machine-readable source coverage
+
+- Generated `outputs/vnext/real_valid/premise_coverage.csv` from only `id,prompt,response`, before any gold access or live semantic inference.
+- 12,235 rows total: 46 explicit system-policy sources; 765 observed trajectory events (393 calls, 372 results); 687 declared tools; 1,590 explicit argument declarations; 1,590 untrusted argument-meaning candidates; and 687 exact tool-description sources.
+- For each declared tool, ten effect/state premise families are recorded separately: reads, writes, entity ownership, result ownership, freshness, effect guarantee, completion semantics, failure semantics, state persistence, and possible side effects. All 6,870 such rows remain `AMBIGUOUS`, `trusted=false`, pending source-grounded extraction and deterministic validation.
+- This artifact distinguishes “source text exists” from “trusted semantic fact established.” It contains no tool-name effect inference and no manual/oracle T1.
 
 # Failure decomposition
 

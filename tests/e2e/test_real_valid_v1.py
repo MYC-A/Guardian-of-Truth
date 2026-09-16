@@ -1,4 +1,25 @@
-from guardian_truth.vnext.e2e.real_valid_v1 import competition_view, score
+import os
+from unittest.mock import patch
+
+from guardian_truth.vnext.e2e.backend_v1 import build_live_backend
+from guardian_truth.vnext.e2e.competition_adapter_v1 import adapt_competition_input
+from guardian_truth.vnext.e2e.real_valid_v1 import competition_view, premise_rows, score
+
+
+AUDIT_PROMPT = """⟦SYSTEM⟧
+<policy>Do not alter records.</policy>
+[AVAILABLE TOOLS]
+- inspect_record — Read a record.
+    record_id: string! — Record identifier.
+⟦USER⟧
+Inspect R-7.
+⟦ASSISTANT_TOOL_CALL name="inspect_record"⟧
+{"record_id":"R-7"}
+⟦TOOL_RESULT name="inspect_record" requestor="assistant"⟧
+{"record_id":"R-7","status":"present"}
+⟦USER⟧
+Describe R-7.""".strip()
+AUDIT_RESPONSE = "⟦ASSISTANT⟧\nR-7 is present."
 
 
 def test_gold_firewall_ignores_label_explanation_and_domain():
@@ -18,3 +39,24 @@ def test_binary_scoring_keeps_internal_status_metrics():
     assert (result["TP"], result["FN"]) == (1, 1)
     assert result["statuses"]["PROVED_ERROR"] == 1
     assert result["statuses"]["UNRESOLVED"] == 1
+
+
+def test_premise_inventory_separates_explicit_schema_from_untrusted_semantics():
+    adapted = adapt_competition_input({"id": "x", "prompt": AUDIT_PROMPT,
+                                       "response": AUDIT_RESPONSE})
+    rows = premise_rows(adapted)
+    schema = [row for row in rows if row["premise"] == "argument_existence"]
+    effects = [row for row in rows if row["premise"] == "effect_guarantee"]
+    assert schema and all(row["origin"] == "EXPLICIT_SCHEMA" and row["trusted"] for row in schema)
+    assert effects and all(row["origin"] == "AMBIGUOUS" and not row["trusted"] for row in effects)
+    assert all(row["derivation"] != "tool_name_inference" for row in rows)
+
+
+def test_live_backend_can_bind_groq_model_and_credential_name():
+    with patch.dict(os.environ, {"GROQ_API_KEY": "synthetic-groq-key"}, clear=True):
+        backend = build_live_backend(provider="groq", model="qwen/qwen3.8-27b",
+                                     api_key_env="GROQ_API_KEY", interval_seconds=0)
+    config = backend.inner.client.config
+    assert config.base_url == "https://api.groq.com/openai/v1"
+    assert config.model == "qwen/qwen3.8-27b"
+    assert config.api_key_env == "GROQ_API_KEY"

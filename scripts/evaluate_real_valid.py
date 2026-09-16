@@ -3,14 +3,17 @@
 from __future__ import annotations
 
 import argparse
+import hashlib
 import json
 from pathlib import Path
+import re
 import sys
 
 ROOT = Path(__file__).resolve().parents[1]
 sys.path.insert(0, str(ROOT / "src"))
 
 from guardian_truth.settings import load_env_file  # noqa: E402
+from guardian_truth.vnext.integrity import canonical  # noqa: E402
 from guardian_truth.vnext.e2e.backend_v1 import build_live_backend  # noqa: E402
 from guardian_truth.vnext.e2e.competition_adapter_v1 import adapt_competition_input  # noqa: E402
 from guardian_truth.vnext.e2e.real_valid_v1 import (MODES, competition_view, run_mode, score,
@@ -37,6 +40,9 @@ def main() -> None:
     parser.add_argument("--input", type=Path, default=ROOT / "valid.parquet")
     parser.add_argument("--output-dir", type=Path, default=ROOT / "outputs/vnext/real_valid")
     parser.add_argument("--env-file", type=Path, default=ROOT / ".env")
+    parser.add_argument("--provider", choices=("bai", "groq"), default="groq")
+    parser.add_argument("--model", default="qwen/qwen3.8-27b")
+    parser.add_argument("--api-key-env", default="GROQ_API_KEY")
     parser.add_argument("--modes", default="R0,R1,R2")
     parser.add_argument("--limit", type=int)
     parser.add_argument("--cache-mode", choices=("cold", "warm", "resume"), default="resume")
@@ -51,7 +57,8 @@ def main() -> None:
         records = records[:args.limit]
     adapted = [adapt_competition_input(record) for record in records]
     args.output_dir.mkdir(parents=True, exist_ok=True)
-    cache_path = args.output_dir / "llm_cache.json"
+    run_tag = re.sub(r"[^A-Za-z0-9_.-]+", "_", f"{args.provider}__{args.model}")
+    cache_path = args.output_dir / f"llm_cache__{run_tag}.json"
     if args.cache_mode == "cold" and cache_path.exists():
         parser.error("cold run requires an absent cache file")
     if not load_env_file(args.env_file):
@@ -59,19 +66,28 @@ def main() -> None:
     backend = build_live_backend(
         interval_seconds=args.interval_seconds,
         cache_path=cache_path if args.cache_mode != "cold" else None,
-        model="qwen3.8-flash", api_key_env="b_ai_api_key")
+        provider=args.provider, model=args.model, api_key_env=args.api_key_env)
     if args.cache_mode == "cold":
         backend.cache_path = cache_path
 
+    input_sha256 = hashlib.sha256(canonical(records)).hexdigest()
+    run_config = {"provider": args.provider, "model": args.model,
+                  "api_key_env": args.api_key_env, "cache_mode": args.cache_mode,
+                  "cache_path": str(cache_path.relative_to(ROOT)),
+                  "input_sha256": input_sha256, "rows": len(records), "modes": modes}
+    (args.output_dir / "run_config.json").write_text(
+        json.dumps(run_config, ensure_ascii=False, indent=2), encoding="utf-8")
+
     by_mode, seals = {}, {}
     for mode in modes:
-        progress = args.output_dir / f"{mode}_audit.json"
+        progress = args.output_dir / f"{mode}_audit__{run_tag}.json"
         rows = run_mode(adapted, backend, mode, progress)
         by_mode[mode] = rows
         prediction_path = args.output_dir / f"{mode}_predictions.csv"
         seals[mode] = {"path": str(prediction_path.relative_to(ROOT)),
                        "sha256": write_predictions(rows, prediction_path),
-                       "rows": len(rows)}
+                       "rows": len(rows), "provider": args.provider,
+                       "model": args.model, "input_sha256": input_sha256}
     (args.output_dir / "prediction_seals.json").write_text(
         json.dumps(seals, ensure_ascii=False, indent=2), encoding="utf-8")
 
@@ -87,7 +103,7 @@ def main() -> None:
                    "metrics": metrics}]
     (args.output_dir / "iterations.json").write_text(
         json.dumps(iterations, ensure_ascii=False, indent=2), encoding="utf-8")
-    backend.persist_receipts(args.output_dir / "llm_receipts.json")
+    backend.persist_receipts(args.output_dir / f"llm_receipts__{run_tag}.json")
     print(json.dumps(metrics, ensure_ascii=False, indent=2))
 
 

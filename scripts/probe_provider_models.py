@@ -13,7 +13,7 @@ from guardian_truth.settings import load_env_file
 
 def main():
     parser=argparse.ArgumentParser(description=__doc__)
-    parser.add_argument('--provider',choices=('openrouter','gemini'),required=True)
+    parser.add_argument('--provider',choices=('groq','openrouter','gemini'),required=True)
     parser.add_argument('--env-file',type=Path,required=True)
     parser.add_argument('--contains',default='')
     parser.add_argument('--limit',type=int,default=40)
@@ -49,8 +49,12 @@ def main():
         print(json.dumps({'provider':args.provider,'status':200,'matched':len(models),
                           'models':models},ensure_ascii=False))
         return 0
-    except Exception:
-        print(json.dumps({'provider':args.provider,'status':'local_or_parse_error','models':[]}))
+    except Exception as error:
+        report={'provider':args.provider,'status':'local_or_parse_error','models':[],
+                'error_type':type(error).__name__}
+        category=getattr(error,'category',None)
+        if isinstance(category,str): report['error_category']=category
+        print(json.dumps(report))
         return 1
 
 

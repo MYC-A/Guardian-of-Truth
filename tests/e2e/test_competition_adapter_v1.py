@@ -42,6 +42,11 @@ def test_adapter_preserves_raw_prompt_and_extracts_only_source_fields():
     assert inspect["parameters"]["required"] == ["record_id"]
     assert inspect["parameters"]["properties"]["mode"]["enum"] == ["brief", "full"]
     assert inspect["source"]["quote"] == PROMPT[inspect["source"]["start"]:inspect["source"]["end"]]
+    declaration = next(item for item in adapted.tool_declarations if item["name"] == "inspect_record")
+    assert declaration["description_source"]["quote"] == "Read a record."
+    mode = next(item for item in declaration["arguments"] if item["path"] == ["mode"])
+    assert mode["enum"] == ["brief", "full"]
+    assert mode["source"]["quote"] == PROMPT[mode["source"]["start"]:mode["source"]["end"]]
 
 
 def test_adapter_rejects_gold_or_domain_fields():
