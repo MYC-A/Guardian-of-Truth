@@ -161,11 +161,27 @@ def main() -> None:
     parser.add_argument("--env-file", type=Path, default=ROOT / ".env")
     parser.add_argument("--manual-t1", type=Path, default=ROOT / "contracts" / "tool_effects_v1.json")
     parser.add_argument("--max-cases", type=int, default=None)
+    parser.add_argument("--slice", default=None,
+                        help="i/N: run only the i-th of N contiguous chunks (parallel live runs); "
+                             "outputs get _slice{i} suffixes; merge with merge_slices.py")
+    parser.add_argument("--resume", action="store_true",
+                        help="skip cases whose id already appears in the output file")
     args = parser.parse_args()
 
     rows = firewall_rows(read_input_rows(args.input))
     if args.max_cases:
         rows = rows[:args.max_cases]
+    slice_tag = None
+    if args.slice:
+        try:
+            i, n = args.slice.split("/")
+            i, n = int(i), int(n)
+            assert 0 <= i < n
+        except Exception:
+            raise SystemExit("--slice must be i/N with 0 <= i < N")
+        size = (len(rows) + n - 1) // n
+        rows = rows[i * size:(i + 1) * size]
+        slice_tag = i
 
     if args.backend == "live":
         backend = build_live_backend(env_path=args.env_file, cache_path=args.cache)
@@ -191,14 +207,27 @@ def main() -> None:
     base_guardian = None if args.arm == "C1" else build_guardian(args.arm, backend, None)
     manual_coverage = {}
 
+    suffix = f"_slice{slice_tag}" if slice_tag is not None else ""
+    out_path = args.output.with_name(args.output.stem + suffix + args.output.suffix)
+    audit_path = (args.audit.with_name(args.audit.stem + suffix + args.audit.suffix)
+                  if args.audit else None)
     args.output.parent.mkdir(parents=True, exist_ok=True)
-    audit_stream = args.audit.open("w", encoding="utf-8") if args.audit else None
+    done_ids = set()
+    if args.resume and out_path.exists():
+        with out_path.open(newline="", encoding="utf-8") as stream:
+            done_ids = {row["id"] for row in csv.DictReader(stream)}
+        print(f"resume: {len(done_ids)} cases already predicted; skipping them", flush=True)
+    audit_stream = audit_path.open("a", encoding="utf-8") if audit_path else None
     started = time.time()
-    counts = {"rows": 0, "status_counts": {}, "fallbacks": 0, "certificate_valid": 0}
-    with args.output.open("w", newline="", encoding="utf-8") as stream:
+    counts = {"rows": 0, "status_counts": {}, "fallbacks": 0, "certificate_valid": 0,
+              "resumed": len(done_ids)}
+    with out_path.open("a" if (args.resume and done_ids) else "w", newline="", encoding="utf-8") as stream:
         writer = csv.DictWriter(stream, fieldnames=["id", "label"])
-        writer.writeheader()
+        if not (args.resume and done_ids):
+            writer.writeheader()
         for row in rows:
+            if row["id"] in done_ids:
+                continue
             comp = parse_competition_case(row["id"], row["prompt"], row["response"])
             if args.arm == "C1":
                 registry, coverage = load_manual_t1_registry(args.manual_t1, catalog=comp.catalog)
@@ -223,13 +252,16 @@ def main() -> None:
         audit_stream.close()
 
     if args.run_report:
-        counts.update(arm=args.arm, backend=args.backend, seconds=round(time.time() - started, 3),
+        report_path = (args.run_report.with_name(args.run_report.stem + suffix
+                                                 + args.run_report.suffix))
+        counts.update(arm=args.arm, backend=args.backend, slice=args.slice,
+                      seconds=round(time.time() - started, 3),
                       live_calls=getattr(backend, "live_calls", 0),
                       cache_hits=sum(1 for r in getattr(backend, "receipts", [])
                                      if r.get("cache_hit")),
                       input=str(args.input))
-        args.run_report.parent.mkdir(parents=True, exist_ok=True)
-        args.run_report.write_text(json.dumps(counts, indent=2), encoding="utf-8")
+        report_path.parent.mkdir(parents=True, exist_ok=True)
+        report_path.write_text(json.dumps(counts, indent=2), encoding="utf-8")
 
 
 if __name__ == "__main__":

@@ -1,0 +1,88 @@
+{
+  "patterns": [
+    {
+      "pattern": "unavailable tool invocation (tool not in [AVAILABLE TOOLS])",
+      "examples": "telecom ::t7/t10/t15/t6 diagnostics (check_network_status, run_speed_test, ...)",
+      "weakest_sufficient_proof": "invocation-level: call name vs catalog names (A_EXPLICIT_SCHEMA + C policy text)",
+      "classification": "PROVABLE_FROM_COMPETITION_INPUT",
+      "observed_C0": "caught mechanically by legacy check_calls (telecom 6/6 TP)"
+    },
+    {
+      "pattern": "argument/schema violation (wrong field names, missing required fields, enum mismatch)",
+      "examples": "airline__23::t10 payment_methods {id,source} vs schema payment_id/amount",
+      "weakest_sufficient_proof": "argument-schema check against parsed catalog DSL",
+      "classification": "PROVABLE_FROM_COMPETITION_INPUT",
+      "observed_C3": "PROVED_ERROR via h0 policy lowering binding catalog requirements"
+    },
+    {
+      "pattern": "explicit procedural policy violation (confirm-before-act, return-or-exchange-once, 2-of-N identity verification)",
+      "examples": "airline__44::t22 cancel rules; retail__27::t10 return XOR exchange; banking__task_005 log_verification 2-of-4",
+      "weakest_sufficient_proof": "policy lowering + operational action binding vs history (needs LLM frontend, prompt-only)",
+      "classification": "PROVABLE_FROM_COMPETITION_INPUT",
+      "note": "h0_hist lowering is an LLM task: binding quality depends on the model; failures surface as POLICY_AMBIGUOUS/UNRESOLVED, not false definitives"
+    },
+    {
+      "pattern": "user-intent violation / premature escalation (obvious steps not exhausted; available tool not used)",
+      "examples": "airline__9::t6 get_flight_status unused; banking task_003/018 premature transfer_to_human_agents; retail__29::t13 false refusal",
+      "weakest_sufficient_proof": "goal contract (conservative) vs response actions + policy transfer-conditions",
+      "classification": "PROVABLE_FROM_COMPETITION_INPUT (hardest family: needs goal+policy composition; partial)"
+    },
+    {
+      "pattern": "unsupported argument provenance (argument value not stated by user/history)",
+      "examples": "retail__106::t3 zip from email local-part; retail__36::t10 identical item->new_item no-op pairs",
+      "weakest_sufficient_proof": "argument provenance check: value traced to USER/history evidence (literal grounding)",
+      "classification": "PROVABLE_FROM_COMPETITION_INPUT (literal grounding; hard for derived values)",
+      "note": "derived/justifiable values (unit conversions, sums stated in policy) need arithmetic grounding the current claim layer does not fully express"
+    },
+    {
+      "pattern": "unsupported factual claim / fabricated completion (text asserts actions never performed)",
+      "examples": "telecom ::t27 'APN reset sent again' with no such call in the turn",
+      "weakest_sufficient_proof": "claim extraction + history evidence grounding (claim adapter)",
+      "classification": "PROVABLE_FROM_COMPETITION_INPUT"
+    },
+    {
+      "pattern": "observed call/result mismatch (repeating a call that already failed identically)",
+      "examples": "retail__48::t4 identical find_user_id_by_name_zip after 'User not found'",
+      "weakest_sufficient_proof": "trajectory comparison (D_OBSERVED_TRAJECTORY)",
+      "classification": "PROVABLE_FROM_COMPETITION_INPUT (no current dedicated rule; surfaces via policy/goal lowering at best)",
+      "gap": "CURRENT_REPRESENTATION_GAP risk: no explicit 'identical failed retry' obligation template in the frozen frontends"
+    },
+    {
+      "pattern": "stale state / old vs newest state",
+      "examples": "airline__7::t6 summing already-flown flights as 'upcoming'",
+      "weakest_sufficient_proof": "temporal reasoning over observation times vs policy current-time + flight dates",
+      "classification": "PROVABLE_FROM_COMPETITION_INPUT (policy states current time; flight dates in results)",
+      "note": "requires state/temporal composition over observations; without T1 freshness the proof must rely on explicit dates in results — feasible for date-stamped data"
+    },
+    {
+      "pattern": "policy exception misapplication (expired contract resume)",
+      "examples": "telecom ::t13 resume_line after contract_end_date < policy current time",
+      "weakest_sufficient_proof": "policy exception + literal date comparison from get_details_by_id result",
+      "classification": "PROVABLE_FROM_COMPETITION_INPUT (dates are literal in results)"
+    },
+    {
+      "pattern": "computed-allowance violation (baggage allowance from membership x cabin)",
+      "examples": "airline__21::t7 nonfree_baggages with silver+economy allowance 2",
+      "weakest_sufficient_proof": "policy rule + profile fields from get_user_details/get_reservation_details (arithmetic)",
+      "classification": "PROVABLE_FROM_COMPETITION_INPUT (observed PROVED_ERROR in C3 via policy lowering)"
+    },
+    {
+      "pattern": "state effect / committed-business-effect claims (X was successfully changed)",
+      "examples": "claims that a write tool's business effect committed (no result for the attempted call in the checked turn)",
+      "weakest_sufficient_proof": "attempted-call semantics: an un-resulted call in the TARGET turn cannot ground a completed-effect claim",
+      "classification": "PROVABLE_FROM_COMPETITION_INPUT (target calls have no results by construction)",
+      "note": "for history effects the architecture needs T1/T2 effect semantics: prompt gives only action verbs -> REQUIRES_UNAVAILABLE_PREMISE for precise effect proofs; untrusted T2 hypotheses keep soundness (never definitive from untrusted)"
+    },
+    {
+      "pattern": "effect/state reasoning needing writes/freshness guarantees",
+      "examples": "proving reservation.status == 'cancelled' from cancel_reservation result + no later mutations",
+      "weakest_sufficient_proof": "trusted effect + freshness closure",
+      "classification": "REQUIRES_UNAVAILABLE_PREMISE (prompt has no freshness/writes guarantees; T2 untrusted hypotheses block definitive state proofs)"
+    }
+  ],
+  "summary": {
+    "PROVABLE_FROM_COMPETITION_INPUT": 11,
+    "REQUIRES_UNAVAILABLE_PREMISE": 1
+  },
+  "headline": "11 of 12 publicly visible error families are provable from the competition input with the weakest sufficient proof; only precise effect/freshness state proofs require premises the prompt never states (unavailable in competition input; untrusted T2 keeps the system sound there by construction)."
+}
