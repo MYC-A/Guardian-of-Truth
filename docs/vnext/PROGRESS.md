@@ -486,3 +486,12 @@ limitations. Full record: docs/vnext/GRS_RESULTS.md.
 - External benchmarks located and reachable (ethz-spylab/agentdojo,
   sierra-research/tau2-bench, apple/ToolSandbox, LiYu0524/ATbench);
   adoption audits deferred to Phase 2. Zero LLM inference used in Phase 0.
+
+## E2E V1 (fresh cycle, frozen at 2a07bc5)
+
+- Implemented the full E2E composition (goal axis E5/assembler/Conservative/RuleFrames; policy H0/GRS composition; shared binding pass; v3-equivalent lowering; E2E certificates with re-derivation checker; analyze_e2e_v1 with arms E0-E4). 45 offline pipeline tests + baseline suites green.
+- Fresh corpus: 69 cases, 42 cohorts, gold by construction, zero shared 8-grams with all prior corpora. Freeze v1 invalidated pre-scoring (disclosed); freeze v2 after 8 live dev-shakeout rounds.
+- Fresh run: 1,134 live requests, all sealed; five arms composed and scored. Hard invariants PASS (0 uncertified, 0 unsafe, 0 crashes).
+- RESULT: CDC 0.246 (E0/E1/E3), 0.232 (E2), 0.174 (E4); definitive accuracy 94%; unsafe 0. No frontend substitution significant (all McNemar p=1.0); retention E4 is a net regression (5 regressions, 0 corrections, p=0.0625).
+- Oracle attribution: claim layer +11.6pp, policy frontends +1.4pp, binding layer second-largest blocker. The E2E bottleneck is the claim channel, not the semantic frontends.
+- TERMINAL DECISION: E2E_LIMITATION_CONFIRMED (no arm reaches CDC>=0.5). Hard stop per prereg. See docs/vnext/e2e/.
