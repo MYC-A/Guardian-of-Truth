@@ -150,7 +150,30 @@ Conclusion before fixes: B4h-sound-v2 cannot be called directly as `analyze(prom
 
 # Failure decomposition
 
-Pending.
+Post-seal FP/FN/UNRESOLVED decomposition is pending the authorized live baseline. The following is a **pre-run representability audit**, not a metric result and not a claim that a public case belongs to a family.
+
+| Real failure family | Static support | Existing mechanism / missing premise |
+|---|---|---|
+| unsupported argument provenance | PARTIALLY_SUPPORTED | Exact calls, arguments, user text, and source spans exist; Goal scope/binding can compare values, but complete provenance closure is not established. |
+| wrong reservation/entity | PARTIALLY_SUPPORTED | Exact entity references and alternative bindings exist; ownership/alias relations not explicit in schema require trusted source semantics. |
+| stale state | REQUIRES_MISSING_PREMISE | Symmetric staleness and later-attempt invalidation are implemented, but authoritative fresh-read/write identity is T1-dependent. |
+| newest-state selection | PARTIALLY_SUPPORTED | `LATEST_OBSERVATION` semantics are implemented; deciding which result is an authoritative state observation requires reads/result-ownership/freshness premises. |
+| confirmation prerequisite | REQUIRES_MISSING_PREMISE | BEFORE/ONLY_IF obligations and event order are representable; proving absence of a required prior confirmation needs source-history closure, deliberately absent in competition mode. |
+| identity verification with multiple fields | PARTIALLY_SUPPORTED | Multiple exact entity keys and candidate bindings are representable; cross-field identity equivalence/result ownership is not supplied by schemas alone. |
+| schema/argument mismatch | NOT_REPRESENTABLE | The adapter preserves required/type/enum/nesting declarations, but frozen B4h passes schemas to T2 and has no direct schema-validity violation component for target calls. |
+| unavailable tool | NOT_REPRESENTABLE | Catalog membership is known, but frozen B4h has no standalone obligation that marks an out-of-catalog target invocation as an error. |
+| action not requested by user | PARTIALLY_SUPPORTED | Goal contracts and target invocation binding exist; an extra action is not automatically prohibited unless the source expresses a prohibition/scope relation. |
+| fabricated action | REQUIRES_MISSING_PREMISE | ACTION_COMPLETED claims bind to calls/effects; absence remains UNKNOWN without complete-history/effect closure. |
+| fabricated result | PARTIALLY_SUPPORTED | Text claims bind to exact observed result fields and can be contradicted; unsupported absence cannot become false without closure. |
+| intent vs completed action | PARTIALLY_SUPPORTED | Claim kind and target level distinguish desired/attempted/completed; completed business effects still require trusted effect semantics. |
+| policy exceptions | PARTIALLY_SUPPORTED | Conditions/exceptions and ALL/ANY gates exist; frozen historical atom catalog cannot represent many value-level conditions from prose. |
+| sequencing rules | PARTIALLY_SUPPORTED | BEFORE/AFTER lowering and ledger order exist; frontend/binding accuracy and closure remain empirical/missing. |
+| wrong entity ID | PARTIALLY_SUPPORTED | Exact identity alternatives avoid silent winner selection; definitive mismatch depends on complete candidate/ownership evidence. |
+| failed calls | PARTIALLY_SUPPORTED | Failure rows never fabricate success/effect; interpreting provider-specific failure/completion fields needs source-grounded semantics. |
+| failure claimed as success | PARTIALLY_SUPPORTED | Literal result-field contradiction is representable; business completion claims need result ownership/effect guarantees. |
+| state-preservation violations | REQUIRES_MISSING_PREMISE | Preservation solver/checker logic exists, but competition prompts provide no trusted state contract or writes/effect contract. |
+
+Static conclusion before live data: structural evidence is substantial, but several headline classes are only partially expressible and two (`schema/argument mismatch`, `unavailable tool`) lack a direct B4h violation primitive. This is a candidate explanation to test against sealed failures, not yet a root-cause count.
 
 # Fix iterations
 
@@ -163,6 +186,16 @@ Pending.
 # Next architecture hypotheses
 
 Pending until baseline, decomposition, and permitted fixes are complete.
+
+# Static hardcoding audit
+
+## 2026-09-16T22:08:00+03:00 — production scan before live baseline
+
+- `rg` found zero occurrences of the prohibited domain prefixes `airline__`, `banking_knowledge__`, `retail__`, or `telecom__` under `src/`.
+- A gold-free scan extracted 221 ID-like tokens from only public `prompt,response` and compared them with every Python source under `src/`; intersection count: **0**. No known reservation/account/customer identifier from the public input is embedded in production code.
+- `case_id` uses in the competition path are logging, progress resumption, joins, and returned audit identity. One content hash still included `case_id`; it was corrected so `E2ESource.source_sha256` is now a function of only `prompt,response`. The metamorphic adapter test pins identical source hashes under ID renaming.
+- `label` access occurs only in the post-seal scoring function and output field naming. `competition_view` and the strict adapter reject label/explanation/domain fields before inference.
+- Result: zero benchmark-specific production hardcoding found in the audited patterns. Research corpus/scoring modules still contain generic `gold_*` fields by design; they are not called by the competition inference path.
 
 # Final state
 

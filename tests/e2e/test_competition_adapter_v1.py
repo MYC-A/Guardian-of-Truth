@@ -58,3 +58,4 @@ def test_id_change_does_not_change_semantic_input():
     first = adapt_competition_input({"id": "case-1", "prompt": PROMPT, "response": RESPONSE}).case
     second = adapt_competition_input({"id": "renamed", "prompt": PROMPT, "response": RESPONSE}).case
     assert replace(first, case_id="renamed") == second
+    assert build_source(first).source_sha256 == build_source(second).source_sha256

@@ -85,7 +85,9 @@ def build_source(case, *, state_contract: dict | None = None) -> E2ESource:
     return E2ESource(case.case_id, prompt, response, case.user_request, policy_text, metadata,
                      tuple(case.tool_schemas), events, projection,
                      bool(case.history_complete), case.completeness_basis,
-                     digest({"prompt": prompt, "response": response, "case_id": case.case_id}))
+                     # Competition id is logging/joining metadata only.  It
+                     # must not alter the content-bound source identity.
+                     digest({"prompt": prompt, "response": response}))
 
 
 def target_calls(source: E2ESource) -> tuple[LedgerEvent, ...]:
