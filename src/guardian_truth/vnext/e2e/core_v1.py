@@ -43,6 +43,10 @@ from .goal_composition_v1 import compose_goal_contracts
 from .goal_types_v1 import BindingRecord, GoalContract
 from .policy_composition_v1 import (PolicyComposition, compose_policy_readings,
                                     compose_single_frontend)
+from .binding_repair_v1 import apply_catalog_identity_binding
+from .claim_adapter_v2 import anchor_claims
+from .scoped_status_v1 import (RepairConfig, scoped_composition,
+                               scoped_world_proofs, world_space_enumerated)
 from .semantic_binding_v1 import run_semantic_binding
 from .source_adapter_v1 import (E2ECaseSources, render_prompt, render_response,
                                 target_call_specs, trajectory_view, user_source_index)
@@ -202,8 +206,15 @@ def run_semantic_passes(sources: E2ECaseSources, deps: E2EDependencies) -> E2ESe
 
 def analyze_e2e_v1(sources: E2ECaseSources, semantic: E2ESemanticOutputs,
                    arm: str, *, max_worlds: int = 4096,
-                   adapter_mode: AdapterMode = AdapterMode.AUDIT) -> E2EAnalysisResult:
-    """Deterministic arm composition: no LLM, no escalation (spec section 158)."""
+                   adapter_mode: AdapterMode = AdapterMode.AUDIT,
+                   repair: RepairConfig | None = None) -> E2EAnalysisResult:
+    """Deterministic arm composition: no LLM, no escalation (spec section 158).
+
+    `repair` (E2E-agent-1 causal repair, default None = exact A0 behavior):
+    scoped claim-UNKNOWN composition (A1), deterministic claim value anchoring
+    (A2) and catalog-identity binding of unexercised semantic atoms (A3).
+    The repairs are lower-layer only: the frozen frontends, their prompts and
+    schemas, the baseline solver and the H0/GRS program space are untouched."""
     if arm not in ARMS:
         raise ValueError("unknown arm: " + arm)
     use_grs = arm in {"E1", "E3", "E4"}
@@ -214,6 +225,16 @@ def analyze_e2e_v1(sources: E2ECaseSources, semantic: E2ESemanticOutputs,
     index = LedgerIndex(ledger)
     registry = ContractRegistry(sources.t1_contracts)
     hard_reasons, reasons = [], []
+
+    # ---- E2E-agent-1 causal repairs (flag-gated, deterministic) ----
+    binding = semantic.binding
+    binding_repairs = ()
+    if repair is not None and repair.catalog_binding:
+        binding, binding_repairs = apply_catalog_identity_binding(
+            binding, sources.tool_names, sources.atom_catalog)
+    claim_anchor_map = {}
+    if repair is not None and repair.value_anchoring:
+        claim_anchor_map = anchor_claims(semantic.claim_graph.claims, registry)
 
     # ---- policy axis ----
     # Arm semantics (spec sections 136-142): a SINGLE-frontend arm's policy
@@ -246,8 +267,8 @@ def analyze_e2e_v1(sources: E2ECaseSources, semantic: E2ESemanticOutputs,
                        "document": event.source.document}
                       for event in ledger.events if event.kind == "call")
     context = LoweringContext(target_calls, len(ledger.events) - 1, all_calls)
-    policy_choices = lower_policy_choices(policy_comp.readings, semantic.binding, context)
-    goal_choices = lower_goal_choices(goal_comp.contracts, semantic.binding, context)
+    policy_choices = lower_policy_choices(policy_comp.readings, binding, context)
+    goal_choices = lower_goal_choices(goal_comp.contracts, binding, context)
     if not policy_choices and not goal_choices:
         hard_reasons.append(Reason.POLICY_NO_INTERPRETATION)
 
@@ -267,10 +288,10 @@ def analyze_e2e_v1(sources: E2ECaseSources, semantic: E2ESemanticOutputs,
                    and _goal_closure_covers(goal_comp, sources))
     goal_complete = bool(goal_comp.contracts) and not goal_space_open
 
-    # ---- claim axes (baseline machinery) ----
+    # ---- claim axes (baseline machinery; A2 anchors are flag-gated) ----
     authorities = []
     groups, bindings = claim_axes(semantic.claim_graph, ledger, index, hard_reasons,
-                                  reasons, authorities)
+                                  reasons, authorities, anchors=claim_anchor_map or None)
     for failure_reason in (reason for _, reason in semantic.claim_graph.failures):
         hard_reasons.append(failure_reason)
 
@@ -322,13 +343,34 @@ def analyze_e2e_v1(sources: E2ECaseSources, semantic: E2ESemanticOutputs,
         "\n".join(source.text for source in sources.user_sources), (), sources.tool_names,
         (), e2e_policy_readings=tuple(_serialize_reading(reading) for reading in policy_comp.readings),
         e2e_goal_contracts=tuple(_serialize_contract(contract) for contract in goal_comp.contracts),
-        e2e_binding=_serialize_binding(semantic.binding),
+        e2e_binding=_serialize_binding(binding),
+        e2e_binding_repairs=tuple((repair_record.unit_id, repair_record.tool, repair_record.rule)
+                                  for repair_record in binding_repairs),
+        e2e_claim_anchors=tuple((claim_id, record["anchor"], record["predicate"],
+                                 record["expected_json"])
+                                for claim_id, record in sorted(claim_anchor_map.items())),
+        e2e_scoped_semantics=bool(repair is not None and repair.scoped_unknown),
         e2e_lowering_inputs={"target_calls": [dict(call) for call in target_calls],
                              "all_calls": [dict(call) for call in all_calls],
                              "end_index": len(ledger.events) - 1},
         e2e_arm=arm, e2e_case_id=sources.case_id,
         e2e_choice_audits=tuple((choice.choice_id, choice.audit)
                                 for choice in (*policy_choices, *goal_choices)))
+    # ---- E2E-agent-1 repair A1: scoped claim-UNKNOWN composition ----
+    scoped_rationale = ()
+    if repair is not None and repair.scoped_unknown:
+        from ..solver import world_space_complete
+        scoped = scoped_composition(problem, solver_result,
+                                    material_space_complete=world_space_complete(problem))
+        scoped_rationale = scoped.rationale
+        if scoped.status is not solver_result.status or scoped.status in {
+                CoreStatus.PROVED_ERROR, CoreStatus.PROVED_NO_ERROR}:
+            rebuilt_proofs = scoped_world_proofs(solver_result, problem)
+            from ..proof_records import SolverResult
+            solver_result = SolverResult(scoped.status, rebuilt_proofs,
+                                         tuple(dict.fromkeys((*solver_result.reasons,
+                                                              *scoped.rationale))))
+
     certificate = make_e2e_certificate(solver_result, problem, ledger, registry,
                                        context=context_cert)
     checked = check_certificate_e2e(certificate, context_cert, problem, ledger, registry) \
@@ -354,7 +396,12 @@ def analyze_e2e_v1(sources: E2ECaseSources, semantic: E2ESemanticOutputs,
                               "goal_agreement": goal_comp.agreement,
                               "policy_choices": len(policy_choices),
                               "goal_choices": len(goal_choices),
-                              "target_calls": len(target_calls)})
+                              "target_calls": len(target_calls),
+                              "repair_arm": repair.arm_label() if repair else "A0",
+                              "binding_repairs": len(binding_repairs),
+                              "claim_anchors": len(claim_anchor_map),
+                              "scoped_rationale": list(scoped_rationale),
+                              "world_space_enumerated": world_space_enumerated(problem)})
 
 
 def _normalize_actor_programs(programs):

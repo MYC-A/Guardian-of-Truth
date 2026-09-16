@@ -183,6 +183,9 @@ class GoalContract:
 class BindingLevel(str, Enum):
     ATTEMPT = "ATTEMPT"       # the invocation attempt itself
     COMPLETED = "COMPLETED"   # a completed, trusted-contract-confirmed action
+    CATALOG_IDENTITY = "CATALOG_IDENTITY"  # E2E-agent-1 repair A3: schema-grounded
+    #   atom<->tool name identity for unexercised atoms; carries no argument
+    #   checks and no entity path — the ledger alone proves calls/absence
 
 
 @dataclass(frozen=True)

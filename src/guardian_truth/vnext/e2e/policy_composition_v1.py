@@ -172,7 +172,11 @@ def make_grs_frontend(ground_task: str, ground_schema: dict, ground_repair_task:
         telemetry.update({f"synth_{key}": item for key, item in synth_telemetry.items()})
         if synth_value is None:
             telemetry["stage"] = "synthesizer"
-            return GRSResult("UNAVAILABLE", (), (), inventory, None, None, False,
+            # (E2E-agent-1 crash fix, disclosed: this path passed one None too
+            # many and raised TypeError instead of returning UNAVAILABLE; the
+            # field order below matches GRSResult exactly and changes no
+            # behavior on any non-crashing path.)
+            return GRSResult("UNAVAILABLE", (), (), inventory, None, False,
                              hallucination, telemetry)
         dsl_text = synth_value.get("dsl", "")
         hallucination = hallucination_attempts(dsl_text, inventory)

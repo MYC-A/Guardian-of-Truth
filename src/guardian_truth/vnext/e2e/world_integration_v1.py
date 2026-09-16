@@ -105,10 +105,17 @@ def lower_goal_choices(contracts, binding: BindingRecord, context: LoweringConte
     return tuple(choices)
 
 
-def claim_axes(graph, ledger, index, hard_reasons, reasons, authorities):
+def claim_axes(graph, ledger, index, hard_reasons, reasons, authorities,
+               anchors=None):
     """Per-claim binding axes — the baseline core machinery, replicated
     verbatim in behavior (factual-consistency obligations + completeness
-    flags + EXPLICIT_SOURCE_IDENTITY authorities for closed bindings)."""
+    flags + EXPLICIT_SOURCE_IDENTITY authorities for closed bindings).
+
+    `anchors` (E2E-agent-1 repair A2, default None = exact old behavior):
+    claim_id -> {predicate, expected_json} deterministic value anchors; the
+    factual atom is built with the anchored surface instead of the boolean
+    reduction.  The anchor set is produced and re-derived by the SAME pure
+    function (claim_adapter_v2.anchor_claims) in pipeline and checker."""
     from ..binder import bind_claim
     from ..certificates import AuthoritativeAxis
     from ..proof_records import AtomKind, ProofAtom, TimeMode
@@ -134,12 +141,16 @@ def claim_axes(graph, ledger, index, hard_reasons, reasons, authorities):
         action = claim.kind in {ClaimKind.ACTION_COMPLETED, ClaimKind.ABSENCE}
         if not action and binding.time_index is None or action and claim.time_anchor not in {"PAST", "ALL_HISTORY", "NOW"} and binding.time_index is None:
             hard_reasons.append(Reason.TIME_UNBOUND)
+        anchor = (anchors or {}).get(claim.claim_id)
+        atom_predicate = anchor["predicate"] if anchor else claim.predicate
+        atom_expected = (anchor["expected_json"] if anchor else
+                         ("false" if claim.polarity == "NEGATIVE" else "true"))
         options = {}
         for i, alternative in enumerate(binding.alternatives):
             cid = claim.claim_id + f":binding:{i}"
             time = binding.time_index if binding.time_index is not None else len(ledger.events) - 1
             atom = ProofAtom(claim.claim_id + f":atom:{i}", mapping[claim.kind], alternative.entity,
-                             claim.predicate, "false" if claim.polarity == "NEGATIVE" else "true",
+                             atom_predicate, atom_expected,
                              claim.actor, TimeMode.THROUGH if action and binding.time_index is None else TimeMode.AT, time)
             options[cid] = (Obligation(claim.claim_id + f":factual:{i}",
                                        "GUARDIAN_FACTUAL_CONSISTENCY_V1", claim.claim_id,

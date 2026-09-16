@@ -56,7 +56,7 @@ from dataclasses import dataclass
 from ..integrity import canonical
 from ..proof_records import ArgumentConstraint, AtomKind, Obligation, ProofAtom, TimeMode
 from ..types import EntityRef, Reason
-from .goal_types_v1 import AtomBindingCandidate, BindingRecord
+from .goal_types_v1 import AtomBindingCandidate, BindingLevel, BindingRecord
 
 RESERVED_PREDICATE_PREFIX = "goal:"
 UNADDRESSED_SENTINEL = "goal:unaddressed"
@@ -145,8 +145,13 @@ def _state_atom(observation, entity: EntityRef, time_index: int, expected: str) 
                      entity, predicate, expected, None, TimeMode.LATEST_OBSERVATION, time_index)
 
 
-def _event_atom(candidate: AtomBindingCandidate, entity: EntityRef, time_index: int,
+def _event_atom(candidate: AtomBindingCandidate, entity: EntityRef | None, time_index: int,
                 *, expected: str = "true") -> ProofAtom:
+    """Event evidence atom.  A CATALOG_IDENTITY candidate (repair A3) has no
+    entity path — it uses the E2E V1 wildcard entity (any assistant call to
+    the tool), which can only under-trigger, never over-trigger."""
+    if entity is None:
+        entity = EntityRef("any", "*", "wildcard")
     return ProofAtom(f"event:{candidate.tool}:{entity.value}", AtomKind.CALL_ATTEMPTED,
                      entity, candidate.tool, expected, "assistant", TimeMode.THROUGH, time_index)
 
@@ -250,7 +255,7 @@ class _RuleLowering:
                 atoms.append(_state_atom(candidate.observation, entity, event["index"], expected))
             elif kind == "event":
                 entity = _entity_for(event, candidate)
-                if entity is None:
+                if entity is None and candidate.level is not BindingLevel.CATALOG_IDENTITY:
                     self.failures.append(f"{self.prefix}:{label}_event_entity_unbound:{atom_name}")
                     ok = False
                     continue

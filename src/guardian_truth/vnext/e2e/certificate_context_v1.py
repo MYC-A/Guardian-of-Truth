@@ -48,6 +48,10 @@ class E2ECertificateContext(CertificateContext):
     e2e_arm: str = ""
     e2e_case_id: str = ""
     e2e_choice_audits: tuple = ()        # (choice_id, ((obligation_id, description), ...))
+    # ---- E2E-agent-1 causal repair (hashed; defaults keep the A0 shape) ----
+    e2e_scoped_semantics: bool = False   # A1: scoped claim-UNKNOWN composition
+    e2e_binding_repairs: tuple = ()      # A3: (unit_id, tool, rule) repair records
+    e2e_claim_anchors: tuple = ()        # A2: (claim_id, anchor, predicate, expected_json)
 
 
 def make_e2e_certificate(result, problem, ledger, registry, *, context):
@@ -167,11 +171,40 @@ def _contract_from_json(record: dict) -> GoalContract:
 def check_certificate_e2e(certificate: ProofCertificate, context: E2ECertificateContext,
                           problem: ProofProblem, ledger: EvidenceLedger,
                           registry: ContractRegistry) -> CertificateCheck:
-    """Baseline checker algorithm + the E2E re-derivation obligation class."""
+    """Baseline checker algorithm + the E2E re-derivation obligation class.
+
+    E2E-agent-1 repair A1 (context.e2e_scoped_semantics): the per-world verdict
+    is the SCOPED error value (scoped_status_v1.scoped_world_value — the same
+    function the pipeline used), markered worlds are admissible for
+    PROVED_ERROR exactly when every world carries a certifiable FALSE
+    conjunct, and PROVED_NO_ERROR keeps the full baseline strictness.  The
+    A2 anchors and A3 binding repairs are re-derived from the hashed
+    evidence with the same pure functions and compared byte-exactly."""
     errors = []
     if certificate.version != E2E_CERTIFICATE_VERSION or certificate.status not in {
             CoreStatus.PROVED_ERROR, CoreStatus.PROVED_NO_ERROR}:
         return CertificateCheck(False, ("INVALID_CERTIFICATE_KIND",))
+
+    # ---- A2/A3 repair records: re-derive from hashed evidence ------------
+    if context.e2e_claim_anchors:
+        from .claim_adapter_v2 import anchor_claims
+        derived = anchor_claims(context.claims, registry)
+        declared = {claim_id: {"anchor": anchor, "predicate": predicate,
+                               "expected_json": expected}
+                    for claim_id, anchor, predicate, expected in context.e2e_claim_anchors}
+        if derived != declared:
+            errors.append("CLAIM_ANCHOR_REDERIVATION_MISMATCH")
+    if context.e2e_binding_repairs:
+        from .binding_repair_v1 import repair_rules_ok
+        repairs = tuple(_RepairRecord(unit, tool, rule)
+                        for unit, tool, rule in context.e2e_binding_repairs)
+        errors.extend(repair_rules_ok(repairs, _binding_from_json(context.e2e_binding),
+                                      tuple(context.tool_catalog)))
+
+    scoped = bool(context.e2e_scoped_semantics)
+    if scoped:
+        from .scoped_status_v1 import axis_completeness, scoped_world_value
+        completeness = axis_completeness(problem)
     hashes = {"source_sha256": digest(asdict(context)),
               "ledger_sha256": digest(asdict(ledger)), "problem_sha256": digest(asdict(problem)),
               "registry_sha256": digest([asdict(contract) for contract in registry.contracts])}
@@ -187,6 +220,14 @@ def check_certificate_e2e(certificate: ProofCertificate, context: E2ECertificate
     if certificate.status is CoreStatus.PROVED_NO_ERROR:
         required_assumptions.update({"SOURCE_HISTORY_COMPLETE", "BINDING_SPACE_COMPLETE",
                                      "SEMANTIC_SPACE_PROVABLY_CLOSED"})
+    elif scoped:
+        # Scoped PROVED_ERROR (repair A1): the epistemic load is carried by the
+        # per-world certifiable-FALSE conjunct check (every certifying conjunct
+        # comes from an enumeration-complete axis) plus the structural product
+        # coverage — NOT by blanket claim/axis completeness.  Claim-local
+        # UNKNOWN (untyped/unbound claims) is exactly what the scoped algebra
+        # admits for ERROR while still forbidding it for NO_ERROR above.
+        required_assumptions = set()
     if any(value in {None, "NOT_ESTABLISHED"} for key, value in assumptions if key in required_assumptions):
         errors.append("COMPLETENESS_UNPROVED")
     if len({axis.name for axis in problem.axes}) != len(problem.axes):
@@ -206,7 +247,13 @@ def check_certificate_e2e(certificate: ProofCertificate, context: E2ECertificate
         proof = proofs.get(wid)
         if proof is None:
             continue
-        if proof.choices != plan.choices or plan.unresolved_reasons:
+        if proof.choices != plan.choices:
+            errors.append("UNRESOLVED_OR_MISMATCHED_WORLD:" + wid)
+        if plan.unresolved_reasons and not scoped:
+            errors.append("UNRESOLVED_OR_MISMATCHED_WORLD:" + wid)
+        if plan.unresolved_reasons and scoped \
+                and certificate.status is CoreStatus.PROVED_NO_ERROR:
+            # scoped semantics keep NO_ERROR strictly baseline: markers forbid it
             errors.append("UNRESOLVED_OR_MISMATCHED_WORLD:" + wid)
         primitives, safety = [], []
         for obligation in plan.obligations:
@@ -221,6 +268,15 @@ def check_certificate_e2e(certificate: ProofCertificate, context: E2ECertificate
                 claim = next((item for item in context.claims if item.claim_id == obligation.claim_id), None)
                 if claim is None or obligation.must_be_true is not True or obligation.conditions:
                     errors.append("FACTUAL_OBLIGATION_NOT_GROUNDED:" + obligation.obligation_id)
+                elif scoped:
+                    anchored = next((item for item in context.e2e_claim_anchors
+                                     if item[0] == obligation.claim_id), None)
+                    expected_predicate = anchored[2] if anchored else claim.predicate
+                    expected_value = (anchored[3] if anchored else
+                                      ("false" if claim.polarity == "NEGATIVE" else "true"))
+                    if (obligation.atom.predicate, obligation.atom.expected_json) != (
+                            expected_predicate, expected_value):
+                        errors.append("FACTUAL_ATOM_SURFACE_MISMATCH:" + obligation.obligation_id)
             elif obligation.hypothesis_id in plan.choices:
                 # E2E rule obligation: full deterministic re-derivation
                 if obligation.hypothesis_id not in e2e_cache:
@@ -239,13 +295,23 @@ def check_certificate_e2e(certificate: ProofCertificate, context: E2ECertificate
         if tuple(primitives) != proof.primitives or tuple(safety) != proof.obligation_safety:
             errors.append("PRIMITIVE_OR_OBLIGATION_WITNESS_MISMATCH:" + wid)
         error_value = negate(conjunction(tuple(value for _, value in safety)))
-        if error_value != proof.error_value:
-            errors.append("WORLD_VERDICT_MISMATCH:" + wid)
-        expected_error = Truth.TRUE if certificate.status is CoreStatus.PROVED_ERROR else Truth.FALSE
-        if error_value is not expected_error:
-            errors.append("WORLD_DOES_NOT_PROVE_CERTIFIED_VERDICT:" + wid)
-        if certificate.status is CoreStatus.PROVED_ERROR and not any(value is Truth.FALSE for _, value in safety):
-            errors.append("MISSING_VIOLATION_WITNESS:" + wid)
+        if scoped:
+            scoped_value, certifying = scoped_world_value(plan, proof, completeness)
+            if scoped_value != proof.error_value:
+                errors.append("WORLD_VERDICT_MISMATCH:" + wid)
+            expected_error = Truth.TRUE if certificate.status is CoreStatus.PROVED_ERROR else Truth.FALSE
+            if scoped_value is not expected_error:
+                errors.append("WORLD_DOES_NOT_PROVE_CERTIFIED_VERDICT:" + wid)
+            if certificate.status is CoreStatus.PROVED_ERROR and not certifying:
+                errors.append("MISSING_VIOLATION_WITNESS:" + wid)
+        else:
+            if error_value != proof.error_value:
+                errors.append("WORLD_VERDICT_MISMATCH:" + wid)
+            expected_error = Truth.TRUE if certificate.status is CoreStatus.PROVED_ERROR else Truth.FALSE
+            if error_value is not expected_error:
+                errors.append("WORLD_DOES_NOT_PROVE_CERTIFIED_VERDICT:" + wid)
+            if certificate.status is CoreStatus.PROVED_ERROR and not any(value is Truth.FALSE for _, value in safety):
+                errors.append("MISSING_VIOLATION_WITNESS:" + wid)
         if certificate.status is CoreStatus.PROVED_NO_ERROR:
             checked_claims = {ob.claim_id for ob in plan.obligations
                               if ob.hypothesis_id == "GUARDIAN_FACTUAL_CONSISTENCY_V1"}
@@ -254,3 +320,10 @@ def check_certificate_e2e(certificate: ProofCertificate, context: E2ECertificate
             if not material_claims <= checked_claims:
                 errors.append("SAFETY_MATERIAL_OBLIGATIONS_INCOMPLETE:" + wid)
     return CertificateCheck(not errors, tuple(dict.fromkeys(errors)))
+
+
+@dataclass(frozen=True)
+class _RepairRecord:
+    unit_id: str
+    tool: str
+    rule: str
