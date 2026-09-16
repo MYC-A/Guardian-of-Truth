@@ -256,9 +256,9 @@ Per directive §45 the soundness-fixed candidate is a NEW explicit version
   line) + Conservative Goal + cycle-3 B3 evidence/claim/world semantics +
   SND-01..SND-10 soundness fixes (all gated behind the cycle-3 semantics
   flags; B0 replay proves the frozen arm untouched).
-* FINAL_FROZEN_COMMIT: recorded in `outputs/vnext/pre_benchmark_soundness_audit.json`
-  (field `final_frozen_commit`; filled at commit time — see the freeze
-  section below).
+* Audit content commit: `5e4bc39e57072e164ab3bf41665e2374f04c6432` (all fixes, tests, documents and
+  replay artifacts). FINAL_FROZEN_COMMIT = the freeze commit that records
+  this manifest (see the worklog and the JSON `freeze` section).
 * Frozen component digests (sha256 of file bytes, first 16 hex):
   world_integration_v1=1c989f652bfcf972, claim_adapter_v1=69f741389e4529ad,
   certificate_context_v1=1b086542f0090f3d, goal_lowering_v1=cb6fc4565823c0de,

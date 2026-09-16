@@ -354,21 +354,66 @@
     }
   ],
   "benchmark_hardcoding_scan": {
-    "production_modules_scanned": ["src/guardian_truth/vnext/e2e/*.py", "src/guardian_truth/vnext/{ledger,tools,proof_evidence,binder,grounding,claims,normalize}.py"],
-    "tokens_searched": ["hold-", "dev-", "case_id", "shipment", "order", "cancelled", "SUCCESS", "FAILURE", "appointment", "meter", "patient", "employee", "subscription", "specific tool names", "entity IDs", "predicate names", "domain values"],
+    "production_modules_scanned": [
+      "src/guardian_truth/vnext/e2e/*.py",
+      "src/guardian_truth/vnext/{ledger,tools,proof_evidence,binder,grounding,claims,normalize}.py"
+    ],
+    "tokens_searched": [
+      "hold-",
+      "dev-",
+      "case_id",
+      "shipment",
+      "order",
+      "cancelled",
+      "SUCCESS",
+      "FAILURE",
+      "appointment",
+      "meter",
+      "patient",
+      "employee",
+      "subscription",
+      "specific tool names",
+      "entity IDs",
+      "predicate names",
+      "domain values"
+    ],
     "benchmark_specific_production_logic_count": 0,
     "notes": "case_id/family are record plumbing; SUCCESS/FAILURE appear as transport-status enums and prompt-overlay example lists (backend_v1.py CLAIM_OVERLAY/BINDING_OVERLAY) that guide LLM extraction but decide nothing deterministically; no value heuristics exist in deterministic semantics"
   },
   "deterministic_repair_audit": {
     "repairs": [
-      {"name": "JSON extraction (first balanced object)", "class": "TRANSPORT_ONLY"},
-      {"name": "arguments/args/parameters path prefix strip", "class": "TRANSPORT_ONLY (path-form normalization against the call-argument root convention)"},
-      {"name": "allowed_json literal canonicalization (bare 14C -> \"14C\")", "class": "REPRESENTATION_PRESERVING (same literal, canonical encoding)"},
-      {"name": "source-quote trailing-punctuation variants", "class": "REPRESENTATION_PRESERVING (grounding span variance; literal unchanged)"},
-      {"name": "action-clause field-check drop", "class": "REPRESENTATION_PRESERVING (action validated by tool name; the compiled rule's semantics come from scope clauses)"},
-      {"name": "H0 one machine-validation repair re-ask (frozen)", "class": "TRANSPORT_ONLY (transport/schema failure only)"},
-      {"name": "GRS canonicalizer + missing-envelope repair (frozen)", "class": "TRANSPORT_ONLY (byte-identical frozen line)"},
-      {"name": "cycle-3 literal coercion", "class": "REPRESENTATION_PRESERVING under the declared canonical-encoding convention (EMP-01)"}
+      {
+        "name": "JSON extraction (first balanced object)",
+        "class": "TRANSPORT_ONLY"
+      },
+      {
+        "name": "arguments/args/parameters path prefix strip",
+        "class": "TRANSPORT_ONLY (path-form normalization against the call-argument root convention)"
+      },
+      {
+        "name": "allowed_json literal canonicalization (bare 14C -> \"14C\")",
+        "class": "REPRESENTATION_PRESERVING (same literal, canonical encoding)"
+      },
+      {
+        "name": "source-quote trailing-punctuation variants",
+        "class": "REPRESENTATION_PRESERVING (grounding span variance; literal unchanged)"
+      },
+      {
+        "name": "action-clause field-check drop",
+        "class": "REPRESENTATION_PRESERVING (action validated by tool name; the compiled rule's semantics come from scope clauses)"
+      },
+      {
+        "name": "H0 one machine-validation repair re-ask (frozen)",
+        "class": "TRANSPORT_ONLY (transport/schema failure only)"
+      },
+      {
+        "name": "GRS canonicalizer + missing-envelope repair (frozen)",
+        "class": "TRANSPORT_ONLY (byte-identical frozen line)"
+      },
+      {
+        "name": "cycle-3 literal coercion",
+        "class": "REPRESENTATION_PRESERVING under the declared canonical-encoding convention (EMP-01)"
+      }
     ],
     "semantic_repairs_introduced_by_this_audit": 0
   },
@@ -376,19 +421,64 @@
     "viewed_development_data_only": true,
     "acceptance_criterion": "soundness, not F1 (directive section 41)",
     "replay": "fully offline, zero LLM cache misses (all fixes are LLM-payload-neutral)",
-    "b0_fidelity": {"dev": "byte_faithful", "holdout": "byte_faithful", "divergences": 0},
-    "old_b4h_combined_144": {"TP": 54, "FP": 0, "FN": 15, "precision": 1.0, "recall": 0.7826, "f1": 0.878,
-                              "false_certified_error": 0, "false_certified_no_error": 0},
-    "b4h_sound_v1_combined_144": {"TP": 54, "FP": 0, "FN": 15, "precision": 1.0, "recall": 0.7826, "f1": 0.878,
-                                   "false_certified_error": 0, "false_certified_no_error": 0,
-                                   "uncertified_definitive": 0},
+    "b0_fidelity": {
+      "dev": "byte_faithful",
+      "holdout": "byte_faithful",
+      "divergences": 0
+    },
+    "old_b4h_combined_144": {
+      "TP": 54,
+      "FP": 0,
+      "FN": 15,
+      "precision": 1.0,
+      "recall": 0.7826,
+      "f1": 0.878,
+      "false_certified_error": 0,
+      "false_certified_no_error": 0
+    },
+    "b4h_sound_v1_combined_144": {
+      "TP": 54,
+      "FP": 0,
+      "FN": 15,
+      "precision": 1.0,
+      "recall": 0.7826,
+      "f1": 0.878,
+      "false_certified_error": 0,
+      "false_certified_no_error": 0,
+      "uncertified_definitive": 0
+    },
     "binary_metrics_change": "none (identical TP/FP/FN)",
     "core_status_verdict_changes": [
-      {"case_id": "dev-019", "old": "UNRESOLVED", "new": "PROVED_NO_ERROR", "cause": "SND-07 linkage fix (improvement; gold NO_ERROR)"},
-      {"case_id": "dev-023", "old": "INCONSISTENT", "new": "PROVED_ERROR", "cause": "SND-01 (gold INCONSISTENT encodes the closed-world persistence assumption; gold_binary None)"},
-      {"case_id": "hold-099", "old": "INCONSISTENT", "new": "PROVED_ERROR", "cause": "SND-01 (gold_binary None)"},
-      {"case_id": "hold-100", "old": "INCONSISTENT", "new": "PROVED_ERROR", "cause": "SND-01 (gold_binary None)"},
-      {"case_id": "hold-042", "old": "PROVED_NO_ERROR", "new": "UNRESOLVED", "cause": "SND-04 flag-channel removal (safe abstention; gold_binary None)"}
+      {
+        "case_id": "dev-019",
+        "old": "UNRESOLVED",
+        "new": "PROVED_NO_ERROR",
+        "cause": "SND-07 linkage fix (improvement; gold NO_ERROR)"
+      },
+      {
+        "case_id": "dev-023",
+        "old": "INCONSISTENT",
+        "new": "PROVED_ERROR",
+        "cause": "SND-01 (gold INCONSISTENT encodes the closed-world persistence assumption; gold_binary None)"
+      },
+      {
+        "case_id": "hold-099",
+        "old": "INCONSISTENT",
+        "new": "PROVED_ERROR",
+        "cause": "SND-01 (gold_binary None)"
+      },
+      {
+        "case_id": "hold-100",
+        "old": "INCONSISTENT",
+        "new": "PROVED_ERROR",
+        "cause": "SND-01 (gold_binary None)"
+      },
+      {
+        "case_id": "hold-042",
+        "old": "PROVED_NO_ERROR",
+        "new": "UNRESOLVED",
+        "cause": "SND-04 flag-channel removal (safe abstention; gold_binary None)"
+      }
     ],
     "detail": "outputs/vnext/pre_benchmark_soundness_regression.json"
   },
@@ -403,7 +493,7 @@
   },
   "freeze": {
     "version": "B4h-sound-v1",
-    "final_frozen_commit": "RECORDED_AT_COMMIT",
+    "final_frozen_commit": "the freeze commit containing this manifest (HEAD after the freeze; a commit cannot contain its own hash - reported in the run log and reproducible via git log)",
     "frozen_component_sha256_16": {
       "world_integration_v1": "1c989f652bfcf972",
       "claim_adapter_v1": "69f741389e4529ad",
@@ -426,7 +516,8 @@
     "reproducible_commands": [
       "PYTHONPATH=src python -m pytest tests/e2e/ tests/e2e_soundness/ -q",
       "PYTHONPATH=src:. python scripts/run_soundness_regression.py"
-    ]
+    ],
+    "audit_content_commit": "5e4bc39e57072e164ab3bf41665e2374f04c6432"
   },
   "hard_stop": "per directive section 47: no new benchmark, no fresh evaluation, no code changes after the freeze commit"
 }
