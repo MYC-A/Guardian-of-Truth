@@ -31,3 +31,18 @@ Work Log:
 Stage Summary:
 - Baseline modules untouched (B0 reproducible); all reuse via import. E2E semantics decisions documented in code: axis-incompleteness (frontend failure) blocks both definitives; reading/rule/claim-level unknowns are per-world UNKNOWN markers (block NO_ERROR, never mask ERROR); PROVED_ERROR needs SEMANTIC_CANDIDATES_COVERED only; PROVED_NO_ERROR needs full closure set (material coverage, history, bindings, closed semantics, fresh state evidence).
 - Next: Phase 6 dev corpus + experiment runner; Phase 7 freeze; Phase 8 fresh E2E.
+
+---
+Task ID: p6-p10
+Agent: main (Super Z)
+Task: Phases 6-10 — development corpus, freeze, fresh holdout E2E, oracle, failure audit, terminal decision
+
+Work Log:
+- Phase 6: dev corpus (32 cases, 15 families); 4 development iterations fixing: BAI strict-schema constraint (response_format_mode=none), frontend schema nullability, REQUIRE_PRESERVE binding mode conventions, claim value anchoring (object==predicate fallback), LATEST-observation state claims, FRESH_STATE_EVIDENCE premise, BEFORE-compilation inversion, GRS condition literal kinds, state-condition evaluation, BOTH-aware INCONSISTENT detection, behavioral closure (replacing canonical-rule closure after action_key variance), registry wiring in run_arm, informational-request empty behaviors.
+- Phase 7: architecture freeze (commit 4d7fdfb; 20 component hashes, 5 prompt/schema hashes, model config, gates); dev metrics at freeze: E0 cov 53%/acc 94%/0 false-NO_ERROR.
+- Phase 8: fresh holdout 112 cases, 8 fresh domains, ZERO shared 8-grams with dev; E0-E4 executed with memoized one-attempt backend; predictions SEALED before gold (seal verification OK); 3 oracle substitution arms post-seal.
+- Phase 9: scoring + oracle attribution + failure audit. Results: E0 cov 0.554/acc 0.855/errR 0.759/noerrR 0.375/0 false-NO_ERROR; E1 parity (p=0.18); E2/E3 significant regression (RF binding conventions); E4 retention 45 regressions/0 corrections; oracle: gold semantics substitutions change nothing (53/112 everywhere) -> bottleneck is binding/claim layers.
+- Phase 10: terminal decision KEEP_CONSERVATIVE_E2E; all 9 required docs + 12 machine-readable artifacts written; 212 tests green; final commit.
+
+Stage Summary:
+- Terminal decision issued per the preregistered machine: the conservative E0-class guardian is promoted; multi-frontend retention is implemented and world-safe but not justified at V1 frontend quality. Hard gates all satisfied (uncertified definitive = 0; false certified NO_ERROR = 0; sealed-before-gold = 100%). STOP per spec 196.
