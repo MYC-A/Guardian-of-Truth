@@ -12,20 +12,33 @@ Semantics fixed by the E2E V1 contract:
 * Exact Cartesian product over the material axes; world budget exceeded means
   UNRESOLVED, never a top-k subset (spec 92, 93).
 
-Cycle-3 conservative state semantics (semantics.conservative_state, B1):
+Cycle-3 conservative state semantics (semantics.conservative_state, B1),
+soundness-audit revision B4h-sound-v1 (pre-benchmark audit, SND-01..SND-09):
 * Only trusted fresh state reads (T1 contract declaring no writes and
-  fresh-read freshness) and verified trusted effects are STATE evidence for
-  CURRENT-state atoms. Rows extracted from mutation results or uncontracted
-  tools are operation outcomes, never entity-state refutations.
-* support + refutation across time are HISTORICAL observations: a CURRENT
-  contradiction (BOTH) exists only when the evidence refers to one material
-  snapshot - same time, or only proven non-mutating calls in between (trusted
-  persistence). When an attempted mutation with unproven effect separates the
-  evidence points, the temporal relation is unknown -> UNKNOWN, never a
-  definitive refutation (absence of an attempted mutation never proves state
-  persistence without a trusted contract).
-* A refutation that strictly precedes the last attempted mutation and is not
-  superseded by later state evidence is stale -> UNKNOWN.
+  fresh-read freshness, contract preconditions held) and verified trusted
+  effects are STATE evidence for CURRENT-state atoms. Rows extracted from
+  mutation results, uncontracted tools or failed reads are operation
+  outcomes, never entity-state refutations.
+* Observation rows bind to an entity only within their own JSON object
+  scope (output-path entity alignment): an envelope field never refutes a
+  nested entity's state, and a scope naming two distinct entities is not
+  attributable at all (SND-03).
+* Cross-time support + refutation are HISTORICAL observations. A CURRENT
+  contradiction (BOTH) exists ONLY for a same-position (single-event
+  snapshot) contradiction. Absence of intervening assistant mutations NEVER
+  proves persistence - external actors are admissible - so a cross-time
+  pair is decided by the freshest trusted evidence, never reported as a
+  contradiction (SND-01).
+* Staleness is symmetric (SND-02): ANY attempted mutation (non-pure-reader
+  call) whose position is AFTER the latest trusted evidence makes the
+  current state UNKNOWN, for support and refutation alike.
+* A claim value token NEVER opens an evidence channel on a same-named
+  boolean predicate: enum<->flag equivalence requires an explicit trusted
+  declaration, which the current representation does not carry (SND-04).
+* Historical (PAST/ALL_HISTORY) existentials are TRUE when any trusted
+  evidence showed the value and UNKNOWN otherwise: refuting 'was never X'
+  would require the complete state timeline, and history_complete certifies
+  only the supplied trace (SND-06).
 """
 
 from __future__ import annotations
@@ -41,7 +54,7 @@ from ..proof_evidence import effect_is_verified, prove_atom
 from ..proof_records import (AtomKind, InterpretationAxis, PrimitiveProof, ProofAtom, ProofProblem,
                              TimeMode, WorldPlan, WorldProof, conjunction, disjunction, negate)
 from ..solver import world_space_complete
-from ..tools import ContractRegistry
+from ..tools import ContractRegistry, conditions_hold
 from ..types import CoreStatus, Reason, Truth, consensus
 from .e2e_types_v1 import FULL_SEMANTICS, DisjunctiveGroup, E2ESemantics, ReadingOption, UnresolvedMarker
 
@@ -86,16 +99,25 @@ class E2ESolverResult:
 
 # ------------------------------------------------------- tool classification
 
-def _pure_reader_event(event, registry: ContractRegistry) -> bool:
+def _pure_reader_event(event, index: LedgerIndex, registry: ContractRegistry) -> bool:
     """A result event is a trusted fresh state read when its tool carries a T1
-    contract that declares NO writes at all and fresh-read freshness: every
-    row it emits then observes entity state at read time. Mutation results
-    (writers) and uncontracted tools are operation outcomes, not state reads."""
-    if event.tool is None:
+    contract that declares NO writes at all and fresh-read freshness, AND the
+    contract's preconditions held for this invocation (SND-05: a failed read
+    did not observe anything; its payload is an operation outcome - the same
+    trusted rule evaluate_t1 already applies to effects). Every row such a
+    call emits then observes entity state at read time."""
+    if event.tool is None or event.call_id is None or event.pairing_issue:
         return False
     contract = registry.lookup(event.tool)
-    return (contract is not None and contract.writes == ()
-            and contract.freshness == "fresh-read")
+    if contract is None or contract.writes != () or contract.freshness != "fresh-read":
+        return False
+    calls = [item for item in index.events_by_call.get(event.call_id, ()) if item.kind == "call"]
+    if len(calls) != 1 or calls[0].tool != event.tool or calls[0].payload_json is None or event.payload_json is None:
+        return False
+    if event.call_candidates != (event.call_id,):
+        return False
+    sources = {"arguments": calls[0].payload, "result": event.payload, "prior_state": {}}
+    return conditions_hold(contract.preconditions, sources)
 
 
 def _mutation_call_positions(ledger: EvidenceLedger, registry: ContractRegistry,
@@ -114,6 +136,26 @@ def _mutation_call_positions(ledger: EvidenceLedger, registry: ContractRegistry,
                 continue  # a declared read-only tool cannot mutate
         positions.append(event.index)
     return positions
+
+
+def _object_scope(path: tuple[str, ...] | str) -> tuple[str, ...]:
+    """JSON object scope of a dotted predicate/ref-key path: all segments
+    except the leaf. Rows and entity refs from the same object share it."""
+    parts = tuple(path.split(".")) if isinstance(path, str) else tuple(path)
+    return tuple(parts[:-1]) if len(parts) > 1 else ()
+
+
+def _row_binds_entity(row_predicate: str, row_refs, entity) -> bool:
+    """SND-03: an observation row is entity-bound only within its own JSON
+    object scope. The entity ref must be extracted from the same object as
+    the row (output-path alignment, not event-level coincidence), and the
+    scope must not name TWO distinct entities (such a row is not
+    attributable to either: same predicate name does not mean same entity
+    state)."""
+    scope = _object_scope(row_predicate)
+    in_scope = [ref for ref in row_refs if _object_scope(ref.key) == scope]
+    return (entity in in_scope
+            and len({(ref.namespace, ref.key, ref.value) for ref in in_scope}) <= 1)
 
 
 def _typed_value_match(actual_json: str, expected_json: str) -> tuple[bool, bool]:
@@ -153,13 +195,6 @@ def _is_number_literal(text: str) -> bool:
         return False
 
 
-def _expected_value(atom: ProofAtom):
-    try:
-        return json.loads(atom.expected_json)
-    except (ValueError, TypeError):
-        return None
-
-
 def prove_e2e_atom(atom: ProofAtom, ledger: EvidenceLedger, index: LedgerIndex,
                    registry: ContractRegistry,
                    semantics: E2ESemantics = FULL_SEMANTICS) -> PrimitiveProof:
@@ -167,12 +202,14 @@ def prove_e2e_atom(atom: ProofAtom, ledger: EvidenceLedger, index: LedgerIndex,
     namespace use the deterministic prerequisite/existential evaluator:
     assistant-call search by exact tool name and entity-value overlap, with
     absence proven ONLY under a complete supplied history and no
-    unknown-actor/unpaired events. OBSERVED_STATE atoms with LATEST semantics
-    use the cycle-3 conservative state semantics (which fully replaces the
-    baseline observation proof for those atoms). Everything else delegates
-    to the baseline prove_atom (shared by solver and checker)."""
+    unknown-actor/unpaired events; under conservative state semantics its
+    observation fallback only consults TRUSTED state evidence (SND-09).
+    OBSERVED_STATE atoms with LATEST semantics use the cycle-3 conservative
+    state semantics (which fully replaces the baseline observation proof for
+    those atoms). Everything else delegates to the baseline prove_atom
+    (shared by solver and checker)."""
     if atom.entity.namespace in {"e2e", "e2e-state"} and atom.kind in {AtomKind.CALL_ATTEMPTED, AtomKind.HISTORICAL_ACTION}:
-        return _prove_deterministic_action_atom(atom, ledger)
+        return _prove_deterministic_action_atom(atom, ledger, index, registry, semantics)
     proof = prove_atom(atom, ledger, index, registry, ())
     if (semantics.conservative_state
             and atom.kind is AtomKind.OBSERVED_STATE
@@ -185,66 +222,54 @@ def prove_e2e_atom(atom: ProofAtom, ledger: EvidenceLedger, index: LedgerIndex,
     return proof
 
 
-def _flag_channel(atom: ProofAtom, semantics: E2ESemantics) -> str | None:
-    """Flag-channel predicate for a value-anchored POSITIVE state claim: the
-    business fact 'field P has value V' is equivalently encoded by this tool
-    ecosystem as the boolean flag 'V is true' (T1 writes/observations use both
-    encodings). Returns the flag predicate, or None when the expectation is
-    not a single anchored literal token."""
-    if not semantics.claim_typing:
-        return None
-    expected = _expected_value(atom)
-    if not isinstance(expected, str) or not expected:
-        return None
-    token = expected.strip()
-    if not token or " " in token or token.lower() in {"true", "false", "null"}:
-        return None
-    if token == atom.predicate:
-        return None  # object merely echoes the predicate: no value information
-    return token
-
-
-def _collect_state_rows(atom, ledger, index, registry, semantics, flag_predicate):
+def _collect_state_rows(atom, ledger, index, registry, semantics):
     """Trusted state evidence rows for the atom: (position, evidence_id,
-    value_json) from pure-reader observations and verified effects, on the
-    field channel (predicate P) and, when enabled, the flag channel
-    (predicate V, boolean value)."""
+    value_json) from pure-reader observations and verified effects on the
+    field channel (predicate must equal the atom predicate exactly; the
+    claim's value token opens no other channel, SND-04). Observation rows
+    additionally bind to the atom entity only within their own JSON object
+    scope (SND-03)."""
     rows = []
-    seen_predicates = {atom.predicate}
-    if flag_predicate is not None:
-        seen_predicates.add(flag_predicate)
     for eid in index.search(entity=atom.entity, time_range=(0, atom.time_index)).event_ids:
         event = index.events_by_id[eid]
-        if not _pure_reader_event(event, registry):
+        if not _pure_reader_event(event, index, registry):
             continue
         for item in index.observations_by_event.get(eid, ()):
-            if atom.entity in item.entity_refs and item.predicate in seen_predicates:
-                rows.append((event.index, item.evidence_id, item.value_json,
-                             item.predicate == flag_predicate if flag_predicate else False))
+            if item.predicate != atom.predicate:
+                continue
+            if not _row_binds_entity(item.predicate, item.entity_refs, atom.entity):
+                continue
+            rows.append((event.index, item.evidence_id, item.value_json))
     for effect in index.effects_by_entity.get(atom.entity, ()):
         if index.positions[effect.event_id] > atom.time_index:
             continue
-        if effect.predicate in seen_predicates and effect_is_verified(effect, ledger, index, registry):
-            rows.append((index.positions[effect.event_id], effect.effect_id, effect.value_json,
-                         effect.predicate == flag_predicate if flag_predicate else False))
+        if effect.predicate == atom.predicate and effect_is_verified(effect, ledger, index, registry):
+            rows.append((index.positions[effect.event_id], effect.effect_id, effect.value_json))
     return rows
 
 
 def _conservative_state_proof(atom, ledger, index, registry, semantics):
-    """Cycle-3 conservative CURRENT-state semantics (see module docstring).
-    Fully replaces the baseline proof for OBSERVED_STATE@LATEST atoms: no
-    trusted state evidence at all means UNKNOWN (an operation-status row or
-    an uncontracted tool's output never refutes an entity-state claim)."""
+    """Conservative CURRENT-state semantics, soundness-audit revision
+    (B4h-sound-v1; see module docstring). Fully replaces the baseline proof
+    for OBSERVED_STATE@LATEST atoms: no trusted state evidence at all means
+    UNKNOWN (an operation-status row, an uncontracted tool's output or a
+    failed read never refutes an entity-state claim).
+
+    Decision procedure:
+    1. same-position support + refutation -> BOTH (one event, one material
+       snapshot - a genuinely contradictory trusted read);
+    2. any attempted mutation positioned AFTER the latest trusted evidence
+       -> UNKNOWN (its effect on this predicate is unproven; staleness is
+       symmetric for support and refutation, SND-02);
+    3. otherwise the freshest trusted evidence decides the CURRENT claim
+       (historical support/refutation on the other side is superseded, never
+       a contradiction - SND-01)."""
     expected_json = atom.expected_json
-    flag_predicate = _flag_channel(atom, semantics)
-    rows = _collect_state_rows(atom, ledger, index, registry, semantics, flag_predicate)
+    rows = _collect_state_rows(atom, ledger, index, registry, semantics)
     support, refute, positions = [], [], {}
-    for position, evidence_id, value_json, is_flag in rows:
+    for position, evidence_id, value_json in rows:
         positions[evidence_id] = position
-        if is_flag:
-            supports, refutes = _flag_row_value(value_json)
-        else:
-            supports, refutes = _typed_value_match(value_json, expected_json)
+        supports, refutes = _typed_value_match(value_json, expected_json)
         if supports:
             support.append(evidence_id)
         elif refutes:
@@ -255,94 +280,47 @@ def _conservative_state_proof(atom, ledger, index, registry, semantics):
     latest = evidence_positions[-1]
     latest_support = [eid for eid in support if positions[eid] == latest]
     latest_refute = [eid for eid in refute if positions[eid] == latest]
-    mutations = _mutation_call_positions(ledger, registry, atom.time_index)
     if latest_support and latest_refute:
-        # same-time contradiction inside one material snapshot
+        # contradictory trusted rows inside ONE event (one material snapshot)
         return PrimitiveProof(atom, Truth.BOTH, tuple(latest_support), tuple(latest_refute))
+    mutations = _mutation_call_positions(ledger, registry, atom.time_index)
+    if mutations and latest < max(mutations):
+        # the last attempted mutation's effect on this predicate is unproven
+        # and no trusted evidence supersedes it: the current state is unknown.
+        return PrimitiveProof(atom, Truth.UNKNOWN, (), (), reasons=(Reason.TEMPORAL_AMBIGUITY,))
     if latest_refute:
-        earlier_support = [eid for eid in support if positions[eid] < latest]
-        if earlier_support:
-            low = min(positions[eid] for eid in earlier_support)
-            separating = [p for p in mutations if low < p < latest]
-            if not separating:
-                # only proven non-mutating calls between the evidence points:
-                # trusted persistence - one material state, so BOTH
-                return PrimitiveProof(atom, Truth.BOTH, tuple(support), tuple(refute))
-            # an attempted mutation with unproven effect separates them: the
-            # historical contradiction is explained; the freshest read wins.
-            return PrimitiveProof(atom, Truth.FALSE, (), tuple(latest_refute))
-        # no supporting evidence anywhere: a fresh refutation at the latest
-        # evidence time is sound - unless it went stale behind the last
-        # attempted mutation whose effect on this predicate is unproven.
-        if mutations and latest < max(mutations):
-            return PrimitiveProof(atom, Truth.UNKNOWN, (), (), reasons=(Reason.TEMPORAL_AMBIGUITY,))
+        # freshest trusted evidence refutes; earlier support is a historical
+        # observation (external actors are admissible; no persistence premise)
         return PrimitiveProof(atom, Truth.FALSE, (), tuple(latest_refute))
-    # latest evidence supports the claim
-    earlier_refute = [eid for eid in refute if positions[eid] < latest]
-    if earlier_refute:
-        low = min(positions[eid] for eid in earlier_refute)
-        separating = [p for p in mutations if low < p < latest]
-        if not separating:
-            return PrimitiveProof(atom, Truth.BOTH, tuple(support), tuple(refute))
-        # the mutation between explains the earlier refutation; the fresh
-        # read at the latest position reports the current state.
-        return PrimitiveProof(atom, Truth.TRUE, tuple(latest_support), ())
+    # freshest trusted evidence supports; earlier refutations are historical
     return PrimitiveProof(atom, Truth.TRUE, tuple(latest_support), ())
 
 
 def _historical_state_proof(atom, ledger, index, registry, semantics):
     """Historical existential state claim ('the status WAS cancelled'):
-    TRUE when ANY trusted state evidence in the prefix shows the value;
-    FALSE only when trusted evidence exists, NONE of it shows the value, and
-    the supplied history is complete (an incomplete prefix can never refute
-    a past state); UNKNOWN otherwise."""
+    TRUE when ANY trusted state evidence in the prefix shows the value.
+    FALSE is NOT reachable in this representation (SND-06): refuting a past
+    existential requires the COMPLETE STATE TIMELINE - every mutation of
+    the entity, including external actors - while history_complete
+    certifies only the completeness of the supplied trace (ledger.py:
+    'relative to the supplied trace, never all external reality'). An
+    exclusive-writer premise would be needed and none is representable."""
     expected_json = atom.expected_json
-    flag_predicate = _flag_channel(atom, semantics)
-    rows = _collect_state_rows(atom, ledger, index, registry, semantics, flag_predicate)
-    support, refute = [], []
-    for _position, evidence_id, value_json, is_flag in rows:
-        if is_flag:
-            supports, _refutes = _flag_row_value(value_json)
-        else:
-            supports, _refutes = _typed_value_match(value_json, expected_json)
+    rows = _collect_state_rows(atom, ledger, index, registry, semantics)
+    support = []
+    for _position, evidence_id, value_json in rows:
+        supports, _refutes = _typed_value_match(value_json, expected_json)
         if supports:
             support.append(evidence_id)
     if support:
         return PrimitiveProof(atom, Truth.TRUE, tuple(support), ())
-    if rows and ledger.history_complete:
-        return PrimitiveProof(atom, Truth.FALSE, (), tuple(evidence_id for _, evidence_id, _, _ in rows))
     return PrimitiveProof(atom, Truth.UNKNOWN, (), (), reasons=(Reason.EVIDENCE_INCOMPLETE,))
 
 
-def _flag_row_value(value_json: str) -> tuple[bool, bool]:
-    """(supports, refutes) of a boolean flag row against a POSITIVE anchored
-    claim: flag true supports, flag false refutes; non-boolean rows carry no
-    evidence in the flag channel."""
-    try:
-        actual = json.loads(value_json)
-    except (ValueError, TypeError):
-        return False, False
-    if type(actual) is bool:
-        return actual, not actual
-    return False, False
-
-
-def _parses(value_json):
-    try:
-        json.loads(value_json)
-        return True
-    except (ValueError, TypeError):
-        return False
-
-
-def _expected(atom):
-    try:
-        return json.loads(atom.expected_json)
-    except (ValueError, TypeError):
-        return None
-
-
-def _prove_deterministic_action_atom(atom: ProofAtom, ledger: EvidenceLedger) -> PrimitiveProof:
+def _prove_deterministic_action_atom(atom: ProofAtom, ledger: EvidenceLedger,
+                                      index: LedgerIndex | None = None,
+                                      registry: ContractRegistry | None = None,
+                                      semantics: E2ESemantics = FULL_SEMANTICS) -> PrimitiveProof:
     try:
         expected = json.loads(atom.expected_json)
     except (ValueError, TypeError):
@@ -361,12 +339,28 @@ def _prove_deterministic_action_atom(atom: ProofAtom, ledger: EvidenceLedger) ->
         return PrimitiveProof(atom, value, ids if expected else (), () if expected else ids)
     # State-condition semantics: no call matches and the predicate matches an
     # observation field -> evaluate against the LATEST matching observation
-    # (a stale observation never proves current state on its own).
+    # (a stale observation never proves current state on its own). Under
+    # conservative state semantics (SND-09) only TRUSTED state evidence
+    # qualifies: pure-reader rows (contract, no writes, fresh-read,
+    # preconditions held) and verified effects. Operation-status rows from
+    # mutation results or uncontracted tools never resolve a gate.
     key_tokens = set(atom.predicate.split("_"))
+    trusted = semantics.conservative_state and index is not None and registry is not None
+
+    def _trusted_state_row(item) -> bool:
+        if not trusted:
+            return True
+        event = index.events_by_id.get(item.event_id)
+        if event is not None and _pure_reader_event(event, index, registry):
+            return True
+        return any(effect.event_id == item.event_id and effect_is_verified(effect, ledger, index, registry)
+                   for effect in ledger.effects)
+
     observations = [item for item in ledger.observations
                     if (item.predicate == atom.predicate or item.predicate in key_tokens)
                     and item.index <= atom.time_index
-                    and (atom.entity.value == "*" or atom.entity.value in {ref.value for ref in item.entity_refs})]
+                    and (atom.entity.value == "*" or atom.entity.value in {ref.value for ref in item.entity_refs})
+                    and _trusted_state_row(item)]
     if observations:
         latest = max(item.index for item in observations)
         support, refute = [], []

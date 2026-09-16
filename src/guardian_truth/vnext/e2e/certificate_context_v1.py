@@ -16,6 +16,7 @@ from ..certificates import CertificateCheck, CertificateContext, material_claims
 from ..integrity import digest
 from ..ledger import EvidenceLedger, LedgerIndex
 from ..normalize import normalize
+from ..proof_evidence import effect_is_verified
 from ..proof_records import (AtomKind, ProofCertificate, ProofProblem, TimeMode,
                              conjunction, disjunction, negate)
 from ..tools import ContractRegistry
@@ -58,7 +59,8 @@ def problem_digest(problem: E2EProblem) -> str:
                    "side": problem.side_sha256})
 
 
-def e2e_completeness_assumptions(bundle: E2EBundle, ledger: EvidenceLedger) -> tuple[tuple[str, str], ...]:
+def e2e_completeness_assumptions(bundle: E2EBundle, ledger: EvidenceLedger,
+                                 registry: ContractRegistry | None = None) -> tuple[tuple[str, str], ...]:
     context = bundle.context
     index = LedgerIndex(ledger)
     material = [claim for claim in context.claims if claim.disposition is Disposition.VERIFIABLE_TYPED]
@@ -75,31 +77,54 @@ def e2e_completeness_assumptions(bundle: E2EBundle, ledger: EvidenceLedger) -> t
             ("BINDING_SPACE_COMPLETE", "explicit exact identity candidates" if bindings_closed else "NOT_ESTABLISHED"),
             ("SEMANTIC_CANDIDATES_COVERED", "all supplied admissible candidates enumerated; not an assertion of unrestricted NL completeness" if axes_covered else "NOT_ESTABLISHED"),
             ("SEMANTIC_SPACE_PROVABLY_CLOSED", "independently supplied authoritative axes" if axes_closed else "NOT_ESTABLISHED"),
-            ("FRESH_STATE_EVIDENCE", "latest supporting observations not superseded by later attempted calls"
-             if _state_evidence_fresh(context, ledger) else "NOT_ESTABLISHED"),
+            ("FRESH_STATE_EVIDENCE", "latest trusted state evidence not superseded by later attempted calls"
+             if _state_evidence_fresh(context, ledger, registry, bundle.semantics) else "NOT_ESTABLISHED"),
             ("ABSENCE_SCOPE_REQUIREMENT", "all absence premises individually checked; retrieval miss is not absence"),
             ("EFFECTS_TRUSTED_ONLY", "no untrusted T2 effect axis present" if _no_t2_axes(bundle) else "NOT_ESTABLISHED"))
 
 
-def _state_evidence_fresh(context, ledger) -> bool:
+def _state_evidence_fresh(context, ledger, registry: ContractRegistry | None = None,
+                          semantics: E2ESemantics = FULL_SEMANTICS) -> bool:
     """A material STATE/ATTRIBUTION claim can only certify safety when its
-    latest supporting observation is not superseded by any later attempted
-    call: an attempted mutation invalidates a stale state claim."""
+    latest TRUSTED state evidence is not superseded by any later attempted
+    call: an attempted mutation invalidates a stale state claim.
+
+    SND-08 (soundness audit): only trusted state evidence positions count -
+    pure-reader observations (T1 contract, no writes, fresh-read,
+    preconditions held) and verified trusted effects. Under conservative
+    state semantics the closure can no longer be established by the
+    mutation result's own operation-status row (the envelope row the
+    solver refuses as state evidence must not establish freshness for the
+    checker). B0 (frozen semantics) keeps the historical premise."""
     call_indexes = [event.index for event in ledger.events if event.kind == "call"]
     if not call_indexes:
         return True
     last_call = max(call_indexes)
+    index = LedgerIndex(ledger)
+    conservative = semantics.conservative_state and registry is not None
     material = [claim for claim in context.claims
                 if claim.disposition is Disposition.VERIFIABLE_TYPED
                 and claim.kind in {ClaimKind.STATE, ClaimKind.ATTRIBUTION}]
     for claim in material:
-        latest = [obs.index for obs in ledger.observations
-                  if claim.predicate == obs.predicate
-                  and any(ref.value in claim.entity_refs for ref in obs.entity_refs)]
-        positions = {event.event_id: event.index for event in ledger.events}
-        latest.extend(positions[effect.event_id] for effect in ledger.effects
-                      if effect.predicate == claim.predicate and effect.status is EffectStatus.TRUSTED_EFFECT
-                      and any(ref.value in claim.entity_refs for ref in (effect.entity,)))
+        latest = []
+        for obs in ledger.observations:
+            if obs.predicate != claim.predicate:
+                continue
+            if not any(ref.value in claim.entity_refs for ref in obs.entity_refs):
+                continue
+            if conservative:
+                from .world_integration_v1 import _pure_reader_event
+                event = index.events_by_id.get(obs.event_id)
+                if event is None or not _pure_reader_event(event, index, registry):
+                    continue
+            latest.append(obs.index)
+        for effect in ledger.effects:
+            if effect.predicate != claim.predicate or effect.status is not EffectStatus.TRUSTED_EFFECT:
+                continue
+            if conservative and not effect_is_verified(effect, ledger, index, registry):
+                continue
+            if any(ref.value in claim.entity_refs for ref in (effect.entity,)):
+                latest.append(index.positions[effect.event_id])
         if not latest or max(latest) < last_call:
             return False
     return True
@@ -118,7 +143,7 @@ def make_e2e_certificate(status: CoreStatus, bundle: E2EBundle, ledger: Evidence
                             digest(asdict(ledger)), digest([asdict(contract) for contract in registry.contracts]),
                             problem_digest(bundle.problem), bundle.problem.worlds and
                             tuple(proof for proof in _world_proofs(bundle, ledger, registry, semantics)),
-                            e2e_completeness_assumptions(bundle, ledger))
+                            e2e_completeness_assumptions(bundle, ledger, registry))
 
 
 def _world_proofs(bundle: E2EBundle, ledger: EvidenceLedger, registry: ContractRegistry,
@@ -144,7 +169,7 @@ def check_e2e_certificate(certificate: ProofCertificate, bundle: E2EBundle, ledg
             errors.append("HASH_MISMATCH:" + field_name)
     if normalize(context.prompt, context.response, tool_identities=context.tool_metadata) != ledger.events:
         errors.append("LEDGER_SOURCE_RECONSTRUCTION_FAILED")
-    assumptions = e2e_completeness_assumptions(bundle, ledger)
+    assumptions = e2e_completeness_assumptions(bundle, ledger, registry)
     if certificate.completeness_assumptions != assumptions:
         errors.append("COMPLETENESS_ASSUMPTIONS_MISMATCH")
     # PROVED_ERROR needs one certified violation witness in every world; a

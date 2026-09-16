@@ -51,9 +51,14 @@ def compile_goal_contract(contract: GoalContract, state_contract: dict | None):
     for i, frame in enumerate(contract.frames):
         quotes = tuple(dict.fromkeys(ref.quote for ref in frame.support))
         key = frame.content_key or _key_from(quotes[0] if quotes else "", None)
-        conditions = tuple(CompiledCondition(_key_from(c, c), False, quotes[0] if quotes else c)
+        # SND-10 (pre-benchmark audit): CompiledCondition requires the
+        # 'bound' argument; the previous call omitted it and ANY goal frame
+        # carrying conditions/exceptions crashed compile_goal_contract.
+        conditions = tuple(CompiledCondition(_key_from(c, c), False, "HISTORY",
+                                             quotes[0] if quotes else c)
                            for c in frame.conditions)
-        exceptions = tuple(CompiledCondition(_key_from(e, e), True, quotes[0] if quotes else e)
+        exceptions = tuple(CompiledCondition(_key_from(e, e), True, "HISTORY",
+                                             quotes[0] if quotes else e)
                            for e in frame.exceptions)
         scope = tuple((entry.field, _value_forms(entry.values)) for entry in frame.scope)
         frame_unresolved = list(frame.unresolved_fields)

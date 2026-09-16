@@ -16,6 +16,13 @@ Cycle-3 alternative_groups semantics (B2): authorization is not obligation.
   lowers into ONE satisfaction group: the goal is satisfied when ANY bound
   alternative operationalization holds (OR over conjunctions), never into
   independent per-choice world obligations (REQUIRE A AND REQUIRE B).
+
+Soundness-audit revision (SND-07): authorized alternatives extend a
+REQUIRE rule's satisfaction ONLY when the alternatives rule is about the
+SAME requirement (its action_key equals the rule's, or the rule's
+action_key is one of its declared alternatives). Alternatives of an
+unrelated frame are cross-frame authorization, never satisfaction paths
+for that requirement.
 """
 
 from __future__ import annotations
@@ -103,6 +110,31 @@ def _alternative_group(rule: CompiledRule, normative_text: str, backend, ledger,
     return group, markers
 
 
+def _linked_alternatives(rule, rules, binding=None) -> tuple[str, ...]:
+    """SND-07: alternatives that are satisfaction paths FOR THIS rule's
+    requirement. Two linkage premises, either suffices:
+    * frame-level: a GOAL_ALTERNATIVES rule about the same action (its
+      action_key equals this rule's, or this rule's action_key is one of
+      its declared alternatives);
+    * operational: this rule's BOUND tool is one of the declared
+      alternatives (the requirement operationalizes to an action the user's
+      own ANY_OF enumeration contains, so the enumeration is about this
+      requirement's task).
+    Alternatives of an unrelated frame (no linkage either way) never
+    satisfy an unrelated requirement."""
+    linked = set()
+    bound_tools = {atom.predicate for choice in (binding.choices if binding else ())
+                   for atom in choice.atoms}
+    for other in rules:
+        if other is rule or other.kind != "GOAL_ALTERNATIVES":
+            continue
+        if (other.action_key == rule.action_key
+                or rule.action_key in other.alternatives
+                or (bound_tools & set(other.alternatives))):
+            linked.update(other.alternatives)
+    return tuple(sorted(linked))
+
+
 def lower_goal_contract(contract: GoalContract, *, user_request: str, state_contract: dict | None,
                         backend, ledger, tool_catalog, target_calls,
                         normative_text: str | None = None,
@@ -111,9 +143,6 @@ def lower_goal_contract(contract: GoalContract, *, user_request: str, state_cont
     lowered = LoweredReading(rules=rules)
     if normative_text is None:
         normative_text = goal_normative_text(user_request, rules)
-    authorized_alternatives = sorted({alternative for other in rules
-                                      if other.kind == "GOAL_ALTERNATIVES"
-                                      for alternative in other.alternatives})
     per_rule_alternatives = []
     for rule in rules:
         if rule.kind == "GOAL_ALTERNATIVES":
@@ -144,13 +173,14 @@ def lower_goal_contract(contract: GoalContract, *, user_request: str, state_cont
             per_rule_alternatives.append([((), (), (marker,) + extra_markers)])
             continue
         if (semantics.alternative_groups and rule.modality == "REQUIRE"
-                and (len(binding.choices) > 1 or authorized_alternatives)
+                and (len(binding.choices) > 1 or _linked_alternatives(rule, rules, binding))
                 and all(choice.must_be_true for choice in binding.choices)):
             # ONE satisfaction group: the goal is satisfied by ANY bound
-            # alternative operationalization, extended with the explicitly
-            # AUTHORIZED alternative tools of the same request (the user's own
-            # ANY_OF words, never an invented reading). Authorization
-            # alternatives are never independent obligations.
+            # alternative operationalization, extended ONLY with the
+            # explicitly authorized alternatives LINKED to this same
+            # requirement (SND-07: the user's own ANY_OF words about THIS
+            # action, never an unrelated frame's authorization).
+            # Authorization alternatives are never independent obligations.
             satisfaction = []
             for choice in binding.choices:
                 lowered.choices = lowered.choices + (choice,)
@@ -158,7 +188,13 @@ def lower_goal_contract(contract: GoalContract, *, user_request: str, state_cont
                 atoms = tuple(atom for atom in choice.atoms
                               if any(call.event_id == atom.entity.value for call in target_calls))
                 satisfaction.append(atoms)
-            for alternative in authorized_alternatives:
+            # extension: linked alternatives NOT already operationalized by a
+            # binding choice (a choice bundle for the same tool already
+            # exists; a redundant authalt bundle with scope-derived
+            # constraints would only distort the behavioral signature).
+            bound_tools = {atom.predicate for choice in binding.choices for atom in choice.atoms}
+            for alternative in (alt for alt in _linked_alternatives(rule, rules, binding)
+                                if alt not in bound_tools):
                 for event in target_calls:
                     constraints = tuple(ArgumentConstraint((field_name,), tuple(values))
                                         for field_name, values in rule.scope)

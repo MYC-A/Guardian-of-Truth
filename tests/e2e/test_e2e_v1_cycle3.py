@@ -1,20 +1,20 @@
 """Cycle-3 controlled tests: conservative temporal/BOTH semantics (directive
 section 3) and claim value-anchoring mutation tests (directive section 6).
 
-Each test pins the EXACT semantics decided in cycle 3:
-* same-material-snapshot contradiction (only proven non-mutating calls
-  between evidence points) -> BOTH -> INCONSISTENT;
-* an attempted mutation with unproven effect between support and refutation
-  is a historical change, never a current contradiction (fresh read wins);
-* refutation strictly before the last attempted mutation is stale -> UNKNOWN;
-* only trusted fresh reads (T1 contract, no writes, fresh-read) and verified
-  effects are state evidence; operation-status rows never refute state;
-* historical (PAST/ALL_HISTORY) state claims are existentials; FUTURE /
-  time-unspecified state claims are unverifiable markers, never refutable
-  atoms;
-* value anchoring guards: entity-ref objects never anchor; numeric/boolean
-  literal coercion is representation-preserving; multi-word objects never
-  anchor.
+Soundness-audit revision (B4h-sound-v1): the tests below were re-pinned to
+the SOUND semantics proven necessary by the pre-benchmark audit
+(docs/vnext/e2e/PRE_BENCHMARK_SOUNDNESS_AUDIT.md, findings SND-01..SND-10):
+* cross-time support+refutation is decided by the freshest trusted evidence
+  (FALSE/TRUE), never reported as BOTH/INCONSISTENT - absence of intervening
+  assistant mutations does not prove persistence (SND-01, external actors
+  are admissible);
+* staleness is symmetric: trusted evidence preceding the LAST attempted
+  mutation yields UNKNOWN for support and refutation alike (SND-02);
+* only same-position (single-event snapshot) contradictions are BOTH;
+* the lexical flag channel is removed (SND-04): a claim value token opens no
+  evidence channel on a same-named boolean predicate;
+* PAST existentials are never refuted from trace completeness alone
+  (SND-06): trace-complete is not state-timeline-complete.
 """
 import pytest
 
@@ -80,11 +80,12 @@ BASE_HISTORY = (_call("fetch_status", '{"order_id": "ORD-1"}', "c1"),
 
 # ------------------------------------------------- section 3: temporal/BOTH
 
-def test_same_time_contradictory_trusted_results_is_inconsistent():
-    # Trusted verified effect (status=cancelled, guarantee conditioned on
-    # SUCCESS) at t1 + fresh trusted read (status=active) at t3 with ONLY the
-    # proven pure read between: one material state under trusted persistence
-    # -> BOTH -> INCONSISTENT (the trusted-persistence-contract case).
+def test_same_time_contradictory_trusted_results_is_refuted_by_freshest_read():
+    # SND-01 re-pin: verified effect (cancelled)@t1 + fresh read (active)@t3
+    # are HISTORICAL observations; INCONSISTENT would require proving the
+    # read wrong, i.e. an unproven persistence premise (external actors are
+    # admissible). The CURRENT claim is decided by the freshest trusted
+    # evidence: FALSE -> PROVED_ERROR (was BOTH -> INCONSISTENT).
     effect_contract = ({"identity": dict(MUTATOR), "preconditions": [], "reads": [], "writes": ["status"],
                         "guarantees": [{"conditions": [{"source": "result", "path": ["status"],
                                                          "equals_json": '"SUCCESS"'}],
@@ -101,36 +102,37 @@ def test_same_time_contradictory_trusted_results_is_inconsistent():
     case = make_case(history, "The status of order ORD-1 is cancelled.",
                      extra_contracts=effect_contract)
     analysis = analyze(case, claim_passes("STATE", "status", "cancelled", ["ORD-1"]))
-    assert claim_truth(analysis) is Truth.BOTH
-    assert analysis.result.status.value == "INCONSISTENT"
+    assert claim_truth(analysis) is Truth.FALSE
+    assert analysis.result.status.value == "PROVED_ERROR"
 
 
-def test_read_call_between_observations_is_trusted_persistence_inconsistent():
-    # support(active)@t1 + refutation(suspended)@t3 with only a PROVEN pure
-    # read between: one material state -> BOTH -> INCONSISTENT (dev-023 /
-    # hold-099 semantics).
+def test_read_call_between_observations_freshest_read_wins():
+    # SND-01 re-pin: support(active)@t1 + refutation(suspended)@t3 with only
+    # a pure read between: no assistant mutation in between does NOT prove
+    # persistence (an external actor may have changed the state), so the pair
+    # is historical and the freshest trusted read decides: FALSE (was
+    # BOTH -> INCONSISTENT; the dev-023/hold-099 closed-world reading).
     history = (BASE_HISTORY
                + (_call("fetch_status", '{"order_id": "ORD-1"}', "c2"),
                   _result("fetch_status", '{"order_id": "ORD-1", "status": "suspended"}', "c2")))
     case = make_case(history, "The status of order ORD-1 is active.")
     analysis = analyze(case, claim_passes("STATE", "status", "active", ["ORD-1"]))
-    assert claim_truth(analysis) is Truth.BOTH
-    assert analysis.result.status.value == "INCONSISTENT"
+    assert claim_truth(analysis) is Truth.FALSE
+    assert analysis.result.status.value != "INCONSISTENT"
 
 
 def test_unknown_external_mutation_between_support_and_refutation_unknown():
-    # An attempted mutation with unproven effect after the supporting read:
-    # the trusted support stays TRUE at the atom level (it is the latest
-    # trusted state evidence) but the CURRENT state is unverifiable - the
-    # operation-status row never refutes it, and the FRESH_STATE_EVIDENCE
-    # closure blocks certified safety, so the case is UNRESOLVED (hold-045
-    # semantics: stale support, never a certified error).
+    # SND-02 re-pin: an attempted mutation with unproven effect AFTER the
+    # supporting read makes the CURRENT state UNKNOWN (the support is stale
+    # and the operation-status row never refutes it) - the case is
+    # UNRESOLVED (hold-045 semantics: stale support, never a certified
+    # verdict in either direction; was TRUE at the atom level).
     history = (BASE_HISTORY
                + (_call("set_status", '{"order_id": "ORD-1", "status": "suspended"}', "c2"),
                   _result("set_status", '{"order_id": "ORD-1", "status": "SUCCESS"}', "c2")))
     case = make_case(history, "The status of order ORD-1 is active.")
     analysis = analyze(case, claim_passes("STATE", "status", "active", ["ORD-1"]))
-    assert claim_truth(analysis) is Truth.TRUE
+    assert claim_truth(analysis) is Truth.UNKNOWN
     assert analysis.result.status.value == "UNRESOLVED"
 
 
@@ -174,12 +176,13 @@ def test_failed_attempted_mutation_state_claim_stays_unknown():
 
 
 def test_attempted_mutation_invalidates_stale_support_for_safety():
-    # True-but-stale support never certifies safety: FRESH_STATE_EVIDENCE
-    # closure blocks NO_ERROR after any attempted call (test_stale shape).
+    # SND-02 re-pin: stale support never certifies safety and never proves
+    # the claim either - the atom itself is UNKNOWN after the unanswered
+    # attempted mutation (was TRUE + closure-blocked).
     history = BASE_HISTORY + (_call("set_status", '{"order_id": "ORD-1"}', "c2"),)
     case = make_case(history, "The status of order ORD-1 is active.")
     analysis = analyze(case, claim_passes("STATE", "status", "active", ["ORD-1"]))
-    assert claim_truth(analysis) is Truth.TRUE
+    assert claim_truth(analysis) is Truth.UNKNOWN
     assert analysis.result.status.value != "PROVED_NO_ERROR"
 
 
@@ -199,12 +202,16 @@ def test_past_state_claim_is_historical_existential():
     assert analysis.result.status.value != "PROVED_ERROR"
 
 
-def test_past_state_claim_refuted_only_under_complete_history():
+def test_past_state_claim_is_historical_existential_unknown_without_timeline():
+    # SND-06 re-pin: refuting 'was cancelled' requires the COMPLETE STATE
+    # TIMELINE (external mutations never appear as events);
+    # history_complete certifies only the supplied trace, so the sound
+    # answer is UNKNOWN even on a complete trace (was FALSE).
     history = BASE_HISTORY
     case = make_case(history, "The status of order ORD-1 was cancelled.")
     analysis = analyze(case, claim_passes("STATE", "status", "cancelled", ["ORD-1"],
                                           time_anchor="PAST"))
-    assert claim_truth(analysis) is Truth.FALSE
+    assert claim_truth(analysis) is Truth.UNKNOWN
     incomplete = make_case(BASE_HISTORY, "The status of order ORD-1 was cancelled.", complete=False)
     analysis2 = analyze(incomplete, claim_passes("STATE", "status", "cancelled", ["ORD-1"],
                                                  time_anchor="PAST"))
@@ -297,9 +304,14 @@ def test_null_and_missing_values_never_support():
     assert claim_truth(analysis2) is Truth.UNKNOWN
 
 
-def test_flag_channel_supports_value_anchored_claim():
-    # 'is cancelled' with a trusted effect cancelled=true (flag encoding of
-    # the same business fact) - hold-042 semantics.
+def test_lexical_flag_channel_removed_value_anchored_claim_unknown():
+    # SND-04 re-pin: 'status is cancelled' with a trusted effect on the
+    # boolean predicate 'cancelled' used to verify through the LEXICAL
+    # flag channel (claim value token -> same-named boolean predicate).
+    # The equivalence 'status==cancelled <-> cancelled==true' has no trusted
+    # source in the representation, so the sound answer is UNKNOWN (was
+    # TRUE); hold-042-style coverage returns only with explicit
+    # semantic_equivalences declarations (REP-02).
     flag_contract = ({"identity": dict(MUTATOR), "preconditions": [], "reads": [], "writes": ["cancelled"],
                       "guarantees": [{"conditions": [{"source": "result", "path": ["status"],
                                                        "equals_json": '"SUCCESS"'}],
@@ -311,9 +323,9 @@ def test_flag_channel_supports_value_anchored_claim():
                       "idempotence": "idempotent", "provenance": "bench_authoritative_contract"},)
     history = (_call("set_status", '{"order_id": "ORD-1"}', "c1"),
                _result("set_status", '{"order_id": "ORD-1", "status": "SUCCESS"}', "c1"))
-    case = make_case(history, "Order ORD-1 is cancelled.", extra_contracts=flag_contract)
+    case = make_case(history, "The status of order ORD-1 is cancelled.", extra_contracts=flag_contract)
     analysis = analyze(case, claim_passes("STATE", "status", "cancelled", ["ORD-1"]))
-    assert claim_truth(analysis) is Truth.TRUE
+    assert claim_truth(analysis) is Truth.UNKNOWN
 
 
 def test_appears_cancelled_is_untyped_not_refuted():
