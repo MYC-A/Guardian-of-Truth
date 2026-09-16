@@ -123,6 +123,13 @@ Conclusion before fixes: B4h-sound-v2 cannot be called directly as `analyze(prom
 - The saved `.env` value still contains a trailing non-ASCII `U+042D` character. The client rejects it locally as `invalid_api_key`; removing that character in-process proved the remaining credential valid, but the full run will use the saved value only after the user saves the correction. No public prompt/response has yet been sent to Groq.
 - Validation after provider generalization: 103/103 E2E+soundness tests and 7/7 focused adapter/firewall/provider tests passed.
 
+## 2026-09-16T21:57:00+03:00 — Groq transport preflight
+
+- The saved credential still has the trailing invalid `U+042D`; for this process only, the already-validated ASCII portion was loaded without modifying `.env` or writing the credential anywhere.
+- One synthetic request to `qwen/qwen3.8-27b` succeeded with `transport_status=SUCCESS` and `schema_status=VALID`. This proves endpoint authentication, selected-model availability, Chat Completions transport, JSON extraction, and local schema validation.
+- The subsequent one-row R1 smoke command was rejected before execution by the environment's external-data safeguard: asking to try a Groq model is not considered explicit authorization to export the contents of `valid.parquet` to Groq.
+- No competition prompt or response was transmitted. Next gate: explicit user consent to send the public dataset's `prompt` and `response` fields to `api.groq.com`; then run one-row smoke followed by the full gold-firewalled baseline.
+
 # T1 / tool-semantics audit
 
 ## 2026-09-16T21:18:00+03:00 — available source-grounded subset
