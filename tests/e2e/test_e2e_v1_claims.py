@@ -71,8 +71,10 @@ READER_IDENTITY = {"name": "get_order", "provider": "bench", "version": "1.0",
 def reader_contract():
     """Trusted fresh-read contract: a declared read-only tool whose result
     rows are state observations at read time (cycle-3 conservative state
-    semantics only accepts trusted fresh reads as state evidence)."""
-    return [{"identity": dict(READER_IDENTITY), "preconditions": [], "reads": [], "writes": [],
+    semantics only accepts trusted fresh reads as state evidence; B4h-sound-v2
+    additionally declares the status output path in `reads` - explicit
+    field-level ownership per SND-11)."""
+    return [{"identity": dict(READER_IDENTITY), "preconditions": [], "reads": ["status"], "writes": [],
              "guarantees": [], "possible_effects": [], "no_effect_conditions": [],
              "failure_semantics": "documented", "freshness": "fresh-read",
              "idempotence": "idempotent", "provenance": "bench_authoritative_contract"}]

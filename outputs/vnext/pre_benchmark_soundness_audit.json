@@ -1,523 +1,677 @@
 {
-  "version": "pre_benchmark_soundness_audit_v1",
-  "audited_candidate": "B4h",
-  "frozen_start_commit": "e7eb79c7897789ec14c696b6b9626a6b73e97306",
-  "branch": "E2E-agent-2",
-  "resulting_candidate": "B4h-sound-v1",
-  "audit_scope": "universality of proof semantics (directive section 1); dev32+holdout112 used only as regression diagnostics (viewed development data)",
-  "main_invariant": "PROVED means PROVED FROM EXPLICIT TRUSTED PREMISES, never reasonable under common API conventions",
-  "micro_suite": {
-    "path": "tests/e2e_soundness/test_pre_benchmark_soundness.py",
-    "tests": 38,
-    "passing": 37,
-    "strict_xfail_documenting_open_risk": 1,
-    "xfail_finding": "SND-03 flat single-entity envelope residue (REP-01)"
+ "version": "pre_benchmark_soundness_audit_v2_final_verification",
+ "audited_candidate": "B4h",
+ "frozen_start_commit": "e7eb79c7897789ec14c696b6b9626a6b73e97306",
+ "branch": "E2E-agent-2",
+ "resulting_candidate": "B4h-sound-v2",
+ "audit_scope": "universality of proof semantics (directive section 1); dev32+holdout112 used only as regression diagnostics (viewed development data)",
+ "main_invariant": "PROVED means PROVED FROM EXPLICIT TRUSTED PREMISES, never reasonable under common API conventions",
+ "micro_suite": {
+  "path": "tests/e2e_soundness/test_pre_benchmark_soundness.py",
+  "tests": 38,
+  "passing": 37,
+  "strict_xfail_documenting_open_risk": 1,
+  "xfail_finding": "SND-03 flat single-entity envelope residue (REP-01)"
+ },
+ "findings": [
+  {
+   "id": "SND-01",
+   "class": "FORMAL_SOUNDNESS_BUG",
+   "module": "src/guardian_truth/vnext/e2e/world_integration_v1.py",
+   "function": "_conservative_state_proof",
+   "invariant": "cross-time support+refutation is a historical pair; a current-state contradiction (BOTH) requires an explicit persistence/exclusive-writer premise; absence of intervening assistant mutations never proves persistence (external actors admissible)",
+   "counterexample": "read status=active@t1, external actor blocks account (not in ledger), read status=blocked@t3, claim 'status is active' -> pre-audit BOTH -> INCONSISTENT certified",
+   "current_behavior": "BOTH -> INCONSISTENT when no assistant mutation separates the evidence points",
+   "correct_behavior": "freshest trusted evidence decides the CURRENT claim (FALSE); BOTH only for same-position (single-event) contradictions",
+   "counterexample_test": "tests/e2e_soundness/test_pre_benchmark_soundness.py::test_A01_external_actor_transition_is_not_contradiction (also A02, H02)",
+   "fixed": true,
+   "corpus_impact": "dev-023/hold-099/hold-100 INCONSISTENT->PROVED_ERROR (gold INCONSISTENT encodes the closed-world assumption; gold_binary None, binary-neutral)"
   },
-  "findings": [
-    {
-      "id": "SND-01",
-      "class": "FORMAL_SOUNDNESS_BUG",
-      "module": "src/guardian_truth/vnext/e2e/world_integration_v1.py",
-      "function": "_conservative_state_proof",
-      "invariant": "cross-time support+refutation is a historical pair; a current-state contradiction (BOTH) requires an explicit persistence/exclusive-writer premise; absence of intervening assistant mutations never proves persistence (external actors admissible)",
-      "counterexample": "read status=active@t1, external actor blocks account (not in ledger), read status=blocked@t3, claim 'status is active' -> pre-audit BOTH -> INCONSISTENT certified",
-      "current_behavior": "BOTH -> INCONSISTENT when no assistant mutation separates the evidence points",
-      "correct_behavior": "freshest trusted evidence decides the CURRENT claim (FALSE); BOTH only for same-position (single-event) contradictions",
-      "counterexample_test": "tests/e2e_soundness/test_pre_benchmark_soundness.py::test_A01_external_actor_transition_is_not_contradiction (also A02, H02)",
-      "fixed": true,
-      "corpus_impact": "dev-023/hold-099/hold-100 INCONSISTENT->PROVED_ERROR (gold INCONSISTENT encodes the closed-world assumption; gold_binary None, binary-neutral)"
-    },
-    {
-      "id": "SND-02",
-      "class": "FORMAL_SOUNDNESS_BUG",
-      "module": "src/guardian_truth/vnext/e2e/world_integration_v1.py",
-      "function": "_conservative_state_proof",
-      "invariant": "staleness is symmetric: any attempted mutation positioned after the latest trusted evidence makes the current state UNKNOWN, for support and refutation alike",
-      "counterexample": "read active@t1, attempted set_status@t2 (unproven effect), claim 'status is active' -> pre-audit TRUE",
-      "current_behavior": "TRUE (support branch had no staleness gate; refute-with-earlier-support branch neither)",
-      "correct_behavior": "UNKNOWN (TEMPORAL_AMBIGUITY)",
-      "counterexample_test": "test_A03_stale_support_before_last_attempted_mutation_is_unknown (also A05)",
-      "fixed": true,
-      "corpus_impact": "none on binary metrics"
-    },
-    {
-      "id": "SND-02+08",
-      "class": "FORMAL_SOUNDNESS_BUG",
-      "module": "src/guardian_truth/vnext/e2e/certificate_context_v1.py",
-      "function": "_state_evidence_fresh",
-      "invariant": "the FRESH_STATE_EVIDENCE closure may only be established by trusted state evidence (pure-reader observations, verified effects); the mutation result's own operation-status row must not establish freshness",
-      "counterexample": "read active@t1, set_status@suspended@t2 returning {status: SUCCESS}, response claims 'status is active', goal closure supplied -> pre-audit PROVED_NO_ERROR certified (false certified safety)",
-      "current_behavior": "freshness established via predicate-name matching over ALL observations including mutation envelope rows",
-      "correct_behavior": "UNRESOLVED",
-      "counterexample_test": "test_A04_stale_support_never_certifies_no_error",
-      "fixed": true,
-      "corpus_impact": "false_certified_NO_ERROR stays 0 on the regression corpora; the adversarial path is closed"
-    },
-    {
-      "id": "SND-03",
-      "class": "FORMAL_SOUNDNESS_BUG",
-      "module": "src/guardian_truth/vnext/e2e/world_integration_v1.py",
-      "function": "_collect_state_rows (+ ledger.observations flattening)",
-      "invariant": "an observation row is entity-bound only within its own JSON object scope (output-path alignment); an envelope field is not the nested entity's state; a scope naming two distinct entities is not attributable",
-      "counterexample": "pure reader returns {status: SUCCESS, account: {id: A-1, status: pending}}, claim 'account A-1 status is active' -> pre-audit refuted by the top-level envelope row; flat variant {from_account: A-1, to_account: A-2, from_balance: 100} supported a claim anchored to the wrong entity",
-      "current_behavior": "predicate-name matching + event-level entity refs",
-      "correct_behavior": "UNKNOWN for both variants (subtree scope + same-scope ambiguity skip)",
-      "counterexample_test": "test_B01_envelope_row_of_nested_reader_never_refutes, test_B02_flat_multi_entity_row_is_not_attributable, test_E01",
-      "fixed": "partial - nested-envelope and multi-entity variants fixed; flat single-entity envelope is representation-limited (REP-01) and pinned by strict xfail test_B05",
-      "corpus_impact": "none (corpus results are flat single-entity or search lists whose binding is unchanged or tightened)"
-    },
-    {
-      "id": "SND-04",
-      "class": "FORMAL_SOUNDNESS_BUG",
-      "module": "src/guardian_truth/vnext/e2e/world_integration_v1.py",
-      "function": "_flag_channel / _flag_row_value (removed)",
-      "invariant": "predicate P == value V is NOT equivalent to predicate V == true without a trusted equivalence declaration; the untrusted claim's own value token must never select an evidence channel",
-      "counterexample": "reader returns {item_id: ITEM-1, red: true}, claim 'color is red' -> pre-audit TRUE via lexical flag channel (and red: false -> FALSE)",
-      "current_behavior": "flag channel supports/refutes value-anchored claims from same-named boolean predicates",
-      "correct_behavior": "UNKNOWN; equivalence returns only with explicit semantic_equivalences (REP-02)",
-      "counterexample_test": "test_C01_lexical_flag_channel_never_supports, test_C02_lexical_flag_channel_never_refutes",
-      "fixed": true,
-      "corpus_impact": "hold-042 PROVED_NO_ERROR->UNRESOLVED (gold_binary None, binary-neutral); documented coverage cost COV-03"
-    },
-    {
-      "id": "SND-05",
-      "class": "FORMAL_SOUNDNESS_BUG",
-      "module": "src/guardian_truth/vnext/e2e/world_integration_v1.py",
-      "function": "_pure_reader_event",
-      "invariant": "a T1 read is a trusted fresh state observation only when the contract's preconditions held (the same trusted rule evaluate_t1 applies to effects); a failed read's payload is an operation outcome",
-      "counterexample": "reader contract with preconditions [result.status == SUCCESS]; read fails returning {status: FAILURE, error: timeout}; claim 'status is active' -> pre-audit FALSE (certified ERROR)",
-      "current_behavior": "no precondition gating for read rows",
-      "correct_behavior": "UNKNOWN",
-      "counterexample_test": "test_B04_failed_pure_read_never_refutes_state",
-      "fixed": true,
-      "corpus_impact": "none (corpus reader contracts declare empty preconditions)"
-    },
-    {
-      "id": "SND-06",
-      "class": "FORMAL_SOUNDNESS_BUG",
-      "module": "src/guardian_truth/vnext/e2e/world_integration_v1.py",
-      "function": "_historical_state_proof",
-      "invariant": "refuting a PAST existential requires the complete state timeline (every mutation of the entity, including external actors); history_complete certifies only the completeness of the supplied trace",
-      "counterexample": "complete trace with reads active@t1, active@t3; external actor set cancelled@t2; claim 'status WAS cancelled' -> pre-audit FALSE",
-      "current_behavior": "FALSE when rows exist, none support, ledger.history_complete",
-      "correct_behavior": "UNKNOWN (no exclusive-writer premise is representable)",
-      "counterexample_test": "test_I01_complete_trace_never_refutes_past_existential",
-      "fixed": true,
-      "corpus_impact": "none on binary metrics"
-    },
-    {
-      "id": "SND-07",
-      "class": "FORMAL_SOUNDNESS_BUG",
-      "module": "src/guardian_truth/vnext/e2e/goal_lowering_v1.py",
-      "function": "lower_goal_contract (authorized_alternatives extension)",
-      "invariant": "authorization alternatives are satisfaction paths only for the requirement they are linked to (frame-level: same action_key or the action_key is one of the alternatives; operational: the rule's bound tool is one of the alternatives); cross-frame authorization is never satisfaction",
-      "counterexample": "'Book flight FL-1. Also, cancel hotel H-1 or modify hotel H-1 as needed.' + assistant only calls cancel_hotel -> pre-audit REQUIRE(book_flight) satisfied by the unrelated alternative (false NO_ERROR path)",
-      "current_behavior": "global union of all GOAL_ALTERNATIVES alternatives extends every REQUIRE rule",
-      "correct_behavior": "PROVED_ERROR (the booking requirement is violated)",
-      "counterexample_test": "test_K01_unlinked_alternatives_do_not_satisfy_requirement (companion: test_K02 linked alternatives preserved)",
-      "fixed": true,
-      "corpus_impact": "dev-019 UNRESOLVED->PROVED_NO_ERROR (improvement: linkage un-degenerated the alternative-actions case); hold-070/072 preserved"
-    },
-    {
-      "id": "SND-09",
-      "class": "FORMAL_SOUNDNESS_BUG",
-      "module": "src/guardian_truth/vnext/e2e/world_integration_v1.py",
-      "function": "_prove_deterministic_action_atom (observation fallback)",
-      "invariant": "action-gate prerequisites resolve only from trusted state evidence (pure-reader rows, verified effects); operation rows from uncontracted/mutation tools never resolve a gate",
-      "counterexample": "gate 'check_booking' (CALL_ATTEMPTED, expected true); uncontracted mutation result {booking: false} -> pre-audit token-overlap row refuted the gate (FALSE)",
-      "current_behavior": "observation fallback consults all ledger observations",
-      "correct_behavior": "UNKNOWN (trusted-evidence-only under conservative semantics; B0 keeps frozen behavior)",
-      "counterexample_test": "test_M01_action_prerequisite_not_resolved_by_operation_row (companion: test_M02 trusted rows still resolve)",
-      "fixed": true,
-      "corpus_impact": "none (corpus gates resolve through call matching; B0 fidelity verified)"
-    },
-    {
-      "id": "SND-10",
-      "class": "FORMAL_SOUNDNESS_BUG (crash; produces no verdict, never a false definitive)",
-      "module": "src/guardian_truth/vnext/e2e/goal_composition_v1.py",
-      "function": "compile_goal_contract",
-      "invariant": "goal frames carrying conditions/exceptions must compile (missing 'bound' positional argument raised TypeError)",
-      "counterexample": "any AUTHORIZATION/DESIRED_OUTCOME frame with non-empty conditions",
-      "current_behavior": "TypeError; evaluator degrades the case to UNRESOLVED, library call raises",
-      "correct_behavior": "conditions compile to HISTORY-bound prerequisite atoms",
-      "counterexample_test": "test_K04_conditions_on_alternatives_block_no_error",
-      "fixed": true,
-      "corpus_impact": "none (no corpus goal frame carries conditions)"
-    },
-    {
-      "id": "COV-01",
-      "class": "CONSERVATIVE_COVERAGE_LIMITATION",
-      "module": "src/guardian_truth/vnext/e2e/world_integration_v1.py",
-      "function": "_pure_reader_event",
-      "invariant": "a tool that writes anything (even an unrelated audit field) is not a pure reader; its reads are discarded (sound abstention)",
-      "counterexample": "tool reads account.balance, writes audit.last_access",
-      "current_behavior": "UNKNOWN",
-      "correct_behavior": "UNKNOWN until field-level read contracts (REP-01)",
-      "counterexample_test": "test_B03_reader_with_unrelated_writes_discards_rows",
-      "fixed": false,
-      "corpus_impact": "none"
-    },
-    {
-      "id": "COV-02",
-      "class": "CONSERVATIVE_COVERAGE_LIMITATION",
-      "module": "src/guardian_truth/vnext/ledger.py",
-      "function": "observations (dotted-path predicates)",
-      "invariant": "nested business fields (account.status) are distinct predicates from bare claim names (status); no false support/refutation crosses the path boundary",
-      "counterexample": "claim predicate 'status' vs row predicate 'account.status'",
-      "current_behavior": "UNKNOWN (coverage loss, sound direction)",
-      "correct_behavior": "path-anchored claims in V2",
-      "counterexample_test": "test_E02_nested_business_field_is_not_bare_predicate",
-      "fixed": false,
-      "corpus_impact": "none"
-    },
-    {
-      "id": "COV-03",
-      "class": "CONSERVATIVE_COVERAGE_LIMITATION",
-      "module": "src/guardian_truth/vnext/e2e/world_integration_v1.py",
-      "function": "(flag channel removal)",
-      "invariant": "cost of the SND-04 soundness fix: flag-encoded claims verify only when the claim predicate IS the boolean field (direct predicate channel)",
-      "counterexample": "hold-042 shape: claim (status, cancelled) + effect (cancelled, true) -> UNKNOWN",
-      "current_behavior": "UNKNOWN",
-      "correct_behavior": "returns with REP-02 semantic_equivalences",
-      "counterexample_test": "tests/e2e/test_e2e_v1_cycle3.py::test_lexical_flag_channel_removed_value_anchored_claim_unknown (companion sound path: test_C03 direct-predicate flag claims)",
-      "fixed": false,
-      "corpus_impact": "hold-042 NO_ERROR->UNRESOLVED (binary-neutral)"
-    },
-    {
-      "id": "COV-04",
-      "class": "CONSERVATIVE_COVERAGE_LIMITATION",
-      "module": "src/guardian_truth/vnext/e2e/world_integration_v1.py",
-      "function": "_prove_deterministic_action_atom (token-overlap gate matching)",
-      "invariant": "state gates resolve only against boolean-typed rows whose predicate overlaps the gate key tokens; everything else stays UNKNOWN",
-      "counterexample": "gate 'account_status' vs string-valued row 'status'",
-      "current_behavior": "UNKNOWN (conservative)",
-      "correct_behavior": "exact-predicate gates in V2 (EMP-02)",
-      "counterexample_test": "covered by M01/M02 companions",
-      "fixed": false,
-      "corpus_impact": "none"
-    },
-    {
-      "id": "REP-01",
-      "class": "REPRESENTATION_LIMITATION (soundness-relevant)",
-      "module": "src/guardian_truth/vnext/tools.py (TrustedContract.reads)",
-      "function": "T1 read declaration",
-      "invariant": "field-level read contracts (output_path, entity_ref, predicate, freshness per read) are required to close the flat single-entity envelope risk",
-      "counterexample": "flat reader {account_id: A-1, status: SUCCESS} where top-level status is an operation envelope - indistinguishable from a business field",
-      "current_behavior": "envelope row can refute state claims (the ONE known open formal soundness risk)",
-      "correct_behavior": "T1 reads: [{output_path: status, entity_ref: arguments.account_id, predicate: status, freshness: fresh}] in V2; cannot be retrofitted to the frozen corpus",
-      "counterexample_test": "test_B05_flat_envelope_row_never_refutes (strict xfail documenting the open risk)",
-      "fixed": false,
-      "corpus_impact": "none on corpus (corpus readers return business fields at top level)"
-    },
-    {
-      "id": "REP-02",
-      "class": "REPRESENTATION_LIMITATION",
-      "module": "src/guardian_truth/vnext/tools.py",
-      "function": "(future contract extension)",
-      "invariant": "explicit semantic_equivalences declarations for enum<->flag encodings (the sound replacement for the removed lexical flag channel)",
-      "counterexample": "SND-04's counterexample re-enabled safely",
-      "current_behavior": "not representable",
-      "correct_behavior": "semantic_equivalences: [{lhs: {predicate: status, value: cancelled}, rhs: {predicate: cancelled, value: true}}]",
-      "counterexample_test": null,
-      "fixed": false,
-      "corpus_impact": "none"
-    },
-    {
-      "id": "REP-03",
-      "class": "REPRESENTATION_LIMITATION",
-      "module": "src/guardian_truth/vnext/e2e/world_integration_v1.py",
-      "function": "_typed_value_match",
-      "invariant": "contract-declared canonicalization for cross-type literal comparison (hardening of EMP-01)",
-      "counterexample": "schema-declared integer canonicalization would make '42'<->42 comparable by declaration",
-      "current_behavior": "declared adapter canonical-encoding convention (EMP-01)",
-      "correct_behavior": "V2 contract declaration",
-      "counterexample_test": "tests D01-D04 pin both the safe and convention behaviors",
-      "fixed": false,
-      "corpus_impact": "none"
-    },
-    {
-      "id": "REP-04",
-      "class": "REPRESENTATION_LIMITATION",
-      "module": "src/guardian_truth/vnext/tools.py (freshness field)",
-      "function": "tool-level freshness",
-      "invariant": "mixed freshness within one output (fresh balance, cached monthly_summary) is not expressible; while T1 is trusted this is a contract-authoring risk, not a proof error",
-      "counterexample": "{balance: 100, monthly_summary: 4250} with tool-level fresh-read",
-      "current_behavior": "all fields treated fresh per the trusted contract",
-      "correct_behavior": "per-field freshness in V2",
-      "counterexample_test": null,
-      "fixed": false,
-      "corpus_impact": "none"
-    },
-    {
-      "id": "REP-05",
-      "class": "REPRESENTATION_LIMITATION",
-      "module": "src/guardian_truth/vnext/tools.py (freshness/consistency)",
-      "function": "(eventual consistency)",
-      "invariant": "T1 must characterize consistency/freshness; a trusted fresh-read contract is taken at face value, so replica staleness is outside Guardian's proof scope",
-      "counterexample": "write committed, immediate replica read returns old state",
-      "current_behavior": "trusted contract vouches the read",
-      "correct_behavior": "consistency declarations in V2 contracts",
-      "counterexample_test": null,
-      "fixed": false,
-      "corpus_impact": "none"
-    },
-    {
-      "id": "REP-06",
-      "class": "REPRESENTATION_LIMITATION",
-      "module": "src/guardian_truth/vnext/tools.py (failure_semantics free string)",
-      "function": "(read success semantics)",
-      "invariant": "machine-readable success/failure semantics for read contracts; SND-05's precondition gate is the best available proxy",
-      "counterexample": "contract without preconditions + failed read still emits rows",
-      "current_behavior": "precondition-gated when declared; otherwise envelope risk remains (shares REP-01 residue)",
-      "correct_behavior": "structured success semantics in V2",
-      "counterexample_test": null,
-      "fixed": false,
-      "corpus_impact": "none"
-    },
-    {
-      "id": "REP-07",
-      "class": "REPRESENTATION_LIMITATION",
-      "module": "(async lifecycle)",
-      "function": "(contract-level stage semantics)",
-      "invariant": "accepted/queued/scheduled/started/completed must stay distinct literals (no collapse); V1 keeps them distinct by value identity",
-      "counterexample": "start_export -> accepted=true; claim 'completed' refuted (correct)",
-      "current_behavior": "distinct literals stay distinct (test G01 pins it)",
-      "correct_behavior": "stage semantics via contracts in V2",
-      "counterexample_test": "test_G01_accepted_is_not_completed",
-      "fixed": false,
-      "corpus_impact": "none"
-    },
-    {
-      "id": "REP-08",
-      "class": "REPRESENTATION_LIMITATION",
-      "module": "src/guardian_truth/vnext/e2e/goal_composition_v1.py",
-      "function": "DESIRED_OUTCOME -> GOAL_CALL",
-      "invariant": "a desired outcome with no target calls is vacuously satisfied (authorization is not obligation); unfulfilled-goal detection relies on OBLIGATION frames and the claim axis",
-      "counterexample": "goal unfulfilled + non-committal response -> NO_ERROR possible",
-      "current_behavior": "declared V1 program-space limitation (documented in module docstrings)",
-      "correct_behavior": "'must act' existential semantics outside V1",
-      "counterexample_test": null,
-      "fixed": false,
-      "corpus_impact": "none"
-    },
-    {
-      "id": "EMP-01",
-      "class": "EMPIRICAL_HYPOTHESIS",
-      "module": "src/guardian_truth/vnext/e2e/world_integration_v1.py",
-      "function": "_typed_value_match",
-      "invariant": "the canonical-encoding literal coercion (claim text token == canonical JSON encoding of the observed number/boolean) is a declared, deterministic, total adapter convention; no counterexample constructible without unrepresentable text-type distinctions; leading-zero/precision-distinct literals already UNKNOWN",
-      "counterexample": "claim '42' vs observation 42 -> TRUE under the convention; '001' vs 1 -> UNKNOWN (pinned)",
-      "current_behavior": "kept as declared convention",
-      "correct_behavior": "harden with REP-03 declarations in V2",
-      "counterexample_test": "test_D01..test_D04",
-      "fixed": false,
-      "corpus_impact": "none"
-    },
-    {
-      "id": "EMP-02",
-      "class": "EMPIRICAL_HYPOTHESIS",
-      "module": "src/guardian_truth/vnext/e2e/world_integration_v1.py",
-      "function": "_prove_deterministic_action_atom (key_tokens)",
-      "invariant": "lexical token bridging for state gates (gate 'account_status' <- trusted row 'status') remains on trusted rows for B0-frozen compatibility; corpus-neutral; exact-predicate gates recommended in V2",
-      "counterexample": "boolean trusted row whose predicate is a token of the gate key resolves the gate",
-      "current_behavior": "kept (B0-shared)",
-      "correct_behavior": "exact predicate matching in V2",
-      "counterexample_test": "test_M02 (pins the trusted-row resolution)",
-      "fixed": false,
-      "corpus_impact": "none"
-    },
-    {
-      "id": "EMP-03",
-      "class": "EMPIRICAL_HYPOTHESIS",
-      "module": "src/guardian_truth/vnext/normalize.py",
-      "function": "explicit_entities",
-      "invariant": "entity refs are extracted only from id/_id/name keys; other key conventions (from_account/to_account) bind no entity refs - claims stay unbound (marker), conservative",
-      "counterexample": "{from_account, to_account, from_balance} -> no entity refs at all",
-      "current_behavior": "conservative unbinding",
-      "correct_behavior": "broader conventions are a V2 representation question",
-      "counterexample_test": "test_B02 (documents the unbinding)",
-      "fixed": false,
-      "corpus_impact": "none"
-    },
-    {
-      "id": "EMP-04",
-      "class": "EMPIRICAL_HYPOTHESIS (Area L architectural risk)",
-      "module": "src/guardian_truth/vnext/e2e/policy_historical_v1.py",
-      "function": "extended_policy_text / ATOM_CATALOG_SUFFIX",
-      "invariant": "machine suffixes (POLICY_ATOM_CATALOG, POLICY_STATE_CONSTRAINTS) make atom keys and trusted literals textually groundable for the operational binding; the frontends parse the RAW policy text; the suffix influences grounding, not normative meaning; recorded as an architectural risk per directive section 30",
-      "counterexample": "a binding candidate quoting machine metadata verbatim (validated against the extended text by design - grounding context, not normative rule)",
-      "current_behavior": "grounding-only in every audited path",
-      "correct_behavior": "keep; the risk is that a future frontend interprets suffix text normatively - guarded by the raw-text parse boundary",
-      "counterexample_test": null,
-      "fixed": false,
-      "corpus_impact": "none"
-    }
+  {
+   "id": "SND-02",
+   "class": "FORMAL_SOUNDNESS_BUG",
+   "module": "src/guardian_truth/vnext/e2e/world_integration_v1.py",
+   "function": "_conservative_state_proof",
+   "invariant": "staleness is symmetric: any attempted mutation positioned after the latest trusted evidence makes the current state UNKNOWN, for support and refutation alike",
+   "counterexample": "read active@t1, attempted set_status@t2 (unproven effect), claim 'status is active' -> pre-audit TRUE",
+   "current_behavior": "TRUE (support branch had no staleness gate; refute-with-earlier-support branch neither)",
+   "correct_behavior": "UNKNOWN (TEMPORAL_AMBIGUITY)",
+   "counterexample_test": "test_A03_stale_support_before_last_attempted_mutation_is_unknown (also A05)",
+   "fixed": true,
+   "corpus_impact": "none on binary metrics"
+  },
+  {
+   "id": "SND-02+08",
+   "class": "FORMAL_SOUNDNESS_BUG",
+   "module": "src/guardian_truth/vnext/e2e/certificate_context_v1.py",
+   "function": "_state_evidence_fresh",
+   "invariant": "the FRESH_STATE_EVIDENCE closure may only be established by trusted state evidence (pure-reader observations, verified effects); the mutation result's own operation-status row must not establish freshness",
+   "counterexample": "read active@t1, set_status@suspended@t2 returning {status: SUCCESS}, response claims 'status is active', goal closure supplied -> pre-audit PROVED_NO_ERROR certified (false certified safety)",
+   "current_behavior": "freshness established via predicate-name matching over ALL observations including mutation envelope rows",
+   "correct_behavior": "UNRESOLVED",
+   "counterexample_test": "test_A04_stale_support_never_certifies_no_error",
+   "fixed": true,
+   "corpus_impact": "false_certified_NO_ERROR stays 0 on the regression corpora; the adversarial path is closed"
+  },
+  {
+   "id": "SND-03",
+   "class": "FORMAL_SOUNDNESS_BUG",
+   "module": "src/guardian_truth/vnext/e2e/world_integration_v1.py",
+   "function": "_collect_state_rows (+ ledger.observations flattening)",
+   "invariant": "an observation row is entity-bound only within its own JSON object scope (output-path alignment); an envelope field is not the nested entity's state; a scope naming two distinct entities is not attributable",
+   "counterexample": "pure reader returns {status: SUCCESS, account: {id: A-1, status: pending}}, claim 'account A-1 status is active' -> pre-audit refuted by the top-level envelope row; flat variant {from_account: A-1, to_account: A-2, from_balance: 100} supported a claim anchored to the wrong entity",
+   "current_behavior": "predicate-name matching + event-level entity refs",
+   "correct_behavior": "UNKNOWN for both variants (subtree scope + same-scope ambiguity skip)",
+   "counterexample_test": "test_B01_envelope_row_of_nested_reader_never_refutes, test_B02_flat_multi_entity_row_is_not_attributable, test_E01",
+   "fixed": "partial - nested-envelope and multi-entity variants fixed; flat single-entity envelope is representation-limited (REP-01) and pinned by strict xfail test_B05",
+   "corpus_impact": "none (corpus results are flat single-entity or search lists whose binding is unchanged or tightened)"
+  },
+  {
+   "id": "SND-04",
+   "class": "FORMAL_SOUNDNESS_BUG",
+   "module": "src/guardian_truth/vnext/e2e/world_integration_v1.py",
+   "function": "_flag_channel / _flag_row_value (removed)",
+   "invariant": "predicate P == value V is NOT equivalent to predicate V == true without a trusted equivalence declaration; the untrusted claim's own value token must never select an evidence channel",
+   "counterexample": "reader returns {item_id: ITEM-1, red: true}, claim 'color is red' -> pre-audit TRUE via lexical flag channel (and red: false -> FALSE)",
+   "current_behavior": "flag channel supports/refutes value-anchored claims from same-named boolean predicates",
+   "correct_behavior": "UNKNOWN; equivalence returns only with explicit semantic_equivalences (REP-02)",
+   "counterexample_test": "test_C01_lexical_flag_channel_never_supports, test_C02_lexical_flag_channel_never_refutes",
+   "fixed": true,
+   "corpus_impact": "hold-042 PROVED_NO_ERROR->UNRESOLVED (gold_binary None, binary-neutral); documented coverage cost COV-03"
+  },
+  {
+   "id": "SND-05",
+   "class": "FORMAL_SOUNDNESS_BUG",
+   "module": "src/guardian_truth/vnext/e2e/world_integration_v1.py",
+   "function": "_pure_reader_event",
+   "invariant": "a T1 read is a trusted fresh state observation only when the contract's preconditions held (the same trusted rule evaluate_t1 applies to effects); a failed read's payload is an operation outcome",
+   "counterexample": "reader contract with preconditions [result.status == SUCCESS]; read fails returning {status: FAILURE, error: timeout}; claim 'status is active' -> pre-audit FALSE (certified ERROR)",
+   "current_behavior": "no precondition gating for read rows",
+   "correct_behavior": "UNKNOWN",
+   "counterexample_test": "test_B04_failed_pure_read_never_refutes_state",
+   "fixed": true,
+   "corpus_impact": "none (corpus reader contracts declare empty preconditions)"
+  },
+  {
+   "id": "SND-06",
+   "class": "FORMAL_SOUNDNESS_BUG",
+   "module": "src/guardian_truth/vnext/e2e/world_integration_v1.py",
+   "function": "_historical_state_proof",
+   "invariant": "refuting a PAST existential requires the complete state timeline (every mutation of the entity, including external actors); history_complete certifies only the completeness of the supplied trace",
+   "counterexample": "complete trace with reads active@t1, active@t3; external actor set cancelled@t2; claim 'status WAS cancelled' -> pre-audit FALSE",
+   "current_behavior": "FALSE when rows exist, none support, ledger.history_complete",
+   "correct_behavior": "UNKNOWN (no exclusive-writer premise is representable)",
+   "counterexample_test": "test_I01_complete_trace_never_refutes_past_existential",
+   "fixed": true,
+   "corpus_impact": "none on binary metrics"
+  },
+  {
+   "id": "SND-07",
+   "class": "FORMAL_SOUNDNESS_BUG",
+   "module": "src/guardian_truth/vnext/e2e/goal_lowering_v1.py",
+   "function": "lower_goal_contract (authorized_alternatives extension)",
+   "invariant": "authorization alternatives are satisfaction paths only for the requirement they are linked to (frame-level: same action_key or the action_key is one of the alternatives; operational: the rule's bound tool is one of the alternatives); cross-frame authorization is never satisfaction",
+   "counterexample": "'Book flight FL-1. Also, cancel hotel H-1 or modify hotel H-1 as needed.' + assistant only calls cancel_hotel -> pre-audit REQUIRE(book_flight) satisfied by the unrelated alternative (false NO_ERROR path)",
+   "current_behavior": "global union of all GOAL_ALTERNATIVES alternatives extends every REQUIRE rule",
+   "correct_behavior": "PROVED_ERROR (the booking requirement is violated)",
+   "counterexample_test": "test_K01_unlinked_alternatives_do_not_satisfy_requirement (companion: test_K02 linked alternatives preserved)",
+   "fixed": true,
+   "corpus_impact": "dev-019 UNRESOLVED->PROVED_NO_ERROR (improvement: linkage un-degenerated the alternative-actions case); hold-070/072 preserved"
+  },
+  {
+   "id": "SND-09",
+   "class": "FORMAL_SOUNDNESS_BUG",
+   "module": "src/guardian_truth/vnext/e2e/world_integration_v1.py",
+   "function": "_prove_deterministic_action_atom (observation fallback)",
+   "invariant": "action-gate prerequisites resolve only from trusted state evidence (pure-reader rows, verified effects); operation rows from uncontracted/mutation tools never resolve a gate",
+   "counterexample": "gate 'check_booking' (CALL_ATTEMPTED, expected true); uncontracted mutation result {booking: false} -> pre-audit token-overlap row refuted the gate (FALSE)",
+   "current_behavior": "observation fallback consults all ledger observations",
+   "correct_behavior": "UNKNOWN (trusted-evidence-only under conservative semantics; B0 keeps frozen behavior)",
+   "counterexample_test": "test_M01_action_prerequisite_not_resolved_by_operation_row (companion: test_M02 trusted rows still resolve)",
+   "fixed": true,
+   "corpus_impact": "none (corpus gates resolve through call matching; B0 fidelity verified)"
+  },
+  {
+   "id": "SND-10",
+   "class": "FORMAL_SOUNDNESS_BUG (crash; produces no verdict, never a false definitive)",
+   "module": "src/guardian_truth/vnext/e2e/goal_composition_v1.py",
+   "function": "compile_goal_contract",
+   "invariant": "goal frames carrying conditions/exceptions must compile (missing 'bound' positional argument raised TypeError)",
+   "counterexample": "any AUTHORIZATION/DESIRED_OUTCOME frame with non-empty conditions",
+   "current_behavior": "TypeError; evaluator degrades the case to UNRESOLVED, library call raises",
+   "correct_behavior": "conditions compile to HISTORY-bound prerequisite atoms",
+   "counterexample_test": "test_K04_conditions_on_alternatives_block_no_error",
+   "fixed": true,
+   "corpus_impact": "none (no corpus goal frame carries conditions)"
+  },
+  {
+   "id": "COV-01",
+   "class": "CONSERVATIVE_COVERAGE_LIMITATION",
+   "module": "src/guardian_truth/vnext/e2e/world_integration_v1.py",
+   "function": "_pure_reader_event",
+   "invariant": "a tool that writes anything (even an unrelated audit field) is not a pure reader; its reads are discarded (sound abstention)",
+   "counterexample": "tool reads account.balance, writes audit.last_access",
+   "current_behavior": "UNKNOWN",
+   "correct_behavior": "UNKNOWN until field-level read contracts (REP-01)",
+   "counterexample_test": "test_B03_reader_with_unrelated_writes_discards_rows",
+   "fixed": false,
+   "corpus_impact": "none"
+  },
+  {
+   "id": "COV-02",
+   "class": "CONSERVATIVE_COVERAGE_LIMITATION",
+   "module": "src/guardian_truth/vnext/ledger.py",
+   "function": "observations (dotted-path predicates)",
+   "invariant": "nested business fields (account.status) are distinct predicates from bare claim names (status); no false support/refutation crosses the path boundary",
+   "counterexample": "claim predicate 'status' vs row predicate 'account.status'",
+   "current_behavior": "UNKNOWN (coverage loss, sound direction)",
+   "correct_behavior": "path-anchored claims in V2",
+   "counterexample_test": "test_E02_nested_business_field_is_not_bare_predicate",
+   "fixed": false,
+   "corpus_impact": "none"
+  },
+  {
+   "id": "COV-03",
+   "class": "CONSERVATIVE_COVERAGE_LIMITATION",
+   "module": "src/guardian_truth/vnext/e2e/world_integration_v1.py",
+   "function": "(flag channel removal)",
+   "invariant": "cost of the SND-04 soundness fix: flag-encoded claims verify only when the claim predicate IS the boolean field (direct predicate channel)",
+   "counterexample": "hold-042 shape: claim (status, cancelled) + effect (cancelled, true) -> UNKNOWN",
+   "current_behavior": "UNKNOWN",
+   "correct_behavior": "returns with REP-02 semantic_equivalences",
+   "counterexample_test": "tests/e2e/test_e2e_v1_cycle3.py::test_lexical_flag_channel_removed_value_anchored_claim_unknown (companion sound path: test_C03 direct-predicate flag claims)",
+   "fixed": false,
+   "corpus_impact": "hold-042 NO_ERROR->UNRESOLVED (binary-neutral)"
+  },
+  {
+   "id": "COV-04",
+   "class": "CONSERVATIVE_COVERAGE_LIMITATION",
+   "module": "src/guardian_truth/vnext/e2e/world_integration_v1.py",
+   "function": "_prove_deterministic_action_atom (token-overlap gate matching)",
+   "invariant": "state gates resolve only against boolean-typed rows whose predicate overlaps the gate key tokens; everything else stays UNKNOWN",
+   "counterexample": "gate 'account_status' vs string-valued row 'status'",
+   "current_behavior": "UNKNOWN (conservative)",
+   "correct_behavior": "exact-predicate gates in V2 (EMP-02)",
+   "counterexample_test": "covered by M01/M02 companions",
+   "fixed": false,
+   "corpus_impact": "none"
+  },
+  {
+   "id": "REP-01",
+   "class": "REPRESENTATION_LIMITATION (soundness-relevant)",
+   "module": "src/guardian_truth/vnext/tools.py (TrustedContract.reads)",
+   "function": "T1 read declaration",
+   "invariant": "field-level read contracts (output_path, entity_ref, predicate, freshness per read) are required to close the flat single-entity envelope risk",
+   "counterexample": "flat reader {account_id: A-1, status: SUCCESS} where top-level status is an operation envelope - indistinguishable from a business field",
+   "current_behavior": "envelope row can refute state claims (the ONE known open formal soundness risk)",
+   "correct_behavior": "T1 reads: [{output_path: status, entity_ref: arguments.account_id, predicate: status, freshness: fresh}] in V2; cannot be retrofitted to the frozen corpus",
+   "counterexample_test": "test_B05_flat_envelope_row_never_refutes (strict xfail documenting the open risk)",
+   "fixed": false,
+   "corpus_impact": "none on corpus (corpus readers return business fields at top level)"
+  },
+  {
+   "id": "REP-02",
+   "class": "REPRESENTATION_LIMITATION",
+   "module": "src/guardian_truth/vnext/tools.py",
+   "function": "(future contract extension)",
+   "invariant": "explicit semantic_equivalences declarations for enum<->flag encodings (the sound replacement for the removed lexical flag channel)",
+   "counterexample": "SND-04's counterexample re-enabled safely",
+   "current_behavior": "not representable",
+   "correct_behavior": "semantic_equivalences: [{lhs: {predicate: status, value: cancelled}, rhs: {predicate: cancelled, value: true}}]",
+   "counterexample_test": null,
+   "fixed": false,
+   "corpus_impact": "none"
+  },
+  {
+   "id": "REP-03",
+   "class": "REPRESENTATION_LIMITATION",
+   "module": "src/guardian_truth/vnext/e2e/world_integration_v1.py",
+   "function": "_typed_value_match",
+   "invariant": "contract-declared canonicalization for cross-type literal comparison (hardening of EMP-01)",
+   "counterexample": "schema-declared integer canonicalization would make '42'<->42 comparable by declaration",
+   "current_behavior": "declared adapter canonical-encoding convention (EMP-01)",
+   "correct_behavior": "V2 contract declaration",
+   "counterexample_test": "tests D01-D04 pin both the safe and convention behaviors",
+   "fixed": false,
+   "corpus_impact": "none"
+  },
+  {
+   "id": "REP-04",
+   "class": "REPRESENTATION_LIMITATION",
+   "module": "src/guardian_truth/vnext/tools.py (freshness field)",
+   "function": "tool-level freshness",
+   "invariant": "mixed freshness within one output (fresh balance, cached monthly_summary) is not expressible; while T1 is trusted this is a contract-authoring risk, not a proof error",
+   "counterexample": "{balance: 100, monthly_summary: 4250} with tool-level fresh-read",
+   "current_behavior": "all fields treated fresh per the trusted contract",
+   "correct_behavior": "per-field freshness in V2",
+   "counterexample_test": null,
+   "fixed": false,
+   "corpus_impact": "none"
+  },
+  {
+   "id": "REP-05",
+   "class": "REPRESENTATION_LIMITATION",
+   "module": "src/guardian_truth/vnext/tools.py (freshness/consistency)",
+   "function": "(eventual consistency)",
+   "invariant": "T1 must characterize consistency/freshness; a trusted fresh-read contract is taken at face value, so replica staleness is outside Guardian's proof scope",
+   "counterexample": "write committed, immediate replica read returns old state",
+   "current_behavior": "trusted contract vouches the read",
+   "correct_behavior": "consistency declarations in V2 contracts",
+   "counterexample_test": null,
+   "fixed": false,
+   "corpus_impact": "none"
+  },
+  {
+   "id": "REP-06",
+   "class": "REPRESENTATION_LIMITATION",
+   "module": "src/guardian_truth/vnext/tools.py (failure_semantics free string)",
+   "function": "(read success semantics)",
+   "invariant": "machine-readable success/failure semantics for read contracts; SND-05's precondition gate is the best available proxy",
+   "counterexample": "contract without preconditions + failed read still emits rows",
+   "current_behavior": "precondition-gated when declared; otherwise envelope risk remains (shares REP-01 residue)",
+   "correct_behavior": "structured success semantics in V2",
+   "counterexample_test": null,
+   "fixed": false,
+   "corpus_impact": "none"
+  },
+  {
+   "id": "REP-07",
+   "class": "REPRESENTATION_LIMITATION",
+   "module": "(async lifecycle)",
+   "function": "(contract-level stage semantics)",
+   "invariant": "accepted/queued/scheduled/started/completed must stay distinct literals (no collapse); V1 keeps them distinct by value identity",
+   "counterexample": "start_export -> accepted=true; claim 'completed' refuted (correct)",
+   "current_behavior": "distinct literals stay distinct (test G01 pins it)",
+   "correct_behavior": "stage semantics via contracts in V2",
+   "counterexample_test": "test_G01_accepted_is_not_completed",
+   "fixed": false,
+   "corpus_impact": "none"
+  },
+  {
+   "id": "REP-08",
+   "class": "REPRESENTATION_LIMITATION",
+   "module": "src/guardian_truth/vnext/e2e/goal_composition_v1.py",
+   "function": "DESIRED_OUTCOME -> GOAL_CALL",
+   "invariant": "a desired outcome with no target calls is vacuously satisfied (authorization is not obligation); unfulfilled-goal detection relies on OBLIGATION frames and the claim axis",
+   "counterexample": "goal unfulfilled + non-committal response -> NO_ERROR possible",
+   "current_behavior": "declared V1 program-space limitation (documented in module docstrings)",
+   "correct_behavior": "'must act' existential semantics outside V1",
+   "counterexample_test": null,
+   "fixed": false,
+   "corpus_impact": "none"
+  },
+  {
+   "id": "EMP-01",
+   "class": "EMPIRICAL_HYPOTHESIS",
+   "module": "src/guardian_truth/vnext/e2e/world_integration_v1.py",
+   "function": "_typed_value_match",
+   "invariant": "the canonical-encoding literal coercion (claim text token == canonical JSON encoding of the observed number/boolean) is a declared, deterministic, total adapter convention; no counterexample constructible without unrepresentable text-type distinctions; leading-zero/precision-distinct literals already UNKNOWN",
+   "counterexample": "claim '42' vs observation 42 -> TRUE under the convention; '001' vs 1 -> UNKNOWN (pinned)",
+   "current_behavior": "kept as declared convention",
+   "correct_behavior": "harden with REP-03 declarations in V2",
+   "counterexample_test": "test_D01..test_D04",
+   "fixed": false,
+   "corpus_impact": "none"
+  },
+  {
+   "id": "EMP-02",
+   "class": "EMPIRICAL_HYPOTHESIS",
+   "module": "src/guardian_truth/vnext/e2e/world_integration_v1.py",
+   "function": "_prove_deterministic_action_atom (key_tokens)",
+   "invariant": "lexical token bridging for state gates (gate 'account_status' <- trusted row 'status') remains on trusted rows for B0-frozen compatibility; corpus-neutral; exact-predicate gates recommended in V2",
+   "counterexample": "boolean trusted row whose predicate is a token of the gate key resolves the gate",
+   "current_behavior": "kept (B0-shared)",
+   "correct_behavior": "exact predicate matching in V2",
+   "counterexample_test": "test_M02 (pins the trusted-row resolution)",
+   "fixed": false,
+   "corpus_impact": "none"
+  },
+  {
+   "id": "EMP-03",
+   "class": "EMPIRICAL_HYPOTHESIS",
+   "module": "src/guardian_truth/vnext/normalize.py",
+   "function": "explicit_entities",
+   "invariant": "entity refs are extracted only from id/_id/name keys; other key conventions (from_account/to_account) bind no entity refs - claims stay unbound (marker), conservative",
+   "counterexample": "{from_account, to_account, from_balance} -> no entity refs at all",
+   "current_behavior": "conservative unbinding",
+   "correct_behavior": "broader conventions are a V2 representation question",
+   "counterexample_test": "test_B02 (documents the unbinding)",
+   "fixed": false,
+   "corpus_impact": "none"
+  },
+  {
+   "id": "EMP-04",
+   "class": "EMPIRICAL_HYPOTHESIS (Area L architectural risk)",
+   "module": "src/guardian_truth/vnext/e2e/policy_historical_v1.py",
+   "function": "extended_policy_text / ATOM_CATALOG_SUFFIX",
+   "invariant": "machine suffixes (POLICY_ATOM_CATALOG, POLICY_STATE_CONSTRAINTS) make atom keys and trusted literals textually groundable for the operational binding; the frontends parse the RAW policy text; the suffix influences grounding, not normative meaning; recorded as an architectural risk per directive section 30",
+   "counterexample": "a binding candidate quoting machine metadata verbatim (validated against the extended text by design - grounding context, not normative rule)",
+   "current_behavior": "grounding-only in every audited path",
+   "correct_behavior": "keep; the risk is that a future frontend interprets suffix text normatively - guarded by the raw-text parse boundary",
+   "counterexample_test": null,
+   "fixed": false,
+   "corpus_impact": "none"
+  },
+  {
+   "id": "SND-11",
+   "class": "FORMAL_SOUNDNESS_BUG",
+   "module": "src/guardian_truth/vnext/e2e/world_integration_v1.py",
+   "function": "_row_binds_entity / _collect_state_rows / _prove_deterministic_action_atom._trusted_state_row",
+   "invariant": "PROVED means PROVED FROM EXPLICIT TRUSTED PREMISES: a flat root-scope result field next to an entity ref key carries no trusted premise that it is entity STATE rather than an operation envelope field, so ownership cannot be proved and the row must not decide a state claim (abstain -> UNKNOWN)",
+   "counterexample": "T1 pure reader (writes=(), fresh-read, preconditions ok) returns {'account_id': 'A-1', 'status': 'SUCCESS'} where status is the operation envelope; claim 'status of A-1 is active' was refuted by the envelope row -> certified PROVED_ERROR (false definitive from wrong field mapping)",
+   "current_behavior_pre_fix": "PROVED_ERROR certified from the flat envelope row",
+   "correct_behavior": "UNKNOWN / UNRESOLVED unless the T1 contract declares the output path in `reads` (explicit ownership mapping) or the row lives in a nested record object with the entity ref (structural ownership)",
+   "counterexample_test": "tests/e2e_soundness/test_pre_benchmark_soundness.py::test_B05_flat_envelope_row_never_refutes",
+   "fixed": true,
+   "fix": "root-scope abstention + explicit ownership mapping via the existing T1 `reads` field (previously dead weight); applied identically to the state channel and the SND-09 gate fallback; gated behind conservative_state so B0 keeps byte fidelity"
+  }
+ ],
+ "benchmark_hardcoding_scan": {
+  "production_modules_scanned": [
+   "src/guardian_truth/vnext/e2e/*.py",
+   "src/guardian_truth/vnext/{ledger,tools,proof_evidence,binder,grounding,claims,normalize}.py"
   ],
-  "benchmark_hardcoding_scan": {
-    "production_modules_scanned": [
-      "src/guardian_truth/vnext/e2e/*.py",
-      "src/guardian_truth/vnext/{ledger,tools,proof_evidence,binder,grounding,claims,normalize}.py"
-    ],
-    "tokens_searched": [
-      "hold-",
-      "dev-",
-      "case_id",
-      "shipment",
-      "order",
-      "cancelled",
-      "SUCCESS",
-      "FAILURE",
-      "appointment",
-      "meter",
-      "patient",
-      "employee",
-      "subscription",
-      "specific tool names",
-      "entity IDs",
-      "predicate names",
-      "domain values"
-    ],
-    "benchmark_specific_production_logic_count": 0,
-    "notes": "case_id/family are record plumbing; SUCCESS/FAILURE appear as transport-status enums and prompt-overlay example lists (backend_v1.py CLAIM_OVERLAY/BINDING_OVERLAY) that guide LLM extraction but decide nothing deterministically; no value heuristics exist in deterministic semantics"
+  "tokens_searched": [
+   "hold-",
+   "dev-",
+   "case_id",
+   "shipment",
+   "order",
+   "cancelled",
+   "SUCCESS",
+   "FAILURE",
+   "appointment",
+   "meter",
+   "patient",
+   "employee",
+   "subscription",
+   "specific tool names",
+   "entity IDs",
+   "predicate names",
+   "domain values"
+  ],
+  "benchmark_specific_production_logic_count": 0,
+  "notes": "case_id/family are record plumbing; SUCCESS/FAILURE appear as transport-status enums and prompt-overlay example lists (backend_v1.py CLAIM_OVERLAY/BINDING_OVERLAY) that guide LLM extraction but decide nothing deterministically; no value heuristics exist in deterministic semantics"
+ },
+ "deterministic_repair_audit": {
+  "repairs": [
+   {
+    "name": "JSON extraction (first balanced object)",
+    "class": "TRANSPORT_ONLY"
+   },
+   {
+    "name": "arguments/args/parameters path prefix strip",
+    "class": "TRANSPORT_ONLY (path-form normalization against the call-argument root convention)"
+   },
+   {
+    "name": "allowed_json literal canonicalization (bare 14C -> \"14C\")",
+    "class": "REPRESENTATION_PRESERVING (same literal, canonical encoding)"
+   },
+   {
+    "name": "source-quote trailing-punctuation variants",
+    "class": "REPRESENTATION_PRESERVING (grounding span variance; literal unchanged)"
+   },
+   {
+    "name": "action-clause field-check drop",
+    "class": "REPRESENTATION_PRESERVING (action validated by tool name; the compiled rule's semantics come from scope clauses)"
+   },
+   {
+    "name": "H0 one machine-validation repair re-ask (frozen)",
+    "class": "TRANSPORT_ONLY (transport/schema failure only)"
+   },
+   {
+    "name": "GRS canonicalizer + missing-envelope repair (frozen)",
+    "class": "TRANSPORT_ONLY (byte-identical frozen line)"
+   },
+   {
+    "name": "cycle-3 literal coercion",
+    "class": "REPRESENTATION_PRESERVING under the declared canonical-encoding convention (EMP-01)"
+   }
+  ],
+  "semantic_repairs_introduced_by_this_audit": 0
+ },
+ "regression": {
+  "viewed_development_data_only": true,
+  "acceptance_criterion": "soundness, not F1 (directive section 41)",
+  "replay": "fully offline, zero LLM cache misses (all fixes are LLM-payload-neutral)",
+  "b0_fidelity": {
+   "dev": "byte_faithful",
+   "holdout": "byte_faithful",
+   "divergences": 0
   },
-  "deterministic_repair_audit": {
-    "repairs": [
-      {
-        "name": "JSON extraction (first balanced object)",
-        "class": "TRANSPORT_ONLY"
-      },
-      {
-        "name": "arguments/args/parameters path prefix strip",
-        "class": "TRANSPORT_ONLY (path-form normalization against the call-argument root convention)"
-      },
-      {
-        "name": "allowed_json literal canonicalization (bare 14C -> \"14C\")",
-        "class": "REPRESENTATION_PRESERVING (same literal, canonical encoding)"
-      },
-      {
-        "name": "source-quote trailing-punctuation variants",
-        "class": "REPRESENTATION_PRESERVING (grounding span variance; literal unchanged)"
-      },
-      {
-        "name": "action-clause field-check drop",
-        "class": "REPRESENTATION_PRESERVING (action validated by tool name; the compiled rule's semantics come from scope clauses)"
-      },
-      {
-        "name": "H0 one machine-validation repair re-ask (frozen)",
-        "class": "TRANSPORT_ONLY (transport/schema failure only)"
-      },
-      {
-        "name": "GRS canonicalizer + missing-envelope repair (frozen)",
-        "class": "TRANSPORT_ONLY (byte-identical frozen line)"
-      },
-      {
-        "name": "cycle-3 literal coercion",
-        "class": "REPRESENTATION_PRESERVING under the declared canonical-encoding convention (EMP-01)"
-      }
+  "old_b4h_combined_144": {
+   "TP": 54,
+   "FP": 0,
+   "FN": 15,
+   "precision": 1.0,
+   "recall": 0.7826,
+   "f1": 0.878,
+   "false_certified_error": 0,
+   "false_certified_no_error": 0
+  },
+  "b4h_sound_v1_combined_144": {
+   "TP": 54,
+   "FP": 0,
+   "FN": 15,
+   "precision": 1.0,
+   "recall": 0.7826,
+   "f1": 0.878,
+   "false_certified_error": 0,
+   "false_certified_no_error": 0,
+   "uncertified_definitive": 0
+  },
+  "binary_metrics_change": "none (identical TP/FP/FN)",
+  "core_status_verdict_changes": [
+   {
+    "case_id": "dev-019",
+    "old": "UNRESOLVED",
+    "new": "PROVED_NO_ERROR",
+    "cause": "SND-07 linkage fix (improvement; gold NO_ERROR)"
+   },
+   {
+    "case_id": "dev-023",
+    "old": "INCONSISTENT",
+    "new": "PROVED_ERROR",
+    "cause": "SND-01 (gold INCONSISTENT encodes the closed-world persistence assumption; gold_binary None)"
+   },
+   {
+    "case_id": "hold-099",
+    "old": "INCONSISTENT",
+    "new": "PROVED_ERROR",
+    "cause": "SND-01 (gold_binary None)"
+   },
+   {
+    "case_id": "hold-100",
+    "old": "INCONSISTENT",
+    "new": "PROVED_ERROR",
+    "cause": "SND-01 (gold_binary None)"
+   },
+   {
+    "case_id": "hold-042",
+    "old": "PROVED_NO_ERROR",
+    "new": "UNRESOLVED",
+    "cause": "SND-04 flag-channel removal (safe abstention; gold_binary None)"
+   }
+  ],
+  "detail": "outputs/vnext/pre_benchmark_soundness_regression.json",
+  "b4h_sound_v2_combined_144": {
+   "TP": 49,
+   "FP": 0,
+   "FN": 20,
+   "TN": 5,
+   "precision": 1.0,
+   "recall": 0.7101,
+   "f1": 0.834,
+   "false_certified_error": 0,
+   "false_certified_no_error": 0,
+   "uncertified_definitive": 0,
+   "status_counts": {
+    "UNRESOLVED": 90,
+    "PROVED_ERROR": 49,
+    "PROVED_NO_ERROR": 5
+   },
+   "cache_misses": 0,
+   "binary_metrics_change_vs_b4h_sound_v1": "TP 54->49, FN 15->20, TN 19->5 (24 verdict changes, every one the sound cost of SND-11: claim verdicts resting solely on undeclared flat rows abstain); precision stays 1.000; false certifications stay 0; metric loss accepted per directive section 15"
+  }
+ },
+ "checker_parity": "solver and certificate checker share the same primitive functions (solve_world via prove_e2e_atom with bundle.semantics) and the same closure function (e2e_completeness_assumptions); no divergence is representable",
+ "acceptance_criteria": {
+  "all_formal_soundness_bugs_have_minimal_tests": true,
+  "no_benchmark_specific_production_logic": true,
+  "no_implicit_semantic_equivalence_without_trusted_source": "true after SND-04 removal; EMP-01 coercion is a declared adapter convention, documented and pinned",
+  "no_cross_time_contradiction_without_valid_temporal_premise": true,
+  "solver_checker_semantics_match": true,
+  "all_definitive_results_certificate_backed": true
+ },
+ "freeze": {
+  "version": "B4h-sound-v2",
+  "final_frozen_commit": "the freeze commit containing this manifest (HEAD after the freeze; a commit cannot contain its own hash - reported in the run log and reproducible via git log)",
+  "frozen_component_sha256_16": {
+   "world_integration_v1": "4b131180aab4e77f",
+   "claim_adapter_v1": "69f741389e4529ad",
+   "certificate_context_v1": "1b086542f0090f3d",
+   "goal_lowering_v1": "cb6fc4565823c0de",
+   "goal_composition_v1": "7e5b4a71d2333c8c",
+   "policy_historical_v1": "866c2c6ecb718e18",
+   "core_v1": "b2a7ca441182673f",
+   "e2e_types_v1": "aa3266e179225ef6",
+   "ledger": "a8a08f90cd07aae8",
+   "tools": "cec9e6ad10e448f0",
+   "proof_evidence": "ddb7ef8da6bcac16",
+   "binder": "430a2a052e39f050",
+   "grounding": "3df44149558f4684",
+   "solver": "60571ef82fa24db7",
+   "c_alr_frozen": "14f5c5492c12b30b",
+   "policy_grs_frozen": "b22d768ac9f3dfdd"
+  },
+  "frozen_frontend_provenance": "HISTORICAL_PROVENANCE in policy_historical_v1.py (Agent-1 @998a756, byte-identical; unchanged from e7eb79c)",
+  "reproducible_commands": [
+   "PYTHONPATH=src python -m pytest tests/e2e/ tests/e2e_soundness/ -q",
+   "PYTHONPATH=src:. python scripts/run_soundness_regression.py",
+   "PYTHONPATH=src:. python scripts/final_verify_inconsistent_to_error.py"
+  ],
+  "audit_content_commit": "5e4bc39e57072e164ab3bf41665e2374f04c6432 (B4h-sound-v1 audit state); the final-verification commit adding SND-11 (this commit series); FINAL_FROZEN_COMMIT = the freeze commit recording this manifest",
+  "changelog_v2": "B4h-sound-v2 = B4h-sound-v1 + SND-11 (root-scope flat-row abstention + explicit T1 reads ownership mapping). SND-01..SND-10 unchanged and re-verified. Only world_integration_v1.py changed (1c989f652bfcf972 -> 4b131180aab4e77f)."
+ },
+ "hard_stop": "per directive section 47: no new benchmark, no fresh evaluation, no code changes after the freeze commit",
+ "final_verification": {
+  "inconsistent_to_error_cases": [
+   {
+    "case_id": "dev-023",
+    "old_status_b4h": "INCONSISTENT",
+    "status_b4h_sound_v1": "PROVED_ERROR",
+    "status_b4h_sound_v2_final": "UNRESOLVED",
+    "world_count": 1,
+    "obligations": [
+     "s0:factual:0 (claim 'record R-4 exists', must_be_true)"
     ],
-    "semantic_repairs_introduced_by_this_audit": 0
-  },
-  "regression": {
-    "viewed_development_data_only": true,
-    "acceptance_criterion": "soundness, not F1 (directive section 41)",
-    "replay": "fully offline, zero LLM cache misses (all fixes are LLM-payload-neutral)",
-    "b0_fidelity": {
-      "dev": "byte_faithful",
-      "holdout": "byte_faithful",
-      "divergences": 0
-    },
-    "old_b4h_combined_144": {
-      "TP": 54,
-      "FP": 0,
-      "FN": 15,
-      "precision": 1.0,
-      "recall": 0.7826,
-      "f1": 0.878,
-      "false_certified_error": 0,
-      "false_certified_no_error": 0
-    },
-    "b4h_sound_v1_combined_144": {
-      "TP": 54,
-      "FP": 0,
-      "FN": 15,
-      "precision": 1.0,
-      "recall": 0.7826,
-      "f1": 0.878,
-      "false_certified_error": 0,
-      "false_certified_no_error": 0,
-      "uncertified_definitive": 0
-    },
-    "binary_metrics_change": "none (identical TP/FP/FN)",
-    "core_status_verdict_changes": [
-      {
-        "case_id": "dev-019",
-        "old": "UNRESOLVED",
-        "new": "PROVED_NO_ERROR",
-        "cause": "SND-07 linkage fix (improvement; gold NO_ERROR)"
-      },
-      {
-        "case_id": "dev-023",
-        "old": "INCONSISTENT",
-        "new": "PROVED_ERROR",
-        "cause": "SND-01 (gold INCONSISTENT encodes the closed-world persistence assumption; gold_binary None)"
-      },
-      {
-        "case_id": "hold-099",
-        "old": "INCONSISTENT",
-        "new": "PROVED_ERROR",
-        "cause": "SND-01 (gold_binary None)"
-      },
-      {
-        "case_id": "hold-100",
-        "old": "INCONSISTENT",
-        "new": "PROVED_ERROR",
-        "cause": "SND-01 (gold_binary None)"
-      },
-      {
-        "case_id": "hold-042",
-        "old": "PROVED_NO_ERROR",
-        "new": "UNRESOLVED",
-        "cause": "SND-04 flag-channel removal (safe abstention; gold_binary None)"
-      }
+    "b4h_sound_v1_primitive_proofs": [
+     {
+      "atom": "exists[entity R-4] expected true",
+      "truth": "FALSE",
+      "refuting_witness": "obs:e4:ee3c75c1aa7ac2584b786b7e6e00f02b375f80f5a55973c507b77322c3b7138f"
+     }
     ],
-    "detail": "outputs/vnext/pre_benchmark_soundness_regression.json"
-  },
-  "checker_parity": "solver and certificate checker share the same primitive functions (solve_world via prove_e2e_atom with bundle.semantics) and the same closure function (e2e_completeness_assumptions); no divergence is representable",
-  "acceptance_criteria": {
-    "all_formal_soundness_bugs_have_minimal_tests": true,
-    "no_benchmark_specific_production_logic": true,
-    "no_implicit_semantic_equivalence_without_trusted_source": "true after SND-04 removal; EMP-01 coercion is a declared adapter convention, documented and pinned",
-    "no_cross_time_contradiction_without_valid_temporal_premise": true,
-    "solver_checker_semantics_match": true,
-    "all_definitive_results_certificate_backed": true
-  },
-  "freeze": {
-    "version": "B4h-sound-v1",
-    "final_frozen_commit": "the freeze commit containing this manifest (HEAD after the freeze; a commit cannot contain its own hash - reported in the run log and reproducible via git log)",
-    "frozen_component_sha256_16": {
-      "world_integration_v1": "1c989f652bfcf972",
-      "claim_adapter_v1": "69f741389e4529ad",
-      "certificate_context_v1": "1b086542f0090f3d",
-      "goal_lowering_v1": "cb6fc4565823c0de",
-      "goal_composition_v1": "7e5b4a71d2333c8c",
-      "policy_historical_v1": "866c2c6ecb718e18",
-      "core_v1": "b2a7ca441182673f",
-      "e2e_types_v1": "aa3266e179225ef6",
-      "ledger": "a8a08f90cd07aae8",
-      "tools": "cec9e6ad10e448f0",
-      "proof_evidence": "ddb7ef8da6bcac16",
-      "binder": "430a2a052e39f050",
-      "grounding": "3df44149558f4684",
-      "solver": "60571ef82fa24db7",
-      "c_alr_frozen": "14f5c5492c12b30b",
-      "policy_grs_frozen": "b22d768ac9f3dfdd"
-    },
-    "frozen_frontend_provenance": "HISTORICAL_PROVENANCE in policy_historical_v1.py (Agent-1 @998a756, byte-identical; unchanged from e7eb79c)",
-    "reproducible_commands": [
-      "PYTHONPATH=src python -m pytest tests/e2e/ tests/e2e_soundness/ -q",
-      "PYTHONPATH=src:. python scripts/run_soundness_regression.py"
+    "unresolved_markers": [],
+    "both_evidence": [],
+    "classification": "A. SOUND_INDEPENDENT_ERROR",
+    "classification_basis": "single FALSE safety witness = the response claim refuted by the freshest trusted fresh read; NO BOTH conjunct exists (cross-time pair is historical, SND-01); ablation removing the t1 mutation preserves PROVED_ERROR with the same witness; certificate valid with MISSING_VIOLATION_WITNESS enforced",
+    "final_note": "under B4h-sound-v2 the flat undeclared fresh-read row abstains (SND-11) -> UNRESOLVED (claim TRUE via verified effect, goal closure premise unproven -> conservative downgrade; no definitive, no inconsistency)"
+   },
+   {
+    "case_id": "hold-099",
+    "old_status_b4h": "INCONSISTENT",
+    "status_b4h_sound_v1": "PROVED_ERROR",
+    "status_b4h_sound_v2_final": "UNRESOLVED",
+    "world_count": 1,
+    "obligations": [
+     "s0:factual:0 (claim 'subscription SUB-5520 exists', must_be_true)"
     ],
-    "audit_content_commit": "5e4bc39e57072e164ab3bf41665e2374f04c6432"
+    "b4h_sound_v1_primitive_proofs": [
+     {
+      "atom": "exists[entity SUB-5520] expected true",
+      "truth": "FALSE",
+      "refuting_witness": "obs:e4:ee3c75c1aa7ac2584b786b7e6e00f02b375f80f5a55973c507b77322c3b7138f"
+     }
+    ],
+    "unresolved_markers": [],
+    "both_evidence": [],
+    "classification": "A. SOUND_INDEPENDENT_ERROR",
+    "classification_basis": "identical shape to dev-023 (fetch_subscription fresh read exists=false vs restore_record verified effect exists=true); independent-witness ablation positive",
+    "final_note": "UNRESOLVED under B4h-sound-v2 (SND-11 abstention)"
+   },
+   {
+    "case_id": "hold-100",
+    "old_status_b4h": "INCONSISTENT",
+    "status_b4h_sound_v1": "PROVED_ERROR",
+    "status_b4h_sound_v2_final": "UNRESOLVED",
+    "world_count": 1,
+    "obligations": [
+     "s0:factual:0 (claim 'claim CLM-1174 exists', must_be_true)"
+    ],
+    "b4h_sound_v1_primitive_proofs": [
+     {
+      "atom": "exists[entity CLM-1174] expected true",
+      "truth": "FALSE",
+      "refuting_witness": "obs:e4:ee3c75c1aa7ac2584b786b7e6e00f02b375f80f5a55973c507b77322c3b7138f"
+     }
+    ],
+    "unresolved_markers": [],
+    "both_evidence": [],
+    "classification": "A. SOUND_INDEPENDENT_ERROR",
+    "classification_basis": "identical shape to dev-023 (fetch_claim fresh read exists=false vs restore_record verified effect exists=true); independent-witness ablation positive",
+    "final_note": "UNRESOLVED under B4h-sound-v2 (SND-11 abstention)"
+   }
+  ],
+  "all_have_independent_false_witness": true,
+  "inconsistency_collapse_bug_found": false,
+  "inconsistency_collapse_analysis": "world-level lattice absorption [BOTH,UNKNOWN]->error TRUE exists (FDE), but the frozen certificate rule MISSING_VIOLATION_WITNESS (present verbatim at e7eb79c) rejects any PROVED_ERROR without an individual FALSE safety conjunct in every world -> conservative UNRESOLVED downgrade; pinned by tests N01/N02 (no independent violation -> NOT PROVED_ERROR), N03 (independent violation -> PROVED_ERROR allowed), N04 (BOTH alone -> INCONSISTENT)",
+  "rep01_class": "FORMAL_SOUNDNESS_BUG (reclassified from REPRESENTATION_LIMITATION by the final-verification directive section 10)",
+  "rep01_false_definitive_reachable": true,
+  "rep01_false_definitive_evidence": "test B05 pre-fix: flat envelope {'account_id': 'A-1', 'status': 'SUCCESS'} refuted 'status of A-1 is active' -> certified PROVED_ERROR; directive sections 8-9 adversarial shapes (nested get_resource envelope; payment/shipment/operation multi-entity) pinned as tests B06-B08",
+  "rep01_resolution": "FIXED as SND-11 in B4h-sound-v2: root-scope rows are attributable only via an explicit T1 `reads` declaration (explicit ownership mapping) or nested record-object structure; otherwise UNKNOWN (abstention). No T1 v2 schema, no snapshot system, no value heuristics introduced; the frozen corpus convention (reads=[]) abstains",
+  "production_hardcoding": 0,
+  "soundness_test_count": 46,
+  "soundness_tests_passing": 46,
+  "soundness_xfail_count": 0,
+  "e2e_suite": "96 passed (tests/e2e/ + tests/e2e_soundness/)",
+  "baseline_suite": "1481 passed + 9 failed; failure list byte-identical with the frozen commit (the same 9 pre-existing archival failures, stash-diff verified); zero new failures",
+  "b0_byte_fidelity": true,
+  "b4h_sound_v2_combined_144": {
+   "TP": 49,
+   "FP": 0,
+   "FN": 20,
+   "TN": 5,
+   "precision": 1.0,
+   "recall": 0.7101,
+   "f1": 0.834,
+   "false_certified_error": 0,
+   "false_certified_no_error": 0,
+   "uncertified_definitive": 0
   },
-  "hard_stop": "per directive section 47: no new benchmark, no fresh evaluation, no code changes after the freeze commit"
+  "known_remaining_formal_soundness_bugs": [],
+  "known_coverage_representation_limitations": [
+   "COV-01 reader with unrelated writes abstains",
+   "COV-02 nested business fields need path-anchored claim predicates",
+   "COV-03 flag-channel coverage requires REP-02 semantic_equivalences",
+   "COV-04 boolean-token state gates keep lexical token bridging (EMP-02)",
+   "SND-11 coverage cost: undeclared flat reader rows abstain (recovery: T1 reads declarations, now consumed, or nested record objects)",
+   "REP-02 semantic equivalences absent",
+   "REP-03 contract-declared canonicalization absent",
+   "REP-04 mixed per-field freshness unrepresentable",
+   "REP-05 eventual consistency outside proof scope while T1 trusted",
+   "REP-06 structured read failure semantics absent",
+   "REP-07 async lifecycle stages unrepresented",
+   "REP-08 DESIRED_OUTCOME 'must act' existentials outside V1 program space"
+  ],
+  "empirical_hypotheses_frozen_line": [
+   "EMP-01 canonical-encoding literal coercion",
+   "EMP-02 lexical gate-token bridging on trusted attributable rows",
+   "EMP-03 entity-ref key conventions (id/_id/name)",
+   "EMP-04 machine suffixes as grounding context",
+   "EMP-05 attribution claims are field-value assertions under the frozen B0 claim convention (name matching over result payloads)"
+  ],
+  "ready_for_shared_benchmark": true,
+  "readiness_rationale": "no known path from insufficient/ambiguous evidence to a definitive verdict: flat-envelope ownership abstains (SND-11), cross-time pairs are historical (SND-01), staleness is symmetric (SND-02), failed reads observe nothing (SND-05), BOTH/INCONSISTENT never certifies ERROR (MISSING_VIOLATION_WITNESS), every definitive verdict is certificate-backed (uncertified_definitive=0), production hardcoding = 0"
+ }
 }

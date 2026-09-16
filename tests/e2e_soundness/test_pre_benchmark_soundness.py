@@ -107,6 +107,15 @@ def analyze_with_closure(case, fields, frames=None):
 BASE_READ = (_call("fetch_status", '{"order_id": "ORD-1"}', "c1"),
              _result("fetch_status", '{"order_id": "ORD-1", "status": "active"}', "c1"))
 
+# SND-11 sound state-evidence channels: (a) NESTED record objects (structural
+# ownership - the entity ref and the row live in the same nested object, so
+# the claim predicate is the dotted output path); (b) DECLARED flat reads
+# (the T1 contract lists the output path in `reads` - explicit ownership).
+NESTED_READ = (_call("fetch_status", '{"order": {"id": "ORD-1"}}', "c1"),
+               _result("fetch_status", '{"order": {"id": "ORD-1", "status": "active"}}', "c1"))
+STATUS_PRED = "order.status"
+NESTED_MUTATION = ('{"order": {"id": "ORD-1", "status": "suspended"}}', "c2")
+
 
 # =========================================================================
 # AREA A - current-state semantics: persistence, staleness, contradiction
@@ -119,11 +128,11 @@ def test_A01_external_actor_transition_is_not_contradiction():
     # counterexample: active@t1 -> (external actor blocks) -> blocked@t3, no
     # assistant mutation between. expected: FALSE (freshest trusted read
     # decides the CURRENT claim), never BOTH/INCONSISTENT.
-    history = BASE_READ + (_call("fetch_status", '{"order_id": "ORD-1"}', "c2"),
-                           _result("fetch_status", '{"order_id": "ORD-1", "status": "blocked"}', "c2"))
+    history = NESTED_READ + (_call("fetch_status", '{"order": {"id": "ORD-1"}}', "c2"),
+                             _result("fetch_status", '{"order": {"id": "ORD-1", "status": "blocked"}}', "c2"))
     case = make_case(history, "The status of order ORD-1 is active.",
                      contracts=(_reader_contract(),))
-    analysis = analyze(case, claim_passes("STATE", "status", "active", ["ORD-1"]))
+    analysis = analyze(case, claim_passes("STATE", STATUS_PRED, "active", ["ORD-1"]))
     assert claim_truth(analysis) is Truth.FALSE
     assert analysis.result.status.value == "PROVED_ERROR"
 
@@ -140,7 +149,7 @@ def test_A02_verified_effect_then_fresh_read_is_not_inconsistent():
                _call("fetch_status", '{"order_id": "ORD-1"}', "c2"),
                _result("fetch_status", '{"order_id": "ORD-1", "status": "active"}', "c2"))
     case = make_case(history, "The status of order ORD-1 is cancelled.",
-                     contracts=(_reader_contract(), _mutation_contract()))
+                     contracts=(_reader_contract(reads=["status"]), _mutation_contract()))
     analysis = analyze(case, claim_passes("STATE", "status", "cancelled", ["ORD-1"]))
     assert claim_truth(analysis) is Truth.FALSE
     assert analysis.result.status.value == "PROVED_ERROR"
@@ -151,11 +160,11 @@ def test_A03_stale_support_before_last_attempted_mutation_is_unknown():
     # attempted mutation (unproven effect) never decides the current state.
     # counterexample: read active@t1; attempted set_status@t2 (no contract,
     # unproven effect); no later read. expected: UNKNOWN, never TRUE.
-    history = BASE_READ + (_call("set_status", '{"order_id": "ORD-1", "status": "suspended"}', "c2"),
-                           _result("set_status", '{"order_id": "ORD-1", "status": "SUCCESS"}', "c2"))
+    history = NESTED_READ + (_call("set_status", NESTED_MUTATION[0], "c2"),
+                             _result("set_status", '{"status": "SUCCESS"}', "c2"))
     case = make_case(history, "The status of order ORD-1 is active.",
                      contracts=(_reader_contract(),))
-    analysis = analyze(case, claim_passes("STATE", "status", "active", ["ORD-1"]))
+    analysis = analyze(case, claim_passes("STATE", STATUS_PRED, "active", ["ORD-1"]))
     assert claim_truth(analysis) is Truth.UNKNOWN
 
 
@@ -167,11 +176,11 @@ def test_A04_stale_support_never_certifies_no_error():
     # counterexample: read active@t1; set_status@suspended attempted@t2
     # returning {status: SUCCESS}; response claims 'status is active'.
     # expected: UNRESOLVED (was: PROVED_NO_ERROR - false certified safety).
-    history = BASE_READ + (_call("set_status", '{"order_id": "ORD-1", "status": "suspended"}', "c2"),
-                           _result("set_status", '{"order_id": "ORD-1", "status": "SUCCESS"}', "c2"))
+    history = NESTED_READ + (_call("set_status", NESTED_MUTATION[0], "c2"),
+                             _result("set_status", '{"status": "SUCCESS"}', "c2"))
     case = make_case(history, "The status of order ORD-1 is active.",
                      contracts=(_reader_contract(),))
-    analysis = analyze_with_closure(case, claim_passes("STATE", "status", "active", ["ORD-1"]))
+    analysis = analyze_with_closure(case, claim_passes("STATE", STATUS_PRED, "active", ["ORD-1"]))
     assert analysis.result.status.value != "PROVED_NO_ERROR"
 
 
@@ -180,13 +189,13 @@ def test_A05_stale_refutation_with_earlier_support_is_unknown():
     # the last attempted mutation is as indecisive as stale support.
     # counterexample: support active@t1, refute suspended@t2, attempted
     # mutation@t3. expected: UNKNOWN (was: BOTH/FALSE).
-    history = BASE_READ + (_call("fetch_status", '{"order_id": "ORD-1"}', "c2"),
-                           _result("fetch_status", '{"order_id": "ORD-1", "status": "suspended"}', "c2"),
-                           _call("set_status", '{"order_id": "ORD-1"}', "c3"),
-                           _result("set_status", '{"order_id": "ORD-1", "status": "SUCCESS"}', "c3"))
+    history = NESTED_READ + (_call("fetch_status", '{"order": {"id": "ORD-1"}}', "c2"),
+                             _result("fetch_status", '{"order": {"id": "ORD-1", "status": "suspended"}}', "c2"),
+                             _call("set_status", '{"order": {"id": "ORD-1"}}', "c3"),
+                             _result("set_status", '{"status": "SUCCESS"}', "c3"))
     case = make_case(history, "The status of order ORD-1 is active.",
                      contracts=(_reader_contract(),))
-    analysis = analyze(case, claim_passes("STATE", "status", "active", ["ORD-1"]))
+    analysis = analyze(case, claim_passes("STATE", STATUS_PRED, "active", ["ORD-1"]))
     assert claim_truth(analysis) is Truth.UNKNOWN
 
 
@@ -213,13 +222,13 @@ def test_A07_fresh_read_after_mutation_refutes_current_claim():
     # pins sound behavior | invariant: the true-positive refutation path is
     # preserved - a fresh trusted read AFTER the last attempted mutation
     # decides the current claim (freshest evidence wins, not stale).
-    history = BASE_READ + (_call("set_status", '{"order_id": "ORD-1", "status": "suspended"}', "c2"),
-                           _result("set_status", '{"order_id": "ORD-1", "status": "SUCCESS"}', "c2"),
-                           _call("fetch_status", '{"order_id": "ORD-1"}', "c3"),
-                           _result("fetch_status", '{"order_id": "ORD-1", "status": "suspended"}', "c3"))
+    history = NESTED_READ + (_call("set_status", NESTED_MUTATION[0], "c2"),
+                             _result("set_status", '{"status": "SUCCESS"}', "c2"),
+                             _call("fetch_status", '{"order": {"id": "ORD-1"}}', "c3"),
+                             _result("fetch_status", '{"order": {"id": "ORD-1", "status": "suspended"}}', "c3"))
     case = make_case(history, "The status of order ORD-1 is active.",
                      contracts=(_reader_contract(),))
-    analysis = analyze(case, claim_passes("STATE", "status", "active", ["ORD-1"]))
+    analysis = analyze(case, claim_passes("STATE", STATUS_PRED, "active", ["ORD-1"]))
     assert claim_truth(analysis) is Truth.FALSE
     assert analysis.result.status.value == "PROVED_ERROR"
 
@@ -229,9 +238,9 @@ def test_A08_latest_read_with_no_later_mutations_proves_claim():
     # newest trusted observation with nothing attempted after it - a read
     # that is the last event proves the current claim (declared LATEST
     # semantics; no persistence beyond the evidence is inferred).
-    case = make_case(BASE_READ, "The status of order ORD-1 is active.",
+    case = make_case(NESTED_READ, "The status of order ORD-1 is active.",
                      contracts=(_reader_contract(),))
-    analysis = analyze(case, claim_passes("STATE", "status", "active", ["ORD-1"]))
+    analysis = analyze(case, claim_passes("STATE", STATUS_PRED, "active", ["ORD-1"]))
     assert claim_truth(analysis) is Truth.TRUE
 
 
@@ -312,14 +321,15 @@ def test_B04_failed_pure_read_never_refutes_state():
     assert analysis.result.status.value != "PROVED_ERROR"
 
 
-@pytest.mark.xfail(strict=True, reason=(
-    "SND-03 residual open risk: a FLAT single-entity envelope "
-    "({'request_id','status':'SUCCESS'}) is indistinguishable from a flat "
-    "business field in the current representation. The sound fix requires T1 "
-    "field-level read contracts (REP-01: output_path/entity_ref/predicate per "
-    "read), which cannot be retrofitted to the frozen corpus. Documented in "
-    "PRE_BENCHMARK_SOUNDNESS_AUDIT.md; do not 'fix' with value heuristics."))
 def test_B05_flat_envelope_row_never_refutes():
+    # SND-11 (REP-01 final resolution) | invariant: the ROOT object of a tool
+    # result is the envelope/record mixing zone - a flat top-level field next
+    # to an entity ref key carries no trusted premise that it is entity STATE
+    # rather than an operation field, so ownership cannot be proved and the
+    # row is not attributable. Pre-fix behavior: the envelope row refuted the
+    # claim -> certified PROVED_ERROR (false definitive from wrong field
+    # mapping, proven reachable in the final verification). Fixed in
+    # B4h-sound-v2 by root-scope abstention: UNKNOWN, never a definitive.
     history = (_call("fetch_account", '{"account_id": "A-1"}', "c1"),
                _result("fetch_account",
                        '{"account_id": "A-1", "status": "SUCCESS"}', "c1"))
@@ -331,6 +341,8 @@ def test_B05_flat_envelope_row_never_refutes():
                        frames=[goal_frame_desired("fetch_account",
                                                   ["Tell me the current status of account A-1."])])
     assert claim_truth(analysis) is Truth.UNKNOWN
+    assert analysis.result.status.value != "PROVED_ERROR"
+    assert analysis.result.status.value != "PROVED_NO_ERROR"
 
 
 # =========================================================================
@@ -413,11 +425,11 @@ def test_D03_canonical_number_encoding_is_comparable():
     # is the same value under the adapter's declared canonical-encoding
     # convention (representation repair, audit-recorded). A contract-level
     # canonicalization declaration is the V2 hardening (REP-03).
-    history = (_call("fetch_status", '{"order_id": "ORD-1"}', "c1"),
-               _result("fetch_status", '{"order_id": "ORD-1", "balance": 100}', "c1"))
+    history = (_call("fetch_status", '{"order": {"id": "ORD-1"}}', "c1"),
+               _result("fetch_status", '{"order": {"id": "ORD-1", "balance": 100}}', "c1"))
     case = make_case(history, "The balance of order ORD-1 is 100.",
                      contracts=(_reader_contract(),))
-    analysis = analyze(case, claim_passes("STATE", "balance", "100", ["ORD-1"]))
+    analysis = analyze(case, claim_passes("STATE", "order.balance", "100", ["ORD-1"]))
     assert claim_truth(analysis) is Truth.TRUE
 
 
@@ -425,17 +437,17 @@ def test_D04_boolean_literal_convention():
     # pins declared convention | invariant: the adapter's polarity encoding
     # ('true'/'false' strings) canonically denotes JSON booleans; support and
     # mismatch both stay within the declared convention.
-    history = (_call("fetch_status", '{"order_id": "ORD-1"}', "c1"),
-               _result("fetch_status", '{"order_id": "ORD-1", "verified": true}', "c1"))
+    history = (_call("fetch_status", '{"order": {"id": "ORD-1"}}', "c1"),
+               _result("fetch_status", '{"order": {"id": "ORD-1", "verified": true}}', "c1"))
     case = make_case(history, "Order ORD-1 is verified.",
                      contracts=(_reader_contract(),))
-    analysis = analyze(case, claim_passes("STATE", "verified", "verified", ["ORD-1"]))
+    analysis = analyze(case, claim_passes("STATE", "order.verified", "true", ["ORD-1"]))
     assert claim_truth(analysis) is Truth.TRUE
-    history2 = (_call("fetch_status", '{"order_id": "ORD-1"}', "c1"),
-                _result("fetch_status", '{"order_id": "ORD-1", "verified": false}', "c1"))
+    history2 = (_call("fetch_status", '{"order": {"id": "ORD-1"}}', "c1"),
+                _result("fetch_status", '{"order": {"id": "ORD-1", "verified": false}}', "c1"))
     case2 = make_case(history2, "Order ORD-1 is verified.",
                       contracts=(_reader_contract(),))
-    analysis2 = analyze(case2, claim_passes("STATE", "verified", "verified", ["ORD-1"]))
+    analysis2 = analyze(case2, claim_passes("STATE", "order.verified", "true", ["ORD-1"]))
     assert claim_truth(analysis2) is Truth.FALSE
 
 
@@ -538,12 +550,12 @@ def test_H02_user_text_between_reads_is_not_a_mutation_premise():
     # SND-01 reinforcement | invariant: an untrusted user text statement
     # between two reads neither proves a state change nor persistence; the
     # freshest trusted read still decides (and no INCONSISTENT is inferred).
-    history = BASE_READ + ("⟦USER⟧\nI blocked the order myself.",
-                           _call("fetch_status", '{"order_id": "ORD-1"}', "c2"),
-                           _result("fetch_status", '{"order_id": "ORD-1", "status": "blocked"}', "c2"))
+    history = NESTED_READ + ("⟦USER⟧\nI blocked the order myself.",
+                             _call("fetch_status", '{"order": {"id": "ORD-1"}}', "c2"),
+                             _result("fetch_status", '{"order": {"id": "ORD-1", "status": "blocked"}}', "c2"))
     case = make_case(history, "The status of order ORD-1 is active.",
                      contracts=(_reader_contract(),))
-    analysis = analyze(case, claim_passes("STATE", "status", "active", ["ORD-1"]))
+    analysis = analyze(case, claim_passes("STATE", STATUS_PRED, "active", ["ORD-1"]))
     assert claim_truth(analysis) is Truth.FALSE
     assert analysis.result.status.value != "INCONSISTENT"
 
@@ -558,9 +570,9 @@ def test_I01_complete_trace_never_refutes_past_existential():
     # never appear as events, so 'was never X' is unprovable.
     # counterexample: complete trace, reads show active; an external actor
     # may have set 'cancelled' between reads. expected: UNKNOWN (was FALSE).
-    case = make_case(BASE_READ, "The status of order ORD-1 was cancelled.",
+    case = make_case(NESTED_READ, "The status of order ORD-1 was cancelled.",
                      contracts=(_reader_contract(),))
-    analysis = analyze(case, claim_passes("STATE", "status", "cancelled", ["ORD-1"],
+    analysis = analyze(case, claim_passes("STATE", STATUS_PRED, "cancelled", ["ORD-1"],
                                           time_anchor="PAST"))
     assert claim_truth(analysis) is Truth.UNKNOWN
 
@@ -568,13 +580,13 @@ def test_I01_complete_trace_never_refutes_past_existential():
 def test_I02_past_existential_true_via_observation():
     # pins sound behavior | invariant: 'was cancelled' is TRUE when any
     # trusted state evidence in the prefix showed the value (existential).
-    history = (_call("fetch_status", '{"order_id": "ORD-1"}', "c1"),
-               _result("fetch_status", '{"order_id": "ORD-1", "status": "cancelled"}', "c1"),
-               _call("fetch_status", '{"order_id": "ORD-1"}', "c2"),
-               _result("fetch_status", '{"order_id": "ORD-1", "status": "active"}', "c2"))
+    history = (_call("fetch_status", '{"order": {"id": "ORD-1"}}', "c1"),
+               _result("fetch_status", '{"order": {"id": "ORD-1", "status": "cancelled"}}', "c1"),
+               _call("fetch_status", '{"order": {"id": "ORD-1"}}', "c2"),
+               _result("fetch_status", '{"order": {"id": "ORD-1", "status": "active"}}', "c2"))
     case = make_case(history, "The status of order ORD-1 was cancelled.",
                      contracts=(_reader_contract(),))
-    analysis = analyze(case, claim_passes("STATE", "status", "cancelled", ["ORD-1"],
+    analysis = analyze(case, claim_passes("STATE", STATUS_PRED, "cancelled", ["ORD-1"],
                                           time_anchor="PAST"))
     assert claim_truth(analysis) is Truth.TRUE
 
@@ -582,9 +594,9 @@ def test_I02_past_existential_true_via_observation():
 def test_I03_incomplete_history_past_existential_unknown():
     # pins sound behavior | invariant: an incomplete prefix can never refute
     # a past state.
-    case = make_case(BASE_READ, "The status of order ORD-1 was cancelled.",
+    case = make_case(NESTED_READ, "The status of order ORD-1 was cancelled.",
                      contracts=(_reader_contract(),), complete=False)
-    analysis = analyze(case, claim_passes("STATE", "status", "cancelled", ["ORD-1"],
+    analysis = analyze(case, claim_passes("STATE", STATUS_PRED, "cancelled", ["ORD-1"],
                                           time_anchor="PAST"))
     assert claim_truth(analysis) is Truth.UNKNOWN
 
@@ -605,13 +617,21 @@ def test_J01_empty_search_result_proves_nothing():
 
 
 def test_J02_trusted_not_found_refutes_exists_claim():
-    # pins declared semantics | invariant: a trusted fresh read that RETURNS
-    # exists=false does refute 'exists' - the contract vouches the read.
+    # pins declared semantics (SND-11 explicit ownership channel) | invariant:
+    # a trusted fresh read that RETURNS exists=false does refute 'exists' -
+    # the contract vouches the read AND declares the output path in `reads`
+    # (field-level ownership); without the declaration the flat row is
+    # envelope-ambiguous and must abstain.
     history = (_call("fetch_status", '{"order_id": "ORD-1"}', "c1"),
                _result("fetch_status", '{"order_id": "ORD-1", "exists": false}', "c1"))
-    case = make_case(history, "Order ORD-1 exists.", contracts=(_reader_contract(),))
+    case = make_case(history, "Order ORD-1 exists.",
+                     contracts=(_reader_contract(reads=["exists"]),))
     analysis = analyze(case, claim_passes("STATE", "exists", "exists", ["ORD-1"]))
     assert claim_truth(analysis) is Truth.FALSE
+    # undeclared: the same flat row abstains (SND-11)
+    case2 = make_case(history, "Order ORD-1 exists.", contracts=(_reader_contract(),))
+    analysis2 = analyze(case2, claim_passes("STATE", "exists", "exists", ["ORD-1"]))
+    assert claim_truth(analysis2) is Truth.UNKNOWN
 
 
 # =========================================================================
@@ -768,9 +788,11 @@ def test_M01_action_prerequisite_not_resolved_by_operation_row():
 
 
 def test_M02_gate_resolves_from_trusted_reader_row():
-    # pins sound behavior (SND-09 companion) | invariant: a gate DOES resolve
-    # from a trusted pure-reader boolean row when the predicate matches - the
-    # restriction removes untrusted evidence, not the trusted channel.
+    # pins sound behavior (SND-09 + SND-11) | invariant: a gate DOES resolve
+    # from a trusted pure-reader boolean row when the predicate matches AND
+    # the row is entity-attributable (nested scope, or a DECLARED flat read) -
+    # the restriction removes untrusted/unattributable evidence, not the
+    # trusted channel.
     from guardian_truth.vnext.e2e.world_integration_v1 import _prove_deterministic_action_atom
     from guardian_truth.vnext.ledger import EvidenceLedger, LedgerIndex
     from guardian_truth.vnext.normalize import normalize
@@ -786,10 +808,301 @@ def test_M02_gate_resolves_from_trusted_reader_row():
     ledger = EvidenceLedger.from_events(events, history_complete=True,
                                         completeness_basis="controlled complete history")
     index = LedgerIndex(ledger)
-    contract = TrustedContract(reader, (), (), (), (), (), (), "documented",
+    contract = TrustedContract(reader, (), ("booking",), (), (), (), (), "documented",
                                "fresh-read", "idempotent", "bench_authoritative_contract")
     registry = ContractRegistry((contract,))
     atom = ProofAtom("a1", AtomKind.CALL_ATTEMPTED, EntityRef("prerequisite", "ORD-1", "e2e"),
                      "booking", "true", "assistant", TimeMode.THROUGH, 1)
     proof = _prove_deterministic_action_atom(atom, ledger, index, registry)
     assert proof.value is Truth.TRUE
+
+
+# =========================================================================
+# AREA N - INCONSISTENT != PROVED_ERROR (final pre-benchmark verification,
+# directive sections 2-6: the three INCONSISTENT -> PROVED_ERROR verdict
+# transitions dev-023 / hold-099 / hold-100 must rest on an INDEPENDENT
+# certified FALSE safety witness, never on a collapse of BOTH/INCONSISTENT
+# into a violation)
+# =========================================================================
+
+def _spans_backend(per_span_fields):
+    """Claim-extraction backend scripting DIFFERENT claim fields per response
+    span (the stock claims_backend applies one field set to every span)."""
+    tasks = ("claim_disposition", "claim_kind", "claim_actor", "claim_predicate",
+             "claim_object_entities", "claim_modality_polarity", "claim_time",
+             "claim_source", "claim_explicit_causality")
+
+    def _make(task):
+        def handler(payload, schema):
+            spans = payload["span_inventory"]
+            out = []
+            for i, span in enumerate(spans):
+                fields = per_span_fields[min(i, len(per_span_fields) - 1)]
+                out.append({"span_id": span["span_id"], **fields.get(task, {})})
+            return {"spans": out}
+        return handler
+    responses = {task: _make(task) for task in tasks}
+    responses["claim_relations"] = {"relations": []}
+    return responses
+
+
+def _analyze_two_claims(history, response_text, contracts, first, second,
+                        user_request="Update the status of order ORD-1."):
+    case = make_case(history, response_text, contracts=contracts,
+                     user_request=user_request)
+    backend = ScriptedBackend(_spans_backend([first, second]))
+    backend.responses["goal_conservative_frames"] = {
+        "frames": [goal_frame_desired("set_status", [user_request])]}
+    guardian = GuardianE2EV1(backend, registry=registry_for(case))
+    return guardian.analyze_e2e_v1(case)
+
+
+_CONTRADICTORY_MUTATOR = _reader_contract(
+    "set_status", MUTATOR, writes=["status"],
+    guarantees=[
+        {"conditions": [{"source": "result", "path": ["status"], "equals_json": '"SUCCESS"'}],
+         "effects": [{"argument_entity_field": "order_id", "predicate": "status",
+                      "value_json": '"cancelled"', "causal_action_confirmed": True}]},
+        {"conditions": [{"source": "result", "path": ["status"], "equals_json": '"SUCCESS"'}],
+         "effects": [{"argument_entity_field": "order_id", "predicate": "status",
+                      "value_json": '"active"', "causal_action_confirmed": True}]}])
+
+
+def test_N01_inconsistent_evidence_without_violation_is_not_proved_error():
+    # final verification | invariant: contradictory trusted evidence about a
+    # claim obligation (BOTH) plus an UNKNOWN conjunct carries NO certified
+    # FALSE safety witness; the world-level error value is TRUE only through
+    # lattice absorption (BOTH and FALSE in FDE), so the certificate checker
+    # must reject PROVED_ERROR (MISSING_VIOLATION_WITNESS) and downgrade to
+    # UNRESOLVED. INCONSISTENT-evidence-alone is never a violation.
+    history = (_call("set_status", '{"order_id": "ORD-1"}', "c1"),
+               _result("set_status", '{"order_id": "ORD-1", "status": "SUCCESS"}', "c1"))
+    analysis = _analyze_two_claims(
+        history, "The status of order ORD-1 is cancelled. The priority of order ORD-1 is high.",
+        (_CONTRADICTORY_MUTATOR,),
+        claim_passes("STATE", "status", "cancelled", ["ORD-1"]),
+        claim_passes("STATE", "priority", "high", ["ORD-1"]))
+    assert analysis.result.status.value != "PROVED_ERROR"
+    assert analysis.result.status.value in ("UNRESOLVED", "INCONSISTENT")
+    # the world error may be TRUE by absorption, but no safety conjunct is FALSE
+    for world in analysis.result.world_proofs:
+        assert all(value is not Truth.FALSE for _, value in world.obligation_safety)
+
+
+def test_N02_inconsistent_evidence_with_unbound_marker_is_not_proved_error():
+    # final verification | invariant: same as N01 with the second conjunct an
+    # unbound-claim UNKNOWN marker (blocks NO_ERROR, never creates ERROR).
+    history = (_call("set_status", '{"order_id": "ORD-1"}', "c1"),
+               _result("set_status", '{"order_id": "ORD-1", "status": "SUCCESS"}', "c1"))
+    analysis = _analyze_two_claims(
+        history, "The status of order ORD-1 is cancelled. The priority of order ZZZ-9 is high.",
+        (_CONTRADICTORY_MUTATOR,),
+        claim_passes("STATE", "status", "cancelled", ["ORD-1"]),
+        claim_passes("STATE", "priority", "high", ["ZZZ-9"]))
+    assert analysis.result.status.value != "PROVED_ERROR"
+    assert analysis.result.status.value in ("UNRESOLVED", "INCONSISTENT")
+
+
+def test_N03_inconsistent_evidence_with_independent_violation_allows_error():
+    # final verification | PAIRED test: contradictory trusted evidence on one
+    # obligation (BOTH) PLUS an independent certified FALSE witness on another
+    # obligation (fresh read refutes the priority claim) -> PROVED_ERROR is
+    # ALLOWED (classification A: the violation independently proves ERROR;
+    # the parallel inconsistency does not veto it and is not its source).
+    history = (_call("set_status", '{"order_id": "ORD-1"}', "c1"),
+               _result("set_status", '{"order_id": "ORD-1", "status": "SUCCESS"}', "c1"),
+               _call("fetch_status", '{"order_id": "ORD-1"}', "c2"),
+               _result("fetch_status", '{"order_id": "ORD-1", "priority": "low"}', "c2"))
+    analysis = _analyze_two_claims(
+        history, "The status of order ORD-1 is cancelled. The priority of order ORD-1 is high.",
+        (_CONTRADICTORY_MUTATOR, _reader_contract(reads=["priority"])),
+        claim_passes("STATE", "status", "cancelled", ["ORD-1"]),
+        claim_passes("STATE", "priority", "high", ["ORD-1"]))
+    assert analysis.result.status.value == "PROVED_ERROR"
+    assert analysis.result.certificate_check.valid
+    # the FALSE witness is the priority refutation, INDEPENDENT of the
+    # contradictory status evidence (different predicate, different event)
+    for world in analysis.result.world_proofs:
+        false_witnesses = [oid for oid, v in world.obligation_safety if v is Truth.FALSE]
+        assert false_witnesses, "PROVED_ERROR must carry a FALSE safety witness per world"
+
+
+def test_N04_inconsistent_evidence_alone_is_inconsistent():
+    # final verification | invariant: a world whose ONLY error-relevant signal
+    # is same-event contradictory trusted evidence surfaces INCONSISTENT
+    # (BOTH world error -> consensus INCONSISTENT), never PROVED_ERROR.
+    history = (_call("set_status", '{"order_id": "ORD-1"}', "c1"),
+               _result("set_status", '{"order_id": "ORD-1", "status": "SUCCESS"}', "c1"))
+    case = make_case(history, "The status of order ORD-1 is cancelled.",
+                     contracts=(_CONTRADICTORY_MUTATOR,))
+    analysis = analyze(case, claim_passes("STATE", "status", "cancelled", ["ORD-1"]))
+    assert claim_truth(analysis) is Truth.BOTH
+    assert analysis.result.status.value == "INCONSISTENT"
+
+
+def test_N05_inconsistent_to_error_transition_has_independent_witness():
+    # final verification | the EXACT shape of the three reported transitions
+    # (dev-023 / hold-099 / hold-100): verified trusted effect exists=true at
+    # t1, contradicting trusted fresh read exists=false at t2, response claims
+    # existence. Two SND-11-consistent outcomes:
+    #   (a) UNDECLARED flat read (the frozen-corpus shape, reads=[]): the
+    #       exists=false row is envelope-ambiguous -> NOT attributable ->
+    #       UNRESOLVED (no false definitive from ambiguous ownership);
+    #   (b) DECLARED read (reads=["exists"]): the fresh read refutes the
+    #       claim -> PROVED_ERROR certified by the fresh-read refutation
+    #       (freshest trusted evidence decides; the cross-time pair is
+    #       historical, NO BOTH exists), and removing the t1 mutation must
+    #       NOT change the verdict (independence of the FALSE witness).
+    history = (_call("restore_record", '{"record_id": "R-4"}', "c1"),
+               _result("restore_record", '{"record_id": "R-4", "status": "SUCCESS"}', "c1"),
+               _call("get_record", '{"record_id": "R-4"}', "c2"),
+               _result("get_record", '{"record_id": "R-4", "exists": false}', "c2"))
+    restore = _reader_contract(
+        "restore_record", {"name": "restore_record", "provider": "bench", "version": "1.0",
+                           "schema_sha256": "e" * 64}, writes=["exists"],
+        guarantees=[{"conditions": [{"source": "result", "path": ["status"],
+                                     "equals_json": '"SUCCESS"'}],
+                     "effects": [{"argument_entity_field": "record_id", "predicate": "exists",
+                                  "value_json": "true", "causal_action_confirmed": True}]}])
+    get_record_undeclared = _reader_contract(
+        "get_record", {"name": "get_record", "provider": "bench", "version": "1.0",
+                       "schema_sha256": "f" * 64})
+    get_record_declared = _reader_contract(
+        "get_record", {"name": "get_record", "provider": "bench", "version": "1.0",
+                       "schema_sha256": "f" * 64}, reads=["exists"])
+    request = "Confirm record R-4 exists."
+    meta = ({"name": "restore_record", "provider": "bench", "version": "1.0",
+             "schema_sha256": "e" * 64},
+            {"name": "get_record", "provider": "bench", "version": "1.0",
+             "schema_sha256": "f" * 64})
+    frames = [goal_frame_desired("get_record", [request])]
+
+    # (a) undeclared flat read: abstain - never a definitive from ambiguity
+    case_a = make_case(history, "Record R-4 exists.",
+                       contracts=(restore, get_record_undeclared), metadata=meta,
+                       schemas=({"name": "restore_record"}, {"name": "get_record"}),
+                       user_request=request)
+    analysis_a = analyze(case_a, claim_passes("STATE", "exists", "true", ["R-4"]), frames=frames)
+    assert analysis_a.result.status.value == "UNRESOLVED"
+    assert not analysis_a.both_evidence if hasattr(analysis_a, "both_evidence") else True
+
+    # (b) declared read: sound refutation with an independent FALSE witness
+    case_b = make_case(history, "Record R-4 exists.",
+                       contracts=(restore, get_record_declared), metadata=meta,
+                       schemas=({"name": "restore_record"}, {"name": "get_record"}),
+                       user_request=request)
+    analysis_b = analyze(case_b, claim_passes("STATE", "exists", "true", ["R-4"]), frames=frames)
+    assert analysis_b.result.status.value == "PROVED_ERROR"
+    assert analysis_b.result.certificate_check.valid
+    assert all(value is Truth.FALSE for _, value in
+               analysis_b.result.world_proofs[0].obligation_safety)
+    # independence ablation: drop the t1 mutation entirely
+    ablated = make_case(history[2:], "Record R-4 exists.", contracts=(get_record_declared,),
+                        metadata=(meta[1],), schemas=({"name": "get_record"},),
+                        user_request=request)
+    ablated_analysis = analyze(ablated, claim_passes("STATE", "exists", "true", ["R-4"]),
+                               frames=frames)
+    assert ablated_analysis.result.status.value == "PROVED_ERROR"
+    assert ablated_analysis.result.certificate_check.valid
+
+
+# =========================================================================
+# AREA B (final verification) - directive sections 8-9 adversarial REP-01
+# cases: top-level operation status must never be usable as a nested
+# entity's state; multi-entity nested outputs must never mix values.
+# =========================================================================
+
+def test_B06_top_level_operation_status_never_answers_nested_state():
+    # SND-11/SND-03 (directive section 8) | invariant: a pure reader returns
+    # {'status': 'SUCCESS', 'resource': {'id': 'R1', 'status': 'pending'}};
+    # the claim 'resource R1 status is SUCCESS' must NEVER be supported by
+    # the top-level operation status. The nested row is structurally owned by
+    # the resource record (scope 'resource') and REFUTES the claim (observed
+    # 'pending'); the root envelope row binds to no entity (no root-scope
+    # entity ref, and undeclared) and can never satisfy resource.status.
+    resource_tool = {"name": "get_resource", "provider": "bench", "version": "1.0",
+                     "schema_sha256": "1" * 64}
+    history = (_call("get_resource", '{"resource": {"id": "R1"}}', "c1"),
+               _result("get_resource",
+                       '{"status": "SUCCESS", "resource": {"id": "R1", "status": "pending"}}', "c1"))
+    case = make_case(history, "Resource R1 status is SUCCESS.",
+                     contracts=(_reader_contract("get_resource", resource_tool,
+                                                 reads=["resource.status"]),),
+                     metadata=(dict(resource_tool),), schemas=({"name": "get_resource"},),
+                     user_request="Tell me the status of resource R1.")
+    analysis = analyze(case, claim_passes("STATE", "resource.status", "SUCCESS", ["R1"]),
+                       frames=[goal_frame_desired("get_resource",
+                                                  ["Tell me the status of resource R1."])])
+    assert claim_truth(analysis) is Truth.FALSE          # refuted by the NESTED 'pending'
+    assert analysis.result.status.value == "PROVED_ERROR"
+    for world in analysis.result.world_proofs:
+        for prim in world.primitives:
+            if prim.value is Truth.TRUE:
+                assert all("resource" in eid or "e" not in eid for eid in prim.supports), \
+                    "the top-level envelope row must never support the nested state claim"
+    # bare-predicate variant: the claim predicate 'status' matches only the
+    # root envelope row, which is not attributable -> UNKNOWN, never TRUE.
+    case2 = make_case(history, "Resource R1 status is SUCCESS.",
+                      contracts=(_reader_contract("get_resource", resource_tool),),
+                      metadata=(dict(resource_tool),), schemas=({"name": "get_resource"},),
+                      user_request="Tell me the status of resource R1.")
+    analysis2 = analyze(case2, claim_passes("STATE", "status", "SUCCESS", ["R1"]),
+                        frames=[goal_frame_desired("get_resource",
+                                                   ["Tell me the status of resource R1."])])
+    assert claim_truth(analysis2) in (None, Truth.UNKNOWN)
+    assert analysis2.result.status.value != "PROVED_NO_ERROR"
+
+
+def test_B07_multi_entity_nested_outputs_never_mix_status_values():
+    # SND-03/SND-11 (directive section 9) | invariant: for
+    # {'payment': {'id': 'P-1', 'status': 'paid'}, 'shipment': {'id': 'S-1',
+    # 'status': 'pending'}, 'operation': {'status': 'SUCCESS'}} every status
+    # row stays inside its own object scope: payment.status belongs to P-1,
+    # shipment.status to S-1, operation.status to no entity. Predicate-only
+    # matching must never mix these values: a payment claim of 'pending' is
+    # refuted by payment's own 'paid' (not supported by shipment's
+    # 'pending'); a payment claim of 'SUCCESS' is refuted (never supported by
+    # the operation envelope); a shipment claim of 'paid' is refuted by
+    # shipment's own 'pending'.
+    multi_tool = {"name": "fetch_bundle", "provider": "bench", "version": "1.0",
+                  "schema_sha256": "2" * 64}
+    payload = ('{"payment": {"id": "P-1", "status": "paid"}, '
+               '"shipment": {"id": "S-1", "status": "pending"}, '
+               '"operation": {"status": "SUCCESS"}}')
+    history = (_call("fetch_bundle", '{"payment": {"id": "P-1"}, "shipment": {"id": "S-1"}}', "c1"),
+               _result("fetch_bundle", payload, "c1"))
+
+    def run_claim(predicate, obj, entity):
+        case = make_case(history, f"The {predicate} of {entity} is {obj}.",
+                         contracts=(_reader_contract("fetch_bundle", multi_tool),),
+                         metadata=(dict(multi_tool),), schemas=({"name": "fetch_bundle"},),
+                         user_request="Tell me the bundle statuses.")
+        return analyze(case, claim_passes("STATE", predicate, obj, [entity]),
+                       frames=[goal_frame_desired("fetch_bundle",
+                                                  ["Tell me the bundle statuses."])])
+
+    assert claim_truth(run_claim("payment.status", "pending", "P-1")) is Truth.FALSE
+    assert claim_truth(run_claim("payment.status", "SUCCESS", "P-1")) is Truth.FALSE
+    assert claim_truth(run_claim("shipment.status", "paid", "S-1")) is Truth.FALSE
+    assert claim_truth(run_claim("payment.status", "paid", "P-1")) is Truth.TRUE
+    # the operation envelope answers no entity's state question
+    assert claim_truth(run_claim("operation.status", "SUCCESS", "P-1")) in (None, Truth.UNKNOWN)
+
+
+def test_B08_nested_scope_naming_two_entities_is_not_attributable():
+    # SND-03 (non-root residue) | invariant: a row whose object scope names
+    # TWO distinct entity refs is not attributable to either, even when the
+    # scope is nested: same predicate name never means same entity state.
+    transfer_tool = {"name": "fetch_transfer", "provider": "bench", "version": "1.0",
+                     "schema_sha256": "3" * 64}
+    history = (_call("fetch_transfer", '{"transfer": {"from_account": "A-1", "to_account": "A-2"}}', "c1"),
+               _result("fetch_transfer",
+                       '{"transfer": {"from_account": "A-1", "to_account": "A-2", "amount": 100}}', "c1"))
+    case = make_case(history, "The amount of account A-1 is 100.",
+                     contracts=(_reader_contract("fetch_transfer", transfer_tool),),
+                     metadata=(dict(transfer_tool),), schemas=({"name": "fetch_transfer"},),
+                     user_request="Tell me the transfer amount.")
+    analysis = analyze(case, claim_passes("STATE", "transfer.amount", "100", ["A-1"]),
+                       frames=[goal_frame_desired("fetch_transfer",
+                                                  ["Tell me the transfer amount."])])
+    assert claim_truth(analysis) in (None, Truth.UNKNOWN)

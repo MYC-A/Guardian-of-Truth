@@ -1,9 +1,13 @@
 """Cycle-3 controlled tests: conservative temporal/BOTH semantics (directive
 section 3) and claim value-anchoring mutation tests (directive section 6).
 
-Soundness-audit revision (B4h-sound-v1): the tests below were re-pinned to
+Soundness-audit revision (B4h-sound-v2): the tests below were re-pinned to
 the SOUND semantics proven necessary by the pre-benchmark audit
-(docs/vnext/e2e/PRE_BENCHMARK_SOUNDNESS_AUDIT.md, findings SND-01..SND-10):
+(docs/vnext/e2e/PRE_BENCHMARK_SOUNDNESS_AUDIT.md, findings SND-01..SND-11).
+B4h-sound-v2 (final verification): the flat reader contract now DECLARES
+reads=["status"] (explicit field-level ownership, SND-11) - an undeclared
+flat top-level row is envelope-ambiguous and abstains; the temporal
+semantics under test are unchanged.
 * cross-time support+refutation is decided by the freshest trusted evidence
   (FALSE/TRUE), never reported as BOTH/INCONSISTENT - absence of intervening
   assistant mutations does not prove persistence (SND-01, external actors
@@ -28,7 +32,7 @@ from test_e2e_v1_core import ScriptedBackend, goal_frame_desired
 
 READER = {"name": "fetch_status", "provider": "bench", "version": "1.0",
           "schema_sha256": "b" * 64}
-READER_CONTRACT = ({"identity": dict(READER), "preconditions": [], "reads": [], "writes": [],
+READER_CONTRACT = ({"identity": dict(READER), "preconditions": [], "reads": ["status", "balance", "verified"], "writes": [],
                     "guarantees": [], "possible_effects": [], "no_effect_conditions": [],
                     "failure_semantics": "documented", "freshness": "fresh-read",
                     "idempotence": "idempotent", "provenance": "bench_authoritative_contract"},)

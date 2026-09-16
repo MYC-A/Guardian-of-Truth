@@ -43,7 +43,7 @@ synthetic counterexample, never by a benchmark case.
 | COV-02 nested business fields unreachable by bare claim predicates | claim predicate "status" vs row predicate "account.status" | UNKNOWN | correct abstention; path-qualified predicates need claim-side path anchoring (V2) | CONSERVATIVE_COVERAGE_LIMITATION | documented |
 | COV-03 flag-channel coverage removed with SND-04 | hold-042 shape: claim (status, "cancelled") + trusted effect (cancelled, true) | was TRUE | now UNKNOWN; returns with explicit semantic_equivalences (REP-02) | CONSERVATIVE_COVERAGE_LIMITATION (cost of a soundness fix) | documented |
 | COV-04 state gates resolve only against boolean-typed rows with token-overlap predicates | gate "account_status" vs row "status" | usually UNKNOWN | conservative; aligned for trusted rows by SND-09, lexical token bridging kept (EMP-02) | CONSERVATIVE_COVERAGE_LIMITATION | documented |
-| REP-01 field-level read contracts absent | flat single-entity envelope `{"account_id": "A-1", "status": "SUCCESS"}` vs business field at top level — indistinguishable | envelope row refutes state claims | requires `reads: [{output_path, entity_ref, predicate, freshness}]` in T1; cannot be retrofitted to the frozen corpus; pinned as the ONE known open soundness risk (xfail test B05) | REPRESENTATION_LIMITATION (soundness-relevant) | deferred to V2 by directive §12/§36 |
+| REP-01 field-level read contracts absent | flat single-entity envelope `{"account_id": "A-1", "status": "SUCCESS"}` vs business field at top level — indistinguishable | envelope row refutes state claims → certified PROVED_ERROR (false definitive reachable — proven in the final verification by test B05 pre-fix) | root-scope rows are attributable ONLY via an explicit T1 `reads` declaration; otherwise UNKNOWN (abstention) | FORMAL_SOUNDNESS_BUG — reclassified by the final-verification directive §10; FIXED as SND-11 in B4h-sound-v2 | FIXED (root-scope abstention + explicit ownership mapping; see section 6.2) |
 | REP-02 no semantic-equivalence declarations | SND-04's replacement | — | `semantic_equivalences: [{lhs: {predicate, value}, rhs: {predicate, value}}]` in T1/application metadata | REPRESENTATION_LIMITATION | deferred |
 | REP-03 no schema-declared canonicalization for cross-type literals | "42"↔42 (see EMP-01) | declared adapter convention | contract-declared canonicalization | REPRESENTATION_LIMITATION | deferred |
 | REP-04 tool-level freshness cannot express mixed freshness | `{"balance": 100 (fresh), "monthly_summary": 4250 (cached)}` | tool-level fresh-read declares both fresh | per-field freshness; T1 is trusted, so the residue is a contract-authoring risk, not a proof error | REPRESENTATION_LIMITATION | documented |
@@ -226,10 +226,13 @@ semantics and checker semantics remain the same code.
 ## 4. Verification evidence
 
 * Adversarial micro-suite `tests/e2e_soundness/test_pre_benchmark_soundness.py`:
-  38 tests, one formal invariant each, expected epistemic result stated in
-  every docstring; 37 pass + 1 strict xfail (the documented REP-01 open
-  risk). Every fixed bug was first reproduced as a failing test (directive
-  §39), then fixed, then re-run.
+  46 tests as of B4h-sound-v2 (38 at B4h-sound-v1: 37 pass + 1 strict xfail
+  for the then-open REP-01 risk), one formal invariant each, expected
+  epistemic result stated in every docstring. Every fixed bug was first
+  reproduced as a failing test (directive §39), then fixed, then re-run.
+  The final verification added N01-N05 (the INCONSISTENT != PROVED_ERROR
+  paired tests) and B06-B08 (directive sections 8-9 adversarial REP-01
+  cases), and converted B05 from strict xfail to a passing test.
 * Cycle-3 controlled tests re-pinned to the sound semantics (6 tests updated
   with per-finding rationale; the file header documents the re-pinning).
 * Full e2e suite: 87 passed + 1 xfail. Full baseline suite: 1481 passed,
@@ -288,3 +291,167 @@ definitive results remain certificate-backed (yes — uncertified=0).
 HARD STOP per directive §47: no new benchmark, no fresh evaluation, no further
 code changes after the freeze commit. The shared benchmark is to be created
 by an independent process.
+
+---
+
+## 6. FINAL PRE-BENCHMARK VERIFICATION (B4h-sound-v1 -> B4h-sound-v2)
+
+Mandated by the final verification directive: close the two remaining
+questions (the three INCONSISTENT -> PROVED_ERROR transitions; REP-01), then
+FINAL FREEZE -> HARD STOP.
+
+### 6.1 Question A - the three INCONSISTENT -> PROVED_ERROR transitions
+
+Cases (B4h-sound-v1 replay, offline, certificate-backed): dev-023, hold-099,
+hold-100 (all family `inconsistent_trusted_evidence`, gold INCONSISTENT,
+gold_binary None). Replay evidence
+(`outputs/vnext/final_verification_inconsistent_to_error.json`,
+`scripts/final_verify_inconsistent_to_error.py`):
+
+```
+World (single world; axes: policy:not_present, goal:conservative:r0#0, s0:binding:0)
+  evidence contradiction -> BOTH ?        NONE (cross-time pair is historical, SND-01)
+  obligation s0:factual:0 (claim "X exists", must_be_true)
+      atom exists[entity] expected true -> FALSE
+      refuting witness: obs:e4:<digest> = the pure fresh read row (exists=false)
+  no unresolved markers, no UNKNOWN conjuncts, no BOTH conjuncts
+  world safety = [FALSE] -> world error TRUE
+all-world aggregation: [TRUE] -> PROVED_ERROR, certificate VALID
+  (checker re-executed solve_world, reproduced the identical primitive
+   witness, and enforced MISSING_VIOLATION_WITNESS: a FALSE safety conjunct
+   per world - the rule exists verbatim at the frozen e7eb79c)
+```
+
+Independence ablation: deleting the t1 mutation call (and its contradicting
+verified effect) PRESERVES PROVED_ERROR with the SAME FALSE witness - the
+ERROR never depended on the contradiction. Verdict: all three transitions are
+**A. SOUND_INDEPENDENT_ERROR** (the old INCONSISTENT was itself the unsound
+closed-world artifact of SND-01; no inconsistency-collapse occurred).
+
+The lattice-absorption path was probed adversarially
+(`scripts/probe_inconsistency_collapse.py`): a world whose safety conjuncts
+are [BOTH, UNKNOWN] computes error TRUE in the four-valued lattice (BOTH and
+FALSE coincide in FDE), but the frozen certificate rule
+MISSING_VIOLATION_WITNESS rejects any PROVED_ERROR without an individual
+FALSE safety conjunct in every world, downgrading to conservative UNRESOLVED.
+So the invariant "INCONSISTENT evidence without an independent violation is
+never PROVED_ERROR" holds end-to-end; paired regression tests N01-N05 pin it.
+
+### 6.2 Question B - REP-01 final classification
+
+Empirical falsification (test B05 pre-fix): a T1 pure reader returning the
+flat single-entity envelope `{"account_id": "A-1", "status": "SUCCESS"}`
+where `status` is the OPERATION envelope refuted the claim "status of A-1 is
+active" -> certified PROVED_ERROR from a possibly-wrong field mapping. A
+FALSE DEFINITIVE IS REACHABLE from insufficient field ownership information,
+so per the directive REP-01 is reclassified from
+REPRESENTATION_LIMITATION to **FORMAL_SOUNDNESS_BUG (SND-11)** and was fixed
+BEFORE the shared benchmark.
+
+SND-11 (minimal general fix, abstention over heuristics, no T1 v2 schema):
+the ROOT object of a tool result is the envelope/record mixing zone - a flat
+top-level field next to an entity ref key carries no trusted premise that it
+is entity STATE rather than an operation field. Rule changes in
+`world_integration_v1.py` (all gated behind `conservative_state`, so B0 keeps
+byte fidelity):
+
+* `_row_binds_entity`: root-scope rows are attributable ONLY when the T1
+  contract explicitly declares the output path in `reads` (explicit ownership
+  mapping - the field exists in the frozen TrustedContract schema and was
+  previously dead weight); nested-scope binding is unchanged (structural
+  ownership, SND-03).
+* the SND-09 gate-fallback row filter (`_trusted_state_row`): the same
+  attribution discipline for pure-reader rows resolving action gates
+  (verified effects - declared field-level ownership - still resolve).
+
+Directive sections 8-9 adversarial cases pinned as tests: B06 (top-level
+operation status never answers `resource.status` - the nested row refutes,
+the envelope never supports), B07 (payment/shipment/operation multi-entity
+nested outputs never mix status values by predicate-name coincidence),
+B08 (a nested scope naming two entities is unattributable). B05 converted
+from strict-xfail to a passing regression test. Post-fix B05 verdict:
+UNKNOWN / UNRESOLVED - the false-definitive path is closed.
+
+Frozen-arm residue (documented, not fixable in place): the
+ATTRIBUTION/RESULT_FIELD claim channel ("the deletion returned success"
+refuted by the result payload's same-named field) is the B0-frozen claim
+machinery shared by both arms; changing it would break the B0 byte-fidelity
+gate. Its name-matching is the declared field-claim convention of the frozen
+line (spec 127/128); recorded as EMP-05.
+
+### 6.3 Regression consequences (soundness over metrics, directive section 15)
+
+144 viewed-development cases (regression diagnostics ONLY, offline replay,
+0 cache misses), B4h-sound-v1 -> B4h-sound-v2:
+
+| metric | B4h-sound-v1 | B4h-sound-v2 |
+|---|---|---|
+| TP | 54 | 49 |
+| FP (binary) | 0 | 0 |
+| FN | 15 | 20 |
+| TN | 19 | 5 |
+| precision | 1.000 | 1.000 |
+| recall | 0.7826 | 0.7101 |
+| F1 | 0.878 | 0.834 |
+| false-certified ERROR | 0 | 0 |
+| false-certified NO_ERROR | 0 | 0 |
+| uncertified definitive | 0 | 0 |
+
+24 verdict changes, every one the sound cost of closing SND-11: 14
+PROVED_NO_ERROR -> UNRESOLVED and 5 PROVED_ERROR -> UNRESOLVED whose claim
+verdicts rested solely on undeclared flat rows; the three transition cases
+(dev-023/hold-099/hold-100) end UNRESOLVED (their flat fresh-read witness
+now abstains; the claim is TRUE via the verified effect but the goal-axis
+closure premise stays unproven -> conservative UNRESOLVED, no definitive);
+dev-019 keeps its SND-07 improvement. B0 byte fidelity: TRUE on both corpora
+(all fixes gated behind cycle-3 semantics flags). Baseline suite: 1481
+passed + 9 failed - byte-identical failure list with the frozen commit (the
+same 9 pre-existing archival failures, verified by stash-diff). Soundness
+suite: 46 passed, 0 xfail (the B05 xfail became a passing test).
+
+### 6.4 Remaining known risks after B4h-sound-v2
+
+* No known FORMAL_SOUNDNESS_BUG remains. No known path from
+  insufficient/ambiguous evidence to a definitive verdict: flat-envelope
+  ownership abstains (SND-11), cross-time pairs are historical (SND-01),
+  staleness is symmetric (SND-02), failed reads observe nothing (SND-05),
+  PROVED_* requires a per-world certified FALSE/TRUE safety witness plus a
+  validated certificate, and INCONSISTENT evidence never certifies ERROR
+  (MISSING_VIOLATION_WITNESS).
+* COVERAGE/REPRESENTATION limitations (deliberately kept, V2 items):
+  COV-01..COV-04; undeclared flat reader rows abstain (SND-11) - coverage
+  recovery is the T1 `reads` declaration channel (now consumed) or nested
+  record objects; nested business fields need path-anchored claim predicates
+  (COV-02); REP-02 semantic equivalences, REP-03 canonicalization
+  declarations, REP-04 mixed freshness, REP-05 eventual consistency, REP-06
+  structured failure semantics, REP-07 async stages, REP-08 "must act"
+  existentials.
+* EMPIRICAL_HYPOTHESIS (frozen-line conventions, mutation-pinned): EMP-01
+  canonical-encoding literal coercion; EMP-02 lexical gate-token bridging on
+  trusted attributable rows; EMP-03 entity-ref key conventions; EMP-04
+  machine suffixes as grounding context; EMP-05 (new) attribution claims are
+  field-value assertions under the frozen B0 claim convention (name matching
+  against result payloads; an unseen domain whose result field names differ
+  from the extraction's predicate yields UNKNOWN, never a fabricated value).
+
+### 6.5 Final freeze - B4h-sound-v2
+
+New explicit version (historical B4h at e7eb79c and the B4h-sound-v1 audit
+state at 5e4bc39 are NOT rewritten): B4h-sound-v2 = B4h-sound-v1 + SND-11.
+SND-01..SND-10 fixes are unchanged and re-verified. Frozen content: source
+commit (this freeze commit), historical H0/GRS frontend hashes
+(HISTORICAL_PROVENANCE in policy_historical_v1.py), Conservative Goal, T1
+schema, state proof semantics (SND-01..SND-06, SND-08, SND-09, SND-11),
+temporal semantics, claim semantics, equivalence semantics (no undeclared
+channels), binding logic, repair registry, world composition, solver,
+checker, scorer, soundness test suite (46 tests), audit documents and
+machine-readable outputs. Reproducible:
+
+* `PYTHONPATH=src python -m pytest tests/e2e/ tests/e2e_soundness/ -q`
+* `PYTHONPATH=src:. python scripts/run_soundness_regression.py`
+  (B0_byte_faithful must be true; the B4h-sound-v2 metrics of 6.3)
+* `PYTHONPATH=src:. python scripts/final_verify_inconsistent_to_error.py`
+  (final states of the three transition cases)
+
+HARD STOP per the directive: no new benchmark, no fresh evaluation, no
+further code changes after this freeze commit.

@@ -13,16 +13,22 @@ Semantics fixed by the E2E V1 contract:
   UNRESOLVED, never a top-k subset (spec 92, 93).
 
 Cycle-3 conservative state semantics (semantics.conservative_state, B1),
-soundness-audit revision B4h-sound-v1 (pre-benchmark audit, SND-01..SND-09):
+soundness-audit revision B4h-sound-v2 (pre-benchmark final verification,
+SND-01..SND-09 + SND-11):
 * Only trusted fresh state reads (T1 contract declaring no writes and
   fresh-read freshness, contract preconditions held) and verified trusted
   effects are STATE evidence for CURRENT-state atoms. Rows extracted from
   mutation results, uncontracted tools or failed reads are operation
   outcomes, never entity-state refutations.
-* Observation rows bind to an entity only within their own JSON object
-  scope (output-path entity alignment): an envelope field never refutes a
-  nested entity's state, and a scope naming two distinct entities is not
-  attributable at all (SND-03).
+* Observation rows bind to an entity only within their own NON-ROOT JSON
+  object scope (output-path entity alignment): an envelope field never
+  refutes a nested entity's state, a scope naming two distinct entities is
+  not attributable at all (SND-03), and the ROOT object of a result is the
+  envelope/record mixing zone where ownership cannot be proved from
+  structure, so flat top-level rows are entity-state evidence ONLY when the
+  T1 contract explicitly declares the output path in `reads` (SND-11 /
+  REP-01 final resolution: explicit ownership mapping or abstain - UNKNOWN -
+  never ownership inferred from name coincidence).
 * Cross-time support + refutation are HISTORICAL observations. A CURRENT
   contradiction (BOTH) exists ONLY for a same-position (single-event
   snapshot) contradiction. Absence of intervening assistant mutations NEVER
@@ -145,14 +151,36 @@ def _object_scope(path: tuple[str, ...] | str) -> tuple[str, ...]:
     return tuple(parts[:-1]) if len(parts) > 1 else ()
 
 
-def _row_binds_entity(row_predicate: str, row_refs, entity) -> bool:
-    """SND-03: an observation row is entity-bound only within its own JSON
-    object scope. The entity ref must be extracted from the same object as
-    the row (output-path alignment, not event-level coincidence), and the
-    scope must not name TWO distinct entities (such a row is not
+def _declared_reads(event, registry: ContractRegistry) -> tuple[str, ...]:
+    """T1 field-level read ownership declarations for a result event's tool
+    (SND-11): the contract's `reads` tuple lists result output paths the
+    contract vouches as entity-state reads. Empty/absent declarations carry
+    no ownership information (the corpus-frozen convention)."""
+    if event.tool is None:
+        return ()
+    contract = registry.lookup(event.tool)
+    return contract.reads if contract is not None else ()
+
+
+def _row_binds_entity(row_predicate: str, row_refs, entity,
+                      declared_reads: tuple[str, ...] = ()) -> bool:
+    """SND-03 + SND-11: an observation row is entity-bound only within its
+    own JSON object scope. The entity ref must be extracted from the same
+    object as the row (output-path alignment, not event-level coincidence)
+    and the scope must not name TWO distinct entities (such a row is not
     attributable to either: same predicate name does not mean same entity
-    state)."""
+    state). The scope must NOT be the ROOT object of a result UNLESS the row
+    is a declared read (SND-11): the root of a tool result is the
+    envelope/record mixing zone - a flat top-level field next to an entity
+    ref key carries no trusted premise that it is entity STATE rather than
+    an operation field, so ownership cannot be proved from structure alone
+    and the row is attributable only when the T1 contract explicitly
+    declares the output path in `reads` (explicit ownership mapping)."""
     scope = _object_scope(row_predicate)
+    if not scope:
+        # SND-11: root-scope rows are envelope-ambiguous unless declared.
+        if row_predicate not in declared_reads:
+            return False
     in_scope = [ref for ref in row_refs if _object_scope(ref.key) == scope]
     return (entity in in_scope
             and len({(ref.namespace, ref.key, ref.value) for ref in in_scope}) <= 1)
@@ -227,8 +255,9 @@ def _collect_state_rows(atom, ledger, index, registry, semantics):
     value_json) from pure-reader observations and verified effects on the
     field channel (predicate must equal the atom predicate exactly; the
     claim's value token opens no other channel, SND-04). Observation rows
-    additionally bind to the atom entity only within their own JSON object
-    scope (SND-03)."""
+    additionally bind to the atom entity only within their own NON-ROOT
+    JSON object scope (SND-03 + SND-11: a flat top-level field carries no
+    provable ownership)."""
     rows = []
     for eid in index.search(entity=atom.entity, time_range=(0, atom.time_index)).event_ids:
         event = index.events_by_id[eid]
@@ -237,7 +266,8 @@ def _collect_state_rows(atom, ledger, index, registry, semantics):
         for item in index.observations_by_event.get(eid, ()):
             if item.predicate != atom.predicate:
                 continue
-            if not _row_binds_entity(item.predicate, item.entity_refs, atom.entity):
+            if not _row_binds_entity(item.predicate, item.entity_refs, atom.entity,
+                                     _declared_reads(event, registry)):
                 continue
             rows.append((event.index, item.evidence_id, item.value_json))
     for effect in index.effects_by_entity.get(atom.entity, ()):
@@ -250,10 +280,11 @@ def _collect_state_rows(atom, ledger, index, registry, semantics):
 
 def _conservative_state_proof(atom, ledger, index, registry, semantics):
     """Conservative CURRENT-state semantics, soundness-audit revision
-    (B4h-sound-v1; see module docstring). Fully replaces the baseline proof
-    for OBSERVED_STATE@LATEST atoms: no trusted state evidence at all means
-    UNKNOWN (an operation-status row, an uncontracted tool's output or a
-    failed read never refutes an entity-state claim).
+    (B4h-sound-v2; see module docstring). Fully replaces the baseline proof
+    for OBSERVED_STATE@LATEST atoms: no trusted ATTRIBUTABLE state evidence
+    at all means UNKNOWN (an operation-status row, an uncontracted tool's
+    output, a failed read or a flat root-scope envelope row never refutes an
+    entity-state claim).
 
     Decision procedure:
     1. same-position support + refutation -> BOTH (one event, one material
@@ -352,7 +383,11 @@ def _prove_deterministic_action_atom(atom: ProofAtom, ledger: EvidenceLedger,
             return True
         event = index.events_by_id.get(item.event_id)
         if event is not None and _pure_reader_event(event, index, registry):
-            return True
+            # SND-11: a pure-reader row resolves a gate only when it is
+            # entity-attributable - a ROOT-scope (flat envelope) row is
+            # attributable only when the T1 contract declares the read.
+            return (_object_scope(item.predicate) != ()
+                    or item.predicate in _declared_reads(event, registry))
         return any(effect.event_id == item.event_id and effect_is_verified(effect, ledger, index, registry)
                    for effect in ledger.effects)
 
