@@ -722,3 +722,88 @@ transport work.
 HARD STOP per directive §42: no new research cycle, no fresh benchmark, no model
 training, no Guardian rewrite. The next step belongs to the user after reviewing
 `REAL_COMPETITION_VALID_CODEX.md`, `cases.jsonl`, `iterations.json`, `metrics.json`.
+
+---
+
+# SESSION B — independent replication (2026-09-16/17, parallel run)
+
+A second agent session executed the same directive in parallel (worktree
+`Guardian-of-Truth`, this branch's earlier commits were pushed by session A
+at 19:59–21:18 UTC; session B discovered them at push time). Both sessions
+worked from the same frozen commit `315bee3` with NO knowledge of each
+other's results. This section records session B's work, the cross-validation
+it provides, and the two measured adapter deltas. Session B's artifacts live
+under `outputs/vnext/real_valid_b/` and its scripts under
+`scripts/real_valid_*.py` (session A's runner `scripts/run_real_valid.py`
+and outputs `outputs/vnext/real_valid/` are untouched).
+
+## Cross-validation (independent agreement)
+
+Both sessions independently concluded, from primary sources and code reading:
+same official contract (F1 primary, prompt+response only, marker vocabulary
+including the arrow spelling, complete [AVAILABLE TOOLS] catalogs 46/46);
+same execution path (evaluate_vnext_e2e_cycle3 → GuardianE2EV1 arm h0_hist +
+conservative, B3 semantics); same §7 answer (analyze(prompt, response)
+impossible; deterministic adapter required; T1/state/closure absent by
+design); same provider situation (GLM-4.7-Flash endpoint saturated 429,
+Gemini region-blocked — session B verified; Mistral ministral-14b-latest the
+only usable endpoint; same reasoning_effort HTTP-400 incompatibility found
+independently and shimmed the same way).
+
+## Session B adapter deltas vs session A (both deterministic, both sound)
+
+| Decision | Session A | Session B | Measured effect |
+|---|---|---|---|
+| history_complete | False (abstain) | True, completeness_basis = official task contract ("prompt is the full context the agent saw") — session A's idea C | unlocks absence proofs: session B R2 has 6 certified TP vs A-final 3; costs 2 FP (both from H0 policy modality confusion manufacturing REQUIRE_CALL, see below) |
+| tool_schemas | name-only dicts (research convention) | full typed schema trees (description + parameters + nested children, §16 provenance) | better T2 grounding, still untrusted |
+| R0 | ≡R1 by construction | direct stuffing run (system_policy=whole prompt) | 45 UNRESOLVED + 1 certified TP; records the no-adapter floor |
+| R2 | zero-LLP structural replay | R1 minus T2 (claims still on) | session B R2 F1 0.387 > R1 0.286: untrusted T2 world axes convert provable structural violations into UNRESOLVED |
+
+## Session B baseline (before any session-B fix iteration; gold sealed post-run)
+
+| mode | TP | FP | FN | TN | P | R | F1 | notes |
+|---|---:|---:|---:|---:|---:|---:|---:|---|
+| R0 direct stuffing | 1 | 0 | 22 | 23 | 1.000 | 0.043 | 0.083 | 45 UNRESOLVED + 1 certified TP |
+| R1 prompt-only | 4 | 1 | 19 | 22 | 0.800 | 0.174 | 0.286 | 5 PROVED_ERROR, 1 false-certified ERROR |
+| R2 structural (T2 off) | 6 | 2 | 17 | 21 | 0.750 | 0.261 | 0.387 | 8 PROVED_ERROR, 2 false-certified ERROR |
+
+Session B adapter bug (found by its own fidelity check, fixed pre-iteration,
+buggy runs archived under `*_run0_goal_source_bug/`): the nested-marker scan
+initially swallowed user_request for every case (goal axis silently absent)
+and mis-roled user tool calls; both fixed with a role-context restoration
+line. Event-fidelity check now 0 problems on 46/46.
+
+Session B FP autopsy (label=0, certified PROVED_ERROR): both FPs are the
+SAME root cause — the single-structure H0 parse of a large banking policy
+manufactured a REQUIRE_CALL obligation (e.g. `resolve_payment_discrepancy`)
+from descriptive policy text; with history_complete=True the absence of that
+call proves FALSE → certified ERROR. This is the policy-modality-confusion
+family: the price of the completeness premise in the CURRENT policy-frontend
+state, NOT a soundness bug of the absence-proof mechanism itself (the
+certificates are mechanically valid; the premise "policy requires X on every
+turn" is wrong).
+
+Session B failure decomposition (R1): GOAL_PARSE 11 FN (conservative schema
+fragility — session A's iteration 1 addresses exactly this), MISSING_T1 6,
+POLICY_PARSE 2+FP family, CLAIM_PARSE 1 FP; dependency: goal axis empty
+20/46, policy parse blocked 12, works-without-T1 3, T2-used 2.
+
+## Catalog conformance pre-check (session B; validates session A's idea A)
+
+Deterministic census (`scripts/catalog_conformance_precheck.py`,
+`outputs/vnext/real_valid_b/catalog_conformance_precheck.json`): every
+response call checked against the prompt's [AVAILABLE TOOLS] catalog and
+typed schema tree (required fields incl. nested array items, enum values):
+
+- 6/46 cases carry violations; **all 6 are label=1; zero label=0 cases do**
+  (unknown tool names: banking_083 get_bank_account_transactions_9173,
+  telecom mms ×2 cases incl. 4 unknown tools, telecom mobile run_speed_test,
+  telecom service t15 — plus airline__23 nested required-field violations:
+  payment_methods items lack payment_id/amount).
+- Expected effect of a catalog-conformance obligation axis: +4 TP on session
+  B's line (2 of the 6 already prove ERROR via other witnesses), +4 TP on
+  session A's line (their F1 0.2308 → ~0.41), no new FP.
+
+This is the evidence base for the next experiment both sessions converged
+on: session A's idea A ("structural-first deterministic rules") = session
+B's planned fix iteration 1.
