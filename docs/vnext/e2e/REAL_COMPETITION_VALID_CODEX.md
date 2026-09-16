@@ -715,7 +715,7 @@ transport work.
 30. **Main bottleneck NOW**: expressibility — the frozen E2E line cannot represent catalog/schema/provenance violations as first-class rules, and its single-structure policy reading cannot carry multi-rule real policies.
 31. **5 architecture ideas**: A structural-first deterministic rules; B bounded per-section multi-rule policy parsing; C absence proofs under the source-derived completeness premise; D response-anchored commitment checks (two-stage); E local offline model backend. (Details with risk/cost/experiment above.)
 32. **Recommended ONE next experiment**: A — add the catalog-grounded deterministic rules to the E2E line, rerun the 46, measure TP/FP movement (banking_083-style cases should become certified; zero-FP requirement enforced by the certificate).
-33. **Final branch SHA**: see the journal commit (this file is committed on `competition-real-valid-codex`; the branch head after the final commit is recorded in the repo).
+33. **Final branch SHA**: `c6cc376` (branch `competition-real-valid-codex`, commits: ee62107 adapter+baseline -> 5b2dcb9 iteration 1 -> c6cc376 iterations 2-3 + final artifacts).
 34. **Pushed**: yes — `git push -u origin competition-real-valid-codex` (see the push section below).
 35. **Main report URL**: `https://github.com/MYC-A/Guardian-of-Truth/blob/competition-real-valid-codex/docs/vnext/e2e/REAL_COMPETITION_VALID_CODEX.md`
 
