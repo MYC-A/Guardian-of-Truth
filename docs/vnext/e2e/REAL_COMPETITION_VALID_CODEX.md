@@ -107,6 +107,14 @@ Conclusion before fixes: B4h-sound-v2 cannot be called directly as `analyze(prom
 - Classification: `MISSING_LLM_RESULT` + `CACHE_DEPENDENCY` + external runtime/quota blocker. The existing frozen caches do not contain unseen public-case frontend inputs, so they cannot complete the required 46-case run.
 - Interpretation: the adapter/inference path is locally ready, but no honest R0/R1/R2 development metrics or failure decomposition can be produced until B.AI quota is restored. Repeating the same API request cannot add evidence and is intentionally avoided.
 
+## 2026-09-16T21:31:00+03:00 — exact frozen-cache coverage audit
+
+- Command: merge all 29 existing `outputs/vnext/*cache*.json` files in memory, inject a fail-closed offline backend for misses, and run the adapted B4h configuration over all 46 gold-free inputs. No network call, label, or explanation was used and no prediction artifact was presented as the live baseline.
+- Seeded cache: 1,897 unique exact keys. Reachable semantic requests: 599; hits: 129; misses: 470. All 46 cases completed transport without a Python exception but ended `UNRESOLVED`.
+- Historical H0 primary: 29 hits / 17 misses across 46 requests; its repair path showed the same split. T2 effect proposals: 71 hits / 150 misses across 221 observed call/result pairs.
+- Conservative Goal: 0 hits / 46 misses. Each of the ten claim passes (`disposition`, `kind`, `modality_polarity`, `predicate`, `object_entities`, `time`, `source`, `actor`, `relations`, `explicit_causality`) had 0 hits / 24 misses for the 24 target responses containing text. Operational binding was not reachable with usable frontend readings in this fail-closed replay.
+- Interpretation: the old cache is not merely an optimization. It partially replays repeated policy/effect inputs but has zero coverage for the real target Goal/Claims inputs and cannot support unseen complete inference. This quantitatively confirms `CACHE_DEPENDENCY`; a live semantic backend (or a separately authorized local model) is required for the requested baseline.
+
 # T1 / tool-semantics audit
 
 ## 2026-09-16T21:18:00+03:00 — available source-grounded subset
