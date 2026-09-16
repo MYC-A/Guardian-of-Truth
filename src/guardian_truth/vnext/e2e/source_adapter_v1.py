@@ -63,13 +63,18 @@ def build_source(case, *, state_contract: dict | None = None) -> E2ESource:
     policy_text = case.system_policy
     if state:
         policy_text = policy_text + POLICY_SCOPE_SUFFIX + canonical(dict(sorted(state.items()))).decode("utf-8")
-    prompt_parts = ["⟦SYSTEM⟧\n" + policy_text] if policy_text else []
-    if case.user_request:
-        prompt_parts.append("⟦USER⟧\n" + case.user_request)
-    for event_text in case.history:
-        if event_text:
-            prompt_parts.append(event_text)
-    prompt = "\n".join(prompt_parts)
+    if case.raw_prompt is not None:
+        if state:
+            raise ValueError("raw competition prompt cannot be rewritten with a state contract")
+        prompt = case.raw_prompt
+    else:
+        prompt_parts = ["⟦SYSTEM⟧\n" + policy_text] if policy_text else []
+        if case.user_request:
+            prompt_parts.append("⟦USER⟧\n" + case.user_request)
+        for event_text in case.history:
+            if event_text:
+                prompt_parts.append(event_text)
+        prompt = "\n".join(prompt_parts)
     response = case.target_response
     metadata = _tool_identities(case.tool_metadata)
     events = normalize(prompt, response, tool_identities=metadata)

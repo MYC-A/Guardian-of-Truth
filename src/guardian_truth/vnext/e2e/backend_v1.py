@@ -161,7 +161,8 @@ class E2ECachingBackend:
 
 
 def build_live_backend(*, interval_seconds: float = 0.5, env_path: Path | None = None,
-                       cache_path: Path | None = None) -> E2ECachingBackend:
+                       cache_path: Path | None = None, model: str | None = None,
+                       api_key_env: str | None = None) -> E2ECachingBackend:
     """BAI provider (qwen3.8-flash) through Guardian's own ChatClient.
 
     The BAI endpoint rejects strict response_format schemas containing
@@ -171,10 +172,14 @@ def build_live_backend(*, interval_seconds: float = 0.5, env_path: Path | None =
     backend boundary exactly as with structured mode."""
     from ...runtime import provider_config
     from ...settings import load_env_file
+    from dataclasses import replace
     from ...llm_client import ChatClient, ClientConfig
     if env_path is not None:
         load_env_file(env_path)
-    config = provider_config(ClientConfig(response_format_mode="none", timeout_seconds=90.0), "bai")
+    config = provider_config(ClientConfig(response_format_mode="none", timeout_seconds=90.0),
+                             "bai", model=model)
+    if api_key_env is not None:
+        config = replace(config, api_key_env=api_key_env)
     client = ChatClient(config)
     client.validate_configuration()
     from .json_extract_backend_v1 import JsonExtractBackend

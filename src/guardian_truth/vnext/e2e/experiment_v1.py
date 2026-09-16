@@ -41,7 +41,8 @@ def load_corpus(path: Path) -> list[E2ECaseInput]:
             authoritative_goal_behaviors=tuple(row.get("authoritative_goal_behaviors", ())),
             gold_core_status=row.get("gold_core_status", ""),
             gold_binary=row.get("gold_binary"),
-            notes=row.get("notes", "")))
+            notes=row.get("notes", ""),
+            raw_prompt=row.get("raw_prompt")))
     return cases
 
 

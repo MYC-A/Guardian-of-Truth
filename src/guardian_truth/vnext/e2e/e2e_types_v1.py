@@ -301,6 +301,10 @@ class E2ECaseInput:
     gold_core_status: str = ""
     gold_binary: int | None = None
     notes: str = ""
+    # Competition inputs already contain the complete marked transcript.
+    # When supplied, source normalization must preserve it byte-for-byte
+    # instead of reconstructing/reordering it from research-only fields.
+    raw_prompt: str | None = None
 
 
 @dataclass(frozen=True)

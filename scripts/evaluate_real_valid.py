@@ -1,0 +1,95 @@
+"""Run frozen B4h-sound-v2 on public competition inputs with a gold firewall."""
+
+from __future__ import annotations
+
+import argparse
+import json
+from pathlib import Path
+import sys
+
+ROOT = Path(__file__).resolve().parents[1]
+sys.path.insert(0, str(ROOT / "src"))
+
+from guardian_truth.settings import load_env_file  # noqa: E402
+from guardian_truth.vnext.e2e.backend_v1 import build_live_backend  # noqa: E402
+from guardian_truth.vnext.e2e.competition_adapter_v1 import adapt_competition_input  # noqa: E402
+from guardian_truth.vnext.e2e.real_valid_v1 import (MODES, competition_view, run_mode, score,
+    write_case_audit, write_predictions, write_premise_coverage)  # noqa: E402
+
+
+def inference_records(path: Path) -> list[dict]:
+    import pandas as pd
+    frame = pd.read_parquet(path, columns=["id", "prompt", "response"])
+    records = [competition_view(row) for row in frame.to_dict("records")]
+    if len({row["id"] for row in records}) != len(records):
+        raise ValueError("duplicate competition id")
+    return records
+
+
+def gold_labels(path: Path) -> dict[str, int]:
+    import pandas as pd
+    frame = pd.read_parquet(path, columns=["id", "label"])
+    return {row["id"]: int(row["label"]) for row in frame.to_dict("records")}
+
+
+def main() -> None:
+    parser = argparse.ArgumentParser(description=__doc__)
+    parser.add_argument("--input", type=Path, default=ROOT / "valid.parquet")
+    parser.add_argument("--output-dir", type=Path, default=ROOT / "outputs/vnext/real_valid")
+    parser.add_argument("--env-file", type=Path, default=ROOT / ".env")
+    parser.add_argument("--modes", default="R0,R1,R2")
+    parser.add_argument("--limit", type=int)
+    parser.add_argument("--cache-mode", choices=("cold", "warm", "resume"), default="resume")
+    parser.add_argument("--interval-seconds", type=float, default=0.5)
+    args = parser.parse_args()
+
+    modes = [mode.strip() for mode in args.modes.split(",") if mode.strip()]
+    if not modes or any(mode not in MODES for mode in modes):
+        parser.error("modes must be a comma-separated subset of R0,R1,R2")
+    records = inference_records(args.input)
+    if args.limit is not None:
+        records = records[:args.limit]
+    adapted = [adapt_competition_input(record) for record in records]
+    args.output_dir.mkdir(parents=True, exist_ok=True)
+    cache_path = args.output_dir / "llm_cache.json"
+    if args.cache_mode == "cold" and cache_path.exists():
+        parser.error("cold run requires an absent cache file")
+    if not load_env_file(args.env_file):
+        parser.error("env file not found")
+    backend = build_live_backend(
+        interval_seconds=args.interval_seconds,
+        cache_path=cache_path if args.cache_mode != "cold" else None,
+        model="qwen3.8-flash", api_key_env="b_ai_api_key")
+    if args.cache_mode == "cold":
+        backend.cache_path = cache_path
+
+    by_mode, seals = {}, {}
+    for mode in modes:
+        progress = args.output_dir / f"{mode}_audit.json"
+        rows = run_mode(adapted, backend, mode, progress)
+        by_mode[mode] = rows
+        prediction_path = args.output_dir / f"{mode}_predictions.csv"
+        seals[mode] = {"path": str(prediction_path.relative_to(ROOT)),
+                       "sha256": write_predictions(rows, prediction_path),
+                       "rows": len(rows)}
+    (args.output_dir / "prediction_seals.json").write_text(
+        json.dumps(seals, ensure_ascii=False, indent=2), encoding="utf-8")
+
+    # Gold is loaded only after every requested prediction file is sealed.
+    gold = gold_labels(args.input)
+    metrics = {mode: score(rows, gold) for mode, rows in by_mode.items()}
+    (args.output_dir / "metrics.json").write_text(
+        json.dumps(metrics, ensure_ascii=False, indent=2), encoding="utf-8")
+    write_case_audit(adapted, by_mode, args.output_dir / "cases.jsonl")
+    write_premise_coverage(adapted, args.output_dir / "premise_coverage.csv")
+    iterations = [{"iteration": 0, "commit": "315bee335a467476732b47e1e7f412097222cd3b",
+                   "description": "frozen B4h-sound-v2 through minimal competition adapter",
+                   "metrics": metrics}]
+    (args.output_dir / "iterations.json").write_text(
+        json.dumps(iterations, ensure_ascii=False, indent=2), encoding="utf-8")
+    backend.persist_receipts(args.output_dir / "llm_receipts.json")
+    print(json.dumps(metrics, ensure_ascii=False, indent=2))
+
+
+if __name__ == "__main__":
+    main()
