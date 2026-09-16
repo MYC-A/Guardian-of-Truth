@@ -212,12 +212,55 @@ class GoalContract:
 # ------------------------------------------------------------ composition core
 
 @dataclass(frozen=True)
+class E2ESemantics:
+    """Cycle-3 semantic gates for the causal ablation arms B0-B4.
+
+    B0 (all False) reproduces the frozen E2E V1 semantics exactly.
+    conservative_state : only trusted fresh reads and verified effects are
+        state evidence; cross-time support/refutation is historical (BOTH
+        only under proven persistence, UNKNOWN when an unproven mutation
+        separates the evidence).
+    alternative_groups : ANY_OF authorizations and multi-choice goal
+        satisfactions lower into ONE disjunctive satisfaction group instead
+        of independent obligations (authorization is not obligation).
+    inconsistent_status : an obligation whose atom evidence is BOTH makes
+        the world verdict BOTH so consensus surfaces INCONSISTENT instead of
+        silently absorbing the contradiction.
+    claim_typing : deterministic claim-adapter guards (entity-ref anchoring
+        guard, flag-channel evidence for value-anchored state claims,
+        representation-preserving literal coercion)."""
+    conservative_state: bool = False
+    alternative_groups: bool = False
+    inconsistent_status: bool = False
+    claim_typing: bool = False
+
+
+FULL_SEMANTICS = E2ESemantics(conservative_state=True, alternative_groups=True,
+                              inconsistent_status=True, claim_typing=True)
+
+SEMANTICS_ARMS = {
+    "B0": E2ESemantics(),
+    "B1": E2ESemantics(conservative_state=True),
+    "B2": E2ESemantics(conservative_state=True, alternative_groups=True),
+    "B3": E2ESemantics(conservative_state=True, alternative_groups=True,
+                       inconsistent_status=True, claim_typing=True),
+    "B4": E2ESemantics(conservative_state=True, alternative_groups=True,
+                       inconsistent_status=True, claim_typing=True),
+}
+
+
+@dataclass(frozen=True)
 class DisjunctiveGroup:
-    """Authorization alternatives: per target call, OR over allowed atoms."""
+    """Authorization alternatives: per target call, OR over allowed atoms.
+    satisfaction_choices (B2): OR over alternative satisfaction bundles -
+    each bundle is a conjunction of atoms; the group holds when ANY bundle
+    holds (alternative ways to satisfy one goal, never independent
+    obligations)."""
     group_id: str
     rule_id: str
     must_be_true: bool
     per_call_atoms: tuple[tuple[str, tuple[object, ...]], ...]   # (event_id, atoms)
+    satisfaction_choices: tuple[tuple[object, ...], ...] = ()    # B2: OR over bundles
 
 
 @dataclass(frozen=True)

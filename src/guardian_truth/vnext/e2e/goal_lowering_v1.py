@@ -7,6 +7,15 @@ alternatives (allowed alternatives are NOT an instruction to execute all of
 them, spec 59). The goal normative text carries the merged explicit scope
 suffix so every allowed literal is textually grounded for the operational
 binding (the same mechanism the baseline core uses for EXPLICIT_ALLOWED_SCOPE).
+
+Cycle-3 alternative_groups semantics (B2): authorization is not obligation.
+* Every binding choice of every allowed alternative contributes its atoms to
+  ONE per-call disjunctive group (binding ambiguity is absorbed by the
+  disjunction, never by dropping an alternative and degenerating the group).
+* A goal REQUIRE rule whose operational binding yields MULTIPLE choices
+  lowers into ONE satisfaction group: the goal is satisfied when ANY bound
+  alternative operationalization holds (OR over conjunctions), never into
+  independent per-choice world obligations (REQUIRE A AND REQUIRE B).
 """
 
 from __future__ import annotations
@@ -17,9 +26,10 @@ from itertools import product
 from ..grounding import bind_evaluation_hypothesis
 from ..integrity import canonical
 from ..policy import quote_spans
-from ..proof_records import AtomKind, ProofAtom, TimeMode
+from ..proof_records import ArgumentConstraint, AtomKind, ProofAtom, TimeMode
 from ..types import EntityRef, EvaluationHypothesis
-from .e2e_types_v1 import CompiledRule, DisjunctiveGroup, GoalContract, ReadingOption, UnresolvedMarker
+from .e2e_types_v1 import (CompiledRule, DisjunctiveGroup, E2ESemantics, FULL_SEMANTICS,
+                           GoalContract, ReadingOption, UnresolvedMarker)
 from .goal_composition_v1 import compile_goal_contract
 from .policy_lowering_v1 import (LoweredReading, _existential_obligation, _raw_scope,
                                   _rule_conditions_atoms, _grounded_hypothesis, rule_side_spec)
@@ -54,7 +64,7 @@ def _bind(rule: CompiledRule, normative_text: str, backend, ledger, tool_catalog
 
 
 def _alternative_group(rule: CompiledRule, normative_text: str, backend, ledger, tool_catalog,
-                       target_calls, lowered: LoweredReading):
+                       target_calls, lowered: LoweredReading, semantics: E2ESemantics):
     """GOAL_ALTERNATIVES: OR over allowed alternatives per target call."""
     per_call = {}
     markers = []
@@ -64,17 +74,25 @@ def _alternative_group(rule: CompiledRule, normative_text: str, backend, ledger,
         hypothesis, binding = _bind(alt_rule, normative_text, backend, ledger, tool_catalog)
         lowered.hypotheses = lowered.hypotheses + (hypothesis,)
         lowered.hypothesis_scopes[hypothesis.hypothesis_id] = _raw_scope(alt_rule) or {}
-        if len(binding.choices) != 1:
+        if not binding.choices:
             markers.append(UnresolvedMarker(f"{rule.rule_id}:alt{alt_index}:binding",
                                             "alternative binding ambiguous or unresolved"))
             continue
-        choice = binding.choices[0]
-        lowered.choices = lowered.choices + (choice,)
-        lowered.choice_rules[choice.choice_id] = rule_side_spec(alt_rule)
-        for atom in choice.atoms:
-            event = next((call for call in target_calls if call.event_id == atom.entity.value), None)
-            if event is not None:
-                per_call.setdefault(event.event_id, []).append(atom)
+        if len(binding.choices) != 1 and not semantics.alternative_groups:
+            markers.append(UnresolvedMarker(f"{rule.rule_id}:alt{alt_index}:binding",
+                                            "alternative binding ambiguous or unresolved"))
+            continue
+        # alternative_groups: EVERY binding choice of the alternative
+        # contributes its atoms; the group disjunction absorbs binding
+        # ambiguity instead of dropping the alternative (a dropped
+        # alternative degenerated the group into a single FALSE atom).
+        for choice in binding.choices:
+            lowered.choices = lowered.choices + (choice,)
+            lowered.choice_rules[choice.choice_id] = rule_side_spec(alt_rule)
+            for atom in choice.atoms:
+                event = next((call for call in target_calls if call.event_id == atom.entity.value), None)
+                if event is not None:
+                    per_call.setdefault(event.event_id, []).append(atom)
     if rule.conditions or rule.exceptions:
         markers.append(UnresolvedMarker(f"{rule.rule_id}:conditions",
                                         "conditions on alternatives not expressible in V1"))
@@ -87,16 +105,20 @@ def _alternative_group(rule: CompiledRule, normative_text: str, backend, ledger,
 
 def lower_goal_contract(contract: GoalContract, *, user_request: str, state_contract: dict | None,
                         backend, ledger, tool_catalog, target_calls,
-                        normative_text: str | None = None) -> LoweredReading:
+                        normative_text: str | None = None,
+                        semantics: E2ESemantics = FULL_SEMANTICS) -> LoweredReading:
     rules, unresolved = compile_goal_contract(contract, state_contract)
     lowered = LoweredReading(rules=rules)
     if normative_text is None:
         normative_text = goal_normative_text(user_request, rules)
+    authorized_alternatives = sorted({alternative for other in rules
+                                      if other.kind == "GOAL_ALTERNATIVES"
+                                      for alternative in other.alternatives})
     per_rule_alternatives = []
     for rule in rules:
         if rule.kind == "GOAL_ALTERNATIVES":
             group, markers = _alternative_group(rule, normative_text, backend, ledger, tool_catalog,
-                                                target_calls, lowered)
+                                                target_calls, lowered, semantics)
             per_rule_alternatives.append([(((), (group,), tuple(markers)))])
             continue
         if rule.kind == "PERMIT" or not rule.action_key:
@@ -121,6 +143,37 @@ def lower_goal_contract(contract: GoalContract, *, user_request: str, state_cont
             marker = UnresolvedMarker(f"{rule.rule_id}:binding", "operational binding unresolved: " + reasons)
             per_rule_alternatives.append([((), (), (marker,) + extra_markers)])
             continue
+        if (semantics.alternative_groups and rule.modality == "REQUIRE"
+                and (len(binding.choices) > 1 or authorized_alternatives)
+                and all(choice.must_be_true for choice in binding.choices)):
+            # ONE satisfaction group: the goal is satisfied by ANY bound
+            # alternative operationalization, extended with the explicitly
+            # AUTHORIZED alternative tools of the same request (the user's own
+            # ANY_OF words, never an invented reading). Authorization
+            # alternatives are never independent obligations.
+            satisfaction = []
+            for choice in binding.choices:
+                lowered.choices = lowered.choices + (choice,)
+                lowered.choice_rules[choice.choice_id] = rule_side_spec(rule)
+                atoms = tuple(atom for atom in choice.atoms
+                              if any(call.event_id == atom.entity.value for call in target_calls))
+                satisfaction.append(atoms)
+            for alternative in authorized_alternatives:
+                for event in target_calls:
+                    constraints = tuple(ArgumentConstraint((field_name,), tuple(values))
+                                        for field_name, values in rule.scope)
+                    alt_atom = ProofAtom(f"{rule.rule_id}:authalt:{alternative}:{event.event_id}",
+                                         AtomKind.TARGET_CALL_MATCH,
+                                         EntityRef("event_id", event.event_id, "ledger"),
+                                         alternative, "true", "assistant", TimeMode.AT,
+                                         event.index, call_id=event.call_id,
+                                         argument_constraints=constraints)
+                    satisfaction.append((alt_atom,))
+            if any(atoms for atoms in satisfaction):
+                group = DisjunctiveGroup(f"{rule.rule_id}:satisfaction", rule.rule_id, True, (),
+                                        tuple(satisfaction))
+                per_rule_alternatives.append([(((), (group,), extra_markers))])
+                continue
         alternatives = []
         for choice in binding.choices:
             lowered.choices = lowered.choices + (choice,)

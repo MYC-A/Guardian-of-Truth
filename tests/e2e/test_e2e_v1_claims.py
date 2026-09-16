@@ -4,6 +4,7 @@ import pytest
 
 from guardian_truth.vnext.e2e.core_v1 import GuardianE2EV1
 from guardian_truth.vnext.e2e.e2e_types_v1 import E2ECaseInput
+from guardian_truth.vnext.e2e.experiment_v1 import registry_for
 from guardian_truth.vnext.integrity import canonical
 from guardian_truth.vnext.semantic import Proposal
 from guardian_truth.vnext.tools import ContractRegistry
@@ -63,6 +64,20 @@ def test_false_success_claim_is_proved_error():
     assert analysis.result.certificate_check.valid
 
 
+READER_IDENTITY = {"name": "get_order", "provider": "bench", "version": "1.0",
+                   "schema_sha256": "a" * 64}
+
+
+def reader_contract():
+    """Trusted fresh-read contract: a declared read-only tool whose result
+    rows are state observations at read time (cycle-3 conservative state
+    semantics only accepts trusted fresh reads as state evidence)."""
+    return [{"identity": dict(READER_IDENTITY), "preconditions": [], "reads": [], "writes": [],
+             "guarantees": [], "possible_effects": [], "no_effect_conditions": [],
+             "failure_semantics": "documented", "freshness": "fresh-read",
+             "idempotence": "idempotent", "provenance": "bench_authoritative_contract"}]
+
+
 def test_matching_state_claim_with_closure_is_no_error():
     base = E2ECaseInput(
         case_id="t-state-ok", family="closed_safe_state_claim",
@@ -70,19 +85,20 @@ def test_matching_state_claim_with_closure_is_no_error():
         history=('⟦ASSISTANT_TOOL_CALL name="get_order" call_id="c1"⟧\n{"order_id": 19}',
                  '⟦TOOL_RESULT name="get_order" requestor="assistant" call_id="c1"⟧\n{"order_id": 19, "status": "pending"}'),
         target_response="⟦ASSISTANT⟧\nOrder 19 status is pending.\n",
-        tool_metadata=({"name": "get_order"},), tool_schemas=({"name": "get_order"},),
+        tool_metadata=(dict(READER_IDENTITY),), tool_schemas=({"name": "get_order"},),
+        t1_contracts=tuple(reader_contract()),
         history_complete=True, completeness_basis="controlled complete history",
         gold_core_status="PROVED_NO_ERROR", gold_binary=0)
     fields = claim_passes("STATE", "status", "pending", ["19"])
     backend = ScriptedBackend(claims_backend(fields))
     backend.responses["goal_conservative_frames"] = {
         "frames": [goal_frame_desired("get_order", ["Show the order status for order 19."])]}
-    first = GuardianE2EV1(backend).analyze_e2e_v1(base)
+    first = GuardianE2EV1(backend, registry=registry_for(base)).analyze_e2e_v1(base)
     from guardian_truth.vnext.e2e.core_v1 import extract_behavior_rows
     behaviors = extract_behavior_rows(first.goal_lowered)
     case = E2ECaseInput(**{**base.__dict__,
                            "authoritative_goal_behaviors": behaviors})
-    analysis = GuardianE2EV1(backend).analyze_e2e_v1(case)
+    analysis = GuardianE2EV1(backend, registry=registry_for(case)).analyze_e2e_v1(case)
     assert analysis.result.status.value == "PROVED_NO_ERROR"
     assert analysis.result.certificate_check.valid
     assert analysis.product_decision.binary_label == 0

@@ -41,7 +41,8 @@ def _condition(key: str, negated: bool, quote: str, literal_kind: str = "ACTION"
 
 
 def compile_h0(structure: PolicyFlatStructure, state_contract: dict | None,
-               tool_catalog: frozenset[str] | set[str]) -> PolicyReading:
+               tool_catalog: frozenset[str] | set[str],
+               reading_id: str = "policy:h0:r0") -> PolicyReading:
     """H0 flat structure -> compiled rules (deterministic, no LLM)."""
     state = state_contract or {}
     rules: list[CompiledRule] = []
@@ -118,7 +119,7 @@ def compile_h0(structure: PolicyFlatStructure, state_contract: dict | None,
         unresolved.append("h0:uncompilable clause " + clause.quote[:40])
     if structure.quantification in {"EXACTLY_ONE", "AT_LEAST_ONE"} and modality in {"PERMISSION", "REQUIREMENT"}:
         unresolved.append("h0:choice cardinality not expressible in V1 program space")
-    return PolicyReading("policy:h0:r0", "h0", tuple(rules), tuple(dict.fromkeys(unresolved)))
+    return PolicyReading(reading_id, "h0", tuple(rules), tuple(dict.fromkeys(unresolved)))
 
 
 def compile_grs(ruleset, inventory, state_contract: dict | None) -> PolicyReading:

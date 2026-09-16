@@ -26,7 +26,7 @@ from ..integrity import canonical
 from ..ledger import EvidenceLedger, LedgerIndex
 from ..proof_records import AtomKind, Obligation, ProofAtom, TimeMode
 from ..types import ClaimKind, Disposition, Reason, TypedClaim
-from .e2e_types_v1 import ReadingOption, UnresolvedMarker
+from .e2e_types_v1 import E2ESemantics, FULL_SEMANTICS, ReadingOption, UnresolvedMarker
 from .world_integration_v1 import Component
 
 CLAIM_ADAPTER_VERSION = "claim_adapter_e2e_v1"
@@ -37,13 +37,19 @@ _KIND_MAP = {ClaimKind.STATE: AtomKind.OBSERVED_STATE, ClaimKind.ATTRIBUTION: At
 _SINGLE_TOKEN = re.compile(r"[A-Za-z0-9_-]+")
 
 
-def claim_expected_json(claim: TypedClaim) -> str:
+def claim_expected_json(claim: TypedClaim, *, typing_v2: bool = False) -> str:
     """Deterministic expectation for a factual claim atom. Shared by the
-    adapter and the independent checker so they can never disagree."""
+    adapter and the independent checker so they can never disagree.
+
+    typing_v2 (cycle 3): the anchored literal must additionally NOT be an
+    entity reference token (an entity id echoing into the object slot is an
+    identity mention, not a value assertion - anchoring it fabricated
+    refutable expectations like status == "CRS-2218")."""
     if (claim.polarity != "NEGATIVE" and claim.object
             and claim.object != claim.predicate
             and _SINGLE_TOKEN.fullmatch(claim.object)
-            and claim.kind in {ClaimKind.STATE, ClaimKind.ATTRIBUTION}):
+            and claim.kind in {ClaimKind.STATE, ClaimKind.ATTRIBUTION}
+            and not (typing_v2 and claim.object in claim.entity_refs)):
         return canonical(claim.object).decode("utf-8")
     # An object that merely echoes the predicate carries no value information:
     # fall back to the boolean polarity mapping (never a fabricated value).
@@ -57,7 +63,8 @@ class ClaimComponents:
     bindings: tuple[ClaimBinding, ...]
 
 
-def build_claims(response: str, backend, ledger: EvidenceLedger) -> ClaimComponents:
+def build_claims(response: str, backend, ledger: EvidenceLedger,
+                 semantics: E2ESemantics = FULL_SEMANTICS) -> ClaimComponents:
     index = LedgerIndex(ledger)
     graph = build_claim_graph(response, backend)
     components, bindings = [], []
@@ -77,9 +84,21 @@ def build_claims(response: str, backend, ledger: EvidenceLedger) -> ClaimCompone
         if Reason.SOURCE_UNBOUND in binding.reasons:
             markers.append(UnresolvedMarker(claim.claim_id + ":source", "claim source unbound"))
         action = claim.kind in {ClaimKind.ACTION_COMPLETED, ClaimKind.ABSENCE}
-        if ((not action and binding.time_index is None)
-                or (action and claim.time_anchor not in {"PAST", "ALL_HISTORY", "NOW"} and binding.time_index is None)):
+        anchor = claim.time_anchor
+        historical = (semantics.claim_typing and claim.kind is ClaimKind.STATE
+                      and anchor in {"PAST", "ALL_HISTORY", "YESTERDAY"})
+        unverifiable_time = (semantics.claim_typing and claim.kind is ClaimKind.STATE
+                             and anchor in {"FUTURE", "UNSPECIFIED", "UNKNOWN"})
+        if ((not action and binding.time_index is None and not historical)
+                or (action and anchor not in {"PAST", "ALL_HISTORY", "NOW"} and binding.time_index is None)):
             markers.append(UnresolvedMarker(claim.claim_id + ":time", "claim time unbound"))
+        if unverifiable_time:
+            # A FUTURE or time-unspecified state claim can never be verified
+            # against supplied evidence; an unbound-time atom fabricated a
+            # refutable CURRENT-state expectation (never again, cycle 3).
+            markers.append(UnresolvedMarker(claim.claim_id + ":time", "claim time not verifiable"))
+            components.append(_single_option_component(claim.claim_id, markers[-1]))
+            continue
         options = {}
         for i, alternative in enumerate(binding.alternatives):
             choice_id = claim.claim_id + f":binding:{i}"
@@ -90,11 +109,13 @@ def build_claims(response: str, backend, ledger: EvidenceLedger) -> ClaimCompone
             # requires the FRESH_STATE_EVIDENCE closure premise: no attempted
             # call may follow the supporting observation (an attempted mutation
             # can invalidate a stale state claim, spec 2.12/20).
-            latest = claim.kind in {ClaimKind.STATE, ClaimKind.ATTRIBUTION}
+            # claim_typing: PAST/ALL_HISTORY/YESTERDAY state claims are HISTORICAL
+            # existentials (through-mode), never current-snapshot refutations.
+            latest = claim.kind in {ClaimKind.STATE, ClaimKind.ATTRIBUTION} and not historical
             atom = ProofAtom(claim.claim_id + f":atom:{i}", _KIND_MAP[claim.kind], alternative.entity,
-                             claim.predicate, claim_expected_json(claim), claim.actor,
+                             claim.predicate, claim_expected_json(claim, typing_v2=semantics.claim_typing), claim.actor,
                              TimeMode.LATEST_OBSERVATION if latest else (
-                                 TimeMode.THROUGH if action and binding.time_index is None else TimeMode.AT), time)
+                                 TimeMode.THROUGH if (action and binding.time_index is None) or historical else TimeMode.AT), time)
             obligation = Obligation(claim.claim_id + f":factual:{i}", CLAIM_OBLIGATION_HYPOTHESIS,
                                     claim.claim_id, atom, True)
             options[choice_id] = ReadingOption(choice_id, (obligation,), (), ())

@@ -20,6 +20,7 @@ from ..proof_records import (AtomKind, ProofCertificate, ProofProblem, TimeMode,
                              conjunction, disjunction, negate)
 from ..tools import ContractRegistry
 from ..types import (ClaimKind, CoreStatus, Disposition, EffectStatus, Reason, ToolIdentity, Truth)
+from .e2e_types_v1 import E2ESemantics, FULL_SEMANTICS
 from .world_integration_v1 import E2EProblem, solve_world
 
 E2E_CERT_VERSION = "guardian-e2e-v1-proof-v1"
@@ -37,15 +38,18 @@ class E2EBundle:
     policy_closure: dict            # {"supplied": bool, "actual_keys": [...], "authoritative_keys": [...]}
     goal_closure: dict
     frontend_failures: tuple        # [(component, kind)]
+    semantics: E2ESemantics = FULL_SEMANTICS   # cycle-3 gates the checker MUST reuse
 
     def source_digest(self) -> str:
+        from dataclasses import asdict as _asdict
         return digest({"context": asdict(self.context),
                        "option_contracts": self.option_contracts,
                        "choice_rules": self.choice_rules,
                        "direct_rules": self.direct_rules,
                        "policy_closure": self.policy_closure,
                        "goal_closure": self.goal_closure,
-                       "frontend_failures": list(self.frontend_failures)})
+                       "frontend_failures": list(self.frontend_failures),
+                       "semantics": _asdict(self.semantics)})
 
 
 def problem_digest(problem: E2EProblem) -> str:
@@ -106,19 +110,21 @@ def _no_t2_axes(bundle: E2EBundle) -> bool:
 
 
 def make_e2e_certificate(status: CoreStatus, bundle: E2EBundle, ledger: EvidenceLedger,
-                         registry: ContractRegistry) -> ProofCertificate | None:
+                         registry: ContractRegistry,
+                         semantics: E2ESemantics = FULL_SEMANTICS) -> ProofCertificate | None:
     if status not in {CoreStatus.PROVED_ERROR, CoreStatus.PROVED_NO_ERROR}:
         return None
     return ProofCertificate(E2E_CERT_VERSION, status, bundle.source_digest(),
                             digest(asdict(ledger)), digest([asdict(contract) for contract in registry.contracts]),
                             problem_digest(bundle.problem), bundle.problem.worlds and
-                            tuple(proof for proof in _world_proofs(bundle, ledger, registry)),
+                            tuple(proof for proof in _world_proofs(bundle, ledger, registry, semantics)),
                             e2e_completeness_assumptions(bundle, ledger))
 
 
-def _world_proofs(bundle: E2EBundle, ledger: EvidenceLedger, registry: ContractRegistry):
+def _world_proofs(bundle: E2EBundle, ledger: EvidenceLedger, registry: ContractRegistry,
+                  semantics: E2ESemantics):
     from .world_integration_v1 import solve_e2e
-    result = solve_e2e(bundle.problem, ledger, registry)
+    result = solve_e2e(bundle.problem, ledger, registry, semantics)
     return result.world_proofs
 
 
@@ -162,13 +168,14 @@ def check_e2e_certificate(certificate: ProofCertificate, bundle: E2EBundle, ledg
     if set(proofs) != set(worlds) or not worlds:
         errors.append("WORLD_INVENTORY_MISMATCH")
     index = LedgerIndex(ledger)
+    semantics = bundle.semantics
     claim_ids = {claim.claim_id for claim in context.claims}
     choice_ids = {choice.choice_id for choice in context.operational_choices}
     for world in worlds.values():
         proof = proofs.get(world.world_id)
         if proof is None:
             continue
-        recomputed = solve_world(world, ledger, index, registry)
+        recomputed = solve_world(world, ledger, index, registry, semantics)
         if tuple(recomputed.primitives) != proof.primitives or tuple(recomputed.obligation_safety) != proof.obligation_safety:
             errors.append("PRIMITIVE_OR_OBLIGATION_WITNESS_MISMATCH:" + world.world_id)
         if recomputed.error_value != proof.error_value:
@@ -192,7 +199,7 @@ def check_e2e_certificate(certificate: ProofCertificate, bundle: E2EBundle, ledg
             if obligation.obligation_id not in allowed_obligation_ids:
                 errors.append("FOREIGN_OBLIGATION:" + obligation.obligation_id)
             if obligation.hypothesis_id == CLAIM_OBLIGATION_HYPOTHESIS:
-                _check_claim_obligation(obligation, context, errors)
+                _check_claim_obligation(obligation, context, errors, semantics)
             elif obligation.hypothesis_id in choice_ids:
                 _check_choice_obligation(obligation, bundle, context, ledger, errors)
             else:
@@ -223,7 +230,7 @@ def check_e2e_certificate(certificate: ProofCertificate, bundle: E2EBundle, ledg
     return CertificateCheck(not errors, tuple(dict.fromkeys(errors)))
 
 
-def _check_claim_obligation(obligation, context, errors):
+def _check_claim_obligation(obligation, context, errors, semantics: E2ESemantics = FULL_SEMANTICS):
     claim = next((item for item in context.claims if item.claim_id == obligation.claim_id), None)
     if (claim is None or obligation.must_be_true is not True or obligation.conditions
             or claim.predicate != obligation.atom.predicate
@@ -235,7 +242,7 @@ def _check_claim_obligation(obligation, context, errors):
                ClaimKind.ABSENCE: AtomKind.HISTORICAL_ACTION, ClaimKind.STATE: AtomKind.OBSERVED_STATE,
                ClaimKind.ATTRIBUTION: AtomKind.RESULT_FIELD, ClaimKind.CAUSAL_ATTRIBUTION: AtomKind.CAUSAL_ATTRIBUTION}
     if (mapping.get(claim.kind) is not obligation.atom.kind
-            or obligation.atom.expected_json != claim_expected_json(claim)
+            or obligation.atom.expected_json != claim_expected_json(claim, typing_v2=semantics.claim_typing)
             or claim.kind in {ClaimKind.ACTION_COMPLETED, ClaimKind.CAUSAL_ATTRIBUTION} and claim.actor != obligation.atom.actor):
         errors.append("CLAIM_TYPE_POLARITY_OR_ACTOR_MISMATCH:" + obligation.obligation_id)
 

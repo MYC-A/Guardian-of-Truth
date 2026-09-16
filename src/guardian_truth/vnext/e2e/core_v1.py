@@ -36,7 +36,7 @@ from ..tools import ContractRegistry, ToolSemantics, evaluate_t1, propose_t2
 from ..types import CoreStatus, Disposition, EffectStatus
 from .certificate_context_v1 import E2EBundle, check_e2e_certificate, e2e_completeness_assumptions, make_e2e_certificate
 from .claim_adapter_v1 import build_claims, claim_obligation_ids
-from .e2e_types_v1 import E2EArmConfig, E2ECaseInput, PolicyReading, ReadingOption, UnresolvedMarker
+from .e2e_types_v1 import E2EArmConfig, E2ECaseInput, E2ESemantics, FULL_SEMANTICS, PolicyReading, ReadingOption, UnresolvedMarker
 from .goal_composition_v1 import compile_goal_contract, conservative_frames_to_contract
 from .goal_conservative_v1 import parse_conservative
 from .goal_lowering_v1 import goal_normative_text, lower_goal_contract, merged_scope
@@ -47,6 +47,7 @@ from .policy_composition_v1 import (compile_grs, compile_h0, dedupe_readings, re
 from .policy_grs_grounder_v1 import ground_inventory
 from .policy_grs_synth_v1 import synthesize
 from .policy_h0_v1 import parse_h0
+from .policy_historical_v1 import historical_readings
 from .policy_lowering_v1 import lower_reading
 from .source_adapter_v1 import build_source, target_calls, tool_catalog
 from .world_integration_v1 import Component, E2EProblem, build_worlds, make_problem, solve_e2e
@@ -79,7 +80,8 @@ class GuardianE2EV1:
     def __init__(self, backend: SemanticBackend, *, registry: ContractRegistry | None = None,
                  arm: E2EArmConfig | None = None, max_worlds: int = 4096,
                  adapter_mode: AdapterMode = AdapterMode.AUDIT, enable_t2: bool = True,
-                 oracle_policy: bool = False, oracle_goal: bool = False):
+                 oracle_policy: bool = False, oracle_goal: bool = False,
+                 semantics: E2ESemantics | None = None):
         if type(max_worlds) is not int or max_worlds < 1:
             raise ValueError("positive material-world computation budget required")
         self.backend = backend
@@ -90,6 +92,9 @@ class GuardianE2EV1:
         self.enable_t2 = enable_t2
         self.oracle_policy = oracle_policy
         self.oracle_goal = oracle_goal
+        # None = latest full cycle-3 semantics; the ablation arms inject the
+        # frozen B0..B4 gates explicitly (SEMANTICS_ARMS).
+        self.semantics = semantics if semantics is not None else FULL_SEMANTICS
 
     # ------------------------------------------------------------- analysis
 
@@ -121,17 +126,17 @@ class GuardianE2EV1:
         ledger = replace(ledger, effects=tuple(effects))
         index = LedgerIndex(ledger)
 
-        claims = build_claims(source.response, self.backend, ledger)
+        claims = build_claims(source.response, self.backend, ledger, self.semantics)
         state_contract = case.state_contract or {}
 
         # ---- PASS 1: frontends (trajectory-free) ----
-        readings, policy_failures = self._policy_readings(case, state_contract, catalog)
+        readings, policy_failures, effective_policy_text = self._policy_readings(case, state_contract, catalog)
         contracts, goal_failures = self._goal_contracts(case)
         frontend_statuses = tuple(policy_failures) + tuple(goal_failures)
 
         # ---- PASS 2: lowering with trajectory binding ----
         policy_lowered = tuple(lower_reading(reading, frontend="policy",
-                                             normative_text=source.policy_normative_text,
+                                             normative_text=effective_policy_text,
                                              backend=self.backend, ledger=ledger,
                                              tool_catalog=catalog, target_calls=calls)
                                for reading in readings)
@@ -151,7 +156,7 @@ class GuardianE2EV1:
             lowered = lower_goal_contract(contract, user_request=case.user_request,
                                           state_contract=state_contract, backend=self.backend,
                                           ledger=ledger, tool_catalog=catalog, target_calls=calls,
-                                          normative_text=goal_text)
+                                          normative_text=goal_text, semantics=self.semantics)
             lowered_goal_contracts.append(lowered)
 
         # ---- axes ----
@@ -256,18 +261,18 @@ class GuardianE2EV1:
                 scopes_json.append((hypothesis_id, canonical(scope).decode("utf-8")))
         context = CertificateContext(source.prompt, source.response, source.tool_metadata,
                                      claims.graph.claims, tuple(authorities), hypotheses,
-                                     source.policy_normative_text, goal_text, choices, catalog,
+                                     effective_policy_text, goal_text, choices, catalog,
                                      tuple(dict.fromkeys(scopes_json)))
         bundle = E2EBundle(context, problem, option_contracts, choice_rules, direct_rules,
                            _behavioral_closure(case.authoritative_policy_behaviors, policy_lowered),
                            _behavioral_closure(case.authoritative_goal_behaviors, lowered_goal_contracts),
-                           tuple(frontend_statuses))
-        solver_result = solve_e2e(problem, ledger, registry)
+                           tuple(frontend_statuses), semantics=self.semantics)
+        solver_result = solve_e2e(problem, ledger, registry, self.semantics)
         status = solver_result.status
         missing_evidence = []
         if budget_exceeded:
             missing_evidence.append(f"WORLD_BUDGET_EXCEEDED:{required}>{self.max_worlds}")
-        certificate = make_e2e_certificate(status, bundle, ledger, registry)
+        certificate = make_e2e_certificate(status, bundle, ledger, registry, self.semantics)
         checked = check_e2e_certificate(certificate, bundle, ledger, registry) if certificate else None
         reasons = list(solver_result.reasons)
         for component_name, kind, _detail in frontend_statuses:
@@ -300,11 +305,27 @@ class GuardianE2EV1:
         failures, readings = [], []
         policy_text = case.system_policy
         if not policy_text.strip():
-            return (), ()
+            return (), (), policy_text
         if self.oracle_policy and case.authoritative_policy_behaviors:
-            return readings_from_behaviors(case.authoritative_policy_behaviors, policy_text), ()
+            return readings_from_behaviors(case.authoritative_policy_behaviors, policy_text), (), policy_text
         if self.oracle_policy and case.authoritative_policy_readings:
-            return reading_from_rows(case.authoritative_policy_readings, policy_text), ()
+            return reading_from_rows(case.authoritative_policy_readings, policy_text), (), policy_text
+        # B0 fidelity: the incumbent H0/GRS frontends see the RAW policy text
+        # exactly as in the frozen E2E V1 run; the state-contract suffix only
+        # extends the NORMATIVE text used for operational grounding.
+        effective_text = policy_text
+        if case.state_contract:
+            from .source_adapter_v1 import POLICY_SCOPE_SUFFIX
+            effective_text = policy_text + POLICY_SCOPE_SUFFIX + canonical(
+                dict(sorted((case.state_contract or {}).items()))).decode("utf-8")
+        if "h0_hist" in self.arm.policy_frontends or "grs_hist" in self.arm.policy_frontends:
+            hist_readings, hist_failures, effective_text = historical_readings(
+                case, state_contract, catalog, policy_text, self.backend,
+                tuple(frontend for frontend in ("h0_hist", "grs_hist")
+                      if frontend in self.arm.policy_frontends))
+            readings.extend(hist_readings)
+            failures.extend(hist_failures)
+            return dedupe_readings(tuple(readings)), tuple(failures), effective_text
         if "h0" in self.arm.policy_frontends:
             h0 = parse_h0(policy_text, self.backend)
             if h0.candidate.available and h0.structure is not None:
@@ -321,7 +342,7 @@ class GuardianE2EV1:
                     failures.append(("policy_grs_synth", synth.candidate.failure, synth.candidate.detail))
             elif not grounder.candidate.available:
                 failures.append(("policy_grs_grounder", grounder.candidate.failure, grounder.candidate.detail))
-        return dedupe_readings(tuple(readings)), tuple(failures)
+        return dedupe_readings(tuple(readings)), tuple(failures), effective_text
 
     def _goal_contracts(self, case):
         failures, contracts = [], []
@@ -365,30 +386,62 @@ def _absence_authority(name: str) -> AuthoritativeAxis:
 
 
 def _behavior_rows(option) -> list:
-    """Behavioral signature rows of one reading option: bound tool predicates,
-    argument constraints, polarity, condition predicates and group
+    """Behavioral signature row ALTERNATIVES of one reading option: bound tool
+    predicates, argument constraints, polarity, condition predicates and group
     alternatives. Representation variance (semantic action keys) collapses:
-    what matters is the bound behavior, not the naming."""
-    rows = []
+    what matters is the bound behavior, not the naming.
+
+    A satisfaction group (B2: alternative ways to satisfy ONE goal) expands
+    the option into one row-set PER satisfaction choice: the option's
+    behavioral space is the SET of alternative bundles, so closure compares
+    exactly the same set the authoritative behaviors enumerate."""
+    base = []
     for obligation in option.obligations:
         constraints = sorted([list(constraint.path) + sorted(constraint.allowed_json)
                               for constraint in obligation.atom.argument_constraints])
         conditions = sorted([[atom.predicate, atom.expected_json] for atom in obligation.conditions
                              if atom.kind is not AtomKind.TARGET_CALL_MATCH])
-        rows.append({"pred": obligation.atom.predicate, "constraints": constraints,
+        base.append({"pred": obligation.atom.predicate, "constraints": constraints,
                      "must": obligation.must_be_true, "conds": conditions})
     for group in option.disjunctive_groups:
-        alternatives = sorted({atom.predicate for _, atoms in group.per_call_atoms for atom in atoms})
-        rows.append({"group_alts": alternatives, "must": group.must_be_true})
+        if group.per_call_atoms:
+            alternatives = sorted({atom.predicate for _, atoms in group.per_call_atoms for atom in atoms})
+            base.append({"group_alts": alternatives, "must": group.must_be_true})
     if option.unresolved_markers:
-        rows.append({"markers": sorted({marker.reason for marker in option.unresolved_markers})})
-    return rows
+        base.append({"markers": sorted({marker.reason for marker in option.unresolved_markers})})
+    satisfaction = [group for group in option.disjunctive_groups if group.satisfaction_choices]
+    if not satisfaction:
+        return [_sort_rows(base)]
+    bundles = [[]]
+    for group in satisfaction:
+        expanded = []
+        for atoms in group.satisfaction_choices:
+            choice_rows = [{"pred": atom.predicate,
+                            "constraints": sorted([list(constraint.path) + sorted(constraint.allowed_json)
+                                                    for constraint in atom.argument_constraints]),
+                            "must": group.must_be_true, "conds": []}
+                           for atom in atoms]
+            for rows in bundles:
+                expanded.append(rows + choice_rows)
+        bundles = expanded
+    return [_sort_rows(base + rows) for rows in bundles]
+
+
+def _sort_rows(rows: list) -> list:
+    """Canonical row order: signatures compare as SETS of rows, never as
+    ordered sequences (row order carries no semantics)."""
+    return sorted(rows, key=lambda row: canonical(row).decode("utf-8"))
 
 
 def _behavior_signature(options) -> list:
-    """One signature per OPTION (world choice): the admissible space is the
-    SET of option bundles, so binding alternatives create distinct options."""
-    return sorted(canonical(_behavior_rows(option)).decode("utf-8") for option in options)
+    """One signature per OPTION BUNDLE (world choice / satisfaction
+    alternative): the admissible space is the SET of bundles, so binding
+    alternatives and satisfaction choices create distinct signatures;
+    duplicate bundles collapse (the space is a set)."""
+    signatures = set()
+    for option in options:
+        signatures.update(canonical(rows).decode("utf-8") for rows in _behavior_rows(option))
+    return sorted(signatures)
 
 
 def _auth_behavior_rows(supplied) -> list:
@@ -426,8 +479,8 @@ def _auth_behavior_rows(supplied) -> list:
                             "conds": sorted([[c[0], c[1]] for c in entry.get("conds", ())])})
         for entry in reading.get("groups", ()):
             entries.append({"group_alts": sorted(entry.get("alts", ())), "must": bool(entry.get("must", True))})
-        rows.append(canonical(entries).decode("utf-8"))
-    return sorted(rows)
+        rows.append(canonical(_sort_rows(entries)).decode("utf-8"))
+    return sorted(set(rows))
 
 
 def extract_behavior_rows(lowered_readings) -> tuple:
@@ -435,19 +488,12 @@ def extract_behavior_rows(lowered_readings) -> tuple:
     tests to author authoritative closure from known-correct runs)."""
     readings = []
     for lowered in lowered_readings:
-        entries = []
         for option in lowered.options:
-            for obligation in option.obligations:
-                constraints = [list(constraint.path) + list(constraint.allowed_json)
-                               for constraint in obligation.atom.argument_constraints]
-                entries.append({"pred": obligation.atom.predicate, "constraints": constraints,
-                                "must": obligation.must_be_true,
-                                "conds": [[atom.predicate, atom.expected_json] for atom in obligation.conditions
-                                          if atom.kind is not AtomKind.TARGET_CALL_MATCH]})
-            for group in option.disjunctive_groups:
-                entries.append({"alts": sorted({atom.predicate for _, atoms in group.per_call_atoms
-                                                for atom in atoms}), "must": group.must_be_true})
-        readings.append({"behavior": entries})
+            for entries in _behavior_rows(option):
+                behavior = [entry for entry in entries if "pred" in entry]
+                groups = [{"alts": entry["group_alts"], "must": entry["must"]}
+                          for entry in entries if "group_alts" in entry]
+                readings.append({"behavior": behavior, "groups": groups})
     return tuple(readings)
 
 
