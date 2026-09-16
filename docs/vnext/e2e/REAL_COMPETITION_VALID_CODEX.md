@@ -485,3 +485,240 @@ case-specific patch): `telecom__mms_issue...break_app_sms_p::t10` contains an
 agent-voice turn wrapped in a `⟦USER⟧` marker ("Спасибо, Джон. Я нашёл ваш аккаунт…",
 "*Примечание: Я вижу, что у меня есть инструменты для удалённой диагностики…"),
 which pollutes the concatenated goal-firewall source for that case.
+
+### ITERATION 2 — multi-rule policy coverage via the frozen GRS frontend (REVERTED)
+
+Root cause targeted: POLICY_PARSE single-structure insufficiency (13 FN cases where
+both frontends are available but the one-rule H0 reading of a 13–27K-char policy cannot
+express the violated rules — device-tool policy, prohibitions, procedure rules).
+
+Hypothesis: the frozen `grs_hist` multi-rule frontend (grounder → inventory →
+synthesizer → DSL with multiple rules) alongside `h0_hist` would surface additional
+readings and produce new certified violations — a runner-level arm change only
+(`REAL_VALID_POLICY_FRONTENDS`), zero production code change, both frontends frozen.
+
+Outcome — the hypothesis is FALSE on the available endpoint, REVERTED before the full
+rerun: the GRS grounder cannot complete on real policy sizes. Direct probes of the
+frozen `GRS_GROUND_TASK` on the 13.5K-char airline policy: `max_tokens=8192` →
+`truncated` (finish_reason=length, the unbounded inventory of a real policy exceeds the
+output cap); `max_tokens=12288/16384` → connection-level `invalid_response` after
+50–95s generations (the long-generation HTTP responses do not survive the endpoint
+path). The frozen GRS protocol was designed for short single-rule policies; on real
+13.5–27.5K-char policies its unbounded inventory is transport-incompatible. The arm
+default was reverted to `h0_hist` and the polluted cache entries pruned; the state was
+re-verified to reproduce the iteration-1 verdicts exactly. The multi-rule policy gap
+remains the open architectural bottleneck (see "Next architecture ideas").
+
+Decision: **REVERT** (root cause confirmed, fix infeasible without protocol redesign —
+out of scope for a general minimal fix).
+
+### ITERATION 3 — transport-casualty recovery (KEEP)
+
+Root cause targeted: CACHE_DEPENDENCY on transport casualties — 142 `rate_limit` (429)
+ERROR entries produced by the baseline's weaker transport config (retries=2,
+interval=1.0s) were persisted by the content-addressed cache as PERMANENT failures,
+crippling claim/T2/policy passes in ~21 cases.
+
+Hypothesis: pruning exactly the transport-ERROR cache entries and re-driving them under
+the hardened transport config (max_retries=5, interval 1.5s, max_output_tokens 8192)
+recovers the casualty-degraded axes and measures the same architecture without
+measurement-infrastructure noise. Runner-level transport knob only
+(`REAL_VALID_MAX_OUTPUT_TOKENS`); zero production-code change.
+
+Full 46-case rerun: verdicts UNCHANGED (TP 3 FP 0 FN 20 TN 23, F1 0.2308 — corrections
+0, regressions 0). What changed is measurement hygiene: 0 transport-ERROR entries remain
+in the final cache (was 142); goal TRANSPORT failures 16→0; policy TRANSPORT failures
+2→0; claim failures are now genuine schema-invalid passes only (17 cases, mostly 1–2
+passes). The claim axes recovered but flipped no verdict — with frontends healthy, the
+abstentions are SEMANTIC, not transport. Decision: **KEEP** (measurement-integrity fix;
+the architecture's true state under clean transport is what the final numbers report).
+
+## Final state (after iterations 1–3)
+
+| mode | TP | FP | FN | TN | Precision | Recall | F1 |
+|---|---:|---:|---:|---:|---:|---:|---:|
+| R0≡R1 final | 3 | 0 | 20 | 23 | 1.000 | 0.1304 | **0.2308** |
+| R2 structural only | 0 | 0 | 23 | 23 | — | 0.000 | 0.000 |
+
+Internal statuses (R1 final): 43 UNRESOLVED, 3 PROVED_ERROR (all certified TRUE
+positives: `telecom__service_issue...::t15`, `airline__9::t6`,
+`banking_knowledge__task_018::t6`), 0 PROVED_NO_ERROR, 0 INCONSISTENT,
+0 false-certified ERROR, 0 false-certified NO_ERROR, 0 uncertified definitive.
+
+Final root-cause table (primitive per case):
+
+| Root cause | FP | FN | TN | TP | total |
+|---|---:|---:|---:|---:|---:|
+| DEEP_SEMANTIC_GAP (frontends OK; violation family not expressible) | 0 | 14 | 6 | 0 | 20 |
+| CLAIM_PARSE (genuine schema-invalid claim passes) | 0 | 2 | 10 | 0 | 12 |
+| GOAL_PARSE (residual schema fragility after repair) | 0 | 3 | 7 | 0 | 10 |
+| POLICY_PARSE (degenerate single-structure compile) | 0 | 1 | 0 | 0 | 1 |
+| OTHER (the three certified TPs) | 0 | 0 | 0 | 3 | 3 |
+
+Tests: `tests/e2e/` + `tests/e2e_soundness/` 107 passed (11 new for the goal repair);
+full pytest suite on the branch shows EXACTLY the same 9 pre-existing archival failures
+as the frozen commit `315bee3` (verified by running both in separate worktrees and
+diffing the failure lists) — zero new failures. B0 byte-fidelity on dev32+holdout112
+preserved, 0 cache misses. Static hard-coding audit: no `airline__`/`banking_knowledge__`/
+`retail__`/`telecom__`/case-ID/reservation-ID/gold references anywhere in production code
+(`src/`, `scripts/predict.py`); the single `ORD-41, ACC-7` hit is a frozen pre-existing
+illustrative example inside the claim-overlay prompt text (present verbatim at
+`315bee3`), not a data-dependent branch. Production hardcoding count: **0**.
+
+DEVELOPMENT RESULT caveat (directive §32): every number above is measured on
+`valid.parquet` — VIEWED development data. Nothing here is a generalization,
+hidden-test, or leaderboard claim.
+
+## Error-type expressibility check (directive §23)
+
+Can the current architecture EXPRESS each real error family? (S = expressible and
+proven at least once on real data; P = representable but not yet proven end-to-end;
+N = not representable without new premises/architecture.)
+
+| Error family | Status | Where it breaks |
+|---|---|---|
+| direct forbidden call | P | H0 FORBID_CALL rules exist; real policies' relevant rules not captured by the single structure |
+| invalid tool name (non-catalog call) | P/S | proven once via goal-plan violation (t15); not a first-class catalog rule, so it depends on goal-binding luck |
+| invalid argument/schema | N | the E2E world/proof layer has no argument-schema validation rule (the OLD production detector has it; B4h-sound-v2 does not) |
+| unsupported argument provenance | N | no provenance rule in the E2E line (OLD detector has the provenance check) |
+| wrong entity | N | entity binding exists for claims but not for argument-vs-observation entity matching at proof level |
+| user did not request action | P | goal-plan obligations (proven: 2 premature-transfer TPs) |
+| required confirmation/precondition missing | N | policy conditions over dialogue state; atom catalog has no value literals |
+| explicit SYSTEM procedure violation | P | only when the violated rule survives the single-structure H0 parse |
+| assistant claims action happened, no call exists | N | ACTION_COMPLETED claims need absence proofs; history_complete=False blocks them (sound abstention) |
+| assistant claims result contradicting observed | P | claim value-anchoring machinery exists; needs claim passes healthy + refutable claim shape |
+| stale state / latest-state override | N | needs trusted freshness/T1 (SND-correct abstention in competition mode) |
+| failed call treated as success | N | failure semantics need T1 |
+| sequencing / temporal | N | temporal gates need state+time premises |
+
+## Next architecture ideas (directive §33 — analysis AFTER the 3-iteration budget)
+
+The dominant bottleneck is now DEEP_SEMANTIC_GAP: 20/46 cases where every frontend is
+healthy and the architecture still cannot express the violation. Five fundamentally
+different directions (NOT implemented; the user picks the next experiment):
+
+**A. Structural-first deterministic rules inside the E2E line.**
+What changes: add catalog-grounded deterministic rules as first-class policy readings —
+"every target call must invoke a `[AVAILABLE TOOLS]` tool" (EXPLICIT_SCHEMA premise),
+"target-call argument fields must satisfy the tool's text schema" (EXPLICIT_SCHEMA),
+"argument values must be traceable to observed trajectory values" (OBSERVED_TRAJECTORY
+provenance). Why it may help: 7/23 positives are provable with NO T1 (catalog/schema/
+provenance), and the old production detector already implements exactly these three
+checks deterministically. Failure family solved: invalid tool name, argument schema,
+placeholder/fabricated argument values. Soundness risk: LOW (all premises are explicit
+in the prompt; no LLM in the rule derivation; must keep abstention when the catalog
+parse is ambiguous). Compute: zero LLM. Complexity: LOW — port three frozen checks into
+CompiledRule/readings form. Minimal causal experiment: add ONLY the catalog rule, rerun
+46, measure whether banking_083-style cases become certified TPs without any FP.
+
+**B. Multi-rule policy reading with bounded per-section parsing.**
+What changes: split the SYSTEM policy into rule-sized sections (deterministic
+markdown/section segmentation), run the frozen single-structure H0 protocol PER SECTION
+(1 parse + 1 repair each), union the readings. Why it may help: the single-structure
+constraint is the binding limit of H0; per-section granularity keeps outputs inside
+transport limits (fixes what killed GRS) and multiplies rule coverage. Failure family
+solved: procedure violations, forbidden actions, precondition rules stated in policy
+text (device-tool policy, cancellation preconditions). Soundness risk: MEDIUM — section
+segmentation must be conservative (unparsable sections abstain; readings must not
+manufacture rules across section boundaries). Compute: ~10–30 H0-sized calls per case.
+Complexity: MEDIUM. Minimal causal experiment: offline segmentation audit on the 4
+unique policies; then parse 3 hand-picked rule sections; verify the frozen compiler
+accepts each; only then a 46-case rerun.
+
+**C. Claim-vs-trajectory absence proofs under a source-derived completeness premise.**
+What changes: the rules PDF states the prompt is "полный контекст, который видел агент"
+— treat THAT as an explicit completeness premise (documented source citation, not an
+invention) enabling absence proofs: "assistant claims action X happened" + no X call in
+the full context → refuted ACTION_COMPLETED claim. Why it may help: fabricated
+action/result family (2/23) and premature-escalation-by-false-incapacity cases;
+history_complete=False currently blocks exactly these proofs. Soundness risk: MEDIUM —
+the premise is only as strong as the source claim; must remain flag-gated and
+certificate-recorded. Compute: zero extra LLM. Complexity: LOW-MEDIUM (flip the premise
++ verify the SND-06 guards stay correct). Minimal causal experiment: flip the premise
+for one synthetic absence-proof case in the soundness suite, then rerun the 46 and diff
+UNRESOLVED→definite transitions.
+
+**D. Response-anchored suspicion + targeted deep checks (two-stage).**
+What changes: stage 1 extracts every checkable commitment from the response (numbers,
+dates, IDs, action claims — deterministic span inventory + typed LLM map, the Cycle-2
+C2 machinery); stage 2 runs targeted deterministic verifications per commitment
+(value match against observed results, ID existence, call existence). Why it may help:
+contradiction-type hallucinations are value-level and the corpus shows they dominate
+(wrong sums, wrong dates, fabricated IDs); commitments decompose the problem into many
+small provable atoms instead of one policy-level proof. Soundness risk: MEDIUM — each
+commitment check must be source-grounded; UNKNOWN on unanchored commitments. Compute:
+1–2 LLM calls per case + deterministic checks. Complexity: MEDIUM-HIGH (new frontend,
+reuses C2 components). Minimal causal experiment: run stage 1 only on the 46 responses,
+measure commitment coverage on the 23 gold explanations' error spans.
+
+**E. Local small-model semantic layer (offline, H100-ready).**
+What changes: replace the remote ministral backend with a local small instruct model
+(qwen/glm 7–14B class) for the LLM-semantic frontends, making the pipeline
+submission-compatible (offline 30-min budget, H100). Why it may help: the transport
+fragility (rate limits, truncation, long-generation cuts) disappears; latency becomes
+predictable; the competition contract requires offline execution anyway. Failure family
+solved: none directly — it is an enabler for A–D at submission time. Soundness risk:
+LOW (backend swap behind the SemanticBackend protocol). Compute: local GPU inference.
+Complexity: LOW-MEDIUM (model serving inside the Docker image, prompt pinning).
+Minimal causal experiment: run the 46-case R1 with the local backend, diff verdicts
+and frontend-failure rates against the mistral run.
+
+**Recommended ONE next experiment: A** (structural-first deterministic rules). It is
+the cheapest, lowest-soundness-risk step, it targets the largest no-T1-needed failure
+family (7/23 positives by premise coverage), and it directly informs whether the E2E
+proof machinery can carry deterministic rules cleanly — a prerequisite for B and C.
+
+## Final classification (directive §41)
+
+**F. MAIN_GAP_IS_STATE/EFFECT_REASONING — with a precision.** The transport/parse
+layers were fixable (iteration 1 proved it: +2 certified TPs, F1 0.0833→0.2308), and
+the remaining 20 abstentions are dominated by violations whose proofs need premises the
+competition prompt does not carry (policy-rule semantics over dialogue state,
+freshness/effects/T1) or structural checks the E2E line never had (argument schema,
+provenance, catalog). The frozen architecture's soundness discipline works exactly as
+designed — 0 false-certified verdicts in every run — but its expressible-without-T1
+coverage on real input is 3/23 positives. The next gain must come from deterministic
+structural rules (idea A) and/or multi-rule policy reading (idea B), not from more
+transport work.
+
+## Answers to the 40 final questions (directive §40)
+
+1. **Task**: binary response-level detection of contextual hallucinations in an LLM-agent answer; guardrail sees only the prompt text and response text (black-box); `1` = at least one hallucination (contradiction or unsupported), `0` = none; ranking by Response F1.
+2. **Solution receives**: `id`, `prompt`, `response` (development parquet adds `label`/`explanation`); prompt = system instruction + user request + prior tool calls/results as a marked transcript; response = the checked assistant output (text and/or tool calls).
+3. **Tool schemas/descriptions in prompts**: YES — every SYSTEM block has a `[AVAILABLE TOOLS]` catalog in text-signature form (13–17 tools per case, 55 unique; names, argument names, types, requiredness, enums, descriptions). NOTE the transport-spelling discrepancy between the rules PDF (`⟦ASSISTANT_TOOL_CALL name="X"⟧` markers) and the actual parquet (`→ TOOL_CALL name: {json}` / `← TOOL_RESPONSE name: {json}` arrows inside `⟦ASSISTANT · ход N⟧` turns); the repo parser accepts both.
+4. **How B4h-sound-v2 really runs**: `GuardianE2EV1(backend, registry=ContractRegistry(t1_contracts), arm=E2EArmConfig("B4h", ("h0_hist",), ("conservative",)), semantics=SEMANTICS_ARMS["B3"]).analyze_e2e_v1(E2ECaseInput)` via `scripts/evaluate_vnext_e2e_cycle3.py` (live) / `scripts/run_soundness_regression.py` (offline replay against persisted caches).
+5. **Research-only metadata it expected**: `t1_contracts`, `state_contract`, `history_complete`+basis, `authoritative_policy/goal_readings/behaviors` (oracle rows), plus persisted per-corpus LLM caches; `tool_metadata`/`tool_schemas` were corpus-authored.
+6. **Applicable to prompt+response directly?** NO — a transport-only adapter is required (committed as `scripts/run_real_valid.py`); every research-only slot is filled with its honest absent value and missing information means abstention.
+7. **Adapter added**: deterministic prompt split (SYSTEM block / all USER turns as goal source / ASSISTANT history blocks verbatim / raw response), tool NAMES from `[AVAILABLE TOOLS]` as name-only metadata, empty T1 registry, no state contract, `history_complete=False`.
+8. **Cases working without T1**: the pipeline PROVED 3/23 positives without any T1 (goal-plan violations); by premise coverage 7/23 positives are provable with no T1 at all (catalog/schema/provenance families — needs idea A to realize).
+9. **Requiring prompt-derived tool semantics**: 8/23 positives (policy-rule families whose rules are in the SYSTEM text).
+10. **Requiring manual/oracle T1**: 6/23 positives (state/freshness/effect reasoning beyond the prompt).
+11. **Manual-only premises encountered**: trusted effect guarantees after mutating calls, freshness of reads, field ownership of nested result objects, completion semantics of action tools, no-effect-on-failure semantics, state persistence between observations.
+12. **Baseline R1 (prompt-only) confusion**: TP 1 FP 0 FN 22 TN 23.
+13. **Precision**: 1.000 (single certified TP).
+14. **Recall**: 0.0435.
+15. **F1**: 0.0833.
+16. **PROVED_ERROR**: 1 (baseline) → 3 (final).
+17. **PROVED_NO_ERROR**: 0 (every run).
+18. **UNRESOLVED**: 45 (baseline) → 43 (final).
+19. **INCONSISTENT**: 0 (every run).
+20. **false-certified ERROR**: 0 (every run).
+21. **false-certified NO_ERROR**: 0 (every run).
+22. **Top-5 root causes (final)**: DEEP_SEMANTIC_GAP 20; CLAIM_PARSE 12; GOAL_PARSE 10; POLICY_PARSE 1; OTHER (TPs) 3.
+23. **Largest root cause**: DEEP_SEMANTIC_GAP — frontends healthy, the violation family is not expressible without new premises or structural rules.
+24. **Fixes made**: (1) goal frontend single machine-validation repair + transport content preservation + transport hardening (KEEP); (2) frozen GRS multi-rule frontend addition (REVERTED — grounder transport-incompatible with real policy sizes); (3) transport-casualty cache recovery (KEEP).
+25. **Per fix**: iter-1 corrections 2 / regressions 0; iter-2 reverted before rerun (no metric change; root cause confirmed infeasible on the endpoint); iter-3 corrections 0 / regressions 0 (measurement hygiene: 142 rate-limit casualties eliminated).
+26. **Final development result**: R1 TP 3 FP 0 FN 20 TN 23, P 1.000 R 0.1304 F1 0.2308 (viewed development data only).
+27. **Known soundness bugs**: none known — 0 false-certified verdicts across all runs; certificates valid on every definitive verdict; the 9 pre-existing archival test failures are identical to the frozen commit.
+28. **Production hardcoding**: 0 (audit above; the only string hit is a frozen pre-existing prompt example).
+29. **Is a big Tool Contract Frontend needed?** NO — not as the next step. The data says the largest recoverable family (7/23) needs deterministic structural rules that already exist in the older detector line, not a bigger contract frontend; manual T1 is strictly required only for 6/23 (deepest) cases where abstention is the sound answer today.
+30. **Main bottleneck NOW**: expressibility — the frozen E2E line cannot represent catalog/schema/provenance violations as first-class rules, and its single-structure policy reading cannot carry multi-rule real policies.
+31. **5 architecture ideas**: A structural-first deterministic rules; B bounded per-section multi-rule policy parsing; C absence proofs under the source-derived completeness premise; D response-anchored commitment checks (two-stage); E local offline model backend. (Details with risk/cost/experiment above.)
+32. **Recommended ONE next experiment**: A — add the catalog-grounded deterministic rules to the E2E line, rerun the 46, measure TP/FP movement (banking_083-style cases should become certified; zero-FP requirement enforced by the certificate).
+33. **Final branch SHA**: see the journal commit (this file is committed on `competition-real-valid-codex`; the branch head after the final commit is recorded in the repo).
+34. **Pushed**: yes — `git push -u origin competition-real-valid-codex` (see the push section below).
+35. **Main report URL**: `https://github.com/MYC-A/Guardian-of-Truth/blob/competition-real-valid-codex/docs/vnext/e2e/REAL_COMPETITION_VALID_CODEX.md`
+
+HARD STOP per directive §42: no new research cycle, no fresh benchmark, no model
+training, no Guardian rewrite. The next step belongs to the user after reviewing
+`REAL_COMPETITION_VALID_CODEX.md`, `cases.jsonl`, `iterations.json`, `metrics.json`.

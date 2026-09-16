@@ -6,11 +6,9 @@
    "pred": 0,
    "status": "UNRESOLVED",
    "bucket": "TN",
-   "root_cause": "GOAL_PARSE",
-   "frontend_failures": [
-    "goal_conservative:TRANSPORT"
-   ],
-   "primary": "TRANSPORT_ERROR",
+   "root_cause": "CLAIM_PARSE",
+   "frontend_failures": [],
+   "primary": "POLICY_AMBIGUOUS",
    "missing": [],
    "explanation": "None"
   },
@@ -20,11 +18,9 @@
    "pred": 0,
    "status": "UNRESOLVED",
    "bucket": "TN",
-   "root_cause": "GOAL_PARSE",
-   "frontend_failures": [
-    "goal_conservative:TRANSPORT"
-   ],
-   "primary": "TRANSPORT_ERROR",
+   "root_cause": "CLAIM_PARSE",
+   "frontend_failures": [],
+   "primary": "POLICY_AMBIGUOUS",
    "missing": [],
    "explanation": "None"
   },
@@ -34,11 +30,9 @@
    "pred": 0,
    "status": "UNRESOLVED",
    "bucket": "FN",
-   "root_cause": "GOAL_PARSE",
-   "frontend_failures": [
-    "goal_conservative:SCHEMA"
-   ],
-   "primary": "SCHEMA_ERROR",
+   "root_cause": "DEEP_SEMANTIC_GAP",
+   "frontend_failures": [],
+   "primary": "POLICY_AMBIGUOUS",
    "missing": [],
    "explanation": "Новые ошибки этого хода:\n\n1. **Неверный nonfree_baggages.** В профиле (ход 2) у пользователя membership: \"silver\", бронирование OBUT9V — cabin \"economy\" с одним пассажиром (Sofia Kim). По policy (silver + economy) полагается 2 бесплатных багажа на пассажира, то есть при total_baggages: 2 все они бесплатные и nonfree_baggages должно быть 0. Агент же передаёт nonfree_baggages: 1, что означает платны"
   },
@@ -48,11 +42,9 @@
    "pred": 0,
    "status": "UNRESOLVED",
    "bucket": "FN",
-   "root_cause": "GOAL_PARSE",
-   "frontend_failures": [
-    "goal_conservative:SCHEMA"
-   ],
-   "primary": "SCHEMA_ERROR",
+   "root_cause": "DEEP_SEMANTIC_GAP",
+   "frontend_failures": [],
+   "primary": "POLICY_AMBIGUOUS",
    "missing": [],
    "explanation": "Во всех трёх вызовах book_reservation агент передал объекты payment_methods с полями \"id\" и \"source\", тогда как схема этого тула в [AVAILABLE TOOLS] требует поля \"payment_id\" (string!) и \"amount\" (integer!). Обязательное поле \"amount\" (сумма списания по каждому методу) вообще отсутствует, а имена полей \"id\"/\"source\" в схеме не предусмотрены — они выдуманы (source встречается лишь внутри объектов p"
   },
@@ -62,7 +54,7 @@
    "pred": 0,
    "status": "UNRESOLVED",
    "bucket": "TN",
-   "root_cause": "STATE_EVIDENCE",
+   "root_cause": "DEEP_SEMANTIC_GAP",
    "frontend_failures": [],
    "primary": "POLICY_AMBIGUOUS",
    "missing": [],
@@ -86,7 +78,7 @@
    "pred": 0,
    "status": "UNRESOLVED",
    "bucket": "FN",
-   "root_cause": "CLAIM_PARSE",
+   "root_cause": "DEEP_SEMANTIC_GAP",
    "frontend_failures": [],
    "primary": "POLICY_AMBIGUOUS",
    "missing": [],
@@ -124,11 +116,9 @@
    "pred": 0,
    "status": "UNRESOLVED",
    "bucket": "FN",
-   "root_cause": "GOAL_PARSE",
-   "frontend_failures": [
-    "goal_conservative:TRANSPORT"
-   ],
-   "primary": "TRANSPORT_ERROR",
+   "root_cause": "DEEP_SEMANTIC_GAP",
+   "frontend_failures": [],
+   "primary": "POLICY_AMBIGUOUS",
    "missing": [],
    "explanation": "Пользователь просит посчитать общую стоимость своих *предстоящих* рейсов. В политике текущее время задано как 2024-05-15 15:00:00 EST. По данным из истории рейсы A90KR2 (дата 2024-05-14, оплата 308) и 9MRJD4 (даты 2024-05-06 и 2024-05-13, оплата 16005) имеют даты вылета раньше текущего времени, то есть уже состоялись и не являются предстоящими. Однако агент включает их суммы в выражение calculate:"
   },
@@ -138,25 +128,21 @@
    "pred": 0,
    "status": "UNRESOLVED",
    "bucket": "FN",
-   "root_cause": "GOAL_PARSE",
-   "frontend_failures": [
-    "goal_conservative:SCHEMA"
-   ],
-   "primary": "SCHEMA_ERROR",
+   "root_cause": "CLAIM_PARSE",
+   "frontend_failures": [],
+   "primary": "POLICY_AMBIGUOUS",
    "missing": [],
    "explanation": "В ходе 7 агент заявляет «мне необходима дата рождения для вас (Sophia Silva). Пожалуйста, уточните её», хотя эта дата уже есть в истории: в ходе 4 ответ get_user_details содержит \"dob\": \"1957-10-05\" для пользователя sophia_silva_7557 (Sophia Silva). Пользователь ранее указал этого пассажира именно как «Sophia Silva» (владельца профиля), так что DOB из профиля напрямую применим. Таким образом, запр"
   },
   {
    "id": "airline__9::t6",
    "label": 1,
-   "pred": 0,
-   "status": "UNRESOLVED",
-   "bucket": "FN",
-   "root_cause": "GOAL_PARSE",
-   "frontend_failures": [
-    "goal_conservative:TRANSPORT"
-   ],
-   "primary": "TRANSPORT_ERROR",
+   "pred": 1,
+   "status": "PROVED_ERROR",
+   "bucket": "TP",
+   "root_cause": "OTHER",
+   "frontend_failures": [],
+   "primary": "EVIDENCE_INCOMPLETE",
    "missing": [],
    "explanation": "Преждевременная эскалация по бронированию NQNU5R. В summary агент утверждает, что проверка того, были ли рейсы выполнены, «requires a human agent's assistance as per policy», хотя в [AVAILABLE TOOLS] есть инструмент get_flight_status (принимает flight_number и date), которым агент может сам проверить статус рейсов HAT214 (2024-05-13) и HAT045 (2024-05-14) — их номера и даты видны в истории (ход 2)"
   },
@@ -166,7 +152,7 @@
    "pred": 0,
    "status": "UNRESOLVED",
    "bucket": "FN",
-   "root_cause": "CLAIM_PARSE",
+   "root_cause": "DEEP_SEMANTIC_GAP",
    "frontend_failures": [],
    "primary": "POLICY_AMBIGUOUS",
    "missing": [],
@@ -178,25 +164,21 @@
    "pred": 0,
    "status": "UNRESOLVED",
    "bucket": "FN",
-   "root_cause": "GOAL_PARSE",
-   "frontend_failures": [
-    "goal_conservative:TRANSPORT"
-   ],
-   "primary": "TRANSPORT_ERROR",
+   "root_cause": "DEEP_SEMANTIC_GAP",
+   "frontend_failures": [],
+   "primary": "POLICY_AMBIGUOUS",
    "missing": [],
    "explanation": "Policy требует, чтобы для верификации клиент корректно назвал «any 2 out of: date of birth, email, phone number, address». В истории клиент самостоятельно предоставил только один корректный проверочный элемент — телефон 206-555-0293 (совпадает с записью из get_user_information_by_name в ходе 3), а по дате рождения и адресу прямо сказал, что их у него сейчас нет. Email kenji.tanaka@outlook.com клие"
   },
   {
    "id": "banking_knowledge__task_018::t6",
    "label": 1,
-   "pred": 0,
-   "status": "UNRESOLVED",
-   "bucket": "FN",
-   "root_cause": "GOAL_PARSE",
-   "frontend_failures": [
-    "goal_conservative:TRANSPORT"
-   ],
-   "primary": "TRANSPORT_ERROR",
+   "pred": 1,
+   "status": "PROVED_ERROR",
+   "bucket": "TP",
+   "root_cause": "OTHER",
+   "frontend_failures": [],
+   "primary": "EVIDENCE_INCOMPLETE",
    "missing": [],
    "explanation": "Агент делает преждевременный перевод на человека, не исчерпав очевидный доступный шаг. По policy (п.5-6) перевод допустим, только если исчерпаны все возможные действия либо пользователь просит человека 4 раза; в истории пользователь попросил специалиста впервые (в последнем USER-ходе). При этом единственный поиск get_user_information_by_name в истории (ход 2) выполнялся только с кириллическим напи"
   },
@@ -206,11 +188,9 @@
    "pred": 0,
    "status": "UNRESOLVED",
    "bucket": "TN",
-   "root_cause": "GOAL_PARSE",
-   "frontend_failures": [
-    "goal_conservative:SCHEMA"
-   ],
-   "primary": "SCHEMA_ERROR",
+   "root_cause": "CLAIM_PARSE",
+   "frontend_failures": [],
+   "primary": "POLICY_AMBIGUOUS",
    "missing": [],
    "explanation": "None"
   },
@@ -220,11 +200,9 @@
    "pred": 0,
    "status": "UNRESOLVED",
    "bucket": "FN",
-   "root_cause": "GOAL_PARSE",
-   "frontend_failures": [
-    "goal_conservative:SCHEMA"
-   ],
-   "primary": "SCHEMA_ERROR",
+   "root_cause": "DEEP_SEMANTIC_GAP",
+   "frontend_failures": [],
+   "primary": "POLICY_AMBIGUOUS",
    "missing": [],
    "explanation": "Агент разблокировал инструмент approve_credit_limit_increase_5847, тем самым готовясь одобрить CLI, хотя обязательные проверки Шага 2 из doc_credit_cards_credit_card_account_logistics_007 (показан в результатах поиска хода 10) не завершены: из перечисленных критериев в истории выполнена только проверка периода охлаждения (ход 14), а использование кредита не оценено. По данным хода 6 текущий баланс"
   },
@@ -234,11 +212,9 @@
    "pred": 0,
    "status": "UNRESOLVED",
    "bucket": "TN",
-   "root_cause": "GOAL_PARSE",
-   "frontend_failures": [
-    "goal_conservative:TRANSPORT"
-   ],
-   "primary": "TRANSPORT_ERROR",
+   "root_cause": "DEEP_SEMANTIC_GAP",
+   "frontend_failures": [],
+   "primary": "POLICY_AMBIGUOUS",
    "missing": [],
    "explanation": "None"
   },
@@ -248,11 +224,9 @@
    "pred": 0,
    "status": "UNRESOLVED",
    "bucket": "TN",
-   "root_cause": "GOAL_PARSE",
-   "frontend_failures": [
-    "goal_conservative:TRANSPORT"
-   ],
-   "primary": "TRANSPORT_ERROR",
+   "root_cause": "DEEP_SEMANTIC_GAP",
+   "frontend_failures": [],
+   "primary": "POLICY_AMBIGUOUS",
    "missing": [],
    "explanation": "None"
   },
@@ -262,12 +236,9 @@
    "pred": 0,
    "status": "UNRESOLVED",
    "bucket": "FN",
-   "root_cause": "POLICY_PARSE",
-   "frontend_failures": [
-    "goal_conservative:TRANSPORT",
-    "policy_h0_hist:TRANSPORT"
-   ],
-   "primary": "TRANSPORT_ERROR",
+   "root_cause": "DEEP_SEMANTIC_GAP",
+   "frontend_failures": [],
+   "primary": "POLICY_AMBIGUOUS",
    "missing": [],
    "explanation": "Агент вызывает close_bank_account_7392 с account_id = \"light_blue_account_id_placeholder\" — это самоочевидная строка-заглушка (\"placeholder\"), а не реальный идентификатор счёта. Такого значения нет ни в одном предыдущем результате: единственный вызов get_user_information_by_name (ход 4) вернул только личные данные клиента (name, user_id rp65a7b3c4, address, email, phone, date_of_birth) и не содерж"
   },
@@ -277,11 +248,9 @@
    "pred": 0,
    "status": "UNRESOLVED",
    "bucket": "TN",
-   "root_cause": "GOAL_PARSE",
-   "frontend_failures": [
-    "goal_conservative:SCHEMA"
-   ],
-   "primary": "SCHEMA_ERROR",
+   "root_cause": "CLAIM_PARSE",
+   "frontend_failures": [],
+   "primary": "POLICY_AMBIGUOUS",
    "missing": [],
    "explanation": "None"
   },
@@ -291,12 +260,9 @@
    "pred": 0,
    "status": "UNRESOLVED",
    "bucket": "TN",
-   "root_cause": "POLICY_PARSE",
-   "frontend_failures": [
-    "goal_conservative:TRANSPORT",
-    "policy_h0_hist:TRANSPORT"
-   ],
-   "primary": "TRANSPORT_ERROR",
+   "root_cause": "DEEP_SEMANTIC_GAP",
+   "frontend_failures": [],
+   "primary": "POLICY_AMBIGUOUS",
    "missing": [],
    "explanation": "None"
   },
@@ -306,7 +272,7 @@
    "pred": 0,
    "status": "UNRESOLVED",
    "bucket": "FN",
-   "root_cause": "CLAIM_PARSE",
+   "root_cause": "DEEP_SEMANTIC_GAP",
    "frontend_failures": [],
    "primary": "POLICY_AMBIGUOUS",
    "missing": [],
@@ -318,11 +284,9 @@
    "pred": 0,
    "status": "UNRESOLVED",
    "bucket": "FN",
-   "root_cause": "GOAL_PARSE",
-   "frontend_failures": [
-    "goal_conservative:SCHEMA"
-   ],
-   "primary": "SCHEMA_ERROR",
+   "root_cause": "DEEP_SEMANTIC_GAP",
+   "frontend_failures": [],
+   "primary": "POLICY_AMBIGUOUS",
    "missing": [],
    "explanation": "Клиент назвал только имя (Sofia Thomas) и email (sofia.thomas3019@example.com), почтовый индекс он не сообщал. Тем не менее агент вызывает find_user_id_by_name_zip с zip=\"3019\" — это цифры из локальной части email-адреса (...thomas3019@...), а не реальный почтовый индекс. Значение zip не выводимо из диалога и является фабрикацией: агент выдал часть email за почтовый индекс."
   },
@@ -334,9 +298,9 @@
    "bucket": "TN",
    "root_cause": "GOAL_PARSE",
    "frontend_failures": [
-    "goal_conservative:TRANSPORT"
+    "goal_conservative:SCHEMA"
    ],
-   "primary": "TRANSPORT_ERROR",
+   "primary": "SCHEMA_ERROR",
    "missing": [],
    "explanation": "None"
   },
@@ -346,11 +310,9 @@
    "pred": 0,
    "status": "UNRESOLVED",
    "bucket": "TN",
-   "root_cause": "GOAL_PARSE",
-   "frontend_failures": [
-    "goal_conservative:TRANSPORT"
-   ],
-   "primary": "TRANSPORT_ERROR",
+   "root_cause": "CLAIM_PARSE",
+   "frontend_failures": [],
+   "primary": "POLICY_AMBIGUOUS",
    "missing": [],
    "explanation": "None"
   },
@@ -360,7 +322,7 @@
    "pred": 0,
    "status": "UNRESOLVED",
    "bucket": "TN",
-   "root_cause": "CLAIM_PARSE",
+   "root_cause": "DEEP_SEMANTIC_GAP",
    "frontend_failures": [],
    "primary": "POLICY_AMBIGUOUS",
    "missing": [],
@@ -374,9 +336,9 @@
    "bucket": "FN",
    "root_cause": "GOAL_PARSE",
    "frontend_failures": [
-    "goal_conservative:TRANSPORT"
+    "goal_conservative:SCHEMA"
    ],
-   "primary": "TRANSPORT_ERROR",
+   "primary": "SCHEMA_ERROR",
    "missing": [],
    "explanation": "Агент в одном ходе вызвал return_delivered_order_items и exchange_delivered_order_items для одного и того же заказа #W7181492. Однако policy прямо указывает: для доставленного заказа возврат ИЛИ обмен можно выполнить только один раз («For a delivered order, return or exchange can be only done once by the agent»; «you can only take action on pending or delivered orders»), и обе операции требуют ста"
   },
@@ -386,11 +348,9 @@
    "pred": 0,
    "status": "UNRESOLVED",
    "bucket": "FN",
-   "root_cause": "GOAL_PARSE",
-   "frontend_failures": [
-    "goal_conservative:SCHEMA"
-   ],
-   "primary": "SCHEMA_ERROR",
+   "root_cause": "CLAIM_PARSE",
+   "frontend_failures": [],
+   "primary": "POLICY_AMBIGUOUS",
    "missing": [],
    "explanation": "Агент заявляет «я не смогу исправить это самостоятельно с помощью имеющихся инструментов» и предлагает перевод на оператора — это ложный отказ и преждевременная эскалация. По истории клиент хочет получить именно шланг с ID 5206946487, а его текущий полученный шланг — Garden Hose item_id 5753502325 (product_id 6679515468) в доставленном заказе #W7181492; целевой шланг 5206946487 имеет тот же produc"
   },
@@ -402,9 +362,9 @@
    "bucket": "FN",
    "root_cause": "GOAL_PARSE",
    "frontend_failures": [
-    "goal_conservative:TRANSPORT"
+    "goal_conservative:SCHEMA"
    ],
-   "primary": "TRANSPORT_ERROR",
+   "primary": "SCHEMA_ERROR",
    "missing": [],
    "explanation": "В вызове modify_pending_order_items массивы item_ids = [6117189161, 9879255677, 7453605304, 3799046073, 9851293632] и new_item_ids = [6700049080, 9879255677, 5320792178, 3234800602, 9851293632] совпадают на позициях 2 и 5: 9879255677 → 9879255677 (Patio Umbrella) и 9851293632 → 9851293632 (Backpack), то есть new_item_id равен старому item_id. Сам агент в ходе 9 отметил эти два товара как «остается"
   },
@@ -414,11 +374,9 @@
    "pred": 0,
    "status": "UNRESOLVED",
    "bucket": "TN",
-   "root_cause": "GOAL_PARSE",
-   "frontend_failures": [
-    "goal_conservative:TRANSPORT"
-   ],
-   "primary": "TRANSPORT_ERROR",
+   "root_cause": "CLAIM_PARSE",
+   "frontend_failures": [],
+   "primary": "POLICY_AMBIGUOUS",
    "missing": [],
    "explanation": "None"
   },
@@ -428,11 +386,9 @@
    "pred": 0,
    "status": "UNRESOLVED",
    "bucket": "FN",
-   "root_cause": "GOAL_PARSE",
-   "frontend_failures": [
-    "goal_conservative:TRANSPORT"
-   ],
-   "primary": "TRANSPORT_ERROR",
+   "root_cause": "DEEP_SEMANTIC_GAP",
+   "frontend_failures": [],
+   "primary": "POLICY_AMBIGUOUS",
    "missing": [],
    "explanation": "В ходе 4 агент делает вызов find_user_id_by_name_zip с аргументами {\"first_name\": \"daiki\", \"last_name\": \"johnson_9523\", \"zip\": \"80273\"}, полностью идентичными вызову из хода 2, который уже вернул в видимой истории ошибку 'User not found' (ход 2). Между ними ничего не изменилось: пользователь в последней реплике подтвердил ровно те же данные, а агент не корректирует аргументы и не пробует очевидные"
   },
@@ -442,7 +398,7 @@
    "pred": 0,
    "status": "UNRESOLVED",
    "bucket": "TN",
-   "root_cause": "CLAIM_PARSE",
+   "root_cause": "DEEP_SEMANTIC_GAP",
    "frontend_failures": [],
    "primary": "POLICY_AMBIGUOUS",
    "missing": [],
@@ -480,11 +436,9 @@
    "pred": 0,
    "status": "UNRESOLVED",
    "bucket": "FN",
-   "root_cause": "GOAL_PARSE",
-   "frontend_failures": [
-    "goal_conservative:SCHEMA"
-   ],
-   "primary": "SCHEMA_ERROR",
+   "root_cause": "DEEP_SEMANTIC_GAP",
+   "frontend_failures": [],
+   "primary": "POLICY_AMBIGUOUS",
    "missing": [],
    "explanation": "Агент вызывает `check_network_status`, которого нет в его списке [AVAILABLE TOOLS] (там перечислены только серверные инструменты вроде get_customer_by_phone, get_details_by_id, enable_roaming и т.п.). Согласно политике, `check_network_status` — это диагностическое действие на устройстве пользователя (раздел «What the user can do on their device» → «Diagnostic Actions»), которое выполняет сам клиен"
   },
@@ -494,7 +448,7 @@
    "pred": 0,
    "status": "UNRESOLVED",
    "bucket": "FN",
-   "root_cause": "CLAIM_PARSE",
+   "root_cause": "DEEP_SEMANTIC_GAP",
    "frontend_failures": [],
    "primary": "POLICY_AMBIGUOUS",
    "missing": [],
@@ -520,11 +474,9 @@
    "pred": 0,
    "status": "UNRESOLVED",
    "bucket": "TN",
-   "root_cause": "GOAL_PARSE",
-   "frontend_failures": [
-    "goal_conservative:SCHEMA"
-   ],
-   "primary": "SCHEMA_ERROR",
+   "root_cause": "CLAIM_PARSE",
+   "frontend_failures": [],
+   "primary": "POLICY_AMBIGUOUS",
    "missing": [],
    "explanation": "None"
   },
@@ -576,10 +528,9 @@
    "pred": 0,
    "status": "UNRESOLVED",
    "bucket": "TN",
-   "root_cause": "POLICY_PARSE",
+   "root_cause": "GOAL_PARSE",
    "frontend_failures": [
-    "goal_conservative:SCHEMA",
-    "policy_h0_hist:SCHEMA"
+    "goal_conservative:SCHEMA"
    ],
    "primary": "SCHEMA_ERROR",
    "missing": [],
@@ -591,11 +542,9 @@
    "pred": 0,
    "status": "UNRESOLVED",
    "bucket": "FN",
-   "root_cause": "GOAL_PARSE",
-   "frontend_failures": [
-    "goal_conservative:SCHEMA"
-   ],
-   "primary": "SCHEMA_ERROR",
+   "root_cause": "DEEP_SEMANTIC_GAP",
+   "frontend_failures": [],
+   "primary": "POLICY_AMBIGUOUS",
    "missing": [],
    "explanation": "Агент вызывает `run_speed_test`, которого нет в списке [AVAILABLE TOOLS] — там есть только инструменты уровня агента (get_customer_*, get_details_by_id, get_data_usage, refuel_data и т.п.). По политике `run_speed_test` — это диагностическое действие пользователя на его устройстве («What the user can do on their device»), которое агент должен инструктировать пользователя выполнить самостоятельно, а"
   },
@@ -627,23 +576,23 @@
   }
  ],
  "root_table": {
-  "GOAL_PARSE": {
-   "TN": 15,
-   "FN": 16
-  },
-  "STATE_EVIDENCE": {
-   "TN": 1
-  },
   "CLAIM_PARSE": {
-   "TN": 5,
-   "FN": 4
+   "TN": 10,
+   "FN": 2
   },
-  "POLICY_PARSE": {
-   "FN": 2,
-   "TN": 2
+  "DEEP_SEMANTIC_GAP": {
+   "FN": 14,
+   "TN": 6
+  },
+  "GOAL_PARSE": {
+   "TN": 7,
+   "FN": 3
   },
   "OTHER": {
-   "TP": 1
+   "TP": 3
+  },
+  "POLICY_PARSE": {
+   "FN": 1
   }
  }
 }

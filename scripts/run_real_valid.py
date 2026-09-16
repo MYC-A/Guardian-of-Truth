@@ -172,7 +172,7 @@ def build_r1_backend(cache_path: Path):
     provider = os.environ.get("REAL_VALID_PROVIDER", "mistral")
     config = provider_config(ClientConfig(response_format_mode="none",
                                           timeout_seconds=120.0,
-                                          max_output_tokens=2048,
+                                          max_output_tokens=int(os.environ.get("REAL_VALID_MAX_OUTPUT_TOKENS", "8192")),
                                           max_retries=int(os.environ.get("REAL_VALID_MAX_RETRIES", "5"))), provider)
     client = ChatClient(config)
     client.validate_configuration()
@@ -202,8 +202,19 @@ class StructuralOnlyBackend:
 
 
 def run_case(case: E2ECaseInput, backend, adapter_mode: AdapterMode):
-    """One B4h-sound-v2 analysis. A crashed case is UNRESOLVED, never a verdict."""
-    arm = E2EArmConfig("B4h", ("h0_hist",), ("conservative",))
+    """One B4h-sound-v2 analysis. A crashed case is UNRESOLVED, never a verdict.
+
+    Fix iteration 2 (REVERTED): adding the frozen grs_hist multi-rule frontend
+    was attempted and reverted - the GRS grounder cannot complete on real
+    13.5-27.5K-char policies through the available endpoint (output truncated
+    at 8192 tokens; connection-level invalid_response at 12288+). The policy
+    axis stays on the frozen single-structure h0_hist frontend; the
+    multi-rule policy gap is recorded as an open architectural bottleneck.
+    """
+    frontends = tuple(part for part in
+                      os.environ.get("REAL_VALID_POLICY_FRONTENDS", "h0_hist").split(",")
+                      if part)
+    arm = E2EArmConfig("B4h", frontends, ("conservative",))
     guardian = GuardianE2EV1(backend, registry=registry_for(case), arm=arm,
                              max_worlds=4096, adapter_mode=adapter_mode,
                              semantics=SEMANTICS_ARMS["B3"],

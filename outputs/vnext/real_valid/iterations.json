@@ -2,7 +2,7 @@
  {
   "iteration": 0,
   "commit": "315bee335a467476732b47e1e7f412097222cd3b",
-  "description": "frozen baseline B4h-sound-v2 via the transport-only competition adapter (R0==R1: no research metadata exists for real cases; R2 structural-only all-UNRESOLVED)",
+  "description": "frozen baseline B4h-sound-v2 via the transport-only competition adapter (R0==R1: no research metadata exists for real cases; R2 structural-only: 46 UNRESOLVED, zero deterministic coverage without LLM semantics)",
   "metrics": {
    "R1": {
     "TP": 1,
@@ -39,7 +39,7 @@
    "src/guardian_truth/vnext/e2e/goal_conservative_v1.py (GOAL_REPAIR_TASK + _first_schema_violation + opt-in allow_format_repair)",
    "src/guardian_truth/vnext/e2e/core_v1.py (GuardianE2EV1.goal_format_repair constructor flag, default False)",
    "src/guardian_truth/vnext/e2e/json_extract_backend_v1.py (preserve decoded-but-schema-invalid payload_json)",
-   "scripts/run_real_valid.py (enable goal repair in competition mode; max_retries 5; interval 1.2s)",
+   "scripts/run_real_valid.py (enable goal repair in competition mode; transport hardening)",
    "tests/e2e/test_goal_conservative_repair.py (11 tests)",
    "scripts/prune_goal_cache.py (surgical re-drive of the 34 pre-fix goal first-attempts)"
   ],
@@ -80,6 +80,77 @@
   ],
   "regressions": [],
   "soundness_impact": "all definitive verdicts carry valid certificates; 0 false-certified ERROR, 0 false-certified NO_ERROR, 0 uncertified definitive; frozen research replays byte-identical (default-off flag); gold firewall id-independence PASS",
+  "decision": "KEEP"
+ },
+ {
+  "iteration": 2,
+  "root_cause": "POLICY_PARSE single-structure insufficiency (13 FN cases where frontends are available but the one-rule H0 reading cannot express the violated rules)",
+  "hypothesis": "enabling the frozen grs_hist multi-rule policy frontend alongside h0_hist (arm frontends h0_hist+grs_hist; zero production code change, both frontends frozen) would surface additional rules (device-tool policy, prohibitions) and produce new certified violations",
+  "changed_files": [
+   "scripts/run_real_valid.py (REAL_VALID_POLICY_FRONTENDS selector; default reverted to h0_hist)"
+  ],
+  "tests": [
+   "direct endpoint probes of the frozen GRS grounder on the 13.5K-char airline policy"
+  ],
+  "metrics_before": {
+   "TP": 3,
+   "FP": 0,
+   "FN": 20,
+   "TN": 23,
+   "precision": 1.0,
+   "recall": 0.1304,
+   "F1": 0.2308,
+   "status_counts": {
+    "UNRESOLVED": 43,
+    "PROVED_ERROR": 3
+   }
+  },
+  "metrics_after": null,
+  "corrections": [],
+  "regressions": [],
+  "outcome": "REVERTED BEFORE FULL RERUN: the GRS grounder cannot complete on real policy sizes through the available endpoint - output truncated at max_tokens=8192 (finish_reason=length), connection-level invalid_response at 12288/16384 tokens after 50-95s generations. The frozen GRS protocol was designed for short single-rule policies; its unbounded inventory has no output cap compatible with real 13.5-27.5K-char policies on this endpoint. The multi-rule policy gap remains the open architectural bottleneck.",
+  "decision": "REVERT"
+ },
+ {
+  "iteration": 3,
+  "root_cause": "CACHE_DEPENDENCY on transport casualties: 142 rate_limit (429) ERROR entries from the baseline's weaker transport config (retries=2, interval=1.0s) were persisted as permanent failures, crippling claim/T2/policy passes in ~21 cases",
+  "hypothesis": "pruning exactly the transport-ERROR cache entries and re-driving them under the hardened transport config (max_retries=5, interval 1.5s, max_output_tokens 8192) recovers the casualty-degraded axes and measures the same architecture without measurement-infrastructure noise",
+  "changed_files": [
+   "scripts/run_real_valid.py (REAL_VALID_MAX_OUTPUT_TOKENS transport knob)"
+  ],
+  "tests": [
+   "cache hygiene census: 0 transport-ERROR entries remain after re-drive",
+   "full 46-case rerun"
+  ],
+  "metrics_before": {
+   "TP": 3,
+   "FP": 0,
+   "FN": 20,
+   "TN": 23,
+   "precision": 1.0,
+   "recall": 0.1304,
+   "F1": 0.2308,
+   "status_counts": {
+    "UNRESOLVED": 43,
+    "PROVED_ERROR": 3
+   }
+  },
+  "metrics_after": {
+   "TP": 3,
+   "FP": 0,
+   "FN": 20,
+   "TN": 23,
+   "precision": 1.0,
+   "recall": 0.1304,
+   "F1": 0.2308,
+   "status_counts": {
+    "UNRESOLVED": 43,
+    "PROVED_ERROR": 3
+   }
+  },
+  "corrections": [],
+  "regressions": [],
+  "soundness_impact": "none on verdict semantics (transport-level only); 0 transport-ERROR entries remain in the final cache; goal TRANSPORT failures 16->0, policy TRANSPORT failures 2->0; claim failures now genuine schema-invalid passes only; all definitive verdicts still carry valid certificates",
   "decision": "KEEP"
  }
 ]
