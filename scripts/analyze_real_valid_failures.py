@@ -166,7 +166,7 @@ def main() -> None:
 
     fields = list(details[0])
     with (output_dir / f"failure_decomposition{suffix}.csv").open("w", encoding="utf-8", newline="") as stream:
-        writer = csv.DictWriter(stream, fieldnames=fields)
+        writer = csv.DictWriter(stream, fieldnames=fields, lineterminator="\n")
         writer.writeheader()
         writer.writerows(details)
 

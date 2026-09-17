@@ -146,7 +146,7 @@ def run_mode(adapted_cases: list[CompetitionInput], backend, mode: str, progress
 def write_predictions(rows: list[dict], path: Path) -> str:
     path.parent.mkdir(parents=True, exist_ok=True)
     with path.open("w", encoding="utf-8", newline="") as stream:
-        writer = csv.DictWriter(stream, fieldnames=["id", "label"])
+        writer = csv.DictWriter(stream, fieldnames=["id", "label"], lineterminator="\n")
         writer.writeheader()
         for row in rows:
             writer.writerow({key: row[key] for key in writer.fieldnames})
@@ -234,7 +234,7 @@ def write_premise_coverage(adapted_cases: list[CompetitionInput], path: Path) ->
     with path.open("w", encoding="utf-8", newline="") as stream:
         fields = ["id", "tool", "premise", "fact", "origin", "assessment", "trusted",
                   "source_document", "source_start", "source_end", "quote", "derivation"]
-        writer = csv.DictWriter(stream, fieldnames=fields)
+        writer = csv.DictWriter(stream, fieldnames=fields, lineterminator="\n")
         writer.writeheader()
         for adapted in adapted_cases:
             for row in premise_rows(adapted):
