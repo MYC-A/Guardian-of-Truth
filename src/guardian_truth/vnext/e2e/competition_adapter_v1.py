@@ -33,6 +33,17 @@ class CompetitionInput:
 
 
 def _object_schema(fields: list[FieldSpec]) -> dict:
+    """JSON-schema-shaped view of a textual field enumeration.
+
+    Note on ``additionalProperties: False``: the textual declaration only
+    enumerates fields; it does not state that unlisted fields are forbidden.
+    This representation keeps the historical shape (frozen LLM caches key T2
+    proposals on these exact bytes), but the invented object-closure marker
+    is NOT a source premise: the certification path derives its validation
+    schema via ``schema_validation_v1.certification_schema``, which honors
+    object closure only when the source explicitly established it
+    (``E2ECaseInput.object_fields_closed``; never true for this format).
+    """
     properties = {field.name: _field_schema(field) for field in fields}
     required = [field.name for field in fields if field.required]
     schema = {"type": "object", "properties": properties, "additionalProperties": False}
@@ -152,6 +163,13 @@ def adapt_competition_input(record: dict) -> CompetitionInput:
         tool_metadata=tuple(tool_metadata),
         tool_schemas=tuple(tool_schemas),
         tool_catalog_complete=True,
+        # The competition prompt format never establishes semantic closure:
+        # no "only these tools" statement exists, and the sources themselves
+        # document actions/tools beyond the declared catalog (discoverable
+        # tools, user-device actions).  Parse completeness above is purely
+        # syntactic; these closure premises must remain absent.
+        tool_universe_closed=False,
+        object_fields_closed=False,
         t1_contracts=(),
         state_contract=None,
         history_complete=False,

@@ -68,7 +68,8 @@ class FailingSemanticBackend:
         return Proposal(None, "ERROR", "NOT_RUN", "deliberate_frontend_failure")
 
 
-def analyze_call(tool, payload, schema, *, policy="", backend=None):
+def analyze_call(tool, payload, schema, *, policy="", backend=None,
+                  object_fields_closed=True):
     case = E2ECaseInput(
         case_id="schema-pair", family="declared_schema_validity",
         system_policy=policy, user_request="", history=(),
@@ -77,6 +78,7 @@ def analyze_call(tool, payload, schema, *, policy="", backend=None):
         tool_metadata=({"name": tool},),
         tool_schemas=({"name": tool, "parameters": schema},),
         tool_catalog_complete=True,
+        object_fields_closed=object_fields_closed,
         history_complete=True, completeness_basis="explicit complete test history",
     )
     return GuardianE2EV1(backend or NoSemanticBackend(),
@@ -95,6 +97,17 @@ def test_invalid_declared_arguments_are_certified_but_valid_control_is_not():
     assert invalid.result.certificate_check.valid
     assert control.result.status is CoreStatus.PROVED_NO_ERROR
     assert control.result.certificate_check.valid
+
+
+def test_extra_field_alone_needs_object_closed_premise():
+    # The same extra-field payload under an open object premise must NOT
+    # certify: the enumeration declares fields, it does not forbid others.
+    open_case = analyze_call("charge", {"id": "gift-7", "payment_id": "gift-7"}, {
+        "type": "object", "properties": {"payment_id": {"type": "string"}},
+        "required": ["payment_id"], "additionalProperties": False},
+        object_fields_closed=False)
+    assert open_case.result.status is CoreStatus.PROVED_NO_ERROR
+    assert open_case.result.certificate_check.valid
 
 
 def test_schema_violation_is_invariant_to_tool_field_and_value_renaming():

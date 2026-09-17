@@ -9,6 +9,29 @@ SUPPORTED_KEYS = frozenset({"type", "properties", "required", "additionalPropert
                             "items", "enum"})
 
 
+def certification_schema(schema: dict, *, object_fields_closed: bool) -> dict:
+    """Certification view of a declared schema (DECLARED_FIELDS vs OBJECT_CLOSED).
+
+    A textual field enumeration declares which fields exist, their types,
+    requiredness and enums; it does not by itself establish that unlisted
+    fields are forbidden.  ``additionalProperties`` assertions that the
+    adapter reconstructed from a mere enumeration are therefore honored only
+    when the source explicitly established object closure.  When it did not,
+    every adapter-invented ``additionalProperties`` marker is removed from
+    the schema tree; required/type/enum constraints are unaffected.
+    """
+    if object_fields_closed or not isinstance(schema, dict):
+        return schema
+
+    def strip(node):
+        if not isinstance(node, dict):
+            return node
+        return {key: strip(value) for key, value in node.items()
+                if key != "additionalProperties"}
+
+    return strip(schema)
+
+
 def validate_declared_json(value, schema: dict, path: tuple[str, ...] = ()) -> tuple[bool | None, tuple[str, ...]]:
     """Return (valid, diagnostics); ``None`` means unsupported/malformed schema.
 

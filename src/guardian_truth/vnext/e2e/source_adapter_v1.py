@@ -42,6 +42,8 @@ class E2ESource:
     tool_metadata: tuple[ToolIdentity, ...]
     tool_schemas: tuple[dict, ...]
     tool_catalog_complete: bool
+    tool_universe_closed: bool               # source-established CLOSED_TOOL_UNIVERSE
+    object_fields_closed: bool               # source-established OBJECT_CLOSED
     events: tuple[LedgerEvent, ...]
     projection: SourceProjection
     history_complete: bool
@@ -84,7 +86,9 @@ def build_source(case, *, state_contract: dict | None = None) -> E2ESource:
     call_events = tuple(event for event in events if event.kind == "call" and event.source.document == "response")
     projection = SourceProjection(text_events, call_events)
     return E2ESource(case.case_id, prompt, response, case.user_request, policy_text, metadata,
-                     tuple(case.tool_schemas), bool(case.tool_catalog_complete), events, projection,
+                     tuple(case.tool_schemas), bool(case.tool_catalog_complete),
+                     bool(case.tool_universe_closed), bool(case.object_fields_closed),
+                     events, projection,
                      bool(case.history_complete), case.completeness_basis,
                      # Competition id is logging/joining metadata only.  It
                      # must not alter the content-bound source identity.

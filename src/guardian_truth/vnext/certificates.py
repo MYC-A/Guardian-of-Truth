@@ -46,6 +46,12 @@ class CertificateContext:
     declared_tool_catalog: tuple[str, ...] = ()
     declared_tool_schemas: tuple[dict, ...] = ()
     tool_catalog_complete: bool = False
+    # Semantic-closure premises, independent of parse completeness.  A
+    # DECLARED_TOOL_MEMBERSHIP group may only certify absence when the source
+    # established CLOSED_TOOL_UNIVERSE; schema object closure
+    # (additionalProperties) is only authoritative under OBJECT_CLOSED.
+    tool_universe_closed: bool = False
+    object_fields_closed: bool = False
 
 
 @dataclass(frozen=True)

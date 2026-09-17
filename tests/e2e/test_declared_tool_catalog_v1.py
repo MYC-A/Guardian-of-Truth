@@ -20,7 +20,7 @@ class FailingSemanticBackend:
 
 
 def analyze(*, declared_tool: str, called_tool: str, entity: str = "R-7",
-            catalog_complete: bool = True):
+            catalog_complete: bool = True, tool_universe_closed: bool = True):
     case = E2ECaseInput(
         case_id="catalog-pair", family="source_catalog_membership",
         system_policy="", user_request="", history=(),
@@ -31,6 +31,7 @@ def analyze(*, declared_tool: str, called_tool: str, entity: str = "R-7",
                        "parameters": {"type": "object", "properties": {
                            "record_id": {"type": "string"}}, "required": ["record_id"]}},),
         tool_catalog_complete=catalog_complete,
+        tool_universe_closed=tool_universe_closed,
         history_complete=True, completeness_basis="explicit complete test history",
     )
     return GuardianE2EV1(NoSemanticBackend(), adapter_mode=AdapterMode.COMPETITION,
@@ -66,6 +67,15 @@ def test_observed_call_names_do_not_invent_catalog_completeness():
     assert analysis.result.status is not CoreStatus.PROVED_ERROR
 
 
+def test_open_tool_universe_abstains_instead_of_certifying_absence():
+    # Without a source-established CLOSED_TOOL_UNIVERSE premise, catalog
+    # absence must remain UNKNOWN: never PROVED_ERROR, never PROVED_NO_ERROR.
+    analysis = analyze(declared_tool="inspect_record", called_tool="erase_record",
+                       tool_universe_closed=False)
+    assert analysis.result.status is CoreStatus.UNRESOLVED
+    assert analysis.product_decision.binary_label == 0
+
+
 def test_structural_catalog_does_not_change_frozen_frontend_catalog():
     case = E2ECaseInput(
         case_id="catalog-isolation", family="source_catalog_membership",
@@ -87,7 +97,7 @@ def test_source_invariant_violation_survives_unrelated_incomplete_policy_axis():
         history=(), target_response='⟦ASSISTANT_TOOL_CALL name="erase_record"⟧\n{}',
         tool_metadata=({"name": "inspect_record"},),
         tool_schemas=({"name": "inspect_record", "parameters": {"type": "object"}},),
-        tool_catalog_complete=True,
+        tool_catalog_complete=True, tool_universe_closed=True,
     )
     analysis = GuardianE2EV1(
         FailingSemanticBackend(), adapter_mode=AdapterMode.COMPETITION,

@@ -1,0 +1,80 @@
+{
+ "catalog_cases": {
+  "A_declared_tool_called": {
+   "verdict": "structurally fine; no marker; PROVED_NO_ERROR reachable",
+   "result": "PASS (test_catalog_A)"
+  },
+  "B_undeclared_called_universe_open": {
+   "premise": "CLOSED_TOOL_UNIVERSE not established",
+   "verdict": "UNKNOWN (UNRESOLVED), never PROVED_ERROR; explicit marker blocks PROVED_NO_ERROR too",
+   "pre_fix_behavior": "certified PROVED_ERROR (over-strong)",
+   "result": "PASS"
+  },
+  "B2_undeclared_blocks_no_error": {
+   "verdict": "UNRESOLVED, not PROVED_NO_ERROR",
+   "result": "PASS"
+  },
+  "C_dynamic_discovery_history_announces_tool": {
+   "verdict": "UNKNOWN; pre-fix logic would have certified ERROR (false-certification risk)",
+   "result": "PASS"
+  },
+  "D_bootstrap_discovery_generated_name": {
+   "verdict": "UNKNOWN",
+   "result": "PASS"
+  },
+  "E_versioned_alias_names": {
+   "verdict": "foo.v3 absent from {foo, foo.v2} -> UNKNOWN",
+   "result": "PASS"
+  },
+  "F_closed_universe_established": {
+   "verdict": "absence certifies PROVED_ERROR (capability preserved under explicit premise)",
+   "result": "PASS"
+  },
+  "counterfactual_dynamic_availability_text": {
+   "verdict": "stays UNKNOWN; corrected behavior needs no textual cue because it abstains by default",
+   "result": "PASS"
+  }
+ },
+ "schema_cases": {
+  "A_required_missing": {
+   "verdict": "certified violation ('!' is explicit source syntax)",
+   "result": "PASS"
+  },
+  "B_enum_violation": {
+   "verdict": "certified violation ([enum: ...] is explicit source syntax)",
+   "result": "PASS"
+  },
+  "C_extra_field_no_object_closure": {
+   "verdict": "NOT a violation; PROVED_NO_ERROR reachable",
+   "pre_fix_behavior": "certified PROVED_ERROR via invented additionalProperties=false",
+   "result": "PASS"
+  },
+  "C2_counterfactual_additional_properties_allowed": {
+   "verdict": "no violation",
+   "result": "PASS"
+  },
+  "D_nested_required_missing": {
+   "verdict": "certified violation",
+   "result": "PASS"
+  },
+  "E_unsupported_schema_syntax": {
+   "verdict": "UNKNOWN, never a guessed violation",
+   "result": "PASS"
+  },
+  "F_extra_field_with_object_closed": {
+   "verdict": "certified violation (capability preserved)",
+   "result": "PASS"
+  },
+  "G_type_mismatch": {
+   "verdict": "certified violation (JSON encoding is explicit in the call transport)",
+   "result": "PASS"
+  }
+ },
+ "empirical_counterexamples_found_in_source": {
+  "banking_discoverable_tools": "banking catalog itself documents unlock_discoverable_agent_tool / call_discoverable_agent_tool / give_discoverable_user_tool: tools beyond the static catalog exist and are invocable (via the wrapper)",
+  "banking_task_081_t35_history": "gold=0 case whose sanctioned history contains DIRECT assistant calls to non-catalog discoverable tools (get_all_user_accounts_by_user_id_3847, get_debit_cards_by_account_id_7823, close_debit_card_4721) that EXECUTE SUCCESSFULLY - the environment accepts non-catalog direct calls",
+  "telecom_user_device_actions": "telecom policy documents check_network_status / run_speed_test etc. as USER-side device actions outside [AVAILABLE TOOLS]; the gold error for calling them is an actor/protocol violation, not bare catalog absence",
+  "telecom_runtime_tool_not_found": "one history shows the runtime enforcing 'Tool not found' for a non-catalog call - runtime enforcement is observed per-case, not a stated contract"
+ },
+ "test_file": "tests/e2e/test_hidden_closure_assumptions.py (20 tests, all passing)"
+}

@@ -292,6 +292,16 @@ class E2ECaseInput:
     tool_metadata: tuple[dict, ...] = ()
     tool_schemas: tuple[dict, ...] = ()
     tool_catalog_complete: bool = False  # explicit source property, never inferred from observed calls
+    # CLOSED_TOOL_UNIVERSE / OBJECT_CLOSED are separate semantic-closure premises.
+    # Parsing the [AVAILABLE TOOLS] block completely (tool_catalog_complete)
+    # proves only that the declared list was read losslessly; it does not
+    # prove that no other tool may be invoked.  Likewise a textual field
+    # enumeration declares fields, but does not by itself forbid unlisted
+    # fields.  These flags may be set True only when the source itself
+    # establishes closure (explicit exhaustive-universe / no-other-fields
+    # statements); they are never inferred from format conventions.
+    tool_universe_closed: bool = False   # source-established CLOSED_TOOL_UNIVERSE
+    object_fields_closed: bool = False   # source-established OBJECT_CLOSED
     t1_contracts: tuple[dict, ...] = ()
     state_contract: dict | None = None        # trusted current field values (preservation)
     history_complete: bool = False

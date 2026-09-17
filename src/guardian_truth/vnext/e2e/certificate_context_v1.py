@@ -267,9 +267,15 @@ def check_e2e_certificate(certificate: ProofCertificate, bundle: E2EBundle, ledg
 
 
 def _check_declared_tool_membership_group(group, rule, context, ledger, errors):
-    """Reconstruct the structural catalog constraint independently."""
+    """Reconstruct the structural catalog constraint independently.
+
+    A DECLARED_TOOL_MEMBERSHIP group asserts closed-world completeness; it
+    may only exist when the source itself established CLOSED_TOOL_UNIVERSE
+    (parse completeness alone is not that premise).
+    """
     declared = tuple(sorted(context.declared_tool_catalog))
-    if (not context.tool_catalog_complete or group.must_be_true is not True or group.satisfaction_choices
+    if (not context.tool_catalog_complete or not context.tool_universe_closed
+            or group.must_be_true is not True or group.satisfaction_choices
             or group.source_invariant is not True
             or tuple(sorted(rule.get("declared_tools", ()))) != declared):
         errors.append("DECLARED_TOOL_GROUP_METADATA_MISMATCH:" + group.group_id)
@@ -296,11 +302,21 @@ def _check_declared_tool_membership_group(group, rule, context, ledger, errors):
 
 
 def _check_declared_tool_schema_group(group, rule, context, ledger, errors):
-    """Bind every schema atom to the exact trusted declaration and call."""
+    """Bind every schema atom to the exact trusted declaration and call.
+
+    The atom's expected schema is the CERTIFICATION view of the declared
+    schema: adapter-invented object closure is honored only when the source
+    established OBJECT_CLOSED (context.object_fields_closed), mirroring the
+    solver-side derivation in core_v1._declared_tool_schema_component.
+    """
     from ..integrity import canonical
+    from .schema_validation_v1 import certification_schema
     schemas = {item["name"]: item.get("parameters", {}) for item in context.declared_tool_schemas
                if isinstance(item.get("name"), str)}
-    expected_hashes = [(name, digest(schema)) for name, schema in sorted(schemas.items())]
+    certification = {name: certification_schema(schema,
+                                                 object_fields_closed=context.object_fields_closed)
+                     for name, schema in schemas.items()}
+    expected_hashes = [(name, digest(schema)) for name, schema in sorted(certification.items())]
     if (not context.tool_catalog_complete or group.must_be_true is not True
             or group.satisfaction_choices or group.source_invariant is not True
             or rule.get("schema_hashes") != expected_hashes):
@@ -322,7 +338,7 @@ def _check_declared_tool_schema_group(group, rule, context, ledger, errors):
         if (atom.kind is not AtomKind.TARGET_CALL_SCHEMA_VALID
                 or atom.entity.namespace != "ledger" or atom.entity.key != "event_id"
                 or atom.entity.value != event.event_id or atom.predicate != event.tool.name
-                or atom.expected_json != canonical(schemas[event.tool.name]).decode("utf-8")
+                or atom.expected_json != canonical(certification[event.tool.name]).decode("utf-8")
                 or atom.actor != "assistant" or atom.time_mode is not TimeMode.AT
                 or atom.time_index != event.index or atom.call_id != event.call_id
                 or atom.argument_constraints):

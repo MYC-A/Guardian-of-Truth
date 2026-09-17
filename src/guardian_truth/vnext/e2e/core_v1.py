@@ -50,6 +50,7 @@ from .policy_grs_synth_v1 import synthesize
 from .policy_h0_v1 import parse_h0
 from .policy_historical_v1 import historical_readings
 from .policy_lowering_v1 import lower_reading
+from .schema_validation_v1 import certification_schema
 from .source_adapter_v1 import build_source, declared_tool_catalog, target_calls, tool_catalog
 from .world_integration_v1 import Component, E2EProblem, build_worlds, make_problem, solve_e2e
 
@@ -60,13 +61,42 @@ def _declared_tool_catalog_component(source, calls, catalog):
     """Require each target call to name one tool from a complete source catalog.
 
     This is structural source validation: it asserts no tool effects and does
-    not interpret names or descriptions.  The disjunction is exhaustive only
-    when the input adapter explicitly established catalog completeness.
+    not interpret names or descriptions.  Two premises are separated:
+
+    - DECLARED_TOOL_MEMBERSHIP: the declared catalog lists tools the source
+      marks available.  A call to a declared tool is structurally fine.
+    - CLOSED_TOOL_UNIVERSE: absence from the catalog proves the call is not
+      to an available tool.  Only a source that explicitly establishes this
+      closure may turn catalog absence into a certified violation.
+
+    When the universe is not source-closed, an out-of-catalog call remains
+    an explicit UNKNOWN (marker): it can support neither PROVED_ERROR nor
+    PROVED_NO_ERROR, because the source may document the named action
+    elsewhere (discoverable tools, user-side device actions).
     """
     if not source.tool_catalog_complete or not calls:
         return None
     rule_id = "source:declared-tool-membership"
-    option_id = "source:declared-tool-membership:only"
+    if not source.tool_universe_closed:
+        out_of_catalog = [event for event in calls
+                          if event.tool is None or event.tool.name not in catalog]
+        if not out_of_catalog:
+            return None
+        option_id = rule_id + ":open-universe"
+        markers = tuple(UnresolvedMarker(
+            f"{rule_id}:open-universe:{event.event_id}",
+            "tool absent from declared catalog; CLOSED_TOOL_UNIVERSE not established by source")
+            for event in out_of_catalog)
+        option = ReadingOption(option_id, (), (), markers)
+        source_id = ("explicit declared tool catalog (open universe):"
+                     + digest({"tools": list(catalog)}))
+        component = Component(
+            InterpretationAxis(rule_id, (option_id,), source_id, True),
+            {option_id: option})
+        authority = AuthoritativeAxis(rule_id, (option_id,), source_id,
+                                      "EXPLICIT_SOURCE_IDENTITY")
+        return component, authority, option_id, None, None
+    option_id = rule_id + ":only"
     source_id = "explicit complete tool catalog:" + digest({"tools": list(catalog)})
     per_call = []
     for event in calls:
@@ -93,16 +123,26 @@ def _declared_tool_catalog_component(source, calls, catalog):
 
 
 def _declared_tool_schema_component(source, calls):
-    """Require declared target calls to satisfy their exact structural schema."""
+    """Require declared target calls to satisfy their exact structural schema.
+
+    The certification schema is the declared schema with adapter-invented
+    object closure removed unless the source established OBJECT_CLOSED
+    (see schema_validation_v1.certification_schema).  Required fields,
+    declared types and enums remain binding in every case: they are explicit
+    source syntax, not closure assumptions.
+    """
     if not source.tool_catalog_complete or not calls:
         return None
     schemas = {item["name"]: item.get("parameters", {}) for item in source.tool_schemas
                if isinstance(item.get("name"), str)}
+    certification = {name: certification_schema(schema,
+                                                 object_fields_closed=source.object_fields_closed)
+                     for name, schema in schemas.items()}
     per_call = []
     for event in calls:
         if event.tool is None or event.tool.name not in schemas:
             continue  # membership component owns undeclared calls
-        schema = schemas[event.tool.name]
+        schema = certification[event.tool.name]
         atom = ProofAtom(
             f"source:declared-tool-schema:{event.event_id}",
             AtomKind.TARGET_CALL_SCHEMA_VALID,
@@ -116,7 +156,7 @@ def _declared_tool_schema_component(source, calls):
     rule_id = "source:declared-tool-schema-validity"
     option_id = rule_id + ":only"
     source_id = "explicit declared tool schemas:" + digest({
-        "schemas": [(name, digest(schema)) for name, schema in sorted(schemas.items())]})
+        "schemas": [(name, digest(schema)) for name, schema in sorted(certification.items())]})
     group = DisjunctiveGroup(rule_id + ":group", rule_id, True, tuple(per_call),
                              source_invariant=True)
     option = ReadingOption(option_id, (), (group,), ())
@@ -125,7 +165,8 @@ def _declared_tool_schema_component(source, calls):
     authority = AuthoritativeAxis(rule_id, (option_id,), source_id, "EXPLICIT_SOURCE_IDENTITY")
     rule_spec = {"rule_kind": "DECLARED_TOOL_SCHEMA_VALIDITY",
                  "schema_hashes": [(name, digest(schema))
-                                   for name, schema in sorted(schemas.items())]}
+                                   for name, schema in sorted(certification.items())],
+                 "object_fields_closed": bool(source.object_fields_closed)}
     return component, authority, option_id, rule_id, rule_spec
 
 
@@ -304,8 +345,12 @@ class GuardianE2EV1:
             component, authority, option_id, rule_id, rule_spec = catalog_component
             components.append(component)
             authorities.append(authority)
-            option_contracts[option_id] = {"rules": {rule_id: {"obligations": []}}}
-            direct_rules[rule_id] = rule_spec
+            if rule_id is not None:
+                option_contracts[option_id] = {"rules": {rule_id: {"obligations": []}}}
+                direct_rules[rule_id] = rule_spec
+            else:
+                # open-universe form: markers only, no rules to contract
+                option_contracts[option_id] = {"rules": {}}
         schema_component = _declared_tool_schema_component(source, calls)
         if schema_component is not None:
             component, authority, option_id, rule_id, rule_spec = schema_component
@@ -354,7 +399,9 @@ class GuardianE2EV1:
                                      tuple(dict.fromkeys(scopes_json)),
                                      declared_tool_catalog=declared_catalog,
                                      declared_tool_schemas=source.tool_schemas,
-                                     tool_catalog_complete=source.tool_catalog_complete)
+                                     tool_catalog_complete=source.tool_catalog_complete,
+                                     tool_universe_closed=source.tool_universe_closed,
+                                     object_fields_closed=source.object_fields_closed)
         bundle = E2EBundle(context, problem, option_contracts, choice_rules, direct_rules,
                            _behavioral_closure(case.authoritative_policy_behaviors, policy_lowered),
                            _behavioral_closure(case.authoritative_goal_behaviors, lowered_goal_contracts),
