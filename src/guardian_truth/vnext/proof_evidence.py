@@ -80,6 +80,8 @@ def prove_atom(atom: ProofAtom, ledger: EvidenceLedger, index: LedgerIndex,
         return PrimitiveProof(atom, Truth.UNKNOWN, (), (), reasons=(Reason.TIME_UNBOUND,))
     if atom.kind is AtomKind.TARGET_CALL_MATCH:
         return prove_target_call(atom, ledger)
+    if atom.kind is AtomKind.TARGET_CALL_SCHEMA_VALID:
+        return prove_target_call_schema(atom, ledger)
     exact = index.search(entity=atom.entity, time_range=(0, atom.time_index))
     evidence = [item for eid in exact.event_ids for item in index.observations_by_event.get(eid, ())
                 if atom.entity in item.entity_refs and item.predicate == atom.predicate
@@ -176,3 +178,22 @@ def prove_target_call(atom: ProofAtom, ledger: EvidenceLedger) -> PrimitiveProof
     refute = (event.event_id,) if value is Truth.FALSE else ()
     return PrimitiveProof(atom, value, support, refute,
         reasons=(Reason.EVIDENCE_INCOMPLETE,) if value is Truth.UNKNOWN else ())
+
+
+def prove_target_call_schema(atom: ProofAtom, ledger: EvidenceLedger) -> PrimitiveProof:
+    """Validate one source invocation against the exact embedded declaration."""
+    event = ledger.events[atom.time_index]
+    if (event.kind != "call" or event.source.document != "response" or event.tool is None
+            or event.actor != atom.actor or event.actor == "unknown"
+            or atom.entity.key != "event_id" or atom.entity.namespace != "ledger"
+            or atom.entity.value != event.event_id or atom.call_id != event.call_id
+            or event.tool.name != atom.predicate):
+        return PrimitiveProof(atom, Truth.UNKNOWN, (), (), reasons=(Reason.ENTITY_UNBOUND,))
+    from .e2e.schema_validation_v1 import validate_declared_json
+    schema = json.loads(atom.expected_json)
+    valid, _diagnostics = validate_declared_json(event.payload, schema)
+    if valid is None:
+        return PrimitiveProof(atom, Truth.UNKNOWN, (), (), reasons=(Reason.SCHEMA_ERROR,))
+    return PrimitiveProof(atom, Truth.TRUE if valid else Truth.FALSE,
+                          (event.event_id,) if valid else (),
+                          () if valid else (event.event_id,))

@@ -44,6 +44,7 @@ class CertificateContext:
     # Explicit normative scope, not values mined from target arguments.
     scopes_json: tuple[tuple[str, str], ...] = ()
     declared_tool_catalog: tuple[str, ...] = ()
+    declared_tool_schemas: tuple[dict, ...] = ()
     tool_catalog_complete: bool = False
 
 

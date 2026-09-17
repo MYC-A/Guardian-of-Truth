@@ -515,14 +515,7 @@ def solve_e2e(problem: E2EProblem, ledger: EvidenceLedger, registry: ContractReg
     # semantic world.  If the independently checkable group is FALSE in every
     # enumerated world, missing policy/goal interpretations cannot make that
     # source fact true and therefore must not mask PROVED_ERROR.
-    invariant_false_in_every_world = bool(proofs) and all(any(
-        group.source_invariant and any(
-            value is Truth.FALSE and (
-                obligation_id == group.group_id
-                or obligation_id.startswith(group.group_id + ":"))
-            for obligation_id, value in proof.obligation_safety)
-        for group in world.groups)
-        for world, proof in zip(problem.worlds, proofs))
+    invariant_false_in_every_world = source_invariant_violation(problem.worlds, proofs)
     complete = complete or invariant_false_in_every_world
     reasons = []
     if not problem.worlds:
@@ -532,3 +525,16 @@ def solve_e2e(problem: E2EProblem, ledger: EvidenceLedger, registry: ContractReg
         reasons.append(Reason.POLICY_AMBIGUOUS)
     return E2ESolverResult(status, proofs, tuple(dict.fromkeys(reasons)),
                            len(problem.worlds), False)
+
+
+def source_invariant_violation(worlds: tuple[E2EWorld, ...],
+                               proofs: tuple[WorldProof, ...]) -> bool:
+    """Whether every world contains a FALSE independently checked source group."""
+    return bool(proofs) and len(worlds) == len(proofs) and all(any(
+        group.source_invariant and any(
+            value is Truth.FALSE and (
+                obligation_id == group.group_id
+                or obligation_id.startswith(group.group_id + ":"))
+            for obligation_id, value in proof.obligation_safety)
+        for group in world.groups)
+        for world, proof in zip(worlds, proofs))

@@ -10,6 +10,7 @@ from .types import CoreStatus, EntityRef, Reason, Truth
 
 class AtomKind(str, Enum):
     TARGET_CALL_MATCH = "TARGET_CALL_MATCH"
+    TARGET_CALL_SCHEMA_VALID = "TARGET_CALL_SCHEMA_VALID"
     OBSERVED_STATE = "OBSERVED_STATE"
     RESULT_FIELD = "RESULT_FIELD"
     CALL_ATTEMPTED = "CALL_ATTEMPTED"
@@ -72,6 +73,9 @@ class ProofAtom:
             raise ValueError("historical action is queried over history, not sampled state")
         if self.kind is AtomKind.TARGET_CALL_MATCH and (self.time_mode is not TimeMode.AT or type(value) is not bool):
             raise ValueError("target invocation comparison requires an exact event and Boolean expectation")
+        if self.kind is AtomKind.TARGET_CALL_SCHEMA_VALID and (
+                self.time_mode is not TimeMode.AT or not isinstance(value, dict)):
+            raise ValueError("target schema validation requires an exact event and declared object schema")
         if self.argument_constraints and self.kind is not AtomKind.TARGET_CALL_MATCH:
             raise ValueError("argument conditions cannot masquerade as business effects")
 

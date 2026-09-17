@@ -92,6 +92,43 @@ def _declared_tool_catalog_component(source, calls, catalog):
     return component, authority, option_id, rule_id, rule_spec
 
 
+def _declared_tool_schema_component(source, calls):
+    """Require declared target calls to satisfy their exact structural schema."""
+    if not source.tool_catalog_complete or not calls:
+        return None
+    schemas = {item["name"]: item.get("parameters", {}) for item in source.tool_schemas
+               if isinstance(item.get("name"), str)}
+    per_call = []
+    for event in calls:
+        if event.tool is None or event.tool.name not in schemas:
+            continue  # membership component owns undeclared calls
+        schema = schemas[event.tool.name]
+        atom = ProofAtom(
+            f"source:declared-tool-schema:{event.event_id}",
+            AtomKind.TARGET_CALL_SCHEMA_VALID,
+            EntityRef("event_id", event.event_id, "ledger"), event.tool.name,
+            canonical(schema).decode("utf-8"), "assistant", TimeMode.AT,
+            event.index, call_id=event.call_id,
+        )
+        per_call.append((event.event_id, (atom,)))
+    if not per_call:
+        return None
+    rule_id = "source:declared-tool-schema-validity"
+    option_id = rule_id + ":only"
+    source_id = "explicit declared tool schemas:" + digest({
+        "schemas": [(name, digest(schema)) for name, schema in sorted(schemas.items())]})
+    group = DisjunctiveGroup(rule_id + ":group", rule_id, True, tuple(per_call),
+                             source_invariant=True)
+    option = ReadingOption(option_id, (), (group,), ())
+    component = Component(InterpretationAxis(rule_id, (option_id,), source_id, True),
+                          {option_id: option})
+    authority = AuthoritativeAxis(rule_id, (option_id,), source_id, "EXPLICIT_SOURCE_IDENTITY")
+    rule_spec = {"rule_kind": "DECLARED_TOOL_SCHEMA_VALIDITY",
+                 "schema_hashes": [(name, digest(schema))
+                                   for name, schema in sorted(schemas.items())]}
+    return component, authority, option_id, rule_id, rule_spec
+
+
 @dataclass
 class E2EAnalysis:
     case_id: str
@@ -269,6 +306,13 @@ class GuardianE2EV1:
             authorities.append(authority)
             option_contracts[option_id] = {"rules": {rule_id: {"obligations": []}}}
             direct_rules[rule_id] = rule_spec
+        schema_component = _declared_tool_schema_component(source, calls)
+        if schema_component is not None:
+            component, authority, option_id, rule_id, rule_spec = schema_component
+            components.append(component)
+            authorities.append(authority)
+            option_contracts[option_id] = {"rules": {rule_id: {"obligations": []}}}
+            direct_rules[rule_id] = rule_spec
         for component in claims.components:
             components.append(component)
             authorities.append(AuthoritativeAxis(component.axis.name, component.axis.choice_ids,
@@ -309,6 +353,7 @@ class GuardianE2EV1:
                                      effective_policy_text, goal_text, choices, catalog,
                                      tuple(dict.fromkeys(scopes_json)),
                                      declared_tool_catalog=declared_catalog,
+                                     declared_tool_schemas=source.tool_schemas,
                                      tool_catalog_complete=source.tool_catalog_complete)
         bundle = E2EBundle(context, problem, option_contracts, choice_rules, direct_rules,
                            _behavioral_closure(case.authoritative_policy_behaviors, policy_lowered),

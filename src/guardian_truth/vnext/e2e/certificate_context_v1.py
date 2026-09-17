@@ -22,7 +22,7 @@ from ..proof_records import (AtomKind, ProofCertificate, ProofProblem, TimeMode,
 from ..tools import ContractRegistry
 from ..types import (ClaimKind, CoreStatus, Disposition, EffectStatus, Reason, ToolIdentity, Truth)
 from .e2e_types_v1 import E2ESemantics, FULL_SEMANTICS
-from .world_integration_v1 import E2EProblem, solve_world
+from .world_integration_v1 import E2EProblem, solve_world, source_invariant_violation
 
 E2E_CERT_VERSION = "guardian-e2e-v1-proof-v1"
 CLAIM_OBLIGATION_HYPOTHESIS = "GUARDIAN_FACTUAL_CONSISTENCY_V1"
@@ -178,15 +178,12 @@ def check_e2e_certificate(certificate: ProofCertificate, bundle: E2EBundle, ledg
     # NOT required for it. PROVED_NO_ERROR needs the full closure set: every
     # material claim checked, complete history, closed bindings, provably
     # closed semantics and fresh state evidence (spec 101).
-    target_calls = tuple(event for event in ledger.events
-                         if event.kind == "call" and event.source.document == "response")
-    independent_catalog_violation = (
-        context.tool_catalog_complete
-        and any(event.tool is not None and event.tool.name not in context.declared_tool_catalog
-                for event in target_calls)
-    )
+    precheck_index = LedgerIndex(ledger)
+    precheck_proofs = tuple(solve_world(world, ledger, precheck_index, registry,
+                                       bundle.semantics) for world in problem.worlds)
+    independent_source_violation = source_invariant_violation(problem.worlds, precheck_proofs)
     required = (set() if certificate.status is CoreStatus.PROVED_ERROR
-                and independent_catalog_violation else {"SEMANTIC_CANDIDATES_COVERED"})
+                and independent_source_violation else {"SEMANTIC_CANDIDATES_COVERED"})
     if certificate.status is CoreStatus.PROVED_NO_ERROR:
         required |= {"MATERIAL_RESPONSE_COVERED", "SOURCE_HISTORY_COMPLETE", "BINDING_SPACE_COMPLETE",
                      "SEMANTIC_SPACE_PROVABLY_CLOSED", "FRESH_STATE_EVIDENCE"}
@@ -241,6 +238,10 @@ def check_e2e_certificate(certificate: ProofCertificate, bundle: E2EBundle, ledg
             rule = bundle.choice_rules.get(group.rule_id) or bundle.direct_rules.get(group.rule_id)
             if rule and rule.get("rule_kind") == "DECLARED_TOOL_MEMBERSHIP":
                 _check_declared_tool_membership_group(group, rule, context, ledger, errors)
+            elif rule and rule.get("rule_kind") == "DECLARED_TOOL_SCHEMA_VALIDITY":
+                _check_declared_tool_schema_group(group, rule, context, ledger, errors)
+            elif group.source_invariant:
+                errors.append("UNAUTHORIZED_SOURCE_INVARIANT_GROUP:" + group.group_id)
             if rule is None and group.rule_id not in bundle.option_contracts.get(
                     option_ids[0] if option_ids else "", {}).get("rules", {}):
                 # groups belong to a rule of one of the selected options
@@ -268,7 +269,7 @@ def check_e2e_certificate(certificate: ProofCertificate, bundle: E2EBundle, ledg
 def _check_declared_tool_membership_group(group, rule, context, ledger, errors):
     """Reconstruct the structural catalog constraint independently."""
     declared = tuple(sorted(context.declared_tool_catalog))
-    if (group.must_be_true is not True or group.satisfaction_choices
+    if (not context.tool_catalog_complete or group.must_be_true is not True or group.satisfaction_choices
             or group.source_invariant is not True
             or tuple(sorted(rule.get("declared_tools", ()))) != declared):
         errors.append("DECLARED_TOOL_GROUP_METADATA_MISMATCH:" + group.group_id)
@@ -292,6 +293,40 @@ def _check_declared_tool_membership_group(group, rule, context, ledger, errors):
                     or atom.time_index != event.index or atom.call_id != event.call_id
                     or atom.argument_constraints):
                 errors.append("DECLARED_TOOL_GROUP_ATOM_MISMATCH:" + atom.atom_id)
+
+
+def _check_declared_tool_schema_group(group, rule, context, ledger, errors):
+    """Bind every schema atom to the exact trusted declaration and call."""
+    from ..integrity import canonical
+    schemas = {item["name"]: item.get("parameters", {}) for item in context.declared_tool_schemas
+               if isinstance(item.get("name"), str)}
+    expected_hashes = [(name, digest(schema)) for name, schema in sorted(schemas.items())]
+    if (not context.tool_catalog_complete or group.must_be_true is not True
+            or group.satisfaction_choices or group.source_invariant is not True
+            or rule.get("schema_hashes") != expected_hashes):
+        errors.append("DECLARED_SCHEMA_GROUP_METADATA_MISMATCH:" + group.group_id)
+        return
+    targets = tuple(event for event in ledger.events
+                    if event.kind == "call" and event.source.document == "response"
+                    and event.tool is not None and event.tool.name in schemas)
+    rows = dict(group.per_call_atoms)
+    if len(rows) != len(group.per_call_atoms) or set(rows) != {event.event_id for event in targets}:
+        errors.append("DECLARED_SCHEMA_GROUP_CALL_COVERAGE_MISMATCH:" + group.group_id)
+        return
+    for event in targets:
+        atoms = rows[event.event_id]
+        if len(atoms) != 1:
+            errors.append("DECLARED_SCHEMA_GROUP_ATOM_COUNT:" + event.event_id)
+            continue
+        atom = atoms[0]
+        if (atom.kind is not AtomKind.TARGET_CALL_SCHEMA_VALID
+                or atom.entity.namespace != "ledger" or atom.entity.key != "event_id"
+                or atom.entity.value != event.event_id or atom.predicate != event.tool.name
+                or atom.expected_json != canonical(schemas[event.tool.name]).decode("utf-8")
+                or atom.actor != "assistant" or atom.time_mode is not TimeMode.AT
+                or atom.time_index != event.index or atom.call_id != event.call_id
+                or atom.argument_constraints):
+            errors.append("DECLARED_SCHEMA_GROUP_ATOM_MISMATCH:" + atom.atom_id)
 
 
 def _check_claim_obligation(obligation, context, errors, semantics: E2ESemantics = FULL_SEMANTICS):
