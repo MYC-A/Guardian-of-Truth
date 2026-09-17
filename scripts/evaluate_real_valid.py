@@ -122,22 +122,9 @@ def main() -> None:
         json.dumps(metrics, ensure_ascii=False, indent=2), encoding="utf-8")
     write_case_audit(adapted, by_mode, args.output_dir / f"cases{artifact_suffix}.jsonl", gold=gold)
     write_premise_coverage(adapted, args.output_dir / f"premise_coverage{artifact_suffix}.csv")
-    iterations = [{
-        "iteration": 0,
-        "commit": "315bee335a467476732b47e1e7f412097222cd3b",
-        "root_cause": "BASELINE",
-        "hypothesis": "frozen B4h-sound-v2 through a lossless competition adapter",
-        "changed_files": ["competition_adapter_v1.py", "real_valid_v1.py",
-                          "evaluate_real_valid.py"],
-        "tests": ["tests/e2e", "tests/e2e_soundness"],
-        "metrics_before": None,
-        "metrics_after": metrics,
-        "corrections": [],
-        "regressions": [],
-        "decision": "BASELINE",
-    }]
-    (args.output_dir / f"iterations{artifact_suffix}.json").write_text(
-        json.dumps(iterations, ensure_ascii=False, indent=2), encoding="utf-8")
+    # iterations.json is the curated experiment history.  A rerun must not
+    # overwrite it with a synthetic one-entry baseline or create misleading
+    # per-label histories; the post-seal analysis appends accepted iterations.
     backend.persist_receipts(args.output_dir / f"llm_receipts__{run_tag}{artifact_suffix}.json")
     print(json.dumps(metrics, ensure_ascii=False, indent=2))
 
