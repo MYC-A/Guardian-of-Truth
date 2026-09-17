@@ -150,7 +150,41 @@ Conclusion before fixes: B4h-sound-v2 cannot be called directly as `analyze(prom
 
 # Failure decomposition
 
-Post-seal FP/FN/UNRESOLVED decomposition is pending the authorized live baseline. The following is a **pre-run representability audit**, not a metric result and not a claim that a public case belongs to a family.
+## 2026-09-17 — sealed Mistral baseline and post-seal decomposition
+
+- Provider fallback sequence: Gemini `gemini-3.6-flash` synthetic preflight was `SUCCESS/VALID`, but real prompts exhausted the external rate window after four valid stages. Mistral `ministral-14b-latest`, using the exact lowercase `.env` aliases `mistral_model` and `mistral_api_key`, passed synthetic and one-row smoke tests. The one-row smoke produced 15 transport successes (14 schema-valid, one schema-invalid).
+- Full command: `python scripts/evaluate_real_valid.py --provider mistral --modes R0,R1,R2 --cache-mode resume --output-dir outputs/vnext/real_valid --interval-seconds 1 --max-output-tokens 4096 --reasoning-effort none` (resumed once after an external rate limit with a five-second interval).
+- All 46 prediction rows for all three modes were written and SHA-256 sealed before `label`/`explanation` were loaded. `R0`, `R1`, and `R2` were identical: TP=2, FP=0, FN=21, TN=23, precision=1.0, recall=0.086957, F1=0.16; `PROVED_ERROR=2`, `PROVED_NO_ERROR=0`, `UNRESOLVED=44`, `INCONSISTENT=0`; false-certified ERROR/NO_ERROR and execution errors were all zero.
+- `scripts/analyze_real_valid_failures.py` verifies all three prediction seals before reading gold and emits `failure_decomposition.csv/json`. The 46-row CSV contains outcome, internal status, primitive cause, observed failure family, dependency bucket, frontend failures, missing premises, and the public explanation. It is diagnostic only and is never imported by inference.
+
+| Root cause | FP | FN | UNRESOLVED | total |
+|---|---:|---:|---:|---:|
+| POLICY_PARSE | 0 | 7 | 17 | 19 |
+| GOAL_PARSE | 0 | 0 | 7 | 7 |
+| CLAIM_PARSE | 0 | 1 | 5 | 5 |
+| TOOL_BINDING | 0 | 5 | 5 | 5 |
+| TEMPORAL_REASONING | 0 | 3 | 3 | 3 |
+| ARGUMENT_PROVENANCE | 0 | 2 | 2 | 2 |
+| CERTIFICATE | 0 | 0 | 2 | 2 |
+| ARGUMENT_BINDING | 0 | 1 | 1 | 1 |
+| STATE_EVIDENCE | 0 | 1 | 1 | 1 |
+| TOOL_SPEC_PARSE | 0 | 1 | 1 | 1 |
+
+| Dependency | Cases |
+|---|---:|
+| Works without T1 | 2 |
+| Needs prompt-derived semantics | 4 |
+| Needs manual/oracle T1 | 0 established |
+| Blocked by Policy parsing | 17 |
+| Blocked by Goal/binding | 16 |
+| Blocked by claims | 5 |
+| Blocked by state/effect evidence | 2 |
+| Blocked by cache/runtime | 0 after the completed run |
+
+- The observed positive families were: unavailable/wrong-executor tool 5, policy precondition/sequence 4, premature escalation 4, unsupported argument provenance 2, and one each for schema mismatch, confirmation prerequisite, identity verification, stale/temporal state, ignored available evidence, failed-call repeat, fabricated action/result, and other policy/goal reasoning.
+- R0/R1/R2 equality is evidence that rich T1/T2 effect semantics was not the decisive baseline bottleneck. The dominant measured blockers are higher: policy/goal/claim frontends and missing direct structural validation. “No manual/oracle T1 established” does not prove that no remaining case could benefit from such semantics.
+
+The following table was the **pre-run representability audit** and is retained for comparison with the measured result.
 
 | Real failure family | Static support | Existing mechanism / missing premise |
 |---|---|---|
@@ -177,15 +211,49 @@ Static conclusion before live data: structural evidence is substantial, but seve
 
 # Fix iterations
 
-Pending; maximum three substantial general fixes, one root cause per iteration.
+## Iteration 1 — KEEP (`92b5d26`)
+
+- Root cause: `TOOL_BINDING` (five FN). Exact pre-fix audit: five target responses contained at least one call whose name was absent from the source-complete `[AVAILABLE TOOLS]` catalog; all five were gold-positive and no gold-negative case matched.
+- Hypothesis: catalog membership is a structural source fact. If the adapter proves the catalog complete, every target call must match one declared interface; an out-of-catalog call is a violation independent of unresolved policy/goal interpretations. No effects are inferred from tool names.
+- Implementation: preserve the frozen LLM frontend catalog, add a separate declared-only catalog, construct a source-invariant disjunction over declared tool identities per target call, and independently reconstruct/check it in the certificate checker. Catalog completeness is explicit adapter metadata and is never inferred from observed calls.
+- Tests: paired available/unavailable call; tool/entity/value renaming; explicit non-invention of catalog completeness; frozen-frontend isolation; and an incomplete unrelated policy axis. Full regression: 109/109 E2E and soundness tests passed.
+- Full rerun: `--run-label fix1_final`, exact semantic cache replay, all 46 cases and all three modes. Before (each mode): TP=2 FP=0 FN=21 TN=23, F1=0.16, 2 proved / 44 unresolved. After: TP=7 FP=0 FN=16 TN=23, precision=1.0, recall=0.304348, F1=0.466667, 7 proved / 39 unresolved.
+- Corrections: the five pre-identified out-of-catalog cases. Regressions: none. Every correction has a `source:declared-tool-membership` false witness in every material world and a valid certificate. False-certified ERROR/NO_ERROR remain zero.
+- A broader draft that also changed the LLM frontend catalog was rejected during witness review because it mixed a policy-frontend correction into this root cause. `fix1_final` is the isolated KEEP result.
+
+## Iteration 2 — KEEP (`0dbacb5`)
+
+- Root cause: `TOOL_SPEC_PARSE`. An exact pre-fix scan found three gold-positive target calls that violated the source-declared closed argument schema and zero matching gold-negative rows. The explanation-based coarse baseline taxonomy had placed two of these rows under policy reasoning, so the exact structural scan—not explanation wording—defines the affected set.
+- Cases affected: `airline__21::t7`, `airline__23::t10`, and `airline__44::t22` (development diagnostics only; no case ID or domain token appears in production logic).
+- Hypothesis: a target call that violates the exact argument interface declared in the prompt is erroneous independently of unresolved policy, goal, state, or effect semantics. Unknown or unsupported schema constructs must remain `UNKNOWN`, never violations.
+- Production change: add a pure deterministic validator for the adapter's exact schema subset (`object`, `array`, scalar/null types, `required`, `properties`, `additionalProperties`, `items`, and `enum`); introduce a source-invariant target-schema atom; and independently reconstruct its binding in the certificate checker. No tool behavior or business effect is inferred.
+- Tests: nested types/requirements/enums/additional properties; unsupported-keyword abstention; paired valid/invalid calls; tool/field/value renaming; and incomplete unrelated policy axes. Full regression: 116/116 E2E and soundness tests passed.
+- Before (each mode): TP=7 FP=0 FN=16 TN=23; precision=1.0, recall=0.304348, F1=0.466667; 7 `PROVED_ERROR`, 39 `UNRESOLVED`.
+- After (each mode): TP=10 FP=0 FN=13 TN=23; precision=1.0, recall=0.434783, F1=0.606061; 10 `PROVED_ERROR`, 0 `PROVED_NO_ERROR`, 36 `UNRESOLVED`, 0 `INCONSISTENT`; certified coverage=0.217391.
+- Corrections: the three pre-identified schema-invalid rows. Regressions: none. All corrections have a `source:declared-tool-schema-validity` false witness and valid certificate; false-certified ERROR/NO_ERROR remain zero.
+- Soundness impact: increased only source-certified error coverage. Unsupported schema syntax and incomplete catalogs fail closed to `UNKNOWN`. Decision: **KEEP**.
 
 # Remaining failures
 
-Pending.
+- After Iteration 2: 13 FN and 36 `UNRESOLVED`; FP, false-certified ERROR/NO_ERROR, and execution errors remain zero.
+- Post-seal coarse counts are led by `POLICY_PARSE` (6 FN / 16 unresolved), followed by argument provenance (2 FN), temporal reasoning (2 FN), and one FN each in claim parsing, argument binding, and state evidence. Seven negative rows remain unresolved under `GOAL_PARSE`, but they do not create FP under the conservative competition fallback.
+- The policy bucket is heterogeneous: preconditions/sequences, premature escalation, calculations, and other policy/goal reasoning. There is no third isolated source-certified fix supported by several cases. Repeated failed calls require a determinism/retry premise; argument provenance requires sound typed derivations; absence-based prerequisites require history closure. Encoding any of these as string heuristics would weaken soundness, so the cycle stops after two substantial KEEP iterations (the allowed maximum was three).
+- Final dependency accounting is: 10 cases proved without T1, 3 currently needing prompt-derived semantics, 0 established as needing manual/oracle T1, 16 blocked by policy parsing, 10 by goal/binding, 5 by claims, and 2 by state/effect evidence. These categories cover all rows but are diagnostic buckets, not mutually causal proofs.
+- `valid.parquet` is viewed public development data. Every delta in this report is a **development result**, not a claim about generalization, hidden-test performance, final score, or expected leaderboard position.
 
 # Next architecture hypotheses
 
-Pending until baseline, decomposition, and permitted fixes are complete.
+The measured bottleneck is policy semantics, not the solver and not a broad missing-T1 layer. Five materially different directions are therefore considered:
+
+| Direction | What changes / target family | Why it may help | Soundness risk | Compute | Complexity | Minimal causal experiment |
+|---|---|---|---|---|---|---|
+| Role-specific stronger policy model | Replace only historical H0 policy extraction; targets policy preconditions, sequencing, and escalation | Distinguishes model-capability failures from IR limitations while freezing all downstream logic | Medium: plausible but ungrounded rules can create false proofs unless every atom is source-spanned and checker-bound | Medium/high API cost | Low | Run the same 46 rows with only the policy role changed; compare schema-valid extraction, grounded-rule coverage, false certificates, and sealed deltas |
+| Deterministic policy grammar | Parse explicit `must`, `only after`, `before`, and exception templates into source-linked rule frames | Directly attacks repeated explicit procedural language without model variance | Medium: scope/negation mistakes | Low | Medium/high | Implement one rule form, use paired negation/scope metamorphics, then measure only cases containing that form |
+| Constrained policy IR redesign | Expand the atom/condition vocabulary for value comparisons, calculations, exceptions, and quantified gates | Removes representation ceilings even with a capable parser | High: a richer IR enlarges the proof surface | Medium | High | Hand-author source-grounded IR for a blinded subset; test whether the existing solver can express the gold-described violation before changing extraction |
+| Multi-candidate policy consensus | Generate several readings and certify only facts common to all source-grounded readings | Can increase robustness while retaining ambiguity explicitly | Low/medium: unsafe candidate merging | High | Medium | Compare intersection-only consensus with single-reading H0 on frontend coverage and false-definitive count |
+| Counterexample-guided policy checking | Ask a verifier for a source quote and a concrete violated condition only for the target action | Focuses compute on material calls and may avoid full-policy parsing | Medium/high: verifier circularity and quote-selection bias | Medium | Medium/high | On policy-FN rows plus matched negatives, require independently replayable quoted predicates and measure accepted-witness precision |
+
+**ONE next experiment:** a role-isolated policy-frontend ablation using NVIDIA `google/gemma-4-31b-it` (the faster available endpoint) against the current Mistral control. Freeze the adapter, claims, goal frontend, world construction, solver, checker, cache settings, and all structural fixes; change only the policy extraction backend. Primary causal question: does a stronger role-specific model reduce the 16 policy-blocked unresolved rows without increasing invalid/ungrounded policy objects or false-certified outcomes? Dataset: the same viewed 46-row development set, with predictions sealed before scoring. Primary metrics: policy schema-valid rate, source-span validity, material policy-rule coverage, TP/FP/FN/TN, internal statuses, and false-certified ERROR/NO_ERROR. Failure criterion: no meaningful grounded-policy coverage gain, any checker-accepted ungrounded rule, or any new false certificate. GPT-OSS-120B remains a fallback transport, not a second experiment arm.
 
 # Static hardcoding audit
 
@@ -197,6 +265,19 @@ Pending until baseline, decomposition, and permitted fixes are complete.
 - `label` access occurs only in the post-seal scoring function and output field naming. `competition_view` and the strict adapter reject label/explanation/domain fields before inference.
 - Result: zero benchmark-specific production hardcoding found in the audited patterns. Research corpus/scoring modules still contain generic `gold_*` fields by design; they are not called by the competition inference path.
 
+## 2026-09-17 — final post-fix scan
+
+- Repeated the prohibited-prefix scan after both KEEP commits: zero `airline__`, `banking_knowledge__`, `retail__`, or `telecom__` occurrences in production Python under `src/`.
+- The only `gold_*` references found are the pre-existing research corpus/experiment types. In the real-valid path, `label` is accessed by the runner only after all requested prediction files are written and sealed; the adapter still rejects non-inference fields.
+- Both production fixes are invariant under renamed tools, fields, entity IDs, and values in targeted metamorphic tests. No case ID, known reservation/account value, label, or observed gold explanation was added to production logic.
+
 # Final state
 
-Pending.
+- Classification: **D. MAIN_GAP_IS_POLICY_SEMANTICS**.
+- Original task: binary response-level contextual-hallucination detection. The solution receives `id,prompt,response`; public development additionally exposes `label,explanation`, which are loaded only after prediction seals. Real prompts include policy/history plus tool descriptions and typed argument schemas.
+- B4h-sound-v2 is invoked through the new strict competition adapter and the existing `GuardianE2EV1` B4h/B3 path. The frozen research path had expected separated source fields and could optionally consume trusted T1/state/closure/oracle metadata not supplied by the competition record. The adapter derives only source-present fields and leaves missing trust premises unknown.
+- Baseline R1 (identical to R0/R2): TP=2, FP=0, FN=21, TN=23; precision=1.0, recall=0.086957, F1=0.16; 2 `PROVED_ERROR`, 0 `PROVED_NO_ERROR`, 44 `UNRESOLVED`, 0 `INCONSISTENT`; no false certificate.
+- Final development result after two KEEP fixes (identical R0/R1/R2): TP=10, FP=0, FN=13, TN=23; precision=1.0, recall=0.434783, F1=0.606061; 10 `PROVED_ERROR`, 0 `PROVED_NO_ERROR`, 36 `UNRESOLVED`, 0 `INCONSISTENT`; no false or uncertified definitive result.
+- Fix 1 corrected five out-of-catalog calls with zero regressions. Fix 2 corrected three declared-schema violations with zero regressions. No known soundness bug or production hardcoding remains after the targeted tests and static scan.
+- A large Tool Contract Frontend is not justified by this development set: 10 cases now certify from direct source structure, only 3 are bucketed as needing prompt-derived semantics, and zero manual/oracle-only T1 dependency is established. The current largest bottleneck is policy parsing/representation.
+- Working branch: `codex-update-run`. The fix commits are `92b5d26` and `0dbacb5`; the final report/artifact commit SHA is reported in the handoff after commit creation. The branch has not yet been pushed because remote mutation is a separate approval step. Intended report URL after push: `https://github.com/MYC-A/Guardian-of-Truth/blob/codex-update-run/docs/vnext/e2e/REAL_COMPETITION_VALID_CODEX.md`.
