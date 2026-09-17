@@ -42,15 +42,29 @@ from guardian_truth.vnext.e2e.e2e_types_v1 import E2EArmConfig, SEMANTICS_ARMS  
 from guardian_truth.parsing import parse_events  # noqa: E402
 
 
-def guardian_for_mode(backend, mode: str) -> GuardianE2EV1:
-    """B4h-sound-v2 frozen configuration; R2 disables T2 proposals only."""
+def guardian_for_mode(backend, mode: str, *, catalog_conformance: bool = True,
+                      schemas: dict | None = None) -> GuardianE2EV1:
+    """B4h-sound-v2 frozen configuration; R2 disables T2 proposals only.
+    catalog_conformance: session B fix iteration 1 (deterministic prompt-
+    grounded obligations over RESPONSE calls; flag-gated, default OFF in the
+    library itself)."""
+    from guardian_truth.vnext.tools import ContractRegistry
+    from dataclasses import replace
+    registry = ContractRegistry((), schemas=schemas or {})
+    # Session B fix iterations: B3 semantics + REP-08 must-act abstention
+    # (iteration 2). Flag lives in E2ESemantics; default OFF keeps the frozen
+    # B0..B4 arms byte-identical.
+    semantics = replace(SEMANTICS_ARMS["B3"], must_act_abstention=True)
     return GuardianE2EV1(
         backend,
+        registry=registry,
         arm=E2EArmConfig("B4h-sound-v2", ("h0_hist",), ("conservative",)),
         max_worlds=4096,
         adapter_mode=AdapterMode.COMPETITION,
         enable_t2=(mode != "R2"),
-        semantics=SEMANTICS_ARMS["B3"],
+        semantics=semantics,
+        catalog_conformance=catalog_conformance,
+        goal_format_repair=True,  # session A iteration-1 KEEP fix, adopted
     )
 
 
@@ -136,21 +150,21 @@ def base_record(case_id: str, started: float, error: str | None = None) -> dict:
     }
 
 
-def run_mode(mode: str, *, provider: str, time_budget: float | None, limit: int | None = None) -> None:
+def run_mode(mode: str, *, provider: str, time_budget: float | None, limit: int | None = None,
+             catalog: bool = True, dir_suffix: str = "") -> None:
     started_at = time.time()
     rows = load_firewalled_rows()
     if limit:
         rows = rows[:limit]
 
-    mode_dir = OUT_DIR / mode
+    mode_dir = OUT_DIR / (mode + dir_suffix)
     mode_dir.mkdir(parents=True, exist_ok=True)
     progress_path = mode_dir / f"{mode}_progress.json"
-    cache_path = mode_dir / f"{mode}_llm_cache_{provider}.json"
+    cache_path = OUT_DIR / mode / f"{mode}_llm_cache_{provider}.json"
     out = load_progress(progress_path)
     done = {row["case_id"] for row in out}
 
     backend = build_backend(cache_path, provider=provider)
-    guardian = guardian_for_mode(backend, mode)
 
     for firewalled in rows:
         case_id = firewalled["id"]
@@ -160,6 +174,10 @@ def run_mode(mode: str, *, provider: str, time_budget: float | None, limit: int 
             print(f"TIME BUDGET EXHAUSTED before {case_id}; {len(out)} done — rerun to resume", flush=True)
             break
         case = competition_case(firewalled)
+        _, schemas_list = parse_tool_catalog(firewalled["prompt"])
+        case_schemas = {schema["name"]: schema for schema in schemas_list}
+        guardian = guardian_for_mode(backend, mode, schemas=case_schemas,
+                                     catalog_conformance=catalog)
         started = time.time()
         try:
             analysis = guardian.analyze_e2e_v1(case)
@@ -193,12 +211,12 @@ def run_mode(mode: str, *, provider: str, time_budget: float | None, limit: int 
               f"cert={record['certificate_valid']} ({record['elapsed_s']}s)", flush=True)
 
     if len(out) == len(rows):
-        seal_mode(mode, provider, out)
+        seal_mode(mode, provider, out, dir_suffix)
 
 
-def seal_mode(mode: str, provider: str, out: list) -> None:
+def seal_mode(mode: str, provider: str, out: list, dir_suffix: str = "") -> None:
     """§18: predictions sealed with SHA256 BEFORE any gold is read."""
-    mode_dir = OUT_DIR / mode
+    mode_dir = OUT_DIR / (mode + dir_suffix)
     predictions_path = mode_dir / f"{mode}_predictions.csv"
     with open(predictions_path, "w", newline="", encoding="utf-8") as handle:
         writer = csv.writer(handle)
@@ -239,12 +257,16 @@ def main() -> None:
     parser.add_argument("--time-budget", type=float, default=None)
     parser.add_argument("--limit", type=int, default=None)
     parser.add_argument("--seal-only", action="store_true")
+    parser.add_argument("--no-catalog", action="store_true",
+                        help="control run: same input decomposition, catalog axis OFF")
+    parser.add_argument("--dir-suffix", default="")
     args = parser.parse_args()
     if args.seal_only:
-        progress = load_progress(OUT_DIR / args.mode / f"{args.mode}_progress.json")
-        seal_mode(args.mode, args.provider, progress)
+        progress = load_progress(OUT_DIR / (args.mode + args.dir_suffix) / f"{args.mode}_progress.json")
+        seal_mode(args.mode, args.provider, progress, args.dir_suffix)
         return
-    run_mode(args.mode, provider=args.provider, time_budget=args.time_budget, limit=args.limit)
+    run_mode(args.mode, provider=args.provider, time_budget=args.time_budget, limit=args.limit,
+             catalog=not args.no_catalog, dir_suffix=args.dir_suffix)
 
 
 if __name__ == "__main__":

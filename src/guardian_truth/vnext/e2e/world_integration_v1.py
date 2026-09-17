@@ -62,6 +62,10 @@ from ..proof_records import (AtomKind, InterpretationAxis, PrimitiveProof, Proof
 from ..solver import world_space_complete
 from ..tools import ContractRegistry, conditions_hold
 from ..types import CoreStatus, Reason, Truth, consensus
+
+# Claim obligations assert COMPLETED actions (fabricated-action detection)
+# and are exempt from the must-act abstention gate.
+_CLAIM_OBLIGATION_HYPOTHESIS = "GUARDIAN_FACTUAL_CONSISTENCY_V1"
 from .e2e_types_v1 import FULL_SEMANTICS, DisjunctiveGroup, E2ESemantics, ReadingOption, UnresolvedMarker
 
 WORLD_INTEGRATION_VERSION = "world_integration_e2e_v1"
@@ -223,6 +227,37 @@ def _is_number_literal(text: str) -> bool:
         return False
 
 
+def _prove_catalog_atom(atom: ProofAtom, ledger: EvidenceLedger, index: LedgerIndex,
+                        registry: ContractRegistry) -> PrimitiveProof:
+    """Deterministic catalog-conformance proofs (session B fix iteration).
+
+    The violation computation is the SAME shared function the independent
+    certificate checker uses (catalog_conformance_v1.catalog_violations), so
+    prover and checker can never disagree. Evidence: the response call event
+    itself plus the application-supplied catalog schemas."""
+    from .catalog_conformance_v1 import ARGUMENT_CONFORMS_SCHEMA, catalog_violations
+    if atom.entity.namespace != "catalog" or not registry.schemas:
+        return PrimitiveProof(atom, Truth.UNKNOWN, (), (), reasons=(Reason.EVIDENCE_INCOMPLETE,))
+    event = index.events_by_id.get(atom.entity.value)
+    if event is None or event.kind != "call":
+        return PrimitiveProof(atom, Truth.UNKNOWN, (), (), reasons=(Reason.EVIDENCE_INCOMPLETE,))
+    violations = catalog_violations(event, registry.schemas)
+    if atom.kind is AtomKind.CALL_IN_CATALOG:
+        broken = any(item.kind == "TOOL_NOT_IN_CATALOG" for item in violations)
+        return (PrimitiveProof(atom, Truth.FALSE, (), (event.event_id,)) if broken
+                else PrimitiveProof(atom, Truth.TRUE, (event.event_id,), ()))
+    if atom.kind is ARGUMENT_CONFORMS_SCHEMA:
+        if not event.tool or event.tool.name not in registry.schemas:
+            # No schema exists for a non-catalog tool: conformance is not
+            # evaluable (the in-catalog atom already carries the violation).
+            return PrimitiveProof(atom, Truth.UNKNOWN, (), (), reasons=(Reason.EVIDENCE_INCOMPLETE,))
+        broken = any(item.kind in ("ARGUMENTS_NOT_JSON", "MISSING_REQUIRED_FIELD",
+                                   "ENUM_VIOLATION") for item in violations)
+        return (PrimitiveProof(atom, Truth.FALSE, (), (event.event_id,)) if broken
+                else PrimitiveProof(atom, Truth.TRUE, (event.event_id,), ()))
+    return PrimitiveProof(atom, Truth.UNKNOWN, (), (), reasons=(Reason.EVIDENCE_INCOMPLETE,))
+
+
 def prove_e2e_atom(atom: ProofAtom, ledger: EvidenceLedger, index: LedgerIndex,
                    registry: ContractRegistry,
                    semantics: E2ESemantics = FULL_SEMANTICS) -> PrimitiveProof:
@@ -236,6 +271,9 @@ def prove_e2e_atom(atom: ProofAtom, ledger: EvidenceLedger, index: LedgerIndex,
     state semantics (which fully replaces the baseline observation proof for
     those atoms). Everything else delegates to the baseline prove_atom
     (shared by solver and checker)."""
+    if atom.entity.namespace == "catalog" and atom.kind in {AtomKind.CALL_IN_CATALOG,
+                                                            AtomKind.ARGUMENT_CONFORMS_SCHEMA}:
+        return _prove_catalog_atom(atom, ledger, index, registry)
     if atom.entity.namespace in {"e2e", "e2e-state"} and atom.kind in {AtomKind.CALL_ATTEMPTED, AtomKind.HISTORICAL_ACTION}:
         return _prove_deterministic_action_atom(atom, ledger, index, registry, semantics)
     proof = prove_atom(atom, ledger, index, registry, ())
@@ -440,6 +478,19 @@ def solve_world(world: E2EWorld, ledger: EvidenceLedger, index: LedgerIndex,
         primitives.extend((*condition_proofs, atom_proof))
         antecedent = conjunction(tuple(proof.value for proof in condition_proofs))
         required = atom_proof.value if obligation.must_be_true else negate(atom_proof.value)
+        if (semantics.must_act_abstention and obligation.must_be_true
+                and atom_proof.value is Truth.FALSE
+                and obligation.hypothesis_id != _CLAIM_OBLIGATION_HYPOTHESIS
+                and obligation.atom.entity.namespace in {"e2e", "e2e-state"}
+                and obligation.atom.kind in {AtomKind.CALL_ATTEMPTED, AtomKind.HISTORICAL_ACTION}
+                and any(refute.startswith("absence:") for refute in atom_proof.refutes)):
+            # REP-08 (session B fix iteration 2): a policy/goal "must act"
+            # obligation whose ONLY refuting witness is the absence of the
+            # attempt cannot certify a violation — "act NOW" existential
+            # semantics are outside V1. Claim-path absence proofs
+            # (fabricated action: ACTION_COMPLETED + no call) are exempt:
+            # they assert a completed action, not a pending duty.
+            required = Truth.UNKNOWN
         value = disjunction((negate(antecedent), required))
         if (semantics.inconsistent_status and required is Truth.BOTH
                 and antecedent is Truth.TRUE and value is Truth.TRUE):

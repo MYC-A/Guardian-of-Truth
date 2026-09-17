@@ -228,11 +228,22 @@ class E2ESemantics:
         silently absorbing the contradiction.
     claim_typing : deterministic claim-adapter guards (entity-ref anchoring
         guard, flag-channel evidence for value-anchored state claims,
-        representation-preserving literal coercion)."""
+        representation-preserving literal coercion).
+    must_act_abstention : REP-08 semantics (session B fix iteration 2): an
+        action-existential obligation (REQUIRE_CALL / GOAL_CALL lowered from
+        policy or goal readings, never a CLAIM obligation) proven FALSE only
+        by the ABSENCE of the attempted call evaluates UNKNOWN instead of
+        FALSE — "the agent must act THIS turn" is an existential-over-future
+        semantics deliberately outside the V1 program space. A turn that only
+        gathers information or asks for confirmation is not a hallucination;
+        fabricated-action claims remain provable through the CLAIM path
+        (ACTION_COMPLETED + absence), which this gate never touches. Default
+        False preserves the frozen B0..B4 behavior byte-identically."""
     conservative_state: bool = False
     alternative_groups: bool = False
     inconsistent_status: bool = False
     claim_typing: bool = False
+    must_act_abstention: bool = False
 
 
 FULL_SEMANTICS = E2ESemantics(conservative_state=True, alternative_groups=True,

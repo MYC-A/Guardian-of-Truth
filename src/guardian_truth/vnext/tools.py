@@ -66,14 +66,22 @@ class ToolSemantics:
 
 
 class ContractRegistry:
-    """Only application-supplied trusted contracts. No LLM promotion operation."""
+    """Only application-supplied trusted contracts. No LLM promotion operation.
 
-    def __init__(self, contracts: tuple[TrustedContract, ...]):
+    `schemas` (optional): tool name -> schema dict supplied by the application
+    (e.g. the prompt-derived [AVAILABLE TOOLS] typed catalog). Schemas feed
+    ONLY deterministic catalog-conformance atoms (CALL_IN_CATALOG /
+    ARGUMENT_CONFORMS_SCHEMA); they never promote a tool into a trusted
+    effects contract."""
+
+    def __init__(self, contracts: tuple[TrustedContract, ...], *, schemas: dict | None = None):
         if any(not isinstance(contract, TrustedContract) for contract in contracts):
             raise TypeError("only trusted contract objects can enter T1 registry")
         if len({contract.identity for contract in contracts}) != len(contracts):
             raise ValueError("conflicting trusted identity")
         self.contracts = contracts
+        self.schemas = {name: value for name, value in (schemas or {}).items()
+                        if isinstance(name, str) and isinstance(value, dict)}
 
     def lookup(self, identity: ToolIdentity) -> TrustedContract | None:
         return next((contract for contract in self.contracts if contract.identity == identity), None)

@@ -807,3 +807,165 @@ typed schema tree (required fields incl. nested array items, enum values):
 This is the evidence base for the next experiment both sessions converged
 on: session A's idea A ("structural-first deterministic rules") = session
 B's planned fix iteration 1.
+
+## SESSION B — fix iterations (2 own + 1 adopted; directive §24-30)
+
+All numbers: DEVELOPMENT RESULTS on the 46 viewed valid cases. Binary
+mapping frozen before unsealing (product adapter COMPETITION mode). Every
+stage is sealed (`*_prediction_seal.json` per run directory).
+
+| Stage | TP | FP | FN | TN | Precision | Recall | F1 | false-cert ERR |
+|---|---:|---:|---:|---:|---:|---:|---:|---:|
+| S0 baseline (adapter, flat schemas) | 4 | 1 | 19 | 22 | 0.800 | 0.174 | 0.286 | 1 |
+| S0+schemas control (tree schemas, no axis) | 5 | 2 | 18 | 21 | 0.714 | 0.217 | 0.333 | 2 |
+| S1 = + catalog conformance (iteration 1) | 7 | 2 | 16 | 21 | 0.778 | 0.304 | 0.438 | 2 |
+| S2 = + REP-08 must-act abstention (iteration 2) | 6 | 0 | 17 | 23 | 1.000 | 0.261 | 0.414 | 0 |
+| **S3 = S2 + goal repair (session A iteration 1 adopted)** | **8** | **0** | 15 | 23 | **1.000** | 0.348 | **0.516** | **0** |
+
+R2 (T2 off) at S3: identical verdicts (TP 8, FP 0, F1 0.516) — with a shared
+frontend cache, untrusted T2 proposals change NO verdict on these 46 cases;
+the earlier "R2 > R1" observation was cache variance between independently
+built caches, now corrected.
+
+### ITERATION 1 (session B) — catalog conformance axis
+
+- Root cause: no deterministic proof path for the INVALID_TOOL_NAME and
+  INVALID_ARGUMENT_SCHEMA families (directive §14 priorities 2-3), although
+  both premises are EXPLICIT in the prompt.
+- Hypothesis: a flag-gated deterministic axis over RESPONSE calls only
+  (catalog membership + required fields recursively incl. nested array
+  items + enum values; types deliberately NOT checked per EMP-01; extra
+  fields not flagged) certifies these violations with zero T1 and zero LLM.
+- Production change: `catalog_conformance_v1.py` (new, shared deterministic
+  violation function used by BOTH prover and checker), 2 AtomKinds
+  (CALL_IN_CATALOG, ARGUMENT_CONFORMS_SCHEMA), `ContractRegistry.schemas`
+  (application-supplied, hash-covered by the certificate when non-empty),
+  prover branch in `world_integration_v1`, checker branch +
+  `_check_catalog_obligation` in `certificate_context_v1`, constructor flag
+  `catalog_conformance=False` in `GuardianE2EV1` (default OFF: frozen
+  behavior byte-identical; the axis enumerates exactly the supplied catalog
+  with authority basis EXPLICIT_SOURCE_IDENTITY).
+- Tests: `tests/e2e/test_catalog_conformance.py` — 14 tests: violation
+  function (unknown tool, missing top-level/nested required fields, enum,
+  extra-fields-not-flagged, coercion-not-flagged), component (user-call
+  exemption, empty-response, single option), prover paths (TRUE/FALSE/
+  UNKNOWN), end-to-end CERTIFIED violation, flag-off frozen behavior,
+  RENAME-INVARIANCE (renaming every tool incl. the violating one preserves
+  the verdict), paired fix-the-condition metamorphic (repairing the nested
+  required field removes the ERROR), label/id independence.
+- Full 46-case rerun: +2 TP (airline__23, banking__083 — exactly the
+  pre-check prediction), 0 new FP, 0 regressions. F1 0.333→0.438.
+- Decision: **KEEP**.
+
+### ITERATION 2 (session B) — REP-08 must-act abstention
+
+- Root cause: absence-only "must act THIS turn" obligations (policy/goal
+  REQUIRE_CALL / GOAL_CALL lowered duties) manufactured CERTIFIED
+  false-ERRORs on legitimate information-gathering turns. Both remaining
+  FPs (airline__47, banking__033) were proven ONLY by absence witnesses.
+  Witness audit showed every TP except banking__051 has an independent
+  non-absence FALSE witness.
+- Hypothesis: converting absence-scoped FALSE on non-CLAIM action-
+  existential obligations to UNKNOWN implements REP-08 ("DESIRED_OUTCOME
+  vacuous without target calls; 'must act' existential semantics
+  deliberately outside V1"). Flag `must_act_abstention` in E2ESemantics
+  (default OFF; B0..B4 arms untouched). Claim-path fabricated-action
+  proofs (ACTION_COMPLETED + absence) are exempt by hypothesis id.
+- Tests: `tests/e2e/test_must_act_abstention.py` — 5 tests: gate off =
+  frozen behavior, gate on = UNKNOWN, CLAIM exemption, prohibition
+  obligations unaffected, positive-call requirement satisfaction/mismatch.
+- Full 46-case rerun: both false-certified ERRORs removed; one regression
+  (banking__051 TP→UNRESOLVED: its violation was covered in the
+  binding-alternative worlds ONLY by the absence witness — the gate
+  abstains correctly; soundness over F1 per directive §27). Precision
+  0.778→1.000, false-certified 2→0. F1 0.438→0.414.
+- Decision: **KEEP** (soundness fix; the directive explicitly mandates
+  keeping it).
+
+### ADOPTED iteration 3 — session A's goal repair in the session B line
+
+Session A's iteration-1 KEEP fix (goal_conservative one-shot
+machine-validation repair, opt-in flag, 11 tests) was enabled in the
+session B runner (`goal_format_repair=True`): goal contracts 18→27/46,
++2 TP (airline__44, telecom mobile t6), 0 new FP. F1 0.414→0.516.
+Zero new production code.
+
+### Final state (session B line, S3)
+
+- 8 certified TRUE positives, 0 false positives, 0 false-certified
+  anything, 0 uncertified definitive, 38 UNRESOLVED, 0 PROVED_NO_ERROR
+  (no authoritative behavioral rows: closure premise never established, by
+  design), 0 INCONSISTENT.
+- Tests: e2e + e2e_soundness 126 passed (19 new); full suite 1607 passed
+  with EXACTLY the 9 pre-existing archival failures (same list as the
+  frozen commit, verified in a clean worktree).
+- Static hard-coding audit: zero benchmark-specific strings in production
+  decision code; the only case-ID strings live in the REPORTING script
+  (iteration-log documentation). Production hardcoding count: **0**.
+- All reruns replay the persisted content-addressed cache (no new live
+  calls after the first pass of each stage).
+
+## Remaining bottleneck after the iterations
+
+15 FN remain (label=1, UNRESOLVED). Post-hoc families:
+- policy-procedural violations ~7 (confirmation-before-action,
+  verify-before-act, transfer preconditions): need MULTI-RULE policy
+  readings (H0 parses ONE structure per 13-27K-char policy);
+- argument provenance ~3 (values the user never provided): need a
+  provenance rule family (deterministic value-traceability, design care
+  against substring false-positives);
+- state/date reasoning ~2 (expired contract, past-vs-upcoming flights):
+  need trusted-read semantics beyond prompt text (T1 family);
+- fabricated/false-capability claims ~3 (false refusal, "policy requires
+  human", dob already in history): need claim-vs-trajectory capability
+  checks.
+
+## Next architecture ideas (directive §33; NOT implemented)
+
+Session A's ideas A-E remain on the table; the session B results sharpen
+their priority:
+
+1. **Structural rules, slice 2 — argument provenance** (extends this
+   cycle's iteration 1): every argument value in a RESPONSE call must be
+   traceable to (a) a user message literal, (b) a tool-result value, or
+   (c) a policy-declared constant; untraceable scalar IDs/zip codes →
+   violation. Solves retail__106/retail__48-style FNs. Soundness risk:
+   substring/partial-value matching must be exact-token; renames must
+   not break it. Minimal experiment: deterministic census on the 46 +
+   paired metamorphic set, then axis wiring as in iteration 1.
+2. **Per-section H0 policy parsing** (session A idea B): deterministic
+   policy segmentation into rule-sized sections, frozen H0 protocol per
+   section, union of readings. Solves the ~7 policy-procedural FNs.
+   Transport-compatible (short outputs). Experiment: segmentation audit
+   on the 4 unique policies first.
+3. **Claim-vs-trajectory capability checks** (new): extract the response's
+   capability claims ("I cannot do X", "policy requires a human", "I need
+   your dob") as typed claims and refute them against the tool catalog
+   (can do), policy text (does it require), and history (already have).
+   Solves the false-refusal family. Risk: claim typing quality.
+4. **Observed-trajectory state gates** (new): the tool RESULTS carry the
+   state (contract_end_date, flight dates); a deterministic date/enum
+   comparison channel from result rows to call arguments (read-before-
+   mutate consistency) — T2 proposals exist but are untrusted; this would
+   be a trusted, prompt-observable specialization. Solves the state/date
+   FNs without manual T1.
+5. **Two-stage response commitments** (session A idea D): deterministic
+   span inventory of checkable commitments (numbers/IDs/dates) + targeted
+   verification. Highest ceiling, highest complexity.
+
+**Recommended ONE next experiment**: idea 1 (argument provenance slice) —
+it continues the proven pattern of this cycle (deterministic, prompt-
+grounded, flag-gated axis with certificates), has a measurable census
+first, and targets the largest remaining structural family.
+
+## Session B final classification (directive §41)
+
+**C. MAIN_GAP_IS_TOOL_SEMANTICS** — with precision: the prompt's EXPLICIT
+tool semantics (catalog + typed schemas + trajectory) are sufficient to
+certify a third of all positives deterministically (8/23 with zero false
+positives after this cycle), and the largest remaining families
+(provenance, read-before-mutate) are still TOOL-SEMANTICS-shaped but
+require richer prompt-derived premise types, not manual T1 and not a new
+policy frontend. (Policy expressiveness is the co-dominant gap for the
+procedural FN family — a full answer is G-adjacent, but the tool-semantics
+axis is the one this cycle measurably advanced.)

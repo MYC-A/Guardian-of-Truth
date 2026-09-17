@@ -27,7 +27,7 @@ if str(REPO_ROOT / "src") not in sys.path:
     sys.path.insert(0, str(REPO_ROOT / "src"))
 
 VALID_PARQUET = REPO_ROOT / "valid.parquet"
-OUT_DIR = REPO_ROOT / "outputs" / "vnext" / "real_valid"
+OUT_DIR = REPO_ROOT / "outputs" / "vnext" / "real_valid_b"
 
 ZAI_BASE_URL = "https://api.z.ai/api/paas/v4"
 ZAI_MODEL = "GLM-4.7-Flash"

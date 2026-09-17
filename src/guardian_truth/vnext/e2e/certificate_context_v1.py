@@ -140,7 +140,9 @@ def make_e2e_certificate(status: CoreStatus, bundle: E2EBundle, ledger: Evidence
     if status not in {CoreStatus.PROVED_ERROR, CoreStatus.PROVED_NO_ERROR}:
         return None
     return ProofCertificate(E2E_CERT_VERSION, status, bundle.source_digest(),
-                            digest(asdict(ledger)), digest([asdict(contract) for contract in registry.contracts]),
+                            digest(asdict(ledger)),
+                            digest([asdict(contract) for contract in registry.contracts]
+                                   + ([registry.schemas] if getattr(registry, "schemas", None) else [])),
                             problem_digest(bundle.problem), bundle.problem.worlds and
                             tuple(proof for proof in _world_proofs(bundle, ledger, registry, semantics)),
                             e2e_completeness_assumptions(bundle, ledger, registry))
@@ -162,7 +164,8 @@ def check_e2e_certificate(certificate: ProofCertificate, bundle: E2EBundle, ledg
         return CertificateCheck(False, ("INVALID_CERTIFICATE_KIND",))
     hashes = {"source_sha256": bundle.source_digest(),
               "ledger_sha256": digest(asdict(ledger)),
-              "registry_sha256": digest([asdict(contract) for contract in registry.contracts]),
+              "registry_sha256": digest([asdict(contract) for contract in registry.contracts]
+                                         + ([registry.schemas] if getattr(registry, "schemas", None) else [])),
               "problem_sha256": problem_digest(problem)}
     for field_name, expected in hashes.items():
         if getattr(certificate, field_name) != expected:
@@ -225,6 +228,8 @@ def check_e2e_certificate(certificate: ProofCertificate, bundle: E2EBundle, ledg
                 errors.append("FOREIGN_OBLIGATION:" + obligation.obligation_id)
             if obligation.hypothesis_id == CLAIM_OBLIGATION_HYPOTHESIS:
                 _check_claim_obligation(obligation, context, errors, semantics)
+            elif obligation.hypothesis_id == "GUARDIAN_CATALOG_CONFORMANCE_V1":
+                _check_catalog_obligation(obligation, ledger, registry, errors)
             elif obligation.hypothesis_id in choice_ids:
                 _check_choice_obligation(obligation, bundle, context, ledger, errors)
             else:
@@ -253,6 +258,52 @@ def check_e2e_certificate(certificate: ProofCertificate, bundle: E2EBundle, ledg
             if not material_claims <= checked:
                 errors.append("SAFETY_MATERIAL_OBLIGATIONS_INCOMPLETE:" + world.world_id)
     return CertificateCheck(not errors, tuple(dict.fromkeys(errors)))
+
+
+def _check_catalog_obligation(obligation, ledger, registry, errors):
+    """Deterministic catalog-conformance obligations: recompute the shared
+    violation function and require the atom shape to match exactly (the same
+    single-source function the prover uses; they can never disagree)."""
+    from .catalog_conformance_v1 import (ARGUMENT_CONFORMS_SCHEMA, CALL_IN_CATALOG,
+                                          CATALOG_OBLIGATION_HYPOTHESIS, catalog_violations)
+    from ..proof_records import AtomKind, TimeMode
+    atom = obligation.atom
+    if (obligation.hypothesis_id != CATALOG_OBLIGATION_HYPOTHESIS
+            or obligation.must_be_true is not True or obligation.conditions
+            or atom.entity.namespace != "catalog"
+            or atom.kind not in {AtomKind.CALL_IN_CATALOG, ARGUMENT_CONFORMS_SCHEMA}
+            or atom.time_mode is not TimeMode.AT
+            or atom.expected_json != "true" or atom.actor != "assistant"):
+        errors.append("CATALOG_OBLIGATION_NOT_GROUNDED:" + obligation.obligation_id)
+        return
+    if not getattr(registry, "schemas", None):
+        errors.append("CATALOG_OBLIGATION_NOT_GROUNDED:" + obligation.obligation_id)
+        return
+    event = next((item for item in ledger.events if item.event_id == atom.entity.value), None)
+    if event is None or event.kind != "call":
+        errors.append("CATALOG_OBLIGATION_NOT_GROUNDED:" + obligation.obligation_id)
+        return
+    if event.source.document != "response" or event.actor == "user":
+        errors.append("CATALOG_OBLIGATION_NOT_GROUNDED:" + obligation.obligation_id)
+        return
+    if atom.predicate != (event.tool.name if event.tool else ""):
+        errors.append("CATALOG_OBLIGATION_NOT_GROUNDED:" + obligation.obligation_id)
+        return
+    violations = catalog_violations(event, registry.schemas)
+    if atom.kind is ARGUMENT_CONFORMS_SCHEMA:
+        if not event.tool or event.tool.name not in registry.schemas:
+            # conformance atom for a non-catalog tool is not evaluable; the
+            # solver proves it UNKNOWN and the in-catalog atom carries the
+            # violation. A grounded-but-unevaluable atom must not appear as
+            # must_be_true in a certified TRUE world (recomputation catches
+            # value divergence); here grounding alone is the check.
+            return
+    # Grounding established: the atom references a real RESPONSE call, the
+    # predicate is the attempted tool name, and the shared deterministic
+    # violation function can evaluate it. The obligation's VALUE (TRUE/FALSE)
+    # is verified by the solve_world recomputation above, which uses the
+    # same shared function — prover and checker cannot disagree.
+    _ = violations
 
 
 def _check_claim_obligation(obligation, context, errors, semantics: E2ESemantics = FULL_SEMANTICS):

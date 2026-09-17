@@ -82,7 +82,8 @@ class GuardianE2EV1:
                  adapter_mode: AdapterMode = AdapterMode.AUDIT, enable_t2: bool = True,
                  oracle_policy: bool = False, oracle_goal: bool = False,
                  semantics: E2ESemantics | None = None,
-                 goal_format_repair: bool = False):
+                 goal_format_repair: bool = False,
+                 catalog_conformance: bool = False):
         if type(max_worlds) is not int or max_worlds < 1:
             raise ValueError("positive material-world computation budget required")
         self.backend = backend
@@ -94,6 +95,11 @@ class GuardianE2EV1:
         self.oracle_policy = oracle_policy
         self.oracle_goal = oracle_goal
         self.goal_format_repair = goal_format_repair
+        # Catalog-conformance axis (session B fix): deterministic, source-
+        # grounded obligations over the RESPONSE calls only. Requires the
+        # registry to carry tool schemas; default OFF preserves the frozen
+        # behavior byte-identically.
+        self.catalog_conformance = catalog_conformance
         # None = latest full cycle-3 semantics; the ablation arms inject the
         # frozen B0..B4 gates explicitly (SEMANTICS_ARMS).
         self.semantics = semantics if semantics is not None else FULL_SEMANTICS
@@ -234,6 +240,22 @@ class GuardianE2EV1:
             for choice_id, option in component.options.items():
                 option_contracts[choice_id] = {"rules": {},
                                                "claim_obligations": [ob.obligation_id for ob in option.obligations]}
+        if self.catalog_conformance and registry.schemas:
+            from .catalog_conformance_v1 import (catalog_conformance_component,
+                                                  catalog_option_contract, CATALOG_AXIS_NAME)
+            catalog_component = catalog_conformance_component(calls, registry.schemas)
+            if catalog_component is not None:
+                components.append(catalog_component)
+                # authority_basis vocabulary is closed (certificates.py):
+                # the catalog axis enumerates exactly the supplied prompt
+                # catalog (source identity), with the grounding recorded in
+                # universe_source.
+                authorities.append(AuthoritativeAxis(CATALOG_AXIS_NAME,
+                                                     catalog_component.axis.choice_ids,
+                                                     catalog_component.axis.universe_source,
+                                                     "EXPLICIT_SOURCE_IDENTITY"))
+                for choice_id in catalog_component.options:
+                    option_contracts[choice_id] = catalog_option_contract(catalog_component)
         for event_id, value in semantics:
             if not value.effects:
                 continue
