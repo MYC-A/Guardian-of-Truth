@@ -151,6 +151,7 @@ def adapt_competition_input(record: dict) -> CompetitionInput:
         target_response=response,
         tool_metadata=tuple(tool_metadata),
         tool_schemas=tuple(tool_schemas),
+        tool_catalog_complete=True,
         t1_contracts=(),
         state_contract=None,
         history_complete=False,

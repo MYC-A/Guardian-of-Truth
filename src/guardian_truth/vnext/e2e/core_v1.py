@@ -30,13 +30,14 @@ from ..claims import build_claim_graph
 from ..decision import CertifiedCoreResult
 from ..integrity import canonical, digest
 from ..ledger import EvidenceLedger, LedgerIndex
-from ..proof_records import AtomKind, InterpretationAxis, Reason
+from ..proof_records import AtomKind, InterpretationAxis, ProofAtom, Reason, TimeMode
 from ..semantic import SemanticBackend
 from ..tools import ContractRegistry, ToolSemantics, evaluate_t1, propose_t2
-from ..types import CoreStatus, Disposition, EffectStatus
+from ..types import CoreStatus, Disposition, EffectStatus, EntityRef
 from .certificate_context_v1 import E2EBundle, check_e2e_certificate, e2e_completeness_assumptions, make_e2e_certificate
 from .claim_adapter_v1 import build_claims, claim_obligation_ids
-from .e2e_types_v1 import E2EArmConfig, E2ECaseInput, E2ESemantics, FULL_SEMANTICS, PolicyReading, ReadingOption, UnresolvedMarker
+from .e2e_types_v1 import (DisjunctiveGroup, E2EArmConfig, E2ECaseInput, E2ESemantics,
+                           FULL_SEMANTICS, PolicyReading, ReadingOption, UnresolvedMarker)
 from .goal_composition_v1 import compile_goal_contract, conservative_frames_to_contract
 from .goal_conservative_v1 import parse_conservative
 from .goal_lowering_v1 import goal_normative_text, lower_goal_contract, merged_scope
@@ -49,10 +50,46 @@ from .policy_grs_synth_v1 import synthesize
 from .policy_h0_v1 import parse_h0
 from .policy_historical_v1 import historical_readings
 from .policy_lowering_v1 import lower_reading
-from .source_adapter_v1 import build_source, target_calls, tool_catalog
+from .source_adapter_v1 import build_source, declared_tool_catalog, target_calls, tool_catalog
 from .world_integration_v1 import Component, E2EProblem, build_worlds, make_problem, solve_e2e
 
 CORE_V1_VERSION = "guardian_e2e_v1"
+
+
+def _declared_tool_catalog_component(source, calls, catalog):
+    """Require each target call to name one tool from a complete source catalog.
+
+    This is structural source validation: it asserts no tool effects and does
+    not interpret names or descriptions.  The disjunction is exhaustive only
+    when the input adapter explicitly established catalog completeness.
+    """
+    if not source.tool_catalog_complete or not calls:
+        return None
+    rule_id = "source:declared-tool-membership"
+    option_id = "source:declared-tool-membership:only"
+    source_id = "explicit complete tool catalog:" + digest({"tools": list(catalog)})
+    per_call = []
+    for event in calls:
+        atoms = tuple(
+            ProofAtom(
+                f"{rule_id}:{event.event_id}:{tool}", AtomKind.TARGET_CALL_MATCH,
+                EntityRef("event_id", event.event_id, "ledger"), tool, "true",
+                "assistant", TimeMode.AT, event.index, call_id=event.call_id,
+            )
+            for tool in catalog
+        )
+        per_call.append((event.event_id, atoms))
+    group = DisjunctiveGroup(rule_id + ":group", rule_id, True, tuple(per_call),
+                             source_invariant=True)
+    option = ReadingOption(option_id, (), (group,), ())
+    component = Component(
+        InterpretationAxis("source:declared-tool-membership", (option_id,), source_id, True),
+        {option_id: option},
+    )
+    authority = AuthoritativeAxis(
+        "source:declared-tool-membership", (option_id,), source_id, "EXPLICIT_SOURCE_IDENTITY")
+    rule_spec = {"rule_kind": "DECLARED_TOOL_MEMBERSHIP", "declared_tools": list(catalog)}
+    return component, authority, option_id, rule_id, rule_spec
 
 
 @dataclass
@@ -104,6 +141,7 @@ class GuardianE2EV1:
                                             history_complete=bool(case.history_complete),
                                             completeness_basis=case.completeness_basis)
         registry, catalog = self.registry, tool_catalog(source)
+        declared_catalog = declared_tool_catalog(source)
         calls = target_calls(source)
         semantics, effects = [], []
         schemas = {schema["name"]: schema for schema in source.tool_schemas
@@ -224,6 +262,13 @@ class GuardianE2EV1:
         else:
             components.append(_absence_component("goal"))
             authorities.append(_absence_authority("goal"))
+        catalog_component = _declared_tool_catalog_component(source, calls, declared_catalog)
+        if catalog_component is not None:
+            component, authority, option_id, rule_id, rule_spec = catalog_component
+            components.append(component)
+            authorities.append(authority)
+            option_contracts[option_id] = {"rules": {rule_id: {"obligations": []}}}
+            direct_rules[rule_id] = rule_spec
         for component in claims.components:
             components.append(component)
             authorities.append(AuthoritativeAxis(component.axis.name, component.axis.choice_ids,
@@ -262,7 +307,9 @@ class GuardianE2EV1:
         context = CertificateContext(source.prompt, source.response, source.tool_metadata,
                                      claims.graph.claims, tuple(authorities), hypotheses,
                                      effective_policy_text, goal_text, choices, catalog,
-                                     tuple(dict.fromkeys(scopes_json)))
+                                     tuple(dict.fromkeys(scopes_json)),
+                                     declared_tool_catalog=declared_catalog,
+                                     tool_catalog_complete=source.tool_catalog_complete)
         bundle = E2EBundle(context, problem, option_contracts, choice_rules, direct_rules,
                            _behavioral_closure(case.authoritative_policy_behaviors, policy_lowered),
                            _behavioral_closure(case.authoritative_goal_behaviors, lowered_goal_contracts),

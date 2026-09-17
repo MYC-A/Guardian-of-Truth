@@ -41,6 +41,7 @@ class E2ESource:
     policy_normative_text: str
     tool_metadata: tuple[ToolIdentity, ...]
     tool_schemas: tuple[dict, ...]
+    tool_catalog_complete: bool
     events: tuple[LedgerEvent, ...]
     projection: SourceProjection
     history_complete: bool
@@ -83,7 +84,7 @@ def build_source(case, *, state_contract: dict | None = None) -> E2ESource:
     call_events = tuple(event for event in events if event.kind == "call" and event.source.document == "response")
     projection = SourceProjection(text_events, call_events)
     return E2ESource(case.case_id, prompt, response, case.user_request, policy_text, metadata,
-                     tuple(case.tool_schemas), events, projection,
+                     tuple(case.tool_schemas), bool(case.tool_catalog_complete), events, projection,
                      bool(case.history_complete), case.completeness_basis,
                      # Competition id is logging/joining metadata only.  It
                      # must not alter the content-bound source identity.
@@ -99,4 +100,11 @@ def tool_catalog(source: E2ESource) -> tuple[str, ...]:
     schemas = {schema["name"] for schema in source.tool_schemas if isinstance(schema.get("name"), str)}
     names = {identity.name for identity in source.tool_metadata}
     names |= {event.tool.name for event in source.events if event.tool}
+    return tuple(sorted(schemas | names))
+
+
+def declared_tool_catalog(source: E2ESource) -> tuple[str, ...]:
+    """Only source-declared interfaces; observed invocations add no capabilities."""
+    schemas = {schema["name"] for schema in source.tool_schemas if isinstance(schema.get("name"), str)}
+    names = {identity.name for identity in source.tool_metadata}
     return tuple(sorted(schemas | names))

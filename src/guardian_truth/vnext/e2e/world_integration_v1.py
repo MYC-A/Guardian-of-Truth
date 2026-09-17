@@ -489,11 +489,12 @@ def make_problem(components: tuple[Component, ...], worlds: tuple[E2EWorld, ...]
     axes = tuple(component.axis for component in components)
     plans = tuple(WorldPlan(world.world_id, world.choices, world.obligations) for world in worlds)
     side = [{"world_id": world.world_id,
-             "groups": [[group.group_id, group.rule_id, group.must_be_true,
+            "groups": [[group.group_id, group.rule_id, group.must_be_true,
                          [[event_id, [canonical_atom(atom) for atom in atoms]]
                           for event_id, atoms in group.per_call_atoms],
                          [[canonical_atom(atom) for atom in atoms]
-                          for atoms in group.satisfaction_choices]]
+                          for atoms in group.satisfaction_choices],
+                         group.source_invariant]
                         for group in world.groups],
              "markers": [[marker.marker_id, marker.reason] for marker in world.markers]}
             for world in worlds]
@@ -510,6 +511,19 @@ def solve_e2e(problem: E2EProblem, ledger: EvidenceLedger, registry: ContractReg
     index = LedgerIndex(ledger)
     proofs = tuple(solve_world(world, ledger, index, registry, semantics) for world in problem.worlds)
     complete = world_space_complete(problem.as_problem()) if problem.worlds else False
+    # A source-invariant structural violation is copied unchanged into every
+    # semantic world.  If the independently checkable group is FALSE in every
+    # enumerated world, missing policy/goal interpretations cannot make that
+    # source fact true and therefore must not mask PROVED_ERROR.
+    invariant_false_in_every_world = bool(proofs) and all(any(
+        group.source_invariant and any(
+            value is Truth.FALSE and (
+                obligation_id == group.group_id
+                or obligation_id.startswith(group.group_id + ":"))
+            for obligation_id, value in proof.obligation_safety)
+        for group in world.groups)
+        for world, proof in zip(problem.worlds, proofs))
+    complete = complete or invariant_false_in_every_world
     reasons = []
     if not problem.worlds:
         reasons.append(Reason.EVIDENCE_INCOMPLETE)

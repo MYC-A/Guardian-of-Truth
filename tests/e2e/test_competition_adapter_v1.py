@@ -36,6 +36,7 @@ def test_adapter_preserves_raw_prompt_and_extracts_only_source_fields():
     assert case.t1_contracts == ()
     assert case.state_contract is None
     assert case.history_complete is False
+    assert case.tool_catalog_complete is True
     assert case.authoritative_policy_behaviors == ()
     assert {item["name"] for item in case.tool_schemas} == {"inspect_record", "erase_record"}
     inspect = next(item for item in case.tool_schemas if item["name"] == "inspect_record")

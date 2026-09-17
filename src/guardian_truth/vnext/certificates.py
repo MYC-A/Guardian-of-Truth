@@ -43,6 +43,8 @@ class CertificateContext:
     tool_catalog: tuple[str, ...] = ()
     # Explicit normative scope, not values mined from target arguments.
     scopes_json: tuple[tuple[str, str], ...] = ()
+    declared_tool_catalog: tuple[str, ...] = ()
+    tool_catalog_complete: bool = False
 
 
 @dataclass(frozen=True)

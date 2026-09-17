@@ -178,7 +178,15 @@ def check_e2e_certificate(certificate: ProofCertificate, bundle: E2EBundle, ledg
     # NOT required for it. PROVED_NO_ERROR needs the full closure set: every
     # material claim checked, complete history, closed bindings, provably
     # closed semantics and fresh state evidence (spec 101).
-    required = {"SEMANTIC_CANDIDATES_COVERED"}
+    target_calls = tuple(event for event in ledger.events
+                         if event.kind == "call" and event.source.document == "response")
+    independent_catalog_violation = (
+        context.tool_catalog_complete
+        and any(event.tool is not None and event.tool.name not in context.declared_tool_catalog
+                for event in target_calls)
+    )
+    required = (set() if certificate.status is CoreStatus.PROVED_ERROR
+                and independent_catalog_violation else {"SEMANTIC_CANDIDATES_COVERED"})
     if certificate.status is CoreStatus.PROVED_NO_ERROR:
         required |= {"MATERIAL_RESPONSE_COVERED", "SOURCE_HISTORY_COMPLETE", "BINDING_SPACE_COMPLETE",
                      "SEMANTIC_SPACE_PROVABLY_CLOSED", "FRESH_STATE_EVIDENCE"}
@@ -231,6 +239,8 @@ def check_e2e_certificate(certificate: ProofCertificate, bundle: E2EBundle, ledg
                 _check_direct_obligation(obligation, context, bundle, errors)
         for group in world.groups:
             rule = bundle.choice_rules.get(group.rule_id) or bundle.direct_rules.get(group.rule_id)
+            if rule and rule.get("rule_kind") == "DECLARED_TOOL_MEMBERSHIP":
+                _check_declared_tool_membership_group(group, rule, context, ledger, errors)
             if rule is None and group.rule_id not in bundle.option_contracts.get(
                     option_ids[0] if option_ids else "", {}).get("rules", {}):
                 # groups belong to a rule of one of the selected options
@@ -253,6 +263,35 @@ def check_e2e_certificate(certificate: ProofCertificate, bundle: E2EBundle, ledg
             if not material_claims <= checked:
                 errors.append("SAFETY_MATERIAL_OBLIGATIONS_INCOMPLETE:" + world.world_id)
     return CertificateCheck(not errors, tuple(dict.fromkeys(errors)))
+
+
+def _check_declared_tool_membership_group(group, rule, context, ledger, errors):
+    """Reconstruct the structural catalog constraint independently."""
+    declared = tuple(sorted(context.declared_tool_catalog))
+    if (group.must_be_true is not True or group.satisfaction_choices
+            or group.source_invariant is not True
+            or tuple(sorted(rule.get("declared_tools", ()))) != declared):
+        errors.append("DECLARED_TOOL_GROUP_METADATA_MISMATCH:" + group.group_id)
+        return
+    targets = tuple(event for event in ledger.events
+                    if event.kind == "call" and event.source.document == "response")
+    rows = dict(group.per_call_atoms)
+    if len(rows) != len(group.per_call_atoms) or set(rows) != {event.event_id for event in targets}:
+        errors.append("DECLARED_TOOL_GROUP_CALL_COVERAGE_MISMATCH:" + group.group_id)
+        return
+    for event in targets:
+        atoms = rows[event.event_id]
+        if len(atoms) != len(declared) or {atom.predicate for atom in atoms} != set(declared):
+            errors.append("DECLARED_TOOL_GROUP_CATALOG_COVERAGE_MISMATCH:" + event.event_id)
+            continue
+        for atom in atoms:
+            if (atom.kind is not AtomKind.TARGET_CALL_MATCH
+                    or atom.entity.namespace != "ledger" or atom.entity.key != "event_id"
+                    or atom.entity.value != event.event_id or atom.expected_json != "true"
+                    or atom.actor != "assistant" or atom.time_mode is not TimeMode.AT
+                    or atom.time_index != event.index or atom.call_id != event.call_id
+                    or atom.argument_constraints):
+                errors.append("DECLARED_TOOL_GROUP_ATOM_MISMATCH:" + atom.atom_id)
 
 
 def _check_claim_obligation(obligation, context, errors, semantics: E2ESemantics = FULL_SEMANTICS):

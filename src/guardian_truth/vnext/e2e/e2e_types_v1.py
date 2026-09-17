@@ -261,6 +261,7 @@ class DisjunctiveGroup:
     must_be_true: bool
     per_call_atoms: tuple[tuple[str, tuple[object, ...]], ...]   # (event_id, atoms)
     satisfaction_choices: tuple[tuple[object, ...], ...] = ()    # B2: OR over bundles
+    source_invariant: bool = False  # independently checkable in every semantic interpretation
 
 
 @dataclass(frozen=True)
@@ -290,6 +291,7 @@ class E2ECaseInput:
     target_response: str                      # marker-syntax target assistant output
     tool_metadata: tuple[dict, ...] = ()
     tool_schemas: tuple[dict, ...] = ()
+    tool_catalog_complete: bool = False  # explicit source property, never inferred from observed calls
     t1_contracts: tuple[dict, ...] = ()
     state_contract: dict | None = None        # trusted current field values (preservation)
     history_complete: bool = False
