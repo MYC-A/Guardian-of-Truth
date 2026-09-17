@@ -9,8 +9,8 @@ def load_env_file(path: Path | str = '.env') -> bool:
     if not path.is_file():
         return False
     allowed = {'GROQ_API_KEY', 'OPENROUTER_API_KEY', 'OPENROUTE_API_KEY',
-               'GEMINI_API_KEY', 'GEMENI_API_KEY', 'OPENROUTER_MODEL',
-               'OPENROUTE_MODEL', 'GEMINI_MODEL', 'GEMENI_MODEL',
+               'GEMINI_API_KEY', 'GEMENI_API_KEY', 'gemeni_api_key_new', 'OPENROUTER_MODEL',
+               'OPENROUTE_MODEL', 'GEMINI_MODEL', 'GEMENI_MODEL', 'gemeni_model',
                'MISTRAL_API_KEY', 'mistral_api_key', 'MISTRAL_MODEL', 'mistral_model',
                'CEREBRAS_API_KEY', 'cerebras_api_key', 'CEREBRAS_MODEL', 'cerebras_model',
                'NVIDIA_API_KEY', 'nvidia_api_key', 'NVIDIA_MODEL', 'nvidia_model',
