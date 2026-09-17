@@ -113,7 +113,7 @@ def _safe_case_id(case_id: str) -> str:
 
 def _environment() -> dict:
     value = {"python": platform.python_version(), "platform": platform.platform(),
-             "gpu_execution_claimed": False}
+             "gpu_execution_observed": False}
     try:
         import torch
         value.update({"torch": torch.__version__, "cuda_runtime": torch.version.cuda,
@@ -469,6 +469,10 @@ def run_experiment(*, input_dir=None, input_file=None, output_dir,
     metrics = _metric_summary(predictions, gold)
     _json_dump(output / "metrics.json", metrics)
     _json_dump(output / "timings.json", {"cases": timings, "models": lifecycle.records})
+    environment["gpu_execution_observed"] = any(
+        str(record.get("device", "")).startswith("cuda") for record in lifecycle.records)
+    _json_dump(output / "environment.json", environment)
+    _json_dump(output / "environment" / "runtime.json", environment)
     manifest["completed_cases"] = len(predictions)
     manifest["completed"] = len(predictions) == len(records)
     _json_dump(output / "run_manifest.json", manifest)

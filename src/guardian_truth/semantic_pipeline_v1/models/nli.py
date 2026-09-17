@@ -2,6 +2,8 @@
 
 from __future__ import annotations
 
+import math
+
 from ..types import NLIEvidence
 
 
@@ -15,8 +17,12 @@ class NLIFirewall:
         return CrossEncoder(model_name, device=device)
 
     def check(self, premise: str, hypothesis: str) -> NLIEvidence:
-        raw = self.model.predict([(premise, hypothesis)], apply_softmax=True)[0]
-        values = [float(item) for item in raw]
+        raw = self.model.predict([(premise, hypothesis)], apply_softmax=False)[0]
+        logits = [float(item) for item in raw]
+        offset = max(logits)
+        exponentials = [math.exp(item - offset) for item in logits]
+        total = sum(exponentials)
+        values = [item / total for item in exponentials]
         mapping = getattr(getattr(self.model, "model", None), "config", None)
         id2label = getattr(mapping, "id2label", {}) or {}
         labels = []
@@ -28,4 +34,4 @@ class NLIFirewall:
             labels = ["CONTRADICTION", "ENTAILMENT", "NEUTRAL"]
         scores = {label: values[index] for index, label in enumerate(labels)}
         label = max(scores, key=scores.get)
-        return NLIEvidence(label, scores, tuple(values), self.model_name, hypothesis)
+        return NLIEvidence(label, scores, tuple(logits), self.model_name, hypothesis)
