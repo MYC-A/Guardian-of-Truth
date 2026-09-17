@@ -1,0 +1,967 @@
+[
+ {
+  "family": "temporal",
+  "case_id": "syn_library__temporal_before",
+  "raw_source": "You must run a liability check before issuing any equipment pass. The liability check confirms the borrower accepts responsibility for damaged items.",
+  "source_metadata": {
+   "fragment_id": "frag:0006",
+   "source_type": "SYSTEM",
+   "span": [
+    246,
+    395
+   ],
+   "document": "prompt"
+  },
+  "expected": {
+   "modality": "REQUIRE",
+   "target_ref": "run_liability_check",
+   "temporal": "BEFORE",
+   "anchor_ref": "issue_equipment_pass"
+  },
+  "extractor_outputs": [
+   {
+    "extractor": "mistral",
+    "modality": "REQUIRE",
+    "target": {
+     "kind": "ACTION",
+     "ref": "run_liability_check",
+     "text": "run a liability check"
+    },
+    "rendered": "Run a liability check is required.",
+    "nli": {
+     "label": "ENTAILMENT",
+     "scores": {
+      "CONTRADICTION": -4.92,
+      "ENTAILMENT": 4.28,
+      "NEUTRAL": 0.64
+     }
+    },
+    "binding": {
+     "status": "UNKNOWN",
+     "candidates": [
+      {
+       "name": "issue_equipment_pass",
+       "method": "crossencoder",
+       "cosine": 0.19278214871883392,
+       "crossencoder_score": 0.163
+      },
+      {
+       "name": "run_liability_check",
+       "method": "crossencoder",
+       "cosine": 0.7052570581436157,
+       "crossencoder_score": -2.542
+      }
+     ]
+    }
+   },
+   {
+    "extractor": "mistral",
+    "modality": "REQUIRE",
+    "target": {
+     "kind": "CLAIM",
+     "ref": "accepts_responsibility_for_damaged_items",
+     "text": "accepts responsibility for damaged items"
+    },
+    "rendered": "Accepts responsibility for damaged items is required only if run a liability check.",
+    "nli": {
+     "label": "NEUTRAL",
+     "scores": {
+      "CONTRADICTION": -0.93,
+      "ENTAILMENT": -1.118,
+      "NEUTRAL": 2.187
+     }
+    },
+    "binding": {
+     "status": "UNKNOWN",
+     "candidates": [
+      {
+       "name": "issue_equipment_pass",
+       "method": "crossencoder",
+       "cosine": 0.3029400408267975,
+       "crossencoder_score": -0.858
+      },
+      {
+       "name": "run_liability_check",
+       "method": "crossencoder",
+       "cosine": 0.2863067388534546,
+       "crossencoder_score": -1.873
+      }
+     ]
+    }
+   },
+   {
+    "extractor": "nuextract",
+    "modality": "REQUIRE",
+    "target": {
+     "kind": "ACTION",
+     "ref": "run_a_liability_check",
+     "text": "run a liability check"
+    },
+    "rendered": "Run a liability check is required.",
+    "nli": {
+     "label": "ENTAILMENT",
+     "scores": {
+      "CONTRADICTION": -4.92,
+      "ENTAILMENT": 4.28,
+      "NEUTRAL": 0.64
+     }
+    },
+    "binding": {
+     "status": "UNKNOWN",
+     "candidates": [
+      {
+       "name": "issue_equipment_pass",
+       "method": "crossencoder",
+       "cosine": 0.19278214871883392,
+       "crossencoder_score": 0.163
+      },
+      {
+       "name": "run_liability_check",
+       "method": "crossencoder",
+       "cosine": 0.7052570581436157,
+       "crossencoder_score": -2.542
+      }
+     ]
+    }
+   }
+  ],
+  "phi_interpretations": 11,
+  "phi_provenance": {
+   "mistral": 6,
+   "gliner2": 3,
+   "nuextract": 2
+  },
+  "compiled_guardian_verdict": {
+   "core_status": "UNRESOLVED",
+   "false_witnesses": []
+  }
+ },
+ {
+  "family": "conditional",
+  "case_id": "syn_permit__conditional_only_if",
+  "raw_source": "Issue a temporary badge only if the visitor holds a valid sponsor invitation. Without a sponsor invitation the visit must be declined politely.",
+  "source_metadata": {
+   "fragment_id": "frag:0006",
+   "source_type": "SYSTEM",
+   "span": [
+    247,
+    390
+   ],
+   "document": "prompt"
+  },
+  "expected": {
+   "modality": "REQUIRE",
+   "target_ref": "issue_temporary_badge",
+   "condition_ref": "sponsor invitation",
+   "condition_polarity": "POSITIVE"
+  },
+  "extractor_outputs": [
+   {
+    "extractor": "nuextract",
+    "modality": "UNKNOWN",
+    "target": {
+     "kind": "UNKNOWN",
+     "ref": "the_visitor_holds_a_valid_sponsor_invitation",
+     "text": "the visitor holds a valid sponsor invitation"
+    },
+    "rendered": "The status of the visitor holds a valid sponsor invitation is unknown only if the visitor holds a valid sponsor invitation and declined politely (unresolved: nuextract-tiny action slot too coarse; span evidence only).",
+    "nli": {
+     "label": "NEUTRAL",
+     "scores": {
+      "CONTRADICTION": -1.05,
+      "ENTAILMENT": 0.584,
+      "NEUTRAL": 0.662
+     }
+    },
+    "binding": {
+     "status": "UNKNOWN",
+     "candidates": [
+      {
+       "name": "issue_temporary_badge",
+       "method": "crossencoder",
+       "cosine": 0.3422482907772064,
+       "crossencoder_score": -0.366
+      },
+      {
+       "name": "get_visitor_profile",
+       "method": "crossencoder",
+       "cosine": 0.27688586711883545,
+       "crossencoder_score": -0.706
+      }
+     ]
+    }
+   }
+  ],
+  "phi_interpretations": 6,
+  "phi_provenance": {
+   "mistral": 2,
+   "gliner2": 2,
+   "nuextract": 2
+  },
+  "compiled_guardian_verdict": {
+   "core_status": "UNRESOLVED",
+   "false_witnesses": []
+  }
+ },
+ {
+  "family": "exception",
+  "case_id": "syn_dispatch__exception_unless",
+  "raw_source": "Do not dispatch a field technician unless the incident priority has been confirmed as critical by the shift supervisor.",
+  "source_metadata": {
+   "fragment_id": "frag:0006",
+   "source_type": "SYSTEM",
+   "span": [
+    248,
+    367
+   ],
+   "document": "prompt"
+  },
+  "expected": {
+   "modality": "FORBID",
+   "target_ref": "dispatch_field_technician",
+   "exception_ref": "critical",
+   "exception_polarity": "POSITIVE"
+  },
+  "extractor_outputs": [
+   {
+    "extractor": "mistral",
+    "modality": "FORBID",
+    "target": {
+     "kind": "ACTION",
+     "ref": "dispatch_field_technician",
+     "text": "dispatch a field technician"
+    },
+    "rendered": "Dispatch a field technician is forbidden only if the incident priority has been confirmed as critical does not equal true.",
+    "nli": {
+     "label": "NEUTRAL",
+     "scores": {
+      "CONTRADICTION": -0.886,
+      "ENTAILMENT": -1.08,
+      "NEUTRAL": 1.915
+     }
+    },
+    "binding": {
+     "status": "BOUND",
+     "candidates": [
+      {
+       "name": "dispatch_field_technician",
+       "method": "crossencoder",
+       "cosine": 0.8150867223739624,
+       "crossencoder_score": 4.104
+      },
+      {
+       "name": "confirm_incident_priority",
+       "method": "crossencoder",
+       "cosine": 0.3145565390586853,
+       "crossencoder_score": -3.789
+      }
+     ]
+    }
+   },
+   {
+    "extractor": "mistral",
+    "modality": "FORBID",
+    "target": {
+     "kind": "ACTION",
+     "ref": "dispatch_field_technician",
+     "text": "dispatch a field technician"
+    },
+    "rendered": "Dispatch a field technician is forbidden unless the incident priority has been confirmed as critical does not equal true (unresolved: unless-clause routed to conditions by extractor; mirror candidate keeps both readings).",
+    "nli": {
+     "label": "NEUTRAL",
+     "scores": {
+      "CONTRADICTION": -1.883,
+      "ENTAILMENT": -2.632,
+      "NEUTRAL": 5.277
+     }
+    },
+    "binding": {
+     "status": "BOUND",
+     "candidates": [
+      {
+       "name": "dispatch_field_technician",
+       "method": "crossencoder",
+       "cosine": 0.8150867223739624,
+       "crossencoder_score": 4.104
+      },
+      {
+       "name": "confirm_incident_priority",
+       "method": "crossencoder",
+       "cosine": 0.3145565390586853,
+       "crossencoder_score": -3.789
+      }
+     ]
+    }
+   },
+   {
+    "extractor": "nuextract",
+    "modality": "UNKNOWN",
+    "target": {
+     "kind": "UNKNOWN",
+     "ref": "the_incident_priority_has_been_confirmed_as_crit",
+     "text": "the incident priority has been confirmed as critical by the shift supervisor"
+    },
+    "rendered": "The status of the incident priority has been confirmed as critical by the shift supervisor is unknown only if the incident priority has been confirmed as critical by the shift supervisor (unresolved: nuextract-tiny action slot too coarse; span evidence only).",
+    "nli": {
+     "label": "NEUTRAL",
+     "scores": {
+      "CONTRADICTION": 0.017,
+      "ENTAILMENT": -1.649,
+      "NEUTRAL": 2.018
+     }
+    },
+    "binding": {
+     "status": "BOUND",
+     "candidates": [
+      {
+       "name": "confirm_incident_priority",
+       "method": "crossencoder",
+       "cosine": 0.7458689212799072,
+       "crossencoder_score": 4.256
+      },
+      {
+       "name": "dispatch_field_technician",
+       "method": "crossencoder",
+       "cosine": 0.30891138315200806,
+       "crossencoder_score": 2.914
+      }
+     ]
+    }
+   }
+  ],
+  "phi_interpretations": 13,
+  "phi_provenance": {
+   "mistral": 4,
+   "gliner2": 7,
+   "nuextract": 2
+  },
+  "compiled_guardian_verdict": {
+   "core_status": "UNRESOLVED",
+   "false_witnesses": []
+  }
+ },
+ {
+  "family": "numeric",
+  "case_id": "syn_gym__numeric_below",
+  "raw_source": "Waive the rescheduling fee if the member's attendance ratio is below 70%. Members above the threshold keep the standard fee.",
+  "source_metadata": {
+   "fragment_id": "frag:0006",
+   "source_type": "SYSTEM",
+   "span": [
+    255,
+    379
+   ],
+   "document": "prompt"
+  },
+  "expected": {
+   "modality": "ALLOW",
+   "target_ref": "waive_reschedule_fee",
+   "comparison_op": "LT",
+   "comparison_rhs": "70",
+   "comparison_lhs_ref": "attendance ratio"
+  },
+  "extractor_outputs": [
+   {
+    "extractor": "nuextract",
+    "modality": "UNKNOWN",
+    "target": {
+     "kind": "UNKNOWN",
+     "ref": "attendance_ratio_is_below_70",
+     "text": "attendance ratio is below 70%"
+    },
+    "rendered": "The status of attendance ratio is below 70% is unknown only if attendance ratio is below 70% is less than 70 and below 70% is less than 70 and the member's attendance ratio (unresolved: nuextract-tiny action slot too coarse; span evidence only).",
+    "nli": {
+     "label": "CONTRADICTION",
+     "scores": {
+      "CONTRADICTION": 1.507,
+      "ENTAILMENT": -0.882,
+      "NEUTRAL": -0.379
+     }
+    },
+    "binding": {
+     "status": "BOUND",
+     "candidates": [
+      {
+       "name": "waive_reschedule_fee",
+       "method": "crossencoder",
+       "cosine": 0.2520141005516052,
+       "crossencoder_score": 3.517
+      },
+      {
+       "name": "get_attendance_ratio",
+       "method": "crossencoder",
+       "cosine": 0.6022309064865112,
+       "crossencoder_score": -1.697
+      }
+     ]
+    }
+   }
+  ],
+  "phi_interpretations": 5,
+  "phi_provenance": {
+   "gliner2": 3,
+   "nuextract": 2
+  },
+  "compiled_guardian_verdict": {
+   "core_status": "UNRESOLVED",
+   "false_witnesses": []
+  }
+ },
+ {
+  "family": "cardinality",
+  "case_id": "syn_claims__cardinality_at_least",
+  "raw_source": "Approve the refund claim only after verifying eligibility with at least 2 independent evidence items.",
+  "source_metadata": {
+   "fragment_id": "frag:0006",
+   "source_type": "SYSTEM",
+   "span": [
+    249,
+    350
+   ],
+   "document": "prompt"
+  },
+  "expected": {
+   "modality": "REQUIRE",
+   "target_ref": "approve_refund_claim",
+   "cardinality_op": "AT_LEAST",
+   "cardinality_count": 2,
+   "cardinality_subject": "evidence"
+  },
+  "extractor_outputs": [
+   {
+    "extractor": "mistral",
+    "modality": "REQUIRE",
+    "target": {
+     "kind": "ACTION",
+     "ref": "approve_refund_claim",
+     "text": "Approve the refund claim"
+    },
+    "rendered": "Approve the refund claim is required only if 2 independent evidence items (at least).",
+    "nli": {
+     "label": "ENTAILMENT",
+     "scores": {
+      "CONTRADICTION": -3.355,
+      "ENTAILMENT": 3.933,
+      "NEUTRAL": -0.612
+     }
+    },
+    "binding": {
+     "status": "BOUND",
+     "candidates": [
+      {
+       "name": "approve_refund_claim",
+       "method": "crossencoder",
+       "cosine": 0.8049341440200806,
+       "crossencoder_score": 4.016
+      },
+      {
+       "name": "verify_evidence_item",
+       "method": "crossencoder",
+       "cosine": 0.2941840887069702,
+       "crossencoder_score": 1.413
+      }
+     ]
+    }
+   }
+  ],
+  "phi_interpretations": 8,
+  "phi_provenance": {
+   "mistral": 4,
+   "gliner2": 3,
+   "nuextract": 1
+  },
+  "compiled_guardian_verdict": {
+   "core_status": "UNRESOLVED",
+   "false_witnesses": []
+  }
+ },
+ {
+  "family": "preservation",
+  "case_id": "syn_parking__preservation",
+  "raw_source": "Do not modify the reserved bay count when updating a parking permit. Bay count changes require a new permit application.",
+  "source_metadata": {
+   "fragment_id": "frag:0006",
+   "source_type": "SYSTEM",
+   "span": [
+    248,
+    368
+   ],
+   "document": "prompt"
+  },
+  "expected": {
+   "modality": "FORBID",
+   "target_ref": "update_parking_permit",
+   "preserved_field": "reserved_bay_count"
+  },
+  "extractor_outputs": [
+   {
+    "extractor": "mistral",
+    "modality": "FORBID",
+    "target": {
+     "kind": "ACTION",
+     "ref": "modify_the_reserved_bay_count",
+     "text": "modify the reserved bay count"
+    },
+    "rendered": "Modify the reserved bay count is forbidden only if updating a parking permit.",
+    "nli": {
+     "label": "ENTAILMENT",
+     "scores": {
+      "CONTRADICTION": -4.072,
+      "ENTAILMENT": 3.301,
+      "NEUTRAL": 0.71
+     }
+    },
+    "binding": {
+     "status": "UNKNOWN",
+     "candidates": [
+      {
+       "name": "update_parking_permit",
+       "method": "crossencoder",
+       "cosine": 0.3802238404750824,
+       "crossencoder_score": 0.347
+      }
+     ]
+    }
+   },
+   {
+    "extractor": "mistral",
+    "modality": "REQUIRE",
+    "target": {
+     "kind": "ACTION",
+     "ref": "require_a_new_permit_application",
+     "text": "require a new permit application"
+    },
+    "rendered": "Require a new permit application is required only if Bay count changes.",
+    "nli": {
+     "label": "ENTAILMENT",
+     "scores": {
+      "CONTRADICTION": -1.199,
+      "ENTAILMENT": 1.417,
+      "NEUTRAL": -0.43
+     }
+    },
+    "binding": {
+     "status": "UNKNOWN",
+     "candidates": [
+      {
+       "name": "update_parking_permit",
+       "method": "crossencoder",
+       "cosine": 0.42203399538993835,
+       "crossencoder_score": -2.052
+      }
+     ]
+    }
+   },
+   {
+    "extractor": "nuextract",
+    "modality": "FORBID",
+    "target": {
+     "kind": "ACTION",
+     "ref": "do_not_modify_the_reserved_bay_count_when_updati",
+     "text": "Do not modify the reserved bay count when updating a parking permit"
+    },
+    "rendered": "Do not modify the reserved bay count when updating a parking permit is forbidden only if Bay count changes require a new permit application.",
+    "nli": {
+     "label": "NEUTRAL",
+     "scores": {
+      "CONTRADICTION": -2.4,
+      "ENTAILMENT": -0.633,
+      "NEUTRAL": 3.256
+     }
+    },
+    "binding": {
+     "status": "BOUND",
+     "candidates": [
+      {
+       "name": "update_parking_permit",
+       "method": "crossencoder",
+       "cosine": 0.675593376159668,
+       "crossencoder_score": 2.147
+      }
+     ]
+    }
+   }
+  ],
+  "phi_interpretations": 6,
+  "phi_provenance": {
+   "mistral": 2,
+   "gliner2": 2,
+   "nuextract": 2
+  },
+  "compiled_guardian_verdict": {
+   "core_status": "UNRESOLVED",
+   "false_witnesses": []
+  }
+ },
+ {
+  "family": "provenance-like",
+  "case_id": "syn_saas__provenance_user_provided",
+  "raw_source": "The verification code for seat reassignment must come from the customer-provided SMS confirmation, never from the operator console.",
+  "source_metadata": {
+   "fragment_id": "frag:0006",
+   "source_type": "SYSTEM",
+   "span": [
+    248,
+    379
+   ],
+   "document": "prompt"
+  },
+  "expected": {
+   "modality": "REQUIRE",
+   "target_ref": "reassign_seat",
+   "condition_ref": "customer-provided SMS confirmation"
+  },
+  "extractor_outputs": [
+   {
+    "extractor": "nuextract",
+    "modality": "FORBID",
+    "target": {
+     "kind": "ACTION",
+     "ref": "from_the_operator_console",
+     "text": "from the operator console"
+    },
+    "rendered": "From the operator console is forbidden only if never from the operator console.",
+    "nli": {
+     "label": "ENTAILMENT",
+     "scores": {
+      "CONTRADICTION": -2.739,
+      "ENTAILMENT": 2.044,
+      "NEUTRAL": 0.674
+     }
+    },
+    "binding": {
+     "status": "UNKNOWN",
+     "candidates": [
+      {
+       "name": "reassign_seat",
+       "method": "crossencoder",
+       "cosine": 0.21565662324428558,
+       "crossencoder_score": -1.691
+      },
+      {
+       "name": "lookup_record",
+       "method": "crossencoder",
+       "cosine": 0.1331581473350525,
+       "crossencoder_score": -3.012
+      }
+     ]
+    }
+   },
+   {
+    "extractor": "nuextract",
+    "modality": "REQUIRE",
+    "target": {
+     "kind": "ACTION",
+     "ref": "from_the_customer_provided_sms_confirmation",
+     "text": "from the customer-provided SMS confirmation"
+    },
+    "rendered": "From the customer-provided SMS confirmation is required only if never from the operator console.",
+    "nli": {
+     "label": "ENTAILMENT",
+     "scores": {
+      "CONTRADICTION": -2.626,
+      "ENTAILMENT": 3.259,
+      "NEUTRAL": -0.508
+     }
+    },
+    "binding": {
+     "status": "UNKNOWN",
+     "candidates": [
+      {
+       "name": "reassign_seat",
+       "method": "crossencoder",
+       "cosine": 0.1283465325832367,
+       "crossencoder_score": -1.628
+      },
+      {
+       "name": "lookup_record",
+       "method": "crossencoder",
+       "cosine": 0.15441828966140747,
+       "crossencoder_score": -2.982
+      }
+     ]
+    }
+   }
+  ],
+  "phi_interpretations": 11,
+  "phi_provenance": {
+   "mistral": 4,
+   "gliner2": 4,
+   "nuextract": 3
+  },
+  "compiled_guardian_verdict": {
+   "core_status": "UNRESOLVED",
+   "false_witnesses": [
+    {
+     "world_id": "world:0",
+     "obligation_id": "goal_plan:e2e:goal:rule1:h0:binding:0:o0"
+    },
+    {
+     "world_id": "world:1",
+     "obligation_id": "goal_plan:e2e:goal:rule1:h0:binding:0:o0"
+    }
+   ]
+  }
+ },
+ {
+  "family": "kb-derived",
+  "case_id": "syn_warehouse__kb_derived_rule",
+  "raw_source": "{\"document\": \"Regional directive NE-7: returns of hazmat-tagged shipments must be declined at the dock and escalated to the safety officer. Standard shipments may be accepted directly.\"}",
+  "source_metadata": {
+   "fragment_id": "frag:0020",
+   "source_type": "TOOL_RESULT",
+   "span": [
+    768,
+    996
+   ],
+   "document": "prompt"
+  },
+  "expected": {
+   "modality": "FORBID",
+   "target_ref": "accept_return",
+   "kb_rule": true,
+   "condition_ref": "hazmat"
+  },
+  "extractor_outputs": [
+   {
+    "extractor": "mistral",
+    "modality": "UNKNOWN",
+    "target": {
+     "kind": "ACTION",
+     "ref": "send_a_message_to_the_user",
+     "text": "send a message to the user"
+    },
+    "rendered": "The status of send a message to the user is unknown.",
+    "nli": {
+     "label": "NEUTRAL",
+     "scores": {
+      "CONTRADICTION": -0.447,
+      "ENTAILMENT": -1.786,
+      "NEUTRAL": 2.193
+     }
+    },
+    "binding": {
+     "status": "UNKNOWN",
+     "candidates": [
+      {
+       "name": "get_regional_directive",
+       "method": "crossencoder",
+       "cosine": 0.1239681988954544,
+       "crossencoder_score": -2.649
+      },
+      {
+       "name": "accept_return",
+       "method": "crossencoder",
+       "cosine": 0.20915065705776215,
+       "crossencoder_score": -3.588
+      }
+     ]
+    }
+   },
+   {
+    "extractor": "mistral",
+    "modality": "UNKNOWN",
+    "target": {
+     "kind": "ACTION",
+     "ref": "make_a_tool_call",
+     "text": "make a tool call"
+    },
+    "rendered": "The status of make a tool call is unknown.",
+    "nli": {
+     "label": "NEUTRAL",
+     "scores": {
+      "CONTRADICTION": -0.63,
+      "ENTAILMENT": -1.36,
+      "NEUTRAL": 1.982
+     }
+    },
+    "binding": {
+     "status": "UNKNOWN",
+     "candidates": [
+      {
+       "name": "get_regional_directive",
+       "method": "crossencoder",
+       "cosine": 0.22561238706111908,
+       "crossencoder_score": -2.513
+      },
+      {
+       "name": "accept_return",
+       "method": "crossencoder",
+       "cosine": 0.0825241208076477,
+       "crossencoder_score": -3.331
+      }
+     ]
+    }
+   },
+   {
+    "extractor": "mistral",
+    "modality": "FORBID",
+    "target": {
+     "kind": "ACTION",
+     "ref": "send_a_message_to_the_user",
+     "text": "send a message to the user"
+    },
+    "rendered": "Send a message to the user is forbidden.",
+    "nli": {
+     "label": "CONTRADICTION",
+     "scores": {
+      "CONTRADICTION": 4.261,
+      "ENTAILMENT": -2.558,
+      "NEUTRAL": -1.692
+     }
+    },
+    "binding": {
+     "status": "UNKNOWN",
+     "candidates": [
+      {
+       "name": "get_regional_directive",
+       "method": "crossencoder",
+       "cosine": 0.1239681988954544,
+       "crossencoder_score": -2.649
+      },
+      {
+       "name": "accept_return",
+       "method": "crossencoder",
+       "cosine": 0.20915065705776215,
+       "crossencoder_score": -3.588
+      }
+     ]
+    }
+   },
+   {
+    "extractor": "mistral",
+    "modality": "FORBID",
+    "target": {
+     "kind": "ACTION",
+     "ref": "make_a_tool_call",
+     "text": "make a tool call"
+    },
+    "rendered": "Make a tool call is forbidden.",
+    "nli": {
+     "label": "CONTRADICTION",
+     "scores": {
+      "CONTRADICTION": 3.753,
+      "ENTAILMENT": -2.603,
+      "NEUTRAL": -1.184
+     }
+    },
+    "binding": {
+     "status": "UNKNOWN",
+     "candidates": [
+      {
+       "name": "get_regional_directive",
+       "method": "crossencoder",
+       "cosine": 0.22561238706111908,
+       "crossencoder_score": -2.513
+      },
+      {
+       "name": "accept_return",
+       "method": "crossencoder",
+       "cosine": 0.0825241208076477,
+       "crossencoder_score": -3.331
+      }
+     ]
+    }
+   },
+   {
+    "extractor": "gliner2",
+    "modality": "ALLOW",
+    "target": {
+     "kind": "ACTION",
+     "ref": "send_a_message",
+     "text": "send a message"
+    },
+    "rendered": "Send a message is allowed.",
+    "nli": {
+     "label": "ENTAILMENT",
+     "scores": {
+      "CONTRADICTION": -5.006,
+      "ENTAILMENT": 3.411,
+      "NEUTRAL": 1.379
+     }
+    },
+    "binding": {
+     "status": "UNKNOWN",
+     "candidates": [
+      {
+       "name": "get_regional_directive",
+       "method": "crossencoder",
+       "cosine": 0.09591761231422424,
+       "crossencoder_score": -3.051
+      },
+      {
+       "name": "accept_return",
+       "method": "crossencoder",
+       "cosine": 0.19270333647727966,
+       "crossencoder_score": -3.493
+      }
+     ]
+    }
+   },
+   {
+    "extractor": "nuextract",
+    "modality": "ALLOW",
+    "target": {
+     "kind": "ACTION",
+     "ref": "either",
+     "text": "either"
+    },
+    "rendered": "Either is allowed only if never both.",
+    "nli": {
+     "label": "NEUTRAL",
+     "scores": {
+      "CONTRADICTION": -1.196,
+      "ENTAILMENT": -1.642,
+      "NEUTRAL": 3.223
+     }
+    },
+    "binding": {
+     "status": "UNKNOWN",
+     "candidates": [
+      {
+       "name": "get_regional_directive",
+       "method": "crossencoder",
+       "cosine": 0.10488015413284302,
+       "crossencoder_score": -2.453
+      },
+      {
+       "name": "accept_return",
+       "method": "crossencoder",
+       "cosine": 0.20834414660930634,
+       "crossencoder_score": -3.549
+      }
+     ]
+    }
+   }
+  ],
+  "phi_interpretations": 6,
+  "phi_provenance": {
+   "mistral": 4,
+   "gliner2": 1,
+   "nuextract": 1
+  },
+  "compiled_guardian_verdict": {
+   "core_status": "UNRESOLVED",
+   "false_witnesses": []
+  }
+ },
+ {
+  "family": "kb-derived (development data)",
+  "case_id": "banking_knowledge__task_051::t15",
+  "raw_source": "KB rule fragment",
+  "source_metadata": {
+   "unit_kind": "kb_doc"
+  },
+  "expected": "KB rule (logistics_007/005 thresholds) inside search results",
+  "extractor_outputs": [],
+  "phi_interpretations": 49,
+  "phi_provenance": {
+   "mistral": 38,
+   "gliner2": 11
+  },
+  "compiled_guardian_verdict": {
+   "core_status": "UNRESOLVED",
+   "false_witnesses": []
+  }
+ }
+]

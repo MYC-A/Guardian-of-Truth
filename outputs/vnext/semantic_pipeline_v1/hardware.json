@@ -1,0 +1,100 @@
+{
+  "captured_at": "2026-09-17",
+  "host": "sandbox container (no GPU)",
+  "cpu": {
+    "model": "Intel(R) Xeon(R) Processor",
+    "cores": 2,
+    "torch_threads": 2
+  },
+  "gpu": {
+    "available": false,
+    "note": "nvidia-smi not found; no CUDA device"
+  },
+  "ram": {
+    "total_gib": 3.9,
+    "available_gib_at_start": 3.5,
+    "swap": 0
+  },
+  "disk": {
+    "filesystem": "rootfs",
+    "total_gib": 9.9,
+    "free_gib_at_start": 9.2
+  },
+  "python": "3.12.14 (/home/z/.venv)",
+  "key_packages": {
+    "torch": "2.14.0+cpu",
+    "transformers": "4.57.1",
+    "sentence-transformers": "6.0.1",
+    "gliner2": "2.0.0",
+    "safetensors": "0.8.0",
+    "protobuf": "installed (tokenizer compatibility)",
+    "openai": "installed (Mistral transport, OpenAI-compatible)"
+  },
+  "local_models": {
+    "embedding": {
+      "model": "sentence-transformers/paraphrase-multilingual-MiniLM-L12-v2",
+      "params": "118M",
+      "dim": 384,
+      "multilingual": true,
+      "load_seconds": 23.9,
+      "status": "RUNNING LOCALLY (CPU)"
+    },
+    "nli_crossencoder": {
+      "model": "cross-encoder/nli-deberta-v3-small",
+      "params": "284M",
+      "labels_order": ["contradiction", "entailment", "neutral"],
+      "load_seconds": 22.6,
+      "pairs_per_second_small_batch": "~23",
+      "status": "RUNNING LOCALLY (CPU)"
+    },
+    "gliner2": {
+      "model": "fastino/gliner2.5-small-v1",
+      "params": "74M",
+      "encoder": "microsoft/deberta-v3-xsmall",
+      "language": "en",
+      "load_seconds": 1.4,
+      "extract_seconds_short_text": 0.11,
+      "loader": "gliner2.AutoExtractor (BoundaryExtractor)",
+      "local_patch": "tokenizer_config.json extra_special_tokens list->dict for transformers 4.57; checkpoint fetched to /home/z/models/gliner2.5-small-v1",
+      "alternative_considered": "fastino/gliner2.5-multi-v1 (287M, multilingual) - viable but 4x slower on 2 CPU cores; small-v1 chosen as primary",
+      "status": "RUNNING LOCALLY (CPU)"
+    },
+    "nuextract": {
+      "requested": "NuExtract3 (numind/NuExtract3)",
+      "nuextract3_local_status": "INFEASIBLE on this hardware",
+      "nuextract3_why": [
+        "NuExtract3 is a 4B vision-language model (Qwen3.5-4B base): fp16 weights alone are ~8 GB, far above the 3.5 GiB available RAM",
+        "Official quantizations are W8A8 / W4A16 in compressed-tensors format, targeted at vLLM/GPU serving; compressed-tensors has no supported CPU inference path in this environment",
+        "No GGUF conversion of NuExtract3 exists on the Hub (searched 2026-09-17), so llama.cpp CPU quantized inference is not available",
+        "The model also carries a vision tower and MTP head with no CPU benefit"
+      ],
+      "fallback_used": "numind/NuExtract-1.5-tiny (official NuMind, same NuExtract model family)",
+      "fallback_details": {
+        "model": "numind/NuExtract-1.5-tiny",
+        "params": "494M",
+        "base": "Qwen/Qwen2.5-0.5B",
+        "multilingual": ["en", "fr", "es", "de", "pt", "it"],
+        "precision": "fp32 (CPU)",
+        "load_seconds": 33.5,
+        "generation_seconds_short_output": 9.1,
+        "prompt_format": "<|input|>\\n### Template:\\n{json template with nulls}\\n### Text:\\n{text}\\n\\n<|output|>"
+      },
+      "status": "RUNNING LOCALLY (CPU, smallest technically sound NuExtract variant; not an unrelated substitute)"
+    },
+    "langextract": {
+      "package": "langextract 1.7.0 (PyPI)",
+      "status": "INVESTIGATED - see SEMANTIC_PIPELINE_V1.md Phase 3/5 sections",
+      "constraint": "local backend requires a local Gemma (MediaPipe) model too large for 3.5 GiB RAM; remote Gemini backend is forbidden by experiment policy (only Mistral allowed remote)"
+    }
+  },
+  "remote_backends": {
+    "mistral": {
+      "provider": "Mistral API (https://api.mistral.ai/v1)",
+      "model": "ministral-14b-latest",
+      "key_env": "MISTRAL_API_KEY",
+      "key_exposed": false,
+      "connectivity": "OK (models.list reachable, 46 models, ministral-14b-latest present)"
+    }
+  },
+  "ram_policy": "models are loaded per-stage in separate process invocations and released between stages to stay under the 3.9 GiB RAM ceiling; no two large models are resident at once"
+}
