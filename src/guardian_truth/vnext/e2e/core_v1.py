@@ -291,7 +291,12 @@ class GuardianE2EV1:
                            _behavioral_closure(case.authoritative_policy_behaviors, policy_lowered),
                            _behavioral_closure(case.authoritative_goal_behaviors, lowered_goal_contracts),
                            tuple(frontend_statuses), semantics=self.semantics)
-        solver_result = solve_e2e(problem, ledger, registry, self.semantics)
+        # option_contracts flow into solve_e2e so the all-world consensus can
+        # recognize a completion-invariant certified FALSE witness (spec
+        # 96/100: an unrelated failed frontend axis must not mask a proved
+        # violation; see world_integration_v1.error_witness_completion_invariant).
+        solver_result = solve_e2e(problem, ledger, registry, self.semantics,
+                                 option_contracts=option_contracts)
         status = solver_result.status
         missing_evidence = []
         if budget_exceeded:

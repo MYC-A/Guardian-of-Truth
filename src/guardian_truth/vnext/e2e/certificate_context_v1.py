@@ -22,7 +22,7 @@ from ..proof_records import (AtomKind, ProofCertificate, ProofProblem, TimeMode,
 from ..tools import ContractRegistry
 from ..types import (ClaimKind, CoreStatus, Disposition, EffectStatus, Reason, ToolIdentity, Truth)
 from .e2e_types_v1 import E2ESemantics, FULL_SEMANTICS
-from .world_integration_v1 import E2EProblem, solve_world
+from .world_integration_v1 import E2EProblem, error_witness_completion_invariant, solve_world
 
 E2E_CERT_VERSION = "guardian-e2e-v1-proof-v1"
 CLAIM_OBLIGATION_HYPOTHESIS = "GUARDIAN_FACTUAL_CONSISTENCY_V1"
@@ -175,18 +175,32 @@ def check_e2e_certificate(certificate: ProofCertificate, bundle: E2EBundle, ledg
     assumptions = e2e_completeness_assumptions(bundle, ledger, registry)
     if certificate.completeness_assumptions != assumptions:
         errors.append("COMPLETENESS_ASSUMPTIONS_MISMATCH")
+    semantics = bundle.semantics
     # PROVED_ERROR needs one certified violation witness in every world; a
     # certified independent violation is never masked by unrelated unknowns
     # (spec 96, 100, 125), so response-claim coverage and closure premises are
     # NOT required for it. PROVED_NO_ERROR needs the full closure set: every
     # material claim checked, complete history, closed bindings, provably
     # closed semantics and fresh state evidence (spec 101).
+    #
+    # The same principle extends to an incompletely enumerated candidate
+    # space: when an enumeration-complete axis carries a certified FALSE
+    # witness in every option, the ERROR verdict is invariant under any
+    # completion of the remaining (incomplete) axes, so the missing readings
+    # of a failed frontend cannot mask a proved violation
+    # (error_witness_completion_invariant; spec 96/100). Without such a
+    # witness the incomplete space still blocks PROVED_ERROR (a missing
+    # reading might contain the only violation) and always blocks
+    # PROVED_NO_ERROR.
     required = {"SEMANTIC_CANDIDATES_COVERED"}
     if certificate.status is CoreStatus.PROVED_NO_ERROR:
         required |= {"MATERIAL_RESPONSE_COVERED", "SOURCE_HISTORY_COMPLETE", "BINDING_SPACE_COMPLETE",
                      "SEMANTIC_SPACE_PROVABLY_CLOSED", "FRESH_STATE_EVIDENCE"}
     if any(value in {None, "NOT_ESTABLISHED"} for key, value in assumptions if key in required):
-        errors.append("COMPLETENESS_UNPROVED")
+        if (certificate.status is not CoreStatus.PROVED_ERROR
+                or not error_witness_completion_invariant(problem, bundle.option_contracts,
+                                                           ledger, registry, semantics)):
+            errors.append("COMPLETENESS_UNPROVED")
     if len({axis.name for axis in problem.axes}) != len(problem.axes):
         errors.append("DUPLICATE_AXIS")
     if any(not axis.choice_ids or len(set(axis.choice_ids)) != len(axis.choice_ids) for axis in problem.axes):
@@ -196,7 +210,6 @@ def check_e2e_certificate(certificate: ProofCertificate, bundle: E2EBundle, ledg
     if set(proofs) != set(worlds) or not worlds:
         errors.append("WORLD_INVENTORY_MISMATCH")
     index = LedgerIndex(ledger)
-    semantics = bundle.semantics
     claim_ids = {claim.claim_id for claim in context.claims}
     choice_ids = {choice.choice_id for choice in context.operational_choices}
     for world in worlds.values():

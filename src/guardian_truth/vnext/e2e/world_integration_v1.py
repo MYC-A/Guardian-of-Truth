@@ -5,6 +5,13 @@ Semantics fixed by the E2E V1 contract:
 * A certified FALSE safety witness in a world makes that world ERROR even when
   unrelated obligations are UNKNOWN (spec 96, 100) - an independent proved
   violation is never masked by unrelated uncertainty.
+* The ERROR direction of that invariant also survives an incompletely
+  enumerated world space: when an enumeration-complete axis carries a
+  certified FALSE safety witness in EVERY option, every admissible world -
+  enumerated or not - is ERROR, so unrelated incomplete axes (the readings a
+  failed frontend could not enumerate) cannot mask a proved violation
+  (error_witness_completion_invariant, spec 96/100). The safety direction is
+  unchanged: PROVED_NO_ERROR still requires the complete material space.
 * Any UNKNOWN safety conjunct (unresolved marker, unbound reading part,
   unknown prerequisite) blocks PROVED_NO_ERROR but never manufactures an error
   (spec 97, 101).
@@ -467,51 +474,77 @@ def _prove_deterministic_action_atom(atom: ProofAtom, ledger: EvidenceLedger,
     return PrimitiveProof(atom, Truth.FALSE if expected else Truth.TRUE, (), ("absence:complete-history:" + atom.atom_id,))
 
 
+def _obligation_evidence(obligation, ledger: EvidenceLedger, index: LedgerIndex,
+                         registry: ContractRegistry,
+                         semantics: E2ESemantics) -> tuple[Truth, tuple]:
+    """Safety value + primitive proofs of ONE obligation - the exact
+    computation solve_world performs, factored out so the completion-
+    invariance check below evaluates witnesses through the very same code
+    path (single source; the prover/checker can never drift apart, same
+    design as the shared catalog violation function)."""
+    condition_proofs = tuple(prove_e2e_atom(atom, ledger, index, registry, semantics)
+                             for atom in obligation.conditions)
+    atom_proof = prove_e2e_atom(obligation.atom, ledger, index, registry, semantics)
+    antecedent = conjunction(tuple(proof.value for proof in condition_proofs))
+    required = atom_proof.value if obligation.must_be_true else negate(atom_proof.value)
+    if (semantics.must_act_abstention and obligation.must_be_true
+            and atom_proof.value is Truth.FALSE
+            and obligation.hypothesis_id != _CLAIM_OBLIGATION_HYPOTHESIS
+            and obligation.atom.entity.namespace in {"e2e", "e2e-state"}
+            and obligation.atom.kind in {AtomKind.CALL_ATTEMPTED, AtomKind.HISTORICAL_ACTION}
+            and any(refute.startswith("absence:") for refute in atom_proof.refutes)):
+        # REP-08 (session B fix iteration 2): a policy/goal "must act"
+        # obligation whose ONLY refuting witness is the absence of the
+        # attempt cannot certify a violation — "act NOW" existential
+        # semantics are outside V1. Claim-path absence proofs
+        # (fabricated action: ACTION_COMPLETED + no call) are exempt:
+        # they assert a completed action, not a pending duty.
+        required = Truth.UNKNOWN
+    value = disjunction((negate(antecedent), required))
+    if (semantics.inconsistent_status and required is Truth.BOTH
+            and antecedent is Truth.TRUE and value is Truth.TRUE):
+        # contradictory trusted evidence about an applicable obligation:
+        # the world verdict itself is BOTH, so consensus surfaces
+        # INCONSISTENT instead of silently absorbing the contradiction
+        # into a non-violation.
+        value = Truth.BOTH
+    return value, (*condition_proofs, atom_proof)
+
+
+def _group_evidence(group, ledger: EvidenceLedger, index: LedgerIndex,
+                    registry: ContractRegistry,
+                    semantics: E2ESemantics) -> tuple[tuple[tuple[str, Truth], ...], tuple]:
+    """Safety conjuncts + primitive proofs of ONE disjunctive group (the
+    exact computation solve_world performs; factored for the same
+    no-drift reason as _obligation_evidence)."""
+    entries: list[tuple[str, Truth]] = []
+    primitives: list = []
+    for event_id, atoms in group.per_call_atoms:
+        proofs = tuple(prove_e2e_atom(atom, ledger, index, registry, semantics) for atom in atoms)
+        primitives.extend(proofs)
+        entries.append((f"{group.group_id}:{event_id}", disjunction(tuple(proof.value for proof in proofs))))
+    if group.satisfaction_choices:
+        choice_values = []
+        for atoms in group.satisfaction_choices:
+            proofs = tuple(prove_e2e_atom(atom, ledger, index, registry, semantics) for atom in atoms)
+            primitives.extend(proofs)
+            choice_values.append(conjunction(tuple(proof.value for proof in proofs)))
+        entries.append((group.group_id, disjunction(tuple(choice_values))))
+    return tuple(entries), tuple(primitives)
+
+
 def solve_world(world: E2EWorld, ledger: EvidenceLedger, index: LedgerIndex,
                 registry: ContractRegistry,
                 semantics: E2ESemantics = FULL_SEMANTICS) -> WorldProof:
     safety, primitives = [], []
     for obligation in world.obligations:
-        condition_proofs = tuple(prove_e2e_atom(atom, ledger, index, registry, semantics)
-                                 for atom in obligation.conditions)
-        atom_proof = prove_e2e_atom(obligation.atom, ledger, index, registry, semantics)
-        primitives.extend((*condition_proofs, atom_proof))
-        antecedent = conjunction(tuple(proof.value for proof in condition_proofs))
-        required = atom_proof.value if obligation.must_be_true else negate(atom_proof.value)
-        if (semantics.must_act_abstention and obligation.must_be_true
-                and atom_proof.value is Truth.FALSE
-                and obligation.hypothesis_id != _CLAIM_OBLIGATION_HYPOTHESIS
-                and obligation.atom.entity.namespace in {"e2e", "e2e-state"}
-                and obligation.atom.kind in {AtomKind.CALL_ATTEMPTED, AtomKind.HISTORICAL_ACTION}
-                and any(refute.startswith("absence:") for refute in atom_proof.refutes)):
-            # REP-08 (session B fix iteration 2): a policy/goal "must act"
-            # obligation whose ONLY refuting witness is the absence of the
-            # attempt cannot certify a violation — "act NOW" existential
-            # semantics are outside V1. Claim-path absence proofs
-            # (fabricated action: ACTION_COMPLETED + no call) are exempt:
-            # they assert a completed action, not a pending duty.
-            required = Truth.UNKNOWN
-        value = disjunction((negate(antecedent), required))
-        if (semantics.inconsistent_status and required is Truth.BOTH
-                and antecedent is Truth.TRUE and value is Truth.TRUE):
-            # contradictory trusted evidence about an applicable obligation:
-            # the world verdict itself is BOTH, so consensus surfaces
-            # INCONSISTENT instead of silently absorbing the contradiction
-            # into a non-violation.
-            value = Truth.BOTH
+        value, proofs = _obligation_evidence(obligation, ledger, index, registry, semantics)
+        primitives.extend(proofs)
         safety.append((obligation.obligation_id, value))
     for group in world.groups:
-        for event_id, atoms in group.per_call_atoms:
-            proofs = tuple(prove_e2e_atom(atom, ledger, index, registry, semantics) for atom in atoms)
-            primitives.extend(proofs)
-            safety.append((f"{group.group_id}:{event_id}", disjunction(tuple(proof.value for proof in proofs))))
-        if group.satisfaction_choices:
-            choice_values = []
-            for atoms in group.satisfaction_choices:
-                proofs = tuple(prove_e2e_atom(atom, ledger, index, registry, semantics) for atom in atoms)
-                primitives.extend(proofs)
-                choice_values.append(conjunction(tuple(proof.value for proof in proofs)))
-            safety.append((group.group_id, disjunction(tuple(choice_values))))
+        entries, proofs = _group_evidence(group, ledger, index, registry, semantics)
+        primitives.extend(proofs)
+        safety.extend(entries)
     for marker in world.markers:
         safety.append((marker.marker_id, Truth.UNKNOWN))
     error = negate(conjunction(tuple(value for _, value in safety)))
@@ -556,15 +589,104 @@ def canonical_atom(atom: ProofAtom) -> dict:
     return asdict(atom)
 
 
+def _option_witness_ids(option_contracts: dict, option_id: str) -> tuple[str, ...]:
+    """Obligation/group ids contracted to one option (the same attribution
+    check_e2e_certificate uses for its FOREIGN_OBLIGATION / coverage checks)."""
+    contract = option_contracts.get(option_id) or {}
+    ids: list[str] = []
+    for spec in (contract.get("rules") or {}).values():
+        if not isinstance(spec, dict):
+            continue
+        ids.extend(spec.get("obligations") or ())
+        ids.extend(spec.get("groups") or ())
+    ids.extend(contract.get("claim_obligations") or ())
+    return tuple(ids)
+
+
+def _option_carries_false_witness(ids, obligations, groups, ledger: EvidenceLedger,
+                                  index: LedgerIndex, registry: ContractRegistry,
+                                  semantics: E2ESemantics) -> bool:
+    """Whether one option's OWN contracted obligations/groups contain a
+    certified FALSE safety conjunct (evaluated through the shared
+    _obligation_evidence/_group_evidence path, so the value is exactly the
+    one solve_world assigns in every world containing this option)."""
+    for item_id in ids:
+        obligation = obligations.get(item_id)
+        if obligation is not None and _obligation_evidence(
+                obligation, ledger, index, registry, semantics)[0] is Truth.FALSE:
+            return True
+        group = groups.get(item_id)
+        if group is not None and any(value is Truth.FALSE for _, value in _group_evidence(
+                group, ledger, index, registry, semantics)[0]):
+            return True
+    return False
+
+
+def error_witness_completion_invariant(problem: E2EProblem, option_contracts: dict,
+                                       ledger: EvidenceLedger, registry: ContractRegistry,
+                                       semantics: E2ESemantics = FULL_SEMANTICS) -> bool:
+    """Whether a certified FALSE safety witness makes the ERROR verdict
+    invariant under any COMPLETION of the world space: at least one
+    enumeration-complete axis carries a certified FALSE safety conjunct in
+    EVERY option.
+
+    Soundness argument (the world_integration_v1 invariant, extended from
+    unknown CONJUNCTS to un-enumerated READINGS):
+    * the option set of an enumeration-complete axis is final, so every
+      admissible world - enumerated or not - chooses one of its options;
+    * a certified FALSE conjunct makes the world's safety conjunction FALSE
+      regardless of every other conjunct (Kleene dominance, spec 96), and
+      obligation/group safety values depend only on (ledger, registry,
+      semantics), never on the world, so whichever option a completion world
+      chooses, that FALSE conjunct is in its conjunction;
+    * hence every admissible world is ERROR and PROVED_ERROR does not depend
+      on the readings a failed frontend failed to enumerate.
+
+    Deliberately NOT sufficient (stays UNRESOLVED): a FALSE witness carried
+    only by options of an INCOMPLETE axis (a missing reading might not
+      contain it) and BOTH/contradictory conjuncts (not a certified
+    witness)."""
+    if not problem.worlds or not option_contracts:
+        return False
+    index = LedgerIndex(ledger)
+    obligations, groups = {}, {}
+    for world in problem.worlds:
+        for obligation in world.obligations:
+            obligations.setdefault(obligation.obligation_id, obligation)
+        for group in world.groups:
+            groups.setdefault(group.group_id, group)
+    for axis in problem.axes:
+        if axis.enumeration_complete is not True or not axis.choice_ids:
+            continue
+        if all(_option_carries_false_witness(_option_witness_ids(option_contracts, option_id),
+                                              obligations, groups, ledger, index, registry,
+                                              semantics)
+               for option_id in axis.choice_ids):
+            return True
+    return False
+
+
 def solve_e2e(problem: E2EProblem, ledger: EvidenceLedger, registry: ContractRegistry,
-              semantics: E2ESemantics = FULL_SEMANTICS) -> E2ESolverResult:
+              semantics: E2ESemantics = FULL_SEMANTICS,
+              option_contracts: dict | None = None) -> E2ESolverResult:
     index = LedgerIndex(ledger)
     proofs = tuple(solve_world(world, ledger, index, registry, semantics) for world in problem.worlds)
     complete = world_space_complete(problem.as_problem()) if problem.worlds else False
+    # Spec 96/100 at the aggregation level: when an enumeration-complete
+    # axis carries a certified FALSE witness in every option, EVERY
+    # admissible world is ERROR, so the definitive ERROR verdict is
+    # invariant under completion of the remaining (incomplete) axes and an
+    # unrelated frontend failure cannot mask a proved violation. The safety
+    # direction is unchanged: without the complete space PROVED_NO_ERROR
+    # stays unreachable (a missing world could still hide a violation).
+    error_invariant = (option_contracts is not None and bool(problem.worlds)
+                       and error_witness_completion_invariant(problem, option_contracts,
+                                                              ledger, registry, semantics))
     reasons = []
     if not problem.worlds:
         reasons.append(Reason.EVIDENCE_INCOMPLETE)
-    status = consensus(tuple(proof.error_value for proof in proofs), material_space_complete=complete)
+    status = consensus(tuple(proof.error_value for proof in proofs),
+                       material_space_complete=complete or error_invariant)
     if status is CoreStatus.UNRESOLVED and not reasons:
         reasons.append(Reason.POLICY_AMBIGUOUS)
     return E2ESolverResult(status, proofs, tuple(dict.fromkeys(reasons)),

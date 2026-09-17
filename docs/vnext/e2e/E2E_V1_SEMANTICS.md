@@ -21,7 +21,12 @@ dominates UNKNOWN in the conjunction, so a certified independent violation
 survives unrelated unknowns (spec 96). Unresolved markers are UNKNOWN safety
 conjuncts: they block NO_ERROR, never manufacture ERROR (spec 97). A failed
 frontend (transport/schema) leaves its AXIS enumeration incomplete, which
-blocks both definitives (conservative reading of spec 34/52).
+blocks PROVED_NO_ERROR and PROVED_ERROR — EXCEPT when an enumeration-complete
+axis carries a certified FALSE safety witness in every option
+(`error_witness_completion_invariant`): every admissible world, enumerated
+or not, is then ERROR, so the missing readings cannot mask a proved violation
+(spec 96/100 extended from unknown conjuncts to un-enumerated readings; fix
+of the witness-masking bug, see WITNESS_MASKING_FIX.md).
 
 ## 3. Program space
 
