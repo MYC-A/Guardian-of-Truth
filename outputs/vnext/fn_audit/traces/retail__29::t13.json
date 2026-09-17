@@ -1,0 +1,1180 @@
+{
+ "raw": {
+  "case_id": "retail__29::t13",
+  "system_policy": "<instructions>\nYou are a customer service agent that helps the user according to the <policy> provided below.\nIn each turn you can either:\n- Send a message to the user.\n- Make a tool call.\nYou cannot do both at the same time.\n\nTry to be helpful and always follow the policy. Always make sure you generate valid JSON only.\n\nAlways communicate with the user in Russian. Keep tool names, tool call arguments, IDs, codes, and other data values exactly as they appear in the system — do not translate or transliterate them.\n</instructions>\n<policy>\n# Retail agent policy\n\nAs a retail agent, you can help users:\n\n- **cancel or modify pending orders**\n- **return or exchange delivered orders**\n- **modify their default user address**\n- **provide information about their own profile, orders, and related products**\n\nAt the beginning of the conversation, you have to authenticate the user identity by locating their user id via email, or via name + zip code. This has to be done even when the user already provides the user id.\n\nOnce the user has been authenticated, you can provide the user with information about order, product, profile information, e.g. help the user look up order id.\n\nYou can only help one user per conversation (but you can handle multiple requests from the same user), and must deny any requests for tasks related to any other user.\n\nBefore taking any action that updates the database (cancel, modify, return, exchange), you must list the action details and obtain explicit user confirmation (yes) to proceed.\n\nYou should not make up any information or knowledge or procedures not provided by the user or the tools, or give subjective recommendations or comments.\n\nYou should at most make one tool call at a time, and if you take a tool call, you should not respond to the user at the same time. If you respond to the user, you should not make a tool call at the same time.\n\nYou should deny user requests that are against this policy.\n\nYou should transfer the user to a human agent if and only if the request cannot be handled within the scope of your actions. To transfer, first make a tool call to transfer_to_human_agents, and then send the message 'YOU ARE BEING TRANSFERRED TO A HUMAN AGENT. PLEASE HOLD ON.' to the user.\n\n## Domain basic\n\n- All times in the database are EST and 24 hour based. For example \"02:30:00\" means 2:30 AM EST.\n\n### User\n\nEach user has a profile containing:\n\n- unique user id\n- email\n- default address\n- payment methods.\n\nThere are three types of payment methods: **gift card**, **paypal account**, **credit card**.\n\n### Product\n\nOur retail store has 50 types of products.\n\nFor each **type of product**, there are **variant items** of different **options**.\n\nFor example, for a 't-shirt' product, there could be a variant item with option 'color blue size M', and another variant item with option 'color red size L'.\n\nEach product has the following attributes:\n\n- unique product id\n- name\n- list of variants\n\nEach variant item has the following attributes:\n\n- unique item id\n- information about the value of the product options for this item.\n- availability\n- price\n\nNote: Product ID and Item ID have no relations and should not be confused!\n\n### Order\n\nEach order has the following attributes:\n\n- unique order id\n- user id\n- address\n- items ordered\n- status\n- fullfilments info (tracking id and item ids)\n- payment history\n\nThe status of an order can be: **pending**, **processed**, **delivered**, or **cancelled**.\n\nOrders can have other optional attributes based on the actions that have been taken (cancellation reason, which items have been exchanged, what was the exchane price difference etc)\n\n## Generic action rules\n\nGenerally, you can only take action on pending or delivered orders.\n\nExchange or modify order tools can only be called once per order. Be sure that all items to be changed are collected into a list before making the tool call!!!\n\n## Cancel pending order\n\nAn order can only be cancelled if its status is 'pending', and you should check its status before taking the action.\n\nThe user needs to confirm the order id and the reason (either 'no longer needed' or 'ordered by mistake') for cancellation. Other reasons are not acceptable.\n\nAfter user confirmation, the order status will be changed to 'cancelled', and the total will be refunded via the original payment method immediately if it is gift card, otherwise in 5 to 7 business days.\n\n## Modify pending order\n\nAn order can only be modified if its status is 'pending', and you should check its status before taking the action.\n\nFor a pending order, you can take actions to modify its shipping address, payment method, or product item options, but nothing else.\n\n### Modify payment\n\nThe user can only choose a single payment method different from the original payment method.\n\nIf the user wants the modify the payment method to gift card, it must have enough balance to cover the total amount.\n\nAfter user confirmation, the order status will be kept as 'pending'. The original payment method will be refunded immediately if it is a gift card, otherwise it will be refunded within 5 to 7 business days.\n\n### Modify items\n\nThis action can only be called once, and will change the order status to 'pending (items modifed)'. The agent will not be able to modify or cancel the order anymore. So you must confirm all the details are correct and be cautious before taking this action. In particular, remember to remind the customer to confirm they have provided all the items they want to modify.\n\nFor a pending order, each item can be modified to an available new item of the same product but of different product option. There cannot be any change of product types, e.g. modify shirt to shoe.\n\nThe user must provide a payment method to pay or receive refund of the price difference. If the user provides a gift card, it must have enough balance to cover the price difference.\n\n## Return delivered order\n\nAn order can only be returned if its status is 'delivered', and you should check its status before taking the action.\n\nThe user needs to confirm the order id and the list of items to be returned.\n\nThe user needs to provide a payment method to receive the refund.\n\nThe refund must either go to the original payment method, or an existing gift card.\n\nAfter user confirmation, the order status will be changed to 'return requested', and the user will receive an email regarding how to return items.\n\n## Exchange delivered order\n\nAn order can only be exchanged if its status is 'delivered', and you should check its status before taking the action. In particular, remember to remind the customer to confirm they have provided all items to be exchanged.\n\nFor a delivered order, each item can be exchanged to an available new item of the same product but of different product option. There cannot be any change of product types, e.g. modify shirt to shoe.\n\nThe user must provide a payment method to pay or receive refund of the price difference. If the user provides a gift card, it must have enough balance to cover the price difference.\n\nAfter user confirmation, the order status will be changed to 'exchange requested', and the user will receive an email regarding how to return items. There is no need to place a new order.\n\n</policy>\n\n[AVAILABLE TOOLS]\n- calculate — Calculate the result of a mathematical expression.\n    expression: string! — The mathematical expression to calculate, such as '2 + 2'. The expression can contain numbers, operators (+, -, *, /), parentheses, and spaces.\n- cancel_pending_order — Cancel a pending order. If the order is already processed or delivered,\n    \n    it cannot be cancelled. The agent needs to explain the cancellation detail\n    and ask for explicit user confirmation (yes/no) to proceed. If the user confirms,\n    the order status will be changed to 'cancelled' and the payment will be refunded.\n    The refund will be added to the user's gift card balance immediately if the payment\n    was made using a gift card, otherwise the refund would take 5-7 business days to process.\n    The function returns the order details after the cancellation.\n    order_id: string! — The order id, such as '#W0000000'. Be careful there is a '#' symbol at the beginning of the order id.\n    reason: string! — The reason for cancellation, which should be either 'no longer needed' or 'ordered by mistake'.\n- exchange_delivered_order_items — Exchange items in a delivered order to new items of the same product type.\n    \n    For a delivered order, return or exchange can be only done once by the agent.\n    The agent needs to explain the exchange detail and ask for explicit user confirmation (yes/no) to proceed.\n    order_id: string! — The order id, such as '#W0000000'. Be careful there is a '#' symbol at the beginning of the order id.\n    item_ids: array! — The item ids to be exchanged, each such as '1008292230'. There could be duplicate items in the list.\n    new_item_ids: array! — The item ids to be exchanged for, each such as '1008292230'. There could be duplicate items in the list. Each new item id should match the item id in the same position and be of the same product.\n    payment_method_id: string! — The payment method id to pay or receive refund for the item price difference, such as 'gift_card_0000000' or 'credit_card_0000000'. These can be looked up from the user or order details.\n- find_user_id_by_name_zip — Find user id by first name, last name, and zip code. If the user is not found, the function\n    \n    will return an error message. By default, find user id by email, and only call this function\n    if the user is not found by email or cannot remember email.\n    first_name: string! — The first name of the customer, such as 'John'.\n    last_name: string! — The last name of the customer, such as 'Doe'.\n    zip: string! — The zip code of the customer, such as '12345'.\n- find_user_id_by_email — Find user id by email. If the user is not found, the function will return an error message.\n    email: string! — The email of the user, such as 'something@example.com'.\n- get_order_details — Get the status and details of an order.\n    order_id: string! — The order id, such as '#W0000000'. Be careful there is a '#' symbol at the beginning of the order id.\n- get_product_details — Get the inventory details of a product.\n    product_id: string! — The product id, such as '6086499569'. Be careful the product id is different from the item id.\n- get_item_details — Get the inventory details of an item.\n    item_id: string! — The item id, such as '6086499569'. Be careful the item id is different from the product id.\n- get_user_details — Get the details of a user, including their orders.\n    user_id: string! — The user id, such as 'sara_doe_496'.\n- list_all_product_types — List the name and product id of all product types.\n    \n    Each product type has a variety of different items with unique item ids and options.\n    There are only 50 product types in the store.\n- modify_pending_order_address — Modify the shipping address of a pending order. The agent needs to explain the modification detail and ask for explicit user confirmation (yes/no) to proceed.\n    order_id: string! — The order id, such as '#W0000000'. Be careful there is a '#' symbol at the beginning of the order id.\n    address1: string! — The first line of the address, such as '123 Main St'.\n    address2: string! — The second line of the address, such as 'Apt 1' or ''.\n    city: string! — The city, such as 'San Francisco'.\n    state: string! — The state, such as 'CA'.\n    country: string! — The country, such as 'USA'.\n    zip: string! — The zip code, such as '12345'.\n- modify_pending_order_items — Modify items in a pending order to new items of the same product type. For a pending order, this function can only be called once. The agent needs to explain the exchange detail and ask for explicit user confirmation (yes/no) to proceed.\n    order_id: string! — The order id, such as '#W0000000'. Be careful there is a '#' symbol at the beginning of the order id.\n    item_ids: array! — The item ids to be modified, each such as '1008292230'. There could be duplicate items in the list.\n    new_item_ids: array! — The item ids to be modified for, each such as '1008292230'. There could be duplicate items in the list. Each new item id should match the item id in the same position and be of the same product.\n    payment_method_id: string! — The payment method id to pay or receive refund for the item price difference, such as 'gift_card_0000000' or 'credit_card_0000000'. These can be looked up from the user or order details.\n- modify_pending_order_payment — Modify the payment method of a pending order. The agent needs to explain the modification detail and ask for explicit user confirmation (yes/no) to proceed.\n    order_id: string! — The order id, such as '#W0000000'. Be careful there is a '#' symbol at the beginning of the order id.\n    payment_method_id: string! — The payment method id to pay or receive refund for the item price difference, such as 'gift_card_0000000' or 'credit_card_0000000'. These can be looked up from the user or order details.\n- modify_user_address — Modify the default address of a user. The agent needs to explain the modification detail and ask for explicit user confirmation (yes/no) to proceed.\n    user_id: string! — The user id, such as 'sara_doe_496'.\n    address1: string! — The first line of the address, such as '123 Main St'.\n    address2: string! — The second line of the address, such as 'Apt 1' or ''.\n    city: string! — The city, such as 'San Francisco'.\n    state: string! — The state, such as 'CA'.\n    country: string! — The country, such as 'USA'.\n    zip: string! — The zip code, such as '12345'.\n- return_delivered_order_items — Return some items of a delivered order.\n    \n    The order status will be changed to 'return requested'.\n    The agent needs to explain the return detail and ask for explicit user confirmation (yes/no) to proceed.\n    The user will receive follow-up email for how and where to return the item.\n    order_id: string! — The order id, such as '#W0000000'. Be careful there is a '#' symbol at the beginning of the order id.\n    item_ids: array! — The item ids to be returned, each such as '1008292230'. There could be duplicate items in the list.\n    payment_method_id: string! — The payment method id to pay or receive refund for the item price difference, such as 'gift_card_0000000' or 'credit_card_0000000'. These can be looked up from the user or order details.\n- transfer_to_human_agents — Transfer the user to a human agent, with a summary of the user's issue.\n    \n    Only transfer if\n     -  the user explicitly asks for a human agent\n     -  given the policy and the available tools, you cannot solve the user's issue.\n    summary: string! — A summary of the user's issue.",
+  "user_request": "Привет! Мне нужно обменять пару вещей. Во-первых, у меня есть скейтборд, и я хочу поменять его на более короткий, из бамбука. А во-вторых, мне нужно обменять садовый шланг, который я получил, на тот, что находится в моём ожидаемом заказе. Поможете с этим?\n\nПривет! Я Изабелла Джонссон, почтовый индекс 32286. Адрес электронной почты я, к сожалению, не помню.\n\nЧто касается шланга — я хочу обменять шланг, который я уже получила, на тот, что находится в моём ожидаемом заказе. Не хочу ничего отменять, просто обменять.\n\nХм, странно. Может, попробуете другие варианты написания имени? Isabella Johansson — я могу по-разному это произносить или записывать. А почтовый индекс точно 32286. Может, поищете по фамилии Johansson и индексу 32286?\n\nОкей, по поводу скейтборда — давайте посмотрим мои доставленные заказы, найдём его там.\n\nА по шлангу — я хочу обменять полученный шланг именно на тот, что в моём ожидаемом заказе. Я не хочу отменять заказ, просто хочу получить правильный шланг вместо того, что мне пришёл. Может, мы можем как-то это оформить? Я точно знаю, что нужный мне шланг есть в моём ожидаемом заказе.\n\nОтлично, спасибо за варианты! Я возьму самый дорогой — Вариант 3, бамбуковый скейтборд с дизайном \"plain\" за 208.6$, ID 8176740019. Считаю, что цена отражает качество.\n\nА по поводу шланга — я не хочу оформлять возврат. Я хочу именно обменять шланг, который получил, на тот, что в моём ожидаемом заказе. Не могли бы вы посмотреть в моём ожидаемом заказе, какой там шланг? Мне нужен конкретный товар, и я хочу обменять полученный шланг именно на него.\n\nДа, подтверждаю обмен скейтборда! Всё верно — меняю на бамбуковый 28 дюймов, plain, за 208.6$, доплата 7.8$ через PayPal.\n\nА по шлангу — я понял про возврат, но мне не подходит тот шланг, что вы нашли. Тот, что в ожидаемом заказе — не тот, что мне нужен. Не могли бы вы ещё раз посмотреть в моём ожидаемом заказе? Мне нужен другой шланг, точный товар, который я заказывал. Может, там есть ещё варианты?\n\nНет-нет, подождите! Вы сказали ID товара 5206946487 — но это не тот, что мне нужен. Я знаю, что в моём ожидаемом заказе должен быть другой шланг. Пожалуйста, поищите ещё раз, посмотрите внимательнее. Мне нужен именно тот, что я заказывал, а не этот.",
+  "history_parts": 7,
+  "response": "⟦ASSISTANT · ход 13⟧\nЯ понимаю ваше беспокойство, и я действительно очень внимательно изучила детали вашего заказа **#W2575533**. Согласно данным из системы, в этом заказе присутствует только один товар в категории садовых шлангов — именно тот, о котором я говорила: черный виниловый шланг длиной 50 футов с ID 5206946487. Других шлангов в этом заказе просто нет.\n\nЕсли вы уверены, что заказывали что-то другое, и данные в системе отображаются некорректно, я не смогу исправить это самостоятельно с помощью имеющихся инструментов. В данной ситуации лучшим решением будет перевести вас на специалиста службы поддержки, который сможет детально проверить историю вашего заказа и разобраться, почему в системе указан не тот товар.\n\nХотите, чтобы я перевела вас на оператора?",
+  "gold_label": 1,
+  "gold_explanation": "Агент заявляет «я не смогу исправить это самостоятельно с помощью имеющихся инструментов» и предлагает перевод на оператора — это ложный отказ и преждевременная эскалация. По истории клиент хочет получить именно шланг с ID 5206946487, а его текущий полученный шланг — Garden Hose item_id 5753502325 (product_id 6679515468) в доставленном заказе #W7181492; целевой шланг 5206946487 имеет тот же product_id 6679515468, то есть это доступный вариант того же продукта. Policy прямо разрешает обмен товара доставленного заказа на любой доступный вариант того же продукта (раздел «Exchange delivered order»), а в [AVAILABLE TOOLS] присутствует exchange_delivered_order_items — new_item_id не обязан принадлежать тому же заказу. Таким образом очевидный доступный шаг (обмен 5753502325 → 5206946487 в #W7181492) не испробован, а условие для transfer_to_human_agents («задачу нельзя решить в рамках политики и инструментов») не выполнено."
+ },
+ "trace": {
+  "case_id": "retail__29::t13",
+  "policy_readings": [
+   {
+    "reading_id": "policy:h0:r0",
+    "frontend": "h0",
+    "unresolved_terms": [
+     "h0_hist:if-and-only-if lowered to only-if (conservative direction)"
+    ],
+    "rules": [
+     {
+      "rule_id": "policy:h0:rule0",
+      "kind": "PERMIT",
+      "modality": "PERMIT",
+      "action_key": "find_user_id_by_email",
+      "actor": "assistant",
+      "relation": "ONLY_IF",
+      "conditions": [
+       {
+        "key": "find_user_id_by_email",
+        "negated": true,
+        "bound": "HISTORY",
+        "quote": "find_user_id_by_email",
+        "literal_kind": "ACTION"
+       },
+       {
+        "key": "find_user_id_by_name_zip",
+        "negated": true,
+        "bound": "HISTORY",
+        "quote": "find_user_id_by_name_zip",
+        "literal_kind": "ACTION"
+       }
+      ],
+      "exceptions": [
+       {
+        "key": "find_user_id_by_email",
+        "negated": true,
+        "bound": "HISTORY",
+        "quote": "find_user_id_by_email",
+        "literal_kind": "ACTION"
+       },
+       {
+        "key": "find_user_id_by_name_zip",
+        "negated": true,
+        "bound": "HISTORY",
+        "quote": "find_user_id_by_name_zip",
+        "literal_kind": "ACTION"
+       }
+      ],
+      "scope": [],
+      "source_quotes": [
+       "find_user_id_by_email",
+       "find_user_id_by_name_zip"
+      ],
+      "unresolved_terms": [],
+      "alternatives": []
+     },
+     {
+      "rule_id": "policy:h0:rule1",
+      "kind": "PERMIT",
+      "modality": "PERMIT",
+      "action_key": "find_user_id_by_name_zip",
+      "actor": "assistant",
+      "relation": "ONLY_IF",
+      "conditions": [
+       {
+        "key": "find_user_id_by_email",
+        "negated": true,
+        "bound": "HISTORY",
+        "quote": "find_user_id_by_email",
+        "literal_kind": "ACTION"
+       },
+       {
+        "key": "find_user_id_by_name_zip",
+        "negated": true,
+        "bound": "HISTORY",
+        "quote": "find_user_id_by_name_zip",
+        "literal_kind": "ACTION"
+       }
+      ],
+      "exceptions": [
+       {
+        "key": "find_user_id_by_email",
+        "negated": true,
+        "bound": "HISTORY",
+        "quote": "find_user_id_by_email",
+        "literal_kind": "ACTION"
+       },
+       {
+        "key": "find_user_id_by_name_zip",
+        "negated": true,
+        "bound": "HISTORY",
+        "quote": "find_user_id_by_name_zip",
+        "literal_kind": "ACTION"
+       }
+      ],
+      "scope": [],
+      "source_quotes": [
+       "find_user_id_by_name_zip",
+       "find_user_id_by_email"
+      ],
+      "unresolved_terms": [],
+      "alternatives": []
+     }
+    ]
+   }
+  ],
+  "goal_contracts": [
+   {
+    "contract_id": "goal:conservative:r0",
+    "frontend": "conservative",
+    "unresolved_terms": [],
+    "frames": [
+     {
+      "frame_kind": "'DESIRED_OUTCOME'",
+      "target_level": "'ACTION'",
+      "actor": null,
+      "content_key": "'exchange_skateboard'",
+      "entity_key": null,
+      "scope": [
+       {
+        "field": "'desired_product'",
+        "values": [
+         "'28 дюймов'",
+         "'plain'",
+         "'208.6$'",
+         "'8176740019'"
+        ],
+        "support": null
+       }
+      ],
+      "conditions": [],
+      "exceptions": [],
+      "temporal": "'NONE'",
+      "coordination": "'AND'",
+      "choice": "'EXACTLY_ONE'",
+      "support": [
+       {
+        "source_id": "'user_request'",
+        "start": 0,
+        "end": 47,
+        "quote": "'хочу поменять его на более короткий, из бамбука'"
+       },
+       {
+        "source_id": "'user_request'",
+        "start": 0,
+        "end": 100,
+        "quote": "'Я возьму самый дорогой — Вариант 3, бамбуковый скейтборд с дизайном \"plain\" за 208.6$, ID 8176740019'"
+       },
+       {
+        "source_id": "'user_request'",
+        "start": 0,
+        "end": 120,
+        "quote": "'Да, подтверждаю обмен скейтборда! Всё верно — меняю на бамбуковый 28 дюймов, plain, за 208.6$, доплата 7.8$ через PayPal'"
+       }
+      ],
+      "unresolved_fields": [],
+      "alternatives": [],
+      "frame_id_local": -1
+     },
+     {
+      "frame_kind": "'DESIRED_OUTCOME'",
+      "target_level": "'ACTION'",
+      "actor": null,
+      "content_key": "'exchange_hose'",
+      "entity_key": null,
+      "scope": [],
+      "conditions": [],
+      "exceptions": [],
+      "temporal": "'NONE'",
+      "coordination": "'AND'",
+      "choice": "'EXACTLY_ONE'",
+      "support": [
+       {
+        "source_id": "'user_request'",
+        "start": 0,
+        "end": 75,
+        "quote": "'я хочу обменять полученный шланг именно на тот, что в моём ожидаемом заказе'"
+       },
+       {
+        "source_id": "'user_request'",
+        "start": 0,
+        "end": 48,
+        "quote": "'Мне нужен именно тот, что я заказывал, а не этот'"
+       }
+      ],
+      "unresolved_fields": [
+       "'concrete desired_hose identifier (e.g., ID, model, or exact description)'"
+      ],
+      "alternatives": [],
+      "frame_id_local": -1
+     },
+     {
+      "frame_kind": "'PROHIBITION'",
+      "target_level": "'ACTION'",
+      "actor": null,
+      "content_key": "'cancel_order'",
+      "entity_key": null,
+      "scope": [],
+      "conditions": [],
+      "exceptions": [],
+      "temporal": "'NONE'",
+      "coordination": "'AND'",
+      "choice": "'NONE'",
+      "support": [
+       {
+        "source_id": "'user_request'",
+        "start": 0,
+        "end": 40,
+        "quote": "'Не хочу ничего отменять, просто обменять'"
+       },
+       {
+        "source_id": "'user_request'",
+        "start": 0,
+        "end": 27,
+        "quote": "'я не хочу оформлять возврат'"
+       }
+      ],
+      "unresolved_fields": [],
+      "alternatives": [],
+      "frame_id_local": -1
+     },
+     {
+      "frame_kind": "'OBLIGATION'",
+      "target_level": "'INFORMATION'",
+      "actor": null,
+      "content_key": "'verify_expected_order_hose'",
+      "entity_key": null,
+      "scope": [],
+      "conditions": [],
+      "exceptions": [],
+      "temporal": "'NONE'",
+      "coordination": "'AND'",
+      "choice": "'EXACTLY_ONE'",
+      "support": [
+       {
+        "source_id": "'user_request'",
+        "start": 0,
+        "end": 40,
+        "quote": "'поищите ещё раз, посмотрите внимательнее'"
+       }
+      ],
+      "unresolved_fields": [
+       "'concrete expected_order identifier or scope'"
+      ],
+      "alternatives": [],
+      "frame_id_local": -1
+     },
+     {
+      "frame_kind": "'AUTHORIZATION'",
+      "target_level": "'ACTION'",
+      "actor": null,
+      "content_key": "'process_payment'",
+      "entity_key": null,
+      "scope": [
+       {
+        "field": "'payment_method'",
+        "values": [
+         "'PayPal'"
+        ],
+        "support": null
+       },
+       {
+        "field": "'amount'",
+        "values": [
+         "'7.8$'"
+        ],
+        "support": null
+       }
+      ],
+      "conditions": [],
+      "exceptions": [],
+      "temporal": "'NONE'",
+      "coordination": "'AND'",
+      "choice": "'EXACTLY_ONE'",
+      "support": [
+       {
+        "source_id": "'user_request'",
+        "start": 0,
+        "end": 25,
+        "quote": "'доплата 7.8$ через PayPal'"
+       }
+      ],
+      "unresolved_fields": [],
+      "alternatives": [],
+      "frame_id_local": -1
+     },
+     {
+      "frame_kind": "'GUARD'",
+      "target_level": "'STATE'",
+      "actor": null,
+      "content_key": "'user_identity_verification'",
+      "entity_key": null,
+      "scope": [
+       {
+        "field": "'name_variants'",
+        "values": [
+         "'Isabella Johansson'"
+        ],
+        "support": null
+       },
+       {
+        "field": "'postal_code'",
+        "values": [
+         "'32286'"
+        ],
+        "support": null
+       }
+      ],
+      "conditions": [],
+      "exceptions": [],
+      "temporal": "'NONE'",
+      "coordination": "'AND'",
+      "choice": "'ANY_OF'",
+      "support": [
+       {
+        "source_id": "'user_request'",
+        "start": 0,
+        "end": 45,
+        "quote": "'поищете по фамилии Johansson и индексу 32286?'"
+       },
+       {
+        "source_id": "'user_request'",
+        "start": 0,
+        "end": 69,
+        "quote": "'Может, попробуете другие варианты написания имени? Isabella Johansson'"
+       },
+       {
+        "source_id": "'user_request'",
+        "start": 0,
+        "end": 27,
+        "quote": "'почтовый индекс точно 32286'"
+       }
+      ],
+      "unresolved_fields": [
+       "'exact email address'"
+      ],
+      "alternatives": [
+       "'name_variants'",
+       "'postal_code'"
+      ],
+      "frame_id_local": -1
+     }
+    ]
+   }
+  ],
+  "claim_axes": 6,
+  "claim_components": [],
+  "ledger": {
+   "event_count": 28,
+   "events": [
+    {
+     "event_id": "e0",
+     "kind": "text",
+     "name": null,
+     "call_id": null,
+     "text": null
+    },
+    {
+     "event_id": "e1",
+     "kind": "text",
+     "name": null,
+     "call_id": null,
+     "text": null
+    },
+    {
+     "event_id": "e2",
+     "kind": "text",
+     "name": null,
+     "call_id": null,
+     "text": null
+    },
+    {
+     "event_id": "e3",
+     "kind": "text",
+     "name": null,
+     "call_id": null,
+     "text": null
+    },
+    {
+     "event_id": "e4",
+     "kind": "call",
+     "name": null,
+     "call_id": "call:e4",
+     "text": null
+    },
+    {
+     "event_id": "e5",
+     "kind": "text",
+     "name": null,
+     "call_id": null,
+     "text": null
+    },
+    {
+     "event_id": "e6",
+     "kind": "call",
+     "name": null,
+     "call_id": "call:e6",
+     "text": null
+    },
+    {
+     "event_id": "e7",
+     "kind": "result",
+     "name": null,
+     "call_id": null,
+     "text": null
+    },
+    {
+     "event_id": "e8",
+     "kind": "text",
+     "name": null,
+     "call_id": null,
+     "text": null
+    },
+    {
+     "event_id": "e9",
+     "kind": "call",
+     "name": null,
+     "call_id": "call:e9",
+     "text": null
+    },
+    {
+     "event_id": "e10",
+     "kind": "result",
+     "name": null,
+     "call_id": "call:e9",
+     "text": null
+    },
+    {
+     "event_id": "e11",
+     "kind": "call",
+     "name": null,
+     "call_id": "call:e11",
+     "text": null
+    },
+    {
+     "event_id": "e12",
+     "kind": "call",
+     "name": null,
+     "call_id": "call:e12",
+     "text": null
+    },
+    {
+     "event_id": "e13",
+     "kind": "call",
+     "name": null,
+     "call_id": "call:e13",
+     "text": null
+    },
+    {
+     "event_id": "e14",
+     "kind": "call",
+     "name": null,
+     "call_id": "call:e14",
+     "text": null
+    },
+    {
+     "event_id": "e15",
+     "kind": "result",
+     "name": null,
+     "call_id": null,
+     "text": null
+    },
+    {
+     "event_id": "e16",
+     "kind": "result",
+     "name": null,
+     "call_id": null,
+     "text": null
+    },
+    {
+     "event_id": "e17",
+     "kind": "result",
+     "name": null,
+     "call_id": null,
+     "text": null
+    },
+    {
+     "event_id": "e18",
+     "kind": "result",
+     "name": null,
+     "call_id": null,
+     "text": null
+    },
+    {
+     "event_id": "e19",
+     "kind": "text",
+     "name": null,
+     "call_id": null,
+     "text": null
+    },
+    {
+     "event_id": "e20",
+     "kind": "call",
+     "name": null,
+     "call_id": "call:e20",
+     "text": null
+    },
+    {
+     "event_id": "e21",
+     "kind": "result",
+     "name": null,
+     "call_id": "call:e20",
+     "text": null
+    },
+    {
+     "event_id": "e22",
+     "kind": "text",
+     "name": null,
+     "call_id": null,
+     "text": null
+    },
+    {
+     "event_id": "e23",
+     "kind": "text",
+     "name": null,
+     "call_id": null,
+     "text": null
+    },
+    {
+     "event_id": "e24",
+     "kind": "call",
+     "name": null,
+     "call_id": "call:e24",
+     "text": null
+    },
+    {
+     "event_id": "e25",
+     "kind": "result",
+     "name": null,
+     "call_id": "call:e24",
+     "text": null
+    },
+    {
+     "event_id": "e26",
+     "kind": "text",
+     "name": null,
+     "call_id": null,
+     "text": null
+    },
+    {
+     "event_id": "e27",
+     "kind": "text",
+     "name": null,
+     "call_id": null,
+     "text": null
+    }
+   ],
+   "effects": [
+    {
+     "effect_id": "t2:e10:0",
+     "predicate": "has_pending_order",
+     "value_json": "null",
+     "event_id": "e10",
+     "provenance": "UNTRUSTED_T2_SEMANTIC_PROPOSAL",
+     "trusted": false
+    },
+    {
+     "effect_id": "t2:e21:0",
+     "predicate": "has_variant_with_material",
+     "value_json": "{\"materials\":[\"plastic\",\"maple\",\"bamboo\"]}",
+     "event_id": "e21",
+     "provenance": "UNTRUSTED_T2_SEMANTIC_PROPOSAL",
+     "trusted": false
+    },
+    {
+     "effect_id": "t2:e21:1",
+     "predicate": "has_variant_with_length",
+     "value_json": "{\"lengths\":[\"28 inch\",\"31 inch\",\"34 inch\"]}",
+     "event_id": "e21",
+     "provenance": "UNTRUSTED_T2_SEMANTIC_PROPOSAL",
+     "trusted": false
+    },
+    {
+     "effect_id": "t2:e21:2",
+     "predicate": "has_variant_with_price_range",
+     "value_json": "{\"max_price\":217.06,\"min_price\":180.1}",
+     "event_id": "e21",
+     "provenance": "UNTRUSTED_T2_SEMANTIC_PROPOSAL",
+     "trusted": false
+    },
+    {
+     "effect_id": "t2:e21:3",
+     "predicate": "has_unavailable_variant",
+     "value_json": "{\"unavailable\":true}",
+     "event_id": "e21",
+     "provenance": "UNTRUSTED_T2_SEMANTIC_PROPOSAL",
+     "trusted": false
+    },
+    {
+     "effect_id": "t2:e25:0",
+     "predicate": "payment_method_used_for_difference",
+     "value_json": "\"paypal_3024827\"",
+     "event_id": "e25",
+     "provenance": "UNTRUSTED_T2_SEMANTIC_PROPOSAL",
+     "trusted": false
+    }
+   ]
+  },
+  "axes": [
+   {
+    "name": "policy",
+    "choices": [
+     "policy:h0:r0#0"
+    ],
+    "universe_source": "grounded finite semantic candidates:2edad816793ed4540b92c329d88bb04bb5d2e9930431b5990b72bfcd3e1df655",
+    "complete": true
+   },
+   {
+    "name": "goal",
+    "choices": [
+     "goal:conservative:r0#0"
+    ],
+    "universe_source": "grounded finite semantic candidates:ef4b6133cde00de3290cbdd7f1f742f2a1b94b6eabf98c65b8618ff243196d16",
+    "complete": true
+   },
+   {
+    "name": "s0",
+    "choices": [
+     "s0:untyped"
+    ],
+    "universe_source": "untyped claim semantics",
+    "complete": true
+   },
+   {
+    "name": "s1",
+    "choices": [
+     "s1:untyped"
+    ],
+    "universe_source": "untyped claim semantics",
+    "complete": true
+   },
+   {
+    "name": "s2",
+    "choices": [
+     "s2:untyped"
+    ],
+    "universe_source": "untyped claim semantics",
+    "complete": true
+   },
+   {
+    "name": "s3",
+    "choices": [
+     "s3:untyped"
+    ],
+    "universe_source": "untyped claim semantics",
+    "complete": true
+   },
+   {
+    "name": "s4",
+    "choices": [
+     "s4:untyped"
+    ],
+    "universe_source": "untyped claim semantics",
+    "complete": true
+   },
+   {
+    "name": "s5",
+    "choices": [
+     "s5:untyped"
+    ],
+    "universe_source": "untyped claim semantics",
+    "complete": true
+   },
+   {
+    "name": "effect:e10",
+    "choices": [
+     "t2:e10:0"
+    ],
+    "universe_source": "nontrusted grounded T2 candidates:e10",
+    "complete": true
+   },
+   {
+    "name": "effect:e21",
+    "choices": [
+     "t2:e21:0",
+     "t2:e21:1",
+     "t2:e21:2",
+     "t2:e21:3"
+    ],
+    "universe_source": "nontrusted grounded T2 candidates:e21",
+    "complete": true
+   },
+   {
+    "name": "effect:e25",
+    "choices": [
+     "t2:e25:0"
+    ],
+    "universe_source": "nontrusted grounded T2 candidates:e25",
+    "complete": true
+   }
+  ],
+  "world_count": 4,
+  "required_worlds": 4,
+  "worlds": [
+   {
+    "world_id": "world:0",
+    "choices": [
+     "policy:h0:r0#0",
+     "goal:conservative:r0#0",
+     "s0:untyped",
+     "s1:untyped",
+     "s2:untyped",
+     "s3:untyped",
+     "s4:untyped",
+     "s5:untyped",
+     "t2:e10:0",
+     "t2:e21:0",
+     "t2:e25:0"
+    ],
+    "markers": [
+     "reading unresolved term",
+     "contract unresolved term",
+     "rule unresolved term",
+     "rule unresolved term",
+     "claim semantics untyped or causal",
+     "claim semantics untyped or causal",
+     "claim semantics untyped or causal",
+     "claim semantics untyped or causal",
+     "claim semantics untyped or causal",
+     "claim semantics untyped or causal"
+    ],
+    "groups": [],
+    "obligations": [
+     {
+      "obligation_id": "goal:rule3:ob",
+      "hypothesis_id": "goal_plan:e2e:goal:rule3:h0",
+      "claim_id": null,
+      "must_be_true": true,
+      "atom": {
+       "atom_id": "goal:rule3:hist",
+       "kind": "HISTORICAL_ACTION",
+       "predicate": "verify_expected_order_hose",
+       "entity": "EntityRef(key='resource', value='*', namespace='e2e')",
+       "time_index": 27,
+       "expected_json": "true",
+       "argument_constraints": []
+      },
+      "conditions": []
+     }
+    ]
+   },
+   {
+    "world_id": "world:1",
+    "choices": [
+     "policy:h0:r0#0",
+     "goal:conservative:r0#0",
+     "s0:untyped",
+     "s1:untyped",
+     "s2:untyped",
+     "s3:untyped",
+     "s4:untyped",
+     "s5:untyped",
+     "t2:e10:0",
+     "t2:e21:1",
+     "t2:e25:0"
+    ],
+    "markers": [
+     "reading unresolved term",
+     "contract unresolved term",
+     "rule unresolved term",
+     "rule unresolved term",
+     "claim semantics untyped or causal",
+     "claim semantics untyped or causal",
+     "claim semantics untyped or causal",
+     "claim semantics untyped or causal",
+     "claim semantics untyped or causal",
+     "claim semantics untyped or causal"
+    ],
+    "groups": [],
+    "obligations": [
+     {
+      "obligation_id": "goal:rule3:ob",
+      "hypothesis_id": "goal_plan:e2e:goal:rule3:h0",
+      "claim_id": null,
+      "must_be_true": true,
+      "atom": {
+       "atom_id": "goal:rule3:hist",
+       "kind": "HISTORICAL_ACTION",
+       "predicate": "verify_expected_order_hose",
+       "entity": "EntityRef(key='resource', value='*', namespace='e2e')",
+       "time_index": 27,
+       "expected_json": "true",
+       "argument_constraints": []
+      },
+      "conditions": []
+     }
+    ]
+   },
+   {
+    "world_id": "world:2",
+    "choices": [
+     "policy:h0:r0#0",
+     "goal:conservative:r0#0",
+     "s0:untyped",
+     "s1:untyped",
+     "s2:untyped",
+     "s3:untyped",
+     "s4:untyped",
+     "s5:untyped",
+     "t2:e10:0",
+     "t2:e21:2",
+     "t2:e25:0"
+    ],
+    "markers": [
+     "reading unresolved term",
+     "contract unresolved term",
+     "rule unresolved term",
+     "rule unresolved term",
+     "claim semantics untyped or causal",
+     "claim semantics untyped or causal",
+     "claim semantics untyped or causal",
+     "claim semantics untyped or causal",
+     "claim semantics untyped or causal",
+     "claim semantics untyped or causal"
+    ],
+    "groups": [],
+    "obligations": [
+     {
+      "obligation_id": "goal:rule3:ob",
+      "hypothesis_id": "goal_plan:e2e:goal:rule3:h0",
+      "claim_id": null,
+      "must_be_true": true,
+      "atom": {
+       "atom_id": "goal:rule3:hist",
+       "kind": "HISTORICAL_ACTION",
+       "predicate": "verify_expected_order_hose",
+       "entity": "EntityRef(key='resource', value='*', namespace='e2e')",
+       "time_index": 27,
+       "expected_json": "true",
+       "argument_constraints": []
+      },
+      "conditions": []
+     }
+    ]
+   },
+   {
+    "world_id": "world:3",
+    "choices": [
+     "policy:h0:r0#0",
+     "goal:conservative:r0#0",
+     "s0:untyped",
+     "s1:untyped",
+     "s2:untyped",
+     "s3:untyped",
+     "s4:untyped",
+     "s5:untyped",
+     "t2:e10:0",
+     "t2:e21:3",
+     "t2:e25:0"
+    ],
+    "markers": [
+     "reading unresolved term",
+     "contract unresolved term",
+     "rule unresolved term",
+     "rule unresolved term",
+     "claim semantics untyped or causal",
+     "claim semantics untyped or causal",
+     "claim semantics untyped or causal",
+     "claim semantics untyped or causal",
+     "claim semantics untyped or causal",
+     "claim semantics untyped or causal"
+    ],
+    "groups": [],
+    "obligations": [
+     {
+      "obligation_id": "goal:rule3:ob",
+      "hypothesis_id": "goal_plan:e2e:goal:rule3:h0",
+      "claim_id": null,
+      "must_be_true": true,
+      "atom": {
+       "atom_id": "goal:rule3:hist",
+       "kind": "HISTORICAL_ACTION",
+       "predicate": "verify_expected_order_hose",
+       "entity": "EntityRef(key='resource', value='*', namespace='e2e')",
+       "time_index": 27,
+       "expected_json": "true",
+       "argument_constraints": []
+      },
+      "conditions": []
+     }
+    ]
+   }
+  ],
+  "solver": {
+   "status": "UNRESOLVED",
+   "world_proofs": [
+    {
+     "world_id": "world:0",
+     "choices": [
+      "policy:h0:r0#0",
+      "goal:conservative:r0#0",
+      "s0:untyped",
+      "s1:untyped",
+      "s2:untyped",
+      "s3:untyped",
+      "s4:untyped",
+      "s5:untyped",
+      "t2:e10:0",
+      "t2:e21:0",
+      "t2:e25:0"
+     ],
+     "error_value": "UNKNOWN",
+     "obligation_safety": [
+      [
+       "goal:rule3:ob",
+       "UNKNOWN"
+      ],
+      [
+       "policy:h0:r0:term:h0_hist:if-and-only-if lowered to only-if (conservative direction)",
+       "UNKNOWN"
+      ],
+      [
+       "goal:conservative:r0:term:goal:guard applicability unknown (user_identity_verification)",
+       "UNKNOWN"
+      ],
+      [
+       "goal:rule1:term:concrete desired_hose identifier (e.g., ID, model, or exact description)",
+       "UNKNOWN"
+      ],
+      [
+       "goal:rule3:term:concrete expected_order identifier or scope",
+       "UNKNOWN"
+      ],
+      [
+       "s0:untyped",
+       "UNKNOWN"
+      ],
+      [
+       "s1:untyped",
+       "UNKNOWN"
+      ],
+      [
+       "s2:untyped",
+       "UNKNOWN"
+      ],
+      [
+       "s3:untyped",
+       "UNKNOWN"
+      ],
+      [
+       "s4:untyped",
+       "UNKNOWN"
+      ],
+      [
+       "s5:untyped",
+       "UNKNOWN"
+      ]
+     ]
+    },
+    {
+     "world_id": "world:1",
+     "choices": [
+      "policy:h0:r0#0",
+      "goal:conservative:r0#0",
+      "s0:untyped",
+      "s1:untyped",
+      "s2:untyped",
+      "s3:untyped",
+      "s4:untyped",
+      "s5:untyped",
+      "t2:e10:0",
+      "t2:e21:1",
+      "t2:e25:0"
+     ],
+     "error_value": "UNKNOWN",
+     "obligation_safety": [
+      [
+       "goal:rule3:ob",
+       "UNKNOWN"
+      ],
+      [
+       "policy:h0:r0:term:h0_hist:if-and-only-if lowered to only-if (conservative direction)",
+       "UNKNOWN"
+      ],
+      [
+       "goal:conservative:r0:term:goal:guard applicability unknown (user_identity_verification)",
+       "UNKNOWN"
+      ],
+      [
+       "goal:rule1:term:concrete desired_hose identifier (e.g., ID, model, or exact description)",
+       "UNKNOWN"
+      ],
+      [
+       "goal:rule3:term:concrete expected_order identifier or scope",
+       "UNKNOWN"
+      ],
+      [
+       "s0:untyped",
+       "UNKNOWN"
+      ],
+      [
+       "s1:untyped",
+       "UNKNOWN"
+      ],
+      [
+       "s2:untyped",
+       "UNKNOWN"
+      ],
+      [
+       "s3:untyped",
+       "UNKNOWN"
+      ],
+      [
+       "s4:untyped",
+       "UNKNOWN"
+      ],
+      [
+       "s5:untyped",
+       "UNKNOWN"
+      ]
+     ]
+    },
+    {
+     "world_id": "world:2",
+     "choices": [
+      "policy:h0:r0#0",
+      "goal:conservative:r0#0",
+      "s0:untyped",
+      "s1:untyped",
+      "s2:untyped",
+      "s3:untyped",
+      "s4:untyped",
+      "s5:untyped",
+      "t2:e10:0",
+      "t2:e21:2",
+      "t2:e25:0"
+     ],
+     "error_value": "UNKNOWN",
+     "obligation_safety": [
+      [
+       "goal:rule3:ob",
+       "UNKNOWN"
+      ],
+      [
+       "policy:h0:r0:term:h0_hist:if-and-only-if lowered to only-if (conservative direction)",
+       "UNKNOWN"
+      ],
+      [
+       "goal:conservative:r0:term:goal:guard applicability unknown (user_identity_verification)",
+       "UNKNOWN"
+      ],
+      [
+       "goal:rule1:term:concrete desired_hose identifier (e.g., ID, model, or exact description)",
+       "UNKNOWN"
+      ],
+      [
+       "goal:rule3:term:concrete expected_order identifier or scope",
+       "UNKNOWN"
+      ],
+      [
+       "s0:untyped",
+       "UNKNOWN"
+      ],
+      [
+       "s1:untyped",
+       "UNKNOWN"
+      ],
+      [
+       "s2:untyped",
+       "UNKNOWN"
+      ],
+      [
+       "s3:untyped",
+       "UNKNOWN"
+      ],
+      [
+       "s4:untyped",
+       "UNKNOWN"
+      ],
+      [
+       "s5:untyped",
+       "UNKNOWN"
+      ]
+     ]
+    },
+    {
+     "world_id": "world:3",
+     "choices": [
+      "policy:h0:r0#0",
+      "goal:conservative:r0#0",
+      "s0:untyped",
+      "s1:untyped",
+      "s2:untyped",
+      "s3:untyped",
+      "s4:untyped",
+      "s5:untyped",
+      "t2:e10:0",
+      "t2:e21:3",
+      "t2:e25:0"
+     ],
+     "error_value": "UNKNOWN",
+     "obligation_safety": [
+      [
+       "goal:rule3:ob",
+       "UNKNOWN"
+      ],
+      [
+       "policy:h0:r0:term:h0_hist:if-and-only-if lowered to only-if (conservative direction)",
+       "UNKNOWN"
+      ],
+      [
+       "goal:conservative:r0:term:goal:guard applicability unknown (user_identity_verification)",
+       "UNKNOWN"
+      ],
+      [
+       "goal:rule1:term:concrete desired_hose identifier (e.g., ID, model, or exact description)",
+       "UNKNOWN"
+      ],
+      [
+       "goal:rule3:term:concrete expected_order identifier or scope",
+       "UNKNOWN"
+      ],
+      [
+       "s0:untyped",
+       "UNKNOWN"
+      ],
+      [
+       "s1:untyped",
+       "UNKNOWN"
+      ],
+      [
+       "s2:untyped",
+       "UNKNOWN"
+      ],
+      [
+       "s3:untyped",
+       "UNKNOWN"
+      ],
+      [
+       "s4:untyped",
+       "UNKNOWN"
+      ],
+      [
+       "s5:untyped",
+       "UNKNOWN"
+      ]
+     ]
+    }
+   ],
+   "diagnostics": {
+    "primary": "POLICY_AMBIGUOUS",
+    "contributing": [],
+    "missing_evidence": []
+   }
+  },
+  "certificate": {
+   "present": false,
+   "status": null,
+   "source_sha256": null,
+   "problem_sha256": null,
+   "check_valid": null,
+   "check_errors": null
+  },
+  "frontend_statuses": [],
+  "component_summary": {
+   "policy_options": 1,
+   "goal_options": 1,
+   "claim_axes": 6,
+   "t2_effect_candidates": 6,
+   "frontend_failures": [],
+   "claim_failures": 2,
+   "status": "UNRESOLVED"
+  },
+  "product_decision": {
+   "binary_label": 0,
+   "used_fallback": true
+  }
+ }
+}

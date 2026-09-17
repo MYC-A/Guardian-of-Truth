@@ -1,0 +1,697 @@
+{
+ "raw": {
+  "case_id": "airline__8::t7",
+  "system_policy": "<instructions>\nYou are a customer service agent that helps the user according to the <policy> provided below.\nIn each turn you can either:\n- Send a message to the user.\n- Make a tool call.\nYou cannot do both at the same time.\n\nTry to be helpful and always follow the policy. Always make sure you generate valid JSON only.\n\nAlways communicate with the user in Russian. Keep tool names, tool call arguments, IDs, codes, and other data values exactly as they appear in the system — do not translate or transliterate them.\n</instructions>\n<policy>\n# Airline Agent Policy\n\nThe current time is 2024-05-15 15:00:00 EST.\n\nAs an airline agent, you can help users **book**, **modify**, or **cancel** flight reservations. You also handle **refunds and compensation**.\n\nBefore taking any actions that update the booking database (booking, modifying flights, editing baggage, changing cabin class, or updating passenger information), you must list the action details and obtain explicit user confirmation (yes) to proceed.\n\nYou should not provide any information, knowledge, or procedures not provided by the user or available tools, or give subjective recommendations or comments.\n\nYou should only make one tool call at a time, and if you make a tool call, you should not respond to the user simultaneously. If you respond to the user, you should not make a tool call at the same time.\n\nYou should deny user requests that are against this policy.\n\nYou should transfer the user to a human agent if and only if the request cannot be handled within the scope of your actions. To transfer, first make a tool call to transfer_to_human_agents, and then send the message 'YOU ARE BEING TRANSFERRED TO A HUMAN AGENT. PLEASE HOLD ON.' to the user.\n\n## Domain Basic\n\n### User\nEach user has a profile containing:\n- user id\n- email\n- addresses\n- date of birth\n- payment methods\n- membership level\n- reservation numbers\n\nThere are three types of payment methods: **credit card**, **gift card**, **travel certificate**.\n\nThere are three membership levels: **regular**, **silver**, **gold**.\n\n### Flight\nEach flight has the following attributes:\n- flight number\n- origin\n- destination\n- scheduled departure and arrival time (local time)\n\nA flight can be available at multiple dates. For each date:\n- If the status is **available**, the flight has not taken off, available seats and prices are listed.\n- If the status is **delayed** or **on time**, the flight has not taken off, cannot be booked.\n- If the status is **flying**, the flight has taken off but not landed, cannot be booked.\n\nThere are three cabin classes: **basic economy**, **economy**, **business**. **basic economy** is its own class, completely distinct from **economy**.\n\nSeat availability and prices are listed for each cabin class.\n\n### Reservation\nEach reservation specifies the following:\n- reservation id\n- user id\n- trip type\n- flights\n- passengers\n- payment methods\n- created time\n- baggages\n- travel insurance information\n\nThere are two types of trip: **one way** and **round trip**.\n\n## Book flight\n\nThe agent must first obtain the user id from the user. \n\nThe agent should then ask for the trip type, origin, destination.\n\nCabin:\n- Cabin class must be the same across all the flights in a reservation. \n\nPassengers: \n- Each reservation can have at most five passengers. \n- The agent needs to collect the first name, last name, and date of birth for each passenger. \n- All passengers must fly the same flights in the same cabin.\n\nPayment: \n- Each reservation can use at most one travel certificate, at most one credit card, and at most three gift cards. \n- The remaining amount of a travel certificate is not refundable. \n- All payment methods must already be in user profile for safety reasons.\n\nChecked bag allowance: \n- If the booking user is a regular member:\n  - 0 free checked bag for each basic economy passenger\n  - 1 free checked bag for each economy passenger\n  - 2 free checked bags for each business passenger\n- If the booking user is a silver member:\n  - 1 free checked bag for each basic economy passenger\n  - 2 free checked bag for each economy passenger\n  - 3 free checked bags for each business passenger\n- If the booking user is a gold member:\n  - 2 free checked bag for each basic economy passenger\n  - 3 free checked bag for each economy passenger\n  - 4 free checked bags for each business passenger\n- Each extra baggage is 50 dollars.\n\nDo not add checked bags that the user does not need.\n\nTravel insurance: \n- The agent should ask if the user wants to buy the travel insurance.\n- The travel insurance is 30 dollars per passenger and enables full refund if the user needs to cancel the flight given health or weather reasons.\n\n## Modify flight\n\nFirst, the agent must obtain the user id and reservation id. \n- The user must provide their user id. \n- If the user doesn't know their reservation id, the agent should help locate it using available tools.\n\nChange flights: \n- Basic economy flights cannot be modified.\n- Other reservations can be modified without changing the origin, destination, and trip type.\n- Some flight segments can be kept, but their prices will not be updated based on the current price.\n- The API does not check these for the agent, so the agent must make sure the rules apply before calling the API!\n\nChange cabin: \n- Cabin cannot be changed if any flight in the reservation has already been flown.\n- In other cases, all reservations, including basic economy, can change cabin without changing the flights.\n- Cabin class must remain the same across all the flights in the same reservation; changing cabin for just one flight segment is not possible.\n- If the price after cabin change is higher than the original price, the user is required to pay for the difference.\n- If the price after cabin change is lower than the original price, the user is should be refunded the difference.\n\nChange baggage and insurance: \n- The user can add but not remove checked bags.\n- The user cannot add insurance after initial booking.\n\nChange passengers:\n- The user can modify passengers but cannot modify the number of passengers.\n- Even a human agent cannot modify the number of passengers.\n\nPayment: \n- If the flights are changed, the user needs to provide a single gift card or credit card for payment or refund method. The payment method must already be in user profile for safety reasons.\n\n## Cancel flight\n\nFirst, the agent must obtain the user id and reservation id. \n- The user must provide their user id. \n- If the user doesn't know their reservation id, the agent should help locate it using available tools.\n\nThe agent must also obtain the reason for cancellation (change of plan, airline cancelled flight, or other reasons)\n\nIf any portion of the flight has already been flown, the agent cannot help and transfer is needed.\n\nOtherwise, flight can be cancelled if any of the following is true:\n- The booking was made within the last 24 hrs\n- The flight is cancelled by airline\n- It is a business flight\n- The user has travel insurance and the reason for cancellation is covered by insurance.\n\nThe API does not check that cancellation rules are met, so the agent must make sure the rules apply before calling the API!\n\nRefund:\n- The refund will go to original payment methods within 5 to 7 business days.\n\n## Refunds and Compensation\nDo not proactively offer a compensation unless the user explicitly asks for one.\n\nDo not compensate if the user is regular member and has no travel insurance and flies (basic) economy.\n\nAlways confirms the facts before offering compensation.\n\nOnly compensate if the user is a silver/gold member or has travel insurance or flies business.\n\n- If the user complains about cancelled flights in a reservation, the agent can offer a certificate as a gesture after confirming the facts, with the amount being $100 times the number of passengers.\n\n- If the user complains about delayed flights in a reservation and wants to change or cancel the reservation, the agent can offer a certificate as a gesture after confirming the facts and changing or cancelling the reservation, with the amount being $50 times the number of passengers.\n\nDo not offer compensation for any other reason than the ones listed above.\n</policy>\n\n[AVAILABLE TOOLS]\n- book_reservation — Book a reservation.\n    user_id: string! — The ID of the user to book the reservation such as 'sara_doe_496'`.\n    origin: string! — The IATA code for the origin city such as 'SFO'.\n    destination: string! — The IATA code for the destination city such as 'JFK'.\n    flight_type: string! [enum: round_trip|one_way] — The type of flight such as 'one_way' or 'round_trip'.\n    cabin: string! [enum: business|economy|basic_economy] — The cabin class such as 'basic_economy', 'economy', or 'business'.\n    flights: array! — An array of objects containing details about each piece of flight.\n        · flight_number: string! — Flight number, such as 'HAT001'.\n        · date: string! — The date for the flight in the format 'YYYY-MM-DD', such as '2024-05-01'.\n    passengers: array! — An array of objects containing details about each passenger.\n        · first_name: string! — Passenger's first name\n        · last_name: string! — Passenger's last name\n        · dob: string! — Date of birth in YYYY-MM-DD format\n    payment_methods: array! — An array of objects containing details about each payment method.\n        · payment_id: string! — Unique identifier for the payment\n        · amount: integer! — Payment amount in dollars\n    total_baggages: integer! — The total number of baggage items to book the reservation.\n    nonfree_baggages: integer! — The number of non-free baggage items to book the reservation.\n    insurance: string! [enum: yes|no] — Whether the reservation has insurance.\n- calculate — Calculate the result of a mathematical expression.\n    expression: string! — The mathematical expression to calculate, such as '2 + 2'. The expression can contain numbers, operators (+, -, *, /), parentheses, and spaces.\n- cancel_reservation — Cancel the whole reservation.\n    reservation_id: string! — The reservation ID, such as 'ZFA04Y'.\n- get_reservation_details — Get the details of a reservation.\n    reservation_id: string! — The reservation ID, such as '8JX2WO'.\n- get_user_details — Get the details of a user, including their reservations.\n    user_id: string! — The user ID, such as 'sara_doe_496'.\n- list_all_airports — Returns a list of all available airports.\n- search_direct_flight — Search for direct flights between two cities on a specific date.\n    origin: string! — The origin city airport in three letters, such as 'JFK'.\n    destination: string! — The destination city airport in three letters, such as 'LAX'.\n    date: string! — The date of the flight in the format 'YYYY-MM-DD', such as '2024-01-01'.\n- search_onestop_flight — Search for one-stop flights between two cities on a specific date.\n    origin: string! — The origin city airport in three letters, such as 'JFK'.\n    destination: string! — The destination city airport in three letters, such as 'LAX'.\n    date: string! — The date of the flight in the format 'YYYY-MM-DD', such as '2024-05-01'.\n- send_certificate — Send a certificate to a user. Be careful!\n    user_id: string! — The ID of the user to book the reservation, such as 'sara_doe_496'.\n    amount: integer! — The amount of the certificate to send.\n- transfer_to_human_agents — Transfer the user to a human agent, with a summary of the user's issue.\n    \n    Only transfer if\n     -  the user explicitly asks for a human agent\n     -  given the policy and the available tools, you cannot solve the user's issue.\n    summary: string! — A summary of the user's issue.\n- update_reservation_baggages — Update the baggage information of a reservation.\n    reservation_id: string! — The reservation ID, such as 'ZFA04Y'\n    total_baggages: integer! — The updated total number of baggage items included in the reservation.\n    nonfree_baggages: integer! — The updated number of non-free baggage items included in the reservation.\n    payment_id: string! — The payment id stored in user profile, such as 'credit_card_7815826', 'gift_card_7815826', 'certificate_7815826'.\n- update_reservation_flights — Update the flight information of a reservation.\n    reservation_id: string! — The reservation ID, such as 'ZFA04Y'.\n    cabin: string! [enum: business|economy|basic_economy] — The cabin class of the reservation\n    flights: array! — An array of objects containing details about each piece of flight in the ENTIRE new reservation. Even if the a flight segment is not changed, it should still be included in the array.\n        · flight_number: string! — Flight number, such as 'HAT001'.\n        · date: string! — The date for the flight in the format 'YYYY-MM-DD', such as '2024-05-01'.\n    payment_id: string! — The payment id stored in user profile, such as 'credit_card_7815826', 'gift_card_7815826', 'certificate_7815826'.\n- update_reservation_passengers — Update the passenger information of a reservation.\n    reservation_id: string! — The reservation ID, such as 'ZFA04Y'.\n    passengers: array! — An array of objects containing details about each passenger.\n        · first_name: string! — Passenger's first name\n        · last_name: string! — Passenger's last name\n        · dob: string! — Date of birth in YYYY-MM-DD format\n- get_flight_status — Get the status of a flight.\n    flight_number: string! — The flight number.\n    date: string! — The date of the flight.",
+  "user_request": "Здравствуйте! Я хотела бы забронировать авиабилет. Мне нужен перелёт в одну сторону из ORD в PHL на 26 мая.\n\nМой user id — sophia_silva_7557.\n\nДело в том, что я хочу забронировать точно такой же рейс, как мой недавний перелёт 10 мая из ORD в PHL. К сожалению, я не помню номер того рейса. Не могли бы вы помочь мне найти информацию об этом перелёте в моей истории?\n\nДа, это именно тот рейс, который мне нужен — HAT271 в Economy.\n\nПассажиров будет двое:\n1. Sophia Silva\n2. Kevin Smith, дата рождения — 2001-04-12\n\nСтраховка мне не нужна. Багажа у нас нет.\n\nМне нужны два места вместе в Economy — у прохода и среднее.",
+  "history_parts": 4,
+  "response": "⟦ASSISTANT · ход 7⟧\nДля завершения бронирования мне необходима дата рождения для вас (Sophia Silva). Пожалуйста, уточните её.\n\nТакже хочу сообщить, что я могу забронировать места в салоне, но выбор конкретных мест (например, у прохода или в центре) не предусмотрен моими инструментами бронирования. Вы сможете выбрать места при регистрации на рейс.\n\nКак только вы предоставите дату рождения, я подготовлю детали бронирования для вашего подтверждения.",
+  "gold_label": 1,
+  "gold_explanation": "В ходе 7 агент заявляет «мне необходима дата рождения для вас (Sophia Silva). Пожалуйста, уточните её», хотя эта дата уже есть в истории: в ходе 4 ответ get_user_details содержит \"dob\": \"1957-10-05\" для пользователя sophia_silva_7557 (Sophia Silva). Пользователь ранее указал этого пассажира именно как «Sophia Silva» (владельца профиля), так что DOB из профиля напрямую применим. Таким образом, запрос отсутствующей информации ложен — данные уже доступны агенту, и вместо запроса он должен был использовать DOB из профиля."
+ },
+ "trace": {
+  "case_id": "airline__8::t7",
+  "policy_readings": [
+   {
+    "reading_id": "policy:h0:r0",
+    "frontend": "h0",
+    "unresolved_terms": [
+     "h0_hist:if-and-only-if lowered to only-if (conservative direction)"
+    ],
+    "rules": [
+     {
+      "rule_id": "policy:h0:rule0",
+      "kind": "REQUIRE_CALL",
+      "modality": "REQUIRE",
+      "action_key": "book_reservation",
+      "actor": "assistant",
+      "relation": "ONLY_IF",
+      "conditions": [
+       {
+        "key": "get_reservation_details",
+        "negated": true,
+        "bound": "HISTORY",
+        "quote": "get_reservation_details",
+        "literal_kind": "ACTION"
+       },
+       {
+        "key": "get_user_details",
+        "negated": true,
+        "bound": "HISTORY",
+        "quote": "get_user_details",
+        "literal_kind": "ACTION"
+       },
+       {
+        "key": "list_all_airports",
+        "negated": true,
+        "bound": "HISTORY",
+        "quote": "list_all_airports",
+        "literal_kind": "ACTION"
+       }
+      ],
+      "exceptions": [],
+      "scope": [],
+      "source_quotes": [
+       "book_reservation",
+       "update_reservation_baggages",
+       "update_reservation_flights",
+       "update_reservation_passengers",
+       "get_reservation_details",
+       "get_user_details",
+       "list_all_airports"
+      ],
+      "unresolved_terms": [],
+      "alternatives": []
+     },
+     {
+      "rule_id": "policy:h0:rule1",
+      "kind": "REQUIRE_CALL",
+      "modality": "REQUIRE",
+      "action_key": "update_reservation_baggages",
+      "actor": "assistant",
+      "relation": "ONLY_IF",
+      "conditions": [
+       {
+        "key": "get_reservation_details",
+        "negated": true,
+        "bound": "HISTORY",
+        "quote": "get_reservation_details",
+        "literal_kind": "ACTION"
+       },
+       {
+        "key": "get_user_details",
+        "negated": true,
+        "bound": "HISTORY",
+        "quote": "get_user_details",
+        "literal_kind": "ACTION"
+       },
+       {
+        "key": "list_all_airports",
+        "negated": true,
+        "bound": "HISTORY",
+        "quote": "list_all_airports",
+        "literal_kind": "ACTION"
+       }
+      ],
+      "exceptions": [],
+      "scope": [],
+      "source_quotes": [
+       "update_reservation_baggages",
+       "book_reservation",
+       "update_reservation_flights",
+       "update_reservation_passengers",
+       "get_reservation_details",
+       "get_user_details",
+       "list_all_airports"
+      ],
+      "unresolved_terms": [],
+      "alternatives": []
+     },
+     {
+      "rule_id": "policy:h0:rule2",
+      "kind": "REQUIRE_CALL",
+      "modality": "REQUIRE",
+      "action_key": "update_reservation_flights",
+      "actor": "assistant",
+      "relation": "ONLY_IF",
+      "conditions": [
+       {
+        "key": "get_reservation_details",
+        "negated": true,
+        "bound": "HISTORY",
+        "quote": "get_reservation_details",
+        "literal_kind": "ACTION"
+       },
+       {
+        "key": "get_user_details",
+        "negated": true,
+        "bound": "HISTORY",
+        "quote": "get_user_details",
+        "literal_kind": "ACTION"
+       },
+       {
+        "key": "list_all_airports",
+        "negated": true,
+        "bound": "HISTORY",
+        "quote": "list_all_airports",
+        "literal_kind": "ACTION"
+       }
+      ],
+      "exceptions": [],
+      "scope": [],
+      "source_quotes": [
+       "update_reservation_flights",
+       "book_reservation",
+       "update_reservation_baggages",
+       "update_reservation_passengers",
+       "get_reservation_details",
+       "get_user_details",
+       "list_all_airports"
+      ],
+      "unresolved_terms": [],
+      "alternatives": []
+     },
+     {
+      "rule_id": "policy:h0:rule3",
+      "kind": "REQUIRE_CALL",
+      "modality": "REQUIRE",
+      "action_key": "update_reservation_passengers",
+      "actor": "assistant",
+      "relation": "ONLY_IF",
+      "conditions": [
+       {
+        "key": "get_reservation_details",
+        "negated": true,
+        "bound": "HISTORY",
+        "quote": "get_reservation_details",
+        "literal_kind": "ACTION"
+       },
+       {
+        "key": "get_user_details",
+        "negated": true,
+        "bound": "HISTORY",
+        "quote": "get_user_details",
+        "literal_kind": "ACTION"
+       },
+       {
+        "key": "list_all_airports",
+        "negated": true,
+        "bound": "HISTORY",
+        "quote": "list_all_airports",
+        "literal_kind": "ACTION"
+       }
+      ],
+      "exceptions": [],
+      "scope": [],
+      "source_quotes": [
+       "update_reservation_passengers",
+       "book_reservation",
+       "update_reservation_baggages",
+       "update_reservation_flights",
+       "get_reservation_details",
+       "get_user_details",
+       "list_all_airports"
+      ],
+      "unresolved_terms": [],
+      "alternatives": []
+     }
+    ]
+   }
+  ],
+  "goal_contracts": [],
+  "claim_axes": 4,
+  "claim_components": [],
+  "ledger": {
+   "event_count": 21,
+   "events": [
+    {
+     "event_id": "e0",
+     "kind": "text",
+     "name": null,
+     "call_id": null,
+     "text": null
+    },
+    {
+     "event_id": "e1",
+     "kind": "text",
+     "name": null,
+     "call_id": null,
+     "text": null
+    },
+    {
+     "event_id": "e2",
+     "kind": "text",
+     "name": null,
+     "call_id": null,
+     "text": null
+    },
+    {
+     "event_id": "e3",
+     "kind": "text",
+     "name": null,
+     "call_id": null,
+     "text": null
+    },
+    {
+     "event_id": "e4",
+     "kind": "call",
+     "name": null,
+     "call_id": "call:e4",
+     "text": null
+    },
+    {
+     "event_id": "e5",
+     "kind": "result",
+     "name": null,
+     "call_id": "call:e4",
+     "text": null
+    },
+    {
+     "event_id": "e6",
+     "kind": "text",
+     "name": null,
+     "call_id": null,
+     "text": null
+    },
+    {
+     "event_id": "e7",
+     "kind": "call",
+     "name": null,
+     "call_id": "call:e7",
+     "text": null
+    },
+    {
+     "event_id": "e8",
+     "kind": "result",
+     "name": null,
+     "call_id": "call:e7",
+     "text": null
+    },
+    {
+     "event_id": "e9",
+     "kind": "call",
+     "name": null,
+     "call_id": "call:e9",
+     "text": null
+    },
+    {
+     "event_id": "e10",
+     "kind": "call",
+     "name": null,
+     "call_id": "call:e10",
+     "text": null
+    },
+    {
+     "event_id": "e11",
+     "kind": "call",
+     "name": null,
+     "call_id": "call:e11",
+     "text": null
+    },
+    {
+     "event_id": "e12",
+     "kind": "call",
+     "name": null,
+     "call_id": "call:e12",
+     "text": null
+    },
+    {
+     "event_id": "e13",
+     "kind": "call",
+     "name": null,
+     "call_id": "call:e13",
+     "text": null
+    },
+    {
+     "event_id": "e14",
+     "kind": "result",
+     "name": null,
+     "call_id": null,
+     "text": null
+    },
+    {
+     "event_id": "e15",
+     "kind": "result",
+     "name": null,
+     "call_id": null,
+     "text": null
+    },
+    {
+     "event_id": "e16",
+     "kind": "result",
+     "name": null,
+     "call_id": null,
+     "text": null
+    },
+    {
+     "event_id": "e17",
+     "kind": "result",
+     "name": null,
+     "call_id": null,
+     "text": null
+    },
+    {
+     "event_id": "e18",
+     "kind": "result",
+     "name": null,
+     "call_id": null,
+     "text": null
+    },
+    {
+     "event_id": "e19",
+     "kind": "text",
+     "name": null,
+     "call_id": null,
+     "text": null
+    },
+    {
+     "event_id": "e20",
+     "kind": "text",
+     "name": null,
+     "call_id": null,
+     "text": null
+    }
+   ],
+   "effects": []
+  },
+  "axes": [
+   {
+    "name": "policy",
+    "choices": [
+     "policy:h0:r0#0"
+    ],
+    "universe_source": "grounded finite semantic candidates:2edad816793ed4540b92c329d88bb04bb5d2e9930431b5990b72bfcd3e1df655",
+    "complete": true
+   },
+   {
+    "name": "goal",
+    "choices": [
+     "goal:unresolved"
+    ],
+    "universe_source": "",
+    "complete": false
+   },
+   {
+    "name": "s0",
+    "choices": [
+     "s0:untyped"
+    ],
+    "universe_source": "untyped claim semantics",
+    "complete": true
+   },
+   {
+    "name": "s2",
+    "choices": [
+     "s2:untyped"
+    ],
+    "universe_source": "untyped claim semantics",
+    "complete": true
+   },
+   {
+    "name": "s3",
+    "choices": [
+     "s3:untyped"
+    ],
+    "universe_source": "untyped claim semantics",
+    "complete": true
+   },
+   {
+    "name": "s4",
+    "choices": [
+     "s4:untyped"
+    ],
+    "universe_source": "untyped claim semantics",
+    "complete": true
+   }
+  ],
+  "world_count": 1,
+  "required_worlds": 1,
+  "worlds": [
+   {
+    "world_id": "world:0",
+    "choices": [
+     "policy:h0:r0#0",
+     "goal:unresolved",
+     "s0:untyped",
+     "s2:untyped",
+     "s3:untyped",
+     "s4:untyped"
+    ],
+    "markers": [
+     "reading unresolved term",
+     "no goal contract available",
+     "claim semantics untyped or causal",
+     "claim semantics untyped or causal",
+     "claim semantics untyped or causal",
+     "claim semantics untyped or causal"
+    ],
+    "groups": [],
+    "obligations": [
+     {
+      "obligation_id": "policy:h0:rule0:ob",
+      "hypothesis_id": "policy:e2e:policy:h0:rule0:h0",
+      "claim_id": null,
+      "must_be_true": true,
+      "atom": {
+       "atom_id": "policy:h0:rule0:hist",
+       "kind": "HISTORICAL_ACTION",
+       "predicate": "book_reservation",
+       "entity": "EntityRef(key='resource', value='*', namespace='e2e')",
+       "time_index": 20,
+       "expected_json": "true",
+       "argument_constraints": []
+      },
+      "conditions": [
+       {
+        "atom_id": "policy:h0:rule0:cond0:hist",
+        "predicate": "get_reservation_details",
+        "entity": "EntityRef(key='prerequisite', value='*', namespace='e2e')",
+        "time_index": 20,
+        "expected_json": "false",
+        "kind": "CALL_ATTEMPTED"
+       },
+       {
+        "atom_id": "policy:h0:rule0:cond1:hist",
+        "predicate": "get_user_details",
+        "entity": "EntityRef(key='prerequisite', value='*', namespace='e2e')",
+        "time_index": 20,
+        "expected_json": "false",
+        "kind": "CALL_ATTEMPTED"
+       },
+       {
+        "atom_id": "policy:h0:rule0:cond2:hist",
+        "predicate": "list_all_airports",
+        "entity": "EntityRef(key='prerequisite', value='*', namespace='e2e')",
+        "time_index": 20,
+        "expected_json": "false",
+        "kind": "CALL_ATTEMPTED"
+       }
+      ]
+     },
+     {
+      "obligation_id": "policy:h0:rule1:ob",
+      "hypothesis_id": "policy:e2e:policy:h0:rule1:h0",
+      "claim_id": null,
+      "must_be_true": true,
+      "atom": {
+       "atom_id": "policy:h0:rule1:hist",
+       "kind": "HISTORICAL_ACTION",
+       "predicate": "update_reservation_baggages",
+       "entity": "EntityRef(key='resource', value='*', namespace='e2e')",
+       "time_index": 20,
+       "expected_json": "true",
+       "argument_constraints": []
+      },
+      "conditions": [
+       {
+        "atom_id": "policy:h0:rule1:cond0:hist",
+        "predicate": "get_reservation_details",
+        "entity": "EntityRef(key='prerequisite', value='*', namespace='e2e')",
+        "time_index": 20,
+        "expected_json": "false",
+        "kind": "CALL_ATTEMPTED"
+       },
+       {
+        "atom_id": "policy:h0:rule1:cond1:hist",
+        "predicate": "get_user_details",
+        "entity": "EntityRef(key='prerequisite', value='*', namespace='e2e')",
+        "time_index": 20,
+        "expected_json": "false",
+        "kind": "CALL_ATTEMPTED"
+       },
+       {
+        "atom_id": "policy:h0:rule1:cond2:hist",
+        "predicate": "list_all_airports",
+        "entity": "EntityRef(key='prerequisite', value='*', namespace='e2e')",
+        "time_index": 20,
+        "expected_json": "false",
+        "kind": "CALL_ATTEMPTED"
+       }
+      ]
+     },
+     {
+      "obligation_id": "policy:h0:rule2:ob",
+      "hypothesis_id": "policy:e2e:policy:h0:rule2:h0",
+      "claim_id": null,
+      "must_be_true": true,
+      "atom": {
+       "atom_id": "policy:h0:rule2:hist",
+       "kind": "HISTORICAL_ACTION",
+       "predicate": "update_reservation_flights",
+       "entity": "EntityRef(key='resource', value='*', namespace='e2e')",
+       "time_index": 20,
+       "expected_json": "true",
+       "argument_constraints": []
+      },
+      "conditions": [
+       {
+        "atom_id": "policy:h0:rule2:cond0:hist",
+        "predicate": "get_reservation_details",
+        "entity": "EntityRef(key='prerequisite', value='*', namespace='e2e')",
+        "time_index": 20,
+        "expected_json": "false",
+        "kind": "CALL_ATTEMPTED"
+       },
+       {
+        "atom_id": "policy:h0:rule2:cond1:hist",
+        "predicate": "get_user_details",
+        "entity": "EntityRef(key='prerequisite', value='*', namespace='e2e')",
+        "time_index": 20,
+        "expected_json": "false",
+        "kind": "CALL_ATTEMPTED"
+       },
+       {
+        "atom_id": "policy:h0:rule2:cond2:hist",
+        "predicate": "list_all_airports",
+        "entity": "EntityRef(key='prerequisite', value='*', namespace='e2e')",
+        "time_index": 20,
+        "expected_json": "false",
+        "kind": "CALL_ATTEMPTED"
+       }
+      ]
+     },
+     {
+      "obligation_id": "policy:h0:rule3:ob",
+      "hypothesis_id": "policy:e2e:policy:h0:rule3:h0",
+      "claim_id": null,
+      "must_be_true": true,
+      "atom": {
+       "atom_id": "policy:h0:rule3:hist",
+       "kind": "HISTORICAL_ACTION",
+       "predicate": "update_reservation_passengers",
+       "entity": "EntityRef(key='resource', value='*', namespace='e2e')",
+       "time_index": 20,
+       "expected_json": "true",
+       "argument_constraints": []
+      },
+      "conditions": [
+       {
+        "atom_id": "policy:h0:rule3:cond0:hist",
+        "predicate": "get_reservation_details",
+        "entity": "EntityRef(key='prerequisite', value='*', namespace='e2e')",
+        "time_index": 20,
+        "expected_json": "false",
+        "kind": "CALL_ATTEMPTED"
+       },
+       {
+        "atom_id": "policy:h0:rule3:cond1:hist",
+        "predicate": "get_user_details",
+        "entity": "EntityRef(key='prerequisite', value='*', namespace='e2e')",
+        "time_index": 20,
+        "expected_json": "false",
+        "kind": "CALL_ATTEMPTED"
+       },
+       {
+        "atom_id": "policy:h0:rule3:cond2:hist",
+        "predicate": "list_all_airports",
+        "entity": "EntityRef(key='prerequisite', value='*', namespace='e2e')",
+        "time_index": 20,
+        "expected_json": "false",
+        "kind": "CALL_ATTEMPTED"
+       }
+      ]
+     }
+    ]
+   }
+  ],
+  "solver": {
+   "status": "UNRESOLVED",
+   "world_proofs": [
+    {
+     "world_id": "world:0",
+     "choices": [
+      "policy:h0:r0#0",
+      "goal:unresolved",
+      "s0:untyped",
+      "s2:untyped",
+      "s3:untyped",
+      "s4:untyped"
+     ],
+     "error_value": "UNKNOWN",
+     "obligation_safety": [
+      [
+       "policy:h0:rule0:ob",
+       "TRUE"
+      ],
+      [
+       "policy:h0:rule1:ob",
+       "TRUE"
+      ],
+      [
+       "policy:h0:rule2:ob",
+       "TRUE"
+      ],
+      [
+       "policy:h0:rule3:ob",
+       "TRUE"
+      ],
+      [
+       "policy:h0:r0:term:h0_hist:if-and-only-if lowered to only-if (conservative direction)",
+       "UNKNOWN"
+      ],
+      [
+       "goal:unresolved",
+       "UNKNOWN"
+      ],
+      [
+       "s0:untyped",
+       "UNKNOWN"
+      ],
+      [
+       "s2:untyped",
+       "UNKNOWN"
+      ],
+      [
+       "s3:untyped",
+       "UNKNOWN"
+      ],
+      [
+       "s4:untyped",
+       "UNKNOWN"
+      ]
+     ]
+    }
+   ],
+   "diagnostics": {
+    "primary": "SCHEMA_ERROR",
+    "contributing": [
+     "POLICY_AMBIGUOUS"
+    ],
+    "missing_evidence": []
+   }
+  },
+  "certificate": {
+   "present": false,
+   "status": null,
+   "source_sha256": null,
+   "problem_sha256": null,
+   "check_valid": null,
+   "check_errors": null
+  },
+  "frontend_statuses": [
+   {
+    "component": "goal_conservative",
+    "kind": "SCHEMA",
+    "detail": ""
+   }
+  ],
+  "component_summary": {
+   "policy_options": 1,
+   "goal_options": 0,
+   "claim_axes": 4,
+   "t2_effect_candidates": 0,
+   "frontend_failures": [
+    {
+     "component": "goal_conservative",
+     "kind": "SCHEMA",
+     "detail": null
+    }
+   ],
+   "claim_failures": 0,
+   "status": "UNRESOLVED"
+  },
+  "product_decision": {
+   "binary_label": 0,
+   "used_fallback": true
+  }
+ }
+}
