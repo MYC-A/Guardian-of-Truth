@@ -96,7 +96,7 @@ def main() -> None:
                   "api_key_env": api_key_env, "cache_mode": args.cache_mode,
                   "max_output_tokens": args.max_output_tokens,
                   "reasoning_effort": args.reasoning_effort,
-                  "cache_path": str(cache_path.relative_to(ROOT)),
+                  "cache_path": cache_path.relative_to(ROOT).as_posix(),
                   "input_sha256": input_sha256, "rows": len(records), "modes": modes,
                   "run_label": args.run_label}
     (args.output_dir / f"run_config{artifact_suffix}.json").write_text(
@@ -108,7 +108,7 @@ def main() -> None:
         rows = run_mode(adapted, backend, mode, progress)
         by_mode[mode] = rows
         prediction_path = args.output_dir / f"{mode}_predictions{artifact_suffix}.csv"
-        seals[mode] = {"path": str(prediction_path.relative_to(ROOT)),
+        seals[mode] = {"path": prediction_path.relative_to(ROOT).as_posix(),
                        "sha256": write_predictions(rows, prediction_path),
                        "rows": len(rows), "provider": args.provider,
                        "model": model, "input_sha256": input_sha256}
