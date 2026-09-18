@@ -1,0 +1,76 @@
+{
+  "captured_at": "2026-09-19",
+  "note": "Per-engine capability findings recorded during the bake-off. Findings were discovered while porting the SAME NeutralCoreInput semantics to each engine; they are engine facts, not Guardian design decisions. Re-verified after the 2026-09-19 environment rebuild (fresh container: clingo 5.8.2 pip, SWI-Prolog 9.2.9 deb extraction, s(CASP) 1.1.4 pack clone, Drools 10.2.0 distribution).",
+  "clingo": {
+    "verdict": "FULL BACKEND CANDIDATE",
+    "native_capabilities_used": [
+      "stable models via choice rule 1 { active(I) : interp(I) } 1 — one model per admissible interpretation (manual world enumeration replaced)",
+      "recursive rule evaluation of condition trees through conjunction/disjunction tables (no per-node Python evaluation)",
+      "joins over fact relations (facts, evidence, entity/predicate identity)",
+      "arithmetic comparisons (<, <=, >, >=, ==) directly on numeric state values",
+      "aggregates: #max for latest-evidence position (staleness/current state), #count for cardinality atoms",
+      "brave/cautious consequences computed as model-set union/intersection and CROSS-CHECKED against the required consensus status per scenario (equivalence tested, not assumed — all 43 scenarios: EQUIVALENT)"
+    ],
+    "limitations_found": [
+      "ASP default negation is closed-world: `not support(P)` is NOT `refute(P)`. Encoded four-valued evidence explicitly (tval/2 from sup/ref facts) and gated every absence-derived refutation behind explicit premises (hist_complete, known_actors) — UNKNOWN can never silently become FALSE",
+      "same-position contradiction (BOTH) is not a native ASP concept; encoded as explicit both-marker facts"
+    ],
+    "failed_attempts": []
+  },
+  "scasp": {
+    "verdict": "FULL BACKEND CANDIDATE (with adapter-enumerated evidence joins)",
+    "native_capabilities_used": [
+      "goal-directed queries with JUSTIFICATION TREES (scasp/2 with tree(Tree)) — unique differentiator: human-readable proof trees per query",
+      "coinductive/top-down evaluation of the recursive semantic layer (tval tables, condition-tree folds, obligation safety as material implication over four-valued tables)",
+      "justification trees feed per-atom witnesses without a separate proof-record format"
+    ],
+    "limitations_found": [
+      "F1: dual generation over fact joins does not terminate / raises determinism_error in scasp_solve:stack_parents/3 — evidence joins (support/refute/staleness/cardinality markers) must be enumerated by the adapter as ground marker facts",
+      "F2: NOT re-entrant — only the first scasp/2 call per session works; one swipl process per query",
+      "F3: no `;` disjunctions allowed inside rule bodies (constraint of s(CASP) 1.1.4)",
+      "F4: predicates under `not` must be single-clause and DEFINED — negating an undefined predicate fails silently instead of raising",
+      "F5: clauses of every predicate must be contiguous in the source file",
+      "F6: ground facts must precede the rules referencing them (ordering constraint)",
+      "no choice rules: interpretations are evaluated as separate goal-directed derivations, not stable models"
+    ],
+    "failed_attempts": [
+      "pure-declarative encoding with s(CASP) doing the fact joins (blocked by F1/F2 after six documented engine findings)"
+    ]
+  },
+  "drools": {
+    "verdict": "FULL BACKEND CANDIDATE (classic Rete forward chaining)",
+    "native_capabilities_used": [
+      "declared fact types (DRL 'declare') — no javac/model classes needed; works on a bare JRE 21 via the single-file source launcher",
+      "pattern joins with constraints (entity wildcard, event-index bounds, actor matching)",
+      "accumulates: max (latest evidence position) and count (cardinality)",
+      "numeric comparisons in constraints",
+      "forward-chaining derivation of condition-tree values and obligation safety through generated rules",
+      "KieFileSystem programmatic build (no kmodule.xml on disk)"
+    ],
+    "limitations_found": [
+      "no stable models / answer sets: every interpretation is evaluated in the SAME session with obligations tagged by interpretation; the world error fold and consensus run in the Java harness, not the engine",
+      "four-valued UNKNOWN/BOTH is not engine semantics: truth tables encoded as MVEL expressions in rule consequences",
+      "DRL `not exists` is hard closed-world: absence-derived refutation rules are generated ONLY under the complete-history premise (structural gating — the generator never emits a `not` rule for open-world absence, so it cannot fire)"
+    ],
+    "failed_attempts": []
+  },
+  "souffle": {
+    "verdict": "NOT A CORE CANDIDATE; PROVENANCE PROBE ONLY (per directive)",
+    "probe_results": "transitive reachability with recursive Datalog join: OK; --provenance explain() of a derived tuple: OK (rule-level derivation tree with rule names R1/R2); runtime 0.02-0.03s",
+    "limitations_found": [
+      "no disjunctive/choice semantics — one least model only; cannot represent interpretation alternatives without external enumeration",
+      "no four-valued truth built in (would need extra relations per value, workable but the engine adds nothing over Clingo for our semantics)",
+      "strength is provenance (explain()) and massively parallel compiled evaluation — a future replacement for derived-fact provenance/certificate layers, not the policy core"
+    ]
+  },
+  "current_guardian_core": {
+    "verdict": "BASELINE (in-repo, production semantics)",
+    "honest_abstention_families": [
+      "numeric_lt / numeric_le / numeric_gt_false / equality / inequality (no comparison atoms)",
+      "count_ge / count_ge_fail / count_eq / count_temporal_entity / count_temporal_entity_fail (no cardinality atoms)",
+      "or_false / or_true / nested (limited disjunction in condition trees)",
+      "latest_state / superseded_state / conflicting_evidence / missing_state_evidence / unverified_mutation (value-typed state exception handling and mutation-staleness semantics partial)"
+    ],
+    "note": "16/43 scenarios end CURRENT_CORE_LIMITATION (honest UNRESOLVED abstention, never a wrong answer). The core never manufactured an unsound verdict in the suite."
+  }
+}

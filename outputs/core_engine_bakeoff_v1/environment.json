@@ -1,0 +1,64 @@
+{
+  "captured_at": "2026-09-19 (re-run)",
+  "environment_rebuild": {
+    "reason": "fresh sandbox container on 2026-09-19 (original container from 2026-09-18 was lost with its /home/z engine installs); all engines reinstalled at the same paths from the same sources; library INDEX regeneration + libtcmalloc fix repeated; synthetic suite, performance suite and souffle probe re-run from scratch with IDENTICAL results (27/43, 43/43, 43/43, 43/43)",
+    "souffle_install_delta": "official .deb release (ubuntu-2404) used instead of RPM extraction; libncurses6 from Debian pool"
+  },
+  "host": "sandbox container (no GPU) — same reduced machine as semantic_pipeline_v1",
+  "cpu": {"model": "Intel(R) Xeon(R) Processor", "cores": 2},
+  "ram": {"total_gib": 3.9, "swap": 0},
+  "disk": {"total_gib": 9.9, "free_gib_at_start": 9.1},
+  "python": "3.12.14 (/home/z/.venv)",
+  "java": "OpenJDK 21.0.12.1 (JRE only, no javac/maven; single-file source launcher used)",
+  "starting_branch": "codex-update-run",
+  "starting_commit": "4e6d20072be86a42466a9490495600dfeb4b9dc6",
+  "semantic_pipeline_v1_commit": "4e6d20072be86a42466a9490495600dfeb4b9dc6",
+  "current_core": "guardian_truth.vnext.e2e (core_v1.GuardianE2EV1 pipeline; solver/world_integration/policy_lowering at 4e6d200, PRODUCTION semantics arm B3/FULL_SEMANTICS)",
+  "branch": "core-engine-bakeoff-v1",
+  "engines": {
+    "current_guardian": {
+      "status": "IN-REPO BASELINE",
+      "adapter_reuses": ["vnext.ledger", "vnext.tools (TrustedContract/evaluate_t1)", "vnext.e2e.world_integration (build_worlds/make_problem/solve_e2e)", "vnext.proof_records", "vnext.types.consensus"],
+      "semantics": "FULL_SEMANTICS (B3: conservative_state + alternative_groups + inconsistent_status + claim_typing)"
+    },
+    "clingo": {
+      "status": "INSTALLED",
+      "version": "5.8.2 (pip 'clingo', official Potassco Python bindings)",
+      "install": "pip3 install clingo",
+      "usage": "in-process Python API (Control/ground/solve, model enumeration; brave/cautious computed by model-set union/intersection)",
+      "extras": {"clingcon": "NOT installed — plain clingo arithmetic/aggregates sufficient for all scenario families (documented in engine_capabilities.json)", "clingo-lpx": "NOT installed — same reason"}
+    },
+    "scasp": {
+      "status": "INSTALLED",
+      "version": "s(CASP) 1.1.4 pack on SWI-Prolog 9.2.9 (swi-prolog-nox 9.2.9+dfsg-1+b1 from Debian trixie, extracted locally without root)",
+      "install": [
+        "apt-get download swi-prolog-nox swi-prolog-core swi-prolog-core-packages libtcmalloc-minimal4t64; dpkg-deb -x into /home/z/swipl-root",
+        "generated missing library/INDEX (deb postinst skipped): swipl -g make_library_index(...)",
+        "pack_install(scasp) cloned to ~/.local/share/swi-prolog/pack/scasp"
+      ],
+      "usage": "subprocess adapter; program + query written to temp .pl; answers via scasp/2 with tree(Tree) option",
+      "notes": "load scasp.pl by absolute path; library INDEX regeneration was required (relocated prefix breaks autoload otherwise)"
+    },
+    "drools": {
+      "status": "INSTALLED",
+      "version": "Drools 10.2.0 + KIE API 10.2.0",
+      "install": "20 jars downloaded directly from Maven Central (no maven, no javac): drools-core, drools-compiler, drools-mvel, drools-util, drools-io, drools-base, drools-wiring-api, drools-wiring-static, drools-wiring-dynamic, drools-drl-ast, drools-drl-parser, drools-drl-extensions, drools-kiesession, kie-api, kie-internal, kie-memory-compiler, kie-util-maven-support, mvel2-2.5.2.Final, antlr-runtime-3.5.3, slf4j-api-2.0.9",
+      "usage": "Java single-file source launcher (java -cp <jars> Harness.java — JRE21 in-memory compiler) + DRL 'declare' fact types (no javac-generated model classes needed)",
+      "classpath_root": "/home/z/drools-jars"
+    },
+    "souffle": {
+      "status": "INSTALLED (optional provenance probe only)",
+      "version": "2.5 (official x86_64-oraclelinux-9 release RPM; binary extracted via custom RPM/cpio/zstd reader — no rpm2cpio on box)",
+      "install": "github.com/souffle-lang/souffle release 2.5 RPM -> /home/z/souffle-root/bin/souffle + libncurses6 from Debian",
+      "usage": "subprocess; --provenance mode for explain() queries"
+    }
+  },
+  "engine_install_problems_solved": [
+    "clingo: PEP 668 system pip refused; venv pip3 works",
+    "swi-prolog: no root for apt install -> apt-get download + dpkg-deb -x local prefix; libtcmalloc_minimal.so.4 added; relocated prefix broke library autoload (missing INDEX) -> make_library_index/1",
+    "scasp pack build error (prolog_config maplist) was a symptom of the same broken autoload; after INDEX regeneration scasp loads and answers queries with justification trees",
+    "drools: no javac/maven -> Java 21 single-file source launcher compiles in memory on JRE; DRL 'declare' types remove the need for precompiled model classes; dependency closure resolved iteratively via ClassNotFoundException (20 jars, ~7 MB)",
+    "souffle: static binary shipped only as RPM; extracted with custom zstd+cpio parser in Python (no rpm2cpio available)"
+  ],
+  "notes": "All engine binaries live OUTSIDE the repository (under /home/z/*) — the repo carries only adapter code. Absolute paths recorded here so the experiment is reproducible on this machine; on another machine engines must be reinstalled."
+}
