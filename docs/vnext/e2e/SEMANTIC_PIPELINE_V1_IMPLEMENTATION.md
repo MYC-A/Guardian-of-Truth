@@ -1,81 +1,166 @@
-# Semantic Pipeline V1 implementation
+# Semantic Pipeline V1
 
-## Boundary
+## Boundary and data flow
 
-Semantic Pipeline V1 is a feature-flagged frontend alongside Guardian's existing frontend. It does not change the evidence ledger, provenance records, world generation, solver, certificates, certificate checker, UNKNOWN semantics, or completion invariants. The thin adapter lowers only RuleIR constructs that the existing `PolicyReading` space can represent exactly. Anything richer remains explicitly unresolved.
+Semantic Pipeline V1 is a feature-flagged semantic frontend. It does not alter
+Guardian's evidence ledger, world generation, solver, certificates, certificate
+checker, UNKNOWN semantics, or completion invariants. The bridge lowers only
+RuleIR constructs that the existing core can represent losslessly; richer or
+ambiguous meanings remain explicitly unresolved.
 
-## Data flow
+`prompt + response -> lossless timeline -> recall retrieval -> independent
+extractors -> RuleIR -> NLI evidence -> binding alternatives -> Phi ->
+conservative bridge -> existing proof core`
 
-`prompt + target response → lossless timeline → recall retrieval → independent Mistral/NuExtract candidates → RuleIR → deterministic rendering → NLI evidence → tool/field/entity binding → SemanticInterpretationSet (Φ) → conservative adapter → existing Guardian core`
+Gold labels are split from immutable inference records before any stage runs.
+They are used only for post-inference metrics.
 
-The default is A5: Mistral + NuExtract3-W4A16 + BGE-M3 retrieval + NLI DeBERTa + BGE reranker. GLiNER and LangExtract are independent, disabled feature flags.
+## Real model contracts
 
-## Source and timeline
+NuExtract uses `numind/NuExtract3-W4A16` through `AutoProcessor` and
+`AutoModelForImageTextToText`. The NuExtract-native template is serialized with
+`json.dumps(...)` and passed as the `template` chat-template argument with
+`enable_thinking=False`. It requests an exact `source_quote`. Python then finds
+the quote in the fragment and creates half-open offsets. Zero matches and
+multiple matches are unresolved; the pipeline never chooses an occurrence by
+score or by accident.
 
-The timeline keeps byte-for-byte prompt and response roots plus structural child segments for roles, calls, results, tool declarations, and schemas. Chronology uses deterministic integer `event_index`; no absent timestamp is invented. Every segment carries document-relative coordinates and exact text. Retrieval coverage marks each structural segment as `ROUTED` or `PRESENT_NOT_ROUTED`, distinguishing absent information from present-but-unrouted information. Extractor unresolved fields distinguish routed-but-lost meaning.
+GLiNER2.5 is not imported by the Guardian process. A one-shot JSON subprocess
+uses `/mnt/data/guardian/gliner2_env/bin/python`, imports
+`gliner2.AutoExtractor`, loads `fastino/gliner2.5-multi-v1` with
+`map_location="cuda", quantize=True`, and performs entity and relation
+extraction. This keeps its Transformers 4.x environment isolated from the main
+Transformers 5.16.1 environment. A6/A8 attempt this real sidecar and record
+`EXECUTED`, `UNAVAILABLE`, or `FAILED` explicitly.
 
-## Recall retrieval
+LangExtract 1.7 is an LLM extraction orchestrator, not a local checkpoint.
+Installing the package alone is not execution. Because V1 has no configured
+LangExtract model-provider plugin, A7/A8 record
+`UNAVAILABLE: MODEL_PROVIDER_NOT_CONFIGURED`; they never report a successful
+no-op. LangExtract output cannot change proof semantics even when a provider is
+added later.
 
-Retrieval is a union of source-class guarantees, exact lexical links, target tool/schema links, knowledge/document result guarantees, BGE-M3 top-k, and configurable timeline neighbors. Embeddings only add candidates. Configuration uses top-k and source-class guarantees rather than a threshold tuned to `valid.parquet`.
+## Stage-major lifecycle
 
-## Semantic extraction and RuleIR
+The runner prepares every active case, then processes the complete batch one
+checkpoint at a time:
 
-Mistral receives exact fragments, minimal neighboring context, metadata, and the RuleIR schema. It is asked for interpretations, never a verdict or label. Credentials come from `MISTRAL_API_KEY`; the established lowercase `mistral_api_key` is accepted only when the standard variable is absent, so the standard variable has precedence. An explicit config/`--mistral-model` wins for the model, followed by `MISTRAL_MODEL`, lowercase `mistral_model`, then the default. The project's whitelist-only `.env` loader is reused. There is no remote fallback provider.
+1. BGE-M3 retrieval (one load for all retrieval cache misses)
+2. remote Mistral extraction, when selected
+3. NuExtract (one load)
+4. optional isolated GLiNER2 sidecar (one load in the worker)
+5. NLI DeBERTa (one load)
+6. BGE-M3 binding (one load)
+7. BGE reranker (one load)
+8. Phi and unchanged Guardian proof core
 
-NuExtract uses `numind/NuExtract3-W4A16` locally and independently produces candidates in the same RuleIR space before seeing Mistral output. RuleIR is domain-neutral and compositional: modality, subject, ACTION/STATE/CLAIM/INFORMATION/EFFECT targets, boolean trees, IF/ONLY_IF/UNLESS, temporal relations, comparisons, cardinality, values, entity references, unresolved references, and exact source spans.
+Each local model is unloaded before the next model is loaded. `timings.json`
+contains per-stage timing, lifecycle records, `stage_load_counts`, and
+`model_load_counts`. The same counts are copied into `run_manifest.json`, so a
+limit-3/5 smoke run can mechanically demonstrate one load per stage regardless
+of case count. BGE-M3 intentionally has two total loads because retrieval and
+binding are separated by the larger NuExtract and NLI stages; each BGE stage
+still loads it exactly once.
 
-## NLI and Φ
+The Hugging Face cache and Guardian stage cache are separate:
 
-The deterministic renderer turns the same RuleIR into the same natural-language hypothesis. `cross-encoder/nli-deberta-v3-base` compares the exact source premise with that rendering and stores logits, normalized scores, label, checkpoint, and rendering. NLI is evidence, not formal proof. A strong self-contradiction prevents a candidate from being the sole supported interpretation; NEUTRAL remains uncertain.
+- Hugging Face files: `/mnt/data/guardian/hf_cache` (hub subdirectory under it)
+- Guardian content-addressed results: `--cache-dir` or
+  `<output>/.guardian-cache/semantic-v1`
 
-Canonical-equal candidates merge extractor provenance. Distinct plausible candidates remain separate members of Φ. There is no majority vote and no highest-score collapse. Each interpretation records RuleIR, source spans/IDs, extractors, NLI evidence, binding alternatives, unresolved components, and digest.
+`HF_HUB_OFFLINE=1` and `TRANSFORMERS_OFFLINE=1` are supported and recorded in
+`environment.json`.
 
-## Binding
+## Independent ablations
 
-Tools and fields use exact names first, then BGE-M3 retrieval and pairwise BGE reranking against names, descriptions, and schemas. Entity candidates come only from exact source literals. Multiple plausible bindings are preserved; embedding and reranker scores never become proof. No keyword-to-tool domain rules exist.
-
-## Optional evidence layers
-
-GLiNER uses the verified `gliner.GLiNER` path and extracts only ACTION/STATE/VALUE/ENTITY/CLAIM-like spans. V1 makes no relation-extraction claim. LangExtract is an optional source-alignment hook and cannot create, delete, or judge semantics. Both are disabled in A5 because measurable benefit has not yet been established.
-
-## Model lifecycle and resume
-
-Large local models are loaded sequentially: BGE retrieval, NuExtract, optional GLiNER, NLI, BGE binding, BGE reranker. After every stage the manager deletes the model, runs garbage collection, empties the CUDA cache, and records load/execution duration plus peak allocated/reserved VRAM. Mistral, embeddings, NuExtract, GLiNER, NLI, and reranking use content-addressed caches keyed by content, checkpoint, model configuration, and schema version—never by a gold label. Completed case markers make `--resume` safe after interruption.
-
-## Gold firewall and artifacts
-
-The loader splits optional labels into a separate map before constructing immutable inference records. Labels are used only to calculate metrics after predictions. Every run writes `run_manifest.json`, `environment.json`, `config.json`, `environment/config.json`, `predictions.csv`, `metrics.json`, and `timings.json`. Each case contains source, retrieval, both extractor outputs, optional GLiNER evidence, NLI, bindings, Φ, core result, and a readable summary. Single-case mode mirrors these under `traces/`.
-
-## Ablations
-
-- A0: current Guardian frontend.
-- A1: new source/retrieval + Mistral.
-- A2: new source/retrieval + NuExtract.
-- A3: Mistral + NuExtract → Φ.
+- A0: current Guardian frontend; Mistral core backend.
+- A1: Mistral RuleIR frontend only.
+- A2: NuExtract RuleIR frontend only. No Mistral client is created. Since the
+  existing core still needs a semantic backend for other frontend tasks, core
+  status is honestly `UNRESOLVED` with `CORE_SEMANTIC_BACKEND_NOT_CONFIGURED`.
+- A3: Mistral + NuExtract to Phi.
 - A4: A3 + NLI.
-- A5: A4 + BGE binding/reranking (default).
-- A6: A5 + GLiNER.
-- A7: A5 + LangExtract.
-- A8: A5 + both optional layers.
+- A5: A4 + BGE binding/reranking (default; no GLiNER/LangExtract).
+- A6: A5 + real GLiNER2 sidecar.
+- A7: A5 + LangExtract request (currently explicitly unavailable).
+- A8: A5 + both optional requests.
 
-## Known limitations
+Mistral frontend extraction and the core semantic backend are separate config
+dimensions. There is no hidden fallback provider.
 
-V1 deliberately does not solve all remaining false negatives. The thin core adapter currently lowers only exact action-level modalities with simple conjunctions. Comparisons, cardinality, richer temporal rules, claims, and state/effect targets remain unresolved until the proof-core representation can accept them without weakening meaning. Argument provenance remains a separate future subsystem. Actual T4 execution was not performed in the Windows development environment; the user's verified Colab compatibility is treated as authoritative.
+## ModelScope A10 setup and smoke sequence
 
-## Running
+Do not reinstall or modify torch, CUDA, or the preconfigured main environment.
+From the repository root:
 
 ```bash
+source /mnt/data/guardian/venv/bin/activate
+export HF_HOME=/mnt/data/guardian/hf_cache
+export HUGGINGFACE_HUB_CACHE=/mnt/data/guardian/hf_cache/hub
+export GUARDIAN_GLINER2_PYTHON=/mnt/data/guardian/gliner2_env/bin/python
+export GUARDIAN_SEMANTIC_CACHE=/mnt/data/guardian/cache/semantic-v1
+
+# The target environment already contains the verified dependencies.
+python -m pip install -e . --no-deps
+python -c 'import torch,transformers,peft,sentence_transformers,compressed_tensors; print(torch.__version__, transformers.__version__, torch.cuda.get_device_name(0))'
+
+pytest -q tests/semantic_pipeline_v1
 python scripts/run_semantic_pipeline_v1.py \
-  --input-dir /content/guardian_tests \
-  --output-dir /content/guardian_outputs \
-  --semantic-frontend v1 \
-  --ablation A5 \
-  --resume
+  --input-file valid.parquet --output-dir outputs/semantic-v1-dry \
+  --ablation A5 --limit 1 --dry-run --no-resume
+
+# Real one-case A5.
+python scripts/run_semantic_pipeline_v1.py \
+  --input-file valid.parquet --output-dir outputs/semantic-v1-a5-one \
+  --ablation A5 --limit 1 --cache-dir "$GUARDIAN_SEMANTIC_CACHE" --resume
+
+# Multi-case lifecycle proof. Inspect model_load_counts in timings.json.
+python scripts/run_semantic_pipeline_v1.py \
+  --input-file valid.parquet --output-dir outputs/semantic-v1-a5-five \
+  --ablation A5 --limit 5 --cache-dir "$GUARDIAN_SEMANTIC_CACHE" --resume
+python -c 'import json; x=json.load(open("outputs/semantic-v1-a5-five/timings.json")); print(x["stage_load_counts"]); print(x["model_load_counts"])'
+
+# Direct offline checkpoint smoke; this makes no Mistral call.
+HF_HUB_OFFLINE=1 TRANSFORMERS_OFFLINE=1 \
+python scripts/preload_semantic_models_v1.py \
+  --models embedding nuextract nli reranker --device cuda
+
+# Pipeline smoke with HF offline. Mistral is still remote and is unrelated to HF.
+HF_HUB_OFFLINE=1 TRANSFORMERS_OFFLINE=1 \
+python scripts/run_semantic_pipeline_v1.py \
+  --input-file valid.parquet --output-dir outputs/semantic-v1-a5-offline \
+  --ablation A5 --limit 1 --device cuda \
+  --cache-dir "$GUARDIAN_SEMANTIC_CACHE" --resume
+
+# GLiNER2 smoke in the isolated environment; does not import it in the main venv.
+python scripts/preload_semantic_models_v1.py --models gliner --device cuda \
+  --gliner-python /mnt/data/guardian/gliner2_env/bin/python
+
+# A6 uses the same real sidecar in the pipeline.
+python scripts/run_semantic_pipeline_v1.py \
+  --input-file valid.parquet --output-dir outputs/semantic-v1-a6-one \
+  --ablation A6 --limit 1 --device cuda \
+  --gliner-python /mnt/data/guardian/gliner2_env/bin/python \
+  --cache-dir "$GUARDIAN_SEMANTIC_CACHE" --resume
 ```
 
-The Python API calls the identical implementation:
+`MISTRAL_API_KEY` and `MISTRAL_MODEL` are read from `.env` or the environment.
+No secret value is written to run artifacts.
 
-```python
-from guardian_truth.semantic_pipeline_v1 import run_experiment
-run_experiment(input_dir="/content/guardian_tests", output_dir="/content/guardian_outputs", resume=True)
-```
+## Artifacts and resume
+
+Every run writes `run_manifest.json`, `environment.json`, `config.json`,
+`predictions.csv`, `metrics.json`, and `timings.json`. Each case contains source
+segments, retrieval, independent extractor outputs, component statuses, NLI,
+binding candidates, Phi, core result, and a readable summary. Cache keys include
+content, checkpoint, relevant config, and schema/template version—never labels.
+Completed-case seals preserve resume behavior.
+
+## Known limits
+
+The core bridge currently lowers only exact action-level modalities with simple
+conjunctions. Comparisons, cardinality, rich temporal rules, claims, and
+state/effect targets remain unresolved rather than weakened. Windows CI cannot
+validate CUDA, cached checkpoints, or the separate Linux sidecar; the real A10
+commands above must be run on ModelScope and their artifacts retained before
+claiming successful GPU execution.

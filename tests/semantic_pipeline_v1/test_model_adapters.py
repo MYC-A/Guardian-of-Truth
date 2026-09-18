@@ -1,6 +1,14 @@
 import math
+import json
+from contextlib import nullcontext
+import sys
+from types import SimpleNamespace
 
+from guardian_truth.semantic_pipeline_v1.models.gliner_optional import GLiNER2Sidecar
+from guardian_truth.semantic_pipeline_v1.models.langextract_optional import LangExtractAligner
+from guardian_truth.semantic_pipeline_v1.models.lifecycle import ModelLifecycleManager
 from guardian_truth.semantic_pipeline_v1.models.nli import NLIFirewall
+from guardian_truth.semantic_pipeline_v1.models.nuextract import NuExtractRuleExtractor, normalize_nuextract
 
 
 class _Config:
@@ -26,3 +34,97 @@ def test_nli_preserves_raw_logits_and_normalizes_scores():
     assert evidence.label == "CONTRADICTION"
     assert math.isclose(sum(evidence.scores.values()), 1.0)
     assert evidence.scores["CONTRADICTION"] > evidence.scores["ENTAILMENT"]
+
+
+def test_nuextract_normalization_grounds_only_unique_exact_quote():
+    source = "Never close account ACC-1. Never close account ACC-1. Verify identity first."
+    value = {"actions": [{"action": "close", "object": "ACC-1", "modality": "FORBID",
+                           "source_quote": "Never close account ACC-1."}],
+             "temporal_relations": [{"first": "Verify identity", "relation": "before",
+                                      "second": "close account",
+                                      "source_quote": "Verify identity first."}]}
+    candidates = normalize_nuextract(value, extractor="test", segment_id="s", source_text=source)
+    assert candidates[0].source_spans == ()
+    assert "ambiguous-source-quote:2" in candidates[0].unresolved_components
+    assert candidates[1].source_spans[0].quote == "Verify identity first."
+    assert candidates[1].rule.temporal == "BEFORE"
+    assert candidates[1].rule.target.name == "Verify identity"
+    assert candidates[1].rule.condition.term.name == "close account"
+
+
+def test_nuextract_calls_processor_with_json_string_template(monkeypatch):
+    captured = {}
+
+    class Inputs(dict):
+        def to(self, device):
+            captured["device"] = device
+            return self
+
+    class Output:
+        def __getitem__(self, key):
+            assert key[1].start == 3
+            return "trimmed-token-ids"
+
+    class Processor:
+        def apply_chat_template(self, messages, **kwargs):
+            captured["messages"] = messages
+            captured["kwargs"] = kwargs
+            return Inputs(input_ids=SimpleNamespace(shape=(1, 3)))
+
+        def batch_decode(self, generated, **kwargs):
+            assert generated == "trimmed-token-ids"
+            return ['{"actions":[{"action":"close","object":"account",'
+                    '"modality":"FORBID","source_quote":"Never close account."}]}']
+
+    class Model:
+        device = "cuda:0"
+
+        def generate(self, **kwargs):
+            assert kwargs["do_sample"] is False
+            return Output()
+
+    monkeypatch.setitem(sys.modules, "torch", SimpleNamespace(
+        inference_mode=lambda: nullcontext()))
+    extractor = NuExtractRuleExtractor(model_name="fake", model=Model(), processor=Processor())
+    candidates = extractor.extract(segment_id="s", source_text="Never close account.")
+    assert isinstance(captured["kwargs"]["template"], str)
+    assert isinstance(json.loads(captured["kwargs"]["template"]), dict)
+    assert captured["kwargs"]["enable_thinking"] is False
+    assert candidates[0].source_spans[0].quote == "Never close account."
+
+
+def test_gliner2_adapter_uses_json_subprocess_contract(tmp_path):
+    worker = tmp_path / "worker.py"
+    worker.write_text("", encoding="utf-8")
+    captured = {}
+
+    def fake_run(command, **kwargs):
+        captured["command"] = command
+        captured["request"] = json.loads(kwargs["input"])
+        return SimpleNamespace(returncode=0, stderr="", stdout=json.dumps({
+            "status": "EXECUTED", "model": "g", "device": "cuda",
+            "rows": [{"id": "x", "entities": {}, "relations": {}}]}))
+
+    adapter = GLiNER2Sidecar(model_name="g", python_executable="sidecar-python",
+                             worker_path=worker, run=fake_run)
+    result = adapter.extract_batch([{"id": "x", "text": "A before B"}])
+    assert captured["command"] == ["sidecar-python", str(worker)]
+    assert "before" in captured["request"]["relation_labels"]
+    assert result["rows"][0]["id"] == "x"
+
+
+def test_langextract_without_provider_is_not_a_successful_noop(monkeypatch):
+    monkeypatch.setattr("importlib.util.find_spec", lambda name: object())
+    status = LangExtractAligner().status()
+    assert status == {"state": "UNAVAILABLE", "reason": "MODEL_PROVIDER_NOT_CONFIGURED",
+                      "executed": False}
+
+
+def test_lifecycle_reports_one_load_for_one_stage_batch():
+    lifecycle = ModelLifecycleManager("cpu")
+    with lifecycle.loaded(stage="batched", model_name="checkpoint", loader=lambda _: object()):
+        for _ in range(5):
+            pass
+    assert lifecycle.load_counts() == {"checkpoint": 1}
+    assert lifecycle.stage_load_counts() == {"batched": 1}
+    assert lifecycle.records[0]["load_index"] == 1

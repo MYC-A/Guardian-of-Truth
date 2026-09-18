@@ -26,9 +26,13 @@ def main(argv=None) -> int:
     parser.add_argument("--enable-langextract", action=argparse.BooleanOptionalAction, default=None)
     parser.add_argument("--cache-dir", type=Path)
     parser.add_argument("--device", default="auto")
+    parser.add_argument("--gliner-python", default=os.environ.get("GUARDIAN_GLINER2_PYTHON"),
+                        help="Python executable from the isolated gliner2 environment")
     parser.add_argument("--retrieval-top-k", type=int, default=12)
     parser.add_argument("--neighbor-window", type=int, default=1)
     parser.add_argument("--mistral-model")
+    parser.add_argument("--core-backend", choices=("mistral", "unavailable"),
+                        help="semantic backend used by the unchanged proof core")
     parser.add_argument("--dry-run", action="store_true",
                         help="exercise I/O/cache/artifacts without loading or calling models")
     args = parser.parse_args(argv)
@@ -42,6 +46,10 @@ def main(argv=None) -> int:
         overrides["enable_langextract"] = args.enable_langextract
     if args.cache_dir is not None:
         overrides["cache_dir"] = str(args.cache_dir)
+    if args.gliner_python is not None:
+        overrides["gliner_python"] = args.gliner_python
+    if args.core_backend is not None:
+        overrides["core_backend"] = args.core_backend
     overrides["mistral_model"] = (args.mistral_model or os.environ.get("MISTRAL_MODEL")
                                    or os.environ.get("mistral_model")
                                    or SemanticPipelineConfig.mistral_model)

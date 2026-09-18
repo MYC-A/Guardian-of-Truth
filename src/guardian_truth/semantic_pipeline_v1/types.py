@@ -3,7 +3,15 @@
 from __future__ import annotations
 
 from dataclasses import asdict, dataclass
+from enum import Enum
 from typing import Any
+
+
+class ComponentState(str, Enum):
+    EXECUTED = "EXECUTED"
+    DISABLED = "DISABLED"
+    UNAVAILABLE = "UNAVAILABLE"
+    FAILED = "FAILED"
 
 
 @dataclass(frozen=True)

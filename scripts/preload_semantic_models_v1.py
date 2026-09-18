@@ -15,6 +15,7 @@ def main(argv=None) -> int:
     parser.add_argument("--models", nargs="+", choices=("embedding", "nuextract", "nli", "reranker", "gliner"),
                         default=("embedding", "nuextract", "nli", "reranker"))
     parser.add_argument("--device", default="auto")
+    parser.add_argument("--gliner-python", default="/mnt/data/guardian/gliner2_env/bin/python")
     args = parser.parse_args(argv)
     config = SemanticPipelineConfig(device=args.device)
     lifecycle = ModelLifecycleManager(args.device)
@@ -31,14 +32,25 @@ def main(argv=None) -> int:
     if "reranker" in args.models:
         from guardian_truth.semantic_pipeline_v1.models.reranker import BGEReranker
         loaders["reranker"] = (config.reranker_model, BGEReranker.load)
-    if "gliner" in args.models:
-        from guardian_truth.semantic_pipeline_v1.models.gliner_optional import GLiNEREvidenceExtractor
-        loaders["gliner"] = (config.gliner_model, GLiNEREvidenceExtractor.load)
-    for stage in args.models:
+    for stage in (item for item in args.models if item != "gliner"):
         model_name, loader = loaders[stage]
         with lifecycle.loaded(stage=f"preload:{stage}", model_name=model_name,
                               loader=lambda device, n=model_name, fn=loader: fn(n, device)):
             print(f"verified {stage}: {model_name}", flush=True)
+    if "gliner" in args.models:
+        from guardian_truth.semantic_pipeline_v1.models.gliner_optional import GLiNER2Sidecar
+        adapter = GLiNER2Sidecar(model_name=config.gliner_model,
+                                 python_executable=args.gliner_python)
+        result = adapter.extract_batch([{"id": "smoke", "text":
+            "Identity verification happens before the account is closed."}],
+            device=lifecycle.resolved_device())
+        lifecycle.record_external({
+            "stage": "preload:gliner", "model": config.gliner_model,
+            "device": result.get("device"), "load_duration_s": result.get("load_duration_s", 0),
+            "execution_duration_s": result.get("execution_duration_s", 0),
+            "max_allocated_vram_bytes": None, "max_reserved_vram_bytes": None,
+            "process_isolated": True, "architecture": result.get("architecture")})
+        print(json.dumps(result["rows"], ensure_ascii=False, indent=2), flush=True)
     print(json.dumps(lifecycle.records, ensure_ascii=False, indent=2))
     return 0
 

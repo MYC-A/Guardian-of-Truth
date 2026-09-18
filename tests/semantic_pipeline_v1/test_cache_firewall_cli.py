@@ -51,3 +51,42 @@ def test_ablation_flags_match_declared_architectures():
     assert SemanticPipelineConfig.for_ablation("A6").enable_gliner
     assert SemanticPipelineConfig.for_ablation("A7").enable_langextract
     assert SemanticPipelineConfig.for_ablation("A8").enable_gliner
+    assert SemanticPipelineConfig.for_ablation("A2").core_backend == "unavailable"
+    assert not SemanticPipelineConfig.for_ablation("A2").use_mistral
+    assert not SemanticPipelineConfig.for_ablation("A5").enable_gliner
+    assert not SemanticPipelineConfig.for_ablation("A5").enable_langextract
+
+
+def test_a2_non_dry_does_not_construct_hidden_mistral_client(tmp_path, monkeypatch):
+    import guardian_truth.semantic_pipeline_v1.runner as runner
+    from guardian_truth.semantic_pipeline_v1.models.embeddings import BGEEmbedder
+    from guardian_truth.semantic_pipeline_v1.models.nuextract import NuExtractRuleExtractor
+
+    class ForbiddenMistral:
+        def __init__(self, **kwargs):
+            raise AssertionError("A2 constructed a hidden Mistral client")
+
+    original_retrieve = runner.retrieve_fragments
+
+    def lexical_retrieve(*args, **kwargs):
+        kwargs.pop("embedder", None)
+        return original_retrieve(*args, **kwargs)
+
+    monkeypatch.setattr(runner, "MistralRuleExtractor", ForbiddenMistral)
+    monkeypatch.setattr(runner, "retrieve_fragments", lexical_retrieve)
+    monkeypatch.setattr(BGEEmbedder, "load", staticmethod(lambda model, device: object()))
+    monkeypatch.setattr(NuExtractRuleExtractor, "load",
+                        staticmethod(lambda model, device: (object(), object())))
+    monkeypatch.setattr(NuExtractRuleExtractor, "extract", lambda self, **kwargs: ())
+    source = tmp_path / "input.jsonl"
+    source.write_text("".join(json.dumps({"id": f"a2-{index}", "prompt": "plain prompt",
+        "response": f"plain response {index}"}) + "\n" for index in range(3)), encoding="utf-8")
+    result = run_experiment(input_file=source, output_dir=tmp_path / "out",
+        config=SemanticPipelineConfig.for_ablation("A2", cache_dir=str(tmp_path / "cache")),
+        resume=False, dry_run=False)
+    assert result["manifest"]["core_semantic_backend"] == "unavailable"
+    assert "mistral-small-latest" not in result["manifest"]["model_load_counts"]
+    assert result["manifest"]["model_load_counts"] == {
+        "BAAI/bge-m3": 1, "numind/NuExtract3-W4A16": 1}
+    assert result["manifest"]["stage_load_counts"] == {
+        "embedding_retrieval": 1, "nuextract": 1}

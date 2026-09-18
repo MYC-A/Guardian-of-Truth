@@ -21,7 +21,7 @@ PY
 TMP_DIR="$(mktemp -d)"
 trap 'rm -rf -- "$TMP_DIR"' EXIT
 python -m pip install --dry-run --report "$TMP_DIR/pip-report.json" \
-  -e '.[data,semantic-v1]'
+  -e '.[data,semantic-v1-colab]'
 python - "$TMP_DIR/pip-report.json" <<'PY'
 import json
 import sys
@@ -35,13 +35,11 @@ if bad:
 print("Dependency plan preserves stock PyTorch/CUDA.")
 PY
 
-python -m pip install --upgrade-strategy only-if-needed -e '.[data,semantic-v1]'
+python -m pip install --upgrade-strategy only-if-needed -e '.[data,semantic-v1-colab]'
 python - <<'PY'
-import compressed_tensors
 import langextract
 import sentence_transformers
 import transformers
-from gliner import GLiNER
 import guardian_truth.semantic_pipeline_v1
 
 print("transformers:", transformers.__version__)
