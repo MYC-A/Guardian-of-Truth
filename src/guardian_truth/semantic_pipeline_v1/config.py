@@ -87,7 +87,8 @@ class SemanticPipelineConfig:
             raise ValueError(f"unknown ablation: {name}")
         values = dict(ABLATIONS[name])
         values.update(overrides)
-        # Optional evidence layers are off unless selected by A6-A8 or overridden.
+        # Optional layers are off unless selected by A6-A8 or explicitly overridden.
+        # Runs with LangExtract enabled are diagnostic-only until it has a provider.
         values.setdefault("enable_gliner", False)
         values.setdefault("enable_langextract", False)
         return cls(ablation=name, **values)
@@ -96,4 +97,17 @@ class SemanticPipelineConfig:
         return replace(self, cache_dir=str(path))
 
     def as_dict(self) -> dict:
-        return asdict(self)
+        value = asdict(self)
+        value["experiment_class"] = self.experiment_class
+        value["quality_evaluation_eligible"] = self.quality_evaluation_eligible
+        return value
+
+    @property
+    def quality_evaluation_eligible(self) -> bool:
+        # LangExtract has no configured provider-backed implementation in V1.
+        # Any run requesting it is diagnostic, not a quality ablation.
+        return self.ablation not in {"A7", "A8"} and not self.enable_langextract
+
+    @property
+    def experiment_class(self) -> str:
+        return "quality-ablation" if self.quality_evaluation_eligible else "diagnostic-only"

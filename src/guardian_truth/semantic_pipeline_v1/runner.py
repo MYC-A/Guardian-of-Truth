@@ -52,7 +52,8 @@ class _CaseState:
     query: str = ""
     retrieval: RetrievalResult | None = None
     segment_by_id: dict = field(default_factory=dict)
-    by_extractor: dict = field(default_factory=lambda: {"mistral": [], "nuextract": []})
+    by_extractor: dict = field(default_factory=lambda: {
+        "mistral": [], "nuextract": [], "gliner": []})
     candidates: list[RuleCandidate] = field(default_factory=list)
     gliner_rows: list[dict] | None = None
     langextract_rows: dict | None = None
@@ -200,6 +201,8 @@ def _write_case_artifacts(case_dir: Path, *, state: _CaseState, core: dict,
     _json_dump(case_dir / "retrieved_fragments.json", to_wire(state.retrieval))
     _json_dump(case_dir / "mistral.json", [to_wire(item) for item in state.by_extractor["mistral"]])
     _json_dump(case_dir / "nuextract.json", [to_wire(item) for item in state.by_extractor["nuextract"]])
+    _json_dump(case_dir / "gliner_candidates.json",
+               [to_wire(item) for item in state.by_extractor["gliner"]])
     _json_dump(case_dir / "gliner_evidence.json", {
         "status": state.component_status.get("gliner"), "rows": state.gliner_rows or []})
     _json_dump(case_dir / "langextract_alignment.json", state.langextract_rows or {
@@ -212,11 +215,14 @@ def _write_case_artifacts(case_dir: Path, *, state: _CaseState, core: dict,
     (case_dir / "summary.txt").write_text(summary, encoding="utf-8")
 
 
-def _metric_summary(rows: list[dict], gold: dict[str, int]) -> dict:
+def _metric_summary(rows: list[dict], gold: dict[str, int], *, quality_eligible: bool,
+                    quality_ineligible_reason: str | None = None) -> dict:
     metrics = {"cases": len(rows), "source_segments": sum(row["source_segments"] for row in rows),
                "retrieved_fragments": sum(row["retrieved_fragments"] for row in rows),
                "mistral_candidates": sum(row["mistral_candidates"] for row in rows),
                "nuextract_candidates": sum(row["nuextract_candidates"] for row in rows),
+               "gliner_candidates": sum(row["gliner_candidates"] for row in rows),
+               "quality_evaluation_eligible": quality_eligible,
                "extractor_agreements": sum(row["extractor_agreements"] for row in rows),
                "extractor_disagreements": sum(row["extractor_disagreements"] for row in rows),
                "nli_contradictions": sum(row["nli_contradictions"] for row in rows),
@@ -226,7 +232,7 @@ def _metric_summary(rows: list[dict], gold: dict[str, int]) -> dict:
                "unresolved_bindings": sum(row["unresolved_bindings"] for row in rows),
                "core_statuses": {status: sum(row["core_status"] == status for row in rows)
                                  for status in ("PROVED_ERROR", "PROVED_NO_ERROR", "UNRESOLVED", "INCONSISTENT")}}
-    scored = [row for row in rows if row["id"] in gold]
+    scored = [row for row in rows if row["id"] in gold] if quality_eligible else []
     if scored:
         tp = sum(row["prediction"] == 1 and gold[row["id"]] == 1 for row in scored)
         fp = sum(row["prediction"] == 1 and gold[row["id"]] == 0 for row in scored)
@@ -237,6 +243,8 @@ def _metric_summary(rows: list[dict], gold: dict[str, int]) -> dict:
         metrics["post_inference_evaluation"] = {
             "TP": tp, "FP": fp, "FN": fn, "TN": tn, "precision": precision, "recall": recall,
             "f1": 2 * precision * recall / (precision + recall) if precision + recall else 0.0}
+    elif not quality_eligible:
+        metrics["post_inference_evaluation_skipped_reason"] = quality_ineligible_reason
     return metrics
 
 
@@ -285,6 +293,9 @@ def run_experiment(*, input_dir=None, input_file=None, output_dir,
     _json_dump(output / "environment" / "runtime.json", environment)
     manifest = {
         "schema_version": config.schema_version, "ablation": config.ablation,
+        "experiment_class": config.experiment_class,
+        "declared_quality_evaluation_eligible": config.quality_evaluation_eligible,
+        "quality_evaluation_eligible": config.quality_evaluation_eligible,
         "semantic_frontend": "current" if config.use_current_frontend else "v1",
         "core_semantic_backend": config.core_backend, "execution_order": "stage-major",
         "dry_run": dry_run, "resume": resume, "case_count": len(records),
@@ -402,7 +413,8 @@ def run_experiment(*, input_dir=None, input_file=None, output_dir,
 
     # GLiNER2.5 runs once, in a Transformers-4.x sidecar environment.
     if config.enable_gliner and states and not dry_run:
-        from .models.gliner_optional import GLiNER2Sidecar, GLiNER2SidecarError
+        from .models.gliner_optional import (GLiNER2Sidecar, GLiNER2SidecarError,
+                                             normalize_gliner2_evidence)
         if not Path(config.gliner_python).is_file():
             for state in states:
                 state.component_status["gliner"] = _status(
@@ -421,7 +433,7 @@ def run_experiment(*, input_dir=None, input_file=None, output_dir,
                     if cached is None:
                         pending.append((state, fragment, key, item_id))
                     else:
-                        cached_rows[item_id] = cached
+                        cached_rows[item_id] = {**cached, "id": item_id}
             try:
                 if pending:
                     adapter = GLiNER2Sidecar(model_name=config.gliner_model,
@@ -441,14 +453,25 @@ def run_experiment(*, input_dir=None, input_file=None, output_dir,
                     returned = {row["id"]: row for row in response["rows"]}
                     for _, _, key, item_id in pending:
                         row = returned[item_id]
-                        cache.put("gliner2", key, row)
+                        cache.put("gliner2", key, {
+                            "entities": row.get("entities", {}),
+                            "relations": row.get("relations", {})})
                         cached_rows[item_id] = row
                 for state in states:
                     state.gliner_rows = [cached_rows[f"{state.safe_id}:{fragment.segment_id}"]
                                          for fragment in state.retrieval.fragments]
+                    for fragment, row in zip(state.retrieval.fragments,
+                                             state.gliner_rows, strict=True):
+                        candidates = normalize_gliner2_evidence(
+                            row, segment_id=fragment.segment_id,
+                            source_text=fragment.exact_text, model_name=config.gliner_model)
+                        state.by_extractor["gliner"].extend(candidates)
+                        state.candidates.extend(candidates)
                     state.component_status["gliner"] = _status(
                         "EXECUTED", model=config.gliner_model,
-                        process="isolated-subprocess", cached=not pending)
+                        process="isolated-subprocess", cached=not pending,
+                        candidate_source=True,
+                        candidates=len(state.by_extractor["gliner"]))
             except (GLiNER2SidecarError, KeyError, ValueError) as error:
                 for state in states:
                     state.component_status["gliner"] = _status(
@@ -528,28 +551,23 @@ def run_experiment(*, input_dir=None, input_file=None, output_dir,
                 "DRY_RUN" if dry_run else "ABLATION_DISABLED")
             state.component_status["binding"] = _status("DISABLED", reason)
 
-    # LangExtract does not contain a model. Without an explicit provider it is
-    # unavailable, never a successful no-op.
+    # LangExtract remains an explicitly diagnostic future feature. It neither
+    # mutates candidates nor participates in Phi until a provider-backed,
+    # grounding-only contract is implemented and tested.
     for state in states:
-        state.phi = build_phi(state.candidates, state.retrieval.source_coverage,
-                              contradiction_threshold=config.nli_contradiction_threshold)
         if config.enable_langextract and not dry_run:
-            from .models.langextract_optional import LangExtractAligner, LangExtractUnavailable
+            from .models.langextract_optional import LangExtractAligner
             aligner = LangExtractAligner(model_id=config.langextract_model)
             status = aligner.status()
             state.component_status["langextract"] = status
-            if status["state"] == "EXECUTED":
-                try:
-                    aligned = aligner.align(state.record.prompt,
-                                            [to_wire(item) for item in state.candidates])
-                    state.langextract_rows = {"status": status, "mode": "span-alignment-only",
-                        "changed_semantics": False, "aligned_candidates": aligned}
-                except LangExtractUnavailable as error:
-                    state.component_status["langextract"] = _status(
-                        "UNAVAILABLE", str(error))
+            state.langextract_rows = {"status": status, "mode": "diagnostic-only",
+                "changed_semantics": False, "participates_in_phi": False,
+                "aligned_candidates": []}
         else:
             state.component_status["langextract"] = _status(
                 "DISABLED", "DRY_RUN" if dry_run else "ABLATION_DISABLED")
+        state.phi = build_phi(state.candidates, state.retrieval.source_coverage,
+                              contradiction_threshold=config.nli_contradiction_threshold)
 
     current_backend = semantic_backend = None
     if mistral is not None:
@@ -623,6 +641,7 @@ def run_experiment(*, input_dir=None, input_file=None, output_dir,
             "retrieved_fragments": len(state.retrieval.fragments),
             "mistral_candidates": len(state.by_extractor["mistral"]),
             "nuextract_candidates": len(state.by_extractor["nuextract"]),
+            "gliner_candidates": len(state.by_extractor["gliner"]),
             "extractor_agreements": agreements, "extractor_disagreements": disagreements,
             "nli_contradictions": labels.count("CONTRADICTION"),
             "nli_neutral": labels.count("NEUTRAL"),
@@ -656,7 +675,20 @@ def run_experiment(*, input_dir=None, input_file=None, output_dir,
         writer.writeheader()
         for row in predictions:
             writer.writerow({"id": row["id"], "label": row["prediction"]})
-    metrics = _metric_summary(predictions, gold)
+    gliner_executed = (not config.enable_gliner or not states or all(
+        state.component_status.get("gliner", {}).get("state") == "EXECUTED"
+        for state in states))
+    quality_eligible = (config.quality_evaluation_eligible and not dry_run
+                        and gliner_executed)
+    quality_ineligible_reason = None
+    if not config.quality_evaluation_eligible:
+        quality_ineligible_reason = "DIAGNOSTIC_ONLY_LANGEXTRACT"
+    elif config.enable_gliner and not gliner_executed:
+        quality_ineligible_reason = "GLINER2_NOT_EXECUTED"
+    elif dry_run:
+        quality_ineligible_reason = "DRY_RUN"
+    metrics = _metric_summary(predictions, gold, quality_eligible=quality_eligible,
+                              quality_ineligible_reason=quality_ineligible_reason)
     _json_dump(output / "metrics.json", metrics)
     _json_dump(output / "timings.json", {"cases": timings, "models": lifecycle.records,
                                           "model_load_counts": lifecycle.load_counts(),
@@ -667,6 +699,9 @@ def run_experiment(*, input_dir=None, input_file=None, output_dir,
     _json_dump(output / "environment" / "runtime.json", environment)
     manifest["completed_cases"] = len(predictions)
     manifest["completed"] = len(predictions) == len(records)
+    manifest["quality_evaluation_eligible"] = quality_eligible
+    if quality_ineligible_reason:
+        manifest["quality_ineligible_reason"] = quality_ineligible_reason
     manifest["model_load_counts"] = lifecycle.load_counts()
     manifest["stage_load_counts"] = lifecycle.stage_load_counts()
     component_rollup = {}

@@ -6,9 +6,137 @@ The Guardian process intentionally never imports gliner2 or its Transformers
 
 from __future__ import annotations
 
+import hashlib
 import json
 from pathlib import Path
 import subprocess
+
+from ..rule_ir import rule_digest
+from ..types import RuleCandidate, RuleExpression, RuleIR, RuleTerm, SourceSpan
+
+
+_ENTITY_KINDS = {
+    "action": "ACTION",
+    "state": "STATE",
+    "claim": "CLAIM",
+    "value": "INFORMATION",
+    "entity": "INFORMATION",
+}
+
+
+def _plain_span(item, *, segment_id: str, source_text: str) -> SourceSpan | None:
+    if not isinstance(item, dict):
+        return None
+    try:
+        start, end, text = int(item["start"]), int(item["end"]), str(item["text"])
+    except (KeyError, TypeError, ValueError):
+        return None
+    if not text or not 0 <= start < end <= len(source_text) or source_text[start:end] != text:
+        return None
+    return SourceSpan(segment_id, start, end, text)
+
+
+def _gliner_candidate(*, rule: RuleIR, spans: tuple[SourceSpan, ...], index: str,
+                      model_name: str, segment_id: str,
+                      unresolved: tuple[str, ...] = ()) -> RuleCandidate:
+    extractor = f"gliner2:{model_name}"
+    digest = rule_digest(rule)
+    candidate_id = hashlib.sha256(
+        f"{extractor}\0{segment_id}\0{index}\0{digest}".encode("utf-8")
+    ).hexdigest()[:20]
+    return RuleCandidate(candidate_id, rule, spans, (segment_id,), (extractor,),
+                         unresolved_components=unresolved, canonical_digest=digest)
+
+
+def normalize_gliner2_evidence(row: dict, *, segment_id: str, source_text: str,
+                               model_name: str) -> tuple[RuleCandidate, ...]:
+    """Convert the sidecar's plain JSON to independent semantic hypotheses.
+
+    Scores are retained in ``gliner_evidence.json`` but deliberately do not
+    select, rank, or collapse candidates here.
+    """
+    candidates: list[RuleCandidate] = []
+    entities_wrapper = row.get("entities") if isinstance(row, dict) else None
+    entities = entities_wrapper.get("entities", {}) if isinstance(entities_wrapper, dict) else {}
+    entity_items = entities.items() if isinstance(entities, dict) else ()
+    for label, items in entity_items:
+        target_kind = _ENTITY_KINDS.get(str(label).casefold())
+        if target_kind is None or not isinstance(items, list):
+            continue
+        for position, item in enumerate(items):
+            span = _plain_span(item, segment_id=segment_id, source_text=source_text)
+            if span is None:
+                continue
+            issue = f"gliner-entity-only:{str(label).casefold()}"
+            rule = RuleIR("UNKNOWN", None, RuleTerm(target_kind, name=span.quote),
+                          unresolved_references=(issue,))
+            candidates.append(_gliner_candidate(
+                rule=rule, spans=(span,), index=f"entity:{label}:{position}",
+                model_name=model_name, segment_id=segment_id, unresolved=(issue,)))
+
+    relations_wrapper = row.get("relations") if isinstance(row, dict) else None
+    relations = (relations_wrapper.get("relation_extraction", {})
+                 if isinstance(relations_wrapper, dict) else {})
+    full_span = ((SourceSpan(segment_id, 0, len(source_text), source_text),)
+                 if source_text else ())
+    relation_items = relations.items() if isinstance(relations, dict) else ()
+    for label, items in relation_items:
+        relation = str(label).casefold()
+        if not isinstance(items, list):
+            continue
+        for position, item in enumerate(items):
+            if not isinstance(item, dict):
+                continue
+            head = item.get("head")
+            tail = item.get("tail")
+            head_span = _plain_span(head, segment_id=segment_id, source_text=source_text)
+            tail_span = _plain_span(tail, segment_id=segment_id, source_text=source_text)
+            if head_span is None or tail_span is None or not full_span:
+                continue
+            unresolved: tuple[str, ...] = ()
+            if relation in {"requires", "prohibits", "allows"}:
+                modality = {"requires": "REQUIRE", "prohibits": "FORBID",
+                            "allows": "ALLOW"}[relation]
+                issue = "gliner-modal-relation-endpoints-unresolved"
+                rule = RuleIR(modality, head_span.quote,
+                              RuleTerm("ACTION", name=tail_span.quote),
+                              unresolved_references=(issue,))
+                unresolved = (issue,)
+            elif relation in {"before", "after"}:
+                issue = "gliner-temporal-modality-unknown"
+                rule = RuleIR("UNKNOWN", None, RuleTerm("STATE", name=head_span.quote),
+                              condition=RuleExpression("ATOM", term=RuleTerm(
+                                  "STATE", name=tail_span.quote)),
+                              temporal=relation.upper(), unresolved_references=(issue,))
+                unresolved = (issue,)
+            elif relation == "condition_for":
+                issue = "gliner-condition-modality-unknown"
+                rule = RuleIR("UNKNOWN", None, RuleTerm("ACTION", name=tail_span.quote),
+                              relation="IF", condition=RuleExpression(
+                                  "ATOM", term=RuleTerm("STATE", name=head_span.quote)),
+                              unresolved_references=(issue,))
+                unresolved = (issue,)
+            elif relation in {"unless", "exception_to"}:
+                issue = "gliner-exception-modality-unknown"
+                target, exception = ((head_span, tail_span) if relation == "unless"
+                                     else (tail_span, head_span))
+                rule = RuleIR("UNKNOWN", None, RuleTerm("ACTION", name=target.quote),
+                              relation="UNLESS", exception=RuleExpression(
+                                  "ATOM", term=RuleTerm("STATE", name=exception.quote)),
+                              unresolved_references=(issue,))
+                unresolved = (issue,)
+            else:
+                continue
+            candidates.append(_gliner_candidate(
+                rule=rule, spans=full_span, index=f"relation:{relation}:{position}",
+                model_name=model_name, segment_id=segment_id, unresolved=unresolved))
+
+    unique = {}
+    for candidate in candidates:
+        key = (candidate.canonical_digest, candidate.source_spans,
+               candidate.unresolved_components)
+        unique.setdefault(key, candidate)
+    return tuple(unique.values())
 
 
 class GLiNER2SidecarError(RuntimeError):

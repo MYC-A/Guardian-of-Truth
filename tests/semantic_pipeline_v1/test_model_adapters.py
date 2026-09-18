@@ -4,11 +4,15 @@ from contextlib import nullcontext
 import sys
 from types import SimpleNamespace
 
-from guardian_truth.semantic_pipeline_v1.models.gliner_optional import GLiNER2Sidecar
+from guardian_truth.semantic_pipeline_v1.models.gliner_optional import (
+    GLiNER2Sidecar, normalize_gliner2_evidence)
 from guardian_truth.semantic_pipeline_v1.models.langextract_optional import LangExtractAligner
 from guardian_truth.semantic_pipeline_v1.models.lifecycle import ModelLifecycleManager
 from guardian_truth.semantic_pipeline_v1.models.nli import NLIFirewall
 from guardian_truth.semantic_pipeline_v1.models.nuextract import NuExtractRuleExtractor, normalize_nuextract
+from guardian_truth.semantic_pipeline_v1.integration import phi_to_policy_readings
+from guardian_truth.semantic_pipeline_v1.phi import build_phi
+from guardian_truth.semantic_pipeline_v1.render import render_rule
 
 
 class _Config:
@@ -50,6 +54,19 @@ def test_nuextract_normalization_grounds_only_unique_exact_quote():
     assert candidates[1].rule.temporal == "BEFORE"
     assert candidates[1].rule.target.name == "Verify identity"
     assert candidates[1].rule.condition.term.name == "close account"
+
+
+def test_nuextract_action_object_is_not_rendered_as_equality_or_assumed_entity():
+    source = "Do not close the account."
+    candidates = normalize_nuextract({"actions": [{
+        "action": "close", "object": "the account", "modality": "FORBID",
+        "source_quote": source}]}, extractor="test", segment_id="s", source_text=source)
+    candidate = candidates[0]
+    rendering = render_rule(candidate.rule)
+    assert 'equals "the account"' not in rendering
+    assert candidate.rule.target.value is None
+    assert candidate.rule.entity_references == ()
+    assert "unbound-action-object:the account" in candidate.unresolved_components
 
 
 def test_nuextract_calls_processor_with_json_string_template(monkeypatch):
@@ -111,6 +128,34 @@ def test_gliner2_adapter_uses_json_subprocess_contract(tmp_path):
     assert captured["command"] == ["sidecar-python", str(worker)]
     assert "before" in captured["request"]["relation_labels"]
     assert result["rows"][0]["id"] == "x"
+
+
+def test_gliner2_plain_json_becomes_independent_candidates_before_phi():
+    source = "The policy prohibits closing the account. Identity verification before closure."
+
+    def span(text):
+        start = source.index(text)
+        return {"text": text, "start": start, "end": start + len(text), "confidence": 0.8}
+
+    row = {
+        "entities": {"entities": {"action": [span("closing the account")]}},
+        "relations": {"relation_extraction": {
+            "prohibits": [{"head": span("The policy"), "tail": span("closing the account")}],
+            "before": [{"head": span("Identity verification"), "tail": span("closure")}],
+        }},
+    }
+    candidates = normalize_gliner2_evidence(
+        row, segment_id="s", source_text=source, model_name="fake-gliner2")
+    assert any(item.rule.modality == "FORBID"
+               and item.rule.target.name == "closing the account" for item in candidates)
+    assert any(item.rule.temporal == "BEFORE" for item in candidates)
+    assert all(item.extractors == ("gliner2:fake-gliner2",) for item in candidates)
+    phi = build_phi(candidates, ())
+    assert len(phi.interpretations) == len(candidates)
+    readings, unresolved = phi_to_policy_readings(phi)
+    assert readings == ()
+    assert any("gliner-modal-relation-endpoints-unresolved" in item for item in unresolved)
+    assert any("gliner-temporal-modality-unknown" in item for item in unresolved)
 
 
 def test_langextract_without_provider_is_not_a_successful_noop(monkeypatch):

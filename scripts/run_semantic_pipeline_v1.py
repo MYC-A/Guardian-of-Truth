@@ -18,7 +18,8 @@ def main(argv=None) -> int:
     source.add_argument("--input-file", type=Path)
     parser.add_argument("--output-dir", type=Path, required=True)
     parser.add_argument("--semantic-frontend", choices=("current", "v1"), default="v1")
-    parser.add_argument("--ablation", choices=tuple(f"A{i}" for i in range(9)), default="A5")
+    parser.add_argument("--ablation", choices=tuple(f"A{i}" for i in range(9)), default="A5",
+                        help="A0-A6 are quality ablations; A7/A8 are diagnostic-only")
     parser.add_argument("--resume", action=argparse.BooleanOptionalAction, default=True)
     parser.add_argument("--case-id")
     parser.add_argument("--limit", type=int)

@@ -25,6 +25,12 @@ the quote in the fragment and creates half-open offsets. Zero matches and
 multiple matches are unresolved; the pipeline never chooses an occurrence by
 score or by accident.
 
+The generic `actions[].object` field is not treated as `RuleTerm.value` and is
+not assumed to be an entity reference. Its type is not known from that slot, so
+V1 preserves it as `unbound-action-object:<text>` and leaves the candidate
+unresolved. This prevents renderings such as `close equals "the account"` and
+prevents an unjustified entity binding.
+
 GLiNER2.5 is not imported by the Guardian process. A one-shot JSON subprocess
 uses `/mnt/data/guardian/gliner2_env/bin/python`, imports
 `gliner2.AutoExtractor`, loads `fastino/gliner2.5-multi-v1` with
@@ -33,12 +39,24 @@ extraction. This keeps its Transformers 4.x environment isolated from the main
 Transformers 5.16.1 environment. A6/A8 attempt this real sidecar and record
 `EXECUTED`, `UNAVAILABLE`, or `FAILED` explicitly.
 
+Sidecar JSON is normalized into independent `RuleCandidate` hypotheses before
+NLI and binding. `requires`, `prohibits`, and `allows` preserve their literal
+modalities, but their endpoint roles remain unresolved and therefore cannot be
+losslessly lowered into a proof-core policy rule. Temporal and conditional
+relations with no known modality remain UNKNOWN/unresolved. Entity-only
+detections are also UNKNOWN. Confidence is retained in `gliner_evidence.json`
+but never votes, ranks, or collapses Phi. Both raw evidence and normalized
+candidates are persisted; the core sees unsupported candidates as bridge
+unresolved rather than silently treating them as proof.
+
 LangExtract 1.7 is an LLM extraction orchestrator, not a local checkpoint.
 Installing the package alone is not execution. Because V1 has no configured
 LangExtract model-provider plugin, A7/A8 record
 `UNAVAILABLE: MODEL_PROVIDER_NOT_CONFIGURED`; they never report a successful
-no-op. LangExtract output cannot change proof semantics even when a provider is
-added later.
+no-op. A7/A8 are therefore `diagnostic-only`, are excluded from post-inference
+quality metrics, and do not participate in candidates or Phi. A future
+provider-backed integration needs a separately tested grounding-only contract
+before it can be enabled.
 
 ## Stage-major lifecycle
 
@@ -81,9 +99,11 @@ The Hugging Face cache and Guardian stage cache are separate:
 - A3: Mistral + NuExtract to Phi.
 - A4: A3 + NLI.
 - A5: A4 + BGE binding/reranking (default; no GLiNER/LangExtract).
-- A6: A5 + real GLiNER2 sidecar.
-- A7: A5 + LangExtract request (currently explicitly unavailable).
-- A8: A5 + both optional requests.
+- A6: A5 + real GLiNER2 candidate source. It is quality-eligible only when the
+  sidecar actually reports `EXECUTED`.
+- A7: diagnostic-only LangExtract availability request; no quality metrics.
+- A8: diagnostic-only A6 + LangExtract availability request; use A6, not A8,
+  for the GLiNER2 quality comparison.
 
 Mistral frontend extraction and the core semantic backend are separate config
 dimensions. There is no hidden fallback provider.
@@ -151,8 +171,9 @@ No secret value is written to run artifacts.
 
 Every run writes `run_manifest.json`, `environment.json`, `config.json`,
 `predictions.csv`, `metrics.json`, and `timings.json`. Each case contains source
-segments, retrieval, independent extractor outputs, component statuses, NLI,
-binding candidates, Phi, core result, and a readable summary. Cache keys include
+segments, retrieval, independent extractor outputs, raw GLiNER evidence,
+normalized GLiNER candidates, component statuses, NLI, binding candidates, Phi,
+core result, and a readable summary. Cache keys include
 content, checkpoint, relevant config, and schema/template version—never labels.
 Completed-case seals preserve resume behavior.
 

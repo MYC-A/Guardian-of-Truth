@@ -144,12 +144,18 @@ def normalize_nuextract(value: dict, *, extractor: str, segment_id: str,
         if modality == "UNKNOWN":
             unresolved.append("action-modality-not-extracted")
         obj = _text(item.get("object"))
+        if obj:
+            # NuExtract's generic `object` slot does not tell us whether this
+            # is an entity identifier, an argument, or merely the grammatical
+            # object. Preserve it explicitly but do not turn it into an
+            # equality or an entity binding without evidence.
+            unresolved.append(f"unbound-action-object:{obj}")
         rule = RuleIR(
             modality, _text(item.get("subject")),
-            RuleTerm("ACTION", name=_text(item.get("action")), value=obj),
+            RuleTerm("ACTION", name=_text(item.get("action"))),
             condition=_atom(_text(item.get("condition"))),
             exception=_atom(_text(item.get("exception"))),
-            entity_references=(obj,) if obj else (), unresolved_references=tuple(unresolved),
+            unresolved_references=tuple(unresolved),
         )
         candidates.append(_candidate(rule=rule, quote=item.get("source_quote"),
                                      index=index, kind="action", extractor=extractor,
