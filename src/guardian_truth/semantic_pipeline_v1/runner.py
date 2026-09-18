@@ -248,8 +248,23 @@ def _metric_summary(rows: list[dict], gold: dict[str, int], *, quality_eligible:
     return metrics
 
 
+def _case_runtime_summary(config: SemanticPipelineConfig, component_status: dict,
+                          *, dry_run: bool) -> dict:
+    quality_eligible = config.quality_evaluation_eligible and not dry_run
+    reason = None
+    if not config.quality_evaluation_eligible:
+        reason = config.diagnostic_reason or "DIAGNOSTIC_ONLY"
+    elif dry_run:
+        reason = "DRY_RUN"
+    return {
+        "component_status": {name: dict(status) for name, status in component_status.items()},
+        "quality_evaluation_eligible": quality_eligible,
+        "quality_ineligible_reason": reason,
+    }
+
+
 def _initial_states(records, output: Path, config, resume: bool, dry_run: bool):
-    active, predictions, timings = [], [], []
+    active, predictions, timings, runtime_summaries = [], [], [], []
     for record in records:
         safe_id = _safe_case_id(record.case_id)
         case_dir = output / "cases" / safe_id
@@ -262,9 +277,19 @@ def _initial_states(records, output: Path, config, resume: bool, dry_run: bool):
             if previous.get("case_run_key") == key:
                 predictions.append(previous["prediction_row"])
                 timings.append(previous["timing"])
+                runtime = previous.get("runtime")
+                if not isinstance(runtime, dict):
+                    # Old completion markers did not preserve enough evidence to
+                    # re-establish quality eligibility. Resume them conservatively.
+                    runtime = {
+                        "component_status": {},
+                        "quality_evaluation_eligible": False,
+                        "quality_ineligible_reason": "RESUME_RUNTIME_STATUS_MISSING",
+                    }
+                runtime_summaries.append(runtime)
                 continue
         active.append(_CaseState(record, safe_id, case_dir, done_path, key))
-    return active, predictions, timings
+    return active, predictions, timings, runtime_summaries
 
 
 def run_experiment(*, input_dir=None, input_file=None, output_dir,
@@ -305,7 +330,9 @@ def run_experiment(*, input_dir=None, input_file=None, output_dir,
         "hf_cache_note": "Hugging Face cache is distinct from Guardian content-addressed stage cache",
     }
     _json_dump(output / "run_manifest.json", manifest)
-    states, predictions, timings = _initial_states(records, output, config, resume, dry_run)
+    states, predictions, timings, runtime_summaries = _initial_states(
+        records, output, config, resume, dry_run)
+    resumed_cases = len(runtime_summaries)
 
     # Prepare every active case before loading any checkpoint.
     for state in states:
@@ -659,11 +686,13 @@ def run_experiment(*, input_dir=None, input_file=None, output_dir,
         if case_id is not None:
             _write_case_artifacts(output / "traces" / state.safe_id,
                                   state=state, core=core_result, summary=summary)
+        runtime = _case_runtime_summary(config, state.component_status, dry_run=dry_run)
         _json_dump(state.done_path, {"case_id": state.record.case_id,
             "case_run_key": state.case_run_key, "prediction_row": prediction_row,
-            "timing": timing})
+            "timing": timing, "runtime": runtime})
         predictions.append(prediction_row)
         timings.append(timing)
+        runtime_summaries.append(runtime)
         print(f"semantic-v1 {position}/{len(states)} {state.record.case_id} {core_result['status']}",
               flush=True)
 
@@ -675,18 +704,14 @@ def run_experiment(*, input_dir=None, input_file=None, output_dir,
         writer.writeheader()
         for row in predictions:
             writer.writerow({"id": row["id"], "label": row["prediction"]})
-    gliner_executed = (not config.enable_gliner or not states or all(
-        state.component_status.get("gliner", {}).get("state") == "EXECUTED"
-        for state in states))
-    quality_eligible = (config.quality_evaluation_eligible and not dry_run
-                        and gliner_executed)
-    quality_ineligible_reason = None
-    if not config.quality_evaluation_eligible:
-        quality_ineligible_reason = "DIAGNOSTIC_ONLY_LANGEXTRACT"
-    elif config.enable_gliner and not gliner_executed:
-        quality_ineligible_reason = "GLINER2_NOT_EXECUTED"
-    elif dry_run:
-        quality_ineligible_reason = "DRY_RUN"
+    quality_eligible = (len(runtime_summaries) == len(records)
+                        and all(runtime.get("quality_evaluation_eligible") is True
+                                for runtime in runtime_summaries))
+    reasons = list(dict.fromkeys(
+        runtime.get("quality_ineligible_reason")
+        for runtime in runtime_summaries
+        if runtime.get("quality_ineligible_reason")))
+    quality_ineligible_reason = ";".join(reasons) if reasons else None
     metrics = _metric_summary(predictions, gold, quality_eligible=quality_eligible,
                               quality_ineligible_reason=quality_ineligible_reason)
     _json_dump(output / "metrics.json", metrics)
@@ -699,14 +724,18 @@ def run_experiment(*, input_dir=None, input_file=None, output_dir,
     _json_dump(output / "environment" / "runtime.json", environment)
     manifest["completed_cases"] = len(predictions)
     manifest["completed"] = len(predictions) == len(records)
+    manifest["resumed_cases"] = resumed_cases
     manifest["quality_evaluation_eligible"] = quality_eligible
     if quality_ineligible_reason:
         manifest["quality_ineligible_reason"] = quality_ineligible_reason
     manifest["model_load_counts"] = lifecycle.load_counts()
     manifest["stage_load_counts"] = lifecycle.stage_load_counts()
     component_rollup = {}
-    for name in {name for state in states for name in state.component_status}:
-        values = [state.component_status[name]["state"] for state in states]
+    component_statuses = [runtime.get("component_status", {})
+                          for runtime in runtime_summaries]
+    for name in {name for statuses in component_statuses for name in statuses}:
+        values = [statuses[name]["state"] for statuses in component_statuses
+                  if name in statuses]
         component_rollup[name] = {status: values.count(status) for status in sorted(set(values))}
     manifest["component_status_rollup"] = component_rollup
     _json_dump(output / "run_manifest.json", manifest)

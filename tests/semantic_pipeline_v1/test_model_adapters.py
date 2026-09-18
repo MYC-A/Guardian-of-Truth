@@ -107,6 +107,8 @@ def test_nuextract_calls_processor_with_json_string_template(monkeypatch):
     assert isinstance(captured["kwargs"]["template"], str)
     assert isinstance(json.loads(captured["kwargs"]["template"]), dict)
     assert captured["kwargs"]["enable_thinking"] is False
+    assert captured["messages"] == [{"role": "user", "content": [
+        {"type": "text", "text": "Never close account."}]}]
     assert candidates[0].source_spans[0].quote == "Never close account."
 
 

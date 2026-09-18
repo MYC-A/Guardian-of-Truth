@@ -99,11 +99,17 @@ The Hugging Face cache and Guardian stage cache are separate:
 - A3: Mistral + NuExtract to Phi.
 - A4: A3 + NLI.
 - A5: A4 + BGE binding/reranking (default; no GLiNER/LangExtract).
-- A6: A5 + real GLiNER2 candidate source. It is quality-eligible only when the
-  sidecar actually reports `EXECUTED`.
+- A6: diagnostic-only A5 + real GLiNER2 candidate source. GLiNER hypotheses
+  independently reach NLI and Phi, but their safe normalization deliberately
+  leaves ambiguous relation endpoints unresolved, so they cannot change the
+  proof-core verdict. An `EXECUTED` sidecar makes the diagnostic meaningful;
+  it does not make A6 a quality ablation.
 - A7: diagnostic-only LangExtract availability request; no quality metrics.
-- A8: diagnostic-only A6 + LangExtract availability request; use A6, not A8,
-  for the GLiNER2 quality comparison.
+- A8: diagnostic-only A6 + LangExtract availability request.
+
+Only A0-A5 are quality ablations. Per-case component status and quality
+eligibility are stored in `complete.json`; resumed and newly executed cases are
+aggregated together, so resume cannot erase a prior optional-component failure.
 
 Mistral frontend extraction and the core semantic backend are separate config
 dimensions. There is no hidden fallback provider.

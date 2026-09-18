@@ -222,7 +222,9 @@ class NuExtractRuleExtractor:
                                   "enable_thinking": False}, payload=payload)
         cached = self.cache.get("nuextract", key) if self.cache else None
         if cached is None:
-            messages = [{"role": "user", "content": source_text}]
+            messages = [{"role": "user", "content": [
+                {"type": "text", "text": source_text},
+            ]}]
             inputs = self.processor.apply_chat_template(
                 messages, add_generation_prompt=True, tokenize=True, return_dict=True,
                 return_tensors="pt", template=json.dumps(NUEXTRACT_RULE_TEMPLATE, indent=4),

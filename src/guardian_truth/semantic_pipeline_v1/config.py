@@ -104,9 +104,23 @@ class SemanticPipelineConfig:
 
     @property
     def quality_evaluation_eligible(self) -> bool:
-        # LangExtract has no configured provider-backed implementation in V1.
-        # Any run requesting it is diagnostic, not a quality ablation.
-        return self.ablation not in {"A7", "A8"} and not self.enable_langextract
+        # GLiNER hypotheses currently reach Phi/core only as unresolved bridge
+        # evidence, while LangExtract has no configured provider. Neither can
+        # change a proof verdict through a lossless lowering in V1.
+        return (self.ablation not in {"A6", "A7", "A8"}
+                and not self.enable_gliner and not self.enable_langextract)
+
+    @property
+    def diagnostic_reason(self) -> str | None:
+        gliner = self.ablation in {"A6", "A8"} or self.enable_gliner
+        langextract = self.ablation in {"A7", "A8"} or self.enable_langextract
+        if gliner and langextract:
+            return "DIAGNOSTIC_ONLY_GLINER2_AND_LANGEXTRACT"
+        if gliner:
+            return "DIAGNOSTIC_ONLY_GLINER2_NO_SAFE_CORE_LOWERING"
+        if langextract:
+            return "DIAGNOSTIC_ONLY_LANGEXTRACT"
+        return None
 
     @property
     def experiment_class(self) -> str:

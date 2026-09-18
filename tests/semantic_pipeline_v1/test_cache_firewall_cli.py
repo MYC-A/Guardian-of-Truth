@@ -55,9 +55,10 @@ def test_ablation_flags_match_declared_architectures():
     assert not SemanticPipelineConfig.for_ablation("A2").use_mistral
     assert not SemanticPipelineConfig.for_ablation("A5").enable_gliner
     assert not SemanticPipelineConfig.for_ablation("A5").enable_langextract
-    assert SemanticPipelineConfig.for_ablation("A6").quality_evaluation_eligible
+    assert not SemanticPipelineConfig.for_ablation("A6").quality_evaluation_eligible
     assert not SemanticPipelineConfig.for_ablation("A7").quality_evaluation_eligible
     assert not SemanticPipelineConfig.for_ablation("A8").quality_evaluation_eligible
+    assert SemanticPipelineConfig.for_ablation("A6").experiment_class == "diagnostic-only"
     assert SemanticPipelineConfig.for_ablation("A7").experiment_class == "diagnostic-only"
 
 
@@ -166,3 +167,53 @@ def test_a6_gliner_candidates_reach_nli_and_phi(tmp_path, monkeypatch):
     phi = json.loads(phi_files[0].read_text(encoding="utf-8"))
     assert any(extractor.startswith("gliner2:")
                for item in phi["interpretations"] for extractor in item["extractors"])
+    assert result["manifest"]["quality_evaluation_eligible"] is False
+    assert result["metrics"]["post_inference_evaluation_skipped_reason"] == \
+        "DIAGNOSTIC_ONLY_GLINER2_NO_SAFE_CORE_LOWERING"
+
+
+def test_failed_gliner_status_remains_quality_ineligible_after_full_resume(
+        tmp_path, monkeypatch):
+    import guardian_truth.semantic_pipeline_v1.runner as runner
+    from guardian_truth.semantic_pipeline_v1.models.embeddings import BGEEmbedder
+    from guardian_truth.semantic_pipeline_v1.models.gliner_optional import (
+        GLiNER2Sidecar, GLiNER2SidecarError)
+
+    original_retrieve = runner.retrieve_fragments
+
+    def lexical_retrieve(*args, **kwargs):
+        kwargs.pop("embedder", None)
+        return original_retrieve(*args, **kwargs)
+
+    def fail_gliner(self, items, *, device):
+        raise GLiNER2SidecarError("intentional test failure")
+
+    sidecar_python = tmp_path / "python"
+    sidecar_python.write_text("placeholder", encoding="utf-8")
+    monkeypatch.setattr(runner, "retrieve_fragments", lexical_retrieve)
+    monkeypatch.setattr(BGEEmbedder, "load", staticmethod(lambda model, device: object()))
+    monkeypatch.setattr(GLiNER2Sidecar, "extract_batch", fail_gliner)
+
+    source = tmp_path / "input.jsonl"
+    source.write_text(json.dumps({"id": "resume-a6", "prompt": "Do not close the account.",
+                                  "response": "The account remains open."}) + "\n",
+                      encoding="utf-8")
+    output = tmp_path / "out"
+    config = SemanticPipelineConfig.for_ablation(
+        "A6", use_mistral=False, use_nuextract=False, use_nli=False,
+        use_binding=False, core_backend="unavailable",
+        gliner_python=str(sidecar_python), cache_dir=str(tmp_path / "cache"))
+
+    first = run_experiment(input_file=source, output_dir=output, config=config,
+                           resume=True, dry_run=False)
+    completion_path = next((output / "cases").glob("*/complete.json"))
+    completion = json.loads(completion_path.read_text(encoding="utf-8"))
+    assert completion["runtime"]["component_status"]["gliner"]["state"] == "FAILED"
+    assert completion["runtime"]["quality_evaluation_eligible"] is False
+
+    second = run_experiment(input_file=source, output_dir=output, config=config,
+                            resume=True, dry_run=False)
+    assert first["manifest"]["quality_evaluation_eligible"] is False
+    assert second["manifest"]["quality_evaluation_eligible"] is False
+    assert second["manifest"]["resumed_cases"] == 1
+    assert second["manifest"]["component_status_rollup"]["gliner"] == {"FAILED": 1}
