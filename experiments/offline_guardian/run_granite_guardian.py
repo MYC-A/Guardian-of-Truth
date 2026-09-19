@@ -85,10 +85,14 @@ def read_cases(path: Path) -> list[dict[str, str]]:
         if missing:
             raise ValueError(f"input CSV misses required columns: {', '.join(sorted(missing))}")
         cases = []
+        seen_ids: set[str] = set()
         for line_no, row in enumerate(reader, start=2):
             case_id = (row.get("id") or "").strip()
             if not case_id:
                 raise ValueError(f"input CSV has an empty id at line {line_no}")
+            if case_id in seen_ids:
+                raise ValueError(f"input CSV has duplicate id {case_id!r} at line {line_no}")
+            seen_ids.add(case_id)
             cases.append({
                 "id": case_id,
                 "prompt": row.get("prompt") or "",
@@ -123,7 +127,7 @@ def parse_score(text: str) -> str | None:
 
 
 def _normalise_token(token: str) -> str:
-    return token.strip().lower().replace("▁", "")
+    return token.strip().lower().replace("▁", "").replace("Ġ", "")
 
 
 def probability_from_logprobs(logprobs: Any) -> tuple[float | None, str | None]:
@@ -165,22 +169,42 @@ def make_output_dir(requested: str | None) -> Path:
 
 
 class GraniteLocalRunner:
-    def __init__(self, model_path: Path, max_new_tokens: int, tensor_parallel_size: int) -> None:
+    def __init__(self, model_path: Path, max_new_tokens: int, tensor_parallel_size: int,
+                 backend: str, device_map: str) -> None:
         # Set before imports: accidental hub fallback must fail rather than download.
         os.environ["HF_HUB_OFFLINE"] = "1"
         os.environ["TRANSFORMERS_OFFLINE"] = "1"
         try:
-            from transformers import AutoTokenizer
-            from vllm import LLM, SamplingParams
+            from transformers import AutoModelForCausalLM, AutoTokenizer
+            import torch
         except ImportError as exc:
-            raise RuntimeError("real execution needs installed transformers and vllm") from exc
+            raise RuntimeError("real execution needs installed transformers and torch") from exc
         self.tokenizer = AutoTokenizer.from_pretrained(
             str(model_path), local_files_only=True, trust_remote_code=False
         )
-        self.model = LLM(model=str(model_path), tensor_parallel_size=tensor_parallel_size)
-        self.sampling_params = SamplingParams(
-            temperature=0.0, logprobs=20, max_tokens=max_new_tokens
-        )
+        self.backend = backend
+        self.max_new_tokens = max_new_tokens
+        self.torch = torch
+        self.word_token_ids = {
+            word: [token_id for token, token_id in self.tokenizer.get_vocab().items()
+                   if _normalise_token(token) == word]
+            for word in ("yes", "no")
+        }
+        if backend == "transformers":
+            self.model = AutoModelForCausalLM.from_pretrained(
+                str(model_path), local_files_only=True, trust_remote_code=False,
+                torch_dtype="auto", device_map=device_map,
+            )
+            self.sampling_params = None
+        elif backend == "vllm":
+            try:
+                from vllm import LLM, SamplingParams
+            except ImportError as exc:
+                raise RuntimeError("--backend vllm was requested, but vllm is not installed") from exc
+            self.model = LLM(model=str(model_path), tensor_parallel_size=tensor_parallel_size)
+            self.sampling_params = SamplingParams(temperature=0.0, logprobs=20, max_tokens=max_new_tokens)
+        else:
+            raise ValueError(f"unsupported backend: {backend}")
 
     def judge(
         self,
@@ -224,17 +248,52 @@ class GraniteLocalRunner:
         else:
             raise ValueError(f"unsupported criterion: {criterion}")
 
-        generated = self.model.generate([chat], self.sampling_params, use_tqdm=False)[0].outputs[0]
-        raw = generated.text.strip()
-        score, method = probability_from_logprobs(getattr(generated, "logprobs", None))
+        if self.backend == "transformers":
+            model_inputs = self.tokenizer(chat, add_special_tokens=False, return_tensors="pt").to(self.model.device)
+            input_token_count = int(model_inputs["input_ids"].shape[-1])
+            with self.torch.inference_mode():
+                generated = self.model.generate(
+                    **model_inputs, do_sample=False, max_new_tokens=self.max_new_tokens,
+                    return_dict_in_generate=True, output_scores=True,
+                )
+            completion_ids = generated.sequences[0, input_token_count:]
+            raw = self.tokenizer.decode(completion_ids, skip_special_tokens=True).strip()
+            score, method = self._transformers_score(generated.scores, completion_ids)
+            output_token_count = int(completion_ids.shape[-1])
+        else:
+            tokenized = self.tokenizer(chat, add_special_tokens=False)
+            input_ids = tokenized["input_ids"]
+            input_token_count = len(input_ids[0]) if input_ids and isinstance(input_ids[0], list) else len(input_ids)
+            generated = self.model.generate([chat], self.sampling_params, use_tqdm=False)[0].outputs[0]
+            raw = generated.text.strip()
+            score, method = probability_from_logprobs(getattr(generated, "logprobs", None))
+            output_token_count = len(getattr(generated, "token_ids", ()) or ())
         return {
             "status": "ok" if parse_score(raw) else "unparseable_model_score",
             "raw_model_output": raw,
             "risk_token": parse_score(raw),
             "probabilistic_score": score,
             "score_method": method,
+            "token_count": {
+                "input": input_token_count,
+                "output": output_token_count,
+            },
             "note": "yes means the selected Granite criterion found risk; this score is not a formal certificate",
         }
+
+    def _transformers_score(self, scores: Any, completion_ids: Any) -> tuple[float | None, str | None]:
+        """Use logits at a generated yes/no token, when the tokenizer exposes both."""
+        if not self.word_token_ids["yes"] or not self.word_token_ids["no"]:
+            return None, "yes_no_tokens_not_single_vocab_tokens"
+        for logits, token_id in zip(reversed(scores), reversed(completion_ids.tolist())):
+            if _normalise_token(self.tokenizer.convert_ids_to_tokens(int(token_id))) not in {"yes", "no"}:
+                continue
+            row = logits[0]
+            yes_logit = self.torch.logsumexp(row[self.word_token_ids["yes"]], dim=0)
+            no_logit = self.torch.logsumexp(row[self.word_token_ids["no"]], dim=0)
+            return float(self.torch.softmax(self.torch.stack((yes_logit, no_logit)), dim=0)[0].item()), \
+                "generated_yes_no_token_logit_softmax"
+        return None, "generated_score_did_not_contain_single_yes_no_token"
 
 
 def run(args: argparse.Namespace) -> int:
@@ -254,6 +313,8 @@ def run(args: argparse.Namespace) -> int:
         "think": False,
         "max_context_chars": args.max_context_chars,
         "max_new_tokens": args.max_new_tokens,
+        "backend": args.backend,
+        "device_map": args.device_map,
         "tensor_parallel_size": args.tensor_parallel_size,
         "input_path": str(input_path),
         "input_sha256": sha256_file(input_path),
@@ -270,7 +331,9 @@ def run(args: argparse.Namespace) -> int:
         model_path = Path(args.model_path).resolve(strict=True)
         if not model_path.is_dir():
             raise ValueError("--model-path must be an existing local model directory")
-        runner = GraniteLocalRunner(model_path, args.max_new_tokens, args.tensor_parallel_size)
+        runner = GraniteLocalRunner(
+            model_path, args.max_new_tokens, args.tensor_parallel_size, args.backend, args.device_map
+        )
 
     status_counts: dict[str, int] = {}
     with (output_dir / "records.jsonl").open("w", encoding="utf-8") as out:
@@ -313,10 +376,6 @@ def run(args: argparse.Namespace) -> int:
                         "reason": [item for item in (prompt.reason, response.reason) if item],
                         "strategy": "head_tail_per_field",
                     },
-                    "token_count": {
-                        "input": result.get("input_token_count"),
-                        "output": result.get("output_token_count"),
-                    },
                     **result,
                 }
                 status_counts[record["status"]] = status_counts.get(record["status"], 0) + 1
@@ -337,6 +396,9 @@ def parse_args(argv: Iterable[str] | None = None) -> argparse.Namespace:
     parser.add_argument("--criteria", nargs="+", choices=SUPPORTED_CRITERIA, default=["groundedness"])
     parser.add_argument("--max-context-chars", type=int, default=12000)
     parser.add_argument("--max-new-tokens", type=int, default=16)
+    parser.add_argument("--backend", choices=("transformers", "vllm"), default="transformers",
+                        help="transformers is default; vllm is used only when already installed")
+    parser.add_argument("--device-map", default="auto", help="Transformers device_map, default: auto")
     parser.add_argument("--tensor-parallel-size", type=int, default=1)
     parser.add_argument("--dry-run", action="store_true", help="Validate input/output contract without loading a model")
     args = parser.parse_args(argv)

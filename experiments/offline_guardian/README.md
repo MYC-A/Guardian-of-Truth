@@ -5,7 +5,9 @@ fresh CSV with `id,prompt,response`, writes only a new
 `outputs/research_granite_guardian/...` namespace, and does not import or
 change the production prediction path.
 
-The runner requires a pre-existing local model directory. It sets
+The runner requires a pre-existing local model directory. Its default backend
+is `transformers` with the already-installed PyTorch and `device_map=auto`;
+`--backend vllm` is optional and only works when vLLM is already installed. It sets
 `HF_HUB_OFFLINE=1` and `TRANSFORMERS_OFFLINE=1` before importing model
 libraries; a Hugging Face model id is not accepted as `--model-path`.
 
@@ -38,9 +40,16 @@ schemas from `--tools-json` or an optional CSV `tools` column containing a JSON
 list. The runner deliberately does not invent tool schemas by parsing natural
 language in `prompt`.
 
+The no-gold smoke fixture has exactly three diagnostics: a valid declared tool
+call (`function_call`), an unknown tool/wrong argument shape (`function_call`),
+and a response unsupported by its prompt context (`groundedness`). Its optional
+`intended_criterion` column documents the applicable route; it is not read as a
+label or passed to the model.
+
 `records.jsonl` contains one record per criterion and case. `risk_token` and
 `probabilistic_score` are only a Granite model assessment. Every record keeps
 `formal_proof_status: "UNRESOLVED"`; the score never becomes a proof result.
 The runner records the input hash, immutable execution configuration, latency,
-character counts, and explicit head/tail truncation reasons. `think=False` is
+actual input/output token counts for real model calls, character counts, and
+explicit head/tail truncation reasons. `think=False` is
 always passed, therefore model reasoning traces are not requested or retained.
