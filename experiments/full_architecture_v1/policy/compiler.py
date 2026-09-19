@@ -161,17 +161,15 @@ def _tree_lower(node: ConditionNode | None, resolutions, markers: list[str],
     if children_all is not None:
         lowered = [_tree_lower(child, resolutions, markers, rule_id)
                    for child in children_all]
-        lowered = [child for child in lowered if child is not None]
-        if not lowered:
+        if any(child is None for child in lowered):
             return None
-        return CondNode(all_=tuple(lowered))
+        return CondNode(all_=tuple(lowered))  # type: ignore[arg-type]
     if children_any is not None:
         lowered = [_tree_lower(child, resolutions, markers, rule_id)
                    for child in children_any]
-        lowered = [child for child in lowered if child is not None]
-        if not lowered:
+        if any(child is None for child in lowered):
             return None
-        return CondNode(any_=tuple(lowered))
+        return CondNode(any_=tuple(lowered))  # type: ignore[arg-type]
     return None
 
 
@@ -183,6 +181,8 @@ def _rule_variants(rule: RuleIR, resolutions) -> list[NeutralRule] | None:
     if rule.modality not in ("FORBID", "REQUIRE"):
         return None
     if rule.target.kind not in _TARGET_KINDS_WITH_OBLIGATION:
+        return None
+    if rule.temporal.relation in ("WHILE", "UNKNOWN"):
         return None
     resolution = _lookup(resolutions, rule.target)
     names: tuple[str, ...] = ()
@@ -210,7 +210,9 @@ def _rule_variants(rule: RuleIR, resolutions) -> list[NeutralRule] | None:
     for name in names:
         out.append(NeutralRule(
             rule_id=rule.rule_id, modality=rule.modality, action=name,
-            entity="*", actor="assistant", target_level="ATTEMPT"))
+            entity="*", actor="assistant", target_level="ATTEMPT",
+            temporal=temporal, temporal_anchor_action=anchor_action,
+            temporal_anchor_entity=anchor_entity))
     return out
 
 
@@ -231,6 +233,13 @@ def compile_rule_set(rules: list[RuleIR],
 
     for rule in rules:
         markers: list[str] = list(rule.unresolved)
+        if markers:
+            fixed_markers.extend(markers)
+            continue
+        if rule.temporal.relation in ("WHILE", "UNKNOWN"):
+            fixed_markers.append(f"rule:{rule.rule_id}:temporal-not-representable:"
+                                 f"{rule.temporal.relation}")
+            continue
         variants = _rule_variants(rule, resolutions)
         if variants is None:
             # rule cannot lower as an obligation: record why (markers only)
@@ -245,8 +254,6 @@ def compile_rule_set(rules: list[RuleIR],
             else:
                 markers.append(f"rule:{rule.rule_id}:target-unbound:"
                                f"{rule.target.text}")
-            if rule.temporal.relation in ("WHILE", "UNKNOWN"):
-                markers.append(f"rule:{rule.rule_id}:temporal-unknown")
             fixed_markers.extend(markers)
             continue
 
@@ -256,14 +263,14 @@ def compile_rule_set(rules: list[RuleIR],
         for variant in variants:
             conditions = _tree_lower(rule.conditions, resolutions,
                                      variant_markers, rule.rule_id)
-            exceptions = tuple(
-                lowered for lowered in (
-                    _tree_lower(exception, resolutions, variant_markers,
-                                rule.rule_id)
-                    for exception in rule.exceptions)
-                if lowered is not None)
-            if rule.temporal.relation in ("WHILE", "UNKNOWN"):
-                variant_markers.append(f"rule:{rule.rule_id}:temporal-unknown")
+            lowered_exceptions = [
+                _tree_lower(exception, resolutions, variant_markers, rule.rule_id)
+                for exception in rule.exceptions
+            ]
+            if (rule.conditions is not None and conditions is None) or any(
+                    exception is None for exception in lowered_exceptions):
+                continue
+            exceptions = tuple(lowered_exceptions)  # type: ignore[arg-type]
             per_variant.append(NeutralRule(
                 rule_id=variant.rule_id, modality=variant.modality,
                 action=variant.action, entity=variant.entity,
@@ -272,7 +279,9 @@ def compile_rule_set(rules: list[RuleIR],
                 temporal=variant.temporal,
                 temporal_anchor_action=variant.temporal_anchor_action,
                 temporal_anchor_entity=variant.temporal_anchor_entity))
-        if len(per_variant) == 1:
+        if not per_variant:
+            fixed_markers.extend(variant_markers)
+        elif len(per_variant) == 1:
             fixed_rules.append(per_variant[0])
             fixed_markers.extend(variant_markers)
         else:
@@ -293,7 +302,11 @@ def compile_rule_set(rules: list[RuleIR],
 
     interpretations: list[NeutralInterpretation] = []
     for index, combo in enumerate(combos):
-        interp_rules = tuple(fixed_rules) + tuple(combo)
+        # A capped Cartesian product is not the full interpretation space.
+        # Retaining its obligations could falsely certify an all-world result.
+        # The marker plus an empty rule set forces this compiler output to
+        # remain an abstaining diagnostic until all worlds are materialized.
+        interp_rules = () if truncated else tuple(fixed_rules) + tuple(combo)
         markers = list(fixed_markers)
         if truncated:
             markers.append("phi-coverage:interpretation-cap-reached:"
