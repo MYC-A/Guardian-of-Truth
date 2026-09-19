@@ -20,6 +20,7 @@ from typing import Any, Iterable
 
 
 MODEL_ID = "cross-encoder/nli-deberta-v3-base"
+MAX_CSV_FIELD_CHARS = 16 * 1024 * 1024
 
 
 def file_sha256(path: Path) -> str:
@@ -31,6 +32,7 @@ def file_sha256(path: Path) -> str:
 
 
 def read_cases(path: Path) -> list[dict[str, str]]:
+    csv.field_size_limit(MAX_CSV_FIELD_CHARS)
     with path.open("r", encoding="utf-8-sig", newline="") as source:
         reader = csv.DictReader(source)
         missing = {"id", "prompt", "response"} - set(reader.fieldnames or ())
