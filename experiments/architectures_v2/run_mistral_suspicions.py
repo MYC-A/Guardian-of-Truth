@@ -27,6 +27,15 @@ from datetime import UTC, datetime
 from pathlib import Path
 from typing import Any, Iterable, Mapping, Protocol
 
+# A direct ``python experiments/.../run_mistral_suspicions.py`` invocation only
+# puts this file's directory on sys.path.  Add the checkout's src layout and
+# root before importing project packages; installed-package execution remains
+# unchanged because these are the same sources from the current checkout.
+_REPO_ROOT = Path(__file__).resolve().parents[2]
+for _import_path in (_REPO_ROOT, _REPO_ROOT / "src"):
+    if str(_import_path) not in sys.path:
+        sys.path.insert(0, str(_import_path))
+
 from guardian_truth.llm_client import ChatClient, ChatClientError, ClientConfig, Completion
 
 from experiments.architectures_v2.source_grounding import (

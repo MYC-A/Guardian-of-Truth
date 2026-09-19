@@ -1,5 +1,8 @@
 import csv
 import json
+import os
+import subprocess
+import sys
 from argparse import Namespace
 from pathlib import Path
 
@@ -181,3 +184,19 @@ def test_large_csv_field_and_strict_atomic_shape(tmp_path):
     invalid["unexpected"] = "no"
     with pytest.raises(ValueError, match="keys differ"):
         parse_a1(json.dumps({"suspicions": [invalid]}))
+
+
+def test_direct_entrypoint_bootstraps_src_layout_without_pythonpath(tmp_path):
+    script = Path(__file__).with_name("run_mistral_suspicions.py").resolve()
+    environment = {key: value for key, value in os.environ.items() if key.upper() != "PYTHONPATH"}
+    environment["PYTHONNOUSERSITE"] = "1"
+    result = subprocess.run(
+        [sys.executable, "-S", str(script), "--help"],
+        cwd=tmp_path,
+        env=environment,
+        capture_output=True,
+        text=True,
+        timeout=30,
+    )
+    assert result.returncode == 0, result.stderr
+    assert "--variant" in result.stdout
