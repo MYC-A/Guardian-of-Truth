@@ -7,6 +7,8 @@ import sys
 import types
 from pathlib import Path
 
+_ORIGINAL_SYS_PATH = list(sys.path)
+
 if "clingo" not in sys.modules:
     try:
         import clingo  # noqa: F401
@@ -19,6 +21,11 @@ if str(_SEMANTIC) not in sys.path:
 
 from experiments.full_architecture_v1.pipeline import _resolutions_for
 from experiments.semantic_pipeline_v1.rule_ir import Ref, RuleIR
+
+# ``pipeline`` supports historical script execution by prepending experiment
+# directories.  A collected test must not leak those paths into unrelated
+# repository tests (notably the top-level ``benchmarks`` namespace).
+sys.path[:] = _ORIGINAL_SYS_PATH
 
 
 def _rule(text="return_delivered_order_items", ref="return_delivered_order_items"):

@@ -29,6 +29,7 @@ obligation records and condition-tree nodes are ground data.
 
 from __future__ import annotations
 
+import math
 import sys
 import time
 from pathlib import Path
@@ -64,8 +65,16 @@ def _asp_truth(symbol: str) -> str:
 def _term(value) -> str:
     if isinstance(value, bool):
         return f"bool({1 if value else 0})"
-    if isinstance(value, (int, float)):
+    if isinstance(value, int):
         return f"num({value})"
+    if isinstance(value, float):
+        # Clingo has integer arithmetic only; emitting ``num(7.8)`` is a
+        # syntax error.  Integral floats remain numeric.  Other floats keep a
+        # distinct typed representation so equality can still be checked,
+        # while ordered comparisons conservatively remain UNKNOWN.
+        if math.isfinite(value) and value.is_integer():
+            return f"num({int(value)})"
+        return f'json("{_esc("float:" + repr(value))}")'
     if isinstance(value, str):
         return f'str("{_esc(value)}")'
     return f'json("{_esc(str(value))}")'
@@ -366,8 +375,10 @@ def _resolved_key(atom: NeutralAtom, t: int) -> str:
 
 
 def _fid(fact_id: str) -> str:
-    out = "".join(ch if ch.isalnum() or ch in "-_" else "_" for ch in fact_id)
-    return out or "f"
+    # Fact ids are opaque data.  Emitting a hyphenated id as an unquoted ASP
+    # atom turns the hyphen into subtraction and can silently drop evidence;
+    # quoting also avoids collisions introduced by punctuation replacement.
+    return _sym(fact_id)
 
 
 def _emit_facts(ci: NeutralCoreInput, prog: _Program) -> None:
