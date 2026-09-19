@@ -24,6 +24,43 @@ from clingo_backend import (  # noqa: E402
 EVIDENCE_LP = (_FULLARCH / "evidence" / "evidence.lp").read_text(encoding="utf-8")
 POLICY_LP = (_FULLARCH / "policy" / "policy.lp").read_text(encoding="utf-8")
 
+_CONTROL = str.maketrans({"\n": " ", "\r": " ", "\t": " "})
+
+
+def _sanitize(ci):
+    """ASP string literals must not carry raw control characters (newlines
+    in benchmark transcripts crash the grounder); replace with spaces and
+    cap length.  Semantics-preserving: values are compared as strings after
+    the same normalization on both the fact and query side is NOT applied —
+    queries come from compiled rules whose text already has no newlines."""
+    from neutral_types import NeutralFact
+    facts = []
+    for fact in ci.facts:
+        predicate = str(fact.predicate).translate(_CONTROL)[:120]
+        entity = str(fact.entity).translate(_CONTROL)[:120]
+        value = fact.value
+        if isinstance(value, str):
+            value = value.translate(_CONTROL)[:512]
+        elif isinstance(value, list):
+            value = value[:20]
+        elif isinstance(value, dict):
+            value = {str(k)[:60]: v for k, v in list(value.items())[:20]}
+        facts.append(NeutralFact(
+            fact.fact_id, fact.kind, fact.actor, entity, predicate,
+            value=value, event_index=fact.event_index,
+            call_id=(str(fact.call_id).translate(_CONTROL)[:120]
+                     if fact.call_id else None),
+            region=fact.region, evidence_status=fact.evidence_status,
+            source_ref=fact.source_ref))
+    from neutral_types import NeutralCoreInput
+    return NeutralCoreInput(
+        case_id=ci.case_id, facts=tuple(facts),
+        interpretations=ci.interpretations,
+        history_complete=ci.history_complete,
+        completeness_basis=ci.completeness_basis,
+        closed_action_universe=ci.closed_action_universe,
+        source_refs=ci.source_refs, notes=ci.notes)
+
 
 def build_program(ci):
     """Return (program_text, program, obligations) — data + static rules.
@@ -34,6 +71,7 @@ def build_program(ci):
       <policy.lp>             (condition folds + obligations + worlds +
                                consensus; reads ONLY tval + its own data)
     """
+    ci = _sanitize(ci)
     prog = _Program()
     _emit_facts(ci, prog)
     emitter = _TreeEmitter(prog)
