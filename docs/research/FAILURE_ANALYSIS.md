@@ -28,3 +28,19 @@ Commit `1f5a093` accepts a frozen `BOUND` value in the formal path only when it 
 The first replay exposed two independent ASP serialization defects. Non-integral JSON numbers were emitted as invalid Clingo terms such as `num(7.8)`, producing 13 runtime errors. Hyphenated fact IDs were emitted as unquoted atoms, so Clingo interpreted the hyphen as subtraction and could silently omit evidence. The backend now keeps integral floats as integers, represents other floats as a distinct nonnumeric term (ordered comparison therefore stays unknown), and quotes opaque fact IDs without collision-prone rewriting. Regression tests cover parser acceptance, type separation and a hyphenated witness ID.
 
 After both serializer corrections, the same frozen-Phi N5 replay completed with 46/46 checker-valid `UNRESOLVED` results, no syntax errors or undefined arithmetic operations: TP0 FP0 FN23 TN23, F1=0, unresolved rate 1.0, summed per-case time 31.21 s. Prediction SHA-256: `c389c822c64a1ec12fe59d8d3d454641e59f6a3f452354a207def8ce841459d0`; artifact: `outputs/research_fullarch_replay_20260919/exact_binding_serialization_fix/`. This establishes that historical N5's apparent recall came entirely from inadmissible semantic bindings on this viewed set. It does not show that the formal core is useless when supplied source-backed exact rules.
+
+## BASE neural probes: first transfer losses
+
+- Granite Guardian function-call gained one PUBLIC_SEEN baseline false negative
+  (`airline__7::t6`) without introducing a false positive, but its raw output is
+  only `<score> yes </score>`. The first missing element for Architecture A is
+  therefore an atomic reason and exact source span. Twenty-three rows were
+  unavailable because the adapter could not identify a target assistant tool
+  call; this abstention is retained.
+- The DeBERTa NLI whole-context pairing predicted `neutral` for all 23 text-only
+  PUBLIC_SEEN cases. It missed both positives (`airline__8::t7` and
+  `retail__29::t13`) and added no false positives. Since the same model separated
+  all 16 short synthetic claim pairs, the first transfer loss is construction of
+  an atomic premise/hypothesis from long agent context. Threshold tuning cannot
+  recover a contradiction class that was never predicted; this pairing is
+  rejected before production integration.

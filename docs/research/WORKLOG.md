@@ -74,3 +74,80 @@ Full repository tests after the changes: 1639 passed, 9 failed. The same nine hi
 ## 11:12 UTC: Granite adapter interface smoke
 
 Commit `08e5394` adds a gold-free `id,prompt,response` to Granite function-call adapter with source trace and explicit `unavailable` states. Six adapter tests pass. An end-to-end preprocessing plus model-runner dry-run over three unlabeled viewed rows produced one ready row, two `missing_target_assistant_tool_call` rows, and three dry-run records. No model decision or metric was generated. The SSH tunnel still returns `Connection refused`; the prior Granite download was not restarted and NLI records were not regenerated.
+
+## 2026-09-19 11:30–12:20 UTC: remote recovery and completed BASE component probes
+
+- SSH became usable only with forced PTY. The prepared A10 has 23,028 MiB and
+  was idle before each run. Existing environments and caches were reused; no
+  framework or model was reinstalled. The old server checkout remains at
+  `923bb445` with its untracked experiment files preserved.
+- Recovered the sealed NLI 16-pair records. Post-hoc scoring at commit `4af3816`
+  produced TP8 FP0 FN0 TN8, F1 1.0 on the synthetic claim slice. Records SHA is
+  `825112e214c5075527551a998a667469c02c44401dd83f8c0140c1a1a492ee1c`;
+  model snapshot `6c749ce…`, weights SHA `d8148c6…8afa` (737,726,552 bytes).
+- Granite Guardian 3.3 8B revision `b3421eda…` was already fully downloaded
+  (16,341,771,384 weight bytes). Three function-call smoke cases parsed and
+  were correct. On the frozen 16 tool pairs it scored TP8 FP0 FN0 TN8, mean
+  772.986 ms, peak 16,029 MiB, records SHA `1c4cdbf…a43a2`. On the same 16
+  claim pairs it scored TP8 FP0 FN0 TN8, mean 716.368 ms, peak 15,963 MiB,
+  records SHA `aa38120…9ceb5`. These are synthetic diagnostics.
+- The label-free public46 adapter yielded 23 eligible tool-call rows and 23
+  explicit missing-target abstentions. Granite alone scored TP8 FP0 FN15 TN23,
+  F1 .516129. The fixed diagnostic OR with legacy baseline scored TP13 FP0
+  FN10 TN23, F1 .722222 versus baseline .685714. The only gained TP was
+  `airline__7::t6`; no FP was introduced. Mean eligible latency was 1,113.546
+  ms, peak 16,735 MiB; records SHA `d201442…49f35e`. This is PUBLIC_SEEN and
+  cannot select the production rule.
+- One malformed diagnostic command printed the remote process environment into
+  the private tool transcript. No secret is recorded in repository artifacts,
+  but the exposed ModelScope access tokens require rotation.
+
+## 2026-09-20: reproducible branch and architecture-v2 boundary
+
+- Fixed Python's default 131,072-character CSV field limit in both Granite and
+  NLI readers. Commits: `52bf829` and `492775a`; focused tests pass.
+- Published `research/offline-20260919` to GitHub for the first time at
+  `492775a`. Remote model experiments now use a separate detached worktree from
+  that exact published commit; the old server tree is not switched or cleaned.
+- Fully read and preserved
+  `manual/guardian_codex_architectures_v2_2026-09-20.md` (SHA-256
+  `a12eb81f…d3bbb`). It reclassifies Granite/NLI as BASE components and requires
+  controlled A0-A3 and B0-B5 comparisons before any C claim.
+- Commit `620dfa0` implements only the shared Architecture A source-grounding
+  contract: exact offsets or a unique quote are accepted; missing, mismatched,
+  or ambiguous spans are `UNANCHORED`; a high score cannot emit a positive;
+  formal state remains separate. Twenty-one related Granite/NLI/grounding tests
+  pass. No model-backed Architecture A/B result is claimed.
+- Server inventory confirms cached NLI, NuExtract3-W4A16, GLiNER2.5, BGE models,
+  and Granite 3.3 8B. There is no confirmed local Mistral checkpoint. Historical
+  API-derived Phi cannot satisfy the local B0 or BASE Mistral requirement.
+
+## 2026-09-20 23:15 UTC: PUBLIC_SEEN NLI transfer test and CLI correction
+
+Hypothesis: cheap DeBERTa NLI over the fixed 23 public46 text-only rows can add a
+claim-error TP to the exact baseline without a tool-policy FP. Stop rule: one
+label-free pass; reject the pairing if it adds no TP or introduces substantial
+FP. The run used published commit `492775a` in detached server worktree
+`/mnt/data/guardian/Guardian-research-offline-20260920`.
+
+- All 23 rows completed, but every relation was `neutral`. Post-hoc text-slice
+  metrics are TP0 FP0 FN2 TN21, F1 0; missed IDs are `airline__8::t7` and
+  `retail__29::t13`. Full-46 legacy OR is unchanged at TP12 FP0 FN11 TN23,
+  F1 .685714. The whole-context NLI pairing is rejected.
+- Records SHA `4acd21647aadcc1075ddf96aa9bc1d571825fcba37c0d79516fde8520cf57afb`;
+  config SHA `4d0ef70e90b7e9320b40540969513e4fbecfb800d01f96d56a6d80da16af3916`;
+  post-hoc report SHA `3f44181d…cf22d5`. Inference sum 1,166.565 ms, mean
+  50.720 ms, process wall 42 s, sampled peak VRAM 1,119 MiB.
+- The first attempted main-entrypoint replay exposed Python's 131,072-character
+  CSV field limit in `src/guardian_truth/cli.py`. Commit `1aa88a9` raises the
+  explicit limit to 16 MiB and adds a 140,000-character regression. With the
+  worktree `src` forced first on `PYTHONPATH`, 31 CLI/runtime/A-contract tests
+  pass. The initial test invocation imported a different globally installed
+  editable checkout; this explains its unrelated failures and is an environment
+  warning for local/server commands.
+- After the developer agent configuration was corrected, it completed commit
+  `01e7ebf`: a gold-free Architecture A grounding CLI that consumes raw atomic
+  suspicion JSONL, writes ordered per-case records plus a hashed run manifest,
+  rejects duplicate/unknown IDs and output overwrite, and keeps formal
+  `UNRESOLVED` separate. Thirteen focused tests pass. This is infrastructure,
+  not a model-backed A result.

@@ -10,6 +10,7 @@ their stated commit, data, model, and artifact provenance.
 | `manual/guardian_master_handoff_2026-09-19.md` | Markdown, fully read (283 logical lines) | Evidence register and branch map. Public46 is viewed development data. Formal core must retain `PROVED_ERROR`, `PROVED_NO_ERROR`, `UNRESOLVED`, and `INCONSISTENT` separately from a probabilistic contest decision. Source catalog and object closure require explicit premises. Final package: offline, `id,label`, under 40 GB and about 30 minutes. | Branch tips and reports listed in sections 2, 4, and 8; FullArch source under `experiments/full_architecture_v1/`; historical local outputs under `outputs/full_architecture_v1/`. |
 | `manual/connect_server.md` | Markdown, fully read (249 logical lines) | Branch-specific ModelScope operating notes: SSH alias `guardian-modelscope`; remote A10; existing venvs, caches, and model paths; do not alter SSH, keys, environments, or redownload models. It permits only a one-case A5 smoke before any full benchmark and forbids mass Mistral calls without approval. Secrets must only be tested for presence. | `/mnt/data/guardian/Guardian-of-Truth`; `/mnt/data/guardian/venv`; GLiNER sidecar; semantic pipeline sources and `scripts/run_semantic_pipeline_v1.py`. |
 | `manual/guardian_new_agent_start_v2_manual_remote.md` (copied from `A:/GIS_Загрузки/`) | Markdown, fully read (72 logical lines) | Later expanded handoff. Requires a manual index, durable research records, remote read-only inventory, no destructive work, offline baseline before new engines, explicit experiment hypothesis/stop rule, and source-to-verdict audit. It makes FullArch frozen-Phi/API dependence and legacy `predict.py` routing priority checks. | Same branch map as master; proposes MiniCheck/LettuceDetect/Granite, Declare/LTLf, Z3, local extraction, and calibrated fallback as unimplemented ablations. |
+| `manual/guardian_codex_architectures_v2_2026-09-20.md` | Markdown, fully read; 61,482 bytes; SHA-256 `a12eb81f27f3b7debfdb6cea15b9baaf00b48f429ad94157333454e6457d3bbb` | Defines the controlled BASE/A/B/C comparison. A must emit atomic suspicions with exact source grounding before review. B must compare independently extracted policy theories, preserve unsupported clauses, and use RuleIR/Clingo only after source checks. C is eligible only after separate A/B gains. Requires a common variant/config contract, raw per-case outputs, manifests, PUBLIC_SEEN marking for public46, independently frozen adversarial pairs and a one-time lockbox. | Current Granite and NLI probes are BASE components, not A/B implementations. `620dfa0` adds only the shared exact-span grounding gate; A model generation and B0-B5 comparisons remain not run. |
 | `A:/GIS_Загрузки/guardian_master_handoff_2026-09-19.md` | Markdown, fully read; byte-identical SHA-256 to `manual/guardian_master_handoff_2026-09-19.md` | External duplicate of the master handoff; no additional requirements. | SHA-256 prefix `0C32CADCC…`. |
 
 ## Confirmed negative or bounded results
@@ -54,3 +55,18 @@ their stated commit, data, model, and artifact provenance.
 3. Compare Z3 on numeric/provenance constraints only, preserving source scope
    and allowed transformations. Run imports/license/VRAM checks, 1–3 smoke cases,
    then an independent balanced set before any full run.
+
+## 2026-09-20 architecture-v2 scope correction
+
+- BASE comprises the exact offline detector plus separately measured local
+  probabilistic detectors. Granite yes/no output and the claim NLI classifier do
+  not satisfy Architecture A because neither emits a reviewed, atomic,
+  source-grounded error reason.
+- Architecture B is not the existing frozen-Phi N5 path. It requires independent
+  theory extraction, exact source spans, clause coverage, disagreement analysis,
+  and targeted repair before RuleIR/Clingo. The clean N5 replay being entirely
+  `UNRESOLVED` is evidence for keeping this boundary strict.
+- No confirmed local Mistral checkpoint exists in the prepared cache. B0 and the
+  Mistral BASE judge are therefore `NOT_RUN`; old API-derived Phi is not a local
+  substitute. Cached NuExtract3 and GLiNER are candidates for bounded B1/B2
+  experiments after a fixed external/adversarial evaluation slice is frozen.
