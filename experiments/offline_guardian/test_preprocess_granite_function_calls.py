@@ -73,3 +73,17 @@ def test_cli_writes_label_free_csv_and_jsonl_trace(tmp_path):
     assert "label" not in output.read_text(encoding="utf-8")
     trace_row = json.loads(trace.read_text(encoding="utf-8"))
     assert trace_row["status"] == "ready"
+
+
+def test_cli_accepts_competition_prompt_larger_than_csv_default(tmp_path):
+    source = tmp_path / "large.csv"
+    large_prompt = VALID.replace("old request", "x" * 140_000)
+    with source.open("w", encoding="utf-8", newline="") as handle:
+        writer = csv.DictWriter(handle, fieldnames=["id", "prompt", "response"])
+        writer.writeheader()
+        writer.writerow(record(large_prompt))
+    output, trace = tmp_path / "prepared.csv", tmp_path / "trace.jsonl"
+    assert preprocess_csv(source, output, trace) == 1
+    with output.open(encoding="utf-8", newline="") as handle:
+        row = next(csv.DictReader(handle))
+    assert row["adapter_status"] == "ready"

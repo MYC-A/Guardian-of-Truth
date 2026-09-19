@@ -20,6 +20,7 @@ from guardian_truth.types import FieldSpec, Source, ToolSpec
 
 
 ADAPTER_VERSION = "granite-function-call-preprocess-v1"
+MAX_CSV_FIELD_CHARS = 16 * 1024 * 1024
 
 
 @dataclass(frozen=True)
@@ -151,6 +152,9 @@ def prepare_record(record: dict[str, str]) -> PreparedRow:
 
 
 def preprocess_csv(input_path: Path, output_path: Path, trace_path: Path) -> int:
+    # Competition prompts routinely exceed the csv module's 128 KiB default.
+    # Keep a finite ceiling so a malformed input cannot request unbounded RAM.
+    csv.field_size_limit(MAX_CSV_FIELD_CHARS)
     with input_path.open("r", encoding="utf-8-sig", newline="") as handle:
         reader = csv.DictReader(handle)
         missing = {"id", "prompt", "response"} - set(reader.fieldnames or ())
