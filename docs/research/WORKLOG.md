@@ -60,3 +60,17 @@ The prepared server's cached `cross-encoder/nli-deberta-v3-base` snapshot `6c749
 ## 08:09 UTC: package install smoke
 
 Created an isolated local venv under an ignored research output, installed `guardian-truth` 0.2.0 with `pip install ".[data]"`, imported pandas 3.0.2 and pyarrow 25.0.1, and ran the official `scripts/predict.py` entrypoint over the fresh three-row CSV. Output was valid `id,label` and the run completed with three explicit fallback decisions. This verifies package metadata and the Python entrypoint. It does not verify the Dockerfile, base-image availability, container size, GPU model packaging or cold-start budget because neither local nor server environment exposes a Docker CLI.
+
+## 11:05-11:12 UTC: exact binding boundary and clean N5 replay
+
+The three N5 positives remaining after the lowering fix were audited to their first premise. All depended on cross-encoder target mappings; the retail witness mapped unrelated policy phrases to `return_delivered_order_items`. Commit `1f5a093` now admits only a single exact-method, identity-consistent binding to the proof pipeline. Focused binding/compiler tests passed.
+
+The first repeat exposed `num(7.8)` parser failures in 13 rows. A second repeat exposed Clingo treating hyphens in unquoted fact IDs as subtraction. The backend now sends non-integral floats through a distinct nonnumeric value (so ordered comparison abstains), retains integral floats as integers, and quotes opaque fact IDs. Thirteen focused soundness/serialization tests pass.
+
+The final one-time replay at `outputs/research_fullarch_replay_20260919/exact_binding_serialization_fix/` completed all 46 rows: 46 `UNRESOLVED`, checker 46/46, TP0 FP0 FN23 TN23, F1=0, no syntax errors and no undefined arithmetic operations. Predictions SHA-256 `c389c822c64a1ec12fe59d8d3d454641e59f6a3f452354a207def8ce841459d0`; summed per-case time 31.21 s. Frozen-Phi N5 is therefore rejected as a contest arm; its former apparent recall was not proof-safe.
+
+Full repository tests after the changes: 1639 passed, 9 failed. The same nine historical artifact seal/hash and protected-incumbent path failures remain; no new soundness, adapter, CLI or runtime failure appeared.
+
+## 11:12 UTC: Granite adapter interface smoke
+
+Commit `08e5394` adds a gold-free `id,prompt,response` to Granite function-call adapter with source trace and explicit `unavailable` states. Six adapter tests pass. An end-to-end preprocessing plus model-runner dry-run over three unlabeled viewed rows produced one ready row, two `missing_target_assistant_tool_call` rows, and three dry-run records. No model decision or metric was generated. The SSH tunnel still returns `Connection refused`; the prior Granite download was not restarted and NLI records were not regenerated.
