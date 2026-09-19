@@ -22,8 +22,10 @@ frontend snapshot only — labels never enter any stage.
 from __future__ import annotations
 
 import json
+import re
 import sys
 import time
+import unicodedata
 from pathlib import Path
 from typing import Any
 
@@ -88,9 +90,56 @@ def _candidates_for_arm(phi_row: dict, arm: str) -> list[RuleIR]:
     return out
 
 
-def _resolutions_for(candidates: list[RuleIR], phi_row: dict) \
+def _normalized_binding_identity(value: object) -> str:
+    """Canonical comparison form for an explicitly named tool or field.
+
+    This intentionally permits only spelling differences such as case, spaces,
+    hyphens, and underscores.  It is not semantic similarity.
+    """
+    if not isinstance(value, str):
+        return ""
+    value = unicodedata.normalize("NFKC", value).casefold()
+    return re.sub(r"[^\w]+", "_", value, flags=re.UNICODE).strip("_")
+
+
+def _exact_proof_binding(rule: RuleIR, binding: dict) -> tuple[bool, str]:
+    """Whether frozen binding data is an admissible formal premise.
+
+    The frontend binder's embedding and cross-encoder decisions are useful
+    routing signals, but cannot turn a RuleIR reference into a proof-level
+    tool identity.  A proof binding therefore needs one explicitly exact
+    candidate whose normalized name is the target text (and, when present,
+    the RuleIR normalized ref).
+    """
+    if binding.get("status") != "BOUND":
+        return False, "status-not-bound"
+    candidates = binding.get("candidates")
+    if not isinstance(candidates, list) or len(candidates) != 1:
+        return False, "not-single-exact-candidate"
+    candidate = candidates[0]
+    if not isinstance(candidate, dict) or candidate.get("method") != "exact":
+        return False, "method-not-exact"
+    name = _normalized_binding_identity(candidate.get("name"))
+    target_text = _normalized_binding_identity(rule.target.text)
+    if not name or name != target_text:
+        return False, "target-name-not-exact"
+    if rule.target.ref != "UNKNOWN" and name != _normalized_binding_identity(rule.target.ref):
+        return False, "target-ref-not-exact"
+    if (binding.get("semantic_text") is not None
+            and name != _normalized_binding_identity(binding["semantic_text"])):
+        return False, "semantic-text-not-exact"
+    return True, "exact"
+
+
+def _resolutions_for(candidates: list[RuleIR], phi_row: dict,
+                     binding_markers: list[str] | None = None) \
         -> dict[str, BindingResolution]:
-    """Binding resolutions from the frozen frontend's binding stage."""
+    """Proof-safe resolutions from the frozen frontend's binding stage.
+
+    ``binding_markers`` keeps discarded neural BOUND decisions visible in the
+    arm trace.  It is optional to keep this narrow helper convenient for
+    direct callers and focused regressions.
+    """
     by_rule = {candidate.get("rule_id"): candidate
                for candidate in phi_row.get("candidates", [])}
     resolutions: dict[str, BindingResolution] = {}
@@ -99,7 +148,15 @@ def _resolutions_for(candidates: list[RuleIR], phi_row: dict) \
         binding = source.get("binding") or {}
         status = binding.get("status", "UNKNOWN")
         names = tuple(candidate["name"] for candidate
-                      in binding.get("candidates", [])[:4])
+                      in binding.get("candidates", [])[:4]
+                      if isinstance(candidate, dict) and isinstance(candidate.get("name"), str))
+        if status == "BOUND":
+            admissible, reason = _exact_proof_binding(rule, binding)
+            if not admissible:
+                status, names = "UNKNOWN", ()
+                if binding_markers is not None:
+                    binding_markers.append(
+                        f"binding:rule:{rule.rule_id}:bound-rejected:{reason}")
         resolution = BindingResolution(
             semantic_text=binding.get("semantic_text", rule.target.text),
             kind="action" if rule.target.kind == "ACTION" else "state",
@@ -123,7 +180,8 @@ def _resolutions_for(candidates: list[RuleIR], phi_row: dict) \
 def build_core_input(case_row: dict, phi_row: dict, arm: str) \
         -> tuple[NeutralCoreInput, dict]:
     candidates = _candidates_for_arm(phi_row, arm)
-    resolutions = _resolutions_for(candidates, phi_row)
+    binding_markers: list[str] = []
+    resolutions = _resolutions_for(candidates, phi_row, binding_markers)
     interpretations, stats = compile_rule_set(
         candidates, resolutions, case_id=case_row["id"])
     facts, fact_stats = build_facts(
@@ -137,7 +195,8 @@ def build_core_input(case_row: dict, phi_row: dict, arm: str) \
         closed_action_universe=(),
         source_refs=source_refs,
         notes=f"fullarch arm {arm}; frontend {FRONTEND_VERSION}")
-    return ci, {"compile": stats, "facts": fact_stats}
+    return ci, {"compile": stats, "facts": fact_stats,
+                "binding_markers": binding_markers}
 
 
 # ------------------------------------------------------------- N3 mode
@@ -278,7 +337,8 @@ def run_arm(case_row: dict, phi_row: dict, arm: str) -> dict:
         "checker_failures": (checker_verdict or {}).get("failures", []),
         "interpretations": len(ci.interpretations),
         "rules_lowered": build_stats["compile"]["rules_lowered"],
-        "markers": build_stats["compile"]["markers"][:12],
+        "markers": (build_stats["binding_markers"]
+                    + build_stats["compile"]["markers"])[:12],
         "facts": build_stats["facts"],
         "runtime_s": round(elapsed, 2),
     }
