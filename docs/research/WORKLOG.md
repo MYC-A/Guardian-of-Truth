@@ -56,3 +56,7 @@ Full repository tests after the fix: 1626 passed, 9 failed in 12.86 s. The nine 
 ## 08:06 UTC: cached NLI inference
 
 The prepared server's cached `cross-encoder/nli-deberta-v3-base` snapshot `6c749ce3425cd33b46d187e45b92bbf96ee12ec7` passed import smoke, a two-pair smoke, then all 16 frozen claim rows offline. Model safetensors SHA-256 `d8148c6d49e0a7925134294c56326c71fe0ab1dc390e37355e00c7efbb488afa`; label map is 0 contradiction, 1 entailment, 2 neutral. It produced 8 entailment and 8 contradiction labels; summed model latency 945.739 ms, mean 59.109 ms, max 303.404 ms. Gold was not present on the server. Exact post-inference scoring is pending retrieval of `records.jsonl`; the SSH endpoint began refusing connections immediately after the run, so no accuracy claim is made yet.
+
+## 08:09 UTC: package install smoke
+
+Created an isolated local venv under an ignored research output, installed `guardian-truth` 0.2.0 with `pip install ".[data]"`, imported pandas 3.0.2 and pyarrow 25.0.1, and ran the official `scripts/predict.py` entrypoint over the fresh three-row CSV. Output was valid `id,label` and the run completed with three explicit fallback decisions. This verifies package metadata and the Python entrypoint. It does not verify the Dockerfile, base-image availability, container size, GPU model packaging or cold-start budget because neither local nor server environment exposes a Docker CLI.
