@@ -45,5 +45,14 @@ class CliTests(unittest.TestCase):
             self.assertIsNone(records[1]['probability'])
             self.assertTrue(records[0]['findings'][0]['sources'])
 
+    def test_csv_accepts_competition_fields_larger_than_python_default(self):
+        row = {'id':'large', 'prompt':'context ' + 'x' * 140_000, 'response':'answer'}
+        with tempfile.TemporaryDirectory() as folder:
+            source = Path(folder)/'large.csv'
+            with source.open('w', encoding='utf-8', newline='') as stream:
+                writer=csv.DictWriter(stream, fieldnames=['id','prompt','response'])
+                writer.writeheader(); writer.writerow(row)
+            self.assertEqual(read_rows(source), [row])
+
 
 if __name__ == '__main__': unittest.main()

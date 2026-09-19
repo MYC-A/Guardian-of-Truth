@@ -12,6 +12,9 @@ from .settings import load_env_file
 from .llm_client import ChatClientError
 
 
+MAX_CSV_FIELD_CHARS = 16 * 1024 * 1024
+
+
 def read_rows(path: Path):
     if path.suffix.lower() == '.parquet':
         try:
@@ -24,6 +27,7 @@ def read_rows(path: Path):
             return [json.loads(line) for line in stream if line.strip()]
         if path.suffix.lower() != '.csv':
             raise ValueError('Input must be CSV, JSONL, or Parquet')
+        csv.field_size_limit(MAX_CSV_FIELD_CHARS)
         return list(csv.DictReader(stream))
 
 
