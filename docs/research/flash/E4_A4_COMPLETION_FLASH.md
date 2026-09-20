@@ -66,3 +66,24 @@ not pushed by them, read-only copies in `outputs/flash/sources_superz_e4/`).
 - `outputs/flash/e4b_a4_verify/a4_analysis_flash.json`, `a4_persuspicion_flash.csv`
 - `outputs/flash/sources_superz_e4/` — provenance copies (a1r_cases, source journal)
 - `experiments/flash/flash_e4b_complete.py`, `flash_a4_analysis.py`
+
+## Addendum: verifier-combination variants (case-level, computed from journals)
+
+| Variant (label=1 iff >=1 suspicion passing rule) | TP | FP | FN | TN | P | R | F1 |
+|---|---|---|---|---|---|---|---|
+| pollinations-only CONFIRMED | 10 | 7 | 10 | 12 | 0.588 | 0.500 | 0.5405 |
+| blockrun-only CONFIRMED | 18 | 17 | 2 | 2 | 0.514 | 0.900 | 0.6545 |
+| AND (both CONFIRMED) | 9 | 6 | 11 | 13 | 0.600 | 0.450 | 0.5143 |
+| OR (either CONFIRMED) | 19 | 18 | 1 | 1 | 0.514 | 0.950 | 0.6667 |
+
+- The two channels bracket the truth from opposite sides: pollinations is REFUTE-heavy
+  (REFUTED on 35 keys where blockrun says CONFIRMED), blockrun is CONFIRM-heavy.
+- OR-either slightly beats the unverified E3a control (0.6667 vs 0.6452) with near-perfect
+  recall, but remains far below the structural+granite ensemble (0.8889): the E3a
+  suspicion producer (frozen Codex A0/A1 Mistral run) is the ceiling of this whole line.
+- AND-agreement does NOT buy precision (0.600): both channels can be wrong together
+  (8 jointly-confirmed keys on gold=0 cases).
+- Conclusion for the program: verification helps only as a precision-restoring signal
+  attached to a high-recall producer; it cannot rescue a producer that misses violations
+  (the lost/missed-TP class), and per-verifier gating is fragile (62% cross-model
+  disagreement).
