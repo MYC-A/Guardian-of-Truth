@@ -271,3 +271,29 @@ repeat stage `93d74bedd4fdd96eea862d1b233a0faf5ecaee663a4d18a00d14b7f519375e33`.
 Local 33 focused B theory tests pass. Next matched comparison uses all 17
 frozen seen synthetic cases (14 errors, 3 controls); the five provider outputs
 are reused exactly, with only 12 new cases sent to models.
+
+## 2026-09-20: independent fullcycle line — access setup checkpoint
+
+New branch `research/independent-fullcycle-20260920` (base = `1755838`, offline-20260919 tip).
+Access layer verified end-to-end before any experiment work:
+
+- Guardian Gateway 2.0 on ModelScope A10: /health 200 v2.0; /gpu success=true exit_code=0
+  NVIDIA A10 23 GiB; /environment torch 2.9.1+cu128 CUDA True; file roundtrip byte-identical
+  (relative paths only); real GPU job SUCCEEDED exit 0 with GUARDIAN_GATEWAY_TEST_OK,
+  hostname dsw-537551-56fdf888f9-dpqk5. TLS pinned by SHA256 fingerprint; no verify=False anywhere.
+  Gateway logs endpoint returns one {"stream","content"} per call; client merges streams.
+- Persistent access config outside the repo: token/cert/github_token (600) + guardian_client.py
+  (files/jobs/wait_job/run_python, status+exit_code checking, no secret in logs or URLs).
+- Server inventory read-only: models granite-guardian-3.3-8b + mistral-7b-instruct-v0.3;
+  hf_cache 14G (bge-m3, bge-reranker-v2-m3, nli-deberta-v3-base, NuExtract3-W4A16,
+  gliner2.5-multi-v1); venv clingo 5.8.2 + langextract + gliner; results/ holds sealed
+  b0/b3/b17 artifacts of the Codex line. Five foreign worktrees identified and untouched;
+  no global git config changes on the server.
+- My isolated server clone: /mnt/data/guardian/agent-workspace/guardian-repo on this branch.
+- Keyless LLM APIs smoke-tested OK: BlockRun.ai, LLM7.io, Pollinations (independent
+  critic/repair channels for direction B, per directive §7.5).
+- Full state table and verified historical numbers: docs/research/INDEPENDENT_FULLCYCLE_20260920.md.
+
+No model calls on competition data were made in this phase (server instruction §8:
+setup + small checks only). Next: baseline reproduction on the server clone, then
+A1 grounding-producer repair and two-generative-critic B experiments.
