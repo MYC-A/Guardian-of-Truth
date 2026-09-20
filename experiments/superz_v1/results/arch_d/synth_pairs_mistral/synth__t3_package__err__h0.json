@@ -1,0 +1,43 @@
+{
+ "id": "synth__t3_package__err",
+ "hyp_idx": 0,
+ "suspicion": {
+  "response_quote": "Подключаю пакет 10 ГБ.",
+  "source_quote": "The 10 GB package can be activated only if the current balance is positive.",
+  "source_type": "policy",
+  "why_error": "Policy violation: Attempted to activate 10GB package with negative balance."
+ },
+ "hypothesis": "The agent attempted to activate a 10 GB package despite the subscriber having a negative balance.",
+ "rule_grounded": true,
+ "trigger_observed": true,
+ "conditions": [
+  {
+   "id": "c1",
+   "status": "ok",
+   "observed": -50,
+   "expected": "< 0",
+   "seq": 1,
+   "scoped": true
+  },
+  {
+   "id": "c2",
+   "status": "ok",
+   "observed": "error",
+   "expected": "== error",
+   "seq": 3,
+   "scoped": true
+  },
+  {
+   "id": "c3",
+   "status": "failed",
+   "observed": "negative_balance",
+   "claimed": "\"msisdn\": \"+7-921-777-88-99\", \"package\": \"10GB\", \"status\": \"error\", \"error\": \"negative_balance\"}",
+   "seq": 3,
+   "scoped": true
+  }
+ ],
+ "exceptions": [],
+ "verdict_python": "REFUTED_CONDITION_FAILS",
+ "verdict_asp": "REFUTED",
+ "verdict": "REFUTED_CONDITION_FAILS"
+}

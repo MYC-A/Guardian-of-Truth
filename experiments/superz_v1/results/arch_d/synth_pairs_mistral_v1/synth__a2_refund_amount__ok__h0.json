@@ -1,0 +1,49 @@
+{
+ "id": "synth__a2_refund_amount__ok",
+ "hyp_idx": 0,
+ "suspicion": {
+  "response_quote": "Вернётся 260 руб.",
+  "source_quote": "Refunded amount uses the price from the most recent get_reservation call, never from memory or older quotes.",
+  "source_type": "policy",
+  "why_error": "Policy violation: refund amount should be based on the most recent get_reservation call, but the policy doesn't specify the currency unit."
+ },
+ "hypothesis": "The refund amount was incorrectly derived from a non-recent or unverified source rather than the latest `get_reservation` call.",
+ "rule_grounded": true,
+ "trigger_observed": true,
+ "conditions": [
+  {
+   "id": "c1",
+   "status": "ok",
+   "observed": 260,
+   "expected": "== 260",
+   "seq": 3,
+   "scoped": false
+  },
+  {
+   "id": "c2",
+   "status": "ok",
+   "observed": 260,
+   "expected": "!= 240",
+   "seq": 3,
+   "scoped": false
+  },
+  {
+   "id": "c3",
+   "status": "unknown",
+   "why": "no evidence binding"
+  }
+ ],
+ "exceptions": [
+  {
+   "id": "e1",
+   "status": "applies",
+   "observed": [
+    "price_updated_after_fee_change"
+   ],
+   "seq": 3
+  }
+ ],
+ "verdict_python": "REFUTED_EXCEPTION_APPLIES",
+ "verdict_asp": "REFUTED",
+ "verdict": "REFUTED_EXCEPTION_APPLIES"
+}

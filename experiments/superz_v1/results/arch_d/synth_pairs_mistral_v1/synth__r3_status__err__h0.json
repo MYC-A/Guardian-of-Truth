@@ -1,0 +1,68 @@
+{
+ "id": "synth__r3_status__err",
+ "hyp_idx": 0,
+ "suspicion": {
+  "response_quote": "Да, конечно, оформляю отмену.",
+  "source_quote": "Cancelled orders in status \"shipped\" must be handled as a return instead.",
+  "source_type": "policy",
+  "why_error": "Policy violation - attempted to cancel an order in \"shipped\" status which requires return instead"
+ },
+ "hypothesis": "The agent attempted to cancel an order in 'shipped' status without first verifying it should be handled as a return.",
+ "rule_grounded": true,
+ "trigger_observed": true,
+ "conditions": [
+  {
+   "id": "c1",
+   "status": "ok",
+   "observed": "shipped",
+   "expected": "== shipped",
+   "seq": 1,
+   "scoped": true
+  },
+  {
+   "id": "c2",
+   "status": "failed",
+   "observed": "shipped",
+   "expected": "!= shipped",
+   "seq": 1,
+   "scoped": true
+  },
+  {
+   "id": "c3",
+   "status": "ok",
+   "observed": "error",
+   "expected": "== error",
+   "seq": 3,
+   "scoped": true
+  },
+  {
+   "id": "c4",
+   "status": "ok",
+   "observed": "invalid_status",
+   "expected": "== invalid_status",
+   "seq": 3,
+   "scoped": true
+  }
+ ],
+ "exceptions": [
+  {
+   "id": "e1",
+   "status": "unknown",
+   "observed": [
+    "shipped"
+   ],
+   "why": "field present but neither matches present_value nor explicit absence"
+  },
+  {
+   "id": "e2",
+   "status": "unknown",
+   "observed": [
+    "shipped"
+   ],
+   "why": "field present but neither matches present_value nor explicit absence"
+  }
+ ],
+ "verdict_python": "REFUTED_CONDITION_FAILS",
+ "verdict_asp": "REFUTED",
+ "verdict": "REFUTED_CONDITION_FAILS"
+}

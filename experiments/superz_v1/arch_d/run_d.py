@@ -30,13 +30,14 @@ def main():
     ap.add_argument("--b1-dir", default=str(HERE.parent / "results" / "arch_b" / "B1"))
     ap.add_argument("--max-hyps", type=int, default=3, help="max suspicions per case to formalize")
     ap.add_argument("--max-seconds", type=float, default=480)
+    ap.add_argument("--provider", default="zai", choices=["zai", "mistral"])
     args = ap.parse_args()
 
     import time
 
     rows = {json.loads(l)["id"]: json.loads(l) for l in open(args.data, encoding="utf-8")}
     labels = json.loads(open(args.labels, encoding="utf-8").read())
-    out_dir = RESULTS / Path(args.data).parent.name
+    out_dir = RESULTS / (Path(args.data).parent.name + f"_{args.provider}")
     out_dir.mkdir(parents=True, exist_ok=True)
 
     # collect tasks: (case_id, suspicion_idx, suspicion)
@@ -49,7 +50,7 @@ def main():
             out_f = out_dir / f"{rec['id'].replace(':', '__')}__h{i}.json"
             if not out_f.exists():
                 tasks.append((rec["id"], i, s, out_f))
-    print(f"[D] {len(tasks)} hypotheses to formalize", flush=True)
+    print(f"[D] {len(tasks)} hypotheses to formalize (provider={args.provider})", flush=True)
 
     t0 = time.time()
     done = ok = 0
@@ -59,7 +60,7 @@ def main():
             break
         row = rows[cid]
         trace = parse_trace(row["prompt"], row["response"])
-        hyp = formalize_suspicion(s, row, trace)
+        hyp = formalize_suspicion(s, row, trace, provider=args.provider)
         out = {"id": cid, "hyp_idx": i, "suspicion": s}
         if hyp is None:
             out["status"] = "FORMALIZE_FAILED"

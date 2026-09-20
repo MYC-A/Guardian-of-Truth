@@ -1,0 +1,40 @@
+{
+ "id": "synth__b4_failed__ok",
+ "hyp_idx": 0,
+ "suspicion": {
+  "response_quote": "баланс ACC-100 — прежние 5000 руб.",
+  "source_quote": "A deposit updates the balance only if the tool response reports status \"completed\". The new balance must always be re-read from get_balance after any deposit; never compute it manually.",
+  "source_type": "policy",
+  "why_error": "Manual balance computation after failed deposit instead of re-reading with get_balance tool"
+ },
+ "hypothesis": "The agent manually claimed the balance of ACC-100 remained unchanged after a failed deposit without verifying it via get_balance.",
+ "rule_grounded": true,
+ "trigger_observed": true,
+ "conditions": [
+  {
+   "id": "c1",
+   "status": "ok",
+   "observed": "failed",
+   "expected": "!= completed",
+   "seq": 3,
+   "scoped": false
+  },
+  {
+   "id": "c2",
+   "status": "failed",
+   "observed": 5000,
+   "expected": "None None",
+   "seq": 1,
+   "scoped": false
+  },
+  {
+   "id": "c3",
+   "status": "unknown",
+   "why": "field None not reported"
+  }
+ ],
+ "exceptions": [],
+ "verdict_python": "REFUTED_CONDITION_FAILS",
+ "verdict_asp": "REFUTED",
+ "verdict": "REFUTED_CONDITION_FAILS"
+}

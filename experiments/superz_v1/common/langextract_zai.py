@@ -51,6 +51,40 @@ class ZaiLanguageModel(base_model.BaseLanguageModel):
                 yield []
 
 
+class MistralLanguageModel(base_model.BaseLanguageModel):
+    """LangExtract provider calling Mistral (ministral-14b-latest) directly.
+
+    Enables true cross-model theory construction: the SAME LangExtract
+    grounding machinery runs over a DIFFERENT model.
+    """
+
+    def __init__(self, tag_prefix: str = "lxm", **kwargs):
+        super().__init__(**kwargs)
+        self._tag_prefix = tag_prefix
+        self.n_calls = 0
+
+    def infer(
+        self, batch_prompts: Sequence[str], **kwargs
+    ) -> Iterator[Sequence[core_types.ScoredOutput]]:
+        for prompt in batch_prompts:
+            self.n_calls += 1
+            resp = chat(
+                user=prompt,
+                system=(
+                    "You are a precise information extraction engine. "
+                    "Follow the output format requested in the prompt exactly. "
+                    "Only use text copied from the provided source; never invent."
+                ),
+                thinking=False,
+                provider="mistral",
+                tag=f"{self._tag_prefix}/{self.n_calls}",
+            )
+            if resp.ok:
+                yield [core_types.ScoredOutput(output=resp.content, score=0.0)]
+            else:
+                yield []
+
+
 def run_langextract(
     text: str,
     prompt_description: str,
@@ -59,11 +93,15 @@ def run_langextract(
     max_char_buffer: int = 2000,
     extraction_passes: int = 1,
     tag_prefix: str = "lx",
+    model_provider: str = "zai",
 ):
-    """Run lx.extract with the z-ai provider. Returns list[AnnotatedDocument]."""
+    """Run lx.extract with the z-ai or Mistral provider. Returns (result, n_calls)."""
     import langextract as lx
 
-    model = ZaiLanguageModel(thinking=thinking, tag_prefix=tag_prefix)
+    if model_provider == "mistral":
+        model = MistralLanguageModel(tag_prefix=tag_prefix)
+    else:
+        model = ZaiLanguageModel(thinking=thinking, tag_prefix=tag_prefix)
     result = lx.extract(
         text,
         prompt_description=prompt_description,

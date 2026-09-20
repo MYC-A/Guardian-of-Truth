@@ -42,6 +42,7 @@ You receive:
 - POLICY (full text),
 - the final agent RESPONSE,
 - ONE suspicion (atomic alleged violation),
+- the OBSERVABLE FIELDS list (tool -> fields actually present in tool results),
 - the ordered TOOL EVENTS (calls and results, with parsed fields).
 
 Return strictly JSON:
@@ -52,25 +53,46 @@ Return strictly JSON:
              "tool": "<tool name or null>",
              "match_response_fragment": "<exact fragment of response that triggers>"},
  "conditions": [
-   {"id": "c1", "desc": "...", "kind": "numeric|flag|absence|temporal",
-    "evidence": {"tool": "<tool that reports the field>", "field": "<field name or path>",
-                 "entity_ref": "<which argument of the trigger call links to this evidence, e.g. 'order' or 'account'>",
-                 "op": ">|<|>=|<=|==|!=", "value": <number or string>},
+   {"id": "c1", "desc": "...", "kind": "numeric|flag|absence|temporal|claim_match",
+    "evidence": {"tool": "<tool from OBSERVABLE FIELDS>", "field": "<field name that exists>",
+                 "entity_ref": "<argument name of the trigger call linking to the evidence, e.g. 'order' or 'account'>",
+                 "op": ">|<|>=|<=|==|!=", "value": <number, string, or "CLAIM" for claim_match>},
     "required": true}
  ],
  "exceptions": [
    {"id": "e1", "desc": "...", "evidence": {"tool": "...", "field": "...", "entity_ref": "...",
-                 "present_value": "<value that would mean the exception applies>"}}
+                 "present_value": "<value that means the exception applies>"}}
  ]
 }
 
 Rules:
-- Bind every condition/exception to a CONCRETE field of a CONCRETE tool result that is
-  able to report it. If nothing in the tool outputs can report the condition, set
-  "evidence": null and "required": false, and add "unverifiable": true.
-- Do NOT invent conditions the policy does not state.
+- BINDING IS MANDATORY: every condition/exception must reference a field that
+  appears in the OBSERVABLE FIELDS list. Only set "unverifiable": true when NO
+  listed tool reports anything relevant (then explain in "unverifiable_reason").
+- For claim_match conditions (comparing what the response CLAIMS with tool
+  evidence): use "value": "CLAIM" and add a "claim": {"extract": "number", "near": "<word next to the claimed number in the response>"}.
+- Do NOT invent conditions the policy does not state. Do NOT invent fields.
 - Quote the policy clause exactly.
 """
+
+
+def _observable_fields(trace: Trace) -> str:
+    """tool -> observed field names (top-level + nested one level)."""
+    lines = []
+    seen = {}
+    for e in trace.tool_events:
+        if e.kind != "RESPONSE" or not isinstance(e.payload, dict):
+            continue
+        fields = seen.setdefault(e.tool, set())
+        for k, v in e.payload.items():
+            fields.add(k)
+            if isinstance(v, dict):
+                fields.update(f"{k}.{k2}" for k2 in v)
+            elif isinstance(v, list) and v and isinstance(v[0], dict):
+                fields.update(f"{k}[].{k2}" for k2 in v[0])
+    for tool, fields in sorted(seen.items()):
+        lines.append(f"- {tool}: {', '.join(sorted(fields))}")
+    return "\n".join(lines)
 
 
 def _entity_values(payload, field: str) -> list:
@@ -250,15 +272,38 @@ def resolve_exception(exc: dict, trace: Trace, trigger_args: dict) -> dict:
     latest = max(scoped or found, key=lambda x: x["seq"])
     pv = str(ev.get("present_value", "")).strip()
     vals_str = [str(v).strip() for v in latest["vals"]]
-    # applies if present_value is contained/equal in any value
-    applies = any(pv and (pv == s or pv in s) for s in vals_str)
-    # explicitly absent if the field exists with an empty/false/different enum
-    explicitly_absent = any(
-        s in ("", "false", "False", "none", "None", "null", "no", "not_received") for s in vals_str
-    )
+    # applies if present_value matches any value (case-insensitive, substring
+    # both ways, numeric equality after coercion)
+    def _matches(s: str) -> bool:
+        if not pv:
+            return False
+        a, b = pv.lower(), s.lower()
+        if a == b or a in b or b in a:
+            return True
+        ca, cb = _coerce(a), _coerce(b)
+        if isinstance(ca, (int, float)) and isinstance(cb, (int, float)):
+            return ca == cb
+        return False
+
+    applies = any(_matches(s) for s in vals_str)
+    # explicitly absent: empty/false/none markers, or the field's value is a
+    # clear negation of present_value (e.g. present_value="completed" vs
+    # observed "failed")
+    NEG_PAIRS = [("completed", "failed"), ("yes", "no"), ("true", "false"),
+                 ("received", "not_received"), ("positive", "negative"),
+                 ("available", "unavailable"), ("silver", "regular")]
+    def _explicitly_absent(s: str) -> bool:
+        if s in ("", "false", "False", "none", "None", "null", "no", "not_received"):
+            return True
+        sl = s.lower()
+        for pos, neg in NEG_PAIRS:
+            if pv.lower() == pos and sl == neg:
+                return True
+        return False
+
     if applies:
         return {"id": exc.get("id"), "status": "applies", "observed": vals_str, "seq": latest["seq"]}
-    if explicitly_absent:
+    if any(_explicitly_absent(s) for s in vals_str):
         return {"id": exc.get("id"), "status": "absent", "observed": vals_str, "seq": latest["seq"]}
     return {"id": exc.get("id"), "status": "unknown", "observed": vals_str,
             "why": "field present but neither matches present_value nor explicit absence"}
@@ -335,6 +380,15 @@ def check_hypothesis(hyp: dict, trace: Trace) -> dict:
     else:
         verdict = "CONFIRMED"
 
+    # Soundness guard: a STATEMENT-trigger hypothesis must link to what the
+    # response actually claims (>=1 claim_match condition or an exception/
+    # condition whose evidence binds the response fragment). Conditions that
+    # merely describe world facts can be vacuously true -> not a proof.
+    if verdict == "CONFIRMED" and trig.get("kind") == "statement":
+        has_claim_link = any(c.get("kind") == "claim_match" for c in hyp.get("conditions", []))
+        if not has_claim_link:
+            verdict = "UNRESOLVED_NO_CLAIM_LINK"
+
     # ASP cross-check (audit; only meaningful when trigger observed)
     asp = build_asp(hyp, cond_results, exc_results) if trigger_observed else build_asp({}, [], []) + "\n:- trigger_observed."
     asp_res = solve(asp)
@@ -361,7 +415,7 @@ def check_hypothesis(hyp: dict, trace: Trace) -> dict:
     }
 
 
-def formalize_suspicion(suspicion: dict, row: dict, trace: Trace) -> Optional[dict]:
+def formalize_suspicion(suspicion: dict, row: dict, trace: Trace, provider: str = "zai") -> Optional[dict]:
     """LLM: suspicion -> typed hypothesis template."""
     tool_lines = [
         f"[{e.kind} {e.tool} seq={e.seq}] {e.raw_payload[:500]}"
@@ -369,12 +423,13 @@ def formalize_suspicion(suspicion: dict, row: dict, trace: Trace) -> Optional[di
     ][:80]
     user = (
         "POLICY:\n" + trace.policy_text
+        + "\n\nOBSERVABLE FIELDS (tool -> fields present in results):\n" + _observable_fields(trace)
         + "\n\nTOOL EVENTS (ordered):\n" + "\n".join(tool_lines)
         + "\n\nFINAL RESPONSE:\n" + row["response"]
         + "\n\nSUSPICION:\n" + json.dumps(suspicion, ensure_ascii=False)
         + "\n\nConvert to the typed template. Output strictly the JSON."
     )
-    resp = chat(user=user, system=FORMALIZE_SYS, thinking=True, tag=f"archD/formalize")
+    resp = chat(user=user, system=FORMALIZE_SYS, thinking=False, provider=provider, tag=f"archD/form/{provider}")
     if not resp.ok:
         return None
     data = extract_json(resp.content)

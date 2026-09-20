@@ -1,0 +1,54 @@
+{
+ "id": "synth__a1_baggage__err",
+ "hyp_idx": 1,
+ "suspicion": {
+  "response_quote": "Добавляю чемодан: это платный багаж, спишу 50 руб. с gift_card_11.",
+  "source_quote": "← TOOL_RESPONSE update_reservation_baggages: {\"reservation\": \"XYZ987\", \"total_baggages\": 2, \"nonfree_baggages\": 1, \"status\": \"error\", \"error\": \"insufficient_funds\"}",
+  "source_type": "tool_result",
+  "why_error": "Effect claimed of a failed call (claimed to add bag despite error response)"
+ },
+ "hypothesis": "The agent claimed to charge a payment method for a bag despite the tool call failing due to insufficient funds, violating the principle of not acting on failed operations.",
+ "rule_grounded": false,
+ "trigger_observed": true,
+ "conditions": [
+  {
+   "id": "c1",
+   "status": "ok",
+   "observed": "error",
+   "expected": "== error",
+   "seq": 5,
+   "scoped": false
+  },
+  {
+   "id": "c2",
+   "status": "ok",
+   "observed": "insufficient_funds",
+   "expected": "== insufficient_funds",
+   "seq": 5,
+   "scoped": false
+  },
+  {
+   "id": "c3",
+   "status": "unknown",
+   "why": "no evidence binding"
+  }
+ ],
+ "exceptions": [
+  {
+   "id": "e1",
+   "status": "unknown",
+   "why": "payment_methods.gift_card_11.amount not observable"
+  },
+  {
+   "id": "e2",
+   "status": "unknown",
+   "observed": [
+    "error"
+   ],
+   "why": "field present but neither matches present_value nor explicit absence"
+  }
+ ],
+ "verdict_python": "UNRESOLVED_UNKNOWN_PREMISE",
+ "verdict_asp": "UNRESOLVED",
+ "verdict": "UNRESOLVED_RULE_UNGROUNDED"
+}

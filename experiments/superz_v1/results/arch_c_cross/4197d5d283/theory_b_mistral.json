@@ -1,0 +1,228 @@
+[
+ {
+  "class": "запрет",
+  "text": "Refunds are prohibited without identity verification",
+  "description": null,
+  "alignment_status": "AlignmentStatus.MATCH_EXACT",
+  "start": 94,
+  "end": 146,
+  "span_exact": true,
+  "attributes": [
+   {
+    "name": "action",
+    "text": "refund"
+   },
+   {
+    "name": "class",
+    "text": "identity_verification"
+   }
+  ]
+ },
+ {
+  "class": "исключение",
+  "text": "EXCEPT when the client has already passed verification in the current session",
+  "description": null,
+  "alignment_status": "AlignmentStatus.MATCH_EXACT",
+  "start": 148,
+  "end": 226,
+  "span_exact": true,
+  "realigned": true,
+  "attributes": [
+   {
+    "name": "action",
+    "text": "refund"
+   },
+   {
+    "name": "class",
+    "text": "identity_verification"
+   }
+  ]
+ },
+ {
+  "class": "порог",
+  "text": "over 10 000 rubles",
+  "description": null,
+  "alignment_status": "AlignmentStatus.MATCH_EXACT",
+  "start": 259,
+  "end": 277,
+  "span_exact": true,
+  "attributes": [
+   {
+    "name": "action",
+    "text": "refund"
+   },
+   {
+    "name": "class",
+    "text": "approval"
+   },
+   {
+    "name": "type",
+    "text": "upper_bound"
+   }
+  ]
+ },
+ {
+  "class": "условие",
+  "text": "manager approval is required",
+  "description": null,
+  "alignment_status": "AlignmentStatus.MATCH_EXACT",
+  "start": 279,
+  "end": 307,
+  "span_exact": true,
+  "attributes": [
+   {
+    "name": "action",
+    "text": "refund"
+   },
+   {
+    "name": "class",
+    "text": "approval"
+   },
+   {
+    "name": "condition",
+    "text": "amount > 10 000 rubles"
+   }
+  ]
+ },
+ {
+  "class": "разрешение",
+  "text": "Refunds for orders that already received approval do not require new approval",
+  "description": null,
+  "alignment_status": "AlignmentStatus.MATCH_EXACT",
+  "start": 309,
+  "end": 387,
+  "span_exact": true,
+  "realigned": true,
+  "attributes": [
+   {
+    "name": "action",
+    "text": "refund"
+   },
+   {
+    "name": "class",
+    "text": "approval"
+   },
+   {
+    "name": "condition",
+    "text": "previously_approved_order"
+   }
+  ]
+ },
+ {
+  "class": "обязанность",
+  "text": "A card can be blocked only at the client's explicit request",
+  "description": null,
+  "alignment_status": "AlignmentStatus.MATCH_EXACT",
+  "start": 408,
+  "end": 467,
+  "span_exact": true,
+  "attributes": [
+   {
+    "name": "action",
+    "text": "block_card"
+   },
+   {
+    "name": "class",
+    "text": "card_operations"
+   },
+   {
+    "name": "condition",
+    "text": "client_explicit_request"
+   }
+  ]
+ },
+ {
+  "class": "разрешение",
+  "text": "Blocking is optional (may be offered) when fraud is suspected",
+  "description": null,
+  "alignment_status": "AlignmentStatus.MATCH_EXACT",
+  "start": 469,
+  "end": 531,
+  "span_exact": true,
+  "realigned": true,
+  "attributes": [
+   {
+    "name": "action",
+    "text": "block_card"
+   },
+   {
+    "name": "class",
+    "text": "card_operations"
+   },
+   {
+    "name": "condition",
+    "text": "fraud_suspicion"
+   }
+  ]
+ },
+ {
+  "class": "запрет",
+  "text": "it is never automatic",
+  "description": null,
+  "alignment_status": "AlignmentStatus.MATCH_EXACT",
+  "start": 532,
+  "end": 553,
+  "span_exact": true,
+  "attributes": [
+   {
+    "name": "action",
+    "text": "block_card"
+   },
+   {
+    "name": "class",
+    "text": "card_operations"
+   },
+   {
+    "name": "condition",
+    "text": "automatic_blocking"
+   }
+  ]
+ },
+ {
+  "class": "условие",
+  "text": "A deposit updates the balance only if the tool response reports status 'completed'",
+  "description": null,
+  "alignment_status": "AlignmentStatus.MATCH_LESSER",
+  "start": 568,
+  "end": 638,
+  "span_exact": false,
+  "attributes": [
+   {
+    "name": "action",
+    "text": "deposit"
+   },
+   {
+    "name": "class",
+    "text": "deposits"
+   },
+   {
+    "name": "condition",
+    "text": "tool_status = 'completed'"
+   }
+  ]
+ },
+ {
+  "class": "обязанность",
+  "text": "The new balance must always be re-read from get_balance after any deposit; never compute it manually",
+  "description": null,
+  "alignment_status": "AlignmentStatus.MATCH_EXACT",
+  "start": 652,
+  "end": 753,
+  "span_exact": true,
+  "realigned": true,
+  "attributes": [
+   {
+    "name": "action",
+    "text": "balance_update"
+   },
+   {
+    "name": "class",
+    "text": "deposits"
+   },
+   {
+    "name": "condition",
+    "text": "post_deposit"
+   }
+  ]
+ }
+]
