@@ -42,7 +42,7 @@ PROVIDERS: dict[str, dict[str, Any]] = {
         "base_url": "https://blockrun.ai/api/v1",
         "model": "nvidia/gpt-oss-120b",
         "api_key": "not-needed",
-        "min_interval": 6.0,
+        "min_interval": 13.0,
         "timeout": 180,
     },
 }
