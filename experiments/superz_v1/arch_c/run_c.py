@@ -74,7 +74,8 @@ def run_c_for_policy(h: str, info: dict, do_c1: bool, do_c3: bool) -> dict:
         "C0": {
             "n_elements": len([e for e in theory_a if not e.get("dropped_unanchored")]),
             "n_unanchored_dropped": len([e for e in theory_a if e.get("dropped_unanchored")]),
-            "coverage": cov_a["n_covered"] / cov_a["n_clauses"] if cov_a["n_clauses"] else 0,
+            "coverage": cov_a["normative_coverage"],
+            "n_normative": cov_a["n_normative"],
             "llm_calls": n_a,
         },
     }
@@ -91,22 +92,26 @@ def run_c_for_policy(h: str, info: dict, do_c1: bool, do_c3: bool) -> dict:
     # C2: targeted re-extraction of uncovered clauses (union of both theories)
     union_el = [e for e in theory_a + theory_b if not e.get("dropped_unanchored")]
     cov_u = clause_coverage(clauses, union_el)
-    uncovered = [c for c in clauses if not any(
+    uncovered = [c for c in clauses if c.get("clause_kind", "normative") == "normative" and not any(
         e["start"] < c["end"] and e["end"] > c["start"] for e in union_el
     )]
     n_retry = 0
     retry_elements = []
-    if uncovered:
+    if uncovered and not (out_dir / "retry_uncovered.json").exists():
         # one targeted pass: concatenate uncovered clause texts
         target_text = "\n".join(c["text"] for c in uncovered)
-        got, n_retry = extract_theory(
-            target_text, PERSONA_A, LX_EXAMPLES_A, tag_prefix=f"C/{h}/retry"
-        )
-        # spans are relative to target_text; keep text-only records
-        retry_elements = [
-            {"class": e["class"], "text": e["text"], "from_retry_pass": True}
-            for e in got if not e.get("dropped_unanchored")
-        ]
+        try:
+            got, n_retry = extract_theory(
+                target_text, PERSONA_A, LX_EXAMPLES_A, tag_prefix=f"C/{h}/retry"
+            )
+            # spans are relative to target_text; keep text-only records
+            retry_elements = [
+                {"class": e["class"], "text": e["text"], "from_retry_pass": True}
+                for e in got if not e.get("dropped_unanchored")
+            ]
+        except Exception as e:  # noqa: BLE001 — retry is best-effort
+            retry_elements = []
+            n_retry = 0
         (out_dir / "retry_uncovered.json").write_text(
             json.dumps({"n_uncovered": len(uncovered), "elements": retry_elements}, ensure_ascii=False, indent=1)
         )
@@ -118,11 +123,28 @@ def run_c_for_policy(h: str, info: dict, do_c1: bool, do_c3: bool) -> dict:
         ]
     )  # simplified: retry found anything for some clauses
 
-    # C3: disagreements + arbitration
-    disagreements = find_disagreements(theory_a, theory_b, clauses)
+    # C3: disagreements + arbitration (incrementally resumable)
+    disagreements = find_disagreements(theory_a, theory_b, clauses, policy_text=pol)
+    (out_dir / "disagreements.json").write_text(json.dumps(disagreements, ensure_ascii=False, indent=1))
     reviews = []
     if do_c3 and disagreements:
-        reviews = review_disagreements(disagreements, tag_prefix=f"C/{h}")
+        rev_dir = out_dir / "reviews"
+        rev_dir.mkdir(exist_ok=True)
+        todo = []
+        for i, d in enumerate(disagreements):
+            rf = rev_dir / f"d{i}.json"
+            if rf.exists():
+                reviews.append(json.loads(rf.read_text()))
+            else:
+                todo.append((i, d, rf))
+        from arch_c.theory import review_disagreements as _rd
+        for i, d, rf in todo:
+            try:
+                rv = _rd([d], tag_prefix=f"C/{h}")[0]
+            except Exception as e:  # noqa: BLE001
+                rv = {**d, "review_ok": False, "review_error": str(e)[:200]}
+            rf.write_text(json.dumps(rv, ensure_ascii=False, indent=1))
+            reviews.append(rv)
     repaired = repair_theory(theory_a, theory_b, reviews) if reviews else {
         "kept": [], "dropped_invented": [], "ambiguous": [], "unreviewed": []
     }
@@ -134,8 +156,8 @@ def run_c_for_policy(h: str, info: dict, do_c1: bool, do_c3: bool) -> dict:
     result["C1"] = {
         "n_elements_b": len([e for e in theory_b if not e.get("dropped_unanchored")]),
         "n_unanchored_b": len([e for e in theory_b if e.get("dropped_unanchored")]),
-        "coverage_b": cov_b["n_covered"] / cov_b["n_clauses"] if cov_b["n_clauses"] else 0,
-        "coverage_union": cov_u["n_covered"] / cov_u["n_clauses"] if cov_u["n_clauses"] else 0,
+        "coverage_b": cov_b["normative_coverage"],
+        "coverage_union": cov_u["normative_coverage"],
         "n_uncovered_clauses": len(uncovered),
         "retry_found_elements": len(retry_elements),
         "llm_calls_b": n_b,

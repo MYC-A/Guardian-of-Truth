@@ -32,6 +32,61 @@ _pace_lock = threading.Lock()
 _last_call_ts = [0.0]
 MIN_CALL_INTERVAL_S = 1.5  # gentle pacing to avoid 429
 
+# --- providers ---
+PROVIDER_ZAI = "zai"
+PROVIDER_MISTRAL = "mistral"
+_MISTRAL_KEY = None
+_MISTRAL_MODEL = "ministral-14b-latest"
+
+
+def _mistral_key() -> str:
+    global _MISTRAL_KEY
+    if _MISTRAL_KEY is None:
+        env = Path(__file__).resolve().parents[1] / ".secrets" / "mistral.env"
+        if env.exists():
+            for line in env.read_text().splitlines():
+                if line.startswith("MISTRAL_API_KEY="):
+                    _MISTRAL_KEY = line.split('"')[1]
+                    break
+        if not _MISTRAL_KEY:
+            _MISTRAL_KEY = os.environ.get("MISTRAL_API_KEY", "")
+    return _MISTRAL_KEY
+
+
+def _mistral_chat(user: str, system: str, timeout: float) -> tuple[bool, str, str, str]:
+    """Direct HTTPS call to Mistral. Returns (ok, content, model, error)."""
+    import urllib.request
+    import urllib.error
+
+    payload = {
+        "model": _MISTRAL_MODEL,
+        "temperature": 0,
+        "messages": [
+            {"role": "system", "content": system},
+            {"role": "user", "content": user},
+        ],
+    }
+    req = urllib.request.Request(
+        "https://api.mistral.ai/v1/chat/completions",
+        data=json.dumps(payload).encode(),
+        headers={
+            "Authorization": f"Bearer {_mistral_key()}",
+            "Content-Type": "application/json",
+        },
+    )
+    try:
+        with urllib.request.urlopen(req, timeout=timeout) as r:
+            obj = json.loads(r.read())
+        content = (obj["choices"][0]["message"].get("content") or "").strip()
+        if not content:
+            return False, "", obj.get("model", ""), "empty-content"
+        return True, content, obj.get("model", ""), ""
+    except urllib.error.HTTPError as e:
+        body = e.read()[:200]
+        return False, "", "", f"http-{e.code}: {body!r}"
+    except Exception as e:  # noqa: BLE001
+        return False, "", "", f"{type(e).__name__}: {e}"
+
 
 @dataclass
 class LLMResponse:
@@ -44,9 +99,9 @@ class LLMResponse:
     attempts: int = 0
 
 
-def _key(system: str, user: str, thinking: bool) -> str:
+def _key(system: str, user: str, thinking: bool, provider: str = PROVIDER_ZAI) -> str:
     h = hashlib.sha256()
-    for part in (system, "\x00<SEP>\x00", user, str(thinking)):
+    for part in (provider, "\x00<P>\x00", system, "\x00<SEP>\x00", user, str(thinking)):
         h.update(part.encode("utf-8", "replace"))
     return h.hexdigest()
 
@@ -58,8 +113,9 @@ def chat(
     use_cache: bool = True,
     max_retries: int = MAX_RETRIES,
     tag: str = "",
+    provider: str = PROVIDER_ZAI,
 ) -> LLMResponse:
-    """Single chat completion via z-ai CLI, cached."""
+    """Single chat completion (z-ai GLM or Mistral), cached."""
     global _seq
     with _pace_lock:
         wait = _last_call_ts[0] + MIN_CALL_INTERVAL_S - time.time()
@@ -68,7 +124,7 @@ def chat(
         _last_call_ts[0] = time.time()
         _seq += 1
         my_seq = _seq
-    key = _key(system, user, thinking)
+    key = _key(system, user, thinking, provider)
     cache_file = CACHE_DIR / f"{key}.json"
     if use_cache and cache_file.exists():
         try:
@@ -88,6 +144,38 @@ def chat(
     t0 = time.time()
     rate_limit_hits = 0
     for attempt in range(1, max_retries + 1):
+        if provider == PROVIDER_MISTRAL:
+            try:
+                ok, content, model, err = _mistral_chat(user, system, DEFAULT_TIMEOUT)
+                if ok:
+                    cache_file.write_text(
+                        json.dumps(
+                            {
+                                "content": content,
+                                "model": model,
+                                "tag": tag,
+                                "system_sha": hashlib.sha256(system.encode()).hexdigest()[:16],
+                                "ts": time.time(),
+                            },
+                            ensure_ascii=False,
+                        ),
+                        encoding="utf-8",
+                    )
+                    return LLMResponse(
+                        ok=True, content=content, cached=False,
+                        elapsed_s=time.time() - t0, model=model, attempts=attempt,
+                    )
+                last_err = err
+                if "429" in err or "rate" in err.lower():
+                    rate_limit_hits += 1
+                    if attempt < max_retries:
+                        time.sleep(min(30 * rate_limit_hits, 150))
+                        continue
+            except Exception as e:  # noqa: BLE001
+                last_err = f"mistral-error: {e}"
+            if attempt < max_retries:
+                time.sleep(5 * attempt)
+            continue
         req_f = TMP_DIR / f"req_{os.getpid()}_{my_seq}_{attempt}.json"
         resp_f = TMP_DIR / f"resp_{os.getpid()}_{my_seq}_{attempt}.json"
         try:

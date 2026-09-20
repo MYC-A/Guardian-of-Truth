@@ -81,10 +81,18 @@ class Trace:
 
     @property
     def policy_text(self) -> str:
-        """Policy block inside SYSTEM (between <policy> tags if present)."""
+        """Policy block inside SYSTEM (between <policy> tags if present).
+
+        Takes the LAST '<policy>' before the LAST '</policy>': instructions
+        often contain a literal '<policy>' reference ('according to the
+        <policy> provided below') which must not start the block.
+        """
         sys_txt = "\n".join(s.text for s in self.system_segments)
-        m = re.search(r"<policy>(.*?)</policy>", sys_txt, re.S)
-        return m.group(1).strip() if m else sys_txt
+        j = sys_txt.rfind("</policy>")
+        i = sys_txt.rfind("<policy>", 0, j)
+        if 0 <= i < j:
+            return sys_txt[i + len("<policy>") : j].strip()
+        return sys_txt
 
     @property
     def user_segments(self) -> list[Segment]:
@@ -259,29 +267,38 @@ def split_policy_clauses(policy_text: str, min_len: int = 25) -> list[dict]:
     """Split policy into clause units with char spans.
 
     Uses paragraph + sentence boundaries. Each clause keeps its absolute
-    span within the policy_text. Used by the clause-coverage registry
-    (Architecture C). Paragraphs that contain list items are kept whole
-    (list structure matters for policy meaning).
+    span within the policy_text. Non-normative lines (headers, xml tags,
+    tool lists, timestamps) get clause_kind='non_policy' so the coverage
+    registry can account for them as non_policy_with_reason instead of
+    diluting coverage.
     """
+    import re as _re
+
+    NON_POLICY_PAT = _re.compile(
+        r"^(\s*#{1,6}\s|</?[a-z_]+>\s*$|\s*[-*]\s*$|AVAILABLE TOOLS|\s*-\s+[a-z_]+\s*$|"
+        r"The current time is|^\s*\d+\.\s*$)"
+    )
     clauses = []
-    for para in policy_text.split("\n"):
-        para = para.rstrip()
-        if not para.strip():
-            continue
-    # better: iterate paragraphs (newline-separated), split long paragraphs by sentence
     pos = 0
     for para in policy_text.split("\n"):
         para_start = pos
         pos += len(para) + 1
         if not para.strip():
             continue
+        non_policy = bool(NON_POLICY_PAT.match(para)) or len(para.strip()) < 12
         if len(para) < 400:
-            clauses.append({"text": para, "start": para_start, "end": para_start + len(para)})
+            clauses.append(
+                {
+                    "text": para,
+                    "start": para_start,
+                    "end": para_start + len(para),
+                    "clause_kind": "non_policy" if non_policy else "normative",
+                }
+            )
         else:
             # sentence split with absolute spans
             rel = 0
             parts = _CLAUSE_SPLIT_RE.split(para)
-            # rebuild spans by finding each part sequentially
             for part in parts:
                 if not part.strip():
                     continue
@@ -290,7 +307,12 @@ def split_policy_clauses(policy_text: str, min_len: int = 25) -> list[dict]:
                     continue
                 if len(part.strip()) >= min_len:
                     clauses.append(
-                        {"text": part, "start": para_start + found, "end": para_start + found + len(part)}
+                        {
+                            "text": part,
+                            "start": para_start + found,
+                            "end": para_start + found + len(part),
+                            "clause_kind": "non_policy" if NON_POLICY_PAT.match(part) else "normative",
+                        }
                     )
                 rel = found + len(part)
     return clauses

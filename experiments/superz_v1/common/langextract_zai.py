@@ -76,8 +76,64 @@ def run_langextract(
     return result, model.n_calls
 
 
+def _normalized_realign(source: str, text: str) -> tuple[int, int] | None:
+    """Whitespace-insensitive re-alignment: locate `text` in `source`
+    ignoring runs of whitespace (line-wrapped policies break exact spans).
+    Returns absolute (start, end) in the ORIGINAL source, or None.
+    """
+    import re as _re
+
+    def norm(s: str) -> str:
+        return _re.sub(r"\s+", " ", s).strip().lower()
+
+    n_src = norm(source)
+    n_txt = norm(text)
+    if not n_txt or len(n_txt) < 8:
+        return None
+    # token-index mapping: walk source once, remember offsets of non-space runs
+    tokens_src = []
+    pos = 0
+    for m in _re.finditer(r"\S+", source):
+        tokens_src.append((m.group(0), m.start(), m.end()))
+        pos += 1
+    joined = []
+    offsets = []  # token idx -> (start_in_joined, len)
+    cur = 0
+    for tok, s, e in tokens_src:
+        joined.append(tok.lower())
+        offsets.append((cur, len(tok)))
+        cur += len(tok) + 1
+    joined_str = " ".join(joined)
+    i = joined_str.find(n_txt)
+    if i < 0:
+        return None
+    # map back: find token containing joined-index i and end
+    start_tok = end_tok = None
+    for idx, (j_start, j_len) in enumerate(offsets):
+        if start_tok is None and j_start <= i < j_start + j_len + 1:
+            start_tok = idx
+        if j_start < i + len(n_txt) <= j_start + j_len + 1:
+            end_tok = idx
+            break
+    if start_tok is None:
+        return None
+    if end_tok is None:
+        # end may fall exactly on a space boundary
+        for idx, (j_start, j_len) in enumerate(offsets):
+            if j_start + j_len == i + len(n_txt) - 1:
+                end_tok = idx
+                break
+    if end_tok is None:
+        return None
+    return (tokens_src[start_tok][1], tokens_src[end_tok][2])
+
+
 def extractions_to_records(annotated, source_text: str) -> list[dict]:
-    """Convert AnnotatedDocument extractions to plain records with spans."""
+    """Convert AnnotatedDocument extractions to plain records with spans.
+
+    Unanchored extractions get ONE whitespace-insensitive re-alignment
+    attempt (recovered=True); only if that fails they stay unanchored.
+    """
     from langextract.core import data as lx_data
 
     out = []
@@ -100,10 +156,22 @@ def extractions_to_records(annotated, source_text: str) -> list[dict]:
                 rec["span_exact"] = (
                     source_text[rec["start"] : rec["end"]] == ext.extraction_text
                 )
+                if not rec["span_exact"]:
+                    ra = _normalized_realign(source_text, ext.extraction_text)
+                    if ra:
+                        rec["start"], rec["end"] = ra
+                        rec["span_exact"] = True
+                        rec["realigned"] = True
             else:
-                rec["start"] = None
-                rec["end"] = None
-                rec["span_exact"] = False
+                ra = _normalized_realign(source_text, ext.extraction_text)
+                if ra:
+                    rec["start"], rec["end"] = ra
+                    rec["span_exact"] = True
+                    rec["realigned"] = True
+                else:
+                    rec["start"] = None
+                    rec["end"] = None
+                    rec["span_exact"] = False
             attrs = ext.attributes or {}
             if isinstance(attrs, dict):
                 rec["attributes"] = [

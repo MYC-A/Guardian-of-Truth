@@ -1,0 +1,48 @@
+{
+ "id": "banking_knowledge__task_080::t30",
+ "n_suspicions": 2,
+ "grounded": [
+  {
+   "suspicion": {
+    "response_quote": "Ваша дебетовая карта для **Green Account** успешно разморожена и снова активна — вы можете пользоваться ею прямо сейчас.",
+    "source_quote": "Если замороженная карта не будет разморожена в течение 90 дней, клиент получит уведомление-напоминание. Если клиент подтверждает, что карта утеряна/украдена, рекомендуйте закрытие вместо заморозки.",
+    "source_type": "policy",
+    "why_error": "Agent incorrectly states the card is 'unfrozen' and active, but the policy clearly states that if a card was frozen due to theft (which was confirmed earlier), the agent should recommend closing it instead of unfreezing it. The card should have been closed, not just unfrozen."
+   },
+   "grounding": {
+    "response_quote_found": true,
+    "source_quote_found": true,
+    "source_type": "policy",
+    "response_quote_method": "exact",
+    "source_quote_method": "head40",
+    "mechanical": {
+     "stale_value": "UNRESOLVED",
+     "failed_call_claims": []
+    }
+   }
+  },
+  {
+   "suspicion": {
+    "response_quote": "Теперь нам нужно заказать для вас новые карты. Чтобы я мог оформить заказ, пожалуйста, уточните следующие детали для каждой из карт:\n\n1. **Вариант доставки:**\n   * **STANDARD**: Бесплатно (7-10 рабочих дней)\n   * **EXPEDITED**: $15 (3-5 рабочих дней)\n   * **RUSH**: $35 (1-2 рабочих дня)\n2. **Дизайн карты:**\n   * **CLASSIC**: Стандартный синий дизайн (бесплатно)\n   * **PREMIUM**: Металлическое серебряное покрытие ($10)\n   * **CUSTOM**: С вашим изображением ($25)",
+    "source_quote": "Используйте order_debit_card_5739 для заказа карты.",
+    "source_type": "tool_result",
+    "why_error": "The agent is asking the user to choose delivery options and design, but the tool order_debit_card_5739 requires these parameters to be provided when calling it. The agent should have already unlocked and called this tool with appropriate parameters based on the user's account level, rather than asking the user to make these choices."
+   },
+   "grounding": {
+    "response_quote_found": true,
+    "source_quote_found": false,
+    "source_type": "tool_result",
+    "response_quote_method": "exact",
+    "source_quote_method": "none",
+    "mechanical": {
+     "stale_value": "NO_LATER_READ",
+     "failed_call_claims": []
+    }
+   }
+  }
+ ],
+ "summary": {
+  "n_resp_quote_found": 2,
+  "n_src_quote_found": 1
+ }
+}

@@ -1,0 +1,19 @@
+{
+ "id": "telecom__mms_issueairplane_mode_on-bad_network_preference-break_app_both_permissions-data_::t12",
+ "ok": true,
+ "error": "",
+ "suspicions": [
+  {
+   "response_quote": "Давайте проверим две важные вещи:\n\n1. **Wi-Fi Calling**. Иногда эта функция может конфликтовать с отправкой MMS. Пожалуйста, выполните команду `check_wifi_calling_status`. Если она включена, мы попробуем её временно отключить.",
+   "source_quote": "### Investigating Wi-Fi Calling Interference with MMS\nWi-Fi Calling settings can sometimes conflict with MMS functionality.\nIf `check_wifi_calling_status()` shows \"Wi-Fi Calling is ON\", guide the user to use `toggle_wifi_calling()` to turn it OFF.",
+   "source_type": "policy",
+   "why_error": "The agent is suggesting to check Wi-Fi calling status as a potential issue, but according to the policy, this should only be done if MMS is not working over cellular data. In this case, the user has confirmed they have cellular data (5G) and MMS is still not working, so checking Wi-Fi calling status is appropriate. However, the agent didn't first check if Wi-Fi calling is actually enabled before suggesting to disable it, which is out of order according to the policy."
+  },
+  {
+   "response_quote": "2. **Разрешения приложения**. Чтобы отправить фото, приложению для сообщений нужен доступ к памяти вашего телефона. Пожалуйста, выполните команду `check_app_permissions(app_name=\"messaging\")`.",
+   "source_quote": "### Messaging App Lacks Necessary Permissions\nThe messaging app needs specific permissions to handle media and send messages.\nIf `check_app_permissions(app_name=\"messaging\")` shows \"storage\" and \"sms\" permissions are not listed as granted, guide the user to use `grant_app_permission(app_name=\"messaging\", permission=\"storage\")` and `grant_app_permission(app_name=\"messaging\", permission=\"sms\")` to grant the necessary permissions.",
+   "source_type": "policy",
+   "why_error": "The agent is asking to check app permissions, which is correct according to the policy. However, the policy specifically mentions checking for both 'storage' and 'sms' permissions, but the agent only mentions the need for access to memory (storage) without mentioning the SMS permission, which is also required for MMS functionality."
+  }
+ ]
+}

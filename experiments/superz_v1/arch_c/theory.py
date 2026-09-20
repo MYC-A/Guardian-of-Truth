@@ -18,6 +18,7 @@ span verification are dropped with UNANCHORED status (never silently kept).
 from __future__ import annotations
 
 import json
+import re
 import sys
 from dataclasses import dataclass, field
 from pathlib import Path
@@ -111,16 +112,24 @@ def extract_theory(policy_text: str, persona: str, examples, tag_prefix: str) ->
 
 
 def clause_coverage(clauses: list[dict], elements: list[dict]) -> dict:
-    """Every clause must be touched by an anchored element span."""
+    """Coverage over NORMATIVE clauses (non-policy lines accounted separately)."""
     anchored = [e for e in elements if not e.get("dropped_unanchored") and e.get("start") is not None]
     registry = []
+    n_norm = n_norm_cov = n_nonpol = 0
     for c in clauses:
         covered = [e for e in anchored if e["start"] < c["end"] and e["end"] > c["start"]]
+        kind = c.get("clause_kind", "normative")
+        if kind == "non_policy":
+            n_nonpol += 1
+        else:
+            n_norm += 1
+            n_norm_cov += bool(covered)
         registry.append(
             {
                 "clause_start": c["start"],
                 "clause_end": c["end"],
                 "clause_text": c["text"][:120],
+                "clause_kind": kind,
                 "covered": bool(covered),
                 "covering_classes": [e["class"] for e in covered],
             }
@@ -128,11 +137,52 @@ def clause_coverage(clauses: list[dict], elements: list[dict]) -> dict:
     return {
         "n_clauses": len(registry),
         "n_covered": sum(1 for r in registry if r["covered"]),
+        "n_normative": n_norm,
+        "n_normative_covered": n_norm_cov,
+        "normative_coverage": (n_norm_cov / n_norm) if n_norm else 0.0,
+        "n_non_policy": n_nonpol,
         "registry": registry,
     }
 
 
-def find_disagreements(theory_a: list[dict], theory_b: list[dict], clauses: list[dict]) -> list[dict]:
+def _clause_for(clauses, policy_text: str, start: int, end: int) -> str:
+    """Full SENTENCE context containing [start, end): extend the clause line
+    to sentence boundaries (line-wrapped sentences must not be split)."""
+    # containing clause
+    base = None
+    for c in clauses:
+        if start < c["end"] and end > c["start"]:
+            base = c
+            break
+    if base is None:
+        return policy_text[max(0, start - 200) : end + 200]
+    # extend backward to the previous sentence end or paragraph start
+    s = base["start"]
+    while s > 0:
+        prev = policy_text[max(0, s - 200) : s]
+        m = None
+        for m in re.finditer(r"[.!?]\s", prev):
+            pass
+        if m:
+            s = max(0, s - 200) + m.end()
+            break
+        s = max(0, s - 200)
+        if s == 0:
+            break
+    # extend forward to the next sentence end
+    e = base["end"]
+    while e < len(policy_text):
+        nxt = policy_text[e : e + 300]
+        m = re.search(r"[.!?](\s|$)", nxt)
+        if m:
+            e = e + m.end()
+            break
+        e += 300
+    return policy_text[s:e].strip()
+
+
+def find_disagreements(theory_a: list[dict], theory_b: list[dict], clauses: list[dict],
+                       policy_text: str = "") -> list[dict]:
     """Elements of A not matched by any anchored element of B (span-overlap
     with same 'hard' class) and vice versa. Restrict to normative classes."""
     HARD = {"запрет", "обязанность", "исключение", "условие", "порог"}
@@ -140,11 +190,10 @@ def find_disagreements(theory_a: list[dict], theory_b: list[dict], clauses: list
     b_el = [e for e in theory_b if not e.get("dropped_unanchored") and e.get("start") is not None and e["class"] in HARD]
     disagreements = []
 
-    def _clause_for(start, end):
-        for c in clauses:
-            if start < c["end"] and end > c["start"]:
-                return c
-        return None
+    def _clause_for_se(start, end):
+        return _clause_for(clauses, policy_text, start, end) if policy_text else (
+            next((c["text"] for c in clauses if start < c["end"] and end > c["start"]), "")
+        )
 
     for e in a_el:
         match = [x for x in b_el if x["start"] < e["end"] and x["end"] > e["start"]]
@@ -153,7 +202,7 @@ def find_disagreements(theory_a: list[dict], theory_b: list[dict], clauses: list
                 {
                     "side": "A_only",
                     "element": {k: e[k] for k in ("class", "text", "start", "end")},
-                    "clause": (_clause_for(e["start"], e["end"]) or {}).get("text", "")[:300],
+                    "clause": _clause_for_se(e["start"], e["end"])[:400],
                 }
             )
     for e in b_el:
@@ -163,7 +212,7 @@ def find_disagreements(theory_a: list[dict], theory_b: list[dict], clauses: list
                 {
                     "side": "B_only",
                     "element": {k: e[k] for k in ("class", "text", "start", "end")},
-                    "clause": (_clause_for(e["start"], e["end"]) or {}).get("text", "")[:300],
+                    "clause": _clause_for_se(e["start"], e["end"])[:400],
                 }
             )
     return disagreements
