@@ -171,11 +171,12 @@ def main() -> int:
     out_dir = Path(args.output_dir)
     out_dir.mkdir(parents=True, exist_ok=True)
     rec_path = out_dir / "records.jsonl"
-    done = set()
+    done = {}
     if rec_path.exists():
         for line in open(rec_path, encoding="utf-8"):
             try:
-                done.add(json.loads(line)["case_id"])
+                rec = json.loads(line)
+                done[rec["case_id"]] = not rec.get("error")  # True = completed OK
             except Exception:  # noqa: BLE001
                 pass
 
@@ -192,7 +193,7 @@ def main() -> int:
     t0 = time.time()
     with open(rec_path, "a", encoding="utf-8") as fh:
         for i, case in enumerate(cases):
-            if case["case_id"] in done:
+            if done.get(case["case_id"]):
                 continue
             rec = {"case_id": case["case_id"], "ts": datetime.now(UTC).isoformat()}
             try:

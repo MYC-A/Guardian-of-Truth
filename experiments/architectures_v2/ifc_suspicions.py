@@ -123,9 +123,22 @@ class LLM:
                     "usage": usage,
                 }
             except urllib.error.HTTPError as e:
-                last_err = f"HTTP {e.code}: {e.read()[:200]!r}"
+                body = b""
+                try:
+                    body = e.read()
+                except Exception:  # noqa: BLE001
+                    pass
+                last_err = f"HTTP {e.code}: {body[:200]!r}"
                 if e.code in (429, 500, 502, 503):
-                    time.sleep(min(60.0, (2 ** attempt) * 5.0))
+                    wait_s = 0.0
+                    try:
+                        err_json = json.loads(body.decode())
+                        wait_s = float(err_json.get("retry_after") or err_json.get("error", {}).get("retry_after") or 0)
+                    except Exception:  # noqa: BLE001
+                        pass
+                    if e.code == 429 and wait_s == 0.0:
+                        wait_s = 30.0  # conservative for keyless pools with token quotas
+                    time.sleep(min(120.0, max(wait_s, (2 ** attempt) * 5.0)))
                     continue
                 break
             except Exception as e:  # noqa: BLE001
@@ -387,11 +400,12 @@ def main() -> int:
     out_dir = Path(args.output_dir)
     out_dir.mkdir(parents=True, exist_ok=True)
     rec_path = out_dir / "records.jsonl"
-    done = set()
+    done = {}
     if rec_path.exists():
         for line in open(rec_path, encoding="utf-8"):
             try:
-                done.add(json.loads(line)["id"])
+                rec = json.loads(line)
+                done[rec["id"]] = not rec.get("error")  # True = completed OK
             except Exception:  # noqa: BLE001
                 pass
 
@@ -419,7 +433,7 @@ def main() -> int:
     t_start = time.time()
     with open(rec_path, "a", encoding="utf-8") as fh:
         for i, case in enumerate(cases):
-            if case["id"] in done:
+            if done.get(case["id"]):
                 continue
             ctx = context_block(case["prompt"], case["response"], args.max_input_chars)
             rec = {"id": case["id"], "variant": args.variant, "producer": args.producer, "ts": datetime.now(UTC).isoformat()}
