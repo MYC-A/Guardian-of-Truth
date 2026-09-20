@@ -94,12 +94,20 @@ def test_critique_requires_exact_original_fragment_and_offset():
 
 def test_direct_langextract_is_gap_evidence_with_mistral_dependency(monkeypatch):
     monkeypatch.setenv("TEST_MISTRAL_KEY", "secret")
+    calls = []
+
+    def extract_fn(**kwargs):
+        calls.append(kwargs)
+        return {"extractions": [{
+            "extraction_text": TEXT, "char_interval": {
+                "start_pos": 0, "end_pos": len(TEXT)}}]}
+
     grounder = MistralLangExtractGrounder(
         api_key_env="TEST_MISTRAL_KEY", model_factory=lambda **kwargs: object(),
-        extract_fn=lambda **kwargs: {"extractions": [{
-            "extraction_text": TEXT, "char_interval": {
-                "start_pos": 0, "end_pos": len(TEXT)}}]})
+        extract_fn=extract_fn, example_factory=lambda: "neutral-example")
     evidence = grounder.extract_original(_case())
+    assert len(calls) == 1
+    assert calls[0]["examples"] == ["neutral-example"]
     assert evidence[0]["quote_validity"] == "EXACT"
     assert evidence[0]["interpretation"] == "UNVERIFIED_MODEL_PROPOSAL"
     assert evidence[0]["relation_correctness"] == "UNVERIFIED"

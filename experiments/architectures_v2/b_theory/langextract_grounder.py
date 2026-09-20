@@ -90,7 +90,9 @@ class MistralLangExtractGrounder:
                     "Return only source text; do not validate, repair, or extend the interpretation. "
                     f"Proposed interpretation: {element.interpretation}"
                 )
-                examples = [self._example_factory()] if self._example_factory else []
+                if self._example_factory is None:
+                    raise RuntimeError("LangExtract requires an extraction example")
+                examples = [self._example_factory()]
                 result = extract_fn(text_or_documents=source.text,
                                     prompt_description=prompt, examples=examples, model=model)
                 proposals.extend(self._links(result, source.source_id, source.text))
@@ -107,6 +109,8 @@ class MistralLangExtractGrounder:
         remain separately unverified.
         """
         model, extract_fn = self._runtime()
+        if self._example_factory is None:
+            raise RuntimeError("LangExtract requires an extraction example")
         evidence = []
         for source in case.sources:
             result = extract_fn(
@@ -115,7 +119,7 @@ class MistralLangExtractGrounder:
                     "Extract every exact policy fragment directly from the original text. "
                     "Do not compare theories, infer missing words, repair rules, or rank alternatives."
                 ),
-                examples=[], model=model,
+                examples=[self._example_factory()], model=model,
             )
             extractions = (result.get("extractions", []) if isinstance(result, dict)
                            else getattr(result, "extractions", []) or [])
