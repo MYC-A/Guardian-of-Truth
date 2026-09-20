@@ -145,8 +145,10 @@ def run_b(dataset, limit=None, use_b3=True, source="arch_a_a1_citations", out_su
     rows = load_dataset(dataset)
     if limit:
         rows = rows[:limit]
-    a1 = json.loads((Path(__file__).resolve().parent.parent.parent / "outputs" / "agentz" /
-                     f"{source}_{dataset}.json").read_text())
+    _oz = Path(__file__).resolve().parent.parent.parent / "outputs" / "agentz"
+    _cand = [_oz / f"{source}_{dataset}.json", _oz / f"{source}.json"]
+    _src = next((c for c in _cand if c.exists()), _cand[0])
+    a1 = json.loads(_src.read_text())
     preds_b1, preds_b2, preds_b3 = {}, {}, {}
     details = {}
     for r in rows:

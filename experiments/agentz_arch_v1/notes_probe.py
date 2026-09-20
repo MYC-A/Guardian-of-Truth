@@ -29,6 +29,8 @@ from arch_c_theory import policy_text
 from common import langextract_runner as LX
 
 OUT = Path("/home/z/my-project/got-agentz/outputs/agentz")
+T_START = time.time()
+E2_BUDGET = 420  # seconds for the E2 phase per invocation
 
 CAPS = ["temporal_seq", "freshness", "actor_role", "success_status",
         "value_context", "entity_scope", "concurrency", "none"]
@@ -200,9 +202,24 @@ def run(ds):
     # --- E2: GLM independent extractor (unset MISTRAL key for this phase) ---
     mistral_key = os.environ.pop("MISTRAL_API_KEY", None)
     try:
-        for i, cid in enumerate(targets):
-            if cid in e2:
-                continue
+        missing_e2 = [cid for cid in targets if cid not in e2]
+        if missing_e2:
+            print(f"E2: {len(missing_e2)} missing; GLM health probe...", flush=True)
+            try:
+                hp = run_llm([{"id": "health-glm", "system": "You are terse.",
+                               "prompt": "Reply exactly: OK"}], concurrency=1)
+                ok = hp.get("health-glm") is not None
+            except Exception as e:
+                ok = False
+            if not ok:
+                print("E2 SKIPPED: GLM unreachable; records will be e1-only "
+                      "(rerun when GLM recovers for dual confirmation)", flush=True)
+                mistral_skipped = True
+                missing_e2 = []
+        for i, cid in enumerate(missing_e2):
+            if time.time() - T_START > E2_BUDGET:
+                print("E2 budget reached; rerun to continue", flush=True)
+                break
             row = rows[cid]
             out = run_llm([{"id": f"{cid}-e2", "system": E2_SYSTEM,
                             "prompt": e2_prompt(policy_text(row["prompt"]))}], concurrency=4)
