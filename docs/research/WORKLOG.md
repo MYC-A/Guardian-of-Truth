@@ -179,3 +179,29 @@ FP. The run used published commit `492775a` in detached server worktree
   evidence only; unanchored or non-exact bindings abstain. Fifty-six relevant
   tests pass locally. Three additional solver tests cannot run because the local
   `clingo` module lacks its native `Control`; they must run in the server venv.
+
+## 2026-09-20: first real Architecture B model run and formal handoff
+
+- One `syn_dispatch__exception_unless` case ran with real `ministral-14b-latest`,
+  cached `numind/NuExtract3-W4A16`, and `fastino/gliner2.5-multi-v1` in a clean
+  detached server worktree at `453b595`. The 68 s provider run was performed
+  once; peak observed GPU occupancy was 9,955 MiB. Input SHA is
+  `1304c58598ccdeabc77768eb22d36e7d95de60bd3207f23d2bc663f12d020de3`;
+  provider-output SHA is
+  `cab60ee20664e391f6aa1f574eaf2ea82ae4a6b16a13e7bf827202a93f191f87`.
+- Mistral returned zero normalized rules. NuExtract returned two; one preserved
+  `FORBID/UNLESS` and its exact source quote but the boundary rejected its
+  condition as `unless-without-exception`. The second was rejected as
+  `INVALID_SOURCE_SPAN`. GLiNER's six hints remained evidence only. These
+  are actual model outputs, not a preformalized scenario.
+- Commit `d4212ae` fixed the combined-provider JSONL handoff without rerunning
+  models. All three B0 alternatives reached existing N5 as `UNRESOLVED` with
+  zero representable and exact-bound rules, so no Clingo/checker execution was
+  possible; `phi-empty:no-eligible-rules` is the recorded marker. B0 records
+  SHA `5ba734d74a5faf47b8a17eaa62ad0d6a2b634bb7fe76b5cf165fd194ba80d856`;
+  N5 alternatives SHA `bc7b6ec7ca596a08f3df124f6a2970624dbe6312941c1e40581e705aad4e9ac0`.
+  Server namespace: `/mnt/data/guardian/results/b0_smoke_20260920T175500_syn_dispatch_exception_unless/`.
+- Commit `0694c2d` allows a correct theory to receive zero issues/no repair,
+  permits a source-grounded addition without altering an existing element, and
+  recovers offsets from one unique verbatim original quote. The validator still
+  rejects missing and ambiguous quotes. Seventy relevant local tests pass.
