@@ -1,0 +1,32 @@
+{
+ "id": "synth__a1_baggage__err",
+ "ok": true,
+ "error": "",
+ "model": "ministral-14b-latest",
+ "suspicions": [
+  {
+   "response_quote": "Добавляю чемодан: это платный багаж, спишу 50 руб. с gift_card_11.",
+   "source_quote": "{\"reservation\": \"XYZ987\", \"cabin\": \"economy\", \"passengers\": 1, \"total_baggages\": 1, \"nonfree_baggages\": 0, \"payment_methods\": {\"gift_card_11\": {\"amount\": 6}}}",
+   "source_type": "tool_result",
+   "why_error": "wrong entity (claimed deduction of 50 RUB from a gift card with only 6 RUB)"
+  },
+  {
+   "response_quote": "Добавляю чемодан: это платный багаж, спишу 50 руб. с gift_card_11.",
+   "source_quote": "{\"membership\": \"silver\"}",
+   "source_type": "tool_result",
+   "why_error": "wrong action (silver member should have 1 free checked bag, no paid baggage allowed)"
+  },
+  {
+   "response_quote": "Добавляю чемодан: это платный багаж, спишу 50 руб. с gift_card_11.",
+   "source_quote": "Basic economy tickets cannot be changed, only cancelled.",
+   "source_type": "policy",
+   "why_error": "wrong action (attempted to modify baggage allowance on basic economy ticket)"
+  },
+  {
+   "response_quote": "Добавляю чемодан: это платный багаж, спишу 50 руб. с gift_card_11.",
+   "source_quote": "update_reservation_baggages: {\"status\": \"error\", \"error\": \"insufficient_funds\"}",
+   "source_type": "tool_result",
+   "why_error": "permission treated as obligation (claimed completed action despite failed tool call)"
+  }
+ ]
+}
