@@ -22,7 +22,7 @@ def run_llm(tasks, concurrency=3, cache_dir=None):
     # in-process cache keyed identically to bridge
     def key(t):
         return hashlib.sha256(json.dumps([t.get("system", ""), t["prompt"],
-                                          t.get("max_tokens", 2048)])).hexdigest()
+                                          t.get("max_tokens", 2048)]).encode()).hexdigest()
     results, todo = {}, []
     for t in tasks:
         k = key(t)

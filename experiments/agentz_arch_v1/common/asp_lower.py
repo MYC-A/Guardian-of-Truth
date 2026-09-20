@@ -49,6 +49,8 @@ flag_unknown_c(R,I) :- cond(R,I,flag,F,_), not flag(true,F), not flag(false,F).
 
 exc_present_e(R,I) :- exc(R,I,actpresent,T), tool_called(T).
 exc_absent_e(R,I) :- exc(R,I,actabsent,T), not tool_called(T).
+flag_true_e(R,I) :- exc(R,I,flag,F,"true"), flag(true,F).
+flag_true_e(R,I) :- exc(R,I,flag,F,"false"), flag(false,F).
 flag_unknown_e(R,I) :- exc(R,I,flag,F,_), not flag(true,F), not flag(false,F).
 
 acts_of_rule(R,A) :- rule(R,_,ActName), action(ActName,A).
@@ -64,9 +66,10 @@ cond_bad(R,A) :- cond_nofield_act(R,I,A), acts_of_rule(R,A).
 cond_bad(R,A) :- cond(R,I,actpresent,T), acts_of_rule(R,A), not tool_called(T).
 cond_bad(R,A) :- cond(R,I,actabsent,T), acts_of_rule(R,A), tool_called(T).
 
-exc_holds(R,A) :- flag_true_e(R,I), acts_of_rule(R,A).
-exc_holds(R,A) :- exc_present_e(R,I), acts_of_rule(R,A).
-exc_holds(R,A) :- exc_absent_e(R,I), acts_of_rule(R,A).
+exc_global(R) :- flag_true_e(R,I).
+exc_global(R) :- exc_present_e(R,I).
+exc_global(R) :- exc_absent_e(R,I).
+exc_holds(R,A) :- exc_global(R), acts_of_rule(R,A).
 cond_present_c(R,I) :- cond(R,I,actpresent,T), tool_called(T).
 cond_absent_c(R,I) :- cond(R,I,actabsent,T), not tool_called(T).
 
@@ -82,7 +85,7 @@ violation(R,A) :- rule(R,"prohibition",_), acts_of_rule(R,A),
 violation(R,A) :- rule(R,"obligation",_), acts_of_rule(R,A),
     cond_bad(R,A), not exc_holds(R,A), not any_unknown.
 violation(R,"omitted") :- rule(R,"requirement",Tgt), Tgt != "*", not action(Tgt,_),
-    not any_unknown.
+    not exc_global(R), not any_unknown.
 
 proved_error :- violation(R,A).
 proved_no_error :- action(_,A), not proved_error, not any_unknown.
@@ -131,9 +134,10 @@ def _cond_fact(rid, slot, i, c):
 
 def rule_facts(theory):
     facts = []
-    for r in theory.get("rules", []):
-        rid = r["id"]
-        kind = r.get("kind", "prohibition")
+    for i, r in enumerate(theory.get("rules", [])):
+        rid = str(r.get("id") or f"R{i+1}")
+        r = dict(r, id=rid)
+        kind = r.get("kind") or r.get("type") or "prohibition"
         facts.append(f'rule({_asp_str(rid)},{_asp_str(kind)},{_asp_str(r.get("action",""))}).')
         for ci, c in enumerate(r.get("conditions", [])):
             f = _cond_fact(rid, "cond", ci, c)
