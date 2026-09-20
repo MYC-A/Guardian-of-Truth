@@ -129,6 +129,12 @@ def _to_fullarch_rule(element: TheoryElement, donor_rule, sources) -> RuleIR:
         converted = _expression(donor_rule.exception)
         if converted is not None:
             exceptions.append(converted)
+    # Some extraction templates place the single UNLESS operand in `condition`
+    # instead of `exception`.  In that unambiguous shape it is an exemption,
+    # never an additional prerequisite to the prohibition/requirement.
+    if donor_rule.relation == "UNLESS" and not exceptions and conditions is not None:
+        exceptions.append(conditions)
+        conditions = None
     if donor_rule.relation == "UNLESS" and not exceptions:
         raise NotImplementedError("EXTRACTED_BUT_IR_UNREPRESENTABLE:unless-without-exception")
     extractor = "deterministic"

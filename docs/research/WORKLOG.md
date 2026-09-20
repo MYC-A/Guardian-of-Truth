@@ -205,3 +205,16 @@ FP. The run used published commit `492775a` in detached server worktree
   permits a source-grounded addition without altering an existing element, and
   recovers offsets from one unique verbatim original quote. The validator still
   rejects missing and ambiguous quotes. Seventy relevant local tests pass.
+
+## 2026-09-20: pinpoint old B0 formal losses before five-case run
+
+The old one-case N5 invocation used a 64-byte placeholder `competition_input.csv`;
+the actual NuExtract RuleIR provenance refers to `prompt[248:367]` in the full
+case. Its `INVALID_SOURCE_SPAN` therefore reflects mismatched input artifacts,
+not a failed quote in that model output. In the prepared five-case competition
+CSV (5,642 bytes), all five source texts match their prompt offsets exactly.
+The `FORBID/UNLESS` donor instead placed its sole exemption in `condition` and
+left `exception` empty. The conservative boundary now maps that unambiguous
+operand to `exceptions`, without adding a conjunctive prerequisite; 31 B theory
+tests pass. The server's five-case raw run remains pinned to `0694c2d` so this
+fix can be measured by replaying its sealed outputs without new model calls.

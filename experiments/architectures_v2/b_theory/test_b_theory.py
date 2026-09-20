@@ -118,6 +118,20 @@ def test_fullarch_boundary_reports_temporal_anchor_loss():
     assert "temporal-anchor" in boundary["reason"]
 
 
+def test_unless_operand_in_donor_condition_becomes_exception_only():
+    wire = _wire("nuextract:unless")
+    wire["rule"]["modality"] = "FORBID"
+    wire["rule"]["relation"] = "UNLESS"
+    wire["rule"]["condition"] = {
+        "operator": "ATOM", "term": {"kind": "STATE", "name": "Manager approval"}
+    }
+    boundary = run_case(_case(), [_candidate("nuextract", wire=wire)], Variant.B1)[
+        "candidates"][0]["elements"][0]["ruleir_boundary"]
+    assert boundary["status"] == "BINDING_REQUIRED"
+    assert boundary["rule_ir"].get("conditions") is None
+    assert len(boundary["rule_ir"]["exceptions"]) == 1
+
+
 def test_segment_relative_span_is_rebased_for_fullarch():
     raw = {
         "case_id": "c-offset",
