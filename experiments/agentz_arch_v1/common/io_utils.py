@@ -20,8 +20,11 @@ def run_llm(tasks, concurrency=3, cache_dir=None):
     cache_dir = cache_dir or CACHE
     cache_dir.mkdir(parents=True, exist_ok=True)
     # in-process cache keyed identically to bridge
+    import os
+    provider = "mistral" if os.environ.get("MISTRAL_API_KEY") else "zai"
+    model = os.environ.get("MISTRAL_MODEL", "ministral-14b-latest")
     def key(t):
-        return hashlib.sha256(json.dumps([t.get("system", ""), t["prompt"],
+        return hashlib.sha256(json.dumps([provider, model, t.get("system", ""), t["prompt"],
                                           t.get("max_tokens", 2048)]).encode()).hexdigest()
     results, todo = {}, []
     for t in tasks:

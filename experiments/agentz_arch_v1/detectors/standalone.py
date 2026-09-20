@@ -17,7 +17,7 @@ from pathlib import Path
 sys.path.insert(0, str(Path(__file__).resolve().parent.parent))
 from common.io_utils import load_dataset, prf, save_result
 
-OUT = Path(__file__).resolve().parent.parent.parent / "outputs" / "agentz"
+OUT = Path("/home/z/my-project/got-agentz/outputs/agentz")
 
 
 # ---------------- context strategies ----------------
@@ -141,14 +141,25 @@ def run_lettuce(dataset, limit=None):
         rows = rows[:limit]
     det = lettuce_model()
     preds, details = {}, {}
+    # incremental persistence (resume across process restarts)
+    inc_path = OUT / f"det_lettuce_{dataset}.partial.json"
+    if inc_path.exists():
+        try:
+            inc = json.loads(inc_path.read_text())
+            preds.update(inc.get("preds", {}))
+            details.update(inc.get("details", {}))
+        except Exception:
+            pass
     t0 = time.time()
     for r in rows:
+        if r["id"] in preds:
+            continue
         resp = r["response"]
         answer = re.sub(r"→\s*TOOL_CALL[^←]*", " ", resp, flags=re.S).strip() or resp[:1500]
         try:
             probs = []
             span_out = []
-            for doc in ctx_chunks(r["prompt"], chunk_chars=2500, max_chunks=4):
+            for doc in ctx_chunks(r["prompt"], chunk_chars=2000, max_chunks=2):
                 spans = det.predict(context=doc, question="", answer=answer,
                                     output_format="spans")
                 for sp in spans:
@@ -162,6 +173,9 @@ def run_lettuce(dataset, limit=None):
         except Exception as e:
             preds[r["id"]] = None
             details[r["id"]] = {"error": str(e)[:200]}
+        if time.time() - t0 > 30:
+            inc_path.write_text(json.dumps({"preds": preds, "details": details}))
+    inc_path.write_text(json.dumps({"preds": preds, "details": details}))
     golds = {r["id"]: r["gold"] for r in rows}
     m = prf(preds, golds)
     m["elapsed_s"] = round(time.time() - t0, 1)

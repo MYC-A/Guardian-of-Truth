@@ -89,6 +89,38 @@ otherwise encode it. The field "kind" (or "type") must be prohibition/obligation
 Answer with JSON only: {"rules":[{...}],"unrepresentable_notes":[...]}
 """
 
+P_THEORY3 = """You are an independent analyst. Read the POLICY and produce a COMPLETE formal
+theory as JSON. Pay special attention to: exceptions (except/unless/кроме), thresholds
+(свыше/более/more than), temporal order (до/перед/before/после/after), actor boundaries,
+freshness of reported data (only from the LATEST result), and scope.
+Use ONLY these condition types:
+- arg_gt, arg_lt, arg_gte, arg_lte, arg_equals (numeric arg of the action)
+- flag_true, flag_false (boolean field from tool results)
+- action_present / action_absent (tool called in history; action_absent requires
+  closure_premise = verbatim policy quote)
+- text_report (field=F): holds if the FINAL RESPONSE text asserts a concrete value
+  for field F (e.g. reporting a balance, price, eta). Use it as the CONDITION of a
+  prohibition rule that governs stating values.
+- value_is_latest (field=F): holds if every value the response asserts for F equals
+  the latest tool-response value for the same entity. Use it as an EXCEPTION to make
+  fresh-data reports legal.
+Rule kinds: prohibition / obligation / requirement. Set "action" to the exact tool
+name, or "*" for speech acts governed via text_report.
+Anything not representable -> "unrepresentable_parts" / "unrepresentable_notes".
+EXAMPLE - policy: "Reporting a balance is allowed only from the latest get_balance
+result for that exact account. The agent must fetch the balance before stating it."
+Correct theory:
+{"rules":[
+ {"id":"R1","kind":"prohibition","action":"*","action_text":"state a balance value",
+  "conditions":[{"type":"text_report","field":"balance"}],
+  "exceptions":[{"type":"value_is_latest","field":"balance"}],
+  "unrepresentable_parts":[]}],
+ "unrepresentable_notes":[]}
+Mark a part "unrepresentable" ONLY when it truly cannot be expressed with the types
+above. Prefer text_report + value_is_latest over marking freshness as unrepresentable.
+Answer with JSON only: {"rules":[{...}],"unrepresentable_notes":[...]}
+"""
+
 P_CRITIC = """You are a critical reviewer of a formal policy theory. Below are:
 (1) the ORIGINAL policy, (2) a list of grounded policy elements extracted with exact quotes,
 (3) another analyst's theory. Find REAL discrepancies only:
@@ -104,7 +136,7 @@ Answer with JSON: {"criticisms":[{...}],"repaired":{...theory json...}}
 
 def build_theory(row, variant=1):
     p = policy_text(row["prompt"])
-    tpl = P_THEORY if variant == 1 else P_THEORY2
+    tpl = {1: P_THEORY, 2: P_THEORY2, 3: P_THEORY3}[variant]
     ctx = build_context(row) if False else row["prompt"]
     # keep response visible for obligation/requirement action names
     tasks = [{"id": f"{row['id']}-t{variant}",

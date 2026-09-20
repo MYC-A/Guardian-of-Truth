@@ -22,9 +22,36 @@ const { default: ZAI } = await import('z-ai-web-dev-sdk');
 const tasks = JSON.parse(fs.readFileSync(tasksFile, 'utf8'));
 fs.mkdirSync(cacheDir, { recursive: true });
 
+// Provider selection: mistral if MISTRAL_API_KEY present, else z-ai (GLM)
+const MISTRAL_KEY = process.env.MISTRAL_API_KEY || '';
+const MISTRAL_MODEL = process.env.MISTRAL_MODEL || 'ministral-14b-latest';
+const PROVIDER = MISTRAL_KEY ? 'mistral' : 'zai';
+
+async function mistralCall(t) {
+  const body = {
+    model: MISTRAL_MODEL,
+    messages: [
+      ...(t.system ? [{ role: 'system', content: t.system }] : []),
+      { role: 'user', content: t.prompt },
+    ],
+    max_tokens: t.max_tokens || 2048,
+    temperature: 0.2,
+  };
+  const r = await fetch('https://api.mistral.ai/v1/chat/completions', {
+    method: 'POST',
+    headers: { 'Authorization': `Bearer ${MISTRAL_KEY}`, 'Content-Type': 'application/json' },
+    body: JSON.stringify(body),
+  });
+  if (!r.ok) throw new Error(`status ${r.status}: ${(await r.text()).slice(0, 200)}`);
+  const j = await r.json();
+  let content = j.choices?.[0]?.message?.content ?? '';
+  content = String(content).replace(/<think>[\s\S]*?<\/think>/g, '').trim();
+  return content;
+}
+
 const keyOf = (t) =>
   crypto.createHash('sha256')
-    .update(JSON.stringify([t.system || '', t.prompt, t.max_tokens || 2048]))
+    .update(JSON.stringify([PROVIDER, MISTRAL_MODEL, t.system || '', t.prompt, t.max_tokens || 2048]))
     .digest('hex');
 
 function readCache(key) {
@@ -45,17 +72,21 @@ async function runTask(zai, t) {
   if (cached) return { id: t.id, ok: true, cached: true, ...cached };
   for (let attempt = 1; attempt <= 6; attempt++) {
     try {
-      const messages = [];
-      if (t.system) messages.push({ role: 'assistant', content: t.system });
-      messages.push({ role: 'user', content: t.prompt });
-      const completion = await zai.chat.completions.create({
-        messages,
-        thinking: { type: 'disabled' },
-        max_tokens: t.max_tokens || 2048,
-      });
-      let content = completion.choices?.[0]?.message?.content ?? '';
-      // strip <think> blocks if any
-      content = String(content).replace(/<think>[\s\S]*?<\/think>/g, '').trim();
+      let content;
+      if (PROVIDER === 'mistral') {
+        content = await mistralCall(t);
+      } else {
+        const messages = [];
+        if (t.system) messages.push({ role: 'assistant', content: t.system });
+        messages.push({ role: 'user', content: t.prompt });
+        const completion = await zai.chat.completions.create({
+          messages,
+          thinking: { type: 'disabled' },
+          max_tokens: t.max_tokens || 2048,
+        });
+        content = completion.choices?.[0]?.message?.content ?? '';
+        content = String(content).replace(/<think>[\s\S]*?<\/think>/g, '').trim();
+      }
       const val = { content };
       writeCache(key, val);
       return { id: t.id, ok: true, cached: false, ...val };

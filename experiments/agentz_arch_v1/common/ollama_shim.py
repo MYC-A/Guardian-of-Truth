@@ -2,7 +2,7 @@
 Lets Google LangExtract run its genuine extraction loop (prompting, parsing,
 char-offset alignment) against an API model. NOT a local model - documented.
 """
-import json, subprocess, tempfile, hashlib, traceback
+import json, os, subprocess, tempfile, hashlib, traceback
 from pathlib import Path
 from http.server import BaseHTTPRequestHandler, HTTPServer
 
@@ -28,14 +28,17 @@ def call_llm(messages):
             system = m.get("content", "")
         elif m.get("role") == "user":
             user = m.get("content", "")
-    key = hashlib.sha256(json.dumps([system, user, 2048]).encode()).hexdigest()
+    # provider-aware cache key (consistent with io_utils.run_llm)
+    provider = "mistral" if os.environ.get("MISTRAL_API_KEY") else "zai"
+    model = os.environ.get("MISTRAL_MODEL", "ministral-14b-latest") if provider == "mistral" else "glm"
+    key = hashlib.sha256(json.dumps([provider, model, system, user, 2048]).encode()).hexdigest()
     p = Path(CACHE) / (key + ".json")
     if p.exists():
         return _strip_fences(json.loads(p.read_text())["content"])
     with tempfile.TemporaryDirectory() as td:
         tf, of = Path(td) / "t.json", Path(td) / "r.json"
         tf.write_text(json.dumps([{"id": "q", "system": system, "prompt": user}]))
-        subprocess.run(["bun", BRIDGE, "--tasks", str(tf), "--out", str(of),
+        r = subprocess.run(["bun", BRIDGE, "--tasks", str(tf), "--out", str(of),
                         "--cache", CACHE, "--concurrency", "1"],
                        capture_output=True, text=True, timeout=300)
         if not of.exists():

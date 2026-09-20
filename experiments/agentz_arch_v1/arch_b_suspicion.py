@@ -140,7 +140,7 @@ def b3_review(row, suspicions):
     return verdicts
 
 
-def run_b(dataset, limit=None, use_b3=True, source="arch_a_a1_citations"):
+def run_b(dataset, limit=None, use_b3=True, source="arch_a_a1_citations", out_suffix=""):
     """Full B pipeline over a dataset, reusing A1 suspicions (B1)."""
     rows = load_dataset(dataset)
     if limit:
@@ -182,7 +182,7 @@ def run_b(dataset, limit=None, use_b3=True, source="arch_a_a1_citations"):
            "metrics_b2": prf(preds_b2, golds),
            "metrics_b3": prf(preds_b3, golds),
            "preds_b2": preds_b2, "preds_b3": preds_b3, "details": details}
-    save_result(f"arch_b_{dataset}.json", out)
+    save_result(f"arch_b_{dataset}{out_suffix}.json", out)
     print(f"B/{dataset}: B1={out['metrics_b1']}")
     print(f"          B2={out['metrics_b2']}")
     print(f"          B3={out['metrics_b3']}")
@@ -190,6 +190,14 @@ def run_b(dataset, limit=None, use_b3=True, source="arch_a_a1_citations"):
 
 if __name__ == "__main__":
     ds = sys.argv[1] if len(sys.argv) > 1 else "public46"
-    limit = int(sys.argv[2]) if len(sys.argv) > 2 else None
+    limit = None
+    if len(sys.argv) > 2 and sys.argv[2].isdigit():
+        limit = int(sys.argv[2])
     nb3 = "--no-b3" in sys.argv
-    run_b(ds, limit, use_b3=not nb3)
+    suffix = ""
+    if "--suffix" in sys.argv:
+        suffix = sys.argv[sys.argv.index("--suffix") + 1]
+    src = "arch_a_a1_citations"
+    if "--source" in sys.argv:
+        src = sys.argv[sys.argv.index("--source") + 1]
+    run_b(ds, limit, use_b3=not nb3, source=src, out_suffix=suffix)
