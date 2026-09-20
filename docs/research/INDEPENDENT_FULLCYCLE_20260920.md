@@ -78,3 +78,24 @@ Agent: Super Z (independent full-cycle research line per directive 2026-09-20).
 - Offline baseline на public46: **TP12 FP0 FN11 TN23, F1 0.6857** — точное совпадение с задокументированным (artifacts: outputs/baseline_ifc/).
 - ОСНОВНАЯ ИНФРАСТРУКТУРНАЯ НАХОДКА: /mnt/data/guardian/secrets/ недоступен для job-процессов (drwx------ root), MISTRAL_API_KEY в env отсутствует → Mistral-канал недоступен с сервера. Все IFC-раннеры строятся provider-agnostic (OpenAI-compatible): BlockRun (пул gpt-oss-120b, ~0.6s), Pollinations (gpt-oss-20b, ~15s), LLM7 (10 RPM) — проверены с сервера; Mistral подключается при появлении доступа без изменения кода.
 - GPU свободен (A10, 0 MiB). Далее: направление A (s1/s2/s3 подозрения с grounding-repair-циклом), E3 Granite full46 параллельно.
+
+## 2026-09-20 — Этап B: направление A (s1/s2) + направление D (Granite) — первые полные прогоны
+
+### Результаты на public46 (gold-blind инференс, метки присоединены после)
+
+| Система | TP | FP | FN | TN | P | R | F1 |
+|---|---|---|---|---|---|---|---|
+| offline baseline (воспроизведён) | 12 | 0 | 11 | 23 | 1.000 | 0.522 | 0.6857 |
+| **Granite Guardian groundedness (46/46, ctx 12000)** | 16 | 2 | 7 | 21 | 0.889 | 0.696 | **0.7805** |
+| Granite function_call (23/46 с каталогом) | 8 | 0 | 13 | 2 | 1.000 | 0.381 | 0.5517 |
+| s1_blockrun (прямой судья, пул llama-3.2-11b) | 18 | 15 | 5 | 8 | 0.545 | 0.783 | 0.6429 |
+| s2_blockrun (grounding-гейт, 18/46 scored) | 4 | 3 | 6 | 5 | 0.571 | 0.400 | 0.4706 |
+| **АНСАМБЛЬ baseline OR granite_grounded** | **20** | **2** | **3** | **21** | **0.909** | **0.870** | **0.8889** |
+| ансамбль majority(baseline,granite,s1) | 16 | 1 | 7 | 22 | 0.941 | 0.696 | 0.8000 |
+
+### Ключевые выводы
+1. **F1 0.8889 — лучший подтверждённый результат линии** (против 0.7547 Mistral BASE и 0.7213 A0). Структурный канал (0 FP) + семантический Granite дают почти ортогональные TP (пересечение мало), всего 2 FP.
+2. Granite FP ids: banking_knowledge__task_057::t2, retail__87::t6 — разобрать в FAILURE_ANALYSIS.
+3. Слабая pool-модель llama-3.2-11b не справляется со строгим цитированием (39 source_document_invalid, 90 ремонтных раундов) — гипотеза «гейт снижает FP» проверяется на сильном продюсере (gpt-oss-20b).
+4. **Независимая валидация (AgentHallu DEV 488): granite groundedness F1 0.4043 (P .644, R .295)** — public46 не репрезентативен для независимой оценки; ee анализ — обязательный пункт.
+5. LLM7: дневная квота токенов исчерпана → канал недоступен до завтра.
