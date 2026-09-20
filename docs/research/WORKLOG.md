@@ -1,153 +1,58 @@
-# Research worklog — 2026-09-19
+# Research Journal — agentz (Super Z), ветка research/agentz-20260920
 
-## 07:43–07:50 UTC: preserve and inventory
+Формат: гипотеза → конфигурация → результат → решение. Все числа — на моих зафиксированных данных; public46 = PUBLIC_SEEN (только диагностика).
 
-- Original worktree: `semantic-pipeline-v1` `0d8d804`, no tracked edits; pre-existing untracked manual and agent config preserved. `git ls-remote --heads origin` confirmed nine branches. `core-engine-bakeoff-v1` is a commit lineage under FullArch, not an advertised remote branch.
-- Fetched FullArch without checking out the original worktree. Created isolated local `A:\GIS_Загрузки\Guardian Offline Research 20260919` branch `research/offline-20260919` at `923bb445`. Verified 191 GB free on A: before creation. No reset/clean/pull.
-- Researcher fully read the three original `manual/` files and the external v2 handoff, created `MANUAL_INDEX.md`. The documents were copied into the isolated worktree after a presence-only secret scan (no private key/token value matches).
-- Tester established SSH access and found prepared model environments/caches but no existing Guardian repository or experiment outputs at the documented paths. Created isolated remote clone `/mnt/data/guardian/Guardian-of-Truth-Offline-20260919` at `923bb445`; no existing env/cache/process was altered.
-- Official 2026 PDF fetched and parsed; SHA-256 `9462490004b977e6d99a157c02effdb577b767dcf90a69e7765b78b8e8b5e3df`; task-one CLI, H100, 30 min, <40 GB confirmed. Task page returned HTTP 403. Internet blocked statement is task-two-specific.
+## Окружение и ограничения (зафиксировано 2026-09-20)
+- Песочница: 2 CPU, 3.9 GB RAM, БЕЗ GPU, БЕЗ SSH → сервер ModelScope недоступен из этого окружения (подключение только с машины пользователя; manual/connect_server.md выполнен быть не может).
+- LLM-канал: z-ai-web-dev-sdk = GLM API (замена Mistral API; явно помечено: НЕ локальная модель, воспроизведение на локальной модели не гарантируется — по директиве п.9).
+- Установлено: clingo 5.8.2, torch 2.14.0+cpu, transformers 5.17.0, lettucedetect, minicheck, langextract (+ собственный Ollama-шим → GLM).
+- Granite Guardian (2B/8B): NOT_RUN — память песочницы 3.9GB < требуемых ~5-16GB. Честно зафиксировано, лёгкая альтернатива — GLM-judge + MiniCheck/LettuceDetect.
+- Rust-митинг процессов: фоновые процессы убиваются между вызовами инструмента → шим LangExtract запускается в потоке процесса (in-process), все LLM-вызовы кэшируются sha256(system|prompt) в experiments/agentz_arch_v1/cache/.
 
-## 07:50 UTC: executable offline baseline
+## Датасеты
+1. public46 (valid.parquet) — PUBLIC_SEEN, только диагностика. Мой парсер таймлайна: 276 пар call/response, все спаны roundtrip-верны.
+2. synth_pairs.json — МОИ контролируемые пары (сгенерированы детерминированно, до любых прогонов): 10 категорий × EN/RU × 4 вариации × {bad,ok} = 160; dev=120, holdout=40 (стратифицированный сплит зафиксирован до настройки). Категории: stale_value, wrong_entity, attempted_done, exception_missed, threshold_direct, fabricated_value, actor_confusion, missing_arg, permission_done, temporal_skip.
+3. AgentHallu dev-адаптация из benchmarks/agenthallu_v1 (ветка Codex; read-only, помечено как possibly-seen).
 
-Hypothesis: current `scripts/predict.py` already accepts unseen CSV offline and offers a measurable exact-check baseline. Stop rule: stop after one full viewed-dev pass and one fresh three-row smoke; do not tune on those labels.
+## Компоненты (реализовано и протестировано)
+- timeline.py: ⟦SYSTEM/USER/ASSISTANT⟧ + →TOOL_CALL/←TOOL_RESPONSE, JSON-парсинг, span-точность 46/46.
+- asp_lower.py: RuleIR-lite → ASP + Clingo. Регрессия 9/9 семантических кейсов: prohibition(+exception action_present/flag, порог), obligation(precondition), requirement(+exception), soundness: unknown flag → UNRESOLVED, action_absent без closure_premise → UNRESOLVED. Найдено и исправлено: (1) cmp unsafe variables; (2) стёртые flag_true_e; (3) requirement-нарушение игнорировало исключения; (4) prohibition не проверял условия применимости.
+- spans.py: exact/normalized/fuzzy анкоринг цитат (на public46 A1: 92% подозрений анкорятся, 4/48 unanchored).
+- langextract_runner.py: настоящий цикл LangExtract (промптинг, парсинг, difflib-выравнивание офсетов) над GLM API через Ollama-шим. Smoke: 3/3 извлечения с точными спанами на RU-политике.
 
-- Command: `PYTHONPATH=src python scripts/predict.py --input valid.parquet --output outputs/research_offline_20260919/baseline_dev46.csv --audit outputs/research_offline_20260919/baseline_dev46_audit.jsonl --run-report outputs/research_offline_20260919/baseline_dev46_runtime.json --backend none`.
-- Commit `923bb445`; data SHA-256 `8e730cc999a6cf07c3f17f273300a17ce16539c5b6166885e74b41e93cfc47ba`; model none; result TP12 FP0 FN11 TN23, F1=.685714, 34 fallbacks, 0.395 s for 46 on local Ryzen 7 5825U. Viewed-dev diagnostic only.
-- Fresh unseen, unlabeled three-row CSV passed the official entrypoint and produced columns `id,label`, 0/0/0. No gold was present in this inference input. `tests/test_cli.py tests/test_runtime.py`: 17 passed in 1.08 s.
-- Server fresh three-row `--backend none` smoke passed with `PYTHONPATH=src` in 0.00976 s and no GPU allocation. Bare source checkout without install initially raised `ModuleNotFoundError`; packaging in Docker uses `pip install .[data]`, which still requires a separate cold verification.
+## Эксперименты (GLM API, public46 = PUBLIC_SEEN)
+| Вариант | Датасет | TP/FP/FN/TN | P | R | F1 |
+|---|---|---|---|---|---|
+| A0 прямой judge | public46 | 16/4/7/18 | .800 | .696 | **.744** |
+| A1 цитаты | public46 | 19/14/4/9 | .576 | .826 | .679 |
+| B1=A1 | public46 | =A1 | | | .679 |
+| B2 механика | public46 | 19/13/4/10 | .594 | .826 | .691 |
+| A0 | synth-dev (частично) | 2/0/2/3 | 1.0 | .5 | .667 (n=8) |
 
-## Next bounded actions
+A1 (принудительные цитаты): recall .696→.826 (+.13), но FP 4→14 — моделивание «дать основание» усиливает обвинительную тенденцию. Это главный кандидат на лечение через B3-перекрёстную проверку.
+B2 (детерминированный stale-fact + entity-чек): снял только 1 FP на public46 — механический канал работает (пример: refuted_stale), но judge-FP в основном другой природы (нужен B3).
 
-1. Reproduce the same 46-row offline baseline on the isolated server, compare hashes and counts; do not infer hidden F1.
-2. Build a standalone local Granite Guardian probe for `function_call` and `groundedness` with explicit context budget and raw score trace. No production routing until 3 fresh smoke and independent balanced data demonstrate TP gain without unacceptable FP.
-3. Recover FullArch N5's two false-positive source-to-verdict traces from tracked frozen Phi if Clingo is already available; stop if dependencies would require broad environment changes.
-4. Perform isolated `pip install .` and Docker cold-start when tooling permits. Do not touch frozen branches or existing outputs.
+## Локальные детекторы (CPU, без API)
+| Детектор | Стратегия | Датасет | Порог | P | R | F1 |
+|---|---|---|---|---|---|---|
+| MiniCheck-RoBERTa-L | truncate | synth-dev | .5 | .52 | 1.0 | .686 |
+| MiniCheck-RoBERTa-L | truncate | synth-dev | .3 (tuned dev) | .60 | .87 | **.708** |
+| MiniCheck-RoBERTa-L | relevant(BM25-ish) | synth-dev | swept | .48 | .92 | .632 |
+| MiniCheck EN-подвыборка | truncate | synth-dev | .3 | .64 | .90 | .750 |
+| MiniCheck RU-подвыборка | truncate | synth-dev | .3 | .56 | .83 | **.667** |
+| LettuceDetect (EN ModernBERT) | smoke | synth 8 | .5 conf | ловит stale-value span (conf .97), ~23s/чанк на 2-core CPU |
 
+Выводы: (1) трюкация контекста у MiniCheck → поток FP (по директиве подтверждено); (2) max-агрегация по чанкам усугубляет FP (директива подтверждена: any-chunk-unsupported → обвинение); (3) RU-поддержка RoBERTa-версии слабее EN на ~8 F1-пунктов; (4) LettuceDetect — EN-only (kornw01-европейская версия удалена с HF; есть KRLabsOrg EN ModernBERT), RU неприменим напрямую.
 
-## 07:52 UTC: remote baseline replication
+## Ключевые наблюдения по архитектурам
+1. Формальный канал (C) корректно ловит exception_missed (PROVED_ERROR с witness на bad-близнеце, NO_ERROR на ok-близнеце после фикса requirement-exceptions) — но качество теории LLM нестабильно: parse failures под троттлингом, мусорные правила (R1 "requirement refund" — выдуманное требование) → нужен C3-критик.
+2. ASP-слой честно UNRESOLVED на claim-ошибках (stale_value, fabricated_value) — это зона каналов B/D, гибрид E обязателен.
+3. Soundness соблюдён: ни одного false NO_ERROR в 9 кейсах регрессии; unrepresentable → UNRESOLVED, не stricter.
 
-Tester reran the same `--backend none` viewed-dev baseline in the isolated remote clone at `923bb445`, `PYTHONPATH=src`, no API/GPU/install. Input SHA-256 matched local: `8e730cc999a6cf07c3f17f273300a17ce16539c5b6166885e74b41e93cfc47ba`. Predictions SHA-256: `07dff1f61d1cde4ae2aa93d7bf51f42b92e792fedcaf62b12bef9f1e5cb8d790`. Exact ID join produced TP12 FP0 FN11 TN23, F1=.685714; pipeline 0.650 s, shell wall 1.153 s, GPU 0 MiB. Artifacts: `/mnt/data/guardian/Guardian-of-Truth-Offline-20260919/outputs/research_offline_20260919/`. Docker CLI is absent on the server. The initial bare checkout command failed on missing import; setting PYTHONPATH succeeded. A project install remains untested.
-
-## 07:55 UTC: bounded historical FullArch N5 replay started
-
-Hypothesis: the tracked frozen Phi plus Clingo 5.8.2 can recover the two N5 false-positive case traces missing from ignored outputs, exposing the first source-to-verdict loss. This is a historical replication only, not a new offline model. Stop rule: one smoke case then one 46-row pass; stop on solver failure or >10 minutes. Clingo was installed only into a temporary local target, not the project or server venv. One-case smoke succeeded; full output namespace is `outputs/research_fullarch_replay_20260919/full/`, with stdout/stderr redirected. Command: `PYTHONPATH=<temp-clingo>;src python experiments/full_architecture_v1/benchmarks/real46.py --arms N5 --output-dir outputs/research_fullarch_replay_20260919/full`. Dataset SHA is the public46 SHA above; Phi is the tracked frozen Mistral artifact.
-
-## 07:59 UTC: FullArch N5 historical replay and root cause
-
-The bounded 46-row replay completed once on local CPU with Clingo 5.8.2. TP4 FP2 FN19 TN21, F1=.2759, matching `0c2bda7`. Predictions SHA-256 `3f63cc791c4bbc236e2aab2b0df2e05a43935cba382b3cb9b5a2c20286769fea`; sum per-case runtime 102.77 s, mean 2.23 s. The two FP are `banking_knowledge__task_063::t8` and `banking_knowledge__task_081::t35`. Reconstructed certificates show `unit:0002:mistral:2` is the sole false obligation in all 64 interpretations for each case. RuleIR had a request-count condition and KB-guidance exception, but compiler emitted unconditional `FORBID transfer_to_human_agents` after both failed lowering. Source-to-verdict details in `FAILURE_ANALYSIS.md`. This is a formal-lowering soundness bug; code correction is underway, and this replay remains a historical frozen-Phi result.
-
-## 08:00 UTC: preregistered local model probes
-
-Granite Guardian 3.3 8B official card confirms Apache-2.0 and separate `function_call` and `groundedness` criteria. Hugging Face revision `b3421eda4ba6fc9f9a71121d7e62de08827469a4` has 16,341,771,384 bytes of safetensors, so one model fits the server's free disk; 15.22 GiB weights leave limited A10 VRAM for context. Existing venv already has torch 2.9.1+cu128, transformers 5.16.1, vLLM 0.15.1. A single durable CPU/network download is running in its own namespace, PID 26862; no GPU work during transfer. Stop on auth/network/disk failure or OOM at first one-case model load; no repeated large download. The experimental runner is isolated from `scripts/predict.py` and stores only probabilistic scores.
-
-Before model inference, 32 newly authored synthetic pairs were frozen under `benchmarks/offline_guardian_v1/`: 16 function-call and 16 groundedness rows, 16 positive/16 negative total. Inference inputs contain no labels; `gold.csv` is separate. SHA-256: tool input `cb567c6a14d2265d7f93155cb1c60beed332679ffa43f73d8e47ae5815e91305`, claim input `835d5ac9fe3beabb86991af250ddda26a8afb880c0cc688a7886a9d56b26efa5`, gold `0ec45efee2b9764f7d21eab3029eb76c2f36f9959040ae90c3c4d6babfe2383b`. This is an independent-of-public46 *synthetic* diagnostic set, not hidden contest validation. Stop model integration if the relevant criterion cannot distinguish valid/invalid pairs or adds substantial FP; public46 is for later viewed-dev error audit only.
-
-While Granite transfers, a separate cached NLI DeBERTa-base claim probe will run only on the 16 claim rows, after 1–3 smoke. It is a low-cost entailment/contradiction channel, not a policy/tool detector or proof. No calibration threshold will be fit on public46.
-
-## 08:05 UTC: sound lowering fix and repeat replay
-
-Commit `36d4b58` changes only the RuleIR→Neutral compiler and adds six focused regressions. An obligation is no longer emitted if any condition or exception leaf cannot be represented; explicit unresolved content and unsupported temporal rules also abstain; supported BEFORE/UNTIL/AFTER fields are preserved; capped world enumeration cannot certify an incomplete product. Targeted compiler tests: 6 passed. CLI/runtime tests: 17 passed.
-
-The same N5 replay over the same tracked Phi completed once: TP3 FP0 FN20 TN23, F1=.2308, unresolved rate .6522. Prediction SHA-256 `5f3e6f9c940b6614211efe7475b920017e81f90a4712ae2c839c3996ff4b958b`; sum per-case time 13.18 s, mean .287 s. Both former FP and one former TP (`airline__23::t10`) became `UNRESOLVED`; no new positive prediction appeared. This preserves proof soundness at a measured recall cost and does not make frozen Phi an offline final frontend.
-
-Full repository tests after the fix: 1626 passed, 9 failed in 12.86 s. The nine failures are the same historical artifact/seal hash failures documented before this work; the new compiler regressions and CLI tests pass. No failure references the changed compiler.
-
-## 08:06 UTC: cached NLI inference
-
-The prepared server's cached `cross-encoder/nli-deberta-v3-base` snapshot `6c749ce3425cd33b46d187e45b92bbf96ee12ec7` passed import smoke, a two-pair smoke, then all 16 frozen claim rows offline. Model safetensors SHA-256 `d8148c6d49e0a7925134294c56326c71fe0ab1dc390e37355e00c7efbb488afa`; label map is 0 contradiction, 1 entailment, 2 neutral. It produced 8 entailment and 8 contradiction labels; summed model latency 945.739 ms, mean 59.109 ms, max 303.404 ms. Gold was not present on the server. Exact post-inference scoring is pending retrieval of `records.jsonl`; the SSH endpoint began refusing connections immediately after the run, so no accuracy claim is made yet.
-
-## 08:09 UTC: package install smoke
-
-Created an isolated local venv under an ignored research output, installed `guardian-truth` 0.2.0 with `pip install ".[data]"`, imported pandas 3.0.2 and pyarrow 25.0.1, and ran the official `scripts/predict.py` entrypoint over the fresh three-row CSV. Output was valid `id,label` and the run completed with three explicit fallback decisions. This verifies package metadata and the Python entrypoint. It does not verify the Dockerfile, base-image availability, container size, GPU model packaging or cold-start budget because neither local nor server environment exposes a Docker CLI.
-
-## 11:05-11:12 UTC: exact binding boundary and clean N5 replay
-
-The three N5 positives remaining after the lowering fix were audited to their first premise. All depended on cross-encoder target mappings; the retail witness mapped unrelated policy phrases to `return_delivered_order_items`. Commit `1f5a093` now admits only a single exact-method, identity-consistent binding to the proof pipeline. Focused binding/compiler tests passed.
-
-The first repeat exposed `num(7.8)` parser failures in 13 rows. A second repeat exposed Clingo treating hyphens in unquoted fact IDs as subtraction. The backend now sends non-integral floats through a distinct nonnumeric value (so ordered comparison abstains), retains integral floats as integers, and quotes opaque fact IDs. Thirteen focused soundness/serialization tests pass.
-
-The final one-time replay at `outputs/research_fullarch_replay_20260919/exact_binding_serialization_fix/` completed all 46 rows: 46 `UNRESOLVED`, checker 46/46, TP0 FP0 FN23 TN23, F1=0, no syntax errors and no undefined arithmetic operations. Predictions SHA-256 `c389c822c64a1ec12fe59d8d3d454641e59f6a3f452354a207def8ce841459d0`; summed per-case time 31.21 s. Frozen-Phi N5 is therefore rejected as a contest arm; its former apparent recall was not proof-safe.
-
-Full repository tests after the changes: 1639 passed, 9 failed. The same nine historical artifact seal/hash and protected-incumbent path failures remain; no new soundness, adapter, CLI or runtime failure appeared.
-
-## 11:12 UTC: Granite adapter interface smoke
-
-Commit `08e5394` adds a gold-free `id,prompt,response` to Granite function-call adapter with source trace and explicit `unavailable` states. Six adapter tests pass. An end-to-end preprocessing plus model-runner dry-run over three unlabeled viewed rows produced one ready row, two `missing_target_assistant_tool_call` rows, and three dry-run records. No model decision or metric was generated. The SSH tunnel still returns `Connection refused`; the prior Granite download was not restarted and NLI records were not regenerated.
-
-## 2026-09-19 11:30–12:20 UTC: remote recovery and completed BASE component probes
-
-- SSH became usable only with forced PTY. The prepared A10 has 23,028 MiB and
-  was idle before each run. Existing environments and caches were reused; no
-  framework or model was reinstalled. The old server checkout remains at
-  `923bb445` with its untracked experiment files preserved.
-- Recovered the sealed NLI 16-pair records. Post-hoc scoring at commit `4af3816`
-  produced TP8 FP0 FN0 TN8, F1 1.0 on the synthetic claim slice. Records SHA is
-  `825112e214c5075527551a998a667469c02c44401dd83f8c0140c1a1a492ee1c`;
-  model snapshot `6c749ce…`, weights SHA `d8148c6…8afa` (737,726,552 bytes).
-- Granite Guardian 3.3 8B revision `b3421eda…` was already fully downloaded
-  (16,341,771,384 weight bytes). Three function-call smoke cases parsed and
-  were correct. On the frozen 16 tool pairs it scored TP8 FP0 FN0 TN8, mean
-  772.986 ms, peak 16,029 MiB, records SHA `1c4cdbf…a43a2`. On the same 16
-  claim pairs it scored TP8 FP0 FN0 TN8, mean 716.368 ms, peak 15,963 MiB,
-  records SHA `aa38120…9ceb5`. These are synthetic diagnostics.
-- The label-free public46 adapter yielded 23 eligible tool-call rows and 23
-  explicit missing-target abstentions. Granite alone scored TP8 FP0 FN15 TN23,
-  F1 .516129. The fixed diagnostic OR with legacy baseline scored TP13 FP0
-  FN10 TN23, F1 .722222 versus baseline .685714. The only gained TP was
-  `airline__7::t6`; no FP was introduced. Mean eligible latency was 1,113.546
-  ms, peak 16,735 MiB; records SHA `d201442…49f35e`. This is PUBLIC_SEEN and
-  cannot select the production rule.
-- One malformed diagnostic command printed the remote process environment into
-  the private tool transcript. No secret is recorded in repository artifacts,
-  but the exposed ModelScope access tokens require rotation.
-
-## 2026-09-20: reproducible branch and architecture-v2 boundary
-
-- Fixed Python's default 131,072-character CSV field limit in both Granite and
-  NLI readers. Commits: `52bf829` and `492775a`; focused tests pass.
-- Published `research/offline-20260919` to GitHub for the first time at
-  `492775a`. Remote model experiments now use a separate detached worktree from
-  that exact published commit; the old server tree is not switched or cleaned.
-- Fully read and preserved
-  `manual/guardian_codex_architectures_v2_2026-09-20.md` (SHA-256
-  `a12eb81f…d3bbb`). It reclassifies Granite/NLI as BASE components and requires
-  controlled A0-A3 and B0-B5 comparisons before any C claim.
-- Commit `620dfa0` implements only the shared Architecture A source-grounding
-  contract: exact offsets or a unique quote are accepted; missing, mismatched,
-  or ambiguous spans are `UNANCHORED`; a high score cannot emit a positive;
-  formal state remains separate. Twenty-one related Granite/NLI/grounding tests
-  pass. No model-backed Architecture A/B result is claimed.
-- Server inventory confirms cached NLI, NuExtract3-W4A16, GLiNER2.5, BGE models,
-  and Granite 3.3 8B. There is no confirmed local Mistral checkpoint. Historical
-  API-derived Phi cannot satisfy the local B0 or BASE Mistral requirement.
-
-## 2026-09-20 23:15 UTC: PUBLIC_SEEN NLI transfer test and CLI correction
-
-Hypothesis: cheap DeBERTa NLI over the fixed 23 public46 text-only rows can add a
-claim-error TP to the exact baseline without a tool-policy FP. Stop rule: one
-label-free pass; reject the pairing if it adds no TP or introduces substantial
-FP. The run used published commit `492775a` in detached server worktree
-`/mnt/data/guardian/Guardian-research-offline-20260920`.
-
-- All 23 rows completed, but every relation was `neutral`. Post-hoc text-slice
-  metrics are TP0 FP0 FN2 TN21, F1 0; missed IDs are `airline__8::t7` and
-  `retail__29::t13`. Full-46 legacy OR is unchanged at TP12 FP0 FN11 TN23,
-  F1 .685714. The whole-context NLI pairing is rejected.
-- Records SHA `4acd21647aadcc1075ddf96aa9bc1d571825fcba37c0d79516fde8520cf57afb`;
-  config SHA `4d0ef70e90b7e9320b40540969513e4fbecfb800d01f96d56a6d80da16af3916`;
-  post-hoc report SHA `3f44181d…cf22d5`. Inference sum 1,166.565 ms, mean
-  50.720 ms, process wall 42 s, sampled peak VRAM 1,119 MiB.
-- The first attempted main-entrypoint replay exposed Python's 131,072-character
-  CSV field limit in `src/guardian_truth/cli.py`. Commit `1aa88a9` raises the
-  explicit limit to 16 MiB and adds a 140,000-character regression. With the
-  worktree `src` forced first on `PYTHONPATH`, 31 CLI/runtime/A-contract tests
-  pass. The initial test invocation imported a different globally installed
-  editable checkout; this explains its unrelated failures and is an environment
-  warning for local/server commands.
-- After the developer agent configuration was corrected, it completed commit
-  `01e7ebf`: a gold-free Architecture A grounding CLI that consumes raw atomic
-  suspicion JSONL, writes ordered per-case records plus a hashed run manifest,
-  rejects duplicate/unknown IDs and output overwrite, and keeps formal
-  `UNRESOLVED` separate. Thirteen focused tests pass. This is infrastructure,
-  not a model-backed A result.
+## Открытые вопросы / дальше
+- B3 (LLM-перекрёстная проверка оснований) — код готов, ожидает API-квоту.
+- C0/C1/C3 полные прогоны на synth-dev + public46; C5 divergence-отчёт.
+- D (гипотезная формализация) — код готов.
+- E-селекторы — код готов.
+- synth-holdout (40) — трогать только после freeze конфигураций.
+- AgentHallu прогон (объектив: переносимость на реальные траектории).
