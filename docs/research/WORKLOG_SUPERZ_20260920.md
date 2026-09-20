@@ -75,3 +75,49 @@ branch `research/independent-fullcycle-20260920-superz`, base `origin/research/o
 - Keyless-API operational failures: llm7 daily token quota; blockrun 300 req/hour/IP cap
   (min_interval now 13 s); pollinations 7 FAILED long-telecom cases (context length);
   llm7 catalog rotation (model identity varies between sessions).
+
+## 2026-09-21 — session 2 (directive: continue A4/E4 and new architectures)
+
+- **E4/A4 COMPLETED** (full-context cross-model verification, verifier pollinations/gpt-oss-20b,
+  producer = frozen Mistral A1R suspicions): verdicts 33 CONFIRMED / 52 REFUTED / 9 tech-fail;
+  case-level TP14 FP8 FN9 TN15, precision .6364, recall .6087, F1 .6222.
+  Delta vs E3a (unverified anchored suspicions, F1 .6452): eliminated 11 FP, lost 6 TP,
+  0 new FP, 0 gained TP. Per-suspicion correctness (case-gold approximation):
+  60 likely-correct, 10 wrongly-confirmed, 15 refuted-in-error-case (suspicion itself
+  wrong or verifier miss), 9 technical failures. 31 cases carry multiple suspicions;
+  10 cases got MIXED verdicts (some confirmed, some refuted) — the verifier discriminates
+  suspicions within one case, confirming the CONFIRMED/REFUTED/UNRESOLVED/NO_ERROR
+  distinction required by the directive. The earlier "7 CONFIRMED / 9 REFUTED" snapshot
+  was a partial state of this same run.
+  Conclusion: A4 is a precision filter, not a recall booster: it never invents new
+  positives (0 new FP) but refutes 6 true-error cases along with 11 false alarms.
+  Full table: outputs/superz_fullcycle/e4_a34_verify/a4_analysis.json.
+- Control architectures fixed for this cycle: E1 offline baseline (.6857),
+  E3a anchored-unverified (.6452), A0 mistral (.7213), E2 pollinations judge (.7556),
+  E5 AND-ensemble (.7442), E7 granite OR-baseline (.7222), E4/A4 (.6222).
+- E3b (producer-dependence arm): live offset-free A1R generation on blockrun pool — RUNNING.
+- P-extract (policy requirement cards, llm7): RUNNING.
+- Next: G (a4g/gjudge), P (pjudge/pgjudge), combos (a4p/a4gp), Q, robustness.
+
+## 2026-09-21 — session 2 (directive: continue A4/E4 and new architectures)
+
+- **E4/A4 COMPLETED** (full-context cross-model verification, verifier pollinations/gpt-oss-20b,
+  producer = frozen Mistral A1R suspicions): verdicts 33 CONFIRMED / 52 REFUTED / 9 tech-fail;
+  case-level TP14 FP8 FN9 TN15, precision .6364, recall .6087, F1 .6222.
+  Delta vs E3a (unverified anchored suspicions, F1 .6452): eliminated 11 FP, lost 6 TP,
+  0 new FP, 0 gained TP. Per-suspicion correctness (case-gold approximation):
+  60 likely-correct, 10 wrongly-confirmed, 15 refuted-in-error-case (suspicion itself
+  wrong or verifier miss), 9 technical failures. 31 cases carry multiple suspicions;
+  10 cases got MIXED verdicts (some confirmed, some refuted) — the verifier discriminates
+  suspicions within one case, confirming the CONFIRMED/REFUTED/UNRESOLVED/NO_ERROR
+  distinction required by the directive. The earlier "7 CONFIRMED / 9 REFUTED" snapshot
+  was a partial state of this same run.
+  Conclusion: A4 is a precision filter, not a recall booster: it never invents new
+  positives (0 new FP) but refutes 6 true-error cases along with 11 false alarms.
+  Full table: outputs/superz_fullcycle/e4_a34_verify/a4_analysis.json.
+- Control architectures fixed for this cycle: E1 offline baseline (.6857),
+  E3a anchored-unverified (.6452), A0 mistral (.7213), E2 pollinations judge (.7556),
+  E5 AND-ensemble (.7442), E7 granite OR-baseline (.7222), E4/A4 (.6222).
+- E3b (producer-dependence arm): live offset-free A1R generation on blockrun pool — RUNNING.
+- P-extract (policy requirement cards, llm7): RUNNING.
+- Next: G (a4g/gjudge), P (pjudge/pgjudge), combos (a4p/a4gp), Q, robustness.
