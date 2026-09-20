@@ -98,3 +98,49 @@ Mistral→GLM cell waits for GLM API recovery; per-case suspicion-level analysis
    never full "no violations" claims.
 3. GLM recovery: E2 dual confirmation, hetero cell Mistral→GLM.
 4. Full joint architecture E v2 with the above components.
+
+## 6. C3v2 (pre-registered repair validation) - results
+
+Validation rules V1/V2/V3 (deterministic, per-rule fallback to the original rule).
+
+| dataset       | C0 F1  | C3 F1  | C3v2 F1 | TP_lost C3→C3v2 | FP_elim C3→C3v2 | rejections (V1/V2/V3) |
+|---------------|--------|--------|---------|-----------------|-----------------|-----------------------|
+| synth-dev     | 0.4421 | 0.1714 | 0.4130  | 15 → 2          | 11 → 2          | 111 / 78 / 6          |
+| synth-holdout | 0.5714 | 0.1739 | 0.5556  | 8 → 0           | 4 → 0           | 41 / 29 / 2           |
+| public46      | 0.3226 | 0.2143 | 0.3226  | 2 → 0           | 1 → 0           | 333 / 71 / 83         |
+
+Validation removes the catastrophic harm AND the benefit. The 9 surviving false proofs
+on synth-dev are undecidable at proof level: their sound repairs require
+actor/permission/indirect-observation/temporal-precedence semantics the ontology does
+not encode (V2 rejections). Critique-as-theory-rewriter is a wash; the critic's value
+must come from ontology extension or from non-rewriting integration.
+
+## 7. E v2 (joint architecture with scoped certificates) - results
+
+Cascade: symbolic proof => 1; scoped no-error certificate (notes filtered by taxonomy:
+A/D always, B trusted to encoded rules, C only if not decision-relevant) => 0; else
+cached A0 judge. Composition variants (dev): judge 0.8163 | proof∪judge 0.7895 |
+judge+coverage-cert-flip 0.8082 | hybrid 0.7815 - NO variant beats the judge.
+
+| dataset       | judge F1 | E v2 F1 | sources (proof/cert/judge) |
+|---------------|----------|---------|----------------------------|
+| synth-dev     | 0.8163   | 0.7015  | 35 / 34 / 51               |
+| synth-holdout | 0.8333   | 0.7391  | 15 / 10 / 15               |
+| public46      | 0.7302   | 0.7000  | 8 / 3 / 35                 |
+
+Certificate precision: ungated 0.62 (synth-dev), coverage-gated 0.89 (8/9 gold=0) -
+but coverage-gated certificates almost always agree with the judge, so the net effect
+is ~zero. Symbolic proofs (P≈0.6) unioned with a recall-1.0 judge only add FP.
+
+**Unified conclusion**: the binding constraint of the whole symbolic line is THEORY
+COVERAGE, not proof mechanics. The same missing capabilities (temporal_seq,
+success_status, actor_role/permission, indirect observation) appear as (a) C3's M1
+unencodable repairs, (b) C-class notes, (c) uncovered theories behind invalid
+certificates, (d) the FP floor of proofs. Extending the ontology + theory prompt for
+exactly these capabilities is the single highest-leverage next step; everything else
+(repair, certificates, cascades) re-shuffles the same covered/vacuous boundary.
+
+## 8. Notes taxonomy on synth-holdout (E1, independent set)
+
+60 notes / unresolved cases: A 68%, B 18%, C 10%, D 3%; scoped-safe 68% -
+consistent with synth-dev (the taxonomy generalizes beyond the dev split).
