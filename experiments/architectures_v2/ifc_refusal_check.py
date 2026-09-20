@@ -57,6 +57,26 @@ Output STRICT JSON:
 JSON only."""
 
 
+ESCALATION_CALL_RE = re.compile(
+    r"→\s*TOOL_CALL\s+([A-Za-z0-9_.\-]+)", re.DOTALL,
+)
+ESCALATION_NAME_RE = re.compile(
+    r"(transfer|escalat|human_agent|human_agent_handoff|handoff|connect_(?:agent|operator|specialist)|"
+    r"contact_(?:support|human)|operator|specialist|live_agent)",
+    re.IGNORECASE,
+)
+
+
+def escalation_tools_used(prompt: str) -> list[str]:
+    """Tool calls in the trajectory whose names look like escalation/handoff."""
+    names = []
+    for m in ESCALATION_CALL_RE.finditer(prompt):
+        name = m.group(1)
+        if ESCALATION_NAME_RE.search(name):
+            names.append(name)
+    return names
+
+
 def main() -> int:
     ap = argparse.ArgumentParser()
     ap.add_argument("--input", required=True)
@@ -111,11 +131,13 @@ def main() -> int:
                 continue
             rec = {"id": case["id"], "ts": datetime.now(UTC).isoformat()}
             marker = REFUSAL_MARKERS.search(case["response"] or "")
+            esc_tools = escalation_tools_used(case["prompt"] or "")
             rec["marker_hit"] = bool(marker)
+            rec["escalation_calls"] = esc_tools
             if marker:
                 n_marker += 1
                 rec["marker_span"] = [marker.start(), marker.end()]
-            if not marker and not args.all_cases:
+            if not marker and not esc_tools and not args.all_cases:
                 rec.update({"prediction": 0, "checked": False, "error": None})
                 fh.write(json.dumps(rec, ensure_ascii=False) + "\n")
                 fh.flush()
