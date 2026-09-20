@@ -9,6 +9,7 @@ from __future__ import annotations
 
 import argparse
 import csv
+csv.field_size_limit(64 * 1024 * 1024)
 import hashlib
 import json
 import math
