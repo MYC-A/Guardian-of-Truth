@@ -57,8 +57,24 @@ def run(dataset, limit=None):
             continue
         if r["id"] in preds and preds[r["id"]] is None and r["id"] in details and "theory" in details[r["id"]]:
             continue
+        # batch-build any missing theories first (concurrent, cache-backed)
+        missing = [x for x in rows if x["id"] not in details or "theory" not in details.get(x["id"], {})]
+        if missing:
+            tasks = []
+            for x in missing:
+                p = policy_text(x["prompt"])
+                prompt = (P_THEORY3 + "\n\nPOLICY:\n" + p +
+                          "\n\nTARGET RESPONSE (for action names only):\n" + x["response"][:1500])
+                tasks.append({"id": f"{x['id']}-t3", "system": SYSTEM_PROMPT,
+                              "prompt": prompt, "max_tokens": 6144})
+            outs = run_llm(tasks, concurrency=4)
+            for x in missing:
+                j = extract_json(outs.get(f"{x['id']}-t3"))
+                if j is None or not isinstance(j, dict) or "rules" not in j:
+                    j = {"rules": [], "unrepresentable_notes": ["theory_parse_failed"]}
+                details.setdefault(x["id"], {})["theory"] = j
         t0 = time.time()
-        th = build_theory_v3(r)
+        th = details[r["id"]]["theory"]
         res, meta = verdict_v2(r, th)
         pred = 1 if res.get("proved_error") else (0 if res.get("proved_no_error") else None)
         preds[r["id"]] = pred

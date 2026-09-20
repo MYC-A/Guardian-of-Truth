@@ -78,7 +78,8 @@ def critique_tasks(rows, c0v3):
         prompt = (P_CRITIC + "\n\nPOLICY:\n" + p[:9000] +
                   "\n\nGROUNDED ELEMENTS:\n[]\n\nTHEORY:\n" +
                   json.dumps(th0, ensure_ascii=False, indent=1))
-        tasks.append({"id": f"{r['id']}-critF", "system": SYSTEM_PROMPT, "prompt": prompt})
+        tasks.append({"id": f"{r['id']}-critF", "system": SYSTEM_PROMPT,
+                      "prompt": prompt, "max_tokens": 6144})
     return tasks
 
 
