@@ -267,13 +267,17 @@ def _build_repair(case: CaseInput, parent: TheoryCandidate, critique: TheoryCrit
             additions.append(element)
     raw_changes, raw_additions = result.parsed.get("changes", []), result.parsed.get("additions", [])
     if not raw_changes and not raw_additions:
+        declined = bool(critique.issues)
         return None, {"parent_candidate_id": parent.candidate_id,
                       "provider": parent.provider,
-                      "status": "SKIPPED_NOT_NEEDED", "changed_element_ids": [],
+                      "status": ("REPAIR_DECLINED_WITH_ISSUES" if declined
+                                 else "SKIPPED_NOT_NEEDED"), "changed_element_ids": [],
                       "added_elements": [], "retained_unchanged_element_ids": [
                           item.element_id for item in parent.elements],
                       "rejected_operations": [],
-                      "unresolved": result.parsed.get("unresolved", [])}
+                      "unresolved": [*result.parsed.get("unresolved", []),
+                                     *(["MODEL_PROPOSED_NO_CHANGE_DESPITE_GROUNDED_ISSUES"]
+                                       if declined else [])]}
     if not changed and not additions:
         raise ValueError("model produced no authorized grounded repair operation")
     elements = tuple(changed.get(item.element_id, item) for item in parent.elements) + tuple(additions)
@@ -379,7 +383,10 @@ def generate_case(case: CaseInput, originals: list[TheoryCandidate], *,
             repair, build = _build_repair(case, parent, critique, result)
             builds.append(build)
             if repair is None:
-                runs[-1]["status"] = "SKIPPED_NOT_NEEDED"
+                runs[-1]["status"] = build["status"]
+                if build["status"] == "REPAIR_DECLINED_WITH_ISSUES":
+                    failures.append({"provider": provider, "operation": "REPAIR",
+                                     "reason": "MODEL_PROPOSED_NO_CHANGE_DESPITE_GROUNDED_ISSUES"})
             else:
                 repairs.append(repair)
         except (TypeError, ValueError) as exc:

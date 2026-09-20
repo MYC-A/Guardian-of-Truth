@@ -378,3 +378,18 @@ def test_theory_level_grounded_omission_authorizes_addition_only_repair():
     assert build["changed_element_ids"] == []
     assert build["added_elements"] == [{"element_id": "added:1",
                                          "marker": "MODEL_PROPOSED_ADDITION"}]
+
+
+def test_noop_repair_does_not_complete_a_grounded_criticism():
+    critique = TheoryCritique.parse({"critique_id": "m-n", "reviewer_provider": "mistral",
+        "target_candidate_id": "n", "issues": [{"issue_id": "i1",
+        "target_element_id": "e1", "problem_type": "wrong_relation",
+        "source_link": {"source_id": "policy:0", "start": 0,
+                        "end": len(TEXT), "quote": TEXT},
+        "explanation": "wrong relation"}]})
+    repair, build = _build_repair(_case(), _theory("nuextract", "n"), critique,
+                                  ModelResult({"changes": [], "additions": [],
+                                               "unresolved": []}, {"model_text": "raw"}))
+    assert repair is None
+    assert build["status"] == "REPAIR_DECLINED_WITH_ISSUES"
+    assert "MODEL_PROPOSED_NO_CHANGE_DESPITE_GROUNDED_ISSUES" in build["unresolved"]
