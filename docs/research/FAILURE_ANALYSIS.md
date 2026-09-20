@@ -78,3 +78,27 @@ binding returns `UNKNOWN` for both, so N5 lowers zero rules and emits no policy
 certificate. A separate `unbound-action-object:a field technician` marker would
 also need resolution. The first remaining semantic loss is target identity,
 after source validation and RuleIR, before the solver can test the rule.
+
+## Architecture B five-case mutual critique: first semantic repair loss
+
+At `509c1c9`, Mistral's five real critiques of NuExtract theories contained
+22 grounded typed issues after a measured list-type normalization. NuExtract's
+five reciprocal critiques contained zero issues, including when Mistral's
+dispatch and SaaS originals had zero elements. This is a semantic capability
+loss, not a quote-offset failure. NuExtract then received Mistral's grounded
+issues as repair requests but returned `changes=[]`, `additions=[]` in all five
+raw responses. No element changed or was added, so the difference from B0 is
+zero. Historical `509c1c9` labelled those calls `SKIPPED_NOT_NEEDED`; commit
+`ca3a81f` now records `REPAIR_DECLINED_WITH_ISSUES` for this exact pattern.
+This leaves B3 unresolved rather than converting a no-op into an improvement.
+Mistral's criticisms also need gold/auditor review: e.g. it questioned a
+`FORBID/UNLESS` rule that already preserved the policy's conditional ban.
+
+The formal loss is separate. Mistral's four extracted rules across the pilot
+had no usable source spans. NuExtract had six structurally representable rules,
+but none matched catalog tool names exactly; temporal-anchor and INFORMATION
+target limitations removed other candidates. LangExtract recovered seven exact
+original fragments but did not verify their interpretation or provide catalog
+binding. B2 had no complete clause accounts. Each issue is retained separately
+in the B0–B3 N5 alternative records; zero Clingo policy proofs is an observed
+outcome, not evidence that the original policies were correct.

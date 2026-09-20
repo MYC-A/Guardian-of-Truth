@@ -237,3 +237,37 @@ model target `dispatch` versus tool `dispatch_field_technician`. N5 reports
 `unbound-action-object:a field technician`. Checker `ok=True` refers to the
 empty lowered rule set, not a Clingo proof of this policy. The next loss is
 target/entity binding; no second B0 extraction run is justified.
+
+## 2026-09-20: real five-case B0–B3 pilot
+
+All five fixed seen synthetic cases were processed by real
+`ministral-14b-latest`, cached `numind/NuExtract3-W4A16`, and cached
+`fastino/gliner2.5-multi-v1` at server detached HEAD `0694c2d`; provider raw
+responses are saved in `b3_smoke_0694c2d_20260920T1815Z/providers.jsonl`.
+Mistral extracted 0/2/1/1/0 rules, NuExtract 2/3/3/1/1, GLiNER supplied
+6/6/7/1/7 evidence hints. At `3a073a5`, real LangExtract direct-original
+returned 7 exact quoted fragments across five cases, with interpretation
+explicitly unverified. B0 and B1 each yielded six RuleIR-representable
+alternatives across 15 whole theories, zero exact-bound and zero lowered rules;
+B2 yielded zero representable because no model supplied complete clause accounts.
+Existing N5 was called per theory with the correct full CSV, but no policy
+proof reached Clingo. Five case verdicts remain `UNRESOLVED`.
+
+The initial B3 call at `3a073a5` exposed a genuine schema mismatch: Mistral
+returned lists of typed issues, whereas the adapter expected one scalar type.
+All five original raw responses were retained. Commit `509c1c9` conservatively
+splits each grounded list into separate typed issues. The real repeat produced
+22 typed Mistral issues on NuExtract theories and zero NuExtract issues on
+Mistral theories, including two empty Mistral theories. NuExtract's five
+addressed repair calls returned empty `changes` and `additions`; there are zero
+repaired theories, and B3's ten originals remain `UNRESOLVED` with zero
+representable/linked/lowered rules through its strict gate. Commit `ca3a81f`
+corrects the misleading `BIDIRECTIONAL_COMPLETE` classification for this
+no-op-with-issues pattern without repeating model calls. The raw `509c1c9`
+record retains its historical status for audit; no semantic repair is claimed.
+Server archive hashes: first five-case stage
+`79e5c27aa1fe7d6fec109eed4f417f8c93ad78adc9c752f5c52bca7f18c14593`;
+repeat stage `93d74bedd4fdd96eea862d1b233a0faf5ecaee663a4d18a00d14b7f519375e33`.
+Local 33 focused B theory tests pass. Next matched comparison uses all 17
+frozen seen synthetic cases (14 errors, 3 controls); the five provider outputs
+are reused exactly, with only 12 new cases sent to models.
