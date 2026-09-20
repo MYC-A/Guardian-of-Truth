@@ -71,6 +71,14 @@ def _candidate_record(candidate: TheoryCandidate, case: CaseInput,
     require_grounding = variant in {Variant.B1, Variant.B2, Variant.B3}
     elements = [_element_record(item, sources, require_grounding=require_grounding)
                 for item in candidate.elements]
+    if candidate.provider.casefold().startswith("gliner"):
+        # GLiNER proposes span/relation hints. It cannot establish modality or
+        # a proof premise, even when its offsets are exact.
+        for element in elements:
+            element["ruleir_boundary"] = {
+                "status": "EVIDENCE_ONLY", "reason": "GLINER_CLAUSE_GAP_HINT",
+                "rule_ir": None,
+            }
     ledger = (_ledger(candidate, case.clauses)
               if variant in {Variant.B2, Variant.B3} else [])
     if variant in {Variant.B2, Variant.B3} and any(
