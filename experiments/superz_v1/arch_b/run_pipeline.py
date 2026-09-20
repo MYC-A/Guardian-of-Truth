@@ -54,16 +54,24 @@ REVIEW_SYS = """You are a strict reviewer of audit suspicions. You receive:
 - mechanical findings from a fact ledger.
 
 Your job: decide whether THIS suspicion is actually a real NEW error of the final response.
-Rules:
-- A suspicion is SUPPORTED only if the cited source really implies the response is wrong,
-  and the error is NEW in the final response (not inherited from earlier turns).
-- If the response relies on a LATER tool result that supersedes the cited one (same entity,
-  later position), the suspicion is REFUTED with reason "stale_source".
-- If the cited source contains an EXCEPTION or CONDITION that permits the response's
-  behaviour, the suspicion is REFUTED with reason "exception_applies".
-- If the cited source does not actually exist or does not imply an error, REFUTED "bad_source".
-- If evidence is insufficient either way, UNRESOLVED.
-- Never refute just because the wording is unusual; refute on substance only.
+
+Decision rules (follow exactly):
+- SUPPORTED: the cited source really implies the final response is wrong, AND the
+  error is NEW in the final response.
+- REFUTED requires POSITIVE counter-evidence you can quote. You may REFUTE only with:
+  * "exception_applies" — a policy exception/condition explicitly permits THIS
+    response's behaviour in THIS case (quote it);
+  * "stale_suspicion" — the SUSPICION itself relies on a superseded value: the
+    response actually used the FRESHER tool read of the same entity (name both reads);
+  * "bad_source" — the quoted source does not exist in the provided sources, or
+    states something else entirely.
+- If you merely FAIL TO SEE the error, or the evidence is insufficient either way,
+  output UNRESOLVED. Do NOT refute just because you are not convinced.
+- STALE DIRECTION (critical): if the RESPONSE reports an older value while a LATER
+  tool read of the SAME entity reports a different value, that SUPPORTS the
+  suspicion (the response is wrong), it does not refute it. Only refute when the
+  response used the FRESHER value and the suspicion cites the older one.
+- Never treat unusual wording as an error; judge on substance.
 
 Output strictly JSON:
 {"status": "SUPPORTED|REFUTED|UNRESOLVED", "reason": "...", "decisive_quote": "..."}"""
@@ -190,8 +198,8 @@ def run_b23(b1_dir: Path, data_rows: dict) -> Path:
     return out_dir
 
 
-def run_b4(b23_dir: Path, data_rows: dict, workers: int) -> Path:
-    out_dir = RESULTS / "B4"
+def run_b4(b23_dir: Path, data_rows: dict, workers: int, name: str = "B4") -> Path:
+    out_dir = RESULTS / name
     out_dir.mkdir(parents=True, exist_ok=True)
     tasks = []
     for f in sorted(b23_dir.glob("*.json")):
@@ -216,15 +224,22 @@ def run_b4(b23_dir: Path, data_rows: dict, workers: int) -> Path:
             f"[{e.kind} {e.tool} seq={e.seq}] {e.raw_payload[:400]}"
             for e in trace.tool_events
         ][:60]
+        mech = dict(g["grounding"].get("mechanical", {}))
+        if mech.get("response_uses_stale_value"):
+            mech["hint"] = ("MECHANICAL: the response reports a value that a LATER tool read "
+                            "of the same entity contradicts -> this is evidence FOR the suspicion.")
+        if mech.get("suspicion_uses_stale_source"):
+            mech["hint"] = ("MECHANICAL: the suspicion's cited value was superseded by a later "
+                            "read of the same entity -> the response may be correct.")
         user = (
             "POLICY:\n" + pol[:6000]
             + "\n\nTOOL EVENTS (ordered):\n" + "\n".join(tool_lines)
             + "\n\nFINAL RESPONSE:\n" + row["response"]
             + "\n\nSUSPICION:\n" + json.dumps(s, ensure_ascii=False)
-            + "\n\nMECHANICAL FINDINGS:\n" + json.dumps(g["grounding"].get("mechanical", {}), ensure_ascii=False)
+            + "\n\nMECHANICAL FINDINGS:\n" + json.dumps(mech, ensure_ascii=False)
             + "\n\nReview this single suspicion. Output the JSON verdict."
         )
-        resp = chat(user=user, system=REVIEW_SYS, thinking=True, tag=f"B4/{rec['id']}/s")
+        resp = chat(user=user, system=REVIEW_SYS, thinking=True, tag=f"{name}/{rec['id']}/s")
         out = {"id": rec["id"], "susp_idx": None, "ok": resp.ok, "error": resp.error}
         if resp.ok:
             data = extract_json(resp.content)
@@ -247,7 +262,7 @@ def run_b4(b23_dir: Path, data_rows: dict, workers: int) -> Path:
     return out_dir
 
 
-def aggregate(b23_dir: Path, b4_dir: Path, labels: dict) -> dict:
+def aggregate(b23_dir: Path, b4_dir: Path, labels: dict, b4b_dir: Path | None = None) -> dict:
     """Aggregate per-case: variants B1, B2(grounding filter), B3(+mechanical
     filter), B4(full). Metrics for each."""
     variants = {"B1": {}, "B2": {}, "B3": {}, "B4": {}}
@@ -283,6 +298,28 @@ def aggregate(b23_dir: Path, b4_dir: Path, labels: dict) -> dict:
         # B4 uses review statuses for suspicions that survived B3 filter
         # (we approximate: any SUPPORTED among reviewed suspicions of the case)
         variants["B4"][cid] = 1 if "SUPPORTED" in by_case.get(cid, []) else (preds if cid not in by_case else 0)
+
+    # B4b: revised reviewer
+    if b4b_dir is not None:
+        by_case_b = {}
+        for f in sorted(b4b_dir.glob("*.json")):
+            r = json.loads(f.read_text())
+            if r.get("ok"):
+                by_case_b.setdefault(r["id"], []).append(r.get("status"))
+        variants["B4b"] = {}
+        for cid, preds in variants["B3"].items():
+            variants["B4b"][cid] = 1 if "SUPPORTED" in by_case_b.get(cid, []) else (preds if cid not in by_case_b else 0)
+        variants["B4b_lenient"] = {}
+        for cid, preds in variants["B3"].items():
+            sts = by_case_b.get(cid, [])
+            if "SUPPORTED" in sts:
+                variants["B4b_lenient"][cid] = 1
+            elif cid not in by_case_b:
+                variants["B4b_lenient"][cid] = preds
+            elif "UNRESOLVED" in sts:
+                variants["B4b_lenient"][cid] = 1  # keep when unresolved (conservative)
+            else:
+                variants["B4b_lenient"][cid] = 0
 
     met = {}
     for name, preds in variants.items():
@@ -329,8 +366,10 @@ def main():
     b23_dir = RESULTS / "B23"
     if args.stage in ("B4", "all"):
         run_b4(b23_dir, data_rows, args.workers)
+        run_b4(b23_dir, data_rows, args.workers, name="B4b")
     b4_dir = RESULTS / "B4"
-    met = aggregate(b23_dir, b4_dir, labels)
+    b4b_dir = RESULTS / "B4b"
+    met = aggregate(b23_dir, b4_dir, labels, b4b_dir)
     (RESULTS / "metrics.json").write_text(json.dumps(met, ensure_ascii=False, indent=1))
     print(json.dumps(met, indent=1))
 
