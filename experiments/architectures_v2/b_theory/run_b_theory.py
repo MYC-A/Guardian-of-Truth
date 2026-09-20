@@ -42,27 +42,74 @@ def _rows(path: Path) -> list[dict]:
 def _candidate_map(specs: list[str]) -> tuple[dict[str, list[TheoryCandidate]], dict[str, str]]:
     result: dict[str, list[TheoryCandidate]] = {}
     hashes = {}
+    parsed_specs = []
+    declared_providers = set()
     for spec in specs:
         if "=" not in spec:
             raise ValueError("provider output must be NAME=PATH")
         provider, raw_path = spec.split("=", 1)
+        if not provider:
+            raise ValueError("provider output NAME must be non-empty")
+        if provider in declared_providers:
+            raise ValueError(f"duplicate provider output spec: {provider}")
+        declared_providers.add(provider)
         path = Path(raw_path).resolve(strict=True)
+        parsed_specs.append((provider, path))
         hashes[provider] = _sha(path)
+    allowed_providers = {"mistral", "nuextract", "gliner", *declared_providers}
+    seen_candidates = set()
+    for provider, path in parsed_specs:
+        seen_case_rows = set()
+        selected_seen = False
+        explicit_in_file = set()
         for row in _rows(path):
             case_id = row.get("case_id")
             if not isinstance(case_id, str):
                 raise ValueError(f"{path}: candidate row missing case_id")
+            if case_id in seen_case_rows:
+                raise ValueError(f"{path}: duplicate case row for {case_id}")
+            seen_case_rows.add(case_id)
             raw_candidates = row.get("candidates", [])
             if not isinstance(raw_candidates, list):
                 raise ValueError(f"{path}: candidates must be a list")
+            provider_runs = row.get("provider_runs", {})
+            if provider_runs is not None and not isinstance(provider_runs, dict):
+                raise ValueError(f"{path}: provider_runs must be an object")
+            unknown_runs = set(provider_runs or {}) - allowed_providers
+            if unknown_runs:
+                raise ValueError(f"{path}: unknown provider_runs: {sorted(unknown_runs)}")
+            if provider in (provider_runs or {}):
+                selected_seen = True
             for raw in raw_candidates:
                 if not isinstance(raw, dict):
                     raise ValueError(f"{path}: candidate must be an object")
                 value = dict(raw)
-                value.setdefault("provider", provider)
-                if value["provider"] != provider:
-                    raise ValueError(f"{path}: provider identity mismatch")
-                result.setdefault(case_id, []).append(TheoryCandidate.parse(value))
+                explicit = value.get("provider")
+                if explicit is None:
+                    if len(provider_runs or {}) > 1:
+                        raise ValueError(f"{path}: provider missing in combined output candidate")
+                    value["provider"] = provider
+                    explicit = provider
+                if not isinstance(explicit, str) or explicit not in allowed_providers:
+                    raise ValueError(f"{path}: unknown candidate provider: {explicit!r}")
+                if provider_runs and explicit not in provider_runs:
+                    raise ValueError(f"{path}: candidate/provider_runs identity mismatch: "
+                                     f"{explicit}")
+                explicit_in_file.add(explicit)
+                if explicit != provider:
+                    # Combined provider_runner rows are intentionally read once
+                    # per NAME=PATH spec. Other known providers are filtered.
+                    continue
+                selected_seen = True
+                candidate = TheoryCandidate.parse(value)
+                identity = (case_id, candidate.candidate_id)
+                if identity in seen_candidates:
+                    raise ValueError(f"{path}: duplicate candidate_id for {case_id}: "
+                                     f"{candidate.candidate_id}")
+                seen_candidates.add(identity)
+                result.setdefault(case_id, []).append(candidate)
+        if explicit_in_file and provider not in explicit_in_file and not selected_seen:
+            raise ValueError(f"{path}: provider identity mismatch for requested {provider}")
     return result, hashes
 
 

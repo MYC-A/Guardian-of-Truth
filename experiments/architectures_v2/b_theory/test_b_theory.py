@@ -8,7 +8,7 @@ from experiments.architectures_v2.b_theory.contracts import (CaseInput, TheoryCa
                                                                Variant)
 from experiments.architectures_v2.b_theory.orchestrator import run_case
 from experiments.architectures_v2.b_theory.adapters import run_with_adapters
-from experiments.architectures_v2.b_theory.run_b_theory import parse_args, run
+from experiments.architectures_v2.b_theory.run_b_theory import _candidate_map, parse_args, run
 
 
 TEXT = "Verify identity before refund. Manager approval is required."
@@ -170,3 +170,35 @@ def test_model_execution_is_injectable_and_fake_only():
 
     result = run_with_adapters(_case(), Variant.B0, providers=[FakeProvider()])
     assert result["providers"] == ["mistral"]
+
+
+def test_combined_provider_output_is_deterministically_filtered_by_spec(tmp_path):
+    combined = tmp_path / "combined.jsonl"
+    candidates = []
+    for provider in ("mistral", "nuextract", "gliner"):
+        candidates.append({
+            "candidate_id": f"{provider}:theory", "provider": provider,
+            "elements": [{"wire_candidate": _wire(f"{provider}:element")}],
+            "clause_accounts": [],
+        })
+    combined.write_text(json.dumps({
+        "case_id": "c1", "candidates": candidates,
+        "provider_runs": {provider: {"status": "EXECUTED"}
+                          for provider in ("mistral", "nuextract", "gliner")},
+    }) + "\n", encoding="utf-8")
+    loaded, hashes = _candidate_map([
+        f"mistral={combined}", f"nuextract={combined}", f"gliner={combined}"])
+    assert [item.provider for item in loaded["c1"]] == [
+        "mistral", "nuextract", "gliner"]
+    assert set(hashes) == {"mistral", "nuextract", "gliner"}
+
+
+def test_combined_provider_output_rejects_unknown_and_duplicate_specs(tmp_path):
+    bad = tmp_path / "bad.jsonl"
+    bad.write_text(json.dumps({"case_id": "c1", "candidates": [{
+        "candidate_id": "x", "provider": "unknown-backend", "elements": []}]}) + "\n",
+        encoding="utf-8")
+    with pytest.raises(ValueError, match="unknown candidate provider"):
+        _candidate_map([f"mistral={bad}"])
+    with pytest.raises(ValueError, match="duplicate provider output spec"):
+        _candidate_map([f"mistral={bad}", f"mistral={bad}"])

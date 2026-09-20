@@ -25,6 +25,15 @@ python -m experiments.architectures_v2.b_theory.provider_runner \
   --provider mistral --provider nuextract --provider gliner
 ```
 
+The combined file is passed once for each provider name; the loader validates
+all identities and deterministically selects only that provider's candidates:
+
+```text
+--provider-output mistral=provider_outputs.jsonl \
+--provider-output nuextract=provider_outputs.jsonl \
+--provider-output gliner=provider_outputs.jsonl
+```
+
 The Mistral API key is read only from `MISTRAL_API_KEY`; the runner enforces
 `ministral-14b-latest` and never serializes the key. The optional
 `MistralLangExtractGrounder` explicitly constructs LangExtract 1.7's
