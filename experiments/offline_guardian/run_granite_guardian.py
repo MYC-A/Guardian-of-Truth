@@ -79,6 +79,8 @@ def sha256_file(path: Path) -> str:
 
 
 def read_cases(path: Path) -> list[dict[str, str]]:
+    # Competition prompts exceed the 128 KiB default csv field limit.
+    csv.field_size_limit(min(2 ** 31 - 1, 2 ** 30))
     with path.open("r", encoding="utf-8-sig", newline="") as handle:
         reader = csv.DictReader(handle)
         missing = {"id", "prompt", "response"} - set(reader.fieldnames or ())
