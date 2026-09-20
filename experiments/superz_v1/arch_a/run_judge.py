@@ -75,7 +75,7 @@ def build_user(prompt: str, response: str) -> str:
     )
 
 
-def run_variant(rows: list[dict], variant: str, workers: int, limit: int | None) -> Path:
+def run_variant(rows: list[dict], variant: str, workers: int, limit: int | None, max_seconds: float | None = None) -> Path:
     out_dir = RESULTS / variant
     out_dir.mkdir(parents=True, exist_ok=True)
     sys_prompt = SYS_A0 if variant == "A0" else SYS_A1
@@ -87,7 +87,8 @@ def run_variant(rows: list[dict], variant: str, workers: int, limit: int | None)
         todo.append((r, out_f))
     if limit:
         todo = todo[:limit]
-    print(f"[{variant}] {len(todo)} rows to run (cache skipped)")
+    print(f"[{variant}] {len(todo)} rows to run (cache skipped)", flush=True)
+    t_start = time.time()
 
     import concurrent.futures
 
@@ -122,15 +123,26 @@ def run_variant(rows: list[dict], variant: str, workers: int, limit: int | None)
                     sus = sus if isinstance(sus, list) else []
                     rec["suspicions"] = sus
                     rec["label"] = int(data.get("label", -1)) if str(data.get("label", "-1")) in "01" else -1
-        out_f.write_text(json.dumps(rec, ensure_ascii=False, indent=1), encoding="utf-8")
+            # persist only successful parses so failed calls retry on resume
+            if rec["ok"] and rec.get("label") in (0, 1):
+                out_f.write_text(json.dumps(rec, ensure_ascii=False, indent=1), encoding="utf-8")
         return rec
 
     done = 0
+    stop = False
     with concurrent.futures.ThreadPoolExecutor(max_workers=workers) as ex:
-        for rec in ex.map(one, todo):
+        futs = [ex.submit(one, item) for item in todo]
+        for fut in concurrent.futures.as_completed(futs):
+            rec = fut.result()
             done += 1
             status = "OK" if rec["ok"] else f"FAIL {rec.get('error','')[:60]}"
-            print(f"  [{done}/{len(todo)}] {rec['id']} {status} ({rec['elapsed_s']}s)")
+            print(f"  [{done}/{len(todo)}] {rec['id']} {status} ({rec['elapsed_s']}s)", flush=True)
+            if max_seconds and time.time() - t_start > max_seconds:
+                print(f"[{variant}] time budget reached, stopping gracefully", flush=True)
+                for f2 in futs:
+                    f2.cancel()
+                stop = True
+                break
     return out_dir
 
 
@@ -170,6 +182,7 @@ def main():
     ap.add_argument("--data", default=str(HERE.parent / "data" / "public46" / "public46.jsonl"))
     ap.add_argument("--labels", default=str(HERE.parent / "data" / "public46" / "labels_local.json"))
     ap.add_argument("--score-only", action="store_true")
+    ap.add_argument("--max-seconds", type=float, default=480)
     args = ap.parse_args()
 
     rows = [json.loads(l) for l in open(args.data, encoding="utf-8")]
@@ -178,7 +191,7 @@ def main():
     out_dir = RESULTS / variant_dir_name
 
     if not args.score_only:
-        out_dir = run_variant(rows, args.variant, args.workers, args.limit)
+        out_dir = run_variant(rows, args.variant, args.workers, args.limit, args.max_seconds)
 
     m = score(out_dir, labels)
     (RESULTS / f"{variant_dir_name.name if hasattr(variant_dir_name,'name') else variant_dir_name}_metrics.json").write_text(

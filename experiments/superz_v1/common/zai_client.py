@@ -18,15 +18,19 @@ from pathlib import Path
 from typing import Optional
 
 HERE = Path(__file__).resolve().parent
-CACHE_DIR = HERE.parents[1] / "results" / "llm_cache"
+CACHE_DIR = HERE.parent / "results" / "llm_cache"
 CACHE_DIR.mkdir(parents=True, exist_ok=True)
 BRIDGE = HERE / "zai_bridge.mjs"
-TMP_DIR = HERE.parents[1] / "results" / ".bridge_tmp"
+TMP_DIR = HERE.parent / "results" / ".bridge_tmp"
 TMP_DIR.mkdir(parents=True, exist_ok=True)
 
 DEFAULT_TIMEOUT = 600  # seconds per call
-MAX_RETRIES = 3
+MAX_RETRIES = 5
 _seq = 0
+import threading
+_pace_lock = threading.Lock()
+_last_call_ts = [0.0]
+MIN_CALL_INTERVAL_S = 1.5  # gentle pacing to avoid 429
 
 
 @dataclass
@@ -57,8 +61,13 @@ def chat(
 ) -> LLMResponse:
     """Single chat completion via z-ai CLI, cached."""
     global _seq
-    _seq += 1
-    my_seq = _seq
+    with _pace_lock:
+        wait = _last_call_ts[0] + MIN_CALL_INTERVAL_S - time.time()
+        if wait > 0:
+            time.sleep(wait)
+        _last_call_ts[0] = time.time()
+        _seq += 1
+        my_seq = _seq
     key = _key(system, user, thinking)
     cache_file = CACHE_DIR / f"{key}.json"
     if use_cache and cache_file.exists():
@@ -77,6 +86,7 @@ def chat(
 
     last_err = ""
     t0 = time.time()
+    rate_limit_hits = 0
     for attempt in range(1, max_retries + 1):
         req_f = TMP_DIR / f"req_{os.getpid()}_{my_seq}_{attempt}.json"
         resp_f = TMP_DIR / f"resp_{os.getpid()}_{my_seq}_{attempt}.json"
@@ -114,7 +124,16 @@ def chat(
                         ok=True, content=content, cached=False,
                         elapsed_s=time.time() - t0, model=model, attempts=attempt,
                     )
-                last_err = out.get("error", "bridge-unknown")[:300]
+                err = out.get("error", "bridge-unknown")
+                # rate limit: wait longer, do not burn retries quickly
+                if "429" in str(err) or "Too many" in str(err) or "rate" in str(err).lower():
+                    rate_limit_hits += 1
+                    wait = min(30 * rate_limit_hits, 120)
+                    last_err = f"rate-limit: {str(err)[:200]}"
+                    if attempt < max_retries:
+                        time.sleep(wait)
+                        continue
+                last_err = str(err)[:300]
             else:
                 last_err = f"no-response-file exit={proc.returncode} err={proc.stderr[:200]!r}"
         except subprocess.TimeoutExpired:
@@ -128,7 +147,7 @@ def chat(
                 except OSError:
                     pass
         if attempt < max_retries:
-            time.sleep(2 * attempt)
+            time.sleep(5 * attempt)
     return LLMResponse(ok=False, content="", error=last_err, attempts=max_retries)
 
 
