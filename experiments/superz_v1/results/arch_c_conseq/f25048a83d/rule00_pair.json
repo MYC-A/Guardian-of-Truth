@@ -1,0 +1,40 @@
+{
+ "rule": {
+  "source": "divergence",
+  "clause": "Cancelled orders in status \"shipped\" must be handled as a return instead.\n\n## Refunds to wallets\nWallet refunds over 5 000 rubles require supervisor confirmation.",
+  "element": {
+   "class": "обязанность",
+   "text": "Cancelled orders in status \"shipped\" must be handled as a return instead",
+   "start": 396,
+   "end": 468
+  },
+  "in_c2": true
+ },
+ "pair": {
+  "ok_situation": {
+   "agent_statement": "Ваш заказ №12345 находится в статусе «shipped», поэтому мы оформим возврат по стандартной процедуре. Пожалуйста, подтвердите адрес для отправки возврата.",
+   "agent_action": "использование инструмента *process_return* для заказа №12345 (статус: shipped, дата отгрузки: 2026-09-15)",
+   "world_facts": {
+    "order_id": "12345",
+    "order_status": "shipped",
+    "order_date": "2026-09-10",
+    "action_taken": "return_initiated",
+    "cancellation_attempted": false,
+    "refund_method": "original_payment"
+   }
+  },
+  "err_situation": {
+   "agent_statement": "Заказ №67890 в статусе «shipped», но вы можете отменить его прямо сейчас. Мы вернём деньги на кошелёк.",
+   "agent_action": "использование инструмента *cancel_order* для заказа №67890 (статус: shipped, сумма: 4800 RUB)",
+   "world_facts": {
+    "order_id": "67890",
+    "order_status": "shipped",
+    "order_date": "2026-09-12",
+    "action_taken": "cancellation_attempted",
+    "refund_method": "wallet",
+    "refund_amount": 4800,
+    "supervisor_confirmation": false
+   }
+  }
+ }
+}

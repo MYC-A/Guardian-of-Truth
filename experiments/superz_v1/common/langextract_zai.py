@@ -116,12 +116,15 @@ def run_langextract(
 
 def _normalized_realign(source: str, text: str) -> tuple[int, int] | None:
     """Whitespace-insensitive re-alignment: locate `text` in `source`
-    ignoring runs of whitespace (line-wrapped policies break exact spans).
-    Returns absolute (start, end) in the ORIGINAL source, or None.
+    ignoring runs of whitespace (line-wrapped policies break exact spans)
+    and markdown emphasis chars (models sometimes add **bold**/`code`
+    markers absent from the source). Returns absolute (start, end) in the
+    ORIGINAL source, or None.
     """
     import re as _re
 
     def norm(s: str) -> str:
+        s = _re.sub(r"[*`]", "", s)  # strip emphasis markers added by the model
         return _re.sub(r"\s+", " ", s).strip().lower()
 
     n_src = norm(source)

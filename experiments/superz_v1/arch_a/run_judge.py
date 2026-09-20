@@ -75,8 +75,8 @@ def build_user(prompt: str, response: str) -> str:
     )
 
 
-def run_variant(rows: list[dict], variant: str, workers: int, limit: int | None, max_seconds: float | None = None) -> Path:
-    out_dir = RESULTS / variant
+def run_variant(rows: list[dict], variant: str, workers: int, limit: int | None, max_seconds: float | None = None, provider: str = "zai", out_name: str | None = None) -> Path:
+    out_dir = RESULTS / (out_name or variant)
     out_dir.mkdir(parents=True, exist_ok=True)
     sys_prompt = SYS_A0 if variant == "A0" else SYS_A1
     todo = []
@@ -100,6 +100,7 @@ def run_variant(rows: list[dict], variant: str, workers: int, limit: int | None,
             system=sys_prompt,
             thinking=(variant != "A0"),  # A1 needs more careful reasoning
             tag=f"archA/{variant}/{r['id']}",
+            provider=provider,
         )
         rec = {
             "id": r["id"],
@@ -182,19 +183,22 @@ def main():
     ap.add_argument("--data", default=str(HERE.parent / "data" / "public46" / "public46.jsonl"))
     ap.add_argument("--labels", default=str(HERE.parent / "data" / "public46" / "labels_local.json"))
     ap.add_argument("--score-only", action="store_true")
+    ap.add_argument("--provider", default="zai", choices=["zai", "mistral"])
+    ap.add_argument("--out-name", default=None)
     ap.add_argument("--max-seconds", type=float, default=480)
     args = ap.parse_args()
 
     rows = [json.loads(l) for l in open(args.data, encoding="utf-8")]
     labels = json.loads(open(args.labels, encoding="utf-8").read())
-    variant_dir_name = args.variant
+    variant_dir_name = args.out_name or args.variant
     out_dir = RESULTS / variant_dir_name
 
     if not args.score_only:
-        out_dir = run_variant(rows, args.variant, args.workers, args.limit, args.max_seconds)
+        out_dir = run_variant(rows, args.variant, args.workers, args.limit, args.max_seconds,
+                              provider=args.provider, out_name=args.out_name)
 
     m = score(out_dir, labels)
-    (RESULTS / f"{variant_dir_name.name if hasattr(variant_dir_name,'name') else variant_dir_name}_metrics.json").write_text(
+    (RESULTS / f"{variant_dir_name}_metrics.json").write_text(
         json.dumps(m, ensure_ascii=False, indent=1)
     )
     printable = {k: v for k, v in m.items() if k != "per_case"}

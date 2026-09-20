@@ -1,0 +1,42 @@
+{
+ "id": "synth__b3_entity__err",
+ "variant": "C1",
+ "hyp_idx": 0,
+ "element_index": 10,
+ "element_class": "обязанность",
+ "element_text": "The new balance must always be re-read from get_balance after any deposit",
+ "element_status": "raw",
+ "suspicion": "Агент не перечитал баланс после операции (депозита/обновления), а использовал устаревшее значение (5000 → 12000 без подтверждения через get_balance).",
+ "response_fragment": "На счёте ACC-100 сейчас 12 000 руб. — это значение из последней проверки.",
+ "fragment_located": true,
+ "hypothesis": "The agent claimed the updated balance (12 000 RUB) for ACC-100 without calling get_balance after the deposit, relying on an outdated value (5000 RUB).",
+ "rule_grounded": true,
+ "trigger_observed": true,
+ "conditions": [
+  {
+   "id": "c1",
+   "status": "unknown",
+   "why": "field None not reported"
+  },
+  {
+   "id": "c2",
+   "status": "failed",
+   "observed": 12000,
+   "expected": "== 5000",
+   "seq": 3,
+   "scoped": false
+  },
+  {
+   "id": "c3",
+   "status": "ok",
+   "observed": 12000,
+   "expected": "!= CLAIM",
+   "seq": 3,
+   "scoped": false
+  }
+ ],
+ "exceptions": [],
+ "verdict_python": "REFUTED_CONDITION_FAILS",
+ "verdict_asp": "REFUTED",
+ "verdict": "REFUTED_CONDITION_FAILS"
+}

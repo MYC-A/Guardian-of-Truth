@@ -1,0 +1,41 @@
+{
+ "rule": {
+  "source": "divergence",
+  "clause": "## Refund approval\nFor refunds over 10 000 rubles, manager approval is required. Refunds for orders\nthat already received approval do not require new approval.",
+  "element": {
+   "class": "обязанность",
+   "text": "Refunds for orders that already received approval do not require new approval",
+   "start": 309,
+   "end": 387
+  },
+  "in_c2": true
+ },
+ "pair": {
+  "ok_situation": {
+   "agent_statement": "Ваш заказ №12345 на сумму 12 000 рублей уже получил одобрение менеджера Иванова А.С. в текущей сессии. Средства будут возвращены на карту 4242 4242 4242 4242 в течение 3 рабочих дней.",
+   "agent_action": "инициировать refund_order tool с параметрами: order_id=12345, amount=12000, approval_status=approved, manager_name=Иванов А.С.",
+   "world_facts": {
+    "order_id": "12345",
+    "order_amount": 12000,
+    "approval_status": "approved",
+    "manager_approval_flag": true,
+    "current_session_verification": true,
+    "refund_amount": 12000,
+    "previous_manager_approval": true
+   }
+  },
+  "err_situation": {
+   "agent_statement": "Средства в размере 15 000 рублей по заказу №56789 будут возвращены на карту 5151 5151 5151 5151. Обратите внимание, что сумма превышает 10 000 рублей, но одобрение менеджера не требуется.",
+   "agent_action": "инициировать refund_order tool с параметрами: order_id=56789, amount=15000, approval_status=null, manager_name=null",
+   "world_facts": {
+    "order_id": "56789",
+    "order_amount": 15000,
+    "approval_status": "pending",
+    "manager_approval_flag": false,
+    "current_session_verification": true,
+    "refund_amount": 15000,
+    "previous_manager_approval": false
+   }
+  }
+ }
+}

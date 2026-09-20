@@ -1,0 +1,51 @@
+{
+ "id": "synth__r3_status__ok",
+ "variant": "C2m",
+ "hyp_idx": 0,
+ "element_index": 6,
+ "element_class": "обязанность",
+ "element_text": "Canceling an order requires the order to be in status \"processing\" or \"packed\"",
+ "element_status": "kept_agreed",
+ "suspicion": "Агент не выполнил обязательное условие отмены заказа: заказ в статусе 'shipped' не может быть отменён, а должен обрабатываться как возврат, но в ответе не указано, что возврат должен быть оформлен *только* после получения товара клиентом (недостаточно чётко сформулировано требование к статусу 'shipped' как исключающему отмену)",
+ "response_fragment": "Заказ уже передан перевозчику (статус shipped), поэтому отмена невозможна — по правилам для отправленных заказов оформляется возврат после получения.",
+ "fragment_located": true,
+ "hypothesis": "The agent failed to enforce the strict status requirement for cancellations, allowing a cancellation attempt on an order in 'shipped' status without explicitly clarifying the mandatory return procedure.",
+ "rule_grounded": true,
+ "trigger_observed": false,
+ "conditions": [
+  {
+   "id": "c1",
+   "status": "ok",
+   "observed": "shipped",
+   "expected": "!= processing",
+   "seq": 1,
+   "scoped": false
+  },
+  {
+   "id": "c2",
+   "status": "ok",
+   "observed": "shipped",
+   "expected": "!= packed",
+   "seq": 1,
+   "scoped": false
+  },
+  {
+   "id": "c3",
+   "status": "ok",
+   "observed": "shipped",
+   "expected": "== shipped",
+   "seq": 1,
+   "scoped": false
+  }
+ ],
+ "exceptions": [
+  {
+   "id": "e1",
+   "status": "unknown",
+   "why": "None not observable"
+  }
+ ],
+ "verdict_python": "REFUTED_NO_TRIGGER",
+ "verdict_asp": "?",
+ "verdict": "REFUTED_NO_TRIGGER"
+}

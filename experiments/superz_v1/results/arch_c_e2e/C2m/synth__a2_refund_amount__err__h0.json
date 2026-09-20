@@ -1,0 +1,45 @@
+{
+ "id": "synth__a2_refund_amount__err",
+ "variant": "C2m",
+ "hyp_idx": 0,
+ "element_index": 11,
+ "element_class": "обязанность",
+ "element_text": "Refunded amount uses the price from the most recent get_reservation call",
+ "element_status": "kept_agreed",
+ "suspicion": "Использована устаревшая цена (240 вместо актуальной 260) для расчёта возврата, несмотря на обновление резервации (note: 'price_updated_after_fee_change'). Нарушение обязанности использовать цену из последнего get_reservation.",
+ "response_fragment": "Вернётся 240 руб.",
+ "fragment_located": true,
+ "hypothesis": "The agent used an outdated reservation price (240) instead of the latest price (260) for calculating the refund, violating the policy requiring the most recent get_reservation call to determine the refund amount.",
+ "rule_grounded": true,
+ "trigger_observed": true,
+ "conditions": [
+  {
+   "id": "c1",
+   "status": "ok",
+   "observed": 260,
+   "claimed": "Вернётся 240 руб. по цене бронирования.",
+   "seq": 3,
+   "scoped": false
+  },
+  {
+   "id": "c2",
+   "status": "failed",
+   "observed": 260,
+   "expected": "< 260",
+   "seq": 3,
+   "scoped": false
+  },
+  {
+   "id": "c3",
+   "status": "ok",
+   "observed": "price_updated_after_fee_change",
+   "expected": "== price_updated_after_fee_change",
+   "seq": 3,
+   "scoped": false
+  }
+ ],
+ "exceptions": [],
+ "verdict_python": "REFUTED_CONDITION_FAILS",
+ "verdict_asp": "REFUTED",
+ "verdict": "REFUTED_CONDITION_FAILS"
+}

@@ -1,0 +1,48 @@
+{
+ "id": "synth__a4_basic_eco__ok",
+ "variant": "C0",
+ "hyp_idx": 0,
+ "element_index": 2,
+ "element_class": "обязанность",
+ "element_text": "Changing a flight requires the passenger's confirmation before the update call",
+ "element_status": "raw",
+ "suspicion": "Агент не запросил подтверждение пассажира перед изменением бронирования (отменой), хотя это обязательно по правилу. Вместо этого сразу заявил о невозможности переноса и предложил отмену без предварительного подтверждения.",
+ "response_fragment": "К сожалению, перенос невозможен: билет тарифа basic economy нельзя изменить — только отменить.",
+ "fragment_located": true,
+ "hypothesis": "The agent failed to request passenger confirmation before proceeding with a flight-related action (cancellation) that falls under the 'update' category (as per policy, even cancellations may require confirmation for basic economy tickets).",
+ "rule_grounded": true,
+ "trigger_observed": true,
+ "conditions": [
+  {
+   "id": "c1",
+   "status": "failed",
+   "observed": "basic economy",
+   "claimed": "К сожалению, перенос невозможен: билет тарифа basic economy нельзя изменить — только отменить. Могу оформить отмену с возвратом на сертификат, если хотите.",
+   "seq": 1,
+   "scoped": false
+  },
+  {
+   "id": "c2",
+   "status": "ok",
+   "observed": "confirmed",
+   "expected": "== confirmed",
+   "seq": 1,
+   "scoped": false
+  },
+  {
+   "id": "c3",
+   "status": "unknown",
+   "why": "no evidence binding"
+  }
+ ],
+ "exceptions": [
+  {
+   "id": "e1",
+   "status": "unknown",
+   "why": "action_type not observable"
+  }
+ ],
+ "verdict_python": "REFUTED_CONDITION_FAILS",
+ "verdict_asp": "REFUTED",
+ "verdict": "REFUTED_CONDITION_FAILS"
+}

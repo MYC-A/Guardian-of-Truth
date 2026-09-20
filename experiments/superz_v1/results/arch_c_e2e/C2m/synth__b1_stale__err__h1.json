@@ -1,0 +1,45 @@
+{
+ "id": "synth__b1_stale__err",
+ "variant": "C2m",
+ "hyp_idx": 1,
+ "element_index": 9,
+ "element_class": "обязанность",
+ "element_text": "The new balance must always be re-read from get_balance after any deposit",
+ "element_status": "kept_agreed",
+ "suspicion": "Агент не выполнил обязанность перечитать баланс после депозита (хотя вызов get_balance был выполнен, но в ответе не указано, что это значение использовалось для корректировки логики).",
+ "response_fragment": "по последней проверке баланс составлял 5000 руб.",
+ "fragment_located": true,
+ "hypothesis": "The agent claimed the balance was 5000 RUB after the deposit, but this contradicts the tool's reported new_balance (8000 RUB) and the subsequent get_balance call (8000 RUB), indicating reliance on an outdated value.",
+ "rule_grounded": true,
+ "trigger_observed": true,
+ "conditions": [
+  {
+   "id": "c1",
+   "status": "ok",
+   "observed": 8000,
+   "claimed": "00 сейчас 5000 руб. — депозит 3000 руб. был зачислен, но по последней проверке баланс составлял 5000 руб.",
+   "seq": 5,
+   "scoped": false
+  },
+  {
+   "id": "c2",
+   "status": "ok",
+   "observed": 8000,
+   "expected": "== 8000",
+   "seq": 7,
+   "scoped": false
+  },
+  {
+   "id": "c3",
+   "status": "ok",
+   "observed": "completed",
+   "expected": "== completed",
+   "seq": 5,
+   "scoped": false
+  }
+ ],
+ "exceptions": [],
+ "verdict_python": "CONFIRMED",
+ "verdict_asp": "CONFIRMED",
+ "verdict": "CONFIRMED"
+}

@@ -1,0 +1,48 @@
+{
+ "id": "synth__a4_basic_eco__err",
+ "variant": "C3",
+ "hyp_idx": 1,
+ "element_index": 7,
+ "element_class": "запрет",
+ "element_text": "Basic economy tickets cannot be changed, only cancelled",
+ "element_status": "kept_agreed",
+ "suspicion": "Агент попытался изменить билет в классе Basic Economy, что запрещено политикой (element 7). Вместо этого должен был предложить только отмену или перенаправить пользователя.",
+ "response_fragment": "→ TOOL_CALL update_reservation_flights: {...} (попытка изменения Basic Economy)",
+ "fragment_located": true,
+ "hypothesis": "The agent attempted to modify a Basic Economy ticket without first confirming cancellation or transferring the user, violating the policy.",
+ "rule_grounded": true,
+ "trigger_observed": true,
+ "conditions": [
+  {
+   "id": "c1",
+   "status": "failed",
+   "observed": "basic economy",
+   "claimed": "Хорошо, выполняю перенос на завтрашний рейс.\n\t→ TOOL_CALL update_reservation_flights: {\"reservation\": \"BBB222\", \"flights\": [{\"flight\": \"HAT100\", \"date\": \"2026-09-22\"}]}\n\t← TOOL_RESPONSE update_reserva",
+   "seq": 1,
+   "scoped": true
+  },
+  {
+   "id": "c2",
+   "status": "ok",
+   "observed": "basic_economy_not_changeable",
+   "expected": "== basic_economy_not_changeable",
+   "seq": 3,
+   "scoped": true
+  },
+  {
+   "id": "c3",
+   "status": "unknown",
+   "why": "field None not reported by any None result"
+  }
+ ],
+ "exceptions": [
+  {
+   "id": "e1",
+   "status": "unknown",
+   "why": "None not observable"
+  }
+ ],
+ "verdict_python": "REFUTED_CONDITION_FAILS",
+ "verdict_asp": "REFUTED",
+ "verdict": "REFUTED_CONDITION_FAILS"
+}

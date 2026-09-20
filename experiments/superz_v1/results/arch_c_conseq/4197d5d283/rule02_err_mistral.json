@@ -1,0 +1,85 @@
+{
+ "rule": {
+  "source": "divergence",
+  "clause": "The new balance must always be re-read from get_balance after any deposit; never\ncompute it manually.",
+  "element": {
+   "class": "обязанность",
+   "text": "The new balance must always be re-read from get_balance after any deposit; never compute it manually",
+   "start": 652,
+   "end": 753
+  },
+  "in_c2": false
+ },
+ "side": "err",
+ "is_err": true,
+ "situation": {
+  "agent_statement": "После пополнения на 3000 рублей ваш баланс должен быть 13000 рублей (ранее было 10000). Пожалуйста, подтвердите.",
+  "agent_action": "только заявление (без вызова get_balance)",
+  "world_facts": {
+   "last_deposit_amount": 3000,
+   "last_deposit_status": "completed",
+   "balance_before_deposit": 10000,
+   "balance_from_get_balance": 12500,
+   "manual_balance_calculation_attempt": true,
+   "get_balance_called": false
+  }
+ },
+ "formal": {
+  "trigger_observed": true,
+  "conditions": [
+   {
+    "id": "c1",
+    "status": "ok",
+    "observed": "completed",
+    "expected": "== completed",
+    "seq": 1,
+    "scoped": false
+   },
+   {
+    "id": "c2",
+    "status": "ok",
+    "observed": true,
+    "expected": "== True",
+    "seq": 1,
+    "scoped": false
+   },
+   {
+    "id": "c3",
+    "status": "ok",
+    "observed": false,
+    "expected": "== False",
+    "seq": 1,
+    "scoped": false
+   }
+  ],
+  "exceptions": [
+   {
+    "id": "e1",
+    "status": "unknown",
+    "observed": [
+     "True"
+    ],
+    "why": "field present but neither matches present_value nor explicit absence"
+   },
+   {
+    "id": "e2",
+    "status": "applies",
+    "observed": [
+     "completed"
+    ],
+    "seq": 1
+   }
+  ],
+  "verdict": "REFUTED_EXCEPTION_APPLIES",
+  "asp_ok": true
+ },
+ "correspondence": {
+  "provider": "mistral",
+  "ok": true,
+  "error": "",
+  "verdict": "violation",
+  "decisive_quote": "must always be re-read from get_balance after any deposit; never compute it manually",
+  "reason": "Агент не вызвал get_balance после пополнения (get_balance_called: false), а вместо этого произвёл ручной расчёт баланса (manual_balance_calculation_attempt: true), что напрямую нарушает требование клаузы.",
+  "quote_found": true
+ }
+}

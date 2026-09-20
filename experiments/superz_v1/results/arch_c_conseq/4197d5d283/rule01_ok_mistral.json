@@ -1,0 +1,92 @@
+{
+ "rule": {
+  "source": "divergence",
+  "clause": "The new balance must always be re-read from get_balance after any deposit; never\ncompute it manually.",
+  "element": {
+   "class": "запрет",
+   "text": "never compute it manually",
+   "start": 727,
+   "end": 753
+  },
+  "in_c2": true
+ },
+ "side": "ok",
+ "is_err": false,
+ "situation": {
+  "agent_statement": "Ваш новый баланс после пополнения на 5000 рублей составляет 15000 рублей. Пожалуйста, подтвердите, что информация корректна.",
+  "agent_action": "get_balance (вызов инструмента для получения актуального баланса)",
+  "world_facts": {
+   "last_deposit_amount": 5000,
+   "last_deposit_status": "completed",
+   "balance_after_deposit": 15000,
+   "balance_from_get_balance": 15000,
+   "manual_balance_calculation_attempt": false
+  }
+ },
+ "formal": {
+  "trigger_observed": true,
+  "conditions": [
+   {
+    "id": "c1",
+    "status": "failed",
+    "observed": 15000,
+    "claimed": "Ваш новый баланс после пополнения на 5000 рублей составляет 15000 рублей. Пожалуйста, подтвердите, что информация корректна.",
+    "seq": 1,
+    "scoped": false
+   },
+   {
+    "id": "c2",
+    "status": "ok",
+    "observed": "completed",
+    "expected": "== completed",
+    "seq": 1,
+    "scoped": false
+   },
+   {
+    "id": "c3",
+    "status": "failed",
+    "observed": false,
+    "expected": "== True",
+    "seq": 1,
+    "scoped": false
+   },
+   {
+    "id": "c4",
+    "status": "failed",
+    "observed": 15000,
+    "expected": "!= 15000",
+    "seq": 1,
+    "scoped": false
+   }
+  ],
+  "exceptions": [
+   {
+    "id": "e1",
+    "status": "absent",
+    "observed": [
+     "False"
+    ],
+    "seq": 1
+   },
+   {
+    "id": "e2",
+    "status": "unknown",
+    "observed": [
+     "completed"
+    ],
+    "why": "field present but neither matches present_value nor explicit absence"
+   }
+  ],
+  "verdict": "REFUTED_CONDITION_FAILS",
+  "asp_ok": true
+ },
+ "correspondence": {
+  "provider": "mistral",
+  "ok": true,
+  "error": "",
+  "verdict": "compliant",
+  "decisive_quote": "must always be re-read from get_balance after any deposit; never compute it manually",
+  "reason": "Агент вызвал get_balance после депозита, не пытаясь вычислять баланс вручную (manual_balance_calculation_attempt: false).",
+  "quote_found": true
+ }
+}

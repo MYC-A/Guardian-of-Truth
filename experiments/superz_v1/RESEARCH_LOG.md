@@ -181,3 +181,164 @@ Unfinished / queued:
 - Cross-model arbitration reviews for C (5 calls pending; z-ai).
 - A0-glm on synth32; C on public46 policies (8 LX calls); D on public46.
 - AgentHallu own slice (dataset cloned locally, adapter not yet built).
+
+---
+
+## 7. Architecture C END-TO-END (2026-09-20, session 2)
+
+Goal (user directive): bring C to a full end-to-end experiment — not just
+two-theory extraction, but their REAL mutual verification and correction
+using original LangExtract fragments; measure preservation of modality /
+conditions / exceptions / participants / temporal / scope; add consequence
+checking with control situations; compare C0 / C1 / C2 / C3 on ONE dataset
+with the SAME formal engine; count corrected FP AND lost TP AND new FP;
+never let a missing exact quote auto-produce a negative label.
+
+Pipeline (`arch_c/theory_case.py`, `run_c_e2e.py`): theory variant →
+Mistral hypothesis generation tied to theory elements (element_index +
+response_fragment) → SAME arch_d formalizer (typed templates, rule quote
+forced to the byte-exact policy substring at the element's span-verified
+position) → local resolver + Clingo → case label = 1 iff any CONFIRMED.
+Hypothesis/formalizer providers held CONSTANT (mistral) across variants;
+the only varying input is the theory. Element order is CANONICAL (document
+position) for every variant — otherwise prompt-order noise masquerades as
+theory differences (caught and fixed mid-experiment).
+
+| Variant | TP | FP | FN | TN | P | R | F1 |
+|---|---|---|---|---|---|---|---|
+| C0 glm-theory | 3 | 0 | 13 | 16 | 1.0 | .188 | .316 |
+| **C1 union (indep. extraction)** | **7** | **0** | 9 | 16 | **1.0** | **.438** | **.609** |
+| C2m one-sided-aggressive | 3 | 0 | 13 | 16 | 1.0 | .188 | .316 |
+| C3 +consequence flags (strict) | 6 | 0 | 10 | 16 | 1.0 | .375 | .546 |
+
+Transitions (the user's requested cost accounting):
+- **C0→C1: +4 TP (a2_refund_amount, b4_failed, r4_points, t2_port), 0 new
+  FP, 0 lost TP.** The union of independent GLM+Mistral extractions more
+  than doubles recall at unchanged P=1.0 — Mistral's elements closed real
+  theory gaps; the formal layer absorbed the added noise.
+- **C1→C2m: −4 TP, 0 corrected FP, 0 new FP.** Aggressive one-sided
+  criticism (a single reviewer rejecting elements with no second side
+  available) destroyed exactly the four detections the union had gained.
+  The five `challenged_one_sided` elements carried real normative content.
+- C2m→C3: +4/−1 — but the meaningful C3 comparison is vs its own base
+  theory (C1/C2): **−1 TP (b1_stale), 0 corrected FP.** The consequence
+  flag fired on the element («the new balance must always be re-read from
+  get_balance») whose synthetic control-situation formalization failed,
+  although the same element's formalization CONFIRMED the real b1_stale
+  case correctly. A false alarm of the consequence mode — quantified, and
+  the reason the lenient aggregation (report-only) is the default.
+
+### Real mutual criticism (`arch_c/mutual_review.py`)
+
+Criticism items = 5 span-disagreements (element in one theory only) + 6
+modality conflicts (overlapping spans, different MODAL class: запрет vs
+разрешение/обязанность — these change what counts as a violation; found by
+a new mechanical scanner, 17 raw class overlaps of which 6 are modal).
+Each item reviewed against the ORIGINAL clause with decisive-quote
+verification by BOTH models (mutual, not a single arbiter). Repair rules
+(recall-preserving): drop only when BOTH sides concede invention; one-sided
+rejection → keep flagged `challenged_one_sided`; split → keep flagged
+ambiguous; class corrections applied only when both sides agree.
+Mistral side: 11/11 items reviewed (8 faithful incl. 3 modality
+preferences, 5 span-invented challenges, verdicts verified quotes 5/8
+grounded). **GLM side: BLOCKED — z-ai returned 429 for the entire ~3h
+session; C2 both-sides completion is PENDING, honestly marked.** C2's
+current theory therefore equals C1's element set (conservative rule keeps
+everything criticizable), and the C2 row is intentionally absent above.
+
+### Facet preservation audit (`arch_c/facet_audit.py`)
+
+Independent reference: 52 facets extracted from the ORIGINAL policies
+(modality/condition/exception/participant/temporal/scope/threshold),
+quotes verified 49/52 after emphasis-tolerant matching. Audit (per facet:
+is its information captured by some theory element?):
+
+| Policy | C0 | C1 | C2m |
+|---|---|---|---|
+| banking | 1.00 | 1.00 | 1.00 |
+| airline | 1.00 | 1.00 | 1.00 |
+| telecom | .824 | .882 | .941* |
+| retail | 1.00 | .909 | .909 |
+
+*telecom C2m shows 0.941 only because the auditor's by-type table keeps
+the union facets; its порог rate collapsed 1.0→0.0 (the «two failed
+resolution attempts» threshold element was dropped by the one-sided
+challenge) and retail's exception rate fell to .67 — the same semantic
+loss that cost the 4 TPs. C0's telecom gaps (exception 0.0, threshold
+0.0, scope .5) are recovered by the union (C1: exception 1.0, threshold
+1.0) — the facet audit independently confirms the C0→C1 recall gain.
+Caveat: single-auditor LLM judgments have ±1-facet noise (visible as
+C1<C0 on retail despite C1⊃C0 — mechanically impossible, hence noise).
+
+### Consequence checking (`arch_c/consequence.py`)
+
+10 rules × 2 constructed situations (ok + err, ground truth by
+construction): sources = theory divergences + independently discovered
+facets missed by C0. TWO SEPARATE checks per situation:
+1. FORMAL: rule → typed template (world facts as observable fields) →
+   resolver + Clingo. Clingo computes consequences of THIS formalization
+   only — it is never the judge of natural-language interpretation.
+2. CORRESPONDENCE: LLM judges the situation against the ORIGINAL clause
+   (decisive quote verified) — the semantic authority.
+Result matrix: 10 ok-situations: formal 8 definitive & correct,
+correspondence 9 correct; 10 err-situations: formal 4 correct, 3
+unresolved (binding gaps — the known bottleneck), 3 wrong (exception
+over-application); correspondence 9 correct, 1 ambiguous.
+Flags: 4 elements flagged unreliable (formal wrong while correspondence
+right — genuine formalization errors caught); 2 untested. Strict C3
+applies the flags; lenient reports only. **On this dataset the flags
+produced −1 TP and 0 corrected FP** (see above) — the mode is diagnost
+ically valuable (it names WHICH formalizations diverge from the natural
+reading) but not yet a safe label filter.
+
+### C vs direct judge vs hybrids (same dataset, same providers)
+
+| System | TP | FP | P | R | F1 |
+|---|---|---|---|---|---|
+| A0-mistral direct judge | 16 | 4 | .80 | 1.00 | **.889** |
+| B1-mistral suspicion judge | 15 | 14 | .52 | .94 | .667 |
+| B1-glm suspicion judge | 15 | 9 | .63 | 1.00 | .769 |
+| C1 union→formal | 7 | 0 | **1.00** | .44 | .609 |
+| Hybrid A0m OR C1 | 16 | 4 | .80 | 1.00 | .889 |
+| Hybrid A0m AND C1 (C as filter) | 7 | 0 | 1.00 | .44 | .609 |
+
+On short clean policies the direct judge is simply stronger; C's every
+confirmation is a subset of the judge's positives, so OR-hybrids add
+nothing and AND-hybrids trade recall for precision 1:1. C's value must
+come from the regime where judges fail (long τ-bench policies: there
+A0-glm F1=.790 while the whole B-chain collapses to .651) — the C run on
+public46 is queued behind the GLM quota. Per the user's directive, no
+additional mechanism enters the final Guardian until its standalone
+contribution is measured on independent data.
+
+### Infrastructure findings (session 2)
+
+- **Canonical element order is mandatory** for variant comparisons: the
+  same element set in different order produces different hypotheses
+  (caught via a C3-vs-C1 flip that traced back to prompt-order noise).
+- Mistral adds `**bold**` emphasis to quotes absent from the source —
+  breaks byte-exact span checks; fixed by emphasis-stripping realignment
+  (telecom theory B 0→8 anchored elements, coverage .89→1.00) and
+  emphasis-tolerant quote verification in the facet audit.
+- Mistral emits JS-style `//` comments and raw newlines inside JSON;
+  robust per-object balanced-scan parsing with comment/trailing-comma
+  cleaning recovered 100% of previously failed generations from cache
+  (zero extra API calls).
+- rule_quote for theory-derived hypotheses = policy substring at the
+  span-verified element position (byte-exact by construction) — absence
+  of a model-quoted citation can never auto-negative a case (user rule).
+- Pair-file structure bug (outer container vs inner dict) fixed; retry
+  markers prevent infinite regeneration loops.
+
+Commands: `python3 experiments/superz_v1/arch_c/mutual_review.py
+[--finalize]`, `.../run_c_e2e.py --variants C0,C1,C2m,C3`,
+`.../facet_audit.py --stage reference|audit`, `.../consequence.py`,
+`.../summarize_systems.py`. All runs resumable, all calls disk-cached.
+
+### Pending (z-ai GLM 429 for the whole session — NOT done, not faked)
+
+1. C2 both-sides mutual criticism (8 GLM reviews) + C2 e2e row.
+2. A0-glm direct judge on synth32 (the GLM anchor for the judge comparison).
+3. GLM-side facet reference (union reference) + GLM-side audits.
+4. C on public46 policies (8 LangExtract calls) + C-e2e on public46.
+5. B4x GLM→Mistral reviews on public46 (43 calls, secondary).

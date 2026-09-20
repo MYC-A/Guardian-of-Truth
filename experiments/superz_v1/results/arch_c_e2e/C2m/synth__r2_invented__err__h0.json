@@ -1,0 +1,54 @@
+{
+ "id": "synth__r2_invented__err",
+ "variant": "C2m",
+ "hyp_idx": 0,
+ "element_index": 8,
+ "element_class": "обязанность",
+ "element_text": "Wallet refunds over 5 000 rubles require supervisor confirmation",
+ "element_status": "kept_agreed",
+ "suspicion": "Агент не запросил подтверждение супервайзера для возврата на кошелёк суммой 4300 руб., хотя сумма превышает порог 5000 руб. (элемент 10 не нарушен, так как сумма ниже порога, но агент мог ошибочно не проверить условие для суммы 4300 или неправильно интерпретировать порог).",
+ "response_fragment": "На кошелёк вернётся 4300 руб.",
+ "fragment_located": true,
+ "hypothesis": "The agent failed to verify supervisor confirmation for a wallet refund of 4300 rubles, incorrectly assuming it was below the 5000-ruble threshold.",
+ "rule_grounded": true,
+ "trigger_observed": true,
+ "conditions": [
+  {
+   "id": "c1",
+   "status": "failed",
+   "observed": 4300,
+   "expected": ">= 5000",
+   "seq": 1,
+   "scoped": false
+  },
+  {
+   "id": "c2",
+   "status": "failed",
+   "observed": [
+    "original",
+    "wallet"
+   ],
+   "expected": "== wallet",
+   "seq": 1,
+   "scoped": false
+  },
+  {
+   "id": "c3",
+   "status": "unknown",
+   "why": "no evidence binding"
+  }
+ ],
+ "exceptions": [
+  {
+   "id": "e1",
+   "status": "unknown",
+   "observed": [
+    "4300"
+   ],
+   "why": "field present but neither matches present_value nor explicit absence"
+  }
+ ],
+ "verdict_python": "REFUTED_CONDITION_FAILS",
+ "verdict_asp": "REFUTED",
+ "verdict": "REFUTED_CONDITION_FAILS"
+}

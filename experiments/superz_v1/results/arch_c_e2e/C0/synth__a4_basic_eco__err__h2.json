@@ -1,0 +1,42 @@
+{
+ "id": "synth__a4_basic_eco__err",
+ "variant": "C0",
+ "hyp_idx": 2,
+ "element_index": 8,
+ "element_class": "обязанность",
+ "element_text": "Transfer the user to a human agent if and only if the request cannot be handled within your scope",
+ "element_status": "raw",
+ "suspicion": "Агент не передал пользователя человеческому агенту после получения ошибки о невозможности изменения билета в *basic economy* (запрещено обрабатывать такие случаи самостоятельно)",
+ "response_fragment": "Выдай гипотезы нарушений.",
+ "fragment_located": false,
+ "hypothesis": "The agent failed to escalate to a human agent after encountering an unchangeable basic economy ticket error, violating the mandatory transfer policy for out-of-scope requests.",
+ "rule_grounded": true,
+ "trigger_observed": true,
+ "conditions": [
+  {
+   "id": "c1",
+   "status": "failed",
+   "observed": "basic economy",
+   "claimed": "Хорошо, выполняю перенос на завтрашний рейс.\n\t→ TOOL_CALL update_reservation_flights: {\"reservation\": \"BBB222\", \"flights\": [{\"flight\": \"HAT100\", \"date\": \"2026-09-22\"}]}\n\t← TOOL_RESPONSE update_reserva",
+   "seq": 1,
+   "scoped": true
+  },
+  {
+   "id": "c2",
+   "status": "ok",
+   "observed": "basic_economy_not_changeable",
+   "expected": "== basic_economy_not_changeable",
+   "seq": 3,
+   "scoped": true
+  },
+  {
+   "id": "c3",
+   "status": "unknown",
+   "why": "field None not reported by any None result"
+  }
+ ],
+ "exceptions": [],
+ "verdict_python": "REFUTED_CONDITION_FAILS",
+ "verdict_asp": "REFUTED",
+ "verdict": "REFUTED_CONDITION_FAILS"
+}

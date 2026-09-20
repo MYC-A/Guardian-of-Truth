@@ -1,0 +1,46 @@
+{
+ "id": "synth__r1_confirm__ok",
+ "variant": "C1",
+ "hyp_idx": 1,
+ "element_index": 7,
+ "element_class": "запрет",
+ "element_text": "Cancelled orders in status \"shipped\" must be handled as a return instead",
+ "element_status": "raw",
+ "suspicion": "Агент не обработал отмену как возврат, так как заказ не был в статусе 'shipped' (элементы 7, 8). Однако, поскольку статус был 'processing', нарушения нет — элемент неприменим.",
+ "response_fragment": "",
+ "fragment_located": false,
+ "hypothesis": "The agent violated the policy by canceling an order without treating it as a return, despite the order being in a non-'shipped' status (processing), which technically makes the rule inapplicable but could still be misinterpreted as a procedural error.",
+ "rule_grounded": true,
+ "trigger_observed": true,
+ "conditions": [
+  {
+   "id": "c1",
+   "status": "ok",
+   "observed": "processing",
+   "expected": "!= shipped",
+   "seq": 1,
+   "scoped": true
+  },
+  {
+   "id": "c2",
+   "status": "ok",
+   "observed": "cancelled",
+   "expected": "== cancelled",
+   "seq": 3,
+   "scoped": true
+  }
+ ],
+ "exceptions": [
+  {
+   "id": "e1",
+   "status": "unknown",
+   "observed": [
+    "processing"
+   ],
+   "why": "field present but neither matches present_value nor explicit absence"
+  }
+ ],
+ "verdict_python": "UNRESOLVED_UNKNOWN_PREMISE",
+ "verdict_asp": "UNRESOLVED",
+ "verdict": "UNRESOLVED_UNKNOWN_PREMISE"
+}

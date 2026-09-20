@@ -1,0 +1,45 @@
+{
+ "id": "synth__r3_status__err",
+ "variant": "C0",
+ "hyp_idx": 1,
+ "element_index": 5,
+ "element_class": "обязанность",
+ "element_text": "Cancelled orders in status \"shipped\" must be handled as a return instead",
+ "element_status": "raw",
+ "suspicion": "Агент не обработал заказ в статусе 'shipped' как возврат, а попытался отменить напрямую, что противоречит правилу о необходимости обработки таких случаев как возврата",
+ "response_fragment": "⟦ASSISTANT · ход 2⟧ Да, конечно, оформляю отмену.",
+ "fragment_located": true,
+ "hypothesis": "The agent attempted to cancel an order in 'shipped' status directly instead of processing it as a return, violating the policy requirement.",
+ "rule_grounded": true,
+ "trigger_observed": true,
+ "conditions": [
+  {
+   "id": "c1",
+   "status": "ok",
+   "observed": "shipped",
+   "expected": "== shipped",
+   "seq": 1,
+   "scoped": true
+  },
+  {
+   "id": "c2",
+   "status": "failed",
+   "observed": "error",
+   "claimed": "Да, конечно, оформляю отмену.\n\t→ TOOL_CALL cancel_order: {\"order\": \"ORD-5590\"}\n\t← TOOL_RESPONSE cancel_order: {\"order\": \"ORD-5590\", \"status\": \"error\", \"error\": \"invalid_status\"}",
+   "seq": 3,
+   "scoped": true
+  },
+  {
+   "id": "c3",
+   "status": "ok",
+   "observed": "invalid_status",
+   "expected": "== invalid_status",
+   "seq": 3,
+   "scoped": true
+  }
+ ],
+ "exceptions": [],
+ "verdict_python": "REFUTED_CONDITION_FAILS",
+ "verdict_asp": "REFUTED",
+ "verdict": "REFUTED_CONDITION_FAILS"
+}

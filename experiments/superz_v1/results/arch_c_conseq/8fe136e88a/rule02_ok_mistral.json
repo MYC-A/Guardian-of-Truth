@@ -1,0 +1,85 @@
+{
+ "rule": {
+  "source": "divergence",
+  "clause": "Basic economy tickets cannot be changed, only cancelled.\n\n## Refunds\nA refund to the original payment method takes 5 business days; a refund to a\ntravel certificate is instant.",
+  "element": {
+   "class": "разрешение",
+   "text": "only cancelled",
+   "start": 364,
+   "end": 378
+  },
+  "in_c2": true
+ },
+ "side": "ok",
+ "is_err": false,
+ "situation": {
+  "agent_statement": "К сожалению, ваш билет в классе Basic Economy не подлежит изменению. Я могу только оформить его возврат на сумму 1250 USD (стоимость по последнему запросу бронирования). Выберите способ возврата: на оригинальный способ оплаты (возврат за 5 рабочих дней) или на travel certificate (мгновенно).",
+  "agent_action": "call_tool: refund_request, params: {ticket_id: 'FLT45678', refund_type: 'original_payment', amount: 1250, reason: 'passenger_initiated'}",
+  "world_facts": {
+   "ticket_class": "Basic Economy",
+   "refund_type": "original_payment",
+   "refund_status": "pending",
+   "refund_processing_time": 5,
+   "last_reservation_price": 1250,
+   "action_taken": "refund_initiated"
+  }
+ },
+ "formal": {
+  "trigger_observed": true,
+  "conditions": [
+   {
+    "id": "c1",
+    "status": "ok",
+    "observed": "Basic Economy",
+    "expected": "== Basic Economy",
+    "seq": 1,
+    "scoped": false
+   },
+   {
+    "id": "c2",
+    "status": "ok",
+    "observed": "refund_initiated",
+    "expected": "!= cancellation_initiated",
+    "seq": 1,
+    "scoped": false
+   },
+   {
+    "id": "c3",
+    "status": "failed",
+    "observed": "refund_initiated",
+    "expected": "!= refund_initiated",
+    "seq": 1,
+    "scoped": false
+   }
+  ],
+  "exceptions": [
+   {
+    "id": "e1",
+    "status": "applies",
+    "observed": [
+     "refund_initiated"
+    ],
+    "seq": 1
+   },
+   {
+    "id": "e2",
+    "status": "unknown",
+    "observed": [
+     "refund_initiated"
+    ],
+    "why": "field present but neither matches present_value nor explicit absence"
+   }
+  ],
+  "verdict": "REFUTED_CONDITION_FAILS",
+  "asp_ok": true
+ },
+ "correspondence": {
+  "provider": "mistral",
+  "ok": true,
+  "error": "",
+  "verdict": "compliant",
+  "decisive_quote": "Basic economy tickets cannot be changed, only cancelled.",
+  "reason": "Агент не пытался изменить билет, а только инициировал возврат (refund) в рамках разрешенного правила. Клауза запрещает изменения, но не запрещает возврат.",
+  "quote_found": true
+ }
+}

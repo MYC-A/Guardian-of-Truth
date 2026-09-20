@@ -1,0 +1,45 @@
+{
+ "id": "synth__r3_status__ok",
+ "variant": "C3",
+ "hyp_idx": 0,
+ "element_index": 6,
+ "element_class": "обязанность",
+ "element_text": "Canceling an order requires the order to be in status \"processing\" or \"packed\"",
+ "element_status": "kept_agreed",
+ "suspicion": "Агент не проверил обязательное условие статуса заказа ('processing' или 'packed') для отмены, а сразу заявил об невозможности отмены, основываясь только на статусе 'shipped'",
+ "response_fragment": "Заказ уже передан перевозчику (статус shipped), поэтому отмена невозможна",
+ "fragment_located": true,
+ "hypothesis": "The agent violated the cancellation policy by failing to verify the order status before denying cancellation, instead assuming 'shipped' status implies automatic denial without checking for compliance with the required statuses.",
+ "rule_grounded": true,
+ "trigger_observed": true,
+ "conditions": [
+  {
+   "id": "c1",
+   "status": "ok",
+   "observed": "shipped",
+   "claimed": "Заказ уже передан перевозчику (статус shipped), поэтому отмена невозможна — по правилам для отправленных заказов оформляется возврат после получения. Могу рассказать, как это будет работать.",
+   "seq": 1,
+   "scoped": false
+  },
+  {
+   "id": "c2",
+   "status": "failed",
+   "observed": "shipped",
+   "expected": "== processing",
+   "seq": 1,
+   "scoped": false
+  },
+  {
+   "id": "c3",
+   "status": "failed",
+   "observed": "shipped",
+   "expected": "== packed",
+   "seq": 1,
+   "scoped": false
+  }
+ ],
+ "exceptions": [],
+ "verdict_python": "REFUTED_CONDITION_FAILS",
+ "verdict_asp": "REFUTED",
+ "verdict": "REFUTED_CONDITION_FAILS"
+}

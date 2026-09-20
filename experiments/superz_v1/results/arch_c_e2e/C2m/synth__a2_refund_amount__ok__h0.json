@@ -1,0 +1,42 @@
+{
+ "id": "synth__a2_refund_amount__ok",
+ "variant": "C2m",
+ "hyp_idx": 0,
+ "element_index": 11,
+ "element_class": "обязанность",
+ "element_text": "Refunded amount uses the price from the most recent get_reservation call",
+ "element_status": "kept_agreed",
+ "suspicion": "Агент заявил о возврате суммы 260 руб., но не уточнил, что это значение взято из последнего запроса get_reservation (seq=3), хотя правило требует явно ссылаться на цену из самого свежего вызова. Возможно, нарушение обязанности по указанию источника цены.",
+ "response_fragment": "Вернётся 260 руб. — это цена из самой свежей проверки бронирования",
+ "fragment_located": true,
+ "hypothesis": "The agent claimed the refund amount (260) without explicitly stating that this value was taken from the most recent get_reservation call (seq=3) in the response, violating the policy's requirement to reference the source of the price.",
+ "rule_grounded": true,
+ "trigger_observed": true,
+ "conditions": [
+  {
+   "id": "c1",
+   "status": "failed",
+   "observed": 260,
+   "claimed": "Вернётся 260 руб. — это цена из самой свежей проверки бронирования (после изменения сбора). Возврат на сертификат моментальный.",
+   "seq": 3,
+   "scoped": false
+  },
+  {
+   "id": "c2",
+   "status": "ok",
+   "observed": 260,
+   "expected": "== 260",
+   "seq": 3,
+   "scoped": false
+  },
+  {
+   "id": "c3",
+   "status": "unknown",
+   "why": "no evidence binding"
+  }
+ ],
+ "exceptions": [],
+ "verdict_python": "REFUTED_CONDITION_FAILS",
+ "verdict_asp": "REFUTED",
+ "verdict": "REFUTED_CONDITION_FAILS"
+}

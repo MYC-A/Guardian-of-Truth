@@ -1,0 +1,83 @@
+{
+ "rule": {
+  "source": "divergence",
+  "clause": "An infant on lap does not increase the allowance.\n\n## Flight changes\nChanging a flight requires the passenger's confirmation before the update call.",
+  "element": {
+   "class": "исключение",
+   "text": "An infant on lap does not increase the allowance",
+   "start": 174,
+   "end": 222
+  },
+  "in_c2": true
+ },
+ "side": "ok",
+ "is_err": false,
+ "situation": {
+  "agent_statement": "Ваш тариф Silver позволяет бесплатно сдать 2 багажа. Ребенок на коленях не учитывается в лимитах, поэтому ваш текущий багаж (1 шт.) в пределах нормы.",
+  "agent_action": "только заявление",
+  "world_facts": {
+   "passenger_ticket_type": "silver",
+   "checked_bags_count": 1,
+   "infant_on_lap_flag": "true",
+   "baggage_allowance": 2
+  }
+ },
+ "formal": {
+  "trigger_observed": true,
+  "conditions": [
+   {
+    "id": "c1",
+    "status": "failed",
+    "observed": 1,
+    "expected": "> 2",
+    "seq": 1,
+    "scoped": false
+   },
+   {
+    "id": "c2",
+    "status": "ok",
+    "observed": "true",
+    "expected": "== true",
+    "seq": 1,
+    "scoped": false
+   },
+   {
+    "id": "c3",
+    "status": "failed",
+    "observed": 2,
+    "expected": "!= 2",
+    "seq": 1,
+    "scoped": false
+   }
+  ],
+  "exceptions": [
+   {
+    "id": "e1",
+    "status": "unknown",
+    "observed": [
+     "true"
+    ],
+    "why": "field present but neither matches present_value nor explicit absence"
+   },
+   {
+    "id": "e2",
+    "status": "applies",
+    "observed": [
+     "1"
+    ],
+    "seq": 1
+   }
+  ],
+  "verdict": "REFUTED_CONDITION_FAILS",
+  "asp_ok": true
+ },
+ "correspondence": {
+  "provider": "mistral",
+  "ok": true,
+  "error": "",
+  "verdict": "compliant",
+  "decisive_quote": "An infant on lap does not increase the allowance",
+  "reason": "Агент корректно сослался на правило, что ребенок на коленях не учитывается в лимитах багажа, и подтвердил, что текущий багаж (1 шт.) соответствует тарифу Silver (2 шт.). Никаких изменений в действиях или нарушений правил не зафиксировано.",
+  "quote_found": true
+ }
+}

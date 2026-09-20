@@ -1,0 +1,45 @@
+{
+ "id": "synth__b1_stale__err",
+ "variant": "C2m",
+ "hyp_idx": 2,
+ "element_index": 10,
+ "element_class": "запрет",
+ "element_text": "never compute it manually",
+ "element_status": "ambiguous_kept",
+ "suspicion": "Агент, вероятно, вычислил баланс вручную (5000 + 3000 = 8000), что запрещено политикой. В ответе не указано, что баланс был взят напрямую из инструмента после депозита.",
+ "response_fragment": "На счёте ACC-100 сейчас 5000 руб. — депозит 3000 руб. был зачислен",
+ "fragment_located": true,
+ "hypothesis": "The agent manually calculated the balance by adding the deposit amount to the pre-deposit balance instead of reading the updated balance from the get_balance tool after the deposit operation.",
+ "rule_grounded": true,
+ "trigger_observed": true,
+ "conditions": [
+  {
+   "id": "c1",
+   "status": "failed",
+   "observed": 8000,
+   "claimed": "На счёте ACC-100 сейчас 5000 руб. — депозит 3000 руб. был зачислен, но по последней проверке баланс составлял 5000 руб.",
+   "seq": 5,
+   "scoped": false
+  },
+  {
+   "id": "c2",
+   "status": "ok",
+   "observed": "completed",
+   "expected": "== completed",
+   "seq": 5,
+   "scoped": false
+  },
+  {
+   "id": "c3",
+   "status": "ok",
+   "observed": 8000,
+   "expected": "!= CLAIM",
+   "seq": 7,
+   "scoped": false
+  }
+ ],
+ "exceptions": [],
+ "verdict_python": "REFUTED_CONDITION_FAILS",
+ "verdict_asp": "REFUTED",
+ "verdict": "REFUTED_CONDITION_FAILS"
+}

@@ -1,0 +1,37 @@
+{
+ "id": "synth__b1_stale__err",
+ "variant": "C1",
+ "hyp_idx": 0,
+ "element_index": 10,
+ "element_class": "обязанность",
+ "element_text": "The new balance must always be re-read from get_balance after any deposit",
+ "element_status": "raw",
+ "suspicion": "Агент не перечитал баланс после депозита через инструмент get_balance, а использовал значение new_balance из deposit-ответа, что нарушает обязанность всегда считывать актуальный баланс после операции.",
+ "response_fragment": "На счёте ACC-100 сейчас 5000 руб. — депозит 3000 руб. был зачислен, но по последней проверке баланс составлял 5000 руб.",
+ "fragment_located": true,
+ "hypothesis": "The agent violated the policy by using the `new_balance` field from the `deposit` response instead of re-reading the balance via `get_balance` after the deposit operation.",
+ "rule_grounded": true,
+ "trigger_observed": true,
+ "conditions": [
+  {
+   "id": "c1",
+   "status": "ok",
+   "observed": 8000,
+   "claimed": "На счёте ACC-100 сейчас 5000 руб. — депозит 3000 руб. был зачислен, но по последней проверке баланс составлял 5000 руб.",
+   "seq": 5,
+   "scoped": false
+  },
+  {
+   "id": "c2",
+   "status": "failed",
+   "observed": 8000,
+   "expected": "== CLAIM",
+   "seq": 7,
+   "scoped": false
+  }
+ ],
+ "exceptions": [],
+ "verdict_python": "REFUTED_CONDITION_FAILS",
+ "verdict_asp": "REFUTED",
+ "verdict": "REFUTED_CONDITION_FAILS"
+}

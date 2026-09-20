@@ -1,0 +1,57 @@
+{
+ "id": "synth__r2_invented__ok",
+ "variant": "C2m",
+ "hyp_idx": 0,
+ "element_index": 8,
+ "element_class": "обязанность",
+ "element_text": "Wallet refunds over 5 000 rubles require supervisor confirmation",
+ "element_status": "kept_agreed",
+ "suspicion": "Агент заявил, что подтверждение супервизора не требуется для суммы 4300 руб., хотя правило требует его для сумм **свыше 5000 руб.** (порог включительно не указан, но формулировка 'over 5 000 rubles' предполагает строгое превышение). Если сумма **включает** 5000+, это нарушает условие обязательного подтверждения.",
+ "response_fragment": "Возврат на кошелёк требует подтверждения супервизора только свыше 5000 руб., здесь это не нужно",
+ "fragment_located": true,
+ "hypothesis": "The agent incorrectly claimed supervisor confirmation is not required for a wallet refund of 4300 rubles when the policy mandates it for refunds exceeding 5000 rubles (strictly greater than).",
+ "rule_grounded": true,
+ "trigger_observed": true,
+ "conditions": [
+  {
+   "id": "c1",
+   "status": "failed",
+   "observed": 4300,
+   "expected": "> 5000",
+   "seq": 1,
+   "scoped": false
+  },
+  {
+   "id": "c2",
+   "status": "failed",
+   "observed": [
+    "original",
+    "wallet"
+   ],
+   "expected": "== wallet",
+   "seq": 1,
+   "scoped": false
+  },
+  {
+   "id": "c3",
+   "status": "ok",
+   "observed": 4300,
+   "claimed": "На кошелёк вернётся 4300 руб. — сумма заказа ORD-4410. Возврат на кошелёк требует подтверждения супервизора только свыше 5000 руб., здесь это не нужно: оформляю возврат на исходный спос",
+   "seq": 1,
+   "scoped": false
+  }
+ ],
+ "exceptions": [
+  {
+   "id": "e1",
+   "status": "applies",
+   "observed": [
+    "4300"
+   ],
+   "seq": 1
+  }
+ ],
+ "verdict_python": "REFUTED_CONDITION_FAILS",
+ "verdict_asp": "REFUTED",
+ "verdict": "REFUTED_CONDITION_FAILS"
+}

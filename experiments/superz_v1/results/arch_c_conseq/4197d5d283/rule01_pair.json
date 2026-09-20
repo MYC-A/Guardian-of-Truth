@@ -1,0 +1,38 @@
+{
+ "rule": {
+  "source": "divergence",
+  "clause": "The new balance must always be re-read from get_balance after any deposit; never\ncompute it manually.",
+  "element": {
+   "class": "запрет",
+   "text": "never compute it manually",
+   "start": 727,
+   "end": 753
+  },
+  "in_c2": true
+ },
+ "pair": {
+  "ok_situation": {
+   "agent_statement": "Ваш новый баланс после пополнения на 5000 рублей составляет 15000 рублей. Пожалуйста, подтвердите, что информация корректна.",
+   "agent_action": "get_balance (вызов инструмента для получения актуального баланса)",
+   "world_facts": {
+    "last_deposit_amount": 5000,
+    "last_deposit_status": "completed",
+    "balance_after_deposit": 15000,
+    "balance_from_get_balance": 15000,
+    "manual_balance_calculation_attempt": false
+   }
+  },
+  "err_situation": {
+   "agent_statement": "После пополнения на 3000 рублей ваш баланс должен быть 13000 рублей (ранее было 10000). Пожалуйста, подтвердите.",
+   "agent_action": "только заявление (без вызова get_balance)",
+   "world_facts": {
+    "last_deposit_amount": 3000,
+    "last_deposit_status": "completed",
+    "balance_before_deposit": 10000,
+    "balance_from_get_balance": 12500,
+    "manual_balance_calculation_attempt": true,
+    "get_balance_called": false
+   }
+  }
+ }
+}

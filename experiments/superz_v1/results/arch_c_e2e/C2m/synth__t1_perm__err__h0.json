@@ -1,0 +1,51 @@
+{
+ "id": "synth__t1_perm__err",
+ "variant": "C2m",
+ "hyp_idx": 0,
+ "element_index": 0,
+ "element_class": "запрет",
+ "element_text": "A tariff can be changed **only once per billing period**",
+ "element_status": "kept_after_review",
+ "suspicion": "Потенциальное нарушение отсутствия проверки возможности изменения тарифа (хотя в данном случае тариф не менялся, но флаг мошенничества может подразумевать блокировку, что косвенно влияет на доступность услуг, включая тарифы). Однако элемент 0 напрямую не нарушен, так как изменений тарифа не было.",
+ "response_fragment": "",
+ "fragment_located": false,
+ "hypothesis": "The subscriber's fraud_flag=true prevents any tariff change, but the system did not explicitly verify or enforce the billing-period limit before blocking the account.",
+ "rule_grounded": true,
+ "trigger_observed": false,
+ "conditions": [
+  {
+   "id": "c1",
+   "status": "ok",
+   "observed": true,
+   "expected": "== True",
+   "seq": 1,
+   "scoped": false
+  },
+  {
+   "id": "c2",
+   "status": "failed",
+   "observed": "Стандарт",
+   "expected": "== CLAIM",
+   "seq": 1,
+   "scoped": false
+  },
+  {
+   "id": "c3",
+   "status": "unknown",
+   "why": "no evidence binding"
+  }
+ ],
+ "exceptions": [
+  {
+   "id": "e1",
+   "status": "unknown",
+   "observed": [
+    "True"
+   ],
+   "why": "field present but neither matches present_value nor explicit absence"
+  }
+ ],
+ "verdict_python": "REFUTED_NO_TRIGGER",
+ "verdict_asp": "?",
+ "verdict": "REFUTED_NO_TRIGGER"
+}

@@ -1,0 +1,85 @@
+{
+ "rule": {
+  "source": "divergence",
+  "clause": "## Tariff changes\nA tariff can be changed only once per billing period. Changing to the \"Premium\"\ntariff requires the user to confirm the new monthly fee in writing (in chat).",
+  "element": {
+   "class": "запрет",
+   "text": "A tariff can be changed **only once per billing period**",
+   "start": 90,
+   "end": 143
+  },
+  "in_c2": true
+ },
+ "side": "ok",
+ "is_err": false,
+ "situation": {
+  "agent_statement": "Ваш тариф успешно изменён с «Стандарт» на «Эконом» в рамках текущего расчётного периода (до 20.10.2026). Повторное изменение возможно только с 21.10.2026.",
+  "agent_action": "вызов инструмента `change_tariff` с параметрами: {old_tariff: 'Стандарт', new_tariff: 'Эконом', billing_period_start: '2026-09-01', billing_period_end: '2026-09-30'}",
+  "world_facts": {
+   "last_tariff_change_date": "2026-09-15",
+   "current_tariff": "Эконом",
+   "billing_period_start": "2026-09-01",
+   "billing_period_end": "2026-09-30",
+   "premium_tariff_confirmed": false,
+   "user_written_confirmation": null
+  }
+ },
+ "formal": {
+  "trigger_observed": true,
+  "conditions": [
+   {
+    "id": "c1",
+    "status": "ok",
+    "observed": "2026-09-15",
+    "expected": ">= 2026-09-01",
+    "seq": 1,
+    "scoped": false
+   },
+   {
+    "id": "c2",
+    "status": "ok",
+    "observed": "2026-09-15",
+    "expected": "< 2026-09-30",
+    "seq": 1,
+    "scoped": false
+   },
+   {
+    "id": "c3",
+    "status": "ok",
+    "observed": "Эконом",
+    "expected": "!= Premium",
+    "seq": 1,
+    "scoped": false
+   }
+  ],
+  "exceptions": [
+   {
+    "id": "e1",
+    "status": "unknown",
+    "observed": [
+     "2026-09-15"
+    ],
+    "why": "field present but neither matches present_value nor explicit absence"
+   },
+   {
+    "id": "e2",
+    "status": "absent",
+    "observed": [
+     "None"
+    ],
+    "seq": 1
+   }
+  ],
+  "verdict": "UNRESOLVED_UNKNOWN_PREMISE",
+  "asp_ok": true
+ },
+ "correspondence": {
+  "provider": "mistral",
+  "ok": true,
+  "error": "",
+  "verdict": "violation",
+  "decisive_quote": "A tariff can be changed only once per billing period",
+  "reason": "Действие агента (изменение тарифа с «Стандарт» на «Эконом» 2026-09-15) нарушает правило, так как в том же расчётном периоде (01.09–30.09.2026) уже была фиксированная дата изменения (2026-09-15).",
+  "quote_found": true
+ }
+}
