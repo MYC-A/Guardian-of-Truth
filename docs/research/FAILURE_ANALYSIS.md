@@ -64,3 +64,17 @@ positions or a uniquely occurring verbatim quote. The validator itself remains
 strict. Post-hoc report:
 outputs/research_mistral_a_20260920/a0_a1_posthoc_comparison.json, SHA-256
 a1d2b35c89c61acc07a4f1acb43187e5ed1ea2becb2e5b423b4d4e514feae89d.
+
+## Architecture B first NuExtract UNLESS rule: fixed syntax, still unbound
+
+Original source quote is exactly `prompt[248:367]` in the full competition
+input. The old 64-byte placeholder CSV caused `INVALID_SOURCE_SPAN` during N5;
+with the correct CSV the quote passes. NuExtract's `FORBID/UNLESS` had put the
+sole exemption in `condition`; commit `12d914e` maps this explicit operand to
+the FullArch exception, allowing `BINDING_REQUIRED`. The replay at `3a073a5`
+contains two representable NuExtract rules, but the model's target text/ref is
+`dispatch`, while the catalog contains `dispatch_field_technician`. Exact
+binding returns `UNKNOWN` for both, so N5 lowers zero rules and emits no policy
+certificate. A separate `unbound-action-object:a field technician` marker would
+also need resolution. The first remaining semantic loss is target identity,
+after source validation and RuleIR, before the solver can test the rule.

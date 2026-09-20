@@ -218,3 +218,22 @@ left `exception` empty. The conservative boundary now maps that unambiguous
 operand to `exceptions`, without adding a conjunctive prerequisite; 31 B theory
 tests pass. The server's five-case raw run remains pinned to `0694c2d` so this
 fix can be measured by replaying its sealed outputs without new model calls.
+
+## 2026-09-20: one-case B0 replay after UNLESS and full-input fixes
+
+The first real provider artifact was reused without model calls (SHA
+`cab60ee20664e391f6aa1f574eaf2ea82ae4a6b16a13e7bf827202a93f191f87`).
+At `3a073a5`, input SHA stayed `1304c58598ccdeabc77768eb22d36e7d95de60bd3207f23d2bc663f12d020de3`;
+the correct full prompt/response CSV SHA is
+`3259a1dc47d0d299c863b193058c047f91d81c6c7e2a1c4044b5cf1eb1753656`.
+B0 records SHA `6d820cc893a607a3056b1d21320a392c92bc8c96d8cc259146f50277198a976d`;
+N5 alternatives SHA `fd8376bd39a82fd7e304a6c4c81593d7e30733f913498107b570f102c84c5d19`.
+Server namespace: `/mnt/data/guardian/results/b0_replay_3a073a5_20260920/`.
+Both NuExtract elements are now `BINDING_REQUIRED` with valid full-input spans;
+the `UNLESS` exemption is preserved. Both still fail exact catalog identity:
+model target `dispatch` versus tool `dispatch_field_technician`. N5 reports
+`representable_rules=2`, `exact_bound_rules=0`, `rules_lowered=0`,
+`UNRESOLVED`, markers `target-unbound:dispatch` and
+`unbound-action-object:a field technician`. Checker `ok=True` refers to the
+empty lowered rule set, not a Clingo proof of this policy. The next loss is
+target/entity binding; no second B0 extraction run is justified.
