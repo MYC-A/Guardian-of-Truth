@@ -9,7 +9,8 @@ from __future__ import annotations
 from dataclasses import asdict
 from typing import Any, Sequence
 
-from .contracts import CaseInput, TheoryCandidate, TheoryCritique, Variant
+from .contracts import (CaseInput, CritiqueProblem, TheoryCandidate, TheoryCritique,
+                        Variant)
 from .grounding import validate_link
 from .orchestrator import run_case
 
@@ -36,14 +37,16 @@ def _validate_critiques(case: CaseInput, originals: Sequence[TheoryCandidate],
         if target is None:
             issues.append("CRITIQUE_TARGET_NOT_ORIGINAL")
         else:
-            if not critique.issues:
-                issues.append("CRITIQUE_REQUIRES_AT_LEAST_ONE_GROUNDED_ISSUE")
             if critique.reviewer_provider == target.provider:
                 issues.append("CRITIQUE_MUST_BE_CROSS_PROVIDER")
             directions.add((critique.reviewer_provider, target.provider))
             element_ids = {item.element_id for item in target.elements}
             for item in critique.issues:
-                if item.target_element_id not in element_ids:
+                theory_level = (item.target_element_id == "__theory__" and
+                                item.problem_type in {CritiqueProblem.MISSING_CONDITION,
+                                                      CritiqueProblem.MISSING_EXCEPTION,
+                                                      CritiqueProblem.OTHER})
+                if item.target_element_id not in element_ids and not theory_level:
                     issues.append(f"{item.issue_id}:UNKNOWN_TARGET_ELEMENT")
                 valid, reason = validate_link(item.source_link, sources)
                 if not valid:
@@ -55,6 +58,7 @@ def _validate_critiques(case: CaseInput, originals: Sequence[TheoryCandidate],
             "issues": [{**asdict(item), "problem_type": item.problem_type.value}
                        for item in critique.issues],
             "unresolved": list(critique.unresolved),
+            "outcome": "NO_ISSUES_FOUND" if not critique.issues else "ISSUES_FOUND",
             "validation_issues": issues,
             "status": "VALID_GROUNDED_CRITIQUE" if not issues else "UNRESOLVED",
         })
@@ -112,10 +116,13 @@ def run_b3_cycle(case: CaseInput, originals: Sequence[TheoryCandidate],
     critique_records, cycle_issues = _validate_critiques(case, originals, critiques)
     original_index = {item.candidate_id: item for item in originals}
     target_issue_ids: dict[str, set[str]] = {}
+    valid_critique_targets = set()
     for critique, record in zip(critiques, critique_records):
         if record["status"] == "VALID_GROUNDED_CRITIQUE":
+            valid_critique_targets.add(critique.target_candidate_id)
             target_issue_ids.setdefault(critique.target_candidate_id, set()).update(
-                item.target_element_id for item in critique.issues)
+                item.target_element_id for item in critique.issues
+                if item.target_element_id != "__theory__")
     repair_diffs = []
     seen_parents = set()
     for repair in repairs:
@@ -128,14 +135,19 @@ def run_b3_cycle(case: CaseInput, originals: Sequence[TheoryCandidate],
             continue
         seen_parents.add(parent.candidate_id)
         diff = _repair_diff(parent, repair, target_issue_ids.get(parent.candidate_id, set()))
-        if not target_issue_ids.get(parent.candidate_id):
+        if parent.candidate_id not in valid_critique_targets:
             diff["invariant_violations"].append("REPAIR_LACKS_VALID_GROUNDED_CROSS_CRITIQUE")
             diff["status"] = "UNRESOLVED"
         if repair.provider != parent.provider:
             diff["invariant_violations"].append("REPAIR_AUTHOR_MUST_MATCH_PARENT_AUTHOR")
             diff["status"] = "UNRESOLVED"
         repair_diffs.append(diff)
-    missing_repairs = sorted(set(original_index) - seen_parents)
+    required_repairs = {target for target, ids in target_issue_ids.items() if ids}
+    required_repairs.update(
+        critique.target_candidate_id for critique, record in zip(critiques, critique_records)
+        if record["status"] == "VALID_GROUNDED_CRITIQUE" and any(
+            item.target_element_id == "__theory__" for item in critique.issues))
+    missing_repairs = sorted(required_repairs - seen_parents)
     if missing_repairs:
         cycle_issues.append("B3_MISSING_SEPARATE_AUTHOR_REPAIR")
     if any(item["status"] != "PRESERVATION_CHECK_PASSED" for item in repair_diffs):

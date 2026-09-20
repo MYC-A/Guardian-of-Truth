@@ -9,7 +9,8 @@ from experiments.architectures_v2.b_theory.contracts import (
 from experiments.architectures_v2.b_theory.langextract_grounder import MistralLangExtractGrounder
 from experiments.architectures_v2.b_theory.run_b3_cycle import parse_args, run
 from experiments.architectures_v2.b_theory.mutual_model_runner import (
-    ModelResult, generate_case, parse_args as model_parse_args, run_cli as run_model_cli)
+    ModelResult, _build_repair, generate_case, parse_args as model_parse_args,
+    run_cli as run_model_cli)
 
 
 TEXT = "Verify identity before refund."
@@ -207,7 +208,9 @@ def test_model_cycle_generates_both_directions_and_constrained_repairs():
     assert result["cycle_generation_status"] == "BIDIRECTIONAL_COMPLETE"
     assert len(result["critiques"]) == len(result["repairs"]) == 2
     assert all(build["changed_element_ids"] == ["e1"] for build in result["repair_builds"])
-    assert all(build["added_elements"][0]["marker"] == "MODEL_PROPOSED_ADDITION"
+    assert all(not build["added_elements"] for build in result["repair_builds"])
+    assert all(any(item.startswith("INVALID_OR_UNGROUNDED_ADDITION")
+                   for item in build["rejected_operations"])
                for build in result["repair_builds"])
     assert all(repair.elements[0].element_id == "e1" for repair in result["repairs"])
 
@@ -255,3 +258,100 @@ def test_model_runner_resumes_and_writes_consumer_files(tmp_path):
     assert (tmp_path / "model" / "critiques.jsonl").exists()
     assert (tmp_path / "model" / "mistral_repairs.jsonl").exists()
     assert (tmp_path / "model" / "nuextract_repairs.jsonl").exists()
+
+
+class _NoIssuesBackend(_FakeReviewBackend):
+    def critique(self, case, target):
+        return ModelResult({"issues": [], "unresolved": []},
+                           {"model_text": '{"issues":[]}'})
+
+    def repair(self, case, parent, critique):
+        raise AssertionError("empty valid critique must not trigger repair")
+
+
+def test_empty_bidirectional_critiques_are_success_and_skip_repairs():
+    result = generate_case(_case(), [_theory("mistral", "m"),
+                           _theory("nuextract", "n")],
+                           mistral=_NoIssuesBackend("mistral"),
+                           nuextract=_NoIssuesBackend("nuextract"))
+    assert result["cycle_generation_status"] == "BIDIRECTIONAL_COMPLETE"
+    assert len(result["critiques"]) == 2
+    assert result["repairs"] == []
+    repair_runs = [item for item in result["model_runs"] if item["operation"] == "REPAIR"]
+    assert all(item["status"] == "SKIPPED_NOT_NEEDED" for item in repair_runs)
+
+    empty_reviews = [TheoryCritique.parse({"critique_id": "n-m",
+                     "reviewer_provider": "nuextract", "target_candidate_id": "m",
+                     "issues": []}), TheoryCritique.parse({"critique_id": "m-n",
+                     "reviewer_provider": "mistral", "target_candidate_id": "n",
+                     "issues": []})]
+    validated = run_b3_cycle(_case(), [_theory("mistral", "m"),
+                             _theory("nuextract", "n")], empty_reviews, [])
+    assert validated["cycle_status"] == "READY_FOR_FORMAL_HANDOFF"
+    assert all(item["outcome"] == "NO_ISSUES_FOUND" for item in validated["critiques"])
+
+
+class _WrongOffsetsBackend(_FakeReviewBackend):
+    def critique(self, case, target):
+        parsed = {"issues": [{"target_element_id": "e1",
+                              "problem_type": "wrong_scope", "source_id": "policy:0",
+                              "start": 999, "end": 1000, "quote": TEXT,
+                              "explanation": "scope"}], "unresolved": []}
+        return ModelResult(parsed, {"model_text": "raw"})
+
+
+def test_unique_verbatim_quote_recovers_wrong_model_offsets():
+    result = generate_case(_case(), [_theory("mistral", "m"),
+                           _theory("nuextract", "n")],
+                           mistral=_WrongOffsetsBackend("mistral"),
+                           nuextract=_WrongOffsetsBackend("nuextract"))
+    assert all(item.source_link.start == 0 for critique in result["critiques"]
+               for item in critique.issues)
+    assert all(item["status"] == "UNIQUE_QUOTE_OFFSETS_RECOVERED"
+               for item in result["critique_binding_results"])
+
+
+class _AmbiguousQuoteBackend(_FakeReviewBackend):
+    def critique(self, case, target):
+        return ModelResult({"issues": [{"target_element_id": "e1",
+            "problem_type": "wrong_scope", "source_id": "policy:0",
+            "quote": "Repeat.", "explanation": "scope"}], "unresolved": []},
+            {"model_text": "raw"})
+
+
+def test_ambiguous_quote_is_technical_binding_issue_not_semantic_no_issues():
+    repeated = CaseInput.parse({"case_id": "repeat", "sources": [{
+        "source_id": "policy:0", "text": "Repeat. Repeat."}], "clauses": []})
+    originals = [TheoryCandidate.parse({"candidate_id": provider, "provider": provider,
+                  "elements": [{"element_id": "e1", "interpretation": "repeat",
+                  "source_links": [], "rule_ir": None}]})
+                 for provider in ("mistral", "nuextract")]
+    result = generate_case(repeated, originals,
+                           mistral=_AmbiguousQuoteBackend("mistral"),
+                           nuextract=_AmbiguousQuoteBackend("nuextract"))
+    assert result["critiques"] == []
+    assert result["capability_failures"] == []
+    assert len([item for item in result["technical_issues"]
+                if item["operation"] == "CRITIQUE"]) == 2
+    critique_runs = [item for item in result["model_runs"] if item["operation"] == "CRITIQUE"]
+    assert all(item["status"] == "TECHNICAL_BINDING_ISSUE" for item in critique_runs)
+
+
+def test_theory_level_grounded_omission_authorizes_addition_only_repair():
+    parent = TheoryCandidate.parse({"candidate_id": "empty", "provider": "mistral",
+                                    "elements": [], "clause_accounts": []})
+    critique = TheoryCritique.parse({"critique_id": "missing", "reviewer_provider": "nuextract",
+        "target_candidate_id": "empty", "issues": [{"issue_id": "missing:1",
+        "target_element_id": "__theory__", "problem_type": "other",
+        "source_link": {"source_id": "policy:0", "start": 0, "end": len(TEXT),
+                        "quote": TEXT}, "explanation": "missing policy element"}]})
+    result = ModelResult({"changes": [], "additions": [{
+        "element_id": "added:1", "interpretation": "identity required before refund",
+        "source_links": [{"source_id": "policy:0", "start": 0, "end": len(TEXT),
+                          "quote": TEXT}], "rule_ir": None,
+        "unresolved_components": []}], "unresolved": []}, {"model_text": "raw"})
+    repair, build = _build_repair(_case(), parent, critique, result)
+    assert repair is not None and [item.element_id for item in repair.elements] == ["added:1"]
+    assert build["changed_element_ids"] == []
+    assert build["added_elements"] == [{"element_id": "added:1",
+                                         "marker": "MODEL_PROPOSED_ADDITION"}]

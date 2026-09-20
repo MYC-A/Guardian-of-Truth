@@ -14,7 +14,7 @@ from typing import Protocol
 
 from .contracts import (CaseInput, CritiqueIssue, TheoryCandidate, TheoryCritique,
                         TheoryElement)
-from .grounding import validate_link
+from .grounding import resolve_unique_quote, validate_link
 from .run_b_theory import _candidate_map, _rows, _sha
 
 
@@ -178,39 +178,56 @@ def _redact(value):
 
 
 def _critique(case: CaseInput, backend: ReviewBackend, target: TheoryCandidate,
-              result: ModelResult) -> TheoryCritique:
+              result: ModelResult) -> tuple[TheoryCritique, list[dict]]:
     if result.parsed is None:
         raise ValueError(result.error or "model returned no parsed critique")
     raw_issues = result.parsed.get("issues")
-    if not isinstance(raw_issues, list) or not raw_issues:
-        raise ValueError("model returned no critique issues")
-    issues = []
+    if not isinstance(raw_issues, list):
+        raise ValueError("model critique issues must be a list")
+    issues, bindings, technical = [], [], []
+    sources = {item.source_id: item for item in case.sources}
     for index, item in enumerate(raw_issues):
         if not isinstance(item, dict):
             raise ValueError("critique issue is not an object")
         wire = dict(item)
         wire["issue_id"] = wire.get("issue_id") or (
             f"{backend.provider}:{target.candidate_id}:{index}")
-        wire["source_link"] = wire.get("source_link") or {
-            key: wire.get(key) for key in ("source_id", "start", "end", "quote")}
+        supplied = wire.get("source_link") or wire
+        link, method = resolve_unique_quote(
+            source_id=supplied.get("source_id"), quote=supplied.get("quote"),
+            start=supplied.get("start"), end=supplied.get("end"), sources=sources)
+        bindings.append({"issue_id": wire["issue_id"], "status": method,
+                         "technical": link is None})
+        if link is None:
+            technical.append(f"TECHNICAL_QUOTE_BINDING:{wire['issue_id']}:{method}")
+            continue
+        wire["source_link"] = asdict(link)
         issues.append(CritiqueIssue.parse(wire))
     unresolved = result.parsed.get("unresolved", [])
-    return TheoryCritique.parse({
+    unresolved = unresolved if isinstance(unresolved, list) else [str(unresolved)]
+    if raw_issues and not issues:
+        raise ValueError("TECHNICAL_BINDING_ISSUE:" + ";".join(technical))
+    critique = TheoryCritique.parse({
         "critique_id": f"{backend.provider}:critique:{target.candidate_id}",
         "reviewer_provider": backend.provider, "target_candidate_id": target.candidate_id,
         "issues": [{**asdict(item), "problem_type": item.problem_type.value}
                    for item in issues],
-        "unresolved": unresolved if isinstance(unresolved, list) else [str(unresolved)],
+        "unresolved": [*unresolved, *technical],
     })
+    return critique, bindings
 
 
 def _build_repair(case: CaseInput, parent: TheoryCandidate, critique: TheoryCritique,
-                  result: ModelResult) -> tuple[TheoryCandidate, dict]:
+                  result: ModelResult) -> tuple[TheoryCandidate | None, dict]:
     if result.parsed is None:
         raise ValueError(result.error or "model returned no parsed repair")
     sources = {item.source_id: item for item in case.sources}
     grounded_targets = {issue.target_element_id for issue in critique.issues
-                        if validate_link(issue.source_link, sources)[0]}
+                        if issue.target_element_id != "__theory__" and
+                        validate_link(issue.source_link, sources)[0]}
+    addition_authorized = any(
+        issue.target_element_id == "__theory__" and validate_link(issue.source_link, sources)[0]
+        for issue in critique.issues)
     parent_map = {item.element_id: item for item in parent.elements}
     changed, rejected = {}, []
     for raw in result.parsed.get("changes", []):
@@ -233,19 +250,30 @@ def _build_repair(case: CaseInput, parent: TheoryCandidate, critique: TheoryCrit
         except (TypeError, ValueError) as exc:
             rejected.append(f"INVALID_ADDITION:{exc}")
             continue
-        if element.element_id in parent_map or not element.source_links or not all(
-                validate_link(link, sources)[0] for link in element.source_links):
+        if (not addition_authorized or element.element_id in parent_map or
+                not element.source_links or not all(
+                validate_link(link, sources)[0] for link in element.source_links)):
             rejected.append(f"INVALID_OR_UNGROUNDED_ADDITION:{element.element_id}")
         else:
             additions.append(element)
-    if not changed:
-        raise ValueError("model produced no valid grounded targeted parent change")
+    raw_changes, raw_additions = result.parsed.get("changes", []), result.parsed.get("additions", [])
+    if not raw_changes and not raw_additions:
+        return None, {"parent_candidate_id": parent.candidate_id,
+                      "provider": parent.provider,
+                      "status": "SKIPPED_NOT_NEEDED", "changed_element_ids": [],
+                      "added_elements": [], "retained_unchanged_element_ids": [
+                          item.element_id for item in parent.elements],
+                      "rejected_operations": [],
+                      "unresolved": result.parsed.get("unresolved", [])}
+    if not changed and not additions:
+        raise ValueError("model produced no authorized grounded repair operation")
     elements = tuple(changed.get(item.element_id, item) for item in parent.elements) + tuple(additions)
     repair_id = f"{parent.provider}:repair:{parent.candidate_id}:{_digest(result.parsed)[:12]}"
     repair = replace(parent, candidate_id=repair_id, elements=elements,
                      parent_candidate_id=parent.candidate_id)
     return repair, {
         "parent_candidate_id": parent.candidate_id,
+        "provider": parent.provider,
         "changed_element_ids": sorted(changed),
         "added_elements": [{"element_id": item.element_id,
                             "marker": "MODEL_PROPOSED_ADDITION"} for item in additions],
@@ -253,6 +281,7 @@ def _build_repair(case: CaseInput, parent: TheoryCandidate, critique: TheoryCrit
                                             if item.element_id not in changed],
         "rejected_operations": rejected,
         "unresolved": result.parsed.get("unresolved", []),
+        "status": "REPAIR_BUILT",
     }
 
 
@@ -274,7 +303,9 @@ def generate_case(case: CaseInput, originals: list[TheoryCandidate], *,
     if len(originals) != 2 or set(by_provider) != {"mistral", "nuextract"}:
         raise ValueError("model runner requires one Mistral and one NuExtract original")
     backends = {"mistral": mistral, "nuextract": nuextract}
-    critiques, repairs, builds, runs, failures = [], [], [], [], []
+    critiques, repairs, builds, runs, failures, technical_issues = [], [], [], [], [], []
+    review_bindings = []
+    technical_targets = set()
     for reviewer, target_provider in (("mistral", "nuextract"),
                                       ("nuextract", "mistral")):
         backend, target = backends[reviewer], by_provider[target_provider]
@@ -282,43 +313,83 @@ def generate_case(case: CaseInput, originals: list[TheoryCandidate], *,
         result = backend.critique(case, target)
         runs.append(_run_metadata(backend, "CRITIQUE", result, started))
         try:
-            critique = _critique(case, backend, target, result)
+            critique, bindings = _critique(case, backend, target, result)
             sources = {item.source_id: item for item in case.sources}
             if not all(validate_link(item.source_link, sources)[0] for item in critique.issues):
                 raise ValueError("critique contains non-exact source quote/offset")
             critiques.append(critique)
+            review_bindings.extend(bindings)
+            if any(item["technical"] for item in bindings):
+                runs[-1]["status"] = "EXECUTED_WITH_BINDING_ISSUES"
         except (TypeError, ValueError) as exc:
             reason = _redact(f"{type(exc).__name__}: {exc}")
-            runs[-1]["status"] = "CAPABILITY_FAILURE"
+            runs[-1]["status"] = ("TECHNICAL_BINDING_ISSUE"
+                                  if "TECHNICAL_BINDING_ISSUE" in reason
+                                  else "CAPABILITY_FAILURE")
             runs[-1]["error"] = reason
-            failures.append({"provider": reviewer, "operation": "CRITIQUE",
-                             "reason": reason})
+            record = {"provider": reviewer, "operation": "CRITIQUE", "reason": reason}
+            if "TECHNICAL_BINDING_ISSUE" in reason:
+                technical_issues.append(record)
+                technical_targets.add(target.candidate_id)
+            else:
+                failures.append(record)
     critique_by_target = {item.target_candidate_id: item for item in critiques}
     for provider in ("mistral", "nuextract"):
         backend, parent = backends[provider], by_provider[provider]
         critique = critique_by_target.get(parent.candidate_id)
         if critique is None:
-            failures.append({"provider": provider, "operation": "REPAIR",
-                             "reason": "NO_VALID_CROSS_PROVIDER_CRITIQUE"})
+            if parent.candidate_id in technical_targets:
+                technical_issues.append({"provider": provider, "operation": "REPAIR",
+                                         "reason": "CROSS_CRITIQUE_BINDING_UNRESOLVED"})
+                runs.append({"provider": backend.provider, "model_id": backend.model_id,
+                             "dependency": backend.dependency, "operation": "REPAIR",
+                             "status": "SKIPPED_BINDING_UNRESOLVED", "error": None,
+                             "latency_seconds": 0.0, "raw_response": None,
+                             "source_raw_sha256": None, "raw_sha256": None})
+            else:
+                failures.append({"provider": provider, "operation": "REPAIR",
+                                 "reason": "NO_VALID_CROSS_PROVIDER_CRITIQUE"})
+            continue
+        if not critique.issues:
+            runs.append({"provider": backend.provider, "model_id": backend.model_id,
+                         "dependency": backend.dependency, "operation": "REPAIR",
+                         "status": "SKIPPED_NOT_NEEDED", "error": None,
+                         "latency_seconds": 0.0, "raw_response": None,
+                         "source_raw_sha256": None, "raw_sha256": None})
+            builds.append({"parent_candidate_id": parent.candidate_id,
+                           "provider": parent.provider,
+                           "status": "SKIPPED_NOT_NEEDED", "changed_element_ids": [],
+                           "added_elements": [], "retained_unchanged_element_ids": [
+                               item.element_id for item in parent.elements],
+                           "rejected_operations": [], "unresolved": []})
             continue
         started = time.perf_counter()
         result = backend.repair(case, parent, critique)
         runs.append(_run_metadata(backend, "REPAIR", result, started))
         try:
             repair, build = _build_repair(case, parent, critique, result)
-            repairs.append(repair)
             builds.append(build)
+            if repair is None:
+                runs[-1]["status"] = "SKIPPED_NOT_NEEDED"
+            else:
+                repairs.append(repair)
         except (TypeError, ValueError) as exc:
             reason = _redact(f"{type(exc).__name__}: {exc}")
             runs[-1]["status"] = "CAPABILITY_FAILURE"
             runs[-1]["error"] = reason
             failures.append({"provider": provider, "operation": "REPAIR",
                              "reason": reason})
+    reviews_complete = len(critiques) == 2
     return {"case_id": case.case_id, "critiques": critiques, "repairs": repairs,
             "repair_builds": builds, "model_runs": runs,
+            "critique_binding_results": review_bindings,
+            "technical_issues": technical_issues,
             "capability_failures": failures,
-            "cycle_generation_status": ("BIDIRECTIONAL_COMPLETE" if len(critiques) == 2
-                                        and len(repairs) == 2 else "ONE_SIDED_OR_UNRESOLVED")}
+            "cycle_generation_status": ("BIDIRECTIONAL_COMPLETE" if reviews_complete and
+                                        all(item["status"] in {"REPAIR_BUILT",
+                                            "SKIPPED_NOT_NEEDED"} for item in builds)
+                                        and len(builds) == 2 else
+                                        "ONE_SIDED_OR_UNRESOLVED")}
 
 
 def _wire(value):
@@ -371,6 +442,7 @@ def run_cli(args, *, mistral=None, nuextract=None) -> int:
             raw_by_operation.setdefault(run["operation"], []).append(run)
         critique_rows.append({"case_id": row["case_id"], "critiques": row["critiques"],
                               "raw_responses": raw_by_operation.get("CRITIQUE", []),
+                              "technical_issues": row.get("technical_issues", []),
                               "capability_failures": row["capability_failures"]})
         for provider in repair_rows:
             candidates = [item for item in row["repairs"] if item["provider"] == provider]
@@ -379,8 +451,7 @@ def run_cli(args, *, mistral=None, nuextract=None) -> int:
                 "raw_responses": [item for item in raw_by_operation.get("REPAIR", [])
                                   if item["provider"] == provider],
                 "repair_builds": [item for item in row["repair_builds"]
-                                  if any(candidate["parent_candidate_id"] ==
-                                         item["parent_candidate_id"] for candidate in candidates)],
+                                  if item.get("provider") == provider],
             })
     for path, rows_to_write in ((output_dir / "critiques.jsonl", critique_rows),
                                 (output_dir / "mistral_repairs.jsonl", repair_rows["mistral"]),
