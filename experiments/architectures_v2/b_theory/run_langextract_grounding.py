@@ -28,13 +28,17 @@ def _default(value):
 
 def run_cli(args, *, grounder=None) -> int:
     case_path = Path(args.input).resolve(strict=True)
-    provider_path = Path(args.provider_output).resolve(strict=True)
+    provider_path = (Path(args.provider_output).resolve(strict=True)
+                     if args.provider_output else None)
+    if args.mode == "grounding" and provider_path is None:
+        raise ValueError("--provider-output is required in grounding mode")
     output = Path(args.output).resolve()
     cases = {item.case_id: item for item in
              (CaseInput.parse(row) for row in _rows(case_path))}
     fingerprint = hashlib.sha256(
         (hashlib.sha256(case_path.read_bytes()).hexdigest() +
-         hashlib.sha256(provider_path.read_bytes()).hexdigest() + args.model).encode()).hexdigest()
+         (hashlib.sha256(provider_path.read_bytes()).hexdigest() if provider_path else "") +
+         args.model + args.mode).encode()).hexdigest()
     completed = set()
     if output.exists():
         prior = _rows(output)
@@ -45,6 +49,24 @@ def run_cli(args, *, grounder=None) -> int:
         model_id=args.model, api_key_env=args.api_key_env)
     output.parent.mkdir(parents=True, exist_ok=True)
     with output.open("a", encoding="utf-8", newline="\n") as destination:
+        if args.mode == "direct-original":
+            for case_id, case in cases.items():
+                if case_id in completed:
+                    continue
+                started = time.perf_counter()
+                record = {
+                    "case_id": case_id, "gap_evidence": grounder.extract_original(case),
+                    "langextract": {
+                        "status": "EXECUTED", "model": args.model,
+                        "mode": "DIRECT_ORIGINAL_GAP_EVIDENCE",
+                        "dependency_marker": "LANGEXTRACT_DEPENDS_ON_MISTRAL_BACKEND",
+                        "independent_from_mistral": False,
+                        "latency_seconds": round(time.perf_counter() - started, 6),
+                    }, "run_fingerprint": fingerprint,
+                }
+                destination.write(json.dumps(record, ensure_ascii=False, sort_keys=True) + "\n")
+                destination.flush()
+            return 0
         for row in _rows(provider_path):
             case_id = row.get("case_id")
             if case_id in completed:
@@ -70,8 +92,10 @@ def run_cli(args, *, grounder=None) -> int:
 def parse_args(argv=None):
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument("--input", required=True, help="CaseInput JSONL")
-    parser.add_argument("--provider-output", required=True)
+    parser.add_argument("--provider-output")
     parser.add_argument("--output", required=True)
+    parser.add_argument("--mode", choices=["grounding", "direct-original"],
+                        default="grounding")
     parser.add_argument("--model", default="ministral-14b-latest")
     parser.add_argument("--api-key-env", default="MISTRAL_API_KEY")
     return parser.parse_args(argv)

@@ -89,7 +89,7 @@ def run_formal_handoff(case: dict, b_record: dict, *, run_arm_fn=None) -> dict:
     tools = _tool_names(case["prompt"])
     alternatives = []
     for theory in b_record.get("candidates", []):
-        rules, losses = [], []
+        rules, losses, binding_results = [], [], []
         eligible_theory = theory.get("candidate_status") == "ELIGIBLE_HYPOTHESIS"
         if not eligible_theory:
             losses.append({"element_id": None, "status": "REJECTED",
@@ -107,10 +107,17 @@ def run_formal_handoff(case: dict, b_record: dict, *, run_arm_fn=None) -> dict:
                 losses.append({"element_id": element.get("element_id"),
                                "status": "REJECTED", "reason": reason})
                 continue
+            binding = _binding(rule, tools)
+            binding_results.append({
+                "element_id": element.get("element_id"),
+                "rule_id": rule["rule_id"], "binding": binding,
+                "reason": ("EXACT_CATALOG_IDENTITY_MATCH" if binding["status"] == "BOUND"
+                           else "NO_UNIQUE_EXACT_CATALOG_IDENTITY_MATCH"),
+            })
             rules.append({"rule_id": rule["rule_id"],
                           "extractor": (rule.get("provenance") or {}).get(
                               "extractor", "deterministic"),
-                          "rule": rule, "binding": _binding(rule, tools)})
+                          "rule": rule, "binding": binding})
         exact_bound = sum(item["binding"]["status"] == "BOUND" for item in rules)
         if rules:
             phi = {"case_id": case["id"], "frontend_hash": "architecture-b-exact-handoff",
@@ -122,8 +129,26 @@ def run_formal_handoff(case: dict, b_record: dict, *, run_arm_fn=None) -> dict:
                       "runtime_s": 0.0, "rules_lowered": 0, "interpretations": 0}
         alternatives.append({
             "candidate_id": theory.get("candidate_id"), "provider": theory.get("provider"),
+            "alternative_kind": theory.get("alternative_kind", "ORIGINAL"),
+            "parent_candidate_id": theory.get("parent_candidate_id"),
+            "critique_ids": theory.get("critique_ids", []),
             "representable_rules": len(rules), "exact_bound_rules": exact_bound,
-            "losses": losses, "n5": result,
+            "losses": losses, "binding_results": binding_results, "n5": result,
+            "lowering": {
+                "rules_submitted": len(rules),
+                "rules_lowered": result.get("rules_lowered", 0),
+                "status": ("LOWERED" if result.get("rules_lowered", 0) else "UNRESOLVED"),
+                "reasons": result.get("markers", []) or
+                           ([] if result.get("rules_lowered", 0) else
+                            ["N5_REPORTED_NO_LOWERED_RULES"]),
+            },
+            "checker": {
+                "ok": result.get("checker_ok"),
+                "failures": result.get("checker_failures", []),
+                "reason": ("CHECKER_ACCEPTED" if result.get("checker_ok") is True else
+                           "CHECKER_REJECTED" if result.get("checker_ok") is False else
+                           "CHECKER_NOT_RUN_OR_UNRESOLVED"),
+            },
         })
     return {"case_id": case["id"], "variant": b_record.get("variant"),
             "alternatives": alternatives,

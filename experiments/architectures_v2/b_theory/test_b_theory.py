@@ -91,23 +91,23 @@ def test_b2_non_policy_requires_reason():
         _candidate(accounts=[{"clause_id": "cl0", "status": "non_policy_with_reason"}])
 
 
-def test_b3_preserves_parent_and_independent_repair_as_alternatives():
+def test_b3_preserves_parent_and_own_author_repair_as_alternatives():
     parent = _candidate()
-    repair = _candidate("nuextract", "nuextract-repair", parent=parent.candidate_id,
-                        wire=_wire("nuextract:1"))
+    repair = _candidate("mistral", "mistral-repair", parent=parent.candidate_id,
+                        wire=_wire("mistral:2"))
     result = run_case(_case(), [parent], Variant.B3, repairs=[repair])
     assert [row["candidate_id"] for row in result["candidates"]] == [
-        "mistral-theory", "nuextract-repair"]
-    assert "B3_REVIEWER_MUST_BE_INDEPENDENT" not in result["candidates"][1]["issues"]
+        "mistral-theory", "mistral-repair"]
+    assert "B3_REPAIR_AUTHOR_MUST_MATCH_PARENT_AUTHOR" not in result["candidates"][1]["issues"]
     assert "B3_REPAIR_REQUIRES_PARENT" not in result["candidates"][0]["issues"]
 
 
-def test_b3_rejects_self_review():
+def test_b3_rejects_repair_authored_by_other_provider():
     parent = _candidate()
-    repair = _candidate("mistral", "repair", parent=parent.candidate_id,
-                        wire=_wire("mistral:2"))
+    repair = _candidate("nuextract", "repair", parent=parent.candidate_id,
+                        wire=_wire("nuextract:2"))
     result = run_case(_case(), [parent], Variant.B3, repairs=[repair])
-    assert "B3_REVIEWER_MUST_BE_INDEPENDENT" in result["candidates"][1]["issues"]
+    assert "B3_REPAIR_AUTHOR_MUST_MATCH_PARENT_AUTHOR" in result["candidates"][1]["issues"]
 
 
 def test_fullarch_boundary_reports_temporal_anchor_loss():

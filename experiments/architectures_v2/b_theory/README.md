@@ -51,7 +51,40 @@ Variants:
 * `b2_clause_coverage` adds the closed ledger states `accounted_for`,
   `non_policy_with_reason`, and `unresolved`.
 * `b3_mutual_repair` accepts separately generated repair candidates, requires
-  an independent provider and a parent reference, then retains both readings.
+  bidirectional cross-provider critiques and an own-author repair for each
+  original, then retains all four readings. Every critique issue carries an
+  exact original-policy quote/offset and a typed problem such as
+  `missing_condition`, `wrong_modality`, or `invented_requirement`.
+
+The dedicated pilot runner accepts exactly 3--5 cases. It checks that neither
+repair deletes a parent element, changes an uncriticised element, or drops a
+clause account. It stores originals, critiques, repairs, unresolved questions,
+parent links, semantic diffs, and raw pre-normalization responses with hashes.
+Raw output is redacted for key values; normalized RuleCandidate wire is never
+labelled as raw.
+
+```text
+python -m experiments.architectures_v2.b_theory.run_b3_cycle \
+  --input pilot_cases.jsonl \
+  --original-output mistral=mistral.jsonl \
+  --original-output nuextract=nuextract.jsonl \
+  --critique-output critiques.jsonl \
+  --repair-output mistral=mistral_repairs.jsonl \
+  --repair-output nuextract=nuextract_repairs.jsonl \
+  --gap-evidence langextract_gaps.jsonl --output-dir outputs/b3
+```
+
+LangExtract also has a direct-original mode. It does not see either theory and
+does not repair them. Its output separates exact quote validity from unverified
+interpretation, relation correctness, and completeness. Because this adapter
+uses Mistral, every row carries
+`LANGEXTRACT_DEPENDS_ON_MISTRAL_BACKEND` and is not counted as independent.
+
+```text
+python -m experiments.architectures_v2.b_theory.run_langextract_grounding \
+  --mode direct-original --input pilot_cases.jsonl \
+  --output langextract_gaps.jsonl
+```
 
 Example:
 
@@ -80,6 +113,7 @@ python -m experiments.architectures_v2.b_theory.formal_handoff \
 ```
 
 The handoff constructs only exact catalog identity bindings and calls the
-existing Full Architecture `run_arm(..., "N5")`. It logs representability,
-exact binding count, compiler markers, Clingo status, and certificate checker
-results. Alternatives are never unioned.
+existing Full Architecture `run_arm(..., "N5")`. Every original and repair is
+submitted as a separate alternative. The result retains concrete per-rule
+binding reasons, boundary losses, lowering markers, and checker failures.
+Alternatives are never unioned.

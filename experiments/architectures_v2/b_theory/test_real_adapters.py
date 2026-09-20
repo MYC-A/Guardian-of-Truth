@@ -10,6 +10,7 @@ from experiments.architectures_v2.b_theory.formal_handoff import run_formal_hand
 from experiments.architectures_v2.b_theory.langextract_grounder import MistralLangExtractGrounder
 from experiments.architectures_v2.b_theory.orchestrator import run_case
 from experiments.architectures_v2.b_theory.provider_runner import run_provider_batch
+from experiments.architectures_v2.b_theory.raw_capture import CapturedExtraction
 
 
 TEXT = "Verify identity before refund."
@@ -55,8 +56,10 @@ def test_mistral_factory_is_injected_and_wire_is_hashed():
 
     class FakeExtractor:
         client = FakeClient()
-        def extract(self, **kwargs):
-            return (_wire_candidate(),)
+        def extract_with_raw(self, **kwargs):
+            return CapturedExtraction((_wire_candidate(),), {
+                "kind": "MISTRAL_COMPLETION_PRE_NORMALIZATION",
+                "completion_content": '{"rules": []}', "parsed_object": {"rules": []}})
 
     rows = run_provider_batch([_case()], ["mistral"],
         mistral_model="ministral-14b-latest", nuextract_model="unused",
@@ -65,6 +68,9 @@ def test_mistral_factory_is_injected_and_wire_is_hashed():
     run = rows[0]["provider_runs"]["mistral"]
     assert run["status"] == "EXECUTED"
     assert len(run["wire_sha256"]) == 64
+    assert run["raw_available"] is True
+    assert run["raw_responses"][0]["response"]["completion_content"] == '{"rules": []}'
+    assert len(run["raw_sha256"]) == 64
     assert "api" not in str(run).casefold()
 
 

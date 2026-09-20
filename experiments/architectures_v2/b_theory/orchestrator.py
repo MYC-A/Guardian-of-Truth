@@ -66,8 +66,8 @@ def _candidate_record(candidate: TheoryCandidate, case: CaseInput,
             issues.append("B3_REPAIR_REQUIRES_PARENT")
         elif candidate.parent_candidate_id not in candidate_index:
             issues.append("B3_PARENT_NOT_FOUND")
-        elif candidate_index[candidate.parent_candidate_id].provider == candidate.provider:
-            issues.append("B3_REVIEWER_MUST_BE_INDEPENDENT")
+        elif candidate_index[candidate.parent_candidate_id].provider != candidate.provider:
+            issues.append("B3_REPAIR_AUTHOR_MUST_MATCH_PARENT_AUTHOR")
     require_grounding = variant in {Variant.B1, Variant.B2, Variant.B3}
     elements = [_element_record(item, sources, require_grounding=require_grounding)
                 for item in candidate.elements]

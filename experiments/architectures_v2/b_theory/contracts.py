@@ -20,6 +20,18 @@ class AccountStatus(str, Enum):
     UNRESOLVED = "unresolved"
 
 
+class CritiqueProblem(str, Enum):
+    MISSING_CONDITION = "missing_condition"
+    MISSING_EXCEPTION = "missing_exception"
+    WRONG_MODALITY = "wrong_modality"
+    WRONG_ACTOR = "wrong_actor"
+    WRONG_TIME = "wrong_time"
+    WRONG_SCOPE = "wrong_scope"
+    INVENTED_REQUIREMENT = "invented_requirement"
+    WRONG_RELATION = "wrong_relation"
+    OTHER = "other"
+
+
 @dataclass(frozen=True)
 class SourceDocument:
     source_id: str
@@ -175,6 +187,62 @@ class TheoryCandidate:
         if len(clause_ids) != len(set(clause_ids)):
             raise ValueError(f"{candidate_id}: duplicate clause account")
         return parsed
+
+
+@dataclass(frozen=True)
+class CritiqueIssue:
+    issue_id: str
+    target_element_id: str
+    problem_type: CritiqueProblem
+    source_link: SourceLink
+    explanation: str
+
+    @classmethod
+    def parse(cls, value: Mapping[str, Any]) -> "CritiqueIssue":
+        issue_id = value.get("issue_id")
+        target = value.get("target_element_id")
+        explanation = value.get("explanation")
+        if not isinstance(issue_id, str) or not issue_id:
+            raise ValueError("critique issue requires issue_id")
+        if not isinstance(target, str) or not target:
+            raise ValueError(f"{issue_id}: target_element_id is required")
+        if not isinstance(explanation, str) or not explanation.strip():
+            raise ValueError(f"{issue_id}: explanation is required")
+        try:
+            problem = CritiqueProblem(value["problem_type"])
+        except (KeyError, ValueError) as exc:
+            raise ValueError(f"{issue_id}: invalid problem_type") from exc
+        raw_link = value.get("source_link")
+        if not isinstance(raw_link, Mapping):
+            raise ValueError(f"{issue_id}: source_link is required")
+        return cls(issue_id, target, problem, SourceLink.parse(raw_link), explanation)
+
+
+@dataclass(frozen=True)
+class TheoryCritique:
+    critique_id: str
+    reviewer_provider: str
+    target_candidate_id: str
+    issues: tuple[CritiqueIssue, ...]
+    unresolved: tuple[str, ...] = ()
+
+    @classmethod
+    def parse(cls, value: Mapping[str, Any]) -> "TheoryCritique":
+        critique_id = value.get("critique_id")
+        reviewer = value.get("reviewer_provider")
+        target = value.get("target_candidate_id")
+        if not all(isinstance(item, str) and item for item in
+                   (critique_id, reviewer, target)):
+            raise ValueError("critique_id, reviewer_provider and target_candidate_id are required")
+        raw_issues, unresolved = value.get("issues", []), value.get("unresolved", [])
+        if not isinstance(raw_issues, list) or not isinstance(unresolved, list):
+            raise ValueError(f"{critique_id}: issues/unresolved must be lists")
+        if not all(isinstance(item, str) and item for item in unresolved):
+            raise ValueError(f"{critique_id}: unresolved entries must be strings")
+        issues = tuple(CritiqueIssue.parse(item) for item in raw_issues)
+        if len({item.issue_id for item in issues}) != len(issues):
+            raise ValueError(f"{critique_id}: duplicate issue_id")
+        return cls(critique_id, reviewer, target, issues, tuple(unresolved))
 
 
 @dataclass(frozen=True)

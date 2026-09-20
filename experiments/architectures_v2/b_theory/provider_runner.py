@@ -54,6 +54,31 @@ def _safe_error(exc: Exception, secrets: Sequence[str] = ()) -> str:
     return message[:1000]
 
 
+def _redact(value: Any, secrets: Sequence[str]) -> Any:
+    if isinstance(value, str):
+        for secret in secrets:
+            if secret:
+                value = value.replace(secret, "[REDACTED]")
+        return value
+    if isinstance(value, list):
+        return [_redact(item, secrets) for item in value]
+    if isinstance(value, tuple):
+        return [_redact(item, secrets) for item in value]
+    if isinstance(value, dict):
+        return {key: _redact(item, secrets) for key, item in value.items()
+                if "api_key" not in str(key).casefold()}
+    return value
+
+
+def _extract(extractor, **kwargs):
+    """Return normalized candidates and a genuinely pre-normalization response."""
+    if hasattr(extractor, "extract_with_raw"):
+        captured = extractor.extract_with_raw(**kwargs)
+        return list(captured.candidates), captured.raw_response
+    # Kept only for injected legacy fakes. Never mislabel normalized wire as raw.
+    return list(extractor.extract(**kwargs)), None
+
+
 def run_provider_batch(cases: Sequence[CaseInput], providers: Sequence[str], *,
                        mistral_model: str, nuextract_model: str,
                        gliner_model: str, gliner_python: str,
@@ -78,43 +103,51 @@ def run_provider_batch(cases: Sequence[CaseInput], providers: Sequence[str], *,
     items = _sources(cases)
 
     if "mistral" in selected:
-        from guardian_truth.semantic_pipeline_v1.models.mistral import MistralRuleExtractor
-        factory = mistral_factory or (lambda: MistralRuleExtractor(
+        from .raw_capture import RawMistralExtractor
+        factory = mistral_factory or (lambda: RawMistralExtractor(
             model=mistral_model, api_key_env=api_key_env))
         extractor = factory()
         if hasattr(extractor, "client") and hasattr(extractor.client, "validate_configuration"):
             extractor.client.validate_configuration()
         for case in cases:
-            started, candidates, error = time.perf_counter(), [], None
+            started, candidates, raw_responses, error = time.perf_counter(), [], [], None
             try:
                 for source in case.sources:
-                    candidates.extend(extractor.extract(
-                        segment_id=source.source_id, source_text=source.text, context=()))
+                    extracted, raw = _extract(extractor, segment_id=source.source_id,
+                                              source_text=source.text, context=())
+                    candidates.extend(extracted)
+                    if raw is not None:
+                        raw_responses.append({"source_id": source.source_id, "response": raw})
             except Exception as exc:
                 error = _safe_error(exc, (os.environ.get(api_key_env, ""),))
             _store(rows[case.case_id], "mistral", candidates, started, error,
-                   {"model": mistral_model})
+                   {"model": mistral_model}, raw_responses,
+                   secrets=(os.environ.get(api_key_env, ""),))
 
     if "nuextract" in selected:
         from guardian_truth.semantic_pipeline_v1.models.nuextract import NuExtractRuleExtractor
+        from .raw_capture import RawNuExtractExtractor
         loader = nuextract_loader or NuExtractRuleExtractor.load
-        factory = nuextract_factory or (lambda model, processor: NuExtractRuleExtractor(
+        factory = nuextract_factory or (lambda model, processor: RawNuExtractExtractor(
             model_name=nuextract_model, model=model, processor=processor))
         load_started = time.perf_counter()
         model, processor = loader(nuextract_model, device)
         load_seconds = time.perf_counter() - load_started
         extractor = factory(model, processor)
         for case in cases:
-            started, candidates, error = time.perf_counter(), [], None
+            started, candidates, raw_responses, error = time.perf_counter(), [], [], None
             try:
                 for source in case.sources:
-                    candidates.extend(extractor.extract(
-                        segment_id=source.source_id, source_text=source.text, context=()))
+                    extracted, raw = _extract(extractor, segment_id=source.source_id,
+                                              source_text=source.text, context=())
+                    candidates.extend(extracted)
+                    if raw is not None:
+                        raw_responses.append({"source_id": source.source_id, "response": raw})
             except Exception as exc:
                 error = _safe_error(exc)
             _store(rows[case.case_id], "nuextract", candidates, started, error,
                    {"model": nuextract_model, "batch_model_load_seconds": round(load_seconds, 6),
-                    "batch_model_load_count": 1})
+                    "batch_model_load_count": 1}, raw_responses)
 
     if "gliner" in selected:
         from guardian_truth.semantic_pipeline_v1.models.gliner_optional import (
@@ -141,20 +174,28 @@ def run_provider_batch(cases: Sequence[CaseInput], providers: Sequence[str], *,
             _store(rows[case.case_id], "gliner", candidates, started, error,
                    {"model": gliner_model, "role": "EVIDENCE_ONLY_CLAUSE_GAP_HINT",
                     "batch_response_metadata": {key: value for key, value in (response or {}).items()
-                                                if key != "rows"}})
+                                                if key != "rows"}},
+                   ([{"response": returned.get(f"{case.case_id}\0{source.source_id}")}
+                     for source in case.sources] if response is not None else []))
     return [rows[case.case_id] for case in cases]
 
 
 def _store(row: dict, provider: str, candidates, started: float,
-           error: str | None, extra: dict) -> None:
+           error: str | None, extra: dict, raw_responses=(), secrets=()) -> None:
     wire = [to_wire(item) for item in candidates]
     status = "EXECUTED" if error is None else "FAILED"
+    raw = list(raw_responses)
+    redacted = _redact(raw, secrets)
     row["provider_runs"][provider] = {
         "status": status, "error": error,
         "latency_seconds": round(time.perf_counter() - started, 6),
         "wire_sha256": _digest(wire), "wire_candidates": wire,
-        "raw_available": False,
-        "raw_note": "donor adapter returns normalized RuleCandidate; provider raw is cache-owned",
+        "raw_available": bool(raw),
+        "raw_responses": redacted,
+        "raw_sha256": _digest(raw) if raw else None,
+        "redacted_raw_sha256": _digest(redacted) if raw else None,
+        "raw_note": ("captured before RuleCandidate normalization"
+                     if raw else "legacy injected extractor did not expose pre-normalization raw"),
         **extra,
     }
     if error is None:

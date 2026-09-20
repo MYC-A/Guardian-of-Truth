@@ -98,3 +98,53 @@ class MistralLangExtractGrounder:
             links = tuple(proposals) if len(proposals) == 1 else ()
             grounded.append(replace(element, source_links=links))
         return replace(candidate, elements=tuple(grounded))
+
+    def extract_original(self, case: CaseInput) -> list[dict]:
+        """Extract direct source observations as gap evidence, never as rules.
+
+        This mode intentionally does not receive either provider theory.  It
+        can reveal missed spans, while interpretation, relations and coverage
+        remain separately unverified.
+        """
+        model, extract_fn = self._runtime()
+        evidence = []
+        for source in case.sources:
+            result = extract_fn(
+                text_or_documents=source.text,
+                prompt_description=(
+                    "Extract every exact policy fragment directly from the original text. "
+                    "Do not compare theories, infer missing words, repair rules, or rank alternatives."
+                ),
+                examples=[], model=model,
+            )
+            extractions = (result.get("extractions", []) if isinstance(result, dict)
+                           else getattr(result, "extractions", []) or [])
+            for index, extraction in enumerate(extractions):
+                raw = extraction if isinstance(extraction, dict) else extraction.__dict__
+                quote = raw.get("extraction_text")
+                interval = raw.get("char_interval")
+                if interval is not None and not isinstance(interval, dict):
+                    interval = {"start_pos": getattr(interval, "start_pos", None),
+                                "end_pos": getattr(interval, "end_pos", None)}
+                interval = interval or {}
+                start, end = interval.get("start_pos"), interval.get("end_pos")
+                link = None
+                if isinstance(quote, str) and isinstance(start, int) and isinstance(end, int):
+                    link = SourceLink(source.source_id, start, end, quote)
+                valid = bool(link and validate_link(link, {source.source_id: source})[0])
+                evidence.append({
+                    "evidence_id": f"langextract:{source.source_id}:{index}",
+                    "source_link": ({"source_id": source.source_id, "start": start,
+                                     "end": end, "quote": quote} if link else None),
+                    "quote_validity": "EXACT" if valid else "INVALID_OR_UNRESOLVED",
+                    "interpretation": "UNVERIFIED_MODEL_PROPOSAL",
+                    "relation_correctness": "UNVERIFIED",
+                    "completeness": "GAP_EVIDENCE_ONLY_NOT_A_COVERAGE_CLAIM",
+                    "admission": "EVIDENCE_ONLY",
+                    "dependency": {
+                        "component": "langextract", "backend": "mistral",
+                        "model": self.model_id, "independent_from_mistral": False,
+                        "marker": "LANGEXTRACT_DEPENDS_ON_MISTRAL_BACKEND",
+                    },
+                })
+        return evidence
