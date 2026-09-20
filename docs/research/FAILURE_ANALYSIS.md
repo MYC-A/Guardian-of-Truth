@@ -44,3 +44,23 @@ After both serializer corrections, the same frozen-Phi N5 replay completed with 
   an atomic premise/hypothesis from long agent context. Threshold tuning cannot
   recover a contradiction class that was never predicted; this pairing is
   rejected before production integration.
+
+## Architecture A1 lost every suspicion at the grounding boundary
+
+The completed PUBLIC_SEEN A1 run produced 120 structured suspicions across 46
+cases, but none passed the exact-offset or unique-quote validator. There were
+114 source_quote_offset_mismatch and 6 source_offsets_out_of_bounds markers;
+50 target quote mismatches and 11 target out-of-bounds markers also occurred.
+With the grounding requirement removed only for post-hoc diagnosis, those same
+scores would produce TP21 FP20 FN2 TN3 (F1 .65625). The sound gate instead
+produced TP0 FP0 FN23 TN23: it removed 20 FP and also lost 21 TP.
+
+The first observed loss is therefore the model-to-validator document/offset
+contract, before any formal binding or Clingo call. Several outputs associate a
+quote from the candidate response with document=prompt; other offsets do not
+address the quoted bytes. Lowering the score threshold cannot fix this. A repair
+must make the model select the correct original document and either emit exact
+positions or a uniquely occurring verbatim quote. The validator itself remains
+strict. Post-hoc report:
+outputs/research_mistral_a_20260920/a0_a1_posthoc_comparison.json, SHA-256
+a1d2b35c89c61acc07a4f1acb43187e5ed1ea2becb2e5b423b4d4e514feae89d.

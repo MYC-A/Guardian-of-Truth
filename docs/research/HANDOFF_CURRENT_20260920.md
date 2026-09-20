@@ -68,12 +68,13 @@ It supplements `WORKLOG.md`, `EXPERIMENT_MATRIX.md`, and `DECISIONS.md`.
   Three of three records are OK; records SHA
   `652fed61299165fe3ad221a2e85493f0d9011a9d893156eabe027949fe049eb3`;
   manifest SHA `a446a77595867378294ec5bf78eb7c06d72b07a6a560a61aa88c8b4af0bc1bcf`.
-- A1 three-row smoke was running when this checkpoint was written. Its manifest
-  had journaled 2/3 OK records, two requests, `finished:false`, and empty stderr;
-  no full run was started. Output path:
+- A1 three-row smoke subsequently completed: 3/3 OK, three requests,
+  `finished:true`, and empty stderr. Output path:
   `/mnt/data/guardian/Guardian-research-a-83bbbb2/outputs/research_mistral_a_20260920/public46_smoke_A1/`.
-  Check its process and manifest before starting anything else. The runner is
-  resumable; do not overwrite the namespace.
+  Records SHA is `2ba22d31ea9887702ea78ecd19fb111daf51ca3e2fc094c2ac4809bc18a17cdd`;
+  manifest SHA is `00468f3312ff09f87afb270b9d2290d31a422ef000c33fd7af10794828e91fe6`.
+  It used 45,189 prompt and 3,088 completion tokens. No full A0/A1 run had
+  started when this update was recorded; keep the smoke namespace immutable.
 
 ### AgentHallu external DEV
 
@@ -101,6 +102,17 @@ It supplements `WORKLOG.md`, `EXPERIMENT_MATRIX.md`, and `DECISIONS.md`.
   did not survive the SSH session.
 - The directory named `mistral-7b-instruct-v0.3-c170c708` is an abandoned,
   incomplete download and must not be treated as a usable model.
+
+## Completed after the original checkpoint
+
+- Full A0 and A1 public46 inference is sealed. A0 is TP22 FP16 FN1 TN7,
+  F1 .7213; A1 is TP0 FP0 FN23 TN23 because 0/120 suspicions passed grounding.
+  The A1 pre-grounding scores are TP21 FP20 FN2 TN3, proving that the present
+  document/offset contract removes useful suspicions together with false ones.
+- NuExtract3-W4A16 and GLiNER2.5 load from existing server caches. Commit
+  b43f615 adds real B provider runners, LangExtract exact grounding and
+  separate-alternative handoff to the existing N5 implementation.
+- No manual model download is needed for the next controlled B smoke.
 
 ## What remains, in order
 

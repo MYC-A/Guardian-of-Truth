@@ -151,3 +151,31 @@ FP. The run used published commit `492775a` in detached server worktree
   rejects duplicate/unknown IDs and output overwrite, and keeps formal
   `UNRESOLVED` separate. Thirteen focused tests pass. This is infrastructure,
   not a model-backed A result.
+
+## 2026-09-20: Architecture A full inference and Architecture B model preflight
+
+- A0 and A1 inference both reached 46/46 terminal `OK` in the isolated server
+  worktree. A0 used 49 journal requests after three successful retries; records
+  SHA is `c3b624688a2208c58b986f280cb0985a50a505cb853237240f4cdbcfd5b67cf6`.
+  A1 used 48 journal requests after two successful retries and 630,613 tokens;
+  records SHA is `50af6bf5daa075884205121b697c94e8f2d85bb0a7fe6bbbc0934ca3c667e41a`.
+  Post-hoc gold join: A0 TP22 FP16 FN1 TN7, precision .5789, recall .9565,
+  F1 .7213. Exact OR A0 reaches TP23 FP16 FN0 TN7, F1 .7419. A1 emits no
+  positives: all 120 proposed suspicions are `UNANCHORED`. Ignoring only the
+  grounding gate, the same A1 generation is TP21 FP20 FN2 TN3, F1 .6563, so
+  the gate suppressed 21 TP and 20 FP. Report SHA is
+  `a1d2b35c89c61acc07a4f1acb43187e5ed1ea2becb2e5b423b4d4e514feae89d`.
+- Cached `numind/NuExtract3-W4A16` loaded offline on the prepared A10 in
+  103.859 s. Peak allocated/reserved VRAM was 5,280,815,104 / 5,335,154,688
+  bytes. This is a load smoke only, not an extraction-quality result.
+- Cached `fastino/gliner2.5-multi-v1` loaded in its isolated environment in
+  25.706 s and completed the fixed smoke in 0.696 s. It returned source-offset
+  entities and relation hypotheses. VRAM was not observable across the isolated
+  subprocess, so it remains unmeasured. This confirms adapter availability but
+  does not make GLiNER output a premise or proof.
+- Commit `b43f615` connects real Mistral, NuExtract and GLiNER provider paths,
+  an injected LangExtract grounder, and a conservative handoff to the existing
+  FullArch N5 arm. Each whole-theory alternative remains separate; GLiNER is
+  evidence only; unanchored or non-exact bindings abstain. Fifty-six relevant
+  tests pass locally. Three additional solver tests cannot run because the local
+  `clingo` module lacks its native `Control`; they must run in the server venv.
