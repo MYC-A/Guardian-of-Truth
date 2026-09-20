@@ -21,24 +21,31 @@ ENCODABLE_ACT = {"arg_gt", "arg_lt", "arg_gte", "arg_lte", "arg_equals",
                  "text_report", "value_is_latest"}
 
 
-def evidence_vocab(row):
+def evidence_vocab(row, stored_ta=None, stored_lv=None):
     ev = T.parse_prompt(row["prompt"])
     ra = A1.analyze_response(ev, row["prompt"], row["response"])
     ra["tools_called"] = sorted({e.tool_name for e in T.tool_calls(ev)} | {a["name"] for a in ra["actions"]})
-    lv = A2.latest_tool_values(ev)
-    ta = A2.analyze_text_acts_lx(row["response"])
-    lx_used = ta is not None
-    if ta is None:
-        ta, _ = A2.analyze_text_acts(row["response"], lv)
-        ta = ta or {"reports": []}
+    if stored_ta is not None:
+        ta = {"reports": [tuple(x) for x in stored_ta]}
+        lv = [tuple(x) for x in (stored_lv or [])]
+        lx_used = True
     else:
-        ents = {e for (_, _, e) in ta["reports"] if e}
-        if ents:
-            lv = [t for t in lv if t[1] in ents or t[1] == "*"]
+        lv = A2.latest_tool_values(ev)
+        ta = A2.analyze_text_acts_lx(row["response"])
+        lx_used = ta is not None
+        if ta is None:
+            ta, _ = A2.analyze_text_acts(row["response"], lv)
+            ta = ta or {"reports": []}
+        else:
+            ents = {e for (_, _, e) in ta["reports"] if e}
+            if ents:
+                lv = [t for t in lv if t[1] in ents or t[1] == "*"]
     facts = A2.build_evidence_facts(ev, ra, text_acts=ta, latest=lv)
     acts = set(ra["tools_called"])
     fields = {t[0] for t in lv}
-    fields |= {f for (f, _, _) in ta.get("reports", [])}
+    for rep in ta.get("reports", []):
+        if rep:
+            fields.add(rep[0])
     for s in facts:
         m = re.match(r'action\([^,]+,"([^"]+)"\)', s)
         if m:
@@ -85,11 +92,11 @@ def validate_rule(rnew, rold, acts, fields):
         if not encodable(c):
             return rold, "V2_unencodable:" + str(c.get("type"))
         for kind, ref in rule_refs(c):
+            refs = ref if isinstance(ref, list) else [ref]
             pool = acts if kind == "act" else fields
-            if kind == "act" and ref != "*" and ref not in pool:
-                return rold, f"V3_{kind}_not_in_trace:{ref}"
-            if kind == "field" and str(ref) not in {str(x) for x in pool}:
-                return rold, f"V3_{kind}_not_in_trace:{ref}"
+            pool_s = {str(x) for x in pool}
+            if not any(str(x) == "*" or str(x) in pool_s for x in refs):
+                return rold, f"V3_{kind}_not_in_trace:{str(ref)[:60]}"
     return rnew, None
 
 
@@ -109,10 +116,19 @@ def validate_theory(th0, th1, acts, fields):
     return th2, rejects
 
 
+def solve_case_stored(row, theory, ta, lv):
+    """solve_case with pre-extracted text acts (no live LX calls)."""
+    ev = T.parse_prompt(row["prompt"])
+    ra = A1.analyze_response(ev, row["prompt"], row["response"])
+    ra["tools_called"] = sorted({e.tool_name for e in T.tool_calls(ev)} | {a["name"] for a in ra["actions"]})
+    facts = A2.build_evidence_facts(ev, ra, text_acts=ta, latest=lv) + A2.rule_facts(theory)
+    return A2.solve(facts)
+
+
 def run(ds):
     rows = {r["id"]: r for r in load_dataset(ds)}
     c3 = json.loads((OUT / f"arch_c3_full_{ds}.json").read_text())
-    golds = {r["id"]: r["gold"] for r in rows}
+    golds = {cid: r["gold"] for cid, r in rows.items()}
     c0v3 = json.loads((OUT / f"arch_c0v3_{ds}.json").read_text())
 
     results, rej_total = {}, {"V1": 0, "V2": 0, "V3": 0}
@@ -120,7 +136,15 @@ def run(ds):
         det0 = c0v3["details"][cid]
         th0 = det0["theory"]
         repaired = c3.get("repaired_theories", {}).get(cid)
-        ev, facts, acts, fields, lx_used = evidence_vocab(r)
+        meta0 = det0.get("meta", {})
+        stored_ta = meta0.get("text_acts")
+        stored_lv = meta0.get("latest")
+        ev, facts, acts, fields, lx_used = evidence_vocab(
+            r, stored_ta=stored_ta, stored_lv=stored_lv)
+        ta_obj = ({"reports": [tuple(x) for x in stored_ta]} if stored_ta is not None
+                  else None)
+        lv_obj = ([tuple(x) for x in (stored_lv or [])] if stored_ta is not None
+                  else None)
         if repaired:
             th2, rejects = validate_theory(th0, repaired, acts, fields)
         else:
@@ -128,12 +152,13 @@ def run(ds):
         for rej in rejects:
             k = rej["reason"].split(":")[0].split("_")[0]
             rej_total[k if k in rej_total else "V3"] += 1
-        s2 = solve_case(r, th2)
-        p0 = det0.get("pred")
-        p0 = p0 if p0 is not None else pred_of(s2) if False else p0
-        # recompute C0 pred from stored asp for consistency:
-        a0 = det0.get("asp", {})
-        p0 = 1 if a0.get("proved_error") else (0 if a0.get("proved_no_error") else None)
+        if ta_obj is not None and lv_obj is not None:
+            s2 = solve_case_stored(r, th2, ta_obj, lv_obj)
+            s0 = solve_case_stored(r, th0, ta_obj, lv_obj)
+        else:
+            s2 = solve_case(r, th2)
+            s0 = solve_case(r, th0)  # identical pipeline for the C0 arm (as in arch_c3_full)
+        p0 = pred_of(s0)
         p2 = pred_of(s2)
         results[cid] = {
             "gold": golds[cid],
