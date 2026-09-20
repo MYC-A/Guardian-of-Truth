@@ -71,3 +71,10 @@ Agent: Super Z (independent full-cycle research line per directive 2026-09-20).
 3. Two generative critics for B (per directive §7.5: NuExtract stays extractor only);
    keyless APIs as independent critic candidates vs Mistral-side criticism.
 4. Targeted small balanced slices before any full public46 rerun; per-case diff vs baseline.
+
+## 2026-09-20 — Этап A выполнен: baseline воспроизведён на сервере
+
+- Серверный клон (guardian-repo @ ad52ac7) синхронизирован, пакет установлен в venv.
+- Offline baseline на public46: **TP12 FP0 FN11 TN23, F1 0.6857** — точное совпадение с задокументированным (artifacts: outputs/baseline_ifc/).
+- ОСНОВНАЯ ИНФРАСТРУКТУРНАЯ НАХОДКА: /mnt/data/guardian/secrets/ недоступен для job-процессов (drwx------ root), MISTRAL_API_KEY в env отсутствует → Mistral-канал недоступен с сервера. Все IFC-раннеры строятся provider-agnostic (OpenAI-compatible): BlockRun (пул gpt-oss-120b, ~0.6s), Pollinations (gpt-oss-20b, ~15s), LLM7 (10 RPM) — проверены с сервера; Mistral подключается при появлении доступа без изменения кода.
+- GPU свободен (A10, 0 MiB). Далее: направление A (s1/s2/s3 подозрения с grounding-repair-циклом), E3 Granite full46 параллельно.
