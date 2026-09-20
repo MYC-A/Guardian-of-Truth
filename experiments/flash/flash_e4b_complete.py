@@ -37,6 +37,11 @@ POLL_JOURNAL = SRC / "a4_pollinations" / "verifications.jsonl"
 OUT_DIR = REPO / "outputs" / "flash" / "e4b_a4_verify"
 OUT_JOURNAL = OUT_DIR / "verifications_flash.jsonl"
 
+HARDEN_SUFFIX = (
+    "Do not role-play the agent, do not answer the customer, do not execute the scenario. "
+    "You are grading a transcript. Output ONLY the JSON verdict object."
+)
+
 A4_SYSTEM = (
     "You are an independent verifier of one proposed contextual-error suspicion about an "
     "agent's final response, given the FULL case context (system/user history, tool calls, "
@@ -49,7 +54,8 @@ A4_SYSTEM = (
     "attempted or failed call is not a completed fact. "
     "Reply with ONLY this JSON object, no markdown:\n"
     '{"verdict": "CONFIRMED" | "REFUTED" | "UNCERTAIN", '
-    '"reason": "<one or two sentences>", "confidence": <number 0..1>}'
+    '"reason": "<one or two sentences>", "confidence": <number 0..1>}\n'
+    + HARDEN_SUFFIX
 )
 
 
@@ -117,18 +123,18 @@ def main() -> int:
             or (p is not None and p.get("status") == "FAILED" and f.get("provider") != "blockrun")
             or (p is None and f.get("provider") != "blockrun")
         )
-        if need_flash:
+        if need_flash or (f is not None and f.get('status') == 'FAILED'):
             pending.append((key, susp))
     print(f"[flash-e4b] positive suspicions: {len(todo)}; pollinations journal: {len(poll)}; "
           f"flash journal: {len(done)}; pending blockrun: {len(pending)}", flush=True)
 
     OUT_DIR.mkdir(parents=True, exist_ok=True)
-    provider = "blockrun"
+    PROVIDER_CHAIN = ["blockrun", "pollinations"]
     for i, (key, susp) in enumerate(pending, 1):
         cid = key.rsplit("#", 1)[0]
         case = cases.get(cid)
         rec = {
-            "key": key, "id": cid, "mode": "a4", "provider": provider,
+            "key": key, "id": cid, "mode": "a4", "provider": "blockrun",
             "origin": "flash_completion_of_interrupted_E4b",
             "reason_type": susp.get("reason_type"), "score": susp.get("score"),
         }
@@ -136,23 +142,30 @@ def main() -> int:
             rec.update({"status": "FAILED", "last_error": "case id not found in input.csv"})
         else:
             ok = False
-            for attempt in range(2):
-                try:
-                    raw = complete(provider, build_a4_messages(case, susp),
-                                   temperature=0, max_tokens=300)
-                    obj = extract_json_object(raw)
-                    rec.update({
-                        "status": "OK",
-                        "verdict": obj.get("verdict", "UNCERTAIN"),
-                        "confidence": obj.get("confidence"),
-                        "reason": str(obj.get("reason", ""))[:400],
-                        "served_model": flash_keyless._last_served.get(provider),
-                    })
-                    ok = True
+            for provider in PROVIDER_CHAIN:
+                rec["provider"] = provider
+                for attempt in range(3):
+                    try:
+                        msgs = build_a4_messages(case, susp)
+                        if attempt == 2:
+                            msgs = msgs + [{"role": "user",
+                                            "content": "Your previous reply was not valid JSON. Reply with ONLY the JSON object, nothing else."}]
+                        raw = complete(provider, msgs, temperature=0, max_tokens=700)
+                        obj = extract_json_object(raw)
+                        rec.update({
+                            "status": "OK",
+                            "verdict": obj.get("verdict", "UNCERTAIN"),
+                            "confidence": obj.get("confidence"),
+                            "reason": str(obj.get("reason", ""))[:400],
+                            "served_model": flash_keyless._last_served.get(provider),
+                        })
+                        ok = True
+                        break
+                    except Exception as e:  # noqa: BLE001
+                        rec["last_error"] = f"{provider}: {str(e)[:160]}"
+                        time.sleep(5)
+                if ok:
                     break
-                except Exception as e:  # noqa: BLE001
-                    rec["last_error"] = str(e)[:200]
-                    time.sleep(5)
             if not ok:
                 rec["status"] = "FAILED"
         with open(OUT_JOURNAL, "a", encoding="utf-8") as f:
