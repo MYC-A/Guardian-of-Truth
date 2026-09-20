@@ -63,6 +63,29 @@ parent links, semantic diffs, and raw pre-normalization responses with hashes.
 Raw output is redacted for key values; normalized RuleCandidate wire is never
 labelled as raw.
 
+Generate the real mutual critique and repair artifacts first. This runner
+calls Mistral to critique the NuExtract original and NuExtract with a dedicated
+JSON extraction template to critique the Mistral original. Each author then
+receives the grounded cross-critique and emits a patch for its own parent.
+The deterministic repair builder retains every parent element and ID, accepts
+changes only for exactly grounded critique targets, and marks additions as
+`MODEL_PROPOSED_ADDITION`.
+
+```text
+python -m experiments.architectures_v2.b_theory.mutual_model_runner \
+  --input pilot_cases.jsonl \
+  --original-output mistral=mistral.jsonl \
+  --original-output nuextract=nuextract.jsonl \
+  --output-dir outputs/b3_model
+```
+
+The output directory contains `critiques.jsonl`, provider-specific repair
+JSONL files, and the append-only `model_cycle.jsonl`. Every model operation
+stores the model and dependency IDs, latency, raw pre-normalization response,
+hash, and error. If NuExtract cannot satisfy the critique or repair template,
+the record says `CAPABILITY_FAILURE`; no substitute critique or repair is
+created and the cycle remains one-sided.
+
 ```text
 python -m experiments.architectures_v2.b_theory.run_b3_cycle \
   --input pilot_cases.jsonl \

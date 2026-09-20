@@ -8,6 +8,8 @@ from experiments.architectures_v2.b_theory.contracts import (
     CaseInput, TheoryCandidate, TheoryCritique)
 from experiments.architectures_v2.b_theory.langextract_grounder import MistralLangExtractGrounder
 from experiments.architectures_v2.b_theory.run_b3_cycle import parse_args, run
+from experiments.architectures_v2.b_theory.mutual_model_runner import (
+    ModelResult, generate_case, parse_args as model_parse_args, run_cli as run_model_cli)
 
 
 TEXT = "Verify identity before refund."
@@ -164,3 +166,92 @@ def _issue_wire(critique):
     return {"issue_id": item.issue_id, "target_element_id": item.target_element_id,
             "problem_type": item.problem_type.value, "source_link": item.source_link.__dict__,
             "explanation": item.explanation}
+
+
+class _FakeReviewBackend:
+    dependency = "FAKE_TEST_ONLY"
+
+    def __init__(self, provider, fail_critique=False):
+        self.provider, self.model_id = provider, f"fake-{provider}"
+        self.fail_critique = fail_critique
+
+    def critique(self, case, target):
+        if self.fail_critique:
+            return ModelResult(None, None, "unsupported template")
+        parsed = {"issues": [{"target_element_id": "e1",
+                              "problem_type": "missing_condition",
+                              "source_id": "policy:0", "start": 0, "end": len(TEXT),
+                              "quote": TEXT, "explanation": "condition omitted"}],
+                  "unresolved": []}
+        return ModelResult(parsed, {"model_text": json.dumps(parsed)})
+
+    def repair(self, case, parent, critique):
+        parsed = {"changes": [{"element_id": "e1",
+            "interpretation": "verify identity before refund",
+            "source_links": [{"source_id": "policy:0", "start": 0,
+                              "end": len(TEXT), "quote": TEXT}],
+            "rule_ir": None, "unresolved_components": []}],
+            "additions": [{"element_id": f"{self.provider}:added",
+                "interpretation": "explicit refund scope",
+                "source_links": [{"source_id": "policy:0", "start": 0,
+                                  "end": len(TEXT), "quote": TEXT}],
+                "rule_ir": None, "unresolved_components": []}], "unresolved": []}
+        return ModelResult(parsed, {"model_text": json.dumps(parsed)})
+
+
+def test_model_cycle_generates_both_directions_and_constrained_repairs():
+    result = generate_case(_case(), [_theory("mistral", "m"),
+                           _theory("nuextract", "n")],
+                           mistral=_FakeReviewBackend("mistral"),
+                           nuextract=_FakeReviewBackend("nuextract"))
+    assert result["cycle_generation_status"] == "BIDIRECTIONAL_COMPLETE"
+    assert len(result["critiques"]) == len(result["repairs"]) == 2
+    assert all(build["changed_element_ids"] == ["e1"] for build in result["repair_builds"])
+    assert all(build["added_elements"][0]["marker"] == "MODEL_PROPOSED_ADDITION"
+               for build in result["repair_builds"])
+    assert all(repair.elements[0].element_id == "e1" for repair in result["repairs"])
+
+
+def test_capability_failure_stays_one_sided_without_fake_repair():
+    result = generate_case(_case(), [_theory("mistral", "m"),
+                           _theory("nuextract", "n")],
+                           mistral=_FakeReviewBackend("mistral"),
+                           nuextract=_FakeReviewBackend("nuextract", fail_critique=True))
+    assert result["cycle_generation_status"] == "ONE_SIDED_OR_UNRESOLVED"
+    assert {item.provider for item in result["repairs"]} == {"nuextract"}
+    assert any(item["reason"] == "NO_VALID_CROSS_PROVIDER_CRITIQUE"
+               for item in result["capability_failures"])
+    failed = [item for item in result["model_runs"]
+              if item["provider"] == "nuextract" and item["operation"] == "CRITIQUE"]
+    assert failed[0]["status"] == "CAPABILITY_FAILURE"
+    assert failed[0]["raw_response"] is None
+
+
+def test_model_runner_resumes_and_writes_consumer_files(tmp_path):
+    cases, m_rows, n_rows = [], [], []
+    for index in range(3):
+        case_id = f"mc{index}"
+        cases.append({"case_id": case_id,
+                      "sources": [{"source_id": "policy:0", "text": TEXT}], "clauses": []})
+        m_rows.append({"case_id": case_id,
+                       "candidates": [_wire(_theory("mistral", f"m{index}"))]})
+        n_rows.append({"case_id": case_id,
+                       "candidates": [_wire(_theory("nuextract", f"n{index}"))]})
+    paths = {}
+    for name, rows in (("cases", cases), ("m", m_rows), ("n", n_rows)):
+        path = tmp_path / f"{name}.jsonl"
+        path.write_text("".join(json.dumps(row) + "\n" for row in rows), encoding="utf-8")
+        paths[name] = path
+    args = model_parse_args(["--input", str(paths["cases"]),
+        "--original-output", f"mistral={paths['m']}",
+        "--original-output", f"nuextract={paths['n']}",
+        "--output-dir", str(tmp_path / "model")])
+    kwargs = {"mistral": _FakeReviewBackend("mistral"),
+              "nuextract": _FakeReviewBackend("nuextract")}
+    assert run_model_cli(args, **kwargs) == 0
+    first = (tmp_path / "model" / "model_cycle.jsonl").read_text(encoding="utf-8")
+    assert run_model_cli(args, **kwargs) == 0
+    assert (tmp_path / "model" / "model_cycle.jsonl").read_text(encoding="utf-8") == first
+    assert (tmp_path / "model" / "critiques.jsonl").exists()
+    assert (tmp_path / "model" / "mistral_repairs.jsonl").exists()
+    assert (tmp_path / "model" / "nuextract_repairs.jsonl").exists()
