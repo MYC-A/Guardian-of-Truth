@@ -377,6 +377,7 @@ def main() -> int:
         df = pd.read_parquet(in_path)[["id", "prompt", "response"]]
     else:
         import csv
+        csv.field_size_limit(min(2 ** 31 - 1, 2 ** 30))
         rows = list(csv.DictReader(open(in_path, encoding="utf-8")))
         df = pd.DataFrame(rows)[["id", "prompt", "response"]] if rows else []
     cases = df.to_dict("records")
