@@ -202,7 +202,16 @@ def _critique(case: CaseInput, backend: ReviewBackend, target: TheoryCandidate,
             technical.append(f"TECHNICAL_QUOTE_BINDING:{wire['issue_id']}:{method}")
             continue
         wire["source_link"] = asdict(link)
-        issues.append(CritiqueIssue.parse(wire))
+        problem_types = wire.get("problem_type")
+        if isinstance(problem_types, list):
+            if not problem_types or any(not isinstance(value, str) for value in problem_types):
+                raise ValueError(f"{wire['issue_id']}: invalid problem_type list")
+            for ordinal, problem_type in enumerate(dict.fromkeys(problem_types)):
+                typed = {**wire, "issue_id": f"{wire['issue_id']}:{ordinal}",
+                         "problem_type": problem_type}
+                issues.append(CritiqueIssue.parse(typed))
+        else:
+            issues.append(CritiqueIssue.parse(wire))
     unresolved = result.parsed.get("unresolved", [])
     unresolved = unresolved if isinstance(unresolved, list) else [str(unresolved)]
     if raw_issues and not issues:

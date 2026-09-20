@@ -9,7 +9,8 @@ from experiments.architectures_v2.b_theory.contracts import (
 from experiments.architectures_v2.b_theory.langextract_grounder import MistralLangExtractGrounder
 from experiments.architectures_v2.b_theory.run_b3_cycle import parse_args, run
 from experiments.architectures_v2.b_theory.mutual_model_runner import (
-    ModelResult, _build_repair, generate_case, parse_args as model_parse_args,
+    ModelResult, _build_repair, _critique as parse_model_critique,
+    generate_case, parse_args as model_parse_args,
     run_cli as run_model_cli)
 
 
@@ -317,6 +318,20 @@ def test_unique_verbatim_quote_recovers_wrong_model_offsets():
                for item in critique.issues)
     assert all(item["status"] == "UNIQUE_QUOTE_OFFSETS_RECOVERED"
                for item in result["critique_binding_results"])
+
+
+def test_multitype_model_issue_keeps_each_grounded_criticism():
+    result = ModelResult({"issues": [{"target_element_id": "e1",
+        "problem_type": ["wrong_modality", "wrong_relation"],
+        "source_id": "policy:0", "start": 0, "end": len(TEXT),
+        "quote": TEXT, "explanation": "Two separate suspected errors"}],
+        "unresolved": []}, {"model_text": "raw"})
+    critique, bindings = parse_model_critique(_case(), _FakeReviewBackend("mistral"),
+                                  _theory("nuextract", "n"), result)
+    assert [item.problem_type.value for item in critique.issues] == [
+        "wrong_modality", "wrong_relation"]
+    assert len({item.issue_id for item in critique.issues}) == 2
+    assert bindings[0]["technical"] is False
 
 
 class _AmbiguousQuoteBackend(_FakeReviewBackend):
