@@ -33,7 +33,7 @@ PROVIDERS: dict[str, dict[str, Any]] = {
     },
     "pollinations": {
         "base_url": "https://text.pollinations.ai/openai",
-        "model": "openai-fast",
+        "model": "gpt-oss-20b",
         "api_key": "not-needed",
         "min_interval": 16.0,
         "timeout": 180,
@@ -42,7 +42,7 @@ PROVIDERS: dict[str, dict[str, Any]] = {
         "base_url": "https://blockrun.ai/api/v1",
         "model": "nvidia/gpt-oss-120b",
         "api_key": "not-needed",
-        "min_interval": 13.0,
+        "min_interval": 6.0,
         "timeout": 180,
     },
 }
@@ -143,6 +143,9 @@ def complete(provider: str, messages: list[dict], *, max_tokens: int = 1024,
     """One chat completion. Returns {content, model, usage, cached, latency}."""
     spec = PROVIDERS[provider]
     model = spec["model"]
+    import os as _os
+    if _os.environ.get("KEYLESS_NO_CACHE"):
+        use_cache = False
     params = {"max_tokens": max_tokens, "temperature": temperature}
 
     ck = None
@@ -187,5 +190,5 @@ def complete(provider: str, messages: list[dict], *, max_tokens: int = 1024,
             return result
         except Exception as e:  # 429 / 5xx / timeout / empty
             last_err = e
-            time.sleep(min(2 ** attempt * 5, 40))
+            time.sleep(min(2 ** attempt * 15, 60))
     raise KeylessError(f"{provider}: all {max_attempts} attempts failed: {last_err}")

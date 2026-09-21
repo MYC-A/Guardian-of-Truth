@@ -23,7 +23,7 @@ from p_precond import cards_block  # noqa: E402
 
 GOLD_PARQUET = REPO / "valid.parquet"
 E3A_CASES = REPO / "outputs" / "superz_fullcycle" / "e3a_a1r_posthoc" / "a1r_cases.jsonl"
-EXTRACT_DIR = REPO / "outputs" / "superz_fullcycle" / "p_precond" / "extract_llm7"
+EXTRACT_DIR = REPO / "outputs" / "superz_fullcycle" / "p_precond" / "extract_blockrun"
 OUT_ROOT = REPO / "outputs" / "superz_fullcycle" / "gp_combo"
 
 SYSTEM = (

@@ -138,11 +138,14 @@ def run_extract(provider: str) -> None:
         ok = False
         for _ in range(3):
             try:
-                res = complete(provider, msgs, max_tokens=900, temperature=0.0, cache_dir=cache)
+                res = complete(provider, msgs, max_tokens=2400, temperature=0.0, cache_dir=cache)
                 parsed = extract_json_object(res["content"])
                 cards = parsed.get("cards", []) or []
-                if not isinstance(cards, list) or len(cards) > 3:
-                    raise KeylessError("cards must be a list of at most 3")
+                if not isinstance(cards, list):
+                    raise KeylessError("cards must be a list")
+                n_cards_raw = len(cards)
+                if n_cards_raw > 3:
+                    cards = cards[:3]
                 grounded = []
                 for card in cards:
                     if not isinstance(card, dict):
@@ -160,6 +163,7 @@ def run_extract(provider: str) -> None:
                         "exceptions": [str(x)[:200] for x in (card.get("exceptions") or [])][:3],
                     })
                 rec.update({"status": "OK", "n_cards": len(grounded),
+                            "n_cards_raw": n_cards_raw,
                             "n_grounded": sum(1 for g in grounded if g["quote_grounded"]),
                             "cards": grounded,
                             "responded_model": res["model"], "latency": res["latency"]})
