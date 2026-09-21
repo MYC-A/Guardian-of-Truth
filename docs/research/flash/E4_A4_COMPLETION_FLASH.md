@@ -116,3 +116,31 @@ non-JSON KB results).
 - Answer to directive question (sec. 5, G3): YES for the verifier — the existing graph
   provides materially better grounds to an A4-style verifier than the raw history.
   Effect on the producer-side judge (G2) still untested; G1-vs-G2 separation kept.
+
+## Experiment P first result (directive sec. 7): obligation-centric check is too conservative (2026-09-21)
+
+P pipeline (no new engine): suspicion -> obligation decomposition + applicable policy
+requirements with verbatim quotes -> per-precondition check (SATISFIED/VIOLATED/NOT_FOUND
+with quotes) -> conservative verdict mapping (CONFIRMED iff precondition VIOLATED and no
+satisfied exception; REFUTED iff decisive satisfied exception; else UNCERTAIN).
+History representation: compacted raw prompt (policy + 9k-char history), blockrun primary.
+
+| Arm | TP | FP | FN | TN | P | R | F1 | verdicts |
+|---|---|---|---|---|---|---|---|---|
+| Base (A4 full context) | 18 | 17 | 5 | 6 | 0.514 | 0.783 | 0.6207 | 74C/12U/8R |
+| G (graph digest) | 19 | 15 | 4 | 8 | 0.559 | 0.826 | **0.6667** | 62C/1U/28R |
+| P (obligation-centric) | 8 | 12 | 15 | 11 | 0.400 | 0.348 | 0.3721 | 36C/35U/0R |
+| E3a unverified control | 20 | 19 | 3 | 4 | 0.513 | 0.870 | 0.6452 | — |
+
+- P NEVER refutes (by construction) and confirms rarely: the check pass mostly returns
+  NOT_FOUND (its instructions correctly forbid treating missing evidence as violation),
+  so the conservative mapping collapses into UNCERTAIN (30 CONFIRMED->UNCERTAIN
+  transitions vs Base). Recall crashes to 0.348.
+- Real precision value exists: 6 FP eliminated (airline__3::t4, airline__5::t1,
+  banking__057::t2, retail__78::t1, telecom t7 x2) — the same FP class G eliminates.
+- Diagnosis (to be disentangled by GP1, running): (a) verdict mapping too strict, or
+  (b) the compact raw history starves the CHECK pass — G's targeted fact digest may
+  supply exactly the evidence the precondition checker needs.
+- Technical: 23/94 keys FAILED on both channels (pollinations-side HTTP 42/50 errors
+  + blockrun JSON refusals on the 2-call pipeline); retried with repair prompts;
+  journals append-only, FAILED never counted as refutation.
