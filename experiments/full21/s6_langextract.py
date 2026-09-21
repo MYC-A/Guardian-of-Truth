@@ -100,6 +100,10 @@ def main() -> int:
     ap.add_argument("--input", required=True)
     ap.add_argument("--limit", type=int, default=0)
     ap.add_argument("--max-chars", type=int, default=48000)
+    ap.add_argument("--time-budget", type=int, default=0,
+                    help="stop cleanly after this many seconds (0 = unlimited)")
+    ap.add_argument("--batch-max", type=int, default=0,
+                    help="stop after this many NEW cases this run (0 = unlimited)")
     args = ap.parse_args()
 
     out_dir = Path("outputs/full21/s6_langextract")
@@ -125,11 +129,19 @@ def main() -> int:
 
     stats = {"cases": 0, "extractions": 0, "span_ok": 0, "span_bad": 0,
              "new_facts": 0, "errors": 0}
+    t_run0 = time.perf_counter()
+    stopped = None
     with open(rec_path, "a", encoding="utf-8") as fout:
         for case in cases:
             cid = case["id"]
             if cid in done:
                 continue
+            if args.time_budget and (time.perf_counter() - t_run0) > args.time_budget:
+                stopped = "time_budget"
+                break
+            if args.batch_max and stats["cases"] >= args.batch_max:
+                stopped = "batch_max"
+                break
             t0 = time.perf_counter()
             source = case["prompt"][:args.max_chars]
             try:
@@ -187,8 +199,12 @@ def main() -> int:
     (out_dir / "summary.json").write_text(json.dumps({
         **stats, "backend": f"local {MODEL_ID} via {BASE_URL}",
         "input": args.input, "max_chars": args.max_chars,
+        "stopped_reason": stopped,
+        "done_total_after": len(done) + stats["cases"],
     }, indent=1))
     print(json.dumps(stats, indent=1))
+    if stopped:
+        print(f"[s6] stopped cleanly: {stopped}", flush=True)
     return 0
 
 
