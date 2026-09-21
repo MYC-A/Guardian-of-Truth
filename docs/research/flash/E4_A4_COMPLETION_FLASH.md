@@ -87,3 +87,32 @@ not pushed by them, read-only copies in `outputs/flash/sources_superz_e4/`).
   attached to a high-recall producer; it cannot rescue a producer that misses violations
   (the lost/missed-TP class), and per-verifier gating is fragile (62% cross-model
   disagreement).
+
+## Experiment G first result (directive sec. 5): graph digest beats full context (2026-09-21)
+
+Paired probe on the same 94 suspicions, same blockrun channel, same verdict protocol;
+only the history representation differs: Base = raw full case context (21-47k chars),
+G = provenance-graph digest built from the EXISTING full-architecture-v1 graph
+(FactNode facts linked to response tokens by exact value matching; entity-scope
+expansion; avg digest 2632 chars; explicit omission notes; raw-text fallback for
+non-JSON KB results).
+
+| Arm | TP | FP | FN | TN | P | R | F1 |
+|---|---|---|---|---|---|---|---|
+| Base (full context) | 18 | 17 | 5 | 6 | 0.514 | 0.783 | 0.6207 |
+| G (graph digest + cited region) | 19 | 15 | 4 | 8 | 0.559 | 0.826 | **0.6667** |
+
+- G beats BOTH the Base arm (+.046 F1) and the unverified E3a control (.6452) —
+  the first verification variant with a positive delta here.
+- Verdict profile: UNCERTAIN collapses 12 -> 1, REFUTED grows 8 -> 28 — the digest
+  gives the verifier grounds to be DECISIVE instead of abstaining, without losing recall.
+- 3/94 technical failures (vs 15 FAILED in the interrupted pollinations full-context run):
+  compact structured context resolves the long-telecom verifiability problem.
+- Case flips G vs Base: FP eliminated {airline__5::t1, banking__063::t8, retail__12::t4,
+  retail__78::t1}, TP gained {banking__068::t11, telecom service-issue t13},
+  TP lost {banking__051::t15}, new FP {banking__080::t30, banking__081::t35}.
+- Suspicion transitions: 20 CONFIRMED->REFUTED, 6 REFUTED->CONFIRMED, 5/6
+  UNCERTAIN->{CONFIRMED,REFUTED} — real content changes, not noise.
+- Answer to directive question (sec. 5, G3): YES for the verifier — the existing graph
+  provides materially better grounds to an A4-style verifier than the raw history.
+  Effect on the producer-side judge (G2) still untested; G1-vs-G2 separation kept.
