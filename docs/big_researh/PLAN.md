@@ -1,5 +1,14 @@
 # big_researh — план исследований (2026-09-22)
 
+## ОБНОВЛЕНИЕ 2026-09-22 (финал): Mistral API-канал работает
+
+Валидный ключ пользователя: локально guardian-access/mistral.env (600), на
+сервере agent-workspace/.mistral.env (600, вне git). ministral-14b-latest
+подтверждён с сервера. Все LLM-эксперименты (S6 API, P, Q, agent) выполнены
+через API. Локальный mistral-7b канал заморожен (6 записей). Итоги —
+docs/big_researh/RESULTS.md (коммит d34d6da).
+
+
 Directive: BIG_RESEARH (AI Journey Contest 2026, Guardian of Truth).
 Приоритет: реальные эксперименты и сохранённые результаты, не инфраструктура.
 
