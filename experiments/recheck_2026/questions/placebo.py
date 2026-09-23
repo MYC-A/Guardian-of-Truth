@@ -28,14 +28,14 @@ def main() -> int:
     case_map = cases(args.cases)
     if any(r["id"] not in case_map for r in source):
         raise ValueError("Q case missing from input")
-    config = {"experiment": "q_cross_case_placebo_v1",
+    config = {"experiment": "q_cross_domain_placebo_v2",
               "q_records_sha256": digest(args.q_records),
               "case_sha256": digest(args.cases),
               "ids": [r["id"] for r in source],
               "context_chars": args.context_chars,
               "model": mistral_settings()["MISTRAL_MODEL"],
               "system": JUDGE_SYSTEM,
-              "placebo": "next selected case's source_quote, situation, answer"}
+              "placebo": "next selected case from a different domain"}
     rows = prepare_run(args.out, config, args.resume)
     by_id = {r["id"]: r for r in rows}
     client = Mistral()
@@ -43,7 +43,13 @@ def main() -> int:
         cid = original["id"]
         if cid in by_id and by_id[cid].get("placebo") in (0, 1):
             continue
-        donor = source[(index + 1) % len(source)]
+        domain = cid.split("__", 1)[0]
+        donor = next((source[(index + offset) % len(source)]
+                      for offset in range(1, len(source))
+                      if source[(index + offset) % len(source)]["id"].split(
+                          "__", 1)[0] != domain), None)
+        if donor is None:
+            raise ValueError("no cross-domain donor for placebo")
         candidate = {"source_quote": donor["source_quote"],
                      "situation": donor["question"]["value"].get("situation"),
                      "answer": donor["question"]["value"].get("proposed_answer")}

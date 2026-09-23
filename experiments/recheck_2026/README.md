@@ -61,11 +61,11 @@ raw per-case outputs, then use new directories for full runs.
    separately and cannot block the paired test.
    The semantic and judge completions use a 1000-token cap: the earlier
    300-token semantic cap cut off every one of 12 JSON outputs in a live run.
-   A cross-case candidate placebo probes whether the paired label changes
+   A cross-domain candidate placebo probes whether the paired label changes
    specifically depend on the relevant candidate:
 
    ```bash
-   python -m experiments.recheck_2026.questions.placebo --q-records outputs/recheck_2026/q_v3_full_remote_01/records.jsonl --out outputs/recheck_2026/q_placebo_remote_01
+   python -m experiments.recheck_2026.questions.placebo --q-records outputs/recheck_2026/q_v3_full_remote_01/records.jsonl --out outputs/recheck_2026/q_placebo_cross_domain_remote_01
    ```
    A separate semantic check is recorded as probabilistic, never as Clingo
    proof. The same judge, system prompt, model and bounded case context are
