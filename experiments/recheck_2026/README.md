@@ -119,8 +119,9 @@ raw per-case outputs, then use new directories for full runs.
    python -m experiments.recheck_2026.c2_x5.run --out outputs/recheck_2026/c2_server_replay_01
    ```
 
-6. **FP reviewer** (`fp_review/`). Replaces the missing v3 implementation with
-   a fully versioned eight-operation critic. It sees the pgjudge allegation,
+6. **FP reviewer** (`fp_review/`). A new Mistral-based eight-operation critic;
+   it is **not** the earlier mechanical v2/v3 from the interrupted session.
+   It sees the pgjudge allegation,
    exact grounded cards, bounded case and response. Every cited card must be
    refuted by an exact source quote before it proposes a 1→0 change. It also
    asks about other errors, so its clearance is **probabilistic**, not proof.

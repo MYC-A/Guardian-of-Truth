@@ -29,13 +29,27 @@ competition estimate. Labels were used only for scoring.
 
 ## FP reviewer: completed negative result
 
-The new eight-operation Mistral reviewer attempted all 35 source-grounded
+The new eight-operation **Mistral reviewer, distinct from the mechanical
+v2/v3 in the interrupted session**, attempted all 35 source-grounded
 positive pgjudge alarms. The source-quote replay gate passed, but there were
 **zero 1→0 flips**: TP23 / FP16 / FN0 / TN7, F1 .7419. On 34 of 35 reviewed
 cases the model claimed that another error existed. Six cases had all cited
 cards refuted with exact anchors, but four of those six are true positives;
 blindly removing that guard would have lost known positives. This runner does
-not reproduce the collaborator's uncommitted v3 claim (TP23 / FP4 / FN0).
+not reproduce or invalidate the collaborator's uncommitted mechanical v3.
+
+The user's interrupted-session log reports a mechanical v1 that removed
+seven FP but lost four TP, a v2 that removed eight FP with no TP loss
+(TP23 / FP8 / FN0, F1 .8519), and a pre-fix v3 that removed twelve FP with
+no TP loss (TP23 / FP4 / FN0, F1 .9200). The pre-fix v3 erroneously cleared
+`banking_knowledge__task_080::t30` through a generic family before its
+`result_claim`-specific observation check. The final kind-first change was
+not executed because the environment failed. If that change only returns
+080 to UNKNOWN, eleven FP remain removed: TP23 / FP5 / FN0, F1 .9020.
+That is an **expected** result, not a measurement. After fetching all
+branches, the original mechanical implementation and its per-case predictions
+are still absent from this checkout, so its reported v2/v3 numbers cannot
+be independently replayed here.
 
 ## Granite custom violation criterion: completed negative result
 
@@ -128,8 +142,8 @@ An apparent gain on this viewed public46 set is a hypothesis. It needs frozen
 per-case evidence and one evaluation on previously unseen cases grouped by
 scenario and response type. A model's citation is source-anchored evidence,
 not a formal proof that its interpretation is correct. The original reported
-v3 result (TP23 / FP4 / FN0) has no recovered per-case decisions in this
-checkout; the new FP reviewer is a different, explicitly versioned test.
+pre-fix v3 result (TP23 / FP4 / FN0) has no recovered per-case decisions in
+this checkout; the new FP reviewer is a different, explicitly versioned test.
 
 The next model-free effort should focus on **claim-level FP attribution**:
 for each pgjudge alarm, retain the precise policy clause, triggering user
