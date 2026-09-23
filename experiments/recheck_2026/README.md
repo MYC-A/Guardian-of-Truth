@@ -14,13 +14,17 @@ checks the frozen config and continues from completed per-case records.
 python -m pip install -e .
 python -m pip install clingo openai pytest
 python -m pytest tests/test_recheck_2026.py tests/test_cycle2_x5.py tests/test_cycle2_x5_execution.py -q
+python scripts/recheck_remote_preflight.py
 ```
 
 The local Granite run additionally needs the server's compatible PyTorch,
 Transformers and Accelerate installation and a local Granite Guardian 3.3 8B
 model directory. Mistral runs need `MISTRAL_API_KEY` in the environment;
-`MISTRAL_MODEL` is optional and defaults to `ministral-14b-latest`. No key is
-written into artifacts. Record the served model and package versions on the
+the client can also read the existing
+`/mnt/data/guardian/secrets/mistral.env` file, or a path named by
+`MISTRAL_ENV_FILE`. Environment variables take precedence. `MISTRAL_MODEL`
+defaults to `ministral-14b-latest`. No key is written into artifacts. Record
+the served model and package versions on the
 server alongside the run outputs.
 
 Before full remote runs, use `--limit 2` for agent/holistic, `--limit 10` for

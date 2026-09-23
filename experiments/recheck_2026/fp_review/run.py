@@ -7,13 +7,12 @@ from __future__ import annotations
 
 import argparse
 import json
-import os
 from pathlib import Path
 
 from experiments.recheck_2026.fp_replay.run import OPERATIONS
 from experiments.recheck_2026.shared import (
     DEFAULT_CASES, DEFAULT_GOLD, REPO, Mistral, bounded, cases, digest,
-    jsonl, labels, policy_text, prepare_run, score, write_json, write_jsonl,
+    jsonl, labels, mistral_settings, policy_text, prepare_run, score, write_json, write_jsonl,
 )
 
 PG = REPO / "outputs/big_researh/p_api/pgjudge/records.jsonl"
@@ -112,7 +111,7 @@ def main() -> int:
         "case_sha256": digest(args.cases), "pg_sha256": digest(PG),
         "cards_sha256": digest(PCARDS), "gold_sha256": digest(args.gold),
         "system": SYSTEM, "ids": ids, "context_chars": args.context_chars,
-        "model": os.getenv("MISTRAL_MODEL", "ministral-14b-latest"),
+        "model": mistral_settings()["MISTRAL_MODEL"],
         "dry_run": args.dry_run}
     rows = prepare_run(args.out, config, args.resume)
     by_id = {r["id"]: r for r in rows}

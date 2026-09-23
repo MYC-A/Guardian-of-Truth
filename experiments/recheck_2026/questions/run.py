@@ -4,13 +4,12 @@ from __future__ import annotations
 import argparse
 import hashlib
 import json
-import os
 from collections import defaultdict
 from pathlib import Path
 
 from experiments.recheck_2026.shared import (
     DEFAULT_CASES, DEFAULT_GOLD, REPO, Mistral, bounded, cases, digest, jsonl,
-    labels, policy_text, prepare_run, score, write_json, write_jsonl,
+    labels, mistral_settings, policy_text, prepare_run, score, write_json, write_jsonl,
 )
 
 DEFAULT_DIVERGENCES = REPO / "outputs/searh_23/q_v2/divergences.jsonl"
@@ -100,7 +99,7 @@ def main() -> int:
         "gold_sha256": digest(args.gold), "selected_keys": [r["key"] for r in selected],
         "selection": "one exact-fragment candidate per case, kind round-robin, stable hash",
         "context_chars": args.context_chars, "dry_run": args.dry_run,
-        "requested_model": os.getenv("MISTRAL_MODEL", "ministral-14b-latest"),
+        "requested_model": mistral_settings()["MISTRAL_MODEL"],
         "judge_system": JUDGE_SYSTEM}
     records = prepare_run(output, config, args.resume)
     by_key = {r["key"]: r for r in records}

@@ -5,7 +5,7 @@ Granite model inference was run locally.
 
 | Check | Result |
 |---|---|
-| New regression checks plus existing X5 tests | 13 passed |
+| New regression checks plus existing X5 tests | 14 passed |
 | Q dry selection | 12 deep candidates from 12 distinct cases, across airline, retail, telecom and banking domains |
 | S7 saved-score reinterpretation | 103 suspicions from 23 cases; `any risk=no` diagnostic TP2/FP3/FN11/TN7 |
 | Typed fixed router, 4 executed tools | 46 cases, 165 tool observations; base and guarded output TP23/FP16/FN0/TN7, 16 safe-card candidates, zero automatic flips |

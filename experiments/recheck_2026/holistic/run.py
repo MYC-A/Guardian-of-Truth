@@ -2,12 +2,11 @@
 from __future__ import annotations
 
 import argparse
-import os
 from pathlib import Path
 
 from experiments.recheck_2026.shared import (
     DEFAULT_CASES, DEFAULT_GOLD, Mistral, bounded, cases, digest, labels,
-    prepare_run, score, write_json, write_jsonl,
+    mistral_settings, prepare_run, score, write_json, write_jsonl,
 )
 
 SYSTEM = (
@@ -46,7 +45,7 @@ def main() -> int:
     config = {"experiment": "holistic_matched_input_v1", "case_sha256": digest(args.cases),
               "gold_sha256": digest(args.gold), "context_chars": args.context_chars,
               "case_ids": [r["id"] for r in selected], "dry_run": args.dry_run,
-              "requested_model": os.getenv("MISTRAL_MODEL", "ministral-14b-latest"),
+              "requested_model": mistral_settings()["MISTRAL_MODEL"],
               "modes": ["head", "head_tail"], "system": SYSTEM}
     rows = prepare_run(output, config, args.resume)
     by_id = {r["id"]: r for r in rows}

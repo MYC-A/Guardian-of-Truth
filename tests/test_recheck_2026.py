@@ -2,6 +2,7 @@
 from __future__ import annotations
 
 import unittest
+from unittest.mock import patch
 from pathlib import Path
 from tempfile import TemporaryDirectory
 from types import SimpleNamespace
@@ -13,7 +14,7 @@ from experiments.recheck_2026.fp_replay.run import audit_evidence
 from experiments.recheck_2026.fp_review.run import candidate_decision
 from experiments.recheck_2026.holistic.run import assemble
 from experiments.recheck_2026.questions.run import pick
-from experiments.recheck_2026.shared import prepare_run, write_jsonl
+from experiments.recheck_2026.shared import mistral_settings, prepare_run, write_jsonl
 
 
 class RecheckContractTests(unittest.TestCase):
@@ -108,6 +109,15 @@ class RecheckContractTests(unittest.TestCase):
                              [{"id": "case"}])
             with self.assertRaises(ValueError):
                 prepare_run(path, {"input_hash": "two"}, True)
+
+    def test_existing_mistral_env_file_is_read_without_echo(self):
+        with TemporaryDirectory() as directory:
+            path = Path(directory) / "mistral.env"
+            path.write_text("export MISTRAL_API_KEY='fixture-key'\nMISTRAL_MODEL=fixture-model\n",
+                            encoding="utf-8")
+            with patch.dict("os.environ", {"MISTRAL_ENV_FILE": str(path)}, clear=True):
+                self.assertEqual(mistral_settings(), {
+                    "MISTRAL_API_KEY": "fixture-key", "MISTRAL_MODEL": "fixture-model"})
 
 
 if __name__ == "__main__":

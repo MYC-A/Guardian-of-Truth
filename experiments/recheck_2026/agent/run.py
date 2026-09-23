@@ -7,7 +7,6 @@ from __future__ import annotations
 
 import argparse
 import json
-import os
 import re
 import sys
 import time
@@ -15,7 +14,7 @@ from pathlib import Path
 
 from experiments.recheck_2026.shared import (
     DEFAULT_CASES, DEFAULT_GOLD, REPO, Mistral, bounded, cases, digest, jsonl,
-    labels, prepare_run, score, write_json, write_jsonl,
+    labels, mistral_settings, prepare_run, score, write_json, write_jsonl,
 )
 
 sys.path.insert(0, str(REPO / "experiments/searh_23"))
@@ -220,7 +219,7 @@ def main() -> int:
         "arm": args.arm, "max_executed_tools": args.max_tools,
         "case_sha256": digest(args.cases), "pg_sha256": digest(PG),
         "cards_sha256": digest(PCARDS), "gold_sha256": digest(args.gold),
-        "requested_model": (os.getenv("MISTRAL_MODEL", "ministral-14b-latest")
+        "requested_model": (mistral_settings()["MISTRAL_MODEL"]
                             if args.arm == "agent" else None),
         "ids": ids, "dry_run": args.dry_run,
         "controller": "card-index matched positive proofs only; safe cards are review candidates"}

@@ -13,6 +13,26 @@ from pathlib import Path
 REPO = Path(__file__).resolve().parents[2]
 DEFAULT_CASES = REPO / "outputs/full21/input/public46_label_free.csv"
 DEFAULT_GOLD = REPO / "outputs/full21/control_repro_percase.csv"
+DEFAULT_MISTRAL_ENV_FILE = Path("/mnt/data/guardian/secrets/mistral.env")
+
+
+def mistral_settings() -> dict[str, str]:
+    """Read the existing server secret file without copying or logging it."""
+    path = Path(os.getenv("MISTRAL_ENV_FILE", str(DEFAULT_MISTRAL_ENV_FILE)))
+    saved: dict[str, str] = {}
+    if path.is_file():
+        for raw in path.read_text(encoding="utf-8").splitlines():
+            line = raw.strip()
+            if line.startswith("export "):
+                line = line[7:].strip()
+            if not line or line.startswith("#") or "=" not in line:
+                continue
+            key, value = line.split("=", 1)
+            if key.strip() in {"MISTRAL_API_KEY", "MISTRAL_MODEL"}:
+                saved[key.strip()] = value.strip().strip("\"'")
+    return {"MISTRAL_API_KEY": os.getenv("MISTRAL_API_KEY") or saved.get("MISTRAL_API_KEY", ""),
+            "MISTRAL_MODEL": os.getenv("MISTRAL_MODEL") or saved.get(
+                "MISTRAL_MODEL", "ministral-14b-latest")}
 
 
 def digest(path: Path) -> str:
@@ -148,8 +168,9 @@ def json_object(raw: str) -> dict:
 
 class Mistral:
     def __init__(self, *, model: str | None = None, api_key: str | None = None):
-        self.model = model or os.getenv("MISTRAL_MODEL", "ministral-14b-latest")
-        self.key = api_key or os.getenv("MISTRAL_API_KEY")
+        settings = mistral_settings()
+        self.model = model or settings["MISTRAL_MODEL"]
+        self.key = api_key or settings["MISTRAL_API_KEY"]
         if not self.key:
             raise RuntimeError("MISTRAL_API_KEY is required for live runs")
 
