@@ -59,6 +59,8 @@ raw per-case outputs, then use new directories for full runs.
    spreading disagreement types. The already verified divergence fragment is
    used as the exact source quote; model-generated quote copying is logged
    separately and cannot block the paired test.
+   The semantic and judge completions use a 1000-token cap: the earlier
+   300-token semantic cap cut off every one of 12 JSON outputs in a live run.
    A separate semantic check is recorded as probabilistic, never as Clingo
    proof. The same judge, system prompt, model and bounded case context are
    used with and without the proposed interpretation. Only paired valid

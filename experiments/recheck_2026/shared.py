@@ -196,8 +196,10 @@ class Mistral:
         start = time.perf_counter()
         with urllib.request.urlopen(request, timeout=300) as response:
             body = json.load(response)
-        raw = body["choices"][0]["message"]["content"]
+        choice = body["choices"][0]
+        raw = choice["message"]["content"]
         return {"value": json_object(raw), "raw": raw,
+                "finish_reason": choice.get("finish_reason"),
                 "latency_s": round(time.perf_counter() - start, 3),
                 "input_sha256": hashlib.sha256((system + "\n" + user).encode("utf-8")).hexdigest(),
                 "input_chars": len(system) + len(user),
