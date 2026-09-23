@@ -10,6 +10,7 @@ from experiments.recheck_2026.agent.run import controller, execute
 from experiments.recheck_2026.c2_x5.run import extraction_from_c2
 from experiments.recheck_2026.claim_verifier.run import support_status
 from experiments.recheck_2026.fp_replay.run import audit_evidence
+from experiments.recheck_2026.fp_review.run import candidate_decision
 from experiments.recheck_2026.holistic.run import assemble
 from experiments.recheck_2026.questions.run import pick
 from experiments.recheck_2026.shared import prepare_run, write_jsonl
@@ -82,6 +83,21 @@ class RecheckContractTests(unittest.TestCase):
         invalid, _ = audit_evidence(case, [{"source": "prompt", "quote": "invented",
                                             "operation": "trigger_present"}])
         self.assertFalse(invalid)
+
+    def test_fp_reviewer_requires_all_cards_and_an_exact_quote(self):
+        case = {"prompt": "Policy says ask for confirmation.", "response": "Please confirm."}
+        cited = {1: {}, 2: {}}
+        one = {"assessments": [{"card_index": 1, "verdict": "refuted",
+                               "source": "response", "quote": "Please confirm.",
+                               "operation": "confirmation_question"}],
+               "other_error_present": False}
+        self.assertEqual(candidate_decision(1, cited, one, case)["label"], 1)
+        both = {"assessments": one["assessments"] + [{"card_index": 2,
+                "verdict": "refuted", "source": "prompt", "quote": "Policy says",
+                "operation": "trigger_present"}], "other_error_present": False}
+        self.assertEqual(candidate_decision(1, cited, both, case)["label"], 0)
+        both["assessments"][1]["quote"] = "invented"
+        self.assertEqual(candidate_decision(1, cited, both, case)["label"], 1)
 
     def test_resume_rejects_changed_config(self):
         with TemporaryDirectory() as directory:

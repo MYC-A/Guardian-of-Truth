@@ -23,8 +23,8 @@ model directory. Mistral runs need `MISTRAL_API_KEY` in the environment;
 written into artifacts. Record the served model and package versions on the
 server alongside the run outputs.
 
-Before full remote runs, use `--limit 2` for agent/holistic, `--deep 2` for Q,
-and `--limit-cases 1` for S7 in separate smoke output directories. Inspect the
+Before full remote runs, use `--limit 2` for agent/holistic, `--limit 10` for
+the FP reviewer, `--deep 2` for Q, and `--limit-cases 1` for S7 in separate smoke output directories. Inspect the
 raw per-case outputs, then use new directories for full runs.
 
 ## Runs
@@ -104,16 +104,28 @@ raw per-case outputs, then use new directories for full runs.
    python -m experiments.recheck_2026.c2_x5.run --out outputs/recheck_2026/c2_server_replay_01
    ```
 
-6. **FP reviewer replay gate** (`fp_replay/`). Once the separate pgjudge v3
-   reviewer supplies all 46 per-case decisions, replay them against the frozen
-   pgjudge labels and gold. Input JSONL rows must contain `id`, `label`, and
+6. **FP reviewer** (`fp_review/`). Replaces the missing v3 implementation with
+   a fully versioned eight-operation critic. It sees the pgjudge allegation,
+   exact grounded cards, bounded case and response. Every cited card must be
+   refuted by an exact source quote before it proposes a 1→0 change. It also
+   asks about other errors, so its clearance is **probabilistic**, not proof.
+   Cases with no cited cards or a missing policy quote keep the base label.
+
+   ```bash
+   python -m experiments.recheck_2026.fp_review.run --dry-run --out outputs/recheck_2026/fp_review_dry
+   python -m experiments.recheck_2026.fp_review.run --out outputs/recheck_2026/fp_review_server_01
+   ```
+
+7. **FP reviewer replay gate** (`fp_replay/`). Replay the new critic's JSONL or
+   the original v3's recovered per-case predictions against frozen pgjudge
+   labels and gold. Input JSONL rows must contain `id`, `label`, and
    `evidence`: a list of `{source, quote, operation}`. Every changed label
    needs an exact source quote and one of the eight named operations in
    `fp_replay/run.py`. This checks ID coverage and provenance, **not** the
    semantic correctness of the quote's interpretation.
 
    ```bash
-   python -m experiments.recheck_2026.fp_replay.run --candidate /path/to/v3_percase.jsonl --out outputs/recheck_2026/fp_v3_replay_01
+   python -m experiments.recheck_2026.fp_replay.run --candidate outputs/recheck_2026/fp_review_server_01/records.jsonl --out outputs/recheck_2026/fp_review_replay_01
    ```
 
 ## Existing controls and limits

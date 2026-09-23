@@ -5,10 +5,11 @@ Granite model inference was run locally.
 
 | Check | Result |
 |---|---|
-| New regression checks plus existing X5 tests | 12 passed |
+| New regression checks plus existing X5 tests | 13 passed |
 | Q dry selection | 12 deep candidates from 12 distinct cases, across airline, retail, telecom and banking domains |
 | S7 saved-score reinterpretation | 103 suspicions from 23 cases; `any risk=no` diagnostic TP2/FP3/FN11/TN7 |
 | Typed fixed router, 4 executed tools | 46 cases, 165 tool observations; base and guarded output TP23/FP16/FN0/TN7, 16 safe-card candidates, zero automatic flips |
+| New FP reviewer dry-run and replay | 46 IDs matched; 35 positive alarms have complete source-grounded card citations; dry output passes the replay gate |
 | C2 → X5 saved-proposal replay | 44/46 schema-valid paired cases; X5 C0 and C2 both TP7/FP0/FN16/TN21; zero binary changes; 12 `PROVED_NO_ERROR` → `UNRESOLVED` |
 | Resume check | Dry Q, S7, holistic and two-case typed router successfully reopened matching configs with `--resume` |
 
