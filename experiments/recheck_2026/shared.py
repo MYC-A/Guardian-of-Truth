@@ -14,11 +14,16 @@ REPO = Path(__file__).resolve().parents[2]
 DEFAULT_CASES = REPO / "outputs/full21/input/public46_label_free.csv"
 DEFAULT_GOLD = REPO / "outputs/full21/control_repro_percase.csv"
 DEFAULT_MISTRAL_ENV_FILE = Path("/mnt/data/guardian/secrets/mistral.env")
+FALLBACK_MISTRAL_ENV_FILE = Path("/mnt/data/guardian/agent-workspace/.mistral.env")
 
 
 def mistral_settings() -> dict[str, str]:
     """Read the existing server secret file without copying or logging it."""
-    path = Path(os.getenv("MISTRAL_ENV_FILE", str(DEFAULT_MISTRAL_ENV_FILE)))
+    configured = os.getenv("MISTRAL_ENV_FILE")
+    path = Path(configured) if configured else next(
+        (candidate for candidate in (DEFAULT_MISTRAL_ENV_FILE,
+                                      FALLBACK_MISTRAL_ENV_FILE) if candidate.is_file()),
+        DEFAULT_MISTRAL_ENV_FILE)
     saved: dict[str, str] = {}
     if path.is_file():
         for raw in path.read_text(encoding="utf-8").splitlines():

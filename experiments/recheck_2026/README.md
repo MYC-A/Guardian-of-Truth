@@ -21,7 +21,8 @@ The local Granite run additionally needs the server's compatible PyTorch,
 Transformers and Accelerate installation and a local Granite Guardian 3.3 8B
 model directory. Mistral runs need `MISTRAL_API_KEY` in the environment;
 the client can also read the existing
-`/mnt/data/guardian/secrets/mistral.env` file, or a path named by
+`/mnt/data/guardian/secrets/mistral.env` file, the server workspace's
+`.mistral.env`, or a path named by
 `MISTRAL_ENV_FILE`. Environment variables take precedence. `MISTRAL_MODEL`
 defaults to `ministral-14b-latest`. No key is written into artifacts. Record
 the served model and package versions on the

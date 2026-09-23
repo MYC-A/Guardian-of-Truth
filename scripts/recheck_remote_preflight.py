@@ -31,13 +31,15 @@ def sha(path: Path) -> str:
 
 def main() -> None:
     model = Path("/mnt/data/guardian/models/granite-guardian-3.3-8b-b3421eda")
-    secret = Path("/mnt/data/guardian/secrets/mistral.env")
+    candidates = (Path("/mnt/data/guardian/secrets/mistral.env"),
+                  Path("/mnt/data/guardian/agent-workspace/.mistral.env"))
+    secret = next((path for path in candidates if path.is_file()), candidates[0])
     try:
         secret_lines = secret.read_text(encoding="utf-8").splitlines()
-        key_present = any(line.strip().lstrip("export ").startswith("MISTRAL_API_KEY=")
+        key_present = any(line.strip().removeprefix("export ").startswith("MISTRAL_API_KEY=")
                           and len(line.partition("=")[2].strip()) > 0
                           for line in secret_lines)
-        model_present = any(line.strip().lstrip("export ").startswith("MISTRAL_MODEL=")
+        model_present = any(line.strip().removeprefix("export ").startswith("MISTRAL_MODEL=")
                             for line in secret_lines)
     except (OSError, UnicodeError):
         key_present = model_present = False
@@ -59,6 +61,7 @@ def main() -> None:
                            "sha256": sha(path) if path.is_file() else None}
                    for name, relative in INPUTS.items()},
         "mistral_secret_file_readable": os.access(secret, os.R_OK),
+        "mistral_secret_file": str(secret),
         "mistral_key_present": key_present,
         "mistral_model_present": model_present,
         "granite_model_config": (model / "config.json").is_file(),
