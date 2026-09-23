@@ -76,8 +76,11 @@ Input: outputs/full21/input/public46_label_free.csv (sha256 in outputs/searh_23/
 
 ## Post-freeze development note (not frozen)
 
-Mechanical FP-refutation layer v3 over pgjudge (candidate C4): public46
-in-sample TP23/FP5/FN0, F1 .9020, R 1.0 (docs/searh_23/FP_DIAGNOSTIC.md).
-NOT added to the frozen set: developed against the same 16 FP it removes;
-requires out-of-sample validation (hotel-domain port) before any freeze
-decision. C1/C2/C3 above are unchanged.
+Mechanical FP-refutation layer over pgjudge (candidate C4): public46 in-sample
+TP23/FP6/FN0, F1 .8846, R 1.0 after the v3.1 grounded-card indexing correction
+(v3.0's .9020 was inflated by the bug; v3.1 does NOT beat the frozen OR F1 —
+it is the recall-complete tradeoff point). Out-of-sample hotel port: pgjudge
+recall transfers (R=1.0), the refutation families do not (0/12 FP removed,
+0 TP lost — conservative abstention). NOT added to the frozen set: in-sample
+development + non-transferring families; v4 history-satisfaction family is
+the recorded next step. C1/C2/C3 above are unchanged.

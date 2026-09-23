@@ -86,3 +86,56 @@ All refutations cite evidence spans; per-case verdicts with evidence:
   tightening them on the same 16 cases would be in-sample overfitting.
 - Not frozen: FREEZE.md C1/C2/C3 unchanged; this is a post-freeze development
   record (candidate C4).
+
+## 4. v3.1 correction (grounded-card indexing bug)
+
+v3.0 indexed `violated_cards` against the FULL extracted card list, but the
+judge-side `cards_block` presents only quote_grounded cards — whenever a case
+had ungrounded cards (19/46 records), the layer looked up the WRONG card.
+v3.1 indexes the grounded subset exactly as the judge sees it (and computes
+'before' metrics instead of hardcoding). Corrected public46 in-sample:
+
+| Layer | TP | FP | FN | P | R | F1 |
+|---|---|---|---|---|---|---|
+| + refute v3.0 (buggy) | 23 | 5 | 0 | .821 | 1.0 | .9020 |
+| + refute v3.1 (fixed) | 23 | 6 | 0 | .793 | 1.0 | **.8846** |
+
+One FP (telecom mms wifi_calling t15) was refuted via a wrong-card lookup;
+airline_3::t4 changed UNKNOWN -> KEEP. CORRECTED CLAIM: v3.1 does not beat the
+frozen OR baseline (.8889); it is the recall-complete tradeoff point
+(FN=0 vs baseline FN=3, 6 FP vs 2). Still 0 TP wrongly refuted, 10/16 FP
+refuted, banking_080 UNKNOWN-kept. All artifacts:
+outputs/searh_23/fp_diagnostic/refute_layer_v3_v31.json (v3.0:
+refute_layer_v3.json, retained as the bug record).
+
+## 5. Out-of-sample: hotel domain port (checkpoint 10)
+
+Pipeline unchanged (experiments/searh_23/p_hotel_port.py repoints
+p_precond_api to the hotel v2 suite); outputs/searh_23/hotel_p/.
+
+pgjudge: TP14/FP12/FN0/TN2 (all28), F1 .7000, R 1.0; semantic20:
+TP10/FP9/FN0/TN1, F1 .6897. granite on semantic20: TP10/FP8/FN0/TN2, .7143.
+
+- RECALL transfers (all constructed violations flagged on a new domain).
+- v3.1 on hotel: fp_refuted 0/12, tp_wrongly_refuted 0 — the layer ABSTAINS on
+  the new domain (safe), removes nothing.
+- Hotel FP cause classes (new vs public46):
+  - ~9/12 C7 history-satisfied-precondition-restatement-demanded: the ok-twin
+    histories contain the satisfying observation (verify_identity match:true;
+    check_supervisor_approval granted SUP-xxx; lookup_reservation cancelled_at /
+    category; search_incident_reports INC confirmed) and the judge demands it be
+    restated/re-done in the final response.
+  - 2/12 C8 invented-applicability: the identity card (scope: modifying or
+    cancelling reservations) applied to refunds (pair13/14) or to informational
+    turns (pair02/03).
+  - 1/12 C9 policy-grounded-value-flagged (pair08: $15 breakfast claim is
+    policy-grounded) and 1 suite artifact (pair11::ok: mechanical control
+    labeled compliant though no identity verification exists in its history —
+    label isolation by design, not policy semantics).
+- v4 design (recorded next step): history-satisfaction family — for a demanded
+  precondition, search trajectory observations for an entity-anchored
+  satisfying result (match:true / approval granted / cancelled_at / confirmed
+  incident / category match); contradicting observation -> KEEP; none ->
+  UNKNOWN. Mechanism domain-general; the JSON-key lexicon is the portable
+  part. HONESTY NOTE: developing v4 on hotel makes hotel in-sample; final
+  validation then requires a third unseen domain/trajectory set.

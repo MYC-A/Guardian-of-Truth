@@ -1,6 +1,12 @@
 #!/usr/bin/env python3
 """Mechanical FP-refutation layer v3 over pgjudge candidates (general operations, evidence-cited).
 
+Portable version (checkpoint 10): CLI args with public46 defaults; runs unchanged on
+public46 and on any new domain (hotel contrast suite) with --records/--cards/--gold-json/
+--cases/--out/--tag. v3.1 fixes: (a) card indexing now filters quote_grounded exactly like
+the judge-side cards_block (ungrounded cards previously shifted violated_cards indices);
+(b) 'before' metrics computed from the base records instead of hardcoded.
+
 History: v1 (server, refute_layer.json) removed 10 FP but wrongly removed 1 TP
 (banking_knowledge__task_003::t7, gold=1) and unsoundly removed banking_080 via a
 KB_search_dense 'confirmation' that is not an unfreeze observation.
@@ -21,6 +27,7 @@ v3 changes over v1:
 
 The layer still targets: FPs removed without touching TPs; unknown observations keep flags.
 """
+import argparse
 import csv
 import json
 import re
@@ -30,14 +37,6 @@ from pathlib import Path
 REPO = Path("/mnt/data/guardian/agent-workspace/Guardian-searh23")
 sys.path.insert(0, str(REPO / "src"))
 from guardian_truth.parsing import parse_events  # noqa: E402
-
-PG = REPO / "outputs/big_researh/p_api/pgjudge/records.jsonl"
-CARDS = REPO / "outputs/big_researh/p_api/extract/cards.jsonl"
-GOLD = REPO / "outputs/searh_23/baseline_frozen/control_repro_percase.csv"
-P46 = REPO / "outputs/full21/input/public46_label_free.csv"
-OUT = REPO / "outputs/searh_23/fp_diagnostic"
-
-csv.field_size_limit(2 ** 30)
 
 CONFIRM_ASK = re.compile(r"(подтверд|да или нет|«да»|ответьте|выберите|что вы выберете|"
                          r"напишите какой|уточните|хотите[^?]*\?)", re.IGNORECASE)
@@ -73,8 +72,6 @@ HANDOFF_FAMILY = re.compile(r"transfer_to_human|human agent", re.IGNORECASE)
 LOGGING_TOOL = re.compile(r"verification logging tool|log_verification", re.IGNORECASE)
 OTHER_USER = re.compile(r"other user", re.IGNORECASE)
 APN_FAMILY = re.compile(r"apn|mmsc", re.IGNORECASE)
-CALL_LINE = re.compile(r"→ TOOL_CALL ([\w.-]+)(?:\s*:\s*(\{.*?\}))?\s*$", re.MULTILINE)
-RESP_LINE = re.compile(r"← TOOL_RESPONSE ([\w.-]+): (.*)")
 
 
 def case_signals(prompt, response):
@@ -193,25 +190,55 @@ def refute_card(card, sig, reason=""):
 
 
 def main():
-    recs = {json.loads(l)["id"]: json.loads(l) for l in open(PG, encoding="utf-8")}
-    gold = {r["id"]: int(r["gold"]) for r in csv.DictReader(open(GOLD, encoding="utf-8"))}
+    ap = argparse.ArgumentParser()
+    ap.add_argument("--records", default=str(REPO / "outputs/big_researh/p_api/pgjudge/records.jsonl"))
+    ap.add_argument("--cards", default=str(REPO / "outputs/big_researh/p_api/extract/cards.jsonl"))
+    ap.add_argument("--gold-csv", default=str(REPO / "outputs/searh_23/baseline_frozen/control_repro_percase.csv"))
+    ap.add_argument("--gold-json", default="",
+                    help="json {id: label} (e.g. hotel expected.json); overrides --gold-csv")
+    ap.add_argument("--cases", default=str(REPO / "outputs/full21/input/public46_label_free.csv"))
+    ap.add_argument("--out-dir", default=str(REPO / "outputs/searh_23/fp_diagnostic"))
+    ap.add_argument("--tag", default="", help="output suffix, e.g. _hotel -> refute_layer_v3_hotel.json")
+    args = ap.parse_args()
+
+    csv.field_size_limit(2 ** 30)
+    recs = {json.loads(l)["id"]: json.loads(l) for l in open(args.records, encoding="utf-8")}
+    if args.gold_json:
+        gold = {k: int(v) for k, v in json.load(open(args.gold_json, encoding="utf-8")).items()}
+    else:
+        gold = {r["id"]: int(r["gold"]) for r in csv.DictReader(open(args.gold_csv, encoding="utf-8"))}
     cards_by_case = {}
-    for l in open(CARDS, encoding="utf-8"):
+    for l in open(args.cards, encoding="utf-8"):
         c = json.loads(l)
-        cards_by_case[c["id"]] = c.get("cards") or []
-    cases = {r["id"]: r for r in csv.DictReader(open(P46, encoding="utf-8"))}
+        # v3.1: index GROUNDED cards only — the judge-side cards_block filters
+        # quote_grounded, so violated_cards indices refer to the grounded subset.
+        cards_by_case[c["id"]] = [x for x in (c.get("cards") or []) if x.get("quote_grounded")]
+    cases = {r["id"]: r for r in csv.DictReader(open(args.cases, encoding="utf-8"))}
 
     per_case, n_fp_refuted, n_tp_refuted, fp_kept_unknown = [], 0, 0, []
+    base_tp = base_fp = base_fn = 0
+    for cid in recs:
+        g = gold.get(cid)
+        if g is None:
+            continue
+        if recs[cid]["label"] == 1 and g == 1:
+            base_tp += 1
+        elif recs[cid]["label"] == 1 and g == 0:
+            base_fp += 1
+        elif recs[cid]["label"] == 0 and g == 1:
+            base_fn += 1
     for cid in sorted(recs):
         r = recs[cid]
         if r["label"] != 1:
+            continue
+        if cid not in cases or cid not in gold:
             continue
         c = cases[cid]
         sig = case_signals(c["prompt"], c["response"])
         idxs = r.get("violated_cards") or []
         cards = []
         for idx in idxs:
-            if isinstance(idx, int) and 1 <= idx <= len(cards_by_case[cid]):
+            if isinstance(idx, int) and 1 <= idx <= len(cards_by_case.get(cid, [])):
                 cards.append(cards_by_case[cid][idx - 1])
         if not cards and not idxs:
             verdicts = [refute_card(None, sig, r.get("reason") or "")]
@@ -236,22 +263,33 @@ def main():
 
     tp = sum(1 for e in per_case if e["new_label"] == 1 and e["gold"] == 1)
     fp = sum(1 for e in per_case if e["new_label"] == 1 and e["gold"] == 0)
-    fn = sum(1 for cid, g in gold.items() if g == 1 and recs[cid]["label"] == 0)
+    fn = base_fn
     p = tp / (tp + fp) if tp + fp else None
     r_ = tp / (tp + fn) if tp + fn else None
     f1 = 2 * p * r_ / (p + r_) if p and r_ else None
+    bp = base_tp / (base_tp + base_fp) if base_tp + base_fp else None
+    br = base_tp / (base_tp + base_fn) if base_tp + base_fn else None
+    bf1 = 2 * bp * br / (bp + br) if bp and br else None
     res = {
-        "layer": "mechanical FP-refutation v3 (general operations; safety-gated; kind-first routing)",
+        "layer": "mechanical FP-refutation v3.1 (general operations; safety-gated; kind-first routing;"
+                 " grounded-card indexing)",
+        "inputs": {"records": args.records, "cards": args.cards, "cases": args.cases,
+                   "gold": args.gold_json or args.gold_csv},
         "fp_refuted": n_fp_refuted, "fp_total": sum(1 for e in per_case if e["gold"] == 0),
         "tp_wrongly_refuted": n_tp_refuted, "tp_total": sum(1 for e in per_case if e["gold"] == 1),
         "fp_kept_unknown": fp_kept_unknown,
         "after": {"TP": tp, "FP": fp, "FN": fn,
                   "P": round(p, 4) if p else None, "R": round(r_, 4) if r_ else None,
                   "F1": round(f1, 4) if f1 else None},
-        "before": {"TP": 23, "FP": 16, "FN": 0, "F1": 0.7419},
+        "before": {"TP": base_tp, "FP": base_fp, "FN": base_fn,
+                   "P": round(bp, 4) if bp else None, "R": round(br, 4) if br else None,
+                   "F1": round(bf1, 4) if bf1 else None},
         "per_case": per_case,
     }
-    (OUT / "refute_layer_v3.json").write_text(json.dumps(res, ensure_ascii=False, indent=1), encoding="utf-8")
+    out_dir = Path(args.out_dir)
+    out_dir.mkdir(parents=True, exist_ok=True)
+    out_name = "refute_layer_v3" + (args.tag if args.tag.startswith("_") else ("_" + args.tag if args.tag else "")) + ".json"
+    (out_dir / out_name).write_text(json.dumps(res, ensure_ascii=False, indent=1), encoding="utf-8")
     print(json.dumps({k: v for k, v in res.items() if k != "per_case"}, ensure_ascii=False, indent=1))
     for e in per_case:
         print(f"{e['id'][:58]:58s} gold={e['gold']} new={e['new_label']} "

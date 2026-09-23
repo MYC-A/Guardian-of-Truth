@@ -160,12 +160,35 @@ flagged cards refuted; any UNKNOWN keeps):
 |---|---|---|---|---|---|---|---|
 | pgjudge (base) | 23 | 16 | 0 | .590 | 1.0 | .7419 | recall channel |
 | + refute v1 | 22 | 6 | 1 | .786 | .957 | .8627 | killed TP banking_003::t7; unsound 080 removal |
-| + refute v3 | 23 | 5 | 0 | .821 | 1.0 | **.9020** | safety-gated, kind-first; 0 TP lost; 080 UNKNOWN-kept |
+| + refute v3.0 | 23 | 5 | 0 | .821 | 1.0 | .9020 | INDEXING BUG: violated_cards looked up in the full card list while the judge sees only grounded cards (19/46 records affected) |
+| + refute v3.1 | 23 | 6 | 0 | .793 | 1.0 | **.8846** | corrected (grounded-card indexing); 0 TP lost; 080 UNKNOWN-kept |
 
-**v3 is the first configuration to beat the frozen OR baseline (.8889) and the
-only one with R=1.0.** IN-SAMPLE CAVEAT: developed against these exact 16 FP;
-upper bound until out-of-sample validation (hotel-domain port of pgjudge+v3 is
-the recorded next step). Candidate C4, not frozen.
+CORRECTED CLAIM: v3.1 does NOT beat the frozen OR baseline F1 (.8889). It is a
+different tradeoff point: recall-complete (R=1.0, FN=0 vs baseline FN=3) with 6
+FP vs baseline 2. The earlier .9020 was inflated by the indexing bug (one FP
+refuted via a wrong-card lookup, telecom t15). In-sample caveat still applies.
+
+Out-of-sample hotel port (checkpoint 10, outputs/searh_23/hotel_p/):
+pgjudge pipeline unchanged, paths repointed (experiments/searh_23/p_hotel_port.py).
+
+| Channel | set | TP | FP | FN | TN | P | R | F1 |
+|---|---|---|---|---|---|---|---|---|
+| granite groundedness | semantic20 | 10 | 8 | 0 | 2 | .556 | 1.0 | .7143 |
+| pgjudge (cards+graph) | semantic20 | 10 | 9 | 0 | 1 | .526 | 1.0 | .6897 |
+| pgjudge (cards+graph) | all28 | 14 | 12 | 0 | 2 | .538 | 1.0 | .7000 |
+| pgjudge + refute v3.1 | all28 | 14 | 12 | 0 | 2 | .538 | 1.0 | .7000 |
+
+- pgjudge RECALL transfers to the new domain (R=1.0); precision does not (12 FP).
+- v3.1 does NOT transfer: 0/12 hotel FP refuted — but 0 TP lost: the layer
+  abstains rather than wrongly refutes (safety property holds out-of-sample).
+- Hotel FP causes are a NEW class vs public46: ~9/12 "precondition already
+  satisfied in trajectory history (verify_identity match:true /
+  check_supervisor_approval granted / cancelled_at present / incident report
+  found), judge demands restatement in the final response". Absent from the
+  public46 diagnostic set the v3 families were built on.
+- Recorded next step (v4): history-satisfaction family (entity-anchored
+  observation search for demanded preconditions). NOTE: developing v4 on hotel
+  makes hotel in-sample; honest final validation then needs a third unseen set.
 
 ## Bottom line
 
@@ -183,6 +206,8 @@ the recorded next step). Candidate C4, not frozen.
 - Recommended next iteration: pgjudge as candidate generator with a
   mechanical FP-verification layer (the reverse of the failed A arm), and
   porting the structural checks to new-domain event formats.
-- UPDATE (post-freeze): that layer now exists — refute v3 reaches
-  F1 .9020 / R 1.0 in-sample (see §11 and docs/searh_23/FP_DIAGNOSTIC.md);
-  out-of-sample validation pending.
+- UPDATE (post-freeze, corrected): the layer exists — refute v3.1 reaches
+  F1 .8846 / R 1.0 in-sample on public46 (indexing-bug-corrected; v3.0's
+  .9020 was inflated). Out-of-sample hotel port: recall transfers (R=1.0),
+  the v3.1 families do not (0/12 FP removed, 0 TP lost — safe abstention).
+  v4 history-satisfaction family is the recorded next step (§11).
