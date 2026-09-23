@@ -7,7 +7,7 @@ from pathlib import Path
 from tempfile import TemporaryDirectory
 from types import SimpleNamespace
 
-from experiments.recheck_2026.agent.run import controller, execute
+from experiments.recheck_2026.agent.run import action_catalog, controller, execute
 from experiments.recheck_2026.c2_x5.run import extraction_from_c2
 from experiments.recheck_2026.claim_verifier.run import support_status
 from experiments.recheck_2026.fp_replay.run import audit_evidence
@@ -18,6 +18,13 @@ from experiments.recheck_2026.shared import json_object, mistral_settings, prepa
 
 
 class RecheckContractTests(unittest.TestCase):
+    def test_agent_catalog_binds_exact_card_address(self):
+        fake = SimpleNamespace(p={"cards": [{"quote_grounded": True,
+                                               "policy_quote": "required"}]},
+                               graph=None, response="", history_events=[])
+        self.assertEqual(action_catalog(fake, "")["P1"],
+                         {"tool": "premise_card", "target": 1})
+
     def test_json_parser_accepts_unescaped_newline_inside_model_string(self):
         self.assertEqual(json_object('{"reason":"first\nsecond","label":0}'),
                          {"reason": "first\nsecond", "label": 0})
