@@ -7,6 +7,7 @@ import json
 import os
 import re
 import time
+import urllib.error
 import urllib.request
 from pathlib import Path
 
@@ -175,6 +176,10 @@ def json_object(raw: str) -> dict:
     return value
 
 
+class MistralRateLimit(RuntimeError):
+    """The API still returned 429 after a bounded cool-down."""
+
+
 class Mistral:
     def __init__(self, *, model: str | None = None, api_key: str | None = None):
         settings = mistral_settings()
@@ -182,6 +187,7 @@ class Mistral:
         self.key = api_key or settings["MISTRAL_API_KEY"]
         if not self.key:
             raise RuntimeError("MISTRAL_API_KEY is required for live runs")
+        self._next_request = 0.0
 
     def ask(self, system: str, user: str, *, max_tokens: int = 400) -> dict:
         payload = {"model": self.model, "temperature": 0,
@@ -194,8 +200,25 @@ class Mistral:
             headers={"Authorization": f"Bearer {self.key}",
                      "Content-Type": "application/json"})
         start = time.perf_counter()
-        with urllib.request.urlopen(request, timeout=300) as response:
-            body = json.load(response)
+        for attempt in range(2):
+            pause = self._next_request - time.monotonic()
+            if pause > 0:
+                time.sleep(pause)
+            self._next_request = time.monotonic() + 2.0
+            try:
+                with urllib.request.urlopen(request, timeout=300) as response:
+                    body = json.load(response)
+                break
+            except urllib.error.HTTPError as exc:
+                if exc.code != 429:
+                    raise
+                if attempt:
+                    raise MistralRateLimit("Mistral API rate limit persists after retry") from None
+                try:
+                    retry_after = float(exc.headers.get("Retry-After", "60"))
+                except ValueError:
+                    retry_after = 60.0
+                time.sleep(min(max(retry_after, 30.0), 120.0))
         choice = body["choices"][0]
         raw = choice["message"]["content"]
         return {"value": json_object(raw), "raw": raw,

@@ -14,7 +14,7 @@ from pathlib import Path
 
 from experiments.recheck_2026.shared import (
     DEFAULT_CASES, DEFAULT_GOLD, REPO, Mistral, bounded, cases, digest, jsonl,
-    labels, mistral_settings, prepare_run, score, write_json, write_jsonl,
+    labels, mistral_settings, MistralRateLimit, prepare_run, score, write_json, write_jsonl,
 )
 
 sys.path.insert(0, str(REPO / "experiments/searh_23"))
@@ -166,6 +166,8 @@ def agent_plan(toolbox: ToolBox, registry: dict, client: Mistral,
             ensure_ascii=False)
         try:
             response = client.ask(PLANNER_SYSTEM, user)
+        except MistralRateLimit:
+            raise
         except Exception as exc:
             decisions.append({"error": f"planner_request_failed:{type(exc).__name__}",
                               "terminal": True})

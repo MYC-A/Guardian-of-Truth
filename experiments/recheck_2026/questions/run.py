@@ -9,7 +9,7 @@ from pathlib import Path
 
 from experiments.recheck_2026.shared import (
     DEFAULT_CASES, DEFAULT_GOLD, REPO, Mistral, bounded, cases, digest, jsonl,
-    labels, mistral_settings, policy_text, prepare_run, score, write_json, write_jsonl,
+    labels, mistral_settings, MistralRateLimit, policy_text, prepare_run, score, write_json, write_jsonl,
 )
 
 DEFAULT_DIVERGENCES = REPO / "outputs/searh_23/q_v2/divergences.jsonl"
@@ -163,6 +163,8 @@ def main() -> int:
                                     "baseline_result": base, "repair_result": changed,
                                     "input_meta": meta,
                                     "used_candidate_reported": changed["value"].get("used_candidate")})
+            except MistralRateLimit:
+                raise
             except Exception as exc:
                 row["status"] = "error"
                 row["error"] = f"{type(exc).__name__}: {exc}"
