@@ -125,7 +125,8 @@ def main() -> int:
                 row["question"] = q
                 proposed = q["value"]
                 quote = proposed.get("quote", "")
-                row["quote_exact_in_policy"] = bool(quote) and quote in policy_text(case_map[cid])
+                row["quote_exact_in_policy"] = (isinstance(quote, str) and bool(quote)
+                                                and quote in policy_text(case_map[cid]))
                 if not row["quote_exact_in_policy"]:
                     row["status"] = "unanchored"
                 else:
