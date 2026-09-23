@@ -154,7 +154,12 @@ def agent_plan(toolbox: ToolBox, registry: dict, client: Mistral,
                                 for i, c in grounded_cards(toolbox).items()],
             "evidence_so_far": actions, "remaining_tool_calls": max_tools - len(actions)},
             ensure_ascii=False)
-        response = client.ask(PLANNER_SYSTEM, user)
+        try:
+            response = client.ask(PLANNER_SYSTEM, user)
+        except Exception as exc:
+            decisions.append({"error": f"planner_request_failed:{type(exc).__name__}",
+                              "terminal": True})
+            break
         decision = response["value"]
         decisions.append({"decision": decision, "latency_s": response["latency_s"],
                           "input_sha256": response["input_sha256"],
