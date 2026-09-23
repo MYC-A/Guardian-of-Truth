@@ -33,7 +33,8 @@ def main() -> None:
     model = Path("/mnt/data/guardian/models/granite-guardian-3.3-8b-b3421eda")
     candidates = (Path("/mnt/data/guardian/secrets/mistral.env"),
                   Path("/mnt/data/guardian/agent-workspace/.mistral.env"))
-    secret = next((path for path in candidates if path.is_file()), candidates[0])
+    secret = next((path for path in candidates
+                   if os.access(path, os.R_OK) and path.is_file()), candidates[0])
     try:
         secret_lines = secret.read_text(encoding="utf-8").splitlines()
         key_present = any(line.strip().removeprefix("export ").startswith("MISTRAL_API_KEY=")

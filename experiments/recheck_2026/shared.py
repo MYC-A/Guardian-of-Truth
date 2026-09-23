@@ -22,7 +22,8 @@ def mistral_settings() -> dict[str, str]:
     configured = os.getenv("MISTRAL_ENV_FILE")
     path = Path(configured) if configured else next(
         (candidate for candidate in (DEFAULT_MISTRAL_ENV_FILE,
-                                      FALLBACK_MISTRAL_ENV_FILE) if candidate.is_file()),
+                                      FALLBACK_MISTRAL_ENV_FILE)
+         if os.access(candidate, os.R_OK) and candidate.is_file()),
         DEFAULT_MISTRAL_ENV_FILE)
     saved: dict[str, str] = {}
     if path.is_file():
