@@ -123,7 +123,7 @@ def load_s8():
 
 # ---------------------------------------------------------------- registry ----
 
-def build_registry(case, cid, arm, ctl, pg):
+def build_registry(case, cid, arm, ctl, pg, p_rec_cards=None):
     """Claim-level suspicion registry (directive §3.1): concrete suspicions,
     multiple per case, each with policy clause, suspected violation,
     alternative explanation and scope."""
@@ -132,27 +132,36 @@ def build_registry(case, cid, arm, ctl, pg):
     base = None
 
     pg_label = None
-    pg_cards = []
     if pg is not None:
         pg_label = pg.get("label", pg.get("pred"))
-        pg_cards = [c for c in (pg.get("cards") or []) if isinstance(c, dict)]
 
     if arm in ("A", "B", "C"):
         if pg_label in (1, "1", True):
-            for i, card in enumerate(pg_cards[:3]):
-                quote = str(card.get("quote", ""))[:200]
+            # violated_cards are 1-BASED indices into the GROUNDED cards list
+            # (p_precond_api pgjudge judge sees grounded cards only)
+            grounded_cards = [c for c in (p_rec_cards or [])
+                              if isinstance(c, dict) and c.get("quote_grounded")]
+            for i in (pg.get("violated_cards") or [])[:3]:
+                try:
+                    idx = int(i)
+                except (TypeError, ValueError):
+                    continue
+                card = grounded_cards[idx - 1] if 1 <= idx <= len(grounded_cards) else None
+                if card is None:
+                    continue
+                quote = str(card.get("policy_quote", card.get("quote", "")))[:200]
                 suspicions.append({
-                    "suspicion_id": f"P{i}", "kind": "violation",
+                    "suspicion_id": f"P{idx}", "kind": "violation",
                     "channel": "pgjudge",
-                    "claim": str(card.get("obligation", card.get("claim", "")))[:200] or quote,
+                    "claim": str(card.get("obligation_summary", ""))[:200] or quote,
                     "policy_clause": quote,
-                    "suspected_violation": str(card.get("violation_hint", ""))[:200] or
+                    "suspected_violation": str(card.get("required_state_or_action", ""))[:200] or
                                            "response may violate this requirement",
                     "alternative_explanation":
                         "precondition/approval may exist in history, or an "
                         "exception applies, or the card is not applicable to "
                         "this case's entities",
-                    "scope": {"card_index": i},
+                    "scope": {"card_index": idx},
                     "disposition": UNKNOWN})
         elif pg_label in (0, "0", False):
             # counter-hypothesis: P+Graph found nothing — the investigator
@@ -425,7 +434,7 @@ def run_fixed(case, cid, arm, toolbox, registry, max_steps, log):
     for s in viol[:2]:
         if s["channel"] == "pgjudge":
             plan.append((s["suspicion_id"], "premise_check",
-                         str(s.get("scope", {}).get("card_index", 0))))
+                         str(s.get("scope", {}).get("card_index", 1))))
             plan.append((s["suspicion_id"], "graph_query",
                          extract_entity(case) or "status"))
         else:
@@ -492,6 +501,9 @@ def main() -> int:
     ap.add_argument("--steps", type=int, default=4)
     ap.add_argument("--limit", type=int, default=0)
     ap.add_argument("--tag", default="")
+    ap.add_argument("--verifier-context", default="compact",
+                    choices=["full", "compact", "graph_source"],
+                    help="§5.1 ablation: NL verifier context construction")
     args = ap.parse_args()
 
     out_dir = OUT_ROOT / f"inv2_{args.arm}{args.tag}"
@@ -550,8 +562,10 @@ def main() -> int:
                        "judge": judge_meta, "trace": []}
             else:
                 toolbox = ToolBox(case, s6.get(cid, {}), s9.get(cid, {}),
-                                  p_cards.get(cid, {}), s8)
-                registry = build_registry(case, cid, args.arm, c, pg)
+                                  p_cards.get(cid, {}), s8,
+                                  verifier_context=args.verifier_context)
+                registry = build_registry(case, cid, args.arm, c, pg,
+                                          p_cards.get(cid, {}).get("cards"))
                 if args.arm == "C":
                     evidence, by_susp, counter_scanned, final, och = run_fixed(
                         case, cid, args.arm, toolbox, registry, args.steps, log)
@@ -629,6 +643,7 @@ def main() -> int:
     lat.sort()
     summary = {
         "arm": args.arm, "steps": args.steps, "n_cases": stats["cases"],
+        "verifier_context": args.verifier_context,
         "arm_metrics": {"TP": tp, "FP": fp, "FN": fn, "TN": tn,
                         "P": p, "R": rc, "F1": f1},
         "base_metrics_same_ids": {"TP": btp, "FP": bfp, "FN": bfn, "TN": btn,
