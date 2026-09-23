@@ -163,10 +163,13 @@ def json_object(raw: str) -> dict:
     try:
         value = json.loads(text)
     except json.JSONDecodeError:
-        match = re.search(r"\{.*\}", text, re.DOTALL)
-        if not match:
-            raise ValueError("model returned no JSON object") from None
-        value = json.loads(match.group())
+        try:
+            value = json.loads(text, strict=False)
+        except json.JSONDecodeError:
+            match = re.search(r"\{.*\}", text, re.DOTALL)
+            if not match:
+                raise ValueError("model returned no JSON object") from None
+            value = json.loads(match.group(), strict=False)
     if not isinstance(value, dict):
         raise ValueError("model returned non-object JSON")
     return value

@@ -14,10 +14,14 @@ from experiments.recheck_2026.fp_replay.run import audit_evidence
 from experiments.recheck_2026.fp_review.run import candidate_decision
 from experiments.recheck_2026.holistic.run import assemble
 from experiments.recheck_2026.questions.run import pick
-from experiments.recheck_2026.shared import mistral_settings, prepare_run, write_jsonl
+from experiments.recheck_2026.shared import json_object, mistral_settings, prepare_run, write_jsonl
 
 
 class RecheckContractTests(unittest.TestCase):
+    def test_json_parser_accepts_unescaped_newline_inside_model_string(self):
+        self.assertEqual(json_object('{"reason":"first\nsecond","label":0}'),
+                         {"reason": "first\nsecond", "label": 0})
+
     def test_questions_sample_distinct_cases_and_exact_source(self):
         cases = {str(i): {"prompt": "Policy exact quote", "response": ""}
                  for i in range(3)}
