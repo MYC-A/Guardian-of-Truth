@@ -143,6 +143,30 @@ Contest-environment constraints: C1 is fully local (16G VRAM granite + CPU
 structural); C2/investigator need the Mistral API channel — its availability
 in the final contest environment is unverified.
 
+## 11. FP diagnostic set + mechanical FP-refutation layer (post-freeze development)
+
+pgjudge fresh (TP23/FP16/FN0, R=1.0) is the only recall-complete channel; the
+16 FP were deep-dived (see docs/searh_23/FP_DIAGNOSTIC.md and
+outputs/searh_23/fp_diagnostic/): 15/16 refutable by 8 general evidence-cited
+operations, 1 honest residual (banking_080, no clean latest observation).
+Dominant cause (~9/16): preconditions demanded where no action is executed or
+the demanded confirmation is already present — an action/communication
+discriminator problem, not reasoning budget (consistent with Investigator v2).
+
+Mechanical refutation layer over pgjudge candidates (1 -> 0 only when ALL
+flagged cards refuted; any UNKNOWN keeps):
+
+| Layer | TP | FP | FN | P | R | F1 | note |
+|---|---|---|---|---|---|---|---|
+| pgjudge (base) | 23 | 16 | 0 | .590 | 1.0 | .7419 | recall channel |
+| + refute v1 | 22 | 6 | 1 | .786 | .957 | .8627 | killed TP banking_003::t7; unsound 080 removal |
+| + refute v3 | 23 | 5 | 0 | .821 | 1.0 | **.9020** | safety-gated, kind-first; 0 TP lost; 080 UNKNOWN-kept |
+
+**v3 is the first configuration to beat the frozen OR baseline (.8889) and the
+only one with R=1.0.** IN-SAMPLE CAVEAT: developed against these exact 16 FP;
+upper bound until out-of-sample validation (hotel-domain port of pgjudge+v3 is
+the recorded next step). Candidate C4, not frozen.
+
 ## Bottom line
 
 - The best frozen configuration remains the audited control
@@ -159,3 +183,6 @@ in the final contest environment is unverified.
 - Recommended next iteration: pgjudge as candidate generator with a
   mechanical FP-verification layer (the reverse of the failed A arm), and
   porting the structural checks to new-domain event formats.
+- UPDATE (post-freeze): that layer now exists — refute v3 reaches
+  F1 .9020 / R 1.0 in-sample (see §11 and docs/searh_23/FP_DIAGNOSTIC.md);
+  out-of-sample validation pending.
