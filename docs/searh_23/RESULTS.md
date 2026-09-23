@@ -162,6 +162,7 @@ flagged cards refuted; any UNKNOWN keeps):
 | + refute v1 | 22 | 6 | 1 | .786 | .957 | .8627 | killed TP banking_003::t7; unsound 080 removal |
 | + refute v3.0 | 23 | 5 | 0 | .821 | 1.0 | .9020 | INDEXING BUG: violated_cards looked up in the full card list while the judge sees only grounded cards (19/46 records affected) |
 | + refute v3.1 | 23 | 6 | 0 | .793 | 1.0 | **.8846** | corrected (grounded-card indexing); 0 TP lost; 080 UNKNOWN-kept |
+| + refute v4 | 23 | 6 | 0 | .793 | 1.0 | .8846 | v3.1 + structural guard + history-satisfaction + scope entailment + temporal threshold; public46 unchanged |
 
 CORRECTED CLAIM: v3.1 does NOT beat the frozen OR baseline F1 (.8889). It is a
 different tradeoff point: recall-complete (R=1.0, FN=0 vs baseline FN=3) with 6
@@ -177,6 +178,7 @@ pgjudge pipeline unchanged, paths repointed (experiments/searh_23/p_hotel_port.p
 | pgjudge (cards+graph) | semantic20 | 10 | 9 | 0 | 1 | .526 | 1.0 | .6897 |
 | pgjudge (cards+graph) | all28 | 14 | 12 | 0 | 2 | .538 | 1.0 | .7000 |
 | pgjudge + refute v3.1 | all28 | 14 | 12 | 0 | 2 | .538 | 1.0 | .7000 |
+| pgjudge + refute v4 | all28 | 14 | 3 | 0 | 11 | .824 | 1.0 | **.9032** |
 
 - pgjudge RECALL transfers to the new domain (R=1.0); precision does not (12 FP).
 - v3.1 does NOT transfer: 0/12 hotel FP refuted — but 0 TP lost: the layer
@@ -186,9 +188,16 @@ pgjudge pipeline unchanged, paths repointed (experiments/searh_23/p_hotel_port.p
   check_supervisor_approval granted / cancelled_at present / incident report
   found), judge demands restatement in the final response". Absent from the
   public46 diagnostic set the v3 families were built on.
-- Recorded next step (v4): history-satisfaction family (entity-anchored
-  observation search for demanded preconditions). NOTE: developing v4 on hotel
-  makes hotel in-sample; honest final validation then needs a third unseen set.
+- v4 BUILT AND RUN (checkpoint 11): structural guard (ported catalog checks —
+  undeclared tool / missing required args; saved pair13/12::viol TPs),
+  history-satisfaction (entity-anchored SAT/FAIL observations), scope
+  entailment, temporal threshold. hotel 9/12 FP removed, 0 TP lost ->
+  F1 .9032 R 1.0; public46 unchanged (.8846, families inert there).
+  Honest residuals: pair05/08 (suite-lenient labels, judge right under
+  strict policy reading), pair11 (control artifact).
+- IN-SAMPLE CHAIN: public46 in-sample for v3, hotel in-sample for v4;
+  mechanisms domain-general, JSON-key lexicon portable; a THIRD unseen
+  domain / new trajectories = the honest validation frontier (next step).
 
 ## Bottom line
 

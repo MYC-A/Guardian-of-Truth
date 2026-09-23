@@ -82,5 +82,10 @@ TP23/FP6/FN0, F1 .8846, R 1.0 after the v3.1 grounded-card indexing correction
 it is the recall-complete tradeoff point). Out-of-sample hotel port: pgjudge
 recall transfers (R=1.0), the refutation families do not (0/12 FP removed,
 0 TP lost — conservative abstention). NOT added to the frozen set: in-sample
-development + non-transferring families; v4 history-satisfaction family is
-the recorded next step. C1/C2/C3 above are unchanged.
+development + non-transferring families. v4 (checkpoint 11) built and
+validated: structural guard (ported catalog checks) + history-satisfaction
++ scope entailment + temporal threshold — hotel 9/12 FP removed with
+0 TP lost (F1 .9032 R 1.0), public46 unchanged (.8846). STILL NOT FROZEN:
+public46 is in-sample for v3 families, hotel is in-sample for v4 families;
+a third unseen domain is the honest validation frontier.
+C1/C2/C3 above are unchanged.
