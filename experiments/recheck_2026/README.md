@@ -56,7 +56,9 @@ raw per-case outputs, then use new directories for full runs.
 
 2. **Discriminating questions** (`questions/`). Reads the saved S6/S9
    divergences but selects at most one exact-fragment candidate per case,
-   spreading disagreement types. A quote must match the source exactly.
+   spreading disagreement types. The already verified divergence fragment is
+   used as the exact source quote; model-generated quote copying is logged
+   separately and cannot block the paired test.
    A separate semantic check is recorded as probabilistic, never as Clingo
    proof. The same judge, system prompt, model and bounded case context are
    used with and without the proposed interpretation. Only paired valid
