@@ -44,7 +44,8 @@ def _structural_evaluations(policy, events) -> list[ObligationEvaluation]:
     return rows
 
 
-def core_review(prompt: str, response: str, *, t1_contract_path=None) -> dict:
+def core_review(prompt: str, response: str, *, t1_contract_path=None,
+                claim_extraction=None) -> dict:
     """Run only new components; never consult Detector findings."""
     policy = compile_policy(prompt, arm="X5_CORE")
     events = normalize_trace(prompt, response)
@@ -54,7 +55,8 @@ def core_review(prompt: str, response: str, *, t1_contract_path=None) -> dict:
         relevant = {name: item for name, item in trusted.items() if name in contracts}
         contracts = merge_human_contracts(contracts, relevant)
     evidence = build_evidence(events, contracts)
-    extraction = extract_claims_with_coverage(response)
+    extraction = (claim_extraction if claim_extraction is not None
+                  else extract_claims_with_coverage(response))
     claims = list(extraction.claims)
     bindings = bind_claims(claims, evidence)
     evaluations = _structural_evaluations(policy, events)
@@ -99,8 +101,10 @@ def core_review(prompt: str, response: str, *, t1_contract_path=None) -> dict:
             "telemetry": telemetry}
 
 
-def protected_review(prompt: str, response: str, *, t1_contract_path=None) -> dict:
-    core = core_review(prompt, response, t1_contract_path=t1_contract_path)
+def protected_review(prompt: str, response: str, *, t1_contract_path=None,
+                     claim_extraction=None) -> dict:
+    core = core_review(prompt, response, t1_contract_path=t1_contract_path,
+                       claim_extraction=claim_extraction)
     incumbent = Detector().review(prompt, response)
     x0 = int(incumbent.status == "violation")
     label = int(bool(x0 or core["label"]))

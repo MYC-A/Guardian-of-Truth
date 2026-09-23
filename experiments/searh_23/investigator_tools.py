@@ -26,6 +26,7 @@ Design notes (directive §4.2 "важная техническая оговор�
 from __future__ import annotations
 
 import json
+import os
 import re
 import sys
 import time
@@ -53,7 +54,9 @@ API_URL = "https://api.mistral.ai/v1/chat/completions"
 
 def load_env(path: Path) -> dict:
     vals = {}
-    for line in open(path):
+    if not path.exists():
+        return vals
+    for line in open(path, encoding="utf-8"):
         line = line.strip()
         if line.startswith("export "):
             k, _, v = line[7:].partition("=")
@@ -62,8 +65,8 @@ def load_env(path: Path) -> dict:
 
 
 ENV = load_env(ENV_FILE)
-API_KEY = ENV.get("MISTRAL_API_KEY") or ""
-MODEL = ENV.get("MISTRAL_MODEL") or "ministral-14b-latest"
+API_KEY = os.getenv("MISTRAL_API_KEY") or ENV.get("MISTRAL_API_KEY") or ""
+MODEL = os.getenv("MISTRAL_MODEL") or ENV.get("MISTRAL_MODEL") or "ministral-14b-latest"
 
 
 def api_chat(system: str, user: str, max_tokens: int, retries: int = 3):
