@@ -23,6 +23,13 @@ justified versus unsupported refusal/transfer, and legal versus illegal tool
 calls. Opportunity counts must be checked after pgjudge runs: a negative pair
 that pgjudge labels 0 gives the refutation layer no chance to improve.
 
+`service_desk_v1_renamed` is a second, label-preserving input frozen before the
+first server readout. It changes all case/device IDs and all tool names while
+keeping policy meaning, trajectories, response shape, and labels paired 1:1.
+Run it in a fresh directory using the same stages and its own `expected.json`
+and `rubric.json`. Compare per-case flips under renaming before interpreting
+any apparent gain. This checks lexical stability, not transfer to a new domain.
+
 ## Server commands
 
 From the repository root, use the existing Python environment with the local
@@ -131,4 +138,5 @@ base-positive opportunities argues for freezing the simpler local path.
 - `prepare` and structural-only `local --skip-model` processed 32/32 locally.
 - Unit checks cover label isolation, frozen-input hash, balanced shapes,
   source-safe guard, and rejection of incomplete scoring.
-- Actual Granite and Mistral inference have **not** been run on this branch yet.
+- The first server execution started after this freeze; its quote-anchoring
+  repair and lack of a scored result are recorded in `RESULTS.md` section 13.

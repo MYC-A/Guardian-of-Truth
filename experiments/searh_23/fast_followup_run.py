@@ -179,7 +179,9 @@ def pgjudge_stage(run_dir: Path) -> None:
         raise RuntimeError("MISTRAL_API_KEY missing; set it in the server environment")
     pg.OUT_ROOT = run_dir / "pgjudge"
     pg.run_extract(cases)
-    extracted = read_jsonl(pg.OUT_ROOT / "extract/cards.jsonl", require_ok=True)
+    cards_path = pg.OUT_ROOT / "extract/cards.jsonl"
+    reanchor_cards(cases, cards_path)
+    extracted = read_jsonl(cards_path, require_ok=True)
     missing = [c["id"] for c in cases if c["id"] not in extracted]
     if missing:
         raise RuntimeError(f"card extraction incomplete: {missing}")
@@ -188,6 +190,40 @@ def pgjudge_stage(run_dir: Path) -> None:
     missing = [c["id"] for c in cases if c["id"] not in judged]
     if missing:
         raise RuntimeError(f"pgjudge incomplete: {missing}")
+
+
+def reanchor_cards(cases: list[dict], cards_path: Path) -> None:
+    """Repair source line-wraps without changing model-generated card content.
+
+    The journal remains append-only. `cards_block` and scoring use the latest
+    successful record; the original model card and its failed anchor survive.
+    """
+    latest = read_jsonl(cards_path, require_ok=True)
+    for case in cases:
+        row = latest.get(case["id"])
+        if row is None:
+            continue
+        policy = pg.policy_text(case)
+        changed = False
+        cards = []
+        for card in row.get("cards", []):
+            card = dict(card)
+            if not card.get("quote_grounded"):
+                proposed = card.get("policy_quote") or ""
+                start, end, issues = pg.anchor_quote(proposed, policy)
+                if start is not None:
+                    card["model_policy_quote"] = proposed
+                    card["policy_quote"] = policy[start:end]
+                    card["quote_grounded"] = True
+                    card["quote_issues"] = issues
+                    card["policy_source_span"] = [start, end]
+                    changed = True
+            cards.append(card)
+        if changed:
+            updated = {**row, "cards": cards, "n_grounded": sum(
+                bool(card.get("quote_grounded")) for card in cards),
+                "source_reanchored": True}
+            append_jsonl(cards_path, updated)
 
 
 def card_decisions(base: dict, grounded: list[dict], sig: dict, refuter,

@@ -30,6 +30,25 @@ class FastFollowupTest(unittest.TestCase):
         refund = next(case for case in cases if case["id"] == "desk_v1__call_ok_refund")
         self.assertIn("подтверждаю возврат $40", refund["prompt"])
 
+    def test_renamed_suite_preserves_labels_and_call_shapes(self):
+        base = ROOT / "experiments/searh_23/service_desk_v1"
+        renamed = ROOT / "experiments/searh_23/service_desk_v1_renamed"
+        original = followup.read_cases(base / "cases.csv")
+        changed = followup.read_cases(renamed / "cases.csv")
+        gold = followup.read_gold(base / "expected.json")
+        renamed_gold = followup.read_gold(renamed / "expected.json")
+        self.assertEqual(len(original), len(changed))
+        for old, new in zip(original, changed):
+            self.assertEqual(new["id"], "renamed__" + old["id"])
+            self.assertEqual(renamed_gold[new["id"]], gold[old["id"]])
+            for token in ("SD-5101", "SD-9999", "DV-7", "execute_replacement"):
+                self.assertNotIn(token, new["prompt"] + new["response"])
+            old_call = any(e.kind == "call" and e.role == "assistant"
+                           for e in followup.parse_events(old["response"], "response"))
+            new_call = any(e.kind == "call" and e.role == "assistant"
+                           for e in followup.parse_events(new["response"], "response"))
+            self.assertEqual(old_call, new_call)
+
     def test_prepare_rejects_gold_and_freeze_detects_changed_input(self):
         with tempfile.TemporaryDirectory() as temp:
             root = Path(temp)
@@ -65,6 +84,32 @@ class FastFollowupTest(unittest.TestCase):
         self.assertEqual(followup.source_safe_guard(
             "execute_replacement missing required argument(s): case_id"),
             "execute_replacement missing required argument(s): case_id")
+
+    def test_policy_quote_reanchors_only_whitespace_and_keeps_model_quote(self):
+        case = next(row for row in followup.read_cases(
+            ROOT / "experiments/searh_23/service_desk_v1/cases.csv")
+                    if row["id"] == "desk_v1__text_bad_done")
+        quote = ("After a replacement completes successfully, record an audit for the "
+                 "SAME case. Do not record the completion audit before a successful "
+                 "replacement.")
+        policy = followup.pg.policy_text(case)
+        start, end, issues = followup.pg.anchor_quote(quote, policy)
+        self.assertEqual(issues, ["whitespace_folded"])
+        self.assertEqual(" ".join(policy[start:end].split()), quote)
+        self.assertIsNone(followup.pg.anchor_quote(
+            quote.replace("audit", "refund"), policy)[0])
+        with tempfile.TemporaryDirectory() as temp:
+            path = Path(temp) / "cards.jsonl"
+            followup.append_jsonl(path, {"id": case["id"], "status": "OK",
+                                         "n_grounded": 0, "cards": [{
+                                             "policy_quote": quote,
+                                             "quote_grounded": False}]})
+            followup.reanchor_cards([case], path)
+            rows = [json.loads(line) for line in path.read_text().splitlines()]
+            self.assertEqual(len(rows), 2)
+            self.assertEqual(rows[-1]["cards"][0]["policy_quote"], policy[start:end])
+            self.assertEqual(rows[-1]["cards"][0]["model_policy_quote"], quote)
+            self.assertTrue(rows[-1]["cards"][0]["quote_grounded"])
 
     def test_score_counts_tp_lost_by_tq_after_fp_clearance(self):
         with tempfile.TemporaryDirectory() as temp:

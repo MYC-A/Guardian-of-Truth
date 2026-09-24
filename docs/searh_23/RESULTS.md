@@ -264,8 +264,25 @@ amount but still depend on model semantics; `UNKNOWN` is retained in their raw
 traces. C1 OR proposal, C1 OR E2E, and C1 AND refutation arms are reported
 separately with per-case TP/FP changes.
 
-**No Granite or Mistral inference on the new suite has been run in this branch.**
-The current work is preparation and local parser/test validation, not a new
+Before reading the first server results, a paired lexical robustness suite was
+also frozen: `service_desk_v1_renamed` changes every case/device ID and tool
+name, with all 32 labels and response-call shapes held fixed. Any improvement
+that disappears under these benign renames is not a mature candidate.
+
+At the initial branch freeze, Granite and Mistral had not run on the new suite.
+The first server execution below has not been scored, so there is still no new
 quality result. The server commands and stop conditions are in
 `docs/searh_23/FAST_FOLLOWUP_RUNBOOK_2026-09-24.md`. A gain on the authored suite
 tests a mechanism; it does not establish performance on untouched contest data.
+
+### First server execution: technical repair before scoring
+
+The first `pgjudge` extraction attempt on `service_desk_v1` produced 30/32
+parseable records and 0 grounded cards. The model folded source line wraps in
+policy quotes; the original exact-substring anchor therefore rejected them.
+The two failures returned no JSON object. Before reading any new-suite labels,
+the runner was amended to accept a **unique whitespace-only** quote match,
+replace it with the exact source span, retain the model quote in the trace,
+and retry a no-JSON completion once with a larger output budget. The initial
+append-only records remain available. These are input/serialization repairs;
+their effect on predictions and quality is still unmeasured.

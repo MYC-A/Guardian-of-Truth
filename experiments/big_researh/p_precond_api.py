@@ -221,6 +221,15 @@ def anchor_quote(quote: str, policy: str):
     h = find_unique_normalized(policy, quote)
     if h:
         return h[0], h[1], ["emphasis_tolerant"]
+    # Mistral often copies words verbatim while folding source line wraps.
+    # Permit whitespace-only differences, still requiring one unique span and
+    # exactly the same non-whitespace characters in the same order.
+    pieces = quote.split()
+    if len(pieces) >= 4:
+        pattern = r"\s+".join(re.escape(piece) for piece in pieces)
+        hits = list(re.finditer(pattern, policy))
+        if len(hits) == 1:
+            return hits[0].start(), hits[0].end(), ["whitespace_folded"]
     return None, None, ["quote_not_found_in_policy"]
 
 
@@ -248,7 +257,8 @@ def cards_block(cid: str, extract_dir: Path) -> str:
                 continue
             if rec.get("id") == cid and rec.get("status") == "OK":
                 cards = [c for c in rec.get("cards", []) if c.get("quote_grounded")]
-                break
+                # The extraction journal is append-only. A later source-only
+                # re-anchoring record supersedes an earlier ungrounded one.
     if not cards:
         return "(no grounded requirement cards were extracted for this case)"
     lines = []
@@ -327,9 +337,20 @@ def run_extract(cases) -> None:
                    "Extract the applicable policy requirement cards for this response.")
         rec = {"key": cid, "id": cid, "mode": "p-extract", "provider": "mistral-api",
                "model": MODEL}
+        out = ""
         try:
             out, resp_model, lat = api_chat(EXTRACT_SYSTEM, content, 900)
-            parsed = extract_json_obj(out)
+            try:
+                parsed = extract_json_obj(out)
+            except ValueError:
+                # A too-short completion may end before the JSON object. The
+                # same frozen prompt gets one larger output budget; both raw
+                # excerpts remain in the trace for technical audit.
+                rec["first_raw_excerpt"] = out[:500]
+                out, resp_model, retry_lat = api_chat(EXTRACT_SYSTEM, content, 1800)
+                rec["json_budget_retry"] = True
+                lat += retry_lat
+                parsed = extract_json_obj(out)
             cards = parsed.get("cards", []) or []
             if not isinstance(cards, list) or len(cards) > 3:
                 raise ValueError("cards must be a list of at most 3")
@@ -356,6 +377,8 @@ def run_extract(cases) -> None:
         except Exception as e:
             rec["status"] = "FAILED"
             rec["last_error"] = f"{type(e).__name__}: {str(e)[:200]}"
+            if out:
+                rec["raw_extract_excerpt"] = out[:500]
         with open(journal, "a", encoding="utf-8") as f:
             f.write(json.dumps(rec, ensure_ascii=False) + "\n")
         print(f"[p-extract/api] {cid} -> {rec.get('status')} cards={rec.get('n_cards')} "
