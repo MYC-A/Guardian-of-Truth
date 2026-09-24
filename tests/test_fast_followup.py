@@ -98,6 +98,17 @@ class FastFollowupTest(unittest.TestCase):
                  "v31_label": 0, "v4_label": 0, "v4_safe_label": 0}]}), encoding="utf-8")
             (run_dir / "tq_questions_fast_followup.json").write_text(
                 json.dumps({"per_case": [{"id": "one", "new_label": 0}]}), encoding="utf-8")
+            jsonl("e2e_R1.jsonl", [
+                {"id": cid, "status": "OK", "label": label,
+                 "source_commit": "300dc2edd20e631928b9997a8f581ab8659a75b2",
+                 "cases_sha256": json.loads((run_dir / "manifest.json").read_text())[
+                     "cases_sha256"],
+                 "input_sha256": hashlib.sha256("p\0r".encode()).hexdigest()}
+                for cid, label in (("one", 1), ("two", 0))])
+            jsonl("feasibility.jsonl", [
+                {"id": cid, "status": "OK", "verdict": verdict,
+                 "input_sha256": hashlib.sha256("p\0r".encode()).hexdigest()}
+                for cid, verdict in (("one", "CANDIDATE"), ("two", "UNKNOWN"))])
             followup.score_stage(run_dir, gold)
             result = json.loads((run_dir / "score.json").read_text(encoding="utf-8"))
             self.assertEqual(result["scores"]["v4_safe"]["TP"], 1)
@@ -107,6 +118,10 @@ class FastFollowupTest(unittest.TestCase):
                              ["fp_removed"], ["two"])
             self.assertEqual(result["comparisons"]["c1_12000 -> c1_12000_and_tq"]
                              ["tp_lost"], ["one"])
+            self.assertEqual(result["scores"]["e2e_r1"]["FP"], 0)
+            self.assertEqual(result["scores"]["feasibility_proposal"]["TP"], 1)
+            self.assertEqual(result["comparisons"]["c1_12000 -> e2e_r1"]
+                             ["fp_removed"], ["two"])
 
 
 if __name__ == "__main__":

@@ -245,3 +245,27 @@ lettucedetect 0.2.3; the encoder emits token-level spans (median 5 chars) that d
 supply operation-grade claim fragments (0/12 supply overall). The typed-question layer
 is experimental, not promoted into frozen candidates; its measured property is zero
 TP losses anywhere with code-verified, evidence-cited refutation traces.
+
+## 13. Fast follow-up prepared for the next server run (2026-09-24)
+
+Branch `codex/fast-followup-20260924` contains a frozen, 32-case service-desk
+mechanism suite and one label-free runner. The suite is balanced across gold
+class and response tool-call shape; its labels are read only after prediction
+files are sealed. Existing C1, Granite context-budget, `function_call`,
+pgjudge, v3.1/v4/v4-safe, and TQ arms are run on the same case IDs.
+
+Additional prepared arms are: (1) exact source and entity joins for argument
+provenance and failed-call replay (diagnostic only); (2) extractive
+action-feasibility proposals for refusal/handoff; (3) atomic completed-action
+claim proposals checked against matching successful tool results; and (4) R1/R2
+from the exact historical E2E commit `300dc2e` on the same CSV. The two Mistral
+proposal arms have code checks for citations, tool membership, entity and
+amount but still depend on model semantics; `UNKNOWN` is retained in their raw
+traces. C1 OR proposal, C1 OR E2E, and C1 AND refutation arms are reported
+separately with per-case TP/FP changes.
+
+**No Granite or Mistral inference on the new suite has been run in this branch.**
+The current work is preparation and local parser/test validation, not a new
+quality result. The server commands and stop conditions are in
+`docs/searh_23/FAST_FOLLOWUP_RUNBOOK_2026-09-24.md`. A gain on the authored suite
+tests a mechanism; it does not establish performance on untouched contest data.

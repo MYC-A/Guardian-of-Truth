@@ -3,7 +3,9 @@
 This branch prepares one new, authored domain to test whether the existing
 v3.1/v4/TQ false-positive clearances transfer. It also tests the frozen Granite
 12k/24k/60k context settings and the official `function_call` criterion on
-balanced tool-call cases. This is a mechanism test, **not** a hidden-test score.
+balanced tool-call cases. Separate arms test extractive feasibility proposals,
+completed-action claims, and the pinned historical E2E implementation on the
+same inputs. This is a mechanism test, **not** a hidden-test score.
 No research arm is installed in `scripts/predict.py` by this run.
 
 ## Frozen inputs
@@ -24,17 +26,21 @@ that pgjudge labels 0 gives the refutation layer no chance to improve.
 ## Server commands
 
 From the repository root, use the existing Python environment with the local
-Granite checkpoint and set `MISTRAL_API_KEY` in the environment, or point
-`GUARDIAN_MISTRAL_ENV_FILE` to the existing credentials file. Mistral is called
-through its API; Granite and the structural engine run locally. No secrets are
-written into the run manifest.
+Granite checkpoint and set `MISTRAL_API_KEY` in the environment. The existing
+TQ/pgjudge loaders can also read `GUARDIAN_MISTRAL_ENV_FILE`; the historical
+E2E wrapper requires the key in the environment. Mistral is called through its
+API; Granite and the structural engine run locally. No secrets are written into
+the run manifest.
 
 ```bash
 git fetch origin
+git fetch origin competition-real-valid-codex
 git switch codex/fast-followup-20260924
 git pull --ff-only
 python experiments/searh_23/fast_followup_run.py prepare \
   --cases experiments/searh_23/service_desk_v1/cases.csv \
+  --run-dir outputs/searh_23/fast_followup/service_desk_v1_run1
+python experiments/searh_23/fast_followup_run.py witness \
   --run-dir outputs/searh_23/fast_followup/service_desk_v1_run1
 python experiments/searh_23/fast_followup_run.py local \
   --run-dir outputs/searh_23/fast_followup/service_desk_v1_run1 \
@@ -45,15 +51,40 @@ python experiments/searh_23/fast_followup_run.py refute \
   --run-dir outputs/searh_23/fast_followup/service_desk_v1_run1
 python experiments/searh_23/fast_followup_run.py tq \
   --run-dir outputs/searh_23/fast_followup/service_desk_v1_run1
+python experiments/searh_23/fast_followup_run.py feasibility \
+  --run-dir outputs/searh_23/fast_followup/service_desk_v1_run1
+python experiments/searh_23/fast_followup_run.py completion \
+  --run-dir outputs/searh_23/fast_followup/service_desk_v1_run1
+python experiments/searh_23/fast_followup_e2e.py \
+  --run-dir outputs/searh_23/fast_followup/service_desk_v1_run1 --mode both
 python experiments/searh_23/fast_followup_run.py score \
   --run-dir outputs/searh_23/fast_followup/service_desk_v1_run1 \
-  --gold experiments/searh_23/service_desk_v1/expected.json
+  --gold experiments/searh_23/service_desk_v1/expected.json \
+  --rubric experiments/searh_23/service_desk_v1/rubric.json
 ```
 
-`local` and `pgjudge` append per-case records and skip completed cases on
-rerun. Use a fresh directory for a fresh comparison. `refute`, `tq`, and
-`score` are one-time stages. `score` seals all prediction file hashes before
-opening labels and requires complete coverage by default.
+`local`, `pgjudge`, `feasibility`, `completion`, and E2E append per-case records
+and skip completed cases on rerun. Use a fresh directory for a fresh comparison.
+`witness`, `refute`, `tq`, and `score` are one-time stages. `score` seals all
+present prediction file hashes before opening labels and requires complete
+coverage by default. If an optional stage is omitted, its arm is absent; if
+its output file exists but is incomplete, scoring stops. Do not score before
+all selected stages finish.
+
+The E2E script reads only the exact source files at commit `300dc2e` from Git
+and checks their digest on resume. It runs R1 and R2 against the *same* CSV;
+its Mistral cache is separate from pgjudge/TQ. A runtime error remains an
+error and cannot silently become a negative prediction. This historical E2E
+arm was previously evaluated on public46, not on this suite.
+
+`witnesses.json` inventories exact argument sources and prior results. It does
+not issue policy verdicts. `feasibility.jsonl` is an extractive Mistral proposal
+for refusals/handoffs; `completion.jsonl` checks an atomic past-action claim
+against matching successful tool results. Their ORs with C1 are experimental
+positive-only arms. Exact citations and entity joins are checked in code, but
+the model's semantic mapping and completeness of policy prerequisites remain
+open error sources. Inspect `UNKNOWN`, `issues`, and the cited premises before
+trusting a gain.
 
 ## Readout and decisions
 
@@ -81,8 +112,13 @@ shape, and paired TP gained/lost and FP removed/added. Check in this order:
 6. For C1 misses on unsupported refusals or handoffs, inspect whether a
    feasible alternative has an exact policy clause, declared tool, matching
    case/amount, satisfied prerequisites and no unknown premise. Only then
-   implement and test the separate action-feasibility witness. This gate avoids
-   adding a generic opinion checker before evidence supports it.
+   consider the `feasibility_proposal` arm. It is already implemented for this
+   run and must earn its marginal TP without adding FP. Compare the
+   `completion_proposal` arm separately on false completion versus future-offer
+   cases; a source quote alone does not validate tense or action mapping.
+7. Compare E2E R1/R2 to C1 on the same cases. Inspect any marginal TP and the
+   corresponding `core_status`, fallback and missing-evidence fields. An OR
+   gain that is reproduced by response-call shape is not a useful new signal.
 
 No arm is promoted from this authored suite alone. A gain with zero TP loss
 qualifies for one untouched contest-like validation. A zero gain with actual

@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
 """Gold-free, resumable paired run for the fast Guardian follow-up.
 
-Stages: prepare -> local -> pgjudge -> refute -> tq -> score.
+Stages: prepare -> local/witness -> pgjudge -> refute -> tq -> score.
 Only score reads labels. Every stage checks the frozen input hash.
 """
 from __future__ import annotations
@@ -26,6 +26,9 @@ import fp_refute_layer_v3 as v3  # noqa: E402
 import fp_refute_layer_v4 as v4  # noqa: E402
 import p_precond_api as pg  # noqa: E402
 import tq_questions as tq  # noqa: E402
+import typed_witnesses as witnesses  # noqa: E402
+import feasibility_witness as feasibility  # noqa: E402
+import completion_witness as completion  # noqa: E402
 
 MANIFEST_VERSION = "fast-followup-v1"
 CONTEXT_BUDGETS = (12000, 24000, 60000)
@@ -147,6 +150,29 @@ def local_stage(run_dir: Path, model_path: Path, skip_model: bool) -> None:
         print(f"[local] {cid}: {row['status']}", flush=True)
 
 
+def witness_stage(run_dir: Path) -> None:
+    """Gold-free source inventory; this diagnostic never changes a label."""
+    manifest, cases = frozen(run_dir)
+    path = run_dir / "witnesses.json"
+    if path.exists():
+        raise FileExistsError(path)
+    rows = [{"id": case["id"], **witnesses.local_record(case)} for case in cases]
+    path.write_text(json.dumps({"input_sha256": manifest["cases_sha256"],
+                                "per_case": rows}, ensure_ascii=False, indent=2),
+                    encoding="utf-8")
+    print(f"recorded source witnesses for {len(rows)} cases")
+
+
+def feasibility_stage(run_dir: Path) -> None:
+    _, cases = frozen(run_dir)
+    feasibility.run(cases, run_dir / "feasibility.jsonl")
+
+
+def completion_stage(run_dir: Path) -> None:
+    _, cases = frozen(run_dir)
+    completion.run(cases, run_dir / "completion.jsonl")
+
+
 def pgjudge_stage(run_dir: Path) -> None:
     _, cases = frozen(run_dir)
     if not pg.API_KEY:
@@ -264,7 +290,8 @@ def read_gold(path: Path) -> dict[str, int]:
     return gold
 
 
-def score_stage(run_dir: Path, gold_path: Path, allow_partial: bool = False) -> None:
+def score_stage(run_dir: Path, gold_path: Path, allow_partial: bool = False,
+                rubric_path: Path | None = None) -> None:
     manifest, cases = frozen(run_dir)
     seal_path = run_dir / "prediction_seal.json"
     if seal_path.exists() or (run_dir / "score.json").exists():
@@ -273,6 +300,52 @@ def score_stage(run_dir: Path, gold_path: Path, allow_partial: bool = False) -> 
              ("local.jsonl", "pgjudge/extract/cards.jsonl",
               "pgjudge/pgjudge/records.jsonl", "refute.json",
               "tq_questions_fast_followup.json")]
+    witness_path = run_dir / "witnesses.json"
+    if witness_path.exists():
+        witness_data = json.loads(witness_path.read_text(encoding="utf-8"))
+        if witness_data.get("input_sha256") != manifest["cases_sha256"] or \
+                [r.get("id") for r in witness_data.get("per_case", [])] != manifest["ids"]:
+            raise RuntimeError("witness coverage or input hash mismatch")
+        files.append(witness_path)
+    e2e_paths = {mode: run_dir / f"e2e_{mode}.jsonl" for mode in ("R1", "R2")}
+    e2e_rows = {}
+    for mode, path in e2e_paths.items():
+        if not path.exists():
+            continue
+        rows = read_jsonl(path, require_ok=True)
+        if not allow_partial and set(rows) != set(manifest["ids"]):
+            raise RuntimeError(f"E2E {mode} coverage incomplete")
+        for case in cases:
+            row = rows.get(case["id"])
+            if row is None:
+                continue
+            expected_hash = hashlib.sha256(
+                (case["prompt"] + "\0" + case["response"]).encode()).hexdigest()
+            if row.get("input_sha256") != expected_hash or \
+                    row.get("cases_sha256") != manifest["cases_sha256"] or \
+                    row.get("source_commit") != \
+                    "300dc2edd20e631928b9997a8f581ab8659a75b2":
+                raise RuntimeError(f"E2E {mode} input/source mismatch: {case['id']}")
+        e2e_rows[mode] = rows
+        files.append(path)
+    proposal_rows = {}
+    for family in ("feasibility", "completion"):
+        path = run_dir / f"{family}.jsonl"
+        if not path.exists():
+            continue
+        rows = read_jsonl(path, require_ok=True)
+        if not allow_partial and set(rows) != set(manifest["ids"]):
+            raise RuntimeError(f"{family} coverage incomplete")
+        for case in cases:
+            row = rows.get(case["id"])
+            if row is None:
+                continue
+            expected_hash = hashlib.sha256(
+                (case["prompt"] + "\0" + case["response"]).encode()).hexdigest()
+            if row.get("input_sha256") != expected_hash:
+                raise RuntimeError(f"{family} input hash mismatch: {case['id']}")
+        proposal_rows[family] = rows
+        files.append(path)
     if not allow_partial:
         absent = [str(path.relative_to(run_dir)) for path in files if not path.exists()]
         if absent:
@@ -306,6 +379,16 @@ def score_stage(run_dir: Path, gold_path: Path, allow_partial: bool = False) -> 
     gold = read_gold(gold_path)
     if set(gold) != set(manifest["ids"]):
         raise ValueError("gold ids do not match frozen case ids")
+    families = {}
+    if rubric_path is not None:
+        rubric = json.loads(rubric_path.read_text(encoding="utf-8"))
+        if not isinstance(rubric, list) or \
+                {row["id"] for row in rubric} != set(manifest["ids"]) or \
+                len(rubric) != len(manifest["ids"]) or \
+                any(int(row["label"]) != gold[row["id"]] or
+                    not isinstance(row.get("family"), str) for row in rubric):
+            raise ValueError("rubric IDs or labels differ from gold")
+        families = {row["id"]: row["family"] for row in rubric}
     local = read_jsonl(run_dir / "local.jsonl") if files[0].exists() else {}
     base = read_jsonl(run_dir / "pgjudge/pgjudge/records.jsonl",
                       require_ok=True) if files[2].exists() else {}
@@ -315,6 +398,8 @@ def score_stage(run_dir: Path, gold_path: Path, allow_partial: bool = False) -> 
     tq_rows = {r["id"]: r for r in json.loads(
         files[4].read_text(encoding="utf-8"))["per_case"]
                } if files[4].exists() else {}
+    witness_rows = {r["id"]: r for r in witness_data["per_case"]} \
+        if witness_path.exists() else {}
     arms: dict[str, dict[str, int | None]] = {}
     for case in cases:
         cid = case["id"]
@@ -338,6 +423,16 @@ def score_stage(run_dir: Path, gold_path: Path, allow_partial: bool = False) -> 
                 arms.setdefault("function_call_eligible", {})[cid] = fc
         if cid in base:
             arms.setdefault("pgjudge", {})[cid] = int(base[cid]["label"])
+        for mode, rows in e2e_rows.items():
+            if cid in rows:
+                arms.setdefault("e2e_" + mode.lower(), {})[cid] = rows[cid]["label"]
+        if cid in proposal_rows.get("feasibility", {}):
+            arms.setdefault("feasibility_proposal", {})[cid] = int(
+                proposal_rows["feasibility"][cid]["verdict"] == "CANDIDATE")
+        if cid in proposal_rows.get("completion", {}):
+            arms.setdefault("completion_proposal", {})[cid] = int(
+                proposal_rows["completion"][cid]["verdict"] ==
+                "UNSUPPORTED_COMPLETION_CANDIDATE")
         if cid in refute:
             for name in ("v31", "v4", "v4_safe"):
                 arms.setdefault(name, {})[cid] = refute[cid].get(name + "_label", refute[cid]["pgjudge"])
@@ -361,6 +456,23 @@ def score_stage(run_dir: Path, gold_path: Path, allow_partial: bool = False) -> 
                 joined[cid] = 1
             else:
                 joined[cid] = None
+    for mode in ("r1", "r2"):
+        other = arms.get("e2e_" + mode)
+        if not other or not c1_predictions:
+            continue
+        joined = arms.setdefault("c1_12000_or_e2e_" + mode, {})
+        for cid in manifest["ids"]:
+            left, right = c1_predictions.get(cid), other.get(cid)
+            joined[cid] = (1 if left == 1 or right == 1 else
+                           0 if left == 0 and right == 0 else None)
+    for family in ("feasibility", "completion"):
+        proposal = arms.get(family + "_proposal")
+        if proposal and c1_predictions:
+            joined = arms.setdefault("c1_12000_or_" + family + "_proposal", {})
+            for cid in manifest["ids"]:
+                left, right = c1_predictions.get(cid), proposal.get(cid)
+                joined[cid] = (1 if left == 1 or right == 1 else
+                               0 if left == 0 and right == 0 else None)
     scores = {}
     for arm, predictions in arms.items():
         covered = [cid for cid in manifest["ids"] if predictions.get(cid) in (0, 1)]
@@ -409,9 +521,54 @@ def score_stage(run_dir: Path, gold_path: Path, allow_partial: bool = False) -> 
             "tp_lost": [cid for cid in removed if gold[cid] == 1],
             "fp_removed": [cid for cid in removed if gold[cid] == 0],
             "fp_added": [cid for cid in added if gold[cid] == 0]}
+    for after in ("e2e_r1", "e2e_r2", "c1_12000_or_e2e_r1",
+                  "c1_12000_or_e2e_r2", "c1_12000_or_feasibility_proposal",
+                  "c1_12000_or_completion_proposal"):
+        before = "c1_12000"
+        if before not in arms or after not in arms:
+            continue
+        common = [cid for cid in manifest["ids"]
+                  if arms[before].get(cid) in (0, 1) and arms[after].get(cid) in (0, 1)]
+        removed = [cid for cid in common
+                   if arms[before][cid] == 1 and arms[after][cid] == 0]
+        added = [cid for cid in common
+                 if arms[before][cid] == 0 and arms[after][cid] == 1]
+        comparisons[f"{before} -> {after}"] = {
+            "paired_covered": len(common), "total": len(manifest["ids"]),
+            "tp_gained": [cid for cid in added if gold[cid] == 1],
+            "tp_lost": [cid for cid in removed if gold[cid] == 1],
+            "fp_removed": [cid for cid in removed if gold[cid] == 0],
+            "fp_added": [cid for cid in added if gold[cid] == 0]}
+    opportunity = {}
+    if witness_rows:
+        for name, predicate in (
+                ("opaque_arg_without_exact_source", lambda r: any(
+                    arg["opaque_field"] and arg["status"] == "UNKNOWN_NO_EXACT_SOURCE"
+                    for target in r["arguments"] for arg in target["args"])),
+                ("exact_failed_replay", lambda r: bool(r["repeated_failed_calls"])),
+                ("text_claim_hint", lambda r: bool(r["claim_hints"]))):
+            ids = [cid for cid in manifest["ids"] if predicate(witness_rows[cid])]
+            opportunity[name] = {"ids": ids, "count": len(ids),
+                                  "positive": sum(gold[cid] == 1 for cid in ids),
+                                  "negative": sum(gold[cid] == 0 for cid in ids)}
+    family_scores = {}
+    if families:
+        for family in sorted(set(families.values())):
+            ids = [cid for cid in manifest["ids"] if families[cid] == family]
+            family_scores[family] = {}
+            for arm, predictions in arms.items():
+                covered = [cid for cid in ids if predictions.get(cid) in (0, 1)]
+                family_scores[family][arm] = {
+                    "covered": len(covered), "total": len(ids),
+                    "TP": sum(predictions[cid] == 1 and gold[cid] == 1 for cid in covered),
+                    "FP": sum(predictions[cid] == 1 and gold[cid] == 0 for cid in covered),
+                    "FN": sum(predictions[cid] == 0 and gold[cid] == 1 for cid in covered),
+                    "TN": sum(predictions[cid] == 0 and gold[cid] == 0 for cid in covered)}
     result = {"version": MANIFEST_VERSION, "gold_sha256": file_hash(gold_path),
+              "rubric_sha256": file_hash(rubric_path) if rubric_path else None,
               "prediction_seal": file_hash(seal_path), "scores": scores,
-              "comparisons": comparisons,
+              "comparisons": comparisons, "witness_opportunities": opportunity,
+              "by_family": family_scores,
               "per_case": [{"id": cid, "gold": gold[cid],
                             "shape_call": manifest["response_has_call"][cid],
                             "predictions": {name: rows.get(cid) for name, rows in arms.items()}}
@@ -428,18 +585,26 @@ def main() -> None:
     p = subs.add_parser("prepare")
     p.add_argument("--cases", type=Path, required=True)
     p.add_argument("--run-dir", type=Path, required=True)
-    for stage in ("local", "pgjudge", "refute", "tq", "score"):
+    for stage in ("local", "witness", "feasibility", "completion",
+                  "pgjudge", "refute", "tq", "score"):
         subs.add_parser(stage).add_argument("--run-dir", type=Path, required=True)
     subs.choices["local"].add_argument("--model-path", type=Path,
                                         default=Path("/mnt/data/guardian/models/granite-guardian-3.3-8b-b3421eda"))
     subs.choices["local"].add_argument("--skip-model", action="store_true")
     subs.choices["score"].add_argument("--gold", type=Path, required=True)
+    subs.choices["score"].add_argument("--rubric", type=Path)
     subs.choices["score"].add_argument("--allow-partial", action="store_true")
     args = parser.parse_args()
     if args.stage == "prepare":
         prepare(args.cases, args.run_dir)
     elif args.stage == "local":
         local_stage(args.run_dir, args.model_path, args.skip_model)
+    elif args.stage == "witness":
+        witness_stage(args.run_dir)
+    elif args.stage == "feasibility":
+        feasibility_stage(args.run_dir)
+    elif args.stage == "completion":
+        completion_stage(args.run_dir)
     elif args.stage == "pgjudge":
         pgjudge_stage(args.run_dir)
     elif args.stage == "refute":
@@ -447,7 +612,7 @@ def main() -> None:
     elif args.stage == "tq":
         tq_stage(args.run_dir)
     elif args.stage == "score":
-        score_stage(args.run_dir, args.gold, args.allow_partial)
+        score_stage(args.run_dir, args.gold, args.allow_partial, args.rubric)
 
 
 if __name__ == "__main__":
