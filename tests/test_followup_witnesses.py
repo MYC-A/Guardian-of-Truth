@@ -11,6 +11,7 @@ import fast_followup_run as followup  # noqa: E402
 import completion_witness as completion  # noqa: E402
 import feasibility_witness as feasibility  # noqa: E402
 import typed_witnesses as witness  # noqa: E402
+import fp_refute_modal_safe as modal_safe  # noqa: E402
 
 CASES = {row["id"]: row for row in followup.read_cases(
     ROOT / "experiments/searh_23/service_desk_v1/cases.csv")}
@@ -18,6 +19,21 @@ POLICY_QUOTE = "The agent must never state that a replacement, refund, or audit 
 
 
 class WitnessTest(unittest.TestCase):
+    def test_no_modal_is_not_proof_that_policy_is_optional(self):
+        quote = ("Before executing a device replacement or fee refund, verify "
+                 "the requester's identity for the SAME case and obtain the "
+                 "user's explicit confirmation of that action.")
+        future = CASES["desk_v1__text_ok_future"]
+        refusal = CASES["desk_v1__text_bad_refusal"]
+        card = {"policy_quote": quote}
+        future_sig = modal_safe.v4.case_signals(future["prompt"], future["response"])
+        refusal_sig = modal_safe.v4.case_signals(refusal["prompt"], refusal["response"])
+        self.assertEqual(modal_safe.refute_card(card, future_sig)[0], "UNKNOWN")
+        self.assertEqual(modal_safe.refute_card(card, refusal_sig)[0], "UNKNOWN")
+        self.assertEqual(modal_safe.refute_card(
+            {"policy_quote": "Verify the requester before acting."},
+            refusal_sig)[0], "UNKNOWN")
+
     def test_amount_source_must_match_entity(self):
         def amount_source(cid):
             record = witness.local_record(CASES[cid])
