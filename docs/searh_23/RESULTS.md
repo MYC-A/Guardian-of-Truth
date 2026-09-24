@@ -220,3 +220,28 @@ pgjudge pipeline unchanged, paths repointed (experiments/searh_23/p_hotel_port.p
   .9020 was inflated). Out-of-sample hotel port: recall transfers (R=1.0),
   the v3.1 families do not (0/12 FP removed, 0 TP lost — safe abstention).
   v4 history-satisfaction family is the recorded next step (§11).
+
+## 12. Typed-question layer (Jev-form) and LettuceDetect v2 locator (2026-09-24)
+
+Protocol per directive: replay the mechanical base, compare base vs base+typed-questions
+vs base+LD-locator on identical inputs, freeze rules, one run on unseen scenarios;
+report additional TP / removed FP / lost TP separately. Full report:
+`docs/searh_23/TQ_LD_LAYER.md`; artifacts `outputs/searh_23/tq_layer/`, `outputs/searh_23/ld_layer/`.
+
+| Arm | Suite | TP | FP | FN | F1 | Changes vs base |
+|---|---|---:|---:|---:|---:|---|
+| v3.1 (replayed from committed code; 0 per-case mismatches) | public46 | 23 | 6 | 0 | .8846 | baseline |
+| v3.1 + typed questions (Mistral, frozen iter-3 rules) | public46 | 23 | 4 | 0 | .9200 | -2 FP (airline__10 tense; banking_033 not-due), 0 TP lost |
+| v3.1 + LD encoder locator | public46 | 23 | 5 | 0 | .9020 | +1 new FP ("185"), 0 missed errors, 0/7 fragment supply |
+| v4 (replayed; in-sample families) | hotel28 | 14 | 3 | 0 | .9032 | baseline |
+| v4 + typed questions (same frozen rules) | hotel28 | 14 | 3 | 0 | .9032 | 0 changes (0 removed, 0 TP lost) |
+| v4 + LD encoder locator | hotel28 | 14 | 4 | 0 | .8750 | +1 new FP (unsourced "5000 bonus points" vs lazy label), 0/5 supply |
+
+Development-loop honesty: TQ iteration 1 lost 7 TP (F1 .9143) via three unsound paths
+(trigger scope, entailment invention, loose handoff conjunction); all were fixed at
+logic level and documented before freezing. LettuceDetect v2-qwen-2b emits invalid
+span offsets on this corpus (negative indices into context) and is unusable via
+lettucedetect 0.2.3; the encoder emits token-level spans (median 5 chars) that do not
+supply operation-grade claim fragments (0/12 supply overall). The typed-question layer
+is experimental, not promoted into frozen candidates; its measured property is zero
+TP losses anywhere with code-verified, evidence-cited refutation traces.

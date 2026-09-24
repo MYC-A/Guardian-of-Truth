@@ -89,3 +89,12 @@ validated: structural guard (ported catalog checks) + history-satisfaction
 public46 is in-sample for v3 families, hotel is in-sample for v4 families;
 a third unseen domain is the honest validation frontier.
 C1/C2/C3 above are unchanged.
+
+
+Post-freeze note (2026-09-24): the typed-question layer (Jev-form questions over the
+eight operations, Mistral API, code-verified verdicts) and the LettuceDetect v2
+locator were tested on top of the frozen candidates and are NOT promoted: TQ removes
+2 in-sample public46 FP with 0 TP lost but changes nothing on hotel; the LD encoder
+supplies no operation-grade fragments and adds one new FP per suite. Frozen candidates
+remain C1 (OR structural+granite .8889) and C2 (pgjudge R=1.0). See
+docs/searh_23/TQ_LD_LAYER.md.

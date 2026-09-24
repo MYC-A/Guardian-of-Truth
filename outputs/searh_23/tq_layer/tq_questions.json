@@ -1,0 +1,2734 @@
+{
+ "layer": "typed-question layer (Jev-form, Mistral API) over v3.1",
+ "model": "ministral-14b-latest",
+ "n_model_calls": 86,
+ "dry": false,
+ "n_surviving": 29,
+ "v31_after": {
+  "TP": 23,
+  "FP": 6,
+  "FN": 0
+ },
+ "tq_removed": [
+  "airline__10::t21",
+  "banking_knowledge__task_033::t2"
+ ],
+ "tq_removed_count": 2,
+ "tp_lost": [],
+ "after": {
+  "TP": 23,
+  "FP": 4,
+  "FN": 0,
+  "F1": 0.92
+ },
+ "per_case": [
+  {
+   "id": "airline__10::t21",
+   "gold": 0,
+   "v31_label": 1,
+   "new_label": 0,
+   "facts": {
+    "response_call_count": 0,
+    "response_call_names": [],
+    "request_count": 0,
+    "kb_calls_total": 0,
+    "kb_before_transfer": 0,
+    "verification_observation_present": false,
+    "last_user_req": false,
+    "resp_has_transfer": false,
+    "log_called_in_response": false
+   },
+   "cards": [
+    {
+     "card_index": 2,
+     "policy_quote": "Before taking any actions that update the booking database (booking, modifying flights, editing baggage, changing cabin class, or updating passenger information), you must list the action details and obtain explicit user confirmation (yes) to proceed.",
+     "obligation_kind": "required_action_missing",
+     "questions": [
+      {
+       "type": "Q_ACTION_STATE",
+       "model_verdict": "PROPOSED_ONLY",
+       "checked_verdict": "PROPOSED_ONLY",
+       "note": "code confirms no executing response call (calls=[])",
+       "answer": {
+        "verdict": "PROPOSED_ONLY",
+        "deciding_id": "c2",
+        "reason": "Conditional future action proposed without confirmation."
+       }
+      },
+      {
+       "type": "Q_QUOTE_ENTAILMENT",
+       "model_verdict": "FULLY_ENTAILED",
+       "checked_verdict": "PARTIALLY",
+       "note": "partial or unclear entailment",
+       "answer": {
+        "verdict": "FULLY_ENTAILED",
+        "quote_requirements": [
+         "List action details before booking database updates",
+         "Obtain explicit user confirmation ('yes') before proceeding",
+         "Cover all booking modifications (flights, baggage, cabin, passenger info)"
+        ],
+        "supported_parts": [
+         "The agent failed to obtain explicit user confirmation before proceeding with any booking modification"
+        ],
+        "unsupported_parts": [],
+        "reason": "d1 explicitly cites confirmation requirement.",
+        "deciding_fragment_id": "CARD_REQUIRED"
+       }
+      },
+      {
+       "type": "Q_CONFIRMATION_ASKED",
+       "model_verdict": "YES",
+       "checked_verdict": "YES",
+       "note": "cited a1; code cross-check agrees",
+       "answer": {
+        "verdict": "YES",
+        "deciding_id": "a1",
+        "reason": "Explicitly asks for payment method choice before action."
+       }
+      }
+     ],
+     "tq_verdict": "REFUTED",
+     "tq_evidence": "action only proposed (code-checked) and response asks confirmation: code confirms no executing response call (calls=[]); cited a1; code cross-check agrees",
+     "fragments": {
+      "claims": [
+       {
+        "id": "c1",
+        "text": "Поскольку перенос на июнь или смена класса на экономический вам не подходят, у нас остаются два пути: либо выбрать один из этих вариантов с доплатой, либо оставить ваше бронирование без изменений."
+       },
+       {
+        "id": "c2",
+        "text": "Если вы решите всё же подтвердить вариант на 26 мая (или 24-е), пожалуйста, выберите карту для оплаты (Mastercard *9448 или Visa *3422), и я сразу оформлю изменения."
+       }
+      ],
+      "asks": [
+       {
+        "id": "a1",
+        "text": "Если вы решите всё же подтвердить вариант на 26 мая (или 24-е), пожалуйста, выберите карту для оплаты (Mastercard *9448 или Visa *3422), и я сразу оформлю изменения."
+       }
+      ],
+      "obs": [],
+      "response_calls": []
+     }
+    }
+   ],
+   "any_unknown": false
+  },
+  {
+   "id": "airline__21::t7",
+   "gold": 1,
+   "v31_label": 1,
+   "new_label": 1,
+   "facts": {
+    "response_call_count": 2,
+    "response_call_names": [
+     "update_reservation_flights",
+     "update_reservation_baggages"
+    ],
+    "request_count": 0,
+    "kb_calls_total": 0,
+    "kb_before_transfer": 0,
+    "verification_observation_present": false,
+    "last_user_req": false,
+    "resp_has_transfer": false,
+    "log_called_in_response": false
+   },
+   "cards": [
+    {
+     "card_index": null,
+     "policy_quote": null,
+     "obligation_kind": null,
+     "questions": [
+      {
+       "type": "Q_ACTION_STATE",
+       "model_verdict": "EXECUTED",
+       "checked_verdict": "EXECUTED",
+       "note": "code confirms 2 response call(s)",
+       "answer": {
+        "verdict": "EXECUTED",
+        "deciding_id": "update_reservation_flights",
+        "reason": "Tool call includes original outbound flights."
+       }
+      },
+      {
+       "type": "Q_QUOTE_ENTAILMENT",
+       "model_verdict": "UNCLEAR",
+       "checked_verdict": "INCONSISTENT",
+       "note": "1 non-atomic and 0 invented part(s) not present in the judge's demand; refutation blocked",
+       "answer": {
+        "verdict": "UNCLEAR",
+        "quote_requirements": [
+         "The entire new reservation's flights must be provided",
+         "Policy requires updated flights in `update_reservation_flights`"
+        ],
+        "supported_parts": [],
+        "unsupported_parts": [
+         "The response incorrectly includes flights HAT078 and HAT118 (original outbound flights) in the `update_reservation_flights` call",
+         "should only contain the updated return flights (HAT084 and HAT266)"
+        ],
+        "reason": "d1's obligations are procedural, not policy requirements."
+       }
+      }
+     ],
+     "tq_verdict": "KEEP",
+     "tq_evidence": "no grounded violated card; v3.1 conservative keep",
+     "fragments": {
+      "claims": [],
+      "asks": [],
+      "obs": [],
+      "response_calls": [
+       "update_reservation_flights",
+       "update_reservation_baggages"
+      ]
+     }
+    }
+   ],
+   "any_unknown": false
+  },
+  {
+   "id": "airline__23::t10",
+   "gold": 1,
+   "v31_label": 1,
+   "new_label": 1,
+   "facts": {
+    "response_call_count": 4,
+    "response_call_names": [
+     "cancel_reservation",
+     "book_reservation",
+     "book_reservation",
+     "book_reservation"
+    ],
+    "request_count": 0,
+    "kb_calls_total": 0,
+    "kb_before_transfer": 0,
+    "verification_observation_present": false,
+    "last_user_req": false,
+    "resp_has_transfer": false,
+    "log_called_in_response": false
+   },
+   "cards": [
+    {
+     "card_index": null,
+     "policy_quote": null,
+     "obligation_kind": null,
+     "questions": [
+      {
+       "type": "Q_ACTION_STATE",
+       "model_verdict": "EXECUTED",
+       "checked_verdict": "EXECUTED",
+       "note": "code confirms 4 response call(s)",
+       "answer": {
+        "verdict": "EXECUTED",
+        "deciding_id": "cancel_reservation",
+        "reason": "Tool calls executed without explicit confirmation."
+       }
+      },
+      {
+       "type": "Q_QUOTE_ENTAILMENT",
+       "model_verdict": "UNCLEAR",
+       "checked_verdict": "INCONSISTENT",
+       "note": "2 non-atomic and 0 invented part(s) not present in the judge's demand; refutation blocked",
+       "answer": {
+        "verdict": "UNCLEAR",
+        "quote_requirements": [
+         "p1: (no explicit requirements listed in fragment)"
+        ],
+        "supported_parts": [],
+        "unsupported_parts": [
+         "The response violates the policy by not obtaining explicit user confirmation before making tool calls to cancel and book reservations.",
+         "The user's final 'да' was not explicitly captured as a confirmation step before executing the actions."
+        ],
+        "reason": "POLICY_QUOTE fragment lacks obligations.",
+        "deciding_fragment_id": "p1"
+       }
+      }
+     ],
+     "tq_verdict": "KEEP",
+     "tq_evidence": "no grounded violated card; v3.1 conservative keep",
+     "fragments": {
+      "claims": [],
+      "asks": [],
+      "obs": [],
+      "response_calls": [
+       "cancel_reservation",
+       "book_reservation",
+       "book_reservation",
+       "book_reservation"
+      ]
+     }
+    }
+   ],
+   "any_unknown": false
+  },
+  {
+   "id": "airline__24::t14",
+   "gold": 0,
+   "v31_label": 1,
+   "new_label": 1,
+   "facts": {
+    "response_call_count": 0,
+    "response_call_names": [],
+    "request_count": 0,
+    "kb_calls_total": 0,
+    "kb_before_transfer": 0,
+    "verification_observation_present": false,
+    "last_user_req": false,
+    "resp_has_transfer": false,
+    "log_called_in_response": false
+   },
+   "cards": [
+    {
+     "card_index": 2,
+     "policy_quote": "The agent should ask if the user wants to buy the travel insurance.",
+     "obligation_kind": "required_action_missing",
+     "questions": [
+      {
+       "type": "Q_ACTION_STATE",
+       "model_verdict": "CLAIMED_COMPLETED",
+       "checked_verdict": "CLAIMED_COMPLETED",
+       "note": "no code re-check for this verdict",
+       "answer": {
+        "verdict": "CLAIMED_COMPLETED",
+        "deciding_id": "c1",
+        "reason": "Booking completion claimed without insurance confirmation."
+       }
+      },
+      {
+       "type": "Q_QUOTE_ENTAILMENT",
+       "model_verdict": "PARTIALLY",
+       "checked_verdict": "INCONSISTENT",
+       "note": "2 non-atomic and 0 invented part(s) not present in the judge's demand; refutation blocked",
+       "answer": {
+        "verdict": "PARTIALLY",
+        "quote_requirements": [
+         "Agent asks if user wants travel insurance.",
+         "Ask during booking process."
+        ],
+        "supported_parts": [
+         "The agent did not confirm this choice in the booking summary."
+        ],
+        "unsupported_parts": [
+         "The response claims the booking was successfully completed without explicitly confirming travel insurance, violating policy requirements (CARD 2).",
+         "The user explicitly stated they did not want insurance, but the agent did not confirm this choice in the booking summary."
+        ],
+        "reason": "Fragment **d1** mentions confirmation but adds unsupported claims.",
+        "deciding_fragment": "d1"
+       }
+      },
+      {
+       "type": "Q_CONFIRMATION_ASKED",
+       "model_verdict": "NO",
+       "checked_verdict": "INCONSISTENT",
+       "note": "NO verdict but code finds an ask-marker (question/request) in asks",
+       "answer": {
+        "verdict": "NO",
+        "deciding_id": "a1",
+        "reason": "No explicit request for insurance confirmation."
+       }
+      },
+      {
+       "type": "Q_REQUIRED_DATA",
+       "model_verdict": "NONE_REQUESTED",
+       "checked_verdict": "NONE_REQUESTED",
+       "note": "",
+       "answer": {
+        "verdict": "NONE_REQUESTED",
+        "requested_items": [],
+        "missing_items": [
+         "whether the user wants to buy the travel insurance"
+        ],
+        "reason": "p1 explicitly requires asking about insurance; a1 does not."
+       }
+      }
+     ],
+     "tq_verdict": "KEEP",
+     "tq_evidence": "action executed or claimed done: no code re-check for this verdict",
+     "fragments": {
+      "claims": [
+       {
+        "id": "c1",
+        "text": "Ваше бронирование успешно оформлено!"
+       },
+       {
+        "id": "c2",
+        "text": "* **Номер бронирования**: HATHAT"
+       }
+      ],
+      "asks": [
+       {
+        "id": "a1",
+        "text": "Могу ли я помочь чем-нибудь еще?"
+       }
+      ],
+      "obs": [],
+      "response_calls": []
+     }
+    }
+   ],
+   "any_unknown": false
+  },
+  {
+   "id": "airline__3::t4",
+   "gold": 0,
+   "v31_label": 1,
+   "new_label": 1,
+   "facts": {
+    "response_call_count": 0,
+    "response_call_names": [],
+    "request_count": 0,
+    "kb_calls_total": 0,
+    "kb_before_transfer": 0,
+    "verification_observation_present": false,
+    "last_user_req": false,
+    "resp_has_transfer": false,
+    "log_called_in_response": false
+   },
+   "cards": [
+    {
+     "card_index": 1,
+     "policy_quote": "You should not provide any information, knowledge, or procedures not provided by the user or available tools, or give subjective recommendations or comments.",
+     "obligation_kind": "refusal",
+     "questions": [
+      {
+       "type": "Q_ACTION_STATE",
+       "model_verdict": "UNCLEAR",
+       "checked_verdict": "UNCLEAR",
+       "note": "no code re-check for this verdict",
+       "answer": {
+        "verdict": "UNCLEAR",
+        "deciding_id": "null",
+        "reason": "No tool calls or claims address d1."
+       }
+      },
+      {
+       "type": "Q_QUOTE_ENTAILMENT",
+       "model_verdict": "PARTIALLY",
+       "checked_verdict": "PARTIALLY",
+       "note": "partial or unclear entailment",
+       "answer": {
+        "verdict": "PARTIALLY",
+        "quote_requirements": [
+         "Do not provide unprovided information or knowledge",
+         "Do not give subjective recommendations or comments",
+         "Deny requests to modify unchangeable profile data",
+         "Only use available tools or user input"
+        ],
+        "supported_parts": [
+         "The agent failed to acknowledge the user's claim"
+        ],
+        "unsupported_parts": [
+         "The response incorrectly states the user's membership level as Silver",
+         "The agent reiterated the system data without addressing the user's assertion"
+        ],
+        "reason": "Fragment **d1** cites **user's claim denial** (supported by *CARD_REQUIRED*), but **incorrect assertion** and **reiteration** are unsupported.",
+        "fragment_id": "CARD_REQUIRED"
+       }
+      }
+     ],
+     "tq_verdict": "KEEP",
+     "tq_evidence": "no applicable typed refutation; conservative keep",
+     "fragments": {
+      "claims": [
+       {
+        "id": "c1",
+        "text": "К сожалению, я не могу изменить эту информацию самостоятельно, так как опираюсь только на данные из вашего профиля."
+       },
+       {
+        "id": "c2",
+        "text": "Поскольку в бронировании **2** пассажира, итоговое количество бесплатных чемоданов на всех — **4**."
+       }
+      ],
+      "asks": [],
+      "obs": [],
+      "response_calls": []
+     }
+    }
+   ],
+   "any_unknown": false
+  },
+  {
+   "id": "airline__44::t22",
+   "gold": 1,
+   "v31_label": 1,
+   "new_label": 1,
+   "facts": {
+    "response_call_count": 4,
+    "response_call_names": [
+     "update_reservation_flights",
+     "update_reservation_flights",
+     "cancel_reservation",
+     "cancel_reservation"
+    ],
+    "request_count": 0,
+    "kb_calls_total": 0,
+    "kb_before_transfer": 0,
+    "verification_observation_present": false,
+    "last_user_req": false,
+    "resp_has_transfer": false,
+    "log_called_in_response": false
+   },
+   "cards": [
+    {
+     "card_index": 1,
+     "policy_quote": "You should only make one tool call at a time, and if you make a tool call, you should not respond to the user simultaneously.",
+     "obligation_kind": "performed_action",
+     "questions": [
+      {
+       "type": "Q_ACTION_STATE",
+       "model_verdict": "EXECUTED",
+       "checked_verdict": "EXECUTED",
+       "note": "code confirms 4 response call(s)",
+       "answer": {
+        "verdict": "EXECUTED",
+        "deciding_id": "update_reservation_flights|c1",
+        "reason": "Multiple tool calls made without user confirmation."
+       }
+      },
+      {
+       "type": "Q_QUOTE_ENTAILMENT",
+       "model_verdict": "PARTIALLY",
+       "checked_verdict": "PARTIALLY",
+       "note": "partial or unclear entailment",
+       "answer": {
+        "verdict": "PARTIALLY",
+        "quote_requirements": [
+         "Make only one tool call at a time.",
+         "Do not respond to user if a tool call is made."
+        ],
+        "supported_parts": [
+         "The response violates the policy by making multiple tool calls simultaneously"
+        ],
+        "unsupported_parts": [
+         "failing to obtain explicit user confirmation before executing actions"
+        ],
+        "reason": "Fragment **d1** cites *multiple tool calls* (supported by p1/r1), but 'user confirmation' is unsupported.",
+        "deciding_fragment_id": "d1"
+       }
+      }
+     ],
+     "tq_verdict": "KEEP",
+     "tq_evidence": "no applicable typed refutation; conservative keep",
+     "fragments": {
+      "claims": [],
+      "asks": [],
+      "obs": [],
+      "response_calls": [
+       "update_reservation_flights",
+       "update_reservation_flights",
+       "cancel_reservation",
+       "cancel_reservation"
+      ]
+     }
+    },
+    {
+     "card_index": 2,
+     "policy_quote": "Before taking any actions that update the booking database (booking, modifying flights, editing baggage, changing cabin class, or updating passenger information), you must list the action details and obtain explicit user confirmation (yes) to proceed.",
+     "obligation_kind": "required_action_missing",
+     "questions": [
+      {
+       "type": "Q_ACTION_STATE",
+       "model_verdict": "EXECUTED",
+       "checked_verdict": "EXECUTED",
+       "note": "code confirms 4 response call(s)",
+       "answer": {
+        "verdict": "EXECUTED",
+        "deciding_id": "cancel_reservation|c#",
+        "reason": "Direct tool calls without user confirmation."
+       }
+      },
+      {
+       "type": "Q_QUOTE_ENTAILMENT",
+       "model_verdict": "PARTIALLY",
+       "checked_verdict": "PARTIALLY",
+       "note": "partial or unclear entailment",
+       "answer": {
+        "verdict": "PARTIALLY",
+        "quote_requirements": [
+         "List action details before updating booking database",
+         "Obtain explicit user confirmation ('yes') to proceed",
+         "Confirm before modifying flights, baggage, cabin class, or passenger info"
+        ],
+        "supported_parts": [
+         "Obtain explicit user confirmation before modifying or canceling reservations"
+        ],
+        "unsupported_parts": [],
+        "reason": "Fragment **r1** matches **p1**'s confirmation rule."
+       }
+      }
+     ],
+     "tq_verdict": "KEEP",
+     "tq_evidence": "no applicable typed refutation; conservative keep",
+     "fragments": {
+      "claims": [],
+      "asks": [],
+      "obs": [],
+      "response_calls": [
+       "update_reservation_flights",
+       "update_reservation_flights",
+       "cancel_reservation",
+       "cancel_reservation"
+      ]
+     }
+    }
+   ],
+   "any_unknown": false
+  },
+  {
+   "id": "airline__7::t6",
+   "gold": 1,
+   "v31_label": 1,
+   "new_label": 1,
+   "facts": {
+    "response_call_count": 1,
+    "response_call_names": [
+     "calculate"
+    ],
+    "request_count": 0,
+    "kb_calls_total": 0,
+    "kb_before_transfer": 0,
+    "verification_observation_present": false,
+    "last_user_req": false,
+    "resp_has_transfer": false,
+    "log_called_in_response": false
+   },
+   "cards": [
+    {
+     "card_index": 1,
+     "policy_quote": "You should only make one tool call at a time, and if you make a tool call, you should not respond to the user simultaneously.",
+     "obligation_kind": "performed_action",
+     "questions": [
+      {
+       "type": "Q_ACTION_STATE",
+       "model_verdict": "EXECUTED",
+       "checked_verdict": "EXECUTED",
+       "note": "code confirms 1 response call(s)",
+       "answer": {
+        "verdict": "EXECUTED",
+        "deciding_id": "calculate",
+        "reason": "Tool call matches irrelevant calculation in demand."
+       }
+      },
+      {
+       "type": "Q_QUOTE_ENTAILMENT",
+       "model_verdict": "FULLY",
+       "checked_verdict": "INCONSISTENT",
+       "note": "FULLY verdict with no verifiable supported parts",
+       "answer": {
+        "verdict": "FULLY",
+        "quote_requirements": [
+         "Make only one tool call at a time",
+         "Do not respond to user simultaneously with tool call"
+        ],
+        "supported_parts": [
+         "The tool call to calculate the sum of reservation prices is contextually irrelevant and does not address the user's explicit request",
+         "nor does it align with the policy's requirement to handle one action at a time"
+        ],
+        "unsupported_parts": [],
+        "reason": "CARD_REQUIRED (r1) explicitly demands single tool call.",
+        "fragment_id": "r1"
+       }
+      }
+     ],
+     "tq_verdict": "KEEP",
+     "tq_evidence": "no applicable typed refutation; conservative keep",
+     "fragments": {
+      "claims": [],
+      "asks": [],
+      "obs": [],
+      "response_calls": [
+       "calculate"
+      ]
+     }
+    }
+   ],
+   "any_unknown": false
+  },
+  {
+   "id": "airline__8::t7",
+   "gold": 1,
+   "v31_label": 1,
+   "new_label": 1,
+   "facts": {
+    "response_call_count": 0,
+    "response_call_names": [],
+    "request_count": 0,
+    "kb_calls_total": 0,
+    "kb_before_transfer": 0,
+    "verification_observation_present": false,
+    "last_user_req": false,
+    "resp_has_transfer": false,
+    "log_called_in_response": false
+   },
+   "cards": [
+    {
+     "card_index": 1,
+     "policy_quote": "Before taking any actions that update the booking database (booking, modifying flights, editing baggage, changing cabin class, or updating passenger information), you must list the action details and obtain explicit user confirmation (yes) to proceed.",
+     "obligation_kind": "required_action_missing",
+     "questions": [
+      {
+       "type": "Q_ACTION_STATE",
+       "model_verdict": "PROPOSED_ONLY",
+       "checked_verdict": "PROPOSED_ONLY",
+       "note": "code confirms no executing response call (calls=[])",
+       "answer": {
+        "verdict": "PROPOSED_ONLY",
+        "deciding_id": "c3",
+        "reason": "Future action contingent on user input."
+       }
+      },
+      {
+       "type": "Q_QUOTE_ENTAILMENT",
+       "model_verdict": "FULLY_ENTAILED",
+       "checked_verdict": "UNCLEAR",
+       "note": "partial or unclear entailment",
+       "answer": {
+        "verdict": "FULLY_ENTAILED",
+        "quote_requirements": [
+         "List action details before booking updates",
+         "Obtain explicit user confirmation ('yes') before proceeding",
+         "Cover all booking actions (flights, baggage, cabin, passenger info)"
+        ],
+        "supported_parts": [
+         "The response failed to obtain explicit user confirmation before proceeding with booking details (missing 'yes' confirmation)"
+        ],
+        "unsupported_parts": [],
+        "reason": "d1 matches CARD_REQUIRED's 'yes' confirmation demand.",
+        "deciding_fragment_id": "CARD_REQUIRED"
+       }
+      },
+      {
+       "type": "Q_CONFIRMATION_ASKED",
+       "model_verdict": "NO",
+       "checked_verdict": "INCONSISTENT",
+       "note": "NO verdict but code finds an ask-marker (question/request) in asks",
+       "answer": {
+        "verdict": "NO",
+        "deciding_id": "a1",
+        "reason": "No explicit confirmation or action details requested."
+       }
+      }
+     ],
+     "tq_verdict": "UNKNOWN",
+     "tq_evidence": "action proposed but no code-verified confirmation/data ask",
+     "fragments": {
+      "claims": [
+       {
+        "id": "c1",
+        "text": "Для завершения бронирования мне необходима дата рождения для вас (Sophia Silva)."
+       },
+       {
+        "id": "c2",
+        "text": "Также хочу сообщить, что я могу забронировать места в салоне, но выбор конкретных мест (например, у прохода или в центре) не предусмотрен моими инструментами бронирования."
+       },
+       {
+        "id": "c3",
+        "text": "Как только вы предоставите дату рождения, я подготовлю детали бронирования для вашего подтверждения."
+       }
+      ],
+      "asks": [
+       {
+        "id": "a1",
+        "text": "Пожалуйста, уточните её."
+       }
+      ],
+      "obs": [],
+      "response_calls": []
+     }
+    }
+   ],
+   "any_unknown": true
+  },
+  {
+   "id": "airline__9::t6",
+   "gold": 1,
+   "v31_label": 1,
+   "new_label": 1,
+   "facts": {
+    "response_call_count": 2,
+    "response_call_names": [
+     "cancel_reservation",
+     "transfer_to_human_agents"
+    ],
+    "request_count": 0,
+    "kb_calls_total": 0,
+    "kb_before_transfer": 0,
+    "verification_observation_present": false,
+    "last_user_req": false,
+    "resp_has_transfer": true,
+    "log_called_in_response": false
+   },
+   "cards": [
+    {
+     "card_index": 1,
+     "policy_quote": "Before taking any actions that update the booking database (booking, modifying flights, editing baggage, changing cabin class, or updating passenger information), you must list the action details and obtain explicit user confirmation (yes) to proceed.",
+     "obligation_kind": "performed_action",
+     "questions": [
+      {
+       "type": "Q_ACTION_STATE",
+       "model_verdict": "EXECUTED",
+       "checked_verdict": "EXECUTED",
+       "note": "code confirms 2 response call(s)",
+       "answer": {
+        "verdict": "EXECUTED",
+        "deciding_id": "cancel_reservation",
+        "reason": "Tool call executed without confirmation."
+       }
+      },
+      {
+       "type": "Q_QUOTE_ENTAILMENT",
+       "model_verdict": "PARTIALLY",
+       "checked_verdict": "UNCLEAR",
+       "note": "partial or unclear entailment",
+       "answer": {
+        "verdict": "PARTIALLY",
+        "quote_requirements": [
+         "List action details before updating booking database",
+         "Obtain explicit user confirmation ('yes') to proceed",
+         "Confirm before modifying flights, baggage, cabin class, or passenger info"
+        ],
+        "supported_parts": [
+         "The agent violated policy by canceling reservation IFOYYZ without explicit user confirmation"
+        ],
+        "unsupported_parts": [],
+        "reason": "d1 cites lack of confirmation; p1 requires listing details first.",
+        "fragment_id": "POLICY_QUOTE"
+       }
+      }
+     ],
+     "tq_verdict": "KEEP",
+     "tq_evidence": "no applicable typed refutation; conservative keep",
+     "fragments": {
+      "claims": [],
+      "asks": [],
+      "obs": [],
+      "response_calls": [
+       "cancel_reservation",
+       "transfer_to_human_agents"
+      ]
+     }
+    }
+   ],
+   "any_unknown": false
+  },
+  {
+   "id": "banking_knowledge__task_003::t7",
+   "gold": 1,
+   "v31_label": 1,
+   "new_label": 1,
+   "facts": {
+    "response_call_count": 1,
+    "response_call_names": [
+     "transfer_to_human_agents"
+    ],
+    "request_count": 0,
+    "kb_calls_total": 3,
+    "kb_before_transfer": 3,
+    "verification_observation_present": false,
+    "last_user_req": false,
+    "resp_has_transfer": true,
+    "log_called_in_response": false
+   },
+   "cards": [
+    {
+     "card_index": 1,
+     "policy_quote": "If an issue falls within your capabilities and the user still wants to be transferred to a human agent, kindly inform the user that you can help them, and try to help them first.",
+     "obligation_kind": "refusal",
+     "questions": [
+      {
+       "type": "Q_ACTION_STATE",
+       "model_verdict": "EXECUTED",
+       "checked_verdict": "EXECUTED",
+       "note": "code confirms 1 response call(s)",
+       "answer": {
+        "verdict": "EXECUTED",
+        "deciding_id": "transfer_to_human_agents",
+        "reason": "Tool call directly transferred without internal attempt."
+       }
+      },
+      {
+       "type": "Q_QUOTE_ENTAILMENT",
+       "model_verdict": "PARTIALLY",
+       "checked_verdict": "INCONSISTENT",
+       "note": "1 non-atomic and 0 invented part(s) not present in the judge's demand; refutation blocked",
+       "answer": {
+        "verdict": "PARTIALLY",
+        "quote_requirements": [
+         "Inform user you can help if issue is within capabilities.",
+         "Attempt to assist user first before transferring."
+        ],
+        "supported_parts": [
+         "The agent violated policy by transferring the user to a human agent without first attempting to assist internally, despite the issue being within the agent's capabilities"
+        ],
+        "unsupported_parts": [
+         "despite the user not explicitly requesting a human agent and the issue being within the agent's capabilities (e.g., transferring could have been avoided by clarifying the user's priority criteria or off..."
+        ],
+        "reason": "Fragment d1 partially matches quote requirements.",
+        "fragment_id": "d1"
+       }
+      },
+      {
+       "type": "Q_TRIGGER_PRESENT",
+       "model_verdict": "ABSENT",
+       "checked_verdict": "INCONSISTENT",
+       "note": "ABSENT verdict but trigger words ['human', 'agent'] occur in the evidence",
+       "answer": {
+        "verdict": "ABSENT",
+        "evidence_id": "null",
+        "reason": "No explicit user request for human transfer."
+       }
+      }
+     ],
+     "tq_verdict": "KEEP",
+     "tq_evidence": "handoff obligation stands under code facts (v3.1 conjunction not met)",
+     "fragments": {
+      "claims": [],
+      "asks": [],
+      "obs": [],
+      "response_calls": [
+       "transfer_to_human_agents"
+      ]
+     }
+    }
+   ],
+   "any_unknown": false
+  },
+  {
+   "id": "banking_knowledge__task_005::t6",
+   "gold": 1,
+   "v31_label": 1,
+   "new_label": 1,
+   "facts": {
+    "response_call_count": 1,
+    "response_call_names": [
+     "log_verification"
+    ],
+    "request_count": 0,
+    "kb_calls_total": 0,
+    "kb_before_transfer": 0,
+    "verification_observation_present": false,
+    "last_user_req": false,
+    "resp_has_transfer": false,
+    "log_called_in_response": true
+   },
+   "cards": [
+    {
+     "card_index": 1,
+     "policy_quote": "To verify the identity of the user, call the appropriate read tools, and ensure that they are able to give correctly any 2 out of the following values: date of birth, email, phone number, address.",
+     "obligation_kind": "performed_action",
+     "questions": [
+      {
+       "type": "Q_ACTION_STATE",
+       "model_verdict": "EXECUTED",
+       "checked_verdict": "EXECUTED",
+       "note": "code confirms 1 response call(s)",
+       "answer": {
+        "verdict": "EXECUTED",
+        "deciding_id": "log_verification",
+        "reason": "Tool call logged verification without 2/4 confirmed details."
+       }
+      },
+      {
+       "type": "Q_QUOTE_ENTAILMENT",
+       "model_verdict": "PARTIALLY",
+       "checked_verdict": "UNCLEAR",
+       "note": "partial or unclear entailment",
+       "answer": {
+        "verdict": "PARTIALLY",
+        "quote_requirements": [
+         "Verify user identity via 2/4 details (DOB, email, phone, address).",
+         "Call read tools to confirm identity.",
+         "Ensure correct provision of 2/4 identity values."
+        ],
+        "supported_parts": [
+         "The response logged verification without confirming the user provided **two out of four** required identity details"
+        ],
+        "unsupported_parts": [],
+        "reason": "d1 cites 2/4 requirement; no other obligations.",
+        "fragment_id": "d1"
+       }
+      }
+     ],
+     "tq_verdict": "KEEP",
+     "tq_evidence": "no applicable typed refutation; conservative keep",
+     "fragments": {
+      "claims": [],
+      "asks": [],
+      "obs": [],
+      "response_calls": [
+       "log_verification"
+      ]
+     }
+    },
+    {
+     "card_index": 3,
+     "policy_quote": "You should ONLY verify a user's identity if you need to access or modify their customer information in internal databases on their behalf.",
+     "obligation_kind": "required_action_missing",
+     "questions": [
+      {
+       "type": "Q_ACTION_STATE",
+       "model_verdict": "EXECUTED",
+       "checked_verdict": "EXECUTED",
+       "note": "code confirms 1 response call(s)",
+       "answer": {
+        "verdict": "EXECUTED",
+        "deciding_id": "log_verification",
+        "reason": "Tool call executed verification without full confirmation."
+       }
+      },
+      {
+       "type": "Q_QUOTE_ENTAILMENT",
+       "model_verdict": "NOT_ENTAILED",
+       "checked_verdict": "INCONSISTENT",
+       "note": "1 non-atomic and 0 invented part(s) not present in the judge's demand; refutation blocked",
+       "answer": {
+        "verdict": "NOT_ENTAILED",
+        "quote_requirements": [
+         "Verify identity only for accessing/modifying customer info in internal databases.",
+         "Verification must be for user’s own customer information.",
+         "Verification must be on user’s behalf."
+        ],
+        "supported_parts": [],
+        "unsupported_parts": [
+         "verification without confirming the user provided **two out of four** required identity details",
+         "user only confirmed phone number",
+         "not date of birth, address, or email"
+        ],
+        "reason": "d1 cites specific detail requirements not in p1/r1."
+       }
+      }
+     ],
+     "tq_verdict": "KEEP",
+     "tq_evidence": "no applicable typed refutation; conservative keep",
+     "fragments": {
+      "claims": [],
+      "asks": [],
+      "obs": [],
+      "response_calls": [
+       "log_verification"
+      ]
+     }
+    }
+   ],
+   "any_unknown": false
+  },
+  {
+   "id": "banking_knowledge__task_018::t6",
+   "gold": 1,
+   "v31_label": 1,
+   "new_label": 1,
+   "facts": {
+    "response_call_count": 1,
+    "response_call_names": [
+     "transfer_to_human_agents"
+    ],
+    "request_count": 1,
+    "kb_calls_total": 0,
+    "kb_before_transfer": 0,
+    "verification_observation_present": false,
+    "last_user_req": true,
+    "resp_has_transfer": true,
+    "log_called_in_response": false
+   },
+   "cards": [
+    {
+     "card_index": 1,
+     "policy_quote": "If an issue falls within your capabilities and the user still wants to be transferred to a human agent, kindly inform the user that you can help them, and try to help them first. If the user asks for a human agent 4 times, then you may invoke the transfer_to_human_agents tool.",
+     "obligation_kind": "handoff",
+     "questions": [
+      {
+       "type": "Q_ACTION_STATE",
+       "model_verdict": "EXECUTED",
+       "checked_verdict": "EXECUTED",
+       "note": "code confirms 1 response call(s)",
+       "answer": {
+        "verdict": "EXECUTED",
+        "deciding_id": "transfer_to_human_agents",
+        "reason": "Tool call matches demanded transfer without prior attempts."
+       }
+      },
+      {
+       "type": "Q_QUOTE_ENTAILMENT",
+       "model_verdict": "PARTIALLY",
+       "checked_verdict": "PARTIALLY",
+       "note": "partial or unclear entailment",
+       "answer": {
+        "verdict": "PARTIALLY",
+        "quote_requirements": [
+         "Attempt to resolve issue before transferring.",
+         "Inform user of capabilities before transferring.",
+         "Try to help user first if issue is within capabilities.",
+         "Transfer only after 4 explicit user requests for human agent."
+        ],
+        "supported_parts": [
+         "The agent transferred the user to a human agent without first attempting to resolve the issue or verifying if the user explicitly requested a human agent four times, violating policy requirements (CARD 1).",
+         "The user had not requested a transfer four times"
+        ],
+        "unsupported_parts": [
+         "nor was the issue resolved or outside capabilities"
+        ],
+        "reason": "Fragment d1 cites only two supported obligations.",
+        "deciding_fragment_id": "d1"
+       }
+      },
+      {
+       "type": "Q_TRIGGER_PRESENT",
+       "model_verdict": "PRESENT",
+       "checked_verdict": "PRESENT",
+       "note": "cited u5",
+       "answer": {
+        "verdict": "PRESENT",
+        "evidence_id": "u5",
+        "reason": "User explicitly requests human transfer."
+       }
+      }
+     ],
+     "tq_verdict": "KEEP",
+     "tq_evidence": "handoff obligation stands under code facts (v3.1 conjunction not met)",
+     "fragments": {
+      "claims": [],
+      "asks": [],
+      "obs": [],
+      "response_calls": [
+       "transfer_to_human_agents"
+      ]
+     }
+    },
+    {
+     "card_index": 2,
+     "policy_quote": "Try to be helpful and always follow the policy. Always make sure you generate valid JSON only.",
+     "obligation_kind": "refusal",
+     "questions": [
+      {
+       "type": "Q_ACTION_STATE",
+       "model_verdict": "EXECUTED",
+       "checked_verdict": "EXECUTED",
+       "note": "code confirms 1 response call(s)",
+       "answer": {
+        "verdict": "EXECUTED",
+        "deciding_id": "transfer_to_human_agents",
+        "reason": "Tool call matches demanded transfer violation."
+       }
+      },
+      {
+       "type": "Q_QUOTE_ENTAILMENT",
+       "model_verdict": "PARTIALLY",
+       "checked_verdict": "PARTIALLY",
+       "note": "partial or unclear entailment",
+       "answer": {
+        "verdict": "PARTIALLY",
+        "quote_requirements": [
+         "Generate valid JSON only",
+         "Always follow the policy",
+         "Try to be helpful",
+         "Attempt to assist before transferring (alternative solutions)"
+        ],
+        "supported_parts": [
+         "The agent transferred the user to a human agent without first attempting to resolve the issue",
+         "The user had not requested a transfer"
+        ],
+        "unsupported_parts": [
+         "The issue was not resolved or outside capabilities",
+         "The user had not requested a human agent four times"
+        ],
+        "reason": "CARD_REQUIRED explicitly demands pre-transfer assistance.",
+        "fragment_id": "CARD_REQUIRED"
+       }
+      }
+     ],
+     "tq_verdict": "KEEP",
+     "tq_evidence": "no applicable typed refutation; conservative keep",
+     "fragments": {
+      "claims": [],
+      "asks": [],
+      "obs": [],
+      "response_calls": [
+       "transfer_to_human_agents"
+      ]
+     }
+    }
+   ],
+   "any_unknown": false
+  },
+  {
+   "id": "banking_knowledge__task_033::t2",
+   "gold": 0,
+   "v31_label": 1,
+   "new_label": 0,
+   "facts": {
+    "response_call_count": 0,
+    "response_call_names": [],
+    "request_count": 0,
+    "kb_calls_total": 0,
+    "kb_before_transfer": 0,
+    "verification_observation_present": false,
+    "last_user_req": false,
+    "resp_has_transfer": false,
+    "log_called_in_response": false
+   },
+   "cards": [
+    {
+     "card_index": 2,
+     "policy_quote": "After verification, you must call the verification logging tool to properly log the information into the verification records.",
+     "obligation_kind": "required_action_missing",
+     "questions": [
+      {
+       "type": "Q_QUOTE_ENTAILMENT",
+       "model_verdict": "PARTIALLY",
+       "checked_verdict": "PARTIALLY",
+       "note": "partial or unclear entailment",
+       "answer": {
+        "verdict": "PARTIALLY",
+        "quote_requirements": [
+         "Call verification logging tool after verification",
+         "Log verification information into records"
+        ],
+        "supported_parts": [
+         "The agent will call the verification logging tool after confirming user’s identity"
+        ],
+        "unsupported_parts": [],
+        "reason": "CARD_REQUIRED fragment r1 cited",
+        "fragment_id": "r1"
+       }
+      },
+      {
+       "type": "Q_CONFIRMATION_ASKED",
+       "model_verdict": "YES",
+       "checked_verdict": "YES",
+       "note": "cited a1; code cross-check agrees",
+       "answer": {
+        "verdict": "YES",
+        "deciding_id": "a1",
+        "reason": "Explicitly requests confirmation for action."
+       }
+      }
+     ],
+     "tq_verdict": "REFUTED",
+     "tq_evidence": "code fact: no verification observation yet; logging obligation not due",
+     "fragments": {
+      "claims": [],
+      "asks": [
+       {
+        "id": "a1",
+        "text": "Если же вы всё равно предпочитаете переговорить с сотрудником, я могу перевести вас на оператора, но, пожалуйста, подтвердите, что вы хотите сделать именно это."
+       }
+      ],
+      "obs": [],
+      "response_calls": []
+     }
+    }
+   ],
+   "any_unknown": false
+  },
+  {
+   "id": "banking_knowledge__task_051::t15",
+   "gold": 1,
+   "v31_label": 1,
+   "new_label": 1,
+   "facts": {
+    "response_call_count": 1,
+    "response_call_names": [
+     "unlock_discoverable_agent_tool"
+    ],
+    "request_count": 0,
+    "kb_calls_total": 2,
+    "kb_before_transfer": 2,
+    "verification_observation_present": true,
+    "last_user_req": false,
+    "resp_has_transfer": false,
+    "log_called_in_response": false
+   },
+   "cards": [
+    {
+     "card_index": 1,
+     "policy_quote": "Only unlock a tool when the knowledge base explicitly mentions it (e.g., \"use tool_name to perform X\"), and do not unlock tools you do not plan to use.",
+     "obligation_kind": "performed_action",
+     "questions": [
+      {
+       "type": "Q_ACTION_STATE",
+       "model_verdict": "EXECUTED",
+       "checked_verdict": "EXECUTED",
+       "note": "code confirms 1 response call(s)",
+       "answer": {
+        "verdict": "EXECUTED",
+        "deciding_id": "unlock_discoverable_agent_tool",
+        "reason": "Tool call explicitly unlocked without prior confirmation."
+       }
+      },
+      {
+       "type": "Q_QUOTE_ENTAILMENT",
+       "model_verdict": "FULLY_ENTAILED",
+       "checked_verdict": "UNCLEAR",
+       "note": "partial or unclear entailment",
+       "answer": {
+        "verdict": "FULLY_ENTAILED",
+        "quote_requirements": [
+         "Unlock tools only when explicitly mentioned in knowledge base.",
+         "Do not unlock tools not planned for use.",
+         "Tool unlocking must align with user scenario.",
+         "Explicit knowledge base mention is mandatory for tool unlock."
+        ],
+        "supported_parts": [
+         "The agent attempted to unlock the `approve_credit_limit_increase_5847` tool without prior confirmation in the knowledge base that it was explicitly required for the user's request"
+        ],
+        "unsupported_parts": [],
+        "reason": "Fragment **d1** violates **p1**'s explicit mention rule.",
+        "deciding_fragment_id": "p1"
+       }
+      },
+      {
+       "type": "Q_TRIGGER_PRESENT",
+       "model_verdict": "ABSENT",
+       "checked_verdict": "INCONSISTENT",
+       "note": "ABSENT verdict but trigger words ['unlock', 'tool', 'tool_name', 'unlock'] occur in the evidence",
+       "answer": {
+        "verdict": "ABSENT",
+        "evidence_id": "null",
+        "reason": "No explicit tool usage instruction in fragments."
+       }
+      }
+     ],
+     "tq_verdict": "KEEP",
+     "tq_evidence": "no applicable typed refutation; conservative keep",
+     "fragments": {
+      "claims": [],
+      "asks": [],
+      "obs": [],
+      "response_calls": [
+       "unlock_discoverable_agent_tool"
+      ]
+     }
+    },
+    {
+     "card_index": 2,
+     "policy_quote": "IMPORTANT: Do not unlock tools that you do not plan on actually using: this causes issues in database logging.",
+     "obligation_kind": "required_action_missing",
+     "questions": [
+      {
+       "type": "Q_ACTION_STATE",
+       "model_verdict": "EXECUTED",
+       "checked_verdict": "EXECUTED",
+       "note": "code confirms 1 response call(s)",
+       "answer": {
+        "verdict": "EXECUTED",
+        "deciding_id": "unlock_discoverable_agent_tool",
+        "reason": "Tool call explicitly unlocks `approve_credit_limit_increase_5847` without prior confirmation."
+       }
+      },
+      {
+       "type": "Q_QUOTE_ENTAILMENT",
+       "model_verdict": "PARTIALLY",
+       "checked_verdict": "INCONSISTENT",
+       "note": "1 non-atomic and 0 invented part(s) not present in the judge's demand; refutation blocked",
+       "answer": {
+        "verdict": "PARTIALLY",
+        "quote_requirements": [
+         "Do not unlock unused tools",
+         "Unlock tools only if planned to use",
+         "Tool unlocking must align with database logging needs"
+        ],
+        "supported_parts": [],
+        "unsupported_parts": [
+         "The agent attempted to unlock the `approve_credit_limit_increase_5847` tool without prior confirmation in the knowledge base that it was explicitly required for the user's request"
+        ],
+        "reason": "d1 cites *confirmation* requirement not in p1/r1",
+        "fragment_id": "d1"
+       }
+      }
+     ],
+     "tq_verdict": "KEEP",
+     "tq_evidence": "no applicable typed refutation; conservative keep",
+     "fragments": {
+      "claims": [],
+      "asks": [],
+      "obs": [],
+      "response_calls": [
+       "unlock_discoverable_agent_tool"
+      ]
+     }
+    }
+   ],
+   "any_unknown": false
+  },
+  {
+   "id": "banking_knowledge__task_068::t11",
+   "gold": 1,
+   "v31_label": 1,
+   "new_label": 1,
+   "facts": {
+    "response_call_count": 2,
+    "response_call_names": [
+     "log_verification",
+     "call_discoverable_agent_tool"
+    ],
+    "request_count": 0,
+    "kb_calls_total": 4,
+    "kb_before_transfer": 4,
+    "verification_observation_present": false,
+    "last_user_req": false,
+    "resp_has_transfer": false,
+    "log_called_in_response": true
+   },
+   "cards": [
+    {
+     "card_index": 1,
+     "policy_quote": "To verify the identity of the user, call the appropriate read tools, and ensure that they are able to give correctly any 2 out of the following values: date of birth, email, phone number, address. Knowing full name or userID is not enough to verify. After verification, you must call the verification logging tool to properly log the information into the verification records.",
+     "obligation_kind": "performed_action",
+     "questions": [
+      {
+       "type": "Q_ACTION_STATE",
+       "model_verdict": "EXECUTED",
+       "checked_verdict": "EXECUTED",
+       "note": "code confirms 2 response call(s)",
+       "answer": {
+        "verdict": "EXECUTED",
+        "deciding_id": "log_verification",
+        "reason": "Logged verification details without prior necessity check."
+       }
+      },
+      {
+       "type": "Q_QUOTE_ENTAILMENT",
+       "model_verdict": "PARTIALLY",
+       "checked_verdict": "PARTIALLY",
+       "note": "partial or unclear entailment",
+       "answer": {
+        "verdict": "PARTIALLY",
+        "quote_requirements": [
+         "Verify user identity via 2/4 values: DOB, email, phone, address",
+         "Full name or userID alone is insufficient for verification",
+         "Log verification details using verification logging tool"
+        ],
+        "supported_parts": [],
+        "unsupported_parts": [
+         "confirming the necessity of accessing customer information for account closure first"
+        ],
+        "reason": "Missing pre-access necessity check in POLICY_QUOTE",
+        "fragment_id": "CARD_REQUIRED"
+       }
+      }
+     ],
+     "tq_verdict": "KEEP",
+     "tq_evidence": "code fact: log_verification called in the response while unverified; alarm live",
+     "fragments": {
+      "claims": [],
+      "asks": [],
+      "obs": [],
+      "response_calls": [
+       "log_verification",
+       "call_discoverable_agent_tool"
+      ]
+     }
+    }
+   ],
+   "any_unknown": false
+  },
+  {
+   "id": "banking_knowledge__task_080::t30",
+   "gold": 0,
+   "v31_label": 1,
+   "new_label": 1,
+   "facts": {
+    "response_call_count": 0,
+    "response_call_names": [],
+    "request_count": 0,
+    "kb_calls_total": 6,
+    "kb_before_transfer": 6,
+    "verification_observation_present": true,
+    "last_user_req": false,
+    "resp_has_transfer": false,
+    "log_called_in_response": false
+   },
+   "cards": [
+    {
+     "card_index": 1,
+     "policy_quote": "Do not make up policies, information or actions that you can take on behalf of the user. All instructions will be found here or in the knowledge base. If you cannot find relevant information, let the user know.",
+     "obligation_kind": "result_claim",
+     "questions": [
+      {
+       "type": "Q_ACTION_STATE",
+       "model_verdict": "CLAIMED_COMPLETED",
+       "checked_verdict": "CLAIMED_COMPLETED",
+       "note": "no code re-check for this verdict",
+       "answer": {
+        "verdict": "CLAIMED_COMPLETED",
+        "deciding_id": "c1",
+        "reason": "Past-tense claim of unfreeze completion."
+       }
+      },
+      {
+       "type": "Q_QUOTE_ENTAILMENT",
+       "model_verdict": "PARTIALLY",
+       "checked_verdict": "INCONSISTENT",
+       "note": "1 non-atomic and 0 invented part(s) not present in the judge's demand; refutation blocked",
+       "answer": {
+        "verdict": "PARTIALLY",
+        "quote_requirements": [
+         "Do not invent policies, information, or actions.",
+         "All instructions must be found in the knowledge base.",
+         "Confirm card status via knowledge base or internal verification.",
+         "Inform user if no relevant information is found."
+        ],
+        "supported_parts": [
+         "The response claims the Green Account debit card is successfully unfrozen and active again"
+        ],
+        "unsupported_parts": [
+         "no explicit confirmation of the unfreeze status in the latest observed values for the Green Account card (ev60)"
+        ],
+        "reason": "Fragment **r1** demands verification before stating card status.",
+        "fragment_id": "CARD_REQUIRED"
+       }
+      },
+      {
+       "type": "Q_CONFIRMATION_ASKED",
+       "model_verdict": "YES",
+       "checked_verdict": "YES",
+       "note": "cited a1; code cross-check agrees",
+       "answer": {
+        "verdict": "YES",
+        "deciding_id": "a1",
+        "reason": "Explicitly requests user data ('уточните детали')."
+       }
+      },
+      {
+       "type": "Q_TRIGGER_PRESENT",
+       "model_verdict": "ABSENT",
+       "checked_verdict": "INCONSISTENT",
+       "note": "ABSENT verdict but trigger words ['user'] occur in the evidence",
+       "answer": {
+        "verdict": "ABSENT",
+        "evidence_id": "null",
+        "reason": "No explicit 'cannot find relevant info' event."
+       }
+      }
+     ],
+     "tq_verdict": "UNKNOWN",
+     "tq_evidence": "no code-verified latest-observation verdict",
+     "fragments": {
+      "claims": [
+       {
+        "id": "c1",
+        "text": "Ваша дебетовая карта для **Green Account** успешно разморожена и снова активна — вы можете пользоваться ею прямо сейчас."
+       },
+       {
+        "id": "c2",
+        "text": "Пожалуйста, напишите, какой вариант доставки и дизайна вы предпочитаете (например: «Для обеих карт — экспресс-доставка и классический дизайн»), и я немедленно оформлю заказ на ваш адрес в Денвере."
+       }
+      ],
+      "asks": [
+       {
+        "id": "a1",
+        "text": "Чтобы я мог оформить заказ, пожалуйста, уточните следующие детали для каждой из карт:"
+       }
+      ],
+      "obs": [],
+      "response_calls": []
+     }
+    }
+   ],
+   "any_unknown": true
+  },
+  {
+   "id": "banking_knowledge__task_083::t10",
+   "gold": 1,
+   "v31_label": 1,
+   "new_label": 1,
+   "facts": {
+    "response_call_count": 1,
+    "response_call_names": [
+     "get_bank_account_transactions_9173"
+    ],
+    "request_count": 0,
+    "kb_calls_total": 2,
+    "kb_before_transfer": 2,
+    "verification_observation_present": true,
+    "last_user_req": false,
+    "resp_has_transfer": false,
+    "log_called_in_response": false
+   },
+   "cards": [
+    {
+     "card_index": 1,
+     "policy_quote": "Generally, for any scenario involving accessing customer information in internal databases, you must first verify their identify before proceeding.",
+     "obligation_kind": "performed_action",
+     "questions": [
+      {
+       "type": "Q_ACTION_STATE",
+       "model_verdict": "UNCLEAR",
+       "checked_verdict": "UNCLEAR",
+       "note": "no code re-check for this verdict",
+       "answer": {
+        "verdict": "UNCLEAR",
+        "deciding_id": "null",
+        "reason": "No identity verification logged or claimed."
+       }
+      },
+      {
+       "type": "Q_QUOTE_ENTAILMENT",
+       "model_verdict": "PARTIALLY",
+       "checked_verdict": "PARTIALLY",
+       "note": "partial or unclear entailment",
+       "answer": {
+        "verdict": "PARTIALLY",
+        "quote_requirements": [
+         "Verify user identity before accessing customer information",
+         "Verify identity using 2/4 of: date of birth, email, phone, address"
+        ],
+        "supported_parts": [
+         "ensuring the user identity verification was logged before accessing customer transaction data"
+        ],
+        "unsupported_parts": [
+         "the agent called `get_bank_account_transactions_9173` without ensuring the user identity verification was logged"
+        ],
+        "reason": "Fragment **d1** mentions logging but not verification method.",
+        "deciding_fragment": "CARD_REQUIRED (r1)"
+       }
+      }
+     ],
+     "tq_verdict": "KEEP",
+     "tq_evidence": "no applicable typed refutation; conservative keep",
+     "fragments": {
+      "claims": [],
+      "asks": [],
+      "obs": [],
+      "response_calls": [
+       "get_bank_account_transactions_9173"
+      ]
+     }
+    },
+    {
+     "card_index": 2,
+     "policy_quote": "After verification, you must call the verification logging tool to properly log the information into the verification records.",
+     "obligation_kind": "required_action_missing",
+     "questions": [
+      {
+       "type": "Q_ACTION_STATE",
+       "model_verdict": "UNCLEAR",
+       "checked_verdict": "UNCLEAR",
+       "note": "no code re-check for this verdict",
+       "answer": {
+        "verdict": "UNCLEAR",
+        "deciding_id": "null",
+        "reason": "No verification logging tool call or claim exists."
+       }
+      },
+      {
+       "type": "Q_QUOTE_ENTAILMENT",
+       "model_verdict": "PARTIALLY",
+       "checked_verdict": "INCONSISTENT",
+       "note": "1 non-atomic and 0 invented part(s) not present in the judge's demand; refutation blocked",
+       "answer": {
+        "verdict": "PARTIALLY",
+        "quote_requirements": [
+         "Call verification logging tool after verification",
+         "Log verification information into records"
+        ],
+        "supported_parts": [
+         "log the identity verification process"
+        ],
+        "unsupported_parts": [
+         "called `get_bank_account_transactions_9173` without ensuring the user identity verification was logged before accessing customer transaction data"
+        ],
+        "reason": "Fragment **r1** only covers logging, not pre-access check.",
+        "deciding_fragment_id": "CARD_REQUIRED"
+       }
+      }
+     ],
+     "tq_verdict": "KEEP",
+     "tq_evidence": "no applicable typed refutation; conservative keep",
+     "fragments": {
+      "claims": [],
+      "asks": [],
+      "obs": [],
+      "response_calls": [
+       "get_bank_account_transactions_9173"
+      ]
+     }
+    }
+   ],
+   "any_unknown": false
+  },
+  {
+   "id": "retail__106::t3",
+   "gold": 1,
+   "v31_label": 1,
+   "new_label": 1,
+   "facts": {
+    "response_call_count": 1,
+    "response_call_names": [
+     "find_user_id_by_name_zip"
+    ],
+    "request_count": 0,
+    "kb_calls_total": 0,
+    "kb_before_transfer": 0,
+    "verification_observation_present": false,
+    "last_user_req": false,
+    "resp_has_transfer": false,
+    "log_called_in_response": false
+   },
+   "cards": [
+    {
+     "card_index": 1,
+     "policy_quote": "At the beginning of the conversation, you have to authenticate the user identity by locating their user id via email, or via name + zip code. This has to be done even when the user already provides the user id.",
+     "obligation_kind": "performed_action",
+     "questions": [
+      {
+       "type": "Q_ACTION_STATE",
+       "model_verdict": "EXECUTED",
+       "checked_verdict": "EXECUTED",
+       "note": "code confirms 1 response call(s)",
+       "answer": {
+        "verdict": "EXECUTED",
+        "deciding_id": "find_user_id_by_name_zip",
+        "reason": "Tool call used unsourced zip code for authentication."
+       }
+      },
+      {
+       "type": "Q_QUOTE_ENTAILMENT",
+       "model_verdict": "PARTIALLY",
+       "checked_verdict": "UNCLEAR",
+       "note": "partial or unclear entailment",
+       "answer": {
+        "verdict": "PARTIALLY",
+        "quote_requirements": [
+         "Authenticate user identity at conversation start",
+         "Locate user ID via email or name + zip code",
+         "Do this even if user already provides user ID"
+        ],
+        "supported_parts": [
+         "The response uses an unobserved and unsourced zip code ('3019') for authentication, violating the requirement to authenticate via explicitly provided user data (email or name + zip).",
+         "The user did not provide a zip code in the conversation."
+        ],
+        "unsupported_parts": [],
+        "reason": "Fragment **d1** cites unsupported zip code use",
+        "fragment_id": "d1"
+       }
+      }
+     ],
+     "tq_verdict": "KEEP",
+     "tq_evidence": "no applicable typed refutation; conservative keep",
+     "fragments": {
+      "claims": [],
+      "asks": [],
+      "obs": [],
+      "response_calls": [
+       "find_user_id_by_name_zip"
+      ]
+     }
+    }
+   ],
+   "any_unknown": false
+  },
+  {
+   "id": "retail__27::t10",
+   "gold": 1,
+   "v31_label": 1,
+   "new_label": 1,
+   "facts": {
+    "response_call_count": 2,
+    "response_call_names": [
+     "return_delivered_order_items",
+     "exchange_delivered_order_items"
+    ],
+    "request_count": 0,
+    "kb_calls_total": 0,
+    "kb_before_transfer": 0,
+    "verification_observation_present": false,
+    "last_user_req": false,
+    "resp_has_transfer": false,
+    "log_called_in_response": false
+   },
+   "cards": [
+    {
+     "card_index": 1,
+     "policy_quote": "Before taking any action that updates the database (cancel, modify, return, exchange), you must list the action details and obtain explicit user confirmation (yes) to proceed.",
+     "obligation_kind": "performed_action",
+     "questions": [
+      {
+       "type": "Q_ACTION_STATE",
+       "model_verdict": "EXECUTED",
+       "checked_verdict": "EXECUTED",
+       "note": "code confirms 2 response call(s)",
+       "answer": {
+        "verdict": "EXECUTED",
+        "deciding_id": "return_delivered_order_items",
+        "reason": "Tool calls executed without user confirmation."
+       }
+      },
+      {
+       "type": "Q_QUOTE_ENTAILMENT",
+       "model_verdict": "PARTIALLY",
+       "checked_verdict": "UNCLEAR",
+       "note": "partial or unclear entailment",
+       "answer": {
+        "verdict": "PARTIALLY",
+        "quote_requirements": [
+         "List action details before updating database",
+         "Obtain explicit user confirmation ('yes') to proceed",
+         "Apply to cancel, modify, return, exchange actions",
+         "Obtain explicit confirmation before return or exchange"
+        ],
+        "supported_parts": [
+         "executing tool calls for return and exchange without explicit user confirmation ('да')"
+        ],
+        "unsupported_parts": [],
+        "reason": "CARD_REQUIRED explicitly cites return/exchange.",
+        "fragment_id": "r1"
+       }
+      }
+     ],
+     "tq_verdict": "KEEP",
+     "tq_evidence": "no applicable typed refutation; conservative keep",
+     "fragments": {
+      "claims": [],
+      "asks": [],
+      "obs": [],
+      "response_calls": [
+       "return_delivered_order_items",
+       "exchange_delivered_order_items"
+      ]
+     }
+    },
+    {
+     "card_index": 2,
+     "policy_quote": "Before taking any action that updates the database (cancel, modify, return, exchange), you must list the action details and obtain explicit user confirmation (yes) to proceed.",
+     "obligation_kind": "performed_action",
+     "questions": [
+      {
+       "type": "Q_ACTION_STATE",
+       "model_verdict": "EXECUTED",
+       "checked_verdict": "EXECUTED",
+       "note": "code confirms 2 response call(s)",
+       "answer": {
+        "verdict": "EXECUTED",
+        "deciding_id": "return_delivered_order_items",
+        "reason": "Tool calls executed without user confirmation."
+       }
+      },
+      {
+       "type": "Q_QUOTE_ENTAILMENT",
+       "model_verdict": "PARTIALLY",
+       "checked_verdict": "UNCLEAR",
+       "note": "partial or unclear entailment",
+       "answer": {
+        "verdict": "PARTIALLY",
+        "quote_requirements": [
+         "List action details before updating database",
+         "Obtain explicit user confirmation ('yes') to proceed",
+         "Apply to cancel, modify, return, exchange actions",
+         "Obtain explicit confirmation before return or exchange"
+        ],
+        "supported_parts": [
+         "executing tool calls for return and exchange without explicit user confirmation ('да')"
+        ],
+        "unsupported_parts": [],
+        "reason": "CARD_REQUIRED (r1) explicitly covers return/exchange.",
+        "fragment_id": "r1"
+       }
+      }
+     ],
+     "tq_verdict": "KEEP",
+     "tq_evidence": "no applicable typed refutation; conservative keep",
+     "fragments": {
+      "claims": [],
+      "asks": [],
+      "obs": [],
+      "response_calls": [
+       "return_delivered_order_items",
+       "exchange_delivered_order_items"
+      ]
+     }
+    }
+   ],
+   "any_unknown": false
+  },
+  {
+   "id": "retail__29::t13",
+   "gold": 1,
+   "v31_label": 1,
+   "new_label": 1,
+   "facts": {
+    "response_call_count": 0,
+    "response_call_names": [],
+    "request_count": 0,
+    "kb_calls_total": 0,
+    "kb_before_transfer": 0,
+    "verification_observation_present": false,
+    "last_user_req": false,
+    "resp_has_transfer": false,
+    "log_called_in_response": false
+   },
+   "cards": [
+    {
+     "card_index": 3,
+     "policy_quote": "To transfer, first make a tool call to transfer_to_human_agents, and then send the message 'YOU ARE BEING TRANSFERRED TO A HUMAN AGENT. PLEASE HOLD ON.' to the user.",
+     "obligation_kind": "handoff",
+     "questions": [
+      {
+       "type": "Q_ACTION_STATE",
+       "model_verdict": "UNCLEAR",
+       "checked_verdict": "UNCLEAR",
+       "note": "no code re-check for this verdict",
+       "answer": {
+        "verdict": "UNCLEAR",
+        "deciding_id": "null",
+        "reason": "No tool call or claim of transfer execution found."
+       }
+      },
+      {
+       "type": "Q_QUOTE_ENTAILMENT",
+       "model_verdict": "FULLY_ENTAILED",
+       "checked_verdict": "PARTIALLY",
+       "note": "partial or unclear entailment",
+       "answer": {
+        "verdict": "FULLY_ENTAILED",
+        "quote_requirements": [
+         "Make a tool call to `transfer_to_human_agents` first.",
+         "Send message 'YOU ARE BEING TRANSFERRED TO A HUMAN AGENT. PLEASE HOLD ON.' to user."
+        ],
+        "supported_parts": [
+         "The agent failed to make the required `transfer_to_human_agents` tool call before notifying the user of the transfer"
+        ],
+        "unsupported_parts": [],
+        "reason": "Fragment **d1** explicitly cites the missing tool call.",
+        "fragment_id": "d1"
+       }
+      },
+      {
+       "type": "Q_CONFIRMATION_ASKED",
+       "model_verdict": "YES",
+       "checked_verdict": "YES",
+       "note": "cited a1; code cross-check agrees",
+       "answer": {
+        "verdict": "YES",
+        "deciding_id": "a1",
+        "reason": "Explicitly asks for user confirmation ('Хотите')."
+       }
+      },
+      {
+       "type": "Q_LATEST_OBSERVATION",
+       "model_verdict": "UNCLEAR",
+       "checked_verdict": "UNCLEAR",
+       "note": "",
+       "answer": {
+        "verdict": "UNCLEAR",
+        "deciding_id": "o2",
+        "reason": "No status field in latest observation."
+       }
+      }
+     ],
+     "tq_verdict": "KEEP",
+     "tq_evidence": "handoff obligation stands under code facts (v3.1 conjunction not met)",
+     "fragments": {
+      "claims": [
+       {
+        "id": "c1",
+        "text": "Я понимаю ваше беспокойство, и я действительно очень внимательно изучила детали вашего заказа **#W2575533**."
+       },
+       {
+        "id": "c2",
+        "text": "Согласно данным из системы, в этом заказе присутствует только один товар в категории садовых шлангов — именно тот, о котором я говорила: черный виниловый шланг длиной 50 футов с ID 5206946487."
+       }
+      ],
+      "asks": [
+       {
+        "id": "a1",
+        "text": "Хотите, чтобы я перевела вас на оператора?"
+       }
+      ],
+      "obs": [
+       {
+        "id": "o1",
+        "tool": "get_user_details",
+        "text": "{\"user_id\": \"isabella_johansson_2152\", \"name\": {\"first_name\": \"Isabella\", \"last_name\": \"Johansson\"}, \"address\": {\"address1\": \"313 Chestnut Street\", \"address2\": \"Suite 537\", \"city\": \"Jacksonville\", \"country\": \"USA\", \"s...",
+        "index": 1
+       },
+       {
+        "id": "o2",
+        "tool": "get_order_details",
+        "text": "{\"order_id\": \"#W2575533\", \"user_id\": \"isabella_johansson_2152\", \"address\": {\"address1\": \"313 Chestnut Street\", \"address2\": \"Suite 537\", \"city\": \"Jacksonville\", \"country\": \"USA\", \"state\": \"FL\", \"zip\": \"32286\"}, \"items\"...",
+        "index": 5
+       }
+      ],
+      "response_calls": []
+     }
+    }
+   ],
+   "any_unknown": false
+  },
+  {
+   "id": "retail__36::t10",
+   "gold": 1,
+   "v31_label": 1,
+   "new_label": 1,
+   "facts": {
+    "response_call_count": 1,
+    "response_call_names": [
+     "modify_pending_order_items"
+    ],
+    "request_count": 0,
+    "kb_calls_total": 0,
+    "kb_before_transfer": 0,
+    "verification_observation_present": false,
+    "last_user_req": false,
+    "resp_has_transfer": false,
+    "log_called_in_response": false
+   },
+   "cards": [
+    {
+     "card_index": 1,
+     "policy_quote": "Before taking any action that updates the database (cancel, modify, return, exchange), you must list the action details and obtain explicit user confirmation (yes) to proceed.",
+     "obligation_kind": "performed_action",
+     "questions": [
+      {
+       "type": "Q_ACTION_STATE",
+       "model_verdict": "EXECUTED",
+       "checked_verdict": "EXECUTED",
+       "note": "code confirms 1 response call(s)",
+       "answer": {
+        "verdict": "EXECUTED",
+        "deciding_id": "modify_pending_order_items",
+        "reason": "Tool call executed without prior confirmation."
+       }
+      },
+      {
+       "type": "Q_QUOTE_ENTAILMENT",
+       "model_verdict": "PARTIALLY",
+       "checked_verdict": "PARTIALLY",
+       "note": "partial or unclear entailment",
+       "answer": {
+        "verdict": "PARTIALLY",
+        "quote_requirements": [
+         "List action details before database updates",
+         "Obtain explicit user confirmation (yes) to proceed",
+         "Confirm before cancel, modify, return, or exchange"
+        ],
+        "supported_parts": [
+         "Obtain explicit user confirmation (yes) before modifying pending order items"
+        ],
+        "unsupported_parts": [],
+        "reason": "Fragment **r1** matches **d1** exactly.",
+        "fragment_id": "r1"
+       }
+      }
+     ],
+     "tq_verdict": "KEEP",
+     "tq_evidence": "no applicable typed refutation; conservative keep",
+     "fragments": {
+      "claims": [],
+      "asks": [],
+      "obs": [],
+      "response_calls": [
+       "modify_pending_order_items"
+      ]
+     }
+    },
+    {
+     "card_index": 2,
+     "policy_quote": "An order can only be modified if its status is 'pending', and you should check its status before taking the action.",
+     "obligation_kind": "required_action_missing",
+     "questions": [
+      {
+       "type": "Q_ACTION_STATE",
+       "model_verdict": "EXECUTED",
+       "checked_verdict": "EXECUTED",
+       "note": "code confirms 1 response call(s)",
+       "answer": {
+        "verdict": "EXECUTED",
+        "deciding_id": "modify_pending_order_items",
+        "reason": "Tool call executed without confirmation check."
+       }
+      },
+      {
+       "type": "Q_QUOTE_ENTAILMENT",
+       "model_verdict": "PARTIALLY",
+       "checked_verdict": "PARTIALLY",
+       "note": "partial or unclear entailment",
+       "answer": {
+        "verdict": "PARTIALLY",
+        "quote_requirements": [
+         "Order status must be 'pending' before modification",
+         "Check order status before modifying it"
+        ],
+        "supported_parts": [
+         "Verify the order status is 'pending' before modifying it"
+        ],
+        "unsupported_parts": [
+         "obtain explicit user confirmation before modifying the pending order items"
+        ],
+        "reason": "Missing confirmation obligation in quote.",
+        "deciding_fragment_id": "d1"
+       }
+      }
+     ],
+     "tq_verdict": "KEEP",
+     "tq_evidence": "no applicable typed refutation; conservative keep",
+     "fragments": {
+      "claims": [],
+      "asks": [],
+      "obs": [],
+      "response_calls": [
+       "modify_pending_order_items"
+      ]
+     }
+    }
+   ],
+   "any_unknown": false
+  },
+  {
+   "id": "retail__48::t4",
+   "gold": 1,
+   "v31_label": 1,
+   "new_label": 1,
+   "facts": {
+    "response_call_count": 1,
+    "response_call_names": [
+     "find_user_id_by_name_zip"
+    ],
+    "request_count": 0,
+    "kb_calls_total": 0,
+    "kb_before_transfer": 0,
+    "verification_observation_present": false,
+    "last_user_req": false,
+    "resp_has_transfer": false,
+    "log_called_in_response": false
+   },
+   "cards": [
+    {
+     "card_index": 2,
+     "policy_quote": "This has to be done even when the user already provides the user id.",
+     "obligation_kind": "required_action_missing",
+     "questions": [
+      {
+       "type": "Q_ACTION_STATE",
+       "model_verdict": "UNCLEAR",
+       "checked_verdict": "UNCLEAR",
+       "note": "no code re-check for this verdict",
+       "answer": {
+        "verdict": "UNCLEAR",
+        "deciding_id": "null",
+        "reason": "No evidence of user ID check in fragments."
+       }
+      },
+      {
+       "type": "Q_QUOTE_ENTAILMENT",
+       "model_verdict": "PARTIALLY",
+       "checked_verdict": "PARTIALLY",
+       "note": "partial or unclear entailment",
+       "answer": {
+        "verdict": "PARTIALLY",
+        "quote_requirements": [
+         "Verify user ID before attempting authentication via name + zip",
+         "Authentication precedence must be followed even with user ID provided"
+        ],
+        "supported_parts": [
+         "The agent failed to verify whether the user had already provided a user ID"
+        ],
+        "unsupported_parts": [
+         "violating policy requirements for authentication precedence"
+        ],
+        "reason": "Fragment **r1** mandates verification but not precedence wording.",
+        "deciding_fragment": "CARD_REQUIRED (r1)"
+       }
+      }
+     ],
+     "tq_verdict": "KEEP",
+     "tq_evidence": "no applicable typed refutation; conservative keep",
+     "fragments": {
+      "claims": [],
+      "asks": [],
+      "obs": [],
+      "response_calls": [
+       "find_user_id_by_name_zip"
+      ]
+     }
+    }
+   ],
+   "any_unknown": false
+  },
+  {
+   "id": "telecom__mms_issueairplane_mode_on-bad_network_preference-bad_wifi_calling-data_usage_exce::t7",
+   "gold": 1,
+   "v31_label": 1,
+   "new_label": 1,
+   "facts": {
+    "response_call_count": 1,
+    "response_call_names": [
+     "check_network_status"
+    ],
+    "request_count": 0,
+    "kb_calls_total": 0,
+    "kb_before_transfer": 0,
+    "verification_observation_present": false,
+    "last_user_req": false,
+    "resp_has_transfer": false,
+    "log_called_in_response": false
+   },
+   "cards": [
+    {
+     "card_index": null,
+     "policy_quote": null,
+     "obligation_kind": null,
+     "questions": [
+      {
+       "type": "Q_ACTION_STATE",
+       "model_verdict": "UNCLEAR",
+       "checked_verdict": "UNCLEAR",
+       "note": "no code re-check for this verdict",
+       "answer": {
+        "verdict": "UNCLEAR",
+        "deciding_id": "null",
+        "reason": "No tool call matches policy; no claim made."
+       }
+      },
+      {
+       "type": "Q_QUOTE_ENTAILMENT",
+       "model_verdict": "UNCLEAR",
+       "checked_verdict": "INCONSISTENT",
+       "note": "2 non-atomic and 0 invented part(s) not present in the judge's demand; refutation blocked",
+       "answer": {
+        "verdict": "UNCLEAR",
+        "quote_requirements": [
+         "p1: (no atomic obligations listed)"
+        ],
+        "supported_parts": [],
+        "unsupported_parts": [
+         "The tool call `check_network_status` is not a valid tool available in the provided tool list",
+         "the agent should have used a tool that aligns with the MMS troubleshooting policy (e.g., `check_apn_settings`, `check_network_mode_preference`, or `can_send_mms` with proper context)"
+        ],
+        "reason": "p1 lacks explicit obligations; d1 is standalone demand."
+       }
+      }
+     ],
+     "tq_verdict": "KEEP",
+     "tq_evidence": "no grounded violated card; v3.1 conservative keep",
+     "fragments": {
+      "claims": [],
+      "asks": [],
+      "obs": [],
+      "response_calls": [
+       "check_network_status"
+      ]
+     }
+    }
+   ],
+   "any_unknown": false
+  },
+  {
+   "id": "telecom__mms_issueairplane_mode_on-bad_network_preference-break_apn_mms_setting-break_app_::t10",
+   "gold": 1,
+   "v31_label": 1,
+   "new_label": 1,
+   "facts": {
+    "response_call_count": 4,
+    "response_call_names": [
+     "check_status_bar",
+     "check_network_status",
+     "check_sim_status",
+     "check_apn_settings"
+    ],
+    "request_count": 0,
+    "kb_calls_total": 0,
+    "kb_before_transfer": 0,
+    "verification_observation_present": false,
+    "last_user_req": false,
+    "resp_has_transfer": false,
+    "log_called_in_response": false
+   },
+   "cards": [
+    {
+     "card_index": 1,
+     "policy_quote": "You should only make one tool call at a time, and if you make a tool call, you should not respond to the user simultaneously.",
+     "obligation_kind": "performed_action",
+     "questions": [
+      {
+       "type": "Q_ACTION_STATE",
+       "model_verdict": "EXECUTED",
+       "checked_verdict": "EXECUTED",
+       "note": "code confirms 4 response call(s)",
+       "answer": {
+        "verdict": "EXECUTED",
+        "deciding_id": "d1",
+        "reason": "Simultaneous tool calls violate policy explicitly."
+       }
+      },
+      {
+       "type": "Q_QUOTE_ENTAILMENT",
+       "model_verdict": "PARTIALLY",
+       "checked_verdict": "INCONSISTENT",
+       "note": "1 non-atomic and 0 invented part(s) not present in the judge's demand; refutation blocked",
+       "answer": {
+        "verdict": "PARTIALLY",
+        "quote_requirements": [
+         "Make only one tool call at a time.",
+         "Do not respond to user simultaneously if making a tool call."
+        ],
+        "supported_parts": [
+         "The response violates the policy by making four simultaneous tool calls"
+        ],
+        "unsupported_parts": [
+         "failing to communicate with the user in Russian before or after the tool calls"
+        ],
+        "reason": "Fragment **d1** cites both tool calls and language; only tool calls are in **p1/r1**."
+       }
+      }
+     ],
+     "tq_verdict": "KEEP",
+     "tq_evidence": "no applicable typed refutation; conservative keep",
+     "fragments": {
+      "claims": [],
+      "asks": [],
+      "obs": [],
+      "response_calls": [
+       "check_status_bar",
+       "check_network_status",
+       "check_sim_status",
+       "check_apn_settings"
+      ]
+     }
+    },
+    {
+     "card_index": 2,
+     "policy_quote": "Always communicate with the user in Russian.",
+     "obligation_kind": "required_action_missing",
+     "questions": [
+      {
+       "type": "Q_ACTION_STATE",
+       "model_verdict": "EXECUTED",
+       "checked_verdict": "EXECUTED",
+       "note": "code confirms 4 response call(s)",
+       "answer": {
+        "verdict": "EXECUTED",
+        "deciding_id": "p1",
+        "reason": "Tool calls made without Russian communication."
+       }
+      },
+      {
+       "type": "Q_QUOTE_ENTAILMENT",
+       "model_verdict": "PARTIALLY",
+       "checked_verdict": "PARTIALLY",
+       "note": "partial or unclear entailment",
+       "answer": {
+        "verdict": "PARTIALLY",
+        "quote_requirements": [
+         "Always communicate with the user in Russian.",
+         "Communicate with the user in Russian before tool calls.",
+         "Communicate with the user in Russian after tool calls."
+        ],
+        "supported_parts": [
+         "failing to communicate with the user in Russian before or after the tool calls"
+        ],
+        "unsupported_parts": [
+         "making four simultaneous tool calls"
+        ],
+        "reason": "Tool calls not mentioned in policy.",
+        "fragment_id": "CARD_REQUIRED"
+       }
+      }
+     ],
+     "tq_verdict": "KEEP",
+     "tq_evidence": "no applicable typed refutation; conservative keep",
+     "fragments": {
+      "claims": [],
+      "asks": [],
+      "obs": [],
+      "response_calls": [
+       "check_status_bar",
+       "check_network_status",
+       "check_sim_status",
+       "check_apn_settings"
+      ]
+     }
+    }
+   ],
+   "any_unknown": false
+  },
+  {
+   "id": "telecom__mms_issueairplane_mode_on-bad_wifi_calling-break_app_both_permissions-data_mode_o::t15",
+   "gold": 0,
+   "v31_label": 1,
+   "new_label": 1,
+   "facts": {
+    "response_call_count": 0,
+    "response_call_names": [],
+    "request_count": 0,
+    "kb_calls_total": 0,
+    "kb_before_transfer": 0,
+    "verification_observation_present": false,
+    "last_user_req": false,
+    "resp_has_transfer": false,
+    "log_called_in_response": false
+   },
+   "cards": [
+    {
+     "card_index": 1,
+     "policy_quote": "Make sure you try all the possible ways to resolve the user's issue before transferring to a human agent.",
+     "obligation_kind": "intent",
+     "questions": [
+      {
+       "type": "Q_ACTION_STATE",
+       "model_verdict": "PROPOSED_ONLY",
+       "checked_verdict": "PROPOSED_ONLY",
+       "note": "code confirms no executing response call (calls=[])",
+       "answer": {
+        "verdict": "PROPOSED_ONLY",
+        "deciding_id": "c1",
+        "reason": "Waiting for confirmation is future-oriented."
+       }
+      },
+      {
+       "type": "Q_QUOTE_ENTAILMENT",
+       "model_verdict": "PARTIALLY",
+       "checked_verdict": "PARTIALLY",
+       "note": "partial or unclear entailment",
+       "answer": {
+        "verdict": "PARTIALLY",
+        "quote_requirements": [
+         "Try all possible ways to resolve user's issue",
+         "Resolve user's issue before transferring to human agent",
+         "Ensure user attempts all troubleshooting steps before escalation"
+        ],
+        "supported_parts": [],
+        "unsupported_parts": [
+         "explicitly instruct the user to confirm after granting permissions",
+         "explicitly instruct the user to retrying MMS"
+        ],
+        "reason": "d1 cites specific missing instructions not in p1/r1",
+        "deciding_fragment": "d1"
+       }
+      },
+      {
+       "type": "Q_CONFIRMATION_ASKED",
+       "model_verdict": "NO",
+       "checked_verdict": "INCONSISTENT",
+       "note": "NO verdict but code finds an ask-marker (question/request) in asks",
+       "answer": {
+        "verdict": "NO",
+        "deciding_id": null,
+        "reason": "No explicit confirmation, choice, or issue-resolution data request."
+       }
+      }
+     ],
+     "tq_verdict": "KEEP",
+     "tq_evidence": "handoff obligation stands under code facts (v3.1 conjunction not met)",
+     "fragments": {
+      "claims": [
+       {
+        "id": "c1",
+        "text": "Я буду ждать вашего подтверждения — надеюсь, в этот раз всё получится!"
+       }
+      ],
+      "asks": [
+       {
+        "id": "a1",
+        "text": "Пожалуйста, предоставьте приложению оба разрешения."
+       }
+      ],
+      "obs": [],
+      "response_calls": []
+     }
+    }
+   ],
+   "any_unknown": false
+  },
+  {
+   "id": "telecom__mms_issuebreak_apn_mms_setting-user_abroad_roaming_enabled_offPERSONA_Hard::t27",
+   "gold": 1,
+   "v31_label": 1,
+   "new_label": 1,
+   "facts": {
+    "response_call_count": 1,
+    "response_call_names": [
+     "transfer_to_human_agents"
+    ],
+    "request_count": 0,
+    "kb_calls_total": 0,
+    "kb_before_transfer": 0,
+    "verification_observation_present": false,
+    "last_user_req": false,
+    "resp_has_transfer": true,
+    "log_called_in_response": false
+   },
+   "cards": [
+    {
+     "card_index": 1,
+     "policy_quote": "You should transfer the user to a human agent if and only if the request cannot be handled within the scope of your actions. To transfer, first make a tool call to transfer_to_human_agents, and then send the message 'YOU ARE BEING TRANSFERRED TO A HUMAN AGENT. PLEASE HOLD ON.' to the user.",
+     "obligation_kind": "handoff",
+     "questions": [
+      {
+       "type": "Q_ACTION_STATE",
+       "model_verdict": "EXECUTED",
+       "checked_verdict": "EXECUTED",
+       "note": "code confirms 1 response call(s)",
+       "answer": {
+        "verdict": "EXECUTED",
+        "deciding_id": "transfer_to_human_agents",
+        "reason": "Tool call executed without prior user notification."
+       }
+      },
+      {
+       "type": "Q_QUOTE_ENTAILMENT",
+       "model_verdict": "PARTIALLY",
+       "checked_verdict": "INCONSISTENT",
+       "note": "1 non-atomic and 0 invented part(s) not present in the judge's demand; refutation blocked",
+       "answer": {
+        "verdict": "PARTIALLY",
+        "quote_requirements": [
+         "Make tool call to `transfer_to_human_agents` first.",
+         "Inform user of transfer with exact message after tool call."
+        ],
+        "supported_parts": [
+         "inform the user of the transfer to a human agent before making the tool call to `transfer_to_human_agents`"
+        ],
+        "unsupported_parts": [
+         "The user was not explicitly notified with the required message 'YOU ARE BEING TRANSFERRED TO A HUMAN AGENT. PLEASE HOLD ON.'"
+        ],
+        "reason": "Order of actions reversed in d1.",
+        "fragment_id": "p1"
+       }
+      }
+     ],
+     "tq_verdict": "KEEP",
+     "tq_evidence": "handoff obligation stands under code facts (v3.1 conjunction not met)",
+     "fragments": {
+      "claims": [
+       {
+        "id": "c1",
+        "text": "Я сейчас сделаю следующее:"
+       },
+       {
+        "id": "c2",
+        "text": "К сожалению, г-н Смит, мои инструменты диагностики снова выдают ошибку при попытке проверить именно функцию MMS на вашем устройстве."
+       },
+       {
+        "id": "c3",
+        "text": "Это окончательно подтверждает, что проблема находится на уровне, к которому у меня, как у агента первой линии, просто нет доступа."
+       },
+       {
+        "id": "c4",
+        "text": "Мой коллега-специалист — это единственный человек, который может зайти в систему управления сетью и «протолкнуть» ваши сообщения вручную или исправить ошибку на сервере."
+       },
+       {
+        "id": "c5",
+        "text": "Я обещаю вам, что буду сопровождать этот перевод до самого конца."
+       }
+      ],
+      "asks": [],
+      "obs": [],
+      "response_calls": [
+       "transfer_to_human_agents"
+      ]
+     }
+    }
+   ],
+   "any_unknown": false
+  },
+  {
+   "id": "telecom__mobile_data_issuebad_network_preference-bad_vpn-data_mode_off-data_saver_mode_onP::t6",
+   "gold": 1,
+   "v31_label": 1,
+   "new_label": 1,
+   "facts": {
+    "response_call_count": 1,
+    "response_call_names": [
+     "run_speed_test"
+    ],
+    "request_count": 0,
+    "kb_calls_total": 0,
+    "kb_before_transfer": 0,
+    "verification_observation_present": false,
+    "last_user_req": false,
+    "resp_has_transfer": false,
+    "log_called_in_response": false
+   },
+   "cards": [
+    {
+     "card_index": 1,
+     "policy_quote": "You should only make one tool call at a time, and if you make a tool call, you should not respond to the user simultaneously.",
+     "obligation_kind": "performed_action",
+     "questions": [
+      {
+       "type": "Q_ACTION_STATE",
+       "model_verdict": "EXECUTED",
+       "checked_verdict": "EXECUTED",
+       "note": "code confirms 1 response call(s)",
+       "answer": {
+        "verdict": "EXECUTED",
+        "deciding_id": "run_speed_test",
+        "reason": "Tool call made without prior confirmation."
+       }
+      },
+      {
+       "type": "Q_QUOTE_ENTAILMENT",
+       "model_verdict": "NOT_ENTAILED",
+       "checked_verdict": "NOT_ENTAILED",
+       "note": "code re-checked: 3 d1-copied part(s) absent from quote and requirements",
+       "answer": {
+        "verdict": "NOT_ENTAILED",
+        "quote_requirements": [
+         "Make only one tool call at a time",
+         "Do not respond to user if tool call is made"
+        ],
+        "supported_parts": [],
+        "unsupported_parts": [
+         "call `run_speed_test` without confirming availability",
+         "ensure user's device is ready for remote diagnostics",
+         "only use tools explicitly available and relevant to user's context"
+        ],
+        "reason": "d1 cites unrelated tool-specific checks."
+       }
+      }
+     ],
+     "tq_verdict": "KEEP",
+     "tq_evidence": "no applicable typed refutation; conservative keep",
+     "fragments": {
+      "claims": [],
+      "asks": [],
+      "obs": [],
+      "response_calls": [
+       "run_speed_test"
+      ]
+     }
+    }
+   ],
+   "any_unknown": false
+  },
+  {
+   "id": "telecom__service_issueairplane_mode_on-break_apn_settings-lock_sim_card_pin-overdue_bill_s::t15",
+   "gold": 1,
+   "v31_label": 1,
+   "new_label": 1,
+   "facts": {
+    "response_call_count": 2,
+    "response_call_names": [
+     "check_sim_status",
+     "check_network_status"
+    ],
+    "request_count": 0,
+    "kb_calls_total": 0,
+    "kb_before_transfer": 0,
+    "verification_observation_present": false,
+    "last_user_req": false,
+    "resp_has_transfer": false,
+    "log_called_in_response": false
+   },
+   "cards": [
+    {
+     "card_index": 1,
+     "policy_quote": "You should only make one tool call at a time, and if you make a tool call, you should not respond to the user simultaneously.",
+     "obligation_kind": "performed_action",
+     "questions": [
+      {
+       "type": "Q_ACTION_STATE",
+       "model_verdict": "EXECUTED",
+       "checked_verdict": "EXECUTED",
+       "note": "code confirms 2 response call(s)",
+       "answer": {
+        "verdict": "EXECUTED",
+        "deciding_id": "RESPONSE_TOOL_CALLS",
+        "reason": "Two tool calls made simultaneously in one turn."
+       }
+      },
+      {
+       "type": "Q_QUOTE_ENTAILMENT",
+       "model_verdict": "FULLY",
+       "checked_verdict": "INCONSISTENT",
+       "note": "FULLY verdict with no verifiable supported parts",
+       "answer": {
+        "verdict": "FULLY",
+        "quote_requirements": [
+         "Make only one tool call at a time.",
+         "Do not respond to user if tool call is made."
+        ],
+        "supported_parts": [
+         "The agent violated the policy by making two tool calls (check_sim_status and check_network_status) simultaneously in one turn, which is explicitly prohibited."
+        ],
+        "unsupported_parts": [],
+        "reason": "d1 cites simultaneous tool calls; p1 forbids multiple tool calls.",
+        "fragment_id": "POLICY_QUOTE"
+       }
+      }
+     ],
+     "tq_verdict": "KEEP",
+     "tq_evidence": "no applicable typed refutation; conservative keep",
+     "fragments": {
+      "claims": [],
+      "asks": [],
+      "obs": [],
+      "response_calls": [
+       "check_sim_status",
+       "check_network_status"
+      ]
+     }
+    }
+   ],
+   "any_unknown": false
+  },
+  {
+   "id": "telecom__service_issuebreak_apn_settings-contract_end_suspension-lock_sim_card_pin-unseat_::t13",
+   "gold": 1,
+   "v31_label": 1,
+   "new_label": 1,
+   "facts": {
+    "response_call_count": 1,
+    "response_call_names": [
+     "resume_line"
+    ],
+    "request_count": 0,
+    "kb_calls_total": 0,
+    "kb_before_transfer": 0,
+    "verification_observation_present": false,
+    "last_user_req": false,
+    "resp_has_transfer": false,
+    "log_called_in_response": false
+   },
+   "cards": [
+    {
+     "card_index": 1,
+     "policy_quote": "After you resume the line, the user will have to reboot their device to get service.",
+     "obligation_kind": "required_action_missing",
+     "questions": [
+      {
+       "type": "Q_ACTION_STATE",
+       "model_verdict": "UNCLEAR",
+       "checked_verdict": "UNCLEAR",
+       "note": "no code re-check for this verdict",
+       "answer": {
+        "verdict": "UNCLEAR",
+        "deciding_id": "null",
+        "reason": "No reboot instruction in tool calls or claims."
+       }
+      },
+      {
+       "type": "Q_QUOTE_ENTAILMENT",
+       "model_verdict": "PARTIALLY",
+       "checked_verdict": "PARTIALLY",
+       "note": "partial or unclear entailment",
+       "answer": {
+        "verdict": "PARTIALLY",
+        "quote_requirements": [
+         "Inform user to reboot device after resuming line",
+         "User must reboot device post-resumption"
+        ],
+        "supported_parts": [
+         "inform the user that they must reboot their device after resuming the suspended line"
+        ],
+        "unsupported_parts": [],
+        "fragment_id": "p1",
+        "reason": "Policy requires reboot instruction; demand matches."
+       }
+      }
+     ],
+     "tq_verdict": "KEEP",
+     "tq_evidence": "no applicable typed refutation; conservative keep",
+     "fragments": {
+      "claims": [],
+      "asks": [],
+      "obs": [],
+      "response_calls": [
+       "resume_line"
+      ]
+     }
+    }
+   ],
+   "any_unknown": false
+  }
+ ]
+}
