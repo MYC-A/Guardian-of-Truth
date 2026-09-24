@@ -48,8 +48,10 @@ that global step is exactly where the recheck's whole-case reviewer failed
 
 Development loop on public46 (in-sample, fully traced in the committed outputs):
 
-- Iteration 1: 10 alarms removed but **7 true positives lost** (F1 .9143 — the
-  "pretty F1" failure the directive warns about). Three unsound paths diagnosed:
+- Iteration 1: 10 alarms removed but **7 true positives lost**. The earlier
+  reported F1 .9143 was a scoring bug: the TQ runner held FN at zero when it
+  cleared a TP. From the reported counts (TP16/FP3/FN7), F1 is **.7619**.
+  Three unsound paths were diagnosed:
   (a) Q_TRIGGER_PRESENT searched only user turns while the killed cards' triggers
   lived in the assistant's own behavior or in observations; (b) Q_QUOTE_ENTAILMENT
   accepted model-invented demands and long compound "unsupported parts"; (c) the
@@ -82,7 +84,8 @@ Frozen single run on the hotel suite (v4 base, 17 surviving alarms, 49 model cal
 remaining hotel FPs are the documented label-lazy residuals (ungrounded email claim,
 $15 breakfast, control artifact); there is nothing mechanically refutable in them,
 and the layer did not manufacture refutations. The public46 removal paths (tense
-discrimination, obligation-not-due) simply had no hotel targets.
+discrimination, obligation-not-due) had no eligible hotel FP targets, so zero
+changes is a conservative behavior check, not a transfer test of either path.
 
 Comparison context: the parsed target-tool-call trivial control reaches F1 .9130 on
 public46 (INDEPENDENT_REVIEW_2026-09-23). The TQ arm's .9200 is in-sample and only

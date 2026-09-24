@@ -13,10 +13,10 @@ but executed with the existing Mistral API per the "Mistral via API, everything 
   fuzzy-match the original; counting verdicts must agree with code-recounted facts) before
   it can influence a label. Failed checks downgrade the verdict to INCONSISTENT (never refute).
 - There is NO global "does another error exist" question: that global step is exactly where
-  the recheck's whole-case reviewer failed (34/35 cases "had another error"). Here the card
-  set is the complete error universe, v3.1 arbitration discipline is preserved (all cards
-  refuted -> 0; any UNKNOWN -> keep), and the v3.1 safety gate (live action calls disable
-  action-precondition refutations) is inherited.
+  the recheck's whole-case reviewer failed (34/35 cases "had another error"). The card
+  set is a candidate set, not a proven complete error inventory: refuting every card can
+  still miss an independent error. The v3.1 arbitration discipline (all cards refuted -> 0;
+  any UNKNOWN -> keep) and safety gate are inherited as empirical rules, not certificates.
 
 Question types:
   Q_ACTION_STATE        did the assistant execute the action, claim it done, or only propose it?
@@ -676,6 +676,28 @@ def build_questions(card: dict, fr: dict, demand: str) -> tuple[list[dict], dict
     return qs, ctx
 
 
+def score_refutations(base: dict, per_case: list[dict]) -> dict:
+    """Score TQ changes against the complete upstream result, including lost TPs."""
+    base_rows = base.get("per_case", [])
+    base_tp = sum(row["new_label"] == 1 and row["gold"] == 1 for row in base_rows)
+    base_fp = sum(row["new_label"] == 1 and row["gold"] == 0 for row in base_rows)
+    base_fn = int(base.get("after", {}).get("FN", 0))
+    removed = [row["id"] for row in per_case if row["new_label"] == 0]
+    tp_lost = [row["id"] for row in per_case if row["new_label"] == 0 and row["gold"] == 1]
+    after_tp = base_tp - len(tp_lost)
+    after_fp = base_fp - (len(removed) - len(tp_lost))
+    after_fn = base_fn + len(tp_lost)
+    denominator = 2 * after_tp + after_fp + after_fn
+    return {
+        "v31_after": {"TP": base_tp, "FP": base_fp, "FN": base_fn},
+        "tq_removed": removed,
+        "tq_removed_count": len(removed),
+        "tp_lost": tp_lost,
+        "after": {"TP": after_tp, "FP": after_fp, "FN": after_fn,
+                  "F1": round(2 * after_tp / denominator, 4) if denominator else 0.0},
+    }
+
+
 def main() -> int:
     ap = argparse.ArgumentParser()
     ap.add_argument("--records", type=Path, default=DEFAULT_RECORDS)
@@ -760,23 +782,10 @@ def main() -> int:
                          "facts": facts, "cards": card_results,
                          "any_unknown": any_unknown})
 
-    tp = sum(1 for e in per_case if e["new_label"] == 1 and e["gold"] == 1)
-    fp = sum(1 for e in per_case if e["new_label"] == 1 and e["gold"] == 0)
-    v31_tp = sum(1 for e in v31.get("per_case", []) if e["new_label"] == 1 and e["gold"] == 1)
-    v31_fp = sum(1 for e in v31.get("per_case", []) if e["new_label"] == 1 and e["gold"] == 0)
-    removed = [e["id"] for e in per_case if e["new_label"] == 0]
-    tp_lost = [e["id"] for e in per_case if e["new_label"] == 0 and e["gold"] == 1]
-    # full-picture metrics: v3.1-refuted cases stay refuted (TQ never re-raises them)
-    after_tp = v31_tp - len(tp_lost)
-    after_fp = v31_fp - (len(removed) - len(tp_lost))
     res = {"layer": "typed-question layer (Jev-form, Mistral API) over v3.1",
            "model": mistral_settings()["MISTRAL_MODEL"], "n_model_calls": n_calls,
            "dry": args.dry, "n_surviving": len(surviving),
-           "v31_after": {"TP": v31_tp, "FP": v31_fp, "FN": 0},
-           "tq_removed": removed, "tq_removed_count": len(removed),
-           "tp_lost": tp_lost,
-           "after": {"TP": after_tp, "FP": after_fp, "FN": 0,
-                     "F1": round(2 * after_tp / (2 * after_tp + after_fp), 4) if after_tp else 0.0},
+           **score_refutations(v31, per_case),
            "per_case": per_case}
     out_name = f"tq_questions{args.tag}.json"
     (args.out / out_name).write_text(json.dumps(res, ensure_ascii=False, indent=1), encoding="utf-8")
