@@ -8,7 +8,7 @@ tuned after seeing results. Inputs and per-case records are in git.
 
 | Configuration | TP | FP | FN | TN | F1 |
 |---|---|---|---|---|---|
-| baseline structural Guardian | 6 | 0 | 17 | 23 | .4138 |
+| baseline structural Guardian | 12 | 0 | 11 | 23 | .6857 |
 | granite 3.3 groundedness (doc 12k) | 16 | 2 | 7 | 21 | .7805 |
 | **OR control (Guardian OR granite)** | **20** | **2** | **3** | **21** | **.8889** |
 | granite 4.1 standalone (re-run verified) | 17 | 2 | 6 | 21 | .8095 |
