@@ -307,3 +307,10 @@ policy clause that names the target tool; `completion_v2.jsonl` asks for a past
 claim independently of whether the history supports it. Both retain v1
 artifacts. They are developed after reading label-free v1 outputs, so a gain
 on these same authored cases is development evidence, not independent transfer.
+
+The additional `service_desk_precondition_ablation/cases.csv` removes one of
+four stated prerequisites (stock, identity, authorization, confirmation) from
+each v2 refusal/handoff candidate in both lexical variants. It has no gold
+file; the narrow expected property is that a conditional **must act now**
+proposal stops when any antecedent is absent. This was constructed after v2
+inspection and is a falsification stress test, not another held-out score.

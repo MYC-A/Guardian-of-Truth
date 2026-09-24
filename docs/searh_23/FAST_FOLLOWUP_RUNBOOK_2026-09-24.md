@@ -101,6 +101,12 @@ The `_v2` proposal arms were added after inspecting label-free v1 outputs.
 They have independent output files and are development diagnostics, even on
 the paired renamed suite. Report v1 and v2 separately.
 
+For the post-inspection prerequisite challenge, run only `prepare` and
+`feasibility_v2` on `service_desk_precondition_ablation/cases.csv` in a fresh
+directory. Its 16 examples have no gold labels. Require no `CANDIDATE` when
+stock, identity, authorization, or confirmation is absent; inspect the cited
+premises if this fails. Do not fold these examples into the 32-case scores.
+
 ## Readout and decisions
 
 `score.json` contains per-case predictions, confusion counts split by response
