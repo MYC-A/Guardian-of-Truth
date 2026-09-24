@@ -20,8 +20,7 @@ from pathlib import Path
 REPO = Path(__file__).resolve().parents[2]
 
 E2E_COMMIT = "300dc2edd20e631928b9997a8f581ab8659a75b2"
-ARCHIVE_PATHS = ("src/guardian_truth", "scripts/real_valid_adapter.py",
-                 "scripts/real_valid_common.py", "scripts/real_valid_run.py")
+ARCHIVE_PATHS = ("src/guardian_truth", "scripts")
 
 
 def frozen(run_dir: Path) -> tuple[dict, list[dict]]:
@@ -53,7 +52,7 @@ def append_jsonl(path: Path, row: dict) -> None:
 
 
 def frozen_source(run_dir: Path) -> Path:
-    root = run_dir / "e2e_source_300dc2e"
+    root = run_dir / "e2e_source_300dc2e_v2"
     sentinel = root / "source.json"
     if sentinel.exists():
         data = json.loads(sentinel.read_text(encoding="utf-8"))
@@ -82,7 +81,7 @@ def frozen_source(run_dir: Path) -> Path:
     file_names = []
     for name in filter(None, names):
         if not (name.startswith("src/guardian_truth/") or
-                name in ARCHIVE_PATHS[1:]):
+                name.startswith("scripts/")):
             raise RuntimeError(f"unexpected source path: {name}")
         content = subprocess.check_output(
             ["git", "show", f"{E2E_COMMIT}:{name}"], cwd=REPO)
