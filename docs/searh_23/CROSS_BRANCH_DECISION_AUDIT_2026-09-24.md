@@ -33,6 +33,12 @@ Rejoin by exact ID:
   this marginal F1 equals the trivial response-call control on this set.
   E2E's value is the *specific source-backed certificates*, not the aggregate
   public46 lift. No text-only violation was newly detected by it.
+- C1's exact three FN are `banking_003`, `banking_018`, and `retail_29`.
+  The E2E result rescues `banking_018`; the other two remain the cleanest
+  source-backed action-feasibility targets. All six E2E provenance-family FN
+  cases were already flagged by C1 on public46, so provenance has **zero
+  measured marginal TP over C1** there. It is a candidate for E2E coverage
+  and for unseen-format robustness, not an established C1 F1 gain.
 
 The old report saying “E2E only TP3” describes an earlier adapter state. It
 must not be used as the final assessment of the branch. The E2E's latest
@@ -41,19 +47,15 @@ misses 14/23 positives on that same set.
 
 ## Genuinely open mechanisms, ranked by evidence and cost
 
-1. **Typed argument provenance / repeated failed action.** The independent
-   real-valid FN audit reproduced the canonical E2E TP8/FP0 result twice with
-   zero cache misses, then traced all 15 FN. Six first losses involve argument
-   provenance. The narrowest source-exact candidates are the unsupported
-   account ID (`banking_068`), ZIP fabricated from email digits (`retail_106`),
-   and an identical retry after a failed call (`retail_48`). The first two
-   demand exact value *and field/entity* provenance, never substring search;
-   the third demands `(tool, canonical arguments, observed failure)` identity.
-   No final implementation/result for this candidate exists at the latest
-   branch HEAD. Two of the six provenance cases also require policy
-   rules, so “+6 TP” is not a valid expectation. Do the three narrow paired
-   tests with negative transformations and renamed entities before promotion.
-2. **Source-backed inability / absent-information / fabricated-action claims.**
+1. **C1 false-alarm veto using the pgjudge refutation stack.** On viewed
+   public46, both C1 FP (`banking_057`, `retail_87`) are pgjudge alarms that
+   v3.1 refutes; all 20 C1 TP remain positive. Thus `C1 AND v3.1` would give
+   TP20/FP0/FN3, F1 .9302 on those *in-sample* cases. This particular
+   composition had not been reported as an arm. It is now added to the
+   service-desk scorer (`C1 AND pgjudge/v4_safe/TQ`), with explicit TP-loss
+   accounting. The pgjudge/TQ route needs Mistral API and is not yet a viable
+   offline demo dependency without confirming deployment constraints.
+2. **Source-backed inability and action-feasibility claims.**
    Three real-valid E2E FN first fail at claim typing: `airline__8` asks for a
    DOB already present, `retail__29` falsely says exchange is impossible,
    telecom `t27` claims diagnostics ran without matching calls. C1 also misses
@@ -63,7 +65,20 @@ misses 14/23 positives on that same set.
    explicit unknowns. A generic NLI or tool-existence check does not test this.
    It is a plausible **text-only** recovery path that the latest E2E branch
    lacks; no marginal result exists yet.
-3. **Targeted policy sections / rule source authority.** Five E2E first losses
+3. **Typed argument provenance / repeated failed action.** The independent
+   real-valid FN audit reproduced the canonical E2E TP8/FP0 result twice with
+   zero cache misses, then traced all 15 FN. Six first losses involve argument
+   provenance. The narrowest source-exact candidates are the unsupported
+   account ID (`banking_068`), ZIP fabricated from email digits (`retail_106`),
+   and an identical retry after a failed call (`retail_48`). The first two
+   demand exact value *and field/entity* provenance, never substring search;
+   the third demands `(tool, canonical arguments, observed failure)` identity.
+   No final implementation/result for this candidate exists at the latest
+   branch HEAD. Two of the six provenance cases also require policy
+   rules, so “+6 TP” is not a valid expectation. Its public46 marginal TP over
+   C1 is zero. Do the three narrow paired tests with negative transformations
+   and renamed entities to assess unseen-format robustness before promotion.
+4. **Targeted policy sections / rule source authority.** Five E2E first losses
    are policy extraction or KB-as-policy source failures. H0 emits one flat
    structure for a long multi-section policy, so it can drop the decisive
    rule or invent a must-act rule. A small target-action clause extractor with
@@ -71,7 +86,7 @@ misses 14/23 positives on that same set.
    from using LangExtract or a graph as the judge's whole document. Its
    risk is wrongful applicability; first check the specific FN clauses and
    matched compliant turns. Do not revive a general policy compiler yet.
-4. **Granite `function_call`, context and FP refutation transfer.** These are
+5. **Granite `function_call`, context and FP refutation transfer.** These are
    now prepared in `fast_followup_run.py` on 32 balanced service-desk cases,
    but inference is pending. Its authored labels can establish mechanism
    behavior only. The suite lacks the three argument-provenance contrasts
@@ -91,6 +106,13 @@ misses 14/23 positives on that same set.
   bottleneck was missing source/representation and unsupported T1-style
   premises. The latest 9 certificates show narrow mechanics can work; broad
   solver integration has not beaten the simpler C1 control.
+- Catalog absence deserves a separate authority check. The E2E pre-check
+  found six public46 responses with catalog/schema violations and all six had
+  gold=1; that is empirical support on the viewed sample. A general
+  `not listed -> forbidden` rule additionally assumes `[AVAILABLE TOOLS]` is
+  an exhaustive universe for that case. The source-safe v4 arm removes only
+  this closure inference while retaining explicitly required arguments.
+  Score both arms on new cases before deciding whether to rely on closure.
 - The original agent-v1 gain was against standalone Granite, not C1; the
   repaired investigator showed no gain against its proper control. Repeating
   the same tool router has low value. A new agent would require a **new
@@ -101,8 +123,8 @@ misses 14/23 positives on that same set.
 
 Do **not** claim that the solution family has been exhausted. Do **not** delay
 an executable demo for another broad architecture. The smallest decisive
-study is: (a) run the already frozen service-desk paired comparison; (b) test
-source-exact provenance and a source-backed inability claim on separate
+study is: (a) run the already frozen service-desk paired comparison, including
+the C1 veto arm; (b) test source-exact provenance and a source-backed inability claim on separate
 matched contrasts; (c) validate any gain on an untouched, contest-like set
 with independent label adjudication and response-shape stratification. A
 candidate earns integration only with a real incremental TP/FP change over C1

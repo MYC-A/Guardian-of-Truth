@@ -345,6 +345,22 @@ def score_stage(run_dir: Path, gold_path: Path, allow_partial: bool = False) -> 
                 arms.setdefault("tq", {})[cid] = (
                     tq_rows[cid]["new_label"] if cid in tq_rows else
                     refute[cid]["new_label"])
+    # A refutation layer may also be used as a veto on C1 alarms. This paired
+    # arm is diagnostic only until its TP cost is measured on new inputs.
+    c1_predictions = arms.get("c1_12000", {})
+    for partner in ("pgjudge", "v4_safe", "tq"):
+        partner_predictions = arms.get(partner)
+        if not c1_predictions or partner_predictions is None:
+            continue
+        joined = arms.setdefault("c1_12000_and_" + partner, {})
+        for cid in manifest["ids"]:
+            left, right = c1_predictions.get(cid), partner_predictions.get(cid)
+            if left == 0 or right == 0:
+                joined[cid] = 0
+            elif left == 1 and right == 1:
+                joined[cid] = 1
+            else:
+                joined[cid] = None
     scores = {}
     for arm, predictions in arms.items():
         covered = [cid for cid in manifest["ids"] if predictions.get(cid) in (0, 1)]
@@ -374,7 +390,10 @@ def score_stage(run_dir: Path, gold_path: Path, allow_partial: bool = False) -> 
                           ("pgjudge", "v4_safe"), ("v4_safe", "tq"),
                           ("c1_12000", "c1_12000_plus_function_call"),
                           ("c1_12000", "c1_24000"),
-                          ("c1_12000", "c1_60000")):
+                          ("c1_12000", "c1_60000"),
+                          ("c1_12000", "c1_12000_and_pgjudge"),
+                          ("c1_12000", "c1_12000_and_v4_safe"),
+                          ("c1_12000", "c1_12000_and_tq")):
         if before not in arms or after not in arms:
             continue
         common = [cid for cid in manifest["ids"]

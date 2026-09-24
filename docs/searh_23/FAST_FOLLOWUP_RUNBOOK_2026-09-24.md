@@ -73,7 +73,12 @@ shape, and paired TP gained/lost and FP removed/added. Check in this order:
    `c1_12000_plus_function_call`, separately on call and text cases. The
    `function_call` only covers eligible target calls; its standalone F1 is
    intentionally undefined on the full set.
-5. For C1 misses on unsupported refusals or handoffs, inspect whether a
+5. Compare `c1_12000` with `c1_12000_and_pgjudge`,
+   `c1_12000_and_v4_safe`, and `c1_12000_and_tq`. This tests the refutation
+   stack as a veto on C1 alarms. Count removed FP and lost TP separately;
+   public46's apparent 2-FP win is in-sample. This arm requires the Mistral
+   API upstream.
+6. For C1 misses on unsupported refusals or handoffs, inspect whether a
    feasible alternative has an exact policy clause, declared tool, matching
    case/amount, satisfied prerequisites and no unknown premise. Only then
    implement and test the separate action-feasibility witness. This gate avoids

@@ -85,7 +85,7 @@ class FastFollowupTest(unittest.TestCase):
             jsonl("local.jsonl", [
                 {"id": cid, "status": "OK", "structural": {"label": 0},
                  "input_sha256": hashlib.sha256("p\0r".encode()).hexdigest(),
-                 "c1": {str(budget): 0 for budget in followup.CONTEXT_BUDGETS},
+                 "c1": {str(budget): 1 for budget in followup.CONTEXT_BUDGETS},
                  "function_call": {"label": None}} for cid in ("one", "two")])
             jsonl("pgjudge/extract/cards.jsonl", [
                 {"id": cid, "status": "OK", "cards": []} for cid in ("one", "two")])
@@ -103,6 +103,10 @@ class FastFollowupTest(unittest.TestCase):
             self.assertEqual(result["scores"]["v4_safe"]["TP"], 1)
             self.assertEqual(result["scores"]["tq"]["FN"], 1)
             self.assertEqual(result["comparisons"]["v4_safe -> tq"]["tp_lost"], ["one"])
+            self.assertEqual(result["comparisons"]["c1_12000 -> c1_12000_and_v4_safe"]
+                             ["fp_removed"], ["two"])
+            self.assertEqual(result["comparisons"]["c1_12000 -> c1_12000_and_tq"]
+                             ["tp_lost"], ["one"])
 
 
 if __name__ == "__main__":
