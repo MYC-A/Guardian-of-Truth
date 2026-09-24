@@ -314,3 +314,16 @@ each v2 refusal/handoff candidate in both lexical variants. It has no gold
 file; the narrow expected property is that a conditional **must act now**
 proposal stops when any antecedent is absent. This was constructed after v2
 inspection and is a falsification stress test, not another held-out score.
+
+## 14. Completed server follow-up and modal-rule audit (2026-09-24)
+
+Full sealed per-case results, paired-renaming flips, post-inspection
+prerequisite ablations, and the modal-word counterexample are in
+`docs/searh_23/FAST_FOLLOWUP_SERVER_RESULTS_2026-09-24.md`.
+The 32-case authored suite and its renamed pair show C1 TP16/FP12/FN0 in
+both. C1 AND frozen v4-safe appears to reduce FP to 8 and 7 without lost TP,
+but its additional removals depend on the invalid inference that a policy
+quote without `must` is not an obligation. A separate modal-safe replay
+returns C1 AND layer to TP16/FP11/FN0 on both. This replay was written after
+the scores were opened; it is a logic correction, not independent validation.
+Six valid-call FP per suite remain. No new whole-case classifier is promoted.

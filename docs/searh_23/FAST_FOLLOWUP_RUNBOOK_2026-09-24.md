@@ -145,6 +145,13 @@ No arm is promoted from this authored suite alone. A gain with zero TP loss
 qualifies for one untouched contest-like validation. A zero gain with actual
 base-positive opportunities argues for freezing the simpler local path.
 
+**Post-run audit:** family H in v3.1/v4 treats a policy quote without a modal
+word as non-obligatory, although “Before executing ..., verify ...” is a
+binding imperative. The sealed scores remain historical results. Use
+`fp_refute_modal_safe.py --run-dir <completed-run>` for the separate
+post-inspection replay and read
+`FAST_FOLLOWUP_SERVER_RESULTS_2026-09-24.md` before considering any veto arm.
+
 ## Local checks already run
 
 - Generator produced all 32 cases; call parser found 16 target calls; the
