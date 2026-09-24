@@ -55,6 +55,16 @@ def exact_literal(text: str, value: Any) -> bool:
                           r"(?![\w@-]|\.[\w])", text))
 
 
+def unique_whitespace_span(source: str, quote: str) -> tuple[int, int] | None:
+    """Unique verbatim words with only whitespace changes; no paraphrases."""
+    pieces = quote.split()
+    if len(pieces) < 4:
+        return None
+    pattern = r"\s+".join(re.escape(piece) for piece in pieces)
+    hits = list(re.finditer(pattern, source))
+    return (hits[0].start(), hits[0].end()) if len(hits) == 1 else None
+
+
 def result_outcome(value: Any) -> str:
     if not isinstance(value, dict):
         return "UNKNOWN"

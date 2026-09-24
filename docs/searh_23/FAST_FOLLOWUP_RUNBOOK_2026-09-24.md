@@ -62,6 +62,10 @@ python experiments/searh_23/fast_followup_run.py feasibility \
   --run-dir outputs/searh_23/fast_followup/service_desk_v1_run1
 python experiments/searh_23/fast_followup_run.py completion \
   --run-dir outputs/searh_23/fast_followup/service_desk_v1_run1
+python experiments/searh_23/fast_followup_run.py feasibility_v2 \
+  --run-dir outputs/searh_23/fast_followup/service_desk_v1_run1
+python experiments/searh_23/fast_followup_run.py completion_v2 \
+  --run-dir outputs/searh_23/fast_followup/service_desk_v1_run1
 python experiments/searh_23/fast_followup_e2e.py \
   --run-dir outputs/searh_23/fast_followup/service_desk_v1_run1 --mode both
 python experiments/searh_23/fast_followup_run.py score \
@@ -70,7 +74,8 @@ python experiments/searh_23/fast_followup_run.py score \
   --rubric experiments/searh_23/service_desk_v1/rubric.json
 ```
 
-`local`, `pgjudge`, `feasibility`, `completion`, and E2E append per-case records
+`local`, `pgjudge`, `feasibility`, `completion`, their separate `_v2` stages,
+and E2E append per-case records
 and skip completed cases on rerun. Use a fresh directory for a fresh comparison.
 `witness`, `refute`, `tq`, and `score` are one-time stages. `score` seals all
 present prediction file hashes before opening labels and requires complete
@@ -92,6 +97,9 @@ positive-only arms. Exact citations and entity joins are checked in code, but
 the model's semantic mapping and completeness of policy prerequisites remain
 open error sources. Inspect `UNKNOWN`, `issues`, and the cited premises before
 trusting a gain.
+The `_v2` proposal arms were added after inspecting label-free v1 outputs.
+They have independent output files and are development diagnostics, even on
+the paired renamed suite. Report v1 and v2 separately.
 
 ## Readout and decisions
 

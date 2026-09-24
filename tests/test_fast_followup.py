@@ -160,6 +160,10 @@ class FastFollowupTest(unittest.TestCase):
                 {"id": cid, "status": "OK", "verdict": verdict,
                  "input_sha256": hashlib.sha256("p\0r".encode()).hexdigest()}
                 for cid, verdict in (("one", "CANDIDATE"), ("two", "UNKNOWN"))])
+            jsonl("feasibility_v2.jsonl", [
+                {"id": cid, "status": "OK", "verdict": verdict,
+                 "input_sha256": hashlib.sha256("p\0r".encode()).hexdigest()}
+                for cid, verdict in (("one", "UNKNOWN"), ("two", "UNKNOWN"))])
             followup.score_stage(run_dir, gold)
             result = json.loads((run_dir / "score.json").read_text(encoding="utf-8"))
             self.assertEqual(result["scores"]["v4_safe"]["TP"], 1)
@@ -171,6 +175,10 @@ class FastFollowupTest(unittest.TestCase):
                              ["tp_lost"], ["one"])
             self.assertEqual(result["scores"]["e2e_r1"]["FP"], 0)
             self.assertEqual(result["scores"]["feasibility_proposal"]["TP"], 1)
+            self.assertEqual(result["scores"]["feasibility_v2_proposal"]["FN"], 1)
+            self.assertEqual(result["comparisons"][
+                "feasibility_proposal -> feasibility_v2_proposal"]["tp_lost"],
+                ["one"])
             self.assertEqual(result["comparisons"]["c1_12000 -> e2e_r1"]
                              ["fp_removed"], ["two"])
 

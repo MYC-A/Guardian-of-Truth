@@ -287,3 +287,23 @@ replace it with the exact source span, retain the model quote in the trace,
 and retry other no-JSON completions once with a larger output budget. The initial
 append-only records remain available. These are input/serialization repairs;
 their effect on predictions and quality is still unmeasured.
+
+### Label-free diagnostic after the first completed proposal run
+
+The original service-desk run completed local C1, pgjudge, refutation, TQ,
+and both v1 proposal stages. TQ made 67 Mistral calls on 25 surviving alarms
+and changed zero raw decisions. This is not a quality score: labels have not
+been opened. The v1 feasibility extractor proposed one candidate, on a
+stock-out refusal whose cited policy merely *permits* a delay or transfer.
+Its two other possible cases failed quote validation because the model folded
+line wraps. The v1 completion extractor proposed no candidates on six
+eligible responses; its raw explanation for a false completed-action claim
+said no matching result existed, showing that it interpreted `candidate` as
+"supported" rather than "asserted". Neither v1 proposal is ready to promote.
+
+Two explicitly post-inspection diagnostic variants now have separate files:
+`feasibility_v2.jsonl` demands a unique source quote from a single mandatory
+policy clause that names the target tool; `completion_v2.jsonl` asks for a past
+claim independently of whether the history supports it. Both retain v1
+artifacts. They are developed after reading label-free v1 outputs, so a gain
+on these same authored cases is development evidence, not independent transfer.

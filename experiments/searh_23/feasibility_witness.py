@@ -14,7 +14,8 @@ from pathlib import Path
 
 from guardian_truth.parsing import parse_catalog, parse_events
 from tq_questions import Mistral
-from typed_witnesses import entity_anchors, exact_literal, same_entity
+from typed_witnesses import (entity_anchors, exact_literal, same_entity,
+                             unique_whitespace_span)
 
 REFUSAL = re.compile(
     r"не могу|невозможно|нельзя|нет способа|переда[юём]|специалист|"
@@ -33,6 +34,15 @@ SYSTEM = ("Identify ONLY a currently feasible alternative to an assistant's "
           "requested action names a monetary amount; otherwise null), and "
           "short reason. Quotes "
           "must be verbatim substrings. Never infer tool success from a call.")
+SYSTEM_V2 = SYSTEM + (
+    " Here candidate=true means the POLICY REQUIRES the agent to take the "
+    "named action NOW instead of the response's refusal or handoff. A policy "
+    "permission to refuse or transfer never supports candidate=true. Cite the "
+    "mandatory clause containing the exact tool name. Missing or uncertain "
+    "prerequisites force candidate=false; list them explicitly.")
+MANDATORY = re.compile(r"\b(?:must|shall|required|obligated)\b|"
+                       r"\b(?:должен|должна|обязан|обязана|необходимо)\b",
+                       re.IGNORECASE)
 
 
 def eligible(case: dict) -> bool:
@@ -146,7 +156,34 @@ def validate(case: dict, answer: dict) -> tuple[str, list[str]]:
     return ("CANDIDATE" if not issues else "UNKNOWN"), sorted(set(issues))
 
 
-def run(cases: list[dict], output: Path) -> None:
+def validate_v2(case: dict, answer: dict) -> tuple[str, list[str]]:
+    if not isinstance(answer, dict) or answer.get("candidate") is not True:
+        return "NO_PROPOSAL", []
+    events = parse_events(case["prompt"], "prompt")
+    system_text = "\n".join(e.text for e in events if e.role == "system")
+    policy_match = re.search(r"<policy>(.*?)</policy>", system_text, re.DOTALL)
+    policy = policy_match.group(1) if policy_match else system_text
+    quote = answer.get("policy_quote")
+    span = unique_whitespace_span(policy, quote) if isinstance(quote, str) else None
+    normalized = dict(answer)
+    if span is not None:
+        normalized["policy_quote"] = policy[span[0]:span[1]]
+    verdict, issues = validate(case, normalized)
+    if verdict != "CANDIDATE":
+        return verdict, issues
+    clause = normalized["policy_quote"]
+    # A quote spanning multiple bullets can borrow "must" from an unrelated
+    # requirement. It cannot certify that the cited action is mandatory.
+    if "\n-" in clause:
+        issues.append("multiple_policy_clauses")
+    if not MANDATORY.search(clause):
+        issues.append("policy_is_not_mandatory")
+    if str(normalized.get("tool", "")) not in clause:
+        issues.append("tool_not_in_mandatory_clause")
+    return ("CANDIDATE" if not issues else "UNKNOWN"), sorted(set(issues))
+
+
+def run(cases: list[dict], output: Path, *, version: int = 1) -> None:
     output.parent.mkdir(parents=True, exist_ok=True)
     done = {}
     if output.exists():
@@ -171,14 +208,16 @@ def run(cases: list[dict], output: Path) -> None:
                 if model is None:
                     model = Mistral()
                 try:
-                    answer = model.ask(SYSTEM, prompt_for(case), max_tokens=900)
+                    answer = model.ask(SYSTEM_V2 if version == 2 else SYSTEM,
+                                       prompt_for(case), max_tokens=900)
                     row["proposal"] = answer["value"]
                     row["usage"] = answer.get("usage", {})
                     row["finish_reason"] = answer.get("finish_reason")
                     if row["finish_reason"] != "stop":
                         row["verdict"], row["issues"] = "UNKNOWN", ["truncated_or_unfinished"]
                     else:
-                        row["verdict"], row["issues"] = validate(case, answer["value"])
+                        validator = validate_v2 if version == 2 else validate
+                        row["verdict"], row["issues"] = validator(case, answer["value"])
                 except Exception as error:
                     row.update(status="ERROR", verdict="UNKNOWN",
                                issues=[f"{type(error).__name__}: {str(error)[:200]}"])

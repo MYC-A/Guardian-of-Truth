@@ -163,14 +163,16 @@ def witness_stage(run_dir: Path) -> None:
     print(f"recorded source witnesses for {len(rows)} cases")
 
 
-def feasibility_stage(run_dir: Path) -> None:
+def feasibility_stage(run_dir: Path, version: int = 1) -> None:
     _, cases = frozen(run_dir)
-    feasibility.run(cases, run_dir / "feasibility.jsonl")
+    suffix = "_v2" if version == 2 else ""
+    feasibility.run(cases, run_dir / f"feasibility{suffix}.jsonl", version=version)
 
 
-def completion_stage(run_dir: Path) -> None:
+def completion_stage(run_dir: Path, version: int = 1) -> None:
     _, cases = frozen(run_dir)
-    completion.run(cases, run_dir / "completion.jsonl")
+    suffix = "_v2" if version == 2 else ""
+    completion.run(cases, run_dir / f"completion{suffix}.jsonl", version=version)
 
 
 def pgjudge_stage(run_dir: Path) -> None:
@@ -365,7 +367,7 @@ def score_stage(run_dir: Path, gold_path: Path, allow_partial: bool = False,
         e2e_rows[mode] = rows
         files.append(path)
     proposal_rows = {}
-    for family in ("feasibility", "completion"):
+    for family in ("feasibility", "completion", "feasibility_v2", "completion_v2"):
         path = run_dir / f"{family}.jsonl"
         if not path.exists():
             continue
@@ -462,13 +464,13 @@ def score_stage(run_dir: Path, gold_path: Path, allow_partial: bool = False,
         for mode, rows in e2e_rows.items():
             if cid in rows:
                 arms.setdefault("e2e_" + mode.lower(), {})[cid] = rows[cid]["label"]
-        if cid in proposal_rows.get("feasibility", {}):
-            arms.setdefault("feasibility_proposal", {})[cid] = int(
-                proposal_rows["feasibility"][cid]["verdict"] == "CANDIDATE")
-        if cid in proposal_rows.get("completion", {}):
-            arms.setdefault("completion_proposal", {})[cid] = int(
-                proposal_rows["completion"][cid]["verdict"] ==
-                "UNSUPPORTED_COMPLETION_CANDIDATE")
+        for family, positive in (("feasibility", "CANDIDATE"),
+                                 ("completion", "UNSUPPORTED_COMPLETION_CANDIDATE"),
+                                 ("feasibility_v2", "CANDIDATE"),
+                                 ("completion_v2", "UNSUPPORTED_COMPLETION_CANDIDATE")):
+            if cid in proposal_rows.get(family, {}):
+                arms.setdefault(family + "_proposal", {})[cid] = int(
+                    proposal_rows[family][cid]["verdict"] == positive)
         if cid in refute:
             for name in ("v31", "v4", "v4_safe"):
                 arms.setdefault(name, {})[cid] = refute[cid].get(name + "_label", refute[cid]["pgjudge"])
@@ -501,7 +503,7 @@ def score_stage(run_dir: Path, gold_path: Path, allow_partial: bool = False,
             left, right = c1_predictions.get(cid), other.get(cid)
             joined[cid] = (1 if left == 1 or right == 1 else
                            0 if left == 0 and right == 0 else None)
-    for family in ("feasibility", "completion"):
+    for family in ("feasibility", "completion", "feasibility_v2", "completion_v2"):
         proposal = arms.get(family + "_proposal")
         if proposal and c1_predictions:
             joined = arms.setdefault("c1_12000_or_" + family + "_proposal", {})
@@ -536,6 +538,8 @@ def score_stage(run_dir: Path, gold_path: Path, allow_partial: bool = False,
     comparisons = {}
     for before, after in (("pgjudge", "v31"), ("pgjudge", "v4"),
                           ("pgjudge", "v4_safe"), ("v4_safe", "tq"),
+                          ("feasibility_proposal", "feasibility_v2_proposal"),
+                          ("completion_proposal", "completion_v2_proposal"),
                           ("c1_12000", "c1_12000_plus_function_call"),
                           ("c1_12000", "c1_24000"),
                           ("c1_12000", "c1_60000"),
@@ -559,7 +563,9 @@ def score_stage(run_dir: Path, gold_path: Path, allow_partial: bool = False,
             "fp_added": [cid for cid in added if gold[cid] == 0]}
     for after in ("e2e_r1", "e2e_r2", "c1_12000_or_e2e_r1",
                   "c1_12000_or_e2e_r2", "c1_12000_or_feasibility_proposal",
-                  "c1_12000_or_completion_proposal"):
+                  "c1_12000_or_completion_proposal",
+                  "c1_12000_or_feasibility_v2_proposal",
+                  "c1_12000_or_completion_v2_proposal"):
         before = "c1_12000"
         if before not in arms or after not in arms:
             continue
@@ -622,6 +628,7 @@ def main() -> None:
     p.add_argument("--cases", type=Path, required=True)
     p.add_argument("--run-dir", type=Path, required=True)
     for stage in ("local", "witness", "feasibility", "completion",
+                  "feasibility_v2", "completion_v2",
                   "pgjudge", "refute", "tq", "score"):
         subs.add_parser(stage).add_argument("--run-dir", type=Path, required=True)
     subs.choices["local"].add_argument("--model-path", type=Path,
@@ -641,6 +648,10 @@ def main() -> None:
         feasibility_stage(args.run_dir)
     elif args.stage == "completion":
         completion_stage(args.run_dir)
+    elif args.stage == "feasibility_v2":
+        feasibility_stage(args.run_dir, version=2)
+    elif args.stage == "completion_v2":
+        completion_stage(args.run_dir, version=2)
     elif args.stage == "pgjudge":
         pgjudge_stage(args.run_dir)
     elif args.stage == "refute":
