@@ -33,6 +33,7 @@ from __future__ import annotations
 import argparse
 import csv
 import json
+import os
 import re
 import sys
 import time
@@ -146,17 +147,22 @@ PGLCJUDGE_SYSTEM = (
 
 def load_env(path: Path) -> dict:
     vals = {}
-    for line in open(path):
+    if not path.is_file():
+        return vals
+    for line in open(path, encoding="utf-8"):
         line = line.strip()
         if line.startswith("export "):
             k, _, v = line[7:].partition("=")
             vals[k.strip()] = v.strip().strip("'\"")
+        elif "=" in line and not line.startswith("#"):
+            k, _, v = line.partition("=")
+            vals[k.strip()] = v.strip().strip("'\"")
     return vals
 
 
-ENV = load_env(ENV_FILE)
-API_KEY = ENV.get("MISTRAL_API_KEY") or ""
-MODEL = ENV.get("MISTRAL_MODEL") or "ministral-14b-latest"
+ENV = load_env(Path(os.environ.get("GUARDIAN_MISTRAL_ENV_FILE", ENV_FILE)))
+API_KEY = os.environ.get("MISTRAL_API_KEY") or ENV.get("MISTRAL_API_KEY") or ""
+MODEL = os.environ.get("MISTRAL_MODEL") or ENV.get("MISTRAL_MODEL") or "ministral-14b-latest"
 
 
 def api_chat(system: str, user: str, max_tokens: int, retries: int = 4) -> tuple[str, str, float]:
@@ -496,16 +502,27 @@ def metrics() -> None:
 
 
 def main() -> int:
+    global API_KEY, MODEL, OUT_ROOT
     ap = argparse.ArgumentParser()
     ap.add_argument("--mode", required=True,
                     choices=["extract", "pjudge", "pgjudge", "pgljudge",
                              "pglcljudge", "metrics", "all"])
     ap.add_argument("--limit", type=int, default=0)
+    ap.add_argument("--input", type=Path, default=INPUT_CSV,
+                    help="label-free CSV with id,prompt,response")
+    ap.add_argument("--out-root", type=Path, default=OUT_ROOT)
+    ap.add_argument("--env-file", type=Path, default=None,
+                    help="optional Mistral env file; environment variables take precedence")
     args = ap.parse_args()
+    if args.env_file is not None:
+        settings = load_env(args.env_file)
+        API_KEY = os.environ.get("MISTRAL_API_KEY") or settings.get("MISTRAL_API_KEY") or ""
+        MODEL = os.environ.get("MISTRAL_MODEL") or settings.get("MISTRAL_MODEL") or "ministral-14b-latest"
+    OUT_ROOT = args.out_root
     if not API_KEY:
         print("FATAL: MISTRAL_API_KEY missing", flush=True)
         return 2
-    cases = read_cases(INPUT_CSV)
+    cases = read_cases(args.input)
     if args.limit:
         cases = cases[:args.limit]
     if args.mode == "extract":
@@ -516,7 +533,8 @@ def main() -> int:
         run_extract(cases)
         for m in ("pjudge", "pgjudge"):
             run_judge(cases, m)
-        metrics()
+        if args.input == INPUT_CSV:
+            metrics()
     else:
         run_judge(cases, args.mode)
     return 0

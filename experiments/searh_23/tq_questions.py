@@ -36,6 +36,7 @@ import argparse
 import csv
 import difflib
 import json
+import os
 import re
 import sys
 import time
@@ -51,7 +52,8 @@ DEFAULT_CARDS = REPO / "outputs/big_researh/p_api/extract/cards.jsonl"
 DEFAULT_CASES = REPO / "outputs/full21/input/public46_label_free.csv"
 DEFAULT_GOLD = REPO / "outputs/searh_23/baseline_frozen/control_repro_percase.csv"
 DEFAULT_V31 = REPO / "outputs/searh_23/fp_diagnostic/refute_layer_v3_v31.json"
-MISTRAL_ENV = Path("/mnt/data/guardian/agent-workspace/.mistral.env")
+MISTRAL_ENV = Path(os.environ.get("GUARDIAN_MISTRAL_ENV_FILE",
+                          str(REPO.parent / ".mistral.env")))
 
 csv.field_size_limit(2 ** 30)
 
@@ -155,8 +157,8 @@ def mistral_settings() -> dict:
             key, value = line.split("=", 1)
             if key.strip() in {"MISTRAL_API_KEY", "MISTRAL_MODEL"}:
                 saved[key.strip()] = value.strip().strip("\"'")
-    return {"MISTRAL_API_KEY": saved.get("MISTRAL_API_KEY", ""),
-            "MISTRAL_MODEL": saved.get("MISTRAL_MODEL", "ministral-14b-latest")}
+    return {"MISTRAL_API_KEY": os.environ.get("MISTRAL_API_KEY") or saved.get("MISTRAL_API_KEY", ""),
+            "MISTRAL_MODEL": os.environ.get("MISTRAL_MODEL") or saved.get("MISTRAL_MODEL", "ministral-14b-latest")}
 
 
 def json_object(raw: str) -> dict:
@@ -679,10 +681,13 @@ def build_questions(card: dict, fr: dict, demand: str) -> tuple[list[dict], dict
 def score_refutations(base: dict, per_case: list[dict]) -> dict:
     """Score TQ changes against the complete upstream result, including lost TPs."""
     base_rows = base.get("per_case", [])
+    removed = [row["id"] for row in per_case if row["new_label"] == 0]
+    if any(row.get("gold") not in (0, 1) for row in base_rows):
+        return {"v31_after": None, "tq_removed": removed,
+                "tq_removed_count": len(removed), "tp_lost": None, "after": None}
     base_tp = sum(row["new_label"] == 1 and row["gold"] == 1 for row in base_rows)
     base_fp = sum(row["new_label"] == 1 and row["gold"] == 0 for row in base_rows)
     base_fn = int(base.get("after", {}).get("FN", 0))
-    removed = [row["id"] for row in per_case if row["new_label"] == 0]
     tp_lost = [row["id"] for row in per_case if row["new_label"] == 0 and row["gold"] == 1]
     after_tp = base_tp - len(tp_lost)
     after_fp = base_fp - (len(removed) - len(tp_lost))
@@ -706,6 +711,8 @@ def main() -> int:
     ap.add_argument("--gold", type=Path, default=DEFAULT_GOLD)
     ap.add_argument("--gold-json", default="",
                     help="json {id: label} (e.g. hotel expected.json); overrides --gold")
+    ap.add_argument("--no-gold", action="store_true",
+                    help="prediction-only run; never load reference labels")
     ap.add_argument("--v31", type=Path, default=DEFAULT_V31,
                     help="v3.1 per-case decisions; TQ processes only its surviving positives")
     ap.add_argument("--out", type=Path, default=REPO / "outputs/searh_23/tq_layer")
@@ -718,7 +725,9 @@ def main() -> int:
     cards_by_case = {json.loads(l)["id"]: (json.loads(l).get("cards") or [])
                      for l in open(args.cards, encoding="utf-8")}
     cases = {r["id"]: r for r in csv.DictReader(open(args.cases, encoding="utf-8"))}
-    if args.gold_json:
+    if args.no_gold:
+        gold = {}
+    elif args.gold_json:
         gold = {k: int(v) for k, v in json.load(open(args.gold_json, encoding="utf-8")).items()}
     else:
         gold = {r["id"]: int(r["gold"]) for r in csv.DictReader(open(args.gold, encoding="utf-8"))}
