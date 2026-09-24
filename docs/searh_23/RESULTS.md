@@ -280,9 +280,10 @@ tests a mechanism; it does not establish performance on untouched contest data.
 The first `pgjudge` extraction attempt on `service_desk_v1` produced 30/32
 parseable records and 0 grounded cards. The model folded source line wraps in
 policy quotes; the original exact-substring anchor therefore rejected them.
-The two failures returned no JSON object. Before reading any new-suite labels,
+The two failures returned an empty JSON array (`[]`) instead of the required
+object, so they now normalize to zero cards for extraction only. Before scoring,
 the runner was amended to accept a **unique whitespace-only** quote match,
 replace it with the exact source span, retain the model quote in the trace,
-and retry a no-JSON completion once with a larger output budget. The initial
+and retry other no-JSON completions once with a larger output budget. The initial
 append-only records remain available. These are input/serialization repairs;
 their effect on predictions and quality is still unmeasured.

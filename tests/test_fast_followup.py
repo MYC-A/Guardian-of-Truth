@@ -111,6 +111,12 @@ class FastFollowupTest(unittest.TestCase):
             self.assertEqual(rows[-1]["cards"][0]["model_policy_quote"], quote)
             self.assertTrue(rows[-1]["cards"][0]["quote_grounded"])
 
+    def test_empty_list_card_output_is_distinct_from_judge_verdict(self):
+        self.assertEqual(followup.pg.extract_cards_obj("```json\n[]\n```"),
+                         {"cards": []})
+        with self.assertRaises(ValueError):
+            followup.pg.extract_json_obj("```json\n[]\n```")
+
     def test_score_counts_tp_lost_by_tq_after_fp_clearance(self):
         with tempfile.TemporaryDirectory() as temp:
             root = Path(temp)

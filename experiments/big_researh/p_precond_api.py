@@ -207,6 +207,17 @@ def extract_json_obj(text: str) -> dict:
     raise ValueError("no JSON object in model output")
 
 
+def extract_cards_obj(text: str) -> dict:
+    """For extraction only, an empty JSON array is an empty card list."""
+    try:
+        return extract_json_obj(text)
+    except ValueError:
+        stripped = re.sub(r"^```(?:json)?\s*|\s*```$", "", text.strip())
+        if stripped.strip() == "[]":
+            return {"cards": []}
+        raise
+
+
 def policy_text(case: dict) -> str:
     m = re.search(r"<policy>(.*?)</policy>", case["prompt"], re.DOTALL)
     return m.group(1) if m else case["prompt"]
@@ -341,7 +352,7 @@ def run_extract(cases) -> None:
         try:
             out, resp_model, lat = api_chat(EXTRACT_SYSTEM, content, 900)
             try:
-                parsed = extract_json_obj(out)
+                parsed = extract_cards_obj(out)
             except ValueError:
                 # A too-short completion may end before the JSON object. The
                 # same frozen prompt gets one larger output budget; both raw
@@ -350,7 +361,7 @@ def run_extract(cases) -> None:
                 out, resp_model, retry_lat = api_chat(EXTRACT_SYSTEM, content, 1800)
                 rec["json_budget_retry"] = True
                 lat += retry_lat
-                parsed = extract_json_obj(out)
+                parsed = extract_cards_obj(out)
             cards = parsed.get("cards", []) or []
             if not isinstance(cards, list) or len(cards) > 3:
                 raise ValueError("cards must be a list of at most 3")
