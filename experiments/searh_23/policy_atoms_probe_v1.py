@@ -10,6 +10,7 @@ from __future__ import annotations
 import argparse
 import hashlib
 import json
+import re
 from pathlib import Path
 
 from build_policy_atoms_v1 import BASE, ROOT, SPECS
@@ -59,6 +60,17 @@ def run(name: str) -> dict:
 FIELDS = ("governs_tool", "evidence_tool", "join_key", "result_field", "required_value", "temporal")
 
 
+def source_guard_reason(policy: str, atoms: list[dict]) -> str | None:
+    """Conservative syntax tripwires, not a semantic completeness proof."""
+    if re.search(r"\b(?:unless|except|otherwise|either)\b", policy, re.I):
+        return "conditional_or_exception_unrepresented"
+    if re.search(r"\b(?:does not exceed|at most|no more than|less than|greater than)\b", policy, re.I):
+        return "numeric_comparison_unrepresented"
+    if len(atoms) < len(re.findall(r"\bAND\b", policy, re.I)) + 1:
+        return "explicit_conjunction_atom_missing"
+    return None
+
+
 def valid_atom(atom: object, data: dict) -> bool:
     if not isinstance(atom, dict):
         return False
@@ -73,6 +85,7 @@ def valid_atom(atom: object, data: dict) -> bool:
             and isinstance(key, str) and key in data["ids"]
             and key == data["tools"][evidence]["id"]
             and isinstance(field, str) and field == data["tools"][evidence]["result"]
+            and data["tools"][evidence].get("result_type", "boolean") == "boolean"
             and type(atom.get("required_value")) is bool
             and atom.get("temporal") in {"LATEST", "PRIOR_TRUE"})
 
@@ -120,13 +133,21 @@ def score(name: str) -> dict:
     expected = [signature(a) for a in data["gold_atoms"]]
     exact = (shape and unsupported == data["expected_unsupported"]
              and sorted(actual) == sorted(expected))
+    guard_reason = source_guard_reason(data["policy"], atoms if isinstance(atoms, list) else [])
     cases = []
     for case in data["cases"]:
         oracle = "UNKNOWN" if data["expected_unsupported"] else optimistic_verdict(case, data["gold_atoms"])
         candidate = ("UNKNOWN" if not shape or unsupported else optimistic_verdict(case, atoms))
+        guarded = "UNKNOWN" if guard_reason else candidate
         cases.append({"name": case["name"], "gold": case["gold"],
-                      "oracle": oracle, "candidate": candidate,
+                      "oracle": oracle, "candidate": candidate, "guarded": guarded,
                       "false_safe": case["gold"] == 1 and candidate == "SAFE"})
+    ablations = []
+    for index in range(len(data["gold_atoms"])):
+        subset = [a for j, a in enumerate(data["gold_atoms"]) if j != index]
+        ablations.append({"omitted_atom": index,
+                          "false_safe": sum(c["gold"] == 1 and optimistic_verdict(c, subset) == "SAFE"
+                                            for c in data["cases"])})
     report = {"suite": name, "split": data["split"],
               "scope": "authored normalized traces, candidate only; no Guardian integration",
               "seal": {"fixture_sha256_lf": input_hash, "response_sha256_lf": digest(path)},
@@ -134,16 +155,21 @@ def score(name: str) -> dict:
               "atom_count_expected": len(expected), "atom_count_actual": len(actual),
               "expected_unsupported": data["expected_unsupported"],
               "actual_unsupported": unsupported,
+              "source_guard_reason": guard_reason,
+              "single_atom_omission_ablations": ablations,
               "oracle_disagrees_gold": sum(c["oracle"] != ("VIOLATION" if c["gold"] else "SAFE")
                                            for c in cases if c["oracle"] != "UNKNOWN"),
               "candidate_false_safe": sum(c["false_safe"] for c in cases),
               "candidate_unknown": sum(c["candidate"] == "UNKNOWN" for c in cases),
+              "guarded_unknown": sum(c["guarded"] == "UNKNOWN" for c in cases),
               "cases": cases, "answer": answer}
     (OUT / name / "score.json").write_text(
         json.dumps(report, ensure_ascii=False, indent=2) + "\n", encoding="utf-8")
     return {k: report[k] for k in ("suite", "valid_shape_and_spans", "atom_exact",
                                       "atom_count_expected", "atom_count_actual",
-                                      "candidate_false_safe", "candidate_unknown", "oracle_disagrees_gold")}
+                                      "candidate_false_safe", "candidate_unknown",
+                                      "guarded_unknown", "source_guard_reason",
+                                      "oracle_disagrees_gold")}
 
 
 def main() -> None:

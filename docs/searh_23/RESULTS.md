@@ -472,3 +472,18 @@ certificate; entity binding, action-effect recognition, and paraphrase gating
 were tightened. The authored 48-case replay remains intact; 16 targeted
 tests pass. None of these probes changes `scripts/predict.py` or a contest
 prediction. See `docs/searh_23/POLICY_LANGUAGE_PROBE_2026-09-26.md`.
+
+## 23. Typed policy atoms across new domains (2026-09-26)
+
+Seven one-call Mistral API extractions were checked against policy atoms and
+contrast traces frozen before each call. On five conjunction policies, all 11
+conditions were named, but two prior-evidence conditions were incorrectly
+made latest-result conditions. Three of five policy IRs were fully exact. The
+model failed to mark both an emergency exception and a numeric limit as
+unsupported by the conjunctive Boolean schema. A post-hoc source guard sends
+those two examples to UNKNOWN. No false SAFE appeared on the 62 authored
+conjunction cases, but removing any one required atom creates 3–4 false SAFE
+decisions. This quantifies the still-unsolved completeness risk. No full
+benchmark or entry-point change occurred. See
+`docs/searh_23/POLICY_ATOMS_PROBE_2026-09-26.md` for the frozen protocol,
+raw outputs, limitations, and next gate.
