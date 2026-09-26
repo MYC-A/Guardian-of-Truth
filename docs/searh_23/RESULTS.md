@@ -487,3 +487,10 @@ decisions. This quantifies the still-unsolved completeness risk. No full
 benchmark or entry-point change occurred. See
 `docs/searh_23/POLICY_ATOMS_PROBE_2026-09-26.md` for the frozen protocol,
 raw outputs, limitations, and next gate.
+
+Independent Astra High audit found and prompted fixes for duplicate-atom
+counting, vacuous SAFE when no atom governs the target, and numeric `1`
+passing as Boolean evidence. A remaining constructed case still gets false
+SAFE when one of two otherwise valid atoms governs the wrong tool. This is a
+source-completeness/action-binding failure, not an event-join bug; the typed
+atom layer remains diagnostic only.

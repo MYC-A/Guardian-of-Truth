@@ -59,6 +59,26 @@ UNKNOWN. These are post-hoc safeguards with limited vocabulary; they do not
 prove completeness on arbitrary policy text. They are not wired into
 `scripts/predict.py`.
 
+An independent GPT-6 Astra High audit found three concrete verifier issues:
+duplicate proposed atoms could defeat the `AND` count, assigning every atom
+to the wrong current tool produced vacuous SAFE, and Python accepted numeric
+`1` as Boolean `true` for `PRIOR_TRUE`. The verifier now counts distinct atoms,
+abstains if no atom governs the current tool, and requires exact Boolean
+evidence. A malformed temporal field also abstains instead of crashing. The
+audit also exposed the missing prior-true-then-false contrast: on a post-hoc
+document example the gold `PRIOR_TRUE` rule says SAFE, while the observed
+model `LATEST` atom says VIOLATION. This is an IR error even though the frozen
+binary cases do not reveal it.
+
+**A false-SAFE hole remains.** Changing just the warehouse quality atom's
+governed tool to the request tool preserves two distinct, valid, source-quoted
+atoms and passes the syntax guard. With a good hold check and no quality
+inspection, the guarded candidate says SAFE while the frozen gold says
+VIOLATION. This is a constructed mutation, not an observed Mistral response.
+It shows that the current source guard cannot certify action binding or
+condition completeness. `tests/test_policy_atoms_probe_v1.py` locks in both
+the fixes and this known limitation.
+
 ## Decision
 
 Typed atoms are a useful intermediate form for **supported conjunctions**:

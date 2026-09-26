@@ -66,7 +66,10 @@ def source_guard_reason(policy: str, atoms: list[dict]) -> str | None:
         return "conditional_or_exception_unrepresented"
     if re.search(r"\b(?:does not exceed|at most|no more than|less than|greater than)\b", policy, re.I):
         return "numeric_comparison_unrepresented"
-    if len(atoms) < len(re.findall(r"\bAND\b", policy, re.I)) + 1:
+    distinct = {json.dumps({field: atom.get(field) for field in FIELDS},
+                           sort_keys=True, default=str)
+                for atom in atoms if isinstance(atom, dict)}
+    if len(distinct) < len(re.findall(r"\bAND\b", policy, re.I)) + 1:
         return "explicit_conjunction_atom_missing"
     return None
 
@@ -87,7 +90,8 @@ def valid_atom(atom: object, data: dict) -> bool:
             and isinstance(field, str) and field == data["tools"][evidence]["result"]
             and data["tools"][evidence].get("result_type", "boolean") == "boolean"
             and type(atom.get("required_value")) is bool
-            and atom.get("temporal") in {"LATEST", "PRIOR_TRUE"})
+            and isinstance(atom.get("temporal"), str)
+            and atom["temporal"] in {"LATEST", "PRIOR_TRUE"})
 
 
 def signature(atom: dict) -> tuple:
@@ -108,11 +112,27 @@ def optimistic_verdict(case: dict, atoms: list[dict]) -> str:
                           and step["arguments"].get(key) == bound
                           and step["result"].get(key) == bound)]
         if atom["temporal"] == "LATEST":
-            if not candidates or candidates[-1] is not atom["required_value"]:
+            if not candidates:
                 return "VIOLATION"
-        elif atom["required_value"] not in candidates:
+            if type(candidates[-1]) is not bool:
+                return "UNKNOWN"
+            if candidates[-1] is not atom["required_value"]:
+                return "VIOLATION"
+        else:
+            if any(type(value) is bool and value is atom["required_value"]
+                   for value in candidates):
+                continue
+            if any(type(value) is not bool for value in candidates):
+                return "UNKNOWN"
             return "VIOLATION"
     return "SAFE"
+
+
+def guarded_verdict(case: dict, atoms: list[dict], source_guard: str | None) -> str:
+    """Never certify a tool if the proposed IR has no rule governing it."""
+    if source_guard or not any(a["governs_tool"] == case["target_tool"] for a in atoms):
+        return "UNKNOWN"
+    return optimistic_verdict(case, atoms)
 
 
 def score(name: str) -> dict:
@@ -138,7 +158,8 @@ def score(name: str) -> dict:
     for case in data["cases"]:
         oracle = "UNKNOWN" if data["expected_unsupported"] else optimistic_verdict(case, data["gold_atoms"])
         candidate = ("UNKNOWN" if not shape or unsupported else optimistic_verdict(case, atoms))
-        guarded = "UNKNOWN" if guard_reason else candidate
+        guarded = (guarded_verdict(case, atoms, guard_reason)
+                   if shape and not unsupported else "UNKNOWN")
         cases.append({"name": case["name"], "gold": case["gold"],
                       "oracle": oracle, "candidate": candidate, "guarded": guarded,
                       "false_safe": case["gold"] == 1 and candidate == "SAFE"})
