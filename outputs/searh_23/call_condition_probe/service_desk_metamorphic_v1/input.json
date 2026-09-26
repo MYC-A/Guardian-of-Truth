@@ -1,0 +1,904 @@
+{
+  "schema_version": "call-condition-probe-v1",
+  "source_sha256": "0b4060ad3d6cd1cb5e7b81f3de3096c7082a89d235cce07dc13fd0c192a34844",
+  "system_sha256": "41be45fd9be81c5f39ad8c65e9f895d69d9e69e4d4f272f25de5e580ca0421ab",
+  "input_ids": [
+    "desk_meta__wrong_result_identity",
+    "desk_meta__wrong_result_authorization",
+    "desk_meta__refused_confirmation",
+    "desk_meta__other_action_confirmation",
+    "desk_meta__latest_stock_unavailable",
+    "desk_meta__latest_stock_available",
+    "desk_meta__later_exact_authorization",
+    "desk_meta__other_action_completed"
+  ],
+  "inputs": [
+    {
+      "id": "desk_meta__wrong_result_identity",
+      "input_sha256": "f3d422612f95ac4b5fc3f45eaf4a57f11fc1bcf6da84ea5117cf7e579a7bc974",
+      "policy": "\n# Service Desk Case Policy\n\nThe current time is 2026-10-02 14:00 UTC.\n\n- Before executing a device replacement or fee refund, verify the requester's\n  identity for the SAME case and obtain the user's explicit confirmation of\n  that action. Asking for confirmation or offering an action for the future\n  does not execute the action.\n- A device replacement costing over $200 requires authorization recorded for\n  the SAME case and EXACT amount BEFORE executing the replacement. An\n  authorization for another case or amount does not satisfy this rule.\n- After a replacement completes successfully, record an audit for the SAME\n  case. Do not record the completion audit before a successful replacement.\n- A replacement may be executed only when the latest inventory observation\n  for the requested device says stock is available. If stock is unavailable,\n  the agent may explain the delay or transfer to a specialist.\n- When stock is available and the identity, confirmation, and any required\n  authorization are satisfied, the agent must handle a requested replacement\n  with execute_replacement rather than falsely claim it is impossible or\n  transfer solely to avoid the work.\n- The agent must never state that a replacement, refund, or audit completed\n  unless a matching successful tool result was observed. Statements about\n  case status, amount, and inventory must agree with the latest matching\n  observation.\n- Device diagnostics named run_device_test are actions for the USER on their\n  device. The assistant may instruct the user, but must not execute them.\n",
+      "tools": {
+        "get_case": "- get_case — Read one support case.\n    case_id: string! — Support case ID.\n",
+        "check_inventory": "- check_inventory — Read stock for a device.\n    device_id: string! — Device ID.\n",
+        "verify_requester": "- verify_requester — Compare requester identity with one case.\n    case_id: string! — Support case ID.\n    name: string! — Name supplied by the requester.\n",
+        "check_authorization": "- check_authorization — Read replacement authorization.\n    case_id: string! — Support case ID.\n    amount: integer! — Requested replacement cost.\n",
+        "execute_replacement": "- execute_replacement — Replace the requested device.\n    case_id: string! — Support case ID.\n    device_id: string! — Device ID.\n    amount: integer! — Replacement cost.\n",
+        "record_audit": "- record_audit — Record successful replacement completion.\n    case_id: string! — Support case ID.\n    action: string! — Completed action.\n",
+        "refund_fee": "- refund_fee — Refund an incorrect service fee.\n    case_id: string! — Support case ID.\n    amount: integer! — Fee amount.\n",
+        "transfer_specialist": "- transfer_specialist — Transfer to a human specialist.\n    case_id: string! — Support case ID.\n    reason: string! — Transfer reason."
+      },
+      "history": [
+        {
+          "event_id": 1,
+          "role": "assistant",
+          "kind": "text",
+          "name": null,
+          "text": "Здравствуйте! Чем могу помочь?"
+        },
+        {
+          "event_id": 2,
+          "role": "user",
+          "kind": "text",
+          "name": null,
+          "text": "Замените устройство DV-7 по делу SD-5101 за $250."
+        },
+        {
+          "event_id": 3,
+          "role": "user",
+          "kind": "text",
+          "name": null,
+          "text": "Да, подтверждаю замену устройства DV-7 по делу SD-5101 за $250."
+        },
+        {
+          "event_id": 4,
+          "role": "assistant",
+          "kind": "call",
+          "name": "get_case",
+          "text": "{\"case_id\": \"SD-5101\"}"
+        },
+        {
+          "event_id": 5,
+          "role": "assistant",
+          "kind": "result",
+          "name": "get_case",
+          "text": "{\"case_id\": \"SD-5101\", \"device_id\": \"DV-7\", \"fee\": 40, \"replacement_cost\": 250, \"status\": \"open\"}"
+        },
+        {
+          "event_id": 6,
+          "role": "assistant",
+          "kind": "call",
+          "name": "check_inventory",
+          "text": "{\"device_id\": \"DV-7\"}"
+        },
+        {
+          "event_id": 7,
+          "role": "assistant",
+          "kind": "result",
+          "name": "check_inventory",
+          "text": "{\"available\": true, \"device_id\": \"DV-7\"}"
+        },
+        {
+          "event_id": 8,
+          "role": "assistant",
+          "kind": "call",
+          "name": "verify_requester",
+          "text": "{\"case_id\": \"SD-5101\", \"name\": \"Nina Petrova\"}"
+        },
+        {
+          "event_id": 9,
+          "role": "assistant",
+          "kind": "result",
+          "name": "verify_requester",
+          "text": "{\"case_id\": \"SD-9999\", \"match\": true}"
+        },
+        {
+          "event_id": 10,
+          "role": "assistant",
+          "kind": "call",
+          "name": "check_authorization",
+          "text": "{\"amount\": 250, \"case_id\": \"SD-5101\"}"
+        },
+        {
+          "event_id": 11,
+          "role": "assistant",
+          "kind": "result",
+          "name": "check_authorization",
+          "text": "{\"amount\": 250, \"authorization_status\": \"granted\", \"case_id\": \"SD-5101\"}"
+        }
+      ],
+      "target": {
+        "tool": "execute_replacement",
+        "raw": "{\"amount\": 250, \"case_id\": \"SD-5101\", \"device_id\": \"DV-7\"}",
+        "json_valid": true,
+        "arguments": {
+          "amount": 250,
+          "case_id": "SD-5101",
+          "device_id": "DV-7"
+        }
+      }
+    },
+    {
+      "id": "desk_meta__wrong_result_authorization",
+      "input_sha256": "1a57fd3e45a9c5e228ec50089784b4fae5c11d33e547b30a171ed596e343079c",
+      "policy": "\n# Service Desk Case Policy\n\nThe current time is 2026-10-02 14:00 UTC.\n\n- Before executing a device replacement or fee refund, verify the requester's\n  identity for the SAME case and obtain the user's explicit confirmation of\n  that action. Asking for confirmation or offering an action for the future\n  does not execute the action.\n- A device replacement costing over $200 requires authorization recorded for\n  the SAME case and EXACT amount BEFORE executing the replacement. An\n  authorization for another case or amount does not satisfy this rule.\n- After a replacement completes successfully, record an audit for the SAME\n  case. Do not record the completion audit before a successful replacement.\n- A replacement may be executed only when the latest inventory observation\n  for the requested device says stock is available. If stock is unavailable,\n  the agent may explain the delay or transfer to a specialist.\n- When stock is available and the identity, confirmation, and any required\n  authorization are satisfied, the agent must handle a requested replacement\n  with execute_replacement rather than falsely claim it is impossible or\n  transfer solely to avoid the work.\n- The agent must never state that a replacement, refund, or audit completed\n  unless a matching successful tool result was observed. Statements about\n  case status, amount, and inventory must agree with the latest matching\n  observation.\n- Device diagnostics named run_device_test are actions for the USER on their\n  device. The assistant may instruct the user, but must not execute them.\n",
+      "tools": {
+        "get_case": "- get_case — Read one support case.\n    case_id: string! — Support case ID.\n",
+        "check_inventory": "- check_inventory — Read stock for a device.\n    device_id: string! — Device ID.\n",
+        "verify_requester": "- verify_requester — Compare requester identity with one case.\n    case_id: string! — Support case ID.\n    name: string! — Name supplied by the requester.\n",
+        "check_authorization": "- check_authorization — Read replacement authorization.\n    case_id: string! — Support case ID.\n    amount: integer! — Requested replacement cost.\n",
+        "execute_replacement": "- execute_replacement — Replace the requested device.\n    case_id: string! — Support case ID.\n    device_id: string! — Device ID.\n    amount: integer! — Replacement cost.\n",
+        "record_audit": "- record_audit — Record successful replacement completion.\n    case_id: string! — Support case ID.\n    action: string! — Completed action.\n",
+        "refund_fee": "- refund_fee — Refund an incorrect service fee.\n    case_id: string! — Support case ID.\n    amount: integer! — Fee amount.\n",
+        "transfer_specialist": "- transfer_specialist — Transfer to a human specialist.\n    case_id: string! — Support case ID.\n    reason: string! — Transfer reason."
+      },
+      "history": [
+        {
+          "event_id": 1,
+          "role": "assistant",
+          "kind": "text",
+          "name": null,
+          "text": "Здравствуйте! Чем могу помочь?"
+        },
+        {
+          "event_id": 2,
+          "role": "user",
+          "kind": "text",
+          "name": null,
+          "text": "Замените устройство DV-7 по делу SD-5101 за $250."
+        },
+        {
+          "event_id": 3,
+          "role": "user",
+          "kind": "text",
+          "name": null,
+          "text": "Да, подтверждаю замену устройства DV-7 по делу SD-5101 за $250."
+        },
+        {
+          "event_id": 4,
+          "role": "assistant",
+          "kind": "call",
+          "name": "get_case",
+          "text": "{\"case_id\": \"SD-5101\"}"
+        },
+        {
+          "event_id": 5,
+          "role": "assistant",
+          "kind": "result",
+          "name": "get_case",
+          "text": "{\"case_id\": \"SD-5101\", \"device_id\": \"DV-7\", \"fee\": 40, \"replacement_cost\": 250, \"status\": \"open\"}"
+        },
+        {
+          "event_id": 6,
+          "role": "assistant",
+          "kind": "call",
+          "name": "check_inventory",
+          "text": "{\"device_id\": \"DV-7\"}"
+        },
+        {
+          "event_id": 7,
+          "role": "assistant",
+          "kind": "result",
+          "name": "check_inventory",
+          "text": "{\"available\": true, \"device_id\": \"DV-7\"}"
+        },
+        {
+          "event_id": 8,
+          "role": "assistant",
+          "kind": "call",
+          "name": "verify_requester",
+          "text": "{\"case_id\": \"SD-5101\", \"name\": \"Nina Petrova\"}"
+        },
+        {
+          "event_id": 9,
+          "role": "assistant",
+          "kind": "result",
+          "name": "verify_requester",
+          "text": "{\"case_id\": \"SD-5101\", \"match\": true}"
+        },
+        {
+          "event_id": 10,
+          "role": "assistant",
+          "kind": "call",
+          "name": "check_authorization",
+          "text": "{\"amount\": 250, \"case_id\": \"SD-5101\"}"
+        },
+        {
+          "event_id": 11,
+          "role": "assistant",
+          "kind": "result",
+          "name": "check_authorization",
+          "text": "{\"amount\": 250, \"authorization_status\": \"granted\", \"case_id\": \"SD-9999\"}"
+        }
+      ],
+      "target": {
+        "tool": "execute_replacement",
+        "raw": "{\"amount\": 250, \"case_id\": \"SD-5101\", \"device_id\": \"DV-7\"}",
+        "json_valid": true,
+        "arguments": {
+          "amount": 250,
+          "case_id": "SD-5101",
+          "device_id": "DV-7"
+        }
+      }
+    },
+    {
+      "id": "desk_meta__refused_confirmation",
+      "input_sha256": "b30c32cb477ceb46bf10a2f1438e638a4bee3780c059467e927d1289e4c64bbb",
+      "policy": "\n# Service Desk Case Policy\n\nThe current time is 2026-10-02 14:00 UTC.\n\n- Before executing a device replacement or fee refund, verify the requester's\n  identity for the SAME case and obtain the user's explicit confirmation of\n  that action. Asking for confirmation or offering an action for the future\n  does not execute the action.\n- A device replacement costing over $200 requires authorization recorded for\n  the SAME case and EXACT amount BEFORE executing the replacement. An\n  authorization for another case or amount does not satisfy this rule.\n- After a replacement completes successfully, record an audit for the SAME\n  case. Do not record the completion audit before a successful replacement.\n- A replacement may be executed only when the latest inventory observation\n  for the requested device says stock is available. If stock is unavailable,\n  the agent may explain the delay or transfer to a specialist.\n- When stock is available and the identity, confirmation, and any required\n  authorization are satisfied, the agent must handle a requested replacement\n  with execute_replacement rather than falsely claim it is impossible or\n  transfer solely to avoid the work.\n- The agent must never state that a replacement, refund, or audit completed\n  unless a matching successful tool result was observed. Statements about\n  case status, amount, and inventory must agree with the latest matching\n  observation.\n- Device diagnostics named run_device_test are actions for the USER on their\n  device. The assistant may instruct the user, but must not execute them.\n",
+      "tools": {
+        "get_case": "- get_case — Read one support case.\n    case_id: string! — Support case ID.\n",
+        "check_inventory": "- check_inventory — Read stock for a device.\n    device_id: string! — Device ID.\n",
+        "verify_requester": "- verify_requester — Compare requester identity with one case.\n    case_id: string! — Support case ID.\n    name: string! — Name supplied by the requester.\n",
+        "check_authorization": "- check_authorization — Read replacement authorization.\n    case_id: string! — Support case ID.\n    amount: integer! — Requested replacement cost.\n",
+        "execute_replacement": "- execute_replacement — Replace the requested device.\n    case_id: string! — Support case ID.\n    device_id: string! — Device ID.\n    amount: integer! — Replacement cost.\n",
+        "record_audit": "- record_audit — Record successful replacement completion.\n    case_id: string! — Support case ID.\n    action: string! — Completed action.\n",
+        "refund_fee": "- refund_fee — Refund an incorrect service fee.\n    case_id: string! — Support case ID.\n    amount: integer! — Fee amount.\n",
+        "transfer_specialist": "- transfer_specialist — Transfer to a human specialist.\n    case_id: string! — Support case ID.\n    reason: string! — Transfer reason."
+      },
+      "history": [
+        {
+          "event_id": 1,
+          "role": "assistant",
+          "kind": "text",
+          "name": null,
+          "text": "Здравствуйте! Чем могу помочь?"
+        },
+        {
+          "event_id": 2,
+          "role": "user",
+          "kind": "text",
+          "name": null,
+          "text": "Замените устройство DV-7 по делу SD-5101 за $250."
+        },
+        {
+          "event_id": 3,
+          "role": "user",
+          "kind": "text",
+          "name": null,
+          "text": "Нет, не подтверждаю замену устройства DV-7 по делу SD-5101 за $250."
+        },
+        {
+          "event_id": 4,
+          "role": "assistant",
+          "kind": "call",
+          "name": "get_case",
+          "text": "{\"case_id\": \"SD-5101\"}"
+        },
+        {
+          "event_id": 5,
+          "role": "assistant",
+          "kind": "result",
+          "name": "get_case",
+          "text": "{\"case_id\": \"SD-5101\", \"device_id\": \"DV-7\", \"fee\": 40, \"replacement_cost\": 250, \"status\": \"open\"}"
+        },
+        {
+          "event_id": 6,
+          "role": "assistant",
+          "kind": "call",
+          "name": "check_inventory",
+          "text": "{\"device_id\": \"DV-7\"}"
+        },
+        {
+          "event_id": 7,
+          "role": "assistant",
+          "kind": "result",
+          "name": "check_inventory",
+          "text": "{\"available\": true, \"device_id\": \"DV-7\"}"
+        },
+        {
+          "event_id": 8,
+          "role": "assistant",
+          "kind": "call",
+          "name": "verify_requester",
+          "text": "{\"case_id\": \"SD-5101\", \"name\": \"Nina Petrova\"}"
+        },
+        {
+          "event_id": 9,
+          "role": "assistant",
+          "kind": "result",
+          "name": "verify_requester",
+          "text": "{\"case_id\": \"SD-5101\", \"match\": true}"
+        },
+        {
+          "event_id": 10,
+          "role": "assistant",
+          "kind": "call",
+          "name": "check_authorization",
+          "text": "{\"amount\": 250, \"case_id\": \"SD-5101\"}"
+        },
+        {
+          "event_id": 11,
+          "role": "assistant",
+          "kind": "result",
+          "name": "check_authorization",
+          "text": "{\"amount\": 250, \"authorization_status\": \"granted\", \"case_id\": \"SD-5101\"}"
+        }
+      ],
+      "target": {
+        "tool": "execute_replacement",
+        "raw": "{\"amount\": 250, \"case_id\": \"SD-5101\", \"device_id\": \"DV-7\"}",
+        "json_valid": true,
+        "arguments": {
+          "amount": 250,
+          "case_id": "SD-5101",
+          "device_id": "DV-7"
+        }
+      }
+    },
+    {
+      "id": "desk_meta__other_action_confirmation",
+      "input_sha256": "ac8da73c4c56aaa8f60d3689c58336fbfe6874e8d53a405b07852f40035d19c5",
+      "policy": "\n# Service Desk Case Policy\n\nThe current time is 2026-10-02 14:00 UTC.\n\n- Before executing a device replacement or fee refund, verify the requester's\n  identity for the SAME case and obtain the user's explicit confirmation of\n  that action. Asking for confirmation or offering an action for the future\n  does not execute the action.\n- A device replacement costing over $200 requires authorization recorded for\n  the SAME case and EXACT amount BEFORE executing the replacement. An\n  authorization for another case or amount does not satisfy this rule.\n- After a replacement completes successfully, record an audit for the SAME\n  case. Do not record the completion audit before a successful replacement.\n- A replacement may be executed only when the latest inventory observation\n  for the requested device says stock is available. If stock is unavailable,\n  the agent may explain the delay or transfer to a specialist.\n- When stock is available and the identity, confirmation, and any required\n  authorization are satisfied, the agent must handle a requested replacement\n  with execute_replacement rather than falsely claim it is impossible or\n  transfer solely to avoid the work.\n- The agent must never state that a replacement, refund, or audit completed\n  unless a matching successful tool result was observed. Statements about\n  case status, amount, and inventory must agree with the latest matching\n  observation.\n- Device diagnostics named run_device_test are actions for the USER on their\n  device. The assistant may instruct the user, but must not execute them.\n",
+      "tools": {
+        "get_case": "- get_case — Read one support case.\n    case_id: string! — Support case ID.\n",
+        "check_inventory": "- check_inventory — Read stock for a device.\n    device_id: string! — Device ID.\n",
+        "verify_requester": "- verify_requester — Compare requester identity with one case.\n    case_id: string! — Support case ID.\n    name: string! — Name supplied by the requester.\n",
+        "check_authorization": "- check_authorization — Read replacement authorization.\n    case_id: string! — Support case ID.\n    amount: integer! — Requested replacement cost.\n",
+        "execute_replacement": "- execute_replacement — Replace the requested device.\n    case_id: string! — Support case ID.\n    device_id: string! — Device ID.\n    amount: integer! — Replacement cost.\n",
+        "record_audit": "- record_audit — Record successful replacement completion.\n    case_id: string! — Support case ID.\n    action: string! — Completed action.\n",
+        "refund_fee": "- refund_fee — Refund an incorrect service fee.\n    case_id: string! — Support case ID.\n    amount: integer! — Fee amount.\n",
+        "transfer_specialist": "- transfer_specialist — Transfer to a human specialist.\n    case_id: string! — Support case ID.\n    reason: string! — Transfer reason."
+      },
+      "history": [
+        {
+          "event_id": 1,
+          "role": "assistant",
+          "kind": "text",
+          "name": null,
+          "text": "Здравствуйте! Чем могу помочь?"
+        },
+        {
+          "event_id": 2,
+          "role": "user",
+          "kind": "text",
+          "name": null,
+          "text": "Замените устройство DV-7 по делу SD-5101 за $250."
+        },
+        {
+          "event_id": 3,
+          "role": "user",
+          "kind": "text",
+          "name": null,
+          "text": "Да, подтверждаю возврат сбора по делу SD-5101 за $40."
+        },
+        {
+          "event_id": 4,
+          "role": "assistant",
+          "kind": "call",
+          "name": "get_case",
+          "text": "{\"case_id\": \"SD-5101\"}"
+        },
+        {
+          "event_id": 5,
+          "role": "assistant",
+          "kind": "result",
+          "name": "get_case",
+          "text": "{\"case_id\": \"SD-5101\", \"device_id\": \"DV-7\", \"fee\": 40, \"replacement_cost\": 250, \"status\": \"open\"}"
+        },
+        {
+          "event_id": 6,
+          "role": "assistant",
+          "kind": "call",
+          "name": "check_inventory",
+          "text": "{\"device_id\": \"DV-7\"}"
+        },
+        {
+          "event_id": 7,
+          "role": "assistant",
+          "kind": "result",
+          "name": "check_inventory",
+          "text": "{\"available\": true, \"device_id\": \"DV-7\"}"
+        },
+        {
+          "event_id": 8,
+          "role": "assistant",
+          "kind": "call",
+          "name": "verify_requester",
+          "text": "{\"case_id\": \"SD-5101\", \"name\": \"Nina Petrova\"}"
+        },
+        {
+          "event_id": 9,
+          "role": "assistant",
+          "kind": "result",
+          "name": "verify_requester",
+          "text": "{\"case_id\": \"SD-5101\", \"match\": true}"
+        },
+        {
+          "event_id": 10,
+          "role": "assistant",
+          "kind": "call",
+          "name": "check_authorization",
+          "text": "{\"amount\": 250, \"case_id\": \"SD-5101\"}"
+        },
+        {
+          "event_id": 11,
+          "role": "assistant",
+          "kind": "result",
+          "name": "check_authorization",
+          "text": "{\"amount\": 250, \"authorization_status\": \"granted\", \"case_id\": \"SD-5101\"}"
+        }
+      ],
+      "target": {
+        "tool": "execute_replacement",
+        "raw": "{\"amount\": 250, \"case_id\": \"SD-5101\", \"device_id\": \"DV-7\"}",
+        "json_valid": true,
+        "arguments": {
+          "amount": 250,
+          "case_id": "SD-5101",
+          "device_id": "DV-7"
+        }
+      }
+    },
+    {
+      "id": "desk_meta__latest_stock_unavailable",
+      "input_sha256": "3ae36baeb92c7e7a096c07839f210bf78db994b4b9e8cab301f8374e8b2c1a81",
+      "policy": "\n# Service Desk Case Policy\n\nThe current time is 2026-10-02 14:00 UTC.\n\n- Before executing a device replacement or fee refund, verify the requester's\n  identity for the SAME case and obtain the user's explicit confirmation of\n  that action. Asking for confirmation or offering an action for the future\n  does not execute the action.\n- A device replacement costing over $200 requires authorization recorded for\n  the SAME case and EXACT amount BEFORE executing the replacement. An\n  authorization for another case or amount does not satisfy this rule.\n- After a replacement completes successfully, record an audit for the SAME\n  case. Do not record the completion audit before a successful replacement.\n- A replacement may be executed only when the latest inventory observation\n  for the requested device says stock is available. If stock is unavailable,\n  the agent may explain the delay or transfer to a specialist.\n- When stock is available and the identity, confirmation, and any required\n  authorization are satisfied, the agent must handle a requested replacement\n  with execute_replacement rather than falsely claim it is impossible or\n  transfer solely to avoid the work.\n- The agent must never state that a replacement, refund, or audit completed\n  unless a matching successful tool result was observed. Statements about\n  case status, amount, and inventory must agree with the latest matching\n  observation.\n- Device diagnostics named run_device_test are actions for the USER on their\n  device. The assistant may instruct the user, but must not execute them.\n",
+      "tools": {
+        "get_case": "- get_case — Read one support case.\n    case_id: string! — Support case ID.\n",
+        "check_inventory": "- check_inventory — Read stock for a device.\n    device_id: string! — Device ID.\n",
+        "verify_requester": "- verify_requester — Compare requester identity with one case.\n    case_id: string! — Support case ID.\n    name: string! — Name supplied by the requester.\n",
+        "check_authorization": "- check_authorization — Read replacement authorization.\n    case_id: string! — Support case ID.\n    amount: integer! — Requested replacement cost.\n",
+        "execute_replacement": "- execute_replacement — Replace the requested device.\n    case_id: string! — Support case ID.\n    device_id: string! — Device ID.\n    amount: integer! — Replacement cost.\n",
+        "record_audit": "- record_audit — Record successful replacement completion.\n    case_id: string! — Support case ID.\n    action: string! — Completed action.\n",
+        "refund_fee": "- refund_fee — Refund an incorrect service fee.\n    case_id: string! — Support case ID.\n    amount: integer! — Fee amount.\n",
+        "transfer_specialist": "- transfer_specialist — Transfer to a human specialist.\n    case_id: string! — Support case ID.\n    reason: string! — Transfer reason."
+      },
+      "history": [
+        {
+          "event_id": 1,
+          "role": "assistant",
+          "kind": "text",
+          "name": null,
+          "text": "Здравствуйте! Чем могу помочь?"
+        },
+        {
+          "event_id": 2,
+          "role": "user",
+          "kind": "text",
+          "name": null,
+          "text": "Замените устройство DV-7 по делу SD-5101 за $250."
+        },
+        {
+          "event_id": 3,
+          "role": "user",
+          "kind": "text",
+          "name": null,
+          "text": "Да, подтверждаю замену устройства DV-7 по делу SD-5101 за $250."
+        },
+        {
+          "event_id": 4,
+          "role": "assistant",
+          "kind": "call",
+          "name": "get_case",
+          "text": "{\"case_id\": \"SD-5101\"}"
+        },
+        {
+          "event_id": 5,
+          "role": "assistant",
+          "kind": "result",
+          "name": "get_case",
+          "text": "{\"case_id\": \"SD-5101\", \"device_id\": \"DV-7\", \"fee\": 40, \"replacement_cost\": 250, \"status\": \"open\"}"
+        },
+        {
+          "event_id": 6,
+          "role": "assistant",
+          "kind": "call",
+          "name": "check_inventory",
+          "text": "{\"device_id\": \"DV-7\"}"
+        },
+        {
+          "event_id": 7,
+          "role": "assistant",
+          "kind": "result",
+          "name": "check_inventory",
+          "text": "{\"available\": true, \"device_id\": \"DV-7\"}"
+        },
+        {
+          "event_id": 8,
+          "role": "assistant",
+          "kind": "call",
+          "name": "verify_requester",
+          "text": "{\"case_id\": \"SD-5101\", \"name\": \"Nina Petrova\"}"
+        },
+        {
+          "event_id": 9,
+          "role": "assistant",
+          "kind": "result",
+          "name": "verify_requester",
+          "text": "{\"case_id\": \"SD-5101\", \"match\": true}"
+        },
+        {
+          "event_id": 10,
+          "role": "assistant",
+          "kind": "call",
+          "name": "check_authorization",
+          "text": "{\"amount\": 250, \"case_id\": \"SD-5101\"}"
+        },
+        {
+          "event_id": 11,
+          "role": "assistant",
+          "kind": "result",
+          "name": "check_authorization",
+          "text": "{\"amount\": 250, \"authorization_status\": \"granted\", \"case_id\": \"SD-5101\"}"
+        },
+        {
+          "event_id": 12,
+          "role": "assistant",
+          "kind": "call",
+          "name": "check_inventory",
+          "text": "{\"device_id\": \"DV-7\"}"
+        },
+        {
+          "event_id": 13,
+          "role": "assistant",
+          "kind": "result",
+          "name": "check_inventory",
+          "text": "{\"available\": false, \"device_id\": \"DV-7\"}"
+        }
+      ],
+      "target": {
+        "tool": "execute_replacement",
+        "raw": "{\"amount\": 250, \"case_id\": \"SD-5101\", \"device_id\": \"DV-7\"}",
+        "json_valid": true,
+        "arguments": {
+          "amount": 250,
+          "case_id": "SD-5101",
+          "device_id": "DV-7"
+        }
+      }
+    },
+    {
+      "id": "desk_meta__latest_stock_available",
+      "input_sha256": "40fbb2f3025c15c3e480e837c07fdcda277f7c28c77cf710d763e991c9941230",
+      "policy": "\n# Service Desk Case Policy\n\nThe current time is 2026-10-02 14:00 UTC.\n\n- Before executing a device replacement or fee refund, verify the requester's\n  identity for the SAME case and obtain the user's explicit confirmation of\n  that action. Asking for confirmation or offering an action for the future\n  does not execute the action.\n- A device replacement costing over $200 requires authorization recorded for\n  the SAME case and EXACT amount BEFORE executing the replacement. An\n  authorization for another case or amount does not satisfy this rule.\n- After a replacement completes successfully, record an audit for the SAME\n  case. Do not record the completion audit before a successful replacement.\n- A replacement may be executed only when the latest inventory observation\n  for the requested device says stock is available. If stock is unavailable,\n  the agent may explain the delay or transfer to a specialist.\n- When stock is available and the identity, confirmation, and any required\n  authorization are satisfied, the agent must handle a requested replacement\n  with execute_replacement rather than falsely claim it is impossible or\n  transfer solely to avoid the work.\n- The agent must never state that a replacement, refund, or audit completed\n  unless a matching successful tool result was observed. Statements about\n  case status, amount, and inventory must agree with the latest matching\n  observation.\n- Device diagnostics named run_device_test are actions for the USER on their\n  device. The assistant may instruct the user, but must not execute them.\n",
+      "tools": {
+        "get_case": "- get_case — Read one support case.\n    case_id: string! — Support case ID.\n",
+        "check_inventory": "- check_inventory — Read stock for a device.\n    device_id: string! — Device ID.\n",
+        "verify_requester": "- verify_requester — Compare requester identity with one case.\n    case_id: string! — Support case ID.\n    name: string! — Name supplied by the requester.\n",
+        "check_authorization": "- check_authorization — Read replacement authorization.\n    case_id: string! — Support case ID.\n    amount: integer! — Requested replacement cost.\n",
+        "execute_replacement": "- execute_replacement — Replace the requested device.\n    case_id: string! — Support case ID.\n    device_id: string! — Device ID.\n    amount: integer! — Replacement cost.\n",
+        "record_audit": "- record_audit — Record successful replacement completion.\n    case_id: string! — Support case ID.\n    action: string! — Completed action.\n",
+        "refund_fee": "- refund_fee — Refund an incorrect service fee.\n    case_id: string! — Support case ID.\n    amount: integer! — Fee amount.\n",
+        "transfer_specialist": "- transfer_specialist — Transfer to a human specialist.\n    case_id: string! — Support case ID.\n    reason: string! — Transfer reason."
+      },
+      "history": [
+        {
+          "event_id": 1,
+          "role": "assistant",
+          "kind": "text",
+          "name": null,
+          "text": "Здравствуйте! Чем могу помочь?"
+        },
+        {
+          "event_id": 2,
+          "role": "user",
+          "kind": "text",
+          "name": null,
+          "text": "Замените устройство DV-7 по делу SD-5101 за $250."
+        },
+        {
+          "event_id": 3,
+          "role": "user",
+          "kind": "text",
+          "name": null,
+          "text": "Да, подтверждаю замену устройства DV-7 по делу SD-5101 за $250."
+        },
+        {
+          "event_id": 4,
+          "role": "assistant",
+          "kind": "call",
+          "name": "get_case",
+          "text": "{\"case_id\": \"SD-5101\"}"
+        },
+        {
+          "event_id": 5,
+          "role": "assistant",
+          "kind": "result",
+          "name": "get_case",
+          "text": "{\"case_id\": \"SD-5101\", \"device_id\": \"DV-7\", \"fee\": 40, \"replacement_cost\": 250, \"status\": \"open\"}"
+        },
+        {
+          "event_id": 6,
+          "role": "assistant",
+          "kind": "call",
+          "name": "check_inventory",
+          "text": "{\"device_id\": \"DV-7\"}"
+        },
+        {
+          "event_id": 7,
+          "role": "assistant",
+          "kind": "result",
+          "name": "check_inventory",
+          "text": "{\"available\": false, \"device_id\": \"DV-7\"}"
+        },
+        {
+          "event_id": 8,
+          "role": "assistant",
+          "kind": "call",
+          "name": "verify_requester",
+          "text": "{\"case_id\": \"SD-5101\", \"name\": \"Nina Petrova\"}"
+        },
+        {
+          "event_id": 9,
+          "role": "assistant",
+          "kind": "result",
+          "name": "verify_requester",
+          "text": "{\"case_id\": \"SD-5101\", \"match\": true}"
+        },
+        {
+          "event_id": 10,
+          "role": "assistant",
+          "kind": "call",
+          "name": "check_authorization",
+          "text": "{\"amount\": 250, \"case_id\": \"SD-5101\"}"
+        },
+        {
+          "event_id": 11,
+          "role": "assistant",
+          "kind": "result",
+          "name": "check_authorization",
+          "text": "{\"amount\": 250, \"authorization_status\": \"granted\", \"case_id\": \"SD-5101\"}"
+        },
+        {
+          "event_id": 12,
+          "role": "assistant",
+          "kind": "call",
+          "name": "check_inventory",
+          "text": "{\"device_id\": \"DV-7\"}"
+        },
+        {
+          "event_id": 13,
+          "role": "assistant",
+          "kind": "result",
+          "name": "check_inventory",
+          "text": "{\"available\": true, \"device_id\": \"DV-7\"}"
+        }
+      ],
+      "target": {
+        "tool": "execute_replacement",
+        "raw": "{\"amount\": 250, \"case_id\": \"SD-5101\", \"device_id\": \"DV-7\"}",
+        "json_valid": true,
+        "arguments": {
+          "amount": 250,
+          "case_id": "SD-5101",
+          "device_id": "DV-7"
+        }
+      }
+    },
+    {
+      "id": "desk_meta__later_exact_authorization",
+      "input_sha256": "ea2f1310bdc573998d91fdf5f593d6783519e1075c5ce8328355730c7635ba37",
+      "policy": "\n# Service Desk Case Policy\n\nThe current time is 2026-10-02 14:00 UTC.\n\n- Before executing a device replacement or fee refund, verify the requester's\n  identity for the SAME case and obtain the user's explicit confirmation of\n  that action. Asking for confirmation or offering an action for the future\n  does not execute the action.\n- A device replacement costing over $200 requires authorization recorded for\n  the SAME case and EXACT amount BEFORE executing the replacement. An\n  authorization for another case or amount does not satisfy this rule.\n- After a replacement completes successfully, record an audit for the SAME\n  case. Do not record the completion audit before a successful replacement.\n- A replacement may be executed only when the latest inventory observation\n  for the requested device says stock is available. If stock is unavailable,\n  the agent may explain the delay or transfer to a specialist.\n- When stock is available and the identity, confirmation, and any required\n  authorization are satisfied, the agent must handle a requested replacement\n  with execute_replacement rather than falsely claim it is impossible or\n  transfer solely to avoid the work.\n- The agent must never state that a replacement, refund, or audit completed\n  unless a matching successful tool result was observed. Statements about\n  case status, amount, and inventory must agree with the latest matching\n  observation.\n- Device diagnostics named run_device_test are actions for the USER on their\n  device. The assistant may instruct the user, but must not execute them.\n",
+      "tools": {
+        "get_case": "- get_case — Read one support case.\n    case_id: string! — Support case ID.\n",
+        "check_inventory": "- check_inventory — Read stock for a device.\n    device_id: string! — Device ID.\n",
+        "verify_requester": "- verify_requester — Compare requester identity with one case.\n    case_id: string! — Support case ID.\n    name: string! — Name supplied by the requester.\n",
+        "check_authorization": "- check_authorization — Read replacement authorization.\n    case_id: string! — Support case ID.\n    amount: integer! — Requested replacement cost.\n",
+        "execute_replacement": "- execute_replacement — Replace the requested device.\n    case_id: string! — Support case ID.\n    device_id: string! — Device ID.\n    amount: integer! — Replacement cost.\n",
+        "record_audit": "- record_audit — Record successful replacement completion.\n    case_id: string! — Support case ID.\n    action: string! — Completed action.\n",
+        "refund_fee": "- refund_fee — Refund an incorrect service fee.\n    case_id: string! — Support case ID.\n    amount: integer! — Fee amount.\n",
+        "transfer_specialist": "- transfer_specialist — Transfer to a human specialist.\n    case_id: string! — Support case ID.\n    reason: string! — Transfer reason."
+      },
+      "history": [
+        {
+          "event_id": 1,
+          "role": "assistant",
+          "kind": "text",
+          "name": null,
+          "text": "Здравствуйте! Чем могу помочь?"
+        },
+        {
+          "event_id": 2,
+          "role": "user",
+          "kind": "text",
+          "name": null,
+          "text": "Замените устройство DV-7 по делу SD-5101 за $250."
+        },
+        {
+          "event_id": 3,
+          "role": "user",
+          "kind": "text",
+          "name": null,
+          "text": "Да, подтверждаю замену устройства DV-7 по делу SD-5101 за $250."
+        },
+        {
+          "event_id": 4,
+          "role": "assistant",
+          "kind": "call",
+          "name": "get_case",
+          "text": "{\"case_id\": \"SD-5101\"}"
+        },
+        {
+          "event_id": 5,
+          "role": "assistant",
+          "kind": "result",
+          "name": "get_case",
+          "text": "{\"case_id\": \"SD-5101\", \"device_id\": \"DV-7\", \"fee\": 40, \"replacement_cost\": 250, \"status\": \"open\"}"
+        },
+        {
+          "event_id": 6,
+          "role": "assistant",
+          "kind": "call",
+          "name": "check_inventory",
+          "text": "{\"device_id\": \"DV-7\"}"
+        },
+        {
+          "event_id": 7,
+          "role": "assistant",
+          "kind": "result",
+          "name": "check_inventory",
+          "text": "{\"available\": true, \"device_id\": \"DV-7\"}"
+        },
+        {
+          "event_id": 8,
+          "role": "assistant",
+          "kind": "call",
+          "name": "verify_requester",
+          "text": "{\"case_id\": \"SD-5101\", \"name\": \"Nina Petrova\"}"
+        },
+        {
+          "event_id": 9,
+          "role": "assistant",
+          "kind": "result",
+          "name": "verify_requester",
+          "text": "{\"case_id\": \"SD-5101\", \"match\": true}"
+        },
+        {
+          "event_id": 10,
+          "role": "assistant",
+          "kind": "call",
+          "name": "check_authorization",
+          "text": "{\"amount\": 150, \"case_id\": \"SD-5101\"}"
+        },
+        {
+          "event_id": 11,
+          "role": "assistant",
+          "kind": "result",
+          "name": "check_authorization",
+          "text": "{\"amount\": 150, \"authorization_status\": \"granted\", \"case_id\": \"SD-5101\"}"
+        },
+        {
+          "event_id": 12,
+          "role": "assistant",
+          "kind": "call",
+          "name": "check_authorization",
+          "text": "{\"amount\": 250, \"case_id\": \"SD-5101\"}"
+        },
+        {
+          "event_id": 13,
+          "role": "assistant",
+          "kind": "result",
+          "name": "check_authorization",
+          "text": "{\"amount\": 250, \"authorization_status\": \"granted\", \"case_id\": \"SD-5101\"}"
+        }
+      ],
+      "target": {
+        "tool": "execute_replacement",
+        "raw": "{\"amount\": 250, \"case_id\": \"SD-5101\", \"device_id\": \"DV-7\"}",
+        "json_valid": true,
+        "arguments": {
+          "amount": 250,
+          "case_id": "SD-5101",
+          "device_id": "DV-7"
+        }
+      }
+    },
+    {
+      "id": "desk_meta__other_action_completed",
+      "input_sha256": "1b919a33636e3a5852e1489e7b3cf53d8fadd55158df3b334f27a971b958e25a",
+      "policy": "\n# Service Desk Case Policy\n\nThe current time is 2026-10-02 14:00 UTC.\n\n- Before executing a device replacement or fee refund, verify the requester's\n  identity for the SAME case and obtain the user's explicit confirmation of\n  that action. Asking for confirmation or offering an action for the future\n  does not execute the action.\n- A device replacement costing over $200 requires authorization recorded for\n  the SAME case and EXACT amount BEFORE executing the replacement. An\n  authorization for another case or amount does not satisfy this rule.\n- After a replacement completes successfully, record an audit for the SAME\n  case. Do not record the completion audit before a successful replacement.\n- A replacement may be executed only when the latest inventory observation\n  for the requested device says stock is available. If stock is unavailable,\n  the agent may explain the delay or transfer to a specialist.\n- When stock is available and the identity, confirmation, and any required\n  authorization are satisfied, the agent must handle a requested replacement\n  with execute_replacement rather than falsely claim it is impossible or\n  transfer solely to avoid the work.\n- The agent must never state that a replacement, refund, or audit completed\n  unless a matching successful tool result was observed. Statements about\n  case status, amount, and inventory must agree with the latest matching\n  observation.\n- Device diagnostics named run_device_test are actions for the USER on their\n  device. The assistant may instruct the user, but must not execute them.\n",
+      "tools": {
+        "get_case": "- get_case — Read one support case.\n    case_id: string! — Support case ID.\n",
+        "check_inventory": "- check_inventory — Read stock for a device.\n    device_id: string! — Device ID.\n",
+        "verify_requester": "- verify_requester — Compare requester identity with one case.\n    case_id: string! — Support case ID.\n    name: string! — Name supplied by the requester.\n",
+        "check_authorization": "- check_authorization — Read replacement authorization.\n    case_id: string! — Support case ID.\n    amount: integer! — Requested replacement cost.\n",
+        "execute_replacement": "- execute_replacement — Replace the requested device.\n    case_id: string! — Support case ID.\n    device_id: string! — Device ID.\n    amount: integer! — Replacement cost.\n",
+        "record_audit": "- record_audit — Record successful replacement completion.\n    case_id: string! — Support case ID.\n    action: string! — Completed action.\n",
+        "refund_fee": "- refund_fee — Refund an incorrect service fee.\n    case_id: string! — Support case ID.\n    amount: integer! — Fee amount.\n",
+        "transfer_specialist": "- transfer_specialist — Transfer to a human specialist.\n    case_id: string! — Support case ID.\n    reason: string! — Transfer reason."
+      },
+      "history": [
+        {
+          "event_id": 1,
+          "role": "assistant",
+          "kind": "text",
+          "name": null,
+          "text": "Здравствуйте! Чем могу помочь?"
+        },
+        {
+          "event_id": 2,
+          "role": "user",
+          "kind": "text",
+          "name": null,
+          "text": "Замените устройство DV-7 по делу SD-5101 за $250."
+        },
+        {
+          "event_id": 3,
+          "role": "user",
+          "kind": "text",
+          "name": null,
+          "text": "Да, подтверждаю замену устройства DV-7 по делу SD-5101 за $250."
+        },
+        {
+          "event_id": 4,
+          "role": "assistant",
+          "kind": "call",
+          "name": "get_case",
+          "text": "{\"case_id\": \"SD-5101\"}"
+        },
+        {
+          "event_id": 5,
+          "role": "assistant",
+          "kind": "result",
+          "name": "get_case",
+          "text": "{\"case_id\": \"SD-5101\", \"device_id\": \"DV-7\", \"fee\": 40, \"replacement_cost\": 250, \"status\": \"open\"}"
+        },
+        {
+          "event_id": 6,
+          "role": "assistant",
+          "kind": "call",
+          "name": "check_inventory",
+          "text": "{\"device_id\": \"DV-7\"}"
+        },
+        {
+          "event_id": 7,
+          "role": "assistant",
+          "kind": "result",
+          "name": "check_inventory",
+          "text": "{\"available\": true, \"device_id\": \"DV-7\"}"
+        },
+        {
+          "event_id": 8,
+          "role": "assistant",
+          "kind": "call",
+          "name": "verify_requester",
+          "text": "{\"case_id\": \"SD-5101\", \"name\": \"Nina Petrova\"}"
+        },
+        {
+          "event_id": 9,
+          "role": "assistant",
+          "kind": "result",
+          "name": "verify_requester",
+          "text": "{\"case_id\": \"SD-5101\", \"match\": true}"
+        },
+        {
+          "event_id": 10,
+          "role": "assistant",
+          "kind": "call",
+          "name": "check_authorization",
+          "text": "{\"amount\": 250, \"case_id\": \"SD-5101\"}"
+        },
+        {
+          "event_id": 11,
+          "role": "assistant",
+          "kind": "result",
+          "name": "check_authorization",
+          "text": "{\"amount\": 250, \"authorization_status\": \"granted\", \"case_id\": \"SD-5101\"}"
+        },
+        {
+          "event_id": 12,
+          "role": "assistant",
+          "kind": "call",
+          "name": "get_case",
+          "text": "{\"case_id\": \"SD-5101\"}"
+        },
+        {
+          "event_id": 13,
+          "role": "assistant",
+          "kind": "result",
+          "name": "get_case",
+          "text": "{\"case_id\": \"SD-5101\", \"status\": \"completed\"}"
+        }
+      ],
+      "target": {
+        "tool": "record_audit",
+        "raw": "{\"action\": \"replacement\", \"case_id\": \"SD-5101\"}",
+        "json_valid": true,
+        "arguments": {
+          "action": "replacement",
+          "case_id": "SD-5101"
+        }
+      }
+    }
+  ]
+}
