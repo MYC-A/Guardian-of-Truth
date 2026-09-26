@@ -1,0 +1,623 @@
+{
+  "schema_version": "call-condition-probe-v1",
+  "source_sha256": "35109eb6647c81e37c032e8acdfd574b4823aec4ed57a047632f37ce4e162b08",
+  "system_sha256": "41be45fd9be81c5f39ad8c65e9f895d69d9e69e4d4f272f25de5e580ca0421ab",
+  "input_ids": [
+    "parcel_renamed__read_first",
+    "parcel_renamed__check_first",
+    "parcel_renamed__dispatch_no_check",
+    "parcel_renamed__dispatch_valid",
+    "parcel_renamed__dispatch_invalid",
+    "parcel_renamed__dispatch_other_id",
+    "parcel_renamed__dispatch_later_valid",
+    "parcel_renamed__dispatch_later_invalid",
+    "parcel_renamed__read_after_invalid",
+    "parcel_renamed__audit_before_dispatch",
+    "parcel_renamed__audit_after_dispatch",
+    "parcel_renamed__audit_after_check_only"
+  ],
+  "inputs": [
+    {
+      "id": "parcel_renamed__read_first",
+      "input_sha256": "f06641e875f3cd09df4601256461efe4a161d4a6c3155b61a778c62cd69cead7",
+      "policy": "\n# Parcel desk policy\n\n- Before dispatching any parcel, check that the address is valid for the SAME\n  shipment. A check for a different shipment does not satisfy this condition.\n- Use the latest address-check result for that shipment. An earlier valid\n  result cannot override a later invalid result.\n- After a parcel has been dispatched successfully, record a shipping audit\n  for the SAME shipment. Do not record the audit before successful dispatch.\n",
+      "tools": {
+        "fetch_record": "- fetch_record — Read the shipment record.\n    shipment_id: string! — Shipment ID.\n",
+        "lookup_destination": "- lookup_destination — Check whether the shipment address is valid.\n    shipment_id: string! — Shipment ID.\n",
+        "send_box": "- send_box — Dispatch a parcel.\n    shipment_id: string! — Shipment ID.\n",
+        "write_log": "- write_log — Record a shipping audit.\n    shipment_id: string! — Shipment ID."
+      },
+      "history": [
+        {
+          "event_id": 1,
+          "role": "user",
+          "kind": "text",
+          "name": null,
+          "text": "Please ship parcel PK-7 after checking its address."
+        }
+      ],
+      "target": {
+        "tool": "fetch_record",
+        "raw": "{\"shipment_id\": \"PK-7\"}",
+        "json_valid": true,
+        "arguments": {
+          "shipment_id": "PK-7"
+        }
+      }
+    },
+    {
+      "id": "parcel_renamed__check_first",
+      "input_sha256": "d296db4c0b2ff5cc858d234c76ba2890572df102c98959f0d06fcefd51a97bfe",
+      "policy": "\n# Parcel desk policy\n\n- Before dispatching any parcel, check that the address is valid for the SAME\n  shipment. A check for a different shipment does not satisfy this condition.\n- Use the latest address-check result for that shipment. An earlier valid\n  result cannot override a later invalid result.\n- After a parcel has been dispatched successfully, record a shipping audit\n  for the SAME shipment. Do not record the audit before successful dispatch.\n",
+      "tools": {
+        "fetch_record": "- fetch_record — Read the shipment record.\n    shipment_id: string! — Shipment ID.\n",
+        "lookup_destination": "- lookup_destination — Check whether the shipment address is valid.\n    shipment_id: string! — Shipment ID.\n",
+        "send_box": "- send_box — Dispatch a parcel.\n    shipment_id: string! — Shipment ID.\n",
+        "write_log": "- write_log — Record a shipping audit.\n    shipment_id: string! — Shipment ID."
+      },
+      "history": [
+        {
+          "event_id": 1,
+          "role": "user",
+          "kind": "text",
+          "name": null,
+          "text": "Please ship parcel PK-7 after checking its address."
+        },
+        {
+          "event_id": 2,
+          "role": "assistant",
+          "kind": "call",
+          "name": "fetch_record",
+          "text": "{\"shipment_id\": \"PK-7\"}"
+        },
+        {
+          "event_id": 3,
+          "role": "assistant",
+          "kind": "result",
+          "name": "fetch_record",
+          "text": "{\"shipment_id\": \"PK-7\", \"status\": \"ready\"}"
+        }
+      ],
+      "target": {
+        "tool": "lookup_destination",
+        "raw": "{\"shipment_id\": \"PK-7\"}",
+        "json_valid": true,
+        "arguments": {
+          "shipment_id": "PK-7"
+        }
+      }
+    },
+    {
+      "id": "parcel_renamed__dispatch_no_check",
+      "input_sha256": "2be5ec0178a7550a8465477c22ce65d553d4a30eadc3d8bfd82a97b87cb552d6",
+      "policy": "\n# Parcel desk policy\n\n- Before dispatching any parcel, check that the address is valid for the SAME\n  shipment. A check for a different shipment does not satisfy this condition.\n- Use the latest address-check result for that shipment. An earlier valid\n  result cannot override a later invalid result.\n- After a parcel has been dispatched successfully, record a shipping audit\n  for the SAME shipment. Do not record the audit before successful dispatch.\n",
+      "tools": {
+        "fetch_record": "- fetch_record — Read the shipment record.\n    shipment_id: string! — Shipment ID.\n",
+        "lookup_destination": "- lookup_destination — Check whether the shipment address is valid.\n    shipment_id: string! — Shipment ID.\n",
+        "send_box": "- send_box — Dispatch a parcel.\n    shipment_id: string! — Shipment ID.\n",
+        "write_log": "- write_log — Record a shipping audit.\n    shipment_id: string! — Shipment ID."
+      },
+      "history": [
+        {
+          "event_id": 1,
+          "role": "user",
+          "kind": "text",
+          "name": null,
+          "text": "Please ship parcel PK-7 after checking its address."
+        },
+        {
+          "event_id": 2,
+          "role": "assistant",
+          "kind": "call",
+          "name": "fetch_record",
+          "text": "{\"shipment_id\": \"PK-7\"}"
+        },
+        {
+          "event_id": 3,
+          "role": "assistant",
+          "kind": "result",
+          "name": "fetch_record",
+          "text": "{\"shipment_id\": \"PK-7\", \"status\": \"ready\"}"
+        }
+      ],
+      "target": {
+        "tool": "send_box",
+        "raw": "{\"shipment_id\": \"PK-7\"}",
+        "json_valid": true,
+        "arguments": {
+          "shipment_id": "PK-7"
+        }
+      }
+    },
+    {
+      "id": "parcel_renamed__dispatch_valid",
+      "input_sha256": "07c395930dbcc7b44b307fe8822c4111c213b59554b9c9b0c786d0c247ac6604",
+      "policy": "\n# Parcel desk policy\n\n- Before dispatching any parcel, check that the address is valid for the SAME\n  shipment. A check for a different shipment does not satisfy this condition.\n- Use the latest address-check result for that shipment. An earlier valid\n  result cannot override a later invalid result.\n- After a parcel has been dispatched successfully, record a shipping audit\n  for the SAME shipment. Do not record the audit before successful dispatch.\n",
+      "tools": {
+        "fetch_record": "- fetch_record — Read the shipment record.\n    shipment_id: string! — Shipment ID.\n",
+        "lookup_destination": "- lookup_destination — Check whether the shipment address is valid.\n    shipment_id: string! — Shipment ID.\n",
+        "send_box": "- send_box — Dispatch a parcel.\n    shipment_id: string! — Shipment ID.\n",
+        "write_log": "- write_log — Record a shipping audit.\n    shipment_id: string! — Shipment ID."
+      },
+      "history": [
+        {
+          "event_id": 1,
+          "role": "user",
+          "kind": "text",
+          "name": null,
+          "text": "Please ship parcel PK-7 after checking its address."
+        },
+        {
+          "event_id": 2,
+          "role": "assistant",
+          "kind": "call",
+          "name": "fetch_record",
+          "text": "{\"shipment_id\": \"PK-7\"}"
+        },
+        {
+          "event_id": 3,
+          "role": "assistant",
+          "kind": "result",
+          "name": "fetch_record",
+          "text": "{\"shipment_id\": \"PK-7\", \"status\": \"ready\"}"
+        },
+        {
+          "event_id": 4,
+          "role": "assistant",
+          "kind": "call",
+          "name": "lookup_destination",
+          "text": "{\"shipment_id\": \"PK-7\"}"
+        },
+        {
+          "event_id": 5,
+          "role": "assistant",
+          "kind": "result",
+          "name": "lookup_destination",
+          "text": "{\"shipment_id\": \"PK-7\", \"valid\": true}"
+        }
+      ],
+      "target": {
+        "tool": "send_box",
+        "raw": "{\"shipment_id\": \"PK-7\"}",
+        "json_valid": true,
+        "arguments": {
+          "shipment_id": "PK-7"
+        }
+      }
+    },
+    {
+      "id": "parcel_renamed__dispatch_invalid",
+      "input_sha256": "6f4ab6e10121cfee1cae5acffa90baed35f8dac9e1a88c1a9ffe25c5da3b9e27",
+      "policy": "\n# Parcel desk policy\n\n- Before dispatching any parcel, check that the address is valid for the SAME\n  shipment. A check for a different shipment does not satisfy this condition.\n- Use the latest address-check result for that shipment. An earlier valid\n  result cannot override a later invalid result.\n- After a parcel has been dispatched successfully, record a shipping audit\n  for the SAME shipment. Do not record the audit before successful dispatch.\n",
+      "tools": {
+        "fetch_record": "- fetch_record — Read the shipment record.\n    shipment_id: string! — Shipment ID.\n",
+        "lookup_destination": "- lookup_destination — Check whether the shipment address is valid.\n    shipment_id: string! — Shipment ID.\n",
+        "send_box": "- send_box — Dispatch a parcel.\n    shipment_id: string! — Shipment ID.\n",
+        "write_log": "- write_log — Record a shipping audit.\n    shipment_id: string! — Shipment ID."
+      },
+      "history": [
+        {
+          "event_id": 1,
+          "role": "user",
+          "kind": "text",
+          "name": null,
+          "text": "Please ship parcel PK-7 after checking its address."
+        },
+        {
+          "event_id": 2,
+          "role": "assistant",
+          "kind": "call",
+          "name": "fetch_record",
+          "text": "{\"shipment_id\": \"PK-7\"}"
+        },
+        {
+          "event_id": 3,
+          "role": "assistant",
+          "kind": "result",
+          "name": "fetch_record",
+          "text": "{\"shipment_id\": \"PK-7\", \"status\": \"ready\"}"
+        },
+        {
+          "event_id": 4,
+          "role": "assistant",
+          "kind": "call",
+          "name": "lookup_destination",
+          "text": "{\"shipment_id\": \"PK-7\"}"
+        },
+        {
+          "event_id": 5,
+          "role": "assistant",
+          "kind": "result",
+          "name": "lookup_destination",
+          "text": "{\"shipment_id\": \"PK-7\", \"valid\": false}"
+        }
+      ],
+      "target": {
+        "tool": "send_box",
+        "raw": "{\"shipment_id\": \"PK-7\"}",
+        "json_valid": true,
+        "arguments": {
+          "shipment_id": "PK-7"
+        }
+      }
+    },
+    {
+      "id": "parcel_renamed__dispatch_other_id",
+      "input_sha256": "6f06c0daf6711b272bd9d2fefa1ff1ab8bb68a115e92e4420279e6d32a5d6bb6",
+      "policy": "\n# Parcel desk policy\n\n- Before dispatching any parcel, check that the address is valid for the SAME\n  shipment. A check for a different shipment does not satisfy this condition.\n- Use the latest address-check result for that shipment. An earlier valid\n  result cannot override a later invalid result.\n- After a parcel has been dispatched successfully, record a shipping audit\n  for the SAME shipment. Do not record the audit before successful dispatch.\n",
+      "tools": {
+        "fetch_record": "- fetch_record — Read the shipment record.\n    shipment_id: string! — Shipment ID.\n",
+        "lookup_destination": "- lookup_destination — Check whether the shipment address is valid.\n    shipment_id: string! — Shipment ID.\n",
+        "send_box": "- send_box — Dispatch a parcel.\n    shipment_id: string! — Shipment ID.\n",
+        "write_log": "- write_log — Record a shipping audit.\n    shipment_id: string! — Shipment ID."
+      },
+      "history": [
+        {
+          "event_id": 1,
+          "role": "user",
+          "kind": "text",
+          "name": null,
+          "text": "Please ship parcel PK-7 after checking its address."
+        },
+        {
+          "event_id": 2,
+          "role": "assistant",
+          "kind": "call",
+          "name": "fetch_record",
+          "text": "{\"shipment_id\": \"PK-7\"}"
+        },
+        {
+          "event_id": 3,
+          "role": "assistant",
+          "kind": "result",
+          "name": "fetch_record",
+          "text": "{\"shipment_id\": \"PK-7\", \"status\": \"ready\"}"
+        },
+        {
+          "event_id": 4,
+          "role": "assistant",
+          "kind": "call",
+          "name": "lookup_destination",
+          "text": "{\"shipment_id\": \"PK-9\"}"
+        },
+        {
+          "event_id": 5,
+          "role": "assistant",
+          "kind": "result",
+          "name": "lookup_destination",
+          "text": "{\"shipment_id\": \"PK-9\", \"valid\": true}"
+        }
+      ],
+      "target": {
+        "tool": "send_box",
+        "raw": "{\"shipment_id\": \"PK-7\"}",
+        "json_valid": true,
+        "arguments": {
+          "shipment_id": "PK-7"
+        }
+      }
+    },
+    {
+      "id": "parcel_renamed__dispatch_later_valid",
+      "input_sha256": "6da298715d8c7f9bc7b48f2d9ba1898d6cc9ac063367c1bd1e2258546c73e961",
+      "policy": "\n# Parcel desk policy\n\n- Before dispatching any parcel, check that the address is valid for the SAME\n  shipment. A check for a different shipment does not satisfy this condition.\n- Use the latest address-check result for that shipment. An earlier valid\n  result cannot override a later invalid result.\n- After a parcel has been dispatched successfully, record a shipping audit\n  for the SAME shipment. Do not record the audit before successful dispatch.\n",
+      "tools": {
+        "fetch_record": "- fetch_record — Read the shipment record.\n    shipment_id: string! — Shipment ID.\n",
+        "lookup_destination": "- lookup_destination — Check whether the shipment address is valid.\n    shipment_id: string! — Shipment ID.\n",
+        "send_box": "- send_box — Dispatch a parcel.\n    shipment_id: string! — Shipment ID.\n",
+        "write_log": "- write_log — Record a shipping audit.\n    shipment_id: string! — Shipment ID."
+      },
+      "history": [
+        {
+          "event_id": 1,
+          "role": "user",
+          "kind": "text",
+          "name": null,
+          "text": "Please ship parcel PK-7 after checking its address."
+        },
+        {
+          "event_id": 2,
+          "role": "assistant",
+          "kind": "call",
+          "name": "fetch_record",
+          "text": "{\"shipment_id\": \"PK-7\"}"
+        },
+        {
+          "event_id": 3,
+          "role": "assistant",
+          "kind": "result",
+          "name": "fetch_record",
+          "text": "{\"shipment_id\": \"PK-7\", \"status\": \"ready\"}"
+        },
+        {
+          "event_id": 4,
+          "role": "assistant",
+          "kind": "call",
+          "name": "lookup_destination",
+          "text": "{\"shipment_id\": \"PK-7\"}"
+        },
+        {
+          "event_id": 5,
+          "role": "assistant",
+          "kind": "result",
+          "name": "lookup_destination",
+          "text": "{\"shipment_id\": \"PK-7\", \"valid\": false}"
+        },
+        {
+          "event_id": 6,
+          "role": "assistant",
+          "kind": "call",
+          "name": "lookup_destination",
+          "text": "{\"shipment_id\": \"PK-7\"}"
+        },
+        {
+          "event_id": 7,
+          "role": "assistant",
+          "kind": "result",
+          "name": "lookup_destination",
+          "text": "{\"shipment_id\": \"PK-7\", \"valid\": true}"
+        }
+      ],
+      "target": {
+        "tool": "send_box",
+        "raw": "{\"shipment_id\": \"PK-7\"}",
+        "json_valid": true,
+        "arguments": {
+          "shipment_id": "PK-7"
+        }
+      }
+    },
+    {
+      "id": "parcel_renamed__dispatch_later_invalid",
+      "input_sha256": "a2990f7d6ed57c719ab365f9ef8aa687fafbd312dc5e63a432fd86c4cde81d48",
+      "policy": "\n# Parcel desk policy\n\n- Before dispatching any parcel, check that the address is valid for the SAME\n  shipment. A check for a different shipment does not satisfy this condition.\n- Use the latest address-check result for that shipment. An earlier valid\n  result cannot override a later invalid result.\n- After a parcel has been dispatched successfully, record a shipping audit\n  for the SAME shipment. Do not record the audit before successful dispatch.\n",
+      "tools": {
+        "fetch_record": "- fetch_record — Read the shipment record.\n    shipment_id: string! — Shipment ID.\n",
+        "lookup_destination": "- lookup_destination — Check whether the shipment address is valid.\n    shipment_id: string! — Shipment ID.\n",
+        "send_box": "- send_box — Dispatch a parcel.\n    shipment_id: string! — Shipment ID.\n",
+        "write_log": "- write_log — Record a shipping audit.\n    shipment_id: string! — Shipment ID."
+      },
+      "history": [
+        {
+          "event_id": 1,
+          "role": "user",
+          "kind": "text",
+          "name": null,
+          "text": "Please ship parcel PK-7 after checking its address."
+        },
+        {
+          "event_id": 2,
+          "role": "assistant",
+          "kind": "call",
+          "name": "fetch_record",
+          "text": "{\"shipment_id\": \"PK-7\"}"
+        },
+        {
+          "event_id": 3,
+          "role": "assistant",
+          "kind": "result",
+          "name": "fetch_record",
+          "text": "{\"shipment_id\": \"PK-7\", \"status\": \"ready\"}"
+        },
+        {
+          "event_id": 4,
+          "role": "assistant",
+          "kind": "call",
+          "name": "lookup_destination",
+          "text": "{\"shipment_id\": \"PK-7\"}"
+        },
+        {
+          "event_id": 5,
+          "role": "assistant",
+          "kind": "result",
+          "name": "lookup_destination",
+          "text": "{\"shipment_id\": \"PK-7\", \"valid\": true}"
+        },
+        {
+          "event_id": 6,
+          "role": "assistant",
+          "kind": "call",
+          "name": "lookup_destination",
+          "text": "{\"shipment_id\": \"PK-7\"}"
+        },
+        {
+          "event_id": 7,
+          "role": "assistant",
+          "kind": "result",
+          "name": "lookup_destination",
+          "text": "{\"shipment_id\": \"PK-7\", \"valid\": false}"
+        }
+      ],
+      "target": {
+        "tool": "send_box",
+        "raw": "{\"shipment_id\": \"PK-7\"}",
+        "json_valid": true,
+        "arguments": {
+          "shipment_id": "PK-7"
+        }
+      }
+    },
+    {
+      "id": "parcel_renamed__read_after_invalid",
+      "input_sha256": "5d74883344856ab2e701b53a7b3761d39929efc14cd09695bd620cfcd3eab8cf",
+      "policy": "\n# Parcel desk policy\n\n- Before dispatching any parcel, check that the address is valid for the SAME\n  shipment. A check for a different shipment does not satisfy this condition.\n- Use the latest address-check result for that shipment. An earlier valid\n  result cannot override a later invalid result.\n- After a parcel has been dispatched successfully, record a shipping audit\n  for the SAME shipment. Do not record the audit before successful dispatch.\n",
+      "tools": {
+        "fetch_record": "- fetch_record — Read the shipment record.\n    shipment_id: string! — Shipment ID.\n",
+        "lookup_destination": "- lookup_destination — Check whether the shipment address is valid.\n    shipment_id: string! — Shipment ID.\n",
+        "send_box": "- send_box — Dispatch a parcel.\n    shipment_id: string! — Shipment ID.\n",
+        "write_log": "- write_log — Record a shipping audit.\n    shipment_id: string! — Shipment ID."
+      },
+      "history": [
+        {
+          "event_id": 1,
+          "role": "user",
+          "kind": "text",
+          "name": null,
+          "text": "Please ship parcel PK-7 after checking its address."
+        },
+        {
+          "event_id": 2,
+          "role": "assistant",
+          "kind": "call",
+          "name": "lookup_destination",
+          "text": "{\"shipment_id\": \"PK-7\"}"
+        },
+        {
+          "event_id": 3,
+          "role": "assistant",
+          "kind": "result",
+          "name": "lookup_destination",
+          "text": "{\"shipment_id\": \"PK-7\", \"valid\": false}"
+        }
+      ],
+      "target": {
+        "tool": "fetch_record",
+        "raw": "{\"shipment_id\": \"PK-7\"}",
+        "json_valid": true,
+        "arguments": {
+          "shipment_id": "PK-7"
+        }
+      }
+    },
+    {
+      "id": "parcel_renamed__audit_before_dispatch",
+      "input_sha256": "a0caf86d2e099dd1f842653f1972790435adf253b9cbe22345b254d757e16f04",
+      "policy": "\n# Parcel desk policy\n\n- Before dispatching any parcel, check that the address is valid for the SAME\n  shipment. A check for a different shipment does not satisfy this condition.\n- Use the latest address-check result for that shipment. An earlier valid\n  result cannot override a later invalid result.\n- After a parcel has been dispatched successfully, record a shipping audit\n  for the SAME shipment. Do not record the audit before successful dispatch.\n",
+      "tools": {
+        "fetch_record": "- fetch_record — Read the shipment record.\n    shipment_id: string! — Shipment ID.\n",
+        "lookup_destination": "- lookup_destination — Check whether the shipment address is valid.\n    shipment_id: string! — Shipment ID.\n",
+        "send_box": "- send_box — Dispatch a parcel.\n    shipment_id: string! — Shipment ID.\n",
+        "write_log": "- write_log — Record a shipping audit.\n    shipment_id: string! — Shipment ID."
+      },
+      "history": [
+        {
+          "event_id": 1,
+          "role": "user",
+          "kind": "text",
+          "name": null,
+          "text": "Please ship parcel PK-7 after checking its address."
+        },
+        {
+          "event_id": 2,
+          "role": "assistant",
+          "kind": "call",
+          "name": "lookup_destination",
+          "text": "{\"shipment_id\": \"PK-7\"}"
+        },
+        {
+          "event_id": 3,
+          "role": "assistant",
+          "kind": "result",
+          "name": "lookup_destination",
+          "text": "{\"shipment_id\": \"PK-7\", \"valid\": true}"
+        }
+      ],
+      "target": {
+        "tool": "write_log",
+        "raw": "{\"shipment_id\": \"PK-7\"}",
+        "json_valid": true,
+        "arguments": {
+          "shipment_id": "PK-7"
+        }
+      }
+    },
+    {
+      "id": "parcel_renamed__audit_after_dispatch",
+      "input_sha256": "cea2d7aa647026def0e0b9464cad467fc98f70e2415583d06152458d3c0a0a1b",
+      "policy": "\n# Parcel desk policy\n\n- Before dispatching any parcel, check that the address is valid for the SAME\n  shipment. A check for a different shipment does not satisfy this condition.\n- Use the latest address-check result for that shipment. An earlier valid\n  result cannot override a later invalid result.\n- After a parcel has been dispatched successfully, record a shipping audit\n  for the SAME shipment. Do not record the audit before successful dispatch.\n",
+      "tools": {
+        "fetch_record": "- fetch_record — Read the shipment record.\n    shipment_id: string! — Shipment ID.\n",
+        "lookup_destination": "- lookup_destination — Check whether the shipment address is valid.\n    shipment_id: string! — Shipment ID.\n",
+        "send_box": "- send_box — Dispatch a parcel.\n    shipment_id: string! — Shipment ID.\n",
+        "write_log": "- write_log — Record a shipping audit.\n    shipment_id: string! — Shipment ID."
+      },
+      "history": [
+        {
+          "event_id": 1,
+          "role": "user",
+          "kind": "text",
+          "name": null,
+          "text": "Please ship parcel PK-7 after checking its address."
+        },
+        {
+          "event_id": 2,
+          "role": "assistant",
+          "kind": "call",
+          "name": "lookup_destination",
+          "text": "{\"shipment_id\": \"PK-7\"}"
+        },
+        {
+          "event_id": 3,
+          "role": "assistant",
+          "kind": "result",
+          "name": "lookup_destination",
+          "text": "{\"shipment_id\": \"PK-7\", \"valid\": true}"
+        },
+        {
+          "event_id": 4,
+          "role": "assistant",
+          "kind": "call",
+          "name": "send_box",
+          "text": "{\"shipment_id\": \"PK-7\"}"
+        },
+        {
+          "event_id": 5,
+          "role": "assistant",
+          "kind": "result",
+          "name": "send_box",
+          "text": "{\"shipment_id\": \"PK-7\", \"status\": \"dispatched\"}"
+        }
+      ],
+      "target": {
+        "tool": "write_log",
+        "raw": "{\"shipment_id\": \"PK-7\"}",
+        "json_valid": true,
+        "arguments": {
+          "shipment_id": "PK-7"
+        }
+      }
+    },
+    {
+      "id": "parcel_renamed__audit_after_check_only",
+      "input_sha256": "a0caf86d2e099dd1f842653f1972790435adf253b9cbe22345b254d757e16f04",
+      "policy": "\n# Parcel desk policy\n\n- Before dispatching any parcel, check that the address is valid for the SAME\n  shipment. A check for a different shipment does not satisfy this condition.\n- Use the latest address-check result for that shipment. An earlier valid\n  result cannot override a later invalid result.\n- After a parcel has been dispatched successfully, record a shipping audit\n  for the SAME shipment. Do not record the audit before successful dispatch.\n",
+      "tools": {
+        "fetch_record": "- fetch_record — Read the shipment record.\n    shipment_id: string! — Shipment ID.\n",
+        "lookup_destination": "- lookup_destination — Check whether the shipment address is valid.\n    shipment_id: string! — Shipment ID.\n",
+        "send_box": "- send_box — Dispatch a parcel.\n    shipment_id: string! — Shipment ID.\n",
+        "write_log": "- write_log — Record a shipping audit.\n    shipment_id: string! — Shipment ID."
+      },
+      "history": [
+        {
+          "event_id": 1,
+          "role": "user",
+          "kind": "text",
+          "name": null,
+          "text": "Please ship parcel PK-7 after checking its address."
+        },
+        {
+          "event_id": 2,
+          "role": "assistant",
+          "kind": "call",
+          "name": "lookup_destination",
+          "text": "{\"shipment_id\": \"PK-7\"}"
+        },
+        {
+          "event_id": 3,
+          "role": "assistant",
+          "kind": "result",
+          "name": "lookup_destination",
+          "text": "{\"shipment_id\": \"PK-7\", \"valid\": true}"
+        }
+      ],
+      "target": {
+        "tool": "write_log",
+        "raw": "{\"shipment_id\": \"PK-7\"}",
+        "json_valid": true,
+        "arguments": {
+          "shipment_id": "PK-7"
+        }
+      }
+    }
+  ]
+}
