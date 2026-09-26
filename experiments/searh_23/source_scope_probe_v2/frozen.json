@@ -1,0 +1,257 @@
+{
+  "system": "Read ONE original policy clause and the declared tool catalog. Identify the tool calls that perform the action which the clause restricts. For 'A requires B', A is the restricted action; B supplies a prerequisite. For 'do A only after B', A is restricted. A tool that only checks, reads, submits a request, or records B is not restricted merely because B is mentioned. Return a single JSON OBJECT: {\"scope_tools\":[\"exact tool name\"],\"action_quote\":\"exact continuous substring from the clause naming the restricted action\"}. If the clause restricts several actions, include all of them. If none of the declared tools performs the restricted action, return empty list and empty quote. Never classify whether the clause is violated, and do not use trace or gold labels.",
+  "source": "original service desk and hotel clauses",
+  "tasks": [
+    {
+      "id": "service_identity",
+      "split": "development",
+      "query": {
+        "clause": "Before executing a device replacement or fee refund, verify the requester's identity for the SAME case and obtain the user's explicit confirmation of that action. Asking for confirmation or offering an action for the future does not execute the action.",
+        "tools": {
+          "load_ticket": "- load_ticket — Read one support case.",
+          "lookup_stock": "- lookup_stock — Read stock for a device.",
+          "match_contact": "- match_contact — Compare requester identity with one case.",
+          "lookup_approval": "- lookup_approval — Read replacement authorization.",
+          "perform_swap": "- perform_swap — Replace the requested device.",
+          "log_completion": "- log_completion — Record successful replacement completion.",
+          "issue_fee_credit": "- issue_fee_credit — Refund an incorrect service fee.",
+          "route_to_expert": "- route_to_expert — Transfer to a human specialist."
+        }
+      },
+      "expected_scope": [
+        "perform_swap",
+        "issue_fee_credit"
+      ]
+    },
+    {
+      "id": "service_authorization",
+      "split": "development",
+      "query": {
+        "clause": "A device replacement costing over $200 requires authorization recorded for the SAME case and EXACT amount BEFORE executing the replacement. An authorization for another case or amount does not satisfy this rule.",
+        "tools": {
+          "load_ticket": "- load_ticket — Read one support case.",
+          "lookup_stock": "- lookup_stock — Read stock for a device.",
+          "match_contact": "- match_contact — Compare requester identity with one case.",
+          "lookup_approval": "- lookup_approval — Read replacement authorization.",
+          "perform_swap": "- perform_swap — Replace the requested device.",
+          "log_completion": "- log_completion — Record successful replacement completion.",
+          "issue_fee_credit": "- issue_fee_credit — Refund an incorrect service fee.",
+          "route_to_expert": "- route_to_expert — Transfer to a human specialist."
+        }
+      },
+      "expected_scope": [
+        "perform_swap"
+      ]
+    },
+    {
+      "id": "hotel_identity",
+      "split": "development",
+      "query": {
+        "clause": "Before modifying or cancelling any reservation you MUST verify the guest's identity: the name on the ID must match the name on the reservation.",
+        "tools": {
+          "lookup_reservation": "- lookup_reservation — Get the details of a reservation.",
+          "get_guest_profile": "- get_guest_profile — Get the guest profile by user ID.",
+          "verify_identity": "- verify_identity — Verify that the name on the guest ID matches the name on the reservation.",
+          "check_supervisor_approval": "- check_supervisor_approval — Check whether supervisor approval is recorded for a reservation.",
+          "record_supervisor_approval": "- record_supervisor_approval — Record supervisor approval for a pending refund.",
+          "process_refund": "- process_refund — Process a refund to the original payment method.",
+          "cancel_reservation": "- cancel_reservation — Cancel the whole reservation.",
+          "get_payment_status": "- get_payment_status — Get the status of a payment.",
+          "charge_card": "- charge_card — Charge the payment card on file.",
+          "escalate_to_payment_desk": "- escalate_to_payment_desk — Escalate a payment issue to the payment desk.",
+          "grant_late_checkout": "- grant_late_checkout — Grant a late checkout for a reservation.",
+          "modify_reservation": "- modify_reservation — Modify a reservation.",
+          "search_incident_reports": "- search_incident_reports — Search incident reports for a reservation.",
+          "get_incident_report": "- get_incident_report — Get a documented incident report.",
+          "issue_compensation": "- issue_compensation — Issue compensation for a documented incident.",
+          "transfer_to_human_agents": "- transfer_to_human_agents — Transfer the user to a human agent, with a summary of the user's issue."
+        }
+      },
+      "expected_scope": [
+        "modify_reservation",
+        "cancel_reservation"
+      ]
+    },
+    {
+      "id": "hotel_approval",
+      "split": "development",
+      "query": {
+        "clause": "Refunds over $200 require supervisor approval recorded BEFORE processing.",
+        "tools": {
+          "lookup_reservation": "- lookup_reservation — Get the details of a reservation.",
+          "get_guest_profile": "- get_guest_profile — Get the guest profile by user ID.",
+          "verify_identity": "- verify_identity — Verify that the name on the guest ID matches the name on the reservation.",
+          "check_supervisor_approval": "- check_supervisor_approval — Check whether supervisor approval is recorded for a reservation.",
+          "record_supervisor_approval": "- record_supervisor_approval — Record supervisor approval for a pending refund.",
+          "process_refund": "- process_refund — Process a refund to the original payment method.",
+          "cancel_reservation": "- cancel_reservation — Cancel the whole reservation.",
+          "get_payment_status": "- get_payment_status — Get the status of a payment.",
+          "charge_card": "- charge_card — Charge the payment card on file.",
+          "escalate_to_payment_desk": "- escalate_to_payment_desk — Escalate a payment issue to the payment desk.",
+          "grant_late_checkout": "- grant_late_checkout — Grant a late checkout for a reservation.",
+          "modify_reservation": "- modify_reservation — Modify a reservation.",
+          "search_incident_reports": "- search_incident_reports — Search incident reports for a reservation.",
+          "get_incident_report": "- get_incident_report — Get a documented incident report.",
+          "issue_compensation": "- issue_compensation — Issue compensation for a documented incident.",
+          "transfer_to_human_agents": "- transfer_to_human_agents — Transfer the user to a human agent, with a summary of the user's issue."
+        }
+      },
+      "expected_scope": [
+        "process_refund"
+      ]
+    },
+    {
+      "id": "hotel_cancellation_order",
+      "split": "development",
+      "query": {
+        "clause": "For paid reservations, process cancellation FIRST and the refund SECOND; never refund before cancelling.",
+        "tools": {
+          "lookup_reservation": "- lookup_reservation — Get the details of a reservation.",
+          "get_guest_profile": "- get_guest_profile — Get the guest profile by user ID.",
+          "verify_identity": "- verify_identity — Verify that the name on the guest ID matches the name on the reservation.",
+          "check_supervisor_approval": "- check_supervisor_approval — Check whether supervisor approval is recorded for a reservation.",
+          "record_supervisor_approval": "- record_supervisor_approval — Record supervisor approval for a pending refund.",
+          "process_refund": "- process_refund — Process a refund to the original payment method.",
+          "cancel_reservation": "- cancel_reservation — Cancel the whole reservation.",
+          "get_payment_status": "- get_payment_status — Get the status of a payment.",
+          "charge_card": "- charge_card — Charge the payment card on file.",
+          "escalate_to_payment_desk": "- escalate_to_payment_desk — Escalate a payment issue to the payment desk.",
+          "grant_late_checkout": "- grant_late_checkout — Grant a late checkout for a reservation.",
+          "modify_reservation": "- modify_reservation — Modify a reservation.",
+          "search_incident_reports": "- search_incident_reports — Search incident reports for a reservation.",
+          "get_incident_report": "- get_incident_report — Get a documented incident report.",
+          "issue_compensation": "- issue_compensation — Issue compensation for a documented incident.",
+          "transfer_to_human_agents": "- transfer_to_human_agents — Transfer the user to a human agent, with a summary of the user's issue."
+        }
+      },
+      "expected_scope": [
+        "process_refund"
+      ]
+    },
+    {
+      "id": "service_audit",
+      "split": "clause_holdout",
+      "query": {
+        "clause": "After a replacement completes successfully, record an audit for the SAME case. Do not record the completion audit before a successful replacement.",
+        "tools": {
+          "load_ticket": "- load_ticket — Read one support case.",
+          "lookup_stock": "- lookup_stock — Read stock for a device.",
+          "match_contact": "- match_contact — Compare requester identity with one case.",
+          "lookup_approval": "- lookup_approval — Read replacement authorization.",
+          "perform_swap": "- perform_swap — Replace the requested device.",
+          "log_completion": "- log_completion — Record successful replacement completion.",
+          "issue_fee_credit": "- issue_fee_credit — Refund an incorrect service fee.",
+          "route_to_expert": "- route_to_expert — Transfer to a human specialist."
+        }
+      },
+      "expected_scope": [
+        "log_completion"
+      ]
+    },
+    {
+      "id": "service_inventory",
+      "split": "clause_holdout",
+      "query": {
+        "clause": "A replacement may be executed only when the latest inventory observation for the requested device says stock is available. If stock is unavailable, the agent may explain the delay or transfer to a specialist.",
+        "tools": {
+          "load_ticket": "- load_ticket — Read one support case.",
+          "lookup_stock": "- lookup_stock — Read stock for a device.",
+          "match_contact": "- match_contact — Compare requester identity with one case.",
+          "lookup_approval": "- lookup_approval — Read replacement authorization.",
+          "perform_swap": "- perform_swap — Replace the requested device.",
+          "log_completion": "- log_completion — Record successful replacement completion.",
+          "issue_fee_credit": "- issue_fee_credit — Refund an incorrect service fee.",
+          "route_to_expert": "- route_to_expert — Transfer to a human specialist."
+        }
+      },
+      "expected_scope": [
+        "perform_swap"
+      ]
+    },
+    {
+      "id": "hotel_incident",
+      "split": "clause_holdout",
+      "query": {
+        "clause": "You must never promise or issue compensation without a documented incident report (INC number) in the system.",
+        "tools": {
+          "lookup_reservation": "- lookup_reservation — Get the details of a reservation.",
+          "get_guest_profile": "- get_guest_profile — Get the guest profile by user ID.",
+          "verify_identity": "- verify_identity — Verify that the name on the guest ID matches the name on the reservation.",
+          "check_supervisor_approval": "- check_supervisor_approval — Check whether supervisor approval is recorded for a reservation.",
+          "record_supervisor_approval": "- record_supervisor_approval — Record supervisor approval for a pending refund.",
+          "process_refund": "- process_refund — Process a refund to the original payment method.",
+          "cancel_reservation": "- cancel_reservation — Cancel the whole reservation.",
+          "get_payment_status": "- get_payment_status — Get the status of a payment.",
+          "charge_card": "- charge_card — Charge the payment card on file.",
+          "escalate_to_payment_desk": "- escalate_to_payment_desk — Escalate a payment issue to the payment desk.",
+          "grant_late_checkout": "- grant_late_checkout — Grant a late checkout for a reservation.",
+          "modify_reservation": "- modify_reservation — Modify a reservation.",
+          "search_incident_reports": "- search_incident_reports — Search incident reports for a reservation.",
+          "get_incident_report": "- get_incident_report — Get a documented incident report.",
+          "issue_compensation": "- issue_compensation — Issue compensation for a documented incident.",
+          "transfer_to_human_agents": "- transfer_to_human_agents — Transfer the user to a human agent, with a summary of the user's issue."
+        }
+      },
+      "expected_scope": [
+        "issue_compensation"
+      ]
+    },
+    {
+      "id": "hotel_charge_retry",
+      "split": "clause_holdout",
+      "query": {
+        "clause": "If the payment card on file was declined twice, escalate the case to the payment desk; do NOT retry the charge a third time.",
+        "tools": {
+          "lookup_reservation": "- lookup_reservation — Get the details of a reservation.",
+          "get_guest_profile": "- get_guest_profile — Get the guest profile by user ID.",
+          "verify_identity": "- verify_identity — Verify that the name on the guest ID matches the name on the reservation.",
+          "check_supervisor_approval": "- check_supervisor_approval — Check whether supervisor approval is recorded for a reservation.",
+          "record_supervisor_approval": "- record_supervisor_approval — Record supervisor approval for a pending refund.",
+          "process_refund": "- process_refund — Process a refund to the original payment method.",
+          "cancel_reservation": "- cancel_reservation — Cancel the whole reservation.",
+          "get_payment_status": "- get_payment_status — Get the status of a payment.",
+          "charge_card": "- charge_card — Charge the payment card on file.",
+          "escalate_to_payment_desk": "- escalate_to_payment_desk — Escalate a payment issue to the payment desk.",
+          "grant_late_checkout": "- grant_late_checkout — Grant a late checkout for a reservation.",
+          "modify_reservation": "- modify_reservation — Modify a reservation.",
+          "search_incident_reports": "- search_incident_reports — Search incident reports for a reservation.",
+          "get_incident_report": "- get_incident_report — Get a documented incident report.",
+          "issue_compensation": "- issue_compensation — Issue compensation for a documented incident.",
+          "transfer_to_human_agents": "- transfer_to_human_agents — Transfer the user to a human agent, with a summary of the user's issue."
+        }
+      },
+      "expected_scope": [
+        "charge_card"
+      ]
+    },
+    {
+      "id": "hotel_late_checkout",
+      "split": "clause_holdout",
+      "query": {
+        "clause": "Late checkout until 14:00 is permitted ONLY for Deluxe category rooms; for Standard rooms late checkout must be declined.",
+        "tools": {
+          "lookup_reservation": "- lookup_reservation — Get the details of a reservation.",
+          "get_guest_profile": "- get_guest_profile — Get the guest profile by user ID.",
+          "verify_identity": "- verify_identity — Verify that the name on the guest ID matches the name on the reservation.",
+          "check_supervisor_approval": "- check_supervisor_approval — Check whether supervisor approval is recorded for a reservation.",
+          "record_supervisor_approval": "- record_supervisor_approval — Record supervisor approval for a pending refund.",
+          "process_refund": "- process_refund — Process a refund to the original payment method.",
+          "cancel_reservation": "- cancel_reservation — Cancel the whole reservation.",
+          "get_payment_status": "- get_payment_status — Get the status of a payment.",
+          "charge_card": "- charge_card — Charge the payment card on file.",
+          "escalate_to_payment_desk": "- escalate_to_payment_desk — Escalate a payment issue to the payment desk.",
+          "grant_late_checkout": "- grant_late_checkout — Grant a late checkout for a reservation.",
+          "modify_reservation": "- modify_reservation — Modify a reservation.",
+          "search_incident_reports": "- search_incident_reports — Search incident reports for a reservation.",
+          "get_incident_report": "- get_incident_report — Get a documented incident report.",
+          "issue_compensation": "- issue_compensation — Issue compensation for a documented incident.",
+          "transfer_to_human_agents": "- transfer_to_human_agents — Transfer the user to a human agent, with a summary of the user's issue."
+        }
+      },
+      "expected_scope": [
+        "grant_late_checkout"
+      ]
+    }
+  ],
+  "max_tokens": 350
+}
