@@ -44,7 +44,8 @@ def test_quote_must_be_exact_unique_authoritative_source():
 
 
 def test_ordered_second_action_is_not_the_prerequisite_action():
-    quote = "After a replacement completes successfully, record an audit for the same case."
+    quote = ("After a replacement completes successfully, record an audit for the same case. "
+             "Do not record the audit before successful replacement.")
     tools = {"check_replacement": "- check_replacement — Read replacement status.\n",
              "log_audit": "- log_audit — Record a completion audit.\n"}
     case = {"policy": quote, "tools": tools,
@@ -52,3 +53,15 @@ def test_ordered_second_action_is_not_the_prerequisite_action():
     decision = bind_clause(case, quote)
     assert decision.status == "MAY_APPLY"
     assert decision.governed_actions == ("audit",)
+
+
+def test_logged_replacement_completion_is_an_audit_stage_not_a_second_replacement():
+    quote = ("After a replacement completes successfully, record an audit for the SAME case. "
+             "Do not record the completion audit before a successful replacement.")
+    case = {"policy": quote, "tools": {
+        "record_audit": "- record_audit — Record successful replacement completion.\n",
+        "log_completion": "- log_completion — Record successful replacement completion.\n"},
+        "target": {"tool": "record_audit", "arguments": {}, "json_valid": True}}
+    assert bind_clause(case, quote).status == "MAY_APPLY"
+    case["target"]["tool"] = "log_completion"
+    assert bind_clause(case, quote).status == "MAY_APPLY"

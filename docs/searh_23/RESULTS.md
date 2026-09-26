@@ -429,3 +429,16 @@ independently; it does not establish a binary score gain. One hotel `ok` label
 also conflicts with its own identity prerequisite. See
 `docs/searh_23/CALL_CONDITION_PROBE_2026-09-26.md` for counts, seals and
 case-level counterexamples. No new arm is promoted to the entry point.
+
+## 20. Action-trigger and ordered-evidence transfer (2026-09-26)
+
+The action-stage trigger was frozen before a balanced 12-case parcel suite
+and a 12-case tool-renamed copy were sent to Mistral API. Raw model counts on
+each suite were TP6/FP2/FN0; the trigger withdrew one FP to UNKNOWN while
+retaining all six TP. A post-hoc source-paired latest-observation check then
+withdrew the other FP to UNKNOWN. The same check withdraws one service-desk
+state-control FP, and an exact earlier action/result pair withdraws the
+renamed audit FP. No binary entry-point decision changed; an UNKNOWN fallback
+remains unselected and the temporal layer was written after seeing the parcel
+answers. Full per-case results, proof boundaries and external-repository
+transfer are in `docs/searh_23/ACTION_TRIGGER_TRANSFER_2026-09-26.md`.

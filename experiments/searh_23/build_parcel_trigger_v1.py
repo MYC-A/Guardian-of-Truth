@@ -120,7 +120,11 @@ def main() -> None:
                 writer.writerows(rows)
         else:
             with csv_path.open(encoding="utf-8-sig", newline="") as handle:
-                if list(csv.DictReader(handle)) != rows:
+                existing = list(csv.DictReader(handle))
+                for row in existing:
+                    row["prompt"] = row["prompt"].replace("\r\n", "\n")
+                    row["response"] = row["response"].replace("\r\n", "\n")
+                if existing != rows:
                     raise ValueError(f"frozen cases differ: {csv_path}")
         write_once(path / "expected.json",
                    (json.dumps(gold, indent=2) + "\n").encode())

@@ -78,6 +78,15 @@ def _target(item: dict) -> tuple[str, tuple[str, ...]]:
         return "READ", ()
     if head not in _WRITE:
         return "UNKNOWN", ()
+    if head in {"record", "log", "write"}:
+        # "Record successful replacement completion" is a log operation,
+        # not another replacement. The logged action is an object of the
+        # sentence; require an explicit audit label before assigning it.
+        return (("WRITE", ("audit",)) if "audit" in name.lower()
+                or "audit" in description.lower()
+                or name.lower().startswith("log_") and
+                   re.search(r"\bcompletion\b", description, re.I)
+                else ("UNKNOWN", ()))
     actions = _actions(description)
     return ("WRITE", actions) if actions else ("UNKNOWN", ())
 
@@ -100,7 +109,7 @@ def _governed_actions(quote: str) -> tuple[str, ...]:
             return actions
     # A rule for an ordered second step governs that second step.
     if text.startswith("after ") and "," in text:
-        consequent = text.split(",", 1)[1]
+        consequent = text.split(",", 1)[1].split(".", 1)[0]
         actions = _actions(consequent)
         if actions:
             return actions
