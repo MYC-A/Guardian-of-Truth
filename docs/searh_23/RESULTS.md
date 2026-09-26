@@ -399,3 +399,19 @@ enabled, and no full benchmark was run. See
 `tests/test_vnext_ordered_effects_v1.py`,
 `src/guardian_truth/vnext/bound_tool_effects_v2.py` and
 `src/guardian_truth/vnext/ordered_effects_v1.py`.
+
+## 18. Real tool trace and independent generality audit (2026-09-26)
+
+On the inspected public46, exact source-bound contracts confirmed three
+action results: one reservation cancellation, one exchange **request**, and
+one line resumption. These are component facts, not three newly detected
+violations. Exact entity echoes recovered 41 previously ambiguous read-result
+pairings for two reviewed tools; one concrete case would pair incorrectly by
+FIFO. No binary Guardian prediction changed.
+
+The separate `codex/generality-research-20260926` branch contains a promising
+post-hoc replay, but six counterexamples show that its proof layer can accept
+wrong actions, wrong entities, or missing amounts. Its TP16/FP7/FN0 renamed
+suite result is not a fresh validation and cannot yet be promoted. Detailed
+commands, source hashes, per-case evidence, and limitations are in
+`docs/searh_23/REAL_TOOL_AND_GENERALITY_AUDIT_2026-09-26.md`.
