@@ -102,12 +102,19 @@ def score() -> dict:
                and all(isinstance(x,str) and x in task["query"]["tools"] for x in scope)
                and isinstance(quote,str) and bool(quote) and quote in task["query"]["clause"])
         exact=valid and sorted(scope)==sorted(task["expected_scope"])
+        scope_exact=(isinstance(scope,list) and all(isinstance(x,str) for x in scope)
+                     and sorted(scope)==sorted(task["expected_scope"]))
         rows.append({"id":task["id"],"split":task["split"],"valid":valid,"exact":exact,
+                     "scope_exact_before_quote_check":scope_exact,
                      "expected":task["expected_scope"],"actual":scope,
                      "action_quote":quote,"requested_model":record["requested_model"]})
+    splits=sorted({row["split"] for row in rows})
     result={"protocol_sha256":sha(protocol),"rows":rows,
-            "development_exact":sum(r["exact"] for r in rows if r["split"]=="development"),
-            "clause_holdout_exact":sum(r["exact"] for r in rows if r["split"]=="clause_holdout")}
+            "by_split":{split:{"total":sum(r["split"]==split for r in rows),
+                               "strict_exact":sum(r["exact"] for r in rows if r["split"]==split),
+                               "scope_exact_before_quote_check":sum(r["scope_exact_before_quote_check"] for r in rows if r["split"]==split),
+                               "invalid":sum(not r["valid"] for r in rows if r["split"]==split)}
+                        for split in splits}}
     (OUT/"score.json").write_text(json.dumps(result,ensure_ascii=False,indent=2)+"\n",encoding="utf-8")
     return {k:v for k,v in result.items() if k!="rows"}
 

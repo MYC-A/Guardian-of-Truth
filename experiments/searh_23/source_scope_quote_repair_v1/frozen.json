@@ -1,0 +1,33 @@
+{
+  "system": "Copy an EXACT CONTINUOUS substring of the supplied policy clause that names the action constrained by the clause. Preserve its spelling, inflection, and punctuation, including typos. Keep the given scope_tools list UNCHANGED. Return one JSON object only: {\"scope_tools\":[\"exact existing tool name\"],\"action_quote\":\"literal substring\"}. Do not reassess tool scope or policy compliance.",
+  "tasks": [
+    {
+      "id": "retail_modify",
+      "split": "public46_policy_clauses",
+      "query": {
+        "clause": "An order can only be modified if its status is 'pending', and you should check its status before taking the action.",
+        "scope_tools": [
+          "modify_pending_order_address",
+          "modify_pending_order_items",
+          "modify_pending_order_payment"
+        ],
+        "invalid_quote": "modify"
+      },
+      "original_response_sha256": "c3e1d077e11aea0c1ac1a03cfef081ceba1a769dec914ef186669c6e50f36160"
+    },
+    {
+      "id": "telecom_payment_request",
+      "split": "public46_policy_clauses",
+      "query": {
+        "clause": "- The send payement request tool will not check if the bill is overdue. You should always check that the bill is overdue before sending a payment request.",
+        "scope_tools": [
+          "send_payment_request"
+        ],
+        "invalid_quote": "send payment request"
+      },
+      "original_response_sha256": "62dfdb4565d9a5b4419b2872267a1d5d879008b67fbf6eae2c293bd0b9869b1e"
+    }
+  ],
+  "max_tokens": 150,
+  "note": "post-hoc syntax repair; does not change original first-pass score"
+}
