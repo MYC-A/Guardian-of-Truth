@@ -327,3 +327,29 @@ quote without `must` is not an obligation. A separate modal-safe replay
 returns C1 AND layer to TP16/FP11/FN0 on both. This replay was written after
 the scores were opened; it is a logic correction, not independent validation.
 Six valid-call FP per suite remain. No new whole-case classifier is promoted.
+
+## 15. Vast action-state and completion mapping probe (2026-09-26)
+
+This was a component test, **not** a full benchmark or a new whole-case score.
+On 16 service-desk text responses, 16 lexical renames and 16 new authored
+responses, a narrow Mistral API frame extractor got the action kind right
+16/16, 16/16 and 15/16. Actor was right only 13/16, 12/16 and 14/16: it
+repeatedly assigned `ASSISTANT` to requests that the **user** act.
+
+Source-bound completion proposals exposed a deeper gap. The first
+claim-to-tool mapper chose the correct tool for 2/4 original and 3/4 renamed
+completed claims; adding exact catalog descriptions raised this only to 3/4
+and 3/4. It still mapped a completed **replacement** claim to the **audit**
+tool, while quote anchoring and absence of a tool result produced a positive
+candidate. On four fresh paired claim families the mapping was correct, but
+two families returned abbreviated policy quotes; exact validation yielded
+only 4/8 expected component verdicts. Replacing those quotes with the suite's
+single policy clause after scoring yielded 8/8, a serialization control rather
+than an end-to-end improvement.
+
+No arm is added to C1. The evidence-backed next target is checking whether a
+*specific tool result entails the specific completed-action claim*, with
+negative pairs such as replacement versus audit. Full setup, hashes, paired
+errors and the formalization-paper triage are in
+`docs/searh_23/VAST_SEMANTIC_PROBE_RESULTS_2026-09-26.md`; archived artifacts
+are in `outputs/searh_23/action_state_probe_2026-09-26/`.
