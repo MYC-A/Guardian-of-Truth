@@ -6,6 +6,7 @@ import sys
 sys.path.insert(0, str(Path(__file__).resolve().parents[1] / "experiments" / "searh_23"))
 
 from call_scope_v1 import malformed_call, scoped_verdict
+from call_scope_replay import replay
 
 
 IDENTITY = ("Before modifying or cancelling any reservation you MUST verify "
@@ -47,3 +48,15 @@ def test_structural_violation_survives_bad_model_reason():
     result = scoped_verdict(accusation, broken)
     assert result["verdict"] == "VIOLATION"
     assert result["structural_errors"] == ["missing:amount"]
+
+
+def test_replay_seal_survives_windows_text_checkout(tmp_path):
+    source = (Path(__file__).resolve().parents[1] / "outputs" / "searh_23" /
+              "call_condition_probe" / "service_desk_v1")
+    for name in ("input.json", "predictions.jsonl", "score.json"):
+        data = (source / name).read_bytes().replace(b"\r\n", b"\n")
+        (tmp_path / name).write_bytes(data.replace(b"\n", b"\r\n"))
+    report = replay(tmp_path / "input.json", tmp_path / "predictions.jsonl",
+                    tmp_path / "score.json")
+    assert report["counts"]["TP"] == 8
+    assert report["counts"]["FN"] == 0
