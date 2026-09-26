@@ -31,12 +31,20 @@ each arm and no more than one paired flip. Passing it would justify a fresh
 domain and a source-bound event verifier; it would **not** justify vetoing C1.
 Any new text error can coexist with a correctly classified future offer.
 
+Before opening either original or renamed score, a further 16-case response-
+only challenge was authored under `action_state_fresh_v1/` with travel,
+shipping and payment language in English and Russian. Its input and separate
+gold file were written while the renamed API run was in progress. The model
+prompt and parser are unchanged. This is still authored data, not a contest
+holdout; it checks whether the small speech-act vocabulary survives a domain
+change. The same 14/16 action-state threshold applies.
+
 ## Vast execution
 
 Run inside `/workspace/guardian/repos/Guardian-of-Truth` with the existing
 `/workspace/guardian/venv/bin/python`. Mistral comes only from the API and the
 existing `/workspace/guardian/secrets/mistral.env` file; no secret is copied
-into Git or printed. These are 32 short API calls across both suites, not the
+into Git or printed. These are 48 short API calls across all three suites, not the
 full benchmark. The runner resumes from append-only JSONL and freezes the input
 and code hashes. Run original and renamed to separate output paths, then score
 each output with the frozen gold file.
