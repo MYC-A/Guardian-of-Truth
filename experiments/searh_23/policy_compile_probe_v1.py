@@ -21,10 +21,10 @@ SYSTEM = """Translate EVERY source policy bullet into this restricted English ru
 {"entries":[{"source_id":0,"source_quote":"exact original bullet","canonical_bullets":["complete standalone rule"],"unsupported":false}, ...]}.
 Use one entry per source bullet in original order. Do not drop, merge, or invent a source bullet. A source bullet may yield two canonical bullets if it requires both a prerequisite and a latest-result modifier. If ANY restriction or exception in the source bullet cannot be expressed by the allowed forms, set unsupported=true and canonical_bullets=[] for that whole bullet. Do not approximate or weaken a rule.
 Only these full bullet forms are allowed:
-1. Before replacing any device, check that the warranty is active for the SAME case. A check for a different case does not satisfy this condition.
-2. Use the latest warranty-check result for that case. An earlier active result cannot override a later inactive result.
-3. After a device has been replaced successfully, record a service audit for the SAME case. Do not record the audit before successful replacement.
-The forms illustrate syntax, not permission to insert a restriction absent from source. The same-case requirement may be paraphrased as identical case. A newer result supersedes an older result. An audit requiring prior successful replacement matches form 3. There is no form for supervisor authorization: keep such a source bullet unsupported. Return no verdict; do not inspect tool histories or labels."""
+1. Before <verb-ing> any <object>, check that the <topic> is <positive-state> for the SAME <entity>. A check for a different <entity> does not satisfy this condition.
+2. Use the latest <topic>-check result for that <entity>. An earlier <positive-state> result cannot override a later <negative-state> result.
+3. After a <object> has been <past-participle> successfully, record a <kind> audit for the SAME <entity>. Do not record the audit before successful <action-noun>.
+Replace bracketed slots with words actually supported by the source. Preserve every condition, exception, entity and ordering requirement. If a rule mentions a condition for which none of these forms is exact, mark that whole source bullet unsupported. Return no verdict; do not inspect tool histories or labels."""
 
 
 CRITICAL = {"supervisor", "manager", "approval", "authorization", "identity",
