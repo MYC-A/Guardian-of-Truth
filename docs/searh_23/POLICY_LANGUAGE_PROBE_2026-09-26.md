@@ -63,16 +63,45 @@ canonical text is now diagnostic only: absent exact source equivalence, it
 cannot authorize a `SAFE` decision. These in-memory probes are not original
 Mistral results or new competition cases.
 
+## Clause-to-tool roles, original wording retained
+
+The next diagnostic kept each original bullet verbatim and showed short
+declared tool descriptions. Gold role rows were frozen before inference in
+`policy_scope_expected_v1.json`. One Mistral API call per policy returned the
+governed current-call tools, prior-result evidence tools, and temporal role.
+All seven bullet entries were source-exact and valid JSON; only **5/7 roles
+were exact**: `until_latest` 2/2, `permission` 1/2, `extra_supervisor` 2/3.
+
+The permission wording omitted `replace_device` from the governed tools even
+though the bullet explicitly constrains replacement. The extra-supervisor
+wording omitted `replace_device` as prior evidence for an audit, though it
+correctly identified replacement as governed by the supervisor condition.
+Source-quote coverage therefore does not establish semantic coverage.
+
+After observing those errors, we froze a narrower post-hoc pairwise prompt
+at `e2b58f7`: one API call per policy-bullet/tool pair, with separate
+`governs_current_call` and `result_can_establish_prerequisite` Booleans. It
+produced 28 valid JSON answers but only **22/28 correct action roles and 20/28
+correct evidence roles**. Per suite: `until_latest` 5/8 and 6/8;
+`permission` 6/8 and 5/8; `extra_supervisor` 11/12 and 9/12. The pairwise
+prompt missed `replace_device` as the governed replacement action in two
+policies and confused audit with its prerequisite in other rows. This is a
+development diagnostic shaped after a seen failure, not an independent
+holdout or a binary Guardian evaluation. Raw responses and sealed scores are
+under `outputs/searh_23/policy_language_v1/`.
+
 ## Decision
 
-Do not promote the canonical-language translation path. The model sometimes
-changes the action governed by a rule, while the current exact parser has no
-useful coverage on new wording. The next experiment should classify each
-source bullet *against declared tool effects* without rewriting the original
-policy text. Keep exact source bullet IDs and test read/check versus mutation
-as a contrastive pair. The output must still be checked against the source,
-and unsupported or contradictory classifications must abstain. A changed
-binary label needs untouched policy-language controls.
+Do not promote either the canonical-language translation or these role
+extractors. The canonical parser has zero coverage on the 36 new-wording
+cases. The two role extractors have nonzero semantic errors, including omitted
+governing actions that would be dangerous in a permissive certificate. The
+micrograph remains useful only after its action, entity, condition, and
+evidence roles are independently established. A credible next gate needs
+typed source atoms, adversarial clauses with two simultaneous conditions,
+request-versus-perform tools, distinct entity IDs, stale results, and an
+unseen policy/domain holdout. Any unproved atom must leave the result UNKNOWN.
+No binary entry-point decision changed here.
 
 Reproduce the local scoring with
 `python experiments/searh_23/policy_compile_probe_v1.py score until_latest`

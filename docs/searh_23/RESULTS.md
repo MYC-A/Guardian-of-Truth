@@ -457,3 +457,18 @@ compiler's binary output is valid only under its narrow complete grammar;
 the contest entry point is unchanged. Details, seals, adversarial controls,
 and the next policy-language test are in
 `docs/searh_23/MICROGRAPH_CERTIFICATE_2026-09-26.md`.
+
+## 22. Policy-language transfer and role extraction (2026-09-26)
+
+Three 12-case policy-wording suites were frozen before Mistral API inference.
+The canonical-language compiler returned UNKNOWN on all 36; no binary gain.
+Keeping original bullets and asking for tool roles yielded 5/7 exact clause
+roles. A narrower, post-hoc pairwise question yielded 22/28 correct
+governed-action roles and 20/28 correct evidence roles. One policy omitted the
+replacement action entirely; pairwise questions also missed it. Exact source
+quotes and valid JSON did not protect against this semantic omission. An
+independent audit found three constructed false-SAFE holes in the earlier
+certificate; entity binding, action-effect recognition, and paraphrase gating
+were tightened. The authored 48-case replay remains intact; 16 targeted
+tests pass. None of these probes changes `scripts/predict.py` or a contest
+prediction. See `docs/searh_23/POLICY_LANGUAGE_PROBE_2026-09-26.md`.

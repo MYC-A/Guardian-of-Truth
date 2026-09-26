@@ -53,6 +53,17 @@ solve this translation. The compiler currently treats tool results such as
 external world state. It only certifies calls under its explicit grammar and
 declared tool semantics. `scripts/predict.py` is unchanged.
 
+An independent adversarial audit subsequently found three constructed
+false-SAFE counterexamples against the first certificate implementation:
+an omitted second condition in a paraphrase, a `customer` policy requirement
+silently bound to `case_id`, and a completed replacement *request* treated as
+an actual replacement. The implementation now requires an exact policy entity
+key and stricter effect-tool descriptions. Model paraphrases cannot authorize
+SAFE without exact source equivalence. These fixes preserve the authored
+48-case replay and pass 16 targeted tests, but they do not establish general
+natural-language policy coverage. See
+`POLICY_LANGUAGE_PROBE_2026-09-26.md` for failed wording transfer.
+
 The next credible test is to propose typed clauses from varied policy prose,
 then validate each exact source quote and separately account for every policy
 paragraph before permitting `SAFE`. Compare the frozen compiler and proposal
