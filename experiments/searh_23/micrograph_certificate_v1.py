@@ -12,7 +12,7 @@ import re
 
 from action_trigger_v1 import _WRITE, _actions, _target, _tool_description
 from call_scope_v1 import malformed_call
-from temporal_counterevidence_v1 import _json_dict, _observations, _same_entity
+from temporal_counterevidence_v1 import _json_dict, _observations
 
 
 @dataclass(frozen=True)
@@ -97,10 +97,14 @@ def compile_policy(policy: str) -> tuple[list[Rule], list[str]]:
     return rules, errors
 
 
-def _same_target_id(target: dict, call: dict) -> bool:
-    keys = [key for key, value in target.items()
-            if key.endswith("_id") and isinstance(value, str) and value]
-    return len(keys) == 1 and call.get(keys[0]) == target[keys[0]]
+def _same_target_id(target: dict, call: dict, entity: str) -> bool:
+    key = entity + "_id"
+    value = target.get(key)
+    return isinstance(value, str) and bool(value) and call.get(key) == value
+
+
+def _same_entity(target: dict, call: dict, result: dict, entity: str) -> bool:
+    return _same_target_id(target, call, entity) and _same_target_id(target, result, entity)
 
 
 def _is_check(item: dict, name: str, topic: str) -> bool:
@@ -115,15 +119,26 @@ def _is_reported_effect_tool(item: dict, name: str, action: str) -> bool:
     desc = _tool_description(item["tools"].get(name, ""), name)
     if not desc or action not in _actions(desc):
         return False
+    if re.search(r"\b(?:not|never|cannot|request|review|attempt|schedule|plan|proposal|quote|status|check|read)\b",
+                 desc, re.I):
+        return False
     head = desc.split()[0].lower()
-    return head in {"replace", "swap", "exchange", "refund", "dispatch", "send",
-                    "transfer", "cancel", "perform", "execute", "process", "issue"}
+    if action == "replace":
+        return head in {"replace", "swap", "exchange"} or (
+            head in {"perform", "execute"} and
+            bool(re.search(r"\b(?:replacement|replace|swap)\b", desc, re.I)))
+    if action == "dispatch":
+        return head == "dispatch" or (head in {"perform", "execute"} and
+                                      "dispatch" in desc.lower())
+    return False
 
 
 def _check_precondition(item: dict, rule: Rule) -> tuple[str, str, list[int], list[dict]]:
     target = item["target"]["arguments"]
     if not isinstance(target, dict):
         return "UNKNOWN", "target_arguments_unbound", [], []
+    if not isinstance(target.get(rule.entity + "_id"), str) or not target[rule.entity + "_id"]:
+        return "UNKNOWN", "policy_entity_unbound", [], []
     paired = list(_observations(item))
     paired_calls = {call_event["event_id"] for call_event, *_ in paired}
     paired_results = {result_event["event_id"] for _, result_event, *_ in paired}
@@ -138,7 +153,7 @@ def _check_precondition(item: dict, rule: Rule) -> tuple[str, str, list[int], li
         if args is None:
             unresolved.append(event["event_id"])
             continue
-        if not _same_target_id(target, args):
+        if not _same_target_id(target, args, rule.entity):
             continue
         if event["event_id"] not in paired_calls:
             unresolved.append(event["event_id"])
@@ -148,15 +163,15 @@ def _check_precondition(item: dict, rule: Rule) -> tuple[str, str, list[int], li
         if not _is_check(item, event.get("name") or "", rule.topic):
             continue
         result = _json_dict(event.get("text", ""))
-        if (result is None or _same_target_id(target, result)
+        if (result is None or _same_target_id(target, result, rule.entity)
                 or rule.state in result and not any(key.endswith("_id") for key in result)):
             unresolved.append(event["event_id"])
     for call_event, result_event, call, result in paired:
         if not _is_check(item, call_event["name"], rule.topic):
             continue
-        if not _same_target_id(target, call):
+        if not _same_target_id(target, call, rule.entity):
             continue
-        if not _same_entity(target, call, result):
+        if not _same_entity(target, call, result, rule.entity):
             unresolved.append(call_event["event_id"])
             continue
         value = result.get(rule.state)
@@ -183,12 +198,14 @@ def _check_after_success(item: dict, rule: Rule) -> tuple[str, str, list[int], l
     target = item["target"]["arguments"]
     if not isinstance(target, dict):
         return "UNKNOWN", "target_arguments_unbound", [], []
+    if not isinstance(target.get(rule.entity + "_id"), str) or not target[rule.entity + "_id"]:
+        return "UNKNOWN", "policy_entity_unbound", [], []
     unresolved: list[int] = []
     for call_event, result_event, call, result in reversed(list(_observations(item))):
         if (not _is_reported_effect_tool(item, call_event["name"], rule.state)
-                or not _same_target_id(target, call)):
+                or not _same_target_id(target, call, rule.entity)):
             continue
-        if not _same_entity(target, call, result):
+        if not _same_entity(target, call, result, rule.entity):
             unresolved.append(call_event["event_id"])
             continue
         if result.get("success") is False or result.get("error") or str(result.get("status", "")).lower() in {"failed", "error"}:
@@ -206,7 +223,7 @@ def _check_after_success(item: dict, rule: Rule) -> tuple[str, str, list[int], l
             continue
         name = event.get("name") or ""
         call = _json_dict(event.get("text", ""))
-        if _is_reported_effect_tool(item, name, rule.state) and (call is None or _same_target_id(target, call)):
+        if _is_reported_effect_tool(item, name, rule.state) and (call is None or _same_target_id(target, call, rule.entity)):
             unresolved.append(event["event_id"])
     if unresolved:
         return "UNKNOWN", "prior_action_result_unresolved", sorted(unresolved), []
@@ -227,6 +244,10 @@ def analyze(item: dict) -> dict:
             or re.search(r"\b(?:and|then)\s+(?:perform|execute|"
                          + "|".join(sorted(_WRITE)) + r")\b", target_desc, re.I))):
         kind = "UNKNOWN"
+    if kind == "WRITE" and any(action in {"replace", "dispatch"} for action in actions):
+        if not all(_is_reported_effect_tool(item, item["target"]["tool"], action)
+                   for action in actions if action in {"replace", "dispatch"}):
+            kind = "UNKNOWN"
     if kind == "UNKNOWN":
         errors.append("target_action_unbound")
     nodes = [{"id": "target", "type": "action", "tool": item["target"]["tool"],

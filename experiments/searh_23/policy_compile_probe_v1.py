@@ -29,6 +29,7 @@ Replace bracketed slots with words actually supported by the source. Preserve ev
 
 CRITICAL = {"supervisor", "manager", "approval", "authorization", "identity",
             "confirmation", "consent", "amount", "fee", "inventory", "stock"}
+RECENCY = ("latest", "newest", "most recent", "several checks", "older", "newer")
 
 
 def digest(path: Path) -> str:
@@ -68,6 +69,7 @@ def validate_translation(source_bullets: list[str], answer: dict) -> tuple[str, 
         if unsupported is True:
             if proposed != []:
                 errors.append(f"unsupported_with_output:{index}")
+            errors.append(f"unsupported_source_bullet:{index}")
             canonical.append(source)
             continue
         if unsupported is not False or not isinstance(proposed, list) or not proposed or not all(isinstance(p, str) for p in proposed):
@@ -76,6 +78,9 @@ def validate_translation(source_bullets: list[str], answer: dict) -> tuple[str, 
             continue
         segment = "# Repair desk policy\n" + "\n".join("- " + p for p in proposed)
         _, grammar_errors = compile_policy(segment)
+        # A standalone latest modifier may attach to a prior source bullet.
+        grammar_errors = [error for error in grammar_errors
+                          if not error.startswith("latest_clause_unbound:")]
         if grammar_errors:
             errors.append(f"canonical_grammar_invalid:{index}")
             canonical.append(source)
@@ -88,8 +93,23 @@ def validate_translation(source_bullets: list[str], answer: dict) -> tuple[str, 
             errors.append(f"critical_constraint_dropped:{index}:{','.join(dropped)}")
             canonical.append(source)
             continue
+        if any(marker in source_lower for marker in RECENCY) and not any(
+                bullet.startswith("Use the latest ") for bullet in proposed):
+            errors.append(f"latest_condition_dropped:{index}")
+            canonical.append(source)
+            continue
         canonical.extend(proposed)
     return "# Repair desk policy\n" + "\n".join("- " + row for row in canonical), errors
+
+
+def source_gated_verdict(original_policy: str, canonical_policy: str,
+                        translation_errors: list[str], analysis: dict) -> str:
+    """Model paraphrases are candidates, not proof of source entailment."""
+    if analysis.get("coverage") == "STRUCTURAL":
+        return analysis["verdict"]
+    if translation_errors or canonical_policy != original_policy:
+        return "UNKNOWN"
+    return analysis["verdict"]
 
 
 def run(suite: str) -> dict:
@@ -128,13 +148,15 @@ def score(suite: str) -> dict:
     for item in source["data"]["inputs"]:
         modified = {**item, "policy": policy}
         analysis = analyze(modified) if policy and record["finish_reason"] == "stop" else {"verdict": "UNKNOWN", "errors": ["model_result_invalid"]}
-        verdict = analysis["verdict"]
+        candidate_verdict = analysis["verdict"]
+        verdict = source_gated_verdict(item["policy"], policy, errors, analysis)
         expected = gold[item["id"]]
         bucket = ("UNKNOWN_POS" if expected else "UNKNOWN_NEG") if verdict == "UNKNOWN" else (
             "TP" if expected else "FP") if verdict == "VIOLATION" else ("FN" if expected else "TN")
         counts[bucket] += 1
         per_case.append({"id": item["id"], "gold": expected, "verdict": verdict,
-                         "bucket": bucket, "errors": analysis.get("errors", []),
+                         "candidate_verdict": candidate_verdict, "bucket": bucket,
+                         "errors": analysis.get("errors", []),
                          "checks": analysis.get("checks", [])})
     report = {"suite": suite, "scope": "authored policy paraphrases; development only",
               "seal": seal, "translation_errors": errors, "canonical_policy": policy,

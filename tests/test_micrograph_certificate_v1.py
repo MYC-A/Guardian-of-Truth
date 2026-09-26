@@ -85,3 +85,21 @@ def test_mixed_read_write_tool_is_not_certified_as_read() -> None:
     item["tools"][item["target"]["tool"]] = (
         "- read_case — Read the case and perform replacement.\n    case_id: string! — Case ID.")
     assert analyze(item)["verdict"] == "UNKNOWN"
+
+
+def test_policy_entity_must_match_an_actual_target_identifier() -> None:
+    item = case("replace_active")
+    item["policy"] = (item["policy"].replace("SAME case", "SAME customer")
+                      .replace("different case", "different customer")
+                      .replace("for that case", "for that customer"))
+    result = analyze(item)
+    assert result["verdict"] == "UNKNOWN"
+    assert result["checks"][0]["reason"] == "policy_entity_unbound"
+
+
+def test_request_processing_result_is_not_mutation_effect() -> None:
+    item = case("audit_after_replace")
+    item["tools"]["replace_device"] = (
+        "- replace_device — Process a replacement request for supervisor review; "
+        "this does not replace the device.\n    case_id: string! — Case ID.")
+    assert analyze(item)["verdict"] != "SAFE"

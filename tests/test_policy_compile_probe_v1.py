@@ -11,7 +11,7 @@ sys.path.insert(0, str(ROOT / "experiments/searh_23"))
 
 from build_policy_language_v1 import POLICIES  # noqa: E402
 from micrograph_certificate_v1 import _bullets, compile_policy  # noqa: E402
-from policy_compile_probe_v1 import validate_translation  # noqa: E402
+from policy_compile_probe_v1 import source_gated_verdict, validate_translation  # noqa: E402
 
 
 PRE = ("Before replacing any device, check that the warranty is active for the SAME case. "
@@ -62,3 +62,24 @@ def test_dropped_supervisor_constraint_stays_unsupported() -> None:
     assert any(error.startswith("critical_constraint_dropped:1") for error in errors)
     assert "supervisor" in policy
     assert compile_policy(policy)[1]
+
+
+def test_dropped_newest_condition_stays_unsupported() -> None:
+    bullets = _bullets(POLICIES["permission"])
+    answer = {"entries": [
+        {"source_id": 0, "source_quote": bullets[0],
+         "canonical_bullets": [PRE], "unsupported": False},
+        {"source_id": 1, "source_quote": bullets[1],
+         "canonical_bullets": [AFTER], "unsupported": False},
+    ]}
+    policy, errors = validate_translation(bullets, answer)
+    assert errors == ["latest_condition_dropped:0"]
+    assert compile_policy(policy)[1]
+
+
+def test_model_can_drop_unlisted_requirement_so_paraphrase_cannot_certify_safe() -> None:
+    original = ("# Repair desk policy\n- Before replacing any device, check that the warranty "
+                "is active for the SAME case and the defective device has already been returned.")
+    canonical = "# Repair desk policy\n- " + PRE + "\n- " + LATEST
+    candidate = {"verdict": "SAFE", "coverage": "COMPLETE_BOUNDED_GRAMMAR"}
+    assert source_gated_verdict(original, canonical, [], candidate) == "UNKNOWN"
