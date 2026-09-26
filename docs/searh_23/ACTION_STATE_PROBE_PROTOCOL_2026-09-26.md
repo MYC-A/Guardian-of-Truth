@@ -68,3 +68,15 @@ coverage would need a clean representative calibration set that we do not have.
 Thus the first GPU-server step is a cheap Mistral component probe using existing
 dependencies. No FOL/TL model weights are downloaded unless the action-state
 and subsequent source-binding gates show a missing formalization capability.
+
+## Follow-up after the action-state score
+
+The action-state kinds passed the predeclared small gate, but Mistral repeatedly
+assigned assistant actor to a request for the *user* to act. This is a semantic
+error, despite the right class. A separate diagnostic `completion_frame_probe.py`
+therefore uses only sealed `COMPLETED_CLAIM` frames. It asks Mistral to map the
+claim to a declared tool and an exact policy clause, then runs the existing
+source/entity/amount/result validator. The initial opportunity is four
+completed-claim cases per lexical suite. A useful result requires anchored
+proposals for all four and matching results to refute paired supported claims.
+It remains diagnostic: model-proposed tool/claim semantics are not a proof.
