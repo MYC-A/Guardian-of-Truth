@@ -42,7 +42,15 @@ def load_cases(path: Path) -> list[dict]:
         raise ValueError("expected label-free id,prompt,response CSV")
     if len({row["id"] for row in rows}) != len(rows):
         raise ValueError("duplicate case IDs")
+    for row in rows:
+        row["prompt"] = row["prompt"].replace("\r\n", "\n")
+        row["response"] = row["response"].replace("\r\n", "\n")
     return rows
+
+
+def cases_digest(cases: list[dict]) -> str:
+    return digest_bytes(json.dumps(cases, ensure_ascii=False, sort_keys=True,
+                                   separators=(",", ":")).encode())
 
 
 def input_record(case: dict) -> dict | None:
@@ -71,16 +79,19 @@ def input_record(case: dict) -> dict | None:
                    "json_valid": calls[0].json_valid, "arguments": calls[0].value}}
 
 
-def prepare(cases_path: Path, output: Path) -> dict:
+def prepare(cases_path: Path, output: Path, *, refresh: bool = False) -> dict:
     cases = load_cases(cases_path)
     inputs = [item for case in cases if (item := input_record(case)) is not None]
     data = {"schema_version": "call-condition-probe-v1",
-            "source_sha256": digest_bytes(cases_path.read_bytes()),
+            "source_sha256": cases_digest(cases),
             "system_sha256": digest_bytes(SYSTEM.encode()),
             "input_ids": [item["id"] for item in inputs], "inputs": inputs}
     if output.exists():
         if json.loads(output.read_text(encoding="utf-8")) != data:
-            raise ValueError("frozen input differs")
+            if not refresh:
+                raise ValueError("frozen input differs")
+            output.write_text(json.dumps(data, ensure_ascii=False, indent=2) + "\n",
+                              encoding="utf-8")
     else:
         output.parent.mkdir(parents=True, exist_ok=True)
         output.write_text(json.dumps(data, ensure_ascii=False, indent=2) + "\n", encoding="utf-8")
@@ -194,15 +205,18 @@ def main() -> None:
     parser.add_argument("--gold", type=Path)
     parser.add_argument("--baseline", type=Path)
     parser.add_argument("--max-new", type=int)
+    parser.add_argument("--refresh", action="store_true")
     args = parser.parse_args()
     frozen = args.out_dir / "input.json"
     predictions = args.out_dir / "predictions.jsonl"
     report = args.out_dir / "score.json"
     if args.phase == "prepare":
-        data = prepare(args.cases, frozen)
+        if args.refresh and predictions.exists():
+            raise ValueError("cannot refresh frozen input after model predictions exist")
+        data = prepare(args.cases, frozen, refresh=args.refresh)
         print(json.dumps({"prepared": len(data["input_ids"]), "source_sha256": data["source_sha256"]}))
     elif args.phase == "run":
-        if digest_bytes(args.cases.read_bytes()) != json.loads(frozen.read_text(encoding="utf-8"))["source_sha256"]:
+        if cases_digest(load_cases(args.cases)) != json.loads(frozen.read_text(encoding="utf-8"))["source_sha256"]:
             raise ValueError("case source changed")
         run(frozen, predictions, max_new=args.max_new)
     else:
