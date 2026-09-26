@@ -144,8 +144,10 @@ def score(frozen_path: Path, predictions: Path, gold_path: Path, baseline_path: 
     for item, row in zip(frozen["inputs"], rows):
         if item["input_sha256"] != row["input_sha256"]:
             raise ValueError("prediction input mismatch")
-    seal = {"frozen_sha256": digest_bytes(frozen_path.read_bytes()),
-            "predictions_sha256": digest_bytes(predictions.read_bytes()),
+    # Git text checkout can change LF to CRLF on Windows. Seal normalized
+    # UTF-8 text bytes so the same artifact remains replayable on Linux.
+    seal = {"frozen_sha256": digest_bytes(frozen_path.read_bytes().replace(b"\r\n", b"\n")),
+            "predictions_sha256": digest_bytes(predictions.read_bytes().replace(b"\r\n", b"\n")),
             "ids": frozen["input_ids"]}
     seal_path = output.parent / (output.stem + "_prediction_seal.json")
     if not seal_path.exists():

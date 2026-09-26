@@ -415,3 +415,17 @@ wrong actions, wrong entities, or missing amounts. Its TP16/FP7/FN0 renamed
 suite result is not a fresh validation and cannot yet be promoted. Detailed
 commands, source hashes, per-case evidence, and limitations are in
 `docs/searh_23/REAL_TOOL_AND_GENERALITY_AUDIT_2026-09-26.md`.
+
+## 19. Target-call precondition probe (2026-09-26)
+
+A narrow Mistral API question about one proposed tool call improved on C1's
+six service desk false alarms in an authored 16-call suite, but tool renaming
+introduced three model false alarms and eight state/provenance controls added
+two more. On eight previously viewed hotel calls, the model marked all four
+nominally valid calls as violations. The common failure is wrong clause scope
+or wrong interpretation of a cited prior fact. A conservative exact-scope
+replay retracts unsupported accusations to UNKNOWN and checks call shape
+independently; it does not establish a binary score gain. One hotel `ok` label
+also conflicts with its own identity prerequisite. See
+`docs/searh_23/CALL_CONDITION_PROBE_2026-09-26.md` for counts, seals and
+case-level counterexamples. No new arm is promoted to the entry point.
