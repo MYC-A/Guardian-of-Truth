@@ -353,3 +353,24 @@ negative pairs such as replacement versus audit. Full setup, hashes, paired
 errors and the formalization-paper triage are in
 `docs/searh_23/VAST_SEMANTIC_PROBE_RESULTS_2026-09-26.md`; archived artifacts
 are in `outputs/searh_23/action_state_probe_2026-09-26/`.
+
+## 16. Tool-effect and external-runtime audit (2026-09-26)
+
+A source-bound counterfactual question did **not** resolve the claim-to-tool
+gap: on three development families it selected the intended action tool on
+0/18 history variants. Terse tool descriptions did not establish every stage
+of a completed-action claim. A second probe with the actual result and strict
+call/ID/outcome gates still produced **3 false supports on 18 development
+rows** and **1 on 36 new-domain rows**; it also missed 4 of 6 genuinely
+supporting fresh results. A generic `status: completed` from an audit or scan
+tool can still be mistaken for completion of the business action. Neither
+probe is promoted to C1. Detailed sealed results are in
+`docs/searh_23/VAST_TOOL_EFFECT_RESULTS_2026-09-26.md`.
+
+Ten adjacent systems were audited in
+`docs/searh_23/EXTERNAL_TOOL_TRACE_SYSTEMS_AUDIT_2026-09-26.md`. ToolSandbox
+and AgentDojo are most useful as state-backed evaluation environments;
+Invariant and MFOTL provide event-order/provenance mechanics once tool effects
+are known. None infers a reliable business postcondition from an ambiguous
+trace. The next bounded candidate is an explicit source-bound postcondition
+contract with `UNKNOWN` when the trace has no such evidence.
