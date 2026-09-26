@@ -64,7 +64,9 @@ def input_record(case: dict) -> dict | None:
     systems = [event.text for event in prompt_events if event.role == "system"]
     if len(systems) != 1 or "<policy>" not in systems[0] or "</policy>" not in systems[0]:
         return None
-    policy = systems[0].split("<policy>", 1)[1].split("</policy>", 1)[0]
+    # The hotel instructions literally mention "<policy>" before the actual
+    # policy block; select the final opening tag paired with the closing tag.
+    policy = systems[0].rsplit("<policy>", 1)[1].split("</policy>", 1)[0]
     catalog = parse_catalog(prompt_events, case["prompt"])
     if not catalog.complete:
         return None
