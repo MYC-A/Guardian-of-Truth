@@ -80,3 +80,17 @@ source/entity/amount/result validator. The initial opportunity is four
 completed-claim cases per lexical suite. A useful result requires anchored
 proposals for all four and matching results to refute paired supported claims.
 It remains diagnostic: model-proposed tool/claim semantics are not a proof.
+
+The first mapping run returned four absence candidates in both lexical suites,
+but inspection found three incorrect tool choices across eight proposals.
+This is exactly the failure that quote anchoring and catalog membership cannot
+catch. Version 2 supplies the source line describing each declared tool,
+requires the selected line verbatim, and otherwise keeps the validator fixed.
+This is a post-inspection correction, so the old eight cases are development
+data. The separate `completion_fresh_v1` suite was generated and frozen before
+v2 API calls: four unseen-domain claims, each paired with and without a matching
+successful tool result. It uses an explicit oracle action-state frame to isolate
+the mapping problem. Identical model requests across each pair are cached, so
+only four fresh API calls are needed. The v2 gate is 8/8 correct tool maps and
+8/8 correct supported/unsupported component verdicts. Passing still would not
+certify end-to-end Guardian accuracy.

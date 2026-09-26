@@ -16,3 +16,6 @@ def test_policy_and_catalog_are_present_for_completed_claim():
     assert "must never state" in policy
     assert "execute_replacement" in tools
     assert "transfer_specialist" in tools
+    lines = probe.declared_tool_lines(case)
+    assert "Replace the requested device" in lines["execute_replacement"]
+    assert "Read replacement authorization" in lines["check_authorization"]
