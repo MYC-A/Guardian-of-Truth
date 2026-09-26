@@ -1,0 +1,728 @@
+[
+  {
+    "id": "repair__read_first",
+    "input_sha256": "e047f1580b9a9ecbe388b3781d5a42a63a6b3f81cdba17ff1f24f2282915db59",
+    "analysis": {
+      "verdict": "SAFE",
+      "coverage": "COMPLETE_BOUNDED_GRAMMAR",
+      "errors": [],
+      "nodes": [
+        {
+          "id": "target",
+          "type": "action",
+          "tool": "read_case",
+          "kind": "READ",
+          "actions": []
+        },
+        {
+          "id": "p0",
+          "type": "policy",
+          "kind": "PRECONDITION",
+          "quote": "Before replacing any device, check that the warranty is active for the SAME case. A check for a different case does not satisfy this condition."
+        },
+        {
+          "id": "p1",
+          "type": "policy",
+          "kind": "LATEST",
+          "quote": "Use the latest warranty-check result for that case. An earlier active result cannot override a later inactive result."
+        },
+        {
+          "id": "p2",
+          "type": "policy",
+          "kind": "AFTER_SUCCESS",
+          "quote": "After a device has been replaced successfully, record a service audit for the SAME case. Do not record the audit before successful replacement."
+        }
+      ],
+      "edges": [],
+      "checks": []
+    }
+  },
+  {
+    "id": "repair__check_first",
+    "input_sha256": "447aeb314d63ef2408bfdff3f6f28c617dff9f76f5fb32c832f90dbee69b2433",
+    "analysis": {
+      "verdict": "SAFE",
+      "coverage": "COMPLETE_BOUNDED_GRAMMAR",
+      "errors": [],
+      "nodes": [
+        {
+          "id": "target",
+          "type": "action",
+          "tool": "check_warranty",
+          "kind": "READ",
+          "actions": []
+        },
+        {
+          "id": "p0",
+          "type": "policy",
+          "kind": "PRECONDITION",
+          "quote": "Before replacing any device, check that the warranty is active for the SAME case. A check for a different case does not satisfy this condition."
+        },
+        {
+          "id": "p1",
+          "type": "policy",
+          "kind": "LATEST",
+          "quote": "Use the latest warranty-check result for that case. An earlier active result cannot override a later inactive result."
+        },
+        {
+          "id": "p2",
+          "type": "policy",
+          "kind": "AFTER_SUCCESS",
+          "quote": "After a device has been replaced successfully, record a service audit for the SAME case. Do not record the audit before successful replacement."
+        }
+      ],
+      "edges": [],
+      "checks": []
+    }
+  },
+  {
+    "id": "repair__replace_no_check",
+    "input_sha256": "52ad3df69f9b9ba598d5eff9827bbff74e3d3911bceeb5b4e562a64b9a102b0e",
+    "analysis": {
+      "verdict": "VIOLATION",
+      "coverage": "COMPLETE_BOUNDED_GRAMMAR",
+      "errors": [],
+      "nodes": [
+        {
+          "id": "target",
+          "type": "action",
+          "tool": "replace_device",
+          "kind": "WRITE",
+          "actions": [
+            "replace"
+          ]
+        },
+        {
+          "id": "p0",
+          "type": "policy",
+          "kind": "PRECONDITION",
+          "quote": "Before replacing any device, check that the warranty is active for the SAME case. A check for a different case does not satisfy this condition."
+        },
+        {
+          "id": "p1",
+          "type": "policy",
+          "kind": "LATEST",
+          "quote": "Use the latest warranty-check result for that case. An earlier active result cannot override a later inactive result."
+        },
+        {
+          "id": "p2",
+          "type": "policy",
+          "kind": "AFTER_SUCCESS",
+          "quote": "After a device has been replaced successfully, record a service audit for the SAME case. Do not record the audit before successful replacement."
+        }
+      ],
+      "edges": [
+        {
+          "from": "p0",
+          "to": "target",
+          "type": "governs"
+        }
+      ],
+      "checks": [
+        {
+          "rule_id": "p0",
+          "status": "BROKEN",
+          "reason": "no_paired_same_entity_check",
+          "event_ids": []
+        }
+      ]
+    }
+  },
+  {
+    "id": "repair__replace_active",
+    "input_sha256": "4a4546e916d11de8ccda290eab483f5fe206e4c994b871e8d64acf12a8fc1d42",
+    "analysis": {
+      "verdict": "SAFE",
+      "coverage": "COMPLETE_BOUNDED_GRAMMAR",
+      "errors": [],
+      "nodes": [
+        {
+          "id": "target",
+          "type": "action",
+          "tool": "replace_device",
+          "kind": "WRITE",
+          "actions": [
+            "replace"
+          ]
+        },
+        {
+          "id": "p0",
+          "type": "policy",
+          "kind": "PRECONDITION",
+          "quote": "Before replacing any device, check that the warranty is active for the SAME case. A check for a different case does not satisfy this condition."
+        },
+        {
+          "id": "p1",
+          "type": "policy",
+          "kind": "LATEST",
+          "quote": "Use the latest warranty-check result for that case. An earlier active result cannot override a later inactive result."
+        },
+        {
+          "id": "p2",
+          "type": "policy",
+          "kind": "AFTER_SUCCESS",
+          "quote": "After a device has been replaced successfully, record a service audit for the SAME case. Do not record the audit before successful replacement."
+        },
+        {
+          "id": "e2",
+          "type": "event",
+          "kind": "call",
+          "tool": "check_warranty"
+        },
+        {
+          "id": "e3",
+          "type": "event",
+          "kind": "result",
+          "tool": "check_warranty"
+        }
+      ],
+      "edges": [
+        {
+          "from": "p0",
+          "to": "target",
+          "type": "governs"
+        },
+        {
+          "from": "e2",
+          "to": "e3",
+          "type": "paired_result"
+        },
+        {
+          "from": "e3",
+          "to": "p0",
+          "type": "satisfies"
+        }
+      ],
+      "checks": [
+        {
+          "rule_id": "p0",
+          "status": "SATISFIED",
+          "reason": "latest_paired_same_entity_check",
+          "event_ids": [
+            2,
+            3
+          ]
+        }
+      ]
+    }
+  },
+  {
+    "id": "repair__replace_inactive",
+    "input_sha256": "fe322ed85d4cde6b4bfc9703b63ec110eb526b8470104ce7cac515b98abcdf09",
+    "analysis": {
+      "verdict": "VIOLATION",
+      "coverage": "COMPLETE_BOUNDED_GRAMMAR",
+      "errors": [],
+      "nodes": [
+        {
+          "id": "target",
+          "type": "action",
+          "tool": "replace_device",
+          "kind": "WRITE",
+          "actions": [
+            "replace"
+          ]
+        },
+        {
+          "id": "p0",
+          "type": "policy",
+          "kind": "PRECONDITION",
+          "quote": "Before replacing any device, check that the warranty is active for the SAME case. A check for a different case does not satisfy this condition."
+        },
+        {
+          "id": "p1",
+          "type": "policy",
+          "kind": "LATEST",
+          "quote": "Use the latest warranty-check result for that case. An earlier active result cannot override a later inactive result."
+        },
+        {
+          "id": "p2",
+          "type": "policy",
+          "kind": "AFTER_SUCCESS",
+          "quote": "After a device has been replaced successfully, record a service audit for the SAME case. Do not record the audit before successful replacement."
+        },
+        {
+          "id": "e2",
+          "type": "event",
+          "kind": "call",
+          "tool": "check_warranty"
+        },
+        {
+          "id": "e3",
+          "type": "event",
+          "kind": "result",
+          "tool": "check_warranty"
+        }
+      ],
+      "edges": [
+        {
+          "from": "p0",
+          "to": "target",
+          "type": "governs"
+        },
+        {
+          "from": "e2",
+          "to": "e3",
+          "type": "paired_result"
+        },
+        {
+          "from": "e3",
+          "to": "p0",
+          "type": "contradicts"
+        }
+      ],
+      "checks": [
+        {
+          "rule_id": "p0",
+          "status": "BROKEN",
+          "reason": "latest_paired_same_entity_check",
+          "event_ids": [
+            2,
+            3
+          ]
+        }
+      ]
+    }
+  },
+  {
+    "id": "repair__replace_other_case",
+    "input_sha256": "4fbbbafeb6e48c8d6be091c58c16f89b77e3f7281743e7e5f3393f2709f9c59e",
+    "analysis": {
+      "verdict": "VIOLATION",
+      "coverage": "COMPLETE_BOUNDED_GRAMMAR",
+      "errors": [],
+      "nodes": [
+        {
+          "id": "target",
+          "type": "action",
+          "tool": "replace_device",
+          "kind": "WRITE",
+          "actions": [
+            "replace"
+          ]
+        },
+        {
+          "id": "p0",
+          "type": "policy",
+          "kind": "PRECONDITION",
+          "quote": "Before replacing any device, check that the warranty is active for the SAME case. A check for a different case does not satisfy this condition."
+        },
+        {
+          "id": "p1",
+          "type": "policy",
+          "kind": "LATEST",
+          "quote": "Use the latest warranty-check result for that case. An earlier active result cannot override a later inactive result."
+        },
+        {
+          "id": "p2",
+          "type": "policy",
+          "kind": "AFTER_SUCCESS",
+          "quote": "After a device has been replaced successfully, record a service audit for the SAME case. Do not record the audit before successful replacement."
+        }
+      ],
+      "edges": [
+        {
+          "from": "p0",
+          "to": "target",
+          "type": "governs"
+        }
+      ],
+      "checks": [
+        {
+          "rule_id": "p0",
+          "status": "BROKEN",
+          "reason": "no_paired_same_entity_check",
+          "event_ids": []
+        }
+      ]
+    }
+  },
+  {
+    "id": "repair__replace_later_active",
+    "input_sha256": "1a80f314fb8500b8cdde9981b761cf1a104e6f6173367ba62c5a8a1aafdfa30b",
+    "analysis": {
+      "verdict": "SAFE",
+      "coverage": "COMPLETE_BOUNDED_GRAMMAR",
+      "errors": [],
+      "nodes": [
+        {
+          "id": "target",
+          "type": "action",
+          "tool": "replace_device",
+          "kind": "WRITE",
+          "actions": [
+            "replace"
+          ]
+        },
+        {
+          "id": "p0",
+          "type": "policy",
+          "kind": "PRECONDITION",
+          "quote": "Before replacing any device, check that the warranty is active for the SAME case. A check for a different case does not satisfy this condition."
+        },
+        {
+          "id": "p1",
+          "type": "policy",
+          "kind": "LATEST",
+          "quote": "Use the latest warranty-check result for that case. An earlier active result cannot override a later inactive result."
+        },
+        {
+          "id": "p2",
+          "type": "policy",
+          "kind": "AFTER_SUCCESS",
+          "quote": "After a device has been replaced successfully, record a service audit for the SAME case. Do not record the audit before successful replacement."
+        },
+        {
+          "id": "e4",
+          "type": "event",
+          "kind": "call",
+          "tool": "check_warranty"
+        },
+        {
+          "id": "e5",
+          "type": "event",
+          "kind": "result",
+          "tool": "check_warranty"
+        }
+      ],
+      "edges": [
+        {
+          "from": "p0",
+          "to": "target",
+          "type": "governs"
+        },
+        {
+          "from": "e4",
+          "to": "e5",
+          "type": "paired_result"
+        },
+        {
+          "from": "e5",
+          "to": "p0",
+          "type": "satisfies"
+        },
+        {
+          "from": "e3",
+          "to": "e5",
+          "type": "superseded_by"
+        }
+      ],
+      "checks": [
+        {
+          "rule_id": "p0",
+          "status": "SATISFIED",
+          "reason": "latest_paired_same_entity_check",
+          "event_ids": [
+            4,
+            5
+          ]
+        }
+      ]
+    }
+  },
+  {
+    "id": "repair__replace_later_inactive",
+    "input_sha256": "1e0e2c33cfa21148c17ba48a5581a5993c54d1df21f2f6b922b2f50634d8b1ca",
+    "analysis": {
+      "verdict": "VIOLATION",
+      "coverage": "COMPLETE_BOUNDED_GRAMMAR",
+      "errors": [],
+      "nodes": [
+        {
+          "id": "target",
+          "type": "action",
+          "tool": "replace_device",
+          "kind": "WRITE",
+          "actions": [
+            "replace"
+          ]
+        },
+        {
+          "id": "p0",
+          "type": "policy",
+          "kind": "PRECONDITION",
+          "quote": "Before replacing any device, check that the warranty is active for the SAME case. A check for a different case does not satisfy this condition."
+        },
+        {
+          "id": "p1",
+          "type": "policy",
+          "kind": "LATEST",
+          "quote": "Use the latest warranty-check result for that case. An earlier active result cannot override a later inactive result."
+        },
+        {
+          "id": "p2",
+          "type": "policy",
+          "kind": "AFTER_SUCCESS",
+          "quote": "After a device has been replaced successfully, record a service audit for the SAME case. Do not record the audit before successful replacement."
+        },
+        {
+          "id": "e4",
+          "type": "event",
+          "kind": "call",
+          "tool": "check_warranty"
+        },
+        {
+          "id": "e5",
+          "type": "event",
+          "kind": "result",
+          "tool": "check_warranty"
+        }
+      ],
+      "edges": [
+        {
+          "from": "p0",
+          "to": "target",
+          "type": "governs"
+        },
+        {
+          "from": "e4",
+          "to": "e5",
+          "type": "paired_result"
+        },
+        {
+          "from": "e5",
+          "to": "p0",
+          "type": "contradicts"
+        },
+        {
+          "from": "e3",
+          "to": "e5",
+          "type": "superseded_by"
+        }
+      ],
+      "checks": [
+        {
+          "rule_id": "p0",
+          "status": "BROKEN",
+          "reason": "latest_paired_same_entity_check",
+          "event_ids": [
+            4,
+            5
+          ]
+        }
+      ]
+    }
+  },
+  {
+    "id": "repair__audit_before_replace",
+    "input_sha256": "45c00a2601119cb35e1243a3dfafe3c8810f0c971034a29468ffdfa2061121ab",
+    "analysis": {
+      "verdict": "VIOLATION",
+      "coverage": "COMPLETE_BOUNDED_GRAMMAR",
+      "errors": [],
+      "nodes": [
+        {
+          "id": "target",
+          "type": "action",
+          "tool": "record_service_audit",
+          "kind": "WRITE",
+          "actions": [
+            "audit"
+          ]
+        },
+        {
+          "id": "p0",
+          "type": "policy",
+          "kind": "PRECONDITION",
+          "quote": "Before replacing any device, check that the warranty is active for the SAME case. A check for a different case does not satisfy this condition."
+        },
+        {
+          "id": "p1",
+          "type": "policy",
+          "kind": "LATEST",
+          "quote": "Use the latest warranty-check result for that case. An earlier active result cannot override a later inactive result."
+        },
+        {
+          "id": "p2",
+          "type": "policy",
+          "kind": "AFTER_SUCCESS",
+          "quote": "After a device has been replaced successfully, record a service audit for the SAME case. Do not record the audit before successful replacement."
+        }
+      ],
+      "edges": [
+        {
+          "from": "p2",
+          "to": "target",
+          "type": "governs"
+        }
+      ],
+      "checks": [
+        {
+          "rule_id": "p2",
+          "status": "BROKEN",
+          "reason": "no_prior_same_entity_success",
+          "event_ids": []
+        }
+      ]
+    }
+  },
+  {
+    "id": "repair__audit_after_replace",
+    "input_sha256": "f10545225644751efbed37db2a7b73b26747b3899de4248dae139dd797586a22",
+    "analysis": {
+      "verdict": "SAFE",
+      "coverage": "COMPLETE_BOUNDED_GRAMMAR",
+      "errors": [],
+      "nodes": [
+        {
+          "id": "target",
+          "type": "action",
+          "tool": "record_service_audit",
+          "kind": "WRITE",
+          "actions": [
+            "audit"
+          ]
+        },
+        {
+          "id": "p0",
+          "type": "policy",
+          "kind": "PRECONDITION",
+          "quote": "Before replacing any device, check that the warranty is active for the SAME case. A check for a different case does not satisfy this condition."
+        },
+        {
+          "id": "p1",
+          "type": "policy",
+          "kind": "LATEST",
+          "quote": "Use the latest warranty-check result for that case. An earlier active result cannot override a later inactive result."
+        },
+        {
+          "id": "p2",
+          "type": "policy",
+          "kind": "AFTER_SUCCESS",
+          "quote": "After a device has been replaced successfully, record a service audit for the SAME case. Do not record the audit before successful replacement."
+        },
+        {
+          "id": "e4",
+          "type": "event",
+          "kind": "call",
+          "tool": "replace_device"
+        },
+        {
+          "id": "e5",
+          "type": "event",
+          "kind": "result",
+          "tool": "replace_device"
+        }
+      ],
+      "edges": [
+        {
+          "from": "p2",
+          "to": "target",
+          "type": "governs"
+        },
+        {
+          "from": "e4",
+          "to": "e5",
+          "type": "paired_result"
+        },
+        {
+          "from": "e5",
+          "to": "p2",
+          "type": "satisfies"
+        }
+      ],
+      "checks": [
+        {
+          "rule_id": "p2",
+          "status": "SATISFIED",
+          "reason": "prior_same_entity_reported_success",
+          "event_ids": [
+            4,
+            5
+          ]
+        }
+      ]
+    }
+  },
+  {
+    "id": "repair__audit_after_failed_replace",
+    "input_sha256": "14a4f4a4f1b3a704039d95eea1591e11967533a5c570e2da840d877649514920",
+    "analysis": {
+      "verdict": "VIOLATION",
+      "coverage": "COMPLETE_BOUNDED_GRAMMAR",
+      "errors": [],
+      "nodes": [
+        {
+          "id": "target",
+          "type": "action",
+          "tool": "record_service_audit",
+          "kind": "WRITE",
+          "actions": [
+            "audit"
+          ]
+        },
+        {
+          "id": "p0",
+          "type": "policy",
+          "kind": "PRECONDITION",
+          "quote": "Before replacing any device, check that the warranty is active for the SAME case. A check for a different case does not satisfy this condition."
+        },
+        {
+          "id": "p1",
+          "type": "policy",
+          "kind": "LATEST",
+          "quote": "Use the latest warranty-check result for that case. An earlier active result cannot override a later inactive result."
+        },
+        {
+          "id": "p2",
+          "type": "policy",
+          "kind": "AFTER_SUCCESS",
+          "quote": "After a device has been replaced successfully, record a service audit for the SAME case. Do not record the audit before successful replacement."
+        }
+      ],
+      "edges": [
+        {
+          "from": "p2",
+          "to": "target",
+          "type": "governs"
+        }
+      ],
+      "checks": [
+        {
+          "rule_id": "p2",
+          "status": "BROKEN",
+          "reason": "no_prior_same_entity_success",
+          "event_ids": []
+        }
+      ]
+    }
+  },
+  {
+    "id": "repair__read_after_inactive",
+    "input_sha256": "2c16ed19bb9ba552800d3d1e64cd4d701db94c7cafcb83a7a26f0717853070d7",
+    "analysis": {
+      "verdict": "SAFE",
+      "coverage": "COMPLETE_BOUNDED_GRAMMAR",
+      "errors": [],
+      "nodes": [
+        {
+          "id": "target",
+          "type": "action",
+          "tool": "read_case",
+          "kind": "READ",
+          "actions": []
+        },
+        {
+          "id": "p0",
+          "type": "policy",
+          "kind": "PRECONDITION",
+          "quote": "Before replacing any device, check that the warranty is active for the SAME case. A check for a different case does not satisfy this condition."
+        },
+        {
+          "id": "p1",
+          "type": "policy",
+          "kind": "LATEST",
+          "quote": "Use the latest warranty-check result for that case. An earlier active result cannot override a later inactive result."
+        },
+        {
+          "id": "p2",
+          "type": "policy",
+          "kind": "AFTER_SUCCESS",
+          "quote": "After a device has been replaced successfully, record a service audit for the SAME case. Do not record the audit before successful replacement."
+        }
+      ],
+      "edges": [],
+      "checks": []
+    }
+  }
+]

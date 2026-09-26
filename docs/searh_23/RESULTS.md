@@ -442,3 +442,18 @@ renamed audit FP. No binary entry-point decision changed; an UNKNOWN fallback
 remains unselected and the temporal layer was written after seeing the parcel
 answers. Full per-case results, proof boundaries and external-repository
 transfer are in `docs/searh_23/ACTION_TRIGGER_TRANSFER_2026-09-26.md`.
+
+## 21. Small action graph and sourced fact chain (2026-09-26)
+
+A bounded compiler now enumerates every supported policy bullet for one call,
+then checks same-entity prior results and action order in a small evidence
+graph. Repair controls and gold were frozen at `3c68de7` before the verifier.
+It scored TP6/FP0/FN0/TN6 on each of four authored 12-case suites: repair,
+renamed repair, parcel, and renamed parcel. The repair rules deliberately
+mirror parcel's grammar, so this is a mechanism check rather than independent
+policy transfer. On the more complex existing service-desk policy, 14/16
+cases remained UNKNOWN; the two other calls had structural errors. The
+compiler's binary output is valid only under its narrow complete grammar;
+the contest entry point is unchanged. Details, seals, adversarial controls,
+and the next policy-language test are in
+`docs/searh_23/MICROGRAPH_CERTIFICATE_2026-09-26.md`.

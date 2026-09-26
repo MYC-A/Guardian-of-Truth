@@ -1,0 +1,207 @@
+{
+  "suite": "repair",
+  "scope": "bounded authored controls; not independent contest accuracy",
+  "seal": {
+    "suite": "repair",
+    "input_sha256_lf": "e5be44f0d54892f2b0921abec301d002725a5839b5ee2afd9e66b740c2b96987",
+    "predictions_sha256_lf": "d307cd427e08e2abaafac1890385a5168af38b114413d3fb63b90dfd5802bb10",
+    "ids": [
+      "repair__read_first",
+      "repair__check_first",
+      "repair__replace_no_check",
+      "repair__replace_active",
+      "repair__replace_inactive",
+      "repair__replace_other_case",
+      "repair__replace_later_active",
+      "repair__replace_later_inactive",
+      "repair__audit_before_replace",
+      "repair__audit_after_replace",
+      "repair__audit_after_failed_replace",
+      "repair__read_after_inactive"
+    ]
+  },
+  "counts": {
+    "TP": 6,
+    "FP": 0,
+    "FN": 0,
+    "TN": 6,
+    "UNKNOWN_POS": 0,
+    "UNKNOWN_NEG": 0
+  },
+  "per_case": [
+    {
+      "id": "repair__read_first",
+      "gold": 0,
+      "verdict": "SAFE",
+      "bucket": "TN",
+      "checks": [],
+      "errors": []
+    },
+    {
+      "id": "repair__check_first",
+      "gold": 0,
+      "verdict": "SAFE",
+      "bucket": "TN",
+      "checks": [],
+      "errors": []
+    },
+    {
+      "id": "repair__replace_no_check",
+      "gold": 1,
+      "verdict": "VIOLATION",
+      "bucket": "TP",
+      "checks": [
+        {
+          "rule_id": "p0",
+          "status": "BROKEN",
+          "reason": "no_paired_same_entity_check",
+          "event_ids": []
+        }
+      ],
+      "errors": []
+    },
+    {
+      "id": "repair__replace_active",
+      "gold": 0,
+      "verdict": "SAFE",
+      "bucket": "TN",
+      "checks": [
+        {
+          "rule_id": "p0",
+          "status": "SATISFIED",
+          "reason": "latest_paired_same_entity_check",
+          "event_ids": [
+            2,
+            3
+          ]
+        }
+      ],
+      "errors": []
+    },
+    {
+      "id": "repair__replace_inactive",
+      "gold": 1,
+      "verdict": "VIOLATION",
+      "bucket": "TP",
+      "checks": [
+        {
+          "rule_id": "p0",
+          "status": "BROKEN",
+          "reason": "latest_paired_same_entity_check",
+          "event_ids": [
+            2,
+            3
+          ]
+        }
+      ],
+      "errors": []
+    },
+    {
+      "id": "repair__replace_other_case",
+      "gold": 1,
+      "verdict": "VIOLATION",
+      "bucket": "TP",
+      "checks": [
+        {
+          "rule_id": "p0",
+          "status": "BROKEN",
+          "reason": "no_paired_same_entity_check",
+          "event_ids": []
+        }
+      ],
+      "errors": []
+    },
+    {
+      "id": "repair__replace_later_active",
+      "gold": 0,
+      "verdict": "SAFE",
+      "bucket": "TN",
+      "checks": [
+        {
+          "rule_id": "p0",
+          "status": "SATISFIED",
+          "reason": "latest_paired_same_entity_check",
+          "event_ids": [
+            4,
+            5
+          ]
+        }
+      ],
+      "errors": []
+    },
+    {
+      "id": "repair__replace_later_inactive",
+      "gold": 1,
+      "verdict": "VIOLATION",
+      "bucket": "TP",
+      "checks": [
+        {
+          "rule_id": "p0",
+          "status": "BROKEN",
+          "reason": "latest_paired_same_entity_check",
+          "event_ids": [
+            4,
+            5
+          ]
+        }
+      ],
+      "errors": []
+    },
+    {
+      "id": "repair__audit_before_replace",
+      "gold": 1,
+      "verdict": "VIOLATION",
+      "bucket": "TP",
+      "checks": [
+        {
+          "rule_id": "p2",
+          "status": "BROKEN",
+          "reason": "no_prior_same_entity_success",
+          "event_ids": []
+        }
+      ],
+      "errors": []
+    },
+    {
+      "id": "repair__audit_after_replace",
+      "gold": 0,
+      "verdict": "SAFE",
+      "bucket": "TN",
+      "checks": [
+        {
+          "rule_id": "p2",
+          "status": "SATISFIED",
+          "reason": "prior_same_entity_reported_success",
+          "event_ids": [
+            4,
+            5
+          ]
+        }
+      ],
+      "errors": []
+    },
+    {
+      "id": "repair__audit_after_failed_replace",
+      "gold": 1,
+      "verdict": "VIOLATION",
+      "bucket": "TP",
+      "checks": [
+        {
+          "rule_id": "p2",
+          "status": "BROKEN",
+          "reason": "no_prior_same_entity_success",
+          "event_ids": []
+        }
+      ],
+      "errors": []
+    },
+    {
+      "id": "repair__read_after_inactive",
+      "gold": 0,
+      "verdict": "SAFE",
+      "bucket": "TN",
+      "checks": [],
+      "errors": []
+    }
+  ]
+}
