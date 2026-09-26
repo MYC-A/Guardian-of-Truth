@@ -93,12 +93,14 @@ remove current files, so this audit only transfers the supported mechanisms.
 ## Server check
 
 The ModelScope machine was accessed through the existing HTTPS Guardian
-Gateway API. GPU and CUDA checks succeeded. A targeted Linux test in the
-remote repository failed because it expects a separate pinned incumbent
-checkout at the sibling path `Guardian of Truth`, which is absent there. The
-failure says nothing about these new components; their targeted local tests
-pass. No full benchmark, GPU model run, Mistral call, or dependency install
-was performed for this audit.
+Gateway API. GPU and CUDA checks succeeded. Commit `ebd4e0c` was checked out
+in a separate server worktree; the new component tests passed **26/26** on
+Linux, and the real audit reproduced **3** confirmed action results and **41**
+repaired read pairs. A separate historical `test_stage_x0` still fails there
+because it expects a pinned incumbent checkout at the absent sibling path
+`Guardian of Truth`. That failure does not exercise these components. No full
+benchmark, GPU model run, Mistral call, or dependency install was performed
+for this audit.
 
 ## Decision
 
