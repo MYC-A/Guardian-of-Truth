@@ -494,3 +494,24 @@ passing as Boolean evidence. A remaining constructed case still gets false
 SAFE when one of two otherwise valid atoms governs the wrong tool. This is a
 source-completeness/action-binding failure, not an event-join bug; the typed
 atom layer remains diagnostic only.
+
+## 24. Original-clause scope and completeness audit (2026-09-26)
+
+Using the model and key supplied by the server environment through Mistral API,
+an action-first question mapped the constrained tool scope on 4/5 previously
+viewed service-desk/hotel clauses and 5/5 other clauses from those same
+policies. On seven clauses from original public46 retail, airline and telecom
+policies, tool scope was correct on 7/7, but only 5/7 outputs carried an exact
+continuous source quote. A separate post-hoc quote-only repair fixed both
+format failures without changing tool selection. One service/hotel order rule
+still included a prerequisite action in the constrained scope.
+
+A second-model completeness question was tested on five authored conjunction
+rules, each intact, with one prerequisite removed, and with one condition bound
+to a request instead of the action. After fixing an underdescribed tool catalog,
+it strictly accepted only 2/5 intact rules while rejecting all five wrong
+action bindings and four of five missing-prerequisite controls with valid
+source quotes. It cannot certify a complete policy interpretation and would
+abstain on too many valid rules. No binary competition replay or entry-point
+change occurred. Frozen protocols, raw responses, per-case errors and limits
+are in `docs/searh_23/SOURCE_POLICY_COMPILATION_2026-09-26.md`.
