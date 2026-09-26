@@ -93,3 +93,7 @@ current contest entry point and treat these atoms as diagnostic proposals.
 Reproduce with `python experiments/searh_23/build_policy_atoms_v1.py`, then
 `python experiments/searh_23/policy_atoms_probe_v1.py score <suite>`. Raw API
 responses and per-case seals are under `outputs/searh_23/policy_atoms_v1/`.
+
+For the full current problem statement, verified successes and failures, and
+the next research protocol, see
+[CURRENT_RESEARCH_PROBLEM_2026-09-26.md](CURRENT_RESEARCH_PROBLEM_2026-09-26.md).

@@ -515,3 +515,5 @@ source quotes. It cannot certify a complete policy interpretation and would
 abstain on too many valid rules. No binary competition replay or entry-point
 change occurred. Frozen protocols, raw responses, per-case errors and limits
 are in `docs/searh_23/SOURCE_POLICY_COMPILATION_2026-09-26.md`.
+The full research handoff is in
+`docs/searh_23/CURRENT_RESEARCH_PROBLEM_2026-09-26.md`.
