@@ -374,3 +374,28 @@ Invariant and MFOTL provide event-order/provenance mechanics once tool effects
 are known. None infers a reliable business postcondition from an ambiguous
 trace. The next bounded candidate is an explicit source-bound postcondition
 contract with `UNKNOWN` when the trace has no such evidence.
+
+## 17. Typed tool-trace transfer (2026-09-26)
+
+Implemented a narrow transfer from Invariant/formal runtime verification and
+ToolSandbox-style paired testing in `vnext`. Existing source envelopes already
+pair calls and results by actor, full tool identity and transport ID. A new
+strict layer (`bound_tool_effects_v2`) requires an application-authored equality
+join between a call field and a result field; it rejects reversed, disputed or
+non-tool results while leaving frozen T1 unchanged. `ordered_effects_v1` checks
+whether a confirmed effect on one exact entity has an independently confirmed
+prerequisite for that entity **before**
+the action. A missing witness returns `UNKNOWN`; it does not assert absence
+of external actions.
+
+The local 10-variant control covers wrong entity, wrong call ID, duplicate IDs,
+late or wrong-entity approval, generic completed status from an audit, failure
+and missing result. It also compares a simulated replacement and a simulated
+audit against their distinct post-states. These are deterministic component
+tests, not an independent Guardian score. The result depends on an
+application-reviewed, exact tool-version contract and explicit postcondition;
+most competition tools do not supply that authority. No new C1 arm or veto is
+enabled, and no full benchmark was run. See
+`tests/test_vnext_ordered_effects_v1.py`,
+`src/guardian_truth/vnext/bound_tool_effects_v2.py` and
+`src/guardian_truth/vnext/ordered_effects_v1.py`.

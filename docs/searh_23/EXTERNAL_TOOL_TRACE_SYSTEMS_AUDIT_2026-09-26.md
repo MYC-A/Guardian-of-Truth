@@ -38,3 +38,15 @@ only says generic `status: completed` and the tool's effect is not established,
 the outcome is `UNKNOWN`. Test this first as a **false-positive refutation**
 component on independent valid and invalid call pairs. Do not add a new OR/veto
 arm to C1 based on these repositories alone.
+
+## Local transfer status
+
+The source-scoped part is implemented as `vnext/bound_tool_effects_v2.py` and
+`vnext/ordered_effects_v1.py`, with 10 controlled trace variants and a small
+state-backed audit/replacement pair in `tests/test_vnext_ordered_effects_v1.py`.
+It uses application-authored exact T1 contracts, call/result entity joins and
+same-entity order checks. Frozen T1 and the competition decision path remain
+unchanged. The seven older contracts in `contracts/tool_effects_v1.json` do not
+carry the full provider/schema identity required by vnext T1 and therefore
+cannot be silently promoted into this layer. Independent real-case coverage
+and benign false alarms remain unmeasured.
