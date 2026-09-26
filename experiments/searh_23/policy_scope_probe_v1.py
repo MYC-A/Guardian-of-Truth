@@ -17,7 +17,7 @@ from policy_compile_probe_v1 import frozen, digest
 from tq_questions import Mistral
 
 
-SYSTEM = """Classify EVERY original policy bullet against the DECLARED tools. Return JSON only:
+SYSTEM = """Classify EVERY original policy bullet against the DECLARED tools. Return one JSON OBJECT only; its first character must be { and it must have an entries key. Never return a top-level array:
 {"entries":[{"source_id":0,"source_quote":"copy exact source bullet","governs":["tool_name"],"evidence":["tool_name"],"relation":"LATEST_BOOLEAN|PRIOR_SUCCESS|UNSUPPORTED_EVIDENCE|OTHER"}, ...]}.
 Include one entry per bullet, original order, exact source quote. `governs` contains only the tool(s) whose CURRENT call performs the constrained action. A lookup, check, search or read tool that merely observes a prerequisite is not governed by a restriction on a later mutation. `evidence` contains only tools whose RESULTS can establish the prerequisite; a call alone is not enough. Use declared descriptions, not names, to distinguish observing from acting. `LATEST_BOOLEAN` is a prior fact whose newest same-entity result controls; `PRIOR_SUCCESS` is an earlier successful mutation required before the current call. Use `UNSUPPORTED_EVIDENCE` if the policy names a necessary prerequisite for which no declared tool result can establish it. A user confirmation is not a tool result. Do not invent tools or drop a source bullet. Do not produce a verdict or rewrite policy text."""
 
@@ -31,11 +31,17 @@ def run(suite: str) -> dict:
     output = OUT / suite / "scope_roles.json"
     if output.exists():
         raise ValueError("scope model result already exists")
-    tools = source["data"]["inputs"][0]["tools"]
+    tools = {name: spec.splitlines()[0] for name, spec in
+             source["data"]["inputs"][0]["tools"].items()}
     query = {"policy_bullets": [{"source_id": i, "source_quote": q}
                                 for i, q in enumerate(source["bullets"])],
              "declared_tools": tools}
-    result = Mistral().ask(SYSTEM, json.dumps(query, ensure_ascii=False), max_tokens=1300)
+    try:
+        result = Mistral().ask(SYSTEM, json.dumps(query, ensure_ascii=False), max_tokens=1300)
+    except ValueError as exc:
+        if str(exc) != "model returned non-object JSON":
+            raise
+        result = {"value": {}, "finish_reason": "non_object_json", "usage": {}}
     record = {"suite": suite, "input_sha256_lf": source["input_sha256_lf"],
               "system_sha256": hashlib.sha256(SYSTEM.encode()).hexdigest(),
               "answer": result["value"], "finish_reason": result["finish_reason"],
@@ -70,6 +76,8 @@ def score(suite: str) -> dict:
                      and entry.get("source_quote") == source["bullets"][i]
                      and isinstance(entry.get("governs"), list)
                      and isinstance(entry.get("evidence"), list)
+                     and all(isinstance(name, str) for name in
+                             entry["governs"] + entry["evidence"])
                      and set(entry["governs"] + entry["evidence"]) <= tools)
             fields = ("governs", "evidence", "relation")
             exact = valid and all(entry.get(field) == gold[field] for field in fields)
