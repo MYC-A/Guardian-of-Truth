@@ -19,6 +19,12 @@
 - **E** — action-intervals → отдельные условия/тип/инструменты для каждого
   action → независимый аудит пропущенных действий → IR из source spans.
 
+Полный E-объект находится в поле `nodes` каждого результата: `action`,
+`conditions`, `before`, `exception`, `scope` хранят char offsets и
+`exact_source_text`, а condition содержит `parent_action_id`. Поле
+`directives` — совместимая с прежним scorer текстовая проекция этих узлов;
+использовать её одну как provenance-bearing IR нельзя.
+
 Рукава A/B здесь запущены на **новых** политиках, а не взяты из старого кэша.
 Их текстовые prompts и JSON schemas взяты из V2 без правок, но общий предел
 ответа в этом парном опыте — `max_tokens=3000` вместо прежних 1300; все три
