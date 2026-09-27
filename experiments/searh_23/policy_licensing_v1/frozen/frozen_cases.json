@@ -1,0 +1,6052 @@
+[
+ {
+  "case_id": "calib_apiary",
+  "orig_case_id": "calib_apiary",
+  "domain": "beekeeping apiary",
+  "family": "near_neighbour_trap",
+  "split": "calib",
+  "policy": "Check the hive temperament before lifting the honey frames. The honey is spun in the extractor at the processing shed. The extracted honey is jarred into retail jars. Order replacement queens in March.",
+  "tools": [
+   {
+    "name": "check_hive_temperament",
+    "type": "verify",
+    "description": "Observes the hive entrance and returns an agitation score for the colony without opening the hive.",
+    "input": {
+     "hive_id": "string"
+    },
+    "output": {
+     "agitation": "string"
+    }
+   },
+   {
+    "name": "lift_honey_frames",
+    "type": "mutate",
+    "description": "Removes the honey frames from the super and stacks them on the carrier for transport.",
+    "input": {
+     "hive_id": "string",
+     "frame_count": "integer"
+    },
+    "output": {
+     "carrier_id": "string"
+    }
+   },
+   {
+    "name": "spin_extractor",
+    "type": "mutate",
+    "description": "Loads frames into the centrifugal extractor and spins the honey out into the settling tank.",
+    "input": {
+     "frame_count": "integer",
+     "speed": "string"
+    },
+    "output": {
+     "tank_level": "number"
+    }
+   },
+   {
+    "name": "jar_honey",
+    "type": "mutate",
+    "description": "Fills retail jars from the settling tank and applies the batch labels.",
+    "input": {
+     "jar_count": "integer",
+     "batch_id": "string"
+    },
+    "output": {
+     "label_range": "string"
+    }
+   },
+   {
+    "name": "order_queens",
+    "type": "mutate",
+    "description": "Places a replacement queen order with the breeder and records the expected delivery week.",
+    "input": {
+     "count": "integer",
+     "breeder": "string"
+    },
+    "output": {
+     "order_id": "string"
+    }
+   },
+   {
+    "name": "read_stock_levels",
+    "type": "read",
+    "description": "Returns current counts of jars, frames and spare supers in the storage shed.",
+    "input": {},
+    "output": {
+     "jars": "integer",
+     "frames": "integer"
+    }
+   }
+  ],
+  "events": [
+   {
+    "eid": "A",
+    "source_span": "Check the hive temperament",
+    "span_start": 0,
+    "span_end": 26,
+    "role": "PRECONDITION_CHECK",
+    "governed_tools": [
+     "check_hive_temperament"
+    ],
+    "sentence_index": 0
+   },
+   {
+    "eid": "B",
+    "source_span": "lifting the honey frames",
+    "span_start": 34,
+    "span_end": 58,
+    "role": "OPERATION_EFFECT",
+    "governed_tools": [
+     "lift_honey_frames"
+    ],
+    "sentence_index": 0
+   },
+   {
+    "eid": "C",
+    "source_span": "The honey is spun in the extractor",
+    "span_start": 60,
+    "span_end": 94,
+    "role": "OPERATION_EFFECT",
+    "governed_tools": [
+     "spin_extractor"
+    ],
+    "sentence_index": 1
+   },
+   {
+    "eid": "D",
+    "source_span": "The extracted honey is jarred",
+    "span_start": 119,
+    "span_end": 148,
+    "role": "OPERATION_EFFECT",
+    "governed_tools": [
+     "jar_honey"
+    ],
+    "sentence_index": 2
+   },
+   {
+    "eid": "E",
+    "source_span": "Order replacement queens",
+    "span_start": 167,
+    "span_end": 191,
+    "role": "OPERATION_EFFECT",
+    "governed_tools": [
+     "order_queens"
+    ],
+    "sentence_index": 3
+   }
+  ],
+  "edges": [
+   {
+    "from_eid": "A",
+    "to_eid": "B",
+    "from_span": "Check the hive temperament",
+    "to_span": "lifting the honey frames",
+    "relation": "PRECONDITION",
+    "acceptable": [
+     "PRECONDITION"
+    ],
+    "evidence": [
+     {
+      "start": 0,
+      "end": 58,
+      "text": "Check the hive temperament before lifting the honey frames"
+     }
+    ]
+   }
+  ],
+  "groups": [],
+  "tool_types": {
+   "check_hive_temperament": "verify",
+   "lift_honey_frames": "mutate",
+   "spin_extractor": "mutate",
+   "jar_honey": "mutate",
+   "order_queens": "mutate",
+   "read_stock_levels": "read"
+  },
+  "pair_universe": [
+   {
+    "a_eid": "A",
+    "b_eid": "B",
+    "a_span": "Check the hive temperament",
+    "b_span": "lifting the honey frames",
+    "gold": "POSITIVE",
+    "hard": true
+   },
+   {
+    "a_eid": "A",
+    "b_eid": "C",
+    "a_span": "Check the hive temperament",
+    "b_span": "The honey is spun in the extractor",
+    "gold": "NEGATIVE",
+    "hard": true
+   },
+   {
+    "a_eid": "A",
+    "b_eid": "D",
+    "a_span": "Check the hive temperament",
+    "b_span": "The extracted honey is jarred",
+    "gold": "NEGATIVE",
+    "hard": true
+   },
+   {
+    "a_eid": "A",
+    "b_eid": "E",
+    "a_span": "Check the hive temperament",
+    "b_span": "Order replacement queens",
+    "gold": "NEGATIVE",
+    "hard": true
+   },
+   {
+    "a_eid": "B",
+    "b_eid": "C",
+    "a_span": "lifting the honey frames",
+    "b_span": "The honey is spun in the extractor",
+    "gold": "NEGATIVE",
+    "hard": true
+   },
+   {
+    "a_eid": "B",
+    "b_eid": "D",
+    "a_span": "lifting the honey frames",
+    "b_span": "The extracted honey is jarred",
+    "gold": "NEGATIVE",
+    "hard": true
+   },
+   {
+    "a_eid": "B",
+    "b_eid": "E",
+    "a_span": "lifting the honey frames",
+    "b_span": "Order replacement queens",
+    "gold": "NEGATIVE",
+    "hard": true
+   },
+   {
+    "a_eid": "C",
+    "b_eid": "D",
+    "a_span": "The honey is spun in the extractor",
+    "b_span": "The extracted honey is jarred",
+    "gold": "NEGATIVE",
+    "hard": true
+   },
+   {
+    "a_eid": "C",
+    "b_eid": "E",
+    "a_span": "The honey is spun in the extractor",
+    "b_span": "Order replacement queens",
+    "gold": "NEGATIVE",
+    "hard": true
+   },
+   {
+    "a_eid": "D",
+    "b_eid": "E",
+    "a_span": "The extracted honey is jarred",
+    "b_span": "Order replacement queens",
+    "gold": "NEGATIVE",
+    "hard": true
+   }
+  ],
+  "cf_of": null,
+  "mp1": false,
+  "notes": "Near-neighbour trap: spinning and jarring are adjacent workflow steps; the check gates only frame lifting."
+ },
+ {
+  "case_id": "calib_laundry",
+  "orig_case_id": "calib_laundry",
+  "domain": "industrial laundry",
+  "family": "nested_chain",
+  "split": "calib",
+  "policy": "Weigh each linen batch at intake. Load the washer only after the batch is weighed. Start the dryer cycle only after the washer is loaded. Invoice the hotel clients weekly.",
+  "tools": [
+   {
+    "name": "weigh_batch",
+    "type": "verify",
+    "description": "Places the linen batch on the platform scale and records the weight on the intake ticket.",
+    "input": {
+     "batch_id": "string"
+    },
+    "output": {
+     "weight_kg": "number"
+    }
+   },
+   {
+    "name": "load_washer",
+    "type": "mutate",
+    "description": "Loads a weighed batch into the tunnel washer and selects the programme.",
+    "input": {
+     "batch_id": "string",
+     "programme": "string"
+    },
+    "output": {
+     "cycle_id": "string"
+    }
+   },
+   {
+    "name": "start_dryer",
+    "type": "mutate",
+    "description": "Starts the tumble dryer cycle for a washed batch and sets the drying time.",
+    "input": {
+     "cycle_id": "string",
+     "minutes": "integer"
+    },
+    "output": {
+     "dryer_id": "string"
+    }
+   },
+   {
+    "name": "send_invoice",
+    "type": "communicate",
+    "description": "Emails the weekly service invoice to a hotel client with the batch totals.",
+    "input": {
+     "client_id": "string",
+     "totals": "string"
+    },
+    "output": {
+     "invoice_id": "string"
+    }
+   }
+  ],
+  "events": [
+   {
+    "eid": "A",
+    "source_span": "Weigh each linen batch",
+    "span_start": 0,
+    "span_end": 22,
+    "role": "OPERATION_EFFECT",
+    "governed_tools": [
+     "weigh_batch"
+    ],
+    "sentence_index": 0
+   },
+   {
+    "eid": "B",
+    "source_span": "Load the washer",
+    "span_start": 34,
+    "span_end": 49,
+    "role": "OPERATION_EFFECT",
+    "governed_tools": [
+     "load_washer"
+    ],
+    "sentence_index": 1
+   },
+   {
+    "eid": "C",
+    "source_span": "Start the dryer cycle",
+    "span_start": 83,
+    "span_end": 104,
+    "role": "OPERATION_EFFECT",
+    "governed_tools": [
+     "start_dryer"
+    ],
+    "sentence_index": 2
+   },
+   {
+    "eid": "E",
+    "source_span": "Invoice the hotel clients",
+    "span_start": 138,
+    "span_end": 163,
+    "role": "COMMUNICATION",
+    "governed_tools": [
+     "send_invoice"
+    ],
+    "sentence_index": 3
+   }
+  ],
+  "edges": [
+   {
+    "from_eid": "A",
+    "to_eid": "B",
+    "from_span": "Weigh each linen batch",
+    "to_span": "Load the washer",
+    "relation": "ORDER_BEFORE",
+    "acceptable": [
+     "ORDER_BEFORE"
+    ],
+    "evidence": [
+     {
+      "start": 34,
+      "end": 81,
+      "text": "Load the washer only after the batch is weighed"
+     }
+    ]
+   },
+   {
+    "from_eid": "B",
+    "to_eid": "C",
+    "from_span": "Load the washer",
+    "to_span": "Start the dryer cycle",
+    "relation": "ORDER_BEFORE",
+    "acceptable": [
+     "ORDER_BEFORE"
+    ],
+    "evidence": [
+     {
+      "start": 83,
+      "end": 136,
+      "text": "Start the dryer cycle only after the washer is loaded"
+     }
+    ]
+   }
+  ],
+  "groups": [],
+  "tool_types": {
+   "weigh_batch": "verify",
+   "load_washer": "mutate",
+   "start_dryer": "mutate",
+   "send_invoice": "communicate"
+  },
+  "pair_universe": [
+   {
+    "a_eid": "A",
+    "b_eid": "B",
+    "a_span": "Weigh each linen batch",
+    "b_span": "Load the washer",
+    "gold": "POSITIVE",
+    "hard": true
+   },
+   {
+    "a_eid": "A",
+    "b_eid": "C",
+    "a_span": "Weigh each linen batch",
+    "b_span": "Start the dryer cycle",
+    "gold": "NEGATIVE",
+    "hard": true
+   },
+   {
+    "a_eid": "A",
+    "b_eid": "E",
+    "a_span": "Weigh each linen batch",
+    "b_span": "Invoice the hotel clients",
+    "gold": "NEGATIVE",
+    "hard": true
+   },
+   {
+    "a_eid": "B",
+    "b_eid": "C",
+    "a_span": "Load the washer",
+    "b_span": "Start the dryer cycle",
+    "gold": "POSITIVE",
+    "hard": true
+   },
+   {
+    "a_eid": "B",
+    "b_eid": "E",
+    "a_span": "Load the washer",
+    "b_span": "Invoice the hotel clients",
+    "gold": "NEGATIVE",
+    "hard": true
+   },
+   {
+    "a_eid": "C",
+    "b_eid": "E",
+    "a_span": "Start the dryer cycle",
+    "b_span": "Invoice the hotel clients",
+    "gold": "NEGATIVE",
+    "hard": true
+   }
+  ],
+  "cf_of": null,
+  "mp1": false,
+  "notes": "Nested A->B->C. Key trap: A->C is transitively true but NOT directly policy-licensed (no direct edge)."
+ },
+ {
+  "case_id": "calib_print",
+  "orig_case_id": "calib_print",
+  "domain": "print shop",
+  "family": "parent_swap",
+  "split": "calib",
+  "policy": "A colour proof approval is required before binding the catalogues. The covers are laminated in the morning batch. Catalogues are boxed for delivery on Fridays.",
+  "tools": [
+   {
+    "name": "check_proof_approval",
+    "type": "verify",
+    "description": "Looks up the colour proof record for a print job and returns whether the client has approved it.",
+    "input": {
+     "job_id": "string"
+    },
+    "output": {
+     "approved": "boolean"
+    }
+   },
+   {
+    "name": "bind_catalogues",
+    "type": "mutate",
+    "description": "Binds the printed signatures into finished catalogues on the binding line.",
+    "input": {
+     "job_id": "string",
+     "run_count": "integer"
+    },
+    "output": {
+     "bundle_ids": "string"
+    }
+   },
+   {
+    "name": "laminate_covers",
+    "type": "mutate",
+    "description": "Feeds cover sheets through the laminator and stacks the finished covers.",
+    "input": {
+     "sheet_count": "integer",
+     "finish": "string"
+    },
+    "output": {
+     "stack_id": "string"
+    }
+   },
+   {
+    "name": "box_catalogues",
+    "type": "mutate",
+    "description": "Packs finished catalogues into delivery boxes and prints the shipping labels.",
+    "input": {
+     "bundle_ids": "string"
+    },
+    "output": {
+     "box_ids": "string"
+    }
+   }
+  ],
+  "events": [
+   {
+    "eid": "A",
+    "source_span": "A colour proof approval",
+    "span_start": 0,
+    "span_end": 23,
+    "role": "STATE_OBSERVATION",
+    "governed_tools": [
+     "check_proof_approval"
+    ],
+    "sentence_index": 0
+   },
+   {
+    "eid": "B",
+    "source_span": "binding the catalogues",
+    "span_start": 43,
+    "span_end": 65,
+    "role": "OPERATION_EFFECT",
+    "governed_tools": [
+     "bind_catalogues"
+    ],
+    "sentence_index": 0
+   },
+   {
+    "eid": "C",
+    "source_span": "The covers are laminated",
+    "span_start": 67,
+    "span_end": 91,
+    "role": "OPERATION_EFFECT",
+    "governed_tools": [
+     "laminate_covers"
+    ],
+    "sentence_index": 1
+   },
+   {
+    "eid": "D",
+    "source_span": "Catalogues are boxed for delivery",
+    "span_start": 114,
+    "span_end": 147,
+    "role": "OPERATION_EFFECT",
+    "governed_tools": [
+     "box_catalogues"
+    ],
+    "sentence_index": 2
+   }
+  ],
+  "edges": [
+   {
+    "from_eid": "A",
+    "to_eid": "B",
+    "from_span": "A colour proof approval",
+    "to_span": "binding the catalogues",
+    "relation": "STATE_GATE",
+    "acceptable": [
+     "STATE_GATE"
+    ],
+    "evidence": [
+     {
+      "start": 0,
+      "end": 65,
+      "text": "A colour proof approval is required before binding the catalogues"
+     }
+    ]
+   }
+  ],
+  "groups": [],
+  "tool_types": {
+   "check_proof_approval": "verify",
+   "bind_catalogues": "mutate",
+   "laminate_covers": "mutate",
+   "box_catalogues": "mutate"
+  },
+  "pair_universe": [
+   {
+    "a_eid": "A",
+    "b_eid": "B",
+    "a_span": "A colour proof approval",
+    "b_span": "binding the catalogues",
+    "gold": "POSITIVE",
+    "hard": true
+   },
+   {
+    "a_eid": "A",
+    "b_eid": "C",
+    "a_span": "A colour proof approval",
+    "b_span": "The covers are laminated",
+    "gold": "NEGATIVE",
+    "hard": true
+   },
+   {
+    "a_eid": "A",
+    "b_eid": "D",
+    "a_span": "A colour proof approval",
+    "b_span": "Catalogues are boxed for delivery",
+    "gold": "NEGATIVE",
+    "hard": true
+   },
+   {
+    "a_eid": "B",
+    "b_eid": "C",
+    "a_span": "binding the catalogues",
+    "b_span": "The covers are laminated",
+    "gold": "NEGATIVE",
+    "hard": true
+   },
+   {
+    "a_eid": "B",
+    "b_eid": "D",
+    "a_span": "binding the catalogues",
+    "b_span": "Catalogues are boxed for delivery",
+    "gold": "NEGATIVE",
+    "hard": true
+   },
+   {
+    "a_eid": "C",
+    "b_eid": "D",
+    "a_span": "The covers are laminated",
+    "b_span": "Catalogues are boxed for delivery",
+    "gold": "NEGATIVE",
+    "hard": true
+   }
+  ],
+  "cf_of": null,
+  "mp1": true,
+  "notes": "MP1 member (original side). The approval gates binding only; laminating and boxing are plausible but unlicensed parents."
+ },
+ {
+  "case_id": "calib_print_cf",
+  "orig_case_id": "calib_print_cf",
+  "domain": "print shop",
+  "family": "parent_swap_cf",
+  "split": "calib",
+  "policy": "A colour proof approval is required before laminating the covers. The catalogues are bound on the saddle stitcher. Catalogues are boxed for delivery on Fridays.",
+  "tools": [
+   {
+    "name": "check_proof_approval",
+    "type": "verify",
+    "description": "Looks up the colour proof record for a print job and returns whether the client has approved it.",
+    "input": {
+     "job_id": "string"
+    },
+    "output": {
+     "approved": "boolean"
+    }
+   },
+   {
+    "name": "bind_catalogues",
+    "type": "mutate",
+    "description": "Binds the printed signatures into finished catalogues on the binding line.",
+    "input": {
+     "job_id": "string",
+     "run_count": "integer"
+    },
+    "output": {
+     "bundle_ids": "string"
+    }
+   },
+   {
+    "name": "laminate_covers",
+    "type": "mutate",
+    "description": "Feeds cover sheets through the laminator and stacks the finished covers.",
+    "input": {
+     "sheet_count": "integer",
+     "finish": "string"
+    },
+    "output": {
+     "stack_id": "string"
+    }
+   },
+   {
+    "name": "box_catalogues",
+    "type": "mutate",
+    "description": "Packs finished catalogues into delivery boxes and prints the shipping labels.",
+    "input": {
+     "bundle_ids": "string"
+    },
+    "output": {
+     "box_ids": "string"
+    }
+   }
+  ],
+  "events": [
+   {
+    "eid": "A",
+    "source_span": "A colour proof approval",
+    "span_start": 0,
+    "span_end": 23,
+    "role": "STATE_OBSERVATION",
+    "governed_tools": [
+     "check_proof_approval"
+    ],
+    "sentence_index": 0
+   },
+   {
+    "eid": "B",
+    "source_span": "The catalogues are bound",
+    "span_start": 66,
+    "span_end": 90,
+    "role": "OPERATION_EFFECT",
+    "governed_tools": [
+     "bind_catalogues"
+    ],
+    "sentence_index": 1
+   },
+   {
+    "eid": "C",
+    "source_span": "laminating the covers",
+    "span_start": 43,
+    "span_end": 64,
+    "role": "OPERATION_EFFECT",
+    "governed_tools": [
+     "laminate_covers"
+    ],
+    "sentence_index": 0
+   },
+   {
+    "eid": "D",
+    "source_span": "Catalogues are boxed for delivery",
+    "span_start": 115,
+    "span_end": 148,
+    "role": "OPERATION_EFFECT",
+    "governed_tools": [
+     "box_catalogues"
+    ],
+    "sentence_index": 2
+   }
+  ],
+  "edges": [
+   {
+    "from_eid": "A",
+    "to_eid": "C",
+    "from_span": "A colour proof approval",
+    "to_span": "laminating the covers",
+    "relation": "STATE_GATE",
+    "acceptable": [
+     "STATE_GATE"
+    ],
+    "evidence": [
+     {
+      "start": 0,
+      "end": 64,
+      "text": "A colour proof approval is required before laminating the covers"
+     }
+    ]
+   }
+  ],
+  "groups": [],
+  "tool_types": {
+   "check_proof_approval": "verify",
+   "bind_catalogues": "mutate",
+   "laminate_covers": "mutate",
+   "box_catalogues": "mutate"
+  },
+  "pair_universe": [
+   {
+    "a_eid": "A",
+    "b_eid": "B",
+    "a_span": "A colour proof approval",
+    "b_span": "The catalogues are bound",
+    "gold": "NEGATIVE",
+    "hard": true
+   },
+   {
+    "a_eid": "A",
+    "b_eid": "C",
+    "a_span": "A colour proof approval",
+    "b_span": "laminating the covers",
+    "gold": "POSITIVE",
+    "hard": true
+   },
+   {
+    "a_eid": "A",
+    "b_eid": "D",
+    "a_span": "A colour proof approval",
+    "b_span": "Catalogues are boxed for delivery",
+    "gold": "NEGATIVE",
+    "hard": true
+   },
+   {
+    "a_eid": "B",
+    "b_eid": "C",
+    "a_span": "The catalogues are bound",
+    "b_span": "laminating the covers",
+    "gold": "NEGATIVE",
+    "hard": true
+   },
+   {
+    "a_eid": "B",
+    "b_eid": "D",
+    "a_span": "The catalogues are bound",
+    "b_span": "Catalogues are boxed for delivery",
+    "gold": "NEGATIVE",
+    "hard": true
+   },
+   {
+    "a_eid": "C",
+    "b_eid": "D",
+    "a_span": "laminating the covers",
+    "b_span": "Catalogues are boxed for delivery",
+    "gold": "NEGATIVE",
+    "hard": true
+   }
+  ],
+  "cf_of": "calib_print",
+  "mp1": true,
+  "notes": "Counterfactual twin of calib_print: ONLY the bound operation changed (binding -> laminating)."
+ },
+ {
+  "case_id": "calib_library",
+  "orig_case_id": "calib_library",
+  "domain": "mobile library",
+  "family": "communication_adjacent",
+  "split": "calib",
+  "policy": "Scan the borrower card before issuing the reserved titles. Notify hold pickup patrons by SMS in the afternoon. The route van is fuelled at the depot every morning.",
+  "tools": [
+   {
+    "name": "scan_borrower_card",
+    "type": "verify",
+    "description": "Reads the borrower card barcode and returns the membership status and any fines.",
+    "input": {
+     "card_code": "string"
+    },
+    "output": {
+     "member_ok": "boolean",
+     "fines": "number"
+    }
+   },
+   {
+    "name": "issue_titles",
+    "type": "mutate",
+    "description": "Checks reserved titles out to a borrower and updates the loan records.",
+    "input": {
+     "member_id": "string",
+     "title_ids": "string"
+    },
+    "output": {
+     "loan_ids": "string"
+    }
+   },
+   {
+    "name": "send_pickup_sms",
+    "type": "communicate",
+    "description": "Sends an SMS notification to patrons whose held titles are ready for pickup.",
+    "input": {
+     "patron_ids": "string",
+     "message": "string"
+    },
+    "output": {
+     "sent_count": "integer"
+    }
+   },
+   {
+    "name": "fuel_van",
+    "type": "mutate",
+    "description": "Refuels the route van at the depot pump and logs the odometer reading.",
+    "input": {
+     "van_id": "string",
+     "litres": "number"
+    },
+    "output": {
+     "log_id": "string"
+    }
+   }
+  ],
+  "events": [
+   {
+    "eid": "A",
+    "source_span": "Scan the borrower card",
+    "span_start": 0,
+    "span_end": 22,
+    "role": "PRECONDITION_CHECK",
+    "governed_tools": [
+     "scan_borrower_card"
+    ],
+    "sentence_index": 0
+   },
+   {
+    "eid": "B",
+    "source_span": "issuing the reserved titles",
+    "span_start": 30,
+    "span_end": 57,
+    "role": "OPERATION_EFFECT",
+    "governed_tools": [
+     "issue_titles"
+    ],
+    "sentence_index": 0
+   },
+   {
+    "eid": "C",
+    "source_span": "Notify hold pickup patrons",
+    "span_start": 59,
+    "span_end": 85,
+    "role": "COMMUNICATION",
+    "governed_tools": [
+     "send_pickup_sms"
+    ],
+    "sentence_index": 1
+   },
+   {
+    "eid": "D",
+    "source_span": "The route van is fuelled",
+    "span_start": 111,
+    "span_end": 135,
+    "role": "OPERATION_EFFECT",
+    "governed_tools": [
+     "fuel_van"
+    ],
+    "sentence_index": 2
+   }
+  ],
+  "edges": [
+   {
+    "from_eid": "A",
+    "to_eid": "B",
+    "from_span": "Scan the borrower card",
+    "to_span": "issuing the reserved titles",
+    "relation": "PRECONDITION",
+    "acceptable": [
+     "PRECONDITION"
+    ],
+    "evidence": [
+     {
+      "start": 0,
+      "end": 57,
+      "text": "Scan the borrower card before issuing the reserved titles"
+     }
+    ]
+   }
+  ],
+  "groups": [],
+  "tool_types": {
+   "scan_borrower_card": "verify",
+   "issue_titles": "mutate",
+   "send_pickup_sms": "communicate",
+   "fuel_van": "mutate"
+  },
+  "pair_universe": [
+   {
+    "a_eid": "A",
+    "b_eid": "B",
+    "a_span": "Scan the borrower card",
+    "b_span": "issuing the reserved titles",
+    "gold": "POSITIVE",
+    "hard": true
+   },
+   {
+    "a_eid": "A",
+    "b_eid": "C",
+    "a_span": "Scan the borrower card",
+    "b_span": "Notify hold pickup patrons",
+    "gold": "NEGATIVE",
+    "hard": true
+   },
+   {
+    "a_eid": "A",
+    "b_eid": "D",
+    "a_span": "Scan the borrower card",
+    "b_span": "The route van is fuelled",
+    "gold": "NEGATIVE",
+    "hard": true
+   },
+   {
+    "a_eid": "B",
+    "b_eid": "C",
+    "a_span": "issuing the reserved titles",
+    "b_span": "Notify hold pickup patrons",
+    "gold": "NEGATIVE",
+    "hard": true
+   },
+   {
+    "a_eid": "B",
+    "b_eid": "D",
+    "a_span": "issuing the reserved titles",
+    "b_span": "The route van is fuelled",
+    "gold": "NEGATIVE",
+    "hard": true
+   },
+   {
+    "a_eid": "C",
+    "b_eid": "D",
+    "a_span": "Notify hold pickup patrons",
+    "b_span": "The route van is fuelled",
+    "gold": "NEGATIVE",
+    "hard": true
+   }
+  ],
+  "cf_of": null,
+  "mp1": false,
+  "notes": "Communication event sits between check and issue; scan->notify and notify->issue are plausible but unsupported."
+ },
+ {
+  "case_id": "calib_icerink",
+  "orig_case_id": "calib_icerink",
+  "domain": "ice rink",
+  "family": "temporal_op_op",
+  "split": "calib",
+  "policy": "Resurface the ice before opening the rink to skaters. Measure the ice thickness before flooding the rink for the night. The skate rental counter opens at ten.",
+  "tools": [
+   {
+    "name": "resurface_ice",
+    "type": "mutate",
+    "description": "Drives the resurfacer over the rink ice to renew the skating surface.",
+    "input": {
+     "passes": "integer"
+    },
+    "output": {
+     "session_id": "string"
+    }
+   },
+   {
+    "name": "open_rink",
+    "type": "mutate",
+    "description": "Opens the rink gates to public skating and starts the session clock.",
+    "input": {
+     "session_id": "string"
+    },
+    "output": {
+     "gate_open": "boolean"
+    }
+   },
+   {
+    "name": "measure_ice",
+    "type": "verify",
+    "description": "Bores a measurement hole and returns the ice thickness in millimetres.",
+    "input": {
+     "location": "string"
+    },
+    "output": {
+     "thickness_mm": "number"
+    }
+   },
+   {
+    "name": "flood_rink",
+    "type": "mutate",
+    "description": "Floods the rink surface with the water hose to build a fresh ice layer overnight.",
+    "input": {
+     "minutes": "integer"
+    },
+    "output": {
+     "flood_id": "string"
+    }
+   },
+   {
+    "name": "open_counter",
+    "type": "mutate",
+    "description": "Opens the skate rental counter and unlocks the rental till.",
+    "input": {
+     "staff_id": "string"
+    },
+    "output": {
+     "till_id": "string"
+    }
+   }
+  ],
+  "events": [
+   {
+    "eid": "A",
+    "source_span": "Resurface the ice",
+    "span_start": 0,
+    "span_end": 17,
+    "role": "OPERATION_EFFECT",
+    "governed_tools": [
+     "resurface_ice"
+    ],
+    "sentence_index": 0
+   },
+   {
+    "eid": "B",
+    "source_span": "opening the rink to skaters",
+    "span_start": 25,
+    "span_end": 52,
+    "role": "OPERATION_EFFECT",
+    "governed_tools": [
+     "open_rink"
+    ],
+    "sentence_index": 0
+   },
+   {
+    "eid": "C",
+    "source_span": "Measure the ice thickness",
+    "span_start": 54,
+    "span_end": 79,
+    "role": "PRECONDITION_CHECK",
+    "governed_tools": [
+     "measure_ice"
+    ],
+    "sentence_index": 1
+   },
+   {
+    "eid": "D",
+    "source_span": "flooding the rink",
+    "span_start": 87,
+    "span_end": 104,
+    "role": "OPERATION_EFFECT",
+    "governed_tools": [
+     "flood_rink"
+    ],
+    "sentence_index": 1
+   },
+   {
+    "eid": "E",
+    "source_span": "The skate rental counter opens",
+    "span_start": 120,
+    "span_end": 150,
+    "role": "OPERATION_EFFECT",
+    "governed_tools": [
+     "open_counter"
+    ],
+    "sentence_index": 2
+   }
+  ],
+  "edges": [
+   {
+    "from_eid": "A",
+    "to_eid": "B",
+    "from_span": "Resurface the ice",
+    "to_span": "opening the rink to skaters",
+    "relation": "ORDER_BEFORE",
+    "acceptable": [
+     "ORDER_BEFORE"
+    ],
+    "evidence": [
+     {
+      "start": 0,
+      "end": 52,
+      "text": "Resurface the ice before opening the rink to skaters"
+     }
+    ]
+   },
+   {
+    "from_eid": "C",
+    "to_eid": "D",
+    "from_span": "Measure the ice thickness",
+    "to_span": "flooding the rink",
+    "relation": "PRECONDITION",
+    "acceptable": [
+     "PRECONDITION"
+    ],
+    "evidence": [
+     {
+      "start": 54,
+      "end": 104,
+      "text": "Measure the ice thickness before flooding the rink"
+     }
+    ]
+   }
+  ],
+  "groups": [],
+  "tool_types": {
+   "resurface_ice": "mutate",
+   "open_rink": "mutate",
+   "measure_ice": "verify",
+   "flood_rink": "mutate",
+   "open_counter": "mutate"
+  },
+  "pair_universe": [
+   {
+    "a_eid": "A",
+    "b_eid": "B",
+    "a_span": "Resurface the ice",
+    "b_span": "opening the rink to skaters",
+    "gold": "POSITIVE",
+    "hard": true
+   },
+   {
+    "a_eid": "A",
+    "b_eid": "C",
+    "a_span": "Resurface the ice",
+    "b_span": "Measure the ice thickness",
+    "gold": "NEGATIVE",
+    "hard": false
+   },
+   {
+    "a_eid": "A",
+    "b_eid": "D",
+    "a_span": "Resurface the ice",
+    "b_span": "flooding the rink",
+    "gold": "NEGATIVE",
+    "hard": true
+   },
+   {
+    "a_eid": "A",
+    "b_eid": "E",
+    "a_span": "Resurface the ice",
+    "b_span": "The skate rental counter opens",
+    "gold": "NEGATIVE",
+    "hard": true
+   },
+   {
+    "a_eid": "B",
+    "b_eid": "C",
+    "a_span": "opening the rink to skaters",
+    "b_span": "Measure the ice thickness",
+    "gold": "NEGATIVE",
+    "hard": false
+   },
+   {
+    "a_eid": "B",
+    "b_eid": "D",
+    "a_span": "opening the rink to skaters",
+    "b_span": "flooding the rink",
+    "gold": "NEGATIVE",
+    "hard": true
+   },
+   {
+    "a_eid": "B",
+    "b_eid": "E",
+    "a_span": "opening the rink to skaters",
+    "b_span": "The skate rental counter opens",
+    "gold": "NEGATIVE",
+    "hard": true
+   },
+   {
+    "a_eid": "C",
+    "b_eid": "D",
+    "a_span": "Measure the ice thickness",
+    "b_span": "flooding the rink",
+    "gold": "POSITIVE",
+    "hard": true
+   },
+   {
+    "a_eid": "C",
+    "b_eid": "E",
+    "a_span": "Measure the ice thickness",
+    "b_span": "The skate rental counter opens",
+    "gold": "NEGATIVE",
+    "hard": true
+   },
+   {
+    "a_eid": "D",
+    "b_eid": "E",
+    "a_span": "flooding the rink",
+    "b_span": "The skate rental counter opens",
+    "gold": "NEGATIVE",
+    "hard": true
+   }
+  ],
+  "cf_of": null,
+  "mp1": false,
+  "notes": "Temporal op->op edge (A->B) plus check->op edge (C->D). Traps: A->D and C->B are plausible cross-combinations."
+ },
+ {
+  "case_id": "val_sawmill",
+  "orig_case_id": "val_sawmill",
+  "domain": "sawmill",
+  "family": "parent_swap",
+  "split": "val",
+  "policy": "An inspected blade guard is required before ripping oak beams. The planing bench is cleaned at shift end. Beam ends are squared on the chop saw.",
+  "tools": [
+   {
+    "name": "inspect_blade_guard",
+    "type": "verify",
+    "description": "Checks the saw blade guard for cracks and secure fixings and returns a pass or fail per guard.",
+    "input": {
+     "saw_id": "string"
+    },
+    "output": {
+     "guard_ok": "boolean"
+    }
+   },
+   {
+    "name": "rip_timber",
+    "type": "mutate",
+    "description": "Rips timber stock into beams on the band saw and stacks the output.",
+    "input": {
+     "stock_id": "string",
+     "width_mm": "integer"
+    },
+    "output": {
+     "beam_ids": "string"
+    }
+   },
+   {
+    "name": "clean_bench",
+    "type": "mutate",
+    "description": "Clears shavings from the planing bench and sweeps the surrounding floor.",
+    "input": {
+     "area": "string"
+    },
+    "output": {
+     "cleaned": "boolean"
+    }
+   },
+   {
+    "name": "square_ends",
+    "type": "mutate",
+    "description": "Squares the beam ends on the chop saw and marks the finished lengths.",
+    "input": {
+     "beam_ids": "string"
+    },
+    "output": {
+     "cut_ids": "string"
+    }
+   }
+  ],
+  "events": [
+   {
+    "eid": "A",
+    "source_span": "An inspected blade guard",
+    "span_start": 0,
+    "span_end": 24,
+    "role": "STATE_OBSERVATION",
+    "governed_tools": [
+     "inspect_blade_guard"
+    ],
+    "sentence_index": 0
+   },
+   {
+    "eid": "B",
+    "source_span": "ripping oak beams",
+    "span_start": 44,
+    "span_end": 61,
+    "role": "OPERATION_EFFECT",
+    "governed_tools": [
+     "rip_timber"
+    ],
+    "sentence_index": 0
+   },
+   {
+    "eid": "C",
+    "source_span": "The planing bench is cleaned",
+    "span_start": 63,
+    "span_end": 91,
+    "role": "OPERATION_EFFECT",
+    "governed_tools": [
+     "clean_bench"
+    ],
+    "sentence_index": 1
+   },
+   {
+    "eid": "D",
+    "source_span": "Beam ends are squared",
+    "span_start": 106,
+    "span_end": 127,
+    "role": "OPERATION_EFFECT",
+    "governed_tools": [
+     "square_ends"
+    ],
+    "sentence_index": 2
+   }
+  ],
+  "edges": [
+   {
+    "from_eid": "A",
+    "to_eid": "B",
+    "from_span": "An inspected blade guard",
+    "to_span": "ripping oak beams",
+    "relation": "STATE_GATE",
+    "acceptable": [
+     "STATE_GATE",
+     "PRECONDITION"
+    ],
+    "evidence": [
+     {
+      "start": 0,
+      "end": 61,
+      "text": "An inspected blade guard is required before ripping oak beams"
+     }
+    ]
+   }
+  ],
+  "groups": [],
+  "tool_types": {
+   "inspect_blade_guard": "verify",
+   "rip_timber": "mutate",
+   "clean_bench": "mutate",
+   "square_ends": "mutate"
+  },
+  "pair_universe": [
+   {
+    "a_eid": "A",
+    "b_eid": "B",
+    "a_span": "An inspected blade guard",
+    "b_span": "ripping oak beams",
+    "gold": "POSITIVE",
+    "hard": true
+   },
+   {
+    "a_eid": "A",
+    "b_eid": "C",
+    "a_span": "An inspected blade guard",
+    "b_span": "The planing bench is cleaned",
+    "gold": "NEGATIVE",
+    "hard": true
+   },
+   {
+    "a_eid": "A",
+    "b_eid": "D",
+    "a_span": "An inspected blade guard",
+    "b_span": "Beam ends are squared",
+    "gold": "NEGATIVE",
+    "hard": true
+   },
+   {
+    "a_eid": "B",
+    "b_eid": "C",
+    "a_span": "ripping oak beams",
+    "b_span": "The planing bench is cleaned",
+    "gold": "NEGATIVE",
+    "hard": true
+   },
+   {
+    "a_eid": "B",
+    "b_eid": "D",
+    "a_span": "ripping oak beams",
+    "b_span": "Beam ends are squared",
+    "gold": "NEGATIVE",
+    "hard": true
+   },
+   {
+    "a_eid": "C",
+    "b_eid": "D",
+    "a_span": "The planing bench is cleaned",
+    "b_span": "Beam ends are squared",
+    "gold": "NEGATIVE",
+    "hard": true
+   }
+  ],
+  "cf_of": null,
+  "mp1": true,
+  "notes": "MP1 member. acceptable includes PRECONDITION because 'inspected' participle admits an act reading."
+ },
+ {
+  "case_id": "val_sawmill_cf",
+  "orig_case_id": "val_sawmill_cf",
+  "domain": "sawmill",
+  "family": "parent_swap_cf",
+  "split": "val",
+  "policy": "An inspected blade guard is required before squaring beam ends. Oak beams are ripped on the band saw. The planing bench is cleaned at shift end.",
+  "tools": [
+   {
+    "name": "inspect_blade_guard",
+    "type": "verify",
+    "description": "Checks the saw blade guard for cracks and secure fixings and returns a pass or fail per guard.",
+    "input": {
+     "saw_id": "string"
+    },
+    "output": {
+     "guard_ok": "boolean"
+    }
+   },
+   {
+    "name": "rip_timber",
+    "type": "mutate",
+    "description": "Rips timber stock into beams on the band saw and stacks the output.",
+    "input": {
+     "stock_id": "string",
+     "width_mm": "integer"
+    },
+    "output": {
+     "beam_ids": "string"
+    }
+   },
+   {
+    "name": "clean_bench",
+    "type": "mutate",
+    "description": "Clears shavings from the planing bench and sweeps the surrounding floor.",
+    "input": {
+     "area": "string"
+    },
+    "output": {
+     "cleaned": "boolean"
+    }
+   },
+   {
+    "name": "square_ends",
+    "type": "mutate",
+    "description": "Squares the beam ends on the chop saw and marks the finished lengths.",
+    "input": {
+     "beam_ids": "string"
+    },
+    "output": {
+     "cut_ids": "string"
+    }
+   }
+  ],
+  "events": [
+   {
+    "eid": "A",
+    "source_span": "An inspected blade guard",
+    "span_start": 0,
+    "span_end": 24,
+    "role": "STATE_OBSERVATION",
+    "governed_tools": [
+     "inspect_blade_guard"
+    ],
+    "sentence_index": 0
+   },
+   {
+    "eid": "B",
+    "source_span": "Oak beams are ripped",
+    "span_start": 64,
+    "span_end": 84,
+    "role": "OPERATION_EFFECT",
+    "governed_tools": [
+     "rip_timber"
+    ],
+    "sentence_index": 1
+   },
+   {
+    "eid": "C",
+    "source_span": "The planing bench is cleaned",
+    "span_start": 102,
+    "span_end": 130,
+    "role": "OPERATION_EFFECT",
+    "governed_tools": [
+     "clean_bench"
+    ],
+    "sentence_index": 2
+   },
+   {
+    "eid": "D",
+    "source_span": "squaring beam ends",
+    "span_start": 44,
+    "span_end": 62,
+    "role": "OPERATION_EFFECT",
+    "governed_tools": [
+     "square_ends"
+    ],
+    "sentence_index": 0
+   }
+  ],
+  "edges": [
+   {
+    "from_eid": "A",
+    "to_eid": "D",
+    "from_span": "An inspected blade guard",
+    "to_span": "squaring beam ends",
+    "relation": "STATE_GATE",
+    "acceptable": [
+     "STATE_GATE",
+     "PRECONDITION"
+    ],
+    "evidence": [
+     {
+      "start": 0,
+      "end": 62,
+      "text": "An inspected blade guard is required before squaring beam ends"
+     }
+    ]
+   }
+  ],
+  "groups": [],
+  "tool_types": {
+   "inspect_blade_guard": "verify",
+   "rip_timber": "mutate",
+   "clean_bench": "mutate",
+   "square_ends": "mutate"
+  },
+  "pair_universe": [
+   {
+    "a_eid": "A",
+    "b_eid": "B",
+    "a_span": "An inspected blade guard",
+    "b_span": "Oak beams are ripped",
+    "gold": "NEGATIVE",
+    "hard": true
+   },
+   {
+    "a_eid": "A",
+    "b_eid": "C",
+    "a_span": "An inspected blade guard",
+    "b_span": "The planing bench is cleaned",
+    "gold": "NEGATIVE",
+    "hard": true
+   },
+   {
+    "a_eid": "A",
+    "b_eid": "D",
+    "a_span": "An inspected blade guard",
+    "b_span": "squaring beam ends",
+    "gold": "POSITIVE",
+    "hard": true
+   },
+   {
+    "a_eid": "B",
+    "b_eid": "C",
+    "a_span": "Oak beams are ripped",
+    "b_span": "The planing bench is cleaned",
+    "gold": "NEGATIVE",
+    "hard": true
+   },
+   {
+    "a_eid": "B",
+    "b_eid": "D",
+    "a_span": "Oak beams are ripped",
+    "b_span": "squaring beam ends",
+    "gold": "NEGATIVE",
+    "hard": true
+   },
+   {
+    "a_eid": "C",
+    "b_eid": "D",
+    "a_span": "The planing bench is cleaned",
+    "b_span": "squaring beam ends",
+    "gold": "NEGATIVE",
+    "hard": true
+   }
+  ],
+  "cf_of": "val_sawmill",
+  "mp1": true,
+  "notes": "Counterfactual twin of val_sawmill: binding moved from ripping to squaring; nothing else changed."
+ },
+ {
+  "case_id": "val_falcon",
+  "orig_case_id": "val_falcon",
+  "domain": "falconry center",
+  "family": "parent_swap",
+  "split": "val",
+  "policy": "Before flying the falcons in the display, weigh each bird on the arena scale. The jesses are inspected in the equipment room on Mondays. Feed the birds from the glove in the evening.",
+  "tools": [
+   {
+    "name": "weigh_falcon",
+    "type": "verify",
+    "description": "Places a falcon on the arena scale and records its weight on the daily chart.",
+    "input": {
+     "bird_id": "string"
+    },
+    "output": {
+     "weight_g": "number"
+    }
+   },
+   {
+    "name": "log_display_flight",
+    "type": "mutate",
+    "description": "Registers a display flight for a falcon in the flying register and marks the bird as flown.",
+    "input": {
+     "bird_id": "string",
+     "session": "string"
+    },
+    "output": {
+     "entry_id": "string"
+    }
+   },
+   {
+    "name": "inspect_jesses",
+    "type": "verify",
+    "description": "Examines the leather jesses and anklets for wear and returns a condition report.",
+    "input": {
+     "item_ids": "string"
+    },
+    "output": {
+     "condition": "string"
+    }
+   },
+   {
+    "name": "log_feeding",
+    "type": "mutate",
+    "description": "Records an evening feeding from the glove in the feeding register.",
+    "input": {
+     "bird_id": "string",
+     "food_g": "number"
+    },
+    "output": {
+     "entry_id": "string"
+    }
+   }
+  ],
+  "events": [
+   {
+    "eid": "A",
+    "source_span": "weigh each bird on the arena scale",
+    "span_start": 42,
+    "span_end": 76,
+    "role": "PRECONDITION_CHECK",
+    "governed_tools": [
+     "weigh_falcon"
+    ],
+    "sentence_index": 0
+   },
+   {
+    "eid": "B",
+    "source_span": "flying the falcons in the display",
+    "span_start": 7,
+    "span_end": 40,
+    "role": "OPERATION_EFFECT",
+    "governed_tools": [
+     "log_display_flight"
+    ],
+    "sentence_index": 0
+   },
+   {
+    "eid": "C",
+    "source_span": "The jesses are inspected",
+    "span_start": 78,
+    "span_end": 102,
+    "role": "PRECONDITION_CHECK",
+    "governed_tools": [
+     "inspect_jesses"
+    ],
+    "sentence_index": 1
+   },
+   {
+    "eid": "D",
+    "source_span": "Feed the birds from the glove",
+    "span_start": 137,
+    "span_end": 166,
+    "role": "OPERATION_EFFECT",
+    "governed_tools": [
+     "log_feeding"
+    ],
+    "sentence_index": 2
+   }
+  ],
+  "edges": [
+   {
+    "from_eid": "A",
+    "to_eid": "B",
+    "from_span": "weigh each bird on the arena scale",
+    "to_span": "flying the falcons in the display",
+    "relation": "PRECONDITION",
+    "acceptable": [
+     "PRECONDITION"
+    ],
+    "evidence": [
+     {
+      "start": 0,
+      "end": 76,
+      "text": "Before flying the falcons in the display, weigh each bird on the arena scale"
+     }
+    ]
+   }
+  ],
+  "groups": [],
+  "tool_types": {
+   "weigh_falcon": "verify",
+   "log_display_flight": "mutate",
+   "inspect_jesses": "verify",
+   "log_feeding": "mutate"
+  },
+  "pair_universe": [
+   {
+    "a_eid": "A",
+    "b_eid": "B",
+    "a_span": "weigh each bird on the arena scale",
+    "b_span": "flying the falcons in the display",
+    "gold": "POSITIVE",
+    "hard": true
+   },
+   {
+    "a_eid": "A",
+    "b_eid": "C",
+    "a_span": "weigh each bird on the arena scale",
+    "b_span": "The jesses are inspected",
+    "gold": "NEGATIVE",
+    "hard": false
+   },
+   {
+    "a_eid": "A",
+    "b_eid": "D",
+    "a_span": "weigh each bird on the arena scale",
+    "b_span": "Feed the birds from the glove",
+    "gold": "NEGATIVE",
+    "hard": true
+   },
+   {
+    "a_eid": "B",
+    "b_eid": "C",
+    "a_span": "flying the falcons in the display",
+    "b_span": "The jesses are inspected",
+    "gold": "NEGATIVE",
+    "hard": false
+   },
+   {
+    "a_eid": "B",
+    "b_eid": "D",
+    "a_span": "flying the falcons in the display",
+    "b_span": "Feed the birds from the glove",
+    "gold": "NEGATIVE",
+    "hard": true
+   },
+   {
+    "a_eid": "C",
+    "b_eid": "D",
+    "a_span": "The jesses are inspected",
+    "b_span": "Feed the birds from the glove",
+    "gold": "NEGATIVE",
+    "hard": true
+   }
+  ],
+  "cf_of": null,
+  "mp1": true,
+  "notes": "MP1 member, 'Before X, check Y' pattern. C is a NONE-style standalone check; C->B is the plausible trap."
+ },
+ {
+  "case_id": "val_falcon_cf",
+  "orig_case_id": "val_falcon_cf",
+  "domain": "falconry center",
+  "family": "parent_swap_cf",
+  "split": "val",
+  "policy": "Before feeding the birds from the glove, weigh each bird on the arena scale. The falcons are flown in the afternoon display. The jesses are inspected in the equipment room on Mondays.",
+  "tools": [
+   {
+    "name": "weigh_falcon",
+    "type": "verify",
+    "description": "Places a falcon on the arena scale and records its weight on the daily chart.",
+    "input": {
+     "bird_id": "string"
+    },
+    "output": {
+     "weight_g": "number"
+    }
+   },
+   {
+    "name": "log_display_flight",
+    "type": "mutate",
+    "description": "Registers a display flight for a falcon in the flying register and marks the bird as flown.",
+    "input": {
+     "bird_id": "string",
+     "session": "string"
+    },
+    "output": {
+     "entry_id": "string"
+    }
+   },
+   {
+    "name": "inspect_jesses",
+    "type": "verify",
+    "description": "Examines the leather jesses and anklets for wear and returns a condition report.",
+    "input": {
+     "item_ids": "string"
+    },
+    "output": {
+     "condition": "string"
+    }
+   },
+   {
+    "name": "log_feeding",
+    "type": "mutate",
+    "description": "Records an evening feeding from the glove in the feeding register.",
+    "input": {
+     "bird_id": "string",
+     "food_g": "number"
+    },
+    "output": {
+     "entry_id": "string"
+    }
+   }
+  ],
+  "events": [
+   {
+    "eid": "A",
+    "source_span": "weigh each bird on the arena scale",
+    "span_start": 41,
+    "span_end": 75,
+    "role": "PRECONDITION_CHECK",
+    "governed_tools": [
+     "weigh_falcon"
+    ],
+    "sentence_index": 0
+   },
+   {
+    "eid": "B",
+    "source_span": "The falcons are flown",
+    "span_start": 77,
+    "span_end": 98,
+    "role": "OPERATION_EFFECT",
+    "governed_tools": [
+     "log_display_flight"
+    ],
+    "sentence_index": 1
+   },
+   {
+    "eid": "C",
+    "source_span": "The jesses are inspected",
+    "span_start": 125,
+    "span_end": 149,
+    "role": "PRECONDITION_CHECK",
+    "governed_tools": [
+     "inspect_jesses"
+    ],
+    "sentence_index": 2
+   },
+   {
+    "eid": "D",
+    "source_span": "feeding the birds from the glove",
+    "span_start": 7,
+    "span_end": 39,
+    "role": "OPERATION_EFFECT",
+    "governed_tools": [
+     "log_feeding"
+    ],
+    "sentence_index": 0
+   }
+  ],
+  "edges": [
+   {
+    "from_eid": "A",
+    "to_eid": "D",
+    "from_span": "weigh each bird on the arena scale",
+    "to_span": "feeding the birds from the glove",
+    "relation": "PRECONDITION",
+    "acceptable": [
+     "PRECONDITION"
+    ],
+    "evidence": [
+     {
+      "start": 0,
+      "end": 75,
+      "text": "Before feeding the birds from the glove, weigh each bird on the arena scale"
+     }
+    ]
+   }
+  ],
+  "groups": [],
+  "tool_types": {
+   "weigh_falcon": "verify",
+   "log_display_flight": "mutate",
+   "inspect_jesses": "verify",
+   "log_feeding": "mutate"
+  },
+  "pair_universe": [
+   {
+    "a_eid": "A",
+    "b_eid": "B",
+    "a_span": "weigh each bird on the arena scale",
+    "b_span": "The falcons are flown",
+    "gold": "NEGATIVE",
+    "hard": true
+   },
+   {
+    "a_eid": "A",
+    "b_eid": "C",
+    "a_span": "weigh each bird on the arena scale",
+    "b_span": "The jesses are inspected",
+    "gold": "NEGATIVE",
+    "hard": false
+   },
+   {
+    "a_eid": "A",
+    "b_eid": "D",
+    "a_span": "weigh each bird on the arena scale",
+    "b_span": "feeding the birds from the glove",
+    "gold": "POSITIVE",
+    "hard": true
+   },
+   {
+    "a_eid": "B",
+    "b_eid": "C",
+    "a_span": "The falcons are flown",
+    "b_span": "The jesses are inspected",
+    "gold": "NEGATIVE",
+    "hard": false
+   },
+   {
+    "a_eid": "B",
+    "b_eid": "D",
+    "a_span": "The falcons are flown",
+    "b_span": "feeding the birds from the glove",
+    "gold": "NEGATIVE",
+    "hard": true
+   },
+   {
+    "a_eid": "C",
+    "b_eid": "D",
+    "a_span": "The jesses are inspected",
+    "b_span": "feeding the birds from the glove",
+    "gold": "NEGATIVE",
+    "hard": true
+   }
+  ],
+  "cf_of": "val_falcon",
+  "mp1": true,
+  "notes": "Counterfactual twin of val_falcon: weighing now gates feeding, not flying."
+ },
+ {
+  "case_id": "val_datacenter",
+  "orig_case_id": "val_datacenter",
+  "domain": "data center",
+  "family": "shared_condition_and",
+  "split": "val",
+  "policy": "A valid access badge and a completed safety induction are both required before racking any server. Rack temperature alarms are acknowledged on the console.",
+  "tools": [
+   {
+    "name": "check_badge",
+    "type": "verify",
+    "description": "Reads the badge reader entry for a technician and returns whether the badge is currently valid.",
+    "input": {
+     "badge_id": "string"
+    },
+    "output": {
+     "valid": "boolean"
+    }
+   },
+   {
+    "name": "check_induction",
+    "type": "verify",
+    "description": "Looks up the training register and returns whether a technician has completed the data hall safety induction.",
+    "input": {
+     "tech_id": "string"
+    },
+    "output": {
+     "completed": "boolean"
+    }
+   },
+   {
+    "name": "rack_server",
+    "type": "mutate",
+    "description": "Mounts a server into a rack, connects the power and network cables, and registers the unit.",
+    "input": {
+     "unit_id": "string",
+     "rack_slot": "string"
+    },
+    "output": {
+     "mounted": "boolean"
+    }
+   },
+   {
+    "name": "acknowledge_alarm",
+    "type": "communicate",
+    "description": "Acknowledges a rack temperature alarm on the operations console and adds a handling note.",
+    "input": {
+     "alarm_id": "string",
+     "note": "string"
+    },
+    "output": {
+     "ack_id": "string"
+    }
+   }
+  ],
+  "events": [
+   {
+    "eid": "A",
+    "source_span": "A valid access badge",
+    "span_start": 0,
+    "span_end": 20,
+    "role": "STATE_OBSERVATION",
+    "governed_tools": [
+     "check_badge"
+    ],
+    "sentence_index": 0
+   },
+   {
+    "eid": "B",
+    "source_span": "a completed safety induction",
+    "span_start": 25,
+    "span_end": 53,
+    "role": "STATE_OBSERVATION",
+    "governed_tools": [
+     "check_induction"
+    ],
+    "sentence_index": 0
+   },
+   {
+    "eid": "C",
+    "source_span": "racking any server",
+    "span_start": 79,
+    "span_end": 97,
+    "role": "OPERATION_EFFECT",
+    "governed_tools": [
+     "rack_server"
+    ],
+    "sentence_index": 0
+   },
+   {
+    "eid": "D",
+    "source_span": "Rack temperature alarms are acknowledged",
+    "span_start": 99,
+    "span_end": 139,
+    "role": "COMMUNICATION",
+    "governed_tools": [
+     "acknowledge_alarm"
+    ],
+    "sentence_index": 1
+   }
+  ],
+  "edges": [
+   {
+    "from_eid": "A",
+    "to_eid": "C",
+    "from_span": "A valid access badge",
+    "to_span": "racking any server",
+    "relation": "STATE_GATE",
+    "acceptable": [
+     "STATE_GATE"
+    ],
+    "evidence": [
+     {
+      "start": 0,
+      "end": 97,
+      "text": "A valid access badge and a completed safety induction are both required before racking any server"
+     }
+    ]
+   },
+   {
+    "from_eid": "B",
+    "to_eid": "C",
+    "from_span": "a completed safety induction",
+    "to_span": "racking any server",
+    "relation": "STATE_GATE",
+    "acceptable": [
+     "STATE_GATE"
+    ],
+    "evidence": [
+     {
+      "start": 0,
+      "end": 97,
+      "text": "A valid access badge and a completed safety induction are both required before racking any server"
+     }
+    ]
+   }
+  ],
+  "groups": [
+   {
+    "target_eid": "C",
+    "logic": "AND",
+    "parent_eids": [
+     "A",
+     "B"
+    ],
+    "target_span": "racking any server",
+    "parent_spans": [
+     "A valid access badge",
+     "a completed safety induction"
+    ],
+    "evidence": [
+     {
+      "start": 0,
+      "end": 97,
+      "text": "A valid access badge and a completed safety induction are both required before racking any server"
+     }
+    ]
+   }
+  ],
+  "tool_types": {
+   "check_badge": "verify",
+   "check_induction": "verify",
+   "rack_server": "mutate",
+   "acknowledge_alarm": "communicate"
+  },
+  "pair_universe": [
+   {
+    "a_eid": "A",
+    "b_eid": "B",
+    "a_span": "A valid access badge",
+    "b_span": "a completed safety induction",
+    "gold": "NEGATIVE",
+    "hard": true
+   },
+   {
+    "a_eid": "A",
+    "b_eid": "C",
+    "a_span": "A valid access badge",
+    "b_span": "racking any server",
+    "gold": "POSITIVE",
+    "hard": true
+   },
+   {
+    "a_eid": "A",
+    "b_eid": "D",
+    "a_span": "A valid access badge",
+    "b_span": "Rack temperature alarms are acknowledged",
+    "gold": "NEGATIVE",
+    "hard": true
+   },
+   {
+    "a_eid": "B",
+    "b_eid": "C",
+    "a_span": "a completed safety induction",
+    "b_span": "racking any server",
+    "gold": "POSITIVE",
+    "hard": true
+   },
+   {
+    "a_eid": "B",
+    "b_eid": "D",
+    "a_span": "a completed safety induction",
+    "b_span": "Rack temperature alarms are acknowledged",
+    "gold": "NEGATIVE",
+    "hard": true
+   },
+   {
+    "a_eid": "C",
+    "b_eid": "D",
+    "a_span": "racking any server",
+    "b_span": "Rack temperature alarms are acknowledged",
+    "gold": "NEGATIVE",
+    "hard": true
+   }
+  ],
+  "cf_of": null,
+  "mp1": false,
+  "notes": "Shared condition AND: both states gate racking. Trap: A<->B cross-link between co-conditions."
+ },
+ {
+  "case_id": "val_balloon",
+  "orig_case_id": "val_balloon",
+  "domain": "weather balloon station",
+  "family": "none_no_edges",
+  "split": "val",
+  "policy": "Calibrate the radiosonde against the reference chamber each Monday. Log the surface wind reading at the morning stand-up. The hydrogen cylinders are stored in the outer shed. Launch the balloon at dawn.",
+  "tools": [
+   {
+    "name": "calibrate_radiosonde",
+    "type": "mutate",
+    "description": "Runs a calibration cycle of the radiosonde against the reference chamber and stores the offsets.",
+    "input": {
+     "device_id": "string"
+    },
+    "output": {
+     "cal_report": "string"
+    }
+   },
+   {
+    "name": "log_wind_reading",
+    "type": "mutate",
+    "description": "Writes the current surface wind reading into the station weather log.",
+    "input": {
+     "wind_ms": "number"
+    },
+    "output": {
+     "log_id": "string"
+    }
+   },
+   {
+    "name": "read_cylinder_store",
+    "type": "read",
+    "description": "Returns the count and pressure class of hydrogen cylinders currently in the store.",
+    "input": {},
+    "output": {
+     "cylinders": "integer"
+    }
+   },
+   {
+    "name": "launch_balloon",
+    "type": "mutate",
+    "description": "Releases the weather balloon with the radiosonde and starts the ascent tracking record.",
+    "input": {
+     "flight_id": "string"
+    },
+    "output": {
+     "ascent_id": "string"
+    }
+   }
+  ],
+  "events": [
+   {
+    "eid": "A",
+    "source_span": "Calibrate the radiosonde",
+    "span_start": 0,
+    "span_end": 24,
+    "role": "OPERATION_EFFECT",
+    "governed_tools": [
+     "calibrate_radiosonde"
+    ],
+    "sentence_index": 0
+   },
+   {
+    "eid": "B",
+    "source_span": "Log the surface wind reading",
+    "span_start": 68,
+    "span_end": 96,
+    "role": "OPERATION_EFFECT",
+    "governed_tools": [
+     "log_wind_reading"
+    ],
+    "sentence_index": 1
+   },
+   {
+    "eid": "C",
+    "source_span": "The hydrogen cylinders are stored",
+    "span_start": 122,
+    "span_end": 155,
+    "role": "OTHER",
+    "governed_tools": [
+     "read_cylinder_store"
+    ],
+    "sentence_index": 2
+   },
+   {
+    "eid": "D",
+    "source_span": "Launch the balloon",
+    "span_start": 175,
+    "span_end": 193,
+    "role": "OPERATION_EFFECT",
+    "governed_tools": [
+     "launch_balloon"
+    ],
+    "sentence_index": 3
+   }
+  ],
+  "edges": [],
+  "groups": [],
+  "tool_types": {
+   "calibrate_radiosonde": "mutate",
+   "log_wind_reading": "mutate",
+   "read_cylinder_store": "read",
+   "launch_balloon": "mutate"
+  },
+  "pair_universe": [
+   {
+    "a_eid": "A",
+    "b_eid": "B",
+    "a_span": "Calibrate the radiosonde",
+    "b_span": "Log the surface wind reading",
+    "gold": "NEGATIVE",
+    "hard": true
+   },
+   {
+    "a_eid": "A",
+    "b_eid": "C",
+    "a_span": "Calibrate the radiosonde",
+    "b_span": "The hydrogen cylinders are stored",
+    "gold": "NEGATIVE",
+    "hard": false
+   },
+   {
+    "a_eid": "A",
+    "b_eid": "D",
+    "a_span": "Calibrate the radiosonde",
+    "b_span": "Launch the balloon",
+    "gold": "NEGATIVE",
+    "hard": true
+   },
+   {
+    "a_eid": "B",
+    "b_eid": "C",
+    "a_span": "Log the surface wind reading",
+    "b_span": "The hydrogen cylinders are stored",
+    "gold": "NEGATIVE",
+    "hard": false
+   },
+   {
+    "a_eid": "B",
+    "b_eid": "D",
+    "a_span": "Log the surface wind reading",
+    "b_span": "Launch the balloon",
+    "gold": "NEGATIVE",
+    "hard": true
+   },
+   {
+    "a_eid": "C",
+    "b_eid": "D",
+    "a_span": "The hydrogen cylinders are stored",
+    "b_span": "Launch the balloon",
+    "gold": "NEGATIVE",
+    "hard": false
+   }
+  ],
+  "cf_of": null,
+  "mp1": false,
+  "notes": "NONE family: no policy-licensed edge at all. World knowledge suggests calibrate->launch, but the text licenses nothing."
+ },
+ {
+  "case_id": "val_signal",
+  "orig_case_id": "val_signal",
+  "domain": "railway signal box",
+  "family": "cross_sentence",
+  "split": "val",
+  "policy": "Points grinding on the coastal line requires a lockout confirmation. The grinder may be coupled to the railhead only after the signalman posts the confirmation on the board. Track circuits are polled from the panel every hour.",
+  "tools": [
+   {
+    "name": "check_lockout_confirmation",
+    "type": "verify",
+    "description": "Queries the signal box system for the lockout confirmation state of a track section.",
+    "input": {
+     "section": "string"
+    },
+    "output": {
+     "confirmed": "boolean"
+    }
+   },
+   {
+    "name": "couple_grinder",
+    "type": "mutate",
+    "description": "Couples the rail grinder to the railhead and arms the grinding programme.",
+    "input": {
+     "grinder_id": "string",
+     "section": "string"
+    },
+    "output": {
+     "coupled": "boolean"
+    }
+   },
+   {
+    "name": "poll_track_circuits",
+    "type": "read",
+    "description": "Polls the track circuit states from the signal panel and returns occupied or clear per section.",
+    "input": {},
+    "output": {
+     "sections": "string"
+    }
+   }
+  ],
+  "events": [
+   {
+    "eid": "A",
+    "source_span": "a lockout confirmation",
+    "span_start": 45,
+    "span_end": 67,
+    "role": "STATE_OBSERVATION",
+    "governed_tools": [
+     "check_lockout_confirmation"
+    ],
+    "sentence_index": 0
+   },
+   {
+    "eid": "B",
+    "source_span": "The grinder may be coupled to the railhead",
+    "span_start": 69,
+    "span_end": 111,
+    "role": "OPERATION_EFFECT",
+    "governed_tools": [
+     "couple_grinder"
+    ],
+    "sentence_index": 1
+   },
+   {
+    "eid": "C",
+    "source_span": "Track circuits are polled",
+    "span_start": 174,
+    "span_end": 199,
+    "role": "OPERATION_EFFECT",
+    "governed_tools": [
+     "poll_track_circuits"
+    ],
+    "sentence_index": 2
+   }
+  ],
+  "edges": [
+   {
+    "from_eid": "A",
+    "to_eid": "B",
+    "from_span": "a lockout confirmation",
+    "to_span": "The grinder may be coupled to the railhead",
+    "relation": "STATE_GATE",
+    "acceptable": [
+     "STATE_GATE"
+    ],
+    "evidence": [
+     {
+      "start": 0,
+      "end": 68,
+      "text": "Points grinding on the coastal line requires a lockout confirmation."
+     },
+     {
+      "start": 69,
+      "end": 173,
+      "text": "The grinder may be coupled to the railhead only after the signalman posts the confirmation on the board."
+     }
+    ]
+   }
+  ],
+  "groups": [],
+  "tool_types": {
+   "check_lockout_confirmation": "verify",
+   "couple_grinder": "mutate",
+   "poll_track_circuits": "read"
+  },
+  "pair_universe": [
+   {
+    "a_eid": "A",
+    "b_eid": "B",
+    "a_span": "a lockout confirmation",
+    "b_span": "The grinder may be coupled to the railhead",
+    "gold": "POSITIVE",
+    "hard": true
+   },
+   {
+    "a_eid": "A",
+    "b_eid": "C",
+    "a_span": "a lockout confirmation",
+    "b_span": "Track circuits are polled",
+    "gold": "NEGATIVE",
+    "hard": true
+   },
+   {
+    "a_eid": "B",
+    "b_eid": "C",
+    "a_span": "The grinder may be coupled to the railhead",
+    "b_span": "Track circuits are polled",
+    "gold": "NEGATIVE",
+    "hard": true
+   }
+  ],
+  "cf_of": null,
+  "mp1": false,
+  "notes": "Cross-sentence: condition named in sentence 1, binding expressed in sentence 2 via anaphoric 'the confirmation'. Evidence = both sentences."
+ },
+ {
+  "case_id": "val_foodtruck",
+  "orig_case_id": "val_foodtruck",
+  "domain": "food truck depot",
+  "family": "near_neighbour_trap",
+  "split": "val",
+  "policy": "Check the gas bottle seals before firing the griddle. The fridge temperature is logged at each stop. Restock the napkin dispensers from the depot cage. Fry the batter in the morning batch.",
+  "tools": [
+   {
+    "name": "check_gas_seal",
+    "type": "verify",
+    "description": "Tests each gas bottle connection with leak spray and returns a tight or leaking result per bottle.",
+    "input": {
+     "bottle_id": "string"
+    },
+    "output": {
+     "seal_ok": "boolean"
+    }
+   },
+   {
+    "name": "ignite_griddle",
+    "type": "mutate",
+    "description": "Ignites the griddle burners and sets the cooking temperature.",
+    "input": {
+     "temp_level": "string"
+    },
+    "output": {
+     "lit": "boolean"
+    }
+   },
+   {
+    "name": "log_fridge_temp",
+    "type": "mutate",
+    "description": "Records the fridge temperature reading in the food safety log.",
+    "input": {
+     "celsius": "number"
+    },
+    "output": {
+     "log_id": "string"
+    }
+   },
+   {
+    "name": "restock_dispensers",
+    "type": "mutate",
+    "description": "Refills the napkin dispensers from depot cage stock.",
+    "input": {
+     "count": "integer"
+    },
+    "output": {
+     "refilled": "boolean"
+    }
+   },
+   {
+    "name": "fry_batter",
+    "type": "mutate",
+    "description": "Fries the churro batter batch in the fryer and drains the finished pieces.",
+    "input": {
+     "batch_kg": "number"
+    },
+    "output": {
+     "tray_ids": "string"
+    }
+   }
+  ],
+  "events": [
+   {
+    "eid": "A",
+    "source_span": "Check the gas bottle seals",
+    "span_start": 0,
+    "span_end": 26,
+    "role": "PRECONDITION_CHECK",
+    "governed_tools": [
+     "check_gas_seal"
+    ],
+    "sentence_index": 0
+   },
+   {
+    "eid": "B",
+    "source_span": "firing the griddle",
+    "span_start": 34,
+    "span_end": 52,
+    "role": "OPERATION_EFFECT",
+    "governed_tools": [
+     "ignite_griddle"
+    ],
+    "sentence_index": 0
+   },
+   {
+    "eid": "C",
+    "source_span": "The fridge temperature is logged",
+    "span_start": 54,
+    "span_end": 86,
+    "role": "OPERATION_EFFECT",
+    "governed_tools": [
+     "log_fridge_temp"
+    ],
+    "sentence_index": 1
+   },
+   {
+    "eid": "D",
+    "source_span": "Restock the napkin dispensers",
+    "span_start": 101,
+    "span_end": 130,
+    "role": "OPERATION_EFFECT",
+    "governed_tools": [
+     "restock_dispensers"
+    ],
+    "sentence_index": 2
+   },
+   {
+    "eid": "E",
+    "source_span": "Fry the batter",
+    "span_start": 152,
+    "span_end": 166,
+    "role": "OPERATION_EFFECT",
+    "governed_tools": [
+     "fry_batter"
+    ],
+    "sentence_index": 3
+   }
+  ],
+  "edges": [
+   {
+    "from_eid": "A",
+    "to_eid": "B",
+    "from_span": "Check the gas bottle seals",
+    "to_span": "firing the griddle",
+    "relation": "PRECONDITION",
+    "acceptable": [
+     "PRECONDITION"
+    ],
+    "evidence": [
+     {
+      "start": 0,
+      "end": 52,
+      "text": "Check the gas bottle seals before firing the griddle"
+     }
+    ]
+   }
+  ],
+  "groups": [],
+  "tool_types": {
+   "check_gas_seal": "verify",
+   "ignite_griddle": "mutate",
+   "log_fridge_temp": "mutate",
+   "restock_dispensers": "mutate",
+   "fry_batter": "mutate"
+  },
+  "pair_universe": [
+   {
+    "a_eid": "A",
+    "b_eid": "B",
+    "a_span": "Check the gas bottle seals",
+    "b_span": "firing the griddle",
+    "gold": "POSITIVE",
+    "hard": true
+   },
+   {
+    "a_eid": "A",
+    "b_eid": "C",
+    "a_span": "Check the gas bottle seals",
+    "b_span": "The fridge temperature is logged",
+    "gold": "NEGATIVE",
+    "hard": true
+   },
+   {
+    "a_eid": "A",
+    "b_eid": "D",
+    "a_span": "Check the gas bottle seals",
+    "b_span": "Restock the napkin dispensers",
+    "gold": "NEGATIVE",
+    "hard": true
+   },
+   {
+    "a_eid": "A",
+    "b_eid": "E",
+    "a_span": "Check the gas bottle seals",
+    "b_span": "Fry the batter",
+    "gold": "NEGATIVE",
+    "hard": true
+   },
+   {
+    "a_eid": "B",
+    "b_eid": "C",
+    "a_span": "firing the griddle",
+    "b_span": "The fridge temperature is logged",
+    "gold": "NEGATIVE",
+    "hard": true
+   },
+   {
+    "a_eid": "B",
+    "b_eid": "D",
+    "a_span": "firing the griddle",
+    "b_span": "Restock the napkin dispensers",
+    "gold": "NEGATIVE",
+    "hard": true
+   },
+   {
+    "a_eid": "B",
+    "b_eid": "E",
+    "a_span": "firing the griddle",
+    "b_span": "Fry the batter",
+    "gold": "NEGATIVE",
+    "hard": true
+   },
+   {
+    "a_eid": "C",
+    "b_eid": "D",
+    "a_span": "The fridge temperature is logged",
+    "b_span": "Restock the napkin dispensers",
+    "gold": "NEGATIVE",
+    "hard": true
+   },
+   {
+    "a_eid": "C",
+    "b_eid": "E",
+    "a_span": "The fridge temperature is logged",
+    "b_span": "Fry the batter",
+    "gold": "NEGATIVE",
+    "hard": true
+   },
+   {
+    "a_eid": "D",
+    "b_eid": "E",
+    "a_span": "Restock the napkin dispensers",
+    "b_span": "Fry the batter",
+    "gold": "NEGATIVE",
+    "hard": true
+   }
+  ],
+  "cf_of": null,
+  "mp1": false,
+  "notes": "Trap: A->E (gas check before frying) is highly plausible in the world; the policy gates only the griddle."
+ },
+ {
+  "case_id": "val_mushroom",
+  "orig_case_id": "val_mushroom",
+  "domain": "mushroom farm",
+  "family": "descriptive_mentions",
+  "split": "val",
+  "policy": "The substrate is pasteurised in the steam vessel. Humidity readings are noted on the clipboard twice a day. The oyster mushroom strain fruits within three weeks. Harvest the flushes only after the spore print test comes back clean.",
+  "tools": [
+   {
+    "name": "pasteurise_substrate",
+    "type": "mutate",
+    "description": "Loads the substrate into the steam vessel and runs the pasteurisation cycle.",
+    "input": {
+     "vessel_id": "string",
+     "minutes": "integer"
+    },
+    "output": {
+     "cycle_id": "string"
+    }
+   },
+   {
+    "name": "log_humidity",
+    "type": "mutate",
+    "description": "Writes a humidity reading onto the growing room clipboard.",
+    "input": {
+     "room_id": "string",
+     "percent": "number"
+    },
+    "output": {
+     "log_id": "string"
+    }
+   },
+   {
+    "name": "run_spore_print_test",
+    "type": "verify",
+    "description": "Takes a spore print from a fruiting sample and returns a clean or contaminated result.",
+    "input": {
+     "sample_id": "string"
+    },
+    "output": {
+     "result": "string"
+    }
+   },
+   {
+    "name": "harvest_flushes",
+    "type": "mutate",
+    "description": "Cuts the mature mushroom flushes with a blade and packs them for dispatch.",
+    "input": {
+     "room_id": "string"
+    },
+    "output": {
+     "pack_ids": "string"
+    }
+   }
+  ],
+  "events": [
+   {
+    "eid": "A",
+    "source_span": "The substrate is pasteurised",
+    "span_start": 0,
+    "span_end": 28,
+    "role": "OPERATION_EFFECT",
+    "governed_tools": [
+     "pasteurise_substrate"
+    ],
+    "sentence_index": 0
+   },
+   {
+    "eid": "B",
+    "source_span": "Humidity readings are noted",
+    "span_start": 50,
+    "span_end": 77,
+    "role": "OPERATION_EFFECT",
+    "governed_tools": [
+     "log_humidity"
+    ],
+    "sentence_index": 1
+   },
+   {
+    "eid": "C",
+    "source_span": "The oyster mushroom strain fruits",
+    "span_start": 108,
+    "span_end": 141,
+    "role": "OTHER",
+    "governed_tools": [],
+    "sentence_index": 2
+   },
+   {
+    "eid": "D",
+    "source_span": "Harvest the flushes",
+    "span_start": 162,
+    "span_end": 181,
+    "role": "OPERATION_EFFECT",
+    "governed_tools": [
+     "harvest_flushes"
+    ],
+    "sentence_index": 3
+   },
+   {
+    "eid": "E",
+    "source_span": "the spore print test comes back clean",
+    "span_start": 193,
+    "span_end": 230,
+    "role": "PRECONDITION_CHECK",
+    "governed_tools": [
+     "run_spore_print_test"
+    ],
+    "sentence_index": 3
+   }
+  ],
+  "edges": [
+   {
+    "from_eid": "E",
+    "to_eid": "D",
+    "from_span": "the spore print test comes back clean",
+    "to_span": "Harvest the flushes",
+    "relation": "PRECONDITION",
+    "acceptable": [
+     "PRECONDITION"
+    ],
+    "evidence": [
+     {
+      "start": 162,
+      "end": 230,
+      "text": "Harvest the flushes only after the spore print test comes back clean"
+     }
+    ]
+   }
+  ],
+  "groups": [],
+  "tool_types": {
+   "pasteurise_substrate": "mutate",
+   "log_humidity": "mutate",
+   "run_spore_print_test": "verify",
+   "harvest_flushes": "mutate"
+  },
+  "pair_universe": [
+   {
+    "a_eid": "A",
+    "b_eid": "B",
+    "a_span": "The substrate is pasteurised",
+    "b_span": "Humidity readings are noted",
+    "gold": "NEGATIVE",
+    "hard": true
+   },
+   {
+    "a_eid": "A",
+    "b_eid": "C",
+    "a_span": "The substrate is pasteurised",
+    "b_span": "The oyster mushroom strain fruits",
+    "gold": "NEGATIVE",
+    "hard": false
+   },
+   {
+    "a_eid": "A",
+    "b_eid": "D",
+    "a_span": "The substrate is pasteurised",
+    "b_span": "Harvest the flushes",
+    "gold": "NEGATIVE",
+    "hard": true
+   },
+   {
+    "a_eid": "A",
+    "b_eid": "E",
+    "a_span": "The substrate is pasteurised",
+    "b_span": "the spore print test comes back clean",
+    "gold": "NEGATIVE",
+    "hard": false
+   },
+   {
+    "a_eid": "B",
+    "b_eid": "C",
+    "a_span": "Humidity readings are noted",
+    "b_span": "The oyster mushroom strain fruits",
+    "gold": "NEGATIVE",
+    "hard": false
+   },
+   {
+    "a_eid": "B",
+    "b_eid": "D",
+    "a_span": "Humidity readings are noted",
+    "b_span": "Harvest the flushes",
+    "gold": "NEGATIVE",
+    "hard": true
+   },
+   {
+    "a_eid": "B",
+    "b_eid": "E",
+    "a_span": "Humidity readings are noted",
+    "b_span": "the spore print test comes back clean",
+    "gold": "NEGATIVE",
+    "hard": false
+   },
+   {
+    "a_eid": "C",
+    "b_eid": "D",
+    "a_span": "The oyster mushroom strain fruits",
+    "b_span": "Harvest the flushes",
+    "gold": "NEGATIVE",
+    "hard": false
+   },
+   {
+    "a_eid": "C",
+    "b_eid": "E",
+    "a_span": "The oyster mushroom strain fruits",
+    "b_span": "the spore print test comes back clean",
+    "gold": "NEGATIVE",
+    "hard": false
+   },
+   {
+    "a_eid": "D",
+    "b_eid": "E",
+    "a_span": "Harvest the flushes",
+    "b_span": "the spore print test comes back clean",
+    "gold": "POSITIVE",
+    "hard": true
+   }
+  ],
+  "cf_of": null,
+  "mp1": false,
+  "notes": "Descriptive event C ('fruits within three weeks') must attract no edge despite the obvious fruiting->harvest world link."
+ },
+ {
+  "case_id": "val_pawnshop",
+  "orig_case_id": "val_pawnshop",
+  "domain": "pawnshop",
+  "family": "multiple_independent_policies",
+  "split": "val",
+  "policy": "Verify the serial numbers against the police register before accepting any electronic pledge. The display cabinet is polished each morning. Loans are issued against gold after the melt test. The till is counted at closing.",
+  "tools": [
+   {
+    "name": "verify_serials",
+    "type": "verify",
+    "description": "Checks an item's serial number against the police stolen goods register and returns a hit or clear.",
+    "input": {
+     "serial": "string"
+    },
+    "output": {
+     "status": "string"
+    }
+   },
+   {
+    "name": "accept_pledge",
+    "type": "mutate",
+    "description": "Books an electronic item into pawn stock and prints the pledge ticket.",
+    "input": {
+     "item_id": "string",
+     "customer_id": "string"
+    },
+    "output": {
+     "ticket_id": "string"
+    }
+   },
+   {
+    "name": "polish_cabinet",
+    "type": "mutate",
+    "description": "Polishes the display cabinet glass and rearranges the stock trays.",
+    "input": {},
+    "output": {
+     "done": "boolean"
+    }
+   },
+   {
+    "name": "run_melt_test",
+    "type": "verify",
+    "description": "Tests a gold item on the touchstone and returns the karat estimate.",
+    "input": {
+     "item_id": "string"
+    },
+    "output": {
+     "karat": "number"
+    }
+   },
+   {
+    "name": "issue_loan",
+    "type": "mutate",
+    "description": "Issues a cash loan against a gold item and records the redemption terms.",
+    "input": {
+     "item_id": "string",
+     "amount": "number"
+    },
+    "output": {
+     "loan_id": "string"
+    }
+   },
+   {
+    "name": "count_till",
+    "type": "mutate",
+    "description": "Counts the till cash at closing and reconciles it against the day's tickets.",
+    "input": {
+     "date": "string"
+    },
+    "output": {
+     "count_id": "string"
+    }
+   }
+  ],
+  "events": [
+   {
+    "eid": "A",
+    "source_span": "Verify the serial numbers",
+    "span_start": 0,
+    "span_end": 25,
+    "role": "PRECONDITION_CHECK",
+    "governed_tools": [
+     "verify_serials"
+    ],
+    "sentence_index": 0
+   },
+   {
+    "eid": "B",
+    "source_span": "accepting any electronic pledge",
+    "span_start": 61,
+    "span_end": 92,
+    "role": "OPERATION_EFFECT",
+    "governed_tools": [
+     "accept_pledge"
+    ],
+    "sentence_index": 0
+   },
+   {
+    "eid": "C",
+    "source_span": "The display cabinet is polished",
+    "span_start": 94,
+    "span_end": 125,
+    "role": "OPERATION_EFFECT",
+    "governed_tools": [
+     "polish_cabinet"
+    ],
+    "sentence_index": 1
+   },
+   {
+    "eid": "D",
+    "source_span": "Loans are issued against gold",
+    "span_start": 140,
+    "span_end": 169,
+    "role": "OPERATION_EFFECT",
+    "governed_tools": [
+     "issue_loan"
+    ],
+    "sentence_index": 2
+   },
+   {
+    "eid": "E",
+    "source_span": "the melt test",
+    "span_start": 176,
+    "span_end": 189,
+    "role": "PRECONDITION_CHECK",
+    "governed_tools": [
+     "run_melt_test"
+    ],
+    "sentence_index": 2
+   },
+   {
+    "eid": "F",
+    "source_span": "The till is counted",
+    "span_start": 191,
+    "span_end": 210,
+    "role": "OPERATION_EFFECT",
+    "governed_tools": [
+     "count_till"
+    ],
+    "sentence_index": 3
+   }
+  ],
+  "edges": [
+   {
+    "from_eid": "A",
+    "to_eid": "B",
+    "from_span": "Verify the serial numbers",
+    "to_span": "accepting any electronic pledge",
+    "relation": "PRECONDITION",
+    "acceptable": [
+     "PRECONDITION"
+    ],
+    "evidence": [
+     {
+      "start": 0,
+      "end": 92,
+      "text": "Verify the serial numbers against the police register before accepting any electronic pledge"
+     }
+    ]
+   },
+   {
+    "from_eid": "E",
+    "to_eid": "D",
+    "from_span": "the melt test",
+    "to_span": "Loans are issued against gold",
+    "relation": "PRECONDITION",
+    "acceptable": [
+     "PRECONDITION"
+    ],
+    "evidence": [
+     {
+      "start": 140,
+      "end": 189,
+      "text": "Loans are issued against gold after the melt test"
+     }
+    ]
+   }
+  ],
+  "groups": [],
+  "tool_types": {
+   "verify_serials": "verify",
+   "accept_pledge": "mutate",
+   "polish_cabinet": "mutate",
+   "run_melt_test": "verify",
+   "issue_loan": "mutate",
+   "count_till": "mutate"
+  },
+  "pair_universe": [
+   {
+    "a_eid": "A",
+    "b_eid": "B",
+    "a_span": "Verify the serial numbers",
+    "b_span": "accepting any electronic pledge",
+    "gold": "POSITIVE",
+    "hard": true
+   },
+   {
+    "a_eid": "A",
+    "b_eid": "C",
+    "a_span": "Verify the serial numbers",
+    "b_span": "The display cabinet is polished",
+    "gold": "NEGATIVE",
+    "hard": true
+   },
+   {
+    "a_eid": "A",
+    "b_eid": "D",
+    "a_span": "Verify the serial numbers",
+    "b_span": "Loans are issued against gold",
+    "gold": "NEGATIVE",
+    "hard": true
+   },
+   {
+    "a_eid": "A",
+    "b_eid": "E",
+    "a_span": "Verify the serial numbers",
+    "b_span": "the melt test",
+    "gold": "NEGATIVE",
+    "hard": false
+   },
+   {
+    "a_eid": "A",
+    "b_eid": "F",
+    "a_span": "Verify the serial numbers",
+    "b_span": "The till is counted",
+    "gold": "NEGATIVE",
+    "hard": true
+   },
+   {
+    "a_eid": "B",
+    "b_eid": "C",
+    "a_span": "accepting any electronic pledge",
+    "b_span": "The display cabinet is polished",
+    "gold": "NEGATIVE",
+    "hard": true
+   },
+   {
+    "a_eid": "B",
+    "b_eid": "D",
+    "a_span": "accepting any electronic pledge",
+    "b_span": "Loans are issued against gold",
+    "gold": "NEGATIVE",
+    "hard": true
+   },
+   {
+    "a_eid": "B",
+    "b_eid": "E",
+    "a_span": "accepting any electronic pledge",
+    "b_span": "the melt test",
+    "gold": "NEGATIVE",
+    "hard": false
+   },
+   {
+    "a_eid": "B",
+    "b_eid": "F",
+    "a_span": "accepting any electronic pledge",
+    "b_span": "The till is counted",
+    "gold": "NEGATIVE",
+    "hard": true
+   },
+   {
+    "a_eid": "C",
+    "b_eid": "D",
+    "a_span": "The display cabinet is polished",
+    "b_span": "Loans are issued against gold",
+    "gold": "NEGATIVE",
+    "hard": true
+   },
+   {
+    "a_eid": "C",
+    "b_eid": "E",
+    "a_span": "The display cabinet is polished",
+    "b_span": "the melt test",
+    "gold": "NEGATIVE",
+    "hard": false
+   },
+   {
+    "a_eid": "C",
+    "b_eid": "F",
+    "a_span": "The display cabinet is polished",
+    "b_span": "The till is counted",
+    "gold": "NEGATIVE",
+    "hard": true
+   },
+   {
+    "a_eid": "D",
+    "b_eid": "E",
+    "a_span": "Loans are issued against gold",
+    "b_span": "the melt test",
+    "gold": "POSITIVE",
+    "hard": true
+   },
+   {
+    "a_eid": "D",
+    "b_eid": "F",
+    "a_span": "Loans are issued against gold",
+    "b_span": "The till is counted",
+    "gold": "NEGATIVE",
+    "hard": true
+   },
+   {
+    "a_eid": "E",
+    "b_eid": "F",
+    "a_span": "the melt test",
+    "b_span": "The till is counted",
+    "gold": "NEGATIVE",
+    "hard": true
+   }
+  ],
+  "cf_of": null,
+  "mp1": false,
+  "notes": "Two independent policy fragments in one input. Cross traps: A->D, E->B, B->D."
+ },
+ {
+  "case_id": "test_tattoo",
+  "orig_case_id": "test_tattoo",
+  "domain": "tattoo studio",
+  "family": "parent_swap",
+  "split": "test",
+  "policy": "A signed consent form is required before ink is applied to a client. Needles are sterilised in the autoclave at session start. Pigment stock is ordered on Mondays.",
+  "tools": [
+   {
+    "name": "check_consent_form",
+    "type": "verify",
+    "description": "Looks up the client record and returns whether a signed consent form is on file.",
+    "input": {
+     "client_id": "string"
+    },
+    "output": {
+     "signed": "boolean"
+    }
+   },
+   {
+    "name": "apply_ink",
+    "type": "mutate",
+    "description": "Applies ink to a client's skin with the tattoo machine and records the session.",
+    "input": {
+     "client_id": "string",
+     "design_id": "string"
+    },
+    "output": {
+     "session_id": "string"
+    }
+   },
+   {
+    "name": "sterilise_needles",
+    "type": "mutate",
+    "description": "Loads the needles into the autoclave and runs the sterilisation cycle.",
+    "input": {
+     "batch_id": "string"
+    },
+    "output": {
+     "sterile": "boolean"
+    }
+   },
+   {
+    "name": "order_pigment",
+    "type": "mutate",
+    "description": "Places a pigment stock order with the supplier and records the delivery date.",
+    "input": {
+     "colours": "string"
+    },
+    "output": {
+     "order_id": "string"
+    }
+   }
+  ],
+  "events": [
+   {
+    "eid": "A",
+    "source_span": "A signed consent form",
+    "span_start": 0,
+    "span_end": 21,
+    "role": "STATE_OBSERVATION",
+    "governed_tools": [
+     "check_consent_form"
+    ],
+    "sentence_index": 0
+   },
+   {
+    "eid": "B",
+    "source_span": "ink is applied to a client",
+    "span_start": 41,
+    "span_end": 67,
+    "role": "OPERATION_EFFECT",
+    "governed_tools": [
+     "apply_ink"
+    ],
+    "sentence_index": 0
+   },
+   {
+    "eid": "C",
+    "source_span": "Needles are sterilised in the autoclave",
+    "span_start": 69,
+    "span_end": 108,
+    "role": "OPERATION_EFFECT",
+    "governed_tools": [
+     "sterilise_needles"
+    ],
+    "sentence_index": 1
+   },
+   {
+    "eid": "D",
+    "source_span": "Pigment stock is ordered",
+    "span_start": 127,
+    "span_end": 151,
+    "role": "OPERATION_EFFECT",
+    "governed_tools": [
+     "order_pigment"
+    ],
+    "sentence_index": 2
+   }
+  ],
+  "edges": [
+   {
+    "from_eid": "A",
+    "to_eid": "B",
+    "from_span": "A signed consent form",
+    "to_span": "ink is applied to a client",
+    "relation": "STATE_GATE",
+    "acceptable": [
+     "STATE_GATE"
+    ],
+    "evidence": [
+     {
+      "start": 0,
+      "end": 67,
+      "text": "A signed consent form is required before ink is applied to a client"
+     }
+    ]
+   }
+  ],
+  "groups": [],
+  "tool_types": {
+   "check_consent_form": "verify",
+   "apply_ink": "mutate",
+   "sterilise_needles": "mutate",
+   "order_pigment": "mutate"
+  },
+  "pair_universe": [
+   {
+    "a_eid": "A",
+    "b_eid": "B",
+    "a_span": "A signed consent form",
+    "b_span": "ink is applied to a client",
+    "gold": "POSITIVE",
+    "hard": true
+   },
+   {
+    "a_eid": "A",
+    "b_eid": "C",
+    "a_span": "A signed consent form",
+    "b_span": "Needles are sterilised in the autoclave",
+    "gold": "NEGATIVE",
+    "hard": true
+   },
+   {
+    "a_eid": "A",
+    "b_eid": "D",
+    "a_span": "A signed consent form",
+    "b_span": "Pigment stock is ordered",
+    "gold": "NEGATIVE",
+    "hard": true
+   },
+   {
+    "a_eid": "B",
+    "b_eid": "C",
+    "a_span": "ink is applied to a client",
+    "b_span": "Needles are sterilised in the autoclave",
+    "gold": "NEGATIVE",
+    "hard": true
+   },
+   {
+    "a_eid": "B",
+    "b_eid": "D",
+    "a_span": "ink is applied to a client",
+    "b_span": "Pigment stock is ordered",
+    "gold": "NEGATIVE",
+    "hard": true
+   },
+   {
+    "a_eid": "C",
+    "b_eid": "D",
+    "a_span": "Needles are sterilised in the autoclave",
+    "b_span": "Pigment stock is ordered",
+    "gold": "NEGATIVE",
+    "hard": true
+   }
+  ],
+  "cf_of": null,
+  "mp1": true,
+  "notes": "MP1 member. Sterilisation is world-plausible before inking but the policy binds consent to inking only."
+ },
+ {
+  "case_id": "test_tattoo_cf",
+  "orig_case_id": "test_tattoo_cf",
+  "domain": "tattoo studio",
+  "family": "parent_swap_cf",
+  "split": "test",
+  "policy": "A signed consent form is required before needles are sterilised in the autoclave. Ink is applied to a client at session start. Pigment stock is ordered on Mondays.",
+  "tools": [
+   {
+    "name": "check_consent_form",
+    "type": "verify",
+    "description": "Looks up the client record and returns whether a signed consent form is on file.",
+    "input": {
+     "client_id": "string"
+    },
+    "output": {
+     "signed": "boolean"
+    }
+   },
+   {
+    "name": "apply_ink",
+    "type": "mutate",
+    "description": "Applies ink to a client's skin with the tattoo machine and records the session.",
+    "input": {
+     "client_id": "string",
+     "design_id": "string"
+    },
+    "output": {
+     "session_id": "string"
+    }
+   },
+   {
+    "name": "sterilise_needles",
+    "type": "mutate",
+    "description": "Loads the needles into the autoclave and runs the sterilisation cycle.",
+    "input": {
+     "batch_id": "string"
+    },
+    "output": {
+     "sterile": "boolean"
+    }
+   },
+   {
+    "name": "order_pigment",
+    "type": "mutate",
+    "description": "Places a pigment stock order with the supplier and records the delivery date.",
+    "input": {
+     "colours": "string"
+    },
+    "output": {
+     "order_id": "string"
+    }
+   }
+  ],
+  "events": [
+   {
+    "eid": "A",
+    "source_span": "A signed consent form",
+    "span_start": 0,
+    "span_end": 21,
+    "role": "STATE_OBSERVATION",
+    "governed_tools": [
+     "check_consent_form"
+    ],
+    "sentence_index": 0
+   },
+   {
+    "eid": "B",
+    "source_span": "Ink is applied to a client",
+    "span_start": 82,
+    "span_end": 108,
+    "role": "OPERATION_EFFECT",
+    "governed_tools": [
+     "apply_ink"
+    ],
+    "sentence_index": 1
+   },
+   {
+    "eid": "C",
+    "source_span": "needles are sterilised in the autoclave",
+    "span_start": 41,
+    "span_end": 80,
+    "role": "OPERATION_EFFECT",
+    "governed_tools": [
+     "sterilise_needles"
+    ],
+    "sentence_index": 0
+   },
+   {
+    "eid": "D",
+    "source_span": "Pigment stock is ordered",
+    "span_start": 127,
+    "span_end": 151,
+    "role": "OPERATION_EFFECT",
+    "governed_tools": [
+     "order_pigment"
+    ],
+    "sentence_index": 2
+   }
+  ],
+  "edges": [
+   {
+    "from_eid": "A",
+    "to_eid": "C",
+    "from_span": "A signed consent form",
+    "to_span": "needles are sterilised in the autoclave",
+    "relation": "STATE_GATE",
+    "acceptable": [
+     "STATE_GATE"
+    ],
+    "evidence": [
+     {
+      "start": 0,
+      "end": 80,
+      "text": "A signed consent form is required before needles are sterilised in the autoclave"
+     }
+    ]
+   }
+  ],
+  "groups": [],
+  "tool_types": {
+   "check_consent_form": "verify",
+   "apply_ink": "mutate",
+   "sterilise_needles": "mutate",
+   "order_pigment": "mutate"
+  },
+  "pair_universe": [
+   {
+    "a_eid": "A",
+    "b_eid": "B",
+    "a_span": "A signed consent form",
+    "b_span": "Ink is applied to a client",
+    "gold": "NEGATIVE",
+    "hard": true
+   },
+   {
+    "a_eid": "A",
+    "b_eid": "C",
+    "a_span": "A signed consent form",
+    "b_span": "needles are sterilised in the autoclave",
+    "gold": "POSITIVE",
+    "hard": true
+   },
+   {
+    "a_eid": "A",
+    "b_eid": "D",
+    "a_span": "A signed consent form",
+    "b_span": "Pigment stock is ordered",
+    "gold": "NEGATIVE",
+    "hard": true
+   },
+   {
+    "a_eid": "B",
+    "b_eid": "C",
+    "a_span": "Ink is applied to a client",
+    "b_span": "needles are sterilised in the autoclave",
+    "gold": "NEGATIVE",
+    "hard": true
+   },
+   {
+    "a_eid": "B",
+    "b_eid": "D",
+    "a_span": "Ink is applied to a client",
+    "b_span": "Pigment stock is ordered",
+    "gold": "NEGATIVE",
+    "hard": true
+   },
+   {
+    "a_eid": "C",
+    "b_eid": "D",
+    "a_span": "needles are sterilised in the autoclave",
+    "b_span": "Pigment stock is ordered",
+    "gold": "NEGATIVE",
+    "hard": true
+   }
+  ],
+  "cf_of": "test_tattoo",
+  "mp1": true,
+  "notes": "Counterfactual twin of test_tattoo: the consent form now gates sterilisation, inking moved to a plain schedule."
+ },
+ {
+  "case_id": "test_quarry",
+  "orig_case_id": "test_quarry",
+  "domain": "quarry",
+  "family": "parent_swap",
+  "split": "test",
+  "policy": "Blasting on the north face may proceed only after the vibration permit is countersigned. Trucks are loaded at the face all shift. The scale house weighs trucks at the gate.",
+  "tools": [
+   {
+    "name": "check_permit_signature",
+    "type": "verify",
+    "description": "Reads the permit folder and returns whether the vibration permit carries the required countersignature.",
+    "input": {
+     "permit_id": "string"
+    },
+    "output": {
+     "countersigned": "boolean"
+    }
+   },
+   {
+    "name": "blast_face",
+    "type": "mutate",
+    "description": "Fires the planned blast on a quarry face and logs the shot details.",
+    "input": {
+     "shot_id": "string"
+    },
+    "output": {
+     "fired": "boolean"
+    }
+   },
+   {
+    "name": "load_trucks",
+    "type": "mutate",
+    "description": "Loads blasted rock into haul trucks at the face with the excavator.",
+    "input": {
+     "truck_id": "string",
+     "tonnes": "number"
+    },
+    "output": {
+     "load_id": "string"
+    }
+   },
+   {
+    "name": "weigh_trucks",
+    "type": "read",
+    "description": "Weighs a truck on the scale house bridge and returns the net weight.",
+    "input": {
+     "truck_id": "string"
+    },
+    "output": {
+     "net_tonnes": "number"
+    }
+   }
+  ],
+  "events": [
+   {
+    "eid": "A",
+    "source_span": "the vibration permit is countersigned",
+    "span_start": 50,
+    "span_end": 87,
+    "role": "STATE_OBSERVATION",
+    "governed_tools": [
+     "check_permit_signature"
+    ],
+    "sentence_index": 0
+   },
+   {
+    "eid": "B",
+    "source_span": "Blasting on the north face",
+    "span_start": 0,
+    "span_end": 26,
+    "role": "OPERATION_EFFECT",
+    "governed_tools": [
+     "blast_face"
+    ],
+    "sentence_index": 0
+   },
+   {
+    "eid": "C",
+    "source_span": "Trucks are loaded at the face",
+    "span_start": 89,
+    "span_end": 118,
+    "role": "OPERATION_EFFECT",
+    "governed_tools": [
+     "load_trucks"
+    ],
+    "sentence_index": 1
+   },
+   {
+    "eid": "D",
+    "source_span": "The scale house weighs trucks",
+    "span_start": 130,
+    "span_end": 159,
+    "role": "OPERATION_EFFECT",
+    "governed_tools": [
+     "weigh_trucks"
+    ],
+    "sentence_index": 2
+   }
+  ],
+  "edges": [
+   {
+    "from_eid": "A",
+    "to_eid": "B",
+    "from_span": "the vibration permit is countersigned",
+    "to_span": "Blasting on the north face",
+    "relation": "STATE_GATE",
+    "acceptable": [
+     "STATE_GATE",
+     "PRECONDITION"
+    ],
+    "evidence": [
+     {
+      "start": 0,
+      "end": 87,
+      "text": "Blasting on the north face may proceed only after the vibration permit is countersigned"
+     }
+    ]
+   }
+  ],
+  "groups": [],
+  "tool_types": {
+   "check_permit_signature": "verify",
+   "blast_face": "mutate",
+   "load_trucks": "mutate",
+   "weigh_trucks": "read"
+  },
+  "pair_universe": [
+   {
+    "a_eid": "A",
+    "b_eid": "B",
+    "a_span": "the vibration permit is countersigned",
+    "b_span": "Blasting on the north face",
+    "gold": "POSITIVE",
+    "hard": true
+   },
+   {
+    "a_eid": "A",
+    "b_eid": "C",
+    "a_span": "the vibration permit is countersigned",
+    "b_span": "Trucks are loaded at the face",
+    "gold": "NEGATIVE",
+    "hard": true
+   },
+   {
+    "a_eid": "A",
+    "b_eid": "D",
+    "a_span": "the vibration permit is countersigned",
+    "b_span": "The scale house weighs trucks",
+    "gold": "NEGATIVE",
+    "hard": true
+   },
+   {
+    "a_eid": "B",
+    "b_eid": "C",
+    "a_span": "Blasting on the north face",
+    "b_span": "Trucks are loaded at the face",
+    "gold": "NEGATIVE",
+    "hard": true
+   },
+   {
+    "a_eid": "B",
+    "b_eid": "D",
+    "a_span": "Blasting on the north face",
+    "b_span": "The scale house weighs trucks",
+    "gold": "NEGATIVE",
+    "hard": true
+   },
+   {
+    "a_eid": "C",
+    "b_eid": "D",
+    "a_span": "Trucks are loaded at the face",
+    "b_span": "The scale house weighs trucks",
+    "gold": "NEGATIVE",
+    "hard": true
+   }
+  ],
+  "cf_of": null,
+  "mp1": true,
+  "notes": "MP1 member, 'only after' pattern. Loading is naturally permit-adjacent but unlicensed in the original."
+ },
+ {
+  "case_id": "test_quarry_cf",
+  "orig_case_id": "test_quarry_cf",
+  "domain": "quarry",
+  "family": "parent_swap_cf",
+  "split": "test",
+  "policy": "Truck loading at the face may proceed only after the vibration permit is countersigned. Blasting on the north face is planned for the afternoon shift. The scale house weighs trucks at the gate.",
+  "tools": [
+   {
+    "name": "check_permit_signature",
+    "type": "verify",
+    "description": "Reads the permit folder and returns whether the vibration permit carries the required countersignature.",
+    "input": {
+     "permit_id": "string"
+    },
+    "output": {
+     "countersigned": "boolean"
+    }
+   },
+   {
+    "name": "blast_face",
+    "type": "mutate",
+    "description": "Fires the planned blast on a quarry face and logs the shot details.",
+    "input": {
+     "shot_id": "string"
+    },
+    "output": {
+     "fired": "boolean"
+    }
+   },
+   {
+    "name": "load_trucks",
+    "type": "mutate",
+    "description": "Loads blasted rock into haul trucks at the face with the excavator.",
+    "input": {
+     "truck_id": "string",
+     "tonnes": "number"
+    },
+    "output": {
+     "load_id": "string"
+    }
+   },
+   {
+    "name": "weigh_trucks",
+    "type": "read",
+    "description": "Weighs a truck on the scale house bridge and returns the net weight.",
+    "input": {
+     "truck_id": "string"
+    },
+    "output": {
+     "net_tonnes": "number"
+    }
+   }
+  ],
+  "events": [
+   {
+    "eid": "A",
+    "source_span": "the vibration permit is countersigned",
+    "span_start": 49,
+    "span_end": 86,
+    "role": "STATE_OBSERVATION",
+    "governed_tools": [
+     "check_permit_signature"
+    ],
+    "sentence_index": 0
+   },
+   {
+    "eid": "B",
+    "source_span": "Blasting on the north face",
+    "span_start": 88,
+    "span_end": 114,
+    "role": "OPERATION_EFFECT",
+    "governed_tools": [
+     "blast_face"
+    ],
+    "sentence_index": 1
+   },
+   {
+    "eid": "C",
+    "source_span": "Truck loading at the face",
+    "span_start": 0,
+    "span_end": 25,
+    "role": "OPERATION_EFFECT",
+    "governed_tools": [
+     "load_trucks"
+    ],
+    "sentence_index": 0
+   },
+   {
+    "eid": "D",
+    "source_span": "The scale house weighs trucks",
+    "span_start": 151,
+    "span_end": 180,
+    "role": "OPERATION_EFFECT",
+    "governed_tools": [
+     "weigh_trucks"
+    ],
+    "sentence_index": 2
+   }
+  ],
+  "edges": [
+   {
+    "from_eid": "A",
+    "to_eid": "C",
+    "from_span": "the vibration permit is countersigned",
+    "to_span": "Truck loading at the face",
+    "relation": "STATE_GATE",
+    "acceptable": [
+     "STATE_GATE",
+     "PRECONDITION"
+    ],
+    "evidence": [
+     {
+      "start": 0,
+      "end": 86,
+      "text": "Truck loading at the face may proceed only after the vibration permit is countersigned"
+     }
+    ]
+   }
+  ],
+  "groups": [],
+  "tool_types": {
+   "check_permit_signature": "verify",
+   "blast_face": "mutate",
+   "load_trucks": "mutate",
+   "weigh_trucks": "read"
+  },
+  "pair_universe": [
+   {
+    "a_eid": "A",
+    "b_eid": "B",
+    "a_span": "the vibration permit is countersigned",
+    "b_span": "Blasting on the north face",
+    "gold": "NEGATIVE",
+    "hard": true
+   },
+   {
+    "a_eid": "A",
+    "b_eid": "C",
+    "a_span": "the vibration permit is countersigned",
+    "b_span": "Truck loading at the face",
+    "gold": "POSITIVE",
+    "hard": true
+   },
+   {
+    "a_eid": "A",
+    "b_eid": "D",
+    "a_span": "the vibration permit is countersigned",
+    "b_span": "The scale house weighs trucks",
+    "gold": "NEGATIVE",
+    "hard": true
+   },
+   {
+    "a_eid": "B",
+    "b_eid": "C",
+    "a_span": "Blasting on the north face",
+    "b_span": "Truck loading at the face",
+    "gold": "NEGATIVE",
+    "hard": true
+   },
+   {
+    "a_eid": "B",
+    "b_eid": "D",
+    "a_span": "Blasting on the north face",
+    "b_span": "The scale house weighs trucks",
+    "gold": "NEGATIVE",
+    "hard": true
+   },
+   {
+    "a_eid": "C",
+    "b_eid": "D",
+    "a_span": "Truck loading at the face",
+    "b_span": "The scale house weighs trucks",
+    "gold": "NEGATIVE",
+    "hard": true
+   }
+  ],
+  "cf_of": "test_quarry",
+  "mp1": true,
+  "notes": "Counterfactual twin of test_quarry: the permit now gates loading; blasting became a plain schedule item."
+ },
+ {
+  "case_id": "test_observatory",
+  "orig_case_id": "test_observatory",
+  "domain": "mountain observatory",
+  "family": "parent_swap",
+  "split": "test",
+  "policy": "Mirror cooldown must precede opening the dome shutters. The dew heater is switched on at sunset. Visitor logs are kept at the gatehouse.",
+  "tools": [
+   {
+    "name": "check_mirror_temperature",
+    "type": "verify",
+    "description": "Reads the primary mirror temperature sensors and returns whether the mirror has reached ambient temperature.",
+    "input": {
+     "sensor_set": "string"
+    },
+    "output": {
+     "cooldown_done": "boolean"
+    }
+   },
+   {
+    "name": "open_shutters",
+    "type": "mutate",
+    "description": "Opens the dome shutters and registers the start of the observing session.",
+    "input": {
+     "session_id": "string"
+    },
+    "output": {
+     "open": "boolean"
+    }
+   },
+   {
+    "name": "switch_dew_heater",
+    "type": "mutate",
+    "description": "Switches the mirror dew heater on or off and records the change.",
+    "input": {
+     "state": "boolean"
+    },
+    "output": {
+     "changed": "boolean"
+    }
+   },
+   {
+    "name": "read_visitor_log",
+    "type": "read",
+    "description": "Returns the entries currently in the gatehouse visitor log.",
+    "input": {
+     "date": "string"
+    },
+    "output": {
+     "entries": "string"
+    }
+   }
+  ],
+  "events": [
+   {
+    "eid": "A",
+    "source_span": "Mirror cooldown",
+    "span_start": 0,
+    "span_end": 15,
+    "role": "STATE_OBSERVATION",
+    "governed_tools": [
+     "check_mirror_temperature"
+    ],
+    "sentence_index": 0
+   },
+   {
+    "eid": "B",
+    "source_span": "opening the dome shutters",
+    "span_start": 29,
+    "span_end": 54,
+    "role": "OPERATION_EFFECT",
+    "governed_tools": [
+     "open_shutters"
+    ],
+    "sentence_index": 0
+   },
+   {
+    "eid": "C",
+    "source_span": "The dew heater is switched on",
+    "span_start": 56,
+    "span_end": 85,
+    "role": "OPERATION_EFFECT",
+    "governed_tools": [
+     "switch_dew_heater"
+    ],
+    "sentence_index": 1
+   },
+   {
+    "eid": "D",
+    "source_span": "Visitor logs are kept",
+    "span_start": 97,
+    "span_end": 118,
+    "role": "OTHER",
+    "governed_tools": [
+     "read_visitor_log"
+    ],
+    "sentence_index": 2
+   }
+  ],
+  "edges": [
+   {
+    "from_eid": "A",
+    "to_eid": "B",
+    "from_span": "Mirror cooldown",
+    "to_span": "opening the dome shutters",
+    "relation": "STATE_GATE",
+    "acceptable": [
+     "STATE_GATE"
+    ],
+    "evidence": [
+     {
+      "start": 0,
+      "end": 54,
+      "text": "Mirror cooldown must precede opening the dome shutters"
+     }
+    ]
+   }
+  ],
+  "groups": [],
+  "tool_types": {
+   "check_mirror_temperature": "verify",
+   "open_shutters": "mutate",
+   "switch_dew_heater": "mutate",
+   "read_visitor_log": "read"
+  },
+  "pair_universe": [
+   {
+    "a_eid": "A",
+    "b_eid": "B",
+    "a_span": "Mirror cooldown",
+    "b_span": "opening the dome shutters",
+    "gold": "POSITIVE",
+    "hard": true
+   },
+   {
+    "a_eid": "A",
+    "b_eid": "C",
+    "a_span": "Mirror cooldown",
+    "b_span": "The dew heater is switched on",
+    "gold": "NEGATIVE",
+    "hard": true
+   },
+   {
+    "a_eid": "A",
+    "b_eid": "D",
+    "a_span": "Mirror cooldown",
+    "b_span": "Visitor logs are kept",
+    "gold": "NEGATIVE",
+    "hard": false
+   },
+   {
+    "a_eid": "B",
+    "b_eid": "C",
+    "a_span": "opening the dome shutters",
+    "b_span": "The dew heater is switched on",
+    "gold": "NEGATIVE",
+    "hard": true
+   },
+   {
+    "a_eid": "B",
+    "b_eid": "D",
+    "a_span": "opening the dome shutters",
+    "b_span": "Visitor logs are kept",
+    "gold": "NEGATIVE",
+    "hard": false
+   },
+   {
+    "a_eid": "C",
+    "b_eid": "D",
+    "a_span": "The dew heater is switched on",
+    "b_span": "Visitor logs are kept",
+    "gold": "NEGATIVE",
+    "hard": false
+   }
+  ],
+  "cf_of": null,
+  "mp1": true,
+  "notes": "MP1 member, 'X must precede Y' pattern. C->B (heater before shutters) is the world-plausible trap."
+ },
+ {
+  "case_id": "test_observatory_cf",
+  "orig_case_id": "test_observatory_cf",
+  "domain": "mountain observatory",
+  "family": "parent_swap_cf",
+  "split": "test",
+  "policy": "Mirror cooldown must precede switching on the dew heater. The dome shutters are opened at dusk. Visitor logs are kept at the gatehouse.",
+  "tools": [
+   {
+    "name": "check_mirror_temperature",
+    "type": "verify",
+    "description": "Reads the primary mirror temperature sensors and returns whether the mirror has reached ambient temperature.",
+    "input": {
+     "sensor_set": "string"
+    },
+    "output": {
+     "cooldown_done": "boolean"
+    }
+   },
+   {
+    "name": "open_shutters",
+    "type": "mutate",
+    "description": "Opens the dome shutters and registers the start of the observing session.",
+    "input": {
+     "session_id": "string"
+    },
+    "output": {
+     "open": "boolean"
+    }
+   },
+   {
+    "name": "switch_dew_heater",
+    "type": "mutate",
+    "description": "Switches the mirror dew heater on or off and records the change.",
+    "input": {
+     "state": "boolean"
+    },
+    "output": {
+     "changed": "boolean"
+    }
+   },
+   {
+    "name": "read_visitor_log",
+    "type": "read",
+    "description": "Returns the entries currently in the gatehouse visitor log.",
+    "input": {
+     "date": "string"
+    },
+    "output": {
+     "entries": "string"
+    }
+   }
+  ],
+  "events": [
+   {
+    "eid": "A",
+    "source_span": "Mirror cooldown",
+    "span_start": 0,
+    "span_end": 15,
+    "role": "STATE_OBSERVATION",
+    "governed_tools": [
+     "check_mirror_temperature"
+    ],
+    "sentence_index": 0
+   },
+   {
+    "eid": "B",
+    "source_span": "The dome shutters are opened",
+    "span_start": 58,
+    "span_end": 86,
+    "role": "OPERATION_EFFECT",
+    "governed_tools": [
+     "open_shutters"
+    ],
+    "sentence_index": 1
+   },
+   {
+    "eid": "C",
+    "source_span": "switching on the dew heater",
+    "span_start": 29,
+    "span_end": 56,
+    "role": "OPERATION_EFFECT",
+    "governed_tools": [
+     "switch_dew_heater"
+    ],
+    "sentence_index": 0
+   },
+   {
+    "eid": "D",
+    "source_span": "Visitor logs are kept",
+    "span_start": 96,
+    "span_end": 117,
+    "role": "OTHER",
+    "governed_tools": [
+     "read_visitor_log"
+    ],
+    "sentence_index": 2
+   }
+  ],
+  "edges": [
+   {
+    "from_eid": "A",
+    "to_eid": "C",
+    "from_span": "Mirror cooldown",
+    "to_span": "switching on the dew heater",
+    "relation": "STATE_GATE",
+    "acceptable": [
+     "STATE_GATE"
+    ],
+    "evidence": [
+     {
+      "start": 0,
+      "end": 56,
+      "text": "Mirror cooldown must precede switching on the dew heater"
+     }
+    ]
+   }
+  ],
+  "groups": [],
+  "tool_types": {
+   "check_mirror_temperature": "verify",
+   "open_shutters": "mutate",
+   "switch_dew_heater": "mutate",
+   "read_visitor_log": "read"
+  },
+  "pair_universe": [
+   {
+    "a_eid": "A",
+    "b_eid": "B",
+    "a_span": "Mirror cooldown",
+    "b_span": "The dome shutters are opened",
+    "gold": "NEGATIVE",
+    "hard": true
+   },
+   {
+    "a_eid": "A",
+    "b_eid": "C",
+    "a_span": "Mirror cooldown",
+    "b_span": "switching on the dew heater",
+    "gold": "POSITIVE",
+    "hard": true
+   },
+   {
+    "a_eid": "A",
+    "b_eid": "D",
+    "a_span": "Mirror cooldown",
+    "b_span": "Visitor logs are kept",
+    "gold": "NEGATIVE",
+    "hard": false
+   },
+   {
+    "a_eid": "B",
+    "b_eid": "C",
+    "a_span": "The dome shutters are opened",
+    "b_span": "switching on the dew heater",
+    "gold": "NEGATIVE",
+    "hard": true
+   },
+   {
+    "a_eid": "B",
+    "b_eid": "D",
+    "a_span": "The dome shutters are opened",
+    "b_span": "Visitor logs are kept",
+    "gold": "NEGATIVE",
+    "hard": false
+   },
+   {
+    "a_eid": "C",
+    "b_eid": "D",
+    "a_span": "switching on the dew heater",
+    "b_span": "Visitor logs are kept",
+    "gold": "NEGATIVE",
+    "hard": false
+   }
+  ],
+  "cf_of": "test_observatory",
+  "mp1": true,
+  "notes": "Counterfactual twin of test_observatory: cooldown now precedes the dew heater, shutters moved to a dusk schedule."
+ },
+ {
+  "case_id": "test_vet",
+  "orig_case_id": "test_vet",
+  "domain": "veterinary clinic",
+  "family": "shared_condition_or",
+  "split": "test",
+  "policy": "Sedating a feline patient requires either a same-day weight on the lobby scale or a verified dose chart from the technician. Kennel runs are disinfected after each patient. Invoice the owners at discharge.",
+  "tools": [
+   {
+    "name": "weigh_feline",
+    "type": "verify",
+    "description": "Places a cat on the lobby scale and returns the same-day weight in kilograms.",
+    "input": {
+     "patient_id": "string"
+    },
+    "output": {
+     "weight_kg": "number"
+    }
+   },
+   {
+    "name": "check_dose_chart",
+    "type": "verify",
+    "description": "Looks up the feline dose chart and returns whether the technician has verified it for the current drug batch.",
+    "input": {
+     "drug_batch": "string"
+    },
+    "output": {
+     "verified": "boolean"
+    }
+   },
+   {
+    "name": "sedate_feline",
+    "type": "mutate",
+    "description": "Administers the sedative dose to a feline patient and records vitals during induction.",
+    "input": {
+     "patient_id": "string",
+     "dose_ml": "number"
+    },
+    "output": {
+     "admin_id": "string"
+    }
+   },
+   {
+    "name": "disinfect_run",
+    "type": "mutate",
+    "description": "Disinfects a kennel run between patients and marks it ready in the boarding board.",
+    "input": {
+     "run_id": "string"
+    },
+    "output": {
+     "ready": "boolean"
+    }
+   },
+   {
+    "name": "send_invoice",
+    "type": "communicate",
+    "description": "Emails the treatment invoice to the owner at discharge.",
+    "input": {
+     "patient_id": "string",
+     "amount": "number"
+    },
+    "output": {
+     "invoice_id": "string"
+    }
+   }
+  ],
+  "events": [
+   {
+    "eid": "A",
+    "source_span": "a same-day weight on the lobby scale",
+    "span_start": 42,
+    "span_end": 78,
+    "role": "PRECONDITION_CHECK",
+    "governed_tools": [
+     "weigh_feline"
+    ],
+    "sentence_index": 0
+   },
+   {
+    "eid": "B",
+    "source_span": "a verified dose chart",
+    "span_start": 82,
+    "span_end": 103,
+    "role": "STATE_OBSERVATION",
+    "governed_tools": [
+     "check_dose_chart"
+    ],
+    "sentence_index": 0
+   },
+   {
+    "eid": "C",
+    "source_span": "Sedating a feline patient",
+    "span_start": 0,
+    "span_end": 25,
+    "role": "OPERATION_EFFECT",
+    "governed_tools": [
+     "sedate_feline"
+    ],
+    "sentence_index": 0
+   },
+   {
+    "eid": "D",
+    "source_span": "Kennel runs are disinfected",
+    "span_start": 125,
+    "span_end": 152,
+    "role": "OPERATION_EFFECT",
+    "governed_tools": [
+     "disinfect_run"
+    ],
+    "sentence_index": 1
+   },
+   {
+    "eid": "E",
+    "source_span": "Invoice the owners",
+    "span_start": 173,
+    "span_end": 191,
+    "role": "COMMUNICATION",
+    "governed_tools": [
+     "send_invoice"
+    ],
+    "sentence_index": 2
+   }
+  ],
+  "edges": [
+   {
+    "from_eid": "A",
+    "to_eid": "C",
+    "from_span": "a same-day weight on the lobby scale",
+    "to_span": "Sedating a feline patient",
+    "relation": "PRECONDITION",
+    "acceptable": [
+     "PRECONDITION",
+     "STATE_GATE"
+    ],
+    "evidence": [
+     {
+      "start": 0,
+      "end": 123,
+      "text": "Sedating a feline patient requires either a same-day weight on the lobby scale or a verified dose chart from the technician"
+     }
+    ]
+   },
+   {
+    "from_eid": "B",
+    "to_eid": "C",
+    "from_span": "a verified dose chart",
+    "to_span": "Sedating a feline patient",
+    "relation": "STATE_GATE",
+    "acceptable": [
+     "STATE_GATE",
+     "PRECONDITION"
+    ],
+    "evidence": [
+     {
+      "start": 0,
+      "end": 123,
+      "text": "Sedating a feline patient requires either a same-day weight on the lobby scale or a verified dose chart from the technician"
+     }
+    ]
+   }
+  ],
+  "groups": [
+   {
+    "target_eid": "C",
+    "logic": "OR",
+    "parent_eids": [
+     "A",
+     "B"
+    ],
+    "target_span": "Sedating a feline patient",
+    "parent_spans": [
+     "a same-day weight on the lobby scale",
+     "a verified dose chart"
+    ],
+    "evidence": [
+     {
+      "start": 0,
+      "end": 123,
+      "text": "Sedating a feline patient requires either a same-day weight on the lobby scale or a verified dose chart from the technician"
+     }
+    ]
+   }
+  ],
+  "tool_types": {
+   "weigh_feline": "verify",
+   "check_dose_chart": "verify",
+   "sedate_feline": "mutate",
+   "disinfect_run": "mutate",
+   "send_invoice": "communicate"
+  },
+  "pair_universe": [
+   {
+    "a_eid": "A",
+    "b_eid": "B",
+    "a_span": "a same-day weight on the lobby scale",
+    "b_span": "a verified dose chart",
+    "gold": "NEGATIVE",
+    "hard": true
+   },
+   {
+    "a_eid": "A",
+    "b_eid": "C",
+    "a_span": "a same-day weight on the lobby scale",
+    "b_span": "Sedating a feline patient",
+    "gold": "POSITIVE",
+    "hard": true
+   },
+   {
+    "a_eid": "A",
+    "b_eid": "D",
+    "a_span": "a same-day weight on the lobby scale",
+    "b_span": "Kennel runs are disinfected",
+    "gold": "NEGATIVE",
+    "hard": true
+   },
+   {
+    "a_eid": "A",
+    "b_eid": "E",
+    "a_span": "a same-day weight on the lobby scale",
+    "b_span": "Invoice the owners",
+    "gold": "NEGATIVE",
+    "hard": true
+   },
+   {
+    "a_eid": "B",
+    "b_eid": "C",
+    "a_span": "a verified dose chart",
+    "b_span": "Sedating a feline patient",
+    "gold": "POSITIVE",
+    "hard": true
+   },
+   {
+    "a_eid": "B",
+    "b_eid": "D",
+    "a_span": "a verified dose chart",
+    "b_span": "Kennel runs are disinfected",
+    "gold": "NEGATIVE",
+    "hard": true
+   },
+   {
+    "a_eid": "B",
+    "b_eid": "E",
+    "a_span": "a verified dose chart",
+    "b_span": "Invoice the owners",
+    "gold": "NEGATIVE",
+    "hard": true
+   },
+   {
+    "a_eid": "C",
+    "b_eid": "D",
+    "a_span": "Sedating a feline patient",
+    "b_span": "Kennel runs are disinfected",
+    "gold": "NEGATIVE",
+    "hard": true
+   },
+   {
+    "a_eid": "C",
+    "b_eid": "E",
+    "a_span": "Sedating a feline patient",
+    "b_span": "Invoice the owners",
+    "gold": "NEGATIVE",
+    "hard": true
+   },
+   {
+    "a_eid": "D",
+    "b_eid": "E",
+    "a_span": "Kennel runs are disinfected",
+    "b_span": "Invoice the owners",
+    "gold": "NEGATIVE",
+    "hard": true
+   }
+  ],
+  "cf_of": null,
+  "mp1": false,
+  "notes": "Shared condition OR: either parent suffices. Traps: A<->B cross-link, D->C, C->E chains."
+ },
+ {
+  "case_id": "test_cinema",
+  "orig_case_id": "test_cinema",
+  "domain": "cinema projection booth",
+  "family": "nested_chain",
+  "split": "test",
+  "policy": "Threading the projector may begin only after the film reel is inspected. Start the projection test only after threading is finished. Dim the house lights from the console.",
+  "tools": [
+   {
+    "name": "inspect_reel",
+    "type": "verify",
+    "description": "Examines a film reel for splices and damage and returns a condition report.",
+    "input": {
+     "reel_id": "string"
+    },
+    "output": {
+     "condition": "string"
+    }
+   },
+   {
+    "name": "thread_projector",
+    "type": "mutate",
+    "description": "Threads the film reel through the projector gate and marks the reel as loaded.",
+    "input": {
+     "reel_id": "string",
+     "projector_id": "string"
+    },
+    "output": {
+     "loaded": "boolean"
+    }
+   },
+   {
+    "name": "run_test_projection",
+    "type": "mutate",
+    "description": "Runs the projection test loop and records the focus and sound levels.",
+    "input": {
+     "projector_id": "string"
+    },
+    "output": {
+     "test_id": "string"
+    }
+   },
+   {
+    "name": "dim_lights",
+    "type": "mutate",
+    "description": "Dims the house lights from the console to the show preset.",
+    "input": {
+     "preset": "string"
+    },
+    "output": {
+     "dimmed": "boolean"
+    }
+   }
+  ],
+  "events": [
+   {
+    "eid": "A",
+    "source_span": "the film reel is inspected",
+    "span_start": 45,
+    "span_end": 71,
+    "role": "PRECONDITION_CHECK",
+    "governed_tools": [
+     "inspect_reel"
+    ],
+    "sentence_index": 0
+   },
+   {
+    "eid": "B",
+    "source_span": "Threading the projector",
+    "span_start": 0,
+    "span_end": 23,
+    "role": "OPERATION_EFFECT",
+    "governed_tools": [
+     "thread_projector"
+    ],
+    "sentence_index": 0
+   },
+   {
+    "eid": "C",
+    "source_span": "Start the projection test",
+    "span_start": 73,
+    "span_end": 98,
+    "role": "OPERATION_EFFECT",
+    "governed_tools": [
+     "run_test_projection"
+    ],
+    "sentence_index": 1
+   },
+   {
+    "eid": "D",
+    "source_span": "Dim the house lights",
+    "span_start": 133,
+    "span_end": 153,
+    "role": "OPERATION_EFFECT",
+    "governed_tools": [
+     "dim_lights"
+    ],
+    "sentence_index": 2
+   }
+  ],
+  "edges": [
+   {
+    "from_eid": "A",
+    "to_eid": "B",
+    "from_span": "the film reel is inspected",
+    "to_span": "Threading the projector",
+    "relation": "PRECONDITION",
+    "acceptable": [
+     "PRECONDITION"
+    ],
+    "evidence": [
+     {
+      "start": 0,
+      "end": 71,
+      "text": "Threading the projector may begin only after the film reel is inspected"
+     }
+    ]
+   },
+   {
+    "from_eid": "B",
+    "to_eid": "C",
+    "from_span": "Threading the projector",
+    "to_span": "Start the projection test",
+    "relation": "ORDER_BEFORE",
+    "acceptable": [
+     "ORDER_BEFORE"
+    ],
+    "evidence": [
+     {
+      "start": 73,
+      "end": 131,
+      "text": "Start the projection test only after threading is finished"
+     }
+    ]
+   }
+  ],
+  "groups": [],
+  "tool_types": {
+   "inspect_reel": "verify",
+   "thread_projector": "mutate",
+   "run_test_projection": "mutate",
+   "dim_lights": "mutate"
+  },
+  "pair_universe": [
+   {
+    "a_eid": "A",
+    "b_eid": "B",
+    "a_span": "the film reel is inspected",
+    "b_span": "Threading the projector",
+    "gold": "POSITIVE",
+    "hard": true
+   },
+   {
+    "a_eid": "A",
+    "b_eid": "C",
+    "a_span": "the film reel is inspected",
+    "b_span": "Start the projection test",
+    "gold": "NEGATIVE",
+    "hard": true
+   },
+   {
+    "a_eid": "A",
+    "b_eid": "D",
+    "a_span": "the film reel is inspected",
+    "b_span": "Dim the house lights",
+    "gold": "NEGATIVE",
+    "hard": true
+   },
+   {
+    "a_eid": "B",
+    "b_eid": "C",
+    "a_span": "Threading the projector",
+    "b_span": "Start the projection test",
+    "gold": "POSITIVE",
+    "hard": true
+   },
+   {
+    "a_eid": "B",
+    "b_eid": "D",
+    "a_span": "Threading the projector",
+    "b_span": "Dim the house lights",
+    "gold": "NEGATIVE",
+    "hard": true
+   },
+   {
+    "a_eid": "C",
+    "b_eid": "D",
+    "a_span": "Start the projection test",
+    "b_span": "Dim the house lights",
+    "gold": "NEGATIVE",
+    "hard": true
+   }
+  ],
+  "cf_of": null,
+  "mp1": false,
+  "notes": "Nested A->B->C. Transitive A->C is the trap: implied by composition, never asserted directly."
+ },
+ {
+  "case_id": "test_concrete",
+  "orig_case_id": "test_concrete",
+  "domain": "concrete batching plant",
+  "family": "same_sentence_unrelated",
+  "split": "test",
+  "policy": "The cement silo level is checked and the mixer drums are greased in the morning routine. Batch tickets are printed for each truck at the gate.",
+  "tools": [
+   {
+    "name": "check_silo_level",
+    "type": "verify",
+    "description": "Reads the cement silo level sensors and returns the remaining tonnes per silo.",
+    "input": {
+     "silo_id": "string"
+    },
+    "output": {
+     "tonnes": "number"
+    }
+   },
+   {
+    "name": "grease_drums",
+    "type": "mutate",
+    "description": "Greases the mixer drum bearings and logs the service in the plant book.",
+    "input": {
+     "drum_ids": "string"
+    },
+    "output": {
+     "serviced": "boolean"
+    }
+   },
+   {
+    "name": "print_batch_ticket",
+    "type": "mutate",
+    "description": "Prints the batch ticket for a truck at the gate with the mix design and load weight.",
+    "input": {
+     "truck_id": "string",
+     "mix_id": "string"
+    },
+    "output": {
+     "ticket_id": "string"
+    }
+   }
+  ],
+  "events": [
+   {
+    "eid": "A",
+    "source_span": "The cement silo level is checked",
+    "span_start": 0,
+    "span_end": 32,
+    "role": "PRECONDITION_CHECK",
+    "governed_tools": [
+     "check_silo_level"
+    ],
+    "sentence_index": 0
+   },
+   {
+    "eid": "B",
+    "source_span": "the mixer drums are greased",
+    "span_start": 37,
+    "span_end": 64,
+    "role": "OPERATION_EFFECT",
+    "governed_tools": [
+     "grease_drums"
+    ],
+    "sentence_index": 0
+   },
+   {
+    "eid": "C",
+    "source_span": "Batch tickets are printed",
+    "span_start": 89,
+    "span_end": 114,
+    "role": "OPERATION_EFFECT",
+    "governed_tools": [
+     "print_batch_ticket"
+    ],
+    "sentence_index": 1
+   }
+  ],
+  "edges": [],
+  "groups": [],
+  "tool_types": {
+   "check_silo_level": "verify",
+   "grease_drums": "mutate",
+   "print_batch_ticket": "mutate"
+  },
+  "pair_universe": [
+   {
+    "a_eid": "A",
+    "b_eid": "B",
+    "a_span": "The cement silo level is checked",
+    "b_span": "the mixer drums are greased",
+    "gold": "NEGATIVE",
+    "hard": true
+   },
+   {
+    "a_eid": "A",
+    "b_eid": "C",
+    "a_span": "The cement silo level is checked",
+    "b_span": "Batch tickets are printed",
+    "gold": "NEGATIVE",
+    "hard": true
+   },
+   {
+    "a_eid": "B",
+    "b_eid": "C",
+    "a_span": "the mixer drums are greased",
+    "b_span": "Batch tickets are printed",
+    "gold": "NEGATIVE",
+    "hard": true
+   }
+  ],
+  "cf_of": null,
+  "mp1": false,
+  "notes": "Same-sentence unrelated: A and B share a sentence via 'and', yet no gating is licensed. Source proximity must not imply an edge."
+ },
+ {
+  "case_id": "test_spray",
+  "orig_case_id": "test_spray",
+  "domain": "pesticide spraying contractor",
+  "family": "exception_unless",
+  "split": "test",
+  "policy": "Spraying may proceed over vineyards unless the wind speed exceeds three metres per second. Record the wind speed at the boom throughout the job. The sprayer tank is rinsed at the depot.",
+  "tools": [
+   {
+    "name": "check_wind_speed",
+    "type": "verify",
+    "description": "Reads the anemometer at the boom and returns the current wind speed in metres per second.",
+    "input": {
+     "field_id": "string"
+    },
+    "output": {
+     "wind_ms": "number"
+    }
+   },
+   {
+    "name": "spray_vineyard",
+    "type": "mutate",
+    "description": "Sprays the pesticide mix over the vineyard rows and logs the treated area.",
+    "input": {
+     "block_id": "string",
+     "litres": "number"
+    },
+    "output": {
+     "treated_ha": "number"
+    }
+   },
+   {
+    "name": "log_wind_reading",
+    "type": "mutate",
+    "description": "Writes a wind speed reading from the boom into the spray job record.",
+    "input": {
+     "job_id": "string",
+     "wind_ms": "number"
+    },
+    "output": {
+     "log_id": "string"
+    }
+   },
+   {
+    "name": "rinse_tank",
+    "type": "mutate",
+    "description": "Rinses the sprayer tank at the depot and disposes of the rinse water.",
+    "input": {
+     "tank_id": "string"
+    },
+    "output": {
+     "rinsed": "boolean"
+    }
+   }
+  ],
+  "events": [
+   {
+    "eid": "A",
+    "source_span": "the wind speed exceeds three metres per second",
+    "span_start": 43,
+    "span_end": 89,
+    "role": "STATE_OBSERVATION",
+    "governed_tools": [
+     "check_wind_speed"
+    ],
+    "sentence_index": 0
+   },
+   {
+    "eid": "B",
+    "source_span": "Spraying may proceed over vineyards",
+    "span_start": 0,
+    "span_end": 35,
+    "role": "OPERATION_EFFECT",
+    "governed_tools": [
+     "spray_vineyard"
+    ],
+    "sentence_index": 0
+   },
+   {
+    "eid": "C",
+    "source_span": "Record the wind speed at the boom",
+    "span_start": 91,
+    "span_end": 124,
+    "role": "OPERATION_EFFECT",
+    "governed_tools": [
+     "log_wind_reading"
+    ],
+    "sentence_index": 1
+   },
+   {
+    "eid": "D",
+    "source_span": "The sprayer tank is rinsed",
+    "span_start": 145,
+    "span_end": 171,
+    "role": "OPERATION_EFFECT",
+    "governed_tools": [
+     "rinse_tank"
+    ],
+    "sentence_index": 2
+   }
+  ],
+  "edges": [
+   {
+    "from_eid": "A",
+    "to_eid": "B",
+    "from_span": "the wind speed exceeds three metres per second",
+    "to_span": "Spraying may proceed over vineyards",
+    "relation": "EXCEPTION",
+    "acceptable": [
+     "EXCEPTION"
+    ],
+    "evidence": [
+     {
+      "start": 0,
+      "end": 89,
+      "text": "Spraying may proceed over vineyards unless the wind speed exceeds three metres per second"
+     }
+    ]
+   }
+  ],
+  "groups": [],
+  "tool_types": {
+   "check_wind_speed": "verify",
+   "spray_vineyard": "mutate",
+   "log_wind_reading": "mutate",
+   "rinse_tank": "mutate"
+  },
+  "pair_universe": [
+   {
+    "a_eid": "A",
+    "b_eid": "B",
+    "a_span": "the wind speed exceeds three metres per second",
+    "b_span": "Spraying may proceed over vineyards",
+    "gold": "POSITIVE",
+    "hard": true
+   },
+   {
+    "a_eid": "A",
+    "b_eid": "C",
+    "a_span": "the wind speed exceeds three metres per second",
+    "b_span": "Record the wind speed at the boom",
+    "gold": "NEGATIVE",
+    "hard": true
+   },
+   {
+    "a_eid": "A",
+    "b_eid": "D",
+    "a_span": "the wind speed exceeds three metres per second",
+    "b_span": "The sprayer tank is rinsed",
+    "gold": "NEGATIVE",
+    "hard": true
+   },
+   {
+    "a_eid": "B",
+    "b_eid": "C",
+    "a_span": "Spraying may proceed over vineyards",
+    "b_span": "Record the wind speed at the boom",
+    "gold": "NEGATIVE",
+    "hard": true
+   },
+   {
+    "a_eid": "B",
+    "b_eid": "D",
+    "a_span": "Spraying may proceed over vineyards",
+    "b_span": "The sprayer tank is rinsed",
+    "gold": "NEGATIVE",
+    "hard": true
+   },
+   {
+    "a_eid": "C",
+    "b_eid": "D",
+    "a_span": "Record the wind speed at the boom",
+    "b_span": "The sprayer tank is rinsed",
+    "gold": "NEGATIVE",
+    "hard": true
+   }
+  ],
+  "cf_of": null,
+  "mp1": false,
+  "notes": "Unless-gate. Traps: C->B (wind recording before spraying, plausible), A->C (same measured quantity)."
+ },
+ {
+  "case_id": "test_harbor",
+  "orig_case_id": "test_harbor",
+  "domain": "harbor crane operations",
+  "family": "even_if",
+  "split": "test",
+  "policy": "Lift the containers even if the load cell reading drifts by two percent. Inspect the spreader latches before each lift. The hatch covers are stowed on the quay.",
+  "tools": [
+   {
+    "name": "read_load_cell",
+    "type": "read",
+    "description": "Reads the crane load cell and returns the current drift percentage against the calibrated zero.",
+    "input": {
+     "crane_id": "string"
+    },
+    "output": {
+     "drift_pct": "number"
+    }
+   },
+   {
+    "name": "lift_container",
+    "type": "mutate",
+    "description": "Hoists a container from the quay onto the vessel and logs the move.",
+    "input": {
+     "container_id": "string",
+     "vessel_slot": "string"
+    },
+    "output": {
+     "move_id": "string"
+    }
+   },
+   {
+    "name": "inspect_latches",
+    "type": "verify",
+    "description": "Checks the spreader latches engage correctly and returns a per-latch result.",
+    "input": {
+     "spreader_id": "string"
+    },
+    "output": {
+     "latches_ok": "boolean"
+    }
+   },
+   {
+    "name": "read_hatch_register",
+    "type": "read",
+    "description": "Returns the current stowage positions of hatch covers from the quay register.",
+    "input": {},
+    "output": {
+     "positions": "string"
+    }
+   }
+  ],
+  "events": [
+   {
+    "eid": "A",
+    "source_span": "the load cell reading drifts by two percent",
+    "span_start": 28,
+    "span_end": 71,
+    "role": "STATE_OBSERVATION",
+    "governed_tools": [
+     "read_load_cell"
+    ],
+    "sentence_index": 0
+   },
+   {
+    "eid": "B",
+    "source_span": "Lift the containers",
+    "span_start": 0,
+    "span_end": 19,
+    "role": "OPERATION_EFFECT",
+    "governed_tools": [
+     "lift_container"
+    ],
+    "sentence_index": 0
+   },
+   {
+    "eid": "C",
+    "source_span": "Inspect the spreader latches",
+    "span_start": 73,
+    "span_end": 101,
+    "role": "PRECONDITION_CHECK",
+    "governed_tools": [
+     "inspect_latches"
+    ],
+    "sentence_index": 1
+   },
+   {
+    "eid": "D",
+    "source_span": "The hatch covers are stowed",
+    "span_start": 120,
+    "span_end": 147,
+    "role": "OTHER",
+    "governed_tools": [
+     "read_hatch_register"
+    ],
+    "sentence_index": 2
+   }
+  ],
+  "edges": [
+   {
+    "from_eid": "A",
+    "to_eid": "B",
+    "from_span": "the load cell reading drifts by two percent",
+    "to_span": "Lift the containers",
+    "relation": "EVEN_IF",
+    "acceptable": [
+     "EVEN_IF"
+    ],
+    "evidence": [
+     {
+      "start": 0,
+      "end": 71,
+      "text": "Lift the containers even if the load cell reading drifts by two percent"
+     }
+    ]
+   },
+   {
+    "from_eid": "C",
+    "to_eid": "B",
+    "from_span": "Inspect the spreader latches",
+    "to_span": "Lift the containers",
+    "relation": "PRECONDITION",
+    "acceptable": [
+     "PRECONDITION"
+    ],
+    "evidence": [
+     {
+      "start": 73,
+      "end": 118,
+      "text": "Inspect the spreader latches before each lift"
+     }
+    ]
+   }
+  ],
+  "groups": [],
+  "tool_types": {
+   "read_load_cell": "read",
+   "lift_container": "mutate",
+   "inspect_latches": "verify",
+   "read_hatch_register": "read"
+  },
+  "pair_universe": [
+   {
+    "a_eid": "A",
+    "b_eid": "B",
+    "a_span": "the load cell reading drifts by two percent",
+    "b_span": "Lift the containers",
+    "gold": "POSITIVE",
+    "hard": true
+   },
+   {
+    "a_eid": "A",
+    "b_eid": "C",
+    "a_span": "the load cell reading drifts by two percent",
+    "b_span": "Inspect the spreader latches",
+    "gold": "NEGATIVE",
+    "hard": false
+   },
+   {
+    "a_eid": "A",
+    "b_eid": "D",
+    "a_span": "the load cell reading drifts by two percent",
+    "b_span": "The hatch covers are stowed",
+    "gold": "NEGATIVE",
+    "hard": false
+   },
+   {
+    "a_eid": "B",
+    "b_eid": "C",
+    "a_span": "Lift the containers",
+    "b_span": "Inspect the spreader latches",
+    "gold": "POSITIVE",
+    "hard": false
+   },
+   {
+    "a_eid": "B",
+    "b_eid": "D",
+    "a_span": "Lift the containers",
+    "b_span": "The hatch covers are stowed",
+    "gold": "NEGATIVE",
+    "hard": false
+   },
+   {
+    "a_eid": "C",
+    "b_eid": "D",
+    "a_span": "Inspect the spreader latches",
+    "b_span": "The hatch covers are stowed",
+    "gold": "NEGATIVE",
+    "hard": false
+   }
+  ],
+  "cf_of": null,
+  "mp1": false,
+  "notes": "EVEN_IF documented non-blocking relation plus a genuine precondition on the same target."
+ },
+ {
+  "case_id": "test_archery",
+  "orig_case_id": "test_archery",
+  "domain": "archery range",
+  "family": "misleading_tool_names",
+  "split": "test",
+  "policy": "Inspect the arrow nocks before stringing the rental bows. The target mats are carried out at opening. Log the attendance sheet at the front desk.",
+  "tools": [
+   {
+    "name": "archive_inspection_records",
+    "type": "verify",
+    "description": "Checks each arrow nock for cracks and loose fletching and returns a pass or fail per arrow.",
+    "input": {
+     "arrow_ids": "string"
+    },
+    "output": {
+     "results": "string"
+    }
+   },
+   {
+    "name": "validate_range_safety",
+    "type": "mutate",
+    "description": "Strings a rental bow, fits the string and marks the bow as issued in the rental register.",
+    "input": {
+     "bow_id": "string"
+    },
+    "output": {
+     "issued": "boolean"
+    }
+   },
+   {
+    "name": "calibrate_target_system",
+    "type": "mutate",
+    "description": "Carries the target mats from the store to the firing line and positions them.",
+    "input": {
+     "mat_ids": "string"
+    },
+    "output": {
+     "placed": "boolean"
+    }
+   },
+   {
+    "name": "process_payment_batch",
+    "type": "mutate",
+    "description": "Writes the daily attendance entries from the front desk sheet into the range register.",
+    "input": {
+     "date": "string",
+     "entries": "string"
+    },
+    "output": {
+     "written": "boolean"
+    }
+   }
+  ],
+  "events": [
+   {
+    "eid": "A",
+    "source_span": "Inspect the arrow nocks",
+    "span_start": 0,
+    "span_end": 23,
+    "role": "PRECONDITION_CHECK",
+    "governed_tools": [
+     "archive_inspection_records"
+    ],
+    "sentence_index": 0
+   },
+   {
+    "eid": "B",
+    "source_span": "stringing the rental bows",
+    "span_start": 31,
+    "span_end": 56,
+    "role": "OPERATION_EFFECT",
+    "governed_tools": [
+     "validate_range_safety"
+    ],
+    "sentence_index": 0
+   },
+   {
+    "eid": "C",
+    "source_span": "The target mats are carried out",
+    "span_start": 58,
+    "span_end": 89,
+    "role": "OPERATION_EFFECT",
+    "governed_tools": [
+     "calibrate_target_system"
+    ],
+    "sentence_index": 1
+   },
+   {
+    "eid": "D",
+    "source_span": "Log the attendance sheet",
+    "span_start": 102,
+    "span_end": 126,
+    "role": "OPERATION_EFFECT",
+    "governed_tools": [
+     "process_payment_batch"
+    ],
+    "sentence_index": 2
+   }
+  ],
+  "edges": [
+   {
+    "from_eid": "A",
+    "to_eid": "B",
+    "from_span": "Inspect the arrow nocks",
+    "to_span": "stringing the rental bows",
+    "relation": "PRECONDITION",
+    "acceptable": [
+     "PRECONDITION"
+    ],
+    "evidence": [
+     {
+      "start": 0,
+      "end": 56,
+      "text": "Inspect the arrow nocks before stringing the rental bows"
+     }
+    ]
+   }
+  ],
+  "groups": [],
+  "tool_types": {
+   "archive_inspection_records": "verify",
+   "validate_range_safety": "mutate",
+   "calibrate_target_system": "mutate",
+   "process_payment_batch": "mutate"
+  },
+  "pair_universe": [
+   {
+    "a_eid": "A",
+    "b_eid": "B",
+    "a_span": "Inspect the arrow nocks",
+    "b_span": "stringing the rental bows",
+    "gold": "POSITIVE",
+    "hard": true
+   },
+   {
+    "a_eid": "A",
+    "b_eid": "C",
+    "a_span": "Inspect the arrow nocks",
+    "b_span": "The target mats are carried out",
+    "gold": "NEGATIVE",
+    "hard": true
+   },
+   {
+    "a_eid": "A",
+    "b_eid": "D",
+    "a_span": "Inspect the arrow nocks",
+    "b_span": "Log the attendance sheet",
+    "gold": "NEGATIVE",
+    "hard": true
+   },
+   {
+    "a_eid": "B",
+    "b_eid": "C",
+    "a_span": "stringing the rental bows",
+    "b_span": "The target mats are carried out",
+    "gold": "NEGATIVE",
+    "hard": true
+   },
+   {
+    "a_eid": "B",
+    "b_eid": "D",
+    "a_span": "stringing the rental bows",
+    "b_span": "Log the attendance sheet",
+    "gold": "NEGATIVE",
+    "hard": true
+   },
+   {
+    "a_eid": "C",
+    "b_eid": "D",
+    "a_span": "The target mats are carried out",
+    "b_span": "Log the attendance sheet",
+    "gold": "NEGATIVE",
+    "hard": true
+   }
+  ],
+  "cf_of": null,
+  "mp1": false,
+  "notes": "All four tool NAMES deliberately mislead (archive_/validate_/calibrate_/process_ suggest other functions); descriptions are truthful. Tests name-leakage anywhere in the stack."
+ },
+ {
+  "case_id": "test_crane",
+  "orig_case_id": "test_crane",
+  "domain": "crane rental yard",
+  "family": "misleading_tool_names",
+  "split": "test",
+  "policy": "Check the outrigger pads before deploying the mobile crane. The hook block is greased weekly. Dispatch the crane truck after the route survey is filed.",
+  "tools": [
+   {
+    "name": "schedule_maintenance_visit",
+    "type": "verify",
+    "description": "Verifies each outrigger pad sits on firm level ground and is undamaged; returns a per-pad safety result.",
+    "input": {
+     "crane_id": "string"
+    },
+    "output": {
+     "pads_ok": "boolean"
+    }
+   },
+   {
+    "name": "update_billing_ledger",
+    "type": "mutate",
+    "description": "Raises the mobile crane on its outriggers, secures it and marks the unit as deployed in the yard system.",
+    "input": {
+     "crane_id": "string",
+     "site": "string"
+    },
+    "output": {
+     "deployed": "boolean"
+    }
+   },
+   {
+    "name": "validate_load_cell",
+    "type": "mutate",
+    "description": "Packs the hook block bearings with grease and logs the service in the maintenance book.",
+    "input": {
+     "block_id": "string"
+    },
+    "output": {
+     "serviced": "boolean"
+    }
+   },
+   {
+    "name": "audit_insurance_docs",
+    "type": "mutate",
+    "description": "Files the route survey with bridge clearances and cable heights along the planned route.",
+    "input": {
+     "route": "string",
+     "clearances": "string"
+    },
+    "output": {
+     "survey_id": "string"
+    }
+   },
+   {
+    "name": "dispatch_truck",
+    "type": "mutate",
+    "description": "Dispatches the crane truck on a surveyed route and records the departure time.",
+    "input": {
+     "crane_id": "string",
+     "survey_id": "string"
+    },
+    "output": {
+     "departure": "string"
+    }
+   }
+  ],
+  "events": [
+   {
+    "eid": "A",
+    "source_span": "Check the outrigger pads",
+    "span_start": 0,
+    "span_end": 24,
+    "role": "PRECONDITION_CHECK",
+    "governed_tools": [
+     "schedule_maintenance_visit"
+    ],
+    "sentence_index": 0
+   },
+   {
+    "eid": "B",
+    "source_span": "deploying the mobile crane",
+    "span_start": 32,
+    "span_end": 58,
+    "role": "OPERATION_EFFECT",
+    "governed_tools": [
+     "update_billing_ledger"
+    ],
+    "sentence_index": 0
+   },
+   {
+    "eid": "C",
+    "source_span": "The hook block is greased",
+    "span_start": 60,
+    "span_end": 85,
+    "role": "OPERATION_EFFECT",
+    "governed_tools": [
+     "validate_load_cell"
+    ],
+    "sentence_index": 1
+   },
+   {
+    "eid": "D",
+    "source_span": "the route survey is filed",
+    "span_start": 125,
+    "span_end": 150,
+    "role": "OPERATION_EFFECT",
+    "governed_tools": [
+     "audit_insurance_docs"
+    ],
+    "sentence_index": 2
+   },
+   {
+    "eid": "E",
+    "source_span": "Dispatch the crane truck",
+    "span_start": 94,
+    "span_end": 118,
+    "role": "OPERATION_EFFECT",
+    "governed_tools": [
+     "dispatch_truck"
+    ],
+    "sentence_index": 2
+   }
+  ],
+  "edges": [
+   {
+    "from_eid": "A",
+    "to_eid": "B",
+    "from_span": "Check the outrigger pads",
+    "to_span": "deploying the mobile crane",
+    "relation": "PRECONDITION",
+    "acceptable": [
+     "PRECONDITION"
+    ],
+    "evidence": [
+     {
+      "start": 0,
+      "end": 58,
+      "text": "Check the outrigger pads before deploying the mobile crane"
+     }
+    ]
+   },
+   {
+    "from_eid": "D",
+    "to_eid": "E",
+    "from_span": "the route survey is filed",
+    "to_span": "Dispatch the crane truck",
+    "relation": "PRECONDITION",
+    "acceptable": [
+     "PRECONDITION",
+     "ORDER_BEFORE"
+    ],
+    "evidence": [
+     {
+      "start": 94,
+      "end": 150,
+      "text": "Dispatch the crane truck after the route survey is filed"
+     }
+    ]
+   }
+  ],
+  "groups": [],
+  "tool_types": {
+   "schedule_maintenance_visit": "verify",
+   "update_billing_ledger": "mutate",
+   "validate_load_cell": "mutate",
+   "audit_insurance_docs": "mutate",
+   "dispatch_truck": "mutate"
+  },
+  "pair_universe": [
+   {
+    "a_eid": "A",
+    "b_eid": "B",
+    "a_span": "Check the outrigger pads",
+    "b_span": "deploying the mobile crane",
+    "gold": "POSITIVE",
+    "hard": true
+   },
+   {
+    "a_eid": "A",
+    "b_eid": "C",
+    "a_span": "Check the outrigger pads",
+    "b_span": "The hook block is greased",
+    "gold": "NEGATIVE",
+    "hard": true
+   },
+   {
+    "a_eid": "A",
+    "b_eid": "D",
+    "a_span": "Check the outrigger pads",
+    "b_span": "the route survey is filed",
+    "gold": "NEGATIVE",
+    "hard": true
+   },
+   {
+    "a_eid": "A",
+    "b_eid": "E",
+    "a_span": "Check the outrigger pads",
+    "b_span": "Dispatch the crane truck",
+    "gold": "NEGATIVE",
+    "hard": true
+   },
+   {
+    "a_eid": "B",
+    "b_eid": "C",
+    "a_span": "deploying the mobile crane",
+    "b_span": "The hook block is greased",
+    "gold": "NEGATIVE",
+    "hard": true
+   },
+   {
+    "a_eid": "B",
+    "b_eid": "D",
+    "a_span": "deploying the mobile crane",
+    "b_span": "the route survey is filed",
+    "gold": "NEGATIVE",
+    "hard": true
+   },
+   {
+    "a_eid": "B",
+    "b_eid": "E",
+    "a_span": "deploying the mobile crane",
+    "b_span": "Dispatch the crane truck",
+    "gold": "NEGATIVE",
+    "hard": true
+   },
+   {
+    "a_eid": "C",
+    "b_eid": "D",
+    "a_span": "The hook block is greased",
+    "b_span": "the route survey is filed",
+    "gold": "NEGATIVE",
+    "hard": true
+   },
+   {
+    "a_eid": "C",
+    "b_eid": "E",
+    "a_span": "The hook block is greased",
+    "b_span": "Dispatch the crane truck",
+    "gold": "NEGATIVE",
+    "hard": true
+   },
+   {
+    "a_eid": "D",
+    "b_eid": "E",
+    "a_span": "the route survey is filed",
+    "b_span": "Dispatch the crane truck",
+    "gold": "POSITIVE",
+    "hard": true
+   }
+  ],
+  "cf_of": null,
+  "mp1": false,
+  "notes": "Misleading names on 4 of 5 tools plus two independent bindings; A->E is the plausible cross trap."
+ },
+ {
+  "case_id": "test_florist",
+  "orig_case_id": "test_florist",
+  "domain": "florist",
+  "family": "multiple_independent_policies",
+  "split": "test",
+  "policy": "Condition the roses in the cold room before arranging any bouquet. Wire the orchid stems after the morning delivery is booked in. The till float is counted at opening. Phone the wedding client on Thursday.",
+  "tools": [
+   {
+    "name": "condition_roses",
+    "type": "mutate",
+    "description": "Conditions rose batches in the cold room: trims stems, hydrates and rests them.",
+    "input": {
+     "batch_id": "string",
+     "hours": "integer"
+    },
+    "output": {
+     "conditioned": "boolean"
+    }
+   },
+   {
+    "name": "arrange_bouquet",
+    "type": "mutate",
+    "description": "Arranges conditioned stems into a bouquet and prints the order label.",
+    "input": {
+     "order_id": "string",
+     "stems": "string"
+    },
+    "output": {
+     "bouquet_id": "string"
+    }
+   },
+   {
+    "name": "wire_stems",
+    "type": "mutate",
+    "description": "Wires orchid stems for corsages and records the wired batch.",
+    "input": {
+     "stem_count": "integer"
+    },
+    "output": {
+     "batch_id": "string"
+    }
+   },
+   {
+    "name": "book_in_delivery",
+    "type": "mutate",
+    "description": "Books the morning flower delivery into the goods register with the supplier manifest.",
+    "input": {
+     "manifest_id": "string"
+    },
+    "output": {
+     "goods_id": "string"
+    }
+   },
+   {
+    "name": "count_float",
+    "type": "mutate",
+    "description": "Counts the till float at opening and records the starting cash.",
+    "input": {
+     "date": "string"
+    },
+    "output": {
+     "float": "number"
+    }
+   },
+   {
+    "name": "call_client",
+    "type": "communicate",
+    "description": "Phones the wedding client to confirm the order details and logs the call.",
+    "input": {
+     "client_id": "string",
+     "order_id": "string"
+    },
+    "output": {
+     "call_id": "string"
+    }
+   }
+  ],
+  "events": [
+   {
+    "eid": "A",
+    "source_span": "Condition the roses in the cold room",
+    "span_start": 0,
+    "span_end": 36,
+    "role": "OPERATION_EFFECT",
+    "governed_tools": [
+     "condition_roses"
+    ],
+    "sentence_index": 0
+   },
+   {
+    "eid": "B",
+    "source_span": "arranging any bouquet",
+    "span_start": 44,
+    "span_end": 65,
+    "role": "OPERATION_EFFECT",
+    "governed_tools": [
+     "arrange_bouquet"
+    ],
+    "sentence_index": 0
+   },
+   {
+    "eid": "C",
+    "source_span": "Wire the orchid stems",
+    "span_start": 67,
+    "span_end": 88,
+    "role": "OPERATION_EFFECT",
+    "governed_tools": [
+     "wire_stems"
+    ],
+    "sentence_index": 1
+   },
+   {
+    "eid": "D",
+    "source_span": "the morning delivery is booked in",
+    "span_start": 95,
+    "span_end": 128,
+    "role": "OPERATION_EFFECT",
+    "governed_tools": [
+     "book_in_delivery"
+    ],
+    "sentence_index": 1
+   },
+   {
+    "eid": "E",
+    "source_span": "The till float is counted",
+    "span_start": 130,
+    "span_end": 155,
+    "role": "OPERATION_EFFECT",
+    "governed_tools": [
+     "count_float"
+    ],
+    "sentence_index": 2
+   },
+   {
+    "eid": "F",
+    "source_span": "Phone the wedding client",
+    "span_start": 168,
+    "span_end": 192,
+    "role": "COMMUNICATION",
+    "governed_tools": [
+     "call_client"
+    ],
+    "sentence_index": 3
+   }
+  ],
+  "edges": [
+   {
+    "from_eid": "A",
+    "to_eid": "B",
+    "from_span": "Condition the roses in the cold room",
+    "to_span": "arranging any bouquet",
+    "relation": "ORDER_BEFORE",
+    "acceptable": [
+     "ORDER_BEFORE",
+     "PRECONDITION"
+    ],
+    "evidence": [
+     {
+      "start": 0,
+      "end": 65,
+      "text": "Condition the roses in the cold room before arranging any bouquet"
+     }
+    ]
+   },
+   {
+    "from_eid": "D",
+    "to_eid": "C",
+    "from_span": "the morning delivery is booked in",
+    "to_span": "Wire the orchid stems",
+    "relation": "ORDER_BEFORE",
+    "acceptable": [
+     "ORDER_BEFORE",
+     "PRECONDITION"
+    ],
+    "evidence": [
+     {
+      "start": 67,
+      "end": 128,
+      "text": "Wire the orchid stems after the morning delivery is booked in"
+     }
+    ]
+   }
+  ],
+  "groups": [],
+  "tool_types": {
+   "condition_roses": "mutate",
+   "arrange_bouquet": "mutate",
+   "wire_stems": "mutate",
+   "book_in_delivery": "mutate",
+   "count_float": "mutate",
+   "call_client": "communicate"
+  },
+  "pair_universe": [
+   {
+    "a_eid": "A",
+    "b_eid": "B",
+    "a_span": "Condition the roses in the cold room",
+    "b_span": "arranging any bouquet",
+    "gold": "POSITIVE",
+    "hard": true
+   },
+   {
+    "a_eid": "A",
+    "b_eid": "C",
+    "a_span": "Condition the roses in the cold room",
+    "b_span": "Wire the orchid stems",
+    "gold": "NEGATIVE",
+    "hard": true
+   },
+   {
+    "a_eid": "A",
+    "b_eid": "D",
+    "a_span": "Condition the roses in the cold room",
+    "b_span": "the morning delivery is booked in",
+    "gold": "NEGATIVE",
+    "hard": true
+   },
+   {
+    "a_eid": "A",
+    "b_eid": "E",
+    "a_span": "Condition the roses in the cold room",
+    "b_span": "The till float is counted",
+    "gold": "NEGATIVE",
+    "hard": true
+   },
+   {
+    "a_eid": "A",
+    "b_eid": "F",
+    "a_span": "Condition the roses in the cold room",
+    "b_span": "Phone the wedding client",
+    "gold": "NEGATIVE",
+    "hard": true
+   },
+   {
+    "a_eid": "B",
+    "b_eid": "C",
+    "a_span": "arranging any bouquet",
+    "b_span": "Wire the orchid stems",
+    "gold": "NEGATIVE",
+    "hard": true
+   },
+   {
+    "a_eid": "B",
+    "b_eid": "D",
+    "a_span": "arranging any bouquet",
+    "b_span": "the morning delivery is booked in",
+    "gold": "NEGATIVE",
+    "hard": true
+   },
+   {
+    "a_eid": "B",
+    "b_eid": "E",
+    "a_span": "arranging any bouquet",
+    "b_span": "The till float is counted",
+    "gold": "NEGATIVE",
+    "hard": true
+   },
+   {
+    "a_eid": "B",
+    "b_eid": "F",
+    "a_span": "arranging any bouquet",
+    "b_span": "Phone the wedding client",
+    "gold": "NEGATIVE",
+    "hard": true
+   },
+   {
+    "a_eid": "C",
+    "b_eid": "D",
+    "a_span": "Wire the orchid stems",
+    "b_span": "the morning delivery is booked in",
+    "gold": "POSITIVE",
+    "hard": true
+   },
+   {
+    "a_eid": "C",
+    "b_eid": "E",
+    "a_span": "Wire the orchid stems",
+    "b_span": "The till float is counted",
+    "gold": "NEGATIVE",
+    "hard": true
+   },
+   {
+    "a_eid": "C",
+    "b_eid": "F",
+    "a_span": "Wire the orchid stems",
+    "b_span": "Phone the wedding client",
+    "gold": "NEGATIVE",
+    "hard": true
+   },
+   {
+    "a_eid": "D",
+    "b_eid": "E",
+    "a_span": "the morning delivery is booked in",
+    "b_span": "The till float is counted",
+    "gold": "NEGATIVE",
+    "hard": true
+   },
+   {
+    "a_eid": "D",
+    "b_eid": "F",
+    "a_span": "the morning delivery is booked in",
+    "b_span": "Phone the wedding client",
+    "gold": "NEGATIVE",
+    "hard": true
+   },
+   {
+    "a_eid": "E",
+    "b_eid": "F",
+    "a_span": "The till float is counted",
+    "b_span": "Phone the wedding client",
+    "gold": "NEGATIVE",
+    "hard": true
+   }
+  ],
+  "cf_of": null,
+  "mp1": false,
+  "notes": "Hairball scenario: 6 events, 12+ plausible pairs, policy licenses exactly 2 edges from two independent processes."
+ }
+]
