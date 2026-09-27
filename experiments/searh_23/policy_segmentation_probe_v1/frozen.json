@@ -1,0 +1,105 @@
+{
+  "systems": {
+    "segments": "Split ONE ORIGINAL policy text into every independent directive\nor descriptive assertion. Return one JSON object only:\n{\"segments\":[{\"quote\":\"exact continuous source substring\"},...]}.\nCopy exact continuous substrings of the ORIGINAL source in their source order.\nSegments must not overlap. Cover every content word; only punctuation and\nstandalone connecting words AND/BUT/OR may remain outside quotes.\nSplit a contrast such as 'may add but not remove' into permission and\nprohibition segments. Split two independent sentences. Keep multiple checks\nthat jointly qualify the SAME action inside their parent directive. Preserve\nthe source's if/only-if/never/before/after words in the appropriate segment.\nDo not restate logical contrapositives or invent a new rule. Do not choose\ntools, formalize truth conditions, or judge any agent action.\n"
+  },
+  "tasks": [
+    {
+      "id": "retail_cancel",
+      "split": "viewed_public46_clause",
+      "query": {
+        "policy": "An order can only be cancelled if its status is 'pending', and you should check its status before taking the action."
+      },
+      "expected_directives": 2
+    },
+    {
+      "id": "retail_modify",
+      "split": "viewed_public46_clause",
+      "query": {
+        "policy": "An order can only be modified if its status is 'pending', and you should check its status before taking the action."
+      },
+      "expected_directives": 2
+    },
+    {
+      "id": "retail_exchange",
+      "split": "viewed_public46_clause",
+      "query": {
+        "policy": "An order can only be exchanged if its status is 'delivered', and you should check its status before taking the action. In particular, remember to remind the customer to confirm they have provided all items to be exchanged."
+      },
+      "expected_directives": 3
+    },
+    {
+      "id": "airline_baggage",
+      "split": "viewed_public46_clause",
+      "query": {
+        "policy": "- The user can add but not remove checked bags."
+      },
+      "expected_directives": 2
+    },
+    {
+      "id": "airline_passenger_count",
+      "split": "viewed_public46_clause",
+      "query": {
+        "policy": "- The user can modify passengers but cannot modify the number of passengers."
+      },
+      "expected_directives": 2
+    },
+    {
+      "id": "telecom_resume",
+      "split": "viewed_public46_clause",
+      "query": {
+        "policy": "You are not allowed to lift the suspension if the line's contract end date is in the past, even if the user has paid all their overdue bills."
+      },
+      "expected_directives": 1
+    },
+    {
+      "id": "telecom_payment_request",
+      "split": "viewed_public46_clause",
+      "query": {
+        "policy": "- The send payement request tool will not check if the bill is overdue. You should always check that the bill is overdue before sending a payment request."
+      },
+      "expected_directives": 2
+    },
+    {
+      "id": "records_dev",
+      "split": "viewed_prior_clause",
+      "query": {
+        "policy": "A document may be published only after its owner approval check has returned approved for that document AND the latest classification check for the same document reports public. Submitting a publication request does not publish it."
+      },
+      "expected_directives": 2
+    },
+    {
+      "id": "hotel_cancellation_order",
+      "split": "viewed_prior_clause",
+      "query": {
+        "policy": "For paid reservations, process cancellation FIRST and the refund SECOND; never refund before cancelling."
+      },
+      "expected_directives": 2
+    },
+    {
+      "id": "parcel_handover_transfer",
+      "split": "viewed_prior_clause",
+      "query": {
+        "policy": "A parcel may be handed over only after its barcode check has returned valid AND its latest custody check reports ready. Filing a handover request does not hand it over."
+      },
+      "expected_directives": 2
+    },
+    {
+      "id": "credit_preview_new",
+      "split": "v3_new_authored",
+      "query": {
+        "policy": "You may preview a credit, but you must never issue a credit without recorded approval."
+      },
+      "expected_directives": 2
+    },
+    {
+      "id": "archive_release_new",
+      "split": "v3_new_authored",
+      "query": {
+        "policy": "An archive may only be released after its retention status is checked. Release through either publish_archive or publish_public_copy; filing a release request is not release."
+      },
+      "expected_directives": 3
+    }
+  ],
+  "max_tokens": 500,
+  "note": "post-hoc viewed source and authored controls; component segmentation only"
+}
