@@ -7,7 +7,8 @@ from pathlib import Path
 sys.path.insert(0, str(Path(__file__).resolve().parents[1] / "experiments/searh_23"))
 
 from policy_architecture_abcd_v1 import (BASE, all_quotes, compile_tree, exact,
-                                         normalize_directives)  # noqa: E402
+                                         normalize_directives, temporal_atoms)  # noqa: E402
+from policy_architecture_abcd_v2 import SCHEMAS  # noqa: E402
 
 
 def test_frozen_inputs_do_not_contain_gold_and_quotes_are_unique() -> None:
@@ -55,3 +56,19 @@ def test_direct_ir_rejects_nonliteral_action() -> None:
     directives, errors = normalize_directives({"directives": [row]}, "May publish a draft.", {"publish": "Publish."})
     assert directives[0]["action_quote"] == ""
     assert errors == ["bad_action_span_0"]
+
+
+def test_schema_controls_recursive_child_types() -> None:
+    assert SCHEMAS["C_node"]["properties"]["left"]["type"] == "string"
+    assert SCHEMAS["D_logical"]["properties"]["right"]["type"] == "string"
+    assert SCHEMAS["D_select"]["properties"]["type"]["enum"] == [
+        "ATOMIC", "QUANTIFIED", "LOGICAL", "NEGATION"]
+    assert SCHEMAS["A"]["$defs"]["Cond"]["properties"]["children"]["items"] == {
+        "$ref": "#/$defs/Cond"}
+
+
+def test_temporal_atoms_keep_both_and_children() -> None:
+    value = {"op": "AND", "children": [
+        {"op": "ATOM", "quote": "first", "temporal": "PRIOR_TRUE"},
+        {"op": "ATOM", "quote": "second", "temporal": "LATEST"}]}
+    assert temporal_atoms(value) == [("first", "PRIOR_TRUE"), ("second", "LATEST")]

@@ -531,6 +531,22 @@ def score() -> dict:
                     matches.append((g, p))
             spans = set(all_quotes(found))
             required = set(all_quotes(expected))
+            gold_exact = Counter(map(exact, expected))
+            found_exact = Counter(map(exact, found))
+            missing_count = gold_exact - found_exact
+            extra_count = found_exact - gold_exact
+            missing_rows = []
+            extra_rows = []
+            for g in expected:
+                key = exact(g)
+                if missing_count[key]:
+                    missing_rows.append(g)
+                    missing_count[key] -= 1
+            for p in found:
+                key = exact(p)
+                if extra_count[key]:
+                    extra_rows.append(p)
+                    extra_count[key] -= 1
             temporal_gold = {q for g in expected for q in temporal_atoms(g.get("condition"))}
             temporal_found = {q for p in found for q in temporal_atoms(p.get("condition"))}
             temporal_gold |= {("BEFORE", g["action_quote"], g["before_quote"]) for g in expected if g["before_quote"]}
@@ -547,9 +563,9 @@ def score() -> dict:
                    "temporal_match": len(temporal_gold & temporal_found),
                    "temporal_total": len(temporal_gold),
                    "span_hit": len(required & spans), "span_total": len(required),
-                   "exact_ir": Counter(map(exact, expected)) == Counter(map(exact, found)),
-                   "missing_directives": [g for g in expected if exact(g) not in Counter(map(exact, found))],
-                   "extra_directives": [p for p in found if exact(p) not in Counter(map(exact, expected))],
+                   "exact_ir": gold_exact == found_exact,
+                   "missing_directives": missing_rows,
+                   "extra_directives": extra_rows,
                    "missing_spans": sorted(required - spans),
                    "errors": result["errors"], "calls": len(result["calls"])}
             rows.append(row)
