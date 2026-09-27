@@ -25,7 +25,8 @@ import time
 from pathlib import Path
 
 sys.path.insert(0, str(Path(__file__).parent))
-from oc_common import load_suite, load_component_inputs, out_dir, write_usage
+from oc_common import (load_suite, load_component_inputs, out_dir, write_usage,
+                       suffix_for)
 
 import numpy as np
 import torch

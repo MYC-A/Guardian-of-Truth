@@ -233,6 +233,11 @@ def resolve_with_llm(case, events, details, outdir_suffix):
         rec = client.ask(RESOLVER_SYSTEM, user, max_tokens=200)
         answer, err = Mistral.parse_json(rec["raw"])
         label = answer.get("label")
+        if isinstance(label, dict):
+            label = label.get("label") or label.get("role") or \
+                label.get("choice") or None
+        if not isinstance(label, str):
+            label = None
         if label in LABEL_TO_ROLE:
             e["role"] = LABEL_TO_ROLE[label]
             e["governed_tools"] = [top3[0]["name"]] if top3 else []

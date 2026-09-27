@@ -427,7 +427,7 @@ def main():
     suite = load_suite(which)
     score = {"suite": which, "arms": {}}
 
-    e2e_arms = ["A_e2e", "I_e2e", "H_hybrid", "Hplus_hybrid"]
+    e2e_arms = ["A_e2e", "I_e2e", "H_hybrid", "Hplus_hybrid", "H2_hybrid"]
     struct_arms = ["B_dependency", "C_amr", "D_srl"]
 
     for arm in struct_arms + e2e_arms:

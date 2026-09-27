@@ -1,0 +1,480 @@
+[
+ {
+  "case_id": "film_archive",
+  "domain": "film production",
+  "policy": "Screen the camera footage before archiving the reel for production P-12, then label the reel.",
+  "tools": [
+   {
+    "name": "screen_footage",
+    "description": "Reviews the recorded footage and records whether it passes the quality screen.",
+    "input": {
+     "reel_id": "string"
+    },
+    "output": {
+     "passed": "boolean"
+    }
+   },
+   {
+    "name": "archive_reel",
+    "description": "Moves a reel into the long-term archive vault and registers it.",
+    "input": {
+     "reel_id": "string"
+    },
+    "output": {
+     "archived": "boolean"
+    }
+   },
+   {
+    "name": "label_reel",
+    "description": "Prints and attaches the content label to a reel.",
+    "input": {
+     "reel_id": "string"
+    },
+    "output": {
+     "labelled": "boolean"
+    }
+   },
+   {
+    "name": "read_archive_index",
+    "description": "Reads the archive index of stored reels.",
+    "input": {},
+    "output": {
+     "reels": "array"
+    }
+   }
+  ]
+ },
+ {
+  "case_id": "vineyard_bottling",
+  "domain": "vineyard",
+  "policy": "Bottle the reserve batch only if the laboratory stability test has passed. Capping a bottle without the test voids lot L-7.",
+  "tools": [
+   {
+    "name": "bottle_batch",
+    "description": "Fills and seals bottles from a wine batch.",
+    "input": {
+     "batch_id": "string"
+    },
+    "output": {
+     "bottled": "boolean"
+    }
+   },
+   {
+    "name": "read_lab_result",
+    "description": "Reads the latest laboratory stability test result for a batch.",
+    "input": {
+     "batch_id": "string"
+    },
+    "output": {
+     "passed": "boolean"
+    }
+   },
+   {
+    "name": "cap_bottle",
+    "description": "Caps a single bottle on the bench line.",
+    "input": {
+     "bottle_id": "string"
+    },
+    "output": {
+     "capped": "boolean"
+    }
+   },
+   {
+    "name": "void_lot",
+    "description": "Marks a lot as void in the production ledger.",
+    "input": {
+     "lot_id": "string"
+    },
+    "output": {
+     "voided": "boolean"
+    }
+   }
+  ]
+ },
+ {
+  "case_id": "school_bus",
+  "domain": "school bus depot",
+  "policy": "The driver must complete the pre-trip inspection and the brake test before departing the depot on route R-14. Announce route delays on the radio during the trip.",
+  "tools": [
+   {
+    "name": "log_inspection",
+    "description": "Records the pre-trip inspection checklist result for a bus.",
+    "input": {
+     "bus_id": "string"
+    },
+    "output": {
+     "complete": "boolean"
+    }
+   },
+   {
+    "name": "read_brake_test",
+    "description": "Reads the brake test result for a bus.",
+    "input": {
+     "bus_id": "string"
+    },
+    "output": {
+     "passed": "boolean"
+    }
+   },
+   {
+    "name": "depart_depot",
+    "description": "Signs a bus out of the depot onto its route.",
+    "input": {
+     "bus_id": "string",
+     "route": "string"
+    },
+    "output": {
+     "departed": "boolean"
+    }
+   },
+   {
+    "name": "radio_announce",
+    "description": "Sends a delay announcement on the depot radio channel.",
+    "input": {
+     "route": "string",
+     "message": "string"
+    },
+    "output": {
+     "sent": "boolean"
+    }
+   },
+   {
+    "name": "read_departure_log",
+    "description": "Reads past depot departure records for a bus.",
+    "input": {
+     "bus_id": "string"
+    },
+    "output": {
+     "records": "array"
+    }
+   }
+  ]
+ },
+ {
+  "case_id": "bakery_allergen",
+  "domain": "bakery chain",
+  "policy": "Attach the allergen label to display tray K-4 only after the ingredient list has been re-checked. Selling an unlabelled tray is forbidden.",
+  "tools": [
+   {
+    "name": "attach_label",
+    "description": "Attaches the allergen label to a display tray.",
+    "input": {
+     "tray_id": "string"
+    },
+    "output": {
+     "labelled": "boolean"
+    }
+   },
+   {
+    "name": "verify_ingredients",
+    "description": "Compares the tray contents against the recipe ingredient list and returns whether they match.",
+    "input": {
+     "tray_id": "string"
+    },
+    "output": {
+     "match": "boolean"
+    }
+   },
+   {
+    "name": "sell_tray",
+    "description": "Records the sale of a display tray to a customer.",
+    "input": {
+     "tray_id": "string"
+    },
+    "output": {
+     "sold": "boolean"
+    }
+   },
+   {
+    "name": "read_sale_ledger",
+    "description": "Reads past sales entries for a tray.",
+    "input": {
+     "tray_id": "string"
+    },
+    "output": {
+     "entries": "array"
+    }
+   }
+  ]
+ },
+ {
+  "case_id": "observatory_dome",
+  "domain": "mountain observatory",
+  "policy": "Close the dome only when the wind speed at summit station S-9 reads below forty knots or the storm protocol is active. A manual override does not close the dome.",
+  "tools": [
+   {
+    "name": "close_dome",
+    "description": "Drives the observatory dome shut and locks it.",
+    "input": {
+     "dome_id": "string"
+    },
+    "output": {
+     "closed": "boolean"
+    }
+   },
+   {
+    "name": "read_wind",
+    "description": "Reads the summit wind speed in knots.",
+    "input": {
+     "station": "string"
+    },
+    "output": {
+     "knots": "number"
+    }
+   },
+   {
+    "name": "read_protocol",
+    "description": "Reads whether the storm protocol is currently active.",
+    "input": {},
+    "output": {
+     "active": "boolean"
+    }
+   },
+   {
+    "name": "log_override",
+    "description": "Records a manual override request against the dome controller.",
+    "input": {
+     "dome_id": "string"
+    },
+    "output": {
+     "logged": "boolean"
+    }
+   }
+  ]
+ },
+ {
+  "case_id": "blood_bank",
+  "domain": "blood bank",
+  "policy": "Collect the donation from donor D-88 only after the screening interview has been completed and the haemoglobin reading is above the threshold. Notify the donor of any deferral.",
+  "tools": [
+   {
+    "name": "collect_donation",
+    "description": "Collects a blood donation from a donor and starts processing.",
+    "input": {
+     "donor_id": "string"
+    },
+    "output": {
+     "donation_id": "string"
+    }
+   },
+   {
+    "name": "read_interview_status",
+    "description": "Reads whether the screening interview for a donor is complete.",
+    "input": {
+     "donor_id": "string"
+    },
+    "output": {
+     "completed": "boolean"
+    }
+   },
+   {
+    "name": "read_haemoglobin",
+    "description": "Reads the measured haemoglobin value for a donor.",
+    "input": {
+     "donor_id": "string"
+    },
+    "output": {
+     "g_dl": "number"
+    }
+   },
+   {
+    "name": "notify_donor",
+    "description": "Sends a deferral notice to the donor.",
+    "input": {
+     "donor_id": "string"
+    },
+    "output": {
+     "sent": "boolean"
+    }
+   }
+  ]
+ },
+ {
+  "case_id": "marina_fuel",
+  "domain": "marina fuel dock",
+  "policy": "Unless the tidal clearance for berth B-3 is confirmed by the harbour office, do not pump fuel into the vessel. Spillage reports must be filed after each pumping session.",
+  "tools": [
+   {
+    "name": "pump_fuel",
+    "description": "Pumps fuel from the dock supply into a vessel.",
+    "input": {
+     "berth_id": "string"
+    },
+    "output": {
+     "litres": "number"
+    }
+   },
+   {
+    "name": "read_clearance",
+    "description": "Reads whether the harbour office has confirmed tidal clearance for a berth.",
+    "input": {
+     "berth_id": "string"
+    },
+    "output": {
+     "confirmed": "boolean"
+    }
+   },
+   {
+    "name": "file_spillage_report",
+    "description": "Files a spillage report for a fuel session.",
+    "input": {
+     "berth_id": "string"
+    },
+    "output": {
+     "filed": "boolean"
+    }
+   },
+   {
+    "name": "read_fuel_log",
+    "description": "Reads the fuel pumping log for a berth.",
+    "input": {
+     "berth_id": "string"
+    },
+    "output": {
+     "sessions": "array"
+    }
+   }
+  ]
+ },
+ {
+  "case_id": "print_proof",
+  "domain": "print shop",
+  "policy": "The press operator may start the print run once the proof for job J-31 has been approved by the client. Reprinting a rejected proof is forbidden even with a supervisor's note.",
+  "tools": [
+   {
+    "name": "start_run",
+    "description": "Starts the print run for a job on the press.",
+    "input": {
+     "job_id": "string"
+    },
+    "output": {
+     "started": "boolean"
+    }
+   },
+   {
+    "name": "read_proof_approval",
+    "description": "Reads whether the client has approved the proof for a job.",
+    "input": {
+     "job_id": "string"
+    },
+    "output": {
+     "approved": "boolean"
+    }
+   },
+   {
+    "name": "reprint_proof",
+    "description": "Reprints a proof copy for a job.",
+    "input": {
+     "job_id": "string"
+    },
+    "output": {
+     "printed": "boolean"
+    }
+   },
+   {
+    "name": "read_supervisor_notes",
+    "description": "Reads the supervisor's notes attached to a job.",
+    "input": {
+     "job_id": "string"
+    },
+    "output": {
+     "notes": "array"
+    }
+   }
+  ]
+ },
+ {
+  "case_id": "apiary_extract",
+  "domain": "beekeeping cooperative",
+  "policy": "Observe that the residue certificate for hive H-2 has arrived, then begin the extraction. Weigh each drum before sealing it.",
+  "tools": [
+   {
+    "name": "read_certificate",
+    "description": "Reads whether the residue certificate for a hive has arrived.",
+    "input": {
+     "hive_id": "string"
+    },
+    "output": {
+     "arrived": "boolean"
+    }
+   },
+   {
+    "name": "extract_honey",
+    "description": "Runs the honey extraction cycle for a hive.",
+    "input": {
+     "hive_id": "string"
+    },
+    "output": {
+     "extracted": "boolean"
+    }
+   },
+   {
+    "name": "weigh_drum",
+    "description": "Weighs a drum on the cooperative scale and writes the weight to the batch record.",
+    "input": {
+     "drum_id": "string"
+    },
+    "output": {
+     "net_kg": "number"
+    }
+   },
+   {
+    "name": "seal_drum",
+    "description": "Seals a drum for storage.",
+    "input": {
+     "drum_id": "string"
+    },
+    "output": {
+     "sealed": "boolean"
+    }
+   }
+  ]
+ },
+ {
+  "case_id": "badge_office",
+  "domain": "badge office",
+  "policy": "Issue the temporary badge for visitor V-55 after the visitor's identity document has been scanned. The same scan is required before issuing the parking token. The badge printer prints badges but does not register access.",
+  "tools": [
+   {
+    "name": "scan_document",
+    "description": "Scans a visitor's identity document into the visitor system.",
+    "input": {
+     "visitor_id": "string"
+    },
+    "output": {
+     "scanned": "boolean"
+    }
+   },
+   {
+    "name": "issue_badge",
+    "description": "Issues a temporary badge to a visitor.",
+    "input": {
+     "visitor_id": "string"
+    },
+    "output": {
+     "badge_id": "string"
+    }
+   },
+   {
+    "name": "issue_token",
+    "description": "Issues a parking token to a visitor.",
+    "input": {
+     "visitor_id": "string"
+    },
+    "output": {
+     "token_id": "string"
+    }
+   },
+   {
+    "name": "register_access",
+    "description": "Registers a badge access event in the door controller.",
+    "input": {
+     "badge_id": "string"
+    },
+    "output": {
+     "registered": "boolean"
+    }
+   }
+  ]
+ }
+]

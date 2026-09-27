@@ -55,6 +55,12 @@ def build_h2(b_case, groundings, tools, client, policy):
             calls += 1
             answer, err = Mistral.parse_json(rec["raw"])
             label = answer.get("label")
+            if isinstance(label, dict):
+                # tolerate nested answers such as {"label": {"role": ...}}
+                label = label.get("label") or label.get("role") or \
+                    label.get("choice") or None
+            if not isinstance(label, str):
+                label = None
         role = "UNKNOWN"
         governed = []
         if label in LABEL_TO_ROLE:
