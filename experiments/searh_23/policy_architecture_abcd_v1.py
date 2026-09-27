@@ -213,7 +213,8 @@ class MistralRaw:
                 break
             except urllib.error.HTTPError as exc:
                 if exc.code != 429 or attempt == 3:
-                    raise
+                    detail = exc.read(1200).decode("utf-8", "replace")
+                    raise RuntimeError(f"Mistral HTTP {exc.code}: {detail}") from None
                 time.sleep(min(120, max(20, float(exc.headers.get("Retry-After", "30")))))
         choice = body["choices"][0]
         raw = choice["message"].get("content") or ""
