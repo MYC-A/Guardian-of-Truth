@@ -162,8 +162,11 @@ def load_b_candidates(which: str) -> dict[str, list[dict]]:
         return {}
     out = {}
     for f in path.glob("*.json"):
+        if f.name.startswith("_"):
+            continue
         data = json.loads(f.read_text(encoding="utf-8"))
-        out[data["case_id"]] = data.get("events", [])
+        if "case_id" in data:
+            out[data["case_id"]] = data.get("events", [])
     return out
 
 

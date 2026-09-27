@@ -488,6 +488,78 @@ def main():
                   f"extra {e['extra']}, missing {e['missing']}")
 
 
+def amr_component_metrics(data, gold_map, suite):
+    """S8 AMR-specific component metrics: gold operation/check event present
+    (aligned token inside the gold span or concept lemma inside its words),
+    relation preserved between the two gold endpoints, alignment coverage."""
+    stats = {"op_present": 0, "op_total": 0, "check_present": 0, "check_total": 0,
+             "obs_present": 0, "obs_total": 0, "comm_present": 0, "comm_total": 0,
+             "relation_preserved": 0, "relation_total": 0,
+             "events_with_alignment": 0, "events_total": 0,
+             "per_case": {}}
+
+    def amr_event_covers(amr_events, gold_span, policy):
+        words = {w.strip('.,;:').lower() for w in gold_span.split()}
+        for ev in amr_events:
+            sp = ev.get("span")
+            if sp and sp in gold_span:
+                return True
+            concept = (ev.get("concept") or "").rsplit("-", 1)[0].replace("-", " ")
+            if concept and concept.lower() in words:
+                return True
+            if sp and sp.strip('.,;:').lower() in words and len(sp.strip()) > 2:
+                return True
+        return False
+
+    for case in suite:
+        cid = case["case_id"]
+        g, a = gold_map.get(cid), data.get(cid)
+        if not g or not a:
+            continue
+        amr_events = a.get("events", [])
+        amr_edges = a.get("edges", [])
+        policy = case["policy"]
+        cc = {}
+        for gev in g["candidate_events"]:
+            role = gev["role"]
+            key = {"OPERATION_EFFECT": "op", "PRECONDITION_CHECK": "check",
+                   "STATE_OBSERVATION": "obs", "COMMUNICATION": "comm"}.get(role)
+            if key is None:
+                continue
+            stats[f"{key}_total"] += 1
+            present = amr_event_covers(amr_events, gev["source_span"], policy)
+            if present:
+                stats[f"{key}_present"] += 1
+            cc[gev["source_span"]] = present
+        for ge in g["condition_edges"]:
+            stats["relation_total"] += 1
+            cond, op = ge["condition_span"], ge["operation_span"]
+            ref = ge.get("ref_span")
+            found = any(
+                (amr_event_covers(amr_events, c_span, policy) and
+                 amr_event_covers(amr_events, o_span, policy))
+                for ed in amr_edges
+                for c_span, o_span in [(ed["condition_span"], ed["operation_span"])]
+            ) or any(
+                amr_event_covers([{"span": ed["condition_span"], "concept": ""},
+                                  {"span": ed["operation_span"], "concept": ""}], s, policy)
+                for ed in amr_edges for s in [cond]) and any(
+                amr_event_covers(amr_events, ref or op, policy))
+            if found:
+                stats["relation_preserved"] += 1
+        stats["events_total"] += len(amr_events)
+        stats["events_with_alignment"] += sum(1 for ev in amr_events if ev.get("span"))
+        stats["per_case"][cid] = cc
+    for k in ("op", "check", "obs", "comm"):
+        t = stats[f"{k}_total"]
+        stats[f"{k}_recall"] = round(stats[f"{k}_present"] / t, 4) if t else None
+    stats["relation_preservation"] = round(stats["relation_preserved"] / stats["relation_total"], 4) \
+        if stats["relation_total"] else None
+    stats["alignment_coverage"] = round(stats["events_with_alignment"] / stats["events_total"], 4) \
+        if stats["events_total"] else None
+    return stats
+
+
 def tool_type_probe_metrics(efg, gold_map):
     """Can NLI recover the designer tool type from description alone?"""
     stats = {"tools": 0, "correct": 0, "per_type": {}}

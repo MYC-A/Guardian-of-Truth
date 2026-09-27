@@ -46,8 +46,8 @@ Judge by the tool description and schema, never by the tool name. Answer with JS
 
 RELATION_SYSTEM = """Given a policy, one condition span and one operation span, choose their relation:
 - GATE: the operation may happen only if the condition holds
-- ORDER_BEFORE: the condition must happen before the operation
-- ORDER_AFTER: the operation happens after the trigger condition
+- ORDER_BEFORE: the condition is a required earlier step in a sequence; the operation is a later step ("after X, perform Y", "weigh before unloading")
+- ORDER_AFTER: the operation is a triggered reaction to the condition occurring, typically a notification duty ("when X, notify", "after each X, report")
 - EXCEPTION: the operation is forbidden unless the condition holds
 - EVEN_IF: the operation is forbidden even if the condition holds
 - NONE: there is no regulatory relation between them
