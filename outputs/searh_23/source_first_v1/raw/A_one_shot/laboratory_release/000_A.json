@@ -1,0 +1,89 @@
+{
+  "signature": "3949c3c38c0e5ad4444babd1d9615100f57836f941ee0ebe74a5ac6cce13b51c",
+  "stage": "A",
+  "model": "ministral-14b-latest",
+  "query": {
+    "policy": "You may inspect a specimen without approval, but release its report only if the latest quality check says pass and a supervisor has signed it.",
+    "tools": {
+      "inspect_specimen": "Read the specimen record.",
+      "check_quality": "Read current quality status.",
+      "check_signature": "Read supervisor signature.",
+      "release_report": "Publish the specimen report."
+    }
+  },
+  "raw": "{\n  \"directives\": [\n    {\n      \"kind\": \"PERMIT\",\n      \"action_quote\": \"inspect a specimen\",\n      \"governed_tools\": [\"inspect_specimen\"],\n      \"condition\": null,\n      \"before_quote\": \"\",\n      \"exception_quote\": \"\",\n      \"exception_type\": \"NONE\",\n      \"scope_quote\": \"\"\n    },\n    {\n      \"kind\": \"GATE\",\n      \"action_quote\": \"release its report\",\n      \"governed_tools\": [\"release_report\"],\n      \"condition\": {\n        \"op\": \"AND\",\n        \"quote\": \"\",\n        \"temporal\": \"NONE\",\n        \"children\": [\n          {\n            \"op\": \"ATOM\",\n            \"quote\": \"latest quality check says pass\",\n            \"temporal\": \"LATEST\",\n            \"children\": []\n          },\n          {\n            \"op\": \"ATOM\",\n            \"quote\": \"a supervisor has signed it\",\n            \"temporal\": \"LATEST\",\n            \"children\": []\n          }\n        ]\n      },\n      \"before_quote\": \"inspect a specimen\",\n      \"exception_quote\": \"\",\n      \"exception_type\": \"NONE\",\n      \"scope_quote\": \"\"\n    },\n    {\n      \"kind\": \"ORDER\",\n      \"action_quote\": \"release its report\",\n      \"governed_tools\": [\"release_report\"],\n      \"condition\": {\n        \"op\": \"ATOM\",\n        \"quote\": \"inspect a specimen\",\n        \"temporal\": \"PRIOR_TRUE\",\n        \"children\": []\n      },\n      \"before_quote\": \"inspect a specimen\",\n      \"exception_quote\": \"\",\n      \"exception_type\": \"NONE\",\n      \"scope_quote\": \"\"\n    }\n  ]\n}",
+  "answer": {
+    "directives": [
+      {
+        "kind": "PERMIT",
+        "action_quote": "inspect a specimen",
+        "governed_tools": [
+          "inspect_specimen"
+        ],
+        "condition": null,
+        "before_quote": "",
+        "exception_quote": "",
+        "exception_type": "NONE",
+        "scope_quote": ""
+      },
+      {
+        "kind": "GATE",
+        "action_quote": "release its report",
+        "governed_tools": [
+          "release_report"
+        ],
+        "condition": {
+          "op": "AND",
+          "quote": "",
+          "temporal": "NONE",
+          "children": [
+            {
+              "op": "ATOM",
+              "quote": "latest quality check says pass",
+              "temporal": "LATEST",
+              "children": []
+            },
+            {
+              "op": "ATOM",
+              "quote": "a supervisor has signed it",
+              "temporal": "LATEST",
+              "children": []
+            }
+          ]
+        },
+        "before_quote": "inspect a specimen",
+        "exception_quote": "",
+        "exception_type": "NONE",
+        "scope_quote": ""
+      },
+      {
+        "kind": "ORDER",
+        "action_quote": "release its report",
+        "governed_tools": [
+          "release_report"
+        ],
+        "condition": {
+          "op": "ATOM",
+          "quote": "inspect a specimen",
+          "temporal": "PRIOR_TRUE",
+          "children": []
+        },
+        "before_quote": "inspect a specimen",
+        "exception_quote": "",
+        "exception_type": "NONE",
+        "scope_quote": ""
+      }
+    ]
+  },
+  "error": "",
+  "finish_reason": "stop",
+  "usage": {
+    "prompt_tokens": 421,
+    "total_tokens": 797,
+    "completion_tokens": 376,
+    "prompt_tokens_details": {
+      "cached_tokens": 0
+    },
+    "service_tier": "standard"
+  }
+}

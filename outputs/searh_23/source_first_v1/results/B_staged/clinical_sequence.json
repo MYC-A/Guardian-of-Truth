@@ -1,0 +1,107 @@
+{
+  "case_id": "clinical_sequence",
+  "arm": "B_staged",
+  "model": "ministral-14b-latest",
+  "protocol_sha256": "443b0d4f505a3e2787abf06f346462d83a5442116a4ff3d515ed087cbc938cc9",
+  "query_sha256": "ead05ece3e70a1b689e99ed54d83d8934f248e9b8126b992abc021acefd14ea9",
+  "directives": [
+    {
+      "kind": "ORDER",
+      "action_quote": "verify patient identity before sending the result",
+      "governed_tools": [
+        "send_result",
+        "verify_identity"
+      ],
+      "condition": null,
+      "before_quote": "",
+      "exception_quote": "",
+      "exception_type": "NONE",
+      "scope_quote": "For test results"
+    },
+    {
+      "kind": "ORDER",
+      "action_quote": "archive the delivery receipt after sending it",
+      "governed_tools": [
+        "archive_receipt",
+        "send_result"
+      ],
+      "condition": null,
+      "before_quote": "sending the result",
+      "exception_quote": "",
+      "exception_type": "NONE",
+      "scope_quote": "For test results"
+    },
+    {
+      "kind": "ORDER",
+      "action_quote": "archive the delivery receipt",
+      "governed_tools": [
+        "archive_receipt"
+      ],
+      "condition": {
+        "op": "ATOM",
+        "quote": "sending the result",
+        "temporal": "PRIOR_TRUE"
+      },
+      "before_quote": "verify patient identity before sending the result",
+      "exception_quote": "",
+      "exception_type": "NONE",
+      "scope_quote": "For test results"
+    },
+    {
+      "kind": "ORDER",
+      "action_quote": "verify patient identity before sending the result",
+      "governed_tools": [
+        "send_result",
+        "verify_identity"
+      ],
+      "condition": null,
+      "before_quote": "",
+      "exception_quote": "",
+      "exception_type": "NONE",
+      "scope_quote": "For test results"
+    },
+    {
+      "kind": "ORDER",
+      "action_quote": "archive the delivery receipt",
+      "governed_tools": [
+        "archive_receipt"
+      ],
+      "condition": null,
+      "before_quote": "",
+      "exception_quote": "",
+      "exception_type": "NONE",
+      "scope_quote": "For test results"
+    }
+  ],
+  "tree": null,
+  "errors": [
+    "detail_count_0:2",
+    "detail_count_2:2"
+  ],
+  "calls": [
+    {
+      "stage": "B_inventory",
+      "path": "raw/B_staged/clinical_sequence/000_B_inventory.json",
+      "error": "",
+      "finish_reason": "stop"
+    },
+    {
+      "stage": "B_detail",
+      "path": "raw/B_staged/clinical_sequence/001_B_detail.json",
+      "error": "",
+      "finish_reason": "stop"
+    },
+    {
+      "stage": "B_detail",
+      "path": "raw/B_staged/clinical_sequence/002_B_detail.json",
+      "error": "",
+      "finish_reason": "stop"
+    },
+    {
+      "stage": "B_detail",
+      "path": "raw/B_staged/clinical_sequence/003_B_detail.json",
+      "error": "",
+      "finish_reason": "stop"
+    }
+  ]
+}

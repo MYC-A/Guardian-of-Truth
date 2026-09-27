@@ -63,6 +63,7 @@ def score_case(case: dict, gold: list[dict], result: dict) -> dict:
     policy, pred = case["query"]["policy"], result["directives"]
     pairs, misses, extras = pair(policy, gold, pred)
     bind_tp = bind_fp = bind_fn = tool_correct = logic_correct = temporal_correct = relation_correct = 0
+    exception_correct = before_correct = scope_correct = 0
     condition_total = sum(len(atoms(g.get("condition"))) for g in gold)
     for gi, pi in pairs:
         g, p = gold[gi], pred[pi]
@@ -70,6 +71,12 @@ def score_case(case: dict, gold: list[dict], result: dict) -> dict:
         logic_correct += shape(g.get("condition")) == shape(p.get("condition"))
         relation_correct += (g["kind"] == p.get("kind") and g.get("exception_type") == p.get("exception_type") and
                              bool(g.get("before_quote")) == bool(p.get("before_quote")))
+        exception_correct += g.get("exception_type") == p.get("exception_type") and (
+            not g.get("exception_quote") or matched(policy, p.get("exception_quote", ""), g["exception_quote"]))
+        before_correct += (not g.get("before_quote") and not p.get("before_quote")) or (
+            bool(g.get("before_quote")) and matched(policy, p.get("before_quote", ""), g["before_quote"]))
+        scope_correct += (not g.get("scope_quote") and not p.get("scope_quote")) or (
+            bool(g.get("scope_quote")) and matched(policy, p.get("scope_quote", ""), g["scope_quote"]))
         ga, pa = atoms(g.get("condition")), atoms(p.get("condition"))
         used = set()
         for gc in ga:
@@ -99,6 +106,9 @@ def score_case(case: dict, gold: list[dict], result: dict) -> dict:
             "extra_directives": [pred[i].get("action_quote", "") for i in extras],
             "tools_correct_on_matched": tool_correct, "relation_correct_on_matched": relation_correct,
             "logic_correct_on_matched": logic_correct,
+            "exception_correct_on_matched": exception_correct,
+            "before_correct_on_matched": before_correct,
+            "scope_correct_on_matched": scope_correct,
             "binding_tp": bind_tp, "binding_fp": bind_fp, "binding_fn": bind_fn,
             "temporal_correct_on_bound": temporal_correct, "condition_total": condition_total,
             "source_span_recall_numerator": span_nodes, "source_span_recall_denominator": total_nodes,
@@ -123,7 +133,8 @@ def score() -> dict:
     for arm in protocol["arms"]:
         group = [r for r in rows if r["arm"] == arm]
         fields = ("directive_count_correct", "action_matched", "tools_correct_on_matched", "relation_correct_on_matched",
-                  "logic_correct_on_matched", "binding_tp", "binding_fp", "binding_fn", "temporal_correct_on_bound",
+                  "logic_correct_on_matched", "exception_correct_on_matched", "before_correct_on_matched", "scope_correct_on_matched",
+                  "binding_tp", "binding_fp", "binding_fn", "temporal_correct_on_bound",
                   "source_span_recall_numerator", "source_span_recall_denominator", "exact_ir", "unknown",
                   "mutation_count", "mutations_rejected_or_unknown")
         aggregate[arm] = {k: sum(r[k] for r in group) for k in fields}

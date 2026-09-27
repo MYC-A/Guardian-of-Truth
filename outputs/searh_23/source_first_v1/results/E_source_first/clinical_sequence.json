@@ -1,0 +1,676 @@
+{
+  "case_id": "clinical_sequence",
+  "arm": "E_source_first",
+  "model": "ministral-14b-latest",
+  "protocol_sha256": "443b0d4f505a3e2787abf06f346462d83a5442116a4ff3d515ed087cbc938cc9",
+  "query_sha256": "ead05ece3e70a1b689e99ed54d83d8934f248e9b8126b992abc021acefd14ea9",
+  "directives": [
+    {
+      "kind": "GATE",
+      "action_quote": "verify patient identity",
+      "governed_tools": [
+        "verify_identity"
+      ],
+      "condition": {
+        "op": "ATOM",
+        "quote": "sending it",
+        "temporal": "NONE"
+      },
+      "before_quote": "sending it",
+      "exception_quote": "",
+      "exception_type": "NONE",
+      "scope_quote": ""
+    },
+    {
+      "kind": "ORDER",
+      "action_quote": "archive the delivery",
+      "governed_tools": [
+        "archive_receipt"
+      ],
+      "condition": {
+        "op": "ATOM",
+        "quote": "before sending the",
+        "temporal": "PRIOR_TRUE"
+      },
+      "before_quote": "sending",
+      "exception_quote": "",
+      "exception_type": "NONE",
+      "scope_quote": ""
+    }
+  ],
+  "nodes": [
+    {
+      "id": 0,
+      "action": {
+        "source_start": 18,
+        "source_end": 41,
+        "exact_source_text": "verify patient identity",
+        "token_start": 4,
+        "token_end": 7
+      },
+      "kind": "GATE",
+      "governed_tools": [
+        "verify_identity"
+      ],
+      "conditions": [
+        {
+          "source_start": 109,
+          "source_end": 119,
+          "exact_source_text": "sending it",
+          "token_start": 18,
+          "token_end": 20,
+          "temporal": "NONE",
+          "parent_action_id": 0
+        }
+      ],
+      "condition_op": "ATOM",
+      "before": {
+        "source_start": 109,
+        "source_end": 119,
+        "exact_source_text": "sending it",
+        "token_start": 18,
+        "token_end": 20
+      },
+      "exception": null,
+      "exception_type": "NONE",
+      "scope": null
+    },
+    {
+      "id": 1,
+      "action": {
+        "source_start": 74,
+        "source_end": 94,
+        "exact_source_text": "archive the delivery",
+        "token_start": 13,
+        "token_end": 16
+      },
+      "kind": "ORDER",
+      "governed_tools": [
+        "archive_receipt"
+      ],
+      "conditions": [
+        {
+          "source_start": 42,
+          "source_end": 60,
+          "exact_source_text": "before sending the",
+          "token_start": 7,
+          "token_end": 10,
+          "temporal": "PRIOR_TRUE",
+          "parent_action_id": 1
+        }
+      ],
+      "condition_op": "ATOM",
+      "before": {
+        "source_start": 109,
+        "source_end": 116,
+        "exact_source_text": "sending",
+        "token_start": 18,
+        "token_end": 19
+      },
+      "exception": null,
+      "exception_type": "NONE",
+      "scope": null
+    }
+  ],
+  "audit_missing": [
+    {
+      "source_start": 49,
+      "source_end": 60,
+      "exact_source_text": "sending the",
+      "token_start": 8,
+      "token_end": 10
+    }
+  ],
+  "unknown": true,
+  "errors": [
+    "audit_found_missing_actions"
+  ],
+  "calls": [
+    {
+      "stage": "E_heads",
+      "path": "raw/E_source_first/clinical_sequence/000_E_heads.json",
+      "error": "",
+      "finish_reason": "stop"
+    },
+    {
+      "stage": "E_detail",
+      "path": "raw/E_source_first/clinical_sequence/001_E_detail.json",
+      "error": "",
+      "finish_reason": "stop"
+    },
+    {
+      "stage": "E_detail",
+      "path": "raw/E_source_first/clinical_sequence/002_E_detail.json",
+      "error": "",
+      "finish_reason": "stop"
+    },
+    {
+      "stage": "E_audit",
+      "path": "raw/E_source_first/clinical_sequence/003_E_audit.json",
+      "error": "",
+      "finish_reason": "stop"
+    }
+  ],
+  "verification": {
+    "candidates": [
+      {
+        "id": "base_0",
+        "node": {
+          "id": 0,
+          "action": {
+            "source_start": 18,
+            "source_end": 41,
+            "exact_source_text": "verify patient identity",
+            "token_start": 4,
+            "token_end": 7
+          },
+          "kind": "GATE",
+          "governed_tools": [
+            "verify_identity"
+          ],
+          "conditions": [
+            {
+              "source_start": 109,
+              "source_end": 119,
+              "exact_source_text": "sending it",
+              "token_start": 18,
+              "token_end": 20,
+              "temporal": "NONE",
+              "parent_action_id": 0
+            }
+          ],
+          "condition_op": "ATOM",
+          "before": {
+            "source_start": 109,
+            "source_end": 119,
+            "exact_source_text": "sending it",
+            "token_start": 18,
+            "token_end": 20
+          },
+          "exception": null,
+          "exception_type": "NONE",
+          "scope": null
+        }
+      },
+      {
+        "id": "base_1",
+        "node": {
+          "id": 1,
+          "action": {
+            "source_start": 74,
+            "source_end": 94,
+            "exact_source_text": "archive the delivery",
+            "token_start": 13,
+            "token_end": 16
+          },
+          "kind": "ORDER",
+          "governed_tools": [
+            "archive_receipt"
+          ],
+          "conditions": [
+            {
+              "source_start": 42,
+              "source_end": 60,
+              "exact_source_text": "before sending the",
+              "token_start": 7,
+              "token_end": 10,
+              "temporal": "PRIOR_TRUE",
+              "parent_action_id": 1
+            }
+          ],
+          "condition_op": "ATOM",
+          "before": {
+            "source_start": 109,
+            "source_end": 116,
+            "exact_source_text": "sending",
+            "token_start": 18,
+            "token_end": 19
+          },
+          "exception": null,
+          "exception_type": "NONE",
+          "scope": null
+        }
+      },
+      {
+        "id": "neighbor_action_0",
+        "node": {
+          "id": 0,
+          "action": {
+            "source_start": 74,
+            "source_end": 94,
+            "exact_source_text": "archive the delivery",
+            "token_start": 13,
+            "token_end": 16
+          },
+          "kind": "GATE",
+          "governed_tools": [
+            "verify_identity"
+          ],
+          "conditions": [
+            {
+              "source_start": 109,
+              "source_end": 119,
+              "exact_source_text": "sending it",
+              "token_start": 18,
+              "token_end": 20,
+              "temporal": "NONE",
+              "parent_action_id": 0
+            }
+          ],
+          "condition_op": "ATOM",
+          "before": {
+            "source_start": 109,
+            "source_end": 119,
+            "exact_source_text": "sending it",
+            "token_start": 18,
+            "token_end": 20
+          },
+          "exception": null,
+          "exception_type": "NONE",
+          "scope": null
+        }
+      },
+      {
+        "id": "wrong_parent_0",
+        "node": {
+          "id": 0,
+          "action": {
+            "source_start": 18,
+            "source_end": 41,
+            "exact_source_text": "verify patient identity",
+            "token_start": 4,
+            "token_end": 7
+          },
+          "kind": "GATE",
+          "governed_tools": [
+            "verify_identity"
+          ],
+          "conditions": [
+            {
+              "source_start": 109,
+              "source_end": 119,
+              "exact_source_text": "sending it",
+              "token_start": 18,
+              "token_end": 20,
+              "temporal": "NONE",
+              "parent_action_id": 1
+            }
+          ],
+          "condition_op": "ATOM",
+          "before": {
+            "source_start": 109,
+            "source_end": 119,
+            "exact_source_text": "sending it",
+            "token_start": 18,
+            "token_end": 20
+          },
+          "exception": null,
+          "exception_type": "NONE",
+          "scope": null
+        }
+      },
+      {
+        "id": "drop_condition_0",
+        "node": {
+          "id": 0,
+          "action": {
+            "source_start": 18,
+            "source_end": 41,
+            "exact_source_text": "verify patient identity",
+            "token_start": 4,
+            "token_end": 7
+          },
+          "kind": "GATE",
+          "governed_tools": [
+            "verify_identity"
+          ],
+          "conditions": [],
+          "condition_op": "ATOM",
+          "before": {
+            "source_start": 109,
+            "source_end": 119,
+            "exact_source_text": "sending it",
+            "token_start": 18,
+            "token_end": 20
+          },
+          "exception": null,
+          "exception_type": "NONE",
+          "scope": null
+        }
+      },
+      {
+        "id": "swap_order_0",
+        "node": {
+          "id": 0,
+          "action": {
+            "source_start": 109,
+            "source_end": 119,
+            "exact_source_text": "sending it",
+            "token_start": 18,
+            "token_end": 20
+          },
+          "kind": "GATE",
+          "governed_tools": [
+            "verify_identity"
+          ],
+          "conditions": [
+            {
+              "source_start": 109,
+              "source_end": 119,
+              "exact_source_text": "sending it",
+              "token_start": 18,
+              "token_end": 20,
+              "temporal": "NONE",
+              "parent_action_id": 0
+            }
+          ],
+          "condition_op": "ATOM",
+          "before": {
+            "source_start": 18,
+            "source_end": 41,
+            "exact_source_text": "verify patient identity",
+            "token_start": 4,
+            "token_end": 7
+          },
+          "exception": null,
+          "exception_type": "NONE",
+          "scope": null
+        }
+      },
+      {
+        "id": "wrong_span_0",
+        "node": {
+          "id": 0,
+          "action": {
+            "source_start": 18,
+            "source_end": 41,
+            "exact_source_text": "verify patient identity",
+            "token_start": 4,
+            "token_end": 7
+          },
+          "kind": "GATE",
+          "governed_tools": [
+            "verify_identity"
+          ],
+          "conditions": [
+            {
+              "source_start": 18,
+              "source_end": 41,
+              "exact_source_text": "verify patient identity",
+              "token_start": 4,
+              "token_end": 7,
+              "temporal": "NONE",
+              "parent_action_id": 0
+            }
+          ],
+          "condition_op": "ATOM",
+          "before": {
+            "source_start": 109,
+            "source_end": 119,
+            "exact_source_text": "sending it",
+            "token_start": 18,
+            "token_end": 20
+          },
+          "exception": null,
+          "exception_type": "NONE",
+          "scope": null
+        }
+      },
+      {
+        "id": "neighbor_action_1",
+        "node": {
+          "id": 1,
+          "action": {
+            "source_start": 18,
+            "source_end": 41,
+            "exact_source_text": "verify patient identity",
+            "token_start": 4,
+            "token_end": 7
+          },
+          "kind": "ORDER",
+          "governed_tools": [
+            "archive_receipt"
+          ],
+          "conditions": [
+            {
+              "source_start": 42,
+              "source_end": 60,
+              "exact_source_text": "before sending the",
+              "token_start": 7,
+              "token_end": 10,
+              "temporal": "PRIOR_TRUE",
+              "parent_action_id": 1
+            }
+          ],
+          "condition_op": "ATOM",
+          "before": {
+            "source_start": 109,
+            "source_end": 116,
+            "exact_source_text": "sending",
+            "token_start": 18,
+            "token_end": 19
+          },
+          "exception": null,
+          "exception_type": "NONE",
+          "scope": null
+        }
+      },
+      {
+        "id": "wrong_parent_1",
+        "node": {
+          "id": 1,
+          "action": {
+            "source_start": 74,
+            "source_end": 94,
+            "exact_source_text": "archive the delivery",
+            "token_start": 13,
+            "token_end": 16
+          },
+          "kind": "ORDER",
+          "governed_tools": [
+            "archive_receipt"
+          ],
+          "conditions": [
+            {
+              "source_start": 42,
+              "source_end": 60,
+              "exact_source_text": "before sending the",
+              "token_start": 7,
+              "token_end": 10,
+              "temporal": "PRIOR_TRUE",
+              "parent_action_id": 0
+            }
+          ],
+          "condition_op": "ATOM",
+          "before": {
+            "source_start": 109,
+            "source_end": 116,
+            "exact_source_text": "sending",
+            "token_start": 18,
+            "token_end": 19
+          },
+          "exception": null,
+          "exception_type": "NONE",
+          "scope": null
+        }
+      },
+      {
+        "id": "drop_condition_1",
+        "node": {
+          "id": 1,
+          "action": {
+            "source_start": 74,
+            "source_end": 94,
+            "exact_source_text": "archive the delivery",
+            "token_start": 13,
+            "token_end": 16
+          },
+          "kind": "ORDER",
+          "governed_tools": [
+            "archive_receipt"
+          ],
+          "conditions": [],
+          "condition_op": "ATOM",
+          "before": {
+            "source_start": 109,
+            "source_end": 116,
+            "exact_source_text": "sending",
+            "token_start": 18,
+            "token_end": 19
+          },
+          "exception": null,
+          "exception_type": "NONE",
+          "scope": null
+        }
+      },
+      {
+        "id": "swap_order_1",
+        "node": {
+          "id": 1,
+          "action": {
+            "source_start": 109,
+            "source_end": 116,
+            "exact_source_text": "sending",
+            "token_start": 18,
+            "token_end": 19
+          },
+          "kind": "ORDER",
+          "governed_tools": [
+            "archive_receipt"
+          ],
+          "conditions": [
+            {
+              "source_start": 42,
+              "source_end": 60,
+              "exact_source_text": "before sending the",
+              "token_start": 7,
+              "token_end": 10,
+              "temporal": "PRIOR_TRUE",
+              "parent_action_id": 1
+            }
+          ],
+          "condition_op": "ATOM",
+          "before": {
+            "source_start": 74,
+            "source_end": 94,
+            "exact_source_text": "archive the delivery",
+            "token_start": 13,
+            "token_end": 16
+          },
+          "exception": null,
+          "exception_type": "NONE",
+          "scope": null
+        }
+      },
+      {
+        "id": "wrong_span_1",
+        "node": {
+          "id": 1,
+          "action": {
+            "source_start": 74,
+            "source_end": 94,
+            "exact_source_text": "archive the delivery",
+            "token_start": 13,
+            "token_end": 16
+          },
+          "kind": "ORDER",
+          "governed_tools": [
+            "archive_receipt"
+          ],
+          "conditions": [
+            {
+              "source_start": 74,
+              "source_end": 94,
+              "exact_source_text": "archive the delivery",
+              "token_start": 13,
+              "token_end": 16,
+              "temporal": "PRIOR_TRUE",
+              "parent_action_id": 1
+            }
+          ],
+          "condition_op": "ATOM",
+          "before": {
+            "source_start": 109,
+            "source_end": 116,
+            "exact_source_text": "sending",
+            "token_start": 18,
+            "token_end": 19
+          },
+          "exception": null,
+          "exception_type": "NONE",
+          "scope": null
+        }
+      }
+    ],
+    "checks": [
+      {
+        "id": "base_0",
+        "valid": true,
+        "reason": "SUPPORTED"
+      },
+      {
+        "id": "base_1",
+        "valid": true,
+        "reason": "SUPPORTED"
+      },
+      {
+        "id": "neighbor_action_0",
+        "valid": false,
+        "reason": "WRONG_ACTION"
+      },
+      {
+        "id": "wrong_parent_0",
+        "valid": false,
+        "reason": "WRONG_BINDING"
+      },
+      {
+        "id": "drop_condition_0",
+        "valid": false,
+        "reason": "MISSING_CONDITION"
+      },
+      {
+        "id": "swap_order_0",
+        "valid": false,
+        "reason": "WRONG_ORDER"
+      },
+      {
+        "id": "wrong_span_0",
+        "valid": false,
+        "reason": "WRONG_SPAN"
+      },
+      {
+        "id": "neighbor_action_1",
+        "valid": false,
+        "reason": "WRONG_ACTION"
+      },
+      {
+        "id": "wrong_parent_1",
+        "valid": false,
+        "reason": "WRONG_BINDING"
+      },
+      {
+        "id": "drop_condition_1",
+        "valid": false,
+        "reason": "MISSING_CONDITION"
+      },
+      {
+        "id": "swap_order_1",
+        "valid": false,
+        "reason": "WRONG_ORDER"
+      },
+      {
+        "id": "wrong_span_1",
+        "valid": false,
+        "reason": "WRONG_SPAN"
+      }
+    ],
+    "calls": [
+      {
+        "stage": "E_verify",
+        "path": "raw/E_verify/clinical_sequence/000_E_verify.json",
+        "error": "",
+        "finish_reason": "stop"
+      }
+    ]
+  }
+}

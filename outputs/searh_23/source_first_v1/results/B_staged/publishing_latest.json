@@ -1,0 +1,75 @@
+{
+  "case_id": "publishing_latest",
+  "arm": "B_staged",
+  "model": "ministral-14b-latest",
+  "protocol_sha256": "443b0d4f505a3e2787abf06f346462d83a5442116a4ff3d515ed087cbc938cc9",
+  "query_sha256": "3d7ec8e4846ee519242261db702067a418197f409239546a8b0953f9831fccfa",
+  "directives": [
+    {
+      "kind": "ORDER",
+      "action_quote": "Publish the revision",
+      "governed_tools": [
+        "publish_revision"
+      ],
+      "condition": null,
+      "before_quote": "",
+      "exception_quote": "",
+      "exception_type": "NONE",
+      "scope_quote": "only after its"
+    },
+    {
+      "kind": "GATE",
+      "action_quote": "Publish the revision",
+      "governed_tools": [
+        "publish_revision"
+      ],
+      "condition": null,
+      "before_quote": "",
+      "exception_quote": "",
+      "exception_type": "NONE",
+      "scope_quote": "Publish the revision only after its latest plagiarism scan"
+    },
+    {
+      "kind": "ORDER",
+      "action_quote": "request another scan",
+      "governed_tools": [
+        "request_scan"
+      ],
+      "condition": {
+        "op": "ATOM",
+        "quote": "scan is still pending",
+        "temporal": "LATEST"
+      },
+      "before_quote": "",
+      "exception_quote": "",
+      "exception_type": "NONE",
+      "scope_quote": "If the scan is still pending"
+    }
+  ],
+  "tree": null,
+  "errors": [
+    "invalid_head_0",
+    "invalid_head_1",
+    "detail_count_3:2"
+  ],
+  "calls": [
+    {
+      "stage": "B_inventory",
+      "path": "raw/B_staged/publishing_latest/000_B_inventory.json",
+      "error": "",
+      "finish_reason": "stop"
+    },
+    {
+      "stage": "B_detail",
+      "path": "raw/B_staged/publishing_latest/001_B_detail.json",
+      "error": "",
+      "finish_reason": "stop"
+    },
+    {
+      "stage": "B_detail",
+      "path": "raw/B_staged/publishing_latest/002_B_detail.json",
+      "error": "",
+      "finish_reason": "stop"
+    }
+  ]
+}

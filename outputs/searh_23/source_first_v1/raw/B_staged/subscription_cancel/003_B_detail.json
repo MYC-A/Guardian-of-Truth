@@ -1,0 +1,70 @@
+{
+  "signature": "e709aa56b21c5d55b93fc87773b4348ea2791cd0fcf8b26209d5c5296387c647",
+  "stage": "B_detail",
+  "model": "ministral-14b-latest",
+  "query": {
+    "policy": "Before closing an account, retrieve its unpaid balance and ask the customer to confirm closure. A balance lookup alone does not close it.",
+    "tools": {
+      "get_balance": "Read unpaid balance.",
+      "ask_confirmation": "Send a confirmation question.",
+      "close_account": "Close account."
+    },
+    "head": {
+      "kind": "FORBID",
+      "head_quote": "A balance lookup alone does not close it"
+    }
+  },
+  "raw": "{\n  \"directives\": [\n    {\n      \"kind\": \"FORBID\",\n      \"action_quote\": \"close it\",\n      \"governed_tools\": [\"close_account\"],\n      \"condition\": {\n        \"op\": \"AND\",\n        \"quote\": \"\",\n        \"temporal\": \"NONE\",\n        \"children\": [\n          {\n            \"op\": \"ATOM\",\n            \"quote\": \"A balance lookup alone\",\n            \"temporal\": \"NONE\",\n            \"children\": []\n          },\n          {\n            \"op\": \"NOT\",\n            \"quote\": \"\",\n            \"temporal\": \"NONE\",\n            \"children\": [\n              {\n                \"op\": \"ATOM\",\n                \"quote\": \"ask the customer to confirm closure\",\n                \"temporal\": \"NONE\",\n                \"children\": []\n              }\n            ]\n          }\n        ]\n      },\n      \"before_quote\": \"\",\n      \"exception_quote\": \"\",\n      \"exception_type\": \"NONE\",\n      \"scope_quote\": \"Before closing an account\"\n    }\n  ]\n}",
+  "answer": {
+    "directives": [
+      {
+        "kind": "FORBID",
+        "action_quote": "close it",
+        "governed_tools": [
+          "close_account"
+        ],
+        "condition": {
+          "op": "AND",
+          "quote": "",
+          "temporal": "NONE",
+          "children": [
+            {
+              "op": "ATOM",
+              "quote": "A balance lookup alone",
+              "temporal": "NONE",
+              "children": []
+            },
+            {
+              "op": "NOT",
+              "quote": "",
+              "temporal": "NONE",
+              "children": [
+                {
+                  "op": "ATOM",
+                  "quote": "ask the customer to confirm closure",
+                  "temporal": "NONE",
+                  "children": []
+                }
+              ]
+            }
+          ]
+        },
+        "before_quote": "",
+        "exception_quote": "",
+        "exception_type": "NONE",
+        "scope_quote": "Before closing an account"
+      }
+    ]
+  },
+  "error": "",
+  "finish_reason": "stop",
+  "usage": {
+    "prompt_tokens": 451,
+    "total_tokens": 673,
+    "completion_tokens": 222,
+    "prompt_tokens_details": {
+      "cached_tokens": 243
+    },
+    "service_tier": "standard"
+  }
+}

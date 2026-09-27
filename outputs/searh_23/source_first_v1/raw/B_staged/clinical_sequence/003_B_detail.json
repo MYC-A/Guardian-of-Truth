@@ -1,0 +1,70 @@
+{
+  "signature": "e5a3eb527ac51caaff5f82397c33413b969c56301b5ce7a5466021949e2db1c5",
+  "stage": "B_detail",
+  "model": "ministral-14b-latest",
+  "query": {
+    "policy": "For test results, verify patient identity before sending the result, then archive the delivery receipt after sending it.",
+    "tools": {
+      "verify_identity": "Check patient identity.",
+      "send_result": "Send the test result.",
+      "archive_receipt": "Archive delivery receipt."
+    },
+    "head": {
+      "kind": "DESCRIPTIVE",
+      "head_quote": "For test results"
+    }
+  },
+  "raw": "{\n  \"directives\": [\n    {\n      \"kind\": \"ORDER\",\n      \"action_quote\": \"verify patient identity before sending the result\",\n      \"governed_tools\": [\"verify_identity\", \"send_result\"],\n      \"condition\": null,\n      \"before_quote\": \"\",\n      \"exception_quote\": \"\",\n      \"exception_type\": \"NONE\",\n      \"scope_quote\": \"For test results\"\n    },\n    {\n      \"kind\": \"ORDER\",\n      \"action_quote\": \"archive the delivery receipt\",\n      \"governed_tools\": [\"archive_receipt\"],\n      \"condition\": {\n        \"op\": \"AND\",\n        \"quote\": \"\",\n        \"temporal\": \"NONE\",\n        \"children\": [\n          {\n            \"op\": \"ATOM\",\n            \"quote\": \"sending the result\",\n            \"temporal\": \"PRIOR_TRUE\",\n            \"children\": []\n          }\n        ]\n      },\n      \"before_quote\": \"\",\n      \"exception_quote\": \"\",\n      \"exception_type\": \"NONE\",\n      \"scope_quote\": \"For test results\"\n    }\n  ]\n}",
+  "answer": {
+    "directives": [
+      {
+        "kind": "ORDER",
+        "action_quote": "verify patient identity before sending the result",
+        "governed_tools": [
+          "verify_identity",
+          "send_result"
+        ],
+        "condition": null,
+        "before_quote": "",
+        "exception_quote": "",
+        "exception_type": "NONE",
+        "scope_quote": "For test results"
+      },
+      {
+        "kind": "ORDER",
+        "action_quote": "archive the delivery receipt",
+        "governed_tools": [
+          "archive_receipt"
+        ],
+        "condition": {
+          "op": "AND",
+          "quote": "",
+          "temporal": "NONE",
+          "children": [
+            {
+              "op": "ATOM",
+              "quote": "sending the result",
+              "temporal": "PRIOR_TRUE",
+              "children": []
+            }
+          ]
+        },
+        "before_quote": "",
+        "exception_quote": "",
+        "exception_type": "NONE",
+        "scope_quote": "For test results"
+      }
+    ]
+  },
+  "error": "",
+  "finish_reason": "stop",
+  "usage": {
+    "prompt_tokens": 441,
+    "total_tokens": 678,
+    "completion_tokens": 237,
+    "prompt_tokens_details": {
+      "cached_tokens": 0
+    },
+    "service_tier": "standard"
+  }
+}

@@ -1,0 +1,100 @@
+{
+  "signature": "864345f5938fa88a76751893e01d439d5aea055f4b4be6668fc2b9863e6dfb4a",
+  "stage": "A",
+  "model": "ministral-14b-latest",
+  "query": {
+    "policy": "Before closing an account, retrieve its unpaid balance and ask the customer to confirm closure. A balance lookup alone does not close it.",
+    "tools": {
+      "get_balance": "Read unpaid balance.",
+      "ask_confirmation": "Send a confirmation question.",
+      "close_account": "Close account."
+    }
+  },
+  "raw": "{\n  \"directives\": [\n    {\n      \"kind\": \"ORDER\",\n      \"action_quote\": \"close_account\",\n      \"governed_tools\": [\"close_account\"],\n      \"condition\": {\n        \"op\": \"AND\",\n        \"quote\": \"\",\n        \"temporal\": \"NONE\",\n        \"children\": [\n          {\n            \"op\": \"ATOM\",\n            \"quote\": \"get_balance\",\n            \"temporal\": \"PRIOR_TRUE\",\n            \"children\": []\n          },\n          {\n            \"op\": \"ATOM\",\n            \"quote\": \"ask_confirmation\",\n            \"temporal\": \"PRIOR_TRUE\",\n            \"children\": []\n          }\n        ]\n      },\n      \"before_quote\": \"\",\n      \"exception_quote\": \"\",\n      \"exception_type\": \"NONE\",\n      \"scope_quote\": \"\"\n    },\n    {\n      \"kind\": \"FORBID\",\n      \"action_quote\": \"close_account\",\n      \"governed_tools\": [\"close_account\"],\n      \"condition\": {\n        \"op\": \"ATOM\",\n        \"quote\": \"get_balance\",\n        \"temporal\": \"PRIOR_TRUE\",\n        \"children\": []\n      },\n      \"before_quote\": \"\",\n      \"exception_quote\": \"ask_confirmation\",\n      \"exception_type\": \"EXCEPT\",\n      \"scope_quote\": \"\"\n    },\n    {\n      \"kind\": \"DESCRIPTIVE\",\n      \"action_quote\": \"get_balance\",\n      \"governed_tools\": [\"get_balance\"],\n      \"condition\": null,\n      \"before_quote\": \"\",\n      \"exception_quote\": \"\",\n      \"exception_type\": \"NONE\",\n      \"scope_quote\": \"Before closing an account\"\n    },\n    {\n      \"kind\": \"DESCRIPTIVE\",\n      \"action_quote\": \"ask_confirmation\",\n      \"governed_tools\": [\"ask_confirmation\"],\n      \"condition\": null,\n      \"before_quote\": \"get_balance\",\n      \"exception_quote\": \"\",\n      \"exception_type\": \"NONE\",\n      \"scope_quote\": \"Before closing an account\"\n    }\n  ]\n}",
+  "answer": {
+    "directives": [
+      {
+        "kind": "ORDER",
+        "action_quote": "close_account",
+        "governed_tools": [
+          "close_account"
+        ],
+        "condition": {
+          "op": "AND",
+          "quote": "",
+          "temporal": "NONE",
+          "children": [
+            {
+              "op": "ATOM",
+              "quote": "get_balance",
+              "temporal": "PRIOR_TRUE",
+              "children": []
+            },
+            {
+              "op": "ATOM",
+              "quote": "ask_confirmation",
+              "temporal": "PRIOR_TRUE",
+              "children": []
+            }
+          ]
+        },
+        "before_quote": "",
+        "exception_quote": "",
+        "exception_type": "NONE",
+        "scope_quote": ""
+      },
+      {
+        "kind": "FORBID",
+        "action_quote": "close_account",
+        "governed_tools": [
+          "close_account"
+        ],
+        "condition": {
+          "op": "ATOM",
+          "quote": "get_balance",
+          "temporal": "PRIOR_TRUE",
+          "children": []
+        },
+        "before_quote": "",
+        "exception_quote": "ask_confirmation",
+        "exception_type": "EXCEPT",
+        "scope_quote": ""
+      },
+      {
+        "kind": "DESCRIPTIVE",
+        "action_quote": "get_balance",
+        "governed_tools": [
+          "get_balance"
+        ],
+        "condition": null,
+        "before_quote": "",
+        "exception_quote": "",
+        "exception_type": "NONE",
+        "scope_quote": "Before closing an account"
+      },
+      {
+        "kind": "DESCRIPTIVE",
+        "action_quote": "ask_confirmation",
+        "governed_tools": [
+          "ask_confirmation"
+        ],
+        "condition": null,
+        "before_quote": "get_balance",
+        "exception_quote": "",
+        "exception_type": "NONE",
+        "scope_quote": "Before closing an account"
+      }
+    ]
+  },
+  "error": "",
+  "finish_reason": "stop",
+  "usage": {
+    "prompt_tokens": 407,
+    "total_tokens": 854,
+    "completion_tokens": 447,
+    "prompt_tokens_details": {
+      "cached_tokens": 0
+    },
+    "service_tier": "standard"
+  }
+}

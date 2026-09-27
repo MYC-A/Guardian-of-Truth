@@ -1,0 +1,100 @@
+{
+  "signature": "40127a4be55f756ceddb57ef5fd221a8478c65207f795044d4b7c3edfc89f157",
+  "stage": "A",
+  "model": "ministral-14b-latest",
+  "query": {
+    "policy": "The operator may read a parcel label, but must not print a replacement label until the original barcode has been invalidated. After printing, log the replacement.",
+    "tools": {
+      "read_label": "Read parcel label.",
+      "invalidate_barcode": "Invalidate barcode.",
+      "print_label": "Print replacement label.",
+      "log_replacement": "Log replacement."
+    }
+  },
+  "raw": "{\n  \"directives\": [\n    {\n      \"kind\": \"PERMIT\",\n      \"action_quote\": \"read a parcel label\",\n      \"governed_tools\": [\"read_label\"],\n      \"condition\": null,\n      \"before_quote\": \"\",\n      \"exception_quote\": \"\",\n      \"exception_type\": \"NONE\",\n      \"scope_quote\": \"\"\n    },\n    {\n      \"kind\": \"FORBID\",\n      \"action_quote\": \"print a replacement label\",\n      \"governed_tools\": [\"print_label\"],\n      \"condition\": {\n        \"op\": \"NOT\",\n        \"quote\": \"\",\n        \"temporal\": \"NONE\",\n        \"children\": [\n          {\n            \"op\": \"ATOM\",\n            \"quote\": \"original barcode has been invalidated\",\n            \"temporal\": \"PRIOR_TRUE\",\n            \"children\": []\n          }\n        ]\n      },\n      \"before_quote\": \"\",\n      \"exception_quote\": \"\",\n      \"exception_type\": \"NONE\",\n      \"scope_quote\": \"\"\n    },\n    {\n      \"kind\": \"ORDER\",\n      \"action_quote\": \"print a replacement label\",\n      \"governed_tools\": [\"print_label\"],\n      \"condition\": {\n        \"op\": \"ATOM\",\n        \"quote\": \"original barcode has been invalidated\",\n        \"temporal\": \"PRIOR_TRUE\",\n        \"children\": []\n      },\n      \"before_quote\": \"invalidate barcode\",\n      \"exception_quote\": \"\",\n      \"exception_type\": \"NONE\",\n      \"scope_quote\": \"\"\n    },\n    {\n      \"kind\": \"REQUIRE_RESPONSE\",\n      \"action_quote\": \"log the replacement\",\n      \"governed_tools\": [\"log_replacement\"],\n      \"condition\": {\n        \"op\": \"ATOM\",\n        \"quote\": \"print a replacement label\",\n        \"temporal\": \"LATEST\",\n        \"children\": []\n      },\n      \"before_quote\": \"\",\n      \"exception_quote\": \"\",\n      \"exception_type\": \"NONE\",\n      \"scope_quote\": \"\"\n    }\n  ]\n}",
+  "answer": {
+    "directives": [
+      {
+        "kind": "PERMIT",
+        "action_quote": "read a parcel label",
+        "governed_tools": [
+          "read_label"
+        ],
+        "condition": null,
+        "before_quote": "",
+        "exception_quote": "",
+        "exception_type": "NONE",
+        "scope_quote": ""
+      },
+      {
+        "kind": "FORBID",
+        "action_quote": "print a replacement label",
+        "governed_tools": [
+          "print_label"
+        ],
+        "condition": {
+          "op": "NOT",
+          "quote": "",
+          "temporal": "NONE",
+          "children": [
+            {
+              "op": "ATOM",
+              "quote": "original barcode has been invalidated",
+              "temporal": "PRIOR_TRUE",
+              "children": []
+            }
+          ]
+        },
+        "before_quote": "",
+        "exception_quote": "",
+        "exception_type": "NONE",
+        "scope_quote": ""
+      },
+      {
+        "kind": "ORDER",
+        "action_quote": "print a replacement label",
+        "governed_tools": [
+          "print_label"
+        ],
+        "condition": {
+          "op": "ATOM",
+          "quote": "original barcode has been invalidated",
+          "temporal": "PRIOR_TRUE",
+          "children": []
+        },
+        "before_quote": "invalidate barcode",
+        "exception_quote": "",
+        "exception_type": "NONE",
+        "scope_quote": ""
+      },
+      {
+        "kind": "REQUIRE_RESPONSE",
+        "action_quote": "log the replacement",
+        "governed_tools": [
+          "log_replacement"
+        ],
+        "condition": {
+          "op": "ATOM",
+          "quote": "print a replacement label",
+          "temporal": "LATEST",
+          "children": []
+        },
+        "before_quote": "",
+        "exception_quote": "",
+        "exception_type": "NONE",
+        "scope_quote": ""
+      }
+    ]
+  },
+  "error": "",
+  "finish_reason": "stop",
+  "usage": {
+    "prompt_tokens": 420,
+    "total_tokens": 867,
+    "completion_tokens": 447,
+    "prompt_tokens_details": {
+      "cached_tokens": 0
+    },
+    "service_tier": "standard"
+  }
+}

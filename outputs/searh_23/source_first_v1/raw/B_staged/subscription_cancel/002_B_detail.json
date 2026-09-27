@@ -1,0 +1,80 @@
+{
+  "signature": "ffa45a3028f05f27168f3ef9be7ecb2d6c62c987794144336323829d8167347b",
+  "stage": "B_detail",
+  "model": "ministral-14b-latest",
+  "query": {
+    "policy": "Before closing an account, retrieve its unpaid balance and ask the customer to confirm closure. A balance lookup alone does not close it.",
+    "tools": {
+      "get_balance": "Read unpaid balance.",
+      "ask_confirmation": "Send a confirmation question.",
+      "close_account": "Close account."
+    },
+    "head": {
+      "kind": "REQUIRE_RESPONSE",
+      "head_quote": "ask the customer to confirm closure"
+    }
+  },
+  "raw": "{\n  \"directives\": [\n    {\n      \"kind\": \"ORDER\",\n      \"action_quote\": \"close_account\",\n      \"governed_tools\": [\"close_account\"],\n      \"condition\": {\n        \"op\": \"AND\",\n        \"quote\": \"\",\n        \"temporal\": \"NONE\",\n        \"children\": [\n          {\n            \"op\": \"ATOM\",\n            \"quote\": \"retrieve its unpaid balance\",\n            \"temporal\": \"PRIOR_TRUE\",\n            \"children\": []\n          },\n          {\n            \"op\": \"ATOM\",\n            \"quote\": \"ask the customer to confirm closure\",\n            \"temporal\": \"PRIOR_TRUE\",\n            \"children\": []\n          }\n        ]\n      },\n      \"before_quote\": \"\",\n      \"exception_quote\": \"\",\n      \"exception_type\": \"NONE\",\n      \"scope_quote\": \"Before closing an account\"\n    },\n    {\n      \"kind\": \"REQUIRE_RESPONSE\",\n      \"action_quote\": \"ask the customer to confirm closure\",\n      \"governed_tools\": [\"ask_confirmation\"],\n      \"condition\": {\n        \"op\": \"ATOM\",\n        \"quote\": \"retrieve its unpaid balance\",\n        \"temporal\": \"PRIOR_TRUE\",\n        \"children\": []\n      },\n      \"before_quote\": \"\",\n      \"exception_quote\": \"\",\n      \"exception_type\": \"NONE\",\n      \"scope_quote\": \"Before closing an account\"\n    }\n  ]\n}",
+  "answer": {
+    "directives": [
+      {
+        "kind": "ORDER",
+        "action_quote": "close_account",
+        "governed_tools": [
+          "close_account"
+        ],
+        "condition": {
+          "op": "AND",
+          "quote": "",
+          "temporal": "NONE",
+          "children": [
+            {
+              "op": "ATOM",
+              "quote": "retrieve its unpaid balance",
+              "temporal": "PRIOR_TRUE",
+              "children": []
+            },
+            {
+              "op": "ATOM",
+              "quote": "ask the customer to confirm closure",
+              "temporal": "PRIOR_TRUE",
+              "children": []
+            }
+          ]
+        },
+        "before_quote": "",
+        "exception_quote": "",
+        "exception_type": "NONE",
+        "scope_quote": "Before closing an account"
+      },
+      {
+        "kind": "REQUIRE_RESPONSE",
+        "action_quote": "ask the customer to confirm closure",
+        "governed_tools": [
+          "ask_confirmation"
+        ],
+        "condition": {
+          "op": "ATOM",
+          "quote": "retrieve its unpaid balance",
+          "temporal": "PRIOR_TRUE",
+          "children": []
+        },
+        "before_quote": "",
+        "exception_quote": "",
+        "exception_type": "NONE",
+        "scope_quote": "Before closing an account"
+      }
+    ]
+  },
+  "error": "",
+  "finish_reason": "stop",
+  "usage": {
+    "prompt_tokens": 452,
+    "total_tokens": 767,
+    "completion_tokens": 315,
+    "prompt_tokens_details": {
+      "cached_tokens": 243
+    },
+    "service_tier": "standard"
+  }
+}

@@ -1,0 +1,104 @@
+{
+  "case_id": "laboratory_release",
+  "arm": "B_staged",
+  "model": "ministral-14b-latest",
+  "protocol_sha256": "443b0d4f505a3e2787abf06f346462d83a5442116a4ff3d515ed087cbc938cc9",
+  "query_sha256": "3b9b409925db3f3ac55db475a5ccfe65f03d2b259c4fa7bf84c5f0ea4ce97ea6",
+  "directives": [
+    {
+      "kind": "PERMIT",
+      "action_quote": "inspect a specimen",
+      "governed_tools": [
+        "inspect_specimen"
+      ],
+      "condition": null,
+      "before_quote": "",
+      "exception_quote": "without approval",
+      "exception_type": "EXCEPT",
+      "scope_quote": ""
+    },
+    {
+      "kind": "FORBID",
+      "action_quote": "release its report",
+      "governed_tools": [
+        "release_report"
+      ],
+      "condition": {
+        "op": "AND",
+        "children": [
+          {
+            "op": "ATOM",
+            "quote": "the latest quality check says pass",
+            "temporal": "LATEST"
+          },
+          {
+            "op": "ATOM",
+            "quote": "a supervisor has signed it",
+            "temporal": "LATEST"
+          }
+        ]
+      },
+      "before_quote": "",
+      "exception_quote": "You may inspect a specimen without approval",
+      "exception_type": "EXCEPT",
+      "scope_quote": "but release its report only if"
+    },
+    {
+      "kind": "PERMIT",
+      "action_quote": "release its report",
+      "governed_tools": [
+        "release_report"
+      ],
+      "condition": {
+        "op": "AND",
+        "children": [
+          {
+            "op": "ATOM",
+            "quote": "latest quality check says pass",
+            "temporal": "LATEST"
+          },
+          {
+            "op": "ATOM",
+            "quote": "a supervisor has signed it",
+            "temporal": "LATEST"
+          }
+        ]
+      },
+      "before_quote": "",
+      "exception_quote": "",
+      "exception_type": "NONE",
+      "scope_quote": "only if"
+    }
+  ],
+  "tree": null,
+  "errors": [
+    "invalid_head_3",
+    "invalid_head_4"
+  ],
+  "calls": [
+    {
+      "stage": "B_inventory",
+      "path": "raw/B_staged/laboratory_release/000_B_inventory.json",
+      "error": "",
+      "finish_reason": "stop"
+    },
+    {
+      "stage": "B_detail",
+      "path": "raw/B_staged/laboratory_release/001_B_detail.json",
+      "error": "",
+      "finish_reason": "stop"
+    },
+    {
+      "stage": "B_detail",
+      "path": "raw/B_staged/laboratory_release/002_B_detail.json",
+      "error": "",
+      "finish_reason": "stop"
+    },
+    {
+      "stage": "B_detail",
+      "path": "raw/B_staged/laboratory_release/003_B_detail.json",
+      "error": "",
+      "finish_reason": "stop"
+    }
+  ]
+}

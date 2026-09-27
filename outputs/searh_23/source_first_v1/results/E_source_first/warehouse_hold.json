@@ -1,0 +1,820 @@
+{
+  "case_id": "warehouse_hold",
+  "arm": "E_source_first",
+  "model": "ministral-14b-latest",
+  "protocol_sha256": "443b0d4f505a3e2787abf06f346462d83a5442116a4ff3d515ed087cbc938cc9",
+  "query_sha256": "e59665fa810e9b9979ff8ab8c1542b5c11c99ff7ba445a4b14a6ee8f8f70cb4c",
+  "directives": [
+    {
+      "kind": "GATE",
+      "action_quote": "Check",
+      "governed_tools": [
+        "dispatch_pallet"
+      ],
+      "condition": {
+        "op": "ATOM",
+        "quote": "Check the lot temperature before",
+        "temporal": "NONE"
+      },
+      "before_quote": "",
+      "exception_quote": "",
+      "exception_type": "NONE",
+      "scope_quote": ""
+    },
+    {
+      "kind": "FORBID",
+      "action_quote": "dispatching",
+      "governed_tools": [
+        "dispatch_pallet"
+      ],
+      "condition": {
+        "op": "ATOM",
+        "quote": "if its seal is broken",
+        "temporal": "NONE"
+      },
+      "before_quote": "",
+      "exception_quote": "even if a manager requests immediate delivery",
+      "exception_type": "EXCEPT",
+      "scope_quote": ""
+    },
+    {
+      "kind": "FORBID",
+      "action_quote": "dispatch",
+      "governed_tools": [
+        "dispatch_pallet"
+      ],
+      "condition": {
+        "op": "ATOM",
+        "quote": "if its seal is broken",
+        "temporal": "NONE"
+      },
+      "before_quote": "",
+      "exception_quote": "even if a manager requests immediate delivery",
+      "exception_type": "EXCEPT",
+      "scope_quote": ""
+    }
+  ],
+  "nodes": [
+    {
+      "id": 0,
+      "action": {
+        "source_start": 0,
+        "source_end": 5,
+        "exact_source_text": "Check",
+        "token_start": 0,
+        "token_end": 1
+      },
+      "kind": "GATE",
+      "governed_tools": [
+        "dispatch_pallet"
+      ],
+      "conditions": [
+        {
+          "source_start": 0,
+          "source_end": 32,
+          "exact_source_text": "Check the lot temperature before",
+          "token_start": 0,
+          "token_end": 5,
+          "temporal": "NONE",
+          "parent_action_id": 0
+        }
+      ],
+      "condition_op": "ATOM",
+      "before": null,
+      "exception": null,
+      "exception_type": "NONE",
+      "scope": null
+    },
+    {
+      "id": 1,
+      "action": {
+        "source_start": 33,
+        "source_end": 44,
+        "exact_source_text": "dispatching",
+        "token_start": 5,
+        "token_end": 6
+      },
+      "kind": "FORBID",
+      "governed_tools": [
+        "dispatch_pallet"
+      ],
+      "conditions": [
+        {
+          "source_start": 81,
+          "source_end": 102,
+          "exact_source_text": "if its seal is broken",
+          "token_start": 13,
+          "token_end": 18,
+          "temporal": "NONE",
+          "parent_action_id": 1
+        }
+      ],
+      "condition_op": "ATOM",
+      "before": null,
+      "exception": {
+        "source_start": 104,
+        "source_end": 149,
+        "exact_source_text": "even if a manager requests immediate delivery",
+        "token_start": 19,
+        "token_end": 26
+      },
+      "exception_type": "EXCEPT",
+      "scope": null
+    },
+    {
+      "id": 2,
+      "action": {
+        "source_start": 63,
+        "source_end": 71,
+        "exact_source_text": "dispatch",
+        "token_start": 10,
+        "token_end": 11
+      },
+      "kind": "FORBID",
+      "governed_tools": [
+        "dispatch_pallet"
+      ],
+      "conditions": [
+        {
+          "source_start": 81,
+          "source_end": 102,
+          "exact_source_text": "if its seal is broken",
+          "token_start": 13,
+          "token_end": 18,
+          "temporal": "NONE",
+          "parent_action_id": 2
+        }
+      ],
+      "condition_op": "ATOM",
+      "before": null,
+      "exception": {
+        "source_start": 104,
+        "source_end": 149,
+        "exact_source_text": "even if a manager requests immediate delivery",
+        "token_start": 19,
+        "token_end": 26
+      },
+      "exception_type": "EXCEPT",
+      "scope": null
+    }
+  ],
+  "audit_missing": [
+    {
+      "source_start": 81,
+      "source_end": 95,
+      "exact_source_text": "if its seal is",
+      "token_start": 13,
+      "token_end": 17
+    }
+  ],
+  "unknown": true,
+  "errors": [
+    "audit_found_missing_actions"
+  ],
+  "calls": [
+    {
+      "stage": "E_heads",
+      "path": "raw/E_source_first/warehouse_hold/000_E_heads.json",
+      "error": "",
+      "finish_reason": "stop"
+    },
+    {
+      "stage": "E_detail",
+      "path": "raw/E_source_first/warehouse_hold/001_E_detail.json",
+      "error": "",
+      "finish_reason": "stop"
+    },
+    {
+      "stage": "E_detail",
+      "path": "raw/E_source_first/warehouse_hold/002_E_detail.json",
+      "error": "",
+      "finish_reason": "stop"
+    },
+    {
+      "stage": "E_detail",
+      "path": "raw/E_source_first/warehouse_hold/003_E_detail.json",
+      "error": "",
+      "finish_reason": "stop"
+    },
+    {
+      "stage": "E_audit",
+      "path": "raw/E_source_first/warehouse_hold/004_E_audit.json",
+      "error": "",
+      "finish_reason": "stop"
+    }
+  ],
+  "verification": {
+    "candidates": [
+      {
+        "id": "base_0",
+        "node": {
+          "id": 0,
+          "action": {
+            "source_start": 0,
+            "source_end": 5,
+            "exact_source_text": "Check",
+            "token_start": 0,
+            "token_end": 1
+          },
+          "kind": "GATE",
+          "governed_tools": [
+            "dispatch_pallet"
+          ],
+          "conditions": [
+            {
+              "source_start": 0,
+              "source_end": 32,
+              "exact_source_text": "Check the lot temperature before",
+              "token_start": 0,
+              "token_end": 5,
+              "temporal": "NONE",
+              "parent_action_id": 0
+            }
+          ],
+          "condition_op": "ATOM",
+          "before": null,
+          "exception": null,
+          "exception_type": "NONE",
+          "scope": null
+        }
+      },
+      {
+        "id": "base_1",
+        "node": {
+          "id": 1,
+          "action": {
+            "source_start": 33,
+            "source_end": 44,
+            "exact_source_text": "dispatching",
+            "token_start": 5,
+            "token_end": 6
+          },
+          "kind": "FORBID",
+          "governed_tools": [
+            "dispatch_pallet"
+          ],
+          "conditions": [
+            {
+              "source_start": 81,
+              "source_end": 102,
+              "exact_source_text": "if its seal is broken",
+              "token_start": 13,
+              "token_end": 18,
+              "temporal": "NONE",
+              "parent_action_id": 1
+            }
+          ],
+          "condition_op": "ATOM",
+          "before": null,
+          "exception": {
+            "source_start": 104,
+            "source_end": 149,
+            "exact_source_text": "even if a manager requests immediate delivery",
+            "token_start": 19,
+            "token_end": 26
+          },
+          "exception_type": "EXCEPT",
+          "scope": null
+        }
+      },
+      {
+        "id": "base_2",
+        "node": {
+          "id": 2,
+          "action": {
+            "source_start": 63,
+            "source_end": 71,
+            "exact_source_text": "dispatch",
+            "token_start": 10,
+            "token_end": 11
+          },
+          "kind": "FORBID",
+          "governed_tools": [
+            "dispatch_pallet"
+          ],
+          "conditions": [
+            {
+              "source_start": 81,
+              "source_end": 102,
+              "exact_source_text": "if its seal is broken",
+              "token_start": 13,
+              "token_end": 18,
+              "temporal": "NONE",
+              "parent_action_id": 2
+            }
+          ],
+          "condition_op": "ATOM",
+          "before": null,
+          "exception": {
+            "source_start": 104,
+            "source_end": 149,
+            "exact_source_text": "even if a manager requests immediate delivery",
+            "token_start": 19,
+            "token_end": 26
+          },
+          "exception_type": "EXCEPT",
+          "scope": null
+        }
+      },
+      {
+        "id": "neighbor_action_0",
+        "node": {
+          "id": 0,
+          "action": {
+            "source_start": 33,
+            "source_end": 44,
+            "exact_source_text": "dispatching",
+            "token_start": 5,
+            "token_end": 6
+          },
+          "kind": "GATE",
+          "governed_tools": [
+            "dispatch_pallet"
+          ],
+          "conditions": [
+            {
+              "source_start": 0,
+              "source_end": 32,
+              "exact_source_text": "Check the lot temperature before",
+              "token_start": 0,
+              "token_end": 5,
+              "temporal": "NONE",
+              "parent_action_id": 0
+            }
+          ],
+          "condition_op": "ATOM",
+          "before": null,
+          "exception": null,
+          "exception_type": "NONE",
+          "scope": null
+        }
+      },
+      {
+        "id": "wrong_parent_0",
+        "node": {
+          "id": 0,
+          "action": {
+            "source_start": 0,
+            "source_end": 5,
+            "exact_source_text": "Check",
+            "token_start": 0,
+            "token_end": 1
+          },
+          "kind": "GATE",
+          "governed_tools": [
+            "dispatch_pallet"
+          ],
+          "conditions": [
+            {
+              "source_start": 0,
+              "source_end": 32,
+              "exact_source_text": "Check the lot temperature before",
+              "token_start": 0,
+              "token_end": 5,
+              "temporal": "NONE",
+              "parent_action_id": 1
+            }
+          ],
+          "condition_op": "ATOM",
+          "before": null,
+          "exception": null,
+          "exception_type": "NONE",
+          "scope": null
+        }
+      },
+      {
+        "id": "drop_condition_0",
+        "node": {
+          "id": 0,
+          "action": {
+            "source_start": 0,
+            "source_end": 5,
+            "exact_source_text": "Check",
+            "token_start": 0,
+            "token_end": 1
+          },
+          "kind": "GATE",
+          "governed_tools": [
+            "dispatch_pallet"
+          ],
+          "conditions": [],
+          "condition_op": "ATOM",
+          "before": null,
+          "exception": null,
+          "exception_type": "NONE",
+          "scope": null
+        }
+      },
+      {
+        "id": "wrong_span_0",
+        "node": {
+          "id": 0,
+          "action": {
+            "source_start": 0,
+            "source_end": 5,
+            "exact_source_text": "Check",
+            "token_start": 0,
+            "token_end": 1
+          },
+          "kind": "GATE",
+          "governed_tools": [
+            "dispatch_pallet"
+          ],
+          "conditions": [
+            {
+              "source_start": 0,
+              "source_end": 5,
+              "exact_source_text": "Check",
+              "token_start": 0,
+              "token_end": 1,
+              "temporal": "NONE",
+              "parent_action_id": 0
+            }
+          ],
+          "condition_op": "ATOM",
+          "before": null,
+          "exception": null,
+          "exception_type": "NONE",
+          "scope": null
+        }
+      },
+      {
+        "id": "neighbor_action_1",
+        "node": {
+          "id": 1,
+          "action": {
+            "source_start": 0,
+            "source_end": 5,
+            "exact_source_text": "Check",
+            "token_start": 0,
+            "token_end": 1
+          },
+          "kind": "FORBID",
+          "governed_tools": [
+            "dispatch_pallet"
+          ],
+          "conditions": [
+            {
+              "source_start": 81,
+              "source_end": 102,
+              "exact_source_text": "if its seal is broken",
+              "token_start": 13,
+              "token_end": 18,
+              "temporal": "NONE",
+              "parent_action_id": 1
+            }
+          ],
+          "condition_op": "ATOM",
+          "before": null,
+          "exception": {
+            "source_start": 104,
+            "source_end": 149,
+            "exact_source_text": "even if a manager requests immediate delivery",
+            "token_start": 19,
+            "token_end": 26
+          },
+          "exception_type": "EXCEPT",
+          "scope": null
+        }
+      },
+      {
+        "id": "wrong_parent_1",
+        "node": {
+          "id": 1,
+          "action": {
+            "source_start": 33,
+            "source_end": 44,
+            "exact_source_text": "dispatching",
+            "token_start": 5,
+            "token_end": 6
+          },
+          "kind": "FORBID",
+          "governed_tools": [
+            "dispatch_pallet"
+          ],
+          "conditions": [
+            {
+              "source_start": 81,
+              "source_end": 102,
+              "exact_source_text": "if its seal is broken",
+              "token_start": 13,
+              "token_end": 18,
+              "temporal": "NONE",
+              "parent_action_id": 0
+            }
+          ],
+          "condition_op": "ATOM",
+          "before": null,
+          "exception": {
+            "source_start": 104,
+            "source_end": 149,
+            "exact_source_text": "even if a manager requests immediate delivery",
+            "token_start": 19,
+            "token_end": 26
+          },
+          "exception_type": "EXCEPT",
+          "scope": null
+        }
+      },
+      {
+        "id": "drop_condition_1",
+        "node": {
+          "id": 1,
+          "action": {
+            "source_start": 33,
+            "source_end": 44,
+            "exact_source_text": "dispatching",
+            "token_start": 5,
+            "token_end": 6
+          },
+          "kind": "FORBID",
+          "governed_tools": [
+            "dispatch_pallet"
+          ],
+          "conditions": [],
+          "condition_op": "ATOM",
+          "before": null,
+          "exception": {
+            "source_start": 104,
+            "source_end": 149,
+            "exact_source_text": "even if a manager requests immediate delivery",
+            "token_start": 19,
+            "token_end": 26
+          },
+          "exception_type": "EXCEPT",
+          "scope": null
+        }
+      },
+      {
+        "id": "wrong_span_1",
+        "node": {
+          "id": 1,
+          "action": {
+            "source_start": 33,
+            "source_end": 44,
+            "exact_source_text": "dispatching",
+            "token_start": 5,
+            "token_end": 6
+          },
+          "kind": "FORBID",
+          "governed_tools": [
+            "dispatch_pallet"
+          ],
+          "conditions": [
+            {
+              "source_start": 33,
+              "source_end": 44,
+              "exact_source_text": "dispatching",
+              "token_start": 5,
+              "token_end": 6,
+              "temporal": "NONE",
+              "parent_action_id": 1
+            }
+          ],
+          "condition_op": "ATOM",
+          "before": null,
+          "exception": {
+            "source_start": 104,
+            "source_end": 149,
+            "exact_source_text": "even if a manager requests immediate delivery",
+            "token_start": 19,
+            "token_end": 26
+          },
+          "exception_type": "EXCEPT",
+          "scope": null
+        }
+      },
+      {
+        "id": "neighbor_action_2",
+        "node": {
+          "id": 2,
+          "action": {
+            "source_start": 0,
+            "source_end": 5,
+            "exact_source_text": "Check",
+            "token_start": 0,
+            "token_end": 1
+          },
+          "kind": "FORBID",
+          "governed_tools": [
+            "dispatch_pallet"
+          ],
+          "conditions": [
+            {
+              "source_start": 81,
+              "source_end": 102,
+              "exact_source_text": "if its seal is broken",
+              "token_start": 13,
+              "token_end": 18,
+              "temporal": "NONE",
+              "parent_action_id": 2
+            }
+          ],
+          "condition_op": "ATOM",
+          "before": null,
+          "exception": {
+            "source_start": 104,
+            "source_end": 149,
+            "exact_source_text": "even if a manager requests immediate delivery",
+            "token_start": 19,
+            "token_end": 26
+          },
+          "exception_type": "EXCEPT",
+          "scope": null
+        }
+      },
+      {
+        "id": "wrong_parent_2",
+        "node": {
+          "id": 2,
+          "action": {
+            "source_start": 63,
+            "source_end": 71,
+            "exact_source_text": "dispatch",
+            "token_start": 10,
+            "token_end": 11
+          },
+          "kind": "FORBID",
+          "governed_tools": [
+            "dispatch_pallet"
+          ],
+          "conditions": [
+            {
+              "source_start": 81,
+              "source_end": 102,
+              "exact_source_text": "if its seal is broken",
+              "token_start": 13,
+              "token_end": 18,
+              "temporal": "NONE",
+              "parent_action_id": 0
+            }
+          ],
+          "condition_op": "ATOM",
+          "before": null,
+          "exception": {
+            "source_start": 104,
+            "source_end": 149,
+            "exact_source_text": "even if a manager requests immediate delivery",
+            "token_start": 19,
+            "token_end": 26
+          },
+          "exception_type": "EXCEPT",
+          "scope": null
+        }
+      },
+      {
+        "id": "drop_condition_2",
+        "node": {
+          "id": 2,
+          "action": {
+            "source_start": 63,
+            "source_end": 71,
+            "exact_source_text": "dispatch",
+            "token_start": 10,
+            "token_end": 11
+          },
+          "kind": "FORBID",
+          "governed_tools": [
+            "dispatch_pallet"
+          ],
+          "conditions": [],
+          "condition_op": "ATOM",
+          "before": null,
+          "exception": {
+            "source_start": 104,
+            "source_end": 149,
+            "exact_source_text": "even if a manager requests immediate delivery",
+            "token_start": 19,
+            "token_end": 26
+          },
+          "exception_type": "EXCEPT",
+          "scope": null
+        }
+      },
+      {
+        "id": "wrong_span_2",
+        "node": {
+          "id": 2,
+          "action": {
+            "source_start": 63,
+            "source_end": 71,
+            "exact_source_text": "dispatch",
+            "token_start": 10,
+            "token_end": 11
+          },
+          "kind": "FORBID",
+          "governed_tools": [
+            "dispatch_pallet"
+          ],
+          "conditions": [
+            {
+              "source_start": 63,
+              "source_end": 71,
+              "exact_source_text": "dispatch",
+              "token_start": 10,
+              "token_end": 11,
+              "temporal": "NONE",
+              "parent_action_id": 2
+            }
+          ],
+          "condition_op": "ATOM",
+          "before": null,
+          "exception": {
+            "source_start": 104,
+            "source_end": 149,
+            "exact_source_text": "even if a manager requests immediate delivery",
+            "token_start": 19,
+            "token_end": 26
+          },
+          "exception_type": "EXCEPT",
+          "scope": null
+        }
+      }
+    ],
+    "checks": [
+      {
+        "id": "base_0",
+        "valid": true,
+        "reason": "SUPPORTED"
+      },
+      {
+        "id": "base_1",
+        "valid": true,
+        "reason": "SUPPORTED"
+      },
+      {
+        "id": "base_2",
+        "valid": true,
+        "reason": "SUPPORTED"
+      },
+      {
+        "id": "neighbor_action_0",
+        "valid": false,
+        "reason": "WRONG_ACTION"
+      },
+      {
+        "id": "wrong_parent_0",
+        "valid": false,
+        "reason": "WRONG_BINDING"
+      },
+      {
+        "id": "drop_condition_0",
+        "valid": false,
+        "reason": "MISSING_CONDITION"
+      },
+      {
+        "id": "wrong_span_0",
+        "valid": false,
+        "reason": "WRONG_SPAN"
+      },
+      {
+        "id": "neighbor_action_1",
+        "valid": false,
+        "reason": "WRONG_ACTION"
+      },
+      {
+        "id": "wrong_parent_1",
+        "valid": false,
+        "reason": "WRONG_BINDING"
+      },
+      {
+        "id": "drop_condition_1",
+        "valid": false,
+        "reason": "MISSING_CONDITION"
+      },
+      {
+        "id": "wrong_span_1",
+        "valid": false,
+        "reason": "WRONG_SPAN"
+      },
+      {
+        "id": "neighbor_action_2",
+        "valid": false,
+        "reason": "WRONG_ACTION"
+      },
+      {
+        "id": "wrong_parent_2",
+        "valid": false,
+        "reason": "WRONG_BINDING"
+      },
+      {
+        "id": "drop_condition_2",
+        "valid": false,
+        "reason": "MISSING_CONDITION"
+      },
+      {
+        "id": "wrong_span_2",
+        "valid": false,
+        "reason": "WRONG_SPAN"
+      }
+    ],
+    "calls": [
+      {
+        "stage": "E_verify",
+        "path": "raw/E_verify/warehouse_hold/000_E_verify.json",
+        "error": "",
+        "finish_reason": "stop"
+      }
+    ]
+  }
+}

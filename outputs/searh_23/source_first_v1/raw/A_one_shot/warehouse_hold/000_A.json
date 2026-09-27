@@ -1,0 +1,89 @@
+{
+  "signature": "5206eae683eb85d9e73510e9aa4e5e09addf28a3005719b457c07d6a35527b2c",
+  "stage": "A",
+  "model": "ministral-14b-latest",
+  "query": {
+    "policy": "Check the lot temperature before dispatching the pallet. Never dispatch a pallet if its seal is broken, even if a manager requests immediate delivery.",
+    "tools": {
+      "read_temperature": "Read lot temperature.",
+      "inspect_seal": "Read seal condition.",
+      "dispatch_pallet": "Dispatch the pallet.",
+      "record_request": "Record manager request."
+    }
+  },
+  "raw": "{\n  \"directives\": [\n    {\n      \"kind\": \"GATE\",\n      \"action_quote\": \"dispatching the pallet\",\n      \"governed_tools\": [\"dispatch_pallet\"],\n      \"condition\": {\n        \"op\": \"AND\",\n        \"quote\": \"\",\n        \"temporal\": \"NONE\",\n        \"children\": [\n          {\n            \"op\": \"ATOM\",\n            \"quote\": \"Check the lot temperature\",\n            \"temporal\": \"LATEST\",\n            \"children\": []\n          },\n          {\n            \"op\": \"ATOM\",\n            \"quote\": \"seal is broken\",\n            \"temporal\": \"LATEST\",\n            \"children\": []\n          }\n        ]\n      },\n      \"before_quote\": \"\",\n      \"exception_quote\": \"manager requests immediate delivery\",\n      \"exception_type\": \"EVEN_IF\",\n      \"scope_quote\": \"\"\n    },\n    {\n      \"kind\": \"FORBID\",\n      \"action_quote\": \"dispatching the pallet\",\n      \"governed_tools\": [\"dispatch_pallet\"],\n      \"condition\": {\n        \"op\": \"ATOM\",\n        \"quote\": \"seal is broken\",\n        \"temporal\": \"LATEST\",\n        \"children\": []\n      },\n      \"before_quote\": \"\",\n      \"exception_quote\": \"\",\n      \"exception_type\": \"NONE\",\n      \"scope_quote\": \"\"\n    },\n    {\n      \"kind\": \"ORDER\",\n      \"action_quote\": \"dispatching the pallet\",\n      \"governed_tools\": [\"dispatch_pallet\"],\n      \"condition\": null,\n      \"before_quote\": \"Check the lot temperature\",\n      \"exception_quote\": \"\",\n      \"exception_type\": \"NONE\",\n      \"scope_quote\": \"\"\n    }\n  ]\n}",
+  "answer": {
+    "directives": [
+      {
+        "kind": "GATE",
+        "action_quote": "dispatching the pallet",
+        "governed_tools": [
+          "dispatch_pallet"
+        ],
+        "condition": {
+          "op": "AND",
+          "quote": "",
+          "temporal": "NONE",
+          "children": [
+            {
+              "op": "ATOM",
+              "quote": "Check the lot temperature",
+              "temporal": "LATEST",
+              "children": []
+            },
+            {
+              "op": "ATOM",
+              "quote": "seal is broken",
+              "temporal": "LATEST",
+              "children": []
+            }
+          ]
+        },
+        "before_quote": "",
+        "exception_quote": "manager requests immediate delivery",
+        "exception_type": "EVEN_IF",
+        "scope_quote": ""
+      },
+      {
+        "kind": "FORBID",
+        "action_quote": "dispatching the pallet",
+        "governed_tools": [
+          "dispatch_pallet"
+        ],
+        "condition": {
+          "op": "ATOM",
+          "quote": "seal is broken",
+          "temporal": "LATEST",
+          "children": []
+        },
+        "before_quote": "",
+        "exception_quote": "",
+        "exception_type": "NONE",
+        "scope_quote": ""
+      },
+      {
+        "kind": "ORDER",
+        "action_quote": "dispatching the pallet",
+        "governed_tools": [
+          "dispatch_pallet"
+        ],
+        "condition": null,
+        "before_quote": "Check the lot temperature",
+        "exception_quote": "",
+        "exception_type": "NONE",
+        "scope_quote": ""
+      }
+    ]
+  },
+  "error": "",
+  "finish_reason": "stop",
+  "usage": {
+    "prompt_tokens": 422,
+    "total_tokens": 803,
+    "completion_tokens": 381,
+    "prompt_tokens_details": {
+      "cached_tokens": 0
+    },
+    "service_tier": "standard"
+  }
+}

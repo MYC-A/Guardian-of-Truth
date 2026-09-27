@@ -1,0 +1,63 @@
+{
+  "signature": "e38e62a57abc30965462989203941bfcdc006af3e77896aee49404b492242b55",
+  "stage": "B_detail",
+  "model": "ministral-14b-latest",
+  "query": {
+    "policy": "Before closing an account, retrieve its unpaid balance and ask the customer to confirm closure. A balance lookup alone does not close it.",
+    "tools": {
+      "get_balance": "Read unpaid balance.",
+      "ask_confirmation": "Send a confirmation question.",
+      "close_account": "Close account."
+    },
+    "head": {
+      "kind": "DESCRIPTIVE",
+      "head_quote": "Before closing an account, retrieve its unpaid balance and ask the customer to confirm closure. A balance lookup alone does not close it."
+    }
+  },
+  "raw": "{\n  \"directives\": [\n    {\n      \"kind\": \"ORDER\",\n      \"action_quote\": \"close an account\",\n      \"governed_tools\": [\"close_account\"],\n      \"condition\": {\n        \"op\": \"AND\",\n        \"quote\": \"\",\n        \"temporal\": \"NONE\",\n        \"children\": [\n          {\n            \"op\": \"ATOM\",\n            \"quote\": \"retrieve its unpaid balance\",\n            \"temporal\": \"PRIOR_TRUE\",\n            \"children\": []\n          },\n          {\n            \"op\": \"ATOM\",\n            \"quote\": \"ask the customer to confirm closure\",\n            \"temporal\": \"PRIOR_TRUE\",\n            \"children\": []\n          }\n        ]\n      },\n      \"before_quote\": \"\",\n      \"exception_quote\": \"A balance lookup alone does not close it\",\n      \"exception_type\": \"EXCEPT\",\n      \"scope_quote\": \"Before closing an account\"\n    }\n  ]\n}",
+  "answer": {
+    "directives": [
+      {
+        "kind": "ORDER",
+        "action_quote": "close an account",
+        "governed_tools": [
+          "close_account"
+        ],
+        "condition": {
+          "op": "AND",
+          "quote": "",
+          "temporal": "NONE",
+          "children": [
+            {
+              "op": "ATOM",
+              "quote": "retrieve its unpaid balance",
+              "temporal": "PRIOR_TRUE",
+              "children": []
+            },
+            {
+              "op": "ATOM",
+              "quote": "ask the customer to confirm closure",
+              "temporal": "PRIOR_TRUE",
+              "children": []
+            }
+          ]
+        },
+        "before_quote": "",
+        "exception_quote": "A balance lookup alone does not close it",
+        "exception_type": "EXCEPT",
+        "scope_quote": "Before closing an account"
+      }
+    ]
+  },
+  "error": "",
+  "finish_reason": "stop",
+  "usage": {
+    "prompt_tokens": 470,
+    "total_tokens": 674,
+    "completion_tokens": 204,
+    "prompt_tokens_details": {
+      "cached_tokens": 371
+    },
+    "service_tier": "standard"
+  }
+}

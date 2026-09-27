@@ -1,0 +1,87 @@
+{
+  "signature": "35c2eb03b2df481f167838ac0f27ee00bcc8c3447a1142b2175f9fde8afdc0c2",
+  "stage": "A",
+  "model": "ministral-14b-latest",
+  "query": {
+    "policy": "Publish the revision only after its latest plagiarism scan is clear. If the scan is still pending, request another scan instead of publishing.",
+    "tools": {
+      "scan_status": "Read plagiarism scan status.",
+      "request_scan": "Request another scan.",
+      "publish_revision": "Publish the revision."
+    }
+  },
+  "raw": "{\n  \"directives\": [\n    {\n      \"kind\": \"GATE\",\n      \"action_quote\": \"Publish the revision\",\n      \"governed_tools\": [\"publish_revision\"],\n      \"condition\": {\n        \"op\": \"AND\",\n        \"quote\": \"\",\n        \"temporal\": \"NONE\",\n        \"children\": [\n          {\n            \"op\": \"ATOM\",\n            \"quote\": \"latest plagiarism scan is clear\",\n            \"temporal\": \"LATEST\",\n            \"children\": []\n          }\n        ]\n      },\n      \"before_quote\": \"\",\n      \"exception_quote\": \"\",\n      \"exception_type\": \"NONE\",\n      \"scope_quote\": \"\"\n    },\n    {\n      \"kind\": \"ORDER\",\n      \"action_quote\": \"request another scan\",\n      \"governed_tools\": [\"request_scan\"],\n      \"condition\": {\n        \"op\": \"ATOM\",\n        \"quote\": \"scan is still pending\",\n        \"temporal\": \"LATEST\",\n        \"children\": []\n      },\n      \"before_quote\": \"\",\n      \"exception_quote\": \"\",\n      \"exception_type\": \"NONE\",\n      \"scope_quote\": \"\"\n    },\n    {\n      \"kind\": \"FORBID\",\n      \"action_quote\": \"Publish the revision\",\n      \"governed_tools\": [\"publish_revision\"],\n      \"condition\": {\n        \"op\": \"ATOM\",\n        \"quote\": \"scan is still pending\",\n        \"temporal\": \"LATEST\",\n        \"children\": []\n      },\n      \"before_quote\": \"\",\n      \"exception_quote\": \"\",\n      \"exception_type\": \"NONE\",\n      \"scope_quote\": \"\"\n    }\n  ]\n}",
+  "answer": {
+    "directives": [
+      {
+        "kind": "GATE",
+        "action_quote": "Publish the revision",
+        "governed_tools": [
+          "publish_revision"
+        ],
+        "condition": {
+          "op": "AND",
+          "quote": "",
+          "temporal": "NONE",
+          "children": [
+            {
+              "op": "ATOM",
+              "quote": "latest plagiarism scan is clear",
+              "temporal": "LATEST",
+              "children": []
+            }
+          ]
+        },
+        "before_quote": "",
+        "exception_quote": "",
+        "exception_type": "NONE",
+        "scope_quote": ""
+      },
+      {
+        "kind": "ORDER",
+        "action_quote": "request another scan",
+        "governed_tools": [
+          "request_scan"
+        ],
+        "condition": {
+          "op": "ATOM",
+          "quote": "scan is still pending",
+          "temporal": "LATEST",
+          "children": []
+        },
+        "before_quote": "",
+        "exception_quote": "",
+        "exception_type": "NONE",
+        "scope_quote": ""
+      },
+      {
+        "kind": "FORBID",
+        "action_quote": "Publish the revision",
+        "governed_tools": [
+          "publish_revision"
+        ],
+        "condition": {
+          "op": "ATOM",
+          "quote": "scan is still pending",
+          "temporal": "LATEST",
+          "children": []
+        },
+        "before_quote": "",
+        "exception_quote": "",
+        "exception_type": "NONE",
+        "scope_quote": ""
+      }
+    ]
+  },
+  "error": "",
+  "finish_reason": "stop",
+  "usage": {
+    "prompt_tokens": 410,
+    "total_tokens": 773,
+    "completion_tokens": 363,
+    "prompt_tokens_details": {
+      "cached_tokens": 0
+    },
+    "service_tier": "standard"
+  }
+}

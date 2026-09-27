@@ -1,5 +1,13 @@
 # SEARCH_23 — Results (final matrix)
 
+**Обновление 2026-09-27 (другая задача, policy parser):** замороженное
+сравнение A/B/E на 10 новых policy показало `exact IR = 0/10` у всех трёх.
+Новый source-first E обеспечил точные source offsets по конструкции, но нашёл
+только 2/22 верных action+kind и 0/15 связей condition→action; one-shot A
+нашёл 11/22 и 4/15. Даже при подаче золотого action в E_detail найдено
+9/15 связей при 13 лишних. Это не метрики конкурсных траекторий. Полный
+разбор, методика и raw: [SOURCE_FIRST_ANCHOR_COMPARE_2026-09-27.md](SOURCE_FIRST_ANCHOR_COMPARE_2026-09-27.md).
+
 Branch searh_23/investigator-v2. All numbers on public46 (46 cases, development
 set, §7.1) unless stated otherwise. Gold joined post-hoc; no thresholds were
 tuned after seeing results. Inputs and per-case records are in git.

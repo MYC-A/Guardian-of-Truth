@@ -1,0 +1,58 @@
+{
+  "signature": "be6ff1f9c11df30a2aa82d4cbcf7a10cac20fcdfc1fe6fcf475acc3dae577bfc",
+  "stage": "B_detail",
+  "model": "ministral-14b-latest",
+  "query": {
+    "policy": "A vehicle may leave the depot only if either its safety certificate is current or an emergency waiver has been logged. A route lookup does not release the vehicle.",
+    "tools": {
+      "check_certificate": "Read certificate validity.",
+      "check_waiver": "Read waiver log.",
+      "route_lookup": "Read route data; does not release.",
+      "release_vehicle": "Release the vehicle from depot."
+    },
+    "head": {
+      "kind": "FORBID",
+      "head_quote": "A route lookup does not release the vehicle"
+    }
+  },
+  "raw": "{\n  \"directives\": [\n    {\n      \"kind\": \"FORBID\",\n      \"action_quote\": \"release the vehicle\",\n      \"governed_tools\": [\"release_vehicle\"],\n      \"condition\": {\n        \"op\": \"OR\",\n        \"quote\": \"\",\n        \"temporal\": \"NONE\",\n        \"children\": [\n          {\n            \"op\": \"ATOM\",\n            \"quote\": \"A route lookup\",\n            \"temporal\": \"NONE\",\n            \"children\": []\n          }\n        ]\n      },\n      \"before_quote\": \"\",\n      \"exception_quote\": \"\",\n      \"exception_type\": \"NONE\",\n      \"scope_quote\": \"only if either its safety certificate is current or an emergency waiver has been logged\"\n    }\n  ]\n}",
+  "answer": {
+    "directives": [
+      {
+        "kind": "FORBID",
+        "action_quote": "release the vehicle",
+        "governed_tools": [
+          "release_vehicle"
+        ],
+        "condition": {
+          "op": "OR",
+          "quote": "",
+          "temporal": "NONE",
+          "children": [
+            {
+              "op": "ATOM",
+              "quote": "A route lookup",
+              "temporal": "NONE",
+              "children": []
+            }
+          ]
+        },
+        "before_quote": "",
+        "exception_quote": "",
+        "exception_type": "NONE",
+        "scope_quote": "only if either its safety certificate is current or an emergency waiver has been logged"
+      }
+    ]
+  },
+  "error": "",
+  "finish_reason": "stop",
+  "usage": {
+    "prompt_tokens": 474,
+    "total_tokens": 639,
+    "completion_tokens": 165,
+    "prompt_tokens_details": {
+      "cached_tokens": 243
+    },
+    "service_tier": "standard"
+  }
+}

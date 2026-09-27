@@ -1,0 +1,58 @@
+{
+  "signature": "03cc45b42ae7a9d13e0cd3ff8e1cd8ac957340d6f945282cdec0397bc03a32a6",
+  "stage": "B_detail",
+  "model": "ministral-14b-latest",
+  "query": {
+    "policy": "Check the lot temperature before dispatching the pallet. Never dispatch a pallet if its seal is broken, even if a manager requests immediate delivery.",
+    "tools": {
+      "read_temperature": "Read lot temperature.",
+      "inspect_seal": "Read seal condition.",
+      "dispatch_pallet": "Dispatch the pallet.",
+      "record_request": "Record manager request."
+    },
+    "head": {
+      "kind": "ORDER",
+      "head_quote": "Check the lot temperature before dispatching the pallet."
+    }
+  },
+  "raw": "{\n  \"directives\": [\n    {\n      \"kind\": \"ORDER\",\n      \"action_quote\": \"dispatching the pallet\",\n      \"governed_tools\": [\"dispatch_pallet\"],\n      \"condition\": {\n        \"op\": \"AND\",\n        \"quote\": \"\",\n        \"temporal\": \"NONE\",\n        \"children\": [\n          {\n            \"op\": \"ATOM\",\n            \"quote\": \"Check the lot temperature\",\n            \"temporal\": \"PRIOR_TRUE\",\n            \"children\": []\n          }\n        ]\n      },\n      \"before_quote\": \"\",\n      \"exception_quote\": \"\",\n      \"exception_type\": \"NONE\",\n      \"scope_quote\": \"before\"\n    }\n  ]\n}",
+  "answer": {
+    "directives": [
+      {
+        "kind": "ORDER",
+        "action_quote": "dispatching the pallet",
+        "governed_tools": [
+          "dispatch_pallet"
+        ],
+        "condition": {
+          "op": "AND",
+          "quote": "",
+          "temporal": "NONE",
+          "children": [
+            {
+              "op": "ATOM",
+              "quote": "Check the lot temperature",
+              "temporal": "PRIOR_TRUE",
+              "children": []
+            }
+          ]
+        },
+        "before_quote": "",
+        "exception_quote": "",
+        "exception_type": "NONE",
+        "scope_quote": "before"
+      }
+    ]
+  },
+  "error": "",
+  "finish_reason": "stop",
+  "usage": {
+    "prompt_tokens": 467,
+    "total_tokens": 620,
+    "completion_tokens": 153,
+    "prompt_tokens_details": {
+      "cached_tokens": 0
+    },
+    "service_tier": "standard"
+  }
+}

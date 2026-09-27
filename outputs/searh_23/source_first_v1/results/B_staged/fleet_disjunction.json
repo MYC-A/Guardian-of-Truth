@@ -1,0 +1,72 @@
+{
+  "case_id": "fleet_disjunction",
+  "arm": "B_staged",
+  "model": "ministral-14b-latest",
+  "protocol_sha256": "443b0d4f505a3e2787abf06f346462d83a5442116a4ff3d515ed087cbc938cc9",
+  "query_sha256": "8dada6c651b350e90345c221a21932a52c1aa464592b8c0a6cd0ce8f85aefc43",
+  "directives": [
+    {
+      "kind": "FORBID",
+      "action_quote": "release the vehicle",
+      "governed_tools": [
+        "release_vehicle"
+      ],
+      "condition": null,
+      "before_quote": "",
+      "exception_quote": "",
+      "exception_type": "NONE",
+      "scope_quote": "only if either its safety certificate is current or an emergency waiver has been logged"
+    },
+    {
+      "kind": "GATE",
+      "action_quote": "leave the depot",
+      "governed_tools": [
+        "release_vehicle"
+      ],
+      "condition": {
+        "op": "OR",
+        "children": [
+          {
+            "op": "ATOM",
+            "quote": "its safety certificate is current",
+            "temporal": "LATEST"
+          },
+          {
+            "op": "ATOM",
+            "quote": "an emergency waiver has been logged",
+            "temporal": "LATEST"
+          }
+        ]
+      },
+      "before_quote": "",
+      "exception_quote": "",
+      "exception_type": "NONE",
+      "scope_quote": "A vehicle may leave the depot only if"
+    }
+  ],
+  "tree": null,
+  "errors": [
+    "invalid_head_0",
+    "invalid_head_1"
+  ],
+  "calls": [
+    {
+      "stage": "B_inventory",
+      "path": "raw/B_staged/fleet_disjunction/000_B_inventory.json",
+      "error": "",
+      "finish_reason": "stop"
+    },
+    {
+      "stage": "B_detail",
+      "path": "raw/B_staged/fleet_disjunction/001_B_detail.json",
+      "error": "",
+      "finish_reason": "stop"
+    },
+    {
+      "stage": "B_detail",
+      "path": "raw/B_staged/fleet_disjunction/002_B_detail.json",
+      "error": "",
+      "finish_reason": "stop"
+    }
+  ]
+}

@@ -1,0 +1,73 @@
+{
+  "case_id": "warehouse_hold",
+  "arm": "A_one_shot",
+  "model": "ministral-14b-latest",
+  "protocol_sha256": "443b0d4f505a3e2787abf06f346462d83a5442116a4ff3d515ed087cbc938cc9",
+  "query_sha256": "e59665fa810e9b9979ff8ab8c1542b5c11c99ff7ba445a4b14a6ee8f8f70cb4c",
+  "directives": [
+    {
+      "kind": "GATE",
+      "action_quote": "dispatching the pallet",
+      "governed_tools": [
+        "dispatch_pallet"
+      ],
+      "condition": {
+        "op": "AND",
+        "children": [
+          {
+            "op": "ATOM",
+            "quote": "Check the lot temperature",
+            "temporal": "LATEST"
+          },
+          {
+            "op": "ATOM",
+            "quote": "seal is broken",
+            "temporal": "LATEST"
+          }
+        ]
+      },
+      "before_quote": "",
+      "exception_quote": "manager requests immediate delivery",
+      "exception_type": "EVEN_IF",
+      "scope_quote": ""
+    },
+    {
+      "kind": "FORBID",
+      "action_quote": "dispatching the pallet",
+      "governed_tools": [
+        "dispatch_pallet"
+      ],
+      "condition": {
+        "op": "ATOM",
+        "quote": "seal is broken",
+        "temporal": "LATEST"
+      },
+      "before_quote": "",
+      "exception_quote": "",
+      "exception_type": "NONE",
+      "scope_quote": ""
+    },
+    {
+      "kind": "ORDER",
+      "action_quote": "dispatching the pallet",
+      "governed_tools": [
+        "dispatch_pallet"
+      ],
+      "condition": null,
+      "before_quote": "Check the lot temperature",
+      "exception_quote": "",
+      "exception_type": "NONE",
+      "scope_quote": ""
+    }
+  ],
+  "tree": null,
+  "errors": [],
+  "calls": [
+    {
+      "stage": "A",
+      "path": "raw/A_one_shot/warehouse_hold/000_A.json",
+      "error": "",
+      "finish_reason": "stop"
+    }
+  ]
+}

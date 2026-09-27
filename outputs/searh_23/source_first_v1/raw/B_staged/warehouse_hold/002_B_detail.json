@@ -1,0 +1,64 @@
+{
+  "signature": "6d9379ca497daa22f62a604b1bfa2dc91a4fcb2465c29393f29157ee7bea5e21",
+  "stage": "B_detail",
+  "model": "ministral-14b-latest",
+  "query": {
+    "policy": "Check the lot temperature before dispatching the pallet. Never dispatch a pallet if its seal is broken, even if a manager requests immediate delivery.",
+    "tools": {
+      "read_temperature": "Read lot temperature.",
+      "inspect_seal": "Read seal condition.",
+      "dispatch_pallet": "Dispatch the pallet.",
+      "record_request": "Record manager request."
+    },
+    "head": {
+      "kind": "FORBID",
+      "head_quote": "Never dispatch a pallet if its seal is broken, even if a manager requests immediate delivery."
+    }
+  },
+  "raw": "{\n  \"directives\": [\n    {\n      \"kind\": \"FORBID\",\n      \"action_quote\": \"dispatch a pallet\",\n      \"governed_tools\": [\"dispatch_pallet\"],\n      \"condition\": {\n        \"op\": \"AND\",\n        \"quote\": \"\",\n        \"temporal\": \"NONE\",\n        \"children\": [\n          {\n            \"op\": \"ATOM\",\n            \"quote\": \"its seal is broken\",\n            \"temporal\": \"NONE\",\n            \"children\": []\n          },\n          {\n            \"op\": \"ATOM\",\n            \"quote\": \"a manager requests immediate delivery\",\n            \"temporal\": \"NONE\",\n            \"children\": []\n          }\n        ]\n      },\n      \"before_quote\": \"\",\n      \"exception_quote\": \"\",\n      \"exception_type\": \"EVEN_IF\",\n      \"scope_quote\": \"Never\"\n    }\n  ]\n}",
+  "answer": {
+    "directives": [
+      {
+        "kind": "FORBID",
+        "action_quote": "dispatch a pallet",
+        "governed_tools": [
+          "dispatch_pallet"
+        ],
+        "condition": {
+          "op": "AND",
+          "quote": "",
+          "temporal": "NONE",
+          "children": [
+            {
+              "op": "ATOM",
+              "quote": "its seal is broken",
+              "temporal": "NONE",
+              "children": []
+            },
+            {
+              "op": "ATOM",
+              "quote": "a manager requests immediate delivery",
+              "temporal": "NONE",
+              "children": []
+            }
+          ]
+        },
+        "before_quote": "",
+        "exception_quote": "",
+        "exception_type": "EVEN_IF",
+        "scope_quote": "Never"
+      }
+    ]
+  },
+  "error": "",
+  "finish_reason": "stop",
+  "usage": {
+    "prompt_tokens": 477,
+    "total_tokens": 667,
+    "completion_tokens": 190,
+    "prompt_tokens_details": {
+      "cached_tokens": 243
+    },
+    "service_tier": "standard"
+  }
+}

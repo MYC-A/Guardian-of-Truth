@@ -1,0 +1,1083 @@
+{
+  "case_id": "subscription_cancel",
+  "arm": "E_source_first",
+  "model": "ministral-14b-latest",
+  "protocol_sha256": "443b0d4f505a3e2787abf06f346462d83a5442116a4ff3d515ed087cbc938cc9",
+  "query_sha256": "5ab008a038780c4c82bd49544447583cf56db7a5fa9295a5bfc358dcb41da8f5",
+  "directives": [
+    {
+      "kind": "ORDER",
+      "action_quote": "retrieve its unpaid balance",
+      "governed_tools": [
+        "get_balance"
+      ],
+      "condition": {
+        "op": "ATOM",
+        "quote": "closing an",
+        "temporal": "NONE"
+      },
+      "before_quote": "Before",
+      "exception_quote": "",
+      "exception_type": "NONE",
+      "scope_quote": ""
+    },
+    {
+      "kind": "REQUIRE_RESPONSE",
+      "action_quote": "ask the customer to confirm",
+      "governed_tools": [
+        "ask_confirmation"
+      ],
+      "condition": {
+        "op": "AND",
+        "children": [
+          {
+            "op": "ATOM",
+            "quote": "retrieve its unpaid balance",
+            "temporal": "NONE"
+          },
+          {
+            "op": "ATOM",
+            "quote": "closing an account",
+            "temporal": "PRIOR_TRUE"
+          }
+        ]
+      },
+      "before_quote": "closing an account",
+      "exception_quote": "",
+      "exception_type": "NONE",
+      "scope_quote": ""
+    },
+    {
+      "kind": "FORBID",
+      "action_quote": "does not close",
+      "governed_tools": [
+        "close_account"
+      ],
+      "condition": {
+        "op": "AND",
+        "children": [
+          {
+            "op": "ATOM",
+            "quote": "retrieve its unpaid balance",
+            "temporal": "NONE"
+          },
+          {
+            "op": "ATOM",
+            "quote": "lookup alone",
+            "temporal": "NONE"
+          }
+        ]
+      },
+      "before_quote": "",
+      "exception_quote": "",
+      "exception_type": "NONE",
+      "scope_quote": "Before closing an account, retrieve its unpaid balance and ask the customer to confirm closure"
+    }
+  ],
+  "nodes": [
+    {
+      "id": 0,
+      "action": {
+        "source_start": 27,
+        "source_end": 54,
+        "exact_source_text": "retrieve its unpaid balance",
+        "token_start": 5,
+        "token_end": 9
+      },
+      "kind": "ORDER",
+      "governed_tools": [
+        "get_balance"
+      ],
+      "conditions": [
+        {
+          "source_start": 7,
+          "source_end": 17,
+          "exact_source_text": "closing an",
+          "token_start": 1,
+          "token_end": 3,
+          "temporal": "NONE",
+          "parent_action_id": 0
+        }
+      ],
+      "condition_op": "ATOM",
+      "before": {
+        "source_start": 0,
+        "source_end": 6,
+        "exact_source_text": "Before",
+        "token_start": 0,
+        "token_end": 1
+      },
+      "exception": null,
+      "exception_type": "NONE",
+      "scope": null
+    },
+    {
+      "id": 1,
+      "action": {
+        "source_start": 59,
+        "source_end": 86,
+        "exact_source_text": "ask the customer to confirm",
+        "token_start": 10,
+        "token_end": 15
+      },
+      "kind": "REQUIRE_RESPONSE",
+      "governed_tools": [
+        "ask_confirmation"
+      ],
+      "conditions": [
+        {
+          "source_start": 27,
+          "source_end": 54,
+          "exact_source_text": "retrieve its unpaid balance",
+          "token_start": 5,
+          "token_end": 9,
+          "temporal": "NONE",
+          "parent_action_id": 1
+        },
+        {
+          "source_start": 7,
+          "source_end": 25,
+          "exact_source_text": "closing an account",
+          "token_start": 1,
+          "token_end": 4,
+          "temporal": "PRIOR_TRUE",
+          "parent_action_id": 1
+        }
+      ],
+      "condition_op": "AND",
+      "before": {
+        "source_start": 7,
+        "source_end": 25,
+        "exact_source_text": "closing an account",
+        "token_start": 1,
+        "token_end": 4
+      },
+      "exception": null,
+      "exception_type": "NONE",
+      "scope": null
+    },
+    {
+      "id": 2,
+      "action": {
+        "source_start": 119,
+        "source_end": 133,
+        "exact_source_text": "does not close",
+        "token_start": 21,
+        "token_end": 24
+      },
+      "kind": "FORBID",
+      "governed_tools": [
+        "close_account"
+      ],
+      "conditions": [
+        {
+          "source_start": 27,
+          "source_end": 54,
+          "exact_source_text": "retrieve its unpaid balance",
+          "token_start": 5,
+          "token_end": 9,
+          "temporal": "NONE",
+          "parent_action_id": 2
+        },
+        {
+          "source_start": 106,
+          "source_end": 118,
+          "exact_source_text": "lookup alone",
+          "token_start": 19,
+          "token_end": 21,
+          "temporal": "NONE",
+          "parent_action_id": 2
+        }
+      ],
+      "condition_op": "AND",
+      "before": null,
+      "exception": null,
+      "exception_type": "NONE",
+      "scope": {
+        "source_start": 0,
+        "source_end": 94,
+        "exact_source_text": "Before closing an account, retrieve its unpaid balance and ask the customer to confirm closure",
+        "token_start": 0,
+        "token_end": 16
+      }
+    }
+  ],
+  "audit_missing": [
+    {
+      "source_start": 76,
+      "source_end": 86,
+      "exact_source_text": "to confirm",
+      "token_start": 13,
+      "token_end": 15
+    }
+  ],
+  "unknown": true,
+  "errors": [
+    "audit_found_missing_actions"
+  ],
+  "calls": [
+    {
+      "stage": "E_heads",
+      "path": "raw/E_source_first/subscription_cancel/000_E_heads.json",
+      "error": "",
+      "finish_reason": "stop"
+    },
+    {
+      "stage": "E_detail",
+      "path": "raw/E_source_first/subscription_cancel/001_E_detail.json",
+      "error": "",
+      "finish_reason": "stop"
+    },
+    {
+      "stage": "E_detail",
+      "path": "raw/E_source_first/subscription_cancel/002_E_detail.json",
+      "error": "",
+      "finish_reason": "stop"
+    },
+    {
+      "stage": "E_detail",
+      "path": "raw/E_source_first/subscription_cancel/003_E_detail.json",
+      "error": "",
+      "finish_reason": "stop"
+    },
+    {
+      "stage": "E_audit",
+      "path": "raw/E_source_first/subscription_cancel/004_E_audit.json",
+      "error": "",
+      "finish_reason": "stop"
+    }
+  ],
+  "verification": {
+    "candidates": [
+      {
+        "id": "base_0",
+        "node": {
+          "id": 0,
+          "action": {
+            "source_start": 27,
+            "source_end": 54,
+            "exact_source_text": "retrieve its unpaid balance",
+            "token_start": 5,
+            "token_end": 9
+          },
+          "kind": "ORDER",
+          "governed_tools": [
+            "get_balance"
+          ],
+          "conditions": [
+            {
+              "source_start": 7,
+              "source_end": 17,
+              "exact_source_text": "closing an",
+              "token_start": 1,
+              "token_end": 3,
+              "temporal": "NONE",
+              "parent_action_id": 0
+            }
+          ],
+          "condition_op": "ATOM",
+          "before": {
+            "source_start": 0,
+            "source_end": 6,
+            "exact_source_text": "Before",
+            "token_start": 0,
+            "token_end": 1
+          },
+          "exception": null,
+          "exception_type": "NONE",
+          "scope": null
+        }
+      },
+      {
+        "id": "base_1",
+        "node": {
+          "id": 1,
+          "action": {
+            "source_start": 59,
+            "source_end": 86,
+            "exact_source_text": "ask the customer to confirm",
+            "token_start": 10,
+            "token_end": 15
+          },
+          "kind": "REQUIRE_RESPONSE",
+          "governed_tools": [
+            "ask_confirmation"
+          ],
+          "conditions": [
+            {
+              "source_start": 27,
+              "source_end": 54,
+              "exact_source_text": "retrieve its unpaid balance",
+              "token_start": 5,
+              "token_end": 9,
+              "temporal": "NONE",
+              "parent_action_id": 1
+            },
+            {
+              "source_start": 7,
+              "source_end": 25,
+              "exact_source_text": "closing an account",
+              "token_start": 1,
+              "token_end": 4,
+              "temporal": "PRIOR_TRUE",
+              "parent_action_id": 1
+            }
+          ],
+          "condition_op": "AND",
+          "before": {
+            "source_start": 7,
+            "source_end": 25,
+            "exact_source_text": "closing an account",
+            "token_start": 1,
+            "token_end": 4
+          },
+          "exception": null,
+          "exception_type": "NONE",
+          "scope": null
+        }
+      },
+      {
+        "id": "base_2",
+        "node": {
+          "id": 2,
+          "action": {
+            "source_start": 119,
+            "source_end": 133,
+            "exact_source_text": "does not close",
+            "token_start": 21,
+            "token_end": 24
+          },
+          "kind": "FORBID",
+          "governed_tools": [
+            "close_account"
+          ],
+          "conditions": [
+            {
+              "source_start": 27,
+              "source_end": 54,
+              "exact_source_text": "retrieve its unpaid balance",
+              "token_start": 5,
+              "token_end": 9,
+              "temporal": "NONE",
+              "parent_action_id": 2
+            },
+            {
+              "source_start": 106,
+              "source_end": 118,
+              "exact_source_text": "lookup alone",
+              "token_start": 19,
+              "token_end": 21,
+              "temporal": "NONE",
+              "parent_action_id": 2
+            }
+          ],
+          "condition_op": "AND",
+          "before": null,
+          "exception": null,
+          "exception_type": "NONE",
+          "scope": {
+            "source_start": 0,
+            "source_end": 94,
+            "exact_source_text": "Before closing an account, retrieve its unpaid balance and ask the customer to confirm closure",
+            "token_start": 0,
+            "token_end": 16
+          }
+        }
+      },
+      {
+        "id": "neighbor_action_0",
+        "node": {
+          "id": 0,
+          "action": {
+            "source_start": 59,
+            "source_end": 86,
+            "exact_source_text": "ask the customer to confirm",
+            "token_start": 10,
+            "token_end": 15
+          },
+          "kind": "ORDER",
+          "governed_tools": [
+            "get_balance"
+          ],
+          "conditions": [
+            {
+              "source_start": 7,
+              "source_end": 17,
+              "exact_source_text": "closing an",
+              "token_start": 1,
+              "token_end": 3,
+              "temporal": "NONE",
+              "parent_action_id": 0
+            }
+          ],
+          "condition_op": "ATOM",
+          "before": {
+            "source_start": 0,
+            "source_end": 6,
+            "exact_source_text": "Before",
+            "token_start": 0,
+            "token_end": 1
+          },
+          "exception": null,
+          "exception_type": "NONE",
+          "scope": null
+        }
+      },
+      {
+        "id": "wrong_parent_0",
+        "node": {
+          "id": 0,
+          "action": {
+            "source_start": 27,
+            "source_end": 54,
+            "exact_source_text": "retrieve its unpaid balance",
+            "token_start": 5,
+            "token_end": 9
+          },
+          "kind": "ORDER",
+          "governed_tools": [
+            "get_balance"
+          ],
+          "conditions": [
+            {
+              "source_start": 7,
+              "source_end": 17,
+              "exact_source_text": "closing an",
+              "token_start": 1,
+              "token_end": 3,
+              "temporal": "NONE",
+              "parent_action_id": 1
+            }
+          ],
+          "condition_op": "ATOM",
+          "before": {
+            "source_start": 0,
+            "source_end": 6,
+            "exact_source_text": "Before",
+            "token_start": 0,
+            "token_end": 1
+          },
+          "exception": null,
+          "exception_type": "NONE",
+          "scope": null
+        }
+      },
+      {
+        "id": "drop_condition_0",
+        "node": {
+          "id": 0,
+          "action": {
+            "source_start": 27,
+            "source_end": 54,
+            "exact_source_text": "retrieve its unpaid balance",
+            "token_start": 5,
+            "token_end": 9
+          },
+          "kind": "ORDER",
+          "governed_tools": [
+            "get_balance"
+          ],
+          "conditions": [],
+          "condition_op": "ATOM",
+          "before": {
+            "source_start": 0,
+            "source_end": 6,
+            "exact_source_text": "Before",
+            "token_start": 0,
+            "token_end": 1
+          },
+          "exception": null,
+          "exception_type": "NONE",
+          "scope": null
+        }
+      },
+      {
+        "id": "swap_order_0",
+        "node": {
+          "id": 0,
+          "action": {
+            "source_start": 0,
+            "source_end": 6,
+            "exact_source_text": "Before",
+            "token_start": 0,
+            "token_end": 1
+          },
+          "kind": "ORDER",
+          "governed_tools": [
+            "get_balance"
+          ],
+          "conditions": [
+            {
+              "source_start": 7,
+              "source_end": 17,
+              "exact_source_text": "closing an",
+              "token_start": 1,
+              "token_end": 3,
+              "temporal": "NONE",
+              "parent_action_id": 0
+            }
+          ],
+          "condition_op": "ATOM",
+          "before": {
+            "source_start": 27,
+            "source_end": 54,
+            "exact_source_text": "retrieve its unpaid balance",
+            "token_start": 5,
+            "token_end": 9
+          },
+          "exception": null,
+          "exception_type": "NONE",
+          "scope": null
+        }
+      },
+      {
+        "id": "wrong_span_0",
+        "node": {
+          "id": 0,
+          "action": {
+            "source_start": 27,
+            "source_end": 54,
+            "exact_source_text": "retrieve its unpaid balance",
+            "token_start": 5,
+            "token_end": 9
+          },
+          "kind": "ORDER",
+          "governed_tools": [
+            "get_balance"
+          ],
+          "conditions": [
+            {
+              "source_start": 27,
+              "source_end": 54,
+              "exact_source_text": "retrieve its unpaid balance",
+              "token_start": 5,
+              "token_end": 9,
+              "temporal": "NONE",
+              "parent_action_id": 0
+            }
+          ],
+          "condition_op": "ATOM",
+          "before": {
+            "source_start": 0,
+            "source_end": 6,
+            "exact_source_text": "Before",
+            "token_start": 0,
+            "token_end": 1
+          },
+          "exception": null,
+          "exception_type": "NONE",
+          "scope": null
+        }
+      },
+      {
+        "id": "neighbor_action_1",
+        "node": {
+          "id": 1,
+          "action": {
+            "source_start": 27,
+            "source_end": 54,
+            "exact_source_text": "retrieve its unpaid balance",
+            "token_start": 5,
+            "token_end": 9
+          },
+          "kind": "REQUIRE_RESPONSE",
+          "governed_tools": [
+            "ask_confirmation"
+          ],
+          "conditions": [
+            {
+              "source_start": 27,
+              "source_end": 54,
+              "exact_source_text": "retrieve its unpaid balance",
+              "token_start": 5,
+              "token_end": 9,
+              "temporal": "NONE",
+              "parent_action_id": 1
+            },
+            {
+              "source_start": 7,
+              "source_end": 25,
+              "exact_source_text": "closing an account",
+              "token_start": 1,
+              "token_end": 4,
+              "temporal": "PRIOR_TRUE",
+              "parent_action_id": 1
+            }
+          ],
+          "condition_op": "AND",
+          "before": {
+            "source_start": 7,
+            "source_end": 25,
+            "exact_source_text": "closing an account",
+            "token_start": 1,
+            "token_end": 4
+          },
+          "exception": null,
+          "exception_type": "NONE",
+          "scope": null
+        }
+      },
+      {
+        "id": "wrong_parent_1",
+        "node": {
+          "id": 1,
+          "action": {
+            "source_start": 59,
+            "source_end": 86,
+            "exact_source_text": "ask the customer to confirm",
+            "token_start": 10,
+            "token_end": 15
+          },
+          "kind": "REQUIRE_RESPONSE",
+          "governed_tools": [
+            "ask_confirmation"
+          ],
+          "conditions": [
+            {
+              "source_start": 27,
+              "source_end": 54,
+              "exact_source_text": "retrieve its unpaid balance",
+              "token_start": 5,
+              "token_end": 9,
+              "temporal": "NONE",
+              "parent_action_id": 0
+            },
+            {
+              "source_start": 7,
+              "source_end": 25,
+              "exact_source_text": "closing an account",
+              "token_start": 1,
+              "token_end": 4,
+              "temporal": "PRIOR_TRUE",
+              "parent_action_id": 1
+            }
+          ],
+          "condition_op": "AND",
+          "before": {
+            "source_start": 7,
+            "source_end": 25,
+            "exact_source_text": "closing an account",
+            "token_start": 1,
+            "token_end": 4
+          },
+          "exception": null,
+          "exception_type": "NONE",
+          "scope": null
+        }
+      },
+      {
+        "id": "drop_condition_1",
+        "node": {
+          "id": 1,
+          "action": {
+            "source_start": 59,
+            "source_end": 86,
+            "exact_source_text": "ask the customer to confirm",
+            "token_start": 10,
+            "token_end": 15
+          },
+          "kind": "REQUIRE_RESPONSE",
+          "governed_tools": [
+            "ask_confirmation"
+          ],
+          "conditions": [
+            {
+              "source_start": 7,
+              "source_end": 25,
+              "exact_source_text": "closing an account",
+              "token_start": 1,
+              "token_end": 4,
+              "temporal": "PRIOR_TRUE",
+              "parent_action_id": 1
+            }
+          ],
+          "condition_op": "AND",
+          "before": {
+            "source_start": 7,
+            "source_end": 25,
+            "exact_source_text": "closing an account",
+            "token_start": 1,
+            "token_end": 4
+          },
+          "exception": null,
+          "exception_type": "NONE",
+          "scope": null
+        }
+      },
+      {
+        "id": "swap_order_1",
+        "node": {
+          "id": 1,
+          "action": {
+            "source_start": 7,
+            "source_end": 25,
+            "exact_source_text": "closing an account",
+            "token_start": 1,
+            "token_end": 4
+          },
+          "kind": "REQUIRE_RESPONSE",
+          "governed_tools": [
+            "ask_confirmation"
+          ],
+          "conditions": [
+            {
+              "source_start": 27,
+              "source_end": 54,
+              "exact_source_text": "retrieve its unpaid balance",
+              "token_start": 5,
+              "token_end": 9,
+              "temporal": "NONE",
+              "parent_action_id": 1
+            },
+            {
+              "source_start": 7,
+              "source_end": 25,
+              "exact_source_text": "closing an account",
+              "token_start": 1,
+              "token_end": 4,
+              "temporal": "PRIOR_TRUE",
+              "parent_action_id": 1
+            }
+          ],
+          "condition_op": "AND",
+          "before": {
+            "source_start": 59,
+            "source_end": 86,
+            "exact_source_text": "ask the customer to confirm",
+            "token_start": 10,
+            "token_end": 15
+          },
+          "exception": null,
+          "exception_type": "NONE",
+          "scope": null
+        }
+      },
+      {
+        "id": "wrong_span_1",
+        "node": {
+          "id": 1,
+          "action": {
+            "source_start": 59,
+            "source_end": 86,
+            "exact_source_text": "ask the customer to confirm",
+            "token_start": 10,
+            "token_end": 15
+          },
+          "kind": "REQUIRE_RESPONSE",
+          "governed_tools": [
+            "ask_confirmation"
+          ],
+          "conditions": [
+            {
+              "source_start": 59,
+              "source_end": 86,
+              "exact_source_text": "ask the customer to confirm",
+              "token_start": 10,
+              "token_end": 15,
+              "temporal": "NONE",
+              "parent_action_id": 1
+            },
+            {
+              "source_start": 7,
+              "source_end": 25,
+              "exact_source_text": "closing an account",
+              "token_start": 1,
+              "token_end": 4,
+              "temporal": "PRIOR_TRUE",
+              "parent_action_id": 1
+            }
+          ],
+          "condition_op": "AND",
+          "before": {
+            "source_start": 7,
+            "source_end": 25,
+            "exact_source_text": "closing an account",
+            "token_start": 1,
+            "token_end": 4
+          },
+          "exception": null,
+          "exception_type": "NONE",
+          "scope": null
+        }
+      },
+      {
+        "id": "neighbor_action_2",
+        "node": {
+          "id": 2,
+          "action": {
+            "source_start": 27,
+            "source_end": 54,
+            "exact_source_text": "retrieve its unpaid balance",
+            "token_start": 5,
+            "token_end": 9
+          },
+          "kind": "FORBID",
+          "governed_tools": [
+            "close_account"
+          ],
+          "conditions": [
+            {
+              "source_start": 27,
+              "source_end": 54,
+              "exact_source_text": "retrieve its unpaid balance",
+              "token_start": 5,
+              "token_end": 9,
+              "temporal": "NONE",
+              "parent_action_id": 2
+            },
+            {
+              "source_start": 106,
+              "source_end": 118,
+              "exact_source_text": "lookup alone",
+              "token_start": 19,
+              "token_end": 21,
+              "temporal": "NONE",
+              "parent_action_id": 2
+            }
+          ],
+          "condition_op": "AND",
+          "before": null,
+          "exception": null,
+          "exception_type": "NONE",
+          "scope": {
+            "source_start": 0,
+            "source_end": 94,
+            "exact_source_text": "Before closing an account, retrieve its unpaid balance and ask the customer to confirm closure",
+            "token_start": 0,
+            "token_end": 16
+          }
+        }
+      },
+      {
+        "id": "wrong_parent_2",
+        "node": {
+          "id": 2,
+          "action": {
+            "source_start": 119,
+            "source_end": 133,
+            "exact_source_text": "does not close",
+            "token_start": 21,
+            "token_end": 24
+          },
+          "kind": "FORBID",
+          "governed_tools": [
+            "close_account"
+          ],
+          "conditions": [
+            {
+              "source_start": 27,
+              "source_end": 54,
+              "exact_source_text": "retrieve its unpaid balance",
+              "token_start": 5,
+              "token_end": 9,
+              "temporal": "NONE",
+              "parent_action_id": 0
+            },
+            {
+              "source_start": 106,
+              "source_end": 118,
+              "exact_source_text": "lookup alone",
+              "token_start": 19,
+              "token_end": 21,
+              "temporal": "NONE",
+              "parent_action_id": 2
+            }
+          ],
+          "condition_op": "AND",
+          "before": null,
+          "exception": null,
+          "exception_type": "NONE",
+          "scope": {
+            "source_start": 0,
+            "source_end": 94,
+            "exact_source_text": "Before closing an account, retrieve its unpaid balance and ask the customer to confirm closure",
+            "token_start": 0,
+            "token_end": 16
+          }
+        }
+      },
+      {
+        "id": "drop_condition_2",
+        "node": {
+          "id": 2,
+          "action": {
+            "source_start": 119,
+            "source_end": 133,
+            "exact_source_text": "does not close",
+            "token_start": 21,
+            "token_end": 24
+          },
+          "kind": "FORBID",
+          "governed_tools": [
+            "close_account"
+          ],
+          "conditions": [
+            {
+              "source_start": 106,
+              "source_end": 118,
+              "exact_source_text": "lookup alone",
+              "token_start": 19,
+              "token_end": 21,
+              "temporal": "NONE",
+              "parent_action_id": 2
+            }
+          ],
+          "condition_op": "AND",
+          "before": null,
+          "exception": null,
+          "exception_type": "NONE",
+          "scope": {
+            "source_start": 0,
+            "source_end": 94,
+            "exact_source_text": "Before closing an account, retrieve its unpaid balance and ask the customer to confirm closure",
+            "token_start": 0,
+            "token_end": 16
+          }
+        }
+      },
+      {
+        "id": "wrong_span_2",
+        "node": {
+          "id": 2,
+          "action": {
+            "source_start": 119,
+            "source_end": 133,
+            "exact_source_text": "does not close",
+            "token_start": 21,
+            "token_end": 24
+          },
+          "kind": "FORBID",
+          "governed_tools": [
+            "close_account"
+          ],
+          "conditions": [
+            {
+              "source_start": 119,
+              "source_end": 133,
+              "exact_source_text": "does not close",
+              "token_start": 21,
+              "token_end": 24,
+              "temporal": "NONE",
+              "parent_action_id": 2
+            },
+            {
+              "source_start": 106,
+              "source_end": 118,
+              "exact_source_text": "lookup alone",
+              "token_start": 19,
+              "token_end": 21,
+              "temporal": "NONE",
+              "parent_action_id": 2
+            }
+          ],
+          "condition_op": "AND",
+          "before": null,
+          "exception": null,
+          "exception_type": "NONE",
+          "scope": {
+            "source_start": 0,
+            "source_end": 94,
+            "exact_source_text": "Before closing an account, retrieve its unpaid balance and ask the customer to confirm closure",
+            "token_start": 0,
+            "token_end": 16
+          }
+        }
+      }
+    ],
+    "checks": [
+      {
+        "id": "base_0",
+        "valid": true,
+        "reason": "SUPPORTED"
+      },
+      {
+        "id": "base_1",
+        "valid": true,
+        "reason": "SUPPORTED"
+      },
+      {
+        "id": "base_2",
+        "valid": true,
+        "reason": "SUPPORTED"
+      },
+      {
+        "id": "neighbor_action_0",
+        "valid": false,
+        "reason": "WRONG_ACTION"
+      },
+      {
+        "id": "wrong_parent_0",
+        "valid": false,
+        "reason": "WRONG_BINDING"
+      },
+      {
+        "id": "drop_condition_0",
+        "valid": false,
+        "reason": "MISSING_CONDITION"
+      },
+      {
+        "id": "swap_order_0",
+        "valid": false,
+        "reason": "WRONG_ORDER"
+      },
+      {
+        "id": "wrong_span_0",
+        "valid": false,
+        "reason": "WRONG_SPAN"
+      },
+      {
+        "id": "neighbor_action_1",
+        "valid": false,
+        "reason": "WRONG_ACTION"
+      },
+      {
+        "id": "wrong_parent_1",
+        "valid": false,
+        "reason": "WRONG_BINDING"
+      },
+      {
+        "id": "drop_condition_1",
+        "valid": false,
+        "reason": "MISSING_CONDITION"
+      },
+      {
+        "id": "swap_order_1",
+        "valid": false,
+        "reason": "WRONG_ORDER"
+      },
+      {
+        "id": "wrong_span_1",
+        "valid": false,
+        "reason": "WRONG_SPAN"
+      },
+      {
+        "id": "neighbor_action_2",
+        "valid": false,
+        "reason": "WRONG_ACTION"
+      },
+      {
+        "id": "wrong_parent_2",
+        "valid": false,
+        "reason": "WRONG_BINDING"
+      },
+      {
+        "id": "drop_condition_2",
+        "valid": false,
+        "reason": "MISSING_CONDITION"
+      },
+      {
+        "id": "wrong_span_2",
+        "valid": false,
+        "reason": "WRONG_SPAN"
+      }
+    ],
+    "calls": [
+      {
+        "stage": "E_verify",
+        "path": "raw/E_verify/subscription_cancel/000_E_verify.json",
+        "error": "",
+        "finish_reason": "stop"
+      }
+    ]
+  }
+}

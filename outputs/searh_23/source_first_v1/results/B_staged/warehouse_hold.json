@@ -1,0 +1,172 @@
+{
+  "case_id": "warehouse_hold",
+  "arm": "B_staged",
+  "model": "ministral-14b-latest",
+  "protocol_sha256": "443b0d4f505a3e2787abf06f346462d83a5442116a4ff3d515ed087cbc938cc9",
+  "query_sha256": "e59665fa810e9b9979ff8ab8c1542b5c11c99ff7ba445a4b14a6ee8f8f70cb4c",
+  "directives": [
+    {
+      "kind": "ORDER",
+      "action_quote": "dispatching the pallet",
+      "governed_tools": [
+        "dispatch_pallet"
+      ],
+      "condition": null,
+      "before_quote": "",
+      "exception_quote": "",
+      "exception_type": "NONE",
+      "scope_quote": "before"
+    },
+    {
+      "kind": "FORBID",
+      "action_quote": "dispatch a pallet",
+      "governed_tools": [
+        "dispatch_pallet"
+      ],
+      "condition": {
+        "op": "AND",
+        "children": [
+          {
+            "op": "ATOM",
+            "quote": "its seal is broken",
+            "temporal": "NONE"
+          },
+          {
+            "op": "ATOM",
+            "quote": "a manager requests immediate delivery",
+            "temporal": "NONE"
+          }
+        ]
+      },
+      "before_quote": "",
+      "exception_quote": "",
+      "exception_type": "EVEN_IF",
+      "scope_quote": "Never"
+    },
+    {
+      "kind": "GATE",
+      "action_quote": "dispatching the pallet",
+      "governed_tools": [
+        "dispatch_pallet"
+      ],
+      "condition": {
+        "op": "AND",
+        "children": [
+          {
+            "op": "ATOM",
+            "quote": "Check the lot temperature",
+            "temporal": "LATEST"
+          },
+          {
+            "op": "ATOM",
+            "quote": "seal is broken",
+            "temporal": "NONE"
+          }
+        ]
+      },
+      "before_quote": "Check the lot temperature before",
+      "exception_quote": "",
+      "exception_type": "NONE",
+      "scope_quote": "dispatching the pallet"
+    },
+    {
+      "kind": "FORBID",
+      "action_quote": "dispatch a pallet",
+      "governed_tools": [
+        "dispatch_pallet"
+      ],
+      "condition": {
+        "op": "AND",
+        "children": [
+          {
+            "op": "ATOM",
+            "quote": "its seal is broken",
+            "temporal": "NONE"
+          },
+          {
+            "op": "NOT",
+            "children": [
+              {
+                "op": "ATOM",
+                "quote": "manager requests immediate delivery",
+                "temporal": "NONE"
+              }
+            ]
+          }
+        ]
+      },
+      "before_quote": "",
+      "exception_quote": "",
+      "exception_type": "EVEN_IF",
+      "scope_quote": ""
+    },
+    {
+      "kind": "FORBID",
+      "action_quote": "",
+      "governed_tools": [
+        "dispatch_pallet"
+      ],
+      "condition": {
+        "op": "AND",
+        "children": [
+          {
+            "op": "ATOM",
+            "quote": "its seal is broken",
+            "temporal": "NONE"
+          },
+          {
+            "op": "ATOM",
+            "quote": "a manager requests immediate delivery",
+            "temporal": "NONE"
+          }
+        ]
+      },
+      "before_quote": "",
+      "exception_quote": "",
+      "exception_type": "EVEN_IF",
+      "scope_quote": ""
+    }
+  ],
+  "tree": null,
+  "errors": [
+    "bad_action_span_0"
+  ],
+  "calls": [
+    {
+      "stage": "B_inventory",
+      "path": "raw/B_staged/warehouse_hold/000_B_inventory.json",
+      "error": "",
+      "finish_reason": "stop"
+    },
+    {
+      "stage": "B_detail",
+      "path": "raw/B_staged/warehouse_hold/001_B_detail.json",
+      "error": "",
+      "finish_reason": "stop"
+    },
+    {
+      "stage": "B_detail",
+      "path": "raw/B_staged/warehouse_hold/002_B_detail.json",
+      "error": "",
+      "finish_reason": "stop"
+    },
+    {
+      "stage": "B_detail",
+      "path": "raw/B_staged/warehouse_hold/003_B_detail.json",
+      "error": "",
+      "finish_reason": "stop"
+    },
+    {
+      "stage": "B_detail",
+      "path": "raw/B_staged/warehouse_hold/004_B_detail.json",
+      "error": "",
+      "finish_reason": "stop"
+    },
+    {
+      "stage": "B_detail",
+      "path": "raw/B_staged/warehouse_hold/005_B_detail.json",
+      "error": "",
+      "finish_reason": "stop"
+    }
+  ]
+}

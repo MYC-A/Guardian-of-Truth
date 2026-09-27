@@ -1,0 +1,50 @@
+{
+  "signature": "95cf7f6a55386a4a721aec1a21c99c66573088e012b079427a2084d4dd32df2b",
+  "stage": "B_detail",
+  "model": "ministral-14b-latest",
+  "query": {
+    "policy": "For test results, verify patient identity before sending the result, then archive the delivery receipt after sending it.",
+    "tools": {
+      "verify_identity": "Check patient identity.",
+      "send_result": "Send the test result.",
+      "archive_receipt": "Archive delivery receipt."
+    },
+    "head": {
+      "kind": "ORDER",
+      "head_quote": "archive the delivery receipt after sending it"
+    }
+  },
+  "raw": "{\n  \"directives\": [\n    {\n      \"kind\": \"ORDER\",\n      \"action_quote\": \"archive the delivery receipt\",\n      \"governed_tools\": [\"archive_receipt\"],\n      \"condition\": {\n        \"op\": \"ATOM\",\n        \"quote\": \"sending the result\",\n        \"temporal\": \"PRIOR_TRUE\",\n        \"children\": []\n      },\n      \"before_quote\": \"verify patient identity before sending the result\",\n      \"exception_quote\": \"\",\n      \"exception_type\": \"NONE\",\n      \"scope_quote\": \"For test results\"\n    }\n  ]\n}",
+  "answer": {
+    "directives": [
+      {
+        "kind": "ORDER",
+        "action_quote": "archive the delivery receipt",
+        "governed_tools": [
+          "archive_receipt"
+        ],
+        "condition": {
+          "op": "ATOM",
+          "quote": "sending the result",
+          "temporal": "PRIOR_TRUE",
+          "children": []
+        },
+        "before_quote": "verify patient identity before sending the result",
+        "exception_quote": "",
+        "exception_type": "NONE",
+        "scope_quote": "For test results"
+      }
+    ]
+  },
+  "error": "",
+  "finish_reason": "stop",
+  "usage": {
+    "prompt_tokens": 443,
+    "total_tokens": 573,
+    "completion_tokens": 130,
+    "prompt_tokens_details": {
+      "cached_tokens": 243
+    },
+    "service_tier": "standard"
+  }
+}

@@ -1,0 +1,61 @@
+{
+  "case_id": "finance_scope",
+  "arm": "B_staged",
+  "model": "ministral-14b-latest",
+  "protocol_sha256": "443b0d4f505a3e2787abf06f346462d83a5442116a4ff3d515ed087cbc938cc9",
+  "query_sha256": "5a1def5d60104a6928a87ad4d11ecf5e48cde85fb2ec881a6a9204d5ecadae11",
+  "directives": [
+    {
+      "kind": "GATE",
+      "action_quote": "",
+      "governed_tools": [
+        "submit_transfer"
+      ],
+      "condition": {
+        "op": "ATOM",
+        "quote": "review the exchange rate",
+        "temporal": "PRIOR_TRUE"
+      },
+      "before_quote": "",
+      "exception_quote": "Domestic payments may be submitted directly",
+      "exception_type": "EXCEPT",
+      "scope_quote": "For foreign payments"
+    },
+    {
+      "kind": "PERMIT",
+      "action_quote": "Domestic payments may be submitted directly",
+      "governed_tools": [
+        "submit_transfer"
+      ],
+      "condition": null,
+      "before_quote": "",
+      "exception_quote": "",
+      "exception_type": "NONE",
+      "scope_quote": ""
+    }
+  ],
+  "tree": null,
+  "errors": [
+    "bad_action_span_0"
+  ],
+  "calls": [
+    {
+      "stage": "B_inventory",
+      "path": "raw/B_staged/finance_scope/000_B_inventory.json",
+      "error": "",
+      "finish_reason": "stop"
+    },
+    {
+      "stage": "B_detail",
+      "path": "raw/B_staged/finance_scope/001_B_detail.json",
+      "error": "",
+      "finish_reason": "stop"
+    },
+    {
+      "stage": "B_detail",
+      "path": "raw/B_staged/finance_scope/002_B_detail.json",
+      "error": "",
+      "finish_reason": "stop"
+    }
+  ]
+}

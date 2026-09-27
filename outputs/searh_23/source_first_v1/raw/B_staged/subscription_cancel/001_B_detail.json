@@ -1,0 +1,63 @@
+{
+  "signature": "836247df4cfd326523bcdb312473a3647300d922f6e9cfaa00dffa3f8423d126",
+  "stage": "B_detail",
+  "model": "ministral-14b-latest",
+  "query": {
+    "policy": "Before closing an account, retrieve its unpaid balance and ask the customer to confirm closure. A balance lookup alone does not close it.",
+    "tools": {
+      "get_balance": "Read unpaid balance.",
+      "ask_confirmation": "Send a confirmation question.",
+      "close_account": "Close account."
+    },
+    "head": {
+      "kind": "ORDER",
+      "head_quote": "Before closing an account, retrieve its unpaid balance"
+    }
+  },
+  "raw": "{\n  \"directives\": [\n    {\n      \"kind\": \"ORDER\",\n      \"action_quote\": \"close_account\",\n      \"governed_tools\": [\"close_account\"],\n      \"condition\": {\n        \"op\": \"AND\",\n        \"quote\": \"\",\n        \"temporal\": \"NONE\",\n        \"children\": [\n          {\n            \"op\": \"ATOM\",\n            \"quote\": \"retrieve its unpaid balance\",\n            \"temporal\": \"PRIOR_TRUE\",\n            \"children\": []\n          },\n          {\n            \"op\": \"ATOM\",\n            \"quote\": \"ask the customer to confirm closure\",\n            \"temporal\": \"PRIOR_TRUE\",\n            \"children\": []\n          }\n        ]\n      },\n      \"before_quote\": \"Before closing an account\",\n      \"exception_quote\": \"\",\n      \"exception_type\": \"NONE\",\n      \"scope_quote\": \"\"\n    }\n  ]\n}",
+  "answer": {
+    "directives": [
+      {
+        "kind": "ORDER",
+        "action_quote": "close_account",
+        "governed_tools": [
+          "close_account"
+        ],
+        "condition": {
+          "op": "AND",
+          "quote": "",
+          "temporal": "NONE",
+          "children": [
+            {
+              "op": "ATOM",
+              "quote": "retrieve its unpaid balance",
+              "temporal": "PRIOR_TRUE",
+              "children": []
+            },
+            {
+              "op": "ATOM",
+              "quote": "ask the customer to confirm closure",
+              "temporal": "PRIOR_TRUE",
+              "children": []
+            }
+          ]
+        },
+        "before_quote": "Before closing an account",
+        "exception_quote": "",
+        "exception_type": "NONE",
+        "scope_quote": ""
+      }
+    ]
+  },
+  "error": "",
+  "finish_reason": "stop",
+  "usage": {
+    "prompt_tokens": 451,
+    "total_tokens": 645,
+    "completion_tokens": 194,
+    "prompt_tokens_details": {
+      "cached_tokens": 243
+    },
+    "service_tier": "standard"
+  }
+}

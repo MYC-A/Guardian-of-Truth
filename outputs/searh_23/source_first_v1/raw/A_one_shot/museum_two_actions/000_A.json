@@ -1,0 +1,107 @@
+{
+  "signature": "2e1a1d1ba1f579e94ad040035b47213d47e2fc30861cc24d6600dc8fd5e452de",
+  "stage": "A",
+  "model": "ministral-14b-latest",
+  "query": {
+    "policy": "The curator may photograph an object. To move the object, first record its location and obtain conservation approval; after the move, notify security.",
+    "tools": {
+      "photograph_object": "Take a photograph.",
+      "record_location": "Record location.",
+      "check_approval": "Read conservation approval.",
+      "move_object": "Move the object.",
+      "notify_security": "Notify security."
+    }
+  },
+  "raw": "{\n  \"directives\": [\n    {\n      \"kind\": \"PERMIT\",\n      \"action_quote\": \"photograph an object\",\n      \"governed_tools\": [\"photograph_object\"],\n      \"condition\": null,\n      \"before_quote\": \"\",\n      \"exception_quote\": \"\",\n      \"exception_type\": \"NONE\",\n      \"scope_quote\": \"curator\"\n    },\n    {\n      \"kind\": \"ORDER\",\n      \"action_quote\": \"move the object\",\n      \"governed_tools\": [\"move_object\"],\n      \"condition\": {\n        \"op\": \"AND\",\n        \"quote\": \"\",\n        \"temporal\": \"NONE\",\n        \"children\": [\n          {\n            \"op\": \"ATOM\",\n            \"quote\": \"record its location\",\n            \"temporal\": \"PRIOR_TRUE\",\n            \"children\": []\n          },\n          {\n            \"op\": \"ATOM\",\n            \"quote\": \"obtain conservation approval\",\n            \"temporal\": \"PRIOR_TRUE\",\n            \"children\": []\n          }\n        ]\n      },\n      \"before_quote\": \"\",\n      \"exception_quote\": \"\",\n      \"exception_type\": \"NONE\",\n      \"scope_quote\": \"\"\n    },\n    {\n      \"kind\": \"ORDER\",\n      \"action_quote\": \"notify security\",\n      \"governed_tools\": [\"notify_security\"],\n      \"condition\": {\n        \"op\": \"ATOM\",\n        \"quote\": \"move the object\",\n        \"temporal\": \"PRIOR_TRUE\",\n        \"children\": []\n      },\n      \"before_quote\": \"\",\n      \"exception_quote\": \"\",\n      \"exception_type\": \"NONE\",\n      \"scope_quote\": \"\"\n    },\n    {\n      \"kind\": \"GATE\",\n      \"action_quote\": \"move the object\",\n      \"governed_tools\": [\"move_object\"],\n      \"condition\": {\n        \"op\": \"ATOM\",\n        \"quote\": \"conservation approval\",\n        \"temporal\": \"LATEST\",\n        \"children\": []\n      },\n      \"before_quote\": \"record its location\",\n      \"exception_quote\": \"\",\n      \"exception_type\": \"NONE\",\n      \"scope_quote\": \"\"\n    }\n  ]\n}",
+  "answer": {
+    "directives": [
+      {
+        "kind": "PERMIT",
+        "action_quote": "photograph an object",
+        "governed_tools": [
+          "photograph_object"
+        ],
+        "condition": null,
+        "before_quote": "",
+        "exception_quote": "",
+        "exception_type": "NONE",
+        "scope_quote": "curator"
+      },
+      {
+        "kind": "ORDER",
+        "action_quote": "move the object",
+        "governed_tools": [
+          "move_object"
+        ],
+        "condition": {
+          "op": "AND",
+          "quote": "",
+          "temporal": "NONE",
+          "children": [
+            {
+              "op": "ATOM",
+              "quote": "record its location",
+              "temporal": "PRIOR_TRUE",
+              "children": []
+            },
+            {
+              "op": "ATOM",
+              "quote": "obtain conservation approval",
+              "temporal": "PRIOR_TRUE",
+              "children": []
+            }
+          ]
+        },
+        "before_quote": "",
+        "exception_quote": "",
+        "exception_type": "NONE",
+        "scope_quote": ""
+      },
+      {
+        "kind": "ORDER",
+        "action_quote": "notify security",
+        "governed_tools": [
+          "notify_security"
+        ],
+        "condition": {
+          "op": "ATOM",
+          "quote": "move the object",
+          "temporal": "PRIOR_TRUE",
+          "children": []
+        },
+        "before_quote": "",
+        "exception_quote": "",
+        "exception_type": "NONE",
+        "scope_quote": ""
+      },
+      {
+        "kind": "GATE",
+        "action_quote": "move the object",
+        "governed_tools": [
+          "move_object"
+        ],
+        "condition": {
+          "op": "ATOM",
+          "quote": "conservation approval",
+          "temporal": "LATEST",
+          "children": []
+        },
+        "before_quote": "record its location",
+        "exception_quote": "",
+        "exception_type": "NONE",
+        "scope_quote": ""
+      }
+    ]
+  },
+  "error": "",
+  "finish_reason": "stop",
+  "usage": {
+    "prompt_tokens": 426,
+    "total_tokens": 901,
+    "completion_tokens": 475,
+    "prompt_tokens_details": {
+      "cached_tokens": 243
+    },
+    "service_tier": "standard"
+  }
+}

@@ -1,0 +1,173 @@
+{
+  "case_id": "subscription_cancel",
+  "arm": "B_staged",
+  "model": "ministral-14b-latest",
+  "protocol_sha256": "443b0d4f505a3e2787abf06f346462d83a5442116a4ff3d515ed087cbc938cc9",
+  "query_sha256": "5ab008a038780c4c82bd49544447583cf56db7a5fa9295a5bfc358dcb41da8f5",
+  "directives": [
+    {
+      "kind": "ORDER",
+      "action_quote": "",
+      "governed_tools": [
+        "close_account"
+      ],
+      "condition": {
+        "op": "AND",
+        "children": [
+          {
+            "op": "ATOM",
+            "quote": "retrieve its unpaid balance",
+            "temporal": "PRIOR_TRUE"
+          },
+          {
+            "op": "ATOM",
+            "quote": "ask the customer to confirm closure",
+            "temporal": "PRIOR_TRUE"
+          }
+        ]
+      },
+      "before_quote": "Before closing an account",
+      "exception_quote": "",
+      "exception_type": "NONE",
+      "scope_quote": ""
+    },
+    {
+      "kind": "ORDER",
+      "action_quote": "",
+      "governed_tools": [
+        "close_account"
+      ],
+      "condition": {
+        "op": "AND",
+        "children": [
+          {
+            "op": "ATOM",
+            "quote": "retrieve its unpaid balance",
+            "temporal": "PRIOR_TRUE"
+          },
+          {
+            "op": "ATOM",
+            "quote": "ask the customer to confirm closure",
+            "temporal": "PRIOR_TRUE"
+          }
+        ]
+      },
+      "before_quote": "",
+      "exception_quote": "",
+      "exception_type": "NONE",
+      "scope_quote": "Before closing an account"
+    },
+    {
+      "kind": "REQUIRE_RESPONSE",
+      "action_quote": "ask the customer to confirm closure",
+      "governed_tools": [
+        "ask_confirmation"
+      ],
+      "condition": {
+        "op": "ATOM",
+        "quote": "retrieve its unpaid balance",
+        "temporal": "PRIOR_TRUE"
+      },
+      "before_quote": "",
+      "exception_quote": "",
+      "exception_type": "NONE",
+      "scope_quote": "Before closing an account"
+    },
+    {
+      "kind": "FORBID",
+      "action_quote": "close it",
+      "governed_tools": [
+        "close_account"
+      ],
+      "condition": {
+        "op": "AND",
+        "children": [
+          {
+            "op": "ATOM",
+            "quote": "A balance lookup alone",
+            "temporal": "NONE"
+          },
+          {
+            "op": "NOT",
+            "children": [
+              {
+                "op": "ATOM",
+                "quote": "ask the customer to confirm closure",
+                "temporal": "NONE"
+              }
+            ]
+          }
+        ]
+      },
+      "before_quote": "",
+      "exception_quote": "",
+      "exception_type": "NONE",
+      "scope_quote": "Before closing an account"
+    },
+    {
+      "kind": "ORDER",
+      "action_quote": "",
+      "governed_tools": [
+        "close_account"
+      ],
+      "condition": {
+        "op": "AND",
+        "children": [
+          {
+            "op": "ATOM",
+            "quote": "retrieve its unpaid balance",
+            "temporal": "PRIOR_TRUE"
+          },
+          {
+            "op": "ATOM",
+            "quote": "ask the customer to confirm closure",
+            "temporal": "PRIOR_TRUE"
+          }
+        ]
+      },
+      "before_quote": "",
+      "exception_quote": "A balance lookup alone does not close it",
+      "exception_type": "EXCEPT",
+      "scope_quote": "Before closing an account"
+    }
+  ],
+  "tree": null,
+  "errors": [
+    "bad_action_span_0",
+    "detail_count_1:2",
+    "bad_action_span_0",
+    "bad_action_span_0"
+  ],
+  "calls": [
+    {
+      "stage": "B_inventory",
+      "path": "raw/B_staged/subscription_cancel/000_B_inventory.json",
+      "error": "",
+      "finish_reason": "stop"
+    },
+    {
+      "stage": "B_detail",
+      "path": "raw/B_staged/subscription_cancel/001_B_detail.json",
+      "error": "",
+      "finish_reason": "stop"
+    },
+    {
+      "stage": "B_detail",
+      "path": "raw/B_staged/subscription_cancel/002_B_detail.json",
+      "error": "",
+      "finish_reason": "stop"
+    },
+    {
+      "stage": "B_detail",
+      "path": "raw/B_staged/subscription_cancel/003_B_detail.json",
+      "error": "",
+      "finish_reason": "stop"
+    },
+    {
+      "stage": "B_detail",
+      "path": "raw/B_staged/subscription_cancel/004_B_detail.json",
+      "error": "",
+      "finish_reason": "stop"
+    }
+  ]
+}

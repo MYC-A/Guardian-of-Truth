@@ -1,0 +1,73 @@
+{
+  "case_id": "laboratory_release",
+  "arm": "A_one_shot",
+  "model": "ministral-14b-latest",
+  "protocol_sha256": "443b0d4f505a3e2787abf06f346462d83a5442116a4ff3d515ed087cbc938cc9",
+  "query_sha256": "3b9b409925db3f3ac55db475a5ccfe65f03d2b259c4fa7bf84c5f0ea4ce97ea6",
+  "directives": [
+    {
+      "kind": "PERMIT",
+      "action_quote": "inspect a specimen",
+      "governed_tools": [
+        "inspect_specimen"
+      ],
+      "condition": null,
+      "before_quote": "",
+      "exception_quote": "",
+      "exception_type": "NONE",
+      "scope_quote": ""
+    },
+    {
+      "kind": "GATE",
+      "action_quote": "release its report",
+      "governed_tools": [
+        "release_report"
+      ],
+      "condition": {
+        "op": "AND",
+        "children": [
+          {
+            "op": "ATOM",
+            "quote": "latest quality check says pass",
+            "temporal": "LATEST"
+          },
+          {
+            "op": "ATOM",
+            "quote": "a supervisor has signed it",
+            "temporal": "LATEST"
+          }
+        ]
+      },
+      "before_quote": "inspect a specimen",
+      "exception_quote": "",
+      "exception_type": "NONE",
+      "scope_quote": ""
+    },
+    {
+      "kind": "ORDER",
+      "action_quote": "release its report",
+      "governed_tools": [
+        "release_report"
+      ],
+      "condition": {
+        "op": "ATOM",
+        "quote": "inspect a specimen",
+        "temporal": "PRIOR_TRUE"
+      },
+      "before_quote": "inspect a specimen",
+      "exception_quote": "",
+      "exception_type": "NONE",
+      "scope_quote": ""
+    }
+  ],
+  "tree": null,
+  "errors": [],
+  "calls": [
+    {
+      "stage": "A",
+      "path": "raw/A_one_shot/laboratory_release/000_A.json",
+      "error": "",
+      "finish_reason": "stop"
+    }
+  ]
+}

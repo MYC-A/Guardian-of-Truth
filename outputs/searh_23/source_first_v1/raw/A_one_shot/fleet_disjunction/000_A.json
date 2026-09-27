@@ -1,0 +1,72 @@
+{
+  "signature": "ac01494ff0319cb4ce0fc423eade6876d6897122b29d50ca5fd46ef81d3b8a3e",
+  "stage": "A",
+  "model": "ministral-14b-latest",
+  "query": {
+    "policy": "A vehicle may leave the depot only if either its safety certificate is current or an emergency waiver has been logged. A route lookup does not release the vehicle.",
+    "tools": {
+      "check_certificate": "Read certificate validity.",
+      "check_waiver": "Read waiver log.",
+      "route_lookup": "Read route data; does not release.",
+      "release_vehicle": "Release the vehicle from depot."
+    }
+  },
+  "raw": "{\n  \"directives\": [\n    {\n      \"kind\": \"GATE\",\n      \"action_quote\": \"release_vehicle\",\n      \"governed_tools\": [\"release_vehicle\"],\n      \"condition\": {\n        \"op\": \"OR\",\n        \"quote\": \"\",\n        \"temporal\": \"NONE\",\n        \"children\": [\n          {\n            \"op\": \"ATOM\",\n            \"quote\": \"safety certificate is current\",\n            \"temporal\": \"LATEST\",\n            \"children\": []\n          },\n          {\n            \"op\": \"ATOM\",\n            \"quote\": \"emergency waiver has been logged\",\n            \"temporal\": \"LATEST\",\n            \"children\": []\n          }\n        ]\n      },\n      \"before_quote\": \"\",\n      \"exception_quote\": \"\",\n      \"exception_type\": \"NONE\",\n      \"scope_quote\": \"\"\n    },\n    {\n      \"kind\": \"DESCRIPTIVE\",\n      \"action_quote\": \"route_lookup\",\n      \"governed_tools\": [\"route_lookup\"],\n      \"condition\": null,\n      \"before_quote\": \"\",\n      \"exception_quote\": \"does not release\",\n      \"exception_type\": \"EXCEPT\",\n      \"scope_quote\": \"\"\n    }\n  ]\n}",
+  "answer": {
+    "directives": [
+      {
+        "kind": "GATE",
+        "action_quote": "release_vehicle",
+        "governed_tools": [
+          "release_vehicle"
+        ],
+        "condition": {
+          "op": "OR",
+          "quote": "",
+          "temporal": "NONE",
+          "children": [
+            {
+              "op": "ATOM",
+              "quote": "safety certificate is current",
+              "temporal": "LATEST",
+              "children": []
+            },
+            {
+              "op": "ATOM",
+              "quote": "emergency waiver has been logged",
+              "temporal": "LATEST",
+              "children": []
+            }
+          ]
+        },
+        "before_quote": "",
+        "exception_quote": "",
+        "exception_type": "NONE",
+        "scope_quote": ""
+      },
+      {
+        "kind": "DESCRIPTIVE",
+        "action_quote": "route_lookup",
+        "governed_tools": [
+          "route_lookup"
+        ],
+        "condition": null,
+        "before_quote": "",
+        "exception_quote": "does not release",
+        "exception_type": "EXCEPT",
+        "scope_quote": ""
+      }
+    ]
+  },
+  "error": "",
+  "finish_reason": "stop",
+  "usage": {
+    "prompt_tokens": 430,
+    "total_tokens": 696,
+    "completion_tokens": 266,
+    "prompt_tokens_details": {
+      "cached_tokens": 0
+    },
+    "service_tier": "standard"
+  }
+}

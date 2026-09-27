@@ -1,0 +1,64 @@
+{
+  "signature": "660465a2a17866554e9acc499ff1b69d6f44703d07802b11c00211668ea439a6",
+  "stage": "B_detail",
+  "model": "ministral-14b-latest",
+  "query": {
+    "policy": "A vehicle may leave the depot only if either its safety certificate is current or an emergency waiver has been logged. A route lookup does not release the vehicle.",
+    "tools": {
+      "check_certificate": "Read certificate validity.",
+      "check_waiver": "Read waiver log.",
+      "route_lookup": "Read route data; does not release.",
+      "release_vehicle": "Release the vehicle from depot."
+    },
+    "head": {
+      "kind": "DESCRIPTIVE",
+      "head_quote": "A vehicle may leave the depot only if either its safety certificate is current or an emergency waiver has been logged"
+    }
+  },
+  "raw": "{\n  \"directives\": [\n    {\n      \"kind\": \"GATE\",\n      \"action_quote\": \"leave the depot\",\n      \"governed_tools\": [\"release_vehicle\"],\n      \"condition\": {\n        \"op\": \"OR\",\n        \"quote\": \"\",\n        \"temporal\": \"NONE\",\n        \"children\": [\n          {\n            \"op\": \"ATOM\",\n            \"quote\": \"its safety certificate is current\",\n            \"temporal\": \"LATEST\",\n            \"children\": []\n          },\n          {\n            \"op\": \"ATOM\",\n            \"quote\": \"an emergency waiver has been logged\",\n            \"temporal\": \"LATEST\",\n            \"children\": []\n          }\n        ]\n      },\n      \"before_quote\": \"\",\n      \"exception_quote\": \"\",\n      \"exception_type\": \"NONE\",\n      \"scope_quote\": \"A vehicle may leave the depot only if\"\n    }\n  ]\n}",
+  "answer": {
+    "directives": [
+      {
+        "kind": "GATE",
+        "action_quote": "leave the depot",
+        "governed_tools": [
+          "release_vehicle"
+        ],
+        "condition": {
+          "op": "OR",
+          "quote": "",
+          "temporal": "NONE",
+          "children": [
+            {
+              "op": "ATOM",
+              "quote": "its safety certificate is current",
+              "temporal": "LATEST",
+              "children": []
+            },
+            {
+              "op": "ATOM",
+              "quote": "an emergency waiver has been logged",
+              "temporal": "LATEST",
+              "children": []
+            }
+          ]
+        },
+        "before_quote": "",
+        "exception_quote": "",
+        "exception_type": "NONE",
+        "scope_quote": "A vehicle may leave the depot only if"
+      }
+    ]
+  },
+  "error": "",
+  "finish_reason": "stop",
+  "usage": {
+    "prompt_tokens": 488,
+    "total_tokens": 687,
+    "completion_tokens": 199,
+    "prompt_tokens_details": {
+      "cached_tokens": 243
+    },
+    "service_tier": "standard"
+  }
+}

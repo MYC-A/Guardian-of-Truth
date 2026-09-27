@@ -1,0 +1,89 @@
+{
+  "case_id": "museum_two_actions",
+  "arm": "A_one_shot",
+  "model": "ministral-14b-latest",
+  "protocol_sha256": "443b0d4f505a3e2787abf06f346462d83a5442116a4ff3d515ed087cbc938cc9",
+  "query_sha256": "09eea898635f70dbf75517d76b57c50d073b523ee48a8f844e593aa32aaba867",
+  "directives": [
+    {
+      "kind": "PERMIT",
+      "action_quote": "photograph an object",
+      "governed_tools": [
+        "photograph_object"
+      ],
+      "condition": null,
+      "before_quote": "",
+      "exception_quote": "",
+      "exception_type": "NONE",
+      "scope_quote": "curator"
+    },
+    {
+      "kind": "ORDER",
+      "action_quote": "move the object",
+      "governed_tools": [
+        "move_object"
+      ],
+      "condition": {
+        "op": "AND",
+        "children": [
+          {
+            "op": "ATOM",
+            "quote": "record its location",
+            "temporal": "PRIOR_TRUE"
+          },
+          {
+            "op": "ATOM",
+            "quote": "obtain conservation approval",
+            "temporal": "PRIOR_TRUE"
+          }
+        ]
+      },
+      "before_quote": "",
+      "exception_quote": "",
+      "exception_type": "NONE",
+      "scope_quote": ""
+    },
+    {
+      "kind": "ORDER",
+      "action_quote": "notify security",
+      "governed_tools": [
+        "notify_security"
+      ],
+      "condition": {
+        "op": "ATOM",
+        "quote": "move the object",
+        "temporal": "PRIOR_TRUE"
+      },
+      "before_quote": "",
+      "exception_quote": "",
+      "exception_type": "NONE",
+      "scope_quote": ""
+    },
+    {
+      "kind": "GATE",
+      "action_quote": "move the object",
+      "governed_tools": [
+        "move_object"
+      ],
+      "condition": {
+        "op": "ATOM",
+        "quote": "conservation approval",
+        "temporal": "LATEST"
+      },
+      "before_quote": "record its location",
+      "exception_quote": "",
+      "exception_type": "NONE",
+      "scope_quote": ""
+    }
+  ],
+  "tree": null,
+  "errors": [],
+  "calls": [
+    {
+      "stage": "A",
+      "path": "raw/A_one_shot/museum_two_actions/000_A.json",
+      "error": "",
+      "finish_reason": "stop"
+    }
+  ]
+}
