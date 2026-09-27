@@ -1,0 +1,482 @@
+{
+  "systems": {
+    "head": "Read ONE ORIGINAL policy clause and the declared tool catalog.\nInventory EVERY independent normative direction. Return JSON only:\n{\"heads\":[{\"kind\":\"PRECONDITION|PROHIBITION|PROHIBITION_IF|PERMISSION|ORDERING|REQUIRE_RESPONSE|DESCRIPTIVE|UNSUPPORTED\",\"governed_tools\":[\"exact declared tool name\"],\"prerequisite_tools\":[\"exact declared tool name\"],\"action_meaning\":\"brief distinct action/facet, no verdict\"}]}.\nPRECONDITION: a fact/check/approval must hold before doing governed action.\nORDERING: TWO distinct executable business operations must occur in order;\ngoverned_tools are SECOND operations, prerequisite_tools are FIRST operations.\nA read/check/lookup before an action is a PRECONDITION, not ORDERING.\nPROHIBITION_IF: governed action is forbidden under a stated condition.\nPROHIBITION: unconditionally forbidden action. PERMISSION: explicitly allowed.\nIf a sentence allows one facet but forbids another, return TWO heads even if\nthe same tool implements both; distinguish facets in action_meaning.\nIf one action can be performed by several declared tools, list ALL of them.\nREQUIRE_RESPONSE: duty to say/ask/remind something; governed_tools is [].\nDESCRIPTIVE: relevant statement about what a tool does/does not do, with no\nindependent command. Preserve it as a head with governed_tools [].\nUNSUPPORTED: material rule whose kind you cannot represent; never discard it.\nRequests, lookups, and audit-writing are not execution of a later operation.\nDo not infer tool effects from a name. Do not inspect any trace or decide a case.\n",
+    "anchor": "Given ONE candidate policy head and the ORIGINAL clause,\ncopy the SHORTEST exact continuous substring naming the head's restricted,\nallowed, forbidden, required or described action. Return JSON only:\n{\"action_quote\":\"exact substring or empty if no exact action span\"}.\nDo not copy a condition, approval, lookup or result in place of the action.\nPreserve original inflection and spelling, including typos. Never paraphrase.\nDo not change the head's kind or tool set. No case verdict.\n"
+  },
+  "tasks": [
+    {
+      "id": "retail_cancel",
+      "split": "viewed_public46_clause",
+      "query": {
+        "policy": "An order can only be cancelled if its status is 'pending', and you should check its status before taking the action.",
+        "tools": {
+          "calculate": "- calculate — Calculate the result of a mathematical expression.",
+          "cancel_pending_order": "- cancel_pending_order — Cancel a pending order. If the order is already processed or delivered,",
+          "exchange_delivered_order_items": "- exchange_delivered_order_items — Exchange items in a delivered order to new items of the same product type.",
+          "find_user_id_by_name_zip": "- find_user_id_by_name_zip — Find user id by first name, last name, and zip code. If the user is not found, the function",
+          "find_user_id_by_email": "- find_user_id_by_email — Find user id by email. If the user is not found, the function will return an error message.",
+          "get_order_details": "- get_order_details — Get the status and details of an order.",
+          "get_product_details": "- get_product_details — Get the inventory details of a product.",
+          "get_item_details": "- get_item_details — Get the inventory details of an item.",
+          "get_user_details": "- get_user_details — Get the details of a user, including their orders.",
+          "list_all_product_types": "- list_all_product_types — List the name and product id of all product types.",
+          "modify_pending_order_address": "- modify_pending_order_address — Modify the shipping address of a pending order. The agent needs to explain the modification detail and ask for explicit user confirmation (yes/no) to proceed.",
+          "modify_pending_order_items": "- modify_pending_order_items — Modify items in a pending order to new items of the same product type. For a pending order, this function can only be called once. The agent needs to explain the exchange detail and ask for explicit user confirmation (yes/no) to proceed.",
+          "modify_pending_order_payment": "- modify_pending_order_payment — Modify the payment method of a pending order. The agent needs to explain the modification detail and ask for explicit user confirmation (yes/no) to proceed.",
+          "modify_user_address": "- modify_user_address — Modify the default address of a user. The agent needs to explain the modification detail and ask for explicit user confirmation (yes/no) to proceed.",
+          "return_delivered_order_items": "- return_delivered_order_items — Return some items of a delivered order.",
+          "transfer_to_human_agents": "- transfer_to_human_agents — Transfer the user to a human agent, with a summary of the user's issue."
+        }
+      },
+      "expected": [
+        {
+          "kind": "PRECONDITION",
+          "governed_tools": [
+            "cancel_pending_order"
+          ],
+          "prerequisite_tools": [],
+          "action_quote": "cancelled"
+        }
+      ]
+    },
+    {
+      "id": "retail_modify",
+      "split": "viewed_public46_clause",
+      "query": {
+        "policy": "An order can only be modified if its status is 'pending', and you should check its status before taking the action.",
+        "tools": {
+          "calculate": "- calculate — Calculate the result of a mathematical expression.",
+          "cancel_pending_order": "- cancel_pending_order — Cancel a pending order. If the order is already processed or delivered,",
+          "exchange_delivered_order_items": "- exchange_delivered_order_items — Exchange items in a delivered order to new items of the same product type.",
+          "find_user_id_by_name_zip": "- find_user_id_by_name_zip — Find user id by first name, last name, and zip code. If the user is not found, the function",
+          "find_user_id_by_email": "- find_user_id_by_email — Find user id by email. If the user is not found, the function will return an error message.",
+          "get_order_details": "- get_order_details — Get the status and details of an order.",
+          "get_product_details": "- get_product_details — Get the inventory details of a product.",
+          "get_item_details": "- get_item_details — Get the inventory details of an item.",
+          "get_user_details": "- get_user_details — Get the details of a user, including their orders.",
+          "list_all_product_types": "- list_all_product_types — List the name and product id of all product types.",
+          "modify_pending_order_address": "- modify_pending_order_address — Modify the shipping address of a pending order. The agent needs to explain the modification detail and ask for explicit user confirmation (yes/no) to proceed.",
+          "modify_pending_order_items": "- modify_pending_order_items — Modify items in a pending order to new items of the same product type. For a pending order, this function can only be called once. The agent needs to explain the exchange detail and ask for explicit user confirmation (yes/no) to proceed.",
+          "modify_pending_order_payment": "- modify_pending_order_payment — Modify the payment method of a pending order. The agent needs to explain the modification detail and ask for explicit user confirmation (yes/no) to proceed.",
+          "modify_user_address": "- modify_user_address — Modify the default address of a user. The agent needs to explain the modification detail and ask for explicit user confirmation (yes/no) to proceed.",
+          "return_delivered_order_items": "- return_delivered_order_items — Return some items of a delivered order.",
+          "transfer_to_human_agents": "- transfer_to_human_agents — Transfer the user to a human agent, with a summary of the user's issue."
+        }
+      },
+      "expected": [
+        {
+          "kind": "PRECONDITION",
+          "governed_tools": [
+            "modify_pending_order_address",
+            "modify_pending_order_items",
+            "modify_pending_order_payment"
+          ],
+          "prerequisite_tools": [],
+          "action_quote": "modified"
+        }
+      ]
+    },
+    {
+      "id": "retail_exchange",
+      "split": "viewed_public46_clause",
+      "query": {
+        "policy": "An order can only be exchanged if its status is 'delivered', and you should check its status before taking the action. In particular, remember to remind the customer to confirm they have provided all items to be exchanged.",
+        "tools": {
+          "calculate": "- calculate — Calculate the result of a mathematical expression.",
+          "cancel_pending_order": "- cancel_pending_order — Cancel a pending order. If the order is already processed or delivered,",
+          "exchange_delivered_order_items": "- exchange_delivered_order_items — Exchange items in a delivered order to new items of the same product type.",
+          "find_user_id_by_name_zip": "- find_user_id_by_name_zip — Find user id by first name, last name, and zip code. If the user is not found, the function",
+          "find_user_id_by_email": "- find_user_id_by_email — Find user id by email. If the user is not found, the function will return an error message.",
+          "get_order_details": "- get_order_details — Get the status and details of an order.",
+          "get_product_details": "- get_product_details — Get the inventory details of a product.",
+          "get_item_details": "- get_item_details — Get the inventory details of an item.",
+          "get_user_details": "- get_user_details — Get the details of a user, including their orders.",
+          "list_all_product_types": "- list_all_product_types — List the name and product id of all product types.",
+          "modify_pending_order_address": "- modify_pending_order_address — Modify the shipping address of a pending order. The agent needs to explain the modification detail and ask for explicit user confirmation (yes/no) to proceed.",
+          "modify_pending_order_items": "- modify_pending_order_items — Modify items in a pending order to new items of the same product type. For a pending order, this function can only be called once. The agent needs to explain the exchange detail and ask for explicit user confirmation (yes/no) to proceed.",
+          "modify_pending_order_payment": "- modify_pending_order_payment — Modify the payment method of a pending order. The agent needs to explain the modification detail and ask for explicit user confirmation (yes/no) to proceed.",
+          "modify_user_address": "- modify_user_address — Modify the default address of a user. The agent needs to explain the modification detail and ask for explicit user confirmation (yes/no) to proceed.",
+          "return_delivered_order_items": "- return_delivered_order_items — Return some items of a delivered order.",
+          "transfer_to_human_agents": "- transfer_to_human_agents — Transfer the user to a human agent, with a summary of the user's issue."
+        }
+      },
+      "expected": [
+        {
+          "kind": "PRECONDITION",
+          "governed_tools": [
+            "exchange_delivered_order_items"
+          ],
+          "prerequisite_tools": [],
+          "action_quote": "only be exchanged"
+        },
+        {
+          "kind": "REQUIRE_RESPONSE",
+          "governed_tools": [],
+          "prerequisite_tools": [],
+          "action_quote": "remind the customer to confirm they have provided all items to be exchanged"
+        }
+      ]
+    },
+    {
+      "id": "airline_baggage",
+      "split": "viewed_public46_clause",
+      "query": {
+        "policy": "- The user can add but not remove checked bags.",
+        "tools": {
+          "book_reservation": "- book_reservation — Book a reservation.",
+          "calculate": "- calculate — Calculate the result of a mathematical expression.",
+          "cancel_reservation": "- cancel_reservation — Cancel the whole reservation.",
+          "get_reservation_details": "- get_reservation_details — Get the details of a reservation.",
+          "get_user_details": "- get_user_details — Get the details of a user, including their reservations.",
+          "list_all_airports": "- list_all_airports — Returns a list of all available airports.",
+          "search_direct_flight": "- search_direct_flight — Search for direct flights between two cities on a specific date.",
+          "search_onestop_flight": "- search_onestop_flight — Search for one-stop flights between two cities on a specific date.",
+          "send_certificate": "- send_certificate — Send a certificate to a user. Be careful!",
+          "transfer_to_human_agents": "- transfer_to_human_agents — Transfer the user to a human agent, with a summary of the user's issue.",
+          "update_reservation_baggages": "- update_reservation_baggages — Update the baggage information of a reservation.",
+          "update_reservation_flights": "- update_reservation_flights — Update the flight information of a reservation.",
+          "update_reservation_passengers": "- update_reservation_passengers — Update the passenger information of a reservation.",
+          "get_flight_status": "- get_flight_status — Get the status of a flight."
+        }
+      },
+      "expected": [
+        {
+          "kind": "PERMISSION",
+          "governed_tools": [
+            "update_reservation_baggages"
+          ],
+          "prerequisite_tools": [],
+          "action_quote": "add"
+        },
+        {
+          "kind": "PROHIBITION",
+          "governed_tools": [
+            "update_reservation_baggages"
+          ],
+          "prerequisite_tools": [],
+          "action_quote": "remove checked bags"
+        }
+      ]
+    },
+    {
+      "id": "airline_passenger_count",
+      "split": "viewed_public46_clause",
+      "query": {
+        "policy": "- The user can modify passengers but cannot modify the number of passengers.",
+        "tools": {
+          "book_reservation": "- book_reservation — Book a reservation.",
+          "calculate": "- calculate — Calculate the result of a mathematical expression.",
+          "cancel_reservation": "- cancel_reservation — Cancel the whole reservation.",
+          "get_reservation_details": "- get_reservation_details — Get the details of a reservation.",
+          "get_user_details": "- get_user_details — Get the details of a user, including their reservations.",
+          "list_all_airports": "- list_all_airports — Returns a list of all available airports.",
+          "search_direct_flight": "- search_direct_flight — Search for direct flights between two cities on a specific date.",
+          "search_onestop_flight": "- search_onestop_flight — Search for one-stop flights between two cities on a specific date.",
+          "send_certificate": "- send_certificate — Send a certificate to a user. Be careful!",
+          "transfer_to_human_agents": "- transfer_to_human_agents — Transfer the user to a human agent, with a summary of the user's issue.",
+          "update_reservation_baggages": "- update_reservation_baggages — Update the baggage information of a reservation.",
+          "update_reservation_flights": "- update_reservation_flights — Update the flight information of a reservation.",
+          "update_reservation_passengers": "- update_reservation_passengers — Update the passenger information of a reservation.",
+          "get_flight_status": "- get_flight_status — Get the status of a flight."
+        }
+      },
+      "expected": [
+        {
+          "kind": "PERMISSION",
+          "governed_tools": [
+            "update_reservation_passengers"
+          ],
+          "prerequisite_tools": [],
+          "action_quote": "modify passengers"
+        },
+        {
+          "kind": "PROHIBITION",
+          "governed_tools": [
+            "update_reservation_passengers"
+          ],
+          "prerequisite_tools": [],
+          "action_quote": "modify the number of passengers"
+        }
+      ]
+    },
+    {
+      "id": "telecom_resume",
+      "split": "viewed_public46_clause",
+      "query": {
+        "policy": "You are not allowed to lift the suspension if the line's contract end date is in the past, even if the user has paid all their overdue bills.",
+        "tools": {
+          "get_customer_by_phone": "- get_customer_by_phone — Finds a customer by their primary contact or line phone number.",
+          "get_customer_by_id": "- get_customer_by_id — Retrieves a customer directly by their unique ID.",
+          "get_customer_by_name": "- get_customer_by_name — Searches for customers by name and DOB. May return multiple matches if names are similar,",
+          "get_details_by_id": "- get_details_by_id — Retrieves the details for a given ID.",
+          "suspend_line": "- suspend_line — Suspends a specific line (max 6 months).",
+          "resume_line": "- resume_line — Resumes a suspended line.",
+          "get_bills_for_customer": "- get_bills_for_customer — Retrieves a list of the customer's bills, most recent first.",
+          "send_payment_request": "- send_payment_request — Sends a payment request to the customer for a specific bill.",
+          "get_data_usage": "- get_data_usage — Retrieves current billing cycle data usage for a line, including data",
+          "enable_roaming": "- enable_roaming — Enables international roaming on a line.",
+          "disable_roaming": "- disable_roaming — Disables international roaming on a line.",
+          "transfer_to_human_agents": "- transfer_to_human_agents — Transfer the user to a human agent, with a summary of the user's issue.",
+          "refuel_data": "- refuel_data — Refuels data for a specific line, adding to the customer's bill."
+        }
+      },
+      "expected": [
+        {
+          "kind": "PROHIBITION_IF",
+          "governed_tools": [
+            "resume_line"
+          ],
+          "prerequisite_tools": [],
+          "action_quote": "lift the suspension"
+        }
+      ]
+    },
+    {
+      "id": "telecom_payment_request",
+      "split": "viewed_public46_clause",
+      "query": {
+        "policy": "- The send payement request tool will not check if the bill is overdue. You should always check that the bill is overdue before sending a payment request.",
+        "tools": {
+          "get_customer_by_phone": "- get_customer_by_phone — Finds a customer by their primary contact or line phone number.",
+          "get_customer_by_id": "- get_customer_by_id — Retrieves a customer directly by their unique ID.",
+          "get_customer_by_name": "- get_customer_by_name — Searches for customers by name and DOB. May return multiple matches if names are similar,",
+          "get_details_by_id": "- get_details_by_id — Retrieves the details for a given ID.",
+          "suspend_line": "- suspend_line — Suspends a specific line (max 6 months).",
+          "resume_line": "- resume_line — Resumes a suspended line.",
+          "get_bills_for_customer": "- get_bills_for_customer — Retrieves a list of the customer's bills, most recent first.",
+          "send_payment_request": "- send_payment_request — Sends a payment request to the customer for a specific bill.",
+          "get_data_usage": "- get_data_usage — Retrieves current billing cycle data usage for a line, including data",
+          "enable_roaming": "- enable_roaming — Enables international roaming on a line.",
+          "disable_roaming": "- disable_roaming — Disables international roaming on a line.",
+          "transfer_to_human_agents": "- transfer_to_human_agents — Transfer the user to a human agent, with a summary of the user's issue.",
+          "refuel_data": "- refuel_data — Refuels data for a specific line, adding to the customer's bill."
+        }
+      },
+      "expected": [
+        {
+          "kind": "DESCRIPTIVE",
+          "governed_tools": [],
+          "prerequisite_tools": [],
+          "action_quote": "will not check if the bill is overdue"
+        },
+        {
+          "kind": "PRECONDITION",
+          "governed_tools": [
+            "send_payment_request"
+          ],
+          "prerequisite_tools": [],
+          "action_quote": "sending a payment request"
+        }
+      ]
+    },
+    {
+      "id": "records_dev",
+      "split": "viewed_prior_clause",
+      "query": {
+        "policy": "A document may be published only after its owner approval check has returned approved for that document AND the latest classification check for the same document reports public. Submitting a publication request does not publish it.",
+        "tools": {
+          "check_owner_approval": {
+            "description": "Check recorded owner approval for a document; no publication occurs.",
+            "id": "document_id",
+            "result": "approved"
+          },
+          "check_classification": {
+            "description": "Check whether the document is public; no publication occurs.",
+            "id": "document_id",
+            "result": "public"
+          },
+          "submit_publication_request": {
+            "description": "Submit a request for future publication; does not publish.",
+            "id": "document_id",
+            "result": "accepted"
+          },
+          "publish_document": {
+            "description": "Publish the document now.",
+            "id": "document_id",
+            "result": "success"
+          }
+        }
+      },
+      "expected": [
+        {
+          "kind": "PRECONDITION",
+          "governed_tools": [
+            "publish_document"
+          ],
+          "prerequisite_tools": [],
+          "action_quote": "published"
+        }
+      ]
+    },
+    {
+      "id": "hotel_cancellation_order",
+      "split": "viewed_prior_clause",
+      "query": {
+        "policy": "For paid reservations, process cancellation FIRST and the refund SECOND; never refund before cancelling.",
+        "tools": {
+          "lookup_reservation": {
+            "description": "- lookup_reservation — Get the details of a reservation."
+          },
+          "get_guest_profile": {
+            "description": "- get_guest_profile — Get the guest profile by user ID."
+          },
+          "verify_identity": {
+            "description": "- verify_identity — Verify that the name on the guest ID matches the name on the reservation."
+          },
+          "check_supervisor_approval": {
+            "description": "- check_supervisor_approval — Check whether supervisor approval is recorded for a reservation."
+          },
+          "record_supervisor_approval": {
+            "description": "- record_supervisor_approval — Record supervisor approval for a pending refund."
+          },
+          "process_refund": {
+            "description": "- process_refund — Process a refund to the original payment method."
+          },
+          "cancel_reservation": {
+            "description": "- cancel_reservation — Cancel the whole reservation."
+          },
+          "get_payment_status": {
+            "description": "- get_payment_status — Get the status of a payment."
+          },
+          "charge_card": {
+            "description": "- charge_card — Charge the payment card on file."
+          },
+          "escalate_to_payment_desk": {
+            "description": "- escalate_to_payment_desk — Escalate a payment issue to the payment desk."
+          },
+          "grant_late_checkout": {
+            "description": "- grant_late_checkout — Grant a late checkout for a reservation."
+          },
+          "modify_reservation": {
+            "description": "- modify_reservation — Modify a reservation."
+          },
+          "search_incident_reports": {
+            "description": "- search_incident_reports — Search incident reports for a reservation."
+          },
+          "get_incident_report": {
+            "description": "- get_incident_report — Get a documented incident report."
+          },
+          "issue_compensation": {
+            "description": "- issue_compensation — Issue compensation for a documented incident."
+          },
+          "transfer_to_human_agents": {
+            "description": "- transfer_to_human_agents — Transfer the user to a human agent, with a summary of the user's issue."
+          }
+        }
+      },
+      "expected": [
+        {
+          "kind": "ORDERING",
+          "governed_tools": [
+            "process_refund"
+          ],
+          "prerequisite_tools": [
+            "cancel_reservation"
+          ],
+          "action_quote": "the refund SECOND"
+        }
+      ]
+    },
+    {
+      "id": "parcel_handover_transfer",
+      "split": "viewed_prior_clause",
+      "query": {
+        "policy": "A parcel may be handed over only after its barcode check has returned valid AND its latest custody check reports ready. Filing a handover request does not hand it over.",
+        "tools": {
+          "check_barcode": {
+            "description": "Read barcode validity for parcel; no handover.",
+            "id": "parcel_id",
+            "result": "valid"
+          },
+          "check_custody": {
+            "description": "Read current custody readiness; no handover.",
+            "id": "parcel_id",
+            "result": "ready"
+          },
+          "file_handover_request": {
+            "description": "Request later parcel handover; does not hand it over.",
+            "id": "parcel_id",
+            "result": "accepted"
+          },
+          "handover_parcel": {
+            "description": "Hand over the parcel now.",
+            "id": "parcel_id",
+            "result": "success"
+          }
+        }
+      },
+      "expected": [
+        {
+          "kind": "PRECONDITION",
+          "governed_tools": [
+            "handover_parcel"
+          ],
+          "prerequisite_tools": [],
+          "action_quote": "handed over"
+        }
+      ]
+    },
+    {
+      "id": "credit_preview_new",
+      "split": "v3_new_authored",
+      "query": {
+        "policy": "You may preview a credit, but you must never issue a credit without recorded approval.",
+        "tools": {
+          "preview_credit": "Show a draft credit without posting it.",
+          "check_approval": "Read recorded credit approval; does not post credit.",
+          "issue_credit": "Post a credit to the customer's balance."
+        }
+      },
+      "expected": [
+        {
+          "kind": "PERMISSION",
+          "governed_tools": [
+            "preview_credit"
+          ],
+          "prerequisite_tools": [],
+          "action_quote": "preview a credit"
+        },
+        {
+          "kind": "PRECONDITION",
+          "governed_tools": [
+            "issue_credit"
+          ],
+          "prerequisite_tools": [],
+          "action_quote": "issue a credit"
+        }
+      ]
+    },
+    {
+      "id": "archive_release_new",
+      "split": "v3_new_authored",
+      "query": {
+        "policy": "An archive may only be released after its retention status is checked. Release through either publish_archive or publish_public_copy; filing a release request is not release.",
+        "tools": {
+          "check_retention": "Read archive retention status; no release.",
+          "publish_archive": "Release an archive.",
+          "publish_public_copy": "Release a public archive copy.",
+          "file_release_request": "File a request for a future release."
+        }
+      },
+      "expected": [
+        {
+          "kind": "PRECONDITION",
+          "governed_tools": [
+            "publish_archive",
+            "publish_public_copy"
+          ],
+          "prerequisite_tools": [],
+          "action_quote": "released"
+        },
+        {
+          "kind": "DESCRIPTIVE",
+          "governed_tools": [],
+          "prerequisite_tools": [],
+          "action_quote": "filing a release request is not release"
+        }
+      ]
+    }
+  ],
+  "max_tokens": 650,
+  "note": "post-hoc after V1/V2/public review; two new authored contrasts; scope only"
+}
