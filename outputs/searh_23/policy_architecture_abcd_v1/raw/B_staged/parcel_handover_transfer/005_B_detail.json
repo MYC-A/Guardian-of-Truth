@@ -1,0 +1,62 @@
+{
+  "signature": "52d2faeef28f131479b70650aeb58a0cf0a1fc84fea97eb7d9e074cb1a91678c",
+  "stage": "B_detail",
+  "model": "ministral-14b-latest",
+  "query": {
+    "policy": "A parcel may be handed over only after its barcode check has returned valid AND its latest custody check reports ready. Filing a handover request does not hand it over.",
+    "tools": {
+      "check_barcode": {
+        "description": "Read barcode validity for parcel; no handover.",
+        "id": "parcel_id",
+        "result": "valid"
+      },
+      "check_custody": {
+        "description": "Read current custody readiness; no handover.",
+        "id": "parcel_id",
+        "result": "ready"
+      },
+      "file_handover_request": {
+        "description": "Request later parcel handover; does not hand it over.",
+        "id": "parcel_id",
+        "result": "accepted"
+      },
+      "handover_parcel": {
+        "description": "Hand over the parcel now.",
+        "id": "parcel_id",
+        "result": "success"
+      }
+    },
+    "head": {
+      "kind": "DESCRIPTIVE",
+      "head_quote": "Filing a handover request does not hand it over."
+    }
+  },
+  "raw": "{\n  \"directives\": [\n    {\n      \"kind\": \"DESCRIPTIVE\",\n      \"action_quote\": \"Filing a handover request\",\n      \"governed_tools\": [\"file_handover_request\"],\n      \"condition\": null,\n      \"before_quote\": \"\",\n      \"exception_quote\": \"does not hand it over\",\n      \"exception_type\": \"NONE\",\n      \"scope_quote\": \"\"\n    }\n  ]\n}",
+  "answer": {
+    "directives": [
+      {
+        "kind": "DESCRIPTIVE",
+        "action_quote": "Filing a handover request",
+        "governed_tools": [
+          "file_handover_request"
+        ],
+        "condition": null,
+        "before_quote": "",
+        "exception_quote": "does not hand it over",
+        "exception_type": "NONE",
+        "scope_quote": ""
+      }
+    ]
+  },
+  "error": "",
+  "finish_reason": "stop",
+  "usage": {
+    "prompt_tokens": 517,
+    "total_tokens": 612,
+    "completion_tokens": 95,
+    "prompt_tokens_details": {
+      "cached_tokens": 228
+    },
+    "service_tier": "standard"
+  }
+}

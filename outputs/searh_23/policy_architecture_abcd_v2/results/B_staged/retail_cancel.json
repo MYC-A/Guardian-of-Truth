@@ -1,0 +1,74 @@
+{
+  "case_id": "retail_cancel",
+  "arm": "B_staged",
+  "model": "ministral-14b-latest",
+  "protocol_sha256": "7c047f7e198b28d42d93138d8b0a4cff554af910df109456922942c2f5f5f6ea",
+  "query_sha256": "81fc1e560774421cd5d7ba0e4ead2a773f7b0746dc7d9e95014d4e81fd03f4a5",
+  "directives": [
+    {
+      "kind": "GATE",
+      "action_quote": "",
+      "governed_tools": [
+        "cancel_pending_order"
+      ],
+      "condition": {
+        "op": "AND",
+        "children": [
+          {
+            "op": "ATOM",
+            "quote": "status is 'pending'",
+            "temporal": "LATEST"
+          },
+          {
+            "op": "ATOM",
+            "quote": "check its status",
+            "temporal": "PRIOR_TRUE"
+          }
+        ]
+      },
+      "before_quote": "",
+      "exception_quote": "",
+      "exception_type": "NONE",
+      "scope_quote": "An order can only be cancelled"
+    },
+    {
+      "kind": "GATE",
+      "action_quote": "",
+      "governed_tools": [
+        "cancel_pending_order"
+      ],
+      "condition": null,
+      "before_quote": "",
+      "exception_quote": "",
+      "exception_type": "NONE",
+      "scope_quote": "An order can only be cancelled if"
+    }
+  ],
+  "tree": null,
+  "errors": [
+    "bad_action_span_0",
+    "bad_action_span_0",
+    "invalid_head_2",
+    "invalid_head_3"
+  ],
+  "calls": [
+    {
+      "stage": "B_inventory",
+      "path": "raw/B_staged/retail_cancel/000_B_inventory.json",
+      "error": "",
+      "finish_reason": "stop"
+    },
+    {
+      "stage": "B_detail",
+      "path": "raw/B_staged/retail_cancel/001_B_detail.json",
+      "error": "",
+      "finish_reason": "stop"
+    },
+    {
+      "stage": "B_detail",
+      "path": "raw/B_staged/retail_cancel/002_B_detail.json",
+      "error": "",
+      "finish_reason": "stop"
+    }
+  ]
+}

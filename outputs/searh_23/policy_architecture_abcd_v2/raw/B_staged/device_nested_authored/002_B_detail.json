@@ -1,0 +1,63 @@
+{
+  "signature": "7981d1a28709622635bf5b24ed2d02627d0bff918ceca678c27ae759c3baefe6",
+  "stage": "B_detail",
+  "model": "ministral-14b-latest",
+  "query": {
+    "policy": "For replacement devices, verify approval before performing the swap, and notify the customer after the swap.",
+    "tools": {
+      "lookup_approval": "Look up approval; does not replace a device.",
+      "perform_swap": "Replace the device.",
+      "notify_customer": "Send a customer notification."
+    },
+    "head": {
+      "kind": "ORDER",
+      "head_quote": "notify the customer after the swap"
+    }
+  },
+  "raw": "{\n  \"directives\": [\n    {\n      \"kind\": \"ORDER\",\n      \"action_quote\": \"notify the customer after the swap\",\n      \"governed_tools\": [\"notify_customer\"],\n      \"condition\": {\n        \"op\": \"AND\",\n        \"quote\": \"\",\n        \"temporal\": \"NONE\",\n        \"children\": [\n          {\n            \"op\": \"ATOM\",\n            \"quote\": \"verify approval before performing the swap\",\n            \"temporal\": \"PRIOR_TRUE\",\n            \"children\": []\n          },\n          {\n            \"op\": \"ATOM\",\n            \"quote\": \"perform the swap\",\n            \"temporal\": \"LATEST\",\n            \"children\": []\n          }\n        ]\n      },\n      \"before_quote\": \"\",\n      \"exception_quote\": \"\",\n      \"exception_type\": \"NONE\",\n      \"scope_quote\": \"For replacement devices\"\n    }\n  ]\n}",
+  "answer": {
+    "directives": [
+      {
+        "kind": "ORDER",
+        "action_quote": "notify the customer after the swap",
+        "governed_tools": [
+          "notify_customer"
+        ],
+        "condition": {
+          "op": "AND",
+          "quote": "",
+          "temporal": "NONE",
+          "children": [
+            {
+              "op": "ATOM",
+              "quote": "verify approval before performing the swap",
+              "temporal": "PRIOR_TRUE",
+              "children": []
+            },
+            {
+              "op": "ATOM",
+              "quote": "perform the swap",
+              "temporal": "LATEST",
+              "children": []
+            }
+          ]
+        },
+        "before_quote": "",
+        "exception_quote": "",
+        "exception_type": "NONE",
+        "scope_quote": "For replacement devices"
+      }
+    ]
+  },
+  "error": "",
+  "finish_reason": "stop",
+  "usage": {
+    "prompt_tokens": 446,
+    "total_tokens": 639,
+    "completion_tokens": 193,
+    "prompt_tokens_details": {
+      "cached_tokens": 0
+    },
+    "service_tier": "standard"
+  }
+}

@@ -1,0 +1,64 @@
+{
+  "case_id": "credit_preview_new",
+  "arm": "B_staged",
+  "model": "ministral-14b-latest",
+  "protocol_sha256": "1d5f72cfa67758a90facbe86f106ced007bcc9845e6d2308343a90ee53a28fa8",
+  "query_sha256": "5f43a13c3d1d49d920a4035ee8c932fc2b0e855ea1de8a9fb1c57db6bf3d206b",
+  "directives": [
+    {
+      "kind": "PERMIT",
+      "action_quote": "preview a credit",
+      "governed_tools": [
+        "preview_credit"
+      ],
+      "condition": null,
+      "before_quote": "",
+      "exception_quote": "",
+      "exception_type": "NONE",
+      "scope_quote": ""
+    },
+    {
+      "kind": "FORBID",
+      "action_quote": "issue a credit without recorded approval",
+      "governed_tools": [
+        "issue_credit"
+      ],
+      "condition": {
+        "op": "NOT",
+        "children": [
+          {
+            "op": "ATOM",
+            "quote": "recorded approval",
+            "temporal": "LATEST"
+          }
+        ]
+      },
+      "before_quote": "",
+      "exception_quote": "",
+      "exception_type": "NONE",
+      "scope_quote": ""
+    }
+  ],
+  "tree": null,
+  "errors": [],
+  "calls": [
+    {
+      "stage": "B_inventory",
+      "path": "raw/B_staged/credit_preview_new/000_B_inventory.json",
+      "error": "",
+      "finish_reason": "stop"
+    },
+    {
+      "stage": "B_detail",
+      "path": "raw/B_staged/credit_preview_new/001_B_detail.json",
+      "error": "",
+      "finish_reason": "stop"
+    },
+    {
+      "stage": "B_detail",
+      "path": "raw/B_staged/credit_preview_new/002_B_detail.json",
+      "error": "",
+      "finish_reason": "stop"
+    }
+  ]
+}

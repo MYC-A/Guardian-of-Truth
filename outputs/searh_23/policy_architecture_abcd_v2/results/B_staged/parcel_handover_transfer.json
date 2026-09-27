@@ -1,0 +1,75 @@
+{
+  "case_id": "parcel_handover_transfer",
+  "arm": "B_staged",
+  "model": "ministral-14b-latest",
+  "protocol_sha256": "7c047f7e198b28d42d93138d8b0a4cff554af910df109456922942c2f5f5f6ea",
+  "query_sha256": "02bdbd1e546f05d0725835f6fad426317c45ac7986fea7947c5596ab65299b8e",
+  "directives": [
+    {
+      "kind": "GATE",
+      "action_quote": "",
+      "governed_tools": [
+        "handover_parcel"
+      ],
+      "condition": {
+        "op": "AND",
+        "children": [
+          {
+            "op": "ATOM",
+            "quote": "barcode check has returned valid",
+            "temporal": "LATEST"
+          },
+          {
+            "op": "ATOM",
+            "quote": "latest custody check reports ready",
+            "temporal": "LATEST"
+          }
+        ]
+      },
+      "before_quote": "",
+      "exception_quote": "",
+      "exception_type": "NONE",
+      "scope_quote": "A parcel"
+    },
+    {
+      "kind": "DESCRIPTIVE",
+      "action_quote": "Filing a handover request",
+      "governed_tools": [
+        "file_handover_request"
+      ],
+      "condition": null,
+      "before_quote": "",
+      "exception_quote": "does not hand it over",
+      "exception_type": "EVEN_IF",
+      "scope_quote": ""
+    }
+  ],
+  "tree": null,
+  "errors": [
+    "bad_action_span_0",
+    "invalid_head_2",
+    "invalid_head_3",
+    "invalid_head_4",
+    "invalid_head_5"
+  ],
+  "calls": [
+    {
+      "stage": "B_inventory",
+      "path": "raw/B_staged/parcel_handover_transfer/000_B_inventory.json",
+      "error": "",
+      "finish_reason": "stop"
+    },
+    {
+      "stage": "B_detail",
+      "path": "raw/B_staged/parcel_handover_transfer/001_B_detail.json",
+      "error": "",
+      "finish_reason": "stop"
+    },
+    {
+      "stage": "B_detail",
+      "path": "raw/B_staged/parcel_handover_transfer/002_B_detail.json",
+      "error": "",
+      "finish_reason": "stop"
+    }
+  ]
+}

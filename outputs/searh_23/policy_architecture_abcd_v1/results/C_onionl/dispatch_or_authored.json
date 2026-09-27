@@ -1,0 +1,45 @@
+{
+  "case_id": "dispatch_or_authored",
+  "arm": "C_onionl",
+  "model": "ministral-14b-latest",
+  "protocol_sha256": "1d5f72cfa67758a90facbe86f106ced007bcc9845e6d2308343a90ee53a28fa8",
+  "query_sha256": "fe616eb5b44025ff501d546ec5658bc5f67b103dfcc467f77d1679238c2d7a1b",
+  "directives": [],
+  "tree": {
+    "op": "ERROR",
+    "reason": "no_progress_left",
+    "text": "Release a shipment only if either customs clearance is recorded or a supervisor waiver is approved.",
+    "answer": {
+      "op": "GATE",
+      "left": {
+        "action": "release_shipment"
+      },
+      "right": {
+        "op": "OR",
+        "left": {
+          "action": "check_customs"
+        },
+        "right": {
+          "action": "check_waiver"
+        }
+      }
+    }
+  },
+  "errors": [
+    "uncompiled:ERROR"
+  ],
+  "calls": [
+    {
+      "stage": "C_macro",
+      "path": "raw/C_onionl/dispatch_or_authored/000_C_macro.json",
+      "error": "",
+      "finish_reason": "stop"
+    },
+    {
+      "stage": "C_node",
+      "path": "raw/C_onionl/dispatch_or_authored/001_C_node.json",
+      "error": "",
+      "finish_reason": "stop"
+    }
+  ]
+}

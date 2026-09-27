@@ -1,0 +1,54 @@
+{
+  "case_id": "dispatch_or_authored",
+  "arm": "B_staged",
+  "model": "ministral-14b-latest",
+  "protocol_sha256": "1d5f72cfa67758a90facbe86f106ced007bcc9845e6d2308343a90ee53a28fa8",
+  "query_sha256": "fe616eb5b44025ff501d546ec5658bc5f67b103dfcc467f77d1679238c2d7a1b",
+  "directives": [
+    {
+      "kind": "PERMIT",
+      "action_quote": "Release a shipment",
+      "governed_tools": [
+        "release_shipment"
+      ],
+      "condition": {
+        "op": "OR",
+        "children": [
+          {
+            "op": "ATOM",
+            "quote": "customs clearance is recorded",
+            "temporal": "LATEST"
+          },
+          {
+            "op": "ATOM",
+            "quote": "a supervisor waiver is approved",
+            "temporal": "LATEST"
+          }
+        ]
+      },
+      "before_quote": "",
+      "exception_quote": "",
+      "exception_type": "NONE",
+      "scope_quote": ""
+    }
+  ],
+  "tree": null,
+  "errors": [
+    "invalid_head_1",
+    "invalid_head_2"
+  ],
+  "calls": [
+    {
+      "stage": "B_inventory",
+      "path": "raw/B_staged/dispatch_or_authored/000_B_inventory.json",
+      "error": "",
+      "finish_reason": "stop"
+    },
+    {
+      "stage": "B_detail",
+      "path": "raw/B_staged/dispatch_or_authored/001_B_detail.json",
+      "error": "",
+      "finish_reason": "stop"
+    }
+  ]
+}

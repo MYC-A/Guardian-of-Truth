@@ -1,0 +1,88 @@
+{
+  "signature": "5acc1bfae31c844d02d012736da66bc032786564203a826972b88c75a1650830",
+  "stage": "A",
+  "model": "ministral-14b-latest",
+  "query": {
+    "policy": "A document may be published only after its owner approval check has returned approved for that document AND the latest classification check for the same document reports public. Submitting a publication request does not publish it.",
+    "tools": {
+      "check_owner_approval": {
+        "description": "Check recorded owner approval for a document; no publication occurs.",
+        "id": "document_id",
+        "result": "approved"
+      },
+      "check_classification": {
+        "description": "Check whether the document is public; no publication occurs.",
+        "id": "document_id",
+        "result": "public"
+      },
+      "submit_publication_request": {
+        "description": "Submit a request for future publication; does not publish.",
+        "id": "document_id",
+        "result": "accepted"
+      },
+      "publish_document": {
+        "description": "Publish the document now.",
+        "id": "document_id",
+        "result": "success"
+      }
+    }
+  },
+  "raw": "{\n  \"directives\": [\n    {\n      \"kind\": \"GATE\",\n      \"action_quote\": \"publish_document\",\n      \"governed_tools\": [\"publish_document\"],\n      \"condition\": {\n        \"op\": \"AND\",\n        \"quote\": \"\",\n        \"temporal\": \"NONE\",\n        \"children\": [\n          {\n            \"op\": \"ATOM\",\n            \"quote\": \"check_owner_approval\",\n            \"temporal\": \"LATEST\",\n            \"children\": []\n          },\n          {\n            \"op\": \"ATOM\",\n            \"quote\": \"check_classification\",\n            \"temporal\": \"LATEST\",\n            \"children\": []\n          }\n        ]\n      },\n      \"before_quote\": \"\",\n      \"exception_quote\": \"\",\n      \"exception_type\": \"NONE\",\n      \"scope_quote\": \"for that document\"\n    },\n    {\n      \"kind\": \"DESCRIPTIVE\",\n      \"action_quote\": \"submit_publication_request\",\n      \"governed_tools\": [\"submit_publication_request\"],\n      \"condition\": null,\n      \"before_quote\": \"\",\n      \"exception_quote\": \"does not publish it\",\n      \"exception_type\": \"EVEN_IF\",\n      \"scope_quote\": \"\"\n    }\n  ]\n}",
+  "answer": {
+    "directives": [
+      {
+        "kind": "GATE",
+        "action_quote": "publish_document",
+        "governed_tools": [
+          "publish_document"
+        ],
+        "condition": {
+          "op": "AND",
+          "quote": "",
+          "temporal": "NONE",
+          "children": [
+            {
+              "op": "ATOM",
+              "quote": "check_owner_approval",
+              "temporal": "LATEST",
+              "children": []
+            },
+            {
+              "op": "ATOM",
+              "quote": "check_classification",
+              "temporal": "LATEST",
+              "children": []
+            }
+          ]
+        },
+        "before_quote": "",
+        "exception_quote": "",
+        "exception_type": "NONE",
+        "scope_quote": "for that document"
+      },
+      {
+        "kind": "DESCRIPTIVE",
+        "action_quote": "submit_publication_request",
+        "governed_tools": [
+          "submit_publication_request"
+        ],
+        "condition": null,
+        "before_quote": "",
+        "exception_quote": "does not publish it",
+        "exception_type": "EVEN_IF",
+        "scope_quote": ""
+      }
+    ]
+  },
+  "error": "",
+  "finish_reason": "stop",
+  "usage": {
+    "prompt_tokens": 518,
+    "total_tokens": 786,
+    "completion_tokens": 268,
+    "prompt_tokens_details": {
+      "cached_tokens": 0
+    },
+    "service_tier": "standard"
+  }
+}

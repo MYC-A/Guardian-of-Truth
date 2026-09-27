@@ -1,0 +1,128 @@
+{
+  "case_id": "records_dev",
+  "arm": "B_staged",
+  "model": "ministral-14b-latest",
+  "protocol_sha256": "7c047f7e198b28d42d93138d8b0a4cff554af910df109456922942c2f5f5f6ea",
+  "query_sha256": "dc0eb93c1ac345d99aa3974915dd93801d69be246bf5cc21509eff1f855a7cd7",
+  "directives": [
+    {
+      "kind": "GATE",
+      "action_quote": "",
+      "governed_tools": [
+        "publish_document"
+      ],
+      "condition": {
+        "op": "AND",
+        "children": [
+          {
+            "op": "ATOM",
+            "quote": "owner approval check has returned approved for that document",
+            "temporal": "LATEST"
+          },
+          {
+            "op": "ATOM",
+            "quote": "classification check for the same document reports public",
+            "temporal": "LATEST"
+          }
+        ]
+      },
+      "before_quote": "",
+      "exception_quote": "",
+      "exception_type": "NONE",
+      "scope_quote": "A document may be published only after its owner approval check has returned approved for that document"
+    },
+    {
+      "kind": "DESCRIPTIVE",
+      "action_quote": "Submitting a publication request does not publish it",
+      "governed_tools": [
+        "submit_publication_request"
+      ],
+      "condition": null,
+      "before_quote": "",
+      "exception_quote": "",
+      "exception_type": "NONE",
+      "scope_quote": ""
+    },
+    {
+      "kind": "PERMIT",
+      "action_quote": "",
+      "governed_tools": [
+        "publish_document"
+      ],
+      "condition": {
+        "op": "AND",
+        "children": [
+          {
+            "op": "ATOM",
+            "quote": "its owner approval check has returned approved for that document",
+            "temporal": "LATEST"
+          },
+          {
+            "op": "ATOM",
+            "quote": "the latest classification check for the same document reports public",
+            "temporal": "LATEST"
+          }
+        ]
+      },
+      "before_quote": "",
+      "exception_quote": "",
+      "exception_type": "NONE",
+      "scope_quote": "A document"
+    },
+    {
+      "kind": "GATE",
+      "action_quote": "",
+      "governed_tools": [
+        "publish_document"
+      ],
+      "condition": {
+        "op": "NOT",
+        "children": [
+          {
+            "op": "ATOM",
+            "quote": "Submitting a publication request does not publish it",
+            "temporal": "NONE"
+          }
+        ]
+      },
+      "before_quote": "",
+      "exception_quote": "",
+      "exception_type": "NONE",
+      "scope_quote": ""
+    }
+  ],
+  "tree": null,
+  "errors": [
+    "bad_action_span_0",
+    "invalid_head_1",
+    "detail_count_3:2",
+    "bad_action_span_0",
+    "bad_action_span_1"
+  ],
+  "calls": [
+    {
+      "stage": "B_inventory",
+      "path": "raw/B_staged/records_dev/000_B_inventory.json",
+      "error": "",
+      "finish_reason": "stop"
+    },
+    {
+      "stage": "B_detail",
+      "path": "raw/B_staged/records_dev/001_B_detail.json",
+      "error": "",
+      "finish_reason": "stop"
+    },
+    {
+      "stage": "B_detail",
+      "path": "raw/B_staged/records_dev/002_B_detail.json",
+      "error": "",
+      "finish_reason": "stop"
+    },
+    {
+      "stage": "B_detail",
+      "path": "raw/B_staged/records_dev/003_B_detail.json",
+      "error": "",
+      "finish_reason": "stop"
+    }
+  ]
+}

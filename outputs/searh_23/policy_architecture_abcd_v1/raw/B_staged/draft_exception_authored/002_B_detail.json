@@ -1,0 +1,63 @@
+{
+  "signature": "91f68533e69f8c5057aebc495aa75cd337db6a835ddcb8cefef610db52673d47",
+  "stage": "B_detail",
+  "model": "ministral-14b-latest",
+  "query": {
+    "policy": "Never publish a draft, except when its owner has approved a public preview.",
+    "tools": {
+      "check_preview_approval": "Read owner approval for a public preview.",
+      "publish_draft": "Publish a draft now."
+    },
+    "head": {
+      "kind": "PERMIT",
+      "head_quote": "publish a draft, except when its owner has approved a public preview"
+    }
+  },
+  "raw": "{\n  \"directives\": [\n    {\n      \"kind\": \"PERMIT\",\n      \"action_quote\": \"publish a draft\",\n      \"governed_tools\": [\"publish_draft\"],\n      \"condition\": {\n        \"op\": \"NOT\",\n        \"children\": [\n          {\n            \"op\": \"AND\",\n            \"children\": [\n              {\n                \"op\": \"ATOM\",\n                \"quote\": \"its owner has approved a public preview\",\n                \"temporal\": \"LATEST\"\n              },\n              {\n                \"op\": \"ATOM\",\n                \"quote\": \"public preview\",\n                \"temporal\": \"NONE\"\n              }\n            ]\n          }\n        ]\n      },\n      \"exception_quote\": \"except when its owner has approved a public preview\",\n      \"exception_type\": \"EXCEPT\",\n      \"scope_quote\": \"\",\n      \"before_quote\": \"\"\n    }\n  ]\n}",
+  "answer": {
+    "directives": [
+      {
+        "kind": "PERMIT",
+        "action_quote": "publish a draft",
+        "governed_tools": [
+          "publish_draft"
+        ],
+        "condition": {
+          "op": "NOT",
+          "children": [
+            {
+              "op": "AND",
+              "children": [
+                {
+                  "op": "ATOM",
+                  "quote": "its owner has approved a public preview",
+                  "temporal": "LATEST"
+                },
+                {
+                  "op": "ATOM",
+                  "quote": "public preview",
+                  "temporal": "NONE"
+                }
+              ]
+            }
+          ]
+        },
+        "exception_quote": "except when its owner has approved a public preview",
+        "exception_type": "EXCEPT",
+        "scope_quote": "",
+        "before_quote": ""
+      }
+    ]
+  },
+  "error": "",
+  "finish_reason": "stop",
+  "usage": {
+    "prompt_tokens": 391,
+    "total_tokens": 581,
+    "completion_tokens": 190,
+    "prompt_tokens_details": {
+      "cached_tokens": 0
+    },
+    "service_tier": "standard"
+  }
+}

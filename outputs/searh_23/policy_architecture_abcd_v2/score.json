@@ -1,0 +1,3436 @@
+{
+  "protocol_sha256": "7c047f7e198b28d42d93138d8b0a4cff554af910df109456922942c2f5f5f6ea",
+  "gold_sha256": "d5cf750d70f8abb15d7f4eb7d9016726f346d747726a120797cc062f5b27ff6c",
+  "summary": {
+    "A_one_shot": {
+      "gold_directives": 19,
+      "found_directives": 29,
+      "directive_match": 7,
+      "scope_match": 7,
+      "logic_match": 5,
+      "temporal_match": 0,
+      "temporal_total": 15,
+      "span_hit": 13,
+      "span_total": 38,
+      "exact_ir": 0,
+      "calls": 12
+    },
+    "B_staged": {
+      "gold_directives": 19,
+      "found_directives": 32,
+      "directive_match": 5,
+      "scope_match": 4,
+      "logic_match": 3,
+      "temporal_match": 2,
+      "temporal_total": 15,
+      "span_hit": 18,
+      "span_total": 38,
+      "exact_ir": 0,
+      "calls": 37
+    },
+    "C_onionl": {
+      "gold_directives": 19,
+      "found_directives": 0,
+      "directive_match": 0,
+      "scope_match": 0,
+      "logic_match": 0,
+      "temporal_match": 0,
+      "temporal_total": 15,
+      "span_hit": 0,
+      "span_total": 38,
+      "exact_ir": 0,
+      "calls": 111
+    },
+    "D_nl2logic": {
+      "gold_directives": 19,
+      "found_directives": 1,
+      "directive_match": 0,
+      "scope_match": 0,
+      "logic_match": 0,
+      "temporal_match": 0,
+      "temporal_total": 15,
+      "span_hit": 1,
+      "span_total": 38,
+      "exact_ir": 0,
+      "calls": 134
+    }
+  },
+  "rows": [
+    {
+      "case_id": "retail_cancel",
+      "origin": "viewed_prior_clause",
+      "arm": "A_one_shot",
+      "gold_directives": 1,
+      "found_directives": 3,
+      "directive_match": 0,
+      "scope_match": 0,
+      "logic_match": 0,
+      "temporal_match": 0,
+      "temporal_total": 2,
+      "span_hit": 0,
+      "span_total": 3,
+      "exact_ir": false,
+      "missing_directives": [
+        {
+          "kind": "GATE",
+          "action_quote": "cancelled",
+          "governed_tools": [
+            "cancel_pending_order"
+          ],
+          "condition": {
+            "op": "AND",
+            "children": [
+              {
+                "op": "ATOM",
+                "quote": "its status is 'pending'",
+                "temporal": "LATEST"
+              },
+              {
+                "op": "ATOM",
+                "quote": "check its status before taking the action",
+                "temporal": "PRIOR_TRUE"
+              }
+            ]
+          },
+          "before_quote": "",
+          "exception_quote": "",
+          "exception_type": "NONE",
+          "scope_quote": ""
+        }
+      ],
+      "extra_directives": [
+        {
+          "kind": "GATE",
+          "action_quote": "check its status",
+          "governed_tools": [
+            "get_order_details"
+          ],
+          "condition": null,
+          "before_quote": "",
+          "exception_quote": "",
+          "exception_type": "NONE",
+          "scope_quote": "before taking the action"
+        },
+        {
+          "kind": "FORBID",
+          "action_quote": "",
+          "governed_tools": [
+            "cancel_pending_order"
+          ],
+          "condition": null,
+          "before_quote": "",
+          "exception_quote": "",
+          "exception_type": "NONE",
+          "scope_quote": ""
+        },
+        {
+          "kind": "ORDER",
+          "action_quote": "check its status",
+          "governed_tools": [
+            "get_order_details"
+          ],
+          "condition": null,
+          "before_quote": "",
+          "exception_quote": "",
+          "exception_type": "NONE",
+          "scope_quote": ""
+        }
+      ],
+      "missing_spans": [
+        "cancelled",
+        "check its status before taking the action",
+        "its status is 'pending'"
+      ],
+      "errors": [
+        "bad_action_span_1"
+      ],
+      "calls": 1
+    },
+    {
+      "case_id": "retail_cancel",
+      "origin": "viewed_prior_clause",
+      "arm": "B_staged",
+      "gold_directives": 1,
+      "found_directives": 2,
+      "directive_match": 0,
+      "scope_match": 0,
+      "logic_match": 0,
+      "temporal_match": 0,
+      "temporal_total": 2,
+      "span_hit": 0,
+      "span_total": 3,
+      "exact_ir": false,
+      "missing_directives": [
+        {
+          "kind": "GATE",
+          "action_quote": "cancelled",
+          "governed_tools": [
+            "cancel_pending_order"
+          ],
+          "condition": {
+            "op": "AND",
+            "children": [
+              {
+                "op": "ATOM",
+                "quote": "its status is 'pending'",
+                "temporal": "LATEST"
+              },
+              {
+                "op": "ATOM",
+                "quote": "check its status before taking the action",
+                "temporal": "PRIOR_TRUE"
+              }
+            ]
+          },
+          "before_quote": "",
+          "exception_quote": "",
+          "exception_type": "NONE",
+          "scope_quote": ""
+        }
+      ],
+      "extra_directives": [
+        {
+          "kind": "GATE",
+          "action_quote": "",
+          "governed_tools": [
+            "cancel_pending_order"
+          ],
+          "condition": {
+            "op": "AND",
+            "children": [
+              {
+                "op": "ATOM",
+                "quote": "status is 'pending'",
+                "temporal": "LATEST"
+              },
+              {
+                "op": "ATOM",
+                "quote": "check its status",
+                "temporal": "PRIOR_TRUE"
+              }
+            ]
+          },
+          "before_quote": "",
+          "exception_quote": "",
+          "exception_type": "NONE",
+          "scope_quote": "An order can only be cancelled"
+        },
+        {
+          "kind": "GATE",
+          "action_quote": "",
+          "governed_tools": [
+            "cancel_pending_order"
+          ],
+          "condition": null,
+          "before_quote": "",
+          "exception_quote": "",
+          "exception_type": "NONE",
+          "scope_quote": "An order can only be cancelled if"
+        }
+      ],
+      "missing_spans": [
+        "cancelled",
+        "check its status before taking the action",
+        "its status is 'pending'"
+      ],
+      "errors": [
+        "bad_action_span_0",
+        "bad_action_span_0",
+        "invalid_head_2",
+        "invalid_head_3"
+      ],
+      "calls": 3
+    },
+    {
+      "case_id": "retail_cancel",
+      "origin": "viewed_prior_clause",
+      "arm": "C_onionl",
+      "gold_directives": 1,
+      "found_directives": 0,
+      "directive_match": 0,
+      "scope_match": 0,
+      "logic_match": 0,
+      "temporal_match": 0,
+      "temporal_total": 2,
+      "span_hit": 0,
+      "span_total": 3,
+      "exact_ir": false,
+      "missing_directives": [
+        {
+          "kind": "GATE",
+          "action_quote": "cancelled",
+          "governed_tools": [
+            "cancel_pending_order"
+          ],
+          "condition": {
+            "op": "AND",
+            "children": [
+              {
+                "op": "ATOM",
+                "quote": "its status is 'pending'",
+                "temporal": "LATEST"
+              },
+              {
+                "op": "ATOM",
+                "quote": "check its status before taking the action",
+                "temporal": "PRIOR_TRUE"
+              }
+            ]
+          },
+          "before_quote": "",
+          "exception_quote": "",
+          "exception_type": "NONE",
+          "scope_quote": ""
+        }
+      ],
+      "extra_directives": [],
+      "missing_spans": [
+        "cancelled",
+        "check its status before taking the action",
+        "its status is 'pending'"
+      ],
+      "errors": [
+        "unbound_gate"
+      ],
+      "calls": 5
+    },
+    {
+      "case_id": "retail_cancel",
+      "origin": "viewed_prior_clause",
+      "arm": "D_nl2logic",
+      "gold_directives": 1,
+      "found_directives": 0,
+      "directive_match": 0,
+      "scope_match": 0,
+      "logic_match": 0,
+      "temporal_match": 0,
+      "temporal_total": 2,
+      "span_hit": 0,
+      "span_total": 3,
+      "exact_ir": false,
+      "missing_directives": [
+        {
+          "kind": "GATE",
+          "action_quote": "cancelled",
+          "governed_tools": [
+            "cancel_pending_order"
+          ],
+          "condition": {
+            "op": "AND",
+            "children": [
+              {
+                "op": "ATOM",
+                "quote": "its status is 'pending'",
+                "temporal": "LATEST"
+              },
+              {
+                "op": "ATOM",
+                "quote": "check its status before taking the action",
+                "temporal": "PRIOR_TRUE"
+              }
+            ]
+          },
+          "before_quote": "",
+          "exception_quote": "",
+          "exception_type": "NONE",
+          "scope_quote": ""
+        }
+      ],
+      "extra_directives": [],
+      "missing_spans": [
+        "cancelled",
+        "check its status before taking the action",
+        "its status is 'pending'"
+      ],
+      "errors": [
+        "unbound_order"
+      ],
+      "calls": 11
+    },
+    {
+      "case_id": "retail_exchange",
+      "origin": "viewed_prior_clause",
+      "arm": "A_one_shot",
+      "gold_directives": 2,
+      "found_directives": 4,
+      "directive_match": 1,
+      "scope_match": 1,
+      "logic_match": 1,
+      "temporal_match": 0,
+      "temporal_total": 2,
+      "span_hit": 1,
+      "span_total": 4,
+      "exact_ir": false,
+      "missing_directives": [
+        {
+          "kind": "GATE",
+          "action_quote": "only be exchanged",
+          "governed_tools": [
+            "exchange_delivered_order_items"
+          ],
+          "condition": {
+            "op": "AND",
+            "children": [
+              {
+                "op": "ATOM",
+                "quote": "its status is 'delivered'",
+                "temporal": "LATEST"
+              },
+              {
+                "op": "ATOM",
+                "quote": "check its status before taking the action",
+                "temporal": "PRIOR_TRUE"
+              }
+            ]
+          },
+          "before_quote": "",
+          "exception_quote": "",
+          "exception_type": "NONE",
+          "scope_quote": ""
+        }
+      ],
+      "extra_directives": [
+        {
+          "kind": "GATE",
+          "action_quote": "check its status",
+          "governed_tools": [
+            "get_order_details"
+          ],
+          "condition": null,
+          "before_quote": "",
+          "exception_quote": "",
+          "exception_type": "NONE",
+          "scope_quote": ""
+        },
+        {
+          "kind": "FORBID",
+          "action_quote": "",
+          "governed_tools": [
+            "exchange_delivered_order_items"
+          ],
+          "condition": null,
+          "before_quote": "",
+          "exception_quote": "",
+          "exception_type": "NONE",
+          "scope_quote": ""
+        },
+        {
+          "kind": "ORDER",
+          "action_quote": "remind the customer to confirm they have provided all items to be exchanged",
+          "governed_tools": [],
+          "condition": null,
+          "before_quote": "",
+          "exception_quote": "",
+          "exception_type": "NONE",
+          "scope_quote": ""
+        }
+      ],
+      "missing_spans": [
+        "check its status before taking the action",
+        "its status is 'delivered'",
+        "only be exchanged"
+      ],
+      "errors": [
+        "bad_action_span_1"
+      ],
+      "calls": 1
+    },
+    {
+      "case_id": "retail_exchange",
+      "origin": "viewed_prior_clause",
+      "arm": "B_staged",
+      "gold_directives": 2,
+      "found_directives": 3,
+      "directive_match": 0,
+      "scope_match": 0,
+      "logic_match": 0,
+      "temporal_match": 1,
+      "temporal_total": 2,
+      "span_hit": 3,
+      "span_total": 4,
+      "exact_ir": false,
+      "missing_directives": [
+        {
+          "kind": "GATE",
+          "action_quote": "only be exchanged",
+          "governed_tools": [
+            "exchange_delivered_order_items"
+          ],
+          "condition": {
+            "op": "AND",
+            "children": [
+              {
+                "op": "ATOM",
+                "quote": "its status is 'delivered'",
+                "temporal": "LATEST"
+              },
+              {
+                "op": "ATOM",
+                "quote": "check its status before taking the action",
+                "temporal": "PRIOR_TRUE"
+              }
+            ]
+          },
+          "before_quote": "",
+          "exception_quote": "",
+          "exception_type": "NONE",
+          "scope_quote": ""
+        },
+        {
+          "kind": "REQUIRE_RESPONSE",
+          "action_quote": "remind the customer to confirm they have provided all items to be exchanged",
+          "governed_tools": [],
+          "condition": null,
+          "before_quote": "",
+          "exception_quote": "",
+          "exception_type": "NONE",
+          "scope_quote": ""
+        }
+      ],
+      "extra_directives": [
+        {
+          "kind": "GATE",
+          "action_quote": "",
+          "governed_tools": [
+            "exchange_delivered_order_items"
+          ],
+          "condition": {
+            "op": "ATOM",
+            "quote": "its status is 'delivered'",
+            "temporal": "LATEST"
+          },
+          "before_quote": "",
+          "exception_quote": "",
+          "exception_type": "NONE",
+          "scope_quote": "An order can only be exchanged if"
+        },
+        {
+          "kind": "REQUIRE_RESPONSE",
+          "action_quote": "check its status before taking the action",
+          "governed_tools": [
+            "get_order_details"
+          ],
+          "condition": null,
+          "before_quote": "",
+          "exception_quote": "",
+          "exception_type": "NONE",
+          "scope_quote": "remind the customer to confirm they have provided all items to be exchanged"
+        },
+        {
+          "kind": "DESCRIPTIVE",
+          "action_quote": "remind the customer to confirm they have provided all items to be exchanged",
+          "governed_tools": [
+            "exchange_delivered_order_items"
+          ],
+          "condition": null,
+          "before_quote": "",
+          "exception_quote": "",
+          "exception_type": "NONE",
+          "scope_quote": "In particular,"
+        }
+      ],
+      "missing_spans": [
+        "only be exchanged"
+      ],
+      "errors": [
+        "bad_action_span_0"
+      ],
+      "calls": 4
+    },
+    {
+      "case_id": "retail_exchange",
+      "origin": "viewed_prior_clause",
+      "arm": "C_onionl",
+      "gold_directives": 2,
+      "found_directives": 0,
+      "directive_match": 0,
+      "scope_match": 0,
+      "logic_match": 0,
+      "temporal_match": 0,
+      "temporal_total": 2,
+      "span_hit": 0,
+      "span_total": 4,
+      "exact_ir": false,
+      "missing_directives": [
+        {
+          "kind": "GATE",
+          "action_quote": "only be exchanged",
+          "governed_tools": [
+            "exchange_delivered_order_items"
+          ],
+          "condition": {
+            "op": "AND",
+            "children": [
+              {
+                "op": "ATOM",
+                "quote": "its status is 'delivered'",
+                "temporal": "LATEST"
+              },
+              {
+                "op": "ATOM",
+                "quote": "check its status before taking the action",
+                "temporal": "PRIOR_TRUE"
+              }
+            ]
+          },
+          "before_quote": "",
+          "exception_quote": "",
+          "exception_type": "NONE",
+          "scope_quote": ""
+        },
+        {
+          "kind": "REQUIRE_RESPONSE",
+          "action_quote": "remind the customer to confirm they have provided all items to be exchanged",
+          "governed_tools": [],
+          "condition": null,
+          "before_quote": "",
+          "exception_quote": "",
+          "exception_type": "NONE",
+          "scope_quote": ""
+        }
+      ],
+      "extra_directives": [],
+      "missing_spans": [
+        "check its status before taking the action",
+        "its status is 'delivered'",
+        "only be exchanged",
+        "remind the customer to confirm they have provided all items to be exchanged"
+      ],
+      "errors": [
+        "unbound_order"
+      ],
+      "calls": 5
+    },
+    {
+      "case_id": "retail_exchange",
+      "origin": "viewed_prior_clause",
+      "arm": "D_nl2logic",
+      "gold_directives": 2,
+      "found_directives": 0,
+      "directive_match": 0,
+      "scope_match": 0,
+      "logic_match": 0,
+      "temporal_match": 0,
+      "temporal_total": 2,
+      "span_hit": 0,
+      "span_total": 4,
+      "exact_ir": false,
+      "missing_directives": [
+        {
+          "kind": "GATE",
+          "action_quote": "only be exchanged",
+          "governed_tools": [
+            "exchange_delivered_order_items"
+          ],
+          "condition": {
+            "op": "AND",
+            "children": [
+              {
+                "op": "ATOM",
+                "quote": "its status is 'delivered'",
+                "temporal": "LATEST"
+              },
+              {
+                "op": "ATOM",
+                "quote": "check its status before taking the action",
+                "temporal": "PRIOR_TRUE"
+              }
+            ]
+          },
+          "before_quote": "",
+          "exception_quote": "",
+          "exception_type": "NONE",
+          "scope_quote": ""
+        },
+        {
+          "kind": "REQUIRE_RESPONSE",
+          "action_quote": "remind the customer to confirm they have provided all items to be exchanged",
+          "governed_tools": [],
+          "condition": null,
+          "before_quote": "",
+          "exception_quote": "",
+          "exception_type": "NONE",
+          "scope_quote": ""
+        }
+      ],
+      "extra_directives": [],
+      "missing_spans": [
+        "check its status before taking the action",
+        "its status is 'delivered'",
+        "only be exchanged",
+        "remind the customer to confirm they have provided all items to be exchanged"
+      ],
+      "errors": [
+        "unbound_order"
+      ],
+      "calls": 21
+    },
+    {
+      "case_id": "airline_baggage",
+      "origin": "viewed_prior_clause",
+      "arm": "A_one_shot",
+      "gold_directives": 2,
+      "found_directives": 2,
+      "directive_match": 1,
+      "scope_match": 1,
+      "logic_match": 1,
+      "temporal_match": 0,
+      "temporal_total": 0,
+      "span_hit": 1,
+      "span_total": 2,
+      "exact_ir": false,
+      "missing_directives": [
+        {
+          "kind": "PERMIT",
+          "action_quote": "add",
+          "governed_tools": [
+            "update_reservation_baggages"
+          ],
+          "condition": null,
+          "before_quote": "",
+          "exception_quote": "",
+          "exception_type": "NONE",
+          "scope_quote": ""
+        }
+      ],
+      "extra_directives": [
+        {
+          "kind": "PERMIT",
+          "action_quote": "",
+          "governed_tools": [
+            "update_reservation_baggages"
+          ],
+          "condition": null,
+          "before_quote": "",
+          "exception_quote": "",
+          "exception_type": "NONE",
+          "scope_quote": ""
+        }
+      ],
+      "missing_spans": [
+        "add"
+      ],
+      "errors": [
+        "bad_action_span_0"
+      ],
+      "calls": 1
+    },
+    {
+      "case_id": "airline_baggage",
+      "origin": "viewed_prior_clause",
+      "arm": "B_staged",
+      "gold_directives": 2,
+      "found_directives": 0,
+      "directive_match": 0,
+      "scope_match": 0,
+      "logic_match": 0,
+      "temporal_match": 0,
+      "temporal_total": 0,
+      "span_hit": 0,
+      "span_total": 2,
+      "exact_ir": false,
+      "missing_directives": [
+        {
+          "kind": "PERMIT",
+          "action_quote": "add",
+          "governed_tools": [
+            "update_reservation_baggages"
+          ],
+          "condition": null,
+          "before_quote": "",
+          "exception_quote": "",
+          "exception_type": "NONE",
+          "scope_quote": ""
+        },
+        {
+          "kind": "FORBID",
+          "action_quote": "remove checked bags",
+          "governed_tools": [
+            "update_reservation_baggages"
+          ],
+          "condition": null,
+          "before_quote": "",
+          "exception_quote": "",
+          "exception_type": "NONE",
+          "scope_quote": ""
+        }
+      ],
+      "extra_directives": [],
+      "missing_spans": [
+        "add",
+        "remove checked bags"
+      ],
+      "errors": [
+        "invalid_head_0",
+        "invalid_head_1"
+      ],
+      "calls": 1
+    },
+    {
+      "case_id": "airline_baggage",
+      "origin": "viewed_prior_clause",
+      "arm": "C_onionl",
+      "gold_directives": 2,
+      "found_directives": 0,
+      "directive_match": 0,
+      "scope_match": 0,
+      "logic_match": 0,
+      "temporal_match": 0,
+      "temporal_total": 0,
+      "span_hit": 0,
+      "span_total": 2,
+      "exact_ir": false,
+      "missing_directives": [
+        {
+          "kind": "PERMIT",
+          "action_quote": "add",
+          "governed_tools": [
+            "update_reservation_baggages"
+          ],
+          "condition": null,
+          "before_quote": "",
+          "exception_quote": "",
+          "exception_type": "NONE",
+          "scope_quote": ""
+        },
+        {
+          "kind": "FORBID",
+          "action_quote": "remove checked bags",
+          "governed_tools": [
+            "update_reservation_baggages"
+          ],
+          "condition": null,
+          "before_quote": "",
+          "exception_quote": "",
+          "exception_type": "NONE",
+          "scope_quote": ""
+        }
+      ],
+      "extra_directives": [],
+      "missing_spans": [
+        "add",
+        "remove checked bags"
+      ],
+      "errors": [
+        "unbound_permit",
+        "unbound_forbid"
+      ],
+      "calls": 7
+    },
+    {
+      "case_id": "airline_baggage",
+      "origin": "viewed_prior_clause",
+      "arm": "D_nl2logic",
+      "gold_directives": 2,
+      "found_directives": 0,
+      "directive_match": 0,
+      "scope_match": 0,
+      "logic_match": 0,
+      "temporal_match": 0,
+      "temporal_total": 0,
+      "span_hit": 0,
+      "span_total": 2,
+      "exact_ir": false,
+      "missing_directives": [
+        {
+          "kind": "PERMIT",
+          "action_quote": "add",
+          "governed_tools": [
+            "update_reservation_baggages"
+          ],
+          "condition": null,
+          "before_quote": "",
+          "exception_quote": "",
+          "exception_type": "NONE",
+          "scope_quote": ""
+        },
+        {
+          "kind": "FORBID",
+          "action_quote": "remove checked bags",
+          "governed_tools": [
+            "update_reservation_baggages"
+          ],
+          "condition": null,
+          "before_quote": "",
+          "exception_quote": "",
+          "exception_type": "NONE",
+          "scope_quote": ""
+        }
+      ],
+      "extra_directives": [],
+      "missing_spans": [
+        "add",
+        "remove checked bags"
+      ],
+      "errors": [
+        "uncompiled:NOT"
+      ],
+      "calls": 7
+    },
+    {
+      "case_id": "telecom_resume",
+      "origin": "viewed_prior_clause",
+      "arm": "A_one_shot",
+      "gold_directives": 1,
+      "found_directives": 1,
+      "directive_match": 1,
+      "scope_match": 1,
+      "logic_match": 0,
+      "temporal_match": 0,
+      "temporal_total": 0,
+      "span_hit": 1,
+      "span_total": 3,
+      "exact_ir": false,
+      "missing_directives": [
+        {
+          "kind": "FORBID",
+          "action_quote": "lift the suspension",
+          "governed_tools": [
+            "resume_line"
+          ],
+          "condition": {
+            "op": "ATOM",
+            "quote": "the line's contract end date is in the past",
+            "temporal": "NONE"
+          },
+          "before_quote": "",
+          "exception_quote": "even if the user has paid all their overdue bills",
+          "exception_type": "EVEN_IF",
+          "scope_quote": ""
+        }
+      ],
+      "extra_directives": [
+        {
+          "kind": "FORBID",
+          "action_quote": "lift the suspension",
+          "governed_tools": [
+            "resume_line"
+          ],
+          "condition": null,
+          "before_quote": "",
+          "exception_quote": "user has paid all their overdue bills",
+          "exception_type": "EVEN_IF",
+          "scope_quote": ""
+        }
+      ],
+      "missing_spans": [
+        "even if the user has paid all their overdue bills",
+        "the line's contract end date is in the past"
+      ],
+      "errors": [],
+      "calls": 1
+    },
+    {
+      "case_id": "telecom_resume",
+      "origin": "viewed_prior_clause",
+      "arm": "B_staged",
+      "gold_directives": 1,
+      "found_directives": 1,
+      "directive_match": 1,
+      "scope_match": 1,
+      "logic_match": 0,
+      "temporal_match": 0,
+      "temporal_total": 0,
+      "span_hit": 1,
+      "span_total": 3,
+      "exact_ir": false,
+      "missing_directives": [
+        {
+          "kind": "FORBID",
+          "action_quote": "lift the suspension",
+          "governed_tools": [
+            "resume_line"
+          ],
+          "condition": {
+            "op": "ATOM",
+            "quote": "the line's contract end date is in the past",
+            "temporal": "NONE"
+          },
+          "before_quote": "",
+          "exception_quote": "even if the user has paid all their overdue bills",
+          "exception_type": "EVEN_IF",
+          "scope_quote": ""
+        }
+      ],
+      "extra_directives": [
+        {
+          "kind": "FORBID",
+          "action_quote": "lift the suspension",
+          "governed_tools": [
+            "resume_line"
+          ],
+          "condition": null,
+          "before_quote": "",
+          "exception_quote": "the user has paid all their overdue bills",
+          "exception_type": "EXCEPT",
+          "scope_quote": ""
+        }
+      ],
+      "missing_spans": [
+        "even if the user has paid all their overdue bills",
+        "the line's contract end date is in the past"
+      ],
+      "errors": [
+        "invalid_head_1"
+      ],
+      "calls": 2
+    },
+    {
+      "case_id": "telecom_resume",
+      "origin": "viewed_prior_clause",
+      "arm": "C_onionl",
+      "gold_directives": 1,
+      "found_directives": 0,
+      "directive_match": 0,
+      "scope_match": 0,
+      "logic_match": 0,
+      "temporal_match": 0,
+      "temporal_total": 0,
+      "span_hit": 0,
+      "span_total": 3,
+      "exact_ir": false,
+      "missing_directives": [
+        {
+          "kind": "FORBID",
+          "action_quote": "lift the suspension",
+          "governed_tools": [
+            "resume_line"
+          ],
+          "condition": {
+            "op": "ATOM",
+            "quote": "the line's contract end date is in the past",
+            "temporal": "NONE"
+          },
+          "before_quote": "",
+          "exception_quote": "even if the user has paid all their overdue bills",
+          "exception_type": "EVEN_IF",
+          "scope_quote": ""
+        }
+      ],
+      "extra_directives": [],
+      "missing_spans": [
+        "even if the user has paid all their overdue bills",
+        "lift the suspension",
+        "the line's contract end date is in the past"
+      ],
+      "errors": [
+        "unbound_forbid"
+      ],
+      "calls": 3
+    },
+    {
+      "case_id": "telecom_resume",
+      "origin": "viewed_prior_clause",
+      "arm": "D_nl2logic",
+      "gold_directives": 1,
+      "found_directives": 0,
+      "directive_match": 0,
+      "scope_match": 0,
+      "logic_match": 0,
+      "temporal_match": 0,
+      "temporal_total": 0,
+      "span_hit": 0,
+      "span_total": 3,
+      "exact_ir": false,
+      "missing_directives": [
+        {
+          "kind": "FORBID",
+          "action_quote": "lift the suspension",
+          "governed_tools": [
+            "resume_line"
+          ],
+          "condition": {
+            "op": "ATOM",
+            "quote": "the line's contract end date is in the past",
+            "temporal": "NONE"
+          },
+          "before_quote": "",
+          "exception_quote": "even if the user has paid all their overdue bills",
+          "exception_type": "EVEN_IF",
+          "scope_quote": ""
+        }
+      ],
+      "extra_directives": [],
+      "missing_spans": [
+        "even if the user has paid all their overdue bills",
+        "lift the suspension",
+        "the line's contract end date is in the past"
+      ],
+      "errors": [
+        "uncompiled:NOT"
+      ],
+      "calls": 7
+    },
+    {
+      "case_id": "records_dev",
+      "origin": "viewed_prior_clause",
+      "arm": "A_one_shot",
+      "gold_directives": 2,
+      "found_directives": 2,
+      "directive_match": 0,
+      "scope_match": 0,
+      "logic_match": 0,
+      "temporal_match": 0,
+      "temporal_total": 2,
+      "span_hit": 0,
+      "span_total": 4,
+      "exact_ir": false,
+      "missing_directives": [
+        {
+          "kind": "GATE",
+          "action_quote": "published",
+          "governed_tools": [
+            "publish_document"
+          ],
+          "condition": {
+            "op": "AND",
+            "children": [
+              {
+                "op": "ATOM",
+                "quote": "its owner approval check has returned approved for that document",
+                "temporal": "PRIOR_TRUE"
+              },
+              {
+                "op": "ATOM",
+                "quote": "the latest classification check for the same document reports public",
+                "temporal": "LATEST"
+              }
+            ]
+          },
+          "before_quote": "",
+          "exception_quote": "",
+          "exception_type": "NONE",
+          "scope_quote": ""
+        },
+        {
+          "kind": "DESCRIPTIVE",
+          "action_quote": "Submitting a publication request does not publish it",
+          "governed_tools": [],
+          "condition": null,
+          "before_quote": "",
+          "exception_quote": "",
+          "exception_type": "NONE",
+          "scope_quote": ""
+        }
+      ],
+      "extra_directives": [
+        {
+          "kind": "GATE",
+          "action_quote": "",
+          "governed_tools": [
+            "publish_document"
+          ],
+          "condition": null,
+          "before_quote": "",
+          "exception_quote": "",
+          "exception_type": "NONE",
+          "scope_quote": "for that document"
+        },
+        {
+          "kind": "DESCRIPTIVE",
+          "action_quote": "",
+          "governed_tools": [
+            "submit_publication_request"
+          ],
+          "condition": null,
+          "before_quote": "",
+          "exception_quote": "does not publish it",
+          "exception_type": "EVEN_IF",
+          "scope_quote": ""
+        }
+      ],
+      "missing_spans": [
+        "Submitting a publication request does not publish it",
+        "its owner approval check has returned approved for that document",
+        "published",
+        "the latest classification check for the same document reports public"
+      ],
+      "errors": [
+        "bad_action_span_0",
+        "bad_action_span_1"
+      ],
+      "calls": 1
+    },
+    {
+      "case_id": "records_dev",
+      "origin": "viewed_prior_clause",
+      "arm": "B_staged",
+      "gold_directives": 2,
+      "found_directives": 4,
+      "directive_match": 1,
+      "scope_match": 0,
+      "logic_match": 1,
+      "temporal_match": 1,
+      "temporal_total": 2,
+      "span_hit": 3,
+      "span_total": 4,
+      "exact_ir": false,
+      "missing_directives": [
+        {
+          "kind": "GATE",
+          "action_quote": "published",
+          "governed_tools": [
+            "publish_document"
+          ],
+          "condition": {
+            "op": "AND",
+            "children": [
+              {
+                "op": "ATOM",
+                "quote": "its owner approval check has returned approved for that document",
+                "temporal": "PRIOR_TRUE"
+              },
+              {
+                "op": "ATOM",
+                "quote": "the latest classification check for the same document reports public",
+                "temporal": "LATEST"
+              }
+            ]
+          },
+          "before_quote": "",
+          "exception_quote": "",
+          "exception_type": "NONE",
+          "scope_quote": ""
+        },
+        {
+          "kind": "DESCRIPTIVE",
+          "action_quote": "Submitting a publication request does not publish it",
+          "governed_tools": [],
+          "condition": null,
+          "before_quote": "",
+          "exception_quote": "",
+          "exception_type": "NONE",
+          "scope_quote": ""
+        }
+      ],
+      "extra_directives": [
+        {
+          "kind": "GATE",
+          "action_quote": "",
+          "governed_tools": [
+            "publish_document"
+          ],
+          "condition": {
+            "op": "AND",
+            "children": [
+              {
+                "op": "ATOM",
+                "quote": "owner approval check has returned approved for that document",
+                "temporal": "LATEST"
+              },
+              {
+                "op": "ATOM",
+                "quote": "classification check for the same document reports public",
+                "temporal": "LATEST"
+              }
+            ]
+          },
+          "before_quote": "",
+          "exception_quote": "",
+          "exception_type": "NONE",
+          "scope_quote": "A document may be published only after its owner approval check has returned approved for that document"
+        },
+        {
+          "kind": "DESCRIPTIVE",
+          "action_quote": "Submitting a publication request does not publish it",
+          "governed_tools": [
+            "submit_publication_request"
+          ],
+          "condition": null,
+          "before_quote": "",
+          "exception_quote": "",
+          "exception_type": "NONE",
+          "scope_quote": ""
+        },
+        {
+          "kind": "PERMIT",
+          "action_quote": "",
+          "governed_tools": [
+            "publish_document"
+          ],
+          "condition": {
+            "op": "AND",
+            "children": [
+              {
+                "op": "ATOM",
+                "quote": "its owner approval check has returned approved for that document",
+                "temporal": "LATEST"
+              },
+              {
+                "op": "ATOM",
+                "quote": "the latest classification check for the same document reports public",
+                "temporal": "LATEST"
+              }
+            ]
+          },
+          "before_quote": "",
+          "exception_quote": "",
+          "exception_type": "NONE",
+          "scope_quote": "A document"
+        },
+        {
+          "kind": "GATE",
+          "action_quote": "",
+          "governed_tools": [
+            "publish_document"
+          ],
+          "condition": {
+            "op": "NOT",
+            "children": [
+              {
+                "op": "ATOM",
+                "quote": "Submitting a publication request does not publish it",
+                "temporal": "NONE"
+              }
+            ]
+          },
+          "before_quote": "",
+          "exception_quote": "",
+          "exception_type": "NONE",
+          "scope_quote": ""
+        }
+      ],
+      "missing_spans": [
+        "published"
+      ],
+      "errors": [
+        "bad_action_span_0",
+        "invalid_head_1",
+        "detail_count_3:2",
+        "bad_action_span_0",
+        "bad_action_span_1"
+      ],
+      "calls": 4
+    },
+    {
+      "case_id": "records_dev",
+      "origin": "viewed_prior_clause",
+      "arm": "C_onionl",
+      "gold_directives": 2,
+      "found_directives": 0,
+      "directive_match": 0,
+      "scope_match": 0,
+      "logic_match": 0,
+      "temporal_match": 0,
+      "temporal_total": 2,
+      "span_hit": 0,
+      "span_total": 4,
+      "exact_ir": false,
+      "missing_directives": [
+        {
+          "kind": "GATE",
+          "action_quote": "published",
+          "governed_tools": [
+            "publish_document"
+          ],
+          "condition": {
+            "op": "AND",
+            "children": [
+              {
+                "op": "ATOM",
+                "quote": "its owner approval check has returned approved for that document",
+                "temporal": "PRIOR_TRUE"
+              },
+              {
+                "op": "ATOM",
+                "quote": "the latest classification check for the same document reports public",
+                "temporal": "LATEST"
+              }
+            ]
+          },
+          "before_quote": "",
+          "exception_quote": "",
+          "exception_type": "NONE",
+          "scope_quote": ""
+        },
+        {
+          "kind": "DESCRIPTIVE",
+          "action_quote": "Submitting a publication request does not publish it",
+          "governed_tools": [],
+          "condition": null,
+          "before_quote": "",
+          "exception_quote": "",
+          "exception_type": "NONE",
+          "scope_quote": ""
+        }
+      ],
+      "extra_directives": [],
+      "missing_spans": [
+        "Submitting a publication request does not publish it",
+        "its owner approval check has returned approved for that document",
+        "published",
+        "the latest classification check for the same document reports public"
+      ],
+      "errors": [
+        "unbound_gate",
+        "orphan_atom:CONDITION"
+      ],
+      "calls": 8
+    },
+    {
+      "case_id": "records_dev",
+      "origin": "viewed_prior_clause",
+      "arm": "D_nl2logic",
+      "gold_directives": 2,
+      "found_directives": 0,
+      "directive_match": 0,
+      "scope_match": 0,
+      "logic_match": 0,
+      "temporal_match": 0,
+      "temporal_total": 2,
+      "span_hit": 0,
+      "span_total": 4,
+      "exact_ir": false,
+      "missing_directives": [
+        {
+          "kind": "GATE",
+          "action_quote": "published",
+          "governed_tools": [
+            "publish_document"
+          ],
+          "condition": {
+            "op": "AND",
+            "children": [
+              {
+                "op": "ATOM",
+                "quote": "its owner approval check has returned approved for that document",
+                "temporal": "PRIOR_TRUE"
+              },
+              {
+                "op": "ATOM",
+                "quote": "the latest classification check for the same document reports public",
+                "temporal": "LATEST"
+              }
+            ]
+          },
+          "before_quote": "",
+          "exception_quote": "",
+          "exception_type": "NONE",
+          "scope_quote": ""
+        },
+        {
+          "kind": "DESCRIPTIVE",
+          "action_quote": "Submitting a publication request does not publish it",
+          "governed_tools": [],
+          "condition": null,
+          "before_quote": "",
+          "exception_quote": "",
+          "exception_type": "NONE",
+          "scope_quote": ""
+        }
+      ],
+      "extra_directives": [],
+      "missing_spans": [
+        "Submitting a publication request does not publish it",
+        "its owner approval check has returned approved for that document",
+        "published",
+        "the latest classification check for the same document reports public"
+      ],
+      "errors": [
+        "unbound_order",
+        "orphan_atom:CONDITION"
+      ],
+      "calls": 15
+    },
+    {
+      "case_id": "hotel_cancellation_order",
+      "origin": "viewed_prior_clause",
+      "arm": "A_one_shot",
+      "gold_directives": 1,
+      "found_directives": 3,
+      "directive_match": 0,
+      "scope_match": 0,
+      "logic_match": 0,
+      "temporal_match": 0,
+      "temporal_total": 1,
+      "span_hit": 1,
+      "span_total": 3,
+      "exact_ir": false,
+      "missing_directives": [
+        {
+          "kind": "ORDER",
+          "action_quote": "the refund SECOND",
+          "governed_tools": [
+            "process_refund"
+          ],
+          "condition": null,
+          "before_quote": "process cancellation FIRST",
+          "exception_quote": "",
+          "exception_type": "NONE",
+          "scope_quote": "For paid reservations"
+        }
+      ],
+      "extra_directives": [
+        {
+          "kind": "ORDER",
+          "action_quote": "process cancellation",
+          "governed_tools": [
+            "cancel_reservation"
+          ],
+          "condition": null,
+          "before_quote": "",
+          "exception_quote": "",
+          "exception_type": "NONE",
+          "scope_quote": "For paid reservations"
+        },
+        {
+          "kind": "ORDER",
+          "action_quote": "the refund",
+          "governed_tools": [
+            "process_refund"
+          ],
+          "condition": null,
+          "before_quote": "process cancellation",
+          "exception_quote": "",
+          "exception_type": "NONE",
+          "scope_quote": "For paid reservations"
+        },
+        {
+          "kind": "FORBID",
+          "action_quote": "",
+          "governed_tools": [
+            "process_refund"
+          ],
+          "condition": null,
+          "before_quote": "",
+          "exception_quote": "",
+          "exception_type": "NONE",
+          "scope_quote": "before cancelling"
+        }
+      ],
+      "missing_spans": [
+        "process cancellation FIRST",
+        "the refund SECOND"
+      ],
+      "errors": [
+        "bad_action_span_2"
+      ],
+      "calls": 1
+    },
+    {
+      "case_id": "hotel_cancellation_order",
+      "origin": "viewed_prior_clause",
+      "arm": "B_staged",
+      "gold_directives": 1,
+      "found_directives": 3,
+      "directive_match": 0,
+      "scope_match": 0,
+      "logic_match": 0,
+      "temporal_match": 0,
+      "temporal_total": 1,
+      "span_hit": 2,
+      "span_total": 3,
+      "exact_ir": false,
+      "missing_directives": [
+        {
+          "kind": "ORDER",
+          "action_quote": "the refund SECOND",
+          "governed_tools": [
+            "process_refund"
+          ],
+          "condition": null,
+          "before_quote": "process cancellation FIRST",
+          "exception_quote": "",
+          "exception_type": "NONE",
+          "scope_quote": "For paid reservations"
+        }
+      ],
+      "extra_directives": [
+        {
+          "kind": "ORDER",
+          "action_quote": "process cancellation FIRST",
+          "governed_tools": [
+            "cancel_reservation"
+          ],
+          "condition": {
+            "op": "ATOM",
+            "quote": "For paid reservations",
+            "temporal": "NONE"
+          },
+          "before_quote": "",
+          "exception_quote": "",
+          "exception_type": "NONE",
+          "scope_quote": ""
+        },
+        {
+          "kind": "ORDER",
+          "action_quote": "process cancellation FIRST and the refund SECOND",
+          "governed_tools": [
+            "cancel_reservation",
+            "process_refund"
+          ],
+          "condition": null,
+          "before_quote": "process cancellation",
+          "exception_quote": "",
+          "exception_type": "NONE",
+          "scope_quote": "For paid reservations"
+        },
+        {
+          "kind": "FORBID",
+          "action_quote": "",
+          "governed_tools": [
+            "process_refund"
+          ],
+          "condition": {
+            "op": "AND",
+            "children": [
+              {
+                "op": "ATOM",
+                "quote": "paid reservations",
+                "temporal": "NONE"
+              },
+              {
+                "op": "NOT",
+                "children": [
+                  {
+                    "op": "ATOM",
+                    "quote": "cancelling",
+                    "temporal": "PRIOR_TRUE"
+                  }
+                ]
+              }
+            ]
+          },
+          "before_quote": "",
+          "exception_quote": "",
+          "exception_type": "NONE",
+          "scope_quote": ""
+        }
+      ],
+      "missing_spans": [
+        "the refund SECOND"
+      ],
+      "errors": [
+        "invalid_head_1",
+        "detail_count_2:2",
+        "bad_action_span_1",
+        "invalid_head_3"
+      ],
+      "calls": 3
+    },
+    {
+      "case_id": "hotel_cancellation_order",
+      "origin": "viewed_prior_clause",
+      "arm": "C_onionl",
+      "gold_directives": 1,
+      "found_directives": 0,
+      "directive_match": 0,
+      "scope_match": 0,
+      "logic_match": 0,
+      "temporal_match": 0,
+      "temporal_total": 1,
+      "span_hit": 0,
+      "span_total": 3,
+      "exact_ir": false,
+      "missing_directives": [
+        {
+          "kind": "ORDER",
+          "action_quote": "the refund SECOND",
+          "governed_tools": [
+            "process_refund"
+          ],
+          "condition": null,
+          "before_quote": "process cancellation FIRST",
+          "exception_quote": "",
+          "exception_type": "NONE",
+          "scope_quote": "For paid reservations"
+        }
+      ],
+      "extra_directives": [],
+      "missing_spans": [
+        "For paid reservations",
+        "process cancellation FIRST",
+        "the refund SECOND"
+      ],
+      "errors": [
+        "unbound_order"
+      ],
+      "calls": 4
+    },
+    {
+      "case_id": "hotel_cancellation_order",
+      "origin": "viewed_prior_clause",
+      "arm": "D_nl2logic",
+      "gold_directives": 1,
+      "found_directives": 0,
+      "directive_match": 0,
+      "scope_match": 0,
+      "logic_match": 0,
+      "temporal_match": 0,
+      "temporal_total": 1,
+      "span_hit": 0,
+      "span_total": 3,
+      "exact_ir": false,
+      "missing_directives": [
+        {
+          "kind": "ORDER",
+          "action_quote": "the refund SECOND",
+          "governed_tools": [
+            "process_refund"
+          ],
+          "condition": null,
+          "before_quote": "process cancellation FIRST",
+          "exception_quote": "",
+          "exception_type": "NONE",
+          "scope_quote": "For paid reservations"
+        }
+      ],
+      "extra_directives": [],
+      "missing_spans": [
+        "For paid reservations",
+        "process cancellation FIRST",
+        "the refund SECOND"
+      ],
+      "errors": [
+        "unbound_order"
+      ],
+      "calls": 7
+    },
+    {
+      "case_id": "parcel_handover_transfer",
+      "origin": "viewed_prior_clause",
+      "arm": "A_one_shot",
+      "gold_directives": 2,
+      "found_directives": 2,
+      "directive_match": 0,
+      "scope_match": 0,
+      "logic_match": 0,
+      "temporal_match": 0,
+      "temporal_total": 2,
+      "span_hit": 0,
+      "span_total": 4,
+      "exact_ir": false,
+      "missing_directives": [
+        {
+          "kind": "GATE",
+          "action_quote": "handed over",
+          "governed_tools": [
+            "handover_parcel"
+          ],
+          "condition": {
+            "op": "AND",
+            "children": [
+              {
+                "op": "ATOM",
+                "quote": "its barcode check has returned valid",
+                "temporal": "PRIOR_TRUE"
+              },
+              {
+                "op": "ATOM",
+                "quote": "its latest custody check reports ready",
+                "temporal": "LATEST"
+              }
+            ]
+          },
+          "before_quote": "",
+          "exception_quote": "",
+          "exception_type": "NONE",
+          "scope_quote": ""
+        },
+        {
+          "kind": "DESCRIPTIVE",
+          "action_quote": "Filing a handover request does not hand it over",
+          "governed_tools": [],
+          "condition": null,
+          "before_quote": "",
+          "exception_quote": "",
+          "exception_type": "NONE",
+          "scope_quote": ""
+        }
+      ],
+      "extra_directives": [
+        {
+          "kind": "GATE",
+          "action_quote": "",
+          "governed_tools": [
+            "handover_parcel"
+          ],
+          "condition": {
+            "op": "AND",
+            "children": [
+              {
+                "op": "ATOM",
+                "quote": "barcode check has returned valid",
+                "temporal": "LATEST"
+              },
+              {
+                "op": "ATOM",
+                "quote": "latest custody check reports ready",
+                "temporal": "LATEST"
+              }
+            ]
+          },
+          "before_quote": "",
+          "exception_quote": "",
+          "exception_type": "NONE",
+          "scope_quote": ""
+        },
+        {
+          "kind": "DESCRIPTIVE",
+          "action_quote": "",
+          "governed_tools": [
+            "file_handover_request"
+          ],
+          "condition": null,
+          "before_quote": "",
+          "exception_quote": "does not hand it over",
+          "exception_type": "EXCEPT",
+          "scope_quote": ""
+        }
+      ],
+      "missing_spans": [
+        "Filing a handover request does not hand it over",
+        "handed over",
+        "its barcode check has returned valid",
+        "its latest custody check reports ready"
+      ],
+      "errors": [
+        "bad_action_span_0",
+        "bad_action_span_1"
+      ],
+      "calls": 1
+    },
+    {
+      "case_id": "parcel_handover_transfer",
+      "origin": "viewed_prior_clause",
+      "arm": "B_staged",
+      "gold_directives": 2,
+      "found_directives": 2,
+      "directive_match": 0,
+      "scope_match": 0,
+      "logic_match": 0,
+      "temporal_match": 0,
+      "temporal_total": 2,
+      "span_hit": 0,
+      "span_total": 4,
+      "exact_ir": false,
+      "missing_directives": [
+        {
+          "kind": "GATE",
+          "action_quote": "handed over",
+          "governed_tools": [
+            "handover_parcel"
+          ],
+          "condition": {
+            "op": "AND",
+            "children": [
+              {
+                "op": "ATOM",
+                "quote": "its barcode check has returned valid",
+                "temporal": "PRIOR_TRUE"
+              },
+              {
+                "op": "ATOM",
+                "quote": "its latest custody check reports ready",
+                "temporal": "LATEST"
+              }
+            ]
+          },
+          "before_quote": "",
+          "exception_quote": "",
+          "exception_type": "NONE",
+          "scope_quote": ""
+        },
+        {
+          "kind": "DESCRIPTIVE",
+          "action_quote": "Filing a handover request does not hand it over",
+          "governed_tools": [],
+          "condition": null,
+          "before_quote": "",
+          "exception_quote": "",
+          "exception_type": "NONE",
+          "scope_quote": ""
+        }
+      ],
+      "extra_directives": [
+        {
+          "kind": "GATE",
+          "action_quote": "",
+          "governed_tools": [
+            "handover_parcel"
+          ],
+          "condition": {
+            "op": "AND",
+            "children": [
+              {
+                "op": "ATOM",
+                "quote": "barcode check has returned valid",
+                "temporal": "LATEST"
+              },
+              {
+                "op": "ATOM",
+                "quote": "latest custody check reports ready",
+                "temporal": "LATEST"
+              }
+            ]
+          },
+          "before_quote": "",
+          "exception_quote": "",
+          "exception_type": "NONE",
+          "scope_quote": "A parcel"
+        },
+        {
+          "kind": "DESCRIPTIVE",
+          "action_quote": "Filing a handover request",
+          "governed_tools": [
+            "file_handover_request"
+          ],
+          "condition": null,
+          "before_quote": "",
+          "exception_quote": "does not hand it over",
+          "exception_type": "EVEN_IF",
+          "scope_quote": ""
+        }
+      ],
+      "missing_spans": [
+        "Filing a handover request does not hand it over",
+        "handed over",
+        "its barcode check has returned valid",
+        "its latest custody check reports ready"
+      ],
+      "errors": [
+        "bad_action_span_0",
+        "invalid_head_2",
+        "invalid_head_3",
+        "invalid_head_4",
+        "invalid_head_5"
+      ],
+      "calls": 3
+    },
+    {
+      "case_id": "parcel_handover_transfer",
+      "origin": "viewed_prior_clause",
+      "arm": "C_onionl",
+      "gold_directives": 2,
+      "found_directives": 0,
+      "directive_match": 0,
+      "scope_match": 0,
+      "logic_match": 0,
+      "temporal_match": 0,
+      "temporal_total": 2,
+      "span_hit": 0,
+      "span_total": 4,
+      "exact_ir": false,
+      "missing_directives": [
+        {
+          "kind": "GATE",
+          "action_quote": "handed over",
+          "governed_tools": [
+            "handover_parcel"
+          ],
+          "condition": {
+            "op": "AND",
+            "children": [
+              {
+                "op": "ATOM",
+                "quote": "its barcode check has returned valid",
+                "temporal": "PRIOR_TRUE"
+              },
+              {
+                "op": "ATOM",
+                "quote": "its latest custody check reports ready",
+                "temporal": "LATEST"
+              }
+            ]
+          },
+          "before_quote": "",
+          "exception_quote": "",
+          "exception_type": "NONE",
+          "scope_quote": ""
+        },
+        {
+          "kind": "DESCRIPTIVE",
+          "action_quote": "Filing a handover request does not hand it over",
+          "governed_tools": [],
+          "condition": null,
+          "before_quote": "",
+          "exception_quote": "",
+          "exception_type": "NONE",
+          "scope_quote": ""
+        }
+      ],
+      "extra_directives": [],
+      "missing_spans": [
+        "Filing a handover request does not hand it over",
+        "handed over",
+        "its barcode check has returned valid",
+        "its latest custody check reports ready"
+      ],
+      "errors": [
+        "unbound_gate"
+      ],
+      "calls": 8
+    },
+    {
+      "case_id": "parcel_handover_transfer",
+      "origin": "viewed_prior_clause",
+      "arm": "D_nl2logic",
+      "gold_directives": 2,
+      "found_directives": 0,
+      "directive_match": 0,
+      "scope_match": 0,
+      "logic_match": 0,
+      "temporal_match": 0,
+      "temporal_total": 2,
+      "span_hit": 0,
+      "span_total": 4,
+      "exact_ir": false,
+      "missing_directives": [
+        {
+          "kind": "GATE",
+          "action_quote": "handed over",
+          "governed_tools": [
+            "handover_parcel"
+          ],
+          "condition": {
+            "op": "AND",
+            "children": [
+              {
+                "op": "ATOM",
+                "quote": "its barcode check has returned valid",
+                "temporal": "PRIOR_TRUE"
+              },
+              {
+                "op": "ATOM",
+                "quote": "its latest custody check reports ready",
+                "temporal": "LATEST"
+              }
+            ]
+          },
+          "before_quote": "",
+          "exception_quote": "",
+          "exception_type": "NONE",
+          "scope_quote": ""
+        },
+        {
+          "kind": "DESCRIPTIVE",
+          "action_quote": "Filing a handover request does not hand it over",
+          "governed_tools": [],
+          "condition": null,
+          "before_quote": "",
+          "exception_quote": "",
+          "exception_type": "NONE",
+          "scope_quote": ""
+        }
+      ],
+      "extra_directives": [],
+      "missing_spans": [
+        "Filing a handover request does not hand it over",
+        "handed over",
+        "its barcode check has returned valid",
+        "its latest custody check reports ready"
+      ],
+      "errors": [
+        "unbound_order",
+        "orphan_atom:CONDITION"
+      ],
+      "calls": 15
+    },
+    {
+      "case_id": "credit_preview_new",
+      "origin": "viewed_prior_clause",
+      "arm": "A_one_shot",
+      "gold_directives": 2,
+      "found_directives": 4,
+      "directive_match": 2,
+      "scope_match": 2,
+      "logic_match": 2,
+      "temporal_match": 0,
+      "temporal_total": 1,
+      "span_hit": 3,
+      "span_total": 3,
+      "exact_ir": false,
+      "missing_directives": [
+        {
+          "kind": "GATE",
+          "action_quote": "issue a credit",
+          "governed_tools": [
+            "issue_credit"
+          ],
+          "condition": {
+            "op": "ATOM",
+            "quote": "recorded approval",
+            "temporal": "PRIOR_TRUE"
+          },
+          "before_quote": "",
+          "exception_quote": "",
+          "exception_type": "NONE",
+          "scope_quote": ""
+        }
+      ],
+      "extra_directives": [
+        {
+          "kind": "FORBID",
+          "action_quote": "issue a credit",
+          "governed_tools": [
+            "issue_credit"
+          ],
+          "condition": {
+            "op": "NOT",
+            "children": [
+              {
+                "op": "ATOM",
+                "quote": "recorded approval",
+                "temporal": "LATEST"
+              }
+            ]
+          },
+          "before_quote": "",
+          "exception_quote": "",
+          "exception_type": "NONE",
+          "scope_quote": ""
+        },
+        {
+          "kind": "GATE",
+          "action_quote": "issue a credit",
+          "governed_tools": [
+            "issue_credit"
+          ],
+          "condition": {
+            "op": "ATOM",
+            "quote": "recorded approval",
+            "temporal": "LATEST"
+          },
+          "before_quote": "",
+          "exception_quote": "",
+          "exception_type": "NONE",
+          "scope_quote": ""
+        },
+        {
+          "kind": "ORDER",
+          "action_quote": "issue a credit",
+          "governed_tools": [
+            "issue_credit"
+          ],
+          "condition": null,
+          "before_quote": "",
+          "exception_quote": "",
+          "exception_type": "NONE",
+          "scope_quote": ""
+        }
+      ],
+      "missing_spans": [],
+      "errors": [],
+      "calls": 1
+    },
+    {
+      "case_id": "credit_preview_new",
+      "origin": "viewed_prior_clause",
+      "arm": "B_staged",
+      "gold_directives": 2,
+      "found_directives": 6,
+      "directive_match": 2,
+      "scope_match": 2,
+      "logic_match": 2,
+      "temporal_match": 0,
+      "temporal_total": 1,
+      "span_hit": 3,
+      "span_total": 3,
+      "exact_ir": false,
+      "missing_directives": [
+        {
+          "kind": "GATE",
+          "action_quote": "issue a credit",
+          "governed_tools": [
+            "issue_credit"
+          ],
+          "condition": {
+            "op": "ATOM",
+            "quote": "recorded approval",
+            "temporal": "PRIOR_TRUE"
+          },
+          "before_quote": "",
+          "exception_quote": "",
+          "exception_type": "NONE",
+          "scope_quote": ""
+        }
+      ],
+      "extra_directives": [
+        {
+          "kind": "PERMIT",
+          "action_quote": "preview a credit",
+          "governed_tools": [
+            "preview_credit"
+          ],
+          "condition": null,
+          "before_quote": "",
+          "exception_quote": "",
+          "exception_type": "NONE",
+          "scope_quote": ""
+        },
+        {
+          "kind": "FORBID",
+          "action_quote": "issue a credit",
+          "governed_tools": [
+            "issue_credit"
+          ],
+          "condition": null,
+          "before_quote": "",
+          "exception_quote": "",
+          "exception_type": "NONE",
+          "scope_quote": ""
+        },
+        {
+          "kind": "PERMIT",
+          "action_quote": "preview a credit",
+          "governed_tools": [
+            "preview_credit"
+          ],
+          "condition": null,
+          "before_quote": "",
+          "exception_quote": "",
+          "exception_type": "NONE",
+          "scope_quote": ""
+        },
+        {
+          "kind": "FORBID",
+          "action_quote": "issue a credit",
+          "governed_tools": [
+            "issue_credit"
+          ],
+          "condition": {
+            "op": "NOT",
+            "children": [
+              {
+                "op": "AND",
+                "children": [
+                  {
+                    "op": "ATOM",
+                    "quote": "without recorded approval",
+                    "temporal": "NONE"
+                  },
+                  {
+                    "op": "ATOM",
+                    "quote": "issue a credit",
+                    "temporal": "NONE"
+                  }
+                ]
+              }
+            ]
+          },
+          "before_quote": "",
+          "exception_quote": "",
+          "exception_type": "NONE",
+          "scope_quote": ""
+        },
+        {
+          "kind": "GATE",
+          "action_quote": "issue a credit",
+          "governed_tools": [
+            "issue_credit"
+          ],
+          "condition": {
+            "op": "ATOM",
+            "quote": "recorded approval",
+            "temporal": "LATEST"
+          },
+          "before_quote": "",
+          "exception_quote": "",
+          "exception_type": "NONE",
+          "scope_quote": ""
+        }
+      ],
+      "missing_spans": [],
+      "errors": [
+        "detail_count_2:2",
+        "detail_count_3:0",
+        "no_directives_array",
+        "detail_count_4:2"
+      ],
+      "calls": 6
+    },
+    {
+      "case_id": "credit_preview_new",
+      "origin": "viewed_prior_clause",
+      "arm": "C_onionl",
+      "gold_directives": 2,
+      "found_directives": 0,
+      "directive_match": 0,
+      "scope_match": 0,
+      "logic_match": 0,
+      "temporal_match": 0,
+      "temporal_total": 1,
+      "span_hit": 0,
+      "span_total": 3,
+      "exact_ir": false,
+      "missing_directives": [
+        {
+          "kind": "PERMIT",
+          "action_quote": "preview a credit",
+          "governed_tools": [
+            "preview_credit"
+          ],
+          "condition": null,
+          "before_quote": "",
+          "exception_quote": "",
+          "exception_type": "NONE",
+          "scope_quote": ""
+        },
+        {
+          "kind": "GATE",
+          "action_quote": "issue a credit",
+          "governed_tools": [
+            "issue_credit"
+          ],
+          "condition": {
+            "op": "ATOM",
+            "quote": "recorded approval",
+            "temporal": "PRIOR_TRUE"
+          },
+          "before_quote": "",
+          "exception_quote": "",
+          "exception_type": "NONE",
+          "scope_quote": ""
+        }
+      ],
+      "extra_directives": [],
+      "missing_spans": [
+        "issue a credit",
+        "preview a credit",
+        "recorded approval"
+      ],
+      "errors": [
+        "unbound_permit",
+        "unbound_forbid"
+      ],
+      "calls": 12
+    },
+    {
+      "case_id": "credit_preview_new",
+      "origin": "viewed_prior_clause",
+      "arm": "D_nl2logic",
+      "gold_directives": 2,
+      "found_directives": 1,
+      "directive_match": 0,
+      "scope_match": 0,
+      "logic_match": 0,
+      "temporal_match": 0,
+      "temporal_total": 1,
+      "span_hit": 1,
+      "span_total": 3,
+      "exact_ir": false,
+      "missing_directives": [
+        {
+          "kind": "PERMIT",
+          "action_quote": "preview a credit",
+          "governed_tools": [
+            "preview_credit"
+          ],
+          "condition": null,
+          "before_quote": "",
+          "exception_quote": "",
+          "exception_type": "NONE",
+          "scope_quote": ""
+        },
+        {
+          "kind": "GATE",
+          "action_quote": "issue a credit",
+          "governed_tools": [
+            "issue_credit"
+          ],
+          "condition": {
+            "op": "ATOM",
+            "quote": "recorded approval",
+            "temporal": "PRIOR_TRUE"
+          },
+          "before_quote": "",
+          "exception_quote": "",
+          "exception_type": "NONE",
+          "scope_quote": ""
+        }
+      ],
+      "extra_directives": [
+        {
+          "kind": "FORBID",
+          "action_quote": "issue a credit",
+          "governed_tools": [
+            "issue_credit"
+          ],
+          "condition": null,
+          "before_quote": "",
+          "exception_quote": "",
+          "exception_type": "NONE",
+          "scope_quote": ""
+        }
+      ],
+      "missing_spans": [
+        "preview a credit",
+        "recorded approval"
+      ],
+      "errors": [
+        "orphan_atom:ACTION"
+      ],
+      "calls": 9
+    },
+    {
+      "case_id": "dispatch_or_authored",
+      "origin": "new_authored",
+      "arm": "A_one_shot",
+      "gold_directives": 1,
+      "found_directives": 1,
+      "directive_match": 0,
+      "scope_match": 0,
+      "logic_match": 0,
+      "temporal_match": 0,
+      "temporal_total": 2,
+      "span_hit": 2,
+      "span_total": 3,
+      "exact_ir": false,
+      "missing_directives": [
+        {
+          "kind": "GATE",
+          "action_quote": "Release a shipment",
+          "governed_tools": [
+            "release_shipment"
+          ],
+          "condition": {
+            "op": "OR",
+            "children": [
+              {
+                "op": "ATOM",
+                "quote": "customs clearance is recorded",
+                "temporal": "PRIOR_TRUE"
+              },
+              {
+                "op": "ATOM",
+                "quote": "a supervisor waiver is approved",
+                "temporal": "PRIOR_TRUE"
+              }
+            ]
+          },
+          "before_quote": "",
+          "exception_quote": "",
+          "exception_type": "NONE",
+          "scope_quote": ""
+        }
+      ],
+      "extra_directives": [
+        {
+          "kind": "GATE",
+          "action_quote": "",
+          "governed_tools": [
+            "release_shipment"
+          ],
+          "condition": {
+            "op": "OR",
+            "children": [
+              {
+                "op": "ATOM",
+                "quote": "customs clearance is recorded",
+                "temporal": "LATEST"
+              },
+              {
+                "op": "ATOM",
+                "quote": "a supervisor waiver is approved",
+                "temporal": "LATEST"
+              }
+            ]
+          },
+          "before_quote": "",
+          "exception_quote": "",
+          "exception_type": "NONE",
+          "scope_quote": ""
+        }
+      ],
+      "missing_spans": [
+        "Release a shipment"
+      ],
+      "errors": [
+        "bad_action_span_0"
+      ],
+      "calls": 1
+    },
+    {
+      "case_id": "dispatch_or_authored",
+      "origin": "new_authored",
+      "arm": "B_staged",
+      "gold_directives": 1,
+      "found_directives": 0,
+      "directive_match": 0,
+      "scope_match": 0,
+      "logic_match": 0,
+      "temporal_match": 0,
+      "temporal_total": 2,
+      "span_hit": 0,
+      "span_total": 3,
+      "exact_ir": false,
+      "missing_directives": [
+        {
+          "kind": "GATE",
+          "action_quote": "Release a shipment",
+          "governed_tools": [
+            "release_shipment"
+          ],
+          "condition": {
+            "op": "OR",
+            "children": [
+              {
+                "op": "ATOM",
+                "quote": "customs clearance is recorded",
+                "temporal": "PRIOR_TRUE"
+              },
+              {
+                "op": "ATOM",
+                "quote": "a supervisor waiver is approved",
+                "temporal": "PRIOR_TRUE"
+              }
+            ]
+          },
+          "before_quote": "",
+          "exception_quote": "",
+          "exception_type": "NONE",
+          "scope_quote": ""
+        }
+      ],
+      "extra_directives": [],
+      "missing_spans": [
+        "Release a shipment",
+        "a supervisor waiver is approved",
+        "customs clearance is recorded"
+      ],
+      "errors": [
+        "invalid_head_0",
+        "invalid_head_1",
+        "invalid_head_2",
+        "invalid_head_3"
+      ],
+      "calls": 1
+    },
+    {
+      "case_id": "dispatch_or_authored",
+      "origin": "new_authored",
+      "arm": "C_onionl",
+      "gold_directives": 1,
+      "found_directives": 0,
+      "directive_match": 0,
+      "scope_match": 0,
+      "logic_match": 0,
+      "temporal_match": 0,
+      "temporal_total": 2,
+      "span_hit": 0,
+      "span_total": 3,
+      "exact_ir": false,
+      "missing_directives": [
+        {
+          "kind": "GATE",
+          "action_quote": "Release a shipment",
+          "governed_tools": [
+            "release_shipment"
+          ],
+          "condition": {
+            "op": "OR",
+            "children": [
+              {
+                "op": "ATOM",
+                "quote": "customs clearance is recorded",
+                "temporal": "PRIOR_TRUE"
+              },
+              {
+                "op": "ATOM",
+                "quote": "a supervisor waiver is approved",
+                "temporal": "PRIOR_TRUE"
+              }
+            ]
+          },
+          "before_quote": "",
+          "exception_quote": "",
+          "exception_type": "NONE",
+          "scope_quote": ""
+        }
+      ],
+      "extra_directives": [],
+      "missing_spans": [
+        "Release a shipment",
+        "a supervisor waiver is approved",
+        "customs clearance is recorded"
+      ],
+      "errors": [
+        "unbound_gate"
+      ],
+      "calls": 24
+    },
+    {
+      "case_id": "dispatch_or_authored",
+      "origin": "new_authored",
+      "arm": "D_nl2logic",
+      "gold_directives": 1,
+      "found_directives": 0,
+      "directive_match": 0,
+      "scope_match": 0,
+      "logic_match": 0,
+      "temporal_match": 0,
+      "temporal_total": 2,
+      "span_hit": 0,
+      "span_total": 3,
+      "exact_ir": false,
+      "missing_directives": [
+        {
+          "kind": "GATE",
+          "action_quote": "Release a shipment",
+          "governed_tools": [
+            "release_shipment"
+          ],
+          "condition": {
+            "op": "OR",
+            "children": [
+              {
+                "op": "ATOM",
+                "quote": "customs clearance is recorded",
+                "temporal": "PRIOR_TRUE"
+              },
+              {
+                "op": "ATOM",
+                "quote": "a supervisor waiver is approved",
+                "temporal": "PRIOR_TRUE"
+              }
+            ]
+          },
+          "before_quote": "",
+          "exception_quote": "",
+          "exception_type": "NONE",
+          "scope_quote": ""
+        }
+      ],
+      "extra_directives": [],
+      "missing_spans": [
+        "Release a shipment",
+        "a supervisor waiver is approved",
+        "customs clearance is recorded"
+      ],
+      "errors": [
+        "unbound_permit"
+      ],
+      "calls": 5
+    },
+    {
+      "case_id": "draft_exception_authored",
+      "origin": "new_authored",
+      "arm": "A_one_shot",
+      "gold_directives": 1,
+      "found_directives": 2,
+      "directive_match": 1,
+      "scope_match": 1,
+      "logic_match": 1,
+      "temporal_match": 0,
+      "temporal_total": 0,
+      "span_hit": 2,
+      "span_total": 2,
+      "exact_ir": false,
+      "missing_directives": [],
+      "extra_directives": [
+        {
+          "kind": "GATE",
+          "action_quote": "publish a draft",
+          "governed_tools": [
+            "publish_draft"
+          ],
+          "condition": {
+            "op": "ATOM",
+            "quote": "its owner has approved a public preview",
+            "temporal": "LATEST"
+          },
+          "before_quote": "",
+          "exception_quote": "",
+          "exception_type": "NONE",
+          "scope_quote": ""
+        }
+      ],
+      "missing_spans": [],
+      "errors": [],
+      "calls": 1
+    },
+    {
+      "case_id": "draft_exception_authored",
+      "origin": "new_authored",
+      "arm": "B_staged",
+      "gold_directives": 1,
+      "found_directives": 1,
+      "directive_match": 1,
+      "scope_match": 1,
+      "logic_match": 0,
+      "temporal_match": 0,
+      "temporal_total": 0,
+      "span_hit": 2,
+      "span_total": 2,
+      "exact_ir": false,
+      "missing_directives": [
+        {
+          "kind": "FORBID",
+          "action_quote": "publish a draft",
+          "governed_tools": [
+            "publish_draft"
+          ],
+          "condition": null,
+          "before_quote": "",
+          "exception_quote": "its owner has approved a public preview",
+          "exception_type": "EXCEPT",
+          "scope_quote": ""
+        }
+      ],
+      "extra_directives": [
+        {
+          "kind": "FORBID",
+          "action_quote": "publish a draft",
+          "governed_tools": [
+            "publish_draft"
+          ],
+          "condition": {
+            "op": "NOT",
+            "children": [
+              {
+                "op": "ATOM",
+                "quote": "its owner has approved a public preview",
+                "temporal": "LATEST"
+              }
+            ]
+          },
+          "before_quote": "",
+          "exception_quote": "when its owner has approved a public preview",
+          "exception_type": "EXCEPT",
+          "scope_quote": ""
+        }
+      ],
+      "missing_spans": [],
+      "errors": [
+        "invalid_head_1"
+      ],
+      "calls": 2
+    },
+    {
+      "case_id": "draft_exception_authored",
+      "origin": "new_authored",
+      "arm": "C_onionl",
+      "gold_directives": 1,
+      "found_directives": 0,
+      "directive_match": 0,
+      "scope_match": 0,
+      "logic_match": 0,
+      "temporal_match": 0,
+      "temporal_total": 0,
+      "span_hit": 0,
+      "span_total": 2,
+      "exact_ir": false,
+      "missing_directives": [
+        {
+          "kind": "FORBID",
+          "action_quote": "publish a draft",
+          "governed_tools": [
+            "publish_draft"
+          ],
+          "condition": null,
+          "before_quote": "",
+          "exception_quote": "its owner has approved a public preview",
+          "exception_type": "EXCEPT",
+          "scope_quote": ""
+        }
+      ],
+      "extra_directives": [],
+      "missing_spans": [
+        "its owner has approved a public preview",
+        "publish a draft"
+      ],
+      "errors": [
+        "unbound_forbid",
+        "exception_or_concession_unbound"
+      ],
+      "calls": 5
+    },
+    {
+      "case_id": "draft_exception_authored",
+      "origin": "new_authored",
+      "arm": "D_nl2logic",
+      "gold_directives": 1,
+      "found_directives": 0,
+      "directive_match": 0,
+      "scope_match": 0,
+      "logic_match": 0,
+      "temporal_match": 0,
+      "temporal_total": 0,
+      "span_hit": 0,
+      "span_total": 2,
+      "exact_ir": false,
+      "missing_directives": [
+        {
+          "kind": "FORBID",
+          "action_quote": "publish a draft",
+          "governed_tools": [
+            "publish_draft"
+          ],
+          "condition": null,
+          "before_quote": "",
+          "exception_quote": "its owner has approved a public preview",
+          "exception_type": "EXCEPT",
+          "scope_quote": ""
+        }
+      ],
+      "extra_directives": [],
+      "missing_spans": [
+        "its owner has approved a public preview",
+        "publish a draft"
+      ],
+      "errors": [
+        "uncompiled:NOT",
+        "exception_or_concession_unbound"
+      ],
+      "calls": 9
+    },
+    {
+      "case_id": "device_nested_authored",
+      "origin": "new_authored",
+      "arm": "A_one_shot",
+      "gold_directives": 2,
+      "found_directives": 2,
+      "directive_match": 0,
+      "scope_match": 0,
+      "logic_match": 0,
+      "temporal_match": 0,
+      "temporal_total": 2,
+      "span_hit": 1,
+      "span_total": 4,
+      "exact_ir": false,
+      "missing_directives": [
+        {
+          "kind": "GATE",
+          "action_quote": "performing the swap",
+          "governed_tools": [
+            "perform_swap"
+          ],
+          "condition": {
+            "op": "ATOM",
+            "quote": "verify approval",
+            "temporal": "PRIOR_TRUE"
+          },
+          "before_quote": "",
+          "exception_quote": "",
+          "exception_type": "NONE",
+          "scope_quote": "For replacement devices"
+        },
+        {
+          "kind": "ORDER",
+          "action_quote": "notify the customer",
+          "governed_tools": [
+            "notify_customer"
+          ],
+          "condition": null,
+          "before_quote": "performing the swap",
+          "exception_quote": "",
+          "exception_type": "NONE",
+          "scope_quote": "For replacement devices"
+        }
+      ],
+      "extra_directives": [
+        {
+          "kind": "GATE",
+          "action_quote": "verify approval before performing the swap",
+          "governed_tools": [
+            "perform_swap"
+          ],
+          "condition": null,
+          "before_quote": "",
+          "exception_quote": "",
+          "exception_type": "NONE",
+          "scope_quote": "For replacement devices"
+        },
+        {
+          "kind": "ORDER",
+          "action_quote": "notify the customer after the swap",
+          "governed_tools": [
+            "notify_customer"
+          ],
+          "condition": null,
+          "before_quote": "",
+          "exception_quote": "",
+          "exception_type": "NONE",
+          "scope_quote": "For replacement devices"
+        }
+      ],
+      "missing_spans": [
+        "notify the customer",
+        "performing the swap",
+        "verify approval"
+      ],
+      "errors": [],
+      "calls": 1
+    },
+    {
+      "case_id": "device_nested_authored",
+      "origin": "new_authored",
+      "arm": "B_staged",
+      "gold_directives": 2,
+      "found_directives": 6,
+      "directive_match": 0,
+      "scope_match": 0,
+      "logic_match": 0,
+      "temporal_match": 0,
+      "temporal_total": 2,
+      "span_hit": 3,
+      "span_total": 4,
+      "exact_ir": false,
+      "missing_directives": [
+        {
+          "kind": "GATE",
+          "action_quote": "performing the swap",
+          "governed_tools": [
+            "perform_swap"
+          ],
+          "condition": {
+            "op": "ATOM",
+            "quote": "verify approval",
+            "temporal": "PRIOR_TRUE"
+          },
+          "before_quote": "",
+          "exception_quote": "",
+          "exception_type": "NONE",
+          "scope_quote": "For replacement devices"
+        },
+        {
+          "kind": "ORDER",
+          "action_quote": "notify the customer",
+          "governed_tools": [
+            "notify_customer"
+          ],
+          "condition": null,
+          "before_quote": "performing the swap",
+          "exception_quote": "",
+          "exception_type": "NONE",
+          "scope_quote": "For replacement devices"
+        }
+      ],
+      "extra_directives": [
+        {
+          "kind": "GATE",
+          "action_quote": "verify approval",
+          "governed_tools": [
+            "lookup_approval"
+          ],
+          "condition": null,
+          "before_quote": "",
+          "exception_quote": "",
+          "exception_type": "NONE",
+          "scope_quote": "before performing the swap"
+        },
+        {
+          "kind": "ORDER",
+          "action_quote": "",
+          "governed_tools": [
+            "perform_swap"
+          ],
+          "condition": null,
+          "before_quote": "",
+          "exception_quote": "",
+          "exception_type": "NONE",
+          "scope_quote": ""
+        },
+        {
+          "kind": "REQUIRE_RESPONSE",
+          "action_quote": "notify the customer",
+          "governed_tools": [
+            "notify_customer"
+          ],
+          "condition": null,
+          "before_quote": "",
+          "exception_quote": "",
+          "exception_type": "NONE",
+          "scope_quote": "after the swap"
+        },
+        {
+          "kind": "ORDER",
+          "action_quote": "notify the customer after the swap",
+          "governed_tools": [
+            "notify_customer"
+          ],
+          "condition": null,
+          "before_quote": "",
+          "exception_quote": "",
+          "exception_type": "NONE",
+          "scope_quote": "For replacement devices"
+        },
+        {
+          "kind": "GATE",
+          "action_quote": "verify approval before performing the swap",
+          "governed_tools": [
+            "perform_swap"
+          ],
+          "condition": {
+            "op": "ATOM",
+            "quote": "For replacement devices",
+            "temporal": "NONE"
+          },
+          "before_quote": "",
+          "exception_quote": "",
+          "exception_type": "NONE",
+          "scope_quote": ""
+        },
+        {
+          "kind": "ORDER",
+          "action_quote": "notify the customer after the swap",
+          "governed_tools": [
+            "notify_customer"
+          ],
+          "condition": {
+            "op": "ATOM",
+            "quote": "For replacement devices",
+            "temporal": "NONE"
+          },
+          "before_quote": "",
+          "exception_quote": "",
+          "exception_type": "NONE",
+          "scope_quote": ""
+        }
+      ],
+      "missing_spans": [
+        "performing the swap"
+      ],
+      "errors": [
+        "detail_count_0:3",
+        "bad_action_span_1",
+        "invalid_head_1",
+        "detail_count_3:2"
+      ],
+      "calls": 4
+    },
+    {
+      "case_id": "device_nested_authored",
+      "origin": "new_authored",
+      "arm": "C_onionl",
+      "gold_directives": 2,
+      "found_directives": 0,
+      "directive_match": 0,
+      "scope_match": 0,
+      "logic_match": 0,
+      "temporal_match": 0,
+      "temporal_total": 2,
+      "span_hit": 0,
+      "span_total": 4,
+      "exact_ir": false,
+      "missing_directives": [
+        {
+          "kind": "GATE",
+          "action_quote": "performing the swap",
+          "governed_tools": [
+            "perform_swap"
+          ],
+          "condition": {
+            "op": "ATOM",
+            "quote": "verify approval",
+            "temporal": "PRIOR_TRUE"
+          },
+          "before_quote": "",
+          "exception_quote": "",
+          "exception_type": "NONE",
+          "scope_quote": "For replacement devices"
+        },
+        {
+          "kind": "ORDER",
+          "action_quote": "notify the customer",
+          "governed_tools": [
+            "notify_customer"
+          ],
+          "condition": null,
+          "before_quote": "performing the swap",
+          "exception_quote": "",
+          "exception_type": "NONE",
+          "scope_quote": "For replacement devices"
+        }
+      ],
+      "extra_directives": [],
+      "missing_spans": [
+        "For replacement devices",
+        "notify the customer",
+        "performing the swap",
+        "verify approval"
+      ],
+      "errors": [
+        "unbound_gate",
+        "unbound_order"
+      ],
+      "calls": 24
+    },
+    {
+      "case_id": "device_nested_authored",
+      "origin": "new_authored",
+      "arm": "D_nl2logic",
+      "gold_directives": 2,
+      "found_directives": 0,
+      "directive_match": 0,
+      "scope_match": 0,
+      "logic_match": 0,
+      "temporal_match": 0,
+      "temporal_total": 2,
+      "span_hit": 0,
+      "span_total": 4,
+      "exact_ir": false,
+      "missing_directives": [
+        {
+          "kind": "GATE",
+          "action_quote": "performing the swap",
+          "governed_tools": [
+            "perform_swap"
+          ],
+          "condition": {
+            "op": "ATOM",
+            "quote": "verify approval",
+            "temporal": "PRIOR_TRUE"
+          },
+          "before_quote": "",
+          "exception_quote": "",
+          "exception_type": "NONE",
+          "scope_quote": "For replacement devices"
+        },
+        {
+          "kind": "ORDER",
+          "action_quote": "notify the customer",
+          "governed_tools": [
+            "notify_customer"
+          ],
+          "condition": null,
+          "before_quote": "performing the swap",
+          "exception_quote": "",
+          "exception_type": "NONE",
+          "scope_quote": "For replacement devices"
+        }
+      ],
+      "extra_directives": [],
+      "missing_spans": [
+        "For replacement devices",
+        "notify the customer",
+        "performing the swap",
+        "verify approval"
+      ],
+      "errors": [
+        "unbound_order"
+      ],
+      "calls": 11
+    },
+    {
+      "case_id": "archive_multitool_authored",
+      "origin": "new_authored",
+      "arm": "A_one_shot",
+      "gold_directives": 2,
+      "found_directives": 3,
+      "directive_match": 1,
+      "scope_match": 1,
+      "logic_match": 0,
+      "temporal_match": 0,
+      "temporal_total": 1,
+      "span_hit": 1,
+      "span_total": 3,
+      "exact_ir": false,
+      "missing_directives": [
+        {
+          "kind": "GATE",
+          "action_quote": "release an archive",
+          "governed_tools": [
+            "publish_archive",
+            "publish_public_copy"
+          ],
+          "condition": {
+            "op": "ATOM",
+            "quote": "the latest retention review says cleared",
+            "temporal": "LATEST"
+          },
+          "before_quote": "",
+          "exception_quote": "",
+          "exception_type": "NONE",
+          "scope_quote": ""
+        },
+        {
+          "kind": "DESCRIPTIVE",
+          "action_quote": "Filing a request is not release",
+          "governed_tools": [],
+          "condition": null,
+          "before_quote": "",
+          "exception_quote": "",
+          "exception_type": "NONE",
+          "scope_quote": ""
+        }
+      ],
+      "extra_directives": [
+        {
+          "kind": "GATE",
+          "action_quote": "release an archive",
+          "governed_tools": [
+            "publish_archive",
+            "publish_public_copy"
+          ],
+          "condition": {
+            "op": "ATOM",
+            "quote": "latest retention review says cleared",
+            "temporal": "LATEST"
+          },
+          "before_quote": "",
+          "exception_quote": "",
+          "exception_type": "NONE",
+          "scope_quote": ""
+        },
+        {
+          "kind": "FORBID",
+          "action_quote": "release an archive",
+          "governed_tools": [
+            "file_request"
+          ],
+          "condition": null,
+          "before_quote": "",
+          "exception_quote": "",
+          "exception_type": "NONE",
+          "scope_quote": ""
+        },
+        {
+          "kind": "DESCRIPTIVE",
+          "action_quote": "release an archive",
+          "governed_tools": [
+            "publish_archive",
+            "publish_public_copy"
+          ],
+          "condition": null,
+          "before_quote": "",
+          "exception_quote": "either publication tool",
+          "exception_type": "EXCEPT",
+          "scope_quote": ""
+        }
+      ],
+      "missing_spans": [
+        "Filing a request is not release",
+        "the latest retention review says cleared"
+      ],
+      "errors": [],
+      "calls": 1
+    },
+    {
+      "case_id": "archive_multitool_authored",
+      "origin": "new_authored",
+      "arm": "B_staged",
+      "gold_directives": 2,
+      "found_directives": 4,
+      "directive_match": 0,
+      "scope_match": 0,
+      "logic_match": 0,
+      "temporal_match": 0,
+      "temporal_total": 1,
+      "span_hit": 1,
+      "span_total": 3,
+      "exact_ir": false,
+      "missing_directives": [
+        {
+          "kind": "GATE",
+          "action_quote": "release an archive",
+          "governed_tools": [
+            "publish_archive",
+            "publish_public_copy"
+          ],
+          "condition": {
+            "op": "ATOM",
+            "quote": "the latest retention review says cleared",
+            "temporal": "LATEST"
+          },
+          "before_quote": "",
+          "exception_quote": "",
+          "exception_type": "NONE",
+          "scope_quote": ""
+        },
+        {
+          "kind": "DESCRIPTIVE",
+          "action_quote": "Filing a request is not release",
+          "governed_tools": [],
+          "condition": null,
+          "before_quote": "",
+          "exception_quote": "",
+          "exception_type": "NONE",
+          "scope_quote": ""
+        }
+      ],
+      "extra_directives": [
+        {
+          "kind": "PERMIT",
+          "action_quote": "release an archive with either publication tool",
+          "governed_tools": [
+            "publish_archive",
+            "publish_public_copy"
+          ],
+          "condition": {
+            "op": "AND",
+            "children": [
+              {
+                "op": "ATOM",
+                "quote": "latest retention review says cleared",
+                "temporal": "LATEST"
+              },
+              {
+                "op": "NOT",
+                "children": [
+                  {
+                    "op": "ATOM",
+                    "quote": "Filing a request",
+                    "temporal": "NONE"
+                  }
+                ]
+              }
+            ]
+          },
+          "before_quote": "",
+          "exception_quote": "",
+          "exception_type": "NONE",
+          "scope_quote": ""
+        },
+        {
+          "kind": "FORBID",
+          "action_quote": "Filing a request",
+          "governed_tools": [
+            "file_request"
+          ],
+          "condition": {
+            "op": "ATOM",
+            "quote": "is not release",
+            "temporal": "NONE"
+          },
+          "before_quote": "",
+          "exception_quote": "",
+          "exception_type": "NONE",
+          "scope_quote": ""
+        },
+        {
+          "kind": "ORDER",
+          "action_quote": "release an archive with either publication tool",
+          "governed_tools": [
+            "publish_archive",
+            "publish_public_copy"
+          ],
+          "condition": null,
+          "before_quote": "After",
+          "exception_quote": "",
+          "exception_type": "NONE",
+          "scope_quote": ""
+        },
+        {
+          "kind": "FORBID",
+          "action_quote": "",
+          "governed_tools": [
+            "file_request"
+          ],
+          "condition": null,
+          "before_quote": "",
+          "exception_quote": "Filing a request is not release",
+          "exception_type": "EXCEPT",
+          "scope_quote": ""
+        }
+      ],
+      "missing_spans": [
+        "release an archive",
+        "the latest retention review says cleared"
+      ],
+      "errors": [
+        "detail_count_2:2",
+        "bad_action_span_1"
+      ],
+      "calls": 4
+    },
+    {
+      "case_id": "archive_multitool_authored",
+      "origin": "new_authored",
+      "arm": "C_onionl",
+      "gold_directives": 2,
+      "found_directives": 0,
+      "directive_match": 0,
+      "scope_match": 0,
+      "logic_match": 0,
+      "temporal_match": 0,
+      "temporal_total": 1,
+      "span_hit": 0,
+      "span_total": 3,
+      "exact_ir": false,
+      "missing_directives": [
+        {
+          "kind": "GATE",
+          "action_quote": "release an archive",
+          "governed_tools": [
+            "publish_archive",
+            "publish_public_copy"
+          ],
+          "condition": {
+            "op": "ATOM",
+            "quote": "the latest retention review says cleared",
+            "temporal": "LATEST"
+          },
+          "before_quote": "",
+          "exception_quote": "",
+          "exception_type": "NONE",
+          "scope_quote": ""
+        },
+        {
+          "kind": "DESCRIPTIVE",
+          "action_quote": "Filing a request is not release",
+          "governed_tools": [],
+          "condition": null,
+          "before_quote": "",
+          "exception_quote": "",
+          "exception_type": "NONE",
+          "scope_quote": ""
+        }
+      ],
+      "extra_directives": [],
+      "missing_spans": [
+        "Filing a request is not release",
+        "release an archive",
+        "the latest retention review says cleared"
+      ],
+      "errors": [
+        "unbound_order"
+      ],
+      "calls": 6
+    },
+    {
+      "case_id": "archive_multitool_authored",
+      "origin": "new_authored",
+      "arm": "D_nl2logic",
+      "gold_directives": 2,
+      "found_directives": 0,
+      "directive_match": 0,
+      "scope_match": 0,
+      "logic_match": 0,
+      "temporal_match": 0,
+      "temporal_total": 1,
+      "span_hit": 0,
+      "span_total": 3,
+      "exact_ir": false,
+      "missing_directives": [
+        {
+          "kind": "GATE",
+          "action_quote": "release an archive",
+          "governed_tools": [
+            "publish_archive",
+            "publish_public_copy"
+          ],
+          "condition": {
+            "op": "ATOM",
+            "quote": "the latest retention review says cleared",
+            "temporal": "LATEST"
+          },
+          "before_quote": "",
+          "exception_quote": "",
+          "exception_type": "NONE",
+          "scope_quote": ""
+        },
+        {
+          "kind": "DESCRIPTIVE",
+          "action_quote": "Filing a request is not release",
+          "governed_tools": [],
+          "condition": null,
+          "before_quote": "",
+          "exception_quote": "",
+          "exception_type": "NONE",
+          "scope_quote": ""
+        }
+      ],
+      "extra_directives": [],
+      "missing_spans": [
+        "Filing a request is not release",
+        "release an archive",
+        "the latest retention review says cleared"
+      ],
+      "errors": [
+        "unbound_order"
+      ],
+      "calls": 17
+    }
+  ]
+}

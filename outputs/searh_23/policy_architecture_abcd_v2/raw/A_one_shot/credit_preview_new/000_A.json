@@ -1,0 +1,94 @@
+{
+  "signature": "843a2ab8e5b07532baf7d7b43672e6df5a2036b2c6506d27b2a6efba5f0be0c7",
+  "stage": "A",
+  "model": "ministral-14b-latest",
+  "query": {
+    "policy": "You may preview a credit, but you must never issue a credit without recorded approval.",
+    "tools": {
+      "preview_credit": "Show a draft credit without posting it.",
+      "check_approval": "Read recorded credit approval; does not post credit.",
+      "issue_credit": "Post a credit to the customer's balance."
+    }
+  },
+  "raw": "{\n  \"directives\": [\n    {\n      \"kind\": \"PERMIT\",\n      \"action_quote\": \"preview a credit\",\n      \"governed_tools\": [\"preview_credit\"],\n      \"condition\": null,\n      \"before_quote\": \"\",\n      \"exception_quote\": \"\",\n      \"exception_type\": \"NONE\",\n      \"scope_quote\": \"\"\n    },\n    {\n      \"kind\": \"FORBID\",\n      \"action_quote\": \"issue a credit\",\n      \"governed_tools\": [\"issue_credit\"],\n      \"condition\": {\n        \"op\": \"NOT\",\n        \"quote\": \"\",\n        \"temporal\": \"NONE\",\n        \"children\": [\n          {\n            \"op\": \"ATOM\",\n            \"quote\": \"recorded approval\",\n            \"temporal\": \"LATEST\",\n            \"children\": []\n          }\n        ]\n      },\n      \"before_quote\": \"\",\n      \"exception_quote\": \"\",\n      \"exception_type\": \"NONE\",\n      \"scope_quote\": \"\"\n    },\n    {\n      \"kind\": \"GATE\",\n      \"action_quote\": \"issue a credit\",\n      \"governed_tools\": [\"issue_credit\"],\n      \"condition\": {\n        \"op\": \"ATOM\",\n        \"quote\": \"recorded approval\",\n        \"temporal\": \"LATEST\",\n        \"children\": []\n      },\n      \"before_quote\": \"\",\n      \"exception_quote\": \"\",\n      \"exception_type\": \"NONE\",\n      \"scope_quote\": \"\"\n    },\n    {\n      \"kind\": \"ORDER\",\n      \"action_quote\": \"issue a credit\",\n      \"governed_tools\": [\"issue_credit\"],\n      \"condition\": null,\n      \"before_quote\": \"check_approval\",\n      \"exception_quote\": \"\",\n      \"exception_type\": \"NONE\",\n      \"scope_quote\": \"\"\n    }\n  ]\n}",
+  "answer": {
+    "directives": [
+      {
+        "kind": "PERMIT",
+        "action_quote": "preview a credit",
+        "governed_tools": [
+          "preview_credit"
+        ],
+        "condition": null,
+        "before_quote": "",
+        "exception_quote": "",
+        "exception_type": "NONE",
+        "scope_quote": ""
+      },
+      {
+        "kind": "FORBID",
+        "action_quote": "issue a credit",
+        "governed_tools": [
+          "issue_credit"
+        ],
+        "condition": {
+          "op": "NOT",
+          "quote": "",
+          "temporal": "NONE",
+          "children": [
+            {
+              "op": "ATOM",
+              "quote": "recorded approval",
+              "temporal": "LATEST",
+              "children": []
+            }
+          ]
+        },
+        "before_quote": "",
+        "exception_quote": "",
+        "exception_type": "NONE",
+        "scope_quote": ""
+      },
+      {
+        "kind": "GATE",
+        "action_quote": "issue a credit",
+        "governed_tools": [
+          "issue_credit"
+        ],
+        "condition": {
+          "op": "ATOM",
+          "quote": "recorded approval",
+          "temporal": "LATEST",
+          "children": []
+        },
+        "before_quote": "",
+        "exception_quote": "",
+        "exception_type": "NONE",
+        "scope_quote": ""
+      },
+      {
+        "kind": "ORDER",
+        "action_quote": "issue a credit",
+        "governed_tools": [
+          "issue_credit"
+        ],
+        "condition": null,
+        "before_quote": "check_approval",
+        "exception_quote": "",
+        "exception_type": "NONE",
+        "scope_quote": ""
+      }
+    ]
+  },
+  "error": "",
+  "finish_reason": "stop",
+  "usage": {
+    "prompt_tokens": 413,
+    "total_tokens": 814,
+    "completion_tokens": 401,
+    "prompt_tokens_details": {
+      "cached_tokens": 0
+    },
+    "service_tier": "standard"
+  }
+}

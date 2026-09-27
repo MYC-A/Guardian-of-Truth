@@ -1,0 +1,54 @@
+{
+  "signature": "12b2660722f2b773063470a2ee4309e97060d4a15e034786133cc08232f10d02",
+  "stage": "C_node",
+  "model": "ministral-14b-latest",
+  "query": {
+    "clause": "A parcel may be handed over only after its barcode check has returned valid AND its latest custody check reports ready. Filing a handover request does not hand it over.",
+    "policy": "A parcel may be handed over only after its barcode check has returned valid AND its latest custody check reports ready. Filing a handover request does not hand it over.",
+    "tools": {
+      "check_barcode": {
+        "description": "Read barcode validity for parcel; no handover.",
+        "id": "parcel_id",
+        "result": "valid"
+      },
+      "check_custody": {
+        "description": "Read current custody readiness; no handover.",
+        "id": "parcel_id",
+        "result": "ready"
+      },
+      "file_handover_request": {
+        "description": "Request later parcel handover; does not hand it over.",
+        "id": "parcel_id",
+        "result": "accepted"
+      },
+      "handover_parcel": {
+        "description": "Hand over the parcel now.",
+        "id": "parcel_id",
+        "result": "success"
+      }
+    }
+  },
+  "raw": "{\n  \"op\": \"AND\",\n  \"left\": {\n    \"clause\": \"A parcel may be handed over only after its barcode check has returned valid AND its latest custody check reports ready.\",\n    \"policy\": \"A parcel may be handed over only after its barcode check has returned valid AND its latest custody check reports ready.\"\n  },\n  \"right\": {\n    \"clause\": \"Filing a handover request does not hand it over.\",\n    \"policy\": \"Filing a handover request does not hand it over.\"\n  }\n}",
+  "answer": {
+    "op": "AND",
+    "left": {
+      "clause": "A parcel may be handed over only after its barcode check has returned valid AND its latest custody check reports ready.",
+      "policy": "A parcel may be handed over only after its barcode check has returned valid AND its latest custody check reports ready."
+    },
+    "right": {
+      "clause": "Filing a handover request does not hand it over.",
+      "policy": "Filing a handover request does not hand it over."
+    }
+  },
+  "error": "",
+  "finish_reason": "stop",
+  "usage": {
+    "prompt_tokens": 408,
+    "total_tokens": 522,
+    "completion_tokens": 114,
+    "prompt_tokens_details": {
+      "cached_tokens": 0
+    },
+    "service_tier": "standard"
+  }
+}

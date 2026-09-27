@@ -1,0 +1,66 @@
+{
+  "signature": "501892a039e9ac5c70af7eb35abf8067852dff21a2bb492a52547f5960cc7b3d",
+  "stage": "B_inventory",
+  "model": "ministral-14b-latest",
+  "query": {
+    "policy": "A parcel may be handed over only after its barcode check has returned valid AND its latest custody check reports ready. Filing a handover request does not hand it over.",
+    "tools": {
+      "check_barcode": {
+        "description": "Read barcode validity for parcel; no handover.",
+        "id": "parcel_id",
+        "result": "valid"
+      },
+      "check_custody": {
+        "description": "Read current custody readiness; no handover.",
+        "id": "parcel_id",
+        "result": "ready"
+      },
+      "file_handover_request": {
+        "description": "Request later parcel handover; does not hand it over.",
+        "id": "parcel_id",
+        "result": "accepted"
+      },
+      "handover_parcel": {
+        "description": "Hand over the parcel now.",
+        "id": "parcel_id",
+        "result": "success"
+      }
+    }
+  },
+  "raw": "{\n  \"heads\": [\n    {\n      \"kind\": \"ORDER\",\n      \"head_quote\": \"A parcel may be handed over only after its barcode check has returned valid AND its latest custody check reports ready.\"\n    },\n    {\n      \"kind\": \"FORBID\",\n      \"head_quote\": \"Filing a handover request does not hand it over.\"\n    },\n    {\n      \"kind\": \"REQUIRE_RESPONSE\",\n      \"head_quote\": \"its barcode check has returned valid\"\n    },\n    {\n      \"kind\": \"REQUIRE_RESPONSE\",\n      \"head_quote\": \"its latest custody check reports ready\"\n    },\n    {\n      \"kind\": \"DESCRIPTIVE\",\n      \"head_quote\": \"Filing a handover request does not hand it over.\"\n    }\n  ]\n}",
+  "answer": {
+    "heads": [
+      {
+        "kind": "ORDER",
+        "head_quote": "A parcel may be handed over only after its barcode check has returned valid AND its latest custody check reports ready."
+      },
+      {
+        "kind": "FORBID",
+        "head_quote": "Filing a handover request does not hand it over."
+      },
+      {
+        "kind": "REQUIRE_RESPONSE",
+        "head_quote": "its barcode check has returned valid"
+      },
+      {
+        "kind": "REQUIRE_RESPONSE",
+        "head_quote": "its latest custody check reports ready"
+      },
+      {
+        "kind": "DESCRIPTIVE",
+        "head_quote": "Filing a handover request does not hand it over."
+      }
+    ]
+  },
+  "error": "",
+  "finish_reason": "stop",
+  "usage": {
+    "prompt_tokens": 265,
+    "total_tokens": 439,
+    "completion_tokens": 174,
+    "prompt_tokens_details": {
+      "cached_tokens": 0
+    },
+    "service_tier": "standard"
+  }
+}

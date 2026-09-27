@@ -1,0 +1,122 @@
+{
+  "case_id": "device_nested_authored",
+  "arm": "B_staged",
+  "model": "ministral-14b-latest",
+  "protocol_sha256": "7c047f7e198b28d42d93138d8b0a4cff554af910df109456922942c2f5f5f6ea",
+  "query_sha256": "3c6e650d91371bcd82e484874848d54d1359f57a9ef27afc088ada4bca1ee0ce",
+  "directives": [
+    {
+      "kind": "GATE",
+      "action_quote": "verify approval",
+      "governed_tools": [
+        "lookup_approval"
+      ],
+      "condition": null,
+      "before_quote": "",
+      "exception_quote": "",
+      "exception_type": "NONE",
+      "scope_quote": "before performing the swap"
+    },
+    {
+      "kind": "ORDER",
+      "action_quote": "",
+      "governed_tools": [
+        "perform_swap"
+      ],
+      "condition": null,
+      "before_quote": "",
+      "exception_quote": "",
+      "exception_type": "NONE",
+      "scope_quote": ""
+    },
+    {
+      "kind": "REQUIRE_RESPONSE",
+      "action_quote": "notify the customer",
+      "governed_tools": [
+        "notify_customer"
+      ],
+      "condition": null,
+      "before_quote": "",
+      "exception_quote": "",
+      "exception_type": "NONE",
+      "scope_quote": "after the swap"
+    },
+    {
+      "kind": "ORDER",
+      "action_quote": "notify the customer after the swap",
+      "governed_tools": [
+        "notify_customer"
+      ],
+      "condition": null,
+      "before_quote": "",
+      "exception_quote": "",
+      "exception_type": "NONE",
+      "scope_quote": "For replacement devices"
+    },
+    {
+      "kind": "GATE",
+      "action_quote": "verify approval before performing the swap",
+      "governed_tools": [
+        "perform_swap"
+      ],
+      "condition": {
+        "op": "ATOM",
+        "quote": "For replacement devices",
+        "temporal": "NONE"
+      },
+      "before_quote": "",
+      "exception_quote": "",
+      "exception_type": "NONE",
+      "scope_quote": ""
+    },
+    {
+      "kind": "ORDER",
+      "action_quote": "notify the customer after the swap",
+      "governed_tools": [
+        "notify_customer"
+      ],
+      "condition": {
+        "op": "ATOM",
+        "quote": "For replacement devices",
+        "temporal": "NONE"
+      },
+      "before_quote": "",
+      "exception_quote": "",
+      "exception_type": "NONE",
+      "scope_quote": ""
+    }
+  ],
+  "tree": null,
+  "errors": [
+    "detail_count_0:3",
+    "bad_action_span_1",
+    "invalid_head_1",
+    "detail_count_3:2"
+  ],
+  "calls": [
+    {
+      "stage": "B_inventory",
+      "path": "raw/B_staged/device_nested_authored/000_B_inventory.json",
+      "error": "",
+      "finish_reason": "stop"
+    },
+    {
+      "stage": "B_detail",
+      "path": "raw/B_staged/device_nested_authored/001_B_detail.json",
+      "error": "",
+      "finish_reason": "stop"
+    },
+    {
+      "stage": "B_detail",
+      "path": "raw/B_staged/device_nested_authored/002_B_detail.json",
+      "error": "",
+      "finish_reason": "stop"
+    },
+    {
+      "stage": "B_detail",
+      "path": "raw/B_staged/device_nested_authored/003_B_detail.json",
+      "error": "",
+      "finish_reason": "stop"
+    }
+  ]
+}

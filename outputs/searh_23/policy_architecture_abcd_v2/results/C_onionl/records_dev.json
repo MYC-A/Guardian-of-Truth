@@ -1,0 +1,94 @@
+{
+  "case_id": "records_dev",
+  "arm": "C_onionl",
+  "model": "ministral-14b-latest",
+  "protocol_sha256": "7c047f7e198b28d42d93138d8b0a4cff554af910df109456922942c2f5f5f6ea",
+  "query_sha256": "dc0eb93c1ac345d99aa3974915dd93801d69be246bf5cc21509eff1f855a7cd7",
+  "directives": [],
+  "tree": {
+    "op": "AND",
+    "left": {
+      "op": "GATE",
+      "left": {
+        "op": "ATOM",
+        "role": "ACTION",
+        "quote": "A document may be published only after its owner approval check has returned approved for that document AND the latest classification check for the same document reports public.",
+        "tools": [
+          "publish_document"
+        ],
+        "temporal": "LATEST"
+      },
+      "right": {
+        "op": "ERROR",
+        "reason": "no_progress_left",
+        "text": "check_owner_approval(document_id) = approved",
+        "answer": {
+          "op": "AND",
+          "left": "check_owner_approval(document_id) = approved",
+          "right": "check_classification(document_id) = public"
+        }
+      }
+    },
+    "right": {
+      "op": "ATOM",
+      "role": "CONDITION",
+      "quote": "the latest classification check for the same document reports public",
+      "tools": [],
+      "temporal": "LATEST"
+    }
+  },
+  "errors": [
+    "unbound_gate",
+    "orphan_atom:CONDITION"
+  ],
+  "calls": [
+    {
+      "stage": "C_macro",
+      "path": "raw/C_onionl/records_dev/000_C_macro.json",
+      "error": "",
+      "finish_reason": "stop"
+    },
+    {
+      "stage": "C_node",
+      "path": "raw/C_onionl/records_dev/001_C_node.json",
+      "error": "",
+      "finish_reason": "stop"
+    },
+    {
+      "stage": "C_node",
+      "path": "raw/C_onionl/records_dev/002_C_node.json",
+      "error": "",
+      "finish_reason": "stop"
+    },
+    {
+      "stage": "C_node",
+      "path": "raw/C_onionl/records_dev/003_C_node.json",
+      "error": "",
+      "finish_reason": "stop"
+    },
+    {
+      "stage": "leaf",
+      "path": "raw/C_onionl/records_dev/004_leaf.json",
+      "error": "",
+      "finish_reason": "stop"
+    },
+    {
+      "stage": "C_node",
+      "path": "raw/C_onionl/records_dev/005_C_node.json",
+      "error": "",
+      "finish_reason": "stop"
+    },
+    {
+      "stage": "C_node",
+      "path": "raw/C_onionl/records_dev/006_C_node.json",
+      "error": "",
+      "finish_reason": "stop"
+    },
+    {
+      "stage": "leaf",
+      "path": "raw/C_onionl/records_dev/007_leaf.json",
+      "error": "",
+      "finish_reason": "stop"
+    }
+  ]
+}

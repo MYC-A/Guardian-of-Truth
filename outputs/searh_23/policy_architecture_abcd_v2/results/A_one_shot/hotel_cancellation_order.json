@@ -1,0 +1,57 @@
+{
+  "case_id": "hotel_cancellation_order",
+  "arm": "A_one_shot",
+  "model": "ministral-14b-latest",
+  "protocol_sha256": "7c047f7e198b28d42d93138d8b0a4cff554af910df109456922942c2f5f5f6ea",
+  "query_sha256": "9dae3053180ffa1fdd96eb28a0f9c625d9d1c39e5a25e7a356d45a04a8a9a1cf",
+  "directives": [
+    {
+      "kind": "ORDER",
+      "action_quote": "process cancellation",
+      "governed_tools": [
+        "cancel_reservation"
+      ],
+      "condition": null,
+      "before_quote": "",
+      "exception_quote": "",
+      "exception_type": "NONE",
+      "scope_quote": "For paid reservations"
+    },
+    {
+      "kind": "ORDER",
+      "action_quote": "the refund",
+      "governed_tools": [
+        "process_refund"
+      ],
+      "condition": null,
+      "before_quote": "process cancellation",
+      "exception_quote": "",
+      "exception_type": "NONE",
+      "scope_quote": "For paid reservations"
+    },
+    {
+      "kind": "FORBID",
+      "action_quote": "",
+      "governed_tools": [
+        "process_refund"
+      ],
+      "condition": null,
+      "before_quote": "",
+      "exception_quote": "",
+      "exception_type": "NONE",
+      "scope_quote": "before cancelling"
+    }
+  ],
+  "tree": null,
+  "errors": [
+    "bad_action_span_2"
+  ],
+  "calls": [
+    {
+      "stage": "A",
+      "path": "raw/A_one_shot/hotel_cancellation_order/000_A.json",
+      "error": "",
+      "finish_reason": "stop"
+    }
+  ]
+}

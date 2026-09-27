@@ -1,0 +1,70 @@
+{
+  "signature": "4cd63d4337fd68185c56c71666d96e1c3665109a81a41b0e4aa266901b6165c0",
+  "stage": "B_inventory",
+  "model": "ministral-14b-latest",
+  "query": {
+    "policy": "A parcel may be handed over only after its barcode check has returned valid AND its latest custody check reports ready. Filing a handover request does not hand it over.",
+    "tools": {
+      "check_barcode": {
+        "description": "Read barcode validity for parcel; no handover.",
+        "id": "parcel_id",
+        "result": "valid"
+      },
+      "check_custody": {
+        "description": "Read current custody readiness; no handover.",
+        "id": "parcel_id",
+        "result": "ready"
+      },
+      "file_handover_request": {
+        "description": "Request later parcel handover; does not hand it over.",
+        "id": "parcel_id",
+        "result": "accepted"
+      },
+      "handover_parcel": {
+        "description": "Hand over the parcel now.",
+        "id": "parcel_id",
+        "result": "success"
+      }
+    }
+  },
+  "raw": "{\n  \"heads\": [\n    {\n      \"kind\": \"FORBID\",\n      \"head_quote\": \"A parcel may be handed over only after its barcode check has returned valid AND its latest custody check reports ready.\"\n    },\n    {\n      \"kind\": \"DESCRIPTIVE\",\n      \"head_quote\": \"Filing a handover request does not hand it over.\"\n    },\n    {\n      \"kind\": \"PERMIT\",\n      \"head_quote\": \"Hand over the parcel now, **if** its barcode check has returned valid **and** its latest custody check reports ready.\"\n    },\n    {\n      \"kind\": \"FORBID\",\n      \"head_quote\": \"Hand over the parcel now, **unless** its barcode check has returned valid **and** its latest custody check reports ready.\"\n    },\n    {\n      \"kind\": \"PERMIT\",\n      \"head_quote\": \"File a handover request for a parcel.\"\n    },\n    {\n      \"kind\": \"DESCRIPTIVE\",\n      \"head_quote\": \"Filing a handover request does not result in an immediate handover.\"\n    }\n  ]\n}",
+  "answer": {
+    "heads": [
+      {
+        "kind": "FORBID",
+        "head_quote": "A parcel may be handed over only after its barcode check has returned valid AND its latest custody check reports ready."
+      },
+      {
+        "kind": "DESCRIPTIVE",
+        "head_quote": "Filing a handover request does not hand it over."
+      },
+      {
+        "kind": "PERMIT",
+        "head_quote": "Hand over the parcel now, **if** its barcode check has returned valid **and** its latest custody check reports ready."
+      },
+      {
+        "kind": "FORBID",
+        "head_quote": "Hand over the parcel now, **unless** its barcode check has returned valid **and** its latest custody check reports ready."
+      },
+      {
+        "kind": "PERMIT",
+        "head_quote": "File a handover request for a parcel."
+      },
+      {
+        "kind": "DESCRIPTIVE",
+        "head_quote": "Filing a handover request does not result in an immediate handover."
+      }
+    ]
+  },
+  "error": "",
+  "finish_reason": "stop",
+  "usage": {
+    "prompt_tokens": 265,
+    "total_tokens": 501,
+    "completion_tokens": 236,
+    "prompt_tokens_details": {
+      "cached_tokens": 0
+    },
+    "service_tier": "standard"
+  }
+}

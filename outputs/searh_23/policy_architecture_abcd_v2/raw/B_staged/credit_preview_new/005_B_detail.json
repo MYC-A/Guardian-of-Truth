@@ -1,0 +1,62 @@
+{
+  "signature": "3b5d22c6c1985f8b95a84f8e3a683a2dbcf8c2497b909d239be7278aa88fad0a",
+  "stage": "B_detail",
+  "model": "ministral-14b-latest",
+  "query": {
+    "policy": "You may preview a credit, but you must never issue a credit without recorded approval.",
+    "tools": {
+      "preview_credit": "Show a draft credit without posting it.",
+      "check_approval": "Read recorded credit approval; does not post credit.",
+      "issue_credit": "Post a credit to the customer's balance."
+    },
+    "head": {
+      "kind": "DESCRIPTIVE",
+      "head_quote": "recorded approval"
+    }
+  },
+  "raw": "{\n  \"directives\": [\n    {\n      \"kind\": \"GATE\",\n      \"action_quote\": \"issue a credit\",\n      \"governed_tools\": [\"issue_credit\"],\n      \"condition\": {\n        \"op\": \"ATOM\",\n        \"quote\": \"recorded approval\",\n        \"temporal\": \"LATEST\",\n        \"children\": []\n      },\n      \"before_quote\": \"\",\n      \"exception_quote\": \"\",\n      \"exception_type\": \"NONE\",\n      \"scope_quote\": \"\"\n    },\n    {\n      \"kind\": \"PERMIT\",\n      \"action_quote\": \"preview a credit\",\n      \"governed_tools\": [\"preview_credit\"],\n      \"condition\": null,\n      \"before_quote\": \"\",\n      \"exception_quote\": \"\",\n      \"exception_type\": \"NONE\",\n      \"scope_quote\": \"\"\n    }\n  ]\n}",
+  "answer": {
+    "directives": [
+      {
+        "kind": "GATE",
+        "action_quote": "issue a credit",
+        "governed_tools": [
+          "issue_credit"
+        ],
+        "condition": {
+          "op": "ATOM",
+          "quote": "recorded approval",
+          "temporal": "LATEST",
+          "children": []
+        },
+        "before_quote": "",
+        "exception_quote": "",
+        "exception_type": "NONE",
+        "scope_quote": ""
+      },
+      {
+        "kind": "PERMIT",
+        "action_quote": "preview a credit",
+        "governed_tools": [
+          "preview_credit"
+        ],
+        "condition": null,
+        "before_quote": "",
+        "exception_quote": "",
+        "exception_type": "NONE",
+        "scope_quote": ""
+      }
+    ]
+  },
+  "error": "",
+  "finish_reason": "stop",
+  "usage": {
+    "prompt_tokens": 452,
+    "total_tokens": 640,
+    "completion_tokens": 188,
+    "prompt_tokens_details": {
+      "cached_tokens": 243
+    },
+    "service_tier": "standard"
+  }
+}

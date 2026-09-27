@@ -1,0 +1,30 @@
+{
+  "signature": "7852aaecde0fa6f9329dba4e40813871650dd3a4b32dc28d8c8013f1e374feab",
+  "stage": "B_detail",
+  "model": "ministral-14b-latest",
+  "query": {
+    "policy": "For replacement devices, verify approval before performing the swap, and notify the customer after the swap.",
+    "tools": {
+      "lookup_approval": "Look up approval; does not replace a device.",
+      "perform_swap": "Replace the device.",
+      "notify_customer": "Send a customer notification."
+    },
+    "head": {
+      "kind": "REQUIRE_RESPONSE",
+      "head_quote": "verify approval before performing the swap"
+    }
+  },
+  "raw": "[\n    {\n        \"kind\": \"GATE\",\n        \"action_quote\": \"verify approval\",\n        \"governed_tools\": [\"lookup_approval\"],\n        \"condition\": null,\n        \"before_quote\": \"\",\n        \"exception_quote\": \"\",\n        \"exception_type\": \"NONE\",\n        \"scope_quote\": \"For replacement devices\"\n    },\n    {\n        \"kind\": \"ORDER\",\n        \"action_quote\": \"performing the swap\",\n        \"governed_tools\": [\"perform_swap\"],\n        \"condition\": {\n            \"op\": \"AND\",\n            \"children\": [\n                {\n                    \"op\": \"ATOM\",\n                    \"quote\": \"verify approval\",\n                    \"temporal\": \"PRIOR_TRUE\"\n                }\n            ]\n        },\n        \"before_quote\": \"\",\n        \"exception_quote\": \"\",\n        \"exception_type\": \"NONE\",\n        \"scope_quote\": \"For replacement devices\"\n    },\n    {\n        \"kind\": \"REQUIRE_RESPONSE\",\n        \"action_quote\": \"notify the customer after the swap\",\n        \"governed_tools\": [\"notify_customer\"],\n        \"condition\": {\n            \"op\": \"ATOM\",\n            \"quote\": \"performing the swap\",\n            \"temporal\": \"PRIOR_TRUE\"\n        },\n        \"before_quote\": \"\",\n        \"exception_quote\": \"\",\n        \"exception_type\": \"NONE\",\n        \"scope_quote\": \"For replacement devices\"\n    }\n]",
+  "answer": {},
+  "error": "non_object_json",
+  "finish_reason": "stop",
+  "usage": {
+    "prompt_tokens": 401,
+    "total_tokens": 713,
+    "completion_tokens": 312,
+    "prompt_tokens_details": {
+      "cached_tokens": 228
+    },
+    "service_tier": "standard"
+  }
+}

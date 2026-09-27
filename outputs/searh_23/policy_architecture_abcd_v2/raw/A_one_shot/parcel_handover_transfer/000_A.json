@@ -1,0 +1,88 @@
+{
+  "signature": "b33001196ccfd8a879c8d4d3b459c4775ffac46324a2c4f35a40cd8b8459d8fa",
+  "stage": "A",
+  "model": "ministral-14b-latest",
+  "query": {
+    "policy": "A parcel may be handed over only after its barcode check has returned valid AND its latest custody check reports ready. Filing a handover request does not hand it over.",
+    "tools": {
+      "check_barcode": {
+        "description": "Read barcode validity for parcel; no handover.",
+        "id": "parcel_id",
+        "result": "valid"
+      },
+      "check_custody": {
+        "description": "Read current custody readiness; no handover.",
+        "id": "parcel_id",
+        "result": "ready"
+      },
+      "file_handover_request": {
+        "description": "Request later parcel handover; does not hand it over.",
+        "id": "parcel_id",
+        "result": "accepted"
+      },
+      "handover_parcel": {
+        "description": "Hand over the parcel now.",
+        "id": "parcel_id",
+        "result": "success"
+      }
+    }
+  },
+  "raw": "{\n  \"directives\": [\n    {\n      \"kind\": \"GATE\",\n      \"action_quote\": \"hand over\",\n      \"governed_tools\": [\"handover_parcel\"],\n      \"condition\": {\n        \"op\": \"AND\",\n        \"quote\": \"\",\n        \"temporal\": \"NONE\",\n        \"children\": [\n          {\n            \"op\": \"ATOM\",\n            \"quote\": \"barcode check has returned valid\",\n            \"temporal\": \"LATEST\",\n            \"children\": []\n          },\n          {\n            \"op\": \"ATOM\",\n            \"quote\": \"latest custody check reports ready\",\n            \"temporal\": \"LATEST\",\n            \"children\": []\n          }\n        ]\n      },\n      \"before_quote\": \"\",\n      \"exception_quote\": \"\",\n      \"exception_type\": \"NONE\",\n      \"scope_quote\": \"\"\n    },\n    {\n      \"kind\": \"DESCRIPTIVE\",\n      \"action_quote\": \"file handover request\",\n      \"governed_tools\": [\"file_handover_request\"],\n      \"condition\": null,\n      \"before_quote\": \"\",\n      \"exception_quote\": \"does not hand it over\",\n      \"exception_type\": \"EXCEPT\",\n      \"scope_quote\": \"\"\n    }\n  ]\n}",
+  "answer": {
+    "directives": [
+      {
+        "kind": "GATE",
+        "action_quote": "hand over",
+        "governed_tools": [
+          "handover_parcel"
+        ],
+        "condition": {
+          "op": "AND",
+          "quote": "",
+          "temporal": "NONE",
+          "children": [
+            {
+              "op": "ATOM",
+              "quote": "barcode check has returned valid",
+              "temporal": "LATEST",
+              "children": []
+            },
+            {
+              "op": "ATOM",
+              "quote": "latest custody check reports ready",
+              "temporal": "LATEST",
+              "children": []
+            }
+          ]
+        },
+        "before_quote": "",
+        "exception_quote": "",
+        "exception_type": "NONE",
+        "scope_quote": ""
+      },
+      {
+        "kind": "DESCRIPTIVE",
+        "action_quote": "file handover request",
+        "governed_tools": [
+          "file_handover_request"
+        ],
+        "condition": null,
+        "before_quote": "",
+        "exception_quote": "does not hand it over",
+        "exception_type": "EXCEPT",
+        "scope_quote": ""
+      }
+    ]
+  },
+  "error": "",
+  "finish_reason": "stop",
+  "usage": {
+    "prompt_tokens": 519,
+    "total_tokens": 791,
+    "completion_tokens": 272,
+    "prompt_tokens_details": {
+      "cached_tokens": 0
+    },
+    "service_tier": "standard"
+  }
+}

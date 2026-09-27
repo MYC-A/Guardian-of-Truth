@@ -1,0 +1,76 @@
+{
+  "signature": "a7b072b993309f7b0573dacac74fc79a04815be9c9deb209be86a53c86aa4bcb",
+  "stage": "D_logical",
+  "model": "ministral-14b-latest",
+  "query": {
+    "clause": "For paid reservations, **the system must** process the cancellation **before** processing the refund. **The system must never** issue a refund before the cancellation is completed.",
+    "policy": "For paid reservations, process cancellation FIRST and the refund SECOND; never refund before cancelling.",
+    "tools": {
+      "lookup_reservation": {
+        "description": "- lookup_reservation — Get the details of a reservation."
+      },
+      "get_guest_profile": {
+        "description": "- get_guest_profile — Get the guest profile by user ID."
+      },
+      "verify_identity": {
+        "description": "- verify_identity — Verify that the name on the guest ID matches the name on the reservation."
+      },
+      "check_supervisor_approval": {
+        "description": "- check_supervisor_approval — Check whether supervisor approval is recorded for a reservation."
+      },
+      "record_supervisor_approval": {
+        "description": "- record_supervisor_approval — Record supervisor approval for a pending refund."
+      },
+      "process_refund": {
+        "description": "- process_refund — Process a refund to the original payment method."
+      },
+      "cancel_reservation": {
+        "description": "- cancel_reservation — Cancel the whole reservation."
+      },
+      "get_payment_status": {
+        "description": "- get_payment_status — Get the status of a payment."
+      },
+      "charge_card": {
+        "description": "- charge_card — Charge the payment card on file."
+      },
+      "escalate_to_payment_desk": {
+        "description": "- escalate_to_payment_desk — Escalate a payment issue to the payment desk."
+      },
+      "grant_late_checkout": {
+        "description": "- grant_late_checkout — Grant a late checkout for a reservation."
+      },
+      "modify_reservation": {
+        "description": "- modify_reservation — Modify a reservation."
+      },
+      "search_incident_reports": {
+        "description": "- search_incident_reports — Search incident reports for a reservation."
+      },
+      "get_incident_report": {
+        "description": "- get_incident_report — Get a documented incident report."
+      },
+      "issue_compensation": {
+        "description": "- issue_compensation — Issue compensation for a documented incident."
+      },
+      "transfer_to_human_agents": {
+        "description": "- transfer_to_human_agents — Transfer the user to a human agent, with a summary of the user's issue."
+      }
+    }
+  },
+  "raw": "{\n  \"op\": \"ORDER\",\n  \"left\": \"process cancellation\",\n  \"right\": \"process refund\"\n}",
+  "answer": {
+    "op": "ORDER",
+    "left": "process cancellation",
+    "right": "process refund"
+  },
+  "error": "",
+  "finish_reason": "stop",
+  "usage": {
+    "prompt_tokens": 606,
+    "total_tokens": 632,
+    "completion_tokens": 26,
+    "prompt_tokens_details": {
+      "cached_tokens": 0
+    },
+    "service_tier": "standard"
+  }
+}

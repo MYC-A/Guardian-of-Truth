@@ -1,0 +1,64 @@
+{
+  "signature": "6f99d9934cf57b4aae3a8b2100bc2fc5774566b5e531d42604c0c4c518d5258c",
+  "stage": "B_detail",
+  "model": "ministral-14b-latest",
+  "query": {
+    "policy": "You may preview a credit, but you must never issue a credit without recorded approval.",
+    "tools": {
+      "preview_credit": "Show a draft credit without posting it.",
+      "check_approval": "Read recorded credit approval; does not post credit.",
+      "issue_credit": "Post a credit to the customer's balance."
+    },
+    "head": {
+      "kind": "FORBID",
+      "head_quote": "you must never issue a credit without recorded approval"
+    }
+  },
+  "raw": "{\n  \"directives\": [\n    {\n      \"kind\": \"FORBID\",\n      \"action_quote\": \"issue a credit\",\n      \"governed_tools\": [\"issue_credit\"],\n      \"condition\": {\n        \"op\": \"AND\",\n        \"quote\": \"\",\n        \"temporal\": \"NONE\",\n        \"children\": [\n          {\n            \"op\": \"NOT\",\n            \"quote\": \"\",\n            \"temporal\": \"NONE\",\n            \"children\": [\n              {\n                \"op\": \"ATOM\",\n                \"quote\": \"recorded approval\",\n                \"temporal\": \"LATEST\",\n                \"children\": []\n              }\n            ]\n          }\n        ]\n      },\n      \"before_quote\": \"\",\n      \"exception_quote\": \"\",\n      \"exception_type\": \"NONE\",\n      \"scope_quote\": \"\"\n    }\n  ]\n}",
+  "answer": {
+    "directives": [
+      {
+        "kind": "FORBID",
+        "action_quote": "issue a credit",
+        "governed_tools": [
+          "issue_credit"
+        ],
+        "condition": {
+          "op": "AND",
+          "quote": "",
+          "temporal": "NONE",
+          "children": [
+            {
+              "op": "NOT",
+              "quote": "",
+              "temporal": "NONE",
+              "children": [
+                {
+                  "op": "ATOM",
+                  "quote": "recorded approval",
+                  "temporal": "LATEST",
+                  "children": []
+                }
+              ]
+            }
+          ]
+        },
+        "before_quote": "",
+        "exception_quote": "",
+        "exception_type": "NONE",
+        "scope_quote": ""
+      }
+    ]
+  },
+  "error": "",
+  "finish_reason": "stop",
+  "usage": {
+    "prompt_tokens": 458,
+    "total_tokens": 639,
+    "completion_tokens": 181,
+    "prompt_tokens_details": {
+      "cached_tokens": 243
+    },
+    "service_tier": "standard"
+  }
+}

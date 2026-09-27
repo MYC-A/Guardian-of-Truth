@@ -1,0 +1,48 @@
+{
+  "signature": "cee6854e22b8ee8b5e05c16e41d134a1ee3421ec6f6fd1fb0ec95e7ad2d41f74",
+  "stage": "D_logical",
+  "model": "ministral-14b-latest",
+  "query": {
+    "clause": "check_barcode(parcel_id) AND check_custody(parcel_id)",
+    "policy": "A parcel may be handed over only after its barcode check has returned valid AND its latest custody check reports ready. Filing a handover request does not hand it over.",
+    "tools": {
+      "check_barcode": {
+        "description": "Read barcode validity for parcel; no handover.",
+        "id": "parcel_id",
+        "result": "valid"
+      },
+      "check_custody": {
+        "description": "Read current custody readiness; no handover.",
+        "id": "parcel_id",
+        "result": "ready"
+      },
+      "file_handover_request": {
+        "description": "Request later parcel handover; does not hand it over.",
+        "id": "parcel_id",
+        "result": "accepted"
+      },
+      "handover_parcel": {
+        "description": "Hand over the parcel now.",
+        "id": "parcel_id",
+        "result": "success"
+      }
+    }
+  },
+  "raw": "{\n  \"op\": \"AND\",\n  \"left\": \"check_barcode(parcel_id)\",\n  \"right\": \"check_custody(parcel_id)\"\n}",
+  "answer": {
+    "op": "AND",
+    "left": "check_barcode(parcel_id)",
+    "right": "check_custody(parcel_id)"
+  },
+  "error": "",
+  "finish_reason": "stop",
+  "usage": {
+    "prompt_tokens": 345,
+    "total_tokens": 382,
+    "completion_tokens": 37,
+    "prompt_tokens_details": {
+      "cached_tokens": 0
+    },
+    "service_tier": "standard"
+  }
+}

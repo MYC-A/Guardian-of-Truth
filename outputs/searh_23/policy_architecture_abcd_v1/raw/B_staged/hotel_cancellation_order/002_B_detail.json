@@ -1,0 +1,91 @@
+{
+  "signature": "748c66a2afbccf36368f3ca1c4f02495755703fa7edc9d93a72db6edaaadb611",
+  "stage": "B_detail",
+  "model": "ministral-14b-latest",
+  "query": {
+    "policy": "For paid reservations, process cancellation FIRST and the refund SECOND; never refund before cancelling.",
+    "tools": {
+      "lookup_reservation": {
+        "description": "- lookup_reservation — Get the details of a reservation."
+      },
+      "get_guest_profile": {
+        "description": "- get_guest_profile — Get the guest profile by user ID."
+      },
+      "verify_identity": {
+        "description": "- verify_identity — Verify that the name on the guest ID matches the name on the reservation."
+      },
+      "check_supervisor_approval": {
+        "description": "- check_supervisor_approval — Check whether supervisor approval is recorded for a reservation."
+      },
+      "record_supervisor_approval": {
+        "description": "- record_supervisor_approval — Record supervisor approval for a pending refund."
+      },
+      "process_refund": {
+        "description": "- process_refund — Process a refund to the original payment method."
+      },
+      "cancel_reservation": {
+        "description": "- cancel_reservation — Cancel the whole reservation."
+      },
+      "get_payment_status": {
+        "description": "- get_payment_status — Get the status of a payment."
+      },
+      "charge_card": {
+        "description": "- charge_card — Charge the payment card on file."
+      },
+      "escalate_to_payment_desk": {
+        "description": "- escalate_to_payment_desk — Escalate a payment issue to the payment desk."
+      },
+      "grant_late_checkout": {
+        "description": "- grant_late_checkout — Grant a late checkout for a reservation."
+      },
+      "modify_reservation": {
+        "description": "- modify_reservation — Modify a reservation."
+      },
+      "search_incident_reports": {
+        "description": "- search_incident_reports — Search incident reports for a reservation."
+      },
+      "get_incident_report": {
+        "description": "- get_incident_report — Get a documented incident report."
+      },
+      "issue_compensation": {
+        "description": "- issue_compensation — Issue compensation for a documented incident."
+      },
+      "transfer_to_human_agents": {
+        "description": "- transfer_to_human_agents — Transfer the user to a human agent, with a summary of the user's issue."
+      }
+    },
+    "head": {
+      "kind": "FORBID",
+      "head_quote": "never refund before cancelling"
+    }
+  },
+  "raw": "{\n  \"directives\": [\n    {\n      \"kind\": \"ORDER\",\n      \"action_quote\": \"process cancellation FIRST and the refund SECOND\",\n      \"governed_tools\": [\"cancel_reservation\", \"process_refund\"],\n      \"condition\": null,\n      \"before_quote\": \"\",\n      \"exception_quote\": \"\",\n      \"exception_type\": \"NONE\",\n      \"scope_quote\": \"For paid reservations\"\n    }\n  ]\n}",
+  "answer": {
+    "directives": [
+      {
+        "kind": "ORDER",
+        "action_quote": "process cancellation FIRST and the refund SECOND",
+        "governed_tools": [
+          "cancel_reservation",
+          "process_refund"
+        ],
+        "condition": null,
+        "before_quote": "",
+        "exception_quote": "",
+        "exception_type": "NONE",
+        "scope_quote": "For paid reservations"
+      }
+    ]
+  },
+  "error": "",
+  "finish_reason": "stop",
+  "usage": {
+    "prompt_tokens": 755,
+    "total_tokens": 851,
+    "completion_tokens": 96,
+    "prompt_tokens_details": {
+      "cached_tokens": 228
+    },
+    "service_tier": "standard"
+  }
+}

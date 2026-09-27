@@ -1,0 +1,67 @@
+{
+  "signature": "e06e4ed33437fe86aa9de64269326183ce95f87e231cff478b4bdd4db16d4510",
+  "stage": "B_detail",
+  "model": "ministral-14b-latest",
+  "query": {
+    "policy": "You are not allowed to lift the suspension if the line's contract end date is in the past, even if the user has paid all their overdue bills.",
+    "tools": {
+      "get_customer_by_phone": "- get_customer_by_phone — Finds a customer by their primary contact or line phone number.",
+      "get_customer_by_id": "- get_customer_by_id — Retrieves a customer directly by their unique ID.",
+      "get_customer_by_name": "- get_customer_by_name — Searches for customers by name and DOB. May return multiple matches if names are similar,",
+      "get_details_by_id": "- get_details_by_id — Retrieves the details for a given ID.",
+      "suspend_line": "- suspend_line — Suspends a specific line (max 6 months).",
+      "resume_line": "- resume_line — Resumes a suspended line.",
+      "get_bills_for_customer": "- get_bills_for_customer — Retrieves a list of the customer's bills, most recent first.",
+      "send_payment_request": "- send_payment_request — Sends a payment request to the customer for a specific bill.",
+      "get_data_usage": "- get_data_usage — Retrieves current billing cycle data usage for a line, including data",
+      "enable_roaming": "- enable_roaming — Enables international roaming on a line.",
+      "disable_roaming": "- disable_roaming — Disables international roaming on a line.",
+      "transfer_to_human_agents": "- transfer_to_human_agents — Transfer the user to a human agent, with a summary of the user's issue.",
+      "refuel_data": "- refuel_data — Refuels data for a specific line, adding to the customer's bill."
+    },
+    "head": {
+      "kind": "FORBID",
+      "head_quote": "lift the suspension if the line's contract end date is in the past"
+    }
+  },
+  "raw": "{\n  \"directives\": [\n    {\n      \"kind\": \"FORBID\",\n      \"action_quote\": \"lift the suspension\",\n      \"governed_tools\": [\"resume_line\"],\n      \"condition\": {\n        \"op\": \"AND\",\n        \"quote\": \"\",\n        \"temporal\": \"NONE\",\n        \"children\": [\n          {\n            \"op\": \"ATOM\",\n            \"quote\": \"the line's contract end date is in the past\",\n            \"temporal\": \"NONE\",\n            \"children\": []\n          }\n        ]\n      },\n      \"before_quote\": \"\",\n      \"exception_quote\": \"the user has paid all their overdue bills\",\n      \"exception_type\": \"EXCEPT\",\n      \"scope_quote\": \"\"\n    }\n  ]\n}",
+  "answer": {
+    "directives": [
+      {
+        "kind": "FORBID",
+        "action_quote": "lift the suspension",
+        "governed_tools": [
+          "resume_line"
+        ],
+        "condition": {
+          "op": "AND",
+          "quote": "",
+          "temporal": "NONE",
+          "children": [
+            {
+              "op": "ATOM",
+              "quote": "the line's contract end date is in the past",
+              "temporal": "NONE",
+              "children": []
+            }
+          ]
+        },
+        "before_quote": "",
+        "exception_quote": "the user has paid all their overdue bills",
+        "exception_type": "EXCEPT",
+        "scope_quote": ""
+      }
+    ]
+  },
+  "error": "",
+  "finish_reason": "stop",
+  "usage": {
+    "prompt_tokens": 748,
+    "total_tokens": 914,
+    "completion_tokens": 166,
+    "prompt_tokens_details": {
+      "cached_tokens": 243
+    },
+    "service_tier": "standard"
+  }
+}

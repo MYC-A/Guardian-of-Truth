@@ -1,0 +1,83 @@
+{
+  "case_id": "draft_exception_authored",
+  "arm": "B_staged",
+  "model": "ministral-14b-latest",
+  "protocol_sha256": "1d5f72cfa67758a90facbe86f106ced007bcc9845e6d2308343a90ee53a28fa8",
+  "query_sha256": "14bd9d46932ea12b028739f4d6f76826d0df1960b0f24ad6cef1d733754890c9",
+  "directives": [
+    {
+      "kind": "FORBID",
+      "action_quote": "publish a draft",
+      "governed_tools": [
+        "publish_draft"
+      ],
+      "condition": {
+        "op": "NOT",
+        "children": [
+          {
+            "op": "ATOM",
+            "quote": "its owner has approved a public preview",
+            "temporal": "LATEST"
+          }
+        ]
+      },
+      "before_quote": "",
+      "exception_quote": "except when its owner has approved a public preview",
+      "exception_type": "EXCEPT",
+      "scope_quote": ""
+    },
+    {
+      "kind": "PERMIT",
+      "action_quote": "publish a draft",
+      "governed_tools": [
+        "publish_draft"
+      ],
+      "condition": {
+        "op": "NOT",
+        "children": [
+          {
+            "op": "AND",
+            "children": [
+              {
+                "op": "ATOM",
+                "quote": "its owner has approved a public preview",
+                "temporal": "LATEST"
+              },
+              {
+                "op": "ATOM",
+                "quote": "public preview",
+                "temporal": "NONE"
+              }
+            ]
+          }
+        ]
+      },
+      "before_quote": "",
+      "exception_quote": "except when its owner has approved a public preview",
+      "exception_type": "EXCEPT",
+      "scope_quote": ""
+    }
+  ],
+  "tree": null,
+  "errors": [],
+  "calls": [
+    {
+      "stage": "B_inventory",
+      "path": "raw/B_staged/draft_exception_authored/000_B_inventory.json",
+      "error": "",
+      "finish_reason": "stop"
+    },
+    {
+      "stage": "B_detail",
+      "path": "raw/B_staged/draft_exception_authored/001_B_detail.json",
+      "error": "",
+      "finish_reason": "stop"
+    },
+    {
+      "stage": "B_detail",
+      "path": "raw/B_staged/draft_exception_authored/002_B_detail.json",
+      "error": "",
+      "finish_reason": "stop"
+    }
+  ]
+}

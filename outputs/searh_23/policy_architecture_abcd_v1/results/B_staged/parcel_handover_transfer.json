@@ -1,0 +1,137 @@
+{
+  "case_id": "parcel_handover_transfer",
+  "arm": "B_staged",
+  "model": "ministral-14b-latest",
+  "protocol_sha256": "1d5f72cfa67758a90facbe86f106ced007bcc9845e6d2308343a90ee53a28fa8",
+  "query_sha256": "02bdbd1e546f05d0725835f6fad426317c45ac7986fea7947c5596ab65299b8e",
+  "directives": [
+    {
+      "kind": "GATE",
+      "action_quote": "handed over",
+      "governed_tools": [
+        "handover_parcel"
+      ],
+      "condition": {
+        "op": "AND",
+        "children": [
+          {
+            "op": "ATOM",
+            "quote": "barcode check has returned valid",
+            "temporal": "LATEST"
+          },
+          {
+            "op": "ATOM",
+            "quote": "custody check reports ready",
+            "temporal": "LATEST"
+          }
+        ]
+      },
+      "before_quote": "",
+      "exception_quote": "",
+      "exception_type": "NONE",
+      "scope_quote": "A parcel"
+    },
+    {
+      "kind": "FORBID",
+      "action_quote": "Filing a handover request",
+      "governed_tools": [
+        "file_handover_request"
+      ],
+      "condition": null,
+      "before_quote": "",
+      "exception_quote": "does not hand it over",
+      "exception_type": "NONE",
+      "scope_quote": ""
+    },
+    {
+      "kind": "GATE",
+      "action_quote": "its barcode check has returned valid AND its latest custody check reports ready",
+      "governed_tools": [
+        "handover_parcel"
+      ],
+      "condition": {
+        "op": "AND",
+        "children": [
+          {
+            "op": "ATOM",
+            "quote": "its barcode check has returned valid",
+            "temporal": "LATEST"
+          },
+          {
+            "op": "ATOM",
+            "quote": "its latest custody check reports ready",
+            "temporal": "LATEST"
+          }
+        ]
+      },
+      "before_quote": "",
+      "exception_quote": "",
+      "exception_type": "NONE",
+      "scope_quote": "A parcel may be handed over only after"
+    },
+    {
+      "kind": "GATE",
+      "action_quote": "its barcode check has returned valid",
+      "governed_tools": [
+        "check_barcode"
+      ],
+      "condition": null,
+      "before_quote": "",
+      "exception_quote": "",
+      "exception_type": "NONE",
+      "scope_quote": "A parcel may be handed over only after"
+    },
+    {
+      "kind": "DESCRIPTIVE",
+      "action_quote": "Filing a handover request",
+      "governed_tools": [
+        "file_handover_request"
+      ],
+      "condition": null,
+      "before_quote": "",
+      "exception_quote": "does not hand it over",
+      "exception_type": "NONE",
+      "scope_quote": ""
+    }
+  ],
+  "tree": null,
+  "errors": [],
+  "calls": [
+    {
+      "stage": "B_inventory",
+      "path": "raw/B_staged/parcel_handover_transfer/000_B_inventory.json",
+      "error": "",
+      "finish_reason": "stop"
+    },
+    {
+      "stage": "B_detail",
+      "path": "raw/B_staged/parcel_handover_transfer/001_B_detail.json",
+      "error": "",
+      "finish_reason": "stop"
+    },
+    {
+      "stage": "B_detail",
+      "path": "raw/B_staged/parcel_handover_transfer/002_B_detail.json",
+      "error": "",
+      "finish_reason": "stop"
+    },
+    {
+      "stage": "B_detail",
+      "path": "raw/B_staged/parcel_handover_transfer/003_B_detail.json",
+      "error": "",
+      "finish_reason": "stop"
+    },
+    {
+      "stage": "B_detail",
+      "path": "raw/B_staged/parcel_handover_transfer/004_B_detail.json",
+      "error": "",
+      "finish_reason": "stop"
+    },
+    {
+      "stage": "B_detail",
+      "path": "raw/B_staged/parcel_handover_transfer/005_B_detail.json",
+      "error": "",
+      "finish_reason": "stop"
+    }
+  ]
+}

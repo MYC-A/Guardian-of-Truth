@@ -1,0 +1,26 @@
+{
+  "signature": "8b3829e490492a5f36fe0fa9f39b7b94eb0cd32fc74e0162b28e7735e38ca964",
+  "stage": "A",
+  "model": "ministral-14b-latest",
+  "query": {
+    "policy": "Release a shipment only if either customs clearance is recorded or a supervisor waiver is approved.",
+    "tools": {
+      "check_customs": "Read recorded customs clearance; no release.",
+      "check_waiver": "Read supervisor waiver approval; no release.",
+      "release_shipment": "Release the shipment now."
+    }
+  },
+  "raw": "[\n    {\n        \"kind\": \"GATE\",\n        \"action_quote\": \"Release a shipment\",\n        \"governed_tools\": [\"release_shipment\"],\n        \"condition\": {\n            \"op\": \"OR\",\n            \"children\": [\n                {\n                    \"op\": \"ATOM\",\n                    \"quote\": \"customs clearance is recorded\",\n                    \"temporal\": \"LATEST\"\n                },\n                {\n                    \"op\": \"ATOM\",\n                    \"quote\": \"a supervisor waiver is approved\",\n                    \"temporal\": \"LATEST\"\n                }\n            ]\n        },\n        \"before_quote\": \"\",\n        \"exception_quote\": \"\",\n        \"exception_type\": \"NONE\",\n        \"scope_quote\": \"\"\n    }\n]",
+  "answer": {},
+  "error": "non_object_json",
+  "finish_reason": "stop",
+  "usage": {
+    "prompt_tokens": 361,
+    "total_tokens": 519,
+    "completion_tokens": 158,
+    "prompt_tokens_details": {
+      "cached_tokens": 0
+    },
+    "service_tier": "standard"
+  }
+}

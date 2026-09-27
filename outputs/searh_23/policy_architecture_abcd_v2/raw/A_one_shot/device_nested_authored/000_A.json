@@ -1,0 +1,58 @@
+{
+  "signature": "c722fa53f02c872069f9494b5c0a852b35868296cfd14eaf3ba7bd0d25b7a01f",
+  "stage": "A",
+  "model": "ministral-14b-latest",
+  "query": {
+    "policy": "For replacement devices, verify approval before performing the swap, and notify the customer after the swap.",
+    "tools": {
+      "lookup_approval": "Look up approval; does not replace a device.",
+      "perform_swap": "Replace the device.",
+      "notify_customer": "Send a customer notification."
+    }
+  },
+  "raw": "{\n  \"directives\": [\n    {\n      \"kind\": \"GATE\",\n      \"action_quote\": \"verify approval before performing the swap\",\n      \"governed_tools\": [\"perform_swap\"],\n      \"condition\": null,\n      \"before_quote\": \"\",\n      \"exception_quote\": \"\",\n      \"exception_type\": \"NONE\",\n      \"scope_quote\": \"For replacement devices\"\n    },\n    {\n      \"kind\": \"ORDER\",\n      \"action_quote\": \"notify the customer after the swap\",\n      \"governed_tools\": [\"notify_customer\"],\n      \"condition\": {\n        \"op\": \"ATOM\",\n        \"quote\": \"perform_swap\",\n        \"temporal\": \"PRIOR_TRUE\",\n        \"children\": []\n      },\n      \"before_quote\": \"\",\n      \"exception_quote\": \"\",\n      \"exception_type\": \"NONE\",\n      \"scope_quote\": \"For replacement devices\"\n    }\n  ]\n}",
+  "answer": {
+    "directives": [
+      {
+        "kind": "GATE",
+        "action_quote": "verify approval before performing the swap",
+        "governed_tools": [
+          "perform_swap"
+        ],
+        "condition": null,
+        "before_quote": "",
+        "exception_quote": "",
+        "exception_type": "NONE",
+        "scope_quote": "For replacement devices"
+      },
+      {
+        "kind": "ORDER",
+        "action_quote": "notify the customer after the swap",
+        "governed_tools": [
+          "notify_customer"
+        ],
+        "condition": {
+          "op": "ATOM",
+          "quote": "perform_swap",
+          "temporal": "PRIOR_TRUE",
+          "children": []
+        },
+        "before_quote": "",
+        "exception_quote": "",
+        "exception_type": "NONE",
+        "scope_quote": "For replacement devices"
+      }
+    ]
+  },
+  "error": "",
+  "finish_reason": "stop",
+  "usage": {
+    "prompt_tokens": 406,
+    "total_tokens": 607,
+    "completion_tokens": 201,
+    "prompt_tokens_details": {
+      "cached_tokens": 0
+    },
+    "service_tier": "standard"
+  }
+}

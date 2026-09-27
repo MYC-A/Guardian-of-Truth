@@ -1,0 +1,54 @@
+{
+  "signature": "a1a46847edb289e9dfd9cabe42c1ffae064c9333685ec2e84560dec26c80adcc",
+  "stage": "B_detail",
+  "model": "ministral-14b-latest",
+  "query": {
+    "policy": "You may preview a credit, but you must never issue a credit without recorded approval.",
+    "tools": {
+      "preview_credit": "Show a draft credit without posting it.",
+      "check_approval": "Read recorded credit approval; does not post credit.",
+      "issue_credit": "Post a credit to the customer's balance."
+    },
+    "head": {
+      "kind": "FORBID",
+      "head_quote": "you must never issue a credit without recorded approval"
+    }
+  },
+  "raw": "{\n  \"directives\": [\n    {\n      \"kind\": \"FORBID\",\n      \"action_quote\": \"issue a credit without recorded approval\",\n      \"governed_tools\": [\"issue_credit\"],\n      \"condition\": {\n        \"op\": \"NOT\",\n        \"children\": [\n          {\n            \"op\": \"ATOM\",\n            \"quote\": \"recorded approval\",\n            \"temporal\": \"LATEST\"\n          }\n        ]\n      },\n      \"before_quote\": \"\",\n      \"exception_quote\": \"\",\n      \"exception_type\": \"NONE\",\n      \"scope_quote\": \"\"\n    }\n  ]\n}",
+  "answer": {
+    "directives": [
+      {
+        "kind": "FORBID",
+        "action_quote": "issue a credit without recorded approval",
+        "governed_tools": [
+          "issue_credit"
+        ],
+        "condition": {
+          "op": "NOT",
+          "children": [
+            {
+              "op": "ATOM",
+              "quote": "recorded approval",
+              "temporal": "LATEST"
+            }
+          ]
+        },
+        "before_quote": "",
+        "exception_quote": "",
+        "exception_type": "NONE",
+        "scope_quote": ""
+      }
+    ]
+  },
+  "error": "",
+  "finish_reason": "stop",
+  "usage": {
+    "prompt_tokens": 408,
+    "total_tokens": 541,
+    "completion_tokens": 133,
+    "prompt_tokens_details": {
+      "cached_tokens": 228
+    },
+    "service_tier": "standard"
+  }
+}

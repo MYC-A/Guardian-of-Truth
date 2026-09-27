@@ -1,0 +1,48 @@
+{
+  "signature": "c2de69181586ec6d217be91e8acd24fe48a3d5a60f38bdc2b88eeb9e7adfe34f",
+  "stage": "D_logical",
+  "model": "ministral-14b-latest",
+  "query": {
+    "clause": "check_owner_approval(document_id) AND check_classification(document_id) reports public",
+    "policy": "A document may be published only after its owner approval check has returned approved for that document AND the latest classification check for the same document reports public. Submitting a publication request does not publish it.",
+    "tools": {
+      "check_owner_approval": {
+        "description": "Check recorded owner approval for a document; no publication occurs.",
+        "id": "document_id",
+        "result": "approved"
+      },
+      "check_classification": {
+        "description": "Check whether the document is public; no publication occurs.",
+        "id": "document_id",
+        "result": "public"
+      },
+      "submit_publication_request": {
+        "description": "Submit a request for future publication; does not publish.",
+        "id": "document_id",
+        "result": "accepted"
+      },
+      "publish_document": {
+        "description": "Publish the document now.",
+        "id": "document_id",
+        "result": "success"
+      }
+    }
+  },
+  "raw": "{\n  \"op\": \"AND\",\n  \"left\": \"check_owner_approval(document_id) reports approved\",\n  \"right\": \"check_classification(document_id) reports public\"\n}",
+  "answer": {
+    "op": "AND",
+    "left": "check_owner_approval(document_id) reports approved",
+    "right": "check_classification(document_id) reports public"
+  },
+  "error": "",
+  "finish_reason": "stop",
+  "usage": {
+    "prompt_tokens": 343,
+    "total_tokens": 382,
+    "completion_tokens": 39,
+    "prompt_tokens_details": {
+      "cached_tokens": 0
+    },
+    "service_tier": "standard"
+  }
+}

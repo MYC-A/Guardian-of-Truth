@@ -1,0 +1,86 @@
+{
+  "signature": "1ef51efba58b45556972220d312be57dde787bb3afaa0008a8e3f477692dc788",
+  "stage": "B_detail",
+  "model": "ministral-14b-latest",
+  "query": {
+    "policy": "For replacement devices, verify approval before performing the swap, and notify the customer after the swap.",
+    "tools": {
+      "lookup_approval": "Look up approval; does not replace a device.",
+      "perform_swap": "Replace the device.",
+      "notify_customer": "Send a customer notification."
+    },
+    "head": {
+      "kind": "REQUIRE_RESPONSE",
+      "head_quote": "verify approval before performing the swap"
+    }
+  },
+  "raw": "{\n  \"directives\": [\n    {\n      \"kind\": \"GATE\",\n      \"action_quote\": \"verify approval\",\n      \"governed_tools\": [\"lookup_approval\"],\n      \"condition\": null,\n      \"before_quote\": \"\",\n      \"exception_quote\": \"\",\n      \"exception_type\": \"NONE\",\n      \"scope_quote\": \"before performing the swap\"\n    },\n    {\n      \"kind\": \"ORDER\",\n      \"action_quote\": \"perform the swap\",\n      \"governed_tools\": [\"perform_swap\"],\n      \"condition\": {\n        \"op\": \"AND\",\n        \"quote\": \"\",\n        \"temporal\": \"NONE\",\n        \"children\": [\n          {\n            \"op\": \"ATOM\",\n            \"quote\": \"verify approval\",\n            \"temporal\": \"PRIOR_TRUE\",\n            \"children\": []\n          }\n        ]\n      },\n      \"before_quote\": \"\",\n      \"exception_quote\": \"\",\n      \"exception_type\": \"NONE\",\n      \"scope_quote\": \"\"\n    },\n    {\n      \"kind\": \"REQUIRE_RESPONSE\",\n      \"action_quote\": \"notify the customer\",\n      \"governed_tools\": [\"notify_customer\"],\n      \"condition\": {\n        \"op\": \"ATOM\",\n        \"quote\": \"perform the swap\",\n        \"temporal\": \"PRIOR_TRUE\",\n        \"children\": []\n      },\n      \"before_quote\": \"\",\n      \"exception_quote\": \"\",\n      \"exception_type\": \"NONE\",\n      \"scope_quote\": \"after the swap\"\n    }\n  ]\n}",
+  "answer": {
+    "directives": [
+      {
+        "kind": "GATE",
+        "action_quote": "verify approval",
+        "governed_tools": [
+          "lookup_approval"
+        ],
+        "condition": null,
+        "before_quote": "",
+        "exception_quote": "",
+        "exception_type": "NONE",
+        "scope_quote": "before performing the swap"
+      },
+      {
+        "kind": "ORDER",
+        "action_quote": "perform the swap",
+        "governed_tools": [
+          "perform_swap"
+        ],
+        "condition": {
+          "op": "AND",
+          "quote": "",
+          "temporal": "NONE",
+          "children": [
+            {
+              "op": "ATOM",
+              "quote": "verify approval",
+              "temporal": "PRIOR_TRUE",
+              "children": []
+            }
+          ]
+        },
+        "before_quote": "",
+        "exception_quote": "",
+        "exception_type": "NONE",
+        "scope_quote": ""
+      },
+      {
+        "kind": "REQUIRE_RESPONSE",
+        "action_quote": "notify the customer",
+        "governed_tools": [
+          "notify_customer"
+        ],
+        "condition": {
+          "op": "ATOM",
+          "quote": "perform the swap",
+          "temporal": "PRIOR_TRUE",
+          "children": []
+        },
+        "before_quote": "",
+        "exception_quote": "",
+        "exception_type": "NONE",
+        "scope_quote": "after the swap"
+      }
+    ]
+  },
+  "error": "",
+  "finish_reason": "stop",
+  "usage": {
+    "prompt_tokens": 451,
+    "total_tokens": 787,
+    "completion_tokens": 336,
+    "prompt_tokens_details": {
+      "cached_tokens": 0
+    },
+    "service_tier": "standard"
+  }
+}

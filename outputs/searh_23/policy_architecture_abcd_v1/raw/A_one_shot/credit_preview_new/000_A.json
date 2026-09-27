@@ -1,0 +1,26 @@
+{
+  "signature": "5f17a74b8bef0bdc42b7916cb0f171cc005a92e13011dd91c3b8681bef9763e2",
+  "stage": "A",
+  "model": "ministral-14b-latest",
+  "query": {
+    "policy": "You may preview a credit, but you must never issue a credit without recorded approval.",
+    "tools": {
+      "preview_credit": "Show a draft credit without posting it.",
+      "check_approval": "Read recorded credit approval; does not post credit.",
+      "issue_credit": "Post a credit to the customer's balance."
+    }
+  },
+  "raw": "[\n    {\n        \"kind\": \"PERMIT\",\n        \"action_quote\": \"preview a credit\",\n        \"governed_tools\": [\"preview_credit\"],\n        \"condition\": null,\n        \"before_quote\": \"\",\n        \"exception_quote\": \"\",\n        \"exception_type\": \"NONE\",\n        \"scope_quote\": \"\"\n    },\n    {\n        \"kind\": \"FORBID\",\n        \"action_quote\": \"issue a credit\",\n        \"governed_tools\": [\"issue_credit\"],\n        \"condition\": {\n            \"op\": \"NOT\",\n            \"children\": [\n                {\n                    \"op\": \"ATOM\",\n                    \"quote\": \"recorded approval\",\n                    \"temporal\": \"PRIOR_TRUE\"\n                }\n            ]\n        },\n        \"before_quote\": \"\",\n        \"exception_quote\": \"\",\n        \"exception_type\": \"NONE\",\n        \"scope_quote\": \"\"\n    },\n    {\n        \"kind\": \"GATE\",\n        \"action_quote\": \"issue a credit\",\n        \"governed_tools\": [\"issue_credit\"],\n        \"condition\": {\n            \"op\": \"ATOM\",\n            \"quote\": \"recorded approval\",\n            \"temporal\": \"PRIOR_TRUE\"\n        },\n        \"before_quote\": \"\",\n        \"exception_quote\": \"\",\n        \"exception_type\": \"NONE\",\n        \"scope_quote\": \"\"\n    }\n]",
+  "answer": {},
+  "error": "non_object_json",
+  "finish_reason": "stop",
+  "usage": {
+    "prompt_tokens": 363,
+    "total_tokens": 659,
+    "completion_tokens": 296,
+    "prompt_tokens_details": {
+      "cached_tokens": 228
+    },
+    "service_tier": "standard"
+  }
+}

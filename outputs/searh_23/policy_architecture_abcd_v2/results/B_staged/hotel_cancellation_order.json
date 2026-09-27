@@ -1,0 +1,96 @@
+{
+  "case_id": "hotel_cancellation_order",
+  "arm": "B_staged",
+  "model": "ministral-14b-latest",
+  "protocol_sha256": "7c047f7e198b28d42d93138d8b0a4cff554af910df109456922942c2f5f5f6ea",
+  "query_sha256": "9dae3053180ffa1fdd96eb28a0f9c625d9d1c39e5a25e7a356d45a04a8a9a1cf",
+  "directives": [
+    {
+      "kind": "ORDER",
+      "action_quote": "process cancellation FIRST",
+      "governed_tools": [
+        "cancel_reservation"
+      ],
+      "condition": {
+        "op": "ATOM",
+        "quote": "For paid reservations",
+        "temporal": "NONE"
+      },
+      "before_quote": "",
+      "exception_quote": "",
+      "exception_type": "NONE",
+      "scope_quote": ""
+    },
+    {
+      "kind": "ORDER",
+      "action_quote": "process cancellation FIRST and the refund SECOND",
+      "governed_tools": [
+        "cancel_reservation",
+        "process_refund"
+      ],
+      "condition": null,
+      "before_quote": "process cancellation",
+      "exception_quote": "",
+      "exception_type": "NONE",
+      "scope_quote": "For paid reservations"
+    },
+    {
+      "kind": "FORBID",
+      "action_quote": "",
+      "governed_tools": [
+        "process_refund"
+      ],
+      "condition": {
+        "op": "AND",
+        "children": [
+          {
+            "op": "ATOM",
+            "quote": "paid reservations",
+            "temporal": "NONE"
+          },
+          {
+            "op": "NOT",
+            "children": [
+              {
+                "op": "ATOM",
+                "quote": "cancelling",
+                "temporal": "PRIOR_TRUE"
+              }
+            ]
+          }
+        ]
+      },
+      "before_quote": "",
+      "exception_quote": "",
+      "exception_type": "NONE",
+      "scope_quote": ""
+    }
+  ],
+  "tree": null,
+  "errors": [
+    "invalid_head_1",
+    "detail_count_2:2",
+    "bad_action_span_1",
+    "invalid_head_3"
+  ],
+  "calls": [
+    {
+      "stage": "B_inventory",
+      "path": "raw/B_staged/hotel_cancellation_order/000_B_inventory.json",
+      "error": "",
+      "finish_reason": "stop"
+    },
+    {
+      "stage": "B_detail",
+      "path": "raw/B_staged/hotel_cancellation_order/001_B_detail.json",
+      "error": "",
+      "finish_reason": "stop"
+    },
+    {
+      "stage": "B_detail",
+      "path": "raw/B_staged/hotel_cancellation_order/002_B_detail.json",
+      "error": "",
+      "finish_reason": "stop"
+    }
+  ]
+}

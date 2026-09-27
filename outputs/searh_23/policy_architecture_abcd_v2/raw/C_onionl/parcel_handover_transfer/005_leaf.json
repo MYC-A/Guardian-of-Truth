@@ -1,0 +1,49 @@
+{
+  "signature": "e4e680cbf0f1c2158ea228eac76b96fe1e0b9ce4a69342f5562703ad816ada8f",
+  "stage": "leaf",
+  "model": "ministral-14b-latest",
+  "query": {
+    "clause": "check_barcode returns valid",
+    "policy": "A parcel may be handed over only after its barcode check has returned valid AND its latest custody check reports ready. Filing a handover request does not hand it over.",
+    "tools": {
+      "check_barcode": {
+        "description": "Read barcode validity for parcel; no handover.",
+        "id": "parcel_id",
+        "result": "valid"
+      },
+      "check_custody": {
+        "description": "Read current custody readiness; no handover.",
+        "id": "parcel_id",
+        "result": "ready"
+      },
+      "file_handover_request": {
+        "description": "Request later parcel handover; does not hand it over.",
+        "id": "parcel_id",
+        "result": "accepted"
+      },
+      "handover_parcel": {
+        "description": "Hand over the parcel now.",
+        "id": "parcel_id",
+        "result": "success"
+      }
+    }
+  },
+  "raw": "{\n  \"role\": \"CONDITION\",\n  \"source_quote\": \"its barcode check has returned valid\",\n  \"tools\": [],\n  \"temporal\": \"PRIOR_TRUE\"\n}",
+  "answer": {
+    "role": "CONDITION",
+    "source_quote": "its barcode check has returned valid",
+    "tools": [],
+    "temporal": "PRIOR_TRUE"
+  },
+  "error": "",
+  "finish_reason": "stop",
+  "usage": {
+    "prompt_tokens": 343,
+    "total_tokens": 384,
+    "completion_tokens": 41,
+    "prompt_tokens_details": {
+      "cached_tokens": 117
+    },
+    "service_tier": "standard"
+  }
+}
