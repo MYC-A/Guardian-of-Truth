@@ -564,3 +564,25 @@ whose annotations were frozen before replay. It over-split an illustrative
 `For example` sentence. None of these results establishes coverage of nested
 conditions or a binary competition gain. The full case-level record is in
 `docs/searh_23/POLICY_STRUCTURE_FOLLOWUP_2026-09-27.md`.
+
+## 27. Paired Req2LTL/OnionL and NL2Logic architecture comparison (2026-09-27)
+
+Twelve identical policy clauses, one server-configured Ministral model and a
+frozen hand-annotated IR were used to compare an adapted one-shot arm, an
+adapted staged arm, a Req2LTL/OnionL-like recursive tree, and an
+NL2Logic-like parser-selector tree. The first JSON-mode pilot exposed a
+response-shape mismatch and was retained only as a format diagnostic. The
+schema-controlled protocol was committed before its first successful response;
+no prompt, gold, or algorithm changes followed the 48-arm run.
+
+Strict full-IR matches were 0/12 for every arm. The adapted one-shot arm
+matched 7/19 gold directive kinds plus exact action quotes in 12 API calls;
+staged matched 5/19 in 37 calls. OnionL-like compiled 0 directives in 111
+calls; NL2Logic-like compiled one incorrect directive in 134 calls. The
+recursive trees sometimes found individual conditions, but confused check
+gates with business ordering or lost source anchors when normalizing atoms.
+These results reject *our current adaptations* as contest candidates, not
+the original research systems. The dataset is small, partly previously viewed,
+and exact span scoring is intentionally strict. Raw calls, per-case errors,
+metric definitions, method-to-paper mapping and limitations are in
+`docs/searh_23/REQ2LTL_NL2LOGIC_ARCHITECTURE_COMPARE_2026-09-27.md`.
