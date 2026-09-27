@@ -28,6 +28,8 @@ from pathlib import Path
 sys.path.insert(0, str(Path(__file__).parent))
 from oc_common import load_suite, out_dir, write_usage
 
+SUBORDINATORS = {"if", "unless", "until", "once", "when", "whenever",
+                  "before", "after"}  # closed class of function words
 COND_MARKS = {"if", "unless", "until", "once"}
 TEMP_MARKS = {"before", "after", "when"}
 DEONTIC = {"must", "shall", "may", "might", "can", "could", "should", "will", "would"}
@@ -44,10 +46,11 @@ MARK_RELATION = {
 }
 
 
-def clause_span(doc, sentence, head_id):
-    """Maximal token span of the subtree of head_id within the sentence."""
-    tokens = [t for t in sentence.tokens]
-    by_id = {t.id[0]: t for t in tokens}
+def clause_span(policy, sentence, head_id):
+    """Maximal char span of the subtree of head_id, EXCLUDING subordinate
+    clauses (advcl/acl children become their own candidates). Word offsets
+    are absolute."""
+    words = [w for w in sentence.words]
 
     def subtree_ids(tid, seen=None):
         if seen is None:
@@ -55,35 +58,46 @@ def clause_span(doc, sentence, head_id):
         if tid in seen:
             return seen
         seen.add(tid)
-        for t in tokens:
-            if t.head == tid and t.id[0] not in seen:
-                subtree_ids(t.id[0], seen)
+        for w in words:
+            if w.head == tid and w.id not in seen:
+                subtree_ids(w.id, seen)
         return seen
 
-    ids = sorted(subtree_ids(head_id))
-    start_char = tokens[ids[0] - 1].start_char
-    end_char = tokens[ids[-1] - 1].end_char
-    text = sentence.text
+    ids = subtree_ids(head_id)
+    # exclude subordinate clause subtrees (they are separate candidates)
+    for w in words:
+        if w.head == head_id and w.deprel.split(":")[0] in {"advcl", "acl"}:
+            for sid in list(subtree_ids(w.id)):
+                ids.discard(sid)
+    ids = sorted(ids)
+    if not ids:
+        return None, None, ""
+    start_char = words[ids[0] - 1].start_char
+    end_char = words[ids[-1] - 1].end_char
     # trim trailing/leading punctuation and coordinating conjunctions
     while ids:
-        tok = tokens[ids[0] - 1]
-        if tok.upos in {"PUNCT", "CCONJ"} and tok.id[0] != head_id:
+        w = words[ids[0] - 1]
+        if w.upos in {"PUNCT", "CCONJ"} and w.id != head_id:
             ids = ids[1:]
-            start_char = tokens[ids[0] - 1].start_char
+            if not ids:
+                return None, None, ""
+            start_char = words[ids[0] - 1].start_char
         else:
             break
     while ids:
-        tok = tokens[ids[-1] - 1]
-        if tok.upos in {"PUNCT", "CCONJ"} and tok.id[0] != head_id:
+        w = words[ids[-1] - 1]
+        if w.upos in {"PUNCT", "CCONJ"} and w.id != head_id:
             ids = ids[:-1]
-            end_char = tokens[ids[-1] - 1].end_char
+            if not ids:
+                return None, None, ""
+            end_char = words[ids[-1] - 1].end_char
         else:
             break
-    span = text[start_char - sentence.start_char: end_char - sentence.start_char]
+    span = policy[start_char:end_char]
     return start_char, end_char, span
 
 
-def np_candidates(sentence, words, verb):
+def np_candidates(policy, sentence, words, verb):
     """Nominal argument candidates of a verb: obj/obl/nsubj subtrees that
     contain no nested verb (non-clausal), conj-split into separate NPs.
     Structural only; roles stay UNKNOWN (grounding will label them)."""
@@ -127,25 +141,29 @@ def np_candidates(sentence, words, verb):
             if not mtoks:
                 continue
             ids = sorted(t.id for t in mtoks)
-            st = sentence.tokens[ids[0] - 1].start_char
-            en = sentence.tokens[ids[-1] - 1].end_char
+            st = by_id[ids[0]].start_char
+            en = by_id[ids[-1]].end_char
             while ids:
-                tok = sentence.tokens[ids[0] - 1]
-                if tok.upos in {"PUNCT", "CCONJ", "DET", "ADP"} and tok.id[0] != m.id:
+                wd = by_id[ids[0]]
+                if wd.upos in {"PUNCT", "CCONJ", "DET", "ADP"} and wd.id != m.id:
                     ids = ids[1:]
                     if not ids:
                         break
-                    st = sentence.tokens[ids[0] - 1].start_char
+                    st = by_id[ids[0]].start_char
                 else:
                     break
             while ids:
-                tok = sentence.tokens[ids[-1] - 1]
-                if tok.upos in {"PUNCT", "CCONJ"} and tok.id[0] != m.id:
+                wd = by_id[ids[-1]]
+                if wd.upos in {"PUNCT", "CCONJ"} and wd.id != m.id:
                     ids = ids[:-1]
-                    en = sentence.tokens[ids[-1] - 1].end_char
+                    if not ids:
+                        break
+                    en = by_id[ids[-1]].end_char
                 else:
                     break
-            span = sentence.text[st - sentence.start_char: en - sentence.start_char]
+            if not ids:
+                continue
+            span = policy[st:en]
             if span.strip() and len(span.split()) >= 2:
                 out.append({"span": span, "np_of_verb": verb.lemma,
                             "dep_in_verb": rel, "case_lemma": case_lemma,
@@ -173,30 +191,30 @@ def analyse_case(nlp, case):
             if w.upos != "VERB" and not has_cop:
                 continue
             head = by_id.get(w.head)
-            # mark / aux children of THIS verb's clause
+            # mark / subordinator children of THIS clause (closed class only)
             marks = [c.lemma for c in words
-                     if c.head == w.id and c.deprel in {"mark", "case"} and c.upos == "SCONJ"]
+                     if c.head == w.id and c.lemma in SUBORDINATORS and
+                     c.deprel in {"mark", "case", "advmod"}]
             aux_kids = [c for c in words if c.head == w.id and c.deprel in {"aux", "aux:pass"}]
             deontic = [c.lemma for c in aux_kids if c.lemma in DEONTIC]
             neg = any(c.deprel == "advmod" and c.lemma in {"not", "never", "no"}
                       for c in words if c.head == w.id)
             passive = any(c.deprel == "aux:pass" for c in aux_kids)
             imperative = False
-            for t in sentence.tokens:
-                if t.id[0] == w.id:
-                    feats = t.feats or {}
-                    if isinstance(feats, dict):
-                        mood = feats.get("Mood", [])
-                        if isinstance(mood, str):
-                            mood = [mood]
-                        imperative = any(m == "Imp" for m in mood)
-                    break
+            wf = w.feats or {}
+            if isinstance(wf, str):
+                imperative = "Mood=Imp" in wf
+            elif isinstance(wf, dict):
+                mood = wf.get("Mood", [])
+                if isinstance(mood, str):
+                    mood = [mood]
+                imperative = any(m == "Imp" for m in mood)
             is_root = dep == "root"
             copula_root = any(c.deprel == "cop" and c.upos == "AUX" and c.lemma == "be"
                               for c in words if c.head == w.id) and is_root
             # event-level "even" modifier for even-if
             even = any(c.lemma == "even" for c in words if c.head == w.id)
-            start, end, span = clause_span(doc, sentence, w.id)
+            start, end, span = clause_span(policy, sentence, w.id)
             if not span.strip():
                 continue
 
@@ -236,7 +254,7 @@ def analyse_case(nlp, case):
             events.append(rec)
             clause_heads.append((w, s_idx, head, rec))
             # nominal argument candidates (obj/obl/nsubj NPs, conj-split)
-            events.extend(np_candidates(sentence, words, w))
+            events.extend(np_candidates(policy, sentence, words, w))
 
     # edges from UD marks between clause heads
     edges = []
@@ -249,9 +267,6 @@ def analyse_case(nlp, case):
         m = rec["mark"]
         if m not in MARK_RELATION:
             continue
-        rel, direction = MARK_RELATION[m]
-        if rec["even"] and m == "if":
-            rel = "EVEN_IF"
         # find the head clause record (match by head word id within sentence)
         head_rec = None
         for hw, hs, _h, hrec in clause_heads:
@@ -260,6 +275,17 @@ def analyse_case(nlp, case):
                 break
         if head_rec is None:
             continue
+        rel, direction = MARK_RELATION[m]
+        if m == "before":
+            # "X before Y": X is the prior event (head). Its nature refines the
+            # relation: verification prerequisites gate, business ops order.
+            if head_rec.get("role_hypothesis") in {
+                    "PRECONDITION_CHECK", "STATE_OBSERVATION"}:
+                rel = "GATE"
+            else:
+                rel = "ORDER_BEFORE"
+        if rec["even"] and m == "if":
+            rel = "EVEN_IF"
         if direction == "cond":
             cond_span, op_span = rec["span"], head_rec["span"]
         elif direction == "head":

@@ -124,15 +124,22 @@ def build_h(b_case, groundings, policy):
 
     by_span = {e["span"]: e for e in events}
 
-    # 1. mark edges from B, kept when the op endpoint is OPERATION_EFFECT
+    # 1. mark edges from B, kept when the op endpoint is OPERATION_EFFECT;
+    #    "X before Y" is retyped by the FINAL role of the prior event:
+    #    verification prerequisites gate, business operations order.
     edges = []
     for ed in b_case.get("edges", []):
         op = by_span.get(ed["operation_span"])
         cond = by_span.get(ed["condition_span"])
         if op and op["role"] == "OPERATION_EFFECT" and cond:
+            rel = ed["relation"]
+            if ed.get("source") in {"mark:before", "obl:before"} and \
+                    cond["role"] in {"PRECONDITION_CHECK", "STATE_OBSERVATION",
+                                     "COMMUNICATION"}:
+                rel = "GATE"
             edges.append({"condition_span": ed["condition_span"],
                           "operation_span": ed["operation_span"],
-                          "relation": ed["relation"], "source": ed.get("source")})
+                          "relation": rel, "source": ed.get("source")})
 
     # index NP candidates by their verb
     np_by_verb = {}

@@ -19,10 +19,13 @@ Gold conventions (fixed before any inference):
 - condition_edges: (condition_span, operation_span, relation[, ref_span]);
   the optional fourth element gives the canonical event span when the edge
   text itself is anaphoric ("removal", "release").
-- relation conventions (wording-driven):
-    GATE          "only if", "requires", "must ... before" with requirement
-                  force, "only after", verification gates
-    ORDER_BEFORE  "after X, perform Y", "X, then Y", "A must happen before B"
+- relation conventions (surface connective drives the label; the prior
+  event's nature refines "before"):
+    GATE          "only if", "requires", "only after", verification gates;
+                  "X before Y" when X is a CHECK/OBSERVATION/COMMUNICATION
+                  (verification prerequisite)
+    ORDER_BEFORE  "after X, perform Y", "X, then Y", "A must happen before B",
+                  "X before Y" when X is a business OPERATION
     ORDER_AFTER   operation follows a trigger ("when X, notify", "after each X")
     EXCEPTION     "unless X, do not Y"
     EVEN_IF       "even if X, never Y"
@@ -99,7 +102,7 @@ CASES_A = [
         "gold_events": [
             ("Open the distribution valve", "OPERATION_EFFECT", ["open_valve"]),
             ("the turbidity reading for tank-12 is below 0.3 NTU", "STATE_OBSERVATION", ["read_turbidity"]),
-            ("An operator override", "STATE_OBSERVATION", ["log_override"]),
+            ("An operator override", "OPERATION_EFFECT", ["log_override"]),
         ],
         "gold_edges": [
             ("the turbidity reading for tank-12 is below 0.3 NTU", "Open the distribution valve", "GATE"),
@@ -132,7 +135,7 @@ CASES_A = [
         "gold_events": [
             ("the returned volume R-9 is scanned", "OPERATION_EFFECT", ["scan_return"]),
             ("release the hold on the borrower's account", "OPERATION_EFFECT", ["release_hold"]),
-            ("Rare volumes must be inspected by the conservation desk", "OPERATION_EFFECT", ["inspect_volume"]),
+            ("Rare volumes must be inspected by the conservation desk", "PRECONDITION_CHECK", ["inspect_volume"]),
             ("re-shelving", "OPERATION_EFFECT", ["shelve_volume"]),
         ],
         "gold_edges": [
