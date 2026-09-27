@@ -18,33 +18,47 @@ from .types import EffectStatus, Truth
 @dataclass(frozen=True)
 class EffectClaimEvidence:
     fact: Truth
-    claim_status: str  # SUPPORTED or NOT_ESTABLISHED
+    claim_status: str  # SUPPORTED, REFUTED, INCONSISTENT, NOT_ESTABLISHED
+    action_call_event_id: str
     answer_before_index: int
     matching_call_ids: tuple[str, ...]
     observed_result_ids: tuple[str, ...]
     proving_result_ids: tuple[str, ...]
+    refuting_result_ids: tuple[str, ...]
     contract_registry_sha256: str
-    scope: str = "TYPED_EFFECT_CLAIM_TRACE_PREFIX_AND_AUTHORITATIVE_CONTRACTS_ONLY"
+    scope: str = "EXACT_CALL_EFFECT_TRACE_PREFIX_AND_AUTHORITATIVE_CONTRACTS_ONLY"
 
 
 def prove_effect_claim_asof(ledger: EvidenceLedger, registry: BoundRegistry,
                            requirement: EffectRequirement, entity_value: str,
-                           *, answer_before_index: int) -> EffectClaimEvidence:
+                           *, action_call_event_id: str, answer_before_index: int,
+                           explicit_counter: EffectRequirement | None = None) -> EffectClaimEvidence:
     """Establish a positive effect, requiring an exact entity and proven result.
 
-    `answer_before_index` is exclusive. The caller must derive it from the
-    target answer's source position, never from the last event in the trace.
+    The claim must already be grounded to ONE exact assistant call. This is a
+    proof about that call's outcome, not an unqualified current-world state.
+    `answer_before_index` is exclusive and comes from the target answer's
+    source position, never from the last event in the trace.
     """
     if (not isinstance(ledger, EvidenceLedger) or not isinstance(registry, BoundRegistry)
             or not isinstance(requirement, EffectRequirement)):
         raise TypeError("typed ledger, contracts and effect proposition required")
     if (not isinstance(entity_value, str) or not entity_value
+            or not isinstance(action_call_event_id, str) or not action_call_event_id
             or type(answer_before_index) is not int
             or not 0 <= answer_before_index <= len(ledger.events)):
         raise ValueError("explicit entity and exclusive answer cutoff required")
-    calls, observed, proving = [], [], []
+    if explicit_counter is not None and (
+            not isinstance(explicit_counter, EffectRequirement)
+            or explicit_counter.identity != requirement.identity
+            or explicit_counter.argument_entity_path != requirement.argument_entity_path
+            or explicit_counter.predicate != requirement.predicate
+            or {explicit_counter.value_json, requirement.value_json} != {"true", "false"}):
+        raise ValueError("counter requires authoritative opposite Boolean values of the same typed proposition")
+    calls, observed, proving, refuting = [], [], [], []
     for call in ledger.events[:answer_before_index]:
-        if call.kind != "call" or call.actor != "assistant" or call.tool != requirement.identity:
+        if (call.event_id != action_call_event_id or call.kind != "call"
+                or call.actor != "assistant" or call.tool != requirement.identity):
             continue
         actual, present = read_path(call.payload, requirement.argument_entity_path)
         if not present or type(actual) not in {str, int} or str(actual) != entity_value:
@@ -55,15 +69,20 @@ def prove_effect_claim_asof(ledger: EvidenceLedger, registry: BoundRegistry,
                 continue
             observed.append(result.event_id)
             semantics = evaluate_bound_t1(registry, call, result)
-            if any(effect.status is EffectStatus.TRUSTED_EFFECT
-                   and effect.entity.key == ".".join(requirement.argument_entity_path)
-                   and effect.entity.value == entity_value
-                   and effect.predicate == requirement.predicate
-                   and effect.value_json == requirement.value_json
-                   and (not requirement.causal_action_required or effect.causal_action_confirmed)
-                   for effect in semantics.effects):
-                proving.append(result.event_id)
+            for proposition, witnesses in ((requirement, proving), (explicit_counter, refuting)):
+                if proposition is not None and any(
+                        effect.status is EffectStatus.TRUSTED_EFFECT
+                        and effect.entity.key == ".".join(proposition.argument_entity_path)
+                        and effect.entity.value == entity_value
+                        and effect.predicate == proposition.predicate
+                        and effect.value_json == proposition.value_json
+                        and (not proposition.causal_action_required or effect.causal_action_confirmed)
+                        for effect in semantics.effects):
+                    witnesses.append(result.event_id)
+    fact = (Truth.BOTH if proving and refuting else Truth.TRUE if proving
+            else Truth.FALSE if refuting else Truth.UNKNOWN)
+    status = {Truth.TRUE: "SUPPORTED", Truth.FALSE: "REFUTED",
+              Truth.BOTH: "INCONSISTENT", Truth.UNKNOWN: "NOT_ESTABLISHED"}[fact]
     return EffectClaimEvidence(
-        Truth.TRUE if proving else Truth.UNKNOWN,
-        "SUPPORTED" if proving else "NOT_ESTABLISHED", answer_before_index,
-        tuple(calls), tuple(observed), tuple(proving), registry.sha256)
+        fact, status, action_call_event_id, answer_before_index, tuple(calls), tuple(observed),
+        tuple(proving), tuple(refuting), registry.sha256)

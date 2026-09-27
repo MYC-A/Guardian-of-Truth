@@ -1,0 +1,49 @@
+{
+  "id": "hotel_cancellation_order",
+  "stage": "head",
+  "protocol_sha256": "745fe87acf5f79f19f951ec53735775a32b9948b09970f713fd5a934b0c381b1",
+  "query_sha256": "9dae3053180ffa1fdd96eb28a0f9c625d9d1c39e5a25e7a356d45a04a8a9a1cf",
+  "requested_model": "ministral-14b-latest",
+  "answer": {
+    "heads": [
+      {
+        "kind": "ORDERING",
+        "governed_tools": [
+          "cancel_reservation"
+        ],
+        "prerequisite_tools": [
+          "cancel_reservation"
+        ],
+        "action_meaning": "process cancellation"
+      },
+      {
+        "kind": "ORDERING",
+        "governed_tools": [
+          "process_refund"
+        ],
+        "prerequisite_tools": [
+          "cancel_reservation"
+        ],
+        "action_meaning": "process refund"
+      },
+      {
+        "kind": "PROHIBITION_IF",
+        "governed_tools": [
+          "process_refund"
+        ],
+        "prerequisite_tools": [],
+        "action_meaning": "refund before cancelling"
+      }
+    ]
+  },
+  "finish_reason": "stop",
+  "usage": {
+    "prompt_tokens": 793,
+    "total_tokens": 949,
+    "completion_tokens": 156,
+    "prompt_tokens_details": {
+      "cached_tokens": 356
+    },
+    "service_tier": "standard"
+  }
+}

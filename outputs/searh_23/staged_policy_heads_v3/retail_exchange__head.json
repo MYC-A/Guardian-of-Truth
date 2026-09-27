@@ -1,0 +1,44 @@
+{
+  "id": "retail_exchange",
+  "stage": "head",
+  "protocol_sha256": "745fe87acf5f79f19f951ec53735775a32b9948b09970f713fd5a934b0c381b1",
+  "query_sha256": "31a8b2d508410eb679d83819e12b1ff0da40b6ab014b1b5b03123c268091676b",
+  "requested_model": "ministral-14b-latest",
+  "answer": {
+    "heads": [
+      {
+        "kind": "PRECONDITION",
+        "governed_tools": [
+          "exchange_delivered_order_items"
+        ],
+        "prerequisite_tools": [
+          "get_order_details"
+        ],
+        "action_meaning": "check if order status is 'delivered' before exchanging items"
+      },
+      {
+        "kind": "REQUIRE_RESPONSE",
+        "governed_tools": [],
+        "action_meaning": "remind customer to confirm all items for exchange are provided"
+      },
+      {
+        "kind": "PROHIBITION_IF",
+        "governed_tools": [
+          "exchange_delivered_order_items"
+        ],
+        "prerequisite_tools": [],
+        "action_meaning": "exchange items if order status is not 'delivered'"
+      }
+    ]
+  },
+  "finish_reason": "stop",
+  "usage": {
+    "prompt_tokens": 915,
+    "total_tokens": 1087,
+    "completion_tokens": 172,
+    "prompt_tokens_details": {
+      "cached_tokens": 0
+    },
+    "service_tier": "standard"
+  }
+}

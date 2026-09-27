@@ -542,3 +542,25 @@ cannot establish an earlier replacement claim. It depends on an application
 authored effect contract and a correctly typed claim. Protocols, raw outputs,
 cost, case-level failures and limits are in
 `docs/searh_23/STAGED_POLICY_TREE_AND_EFFECT_CLAIMS_2026-09-27.md`.
+
+## 26. Policy inventory versus local relation typing (2026-09-27)
+
+A frozen 12-clause Mistral probe attempted to inventory every policy head,
+tool set and rule kind at once. It produced 0/12 structurally complete
+answers; five calls returned non-object JSON, while the other answers omitted
+required fields, duplicated derived prohibitions, or moved conditions to
+new parent rules. Some partial meanings, such as three relevant retail tools
+and both baggage facets, were found. When the exact source fragment and
+action were manually supplied, a separate 16-case relation-only question
+matched 15/16 frozen labels; the lone disagreement (`never ... without`
+approval) has a logically compatible conditional-prohibition reading.
+
+Direct model-generated source segmentation passed all literal, coverage and
+count gates on 1/12 full clauses. Selecting only code-enumerated cut IDs
+preserved source text but matched expected cuts on 2/12. A narrow deterministic
+splitter for explicit sentence and contrast markers then matched 14/14
+post-hoc selected source clauses and 12/13 further original-policy clauses
+whose annotations were frozen before replay. It over-split an illustrative
+`For example` sentence. None of these results establishes coverage of nested
+conditions or a binary competition gain. The full case-level record is in
+`docs/searh_23/POLICY_STRUCTURE_FOLLOWUP_2026-09-27.md`.

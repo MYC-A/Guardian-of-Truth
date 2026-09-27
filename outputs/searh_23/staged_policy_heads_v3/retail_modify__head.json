@@ -1,0 +1,43 @@
+{
+  "id": "retail_modify",
+  "stage": "head",
+  "protocol_sha256": "745fe87acf5f79f19f951ec53735775a32b9948b09970f713fd5a934b0c381b1",
+  "query_sha256": "ddb035d0cd141f1455dbcb0bad0b488fdf52b789223d6855d9bc2637f50f5262",
+  "requested_model": "ministral-14b-latest",
+  "answer": {
+    "heads": [
+      {
+        "kind": "PRECONDITION",
+        "governed_tools": [
+          "modify_pending_order_address",
+          "modify_pending_order_items",
+          "modify_pending_order_payment"
+        ],
+        "prerequisite_tools": [
+          "get_order_details"
+        ],
+        "action_meaning": "check if order status is 'pending' before modifying"
+      },
+      {
+        "kind": "PROHIBITION_IF",
+        "governed_tools": [
+          "modify_pending_order_address",
+          "modify_pending_order_items",
+          "modify_pending_order_payment"
+        ],
+        "prerequisite_tools": [],
+        "action_meaning": "modify order if its status is **not** 'pending'"
+      }
+    ]
+  },
+  "finish_reason": "stop",
+  "usage": {
+    "prompt_tokens": 895,
+    "total_tokens": 1066,
+    "completion_tokens": 171,
+    "prompt_tokens_details": {
+      "cached_tokens": 0
+    },
+    "service_tier": "standard"
+  }
+}

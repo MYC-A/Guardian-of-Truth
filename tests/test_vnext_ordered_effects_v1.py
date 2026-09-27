@@ -169,24 +169,79 @@ def test_effect_claim_uses_only_contract_proven_results_before_answer():
     replacement = next(event for event in ledger.events
                        if event.kind == "call" and event.tool == IDENTITIES["replace_item"])
     before_replacement = prove_effect_claim_asof(
-        ledger, REGISTRY, QUERY_ACTION, "SD-101", answer_before_index=replacement.index)
+        ledger, REGISTRY, QUERY_ACTION, "SD-101", action_call_event_id=replacement.event_id,
+        answer_before_index=replacement.index)
     before_result = prove_effect_claim_asof(
-        ledger, REGISTRY, QUERY_ACTION, "SD-101", answer_before_index=replacement.index + 1)
+        ledger, REGISTRY, QUERY_ACTION, "SD-101", action_call_event_id=replacement.event_id,
+        answer_before_index=replacement.index + 1)
     after_result = prove_effect_claim_asof(
-        ledger, REGISTRY, QUERY_ACTION, "SD-101", answer_before_index=len(ledger.events))
+        ledger, REGISTRY, QUERY_ACTION, "SD-101", action_call_event_id=replacement.event_id,
+        answer_before_index=len(ledger.events))
     assert before_replacement.fact is Truth.UNKNOWN
     assert before_result.fact is Truth.UNKNOWN and before_result.matching_call_ids
     assert after_result.fact is Truth.TRUE and after_result.proving_result_ids
     assert before_result.claim_status == "NOT_ESTABLISHED"
     assert after_result.claim_status == "SUPPORTED"
     assert prove_effect_claim_asof(ledger, REGISTRY, QUERY_ACTION, "SD-999",
+                                 action_call_event_id=replacement.event_id,
                                  answer_before_index=len(ledger.events)).fact is Truth.UNKNOWN
 
 
 def test_completed_tool_status_and_audit_are_not_replacement_proof():
     ledger = replay([APPROVAL, AUDIT,
                      step("replace_item", result={"status": "completed"})])
+    replacement = next(event for event in ledger.events
+                       if event.kind == "call" and event.tool == IDENTITIES["replace_item"])
     proof = prove_effect_claim_asof(ledger, REGISTRY, QUERY_ACTION, "SD-101",
+                                   action_call_event_id=replacement.event_id,
                                    answer_before_index=len(ledger.events))
     assert proof.observed_result_ids and not proof.proving_result_ids
     assert proof.fact is Truth.UNKNOWN and proof.claim_status == "NOT_ESTABLISHED"
+
+
+def test_explicit_authoritative_counter_can_refute_but_generic_failure_cannot():
+    positive = REGISTRY.by_identity[IDENTITIES["replace_item"]]
+    positive_contract = contract("replace_item", "replaced", True, "replaced", causal=True)
+    negative = ConditionalGuarantee(
+        (FieldCondition("result", ("replaced",), "false"),),
+        (EffectSpec("case_id", "replaced", "false"),))
+    registry = BoundRegistry(tuple(
+        BoundContract(replace(positive_contract, guarantees=(*positive_contract.guarantees, negative)),
+                      item.result_bindings) if item is positive else item
+        for item in REGISTRY.contracts))
+    positive_query = EffectRequirement(IDENTITIES["replace_item"], ("case_id",),
+                                       "replaced", "true", True)
+    counter = EffectRequirement(IDENTITIES["replace_item"], ("case_id",), "replaced", "false")
+    failed = replay([step("replace_item", result={"status": "completed"})])
+    absent = prove_effect_claim_asof(failed, registry, positive_query, "SD-101",
+                                    action_call_event_id=failed.events[0].event_id,
+                                    answer_before_index=len(failed.events), explicit_counter=counter)
+    assert absent.fact is Truth.UNKNOWN and absent.claim_status == "NOT_ESTABLISHED"
+
+    explicit = replay([step("replace_item", result={"replaced": False,
+                                                    "status": "completed"})])
+    refuted = prove_effect_claim_asof(explicit, registry, positive_query, "SD-101",
+                                     action_call_event_id=explicit.events[0].event_id,
+                                     answer_before_index=len(explicit.events), explicit_counter=counter)
+    assert refuted.fact is Truth.FALSE and refuted.claim_status == "REFUTED"
+    assert refuted.refuting_result_ids and not refuted.proving_result_ids
+
+    mixed = replay([step("replace_item", tid="first", result={"replaced": False}),
+                    step("replace_item", tid="second", result={"replaced": True})])
+    earlier = prove_effect_claim_asof(mixed, registry, positive_query, "SD-101",
+                                     action_call_event_id=mixed.events[0].event_id,
+                                     answer_before_index=len(mixed.events), explicit_counter=counter)
+    later = prove_effect_claim_asof(mixed, registry, positive_query, "SD-101",
+                                   action_call_event_id=mixed.events[2].event_id,
+                                   answer_before_index=len(mixed.events), explicit_counter=counter)
+    assert earlier.fact is Truth.FALSE and later.fact is Truth.TRUE
+    assert earlier.refuting_result_ids != later.proving_result_ids
+
+
+def test_counter_must_match_same_tool_entity_and_predicate():
+    ledger = replay([REPLACEMENT])
+    wrong = EffectRequirement(IDENTITIES["record_audit"], ("case_id",), "audited", "true")
+    with pytest.raises(ValueError, match="opposite Boolean values"):
+        prove_effect_claim_asof(ledger, REGISTRY, QUERY_ACTION, "SD-101",
+                                action_call_event_id=ledger.events[0].event_id,
+                                answer_before_index=len(ledger.events), explicit_counter=wrong)
