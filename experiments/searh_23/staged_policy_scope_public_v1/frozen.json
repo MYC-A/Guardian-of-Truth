@@ -1,0 +1,190 @@
+{
+  "systems": {
+    "scope": "Read ONE source policy and a declared tool catalog.\nDecide whether the clause is PRECONDITION or ORDERING, then locate the action\nwhose execution is restricted. Checks, lookups, authorizations and requests\nare evidence or preparation, not the restricted business action.\nPRECONDITION means a fact/check/approval must hold before one business action;\nphrases 'before', 'after', 'only after', and 'requires' can express this.\nORDERING means two distinct business operations must be executed in a stated\nsequence, such as cancellation then refund. The second operation is governed.\nReturn only JSON with exactly these keys:\n{\"kind\":\"PRECONDITION|ORDERING|UNSUPPORTED\",\"governed_tool\":\"declared name or empty\",\"prerequisite_tool\":\"declared name only for ORDERING, otherwise empty\",\"action_quote\":\"unique exact continuous source substring naming the governed action\"}.\nChoose a longer source phrase if the short action word appears twice. Never\ninfer a tool not in the catalog. No case verdict or interpretation of results.\n"
+  },
+  "tasks": [
+    {
+      "id": "retail_cancel",
+      "query": {
+        "policy": "An order can only be cancelled if its status is 'pending', and you should check its status before taking the action.",
+        "tools": {
+          "calculate": "- calculate — Calculate the result of a mathematical expression.",
+          "cancel_pending_order": "- cancel_pending_order — Cancel a pending order. If the order is already processed or delivered,",
+          "exchange_delivered_order_items": "- exchange_delivered_order_items — Exchange items in a delivered order to new items of the same product type.",
+          "find_user_id_by_name_zip": "- find_user_id_by_name_zip — Find user id by first name, last name, and zip code. If the user is not found, the function",
+          "find_user_id_by_email": "- find_user_id_by_email — Find user id by email. If the user is not found, the function will return an error message.",
+          "get_order_details": "- get_order_details — Get the status and details of an order.",
+          "get_product_details": "- get_product_details — Get the inventory details of a product.",
+          "get_item_details": "- get_item_details — Get the inventory details of an item.",
+          "get_user_details": "- get_user_details — Get the details of a user, including their orders.",
+          "list_all_product_types": "- list_all_product_types — List the name and product id of all product types.",
+          "modify_pending_order_address": "- modify_pending_order_address — Modify the shipping address of a pending order. The agent needs to explain the modification detail and ask for explicit user confirmation (yes/no) to proceed.",
+          "modify_pending_order_items": "- modify_pending_order_items — Modify items in a pending order to new items of the same product type. For a pending order, this function can only be called once. The agent needs to explain the exchange detail and ask for explicit user confirmation (yes/no) to proceed.",
+          "modify_pending_order_payment": "- modify_pending_order_payment — Modify the payment method of a pending order. The agent needs to explain the modification detail and ask for explicit user confirmation (yes/no) to proceed.",
+          "modify_user_address": "- modify_user_address — Modify the default address of a user. The agent needs to explain the modification detail and ask for explicit user confirmation (yes/no) to proceed.",
+          "return_delivered_order_items": "- return_delivered_order_items — Return some items of a delivered order.",
+          "transfer_to_human_agents": "- transfer_to_human_agents — Transfer the user to a human agent, with a summary of the user's issue."
+        }
+      },
+      "expected_scope": [
+        "cancel_pending_order"
+      ]
+    },
+    {
+      "id": "retail_modify",
+      "query": {
+        "policy": "An order can only be modified if its status is 'pending', and you should check its status before taking the action.",
+        "tools": {
+          "calculate": "- calculate — Calculate the result of a mathematical expression.",
+          "cancel_pending_order": "- cancel_pending_order — Cancel a pending order. If the order is already processed or delivered,",
+          "exchange_delivered_order_items": "- exchange_delivered_order_items — Exchange items in a delivered order to new items of the same product type.",
+          "find_user_id_by_name_zip": "- find_user_id_by_name_zip — Find user id by first name, last name, and zip code. If the user is not found, the function",
+          "find_user_id_by_email": "- find_user_id_by_email — Find user id by email. If the user is not found, the function will return an error message.",
+          "get_order_details": "- get_order_details — Get the status and details of an order.",
+          "get_product_details": "- get_product_details — Get the inventory details of a product.",
+          "get_item_details": "- get_item_details — Get the inventory details of an item.",
+          "get_user_details": "- get_user_details — Get the details of a user, including their orders.",
+          "list_all_product_types": "- list_all_product_types — List the name and product id of all product types.",
+          "modify_pending_order_address": "- modify_pending_order_address — Modify the shipping address of a pending order. The agent needs to explain the modification detail and ask for explicit user confirmation (yes/no) to proceed.",
+          "modify_pending_order_items": "- modify_pending_order_items — Modify items in a pending order to new items of the same product type. For a pending order, this function can only be called once. The agent needs to explain the exchange detail and ask for explicit user confirmation (yes/no) to proceed.",
+          "modify_pending_order_payment": "- modify_pending_order_payment — Modify the payment method of a pending order. The agent needs to explain the modification detail and ask for explicit user confirmation (yes/no) to proceed.",
+          "modify_user_address": "- modify_user_address — Modify the default address of a user. The agent needs to explain the modification detail and ask for explicit user confirmation (yes/no) to proceed.",
+          "return_delivered_order_items": "- return_delivered_order_items — Return some items of a delivered order.",
+          "transfer_to_human_agents": "- transfer_to_human_agents — Transfer the user to a human agent, with a summary of the user's issue."
+        }
+      },
+      "expected_scope": [
+        "modify_pending_order_address",
+        "modify_pending_order_items",
+        "modify_pending_order_payment"
+      ]
+    },
+    {
+      "id": "retail_exchange",
+      "query": {
+        "policy": "An order can only be exchanged if its status is 'delivered', and you should check its status before taking the action. In particular, remember to remind the customer to confirm they have provided all items to be exchanged.",
+        "tools": {
+          "calculate": "- calculate — Calculate the result of a mathematical expression.",
+          "cancel_pending_order": "- cancel_pending_order — Cancel a pending order. If the order is already processed or delivered,",
+          "exchange_delivered_order_items": "- exchange_delivered_order_items — Exchange items in a delivered order to new items of the same product type.",
+          "find_user_id_by_name_zip": "- find_user_id_by_name_zip — Find user id by first name, last name, and zip code. If the user is not found, the function",
+          "find_user_id_by_email": "- find_user_id_by_email — Find user id by email. If the user is not found, the function will return an error message.",
+          "get_order_details": "- get_order_details — Get the status and details of an order.",
+          "get_product_details": "- get_product_details — Get the inventory details of a product.",
+          "get_item_details": "- get_item_details — Get the inventory details of an item.",
+          "get_user_details": "- get_user_details — Get the details of a user, including their orders.",
+          "list_all_product_types": "- list_all_product_types — List the name and product id of all product types.",
+          "modify_pending_order_address": "- modify_pending_order_address — Modify the shipping address of a pending order. The agent needs to explain the modification detail and ask for explicit user confirmation (yes/no) to proceed.",
+          "modify_pending_order_items": "- modify_pending_order_items — Modify items in a pending order to new items of the same product type. For a pending order, this function can only be called once. The agent needs to explain the exchange detail and ask for explicit user confirmation (yes/no) to proceed.",
+          "modify_pending_order_payment": "- modify_pending_order_payment — Modify the payment method of a pending order. The agent needs to explain the modification detail and ask for explicit user confirmation (yes/no) to proceed.",
+          "modify_user_address": "- modify_user_address — Modify the default address of a user. The agent needs to explain the modification detail and ask for explicit user confirmation (yes/no) to proceed.",
+          "return_delivered_order_items": "- return_delivered_order_items — Return some items of a delivered order.",
+          "transfer_to_human_agents": "- transfer_to_human_agents — Transfer the user to a human agent, with a summary of the user's issue."
+        }
+      },
+      "expected_scope": [
+        "exchange_delivered_order_items"
+      ]
+    },
+    {
+      "id": "airline_baggage",
+      "query": {
+        "policy": "- The user can add but not remove checked bags.",
+        "tools": {
+          "book_reservation": "- book_reservation — Book a reservation.",
+          "calculate": "- calculate — Calculate the result of a mathematical expression.",
+          "cancel_reservation": "- cancel_reservation — Cancel the whole reservation.",
+          "get_reservation_details": "- get_reservation_details — Get the details of a reservation.",
+          "get_user_details": "- get_user_details — Get the details of a user, including their reservations.",
+          "list_all_airports": "- list_all_airports — Returns a list of all available airports.",
+          "search_direct_flight": "- search_direct_flight — Search for direct flights between two cities on a specific date.",
+          "search_onestop_flight": "- search_onestop_flight — Search for one-stop flights between two cities on a specific date.",
+          "send_certificate": "- send_certificate — Send a certificate to a user. Be careful!",
+          "transfer_to_human_agents": "- transfer_to_human_agents — Transfer the user to a human agent, with a summary of the user's issue.",
+          "update_reservation_baggages": "- update_reservation_baggages — Update the baggage information of a reservation.",
+          "update_reservation_flights": "- update_reservation_flights — Update the flight information of a reservation.",
+          "update_reservation_passengers": "- update_reservation_passengers — Update the passenger information of a reservation.",
+          "get_flight_status": "- get_flight_status — Get the status of a flight."
+        }
+      },
+      "expected_scope": [
+        "update_reservation_baggages"
+      ]
+    },
+    {
+      "id": "airline_passenger_count",
+      "query": {
+        "policy": "- The user can modify passengers but cannot modify the number of passengers.",
+        "tools": {
+          "book_reservation": "- book_reservation — Book a reservation.",
+          "calculate": "- calculate — Calculate the result of a mathematical expression.",
+          "cancel_reservation": "- cancel_reservation — Cancel the whole reservation.",
+          "get_reservation_details": "- get_reservation_details — Get the details of a reservation.",
+          "get_user_details": "- get_user_details — Get the details of a user, including their reservations.",
+          "list_all_airports": "- list_all_airports — Returns a list of all available airports.",
+          "search_direct_flight": "- search_direct_flight — Search for direct flights between two cities on a specific date.",
+          "search_onestop_flight": "- search_onestop_flight — Search for one-stop flights between two cities on a specific date.",
+          "send_certificate": "- send_certificate — Send a certificate to a user. Be careful!",
+          "transfer_to_human_agents": "- transfer_to_human_agents — Transfer the user to a human agent, with a summary of the user's issue.",
+          "update_reservation_baggages": "- update_reservation_baggages — Update the baggage information of a reservation.",
+          "update_reservation_flights": "- update_reservation_flights — Update the flight information of a reservation.",
+          "update_reservation_passengers": "- update_reservation_passengers — Update the passenger information of a reservation.",
+          "get_flight_status": "- get_flight_status — Get the status of a flight."
+        }
+      },
+      "expected_scope": [
+        "update_reservation_passengers"
+      ]
+    },
+    {
+      "id": "telecom_resume",
+      "query": {
+        "policy": "You are not allowed to lift the suspension if the line's contract end date is in the past, even if the user has paid all their overdue bills.",
+        "tools": {
+          "get_customer_by_phone": "- get_customer_by_phone — Finds a customer by their primary contact or line phone number.",
+          "get_customer_by_id": "- get_customer_by_id — Retrieves a customer directly by their unique ID.",
+          "get_customer_by_name": "- get_customer_by_name — Searches for customers by name and DOB. May return multiple matches if names are similar,",
+          "get_details_by_id": "- get_details_by_id — Retrieves the details for a given ID.",
+          "suspend_line": "- suspend_line — Suspends a specific line (max 6 months).",
+          "resume_line": "- resume_line — Resumes a suspended line.",
+          "get_bills_for_customer": "- get_bills_for_customer — Retrieves a list of the customer's bills, most recent first.",
+          "send_payment_request": "- send_payment_request — Sends a payment request to the customer for a specific bill.",
+          "get_data_usage": "- get_data_usage — Retrieves current billing cycle data usage for a line, including data",
+          "enable_roaming": "- enable_roaming — Enables international roaming on a line.",
+          "disable_roaming": "- disable_roaming — Disables international roaming on a line.",
+          "transfer_to_human_agents": "- transfer_to_human_agents — Transfer the user to a human agent, with a summary of the user's issue.",
+          "refuel_data": "- refuel_data — Refuels data for a specific line, adding to the customer's bill."
+        }
+      },
+      "expected_scope": [
+        "resume_line"
+      ]
+    },
+    {
+      "id": "telecom_payment_request",
+      "query": {
+        "policy": "- The send payement request tool will not check if the bill is overdue. You should always check that the bill is overdue before sending a payment request.",
+        "tools": {
+          "get_customer_by_phone": "- get_customer_by_phone — Finds a customer by their primary contact or line phone number.",
+          "get_customer_by_id": "- get_customer_by_id — Retrieves a customer directly by their unique ID.",
+          "get_customer_by_name": "- get_customer_by_name — Searches for customers by name and DOB. May return multiple matches if names are similar,",
+          "get_details_by_id": "- get_details_by_id — Retrieves the details for a given ID.",
+          "suspend_line": "- suspend_line — Suspends a specific line (max 6 months).",
+          "resume_line": "- resume_line — Resumes a suspended line.",
+          "get_bills_for_customer": "- get_bills_for_customer — Retrieves a list of the customer's bills, most recent first.",
+          "send_payment_request": "- send_payment_request — Sends a payment request to the customer for a specific bill.",
+          "get_data_usage": "- get_data_usage — Retrieves current billing cycle data usage for a line, including data",
+          "enable_roaming": "- enable_roaming — Enables international roaming on a line.",
+          "disable_roaming": "- disable_roaming — Disables international roaming on a line.",
+          "transfer_to_human_agents": "- transfer_to_human_agents — Transfer the user to a human agent, with a summary of the user's issue.",
+          "refuel_data": "- refuel_data — Refuels data for a specific line, adding to the customer's bill."
+        }
+      },
+      "expected_scope": [
+        "send_payment_request"
+      ]
+    }
+  ],
+  "max_tokens": 350,
+  "note": "same V2 prompt; original public46 clauses already viewed in earlier studies; scope only"
+}
