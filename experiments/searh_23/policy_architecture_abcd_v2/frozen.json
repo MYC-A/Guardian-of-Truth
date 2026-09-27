@@ -1,0 +1,848 @@
+{
+  "version": 2,
+  "model_source": "MISTRAL_MODEL in server env",
+  "temperature": 0,
+  "max_tokens": 1300,
+  "max_nodes": 18,
+  "max_depth": 6,
+  "arms": [
+    "A_one_shot",
+    "B_staged",
+    "C_onionl",
+    "D_nl2logic"
+  ],
+  "systems": {
+    "A": "Read the whole policy and tool catalog. Compile the complete policy directly. Return one JSON object {\"directives\":[...]}. Each independent policy direction is:\n{\"kind\":\"GATE|FORBID|PERMIT|ORDER|REQUIRE_RESPONSE|DESCRIPTIVE\",\n \"action_quote\":\"exact continuous source substring naming the governed action or response\",\n \"governed_tools\":[\"exact declared tool names\"],\n \"condition\":null or {\"op\":\"ATOM\",\"quote\":\"exact source substring\",\"temporal\":\"NONE|LATEST|PRIOR_TRUE\"} or\n   {\"op\":\"AND|OR|NOT\",\"children\":[condition,...]},\n \"before_quote\":\"exact source substring of required earlier action, or empty\",\n \"exception_quote\":\"exact source substring after exception/concession marker, or empty\",\n \"exception_type\":\"NONE|EXCEPT|EVEN_IF\",\n \"scope_quote\":\"exact source substring of contextual scope, or empty\"}.\nGATE means a required state/check/approval constrains the action. ORDER means one separate business operation must precede another. A check before an action is GATE. FORBID and PERMIT can name facets of the same tool. Preserve independent response duties and explanatory non-equivalence as separate directives. Do not turn a derived logical contrapositive into another source directive. Copy source wording exactly; no case verdict. For the strict condition schema, EVERY condition node has op, quote, temporal, children. For ATOM set children=[]; for AND/OR/NOT set quote='' and temporal='NONE'. A missing condition is null.",
+    "B_inventory": "Read the whole policy. List ALL independent source directions, including permission and prohibition facets, response duties and descriptive non-equivalence. No derived directions. Return JSON {\"heads\":[{\"kind\":\"GATE|FORBID|PERMIT|ORDER|REQUIRE_RESPONSE|DESCRIPTIVE\",\"head_quote\":\"exact continuous source quote identifying the direction\"}]}. Do not compile conditions or bind tools yet.",
+    "B_detail": "Given ONE extracted policy head, compile only that head using the full original policy and tool catalog. Return one JSON object {\"directives\":[...]}. Each independent policy direction is:\n{\"kind\":\"GATE|FORBID|PERMIT|ORDER|REQUIRE_RESPONSE|DESCRIPTIVE\",\n \"action_quote\":\"exact continuous source substring naming the governed action or response\",\n \"governed_tools\":[\"exact declared tool names\"],\n \"condition\":null or {\"op\":\"ATOM\",\"quote\":\"exact source substring\",\"temporal\":\"NONE|LATEST|PRIOR_TRUE\"} or\n   {\"op\":\"AND|OR|NOT\",\"children\":[condition,...]},\n \"before_quote\":\"exact source substring of required earlier action, or empty\",\n \"exception_quote\":\"exact source substring after exception/concession marker, or empty\",\n \"exception_type\":\"NONE|EXCEPT|EVEN_IF\",\n \"scope_quote\":\"exact source substring of contextual scope, or empty\"}.\nGATE means a required state/check/approval constrains the action. ORDER means one separate business operation must precede another. A check before an action is GATE. FORBID and PERMIT can name facets of the same tool. Preserve independent response duties and explanatory non-equivalence as separate directives. Do not turn a derived logical contrapositive into another source directive. Copy source wording exactly; no case verdict. Return exactly one directive inside directives; preserve shared context when it applies. For the strict condition schema, EVERY condition node has op, quote, temporal, children. For ATOM set children=[]; for AND/OR/NOT set quote='' and temporal='NONE'. A missing condition is null.",
+    "C_macro": "Req2LTL/OnionL stage I: identify the GLOBAL temporal/mode scope before decomposing the clause. Return JSON {\"scope\":\"GLOBAL|MODE|EVENTUAL\",\"scope_quote\":\"exact source substring or empty\",\"clause\":\"the remaining natural-language clause\"}. Default GLOBAL when no overarching scope. A local BEFORE or ONLY IF is a relation within the clause, not a global scope.",
+    "C_node": "Req2LTL/OnionL stage II: examine ONLY the outermost semantic construct of this clause. Return JSON {\"op\":\"ATOM|AND|OR|GATE|ORDER|PERMIT|FORBID|EXCEPT|EVEN_IF\",\"left\":\"standalone child clause or empty\",\"right\":\"standalone child clause or empty\"}. ATOM has no children. PERMIT/FORBID unary: left is the governed action. AND/OR combine independent or condition clauses. GATE: left is governed action, right is required condition. ORDER: left is earlier operation, right is governed later operation. EXCEPT: left is base direction, right is exception. EVEN_IF: left is base direction, right is concession that does not cancel it. Choose outermost relation; recurse on children later. Preserve negation and the original scope; do not infer a new directive from a necessary condition.",
+    "D_rephrase": "NL2Logic preprocessing: rephrase the policy into clear natural language ONLY where an explicit quantifier or pronoun needs disambiguation. Keep every independent directive, condition, exception and temporal relation. Do not simplify a prohibition into permission. Return JSON {\"rephrased\":\"complete policy in natural language\"}. If no rephrase is needed, copy the input unchanged. This is an input-normalization step, not a logic translation.",
+    "D_select": "NL2Logic-style parser selector: classify ONLY this current clause as ATOMIC, QUANTIFIED, LOGICAL or NEGATION. A logical clause has an outermost AND/OR/ONLY_IF/IF/BEFORE/EXCEPT/EVEN_IF/PERMIT/FORBID relation. QUANTIFIED is an explicit all/every/each/no entity scope, not merely an indefinite noun. Return JSON {\"type\":\"ATOMIC|QUANTIFIED|LOGICAL|NEGATION\"}.",
+    "D_logical": "NL2Logic-style specialized logical parser: identify ONLY the outermost operator and rewrite its operands as standalone child clauses. Return JSON {\"op\":\"AND|OR|GATE|ORDER|PERMIT|FORBID|EXCEPT|EVEN_IF\",\"left\":\"child clause or empty\",\"right\":\"child clause or empty\"}. GATE: left governed action, right necessary condition. ORDER: left earlier operation, right later governed operation. PERMIT/FORBID unary: left governed action. EXCEPT and EVEN_IF: left base direction, right exception/concession. Do not parse nested operators here; children will be parsed recursively. Never treat a lookup as executing a later action.",
+    "D_quantified": "NL2Logic-style quantified parser: extract only the outermost explicit quantifier and rewrite the remaining clause using a variable if needed. Return JSON {\"quantifier\":\"FORALL|EXISTS\",\"variable\":\"x\",\"clause\":\"remaining standalone clause\"}. Preserve inner conditions for later recursive parsing.",
+    "D_negation": "NL2Logic-style unary parser: remove only the outermost logical negation; return JSON {\"op\":\"NOT\",\"clause\":\"remaining positive standalone clause\"}.",
+    "leaf": "Atomic proposition normalization shared by recursive arms. Read ONE terminal clause and the original policy/tool catalog. Return JSON {\"role\":\"ACTION|CONDITION|RESPONSE|DESCRIPTIVE\",\"source_quote\":\"one exact continuous substring from original policy corresponding to this clause\",\"tools\":[\"declared names that EXECUTE this action; no lookup tools for an action\"],\"temporal\":\"NONE|LATEST|PRIOR_TRUE\"}. For a condition, RESPONSE or DESCRIPTIVE, tools must be empty. A check that has returned is PRIOR_TRUE; latest/current is LATEST. Preserve exact source spelling. If no unique source substring supports the clause, use empty source_quote. No verdict."
+  },
+  "cases": [
+    {
+      "id": "retail_cancel",
+      "origin": "viewed_prior_clause",
+      "query": {
+        "policy": "An order can only be cancelled if its status is 'pending', and you should check its status before taking the action.",
+        "tools": {
+          "calculate": "- calculate — Calculate the result of a mathematical expression.",
+          "cancel_pending_order": "- cancel_pending_order — Cancel a pending order. If the order is already processed or delivered,",
+          "exchange_delivered_order_items": "- exchange_delivered_order_items — Exchange items in a delivered order to new items of the same product type.",
+          "find_user_id_by_name_zip": "- find_user_id_by_name_zip — Find user id by first name, last name, and zip code. If the user is not found, the function",
+          "find_user_id_by_email": "- find_user_id_by_email — Find user id by email. If the user is not found, the function will return an error message.",
+          "get_order_details": "- get_order_details — Get the status and details of an order.",
+          "get_product_details": "- get_product_details — Get the inventory details of a product.",
+          "get_item_details": "- get_item_details — Get the inventory details of an item.",
+          "get_user_details": "- get_user_details — Get the details of a user, including their orders.",
+          "list_all_product_types": "- list_all_product_types — List the name and product id of all product types.",
+          "modify_pending_order_address": "- modify_pending_order_address — Modify the shipping address of a pending order. The agent needs to explain the modification detail and ask for explicit user confirmation (yes/no) to proceed.",
+          "modify_pending_order_items": "- modify_pending_order_items — Modify items in a pending order to new items of the same product type. For a pending order, this function can only be called once. The agent needs to explain the exchange detail and ask for explicit user confirmation (yes/no) to proceed.",
+          "modify_pending_order_payment": "- modify_pending_order_payment — Modify the payment method of a pending order. The agent needs to explain the modification detail and ask for explicit user confirmation (yes/no) to proceed.",
+          "modify_user_address": "- modify_user_address — Modify the default address of a user. The agent needs to explain the modification detail and ask for explicit user confirmation (yes/no) to proceed.",
+          "return_delivered_order_items": "- return_delivered_order_items — Return some items of a delivered order.",
+          "transfer_to_human_agents": "- transfer_to_human_agents — Transfer the user to a human agent, with a summary of the user's issue."
+        }
+      }
+    },
+    {
+      "id": "retail_exchange",
+      "origin": "viewed_prior_clause",
+      "query": {
+        "policy": "An order can only be exchanged if its status is 'delivered', and you should check its status before taking the action. In particular, remember to remind the customer to confirm they have provided all items to be exchanged.",
+        "tools": {
+          "calculate": "- calculate — Calculate the result of a mathematical expression.",
+          "cancel_pending_order": "- cancel_pending_order — Cancel a pending order. If the order is already processed or delivered,",
+          "exchange_delivered_order_items": "- exchange_delivered_order_items — Exchange items in a delivered order to new items of the same product type.",
+          "find_user_id_by_name_zip": "- find_user_id_by_name_zip — Find user id by first name, last name, and zip code. If the user is not found, the function",
+          "find_user_id_by_email": "- find_user_id_by_email — Find user id by email. If the user is not found, the function will return an error message.",
+          "get_order_details": "- get_order_details — Get the status and details of an order.",
+          "get_product_details": "- get_product_details — Get the inventory details of a product.",
+          "get_item_details": "- get_item_details — Get the inventory details of an item.",
+          "get_user_details": "- get_user_details — Get the details of a user, including their orders.",
+          "list_all_product_types": "- list_all_product_types — List the name and product id of all product types.",
+          "modify_pending_order_address": "- modify_pending_order_address — Modify the shipping address of a pending order. The agent needs to explain the modification detail and ask for explicit user confirmation (yes/no) to proceed.",
+          "modify_pending_order_items": "- modify_pending_order_items — Modify items in a pending order to new items of the same product type. For a pending order, this function can only be called once. The agent needs to explain the exchange detail and ask for explicit user confirmation (yes/no) to proceed.",
+          "modify_pending_order_payment": "- modify_pending_order_payment — Modify the payment method of a pending order. The agent needs to explain the modification detail and ask for explicit user confirmation (yes/no) to proceed.",
+          "modify_user_address": "- modify_user_address — Modify the default address of a user. The agent needs to explain the modification detail and ask for explicit user confirmation (yes/no) to proceed.",
+          "return_delivered_order_items": "- return_delivered_order_items — Return some items of a delivered order.",
+          "transfer_to_human_agents": "- transfer_to_human_agents — Transfer the user to a human agent, with a summary of the user's issue."
+        }
+      }
+    },
+    {
+      "id": "airline_baggage",
+      "origin": "viewed_prior_clause",
+      "query": {
+        "policy": "- The user can add but not remove checked bags.",
+        "tools": {
+          "book_reservation": "- book_reservation — Book a reservation.",
+          "calculate": "- calculate — Calculate the result of a mathematical expression.",
+          "cancel_reservation": "- cancel_reservation — Cancel the whole reservation.",
+          "get_reservation_details": "- get_reservation_details — Get the details of a reservation.",
+          "get_user_details": "- get_user_details — Get the details of a user, including their reservations.",
+          "list_all_airports": "- list_all_airports — Returns a list of all available airports.",
+          "search_direct_flight": "- search_direct_flight — Search for direct flights between two cities on a specific date.",
+          "search_onestop_flight": "- search_onestop_flight — Search for one-stop flights between two cities on a specific date.",
+          "send_certificate": "- send_certificate — Send a certificate to a user. Be careful!",
+          "transfer_to_human_agents": "- transfer_to_human_agents — Transfer the user to a human agent, with a summary of the user's issue.",
+          "update_reservation_baggages": "- update_reservation_baggages — Update the baggage information of a reservation.",
+          "update_reservation_flights": "- update_reservation_flights — Update the flight information of a reservation.",
+          "update_reservation_passengers": "- update_reservation_passengers — Update the passenger information of a reservation.",
+          "get_flight_status": "- get_flight_status — Get the status of a flight."
+        }
+      }
+    },
+    {
+      "id": "telecom_resume",
+      "origin": "viewed_prior_clause",
+      "query": {
+        "policy": "You are not allowed to lift the suspension if the line's contract end date is in the past, even if the user has paid all their overdue bills.",
+        "tools": {
+          "get_customer_by_phone": "- get_customer_by_phone — Finds a customer by their primary contact or line phone number.",
+          "get_customer_by_id": "- get_customer_by_id — Retrieves a customer directly by their unique ID.",
+          "get_customer_by_name": "- get_customer_by_name — Searches for customers by name and DOB. May return multiple matches if names are similar,",
+          "get_details_by_id": "- get_details_by_id — Retrieves the details for a given ID.",
+          "suspend_line": "- suspend_line — Suspends a specific line (max 6 months).",
+          "resume_line": "- resume_line — Resumes a suspended line.",
+          "get_bills_for_customer": "- get_bills_for_customer — Retrieves a list of the customer's bills, most recent first.",
+          "send_payment_request": "- send_payment_request — Sends a payment request to the customer for a specific bill.",
+          "get_data_usage": "- get_data_usage — Retrieves current billing cycle data usage for a line, including data",
+          "enable_roaming": "- enable_roaming — Enables international roaming on a line.",
+          "disable_roaming": "- disable_roaming — Disables international roaming on a line.",
+          "transfer_to_human_agents": "- transfer_to_human_agents — Transfer the user to a human agent, with a summary of the user's issue.",
+          "refuel_data": "- refuel_data — Refuels data for a specific line, adding to the customer's bill."
+        }
+      }
+    },
+    {
+      "id": "records_dev",
+      "origin": "viewed_prior_clause",
+      "query": {
+        "policy": "A document may be published only after its owner approval check has returned approved for that document AND the latest classification check for the same document reports public. Submitting a publication request does not publish it.",
+        "tools": {
+          "check_owner_approval": {
+            "description": "Check recorded owner approval for a document; no publication occurs.",
+            "id": "document_id",
+            "result": "approved"
+          },
+          "check_classification": {
+            "description": "Check whether the document is public; no publication occurs.",
+            "id": "document_id",
+            "result": "public"
+          },
+          "submit_publication_request": {
+            "description": "Submit a request for future publication; does not publish.",
+            "id": "document_id",
+            "result": "accepted"
+          },
+          "publish_document": {
+            "description": "Publish the document now.",
+            "id": "document_id",
+            "result": "success"
+          }
+        }
+      }
+    },
+    {
+      "id": "hotel_cancellation_order",
+      "origin": "viewed_prior_clause",
+      "query": {
+        "policy": "For paid reservations, process cancellation FIRST and the refund SECOND; never refund before cancelling.",
+        "tools": {
+          "lookup_reservation": {
+            "description": "- lookup_reservation — Get the details of a reservation."
+          },
+          "get_guest_profile": {
+            "description": "- get_guest_profile — Get the guest profile by user ID."
+          },
+          "verify_identity": {
+            "description": "- verify_identity — Verify that the name on the guest ID matches the name on the reservation."
+          },
+          "check_supervisor_approval": {
+            "description": "- check_supervisor_approval — Check whether supervisor approval is recorded for a reservation."
+          },
+          "record_supervisor_approval": {
+            "description": "- record_supervisor_approval — Record supervisor approval for a pending refund."
+          },
+          "process_refund": {
+            "description": "- process_refund — Process a refund to the original payment method."
+          },
+          "cancel_reservation": {
+            "description": "- cancel_reservation — Cancel the whole reservation."
+          },
+          "get_payment_status": {
+            "description": "- get_payment_status — Get the status of a payment."
+          },
+          "charge_card": {
+            "description": "- charge_card — Charge the payment card on file."
+          },
+          "escalate_to_payment_desk": {
+            "description": "- escalate_to_payment_desk — Escalate a payment issue to the payment desk."
+          },
+          "grant_late_checkout": {
+            "description": "- grant_late_checkout — Grant a late checkout for a reservation."
+          },
+          "modify_reservation": {
+            "description": "- modify_reservation — Modify a reservation."
+          },
+          "search_incident_reports": {
+            "description": "- search_incident_reports — Search incident reports for a reservation."
+          },
+          "get_incident_report": {
+            "description": "- get_incident_report — Get a documented incident report."
+          },
+          "issue_compensation": {
+            "description": "- issue_compensation — Issue compensation for a documented incident."
+          },
+          "transfer_to_human_agents": {
+            "description": "- transfer_to_human_agents — Transfer the user to a human agent, with a summary of the user's issue."
+          }
+        }
+      }
+    },
+    {
+      "id": "parcel_handover_transfer",
+      "origin": "viewed_prior_clause",
+      "query": {
+        "policy": "A parcel may be handed over only after its barcode check has returned valid AND its latest custody check reports ready. Filing a handover request does not hand it over.",
+        "tools": {
+          "check_barcode": {
+            "description": "Read barcode validity for parcel; no handover.",
+            "id": "parcel_id",
+            "result": "valid"
+          },
+          "check_custody": {
+            "description": "Read current custody readiness; no handover.",
+            "id": "parcel_id",
+            "result": "ready"
+          },
+          "file_handover_request": {
+            "description": "Request later parcel handover; does not hand it over.",
+            "id": "parcel_id",
+            "result": "accepted"
+          },
+          "handover_parcel": {
+            "description": "Hand over the parcel now.",
+            "id": "parcel_id",
+            "result": "success"
+          }
+        }
+      }
+    },
+    {
+      "id": "credit_preview_new",
+      "origin": "viewed_prior_clause",
+      "query": {
+        "policy": "You may preview a credit, but you must never issue a credit without recorded approval.",
+        "tools": {
+          "preview_credit": "Show a draft credit without posting it.",
+          "check_approval": "Read recorded credit approval; does not post credit.",
+          "issue_credit": "Post a credit to the customer's balance."
+        }
+      }
+    },
+    {
+      "id": "dispatch_or_authored",
+      "query": {
+        "policy": "Release a shipment only if either customs clearance is recorded or a supervisor waiver is approved.",
+        "tools": {
+          "check_customs": "Read recorded customs clearance; no release.",
+          "check_waiver": "Read supervisor waiver approval; no release.",
+          "release_shipment": "Release the shipment now."
+        }
+      },
+      "origin": "new_authored"
+    },
+    {
+      "id": "draft_exception_authored",
+      "query": {
+        "policy": "Never publish a draft, except when its owner has approved a public preview.",
+        "tools": {
+          "check_preview_approval": "Read owner approval for a public preview.",
+          "publish_draft": "Publish a draft now."
+        }
+      },
+      "origin": "new_authored"
+    },
+    {
+      "id": "device_nested_authored",
+      "query": {
+        "policy": "For replacement devices, verify approval before performing the swap, and notify the customer after the swap.",
+        "tools": {
+          "lookup_approval": "Look up approval; does not replace a device.",
+          "perform_swap": "Replace the device.",
+          "notify_customer": "Send a customer notification."
+        }
+      },
+      "origin": "new_authored"
+    },
+    {
+      "id": "archive_multitool_authored",
+      "query": {
+        "policy": "After the latest retention review says cleared, release an archive with either publication tool. Filing a request is not release.",
+        "tools": {
+          "review_retention": "Read latest retention status.",
+          "publish_archive": "Release the archive.",
+          "publish_public_copy": "Release a public copy of the archive.",
+          "file_request": "Request a future release; no release."
+        }
+      },
+      "origin": "new_authored"
+    }
+  ],
+  "source_references": {
+    "req2ltl": "https://arxiv.org/html/2512.17334",
+    "req2ltl_repo": "https://github.com/Meng-Nan-MZ/Req2LTL",
+    "nl2logic": "https://aclanthology.org/2026.findings-eacl.317/",
+    "nl2logic_repo": "https://github.com/peng-gao-lab/nl2logic"
+  },
+  "schemas": {
+    "A": {
+      "type": "json_schema",
+      "json_schema": {
+        "name": "GuardianA",
+        "schema_definition": {
+          "type": "object",
+          "properties": {
+            "directives": {
+              "type": "array",
+              "items": {
+                "type": "object",
+                "properties": {
+                  "kind": {
+                    "type": "string",
+                    "enum": [
+                      "DESCRIPTIVE",
+                      "FORBID",
+                      "GATE",
+                      "ORDER",
+                      "PERMIT",
+                      "REQUIRE_RESPONSE"
+                    ]
+                  },
+                  "action_quote": {
+                    "type": "string"
+                  },
+                  "governed_tools": {
+                    "type": "array",
+                    "items": {
+                      "type": "string"
+                    }
+                  },
+                  "condition": {
+                    "anyOf": [
+                      {
+                        "$ref": "#/$defs/Cond"
+                      },
+                      {
+                        "type": "null"
+                      }
+                    ]
+                  },
+                  "before_quote": {
+                    "type": "string"
+                  },
+                  "exception_quote": {
+                    "type": "string"
+                  },
+                  "exception_type": {
+                    "type": "string",
+                    "enum": [
+                      "NONE",
+                      "EXCEPT",
+                      "EVEN_IF"
+                    ]
+                  },
+                  "scope_quote": {
+                    "type": "string"
+                  }
+                },
+                "required": [
+                  "kind",
+                  "action_quote",
+                  "governed_tools",
+                  "condition",
+                  "before_quote",
+                  "exception_quote",
+                  "exception_type",
+                  "scope_quote"
+                ],
+                "additionalProperties": false
+              }
+            }
+          },
+          "required": [
+            "directives"
+          ],
+          "additionalProperties": false,
+          "$defs": {
+            "Cond": {
+              "type": "object",
+              "properties": {
+                "op": {
+                  "type": "string",
+                  "enum": [
+                    "ATOM",
+                    "AND",
+                    "OR",
+                    "NOT"
+                  ]
+                },
+                "quote": {
+                  "type": "string"
+                },
+                "temporal": {
+                  "type": "string",
+                  "enum": [
+                    "NONE",
+                    "LATEST",
+                    "PRIOR_TRUE"
+                  ]
+                },
+                "children": {
+                  "type": "array",
+                  "items": {
+                    "$ref": "#/$defs/Cond"
+                  }
+                }
+              },
+              "required": [
+                "op",
+                "quote",
+                "temporal",
+                "children"
+              ],
+              "additionalProperties": false
+            }
+          }
+        },
+        "strict": true
+      }
+    },
+    "B_inventory": {
+      "type": "json_schema",
+      "json_schema": {
+        "name": "GuardianBinventory",
+        "schema_definition": {
+          "type": "object",
+          "properties": {
+            "heads": {
+              "type": "array",
+              "items": {
+                "type": "object",
+                "properties": {
+                  "kind": {
+                    "type": "string",
+                    "enum": [
+                      "DESCRIPTIVE",
+                      "FORBID",
+                      "GATE",
+                      "ORDER",
+                      "PERMIT",
+                      "REQUIRE_RESPONSE"
+                    ]
+                  },
+                  "head_quote": {
+                    "type": "string"
+                  }
+                },
+                "required": [
+                  "kind",
+                  "head_quote"
+                ],
+                "additionalProperties": false
+              }
+            }
+          },
+          "required": [
+            "heads"
+          ],
+          "additionalProperties": false
+        },
+        "strict": true
+      }
+    },
+    "B_detail": {
+      "type": "json_schema",
+      "json_schema": {
+        "name": "GuardianBdetail",
+        "schema_definition": {
+          "type": "object",
+          "properties": {
+            "directives": {
+              "type": "array",
+              "items": {
+                "type": "object",
+                "properties": {
+                  "kind": {
+                    "type": "string",
+                    "enum": [
+                      "DESCRIPTIVE",
+                      "FORBID",
+                      "GATE",
+                      "ORDER",
+                      "PERMIT",
+                      "REQUIRE_RESPONSE"
+                    ]
+                  },
+                  "action_quote": {
+                    "type": "string"
+                  },
+                  "governed_tools": {
+                    "type": "array",
+                    "items": {
+                      "type": "string"
+                    }
+                  },
+                  "condition": {
+                    "anyOf": [
+                      {
+                        "$ref": "#/$defs/Cond"
+                      },
+                      {
+                        "type": "null"
+                      }
+                    ]
+                  },
+                  "before_quote": {
+                    "type": "string"
+                  },
+                  "exception_quote": {
+                    "type": "string"
+                  },
+                  "exception_type": {
+                    "type": "string",
+                    "enum": [
+                      "NONE",
+                      "EXCEPT",
+                      "EVEN_IF"
+                    ]
+                  },
+                  "scope_quote": {
+                    "type": "string"
+                  }
+                },
+                "required": [
+                  "kind",
+                  "action_quote",
+                  "governed_tools",
+                  "condition",
+                  "before_quote",
+                  "exception_quote",
+                  "exception_type",
+                  "scope_quote"
+                ],
+                "additionalProperties": false
+              }
+            }
+          },
+          "required": [
+            "directives"
+          ],
+          "additionalProperties": false,
+          "$defs": {
+            "Cond": {
+              "type": "object",
+              "properties": {
+                "op": {
+                  "type": "string",
+                  "enum": [
+                    "ATOM",
+                    "AND",
+                    "OR",
+                    "NOT"
+                  ]
+                },
+                "quote": {
+                  "type": "string"
+                },
+                "temporal": {
+                  "type": "string",
+                  "enum": [
+                    "NONE",
+                    "LATEST",
+                    "PRIOR_TRUE"
+                  ]
+                },
+                "children": {
+                  "type": "array",
+                  "items": {
+                    "$ref": "#/$defs/Cond"
+                  }
+                }
+              },
+              "required": [
+                "op",
+                "quote",
+                "temporal",
+                "children"
+              ],
+              "additionalProperties": false
+            }
+          }
+        },
+        "strict": true
+      }
+    },
+    "C_macro": {
+      "type": "json_schema",
+      "json_schema": {
+        "name": "GuardianCmacro",
+        "schema_definition": {
+          "type": "object",
+          "properties": {
+            "scope": {
+              "type": "string",
+              "enum": [
+                "GLOBAL",
+                "MODE",
+                "EVENTUAL"
+              ]
+            },
+            "scope_quote": {
+              "type": "string"
+            },
+            "clause": {
+              "type": "string"
+            }
+          },
+          "required": [
+            "scope",
+            "scope_quote",
+            "clause"
+          ],
+          "additionalProperties": false
+        },
+        "strict": true
+      }
+    },
+    "C_node": {
+      "type": "json_schema",
+      "json_schema": {
+        "name": "GuardianCnode",
+        "schema_definition": {
+          "type": "object",
+          "properties": {
+            "op": {
+              "type": "string",
+              "enum": [
+                "ATOM",
+                "AND",
+                "OR",
+                "GATE",
+                "ORDER",
+                "PERMIT",
+                "FORBID",
+                "EXCEPT",
+                "EVEN_IF"
+              ]
+            },
+            "left": {
+              "type": "string"
+            },
+            "right": {
+              "type": "string"
+            }
+          },
+          "required": [
+            "op",
+            "left",
+            "right"
+          ],
+          "additionalProperties": false
+        },
+        "strict": true
+      }
+    },
+    "D_rephrase": {
+      "type": "json_schema",
+      "json_schema": {
+        "name": "GuardianDrephrase",
+        "schema_definition": {
+          "type": "object",
+          "properties": {
+            "rephrased": {
+              "type": "string"
+            }
+          },
+          "required": [
+            "rephrased"
+          ],
+          "additionalProperties": false
+        },
+        "strict": true
+      }
+    },
+    "D_select": {
+      "type": "json_schema",
+      "json_schema": {
+        "name": "GuardianDselect",
+        "schema_definition": {
+          "type": "object",
+          "properties": {
+            "type": {
+              "type": "string",
+              "enum": [
+                "ATOMIC",
+                "QUANTIFIED",
+                "LOGICAL",
+                "NEGATION"
+              ]
+            }
+          },
+          "required": [
+            "type"
+          ],
+          "additionalProperties": false
+        },
+        "strict": true
+      }
+    },
+    "D_logical": {
+      "type": "json_schema",
+      "json_schema": {
+        "name": "GuardianDlogical",
+        "schema_definition": {
+          "type": "object",
+          "properties": {
+            "op": {
+              "type": "string",
+              "enum": [
+                "AND",
+                "OR",
+                "GATE",
+                "ORDER",
+                "PERMIT",
+                "FORBID",
+                "EXCEPT",
+                "EVEN_IF"
+              ]
+            },
+            "left": {
+              "type": "string"
+            },
+            "right": {
+              "type": "string"
+            }
+          },
+          "required": [
+            "op",
+            "left",
+            "right"
+          ],
+          "additionalProperties": false
+        },
+        "strict": true
+      }
+    },
+    "D_quantified": {
+      "type": "json_schema",
+      "json_schema": {
+        "name": "GuardianDquantified",
+        "schema_definition": {
+          "type": "object",
+          "properties": {
+            "quantifier": {
+              "type": "string",
+              "enum": [
+                "FORALL",
+                "EXISTS"
+              ]
+            },
+            "variable": {
+              "type": "string"
+            },
+            "clause": {
+              "type": "string"
+            }
+          },
+          "required": [
+            "quantifier",
+            "variable",
+            "clause"
+          ],
+          "additionalProperties": false
+        },
+        "strict": true
+      }
+    },
+    "D_negation": {
+      "type": "json_schema",
+      "json_schema": {
+        "name": "GuardianDnegation",
+        "schema_definition": {
+          "type": "object",
+          "properties": {
+            "op": {
+              "type": "string",
+              "enum": [
+                "NOT"
+              ]
+            },
+            "clause": {
+              "type": "string"
+            }
+          },
+          "required": [
+            "op",
+            "clause"
+          ],
+          "additionalProperties": false
+        },
+        "strict": true
+      }
+    },
+    "leaf": {
+      "type": "json_schema",
+      "json_schema": {
+        "name": "Guardianleaf",
+        "schema_definition": {
+          "type": "object",
+          "properties": {
+            "role": {
+              "type": "string",
+              "enum": [
+                "ACTION",
+                "CONDITION",
+                "RESPONSE",
+                "DESCRIPTIVE"
+              ]
+            },
+            "source_quote": {
+              "type": "string"
+            },
+            "tools": {
+              "type": "array",
+              "items": {
+                "type": "string"
+              }
+            },
+            "temporal": {
+              "type": "string",
+              "enum": [
+                "NONE",
+                "LATEST",
+                "PRIOR_TRUE"
+              ]
+            }
+          },
+          "required": [
+            "role",
+            "source_quote",
+            "tools",
+            "temporal"
+          ],
+          "additionalProperties": false
+        },
+        "strict": true
+      }
+    }
+  },
+  "note": "V1 pilot failed output contract; V2 schema correction frozen before V1 gold scoring"
+}

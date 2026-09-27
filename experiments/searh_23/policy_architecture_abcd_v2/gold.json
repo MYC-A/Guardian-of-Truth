@@ -1,0 +1,333 @@
+{
+  "retail_cancel": [
+    {
+      "kind": "GATE",
+      "action_quote": "cancelled",
+      "governed_tools": [
+        "cancel_pending_order"
+      ],
+      "condition": {
+        "op": "AND",
+        "children": [
+          {
+            "op": "ATOM",
+            "quote": "its status is 'pending'",
+            "temporal": "LATEST"
+          },
+          {
+            "op": "ATOM",
+            "quote": "check its status before taking the action",
+            "temporal": "PRIOR_TRUE"
+          }
+        ]
+      },
+      "before_quote": "",
+      "exception_quote": "",
+      "exception_type": "NONE",
+      "scope_quote": ""
+    }
+  ],
+  "retail_exchange": [
+    {
+      "kind": "GATE",
+      "action_quote": "only be exchanged",
+      "governed_tools": [
+        "exchange_delivered_order_items"
+      ],
+      "condition": {
+        "op": "AND",
+        "children": [
+          {
+            "op": "ATOM",
+            "quote": "its status is 'delivered'",
+            "temporal": "LATEST"
+          },
+          {
+            "op": "ATOM",
+            "quote": "check its status before taking the action",
+            "temporal": "PRIOR_TRUE"
+          }
+        ]
+      },
+      "before_quote": "",
+      "exception_quote": "",
+      "exception_type": "NONE",
+      "scope_quote": ""
+    },
+    {
+      "kind": "REQUIRE_RESPONSE",
+      "action_quote": "remind the customer to confirm they have provided all items to be exchanged",
+      "governed_tools": [],
+      "condition": null,
+      "before_quote": "",
+      "exception_quote": "",
+      "exception_type": "NONE",
+      "scope_quote": ""
+    }
+  ],
+  "airline_baggage": [
+    {
+      "kind": "PERMIT",
+      "action_quote": "add",
+      "governed_tools": [
+        "update_reservation_baggages"
+      ],
+      "condition": null,
+      "before_quote": "",
+      "exception_quote": "",
+      "exception_type": "NONE",
+      "scope_quote": ""
+    },
+    {
+      "kind": "FORBID",
+      "action_quote": "remove checked bags",
+      "governed_tools": [
+        "update_reservation_baggages"
+      ],
+      "condition": null,
+      "before_quote": "",
+      "exception_quote": "",
+      "exception_type": "NONE",
+      "scope_quote": ""
+    }
+  ],
+  "telecom_resume": [
+    {
+      "kind": "FORBID",
+      "action_quote": "lift the suspension",
+      "governed_tools": [
+        "resume_line"
+      ],
+      "condition": {
+        "op": "ATOM",
+        "quote": "the line's contract end date is in the past",
+        "temporal": "NONE"
+      },
+      "before_quote": "",
+      "exception_quote": "even if the user has paid all their overdue bills",
+      "exception_type": "EVEN_IF",
+      "scope_quote": ""
+    }
+  ],
+  "records_dev": [
+    {
+      "kind": "GATE",
+      "action_quote": "published",
+      "governed_tools": [
+        "publish_document"
+      ],
+      "condition": {
+        "op": "AND",
+        "children": [
+          {
+            "op": "ATOM",
+            "quote": "its owner approval check has returned approved for that document",
+            "temporal": "PRIOR_TRUE"
+          },
+          {
+            "op": "ATOM",
+            "quote": "the latest classification check for the same document reports public",
+            "temporal": "LATEST"
+          }
+        ]
+      },
+      "before_quote": "",
+      "exception_quote": "",
+      "exception_type": "NONE",
+      "scope_quote": ""
+    },
+    {
+      "kind": "DESCRIPTIVE",
+      "action_quote": "Submitting a publication request does not publish it",
+      "governed_tools": [],
+      "condition": null,
+      "before_quote": "",
+      "exception_quote": "",
+      "exception_type": "NONE",
+      "scope_quote": ""
+    }
+  ],
+  "hotel_cancellation_order": [
+    {
+      "kind": "ORDER",
+      "action_quote": "the refund SECOND",
+      "governed_tools": [
+        "process_refund"
+      ],
+      "condition": null,
+      "before_quote": "process cancellation FIRST",
+      "exception_quote": "",
+      "exception_type": "NONE",
+      "scope_quote": "For paid reservations"
+    }
+  ],
+  "parcel_handover_transfer": [
+    {
+      "kind": "GATE",
+      "action_quote": "handed over",
+      "governed_tools": [
+        "handover_parcel"
+      ],
+      "condition": {
+        "op": "AND",
+        "children": [
+          {
+            "op": "ATOM",
+            "quote": "its barcode check has returned valid",
+            "temporal": "PRIOR_TRUE"
+          },
+          {
+            "op": "ATOM",
+            "quote": "its latest custody check reports ready",
+            "temporal": "LATEST"
+          }
+        ]
+      },
+      "before_quote": "",
+      "exception_quote": "",
+      "exception_type": "NONE",
+      "scope_quote": ""
+    },
+    {
+      "kind": "DESCRIPTIVE",
+      "action_quote": "Filing a handover request does not hand it over",
+      "governed_tools": [],
+      "condition": null,
+      "before_quote": "",
+      "exception_quote": "",
+      "exception_type": "NONE",
+      "scope_quote": ""
+    }
+  ],
+  "credit_preview_new": [
+    {
+      "kind": "PERMIT",
+      "action_quote": "preview a credit",
+      "governed_tools": [
+        "preview_credit"
+      ],
+      "condition": null,
+      "before_quote": "",
+      "exception_quote": "",
+      "exception_type": "NONE",
+      "scope_quote": ""
+    },
+    {
+      "kind": "GATE",
+      "action_quote": "issue a credit",
+      "governed_tools": [
+        "issue_credit"
+      ],
+      "condition": {
+        "op": "ATOM",
+        "quote": "recorded approval",
+        "temporal": "PRIOR_TRUE"
+      },
+      "before_quote": "",
+      "exception_quote": "",
+      "exception_type": "NONE",
+      "scope_quote": ""
+    }
+  ],
+  "dispatch_or_authored": [
+    {
+      "kind": "GATE",
+      "action_quote": "Release a shipment",
+      "governed_tools": [
+        "release_shipment"
+      ],
+      "condition": {
+        "op": "OR",
+        "children": [
+          {
+            "op": "ATOM",
+            "quote": "customs clearance is recorded",
+            "temporal": "PRIOR_TRUE"
+          },
+          {
+            "op": "ATOM",
+            "quote": "a supervisor waiver is approved",
+            "temporal": "PRIOR_TRUE"
+          }
+        ]
+      },
+      "before_quote": "",
+      "exception_quote": "",
+      "exception_type": "NONE",
+      "scope_quote": ""
+    }
+  ],
+  "draft_exception_authored": [
+    {
+      "kind": "FORBID",
+      "action_quote": "publish a draft",
+      "governed_tools": [
+        "publish_draft"
+      ],
+      "condition": null,
+      "before_quote": "",
+      "exception_quote": "its owner has approved a public preview",
+      "exception_type": "EXCEPT",
+      "scope_quote": ""
+    }
+  ],
+  "device_nested_authored": [
+    {
+      "kind": "GATE",
+      "action_quote": "performing the swap",
+      "governed_tools": [
+        "perform_swap"
+      ],
+      "condition": {
+        "op": "ATOM",
+        "quote": "verify approval",
+        "temporal": "PRIOR_TRUE"
+      },
+      "before_quote": "",
+      "exception_quote": "",
+      "exception_type": "NONE",
+      "scope_quote": "For replacement devices"
+    },
+    {
+      "kind": "ORDER",
+      "action_quote": "notify the customer",
+      "governed_tools": [
+        "notify_customer"
+      ],
+      "condition": null,
+      "before_quote": "performing the swap",
+      "exception_quote": "",
+      "exception_type": "NONE",
+      "scope_quote": "For replacement devices"
+    }
+  ],
+  "archive_multitool_authored": [
+    {
+      "kind": "GATE",
+      "action_quote": "release an archive",
+      "governed_tools": [
+        "publish_archive",
+        "publish_public_copy"
+      ],
+      "condition": {
+        "op": "ATOM",
+        "quote": "the latest retention review says cleared",
+        "temporal": "LATEST"
+      },
+      "before_quote": "",
+      "exception_quote": "",
+      "exception_type": "NONE",
+      "scope_quote": ""
+    },
+    {
+      "kind": "DESCRIPTIVE",
+      "action_quote": "Filing a request is not release",
+      "governed_tools": [],
+      "condition": null,
+      "before_quote": "",
+      "exception_quote": "",
+      "exception_type": "NONE",
+      "scope_quote": ""
+    }
+  ]
+}

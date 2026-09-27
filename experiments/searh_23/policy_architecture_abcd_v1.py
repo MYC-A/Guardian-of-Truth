@@ -194,9 +194,10 @@ class MistralRaw:
             raise RuntimeError("MISTRAL_API_KEY missing")
         self.next_call = 0.0
 
-    def ask(self, system: str, query: dict, max_tokens: int) -> dict:
+    def ask(self, system: str, query: dict, max_tokens: int,
+            response_format: dict | None = None) -> dict:
         payload = {"model": self.model, "temperature": 0, "max_tokens": max_tokens,
-                   "response_format": {"type": "json_object"},
+                   "response_format": response_format or {"type": "json_object"},
                    "messages": [{"role": "system", "content": system},
                                 {"role": "user", "content": json.dumps(query, ensure_ascii=False)}]}
         for attempt in range(4):
@@ -245,7 +246,8 @@ class Recorder:
                 raise ValueError("cached call mismatch: " + str(path))
         else:
             result = self.model.ask(self.protocol["systems"][stage], query,
-                                    self.protocol["max_tokens"])
+                                    self.protocol["max_tokens"],
+                                    self.protocol.get("schemas", {}).get(stage))
             record = {"signature": signature, "stage": stage,
                       "model": self.model.model, "query": query, **result}
             path.write_text(json.dumps(record, ensure_ascii=False, indent=2) + "\n", encoding="utf-8")
