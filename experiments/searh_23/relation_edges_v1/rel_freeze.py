@@ -23,7 +23,6 @@ from rel_cases_mini import CASES_MINI
 
 ROLES = {"OPERATION_EFFECT", "PRECONDITION_CHECK", "STATE_OBSERVATION",
          "COMMUNICATION", "OTHER"}
-TO_SIDE_ROLES = {"OPERATION_EFFECT", "COMMUNICATION"}
 RELATIONS = {"PRECONDITION", "STATE_GATE", "ORDER_BEFORE", "ORDER_AFTER",
              "RESPONSE", "EXCEPTION", "EVEN_IF"}
 GOLD_RELATIONS = RELATIONS - {"ORDER_AFTER"}  # stored canonically earlier->later
@@ -123,11 +122,13 @@ def validate(cases, label):
 
 
 def pair_universe(case):
-    """All ordered (from_event, to_event) candidate pairs for detection."""
-    events = [(s, r) for s, r, _ in case["gold_events"]]
-    to_side = [s for s, r in events if r in TO_SIDE_ROLES]
-    from_side = [s for s, r in events if r != "OTHER"]
-    return [(a, b) for a in from_side for b in to_side if a != b]
+    """All ordered (from_event, to_event) candidate pairs over non-descriptive
+    events in both directions (a != b). Amendment before LLM unsealing: the
+    to-side originally contained only operations/communications, which made
+    the nested cond-on-cond gold edges unreachable; it now includes checks and
+    state observations as well."""
+    side = [s for s, r in [(e[0], e[1]) for e in case["gold_events"]] if r != "OTHER"]
+    return [(a, b) for a in side for b in side if a != b]
 
 
 def runner_case(case):
