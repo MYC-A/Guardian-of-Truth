@@ -73,9 +73,9 @@ def freeze() -> None:
             " set quote='' and temporal='NONE'. A missing condition is null.")
     original["schemas"] = {stage: {"type": "json_schema", "json_schema":
                             {"name": "Guardian" + stage.replace("_", ""),
-                             "schema_definition": schema, "strict": True}}
+                             "schema": schema, "strict": True}}
                            for stage, schema in SCHEMAS.items()}
-    original["note"] = "V1 pilot failed output contract; V2 schema correction frozen before V1 gold scoring"
+    original["note"] = "V1 pilot failed output contract; V2 schema correction frozen before V1 gold scoring. HTTP 422 format key corrected before any successful V2 call."
     BASE.mkdir(parents=True, exist_ok=True)
     for name, data in (("frozen.json", original),
                        ("gold.json", json.loads((v1.BASE / "gold.json").read_text(encoding="utf-8")))):
