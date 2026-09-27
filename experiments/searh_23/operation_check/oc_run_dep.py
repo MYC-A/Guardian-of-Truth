@@ -26,7 +26,7 @@ import time
 from pathlib import Path
 
 sys.path.insert(0, str(Path(__file__).parent))
-from oc_common import load_suite, out_dir, write_usage
+from oc_common import load_suite, out_dir, write_usage, suffix_for
 
 SUBORDINATORS = {"if", "unless", "until", "once", "when", "whenever",
                   "before", "after"}  # closed class of function words
@@ -306,7 +306,7 @@ def main():
     nlp = stanza.Pipeline("en", processors="tokenize,pos,lemma,depparse",
                           verbose=False, use_gpu=True)
     t0 = time.time()
-    outdir = out_dir(arm + ("_renamed" if which == "renamed" else ""))
+    outdir = out_dir(arm + suffix_for(which))
     for case in suite:
         path = outdir / f"{case['case_id']}.json"
         if path.is_file():
@@ -314,7 +314,7 @@ def main():
         result = analyse_case(nlp, case)
         path.write_text(json.dumps(result, ensure_ascii=False, indent=1),
                         encoding="utf-8")
-    write_usage(arm + ("_renamed" if which == "renamed" else ""),
+    write_usage(arm + suffix_for(which),
                 {"wall_seconds": round(time.time() - t0, 1),
                  "suite": which, "model": "stanza en (tokenize,pos,lemma,depparse)",
                  "gpu": True})

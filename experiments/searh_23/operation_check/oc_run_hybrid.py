@@ -35,7 +35,7 @@ from pathlib import Path
 
 sys.path.insert(0, str(Path(__file__).parent))
 from oc_common import (Mistral, load_suite, out_dir, write_usage, FROZEN_DIR,
-                       ROLE_VOCAB)
+                       ROLE_VOCAB, suffix_for)
 
 LABEL_TO_ROLE = {
     "REALIZES_OPERATION": "OPERATION_EFFECT",
@@ -57,7 +57,7 @@ Answer with JSON only: {"label": "..."}."""
 
 def load_arm_dir(name: str, which: str) -> Path:
     base = Path(os.environ.get("OC_OUTPUTS", str(Path(__file__).parent / "outputs")))
-    return base / (name + ("_renamed" if which == "renamed" else ""))
+    return base / (name + suffix_for(which))
 
 
 def ground_index(efg_dir: Path) -> dict[str, dict[str, dict]]:
@@ -246,7 +246,7 @@ def main():
     resolve = os.environ.get("OC_RESOLVE", "0") == "1"
     arm = "Hplus_hybrid" if resolve else "H_hybrid"
     suite = load_suite(which)
-    suffix = "_renamed" if which == "renamed" else ""
+    suffix = suffix_for(which)
     b_dir = load_arm_dir("B_dependency", which)
     efg_dir = load_arm_dir("EFG_grounding", which)
     groundings = ground_index(efg_dir)

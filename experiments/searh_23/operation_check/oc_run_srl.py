@@ -19,7 +19,7 @@ import time
 from pathlib import Path
 
 sys.path.insert(0, str(Path(__file__).parent))
-from oc_common import load_suite, out_dir, write_usage
+from oc_common import load_suite, out_dir, write_usage, suffix_for
 
 
 def split_sentences(text: str) -> list[str]:
@@ -137,7 +137,7 @@ def main():
         "/workspace/guardian/models/allennlp/structured-prediction-srl-bert.2020.12.15.tar.gz",
         cuda_device=-1)
     t0 = time.time()
-    outdir = out_dir(arm + ("_renamed" if which == "renamed" else ""))
+    outdir = out_dir(arm + suffix_for(which))
     for case in suite:
         path = outdir / f"{case['case_id']}.json"
         if path.is_file():
@@ -151,7 +151,7 @@ def main():
         result = {"case_id": case["case_id"], "events": events, "edges": edges}
         path.write_text(json.dumps(result, ensure_ascii=False, indent=1),
                         encoding="utf-8")
-    write_usage(arm + ("_renamed" if which == "renamed" else ""),
+    write_usage(arm + suffix_for(which),
                 {"wall_seconds": round(time.time() - t0, 1), "suite": which,
                  "model": "allennlp structured-prediction-srl-bert.2020.12.15 (cpu)",
                  "device": "cpu"})

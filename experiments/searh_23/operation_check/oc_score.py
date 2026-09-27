@@ -20,7 +20,8 @@ import sys
 from pathlib import Path
 
 sys.path.insert(0, str(Path(__file__).parent))
-from oc_common import FROZEN_DIR, OUTPUTS_DIR, l1, all_occurrences, l1_occurrences, iou
+from oc_common import (FROZEN_DIR, OUTPUTS_DIR, l1, all_occurrences,
+                       l1_occurrences, iou, suffix_for)
 
 ROLE_TO_PAIR = {
     "OPERATION_EFFECT": "REALIZES_OPERATION",
@@ -85,7 +86,7 @@ def match_events(policy: str, predicted: list[dict], gold_events: list[dict]):
 # ------------------------------------------------------------------ arm kinds
 
 def load_arm(arm: str, which: str) -> dict[str, dict]:
-    d = OUTPUTS_DIR / (arm + ("_renamed" if which == "renamed" else ""))
+    d = OUTPUTS_DIR / (arm + suffix_for(which))
     out = {}
     if not d.is_dir():
         return out
@@ -152,12 +153,16 @@ def score_events(arm_data, gold_map, suite):
                 "pred_span": pev.get("span"), "pred_role": pev.get("role"),
                 "method": method, "role_ok": role_ok})
         for i, pev in enumerate(predicted):
-            per_role[pev.get("role", "UNKNOWN")]["predicted"] += 1
+            r = pev.get("role", "UNKNOWN")
+            if r not in per_role:
+                per_role.setdefault(r, {"gold": 0, "matched": 0, "role_correct": 0,
+                                        "predicted": 0})
+            per_role[r]["predicted"] += 1
         case_diag[cid] = diag
     metrics = {"per_role": per_role, **totals}
     # derive P/R
     deriv = {}
-    for r in roles:
+    for r in per_role:
         gold_n = per_role[r]["gold"]
         pred_n = per_role[r]["predicted"]
         m = per_role[r]["matched"]
@@ -400,17 +405,17 @@ def tool_grounding_of_matched_events(arm_data, gold_map, suite):
 
 
 def load_gold(which: str):
-    name = "gold.json" if which == "original" else "gold_renamed.json"
+    name = {"original": "gold.json", "renamed": "gold_renamed.json", "mini": "gold_mini.json", "mini_renamed": "gold_mini_renamed.json"}.get(which, "gold.json")
     return {g["case_id"]: g for g in json.loads((FROZEN_DIR / name).read_text(encoding="utf-8"))}
 
 
 def load_suite(which: str):
-    name = "frozen_cases.json" if which == "original" else "frozen_cases_renamed.json"
+    name = {"original": "frozen_cases.json", "renamed": "frozen_cases_renamed.json", "mini": "frozen_cases_mini.json", "mini_renamed": "frozen_cases_mini_renamed.json"}.get(which, "frozen_cases.json")
     return json.loads((FROZEN_DIR / name).read_text(encoding="utf-8"))
 
 
 def usage_of(arm: str, which: str):
-    p = OUTPUTS_DIR / (arm + ("_renamed" if which == "renamed" else "")) / "_usage.json"
+    p = OUTPUTS_DIR / (arm + suffix_for(which)) / "_usage.json"
     if p.is_file():
         return json.loads(p.read_text(encoding="utf-8"))
     return {}
@@ -448,6 +453,7 @@ def main():
                           for ev in rec.get("events", []) if ev.get("span"))
             total = sum(len(rec.get("events", [])) for rec in data.values())
             block["amr_alignment_coverage"] = round(aligned / total, 4) if total else None
+            block["amr_component"] = amr_component_metrics(data, gold_map, suite)
         block["usage"] = usage_of(arm, which)
         score["arms"][arm] = block
 
@@ -470,7 +476,7 @@ def main():
             score["arms"][arm] = {"relation_only": score_relation(data, gold_map, suite),
                                   "usage": usage_of(arm, which)}
 
-    out = OUTPUTS_DIR / ("score.json" if which == "original" else "score_renamed.json")
+    out = OUTPUTS_DIR / {"original": "score.json", "renamed": "score_renamed.json", "mini": "score_mini.json", "mini_renamed": "score_mini_renamed.json"}.get(which, "score.json")
     out.write_text(json.dumps(score, ensure_ascii=False, indent=1), encoding="utf-8")
     print("wrote", out)
     # compact summary

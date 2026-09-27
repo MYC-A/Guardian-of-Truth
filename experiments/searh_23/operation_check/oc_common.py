@@ -28,6 +28,29 @@ RELATION_VOCAB = {"GATE", "ORDER_BEFORE", "ORDER_AFTER", "EXCEPTION",
 PAIR_LABEL_VOCAB = {"REALIZES_OPERATION", "CHECKS_PRECONDITION", "OBSERVES_STATE",
                     "COMMUNICATES", "UNRELATED", "UNKNOWN"}
 
+_SUITE_FILES = {
+    "original": "frozen_cases.json",
+    "renamed": "frozen_cases_renamed.json",
+    "mini": "frozen_cases_mini.json",
+    "mini_renamed": "frozen_cases_mini_renamed.json",
+}
+_COMP_FILES = {
+    "original": "component_inputs.json",
+    "renamed": "component_inputs_renamed.json",
+    "mini": "component_inputs_mini.json",
+    "mini_renamed": "component_inputs_mini.json",
+}
+
+
+def suffix_for(suite: str) -> str:
+    if suite == "renamed":
+        return "_renamed"
+    if suite == "mini":
+        return "_mini"
+    if suite == "mini_renamed":
+        return "_mini_renamed"
+    return ""
+
 
 # ---------------------------------------------------------------- env / api
 
@@ -61,6 +84,7 @@ class Mistral:
             cache_dir.mkdir(parents=True, exist_ok=True)
         self.next_call = 0.0
         self.calls = 0
+        self.throttled = 0
         self.usage_total = {"prompt_tokens": 0, "completion_tokens": 0, "total_tokens": 0}
 
     def _cache_path(self, system: str, user: str, max_tokens: int) -> Path:
@@ -80,10 +104,11 @@ class Mistral:
                    "messages": [{"role": "system", "content": system},
                                 {"role": "user", "content": user}]}
         body = None
-        for attempt in range(5):
+        rate_wait = 20.0
+        for attempt in range(14):
             if self.next_call > time.monotonic():
                 time.sleep(self.next_call - time.monotonic())
-            self.next_call = time.monotonic() + 1.5
+            self.next_call = time.monotonic() + 3.0
             request = urllib.request.Request(
                 "https://api.mistral.ai/v1/chat/completions",
                 data=json.dumps(payload, ensure_ascii=False).encode(),
@@ -95,15 +120,25 @@ class Mistral:
                     body = json.load(response)
                 break
             except urllib.error.HTTPError as exc:
-                if exc.code == 429 and attempt < 4:
-                    time.sleep(min(90, max(10, float(exc.headers.get("Retry-After", "20")))))
+                if exc.code == 429:
+                    self.throttled += 1
+                    retry_after = exc.headers.get("Retry-After")
+                    try:
+                        wait = float(retry_after) if retry_after else rate_wait
+                    except ValueError:
+                        wait = rate_wait
+                    wait = min(180.0, max(15.0, wait))
+                    rate_wait = min(120.0, rate_wait * 1.5)
+                    time.sleep(wait)
                     continue
                 detail = exc.read(800).decode("utf-8", "replace")
                 raise RuntimeError(f"Mistral HTTP {exc.code}: {detail}") from None
-            except Exception as exc:
-                if attempt == 4:
+            except Exception:
+                if attempt >= 13:
                     raise
                 time.sleep(5)
+            finally:
+                pass
         latency = round(time.monotonic() - t0, 3)
         choice = body["choices"][0]
         raw = choice["message"].get("content") or ""
@@ -168,15 +203,13 @@ class Mistral:
 # ---------------------------------------------------------------- suites
 
 def load_suite(which: str = "original") -> list[dict]:
-    name = "frozen_cases.json" if which == "original" else "frozen_cases_renamed.json"
-    path = FROZEN_DIR / name
+    path = FROZEN_DIR / _SUITE_FILES.get(which, "frozen_cases.json")
     return json.loads(path.read_text(encoding="utf-8"))
 
 
 def load_component_inputs(which: str = "original") -> dict[str, list[str]]:
     """Gold-derived SPANS ONLY (no roles, no tools) for component arms."""
-    name = "component_inputs.json" if which == "original" else "component_inputs_renamed.json"
-    path = FROZEN_DIR / name
+    path = FROZEN_DIR / _COMP_FILES.get(which, "component_inputs.json")
     data = json.loads(path.read_text(encoding="utf-8"))
     return {rec["case_id"]: rec["spans"] for rec in data}
 

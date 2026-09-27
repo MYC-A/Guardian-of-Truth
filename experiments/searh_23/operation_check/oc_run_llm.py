@@ -20,7 +20,7 @@ from pathlib import Path
 sys.path.insert(0, str(Path(__file__).parent))
 from oc_common import (Mistral, mistral_settings, load_suite, load_component_inputs,
                        out_dir, write_usage, ROLE_VOCAB, RELATION_VOCAB,
-                       PAIR_LABEL_VOCAB, FROZEN_DIR)
+                       PAIR_LABEL_VOCAB, FROZEN_DIR, suffix_for)
 
 STRONG_MODEL = os.environ.get("OC_STRONG_MODEL", "mistral-medium-latest")
 
@@ -108,7 +108,7 @@ def validate_e2e(case, answer):
 
 def run_e2e(arm: str, model: str, which: str):
     suite = load_suite(which)
-    suffix = "_renamed" if which == "renamed" else ""
+    suffix = suffix_for(which)
     client = Mistral(model=model, cache_dir=out_dir(arm + suffix) / "_cache")
     outdir = out_dir(arm + suffix)
     t0 = time.time()
@@ -139,7 +139,7 @@ def run_e2e(arm: str, model: str, which: str):
 def run_pairs(arm: str, model: str, which: str):
     suite = load_suite(which)
     comp = load_component_inputs(which)
-    suffix = "_renamed" if which == "renamed" else ""
+    suffix = suffix_for(which)
     client = Mistral(model=model, cache_dir=out_dir(arm + suffix) / "_cache")
     outdir = out_dir(arm + suffix)
     t0 = time.time()
@@ -179,10 +179,10 @@ def run_relation(arm: str, model: str, which: str):
     """Oracle-endpoint diagnostic: gold condition/operation pairs + sampled
     negatives with no gold edge; the model only types the relation."""
     suite = load_suite(which)
-    gold_name = "gold.json" if which == "original" else "gold_renamed.json"
+    gold_name = {"original": "gold.json", "renamed": "gold_renamed.json", "mini": "gold_mini.json", "mini_renamed": "gold_mini_renamed.json"}.get(which, "gold.json")
     gold = {g["case_id"]: g for g in json.loads((FROZEN_DIR / gold_name).read_text(encoding="utf-8"))}
     rng = random.Random(20260927)
-    suffix = "_renamed" if which == "renamed" else ""
+    suffix = suffix_for(which)
     client = Mistral(model=model, cache_dir=out_dir(arm + suffix) / "_cache")
     outdir = out_dir(arm + suffix)
     t0 = time.time()

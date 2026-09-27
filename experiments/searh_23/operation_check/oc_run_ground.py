@@ -156,7 +156,7 @@ class Grounders:
 def load_b_candidates(which: str) -> dict[str, list[dict]]:
     """Candidate spans produced by arm B for the hybrid arm (optional)."""
     d = Path(os.environ.get("OC_OUTPUTS", str(Path(__file__).parent / "outputs")))
-    sub = "B_dependency_renamed" if which == "renamed" else "B_dependency"
+    sub = "B_dependency" + suffix_for(which)
     path = d / sub
     if not path.is_dir():
         return {}
@@ -178,7 +178,7 @@ def main():
     b_cand = load_b_candidates(which)
     g = Grounders()
     t0 = time.time()
-    outdir = out_dir(arm + ("_renamed" if which == "renamed" else ""))
+    outdir = out_dir(arm + suffix_for(which))
     for case in suite:
         path = outdir / f"{case['case_id']}.json"
         if path.is_file():
@@ -213,7 +213,7 @@ def main():
             })
         path.write_text(json.dumps(result, ensure_ascii=False, indent=1),
                         encoding="utf-8")
-    write_usage(arm + ("_renamed" if which == "renamed" else ""),
+    write_usage(arm + suffix_for(which),
                 {"wall_seconds": round(time.time() - t0, 1), "suite": which,
                  "models": ["BAAI/bge-base-en-v1.5", "BAAI/bge-reranker-base",
                             "cross-encoder/nli-deberta-v3-base"],
