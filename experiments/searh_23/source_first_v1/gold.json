@@ -1,0 +1,366 @@
+{
+  "laboratory_release": [
+    {
+      "kind": "PERMIT",
+      "action_quote": "inspect a specimen",
+      "governed_tools": [
+        "inspect_specimen"
+      ],
+      "condition": null,
+      "before_quote": "",
+      "exception_quote": "",
+      "exception_type": "NONE",
+      "scope_quote": ""
+    },
+    {
+      "kind": "GATE",
+      "action_quote": "release its report",
+      "governed_tools": [
+        "release_report"
+      ],
+      "condition": {
+        "op": "AND",
+        "children": [
+          {
+            "op": "ATOM",
+            "quote": "the latest quality check says pass",
+            "temporal": "LATEST"
+          },
+          {
+            "op": "ATOM",
+            "quote": "a supervisor has signed it",
+            "temporal": "PRIOR_TRUE"
+          }
+        ]
+      },
+      "before_quote": "",
+      "exception_quote": "",
+      "exception_type": "NONE",
+      "scope_quote": ""
+    }
+  ],
+  "warehouse_hold": [
+    {
+      "kind": "GATE",
+      "action_quote": "dispatching the pallet",
+      "governed_tools": [
+        "dispatch_pallet"
+      ],
+      "condition": {
+        "op": "ATOM",
+        "quote": "Check the lot temperature",
+        "temporal": "PRIOR_TRUE"
+      },
+      "before_quote": "",
+      "exception_quote": "",
+      "exception_type": "NONE",
+      "scope_quote": ""
+    },
+    {
+      "kind": "FORBID",
+      "action_quote": "dispatch a pallet",
+      "governed_tools": [
+        "dispatch_pallet"
+      ],
+      "condition": {
+        "op": "ATOM",
+        "quote": "its seal is broken",
+        "temporal": "NONE"
+      },
+      "before_quote": "",
+      "exception_quote": "even if a manager requests immediate delivery",
+      "exception_type": "EVEN_IF",
+      "scope_quote": ""
+    }
+  ],
+  "clinical_sequence": [
+    {
+      "kind": "GATE",
+      "action_quote": "sending the result",
+      "governed_tools": [
+        "send_result"
+      ],
+      "condition": {
+        "op": "ATOM",
+        "quote": "verify patient identity",
+        "temporal": "PRIOR_TRUE"
+      },
+      "before_quote": "",
+      "exception_quote": "",
+      "exception_type": "NONE",
+      "scope_quote": "For test results"
+    },
+    {
+      "kind": "ORDER",
+      "action_quote": "archive the delivery receipt",
+      "governed_tools": [
+        "archive_receipt"
+      ],
+      "condition": null,
+      "before_quote": "sending it",
+      "exception_quote": "",
+      "exception_type": "NONE",
+      "scope_quote": "For test results"
+    }
+  ],
+  "permit_exception": [
+    {
+      "kind": "FORBID",
+      "action_quote": "export a private record",
+      "governed_tools": [
+        "export_record"
+      ],
+      "condition": null,
+      "before_quote": "",
+      "exception_quote": "when the owner has granted written consent",
+      "exception_type": "EXCEPT",
+      "scope_quote": ""
+    },
+    {
+      "kind": "PERMIT",
+      "action_quote": "preview its metadata",
+      "governed_tools": [
+        "preview_metadata"
+      ],
+      "condition": null,
+      "before_quote": "",
+      "exception_quote": "",
+      "exception_type": "NONE",
+      "scope_quote": ""
+    }
+  ],
+  "fleet_disjunction": [
+    {
+      "kind": "GATE",
+      "action_quote": "leave the depot",
+      "governed_tools": [
+        "release_vehicle"
+      ],
+      "condition": {
+        "op": "OR",
+        "children": [
+          {
+            "op": "ATOM",
+            "quote": "its safety certificate is current",
+            "temporal": "LATEST"
+          },
+          {
+            "op": "ATOM",
+            "quote": "an emergency waiver has been logged",
+            "temporal": "PRIOR_TRUE"
+          }
+        ]
+      },
+      "before_quote": "",
+      "exception_quote": "",
+      "exception_type": "NONE",
+      "scope_quote": ""
+    },
+    {
+      "kind": "DESCRIPTIVE",
+      "action_quote": "A route lookup does not release the vehicle",
+      "governed_tools": [],
+      "condition": null,
+      "before_quote": "",
+      "exception_quote": "",
+      "exception_type": "NONE",
+      "scope_quote": ""
+    }
+  ],
+  "subscription_cancel": [
+    {
+      "kind": "GATE",
+      "action_quote": "closing an account",
+      "governed_tools": [
+        "close_account"
+      ],
+      "condition": {
+        "op": "AND",
+        "children": [
+          {
+            "op": "ATOM",
+            "quote": "retrieve its unpaid balance",
+            "temporal": "PRIOR_TRUE"
+          },
+          {
+            "op": "ATOM",
+            "quote": "ask the customer to confirm closure",
+            "temporal": "PRIOR_TRUE"
+          }
+        ]
+      },
+      "before_quote": "",
+      "exception_quote": "",
+      "exception_type": "NONE",
+      "scope_quote": ""
+    },
+    {
+      "kind": "DESCRIPTIVE",
+      "action_quote": "A balance lookup alone does not close it",
+      "governed_tools": [],
+      "condition": null,
+      "before_quote": "",
+      "exception_quote": "",
+      "exception_type": "NONE",
+      "scope_quote": ""
+    }
+  ],
+  "museum_two_actions": [
+    {
+      "kind": "PERMIT",
+      "action_quote": "photograph an object",
+      "governed_tools": [
+        "photograph_object"
+      ],
+      "condition": null,
+      "before_quote": "",
+      "exception_quote": "",
+      "exception_type": "NONE",
+      "scope_quote": ""
+    },
+    {
+      "kind": "GATE",
+      "action_quote": "move the object",
+      "governed_tools": [
+        "move_object"
+      ],
+      "condition": {
+        "op": "AND",
+        "children": [
+          {
+            "op": "ATOM",
+            "quote": "record its location",
+            "temporal": "PRIOR_TRUE"
+          },
+          {
+            "op": "ATOM",
+            "quote": "obtain conservation approval",
+            "temporal": "PRIOR_TRUE"
+          }
+        ]
+      },
+      "before_quote": "",
+      "exception_quote": "",
+      "exception_type": "NONE",
+      "scope_quote": ""
+    },
+    {
+      "kind": "ORDER",
+      "action_quote": "notify security",
+      "governed_tools": [
+        "notify_security"
+      ],
+      "condition": null,
+      "before_quote": "the move",
+      "exception_quote": "",
+      "exception_type": "NONE",
+      "scope_quote": ""
+    }
+  ],
+  "finance_scope": [
+    {
+      "kind": "GATE",
+      "action_quote": "submitting the transfer",
+      "governed_tools": [
+        "submit_transfer"
+      ],
+      "condition": {
+        "op": "ATOM",
+        "quote": "review the exchange rate",
+        "temporal": "PRIOR_TRUE"
+      },
+      "before_quote": "",
+      "exception_quote": "",
+      "exception_type": "NONE",
+      "scope_quote": "For foreign payments"
+    },
+    {
+      "kind": "PERMIT",
+      "action_quote": "Domestic payments may be submitted directly",
+      "governed_tools": [
+        "submit_transfer"
+      ],
+      "condition": null,
+      "before_quote": "",
+      "exception_quote": "",
+      "exception_type": "NONE",
+      "scope_quote": ""
+    }
+  ],
+  "publishing_latest": [
+    {
+      "kind": "GATE",
+      "action_quote": "Publish the revision",
+      "governed_tools": [
+        "publish_revision"
+      ],
+      "condition": {
+        "op": "ATOM",
+        "quote": "its latest plagiarism scan is clear",
+        "temporal": "LATEST"
+      },
+      "before_quote": "",
+      "exception_quote": "",
+      "exception_type": "NONE",
+      "scope_quote": ""
+    },
+    {
+      "kind": "GATE",
+      "action_quote": "request another scan",
+      "governed_tools": [
+        "request_scan"
+      ],
+      "condition": {
+        "op": "ATOM",
+        "quote": "the scan is still pending",
+        "temporal": "LATEST"
+      },
+      "before_quote": "",
+      "exception_quote": "",
+      "exception_type": "NONE",
+      "scope_quote": ""
+    }
+  ],
+  "parcel_split": [
+    {
+      "kind": "PERMIT",
+      "action_quote": "read a parcel label",
+      "governed_tools": [
+        "read_label"
+      ],
+      "condition": null,
+      "before_quote": "",
+      "exception_quote": "",
+      "exception_type": "NONE",
+      "scope_quote": ""
+    },
+    {
+      "kind": "GATE",
+      "action_quote": "print a replacement label",
+      "governed_tools": [
+        "print_label"
+      ],
+      "condition": {
+        "op": "ATOM",
+        "quote": "the original barcode has been invalidated",
+        "temporal": "PRIOR_TRUE"
+      },
+      "before_quote": "",
+      "exception_quote": "",
+      "exception_type": "NONE",
+      "scope_quote": ""
+    },
+    {
+      "kind": "ORDER",
+      "action_quote": "log the replacement",
+      "governed_tools": [
+        "log_replacement"
+      ],
+      "condition": null,
+      "before_quote": "printing",
+      "exception_quote": "",
+      "exception_type": "NONE",
+      "scope_quote": ""
+    }
+  ]
+}
