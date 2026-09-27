@@ -1,0 +1,959 @@
+[
+ {
+  "case_id": "vet_clinic",
+  "candidate_events": [
+   {
+    "source_span": "Admit animal A-118",
+    "role": "OPERATION_EFFECT",
+    "governed_tools": [
+     "admit_animal"
+    ]
+   },
+   {
+    "source_span": "its vaccination certificate has been verified",
+    "role": "PRECONDITION_CHECK",
+    "governed_tools": [
+     "verify_vaccination"
+    ]
+   },
+   {
+    "source_span": "grooming",
+    "role": "OPERATION_EFFECT",
+    "governed_tools": [
+     "groom_animal"
+    ]
+   },
+   {
+    "source_span": "boarding",
+    "role": "OPERATION_EFFECT",
+    "governed_tools": [
+     "board_animal"
+    ]
+   },
+   {
+    "source_span": "Confirm the owner's contact details",
+    "role": "PRECONDITION_CHECK",
+    "governed_tools": [
+     "read_owner_contact"
+    ]
+   },
+   {
+    "source_span": "returning the animal",
+    "role": "OPERATION_EFFECT",
+    "governed_tools": [
+     "return_animal"
+    ]
+   }
+  ],
+  "condition_edges": [
+   {
+    "condition_span": "its vaccination certificate has been verified",
+    "operation_span": "Admit animal A-118",
+    "relation": "GATE"
+   },
+   {
+    "condition_span": "its vaccination certificate has been verified",
+    "operation_span": "grooming",
+    "relation": "GATE"
+   },
+   {
+    "condition_span": "its vaccination certificate has been verified",
+    "operation_span": "boarding",
+    "relation": "GATE"
+   },
+   {
+    "condition_span": "Confirm the owner's contact details",
+    "operation_span": "returning the animal",
+    "relation": "GATE"
+   }
+  ],
+  "tool_types": {
+   "admit_animal": "mutate",
+   "verify_vaccination": "verify",
+   "groom_animal": "mutate",
+   "board_animal": "mutate",
+   "read_owner_contact": "read",
+   "return_animal": "mutate",
+   "read_kennel_log": "read"
+  }
+ },
+ {
+  "case_id": "water_valve",
+  "candidate_events": [
+   {
+    "source_span": "Open the distribution valve",
+    "role": "OPERATION_EFFECT",
+    "governed_tools": [
+     "open_valve"
+    ]
+   },
+   {
+    "source_span": "the turbidity reading for tank-12 is below 0.3 NTU",
+    "role": "STATE_OBSERVATION",
+    "governed_tools": [
+     "read_turbidity"
+    ]
+   },
+   {
+    "source_span": "An operator override",
+    "role": "STATE_OBSERVATION",
+    "governed_tools": [
+     "log_override"
+    ]
+   }
+  ],
+  "condition_edges": [
+   {
+    "condition_span": "the turbidity reading for tank-12 is below 0.3 NTU",
+    "operation_span": "Open the distribution valve",
+    "relation": "GATE"
+   }
+  ],
+  "tool_types": {
+   "open_valve": "mutate",
+   "read_turbidity": "read",
+   "log_override": "mutate",
+   "read_valve_state": "read"
+  }
+ },
+ {
+  "case_id": "library_return",
+  "candidate_events": [
+   {
+    "source_span": "the returned volume R-9 is scanned",
+    "role": "OPERATION_EFFECT",
+    "governed_tools": [
+     "scan_return"
+    ]
+   },
+   {
+    "source_span": "release the hold on the borrower's account",
+    "role": "OPERATION_EFFECT",
+    "governed_tools": [
+     "release_hold"
+    ]
+   },
+   {
+    "source_span": "Rare volumes must be inspected by the conservation desk",
+    "role": "OPERATION_EFFECT",
+    "governed_tools": [
+     "inspect_volume"
+    ]
+   },
+   {
+    "source_span": "re-shelving",
+    "role": "OPERATION_EFFECT",
+    "governed_tools": [
+     "shelve_volume"
+    ]
+   }
+  ],
+  "condition_edges": [
+   {
+    "condition_span": "the returned volume R-9 is scanned",
+    "operation_span": "release the hold on the borrower's account",
+    "relation": "ORDER_BEFORE"
+   },
+   {
+    "condition_span": "Rare volumes must be inspected by the conservation desk",
+    "operation_span": "re-shelving",
+    "relation": "GATE"
+   }
+  ],
+  "tool_types": {
+   "scan_return": "mutate",
+   "release_hold": "mutate",
+   "inspect_volume": "verify",
+   "shelve_volume": "mutate",
+   "read_hold_queue": "read"
+  }
+ },
+ {
+  "case_id": "crane_lift",
+  "candidate_events": [
+   {
+    "source_span": "A lift with crane-07",
+    "role": "OPERATION_EFFECT",
+    "governed_tools": [
+     "execute_lift"
+    ]
+   },
+   {
+    "source_span": "a load chart check",
+    "role": "PRECONDITION_CHECK",
+    "governed_tools": [
+     "check_load_chart"
+    ]
+   },
+   {
+    "source_span": "a wind speed reading below level five",
+    "role": "STATE_OBSERVATION",
+    "governed_tools": [
+     "read_wind"
+    ]
+   },
+   {
+    "source_span": "a ground condition inspection",
+    "role": "PRECONDITION_CHECK",
+    "governed_tools": [
+     "inspect_ground"
+    ]
+   },
+   {
+    "source_span": "Hoisting personnel",
+    "role": "OPERATION_EFFECT",
+    "governed_tools": [
+     "hoist_personnel"
+    ]
+   },
+   {
+    "source_span": "an approved lift window",
+    "role": "STATE_OBSERVATION",
+    "governed_tools": [
+     "read_lift_window"
+    ]
+   }
+  ],
+  "condition_edges": [
+   {
+    "condition_span": "a load chart check",
+    "operation_span": "A lift with crane-07",
+    "relation": "GATE"
+   },
+   {
+    "condition_span": "a wind speed reading below level five",
+    "operation_span": "A lift with crane-07",
+    "relation": "GATE"
+   },
+   {
+    "condition_span": "a ground condition inspection",
+    "operation_span": "A lift with crane-07",
+    "relation": "GATE"
+   },
+   {
+    "condition_span": "an approved lift window",
+    "operation_span": "Hoisting personnel",
+    "relation": "EVEN_IF"
+   }
+  ],
+  "tool_types": {
+   "execute_lift": "mutate",
+   "check_load_chart": "verify",
+   "read_wind": "read",
+   "inspect_ground": "verify",
+   "hoist_personnel": "mutate",
+   "read_lift_window": "read",
+   "read_lift_log": "read"
+  }
+ },
+ {
+  "case_id": "pushback_or",
+  "candidate_events": [
+   {
+    "source_span": "Push back flight F-224",
+    "role": "OPERATION_EFFECT",
+    "governed_tools": [
+     "push_back"
+    ]
+   },
+   {
+    "source_span": "the weight report has been signed",
+    "role": "PRECONDITION_CHECK",
+    "governed_tools": [
+     "read_weight_report"
+    ]
+   },
+   {
+    "source_span": "a load controller waiver has been issued",
+    "role": "PRECONDITION_CHECK",
+    "governed_tools": [
+     "read_waiver"
+    ]
+   },
+   {
+    "source_span": "Towing the aircraft to the hangar",
+    "role": "OPERATION_EFFECT",
+    "governed_tools": [
+     "tow_aircraft"
+    ]
+   }
+  ],
+  "condition_edges": [
+   {
+    "condition_span": "the weight report has been signed",
+    "operation_span": "Push back flight F-224",
+    "relation": "GATE"
+   },
+   {
+    "condition_span": "a load controller waiver has been issued",
+    "operation_span": "Push back flight F-224",
+    "relation": "GATE"
+   }
+  ],
+  "tool_types": {
+   "push_back": "mutate",
+   "read_weight_report": "read",
+   "read_waiver": "read",
+   "tow_aircraft": "mutate",
+   "read_brake_state": "read"
+  }
+ },
+ {
+  "case_id": "datacenter_dimm",
+  "candidate_events": [
+   {
+    "source_span": "Observe that rack R-31 is de-energized",
+    "role": "STATE_OBSERVATION",
+    "governed_tools": [
+     "read_rack_power"
+    ]
+   },
+   {
+    "source_span": "remove the failed DIMM",
+    "role": "OPERATION_EFFECT",
+    "governed_tools": [
+     "remove_dimm"
+    ]
+   },
+   {
+    "source_span": "Log the DIMM serial in the parts ledger",
+    "role": "OPERATION_EFFECT",
+    "governed_tools": [
+     "log_part"
+    ]
+   }
+  ],
+  "condition_edges": [
+   {
+    "condition_span": "Observe that rack R-31 is de-energized",
+    "operation_span": "remove the failed DIMM",
+    "relation": "ORDER_BEFORE"
+   },
+   {
+    "condition_span": "removal",
+    "operation_span": "Log the DIMM serial in the parts ledger",
+    "relation": "ORDER_BEFORE",
+    "ref_span": "remove the failed DIMM"
+   }
+  ],
+  "tool_types": {
+   "read_rack_power": "read",
+   "remove_dimm": "mutate",
+   "log_part": "mutate",
+   "read_parts_ledger": "read"
+  }
+ },
+ {
+  "case_id": "telecom_portout",
+  "candidate_events": [
+   {
+    "source_span": "Execute the number port-out for line-4471",
+    "role": "OPERATION_EFFECT",
+    "governed_tools": [
+     "execute_portout"
+    ]
+   },
+   {
+    "source_span": "the subscriber has confirmed the request by SMS",
+    "role": "COMMUNICATION",
+    "governed_tools": [
+     "read_sms_confirmation"
+    ]
+   },
+   {
+    "source_span": "A port-out request alone does not move the number",
+    "role": "OTHER",
+    "governed_tools": []
+   }
+  ],
+  "condition_edges": [
+   {
+    "condition_span": "the subscriber has confirmed the request by SMS",
+    "operation_span": "Execute the number port-out for line-4471",
+    "relation": "GATE"
+   }
+  ],
+  "tool_types": {
+   "execute_portout": "mutate",
+   "read_sms_confirmation": "read",
+   "create_portout_request": "mutate",
+   "read_portout_status": "read"
+  }
+ },
+ {
+  "case_id": "railway_signal",
+  "candidate_events": [
+   {
+    "source_span": "Route clearance for signal M-4 must be given",
+    "role": "OPERATION_EFFECT",
+    "governed_tools": [
+     "grant_route_clearance"
+    ]
+   },
+   {
+    "source_span": "the main signal is cleared",
+    "role": "OPERATION_EFFECT",
+    "governed_tools": [
+     "clear_main_signal"
+    ]
+   },
+   {
+    "source_span": "Clearing the shunt signal",
+    "role": "OPERATION_EFFECT",
+    "governed_tools": [
+     "clear_shunt_signal"
+    ]
+   }
+  ],
+  "condition_edges": [
+   {
+    "condition_span": "Route clearance for signal M-4 must be given",
+    "operation_span": "the main signal is cleared",
+    "relation": "ORDER_BEFORE"
+   }
+  ],
+  "tool_types": {
+   "grant_route_clearance": "mutate",
+   "clear_main_signal": "mutate",
+   "clear_shunt_signal": "mutate",
+   "read_signal_state": "read"
+  }
+ },
+ {
+  "case_id": "food_safety",
+  "candidate_events": [
+   {
+    "source_span": "reheat a held batch",
+    "role": "OPERATION_EFFECT",
+    "governed_tools": [
+     "reheat_batch"
+    ]
+   },
+   {
+    "source_span": "Discarding the temperature log for batch B-19",
+    "role": "OPERATION_EFFECT",
+    "governed_tools": [
+     "discard_log_record"
+    ]
+   },
+   {
+    "source_span": "The holding cooler runs at 4 degrees Celsius",
+    "role": "OTHER",
+    "governed_tools": []
+   }
+  ],
+  "condition_edges": [],
+  "tool_types": {
+   "reheat_batch": "mutate",
+   "read_temperature_log": "read",
+   "discard_log_record": "mutate",
+   "read_batch_status": "read"
+  }
+ },
+ {
+  "case_id": "grid_breaker",
+  "candidate_events": [
+   {
+    "source_span": "close the breaker",
+    "role": "OPERATION_EFFECT",
+    "governed_tools": [
+     "close_breaker"
+    ]
+   },
+   {
+    "source_span": "the isolation permit for feeder F-8 is active",
+    "role": "STATE_OBSERVATION",
+    "governed_tools": [
+     "read_permit_status"
+    ]
+   },
+   {
+    "source_span": "Closing the tie breaker",
+    "role": "OPERATION_EFFECT",
+    "governed_tools": [
+     "close_tie_breaker"
+    ]
+   }
+  ],
+  "condition_edges": [
+   {
+    "condition_span": "the isolation permit for feeder F-8 is active",
+    "operation_span": "close the breaker",
+    "relation": "EXCEPTION"
+   }
+  ],
+  "tool_types": {
+   "close_breaker": "mutate",
+   "close_tie_breaker": "mutate",
+   "read_permit_status": "read",
+   "read_feeder_state": "read"
+  }
+ },
+ {
+  "case_id": "archive_provenance",
+  "candidate_events": [
+   {
+    "source_span": "the donor requests expedited access",
+    "role": "COMMUNICATION",
+    "governed_tools": [
+     "read_donor_requests"
+    ]
+   },
+   {
+    "source_span": "alter the provenance record for document D-77",
+    "role": "OPERATION_EFFECT",
+    "governed_tools": [
+     "edit_provenance"
+    ]
+   },
+   {
+    "source_span": "add a new conservation note to the catalogue",
+    "role": "OPERATION_EFFECT",
+    "governed_tools": [
+     "add_note"
+    ]
+   }
+  ],
+  "condition_edges": [
+   {
+    "condition_span": "the donor requests expedited access",
+    "operation_span": "alter the provenance record for document D-77",
+    "relation": "EVEN_IF"
+   }
+  ],
+  "tool_types": {
+   "edit_provenance": "mutate",
+   "read_provenance": "read",
+   "add_note": "mutate",
+   "read_donor_requests": "read"
+  }
+ },
+ {
+  "case_id": "customs_entry",
+  "candidate_events": [
+   {
+    "source_span": "Classify the consignment under the customs tariff",
+    "role": "OPERATION_EFFECT",
+    "governed_tools": [
+     "classify_consignment"
+    ]
+   },
+   {
+    "source_span": "collect the import duty",
+    "role": "OPERATION_EFFECT",
+    "governed_tools": [
+     "collect_duty"
+    ]
+   },
+   {
+    "source_span": "Auditing the entry record",
+    "role": "PRECONDITION_CHECK",
+    "governed_tools": [
+     "audit_entry"
+    ]
+   }
+  ],
+  "condition_edges": [],
+  "tool_types": {
+   "classify_consignment": "mutate",
+   "collect_duty": "mutate",
+   "audit_entry": "read",
+   "read_tariff": "read"
+  }
+ },
+ {
+  "case_id": "pharmacy_dispense",
+  "candidate_events": [
+   {
+    "source_span": "verify the prescription match",
+    "role": "PRECONDITION_CHECK",
+    "governed_tools": [
+     "verify_prescription"
+    ]
+   },
+   {
+    "source_span": "dispensing medication M-9",
+    "role": "OPERATION_EFFECT",
+    "governed_tools": [
+     "dispense_medication"
+    ]
+   },
+   {
+    "source_span": "dispensing a substitute",
+    "role": "OPERATION_EFFECT",
+    "governed_tools": [
+     "dispense_medication"
+    ]
+   },
+   {
+    "source_span": "notify the prescriber",
+    "role": "COMMUNICATION",
+    "governed_tools": [
+     "notify_prescriber"
+    ]
+   }
+  ],
+  "condition_edges": [
+   {
+    "condition_span": "verify the prescription match",
+    "operation_span": "dispensing medication M-9",
+    "relation": "GATE"
+   },
+   {
+    "condition_span": "dispensing a substitute",
+    "operation_span": "notify the prescriber",
+    "relation": "ORDER_AFTER"
+   }
+  ],
+  "tool_types": {
+   "verify_prescription": "verify",
+   "dispense_medication": "mutate",
+   "notify_prescriber": "message",
+   "read_dispense_log": "read"
+  }
+ },
+ {
+  "case_id": "payroll_reimburse",
+  "candidate_events": [
+   {
+    "source_span": "A tuition reimbursement is paid",
+    "role": "OPERATION_EFFECT",
+    "governed_tools": [
+     "pay_reimbursement"
+    ]
+   },
+   {
+    "source_span": "the employee's claim P-301 has been approved by the payroll officer",
+    "role": "OPERATION_EFFECT",
+    "governed_tools": [
+     "approve_claim"
+    ]
+   },
+   {
+    "source_span": "Submitting a claim",
+    "role": "OPERATION_EFFECT",
+    "governed_tools": [
+     "submit_claim"
+    ]
+   },
+   {
+    "source_span": "The payroll calendar runs biweekly",
+    "role": "OTHER",
+    "governed_tools": []
+   }
+  ],
+  "condition_edges": [
+   {
+    "condition_span": "the employee's claim P-301 has been approved by the payroll officer",
+    "operation_span": "A tuition reimbursement is paid",
+    "relation": "GATE"
+   }
+  ],
+  "tool_types": {
+   "pay_reimbursement": "mutate",
+   "approve_claim": "mutate",
+   "submit_claim": "mutate",
+   "read_approval_status": "read",
+   "read_payroll_calendar": "read"
+  }
+ },
+ {
+  "case_id": "biotech_thaw",
+  "candidate_events": [
+   {
+    "source_span": "Observe that the thaw cycle for culture X-22 has completed",
+    "role": "STATE_OBSERVATION",
+    "governed_tools": [
+     "read_thaw_status"
+    ]
+   },
+   {
+    "source_span": "inoculating the culture",
+    "role": "OPERATION_EFFECT",
+    "governed_tools": [
+     "inoculate_culture"
+    ]
+   },
+   {
+    "source_span": "Report the viability count to the study lead",
+    "role": "COMMUNICATION",
+    "governed_tools": [
+     "report_count"
+    ]
+   }
+  ],
+  "condition_edges": [
+   {
+    "condition_span": "Observe that the thaw cycle for culture X-22 has completed",
+    "operation_span": "inoculating the culture",
+    "relation": "GATE"
+   },
+   {
+    "condition_span": "inoculating the culture",
+    "operation_span": "Report the viability count to the study lead",
+    "relation": "ORDER_AFTER"
+   }
+  ],
+  "tool_types": {
+   "read_thaw_status": "read",
+   "inoculate_culture": "mutate",
+   "report_count": "message",
+   "read_viability": "read"
+  }
+ },
+ {
+  "case_id": "mine_blast",
+  "candidate_events": [
+   {
+    "source_span": "Blast charging",
+    "role": "OPERATION_EFFECT",
+    "governed_tools": [
+     "charge_blast"
+    ]
+   },
+   {
+    "source_span": "the ventilation level in drift D-2 reads green",
+    "role": "STATE_OBSERVATION",
+    "governed_tools": [
+     "read_ventilation"
+    ]
+   },
+   {
+    "source_span": "Run the blast plan check",
+    "role": "PRECONDITION_CHECK",
+    "governed_tools": [
+     "execute_blast_sequence"
+    ]
+   },
+   {
+    "source_span": "initiating the firing sequence",
+    "role": "OPERATION_EFFECT",
+    "governed_tools": [
+     "fire_sequence"
+    ]
+   }
+  ],
+  "condition_edges": [
+   {
+    "condition_span": "the ventilation level in drift D-2 reads green",
+    "operation_span": "Blast charging",
+    "relation": "GATE"
+   },
+   {
+    "condition_span": "Run the blast plan check",
+    "operation_span": "initiating the firing sequence",
+    "relation": "GATE"
+   }
+  ],
+  "tool_types": {
+   "charge_blast": "mutate",
+   "read_ventilation": "read",
+   "execute_blast_sequence": "read",
+   "fire_sequence": "mutate",
+   "read_drift_status": "read"
+  }
+ },
+ {
+  "case_id": "waste_route",
+  "candidate_events": [
+   {
+    "source_span": "Collect bin T-18 on route North",
+    "role": "OPERATION_EFFECT",
+    "governed_tools": [
+     "collect_bin"
+    ]
+   },
+   {
+    "source_span": "its fill sensor reports at least eighty percent",
+    "role": "STATE_OBSERVATION",
+    "governed_tools": [
+     "read_fill_sensor"
+    ]
+   },
+   {
+    "source_span": "Emptying bin T-19",
+    "role": "OPERATION_EFFECT",
+    "governed_tools": [
+     "collect_bin"
+    ]
+   },
+   {
+    "source_span": "its sensor reading",
+    "role": "STATE_OBSERVATION",
+    "governed_tools": [
+     "read_fill_sensor"
+    ]
+   }
+  ],
+  "condition_edges": [
+   {
+    "condition_span": "its fill sensor reports at least eighty percent",
+    "operation_span": "Collect bin T-18 on route North",
+    "relation": "GATE"
+   }
+  ],
+  "tool_types": {
+   "collect_bin": "mutate",
+   "read_fill_sensor": "read",
+   "read_route_manifest": "read",
+   "read_pickup_result": "read"
+  }
+ },
+ {
+  "case_id": "claim_approval",
+  "candidate_events": [
+   {
+    "source_span": "Approve claim C-301",
+    "role": "OPERATION_EFFECT",
+    "governed_tools": [
+     "approve_claim"
+    ]
+   },
+   {
+    "source_span": "the adjuster's field report is attached",
+    "role": "STATE_OBSERVATION",
+    "governed_tools": [
+     "read_report_attachment"
+    ]
+   },
+   {
+    "source_span": "The claim audit trail may be consulted",
+    "role": "STATE_OBSERVATION",
+    "governed_tools": [
+     "audit_claim_history"
+    ]
+   }
+  ],
+  "condition_edges": [
+   {
+    "condition_span": "the adjuster's field report is attached",
+    "operation_span": "Approve claim C-301",
+    "relation": "GATE"
+   }
+  ],
+  "tool_types": {
+   "approve_claim": "mutate",
+   "read_report_attachment": "read",
+   "audit_claim_history": "read",
+   "create_claim": "mutate"
+  }
+ },
+ {
+  "case_id": "quarantine_release",
+  "candidate_events": [
+   {
+    "source_span": "Release the plant consignment Q-50",
+    "role": "OPERATION_EFFECT",
+    "governed_tools": [
+     "release_consignment"
+    ]
+   },
+   {
+    "source_span": "the phytosanitary certificate is present",
+    "role": "STATE_OBSERVATION",
+    "governed_tools": [
+     "read_certificate"
+    ]
+   },
+   {
+    "source_span": "the inspection exemption has been granted",
+    "role": "STATE_OBSERVATION",
+    "governed_tools": [
+     "read_exemption"
+    ]
+   },
+   {
+    "source_span": "Photograph the consignment",
+    "role": "OPERATION_EFFECT",
+    "governed_tools": [
+     "photograph_consignment"
+    ]
+   }
+  ],
+  "condition_edges": [
+   {
+    "condition_span": "the phytosanitary certificate is present",
+    "operation_span": "Release the plant consignment Q-50",
+    "relation": "GATE"
+   },
+   {
+    "condition_span": "the inspection exemption has been granted",
+    "operation_span": "Release the plant consignment Q-50",
+    "relation": "GATE"
+   },
+   {
+    "condition_span": "Photograph the consignment",
+    "operation_span": "release",
+    "relation": "ORDER_BEFORE",
+    "ref_span": "Release the plant consignment Q-50"
+   }
+  ],
+  "tool_types": {
+   "release_consignment": "mutate",
+   "read_certificate": "read",
+   "read_exemption": "read",
+   "photograph_consignment": "mutate",
+   "read_quarantine_log": "read"
+  }
+ },
+ {
+  "case_id": "grain_elevator",
+  "candidate_events": [
+   {
+    "source_span": "Weigh the grain delivery",
+    "role": "OPERATION_EFFECT",
+    "governed_tools": [
+     "weigh_truck"
+    ]
+   },
+   {
+    "source_span": "unloading it into silo S-2",
+    "role": "OPERATION_EFFECT",
+    "governed_tools": [
+     "unload_silo"
+    ]
+   },
+   {
+    "source_span": "The moisture reading must be recorded",
+    "role": "OPERATION_EFFECT",
+    "governed_tools": [
+     "record_moisture"
+    ]
+   },
+   {
+    "source_span": "Notify the dispatcher",
+    "role": "COMMUNICATION",
+    "governed_tools": [
+     "notify_dispatcher"
+    ]
+   },
+   {
+    "source_span": "a delivery is rejected",
+    "role": "OPERATION_EFFECT",
+    "governed_tools": [
+     "reject_delivery"
+    ]
+   }
+  ],
+  "condition_edges": [
+   {
+    "condition_span": "Weigh the grain delivery",
+    "operation_span": "unloading it into silo S-2",
+    "relation": "ORDER_BEFORE"
+   },
+   {
+    "condition_span": "a delivery is rejected",
+    "operation_span": "Notify the dispatcher",
+    "relation": "ORDER_AFTER"
+   }
+  ],
+  "tool_types": {
+   "weigh_truck": "mutate",
+   "unload_silo": "mutate",
+   "record_moisture": "mutate",
+   "notify_dispatcher": "message",
+   "reject_delivery": "mutate",
+   "read_moisture": "read"
+  }
+ }
+]

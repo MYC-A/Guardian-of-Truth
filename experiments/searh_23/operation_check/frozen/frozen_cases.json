@@ -1,0 +1,1073 @@
+[
+ {
+  "case_id": "vet_clinic",
+  "domain": "veterinary clinic",
+  "policy": "Admit animal A-118 only after its vaccination certificate has been verified. The same certificate check is required before both grooming and boarding. Confirm the owner's contact details before returning the animal.",
+  "tools": [
+   {
+    "name": "admit_animal",
+    "description": "Creates an admission record for an animal in the clinic system and assigns it a kennel.",
+    "input": {
+     "animal_id": "string"
+    },
+    "output": {
+     "admission_id": "string"
+    }
+   },
+   {
+    "name": "verify_vaccination",
+    "description": "Compares the vaccination certificate on file against the required immunisation schedule and returns whether it is satisfied. Does not modify records.",
+    "input": {
+     "animal_id": "string"
+    },
+    "output": {
+     "satisfied": "boolean"
+    }
+   },
+   {
+    "name": "groom_animal",
+    "description": "Books and performs the grooming service for an admitted animal.",
+    "input": {
+     "animal_id": "string"
+    },
+    "output": {
+     "groomed": "boolean"
+    }
+   },
+   {
+    "name": "board_animal",
+    "description": "Assigns the animal to an overnight boarding slot and starts the stay.",
+    "input": {
+     "animal_id": "string"
+    },
+    "output": {
+     "stay_id": "string"
+    }
+   },
+   {
+    "name": "read_owner_contact",
+    "description": "Reads the owner's registered contact details from the patient file.",
+    "input": {
+     "animal_id": "string"
+    },
+    "output": {
+     "phone": "string",
+     "email": "string"
+    }
+   },
+   {
+    "name": "return_animal",
+    "description": "Releases the animal back to the owner and closes the admission record.",
+    "input": {
+     "animal_id": "string"
+    },
+    "output": {
+     "closed": "boolean"
+    }
+   },
+   {
+    "name": "read_kennel_log",
+    "description": "Reads the kennel occupancy log for the clinic.",
+    "input": {},
+    "output": {
+     "entries": "array"
+    }
+   }
+  ]
+ },
+ {
+  "case_id": "water_valve",
+  "domain": "water treatment plant",
+  "policy": "Open the distribution valve only if the turbidity reading for tank-12 is below 0.3 NTU. An operator override does not open the valve.",
+  "tools": [
+   {
+    "name": "open_valve",
+    "description": "Actuates the distribution valve and records the open event in the plant log.",
+    "input": {
+     "valve_id": "string"
+    },
+    "output": {
+     "opened": "boolean"
+    }
+   },
+   {
+    "name": "read_turbidity",
+    "description": "Reads the current turbidity sensor value for a tank in NTU.",
+    "input": {
+     "tank_id": "string"
+    },
+    "output": {
+     "ntu": "number"
+    }
+   },
+   {
+    "name": "log_override",
+    "description": "Records an operator override request against a tank alarm.",
+    "input": {
+     "tank_id": "string",
+     "reason": "string"
+    },
+    "output": {
+     "logged": "boolean"
+    }
+   },
+   {
+    "name": "read_valve_state",
+    "description": "Reads whether the distribution valve is currently open or closed.",
+    "input": {
+     "valve_id": "string"
+    },
+    "output": {
+     "state": "string"
+    }
+   }
+  ]
+ },
+ {
+  "case_id": "library_return",
+  "domain": "university library",
+  "policy": "After the returned volume R-9 is scanned, release the hold on the borrower's account. Rare volumes must be inspected by the conservation desk before re-shelving.",
+  "tools": [
+   {
+    "name": "scan_return",
+    "description": "Registers a returned volume by scanning its barcode and updates the loan record.",
+    "input": {
+     "volume_id": "string"
+    },
+    "output": {
+     "registered": "boolean"
+    }
+   },
+   {
+    "name": "release_hold",
+    "description": "Removes the pending hold from the borrower's account.",
+    "input": {
+     "borrower_id": "string"
+    },
+    "output": {
+     "released": "boolean"
+    }
+   },
+   {
+    "name": "inspect_volume",
+    "description": "Records the conservation desk's inspection verdict for a volume: accepted for shelving or rejected for treatment.",
+    "input": {
+     "volume_id": "string"
+    },
+    "output": {
+     "verdict": "string"
+    }
+   },
+   {
+    "name": "shelve_volume",
+    "description": "Places a volume on its designated shelf and updates the stack map.",
+    "input": {
+     "volume_id": "string",
+     "shelf": "string"
+    },
+    "output": {
+     "shelved": "boolean"
+    }
+   },
+   {
+    "name": "read_hold_queue",
+    "description": "Reads the list of active holds on a borrower's account.",
+    "input": {
+     "borrower_id": "string"
+    },
+    "output": {
+     "holds": "array"
+    }
+   }
+  ]
+ },
+ {
+  "case_id": "crane_lift",
+  "domain": "construction site",
+  "policy": "A lift with crane-07 requires a load chart check, a wind speed reading below level five, and a ground condition inspection. Hoisting personnel is forbidden even during an approved lift window.",
+  "tools": [
+   {
+    "name": "execute_lift",
+    "description": "Executes the crane lift sequence and records the lift in the site register.",
+    "input": {
+     "crane_id": "string",
+     "load_id": "string"
+    },
+    "output": {
+     "lift_id": "string"
+    }
+   },
+   {
+    "name": "check_load_chart",
+    "description": "Compares the planned load against the crane's load chart limits and returns whether the lift is within capacity.",
+    "input": {
+     "crane_id": "string",
+     "load_kg": "number"
+    },
+    "output": {
+     "within_capacity": "boolean"
+    }
+   },
+   {
+    "name": "read_wind",
+    "description": "Reads the current wind speed at the crane mast in metres per second.",
+    "input": {
+     "crane_id": "string"
+    },
+    "output": {
+     "wind_ms": "number"
+    }
+   },
+   {
+    "name": "inspect_ground",
+    "description": "Records the ground condition inspection verdict for the lift pad: stable or unstable.",
+    "input": {
+     "pad_id": "string"
+    },
+    "output": {
+     "verdict": "string"
+    }
+   },
+   {
+    "name": "hoist_personnel",
+    "description": "Uses the crane to hoist personnel in a work basket.",
+    "input": {
+     "crane_id": "string"
+    },
+    "output": {
+     "hoisted": "boolean"
+    }
+   },
+   {
+    "name": "read_lift_window",
+    "description": "Reads the currently approved lift windows for a crane.",
+    "input": {
+     "crane_id": "string"
+    },
+    "output": {
+     "windows": "array"
+    }
+   },
+   {
+    "name": "read_lift_log",
+    "description": "Reads the site register of past crane lifts.",
+    "input": {
+     "crane_id": "string"
+    },
+    "output": {
+     "lifts": "array"
+    }
+   }
+  ]
+ },
+ {
+  "case_id": "pushback_or",
+  "domain": "airline flight operations",
+  "policy": "Push back flight F-224 only if the weight report has been signed or a load controller waiver has been issued. Towing the aircraft to the hangar does not release the parking brake.",
+  "tools": [
+   {
+    "name": "push_back",
+    "description": "Commands the pushback tug for a flight, releases the parking brake, and records the departure movement.",
+    "input": {
+     "flight_id": "string"
+    },
+    "output": {
+     "movement_id": "string"
+    }
+   },
+   {
+    "name": "read_weight_report",
+    "description": "Reads the signed status of the weight and balance report for a flight.",
+    "input": {
+     "flight_id": "string"
+    },
+    "output": {
+     "signed": "boolean"
+    }
+   },
+   {
+    "name": "read_waiver",
+    "description": "Reads whether a load controller waiver has been issued for a flight.",
+    "input": {
+     "flight_id": "string"
+    },
+    "output": {
+     "issued": "boolean"
+    }
+   },
+   {
+    "name": "tow_aircraft",
+    "description": "Tows the aircraft to the hangar along the maintenance taxi route.",
+    "input": {
+     "flight_id": "string"
+    },
+    "output": {
+     "towed": "boolean"
+    }
+   },
+   {
+    "name": "read_brake_state",
+    "description": "Reads the current parking brake status of an aircraft.",
+    "input": {
+     "flight_id": "string"
+    },
+    "output": {
+     "engaged": "boolean"
+    }
+   }
+  ]
+ },
+ {
+  "case_id": "datacenter_dimm",
+  "domain": "data centre maintenance",
+  "policy": "Observe that rack R-31 is de-energized, then remove the failed DIMM. Log the DIMM serial in the parts ledger after removal.",
+  "tools": [
+   {
+    "name": "read_rack_power",
+    "description": "Reads the power state of a rack: energized or de-energized.",
+    "input": {
+     "rack_id": "string"
+    },
+    "output": {
+     "state": "string"
+    }
+   },
+   {
+    "name": "remove_dimm",
+    "description": "Removes a failed DIMM from a server and updates the fault ticket.",
+    "input": {
+     "rack_id": "string",
+     "slot": "string"
+    },
+    "output": {
+     "removed": "boolean"
+    }
+   },
+   {
+    "name": "log_part",
+    "description": "Writes a removed part's serial number to the parts ledger.",
+    "input": {
+     "serial": "string"
+    },
+    "output": {
+     "logged": "boolean"
+    }
+   },
+   {
+    "name": "read_parts_ledger",
+    "description": "Reads past entries from the parts ledger.",
+    "input": {},
+    "output": {
+     "entries": "array"
+    }
+   }
+  ]
+ },
+ {
+  "case_id": "telecom_portout",
+  "domain": "telecom provisioning",
+  "policy": "Execute the number port-out for line-4471 only after the subscriber has confirmed the request by SMS. A port-out request alone does not move the number.",
+  "tools": [
+   {
+    "name": "execute_portout",
+    "description": "Executes the number port-out and transfers the number to the gaining carrier.",
+    "input": {
+     "line_id": "string"
+    },
+    "output": {
+     "transferred": "boolean"
+    }
+   },
+   {
+    "name": "read_sms_confirmation",
+    "description": "Reads whether the subscriber has confirmed the port-out request by SMS.",
+    "input": {
+     "line_id": "string"
+    },
+    "output": {
+     "confirmed": "boolean"
+    }
+   },
+   {
+    "name": "create_portout_request",
+    "description": "Creates a pending port-out request record; does not transfer the number.",
+    "input": {
+     "line_id": "string"
+    },
+    "output": {
+     "request_id": "string"
+    }
+   },
+   {
+    "name": "read_portout_status",
+    "description": "Reads the current status of a port-out request.",
+    "input": {
+     "line_id": "string"
+    },
+    "output": {
+     "status": "string"
+    }
+   }
+  ]
+ },
+ {
+  "case_id": "railway_signal",
+  "domain": "railway signalling",
+  "policy": "Route clearance for signal M-4 must be given before the main signal is cleared. Clearing the shunt signal does not authorize a train movement.",
+  "tools": [
+   {
+    "name": "grant_route_clearance",
+    "description": "Sets the route clearance flag for a main signal in the interlocking system.",
+    "input": {
+     "signal_id": "string"
+    },
+    "output": {
+     "cleared_route": "boolean"
+    }
+   },
+   {
+    "name": "clear_main_signal",
+    "description": "Clears a main signal to proceed and logs the movement authority.",
+    "input": {
+     "signal_id": "string"
+    },
+    "output": {
+     "authority_id": "string"
+    }
+   },
+   {
+    "name": "clear_shunt_signal",
+    "description": "Clears a shunt signal for low-speed depot moves only; does not grant a running authority.",
+    "input": {
+     "signal_id": "string"
+    },
+    "output": {
+     "cleared": "boolean"
+    }
+   },
+   {
+    "name": "read_signal_state",
+    "description": "Reads the current aspect of a signal.",
+    "input": {
+     "signal_id": "string"
+    },
+    "output": {
+     "aspect": "string"
+    }
+   }
+  ]
+ },
+ {
+  "case_id": "food_safety",
+  "domain": "commercial kitchen",
+  "policy": "Kitchen staff may reheat a held batch once. Discarding the temperature log for batch B-19 is forbidden. The holding cooler runs at 4 degrees Celsius.",
+  "tools": [
+   {
+    "name": "reheat_batch",
+    "description": "Reheats a held food batch to serving temperature and records the reheat cycle.",
+    "input": {
+     "batch_id": "string"
+    },
+    "output": {
+     "reheated": "boolean"
+    }
+   },
+   {
+    "name": "read_temperature_log",
+    "description": "Reads the temperature log entries for a batch.",
+    "input": {
+     "batch_id": "string"
+    },
+    "output": {
+     "entries": "array"
+    }
+   },
+   {
+    "name": "discard_log_record",
+    "description": "Permanently deletes a temperature log entry for a batch.",
+    "input": {
+     "batch_id": "string"
+    },
+    "output": {
+     "deleted": "boolean"
+    }
+   },
+   {
+    "name": "read_batch_status",
+    "description": "Reads the holding status of a food batch.",
+    "input": {
+     "batch_id": "string"
+    },
+    "output": {
+     "status": "string"
+    }
+   }
+  ]
+ },
+ {
+  "case_id": "grid_breaker",
+  "domain": "electricity distribution",
+  "policy": "Unless the isolation permit for feeder F-8 is active, do not close the breaker. Closing the tie breaker does not energize feeder F-8.",
+  "tools": [
+   {
+    "name": "close_breaker",
+    "description": "Closes the feeder breaker and energizes the feeder.",
+    "input": {
+     "feeder_id": "string"
+    },
+    "output": {
+     "closed": "boolean"
+    }
+   },
+   {
+    "name": "close_tie_breaker",
+    "description": "Closes the parallel tie breaker between feeders; does not energize a feeder by itself.",
+    "input": {
+     "feeder_id": "string"
+    },
+    "output": {
+     "closed": "boolean"
+    }
+   },
+   {
+    "name": "read_permit_status",
+    "description": "Reads whether an isolation permit for a feeder is currently active.",
+    "input": {
+     "feeder_id": "string"
+    },
+    "output": {
+     "active": "boolean"
+    }
+   },
+   {
+    "name": "read_feeder_state",
+    "description": "Reads the current energization state of a feeder.",
+    "input": {
+     "feeder_id": "string"
+    },
+    "output": {
+     "state": "string"
+    }
+   }
+  ]
+ },
+ {
+  "case_id": "archive_provenance",
+  "domain": "historic archive",
+  "policy": "Even if the donor requests expedited access, never alter the provenance record for document D-77. Staff may add a new conservation note to the catalogue.",
+  "tools": [
+   {
+    "name": "edit_provenance",
+    "description": "Modifies the provenance chain of a document record.",
+    "input": {
+     "document_id": "string"
+    },
+    "output": {
+     "edited": "boolean"
+    }
+   },
+   {
+    "name": "read_provenance",
+    "description": "Reads the provenance chain of a document record without changing it.",
+    "input": {
+     "document_id": "string"
+    },
+    "output": {
+     "chain": "array"
+    }
+   },
+   {
+    "name": "add_note",
+    "description": "Appends a conservation note to a catalogue record.",
+    "input": {
+     "document_id": "string",
+     "note": "string"
+    },
+    "output": {
+     "appended": "boolean"
+    }
+   },
+   {
+    "name": "read_donor_requests",
+    "description": "Reads the donor's incoming requests for a document.",
+    "input": {
+     "document_id": "string"
+    },
+    "output": {
+     "requests": "array"
+    }
+   }
+  ]
+ },
+ {
+  "case_id": "customs_entry",
+  "domain": "customs brokerage",
+  "policy": "Classify the consignment under the customs tariff and collect the import duty for entry E-401. Auditing the entry record does not complete either step.",
+  "tools": [
+   {
+    "name": "classify_consignment",
+    "description": "Assigns a tariff classification code to a consignment and records it on the entry.",
+    "input": {
+     "entry_id": "string"
+    },
+    "output": {
+     "code": "string"
+    }
+   },
+   {
+    "name": "collect_duty",
+    "description": "Charges and collects the import duty for a customs entry.",
+    "input": {
+     "entry_id": "string"
+    },
+    "output": {
+     "charged": "boolean"
+    }
+   },
+   {
+    "name": "audit_entry",
+    "description": "Reads the full entry record including classification and duty events for compliance review.",
+    "input": {
+     "entry_id": "string"
+    },
+    "output": {
+     "record": "object"
+    }
+   },
+   {
+    "name": "read_tariff",
+    "description": "Reads the customs tariff schedule.",
+    "input": {
+     "query": "string"
+    },
+    "output": {
+     "codes": "array"
+    }
+   }
+  ]
+ },
+ {
+  "case_id": "pharmacy_dispense",
+  "domain": "hospital pharmacy",
+  "policy": "The pharmacist must verify the prescription match before dispensing medication M-9. When dispensing a substitute, notify the prescriber.",
+  "tools": [
+   {
+    "name": "verify_prescription",
+    "description": "Compares the dispense request against the electronic prescription record and returns whether they match; no record is changed.",
+    "input": {
+     "request_id": "string"
+    },
+    "output": {
+     "match": "boolean"
+    }
+   },
+   {
+    "name": "dispense_medication",
+    "description": "Releases a medication from the cabinet and marks it as dispensed in the inventory.",
+    "input": {
+     "request_id": "string"
+    },
+    "output": {
+     "dispensed": "boolean"
+    }
+   },
+   {
+    "name": "notify_prescriber",
+    "description": "Sends a substitution notice to the prescriber's messaging address.",
+    "input": {
+     "request_id": "string"
+    },
+    "output": {
+     "sent": "boolean"
+    }
+   },
+   {
+    "name": "read_dispense_log",
+    "description": "Reads past dispense events for a medication from the audit log.",
+    "input": {
+     "medication_id": "string"
+    },
+    "output": {
+     "events": "array"
+    }
+   }
+  ]
+ },
+ {
+  "case_id": "payroll_reimburse",
+  "domain": "payroll operations",
+  "policy": "A tuition reimbursement is paid only after the employee's claim P-301 has been approved by the payroll officer. Submitting a claim alone does not pay it. The payroll calendar runs biweekly.",
+  "tools": [
+   {
+    "name": "pay_reimbursement",
+    "description": "Pays an approved tuition reimbursement to the employee's bank account.",
+    "input": {
+     "claim_id": "string"
+    },
+    "output": {
+     "paid": "boolean"
+    }
+   },
+   {
+    "name": "approve_claim",
+    "description": "Records the payroll officer's approval decision on a reimbursement claim.",
+    "input": {
+     "claim_id": "string"
+    },
+    "output": {
+     "approved": "boolean"
+    }
+   },
+   {
+    "name": "submit_claim",
+    "description": "Creates a pending tuition reimbursement claim; does not pay anything.",
+    "input": {
+     "employee_id": "string"
+    },
+    "output": {
+     "claim_id": "string"
+    }
+   },
+   {
+    "name": "read_approval_status",
+    "description": "Reads whether a claim has been approved.",
+    "input": {
+     "claim_id": "string"
+    },
+    "output": {
+     "approved": "boolean"
+    }
+   },
+   {
+    "name": "read_payroll_calendar",
+    "description": "Reads the biweekly payroll calendar dates.",
+    "input": {},
+    "output": {
+     "dates": "array"
+    }
+   }
+  ]
+ },
+ {
+  "case_id": "biotech_thaw",
+  "domain": "biotech cell bank",
+  "policy": "Observe that the thaw cycle for culture X-22 has completed before inoculating the culture. Report the viability count to the study lead after inoculating the culture.",
+  "tools": [
+   {
+    "name": "read_thaw_status",
+    "description": "Reads whether the thaw cycle for a culture has completed.",
+    "input": {
+     "culture_id": "string"
+    },
+    "output": {
+     "completed": "boolean"
+    }
+   },
+   {
+    "name": "inoculate_culture",
+    "description": "Inoculates a culture and starts the incubation timer.",
+    "input": {
+     "culture_id": "string"
+    },
+    "output": {
+     "started": "boolean"
+    }
+   },
+   {
+    "name": "report_count",
+    "description": "Sends the viability count message to the study lead.",
+    "input": {
+     "culture_id": "string"
+    },
+    "output": {
+     "sent": "boolean"
+    }
+   },
+   {
+    "name": "read_viability",
+    "description": "Reads the measured viability count of a culture without sending anything.",
+    "input": {
+     "culture_id": "string"
+    },
+    "output": {
+     "count": "number"
+    }
+   }
+  ]
+ },
+ {
+  "case_id": "mine_blast",
+  "domain": "underground mining",
+  "policy": "Blast charging may proceed only when the ventilation level in drift D-2 reads green. Run the blast plan check before initiating the firing sequence.",
+  "tools": [
+   {
+    "name": "charge_blast",
+    "description": "Loads and charges the blast holes in a drift and arms the sequence.",
+    "input": {
+     "drift_id": "string"
+    },
+    "output": {
+     "charged": "boolean"
+    }
+   },
+   {
+    "name": "read_ventilation",
+    "description": "Reads the ventilation level sensor for a drift.",
+    "input": {
+     "drift_id": "string"
+    },
+    "output": {
+     "level": "string"
+    }
+   },
+   {
+    "name": "execute_blast_sequence",
+    "description": "Reads the configured blast plan and reports whether the sequence is ready; does not fire anything.",
+    "input": {
+     "drift_id": "string"
+    },
+    "output": {
+     "ready": "boolean"
+    }
+   },
+   {
+    "name": "fire_sequence",
+    "description": "Fires the charged blast sequence in a drift.",
+    "input": {
+     "drift_id": "string"
+    },
+    "output": {
+     "fired": "boolean"
+    }
+   },
+   {
+    "name": "read_drift_status",
+    "description": "Reads the operational status of a drift.",
+    "input": {
+     "drift_id": "string"
+    },
+    "output": {
+     "status": "string"
+    }
+   }
+  ]
+ },
+ {
+  "case_id": "waste_route",
+  "domain": "waste collection",
+  "policy": "Collect bin T-18 on route North only if its fill sensor reports at least eighty percent. Emptying bin T-19 may happen regardless of its sensor reading.",
+  "tools": [
+   {
+    "name": "collect_bin",
+    "description": "Empties a bin into the collection truck and records the pickup.",
+    "input": {
+     "bin_id": "string"
+    },
+    "output": {
+     "collected": "boolean"
+    }
+   },
+   {
+    "name": "read_fill_sensor",
+    "description": "Reads the fill percentage reported by a bin's sensor.",
+    "input": {
+     "bin_id": "string"
+    },
+    "output": {
+     "percent": "number"
+    }
+   },
+   {
+    "name": "read_route_manifest",
+    "description": "Reads the pickup manifest for a route.",
+    "input": {
+     "route": "string"
+    },
+    "output": {
+     "bins": "array"
+    }
+   },
+   {
+    "name": "read_pickup_result",
+    "description": "Reads whether the last pickup of a bin succeeded.",
+    "input": {
+     "bin_id": "string"
+    },
+    "output": {
+     "succeeded": "boolean"
+    }
+   }
+  ]
+ },
+ {
+  "case_id": "claim_approval",
+  "domain": "insurance claims",
+  "policy": "Approve claim C-301 only after the adjuster's field report is attached. The claim audit trail may be consulted at any time.",
+  "tools": [
+   {
+    "name": "approve_claim",
+    "description": "Records the approval decision on an insurance claim.",
+    "input": {
+     "claim_id": "string"
+    },
+    "output": {
+     "approved": "boolean"
+    }
+   },
+   {
+    "name": "read_report_attachment",
+    "description": "Reads whether the adjuster's field report is attached to a claim.",
+    "input": {
+     "claim_id": "string"
+    },
+    "output": {
+     "attached": "boolean"
+    }
+   },
+   {
+    "name": "audit_claim_history",
+    "description": "Reads a claim's full audit trail including past approval events.",
+    "input": {
+     "claim_id": "string"
+    },
+    "output": {
+     "trail": "array"
+    }
+   },
+   {
+    "name": "create_claim",
+    "description": "Creates a new insurance claim record.",
+    "input": {
+     "policy_id": "string"
+    },
+    "output": {
+     "claim_id": "string"
+    }
+   }
+  ]
+ },
+ {
+  "case_id": "quarantine_release",
+  "domain": "border plant quarantine",
+  "policy": "Release the plant consignment Q-50 if either the phytosanitary certificate is present or the inspection exemption has been granted. Photograph the consignment before release.",
+  "tools": [
+   {
+    "name": "release_consignment",
+    "description": "Releases the plant consignment from quarantine and records the release.",
+    "input": {
+     "consignment_id": "string"
+    },
+    "output": {
+     "released": "boolean"
+    }
+   },
+   {
+    "name": "read_certificate",
+    "description": "Reads whether a phytosanitary certificate is on file for a consignment.",
+    "input": {
+     "consignment_id": "string"
+    },
+    "output": {
+     "present": "boolean"
+    }
+   },
+   {
+    "name": "read_exemption",
+    "description": "Reads whether an inspection exemption has been granted for a consignment.",
+    "input": {
+     "consignment_id": "string"
+    },
+    "output": {
+     "granted": "boolean"
+    }
+   },
+   {
+    "name": "photograph_consignment",
+    "description": "Takes and stores photographs of a consignment.",
+    "input": {
+     "consignment_id": "string"
+    },
+    "output": {
+     "photo_ids": "array"
+    }
+   },
+   {
+    "name": "read_quarantine_log",
+    "description": "Reads the quarantine log entries for a consignment.",
+    "input": {
+     "consignment_id": "string"
+    },
+    "output": {
+     "entries": "array"
+    }
+   }
+  ]
+ },
+ {
+  "case_id": "grain_elevator",
+  "domain": "agricultural cooperative",
+  "policy": "Weigh the grain delivery before unloading it into silo S-2. The moisture reading must be recorded for every delivery. Notify the dispatcher when a delivery is rejected.",
+  "tools": [
+   {
+    "name": "weigh_truck",
+    "description": "Weighs the delivery truck on the scale and writes the weight to the delivery ticket.",
+    "input": {
+     "delivery_id": "string"
+    },
+    "output": {
+     "net_kg": "number"
+    }
+   },
+   {
+    "name": "unload_silo",
+    "description": "Unloads the delivery into a silo and updates the stock record.",
+    "input": {
+     "delivery_id": "string",
+     "silo_id": "string"
+    },
+    "output": {
+     "unloaded": "boolean"
+    }
+   },
+   {
+    "name": "record_moisture",
+    "description": "Writes the moisture reading to the delivery record.",
+    "input": {
+     "delivery_id": "string",
+     "percent": "number"
+    },
+    "output": {
+     "recorded": "boolean"
+    }
+   },
+   {
+    "name": "notify_dispatcher",
+    "description": "Sends a rejection notice to the dispatcher.",
+    "input": {
+     "delivery_id": "string"
+    },
+    "output": {
+     "sent": "boolean"
+    }
+   },
+   {
+    "name": "reject_delivery",
+    "description": "Marks a delivery as rejected and closes its intake record.",
+    "input": {
+     "delivery_id": "string"
+    },
+    "output": {
+     "rejected": "boolean"
+    }
+   },
+   {
+    "name": "read_moisture",
+    "description": "Reads the current moisture level of grain in the intake pit.",
+    "input": {},
+    "output": {
+     "percent": "number"
+    }
+   }
+  ]
+ }
+]
