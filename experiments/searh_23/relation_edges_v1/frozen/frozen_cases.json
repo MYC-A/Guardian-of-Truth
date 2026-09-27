@@ -1,0 +1,1497 @@
+[
+ {
+  "case_id": "climbing_bindA",
+  "domain": "climbing gym",
+  "policy": "Verify the harness inspection tag before renting climbing gear C-401 to members. Register new members at the front desk. Sell chalk and belay devices from the shop counter.",
+  "tools": [
+   {
+    "name": "rent_climbing_gear",
+    "description": "Creates a rental agreement for a climbing gear item, assigns it to the member and marks the item as checked out in the inventory.",
+    "input": {
+     "gear_id": "string",
+     "member_id": "string"
+    },
+    "output": {
+     "rental_id": "string"
+    }
+   },
+   {
+    "name": "verify_harness_tag",
+    "description": "Compares the harness inspection tag against the safety inspection register and returns whether the tag is current. Does not modify records.",
+    "input": {
+     "gear_id": "string"
+    },
+    "output": {
+     "tag_valid": "boolean"
+    }
+   },
+   {
+    "name": "register_member",
+    "description": "Creates a new member profile in the gym system with contact details and membership status.",
+    "input": {
+     "name": "string",
+     "contact": "string"
+    },
+    "output": {
+     "member_id": "string"
+    }
+   },
+   {
+    "name": "sell_shop_item",
+    "description": "Records a retail sale of a shop product and decrements the stock count.",
+    "input": {
+     "product_id": "string",
+     "quantity": "integer"
+    },
+    "output": {
+     "sale_id": "string"
+    }
+   },
+   {
+    "name": "read_membership_status",
+    "description": "Returns the current membership status and outstanding fees for a member without changing anything.",
+    "input": {
+     "member_id": "string"
+    },
+    "output": {
+     "status": "string",
+     "fees": "number"
+    }
+   },
+   {
+    "name": "send_membership_pack",
+    "description": "Emails the welcome pack and gym rules to a new member.",
+    "input": {
+     "member_id": "string",
+     "email": "string"
+    },
+    "output": {
+     "sent": "boolean"
+    }
+   }
+  ]
+ },
+ {
+  "case_id": "climbing_bindB",
+  "domain": "climbing gym",
+  "policy": "Register new members before renting climbing gear C-401 to them. Verify the harness inspection tag at the inspection bench. Sell chalk and belay devices from the shop counter.",
+  "tools": [
+   {
+    "name": "rent_climbing_gear",
+    "description": "Creates a rental agreement for a climbing gear item, assigns it to the member and marks the item as checked out in the inventory.",
+    "input": {
+     "gear_id": "string",
+     "member_id": "string"
+    },
+    "output": {
+     "rental_id": "string"
+    }
+   },
+   {
+    "name": "verify_harness_tag",
+    "description": "Compares the harness inspection tag against the safety inspection register and returns whether the tag is current. Does not modify records.",
+    "input": {
+     "gear_id": "string"
+    },
+    "output": {
+     "tag_valid": "boolean"
+    }
+   },
+   {
+    "name": "register_member",
+    "description": "Creates a new member profile in the gym system with contact details and membership status.",
+    "input": {
+     "name": "string",
+     "contact": "string"
+    },
+    "output": {
+     "member_id": "string"
+    }
+   },
+   {
+    "name": "sell_shop_item",
+    "description": "Records a retail sale of a shop product and decrements the stock count.",
+    "input": {
+     "product_id": "string",
+     "quantity": "integer"
+    },
+    "output": {
+     "sale_id": "string"
+    }
+   },
+   {
+    "name": "read_membership_status",
+    "description": "Returns the current membership status and outstanding fees for a member without changing anything.",
+    "input": {
+     "member_id": "string"
+    },
+    "output": {
+     "status": "string",
+     "fees": "number"
+    }
+   },
+   {
+    "name": "send_membership_pack",
+    "description": "Emails the welcome pack and gym rules to a new member.",
+    "input": {
+     "member_id": "string",
+     "email": "string"
+    },
+    "output": {
+     "sent": "boolean"
+    }
+   }
+  ]
+ },
+ {
+  "case_id": "dairy_directionA",
+  "domain": "cheese dairy",
+  "policy": "Pasteurize the milk in batch heater H-9 before filling the cheese molds. Age the wheels in cellar room S-2 for six weeks. Record the cellar temperature every morning.",
+  "tools": [
+   {
+    "name": "pasteurize_milk",
+    "description": "Heats the milk batch in the pasteurisation heater to the required temperature profile and logs the completed pasteurisation cycle.",
+    "input": {
+     "batch_id": "string"
+    },
+    "output": {
+     "cycle_id": "string"
+    }
+   },
+   {
+    "name": "fill_cheese_molds",
+    "description": "Fills the prepared cheese molds with curd from the vat and registers the filled mold set.",
+    "input": {
+     "mold_set_id": "string",
+     "batch_id": "string"
+    },
+    "output": {
+     "fill_id": "string"
+    }
+   },
+   {
+    "name": "age_wheels",
+    "description": "Moves the cheese wheels into the cellar rack and starts the six-week aging timer for each wheel.",
+    "input": {
+     "wheel_ids": "array",
+     "rack_id": "string"
+    },
+    "output": {
+     "aging_ids": "array"
+    }
+   },
+   {
+    "name": "log_cellar_temperature",
+    "description": "Reads the cellar temperature probe and appends a timestamped reading to the monitoring record. Does not change any business state.",
+    "input": {
+     "probe_id": "string"
+    },
+    "output": {
+     "reading": "number"
+    }
+   },
+   {
+    "name": "read_batch_status",
+    "description": "Returns the current processing stage of a milk batch without modifying it.",
+    "input": {
+     "batch_id": "string"
+    },
+    "output": {
+     "stage": "string"
+    }
+   },
+   {
+    "name": "notify_coldroom",
+    "description": "Sends an alert message to the dairy technician about cellar conditions.",
+    "input": {
+     "message": "string"
+    },
+    "output": {
+     "sent": "boolean"
+    }
+   }
+  ]
+ },
+ {
+  "case_id": "dairy_directionB",
+  "domain": "cheese dairy",
+  "policy": "Fill the cheese molds before pasteurizing the milk in batch heater H-9. Age the wheels in cellar room S-2 for six weeks. Record the cellar temperature every morning.",
+  "tools": [
+   {
+    "name": "pasteurize_milk",
+    "description": "Heats the milk batch in the pasteurisation heater to the required temperature profile and logs the completed pasteurisation cycle.",
+    "input": {
+     "batch_id": "string"
+    },
+    "output": {
+     "cycle_id": "string"
+    }
+   },
+   {
+    "name": "fill_cheese_molds",
+    "description": "Fills the prepared cheese molds with curd from the vat and registers the filled mold set.",
+    "input": {
+     "mold_set_id": "string",
+     "batch_id": "string"
+    },
+    "output": {
+     "fill_id": "string"
+    }
+   },
+   {
+    "name": "age_wheels",
+    "description": "Moves the cheese wheels into the cellar rack and starts the six-week aging timer for each wheel.",
+    "input": {
+     "wheel_ids": "array",
+     "rack_id": "string"
+    },
+    "output": {
+     "aging_ids": "array"
+    }
+   },
+   {
+    "name": "log_cellar_temperature",
+    "description": "Reads the cellar temperature probe and appends a timestamped reading to the monitoring record. Does not change any business state.",
+    "input": {
+     "probe_id": "string"
+    },
+    "output": {
+     "reading": "number"
+    }
+   },
+   {
+    "name": "read_batch_status",
+    "description": "Returns the current processing stage of a milk batch without modifying it.",
+    "input": {
+     "batch_id": "string"
+    },
+    "output": {
+     "stage": "string"
+    }
+   },
+   {
+    "name": "notify_coldroom",
+    "description": "Sends an alert message to the dairy technician about cellar conditions.",
+    "input": {
+     "message": "string"
+    },
+    "output": {
+     "sent": "boolean"
+    }
+   }
+  ]
+ },
+ {
+  "case_id": "ferry_and",
+  "domain": "ferry terminal",
+  "policy": "A valid ferry ticket and a government photo ID are both required before boarding the night ferry F-77. Crew members wave vehicles onto the car deck. Announce the departure over the pier speaker.",
+  "tools": [
+   {
+    "name": "board_ferry",
+    "description": "Marks the passenger as boarded on the night ferry manifest and allocates a cabin berth.",
+    "input": {
+     "passenger_id": "string",
+     "ferry_id": "string"
+    },
+    "output": {
+     "boarding_id": "string",
+     "berth": "string"
+    }
+   },
+   {
+    "name": "read_ticket",
+    "description": "Looks up the ferry ticket record and returns whether it is valid for the scheduled sailing. Does not modify the ticket.",
+    "input": {
+     "ticket_ref": "string"
+    },
+    "output": {
+     "valid": "boolean"
+    }
+   },
+   {
+    "name": "read_id_document",
+    "description": "Checks the government photo ID against the passenger record and returns whether the identity matches. Does not store the document.",
+    "input": {
+     "id_number": "string"
+    },
+    "output": {
+     "match": "boolean"
+    }
+   },
+   {
+    "name": "direct_car_deck",
+    "description": "Registers a vehicle onto the car deck list under crew direction and assigns a deck slot.",
+    "input": {
+     "vehicle_id": "string"
+    },
+    "output": {
+     "slot": "string"
+    }
+   },
+   {
+    "name": "announce_departure",
+    "description": "Broadcasts the departure announcement over the pier speaker system.",
+    "input": {
+     "ferry_id": "string",
+     "message": "string"
+    },
+    "output": {
+     "played": "boolean"
+    }
+   },
+   {
+    "name": "read_sailing_schedule",
+    "description": "Returns the scheduled departure and arrival times for a sailing without changing anything.",
+    "input": {
+     "ferry_id": "string"
+    },
+    "output": {
+     "times": "array"
+    }
+   }
+  ]
+ },
+ {
+  "case_id": "ferry_or",
+  "domain": "ferry terminal",
+  "policy": "A valid ferry ticket or a monthly commuter pass permits boarding the night ferry F-77. Crew members wave vehicles onto the car deck. Announce the departure over the pier speaker.",
+  "tools": [
+   {
+    "name": "board_ferry",
+    "description": "Marks the passenger as boarded on the night ferry manifest and allocates a cabin berth.",
+    "input": {
+     "passenger_id": "string",
+     "ferry_id": "string"
+    },
+    "output": {
+     "boarding_id": "string",
+     "berth": "string"
+    }
+   },
+   {
+    "name": "read_ticket",
+    "description": "Looks up the ferry ticket record and returns whether it is valid for the scheduled sailing. Does not modify the ticket.",
+    "input": {
+     "ticket_ref": "string"
+    },
+    "output": {
+     "valid": "boolean"
+    }
+   },
+   {
+    "name": "read_commuter_pass",
+    "description": "Reads the monthly commuter pass record and returns whether it is active for the current month. Does not modify the pass.",
+    "input": {
+     "pass_ref": "string"
+    },
+    "output": {
+     "active": "boolean"
+    }
+   },
+   {
+    "name": "direct_car_deck",
+    "description": "Registers a vehicle onto the car deck list under crew direction and assigns a deck slot.",
+    "input": {
+     "vehicle_id": "string"
+    },
+    "output": {
+     "slot": "string"
+    }
+   },
+   {
+    "name": "announce_departure",
+    "description": "Broadcasts the departure announcement over the pier speaker system.",
+    "input": {
+     "ferry_id": "string",
+     "message": "string"
+    },
+    "output": {
+     "played": "boolean"
+    }
+   },
+   {
+    "name": "read_sailing_schedule",
+    "description": "Returns the scheduled departure and arrival times for a sailing without changing anything.",
+    "input": {
+     "ferry_id": "string"
+    },
+    "output": {
+     "times": "array"
+    }
+   }
+  ]
+ },
+ {
+  "case_id": "museum_condphrase",
+  "domain": "museum conservation",
+  "policy": "The case humidity reading must be confirmed before unlocking display cabinet M-4. The visitor brochure mentions that the humidity reading is taken twice daily. Dust the cabinet exterior each evening.",
+  "tools": [
+   {
+    "name": "unlock_cabinet",
+    "description": "Releases the electronic lock of the display cabinet and records the unlock event with the staff badge.",
+    "input": {
+     "cabinet_id": "string",
+     "badge_id": "string"
+    },
+    "output": {
+     "unlock_id": "string"
+    }
+   },
+   {
+    "name": "confirm_humidity",
+    "description": "Reads the humidity sensor inside the display case and returns whether the reading is within the conservation range. Does not modify records.",
+    "input": {
+     "case_id": "string"
+    },
+    "output": {
+     "in_range": "boolean"
+    }
+   },
+   {
+    "name": "log_humidity_reading",
+    "description": "Appends the current case humidity value to the conservation monitoring journal. Does not change any business state.",
+    "input": {
+     "case_id": "string"
+    },
+    "output": {
+     "entry_id": "string"
+    }
+   },
+   {
+    "name": "dust_cabinet",
+    "description": "Records an exterior cleaning of the display cabinet in the housekeeping log.",
+    "input": {
+     "cabinet_id": "string"
+    },
+    "output": {
+     "clean_id": "string"
+    }
+   },
+   {
+    "name": "schedule_tour",
+    "description": "Books a guided tour slot for a visitor group and assigns a docent.",
+    "input": {
+     "group_id": "string",
+     "slot": "string"
+    },
+    "output": {
+     "tour_id": "string"
+    }
+   }
+  ]
+ },
+ {
+  "case_id": "museum_descphrase",
+  "domain": "museum conservation",
+  "policy": "The case humidity reading is taken twice daily by the conservation intern. Unlock display cabinet M-4 only during guided tours. Dust the cabinet exterior each evening.",
+  "tools": [
+   {
+    "name": "unlock_cabinet",
+    "description": "Releases the electronic lock of the display cabinet and records the unlock event with the staff badge.",
+    "input": {
+     "cabinet_id": "string",
+     "badge_id": "string"
+    },
+    "output": {
+     "unlock_id": "string"
+    }
+   },
+   {
+    "name": "confirm_humidity",
+    "description": "Reads the humidity sensor inside the display case and returns whether the reading is within the conservation range. Does not modify records.",
+    "input": {
+     "case_id": "string"
+    },
+    "output": {
+     "in_range": "boolean"
+    }
+   },
+   {
+    "name": "log_humidity_reading",
+    "description": "Appends the current case humidity value to the conservation monitoring journal. Does not change any business state.",
+    "input": {
+     "case_id": "string"
+    },
+    "output": {
+     "entry_id": "string"
+    }
+   },
+   {
+    "name": "dust_cabinet",
+    "description": "Records an exterior cleaning of the display cabinet in the housekeeping log.",
+    "input": {
+     "cabinet_id": "string"
+    },
+    "output": {
+     "clean_id": "string"
+    }
+   },
+   {
+    "name": "schedule_tour",
+    "description": "Books a guided tour slot for a visitor group and assigns a docent.",
+    "input": {
+     "group_id": "string",
+     "slot": "string"
+    },
+    "output": {
+     "tour_id": "string"
+    }
+   }
+  ]
+ },
+ {
+  "case_id": "brewery_clauseA",
+  "domain": "brewery",
+  "policy": "Bottling of ale batch B-44 may begin only after the gravity reading is stable. Cap the bottles on the rotary line. Store the crates in the cold room.",
+  "tools": [
+   {
+    "name": "bottle_ale",
+    "description": "Fills rinsed bottles from the bright tank for the ale batch and records the filled bottle count.",
+    "input": {
+     "batch_id": "string"
+    },
+    "output": {
+     "run_id": "string"
+    }
+   },
+   {
+    "name": "read_gravity",
+    "description": "Reads the current gravity of the conditioning tank and returns the measured value. Does not modify anything.",
+    "input": {
+     "tank_id": "string"
+    },
+    "output": {
+     "gravity": "number"
+    }
+   },
+   {
+    "name": "cap_bottles",
+    "description": "Runs the rotary capper over the filled bottles and logs the capping run.",
+    "input": {
+     "run_id": "string"
+    },
+    "output": {
+     "capped_count": "integer"
+    }
+   },
+   {
+    "name": "store_crates",
+    "description": "Registers the bottle crates into the cold room inventory and assigns rack positions.",
+    "input": {
+     "crate_ids": "array"
+    },
+    "output": {
+     "positions": "array"
+    }
+   },
+   {
+    "name": "read_cellar_humidity",
+    "description": "Returns the cold room humidity value without changing anything.",
+    "input": {
+     "room_id": "string"
+    },
+    "output": {
+     "humidity": "number"
+    }
+   },
+   {
+    "name": "notify_distributor",
+    "description": "Sends the batch readiness notice to the distributor.",
+    "input": {
+     "batch_id": "string"
+    },
+    "output": {
+     "sent": "boolean"
+    }
+   }
+  ]
+ },
+ {
+  "case_id": "brewery_clauseB",
+  "domain": "brewery",
+  "policy": "The gravity reading must be stable. Only then may bottling of ale batch B-44 begin. Cap the bottles on the rotary line. Store the crates in the cold room.",
+  "tools": [
+   {
+    "name": "bottle_ale",
+    "description": "Fills rinsed bottles from the bright tank for the ale batch and records the filled bottle count.",
+    "input": {
+     "batch_id": "string"
+    },
+    "output": {
+     "run_id": "string"
+    }
+   },
+   {
+    "name": "read_gravity",
+    "description": "Reads the current gravity of the conditioning tank and returns the measured value. Does not modify anything.",
+    "input": {
+     "tank_id": "string"
+    },
+    "output": {
+     "gravity": "number"
+    }
+   },
+   {
+    "name": "cap_bottles",
+    "description": "Runs the rotary capper over the filled bottles and logs the capping run.",
+    "input": {
+     "run_id": "string"
+    },
+    "output": {
+     "capped_count": "integer"
+    }
+   },
+   {
+    "name": "store_crates",
+    "description": "Registers the bottle crates into the cold room inventory and assigns rack positions.",
+    "input": {
+     "crate_ids": "array"
+    },
+    "output": {
+     "positions": "array"
+    }
+   },
+   {
+    "name": "read_cellar_humidity",
+    "description": "Returns the cold room humidity value without changing anything.",
+    "input": {
+     "room_id": "string"
+    },
+    "output": {
+     "humidity": "number"
+    }
+   },
+   {
+    "name": "notify_distributor",
+    "description": "Sends the batch readiness notice to the distributor.",
+    "input": {
+     "batch_id": "string"
+    },
+    "output": {
+     "sent": "boolean"
+    }
+   }
+  ]
+ },
+ {
+  "case_id": "aquarium_fanout",
+  "domain": "public aquarium",
+  "policy": "Confirm the salinity in tank T-3 is within range before feeding the rays and before cleaning the display glass. Log the feeding in the husbandry journal.",
+  "tools": [
+   {
+    "name": "check_salinity",
+    "description": "Measures the salinity of the display tank against the husbandry target range and returns whether it is in range. Does not modify the tank.",
+    "input": {
+     "tank_id": "string"
+    },
+    "output": {
+     "in_range": "boolean"
+    }
+   },
+   {
+    "name": "feed_rays",
+    "description": "Records the feeding of the ray group with the food batch used and updates the feeding roster.",
+    "input": {
+     "tank_id": "string",
+     "food_batch": "string"
+    },
+    "output": {
+     "feed_id": "string"
+    }
+   },
+   {
+    "name": "clean_display_glass",
+    "description": "Registers a glass cleaning session for the display tank and marks the cleaning task complete.",
+    "input": {
+     "tank_id": "string"
+    },
+    "output": {
+     "clean_id": "string"
+    }
+   },
+   {
+    "name": "log_feeding",
+    "description": "Appends the completed feeding entry to the husbandry journal without altering other records.",
+    "input": {
+     "feed_id": "string"
+    },
+    "output": {
+     "entry_id": "string"
+    }
+   },
+   {
+    "name": "read_water_chemistry",
+    "description": "Returns the latest water chemistry panel values for a tank without modifications.",
+    "input": {
+     "tank_id": "string"
+    },
+    "output": {
+     "values": "array"
+    }
+   },
+   {
+    "name": "alert_vet",
+    "description": "Sends an animal health alert to the on-call veterinarian.",
+    "input": {
+     "message": "string"
+    },
+    "output": {
+     "sent": "boolean"
+    }
+   }
+  ]
+ },
+ {
+  "case_id": "zoo_transport_shared",
+  "domain": "zoo animal transport",
+  "policy": "Scan the transport crate manifest K-14 before loading the animals and before dispatching the convoy. The shift supervisor signs the convoy release form.",
+  "tools": [
+   {
+    "name": "scan_crate_manifest",
+    "description": "Reads the transport crate manifest and returns whether the crate IDs, species counts and destination match the movement order. Does not modify the manifest.",
+    "input": {
+     "manifest_id": "string"
+    },
+    "output": {
+     "consistent": "boolean"
+    }
+   },
+   {
+    "name": "load_animals",
+    "description": "Registers the animals loaded into the transport crate and updates the movement order status.",
+    "input": {
+     "manifest_id": "string",
+     "animal_ids": "array"
+    },
+    "output": {
+     "load_id": "string"
+    }
+   },
+   {
+    "name": "dispatch_convoy",
+    "description": "Releases the convoy for departure and records the departure time in the transport log.",
+    "input": {
+     "convoy_id": "string"
+    },
+    "output": {
+     "departure_id": "string"
+    }
+   },
+   {
+    "name": "sign_release_form",
+    "description": "Stores the shift supervisor's signature on the convoy release form.",
+    "input": {
+     "form_id": "string",
+     "supervisor_id": "string"
+    },
+    "output": {
+     "signed": "boolean"
+    }
+   },
+   {
+    "name": "read_convoy_status",
+    "description": "Returns the current position and status of a convoy without changes.",
+    "input": {
+     "convoy_id": "string"
+    },
+    "output": {
+     "status": "string"
+    }
+   },
+   {
+    "name": "notify_zoo_office",
+    "description": "Sends a convoy status message to the zoo transport office.",
+    "input": {
+     "message": "string"
+    },
+    "output": {
+     "sent": "boolean"
+    }
+   }
+  ]
+ },
+ {
+  "case_id": "seedvault_nested",
+  "domain": "seed vault",
+  "policy": "Access seed vault V-2 only after the curator has approved the request and the integrity seal has been inspected. The integrity inspection itself requires that the chamber has been pre-chilled.",
+  "tools": [
+   {
+    "name": "access_seed_vault",
+    "description": "Unlocks the seed vault chamber for an approved request and logs the entry session.",
+    "input": {
+     "request_id": "string",
+     "vault_id": "string"
+    },
+    "output": {
+     "session_id": "string"
+    }
+   },
+   {
+    "name": "approve_request",
+    "description": "Records the curator's approval of a seed vault access request.",
+    "input": {
+     "request_id": "string",
+     "curator_id": "string"
+    },
+    "output": {
+     "approval_id": "string"
+    }
+   },
+   {
+    "name": "inspect_integrity_seal",
+    "description": "Examines the chamber integrity seal and returns whether it is intact. Does not modify the seal.",
+    "input": {
+     "vault_id": "string"
+    },
+    "output": {
+     "intact": "boolean"
+    }
+   },
+   {
+    "name": "prechill_chamber",
+    "description": "Starts the pre-chilling cycle of the vault chamber to the storage temperature.",
+    "input": {
+     "chamber_id": "string"
+    },
+    "output": {
+     "cycle_id": "string"
+    }
+   },
+   {
+    "name": "read_request_status",
+    "description": "Returns whether an access request is pending, approved or rejected.",
+    "input": {
+     "request_id": "string"
+    },
+    "output": {
+     "status": "string"
+    }
+   },
+   {
+    "name": "send_access_report",
+    "description": "Emails the vault access report to the registrar.",
+    "input": {
+     "session_id": "string"
+    },
+    "output": {
+     "sent": "boolean"
+    }
+   }
+  ]
+ },
+ {
+  "case_id": "glassblowing_mixed",
+  "domain": "glassblowing studio",
+  "policy": "Check the kiln temperature before annealing the glass. Once annealed, pack the finished pieces. Etch the studio mark on each piece.",
+  "tools": [
+   {
+    "name": "check_kiln_temperature",
+    "description": "Reads the annealing kiln temperature profile and returns whether it matches the schedule. Does not modify the kiln.",
+    "input": {
+     "kiln_id": "string"
+    },
+    "output": {
+     "matches": "boolean"
+    }
+   },
+   {
+    "name": "anneal_glass",
+    "description": "Runs the annealing cycle for the glass batch and records the finished batch.",
+    "input": {
+     "batch_id": "string"
+    },
+    "output": {
+     "cycle_id": "string"
+    }
+   },
+   {
+    "name": "pack_pieces",
+    "description": "Wraps the finished pieces and registers the packed crate for pickup.",
+    "input": {
+     "piece_ids": "array"
+    },
+    "output": {
+     "crate_id": "string"
+    }
+   },
+   {
+    "name": "etch_mark",
+    "description": "Etches the studio identification mark onto each piece and logs the marking run.",
+    "input": {
+     "piece_ids": "array"
+    },
+    "output": {
+     "run_id": "string"
+    }
+   },
+   {
+    "name": "read_shop_orders",
+    "description": "Returns today's shop orders without changes.",
+    "input": {
+     "date": "string"
+    },
+    "output": {
+     "orders": "array"
+    }
+   },
+   {
+    "name": "notify_pickup",
+    "description": "Sends the pickup readiness message to the courier.",
+    "input": {
+     "crate_id": "string"
+    },
+    "output": {
+     "sent": "boolean"
+    }
+   }
+  ]
+ },
+ {
+  "case_id": "diving_exception",
+  "domain": "diving center",
+  "policy": "Do not refill the oxygen cylinders C-9 unless the hydrostatic test certificate is on file. Rinse the cylinders with fresh water after each refill. Log every refill in the dive register.",
+  "tools": [
+   {
+    "name": "refill_cylinder",
+    "description": "Fills an oxygen cylinder from the bank supply and records the fill pressure and date.",
+    "input": {
+     "cylinder_id": "string"
+    },
+    "output": {
+     "fill_id": "string"
+    }
+   },
+   {
+    "name": "read_certificate_status",
+    "description": "Returns whether the hydrostatic test certificate for a cylinder is on file and current. Does not modify records.",
+    "input": {
+     "cylinder_id": "string"
+    },
+    "output": {
+     "on_file": "boolean",
+     "current": "boolean"
+    }
+   },
+   {
+    "name": "rinse_cylinder",
+    "description": "Registers the fresh water rinse of a cylinder after its fill.",
+    "input": {
+     "cylinder_id": "string"
+    },
+    "output": {
+     "rinse_id": "string"
+    }
+   },
+   {
+    "name": "log_refill",
+    "description": "Appends the refill entry to the dive register. Does not change other records.",
+    "input": {
+     "fill_id": "string"
+    },
+    "output": {
+     "entry_id": "string"
+    }
+   },
+   {
+    "name": "order_certificate",
+    "description": "Sends a request to the test house for a new hydrostatic certificate.",
+    "input": {
+     "cylinder_id": "string"
+    },
+    "output": {
+     "sent": "boolean"
+    }
+   },
+   {
+    "name": "inspect_valve",
+    "description": "Checks the cylinder valve threads and returns whether they pass. Does not modify the valve.",
+    "input": {
+     "cylinder_id": "string"
+    },
+    "output": {
+     "pass": "boolean"
+    }
+   }
+  ]
+ },
+ {
+  "case_id": "tram_evenif",
+  "domain": "tram depot",
+  "policy": "Even if the depot alarm panel shows green, inspect the brake system before releasing tram T-31 from the depot. Record the release time in the shift log.",
+  "tools": [
+   {
+    "name": "release_tram",
+    "description": "Authorises the tram to leave the depot and records the outbound movement.",
+    "input": {
+     "tram_id": "string"
+    },
+    "output": {
+     "release_id": "string"
+    }
+   },
+   {
+    "name": "read_alarm_panel",
+    "description": "Reads the depot alarm panel status and returns the current signal colour. Does not modify the panel.",
+    "input": {
+     "panel_id": "string"
+    },
+    "output": {
+     "colour": "string"
+    }
+   },
+   {
+    "name": "inspect_brakes",
+    "description": "Performs the brake system inspection routine and returns whether the brakes pass. Does not modify the tram.",
+    "input": {
+     "tram_id": "string"
+    },
+    "output": {
+     "pass": "boolean"
+    }
+   },
+   {
+    "name": "log_release",
+    "description": "Appends the release time entry to the shift log. Does not change other records.",
+    "input": {
+     "release_id": "string"
+    },
+    "output": {
+     "entry_id": "string"
+    }
+   },
+   {
+    "name": "charge_tram_battery",
+    "description": "Connects the tram to the depot charger and records the charging session.",
+    "input": {
+     "tram_id": "string"
+    },
+    "output": {
+     "session_id": "string"
+    }
+   },
+   {
+    "name": "radio_depot",
+    "description": "Radios the depot controller with a voice message.",
+    "input": {
+     "message": "string"
+    },
+    "output": {
+     "sent": "boolean"
+    }
+   }
+  ]
+ },
+ {
+  "case_id": "orchard_response",
+  "domain": "orchard press house",
+  "policy": "Press the apples only after the fruit has been washed. When pressing is complete, notify the cooperative coordinator. Bottle the juice in returnable glass on line G-8.",
+  "tools": [
+   {
+    "name": "press_apples",
+    "description": "Runs the apple press for the day's fruit intake and records the extracted juice volume.",
+    "input": {
+     "batch_id": "string"
+    },
+    "output": {
+     "run_id": "string"
+    }
+   },
+   {
+    "name": "wash_fruit",
+    "description": "Washes the incoming fruit lot in the washing line and marks the lot as washed.",
+    "input": {
+     "lot_id": "string"
+    },
+    "output": {
+     "wash_id": "string"
+    }
+   },
+   {
+    "name": "notify_coordinator",
+    "description": "Sends the pressing completion notice to the cooperative coordinator.",
+    "input": {
+     "run_id": "string"
+    },
+    "output": {
+     "sent": "boolean"
+    }
+   },
+   {
+    "name": "bottle_juice",
+    "description": "Fills returnable glass bottles from the juice tank and registers the bottled batch.",
+    "input": {
+     "tank_id": "string"
+    },
+    "output": {
+     "bottled_id": "string"
+    }
+   },
+   {
+    "name": "read_press_status",
+    "description": "Returns the current status of a press run without changes.",
+    "input": {
+     "run_id": "string"
+    },
+    "output": {
+     "status": "string"
+    }
+   },
+   {
+    "name": "order_glass",
+    "description": "Sends the returnable glass restocking order to the supplier.",
+    "input": {
+     "quantity": "integer"
+    },
+    "output": {
+     "sent": "boolean"
+    }
+   }
+  ]
+ },
+ {
+  "case_id": "candle_unrelated",
+  "domain": "candle workshop",
+  "policy": "Melt the wax in boiler W-3 before pouring the candle molds. The gift shop restocks candle holders on Fridays. Send the weekly production summary to management.",
+  "tools": [
+   {
+    "name": "melt_wax",
+    "description": "Heats the wax batch in the double boiler and records the melt cycle.",
+    "input": {
+     "batch_id": "string"
+    },
+    "output": {
+     "cycle_id": "string"
+    }
+   },
+   {
+    "name": "pour_molds",
+    "description": "Pours the melted wax into the candle molds and registers the poured set.",
+    "input": {
+     "cycle_id": "string",
+     "mold_ids": "array"
+    },
+    "output": {
+     "pour_id": "string"
+    }
+   },
+   {
+    "name": "restock_shop",
+    "description": "Records a restocking of shop shelves with candle holders and updates the stock level.",
+    "input": {
+     "product_id": "string",
+     "quantity": "integer"
+    },
+    "output": {
+     "restock_id": "string"
+    }
+   },
+   {
+    "name": "validate_production_summary",
+    "description": "Sends the weekly production summary email to the production manager and board.",
+    "input": {
+     "summary_ref": "string"
+    },
+    "output": {
+     "sent": "boolean"
+    }
+   },
+   {
+    "name": "read_wax_stock",
+    "description": "Returns the current wax stock level without changes.",
+    "input": {
+     "store_id": "string"
+    },
+    "output": {
+     "level": "number"
+    }
+   },
+   {
+    "name": "schedule_shop_promo",
+    "description": "Books a shop promotion week in the retail calendar.",
+    "input": {
+     "product_id": "string",
+     "week": "string"
+    },
+    "output": {
+     "promo_id": "string"
+    }
+   }
+  ]
+ },
+ {
+  "case_id": "windfarm_distance",
+  "domain": "wind farm",
+  "policy": "The blade inspection must be completed before any maintenance session on turbine T-118. Log the weather forecast each morning. Maintenance sessions are scheduled through the control room portal.",
+  "tools": [
+   {
+    "name": "inspect_blades",
+    "description": "Runs the blade inspection routine for a turbine and returns the damage rating per blade. Does not modify the turbine.",
+    "input": {
+     "turbine_id": "string"
+    },
+    "output": {
+     "ratings": "array"
+    }
+   },
+   {
+    "name": "run_maintenance",
+    "description": "Opens a maintenance session on the turbine, records the work carried out and closes the session.",
+    "input": {
+     "turbine_id": "string",
+     "work_items": "array"
+    },
+    "output": {
+     "session_id": "string"
+    }
+   },
+   {
+    "name": "log_forecast",
+    "description": "Appends the morning weather forecast to the site log. Does not change business state.",
+    "input": {
+     "forecast_ref": "string"
+    },
+    "output": {
+     "entry_id": "string"
+    }
+   },
+   {
+    "name": "schedule_maintenance",
+    "description": "Books a maintenance session slot for a turbine through the control room portal.",
+    "input": {
+     "turbine_id": "string",
+     "slot": "string"
+    },
+    "output": {
+     "booking_id": "string"
+    }
+   },
+   {
+    "name": "inspect_weather_station",
+    "description": "Reads the current weather station feed and returns wind speed and visibility values without modifying anything.",
+    "input": {
+     "station_id": "string"
+    },
+    "output": {
+     "wind_speed": "number",
+     "visibility": "number"
+    }
+   },
+   {
+    "name": "notify_grid_operator",
+    "description": "Sends the outage notice to the grid operator.",
+    "input": {
+     "turbine_id": "string"
+    },
+    "output": {
+     "sent": "boolean"
+    }
+   }
+  ]
+ },
+ {
+  "case_id": "substation_or_mixed",
+  "domain": "electrical substation",
+  "policy": "Either the duty engineer signs the energisation waiver or the site manager approves the switching plan before energising bay B-7. Trip the test current after energisation. Archive the switching order at end of shift.",
+  "tools": [
+   {
+    "name": "energise_bay",
+    "description": "Energises the substation bay and records the new bay state in the switching register.",
+    "input": {
+     "bay_id": "string"
+    },
+    "output": {
+     "state": "string"
+    }
+   },
+   {
+    "name": "sign_waiver",
+    "description": "Stores the duty engineer's signature on the energisation waiver document.",
+    "input": {
+     "waiver_id": "string",
+     "engineer_id": "string"
+    },
+    "output": {
+     "signed": "boolean"
+    }
+   },
+   {
+    "name": "approve_switching_plan",
+    "description": "Records the site manager's approval of the switching plan.",
+    "input": {
+     "plan_id": "string",
+     "manager_id": "string"
+    },
+    "output": {
+     "approval_id": "string"
+    }
+   },
+   {
+    "name": "verify_waiver_signature",
+    "description": "Compares the signature on the energisation waiver against the engineering roster and returns whether it matches. Does not modify the waiver.",
+    "input": {
+     "waiver_id": "string"
+    },
+    "output": {
+     "match": "boolean"
+    }
+   },
+   {
+    "name": "trip_test_current",
+    "description": "Removes the test current injection from the bay and logs the trip.",
+    "input": {
+     "bay_id": "string"
+    },
+    "output": {
+     "trip_id": "string"
+    }
+   },
+   {
+    "name": "archive_switching_order",
+    "description": "Moves the switching order document to the end-of-shift archive.",
+    "input": {
+     "order_id": "string"
+    },
+    "output": {
+     "archived": "boolean"
+    }
+   }
+  ]
+ },
+ {
+  "case_id": "textile_crossing",
+  "domain": "textile mill",
+  "policy": "The dye lot must be approved before weaving on loom L-12. The loom maintenance log must be cleared before weaving and before cutting the finished cloth. Weigh the fabric remnants for recycling.",
+  "tools": [
+   {
+    "name": "weave_cloth",
+    "description": "Runs the loom weaving job for the approved dye lot and registers the produced cloth roll.",
+    "input": {
+     "loom_id": "string",
+     "lot_id": "string"
+    },
+    "output": {
+     "roll_id": "string"
+    }
+   },
+   {
+    "name": "approve_dye_lot",
+    "description": "Records the quality supervisor's approval of the dye lot.",
+    "input": {
+     "lot_id": "string",
+     "supervisor_id": "string"
+    },
+    "output": {
+     "approval_id": "string"
+    }
+   },
+   {
+    "name": "clear_maintenance_log",
+    "description": "Reviews the loom maintenance log for open issues and returns whether the log is clear for production. Does not modify the log.",
+    "input": {
+     "loom_id": "string"
+    },
+    "output": {
+     "clear": "boolean"
+    }
+   },
+   {
+    "name": "cut_cloth",
+    "description": "Cuts the finished cloth roll to the order sizes and records the cutting job.",
+    "input": {
+     "roll_id": "string"
+    },
+    "output": {
+     "job_id": "string"
+    }
+   },
+   {
+    "name": "weigh_remnants",
+    "description": "Weighs the fabric remnants bin and appends the weight to the recycling record. Does not change business state.",
+    "input": {
+     "bin_id": "string"
+    },
+    "output": {
+     "weight": "number"
+    }
+   },
+   {
+    "name": "order_yarn",
+    "description": "Sends the yarn restocking order to the supplier.",
+    "input": {
+     "yarn_ref": "string",
+     "quantity": "integer"
+    },
+    "output": {
+     "sent": "boolean"
+    }
+   }
+  ]
+ },
+ {
+  "case_id": "planetarium_comm",
+  "domain": "planetarium",
+  "policy": "Test the star projector before opening the dome to the public. When the dome closes, archive the session recording. Wipe the console after the last show.",
+  "tools": [
+   {
+    "name": "open_dome",
+    "description": "Unlocks the planetarium dome for a public session and registers the opening.",
+    "input": {
+     "session_id": "string"
+    },
+    "output": {
+     "open_id": "string"
+    }
+   },
+   {
+    "name": "test_projector",
+    "description": "Runs the star projector self-test sequence and returns the pass status per lamp. Does not modify the projector.",
+    "input": {
+     "projector_id": "string"
+    },
+    "output": {
+     "status": "array"
+    }
+   },
+   {
+    "name": "close_dome",
+    "description": "Locks the planetarium dome after the session and registers the closing.",
+    "input": {
+     "session_id": "string"
+    },
+    "output": {
+     "close_id": "string"
+    }
+   },
+   {
+    "name": "archive_recording",
+    "description": "Moves the session recording into the planetarium archive and indexes it.",
+    "input": {
+     "recording_id": "string"
+    },
+    "output": {
+     "archive_id": "string"
+    }
+   },
+   {
+    "name": "wipe_console",
+    "description": "Cleans the console surfaces and logs the cleaning.",
+    "input": {
+     "console_id": "string"
+    },
+    "output": {
+     "log_id": "string"
+    }
+   },
+   {
+    "name": "read_ticket_sales",
+    "description": "Returns the ticket sales totals for a session without changes.",
+    "input": {
+     "session_id": "string"
+    },
+    "output": {
+     "totals": "number"
+    }
+   }
+  ]
+ }
+]

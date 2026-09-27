@@ -1,0 +1,835 @@
+[
+ {
+  "case_id": "greenhouse_vents",
+  "candidate_events": [
+   {
+    "source_span": "The soil moisture report must be checked",
+    "role": "PRECONDITION_CHECK",
+    "governed_tools": [
+     "check_moisture_report"
+    ]
+   },
+   {
+    "source_span": "opening the greenhouse vents",
+    "role": "OPERATION_EFFECT",
+    "governed_tools": [
+     "open_vents"
+    ]
+   },
+   {
+    "source_span": "The member newsletter summarises the soil moisture report",
+    "role": "OTHER",
+    "governed_tools": []
+   },
+   {
+    "source_span": "Mist the seedlings",
+    "role": "OPERATION_EFFECT",
+    "governed_tools": [
+     "mist_seedlings"
+    ]
+   }
+  ],
+  "edges": [
+   {
+    "from_span": "The soil moisture report must be checked",
+    "to_span": "opening the greenhouse vents",
+    "relation": "PRECONDITION",
+    "acceptable": [
+     "PRECONDITION"
+    ]
+   }
+  ],
+  "groups": [],
+  "tool_types": {
+   "check_moisture_report": "verify",
+   "open_vents": "mutate",
+   "mist_seedlings": "mutate",
+   "print_newsletter": "communicate",
+   "read_vent_status": "read"
+  },
+  "pair_universe": [
+   {
+    "from": "The soil moisture report must be checked",
+    "to": "opening the greenhouse vents"
+   },
+   {
+    "from": "The soil moisture report must be checked",
+    "to": "Mist the seedlings"
+   },
+   {
+    "from": "opening the greenhouse vents",
+    "to": "Mist the seedlings"
+   },
+   {
+    "from": "Mist the seedlings",
+    "to": "opening the greenhouse vents"
+   }
+  ]
+ },
+ {
+  "case_id": "gliding_and",
+  "candidate_events": [
+   {
+    "source_span": "A daily airframe inspection",
+    "role": "PRECONDITION_CHECK",
+    "governed_tools": [
+     "inspect_airframe"
+    ]
+   },
+   {
+    "source_span": "a signed weather waiver",
+    "role": "STATE_OBSERVATION",
+    "governed_tools": [
+     "read_waiver"
+    ]
+   },
+   {
+    "source_span": "launching glider G-5",
+    "role": "OPERATION_EFFECT",
+    "governed_tools": [
+     "launch_glider"
+    ]
+   },
+   {
+    "source_span": "the glider has landed",
+    "role": "OPERATION_EFFECT",
+    "governed_tools": [
+     "land_glider"
+    ]
+   },
+   {
+    "source_span": "Recover the winch cable",
+    "role": "OPERATION_EFFECT",
+    "governed_tools": [
+     "recover_winch_cable"
+    ]
+   }
+  ],
+  "edges": [
+   {
+    "from_span": "A daily airframe inspection",
+    "to_span": "launching glider G-5",
+    "relation": "PRECONDITION",
+    "acceptable": [
+     "PRECONDITION"
+    ]
+   },
+   {
+    "from_span": "a signed weather waiver",
+    "to_span": "launching glider G-5",
+    "relation": "STATE_GATE",
+    "acceptable": [
+     "STATE_GATE",
+     "PRECONDITION"
+    ]
+   },
+   {
+    "from_span": "the glider has landed",
+    "to_span": "Recover the winch cable",
+    "relation": "ORDER_BEFORE",
+    "acceptable": [
+     "ORDER_BEFORE",
+     "RESPONSE"
+    ]
+   }
+  ],
+  "groups": [
+   {
+    "type": "AND",
+    "members": [
+     "A daily airframe inspection",
+     "a signed weather waiver"
+    ],
+    "target": "launching glider G-5"
+   }
+  ],
+  "tool_types": {
+   "launch_glider": "mutate",
+   "inspect_airframe": "verify",
+   "read_waiver": "read",
+   "land_glider": "mutate",
+   "recover_winch_cable": "mutate",
+   "notify_strip": "communicate"
+  },
+  "pair_universe": [
+   {
+    "from": "A daily airframe inspection",
+    "to": "launching glider G-5"
+   },
+   {
+    "from": "A daily airframe inspection",
+    "to": "the glider has landed"
+   },
+   {
+    "from": "A daily airframe inspection",
+    "to": "Recover the winch cable"
+   },
+   {
+    "from": "a signed weather waiver",
+    "to": "launching glider G-5"
+   },
+   {
+    "from": "a signed weather waiver",
+    "to": "the glider has landed"
+   },
+   {
+    "from": "a signed weather waiver",
+    "to": "Recover the winch cable"
+   },
+   {
+    "from": "launching glider G-5",
+    "to": "the glider has landed"
+   },
+   {
+    "from": "launching glider G-5",
+    "to": "Recover the winch cable"
+   },
+   {
+    "from": "the glider has landed",
+    "to": "launching glider G-5"
+   },
+   {
+    "from": "the glider has landed",
+    "to": "Recover the winch cable"
+   },
+   {
+    "from": "Recover the winch cable",
+    "to": "launching glider G-5"
+   },
+   {
+    "from": "Recover the winch cable",
+    "to": "the glider has landed"
+   }
+  ]
+ },
+ {
+  "case_id": "heliport_or",
+  "candidate_events": [
+   {
+    "source_span": "A filed flight plan",
+    "role": "STATE_OBSERVATION",
+    "governed_tools": [
+     "read_flight_plan"
+    ]
+   },
+   {
+    "source_span": "a visual departure clearance",
+    "role": "STATE_OBSERVATION",
+    "governed_tools": [
+     "read_departure_clearance"
+    ]
+   },
+   {
+    "source_span": "lifting off from pad H-2",
+    "role": "OPERATION_EFFECT",
+    "governed_tools": [
+     "liftoff_helicopter"
+    ]
+   },
+   {
+    "source_span": "Salute the departure",
+    "role": "COMMUNICATION",
+    "governed_tools": [
+     "signal_departure"
+    ]
+   },
+   {
+    "source_span": "Record the tail number",
+    "role": "OPERATION_EFFECT",
+    "governed_tools": [
+     "log_tail_number"
+    ]
+   }
+  ],
+  "edges": [
+   {
+    "from_span": "A filed flight plan",
+    "to_span": "lifting off from pad H-2",
+    "relation": "STATE_GATE",
+    "acceptable": [
+     "STATE_GATE",
+     "PRECONDITION"
+    ]
+   },
+   {
+    "from_span": "a visual departure clearance",
+    "to_span": "lifting off from pad H-2",
+    "relation": "STATE_GATE",
+    "acceptable": [
+     "STATE_GATE",
+     "PRECONDITION"
+    ]
+   }
+  ],
+  "groups": [
+   {
+    "type": "OR",
+    "members": [
+     "A filed flight plan",
+     "a visual departure clearance"
+    ],
+    "target": "lifting off from pad H-2"
+   }
+  ],
+  "tool_types": {
+   "liftoff_helicopter": "mutate",
+   "read_flight_plan": "read",
+   "read_departure_clearance": "read",
+   "signal_departure": "communicate",
+   "log_tail_number": "read",
+   "deice_pad": "mutate"
+  },
+  "pair_universe": [
+   {
+    "from": "A filed flight plan",
+    "to": "lifting off from pad H-2"
+   },
+   {
+    "from": "A filed flight plan",
+    "to": "Salute the departure"
+   },
+   {
+    "from": "A filed flight plan",
+    "to": "Record the tail number"
+   },
+   {
+    "from": "a visual departure clearance",
+    "to": "lifting off from pad H-2"
+   },
+   {
+    "from": "a visual departure clearance",
+    "to": "Salute the departure"
+   },
+   {
+    "from": "a visual departure clearance",
+    "to": "Record the tail number"
+   },
+   {
+    "from": "lifting off from pad H-2",
+    "to": "Salute the departure"
+   },
+   {
+    "from": "lifting off from pad H-2",
+    "to": "Record the tail number"
+   },
+   {
+    "from": "Salute the departure",
+    "to": "lifting off from pad H-2"
+   },
+   {
+    "from": "Salute the departure",
+    "to": "Record the tail number"
+   },
+   {
+    "from": "Record the tail number",
+    "to": "lifting off from pad H-2"
+   },
+   {
+    "from": "Record the tail number",
+    "to": "Salute the departure"
+   }
+  ]
+ },
+ {
+  "case_id": "tannery_chain",
+  "candidate_events": [
+   {
+    "source_span": "Inspect the hide grading",
+    "role": "PRECONDITION_CHECK",
+    "governed_tools": [
+     "inspect_grading"
+    ]
+   },
+   {
+    "source_span": "shipping the finished leather",
+    "role": "OPERATION_EFFECT",
+    "governed_tools": [
+     "ship_leather"
+    ]
+   },
+   {
+    "source_span": "the moisture meter has been calibrated",
+    "role": "OPERATION_EFFECT",
+    "governed_tools": [
+     "calibrate_meter"
+    ]
+   },
+   {
+    "source_span": "Store the shavings",
+    "role": "OPERATION_EFFECT",
+    "governed_tools": [
+     "store_shavings"
+    ]
+   }
+  ],
+  "edges": [
+   {
+    "from_span": "Inspect the hide grading",
+    "to_span": "shipping the finished leather",
+    "relation": "PRECONDITION",
+    "acceptable": [
+     "PRECONDITION"
+    ]
+   },
+   {
+    "from_span": "the moisture meter has been calibrated",
+    "to_span": "Inspect the hide grading",
+    "relation": "ORDER_BEFORE",
+    "acceptable": [
+     "ORDER_BEFORE",
+     "PRECONDITION"
+    ]
+   }
+  ],
+  "groups": [],
+  "tool_types": {
+   "ship_leather": "mutate",
+   "inspect_grading": "verify",
+   "calibrate_meter": "mutate",
+   "store_shavings": "mutate",
+   "read_shipping_manifest": "read"
+  },
+  "pair_universe": [
+   {
+    "from": "Inspect the hide grading",
+    "to": "shipping the finished leather"
+   },
+   {
+    "from": "Inspect the hide grading",
+    "to": "the moisture meter has been calibrated"
+   },
+   {
+    "from": "Inspect the hide grading",
+    "to": "Store the shavings"
+   },
+   {
+    "from": "shipping the finished leather",
+    "to": "the moisture meter has been calibrated"
+   },
+   {
+    "from": "shipping the finished leather",
+    "to": "Store the shavings"
+   },
+   {
+    "from": "the moisture meter has been calibrated",
+    "to": "shipping the finished leather"
+   },
+   {
+    "from": "the moisture meter has been calibrated",
+    "to": "Store the shavings"
+   },
+   {
+    "from": "Store the shavings",
+    "to": "shipping the finished leather"
+   },
+   {
+    "from": "Store the shavings",
+    "to": "the moisture meter has been calibrated"
+   }
+  ]
+ },
+ {
+  "case_id": "radio_unrelated",
+  "candidate_events": [
+   {
+    "source_span": "Review the transmitter log",
+    "role": "PRECONDITION_CHECK",
+    "governed_tools": [
+     "review_transmitter_log"
+    ]
+   },
+   {
+    "source_span": "broadcasting the evening bulletin",
+    "role": "OPERATION_EFFECT",
+    "governed_tools": [
+     "broadcast_bulletin"
+    ]
+   },
+   {
+    "source_span": "The morning show reads listener letters",
+    "role": "COMMUNICATION",
+    "governed_tools": [
+     "read_letters_onair"
+    ]
+   },
+   {
+    "source_span": "Publish the playlist",
+    "role": "COMMUNICATION",
+    "governed_tools": [
+     "publish_playlist"
+    ]
+   }
+  ],
+  "edges": [
+   {
+    "from_span": "Review the transmitter log",
+    "to_span": "broadcasting the evening bulletin",
+    "relation": "PRECONDITION",
+    "acceptable": [
+     "PRECONDITION"
+    ]
+   }
+  ],
+  "groups": [],
+  "tool_types": {
+   "broadcast_bulletin": "mutate",
+   "review_transmitter_log": "verify",
+   "read_letters_onair": "communicate",
+   "publish_playlist": "communicate",
+   "read_transmitter_power": "read"
+  },
+  "pair_universe": [
+   {
+    "from": "Review the transmitter log",
+    "to": "broadcasting the evening bulletin"
+   },
+   {
+    "from": "Review the transmitter log",
+    "to": "The morning show reads listener letters"
+   },
+   {
+    "from": "Review the transmitter log",
+    "to": "Publish the playlist"
+   },
+   {
+    "from": "broadcasting the evening bulletin",
+    "to": "The morning show reads listener letters"
+   },
+   {
+    "from": "broadcasting the evening bulletin",
+    "to": "Publish the playlist"
+   },
+   {
+    "from": "The morning show reads listener letters",
+    "to": "broadcasting the evening bulletin"
+   },
+   {
+    "from": "The morning show reads listener letters",
+    "to": "Publish the playlist"
+   },
+   {
+    "from": "Publish the playlist",
+    "to": "broadcasting the evening bulletin"
+   },
+   {
+    "from": "Publish the playlist",
+    "to": "The morning show reads listener letters"
+   }
+  ]
+ },
+ {
+  "case_id": "stormdrain_evenif",
+  "candidate_events": [
+   {
+    "source_span": "the pump status indicator is green",
+    "role": "STATE_OBSERVATION",
+    "governed_tools": [
+     "read_pump_status"
+    ]
+   },
+   {
+    "source_span": "open the sluice gate",
+    "role": "OPERATION_EFFECT",
+    "governed_tools": [
+     "open_sluice"
+    ]
+   },
+   {
+    "source_span": "the upstream gauge confirms low flow",
+    "role": "PRECONDITION_CHECK",
+    "governed_tools": [
+     "read_upstream_gauge"
+    ]
+   },
+   {
+    "source_span": "Grease the gate spindle",
+    "role": "OPERATION_EFFECT",
+    "governed_tools": [
+     "grease_spindle"
+    ]
+   }
+  ],
+  "edges": [
+   {
+    "from_span": "the pump status indicator is green",
+    "to_span": "open the sluice gate",
+    "relation": "EVEN_IF",
+    "acceptable": [
+     "EVEN_IF"
+    ]
+   },
+   {
+    "from_span": "the upstream gauge confirms low flow",
+    "to_span": "open the sluice gate",
+    "relation": "PRECONDITION",
+    "acceptable": [
+     "PRECONDITION"
+    ]
+   }
+  ],
+  "groups": [],
+  "tool_types": {
+   "open_sluice": "mutate",
+   "read_pump_status": "read",
+   "read_upstream_gauge": "verify",
+   "grease_spindle": "mutate",
+   "radio_duty_officer": "communicate"
+  },
+  "pair_universe": [
+   {
+    "from": "the pump status indicator is green",
+    "to": "open the sluice gate"
+   },
+   {
+    "from": "the pump status indicator is green",
+    "to": "Grease the gate spindle"
+   },
+   {
+    "from": "open the sluice gate",
+    "to": "Grease the gate spindle"
+   },
+   {
+    "from": "the upstream gauge confirms low flow",
+    "to": "open the sluice gate"
+   },
+   {
+    "from": "the upstream gauge confirms low flow",
+    "to": "Grease the gate spindle"
+   },
+   {
+    "from": "Grease the gate spindle",
+    "to": "open the sluice gate"
+   }
+  ]
+ },
+ {
+  "case_id": "ski_response",
+  "candidate_events": [
+   {
+    "source_span": "Check the avalanche transceiver",
+    "role": "PRECONDITION_CHECK",
+    "governed_tools": [
+     "check_transceiver"
+    ]
+   },
+   {
+    "source_span": "opening the training slope",
+    "role": "OPERATION_EFFECT",
+    "governed_tools": [
+     "open_slope"
+    ]
+   },
+   {
+    "source_span": "the slope closes",
+    "role": "OPERATION_EFFECT",
+    "governed_tools": [
+     "close_slope"
+    ]
+   },
+   {
+    "source_span": "file the patrol report",
+    "role": "COMMUNICATION",
+    "governed_tools": [
+     "file_patrol_report"
+    ]
+   },
+   {
+    "source_span": "Groom the slope",
+    "role": "OPERATION_EFFECT",
+    "governed_tools": [
+     "groom_slope"
+    ]
+   }
+  ],
+  "edges": [
+   {
+    "from_span": "Check the avalanche transceiver",
+    "to_span": "opening the training slope",
+    "relation": "PRECONDITION",
+    "acceptable": [
+     "PRECONDITION"
+    ]
+   },
+   {
+    "from_span": "the slope closes",
+    "to_span": "file the patrol report",
+    "relation": "RESPONSE",
+    "acceptable": [
+     "RESPONSE"
+    ]
+   }
+  ],
+  "groups": [],
+  "tool_types": {
+   "open_slope": "mutate",
+   "check_transceiver": "verify",
+   "close_slope": "mutate",
+   "file_patrol_report": "communicate",
+   "groom_slope": "mutate",
+   "read_snowpack": "read"
+  },
+  "pair_universe": [
+   {
+    "from": "Check the avalanche transceiver",
+    "to": "opening the training slope"
+   },
+   {
+    "from": "Check the avalanche transceiver",
+    "to": "the slope closes"
+   },
+   {
+    "from": "Check the avalanche transceiver",
+    "to": "file the patrol report"
+   },
+   {
+    "from": "Check the avalanche transceiver",
+    "to": "Groom the slope"
+   },
+   {
+    "from": "opening the training slope",
+    "to": "the slope closes"
+   },
+   {
+    "from": "opening the training slope",
+    "to": "file the patrol report"
+   },
+   {
+    "from": "opening the training slope",
+    "to": "Groom the slope"
+   },
+   {
+    "from": "the slope closes",
+    "to": "opening the training slope"
+   },
+   {
+    "from": "the slope closes",
+    "to": "file the patrol report"
+   },
+   {
+    "from": "the slope closes",
+    "to": "Groom the slope"
+   },
+   {
+    "from": "file the patrol report",
+    "to": "opening the training slope"
+   },
+   {
+    "from": "file the patrol report",
+    "to": "the slope closes"
+   },
+   {
+    "from": "file the patrol report",
+    "to": "Groom the slope"
+   },
+   {
+    "from": "Groom the slope",
+    "to": "opening the training slope"
+   },
+   {
+    "from": "Groom the slope",
+    "to": "the slope closes"
+   },
+   {
+    "from": "Groom the slope",
+    "to": "file the patrol report"
+   }
+  ]
+ },
+ {
+  "case_id": "ceramics_and",
+  "candidate_events": [
+   {
+    "source_span": "A kiln badge",
+    "role": "STATE_OBSERVATION",
+    "governed_tools": [
+     "read_badge"
+    ]
+   },
+   {
+    "source_span": "a signed studio waiver",
+    "role": "STATE_OBSERVATION",
+    "governed_tools": [
+     "read_waiver"
+    ]
+   },
+   {
+    "source_span": "firing kiln K-2",
+    "role": "OPERATION_EFFECT",
+    "governed_tools": [
+     "fire_kiln"
+    ]
+   },
+   {
+    "source_span": "Glaze the bisque ware",
+    "role": "OPERATION_EFFECT",
+    "governed_tools": [
+     "glaze_bisque"
+    ]
+   }
+  ],
+  "edges": [
+   {
+    "from_span": "A kiln badge",
+    "to_span": "firing kiln K-2",
+    "relation": "STATE_GATE",
+    "acceptable": [
+     "STATE_GATE",
+     "PRECONDITION"
+    ]
+   },
+   {
+    "from_span": "a signed studio waiver",
+    "to_span": "firing kiln K-2",
+    "relation": "STATE_GATE",
+    "acceptable": [
+     "STATE_GATE",
+     "PRECONDITION"
+    ]
+   }
+  ],
+  "groups": [
+   {
+    "type": "AND",
+    "members": [
+     "A kiln badge",
+     "a signed studio waiver"
+    ],
+    "target": "firing kiln K-2"
+   }
+  ],
+  "tool_types": {
+   "fire_kiln": "mutate",
+   "read_badge": "read",
+   "read_waiver": "read",
+   "glaze_bisque": "mutate",
+   "read_kiln_slots": "read",
+   "order_clay": "communicate"
+  },
+  "pair_universe": [
+   {
+    "from": "A kiln badge",
+    "to": "firing kiln K-2"
+   },
+   {
+    "from": "A kiln badge",
+    "to": "Glaze the bisque ware"
+   },
+   {
+    "from": "a signed studio waiver",
+    "to": "firing kiln K-2"
+   },
+   {
+    "from": "a signed studio waiver",
+    "to": "Glaze the bisque ware"
+   },
+   {
+    "from": "firing kiln K-2",
+    "to": "Glaze the bisque ware"
+   },
+   {
+    "from": "Glaze the bisque ware",
+    "to": "firing kiln K-2"
+   }
+  ]
+ }
+]

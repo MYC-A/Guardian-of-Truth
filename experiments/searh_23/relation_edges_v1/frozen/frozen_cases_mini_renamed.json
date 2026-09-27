@@ -1,0 +1,500 @@
+[
+ {
+  "case_id": "greenhouse_vents",
+  "domain": "greenhouse",
+  "policy": "The soil moisture report must be checked before opening the greenhouse vents. The member newsletter summarises the soil moisture report each month. Mist the seedlings in the morning.",
+  "tools": [
+   {
+    "name": "tool_b24",
+    "description": "Reads the soil moisture report for the greenhouse and returns whether the moisture level is within the growing target. Does not modify records.",
+    "input": {
+     "zone_id": "string"
+    },
+    "output": {
+     "in_range": "boolean"
+    }
+   },
+   {
+    "name": "tool_h92",
+    "description": "Actuates the greenhouse vents to open and records the ventilation event.",
+    "input": {
+     "zone_id": "string"
+    },
+    "output": {
+     "vent_id": "string"
+    }
+   },
+   {
+    "name": "tool_t23",
+    "description": "Runs the misting line over the seedling benches and logs the session.",
+    "input": {
+     "zone_id": "string"
+    },
+    "output": {
+     "mist_id": "string"
+    }
+   },
+   {
+    "name": "tool_b95",
+    "description": "Emails the monthly member newsletter to subscribers.",
+    "input": {
+     "issue_ref": "string"
+    },
+    "output": {
+     "sent": "boolean"
+    }
+   },
+   {
+    "name": "tool_u57",
+    "description": "Returns the current vent positions without changes.",
+    "input": {
+     "zone_id": "string"
+    },
+    "output": {
+     "positions": "array"
+    }
+   }
+  ]
+ },
+ {
+  "case_id": "gliding_and",
+  "domain": "gliding club",
+  "policy": "A daily airframe inspection and a signed weather waiver are both required before launching glider bq-84. Recover the winch cable once the glider has landed.",
+  "tools": [
+   {
+    "name": "tool_i81",
+    "description": "Authorises the glider launch on the winch strip and records the launch.",
+    "input": {
+     "glider_id": "string"
+    },
+    "output": {
+     "launch_id": "string"
+    }
+   },
+   {
+    "name": "tool_j89",
+    "description": "Performs the daily airframe inspection walk-around and returns the defect list. Does not modify the glider.",
+    "input": {
+     "glider_id": "string"
+    },
+    "output": {
+     "defects": "array"
+    }
+   },
+   {
+    "name": "tool_o18",
+    "description": "Returns whether the weather waiver for the day is signed on file. Does not modify the waiver.",
+    "input": {
+     "date": "string"
+    },
+    "output": {
+     "signed": "boolean"
+    }
+   },
+   {
+    "name": "tool_s12",
+    "description": "Registers the glider landing on the strip and records the landing time.",
+    "input": {
+     "glider_id": "string"
+    },
+    "output": {
+     "landing_id": "string"
+    }
+   },
+   {
+    "name": "tool_y94",
+    "description": "Retrieves the winch cable after the flight and logs the recovery.",
+    "input": {
+     "launch_id": "string"
+    },
+    "output": {
+     "recovery_id": "string"
+    }
+   },
+   {
+    "name": "tool_u76",
+    "description": "Radios the strip controller with a launch cancellation message.",
+    "input": {
+     "message": "string"
+    },
+    "output": {
+     "sent": "boolean"
+    }
+   }
+  ]
+ },
+ {
+  "case_id": "heliport_or",
+  "domain": "heliport",
+  "policy": "A filed flight plan or a visual departure clearance permits lifting off from pad rj-36. Salute the departure from the tower. Record the tail number of each departure.",
+  "tools": [
+   {
+    "name": "tool_w18",
+    "description": "Records the helicopter lift-off from the pad and opens the flight movement record.",
+    "input": {
+     "helicopter_id": "string",
+     "pad_id": "string"
+    },
+    "output": {
+     "movement_id": "string"
+    }
+   },
+   {
+    "name": "tool_h44",
+    "description": "Returns whether a flight plan is filed and active for the helicopter. Does not modify the plan.",
+    "input": {
+     "helicopter_id": "string"
+    },
+    "output": {
+     "filed": "boolean"
+    }
+   },
+   {
+    "name": "tool_v63",
+    "description": "Returns whether a visual departure clearance is issued for the pad. Does not modify the clearance.",
+    "input": {
+     "pad_id": "string"
+    },
+    "output": {
+     "issued": "boolean"
+    }
+   },
+   {
+    "name": "tool_y80",
+    "description": "Shows the tower salute signal for the departing helicopter.",
+    "input": {
+     "movement_id": "string"
+    },
+    "output": {
+     "signalled": "boolean"
+    }
+   },
+   {
+    "name": "tool_v96",
+    "description": "Appends the tail number of the departure to the tower log. Does not change other records.",
+    "input": {
+     "movement_id": "string"
+    },
+    "output": {
+     "entry_id": "string"
+    }
+   },
+   {
+    "name": "tool_f11",
+    "description": "Runs the pad de-icing cycle and records the treatment.",
+    "input": {
+     "pad_id": "string"
+    },
+    "output": {
+     "treatment_id": "string"
+    }
+   }
+  ]
+ },
+ {
+  "case_id": "tannery_chain",
+  "domain": "tannery",
+  "policy": "Inspect the hide grading before shipping the finished leather. The grading itself requires that the moisture meter has been calibrated. Store the shavings in the drying room.",
+  "tools": [
+   {
+    "name": "tool_p24",
+    "description": "Creates the shipment for the finished leather rolls and books the carrier pickup.",
+    "input": {
+     "roll_ids": "array"
+    },
+    "output": {
+     "shipment_id": "string"
+    }
+   },
+   {
+    "name": "tool_h43",
+    "description": "Examines the hide grading entries for the shipment and returns whether they are complete and consistent. Does not modify the grading.",
+    "input": {
+     "shipment_id": "string"
+    },
+    "output": {
+     "consistent": "boolean"
+    }
+   },
+   {
+    "name": "tool_w43",
+    "description": "Runs the calibration routine on the moisture meter and stores the calibration certificate.",
+    "input": {
+     "meter_id": "string"
+    },
+    "output": {
+     "certificate_id": "string"
+    }
+   },
+   {
+    "name": "tool_o77",
+    "description": "Registers the leather shavings bags in the drying room and assigns rack slots.",
+    "input": {
+     "bag_ids": "array"
+    },
+    "output": {
+     "slots": "array"
+    }
+   },
+   {
+    "name": "tool_j56",
+    "description": "Returns the current shipping manifest lines without changes.",
+    "input": {
+     "shipment_id": "string"
+    },
+    "output": {
+     "lines": "array"
+    }
+   }
+  ]
+ },
+ {
+  "case_id": "radio_unrelated",
+  "domain": "community radio station",
+  "policy": "Review the transmitter log before broadcasting the evening bulletin. The morning show reads listener letters on air. Publish the playlist to the station website.",
+  "tools": [
+   {
+    "name": "tool_r34",
+    "description": "Starts the evening bulletin broadcast and records the transmission slot.",
+    "input": {
+     "bulletin_id": "string"
+    },
+    "output": {
+     "slot_id": "string"
+    }
+   },
+   {
+    "name": "tool_k48",
+    "description": "Checks the transmitter log for faults since the last bulletin and returns whether the log is clean. Does not modify the log.",
+    "input": {
+     "period": "string"
+    },
+    "output": {
+     "clean": "boolean"
+    }
+   },
+   {
+    "name": "tool_o92",
+    "description": "Reads listener letters on air during the morning show.",
+    "input": {
+     "show_id": "string"
+    },
+    "output": {
+     "aired": "boolean"
+    }
+   },
+   {
+    "name": "tool_h62",
+    "description": "Publishes the playlist page to the station website.",
+    "input": {
+     "playlist_id": "string"
+    },
+    "output": {
+     "published": "boolean"
+    }
+   },
+   {
+    "name": "tool_e69",
+    "description": "Returns the current transmitter power output without changes.",
+    "input": {
+     "transmitter_id": "string"
+    },
+    "output": {
+     "watts": "number"
+    }
+   }
+  ]
+ },
+ {
+  "case_id": "stormdrain_evenif",
+  "domain": "storm drainage",
+  "policy": "Even if the pump status indicator is green, open the sluice gate only after the upstream gauge confirms low flow. Grease the gate spindle monthly.",
+  "tools": [
+   {
+    "name": "tool_i94",
+    "description": "Raises the sluice gate and records the opening in the drainage control log.",
+    "input": {
+     "gate_id": "string"
+    },
+    "output": {
+     "opening_id": "string"
+    }
+   },
+   {
+    "name": "tool_m65",
+    "description": "Reads the pump status indicator and returns the current colour. Does not modify the pump.",
+    "input": {
+     "pump_id": "string"
+    },
+    "output": {
+     "colour": "string"
+    }
+   },
+   {
+    "name": "tool_m80",
+    "description": "Reads the upstream water level gauge and returns whether the flow is below the low-flow threshold. Does not modify records.",
+    "input": {
+     "gauge_id": "string"
+    },
+    "output": {
+     "low_flow": "boolean"
+    }
+   },
+   {
+    "name": "tool_a72",
+    "description": "Greases the sluice gate spindle and logs the maintenance.",
+    "input": {
+     "gate_id": "string"
+    },
+    "output": {
+     "maintenance_id": "string"
+    }
+   },
+   {
+    "name": "tool_w73",
+    "description": "Radios the duty drainage officer with a gate status message.",
+    "input": {
+     "message": "string"
+    },
+    "output": {
+     "sent": "boolean"
+    }
+   }
+  ]
+ },
+ {
+  "case_id": "ski_response",
+  "domain": "ski resort",
+  "policy": "Check the avalanche transceiver before opening the training slope. When the slope closes, file the patrol report with the mountain office. Groom the slope at night.",
+  "tools": [
+   {
+    "name": "tool_y98",
+    "description": "Marks the training slope as open for the day and records the opening.",
+    "input": {
+     "slope_id": "string"
+    },
+    "output": {
+     "opening_id": "string"
+    }
+   },
+   {
+    "name": "tool_p74",
+    "description": "Runs the avalanche transceiver check for the patrol group and returns whether all units function. Does not modify the transceivers.",
+    "input": {
+     "group_id": "string"
+    },
+    "output": {
+     "all_function": "boolean"
+    }
+   },
+   {
+    "name": "tool_o89",
+    "description": "Marks the slope as closed at the end of the day and records the closing.",
+    "input": {
+     "slope_id": "string"
+    },
+    "output": {
+     "closing_id": "string"
+    }
+   },
+   {
+    "name": "tool_s55",
+    "description": "Submits the patrol report to the mountain office.",
+    "input": {
+     "report_id": "string"
+    },
+    "output": {
+     "submitted": "boolean"
+    }
+   },
+   {
+    "name": "tool_j93",
+    "description": "Records the night grooming run on the slope.",
+    "input": {
+     "slope_id": "string"
+    },
+    "output": {
+     "groom_id": "string"
+    }
+   },
+   {
+    "name": "tool_r39",
+    "description": "Returns the latest snowpack analysis for the slope without changes.",
+    "input": {
+     "slope_id": "string"
+    },
+    "output": {
+     "analysis": "string"
+    }
+   }
+  ]
+ },
+ {
+  "case_id": "ceramics_and",
+  "domain": "ceramics studio",
+  "policy": "A kiln badge and a signed studio waiver are required before firing kiln fx-80. Glaze the bisque ware in the spray booth.",
+  "tools": [
+   {
+    "name": "tool_s10",
+    "description": "Starts the firing program on the kiln and records the firing batch.",
+    "input": {
+     "kiln_id": "string",
+     "program": "string"
+    },
+    "output": {
+     "batch_id": "string"
+    }
+   },
+   {
+    "name": "tool_r85",
+    "description": "Returns whether the member holds a valid kiln badge. Does not modify the badge record.",
+    "input": {
+     "member_id": "string"
+    },
+    "output": {
+     "valid": "boolean"
+    }
+   },
+   {
+    "name": "tool_o18",
+    "description": "Returns whether the signed studio waiver for the member is on file. Does not modify the waiver.",
+    "input": {
+     "member_id": "string"
+    },
+    "output": {
+     "on_file": "boolean"
+    }
+   },
+   {
+    "name": "tool_n45",
+    "description": "Registers the glazing of the bisque ware in the spray booth.",
+    "input": {
+     "ware_ids": "array"
+    },
+    "output": {
+     "glaze_id": "string"
+    }
+   },
+   {
+    "name": "tool_y77",
+    "description": "Returns the free firing slots for a kiln without changes.",
+    "input": {
+     "kiln_id": "string"
+    },
+    "output": {
+     "slots": "array"
+    }
+   },
+   {
+    "name": "tool_k15",
+    "description": "Sends the clay restocking order to the supplier.",
+    "input": {
+     "quantity": "integer"
+    },
+    "output": {
+     "sent": "boolean"
+    }
+   }
+  ]
+ }
+]
