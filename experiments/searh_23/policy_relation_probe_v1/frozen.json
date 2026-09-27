@@ -1,0 +1,153 @@
+{
+  "systems": {
+    "relation": "Read ONE exact original policy fragment with ONE already located\naction phrase. Classify ONLY the relation of the fragment to THAT action.\nReturn one JSON object with exactly one field: {\"relation\":\"STATE_GATE|CHECK_BEFORE|BUSINESS_ORDER|FORBID_IF|FORBID_FACET|PERMIT_FACET|REQUIRE_RESPONSE|DESCRIPTIVE\"}.\nSTATE_GATE: action is allowed/required only if a fact or approval holds.\nCHECK_BEFORE: agent is explicitly told to perform a check before the action.\nBUSINESS_ORDER: two distinct business operations must be executed in order.\nFORBID_IF: action is forbidden under a stated condition.\nFORBID_FACET: a specific facet of the action is forbidden outright.\nPERMIT_FACET: a specific facet is explicitly allowed.\nREQUIRE_RESPONSE: agent must ask, say, explain or remind something.\nDESCRIPTIVE: states what a tool does/does not do without a command.\nOnly label the selected action phrase; do not create contrapositive rules or\nclassify an adjacent action. A check before a later action is CHECK_BEFORE,\nnot BUSINESS_ORDER. A statement that a tool will not check is DESCRIPTIVE,\nnot a prohibition on that tool. No trace verdict.\n"
+  },
+  "tasks": [
+    {
+      "id": "cancel_status",
+      "source_id": "retail_cancel",
+      "query": {
+        "fragment": "An order can only be cancelled if its status is 'pending'",
+        "action_quote": "cancelled"
+      },
+      "expected_relation": "STATE_GATE"
+    },
+    {
+      "id": "cancel_check",
+      "source_id": "retail_cancel",
+      "query": {
+        "fragment": "you should check its status before taking the action",
+        "action_quote": "taking the action"
+      },
+      "expected_relation": "CHECK_BEFORE"
+    },
+    {
+      "id": "modify_status",
+      "source_id": "retail_modify",
+      "query": {
+        "fragment": "An order can only be modified if its status is 'pending'",
+        "action_quote": "modified"
+      },
+      "expected_relation": "STATE_GATE"
+    },
+    {
+      "id": "exchange_status",
+      "source_id": "retail_exchange",
+      "query": {
+        "fragment": "An order can only be exchanged if its status is 'delivered'",
+        "action_quote": "exchanged"
+      },
+      "expected_relation": "STATE_GATE"
+    },
+    {
+      "id": "exchange_reminder",
+      "source_id": "retail_exchange",
+      "query": {
+        "fragment": "remember to remind the customer to confirm they have provided all items to be exchanged",
+        "action_quote": "remind the customer"
+      },
+      "expected_relation": "REQUIRE_RESPONSE"
+    },
+    {
+      "id": "bags_add",
+      "source_id": "airline_baggage",
+      "query": {
+        "fragment": "The user can add but not remove checked bags",
+        "action_quote": "add"
+      },
+      "expected_relation": "PERMIT_FACET"
+    },
+    {
+      "id": "bags_remove",
+      "source_id": "airline_baggage",
+      "query": {
+        "fragment": "The user can add but not remove checked bags",
+        "action_quote": "remove checked bags"
+      },
+      "expected_relation": "FORBID_FACET"
+    },
+    {
+      "id": "passenger_modify",
+      "source_id": "airline_passenger_count",
+      "query": {
+        "fragment": "The user can modify passengers but cannot modify the number of passengers",
+        "action_quote": "modify passengers"
+      },
+      "expected_relation": "PERMIT_FACET"
+    },
+    {
+      "id": "passenger_count",
+      "source_id": "airline_passenger_count",
+      "query": {
+        "fragment": "The user can modify passengers but cannot modify the number of passengers",
+        "action_quote": "modify the number of passengers"
+      },
+      "expected_relation": "FORBID_FACET"
+    },
+    {
+      "id": "resume_expired",
+      "source_id": "telecom_resume",
+      "query": {
+        "fragment": "You are not allowed to lift the suspension if the line's contract end date is in the past",
+        "action_quote": "lift the suspension"
+      },
+      "expected_relation": "FORBID_IF"
+    },
+    {
+      "id": "payment_tool_fact",
+      "source_id": "telecom_payment_request",
+      "query": {
+        "fragment": "The send payement request tool will not check if the bill is overdue",
+        "action_quote": "will not check if the bill is overdue"
+      },
+      "expected_relation": "DESCRIPTIVE"
+    },
+    {
+      "id": "payment_check",
+      "source_id": "telecom_payment_request",
+      "query": {
+        "fragment": "You should always check that the bill is overdue before sending a payment request",
+        "action_quote": "sending a payment request"
+      },
+      "expected_relation": "CHECK_BEFORE"
+    },
+    {
+      "id": "cancel_refund_order",
+      "source_id": "hotel_cancellation_order",
+      "query": {
+        "fragment": "process cancellation FIRST and the refund SECOND",
+        "action_quote": "the refund SECOND"
+      },
+      "expected_relation": "BUSINESS_ORDER"
+    },
+    {
+      "id": "publish_approval",
+      "source_id": "records_dev",
+      "query": {
+        "fragment": "A document may be published only after its owner approval check has returned approved for that document",
+        "action_quote": "published"
+      },
+      "expected_relation": "STATE_GATE"
+    },
+    {
+      "id": "credit_preview",
+      "source_id": "credit_preview_new",
+      "query": {
+        "fragment": "You may preview a credit",
+        "action_quote": "preview a credit"
+      },
+      "expected_relation": "PERMIT_FACET"
+    },
+    {
+      "id": "credit_issue",
+      "source_id": "credit_preview_new",
+      "query": {
+        "fragment": "you must never issue a credit without recorded approval",
+        "action_quote": "issue a credit"
+      },
+      "expected_relation": "STATE_GATE"
+    }
+  ],
+  "max_tokens": 90,
+  "note": "post-hoc, manually localized fragments; relation only; no binary verdict"
+}
