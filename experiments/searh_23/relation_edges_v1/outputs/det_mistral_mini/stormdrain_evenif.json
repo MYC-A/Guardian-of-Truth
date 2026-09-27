@@ -1,0 +1,149 @@
+{
+ "case_id": "stormdrain_evenif",
+ "pairs": [
+  {
+   "from_span": "the pump status indicator is green",
+   "to_span": "open the sluice gate",
+   "from_role": "STATE_OBSERVATION",
+   "to_role": "OPERATION_EFFECT",
+   "decision": "NOT_RELATED",
+   "reason": "Event A does not block or regulate Event B; it is explicitly stated that Event B should only occur *after* an additional condition (upstream gauge confirms low flow).",
+   "parse_error": "",
+   "raw": "{\n  \"decision\": \"NOT_RELATED\",\n  \"reason\": \"Event A does not block or regulate Event B; it is explicitly stated that Event B should only occur *after* an additional condition (upstream gauge confirms low flow).\"\n}",
+   "cached": false,
+   "latency": 0.979
+  },
+  {
+   "from_span": "the pump status indicator is green",
+   "to_span": "the upstream gauge confirms low flow",
+   "from_role": "STATE_OBSERVATION",
+   "to_role": "PRECONDITION_CHECK",
+   "decision": "NOT_RELATED",
+   "reason": "Event A does not gate, precede, enable, trigger, or except Event B; it is explicitly stated as a condition that does not block B.",
+   "parse_error": "",
+   "raw": "{\n  \"decision\": \"NOT_RELATED\",\n  \"reason\": \"Event A does not gate, precede, enable, trigger, or except Event B; it is explicitly stated as a condition that does not block B.\"\n}",
+   "cached": false,
+   "latency": 0.872
+  },
+  {
+   "from_span": "the pump status indicator is green",
+   "to_span": "Grease the gate spindle",
+   "from_role": "STATE_OBSERVATION",
+   "to_role": "OPERATION_EFFECT",
+   "decision": "NOT_RELATED",
+   "reason": "Event A regulates gate-opening conditions, while Event B is a standalone maintenance task with no direct relation to A.",
+   "parse_error": "",
+   "raw": "{\n  \"decision\": \"NOT_RELATED\",\n  \"reason\": \"Event A regulates gate-opening conditions, while Event B is a standalone maintenance task with no direct relation to A.\"\n}",
+   "cached": false,
+   "latency": 0.77
+  },
+  {
+   "from_span": "open the sluice gate",
+   "to_span": "the pump status indicator is green",
+   "from_role": "OPERATION_EFFECT",
+   "to_role": "STATE_OBSERVATION",
+   "decision": "RELATED",
+   "reason": "Event A is explicitly conditioned on the absence of a state (low flow) that is not directly tied to Event B's observation, but Event B's state is mentioned as a non-blocking condition for Event A.",
+   "parse_error": "",
+   "raw": "{\n  \"decision\": \"RELATED\",\n  \"reason\": \"Event A is explicitly conditioned on the absence of a state (low flow) that is not directly tied to Event B's observation, but Event B's state is mentioned as a non-blocking condition for Event A.\"\n}",
+   "cached": false,
+   "latency": 0.944
+  },
+  {
+   "from_span": "open the sluice gate",
+   "to_span": "the upstream gauge confirms low flow",
+   "from_role": "OPERATION_EFFECT",
+   "to_role": "PRECONDITION_CHECK",
+   "decision": "RELATED",
+   "reason": "Event A (opening the gate) is explicitly stated to occur **only after** Event B (upstream gauge confirms low flow), establishing a **temporal and enabling** relation.",
+   "parse_error": "",
+   "raw": "{\n  \"decision\": \"RELATED\",\n  \"reason\": \"Event A (opening the gate) is explicitly stated to occur **only after** Event B (upstream gauge confirms low flow), establishing a **temporal and enabling** relation.\"\n}",
+   "cached": false,
+   "latency": 0.925
+  },
+  {
+   "from_span": "open the sluice gate",
+   "to_span": "Grease the gate spindle",
+   "from_role": "OPERATION_EFFECT",
+   "to_role": "OPERATION_EFFECT",
+   "decision": "NOT_RELATED",
+   "reason": "The policy links Event A to flow confirmation and pump status, while Event B is tied to a separate monthly maintenance schedule.",
+   "parse_error": "",
+   "raw": "{\n  \"decision\": \"NOT_RELATED\",\n  \"reason\": \"The policy links Event A to flow confirmation and pump status, while Event B is tied to a separate monthly maintenance schedule.\"\n}",
+   "cached": false,
+   "latency": 0.741
+  },
+  {
+   "from_span": "the upstream gauge confirms low flow",
+   "to_span": "the pump status indicator is green",
+   "from_role": "PRECONDITION_CHECK",
+   "to_role": "STATE_OBSERVATION",
+   "decision": "RELATED",
+   "reason": "Event A (low flow confirmation) must occur *after* Event B (green pump indicator) to open the gate, but B does not block A.",
+   "parse_error": "",
+   "raw": "{\n  \"decision\": \"RELATED\",\n  \"relation\": {\n    \"type\": \"PRECEDES\",\n    \"condition\": \"ENABLES\",\n    \"explicit_block\": false\n  },\n  \"reason\": \"Event A (low flow confirmation) must occur *after* Event B (green pump indicator) to open the gate, but B does not block A.\"\n}",
+   "cached": false,
+   "latency": 1.042
+  },
+  {
+   "from_span": "the upstream gauge confirms low flow",
+   "to_span": "open the sluice gate",
+   "from_role": "PRECONDITION_CHECK",
+   "to_role": "OPERATION_EFFECT",
+   "decision": "RELATED",
+   "reason": "Event A **precedes** Event B as a mandatory precondition in the policy.",
+   "parse_error": "",
+   "raw": "{\n  \"decision\": \"RELATED\",\n  \"reason\": \"Event A **precedes** Event B as a mandatory precondition in the policy.\"\n}",
+   "cached": false,
+   "latency": 0.671
+  },
+  {
+   "from_span": "the upstream gauge confirms low flow",
+   "to_span": "Grease the gate spindle",
+   "from_role": "PRECONDITION_CHECK",
+   "to_role": "OPERATION_EFFECT",
+   "decision": "NOT_RELATED",
+   "reason": "Event A is a precondition for opening the sluice gate, while Event B is a separate monthly maintenance operation.",
+   "parse_error": "",
+   "raw": "{\n  \"decision\": \"NOT_RELATED\",\n  \"reason\": \"Event A is a precondition for opening the sluice gate, while Event B is a separate monthly maintenance operation.\"\n}",
+   "cached": false,
+   "latency": 1.033
+  },
+  {
+   "from_span": "Grease the gate spindle",
+   "to_span": "the pump status indicator is green",
+   "from_role": "OPERATION_EFFECT",
+   "to_role": "STATE_OBSERVATION",
+   "decision": "NOT_RELATED",
+   "reason": "Event A (greasing the spindle) is unrelated to the conditional gate-opening rule tied to Event B (pump status).",
+   "parse_error": "",
+   "raw": "{\n  \"decision\": \"NOT_RELATED\",\n  \"reason\": \"Event A (greasing the spindle) is unrelated to the conditional gate-opening rule tied to Event B (pump status).\"\n}",
+   "cached": false,
+   "latency": 0.769
+  },
+  {
+   "from_span": "Grease the gate spindle",
+   "to_span": "open the sluice gate",
+   "from_role": "OPERATION_EFFECT",
+   "to_role": "OPERATION_EFFECT",
+   "decision": "RELATED",
+   "reason": "Event A (greasing the spindle) is temporally linked to Event B (opening the gate) via the policy's monthly maintenance requirement, but does not explicitly regulate or block Event B.",
+   "parse_error": "",
+   "raw": "{\n  \"decision\": \"RELATED\",\n  \"reason\": \"Event A (greasing the spindle) is temporally linked to Event B (opening the gate) via the policy's monthly maintenance requirement, but does not explicitly regulate or block Event B.\"\n}",
+   "cached": false,
+   "latency": 0.84
+  },
+  {
+   "from_span": "Grease the gate spindle",
+   "to_span": "the upstream gauge confirms low flow",
+   "from_role": "OPERATION_EFFECT",
+   "to_role": "PRECONDITION_CHECK",
+   "decision": "NOT_RELATED",
+   "reason": "Event A (greasing) is a maintenance task unrelated to the conditional opening of the sluice gate in Event B.",
+   "parse_error": "",
+   "raw": "{\n  \"decision\": \"NOT_RELATED\",\n  \"reason\": \"Event A (greasing) is a maintenance task unrelated to the conditional opening of the sluice gate in Event B.\"\n}",
+   "cached": false,
+   "latency": 0.741
+  }
+ ]
+}

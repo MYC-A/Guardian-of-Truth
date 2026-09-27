@@ -6,6 +6,8 @@ set -e
 cd /workspace/guardian/repos/Guardian-of-Truth/experiments/searh_23/relation_edges_v1
 PY=/workspace/guardian/venv/bin/python
 
+echo "=== R_retriever mini ==="
+REL_SUITE=mini REL_ARM_DIR=R_retriever $PY rel_run_retriever.py
 echo "=== DET_local mini ==="
 REL_SUITE=mini REL_ARM_DIR=DET_local $PY rel_run_detector.py
 echo "=== det mistral mini ==="

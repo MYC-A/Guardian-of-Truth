@@ -1,0 +1,84 @@
+{
+ "case_id": "tannery_chain",
+ "graph": {
+  "events": [
+   {
+    "span": "Inspect the hide grading before shipping the finished leather.",
+    "role": "PRECONDITION_CHECK"
+   },
+   {
+    "span": "The grading itself requires that the moisture meter has been calibrated.",
+    "role": "PRECONDITION_CHECK"
+   },
+   {
+    "span": "Store the shavings in the drying room.",
+    "role": "OPERATION_EFFECT"
+   },
+   {
+    "span": "shipping the finished leather rolls and books the carrier pickup",
+    "role": "OPERATION_EFFECT"
+   },
+   {
+    "span": "moisture meter has been calibrated",
+    "role": "STATE_OBSERVATION"
+   },
+   {
+    "span": "calibrated. (from 'moisture meter has been calibrated')",
+    "role": "STATE_OBSERVATION"
+   },
+   {
+    "span": "Inspect the hide grading",
+    "role": "OPERATION_EFFECT"
+   },
+   {
+    "span": "finished leather",
+    "role": "STATE_OBSERVATION"
+   }
+  ],
+  "edges": [
+   {
+    "from_span": "The grading itself requires that the moisture meter has been calibrated.",
+    "to_span": "Inspect the hide grading",
+    "relation": "PRECONDITION"
+   },
+   {
+    "from_span": "moisture meter has been calibrated",
+    "to_span": "Inspect the hide grading",
+    "relation": "PRECONDITION"
+   },
+   {
+    "from_span": "Inspect the hide grading",
+    "to_span": "shipping the finished leather rolls and books the carrier pickup",
+    "relation": "PRECONDITION"
+   },
+   {
+    "from_span": "finished leather",
+    "to_span": "shipping the finished leather rolls and books the carrier pickup",
+    "relation": "STATE_GATE"
+   },
+   {
+    "from_span": "Store the shavings in the drying room.",
+    "to_span": "shipping the finished leather rolls and books the carrier pickup",
+    "relation": "ORDER_BEFORE"
+   },
+   {
+    "from_span": "moisture meter has been calibrated",
+    "to_span": "calibrated.",
+    "relation": "RESPONSE"
+   }
+  ],
+  "groups": [
+   {
+    "logic": "AND",
+    "members": [
+     "The grading itself requires that the moisture meter has been calibrated.",
+     "moisture meter has been calibrated"
+    ],
+    "target": "Inspect the hide grading"
+   }
+  ]
+ },
+ "parse_error": "",
+ "raw": "{\n  \"events\": [\n    {\n      \"span\": \"Inspect the hide grading before shipping the finished leather.\",\n      \"role\": \"PRECONDITION_CHECK\"\n    },\n    {\n      \"span\": \"The grading itself requires that the moisture meter has been calibrated.\",\n      \"role\": \"PRECONDITION_CHECK\"\n    },\n    {\n      \"span\": \"Store the shavings in the drying room.\",\n      \"role\": \"OPERATION_EFFECT\"\n    },\n    {\n      \"span\": \"shipping the finished leather rolls and books the carrier pickup\",\n      \"role\": \"OPERATION_EFFECT\"\n    },\n    {\n      \"span\": \"moisture meter has been calibrated\",\n      \"role\": \"STATE_OBSERVATION\"\n    },\n    {\n      \"span\": \"calibrated. (from 'moisture meter has been calibrated')\",\n      \"role\": \"STATE_OBSERVATION\"\n    },\n    {\n      \"span\": \"Inspect the hide grading\",\n      \"role\": \"OPERATION_EFFECT\"\n    },\n    {\n      \"span\": \"finished leather\",\n      \"role\": \"STATE_OBSERVATION\"\n    }\n  ],\n  \"edges\": [\n    {\n      \"from_span\": \"The grading itself requires that the moisture meter has been calibrated.\",\n      \"to_span\": \"Inspect the hide grading\",\n      \"relation\": \"PRECONDITION\"\n    },\n    {\n      \"from_span\": \"moisture meter has been calibrated\",\n      \"to_span\": \"Inspect the hide grading\",\n      \"relation\": \"PRECONDITION\"\n    },\n    {\n      \"from_span\": \"Inspect the hide grading\",\n      \"to_span\": \"shipping the finished leather rolls and books the carrier pickup\",\n      \"relation\": \"PRECONDITION\"\n    },\n    {\n      \"from_span\": \"finished leather\",\n      \"to_span\": \"shipping the finished leather rolls and books the carrier pickup\",\n      \"relation\": \"STATE_GATE\"\n    },\n    {\n      \"from_span\": \"Store the shavings in the drying room.\",\n      \"to_span\": \"shipping the finished leather rolls and books the carrier pickup\",\n      \"relation\": \"ORDER_BEFORE\"\n    },\n    {\n      \"from_span\": \"moisture meter has been calibrated\",\n      \"to_span\": \"calibrated.\",\n      \"relation\": \"RESPONSE\"\n    }\n  ],\n  \"groups\": [\n    {\n      \"logic\": \"AND\",\n      \"members\": [\n        \"The grading itself requires that the moisture meter has been calibrated.\",\n        \"moisture meter has been calibrated\"\n      ],\n      \"target\": \"Inspect the hide grading\"\n    }\n  ]\n}",
+ "latency": 5.149
+}
