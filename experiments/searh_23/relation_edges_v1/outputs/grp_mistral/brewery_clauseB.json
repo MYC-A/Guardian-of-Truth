@@ -1,0 +1,56 @@
+{
+ "case_id": "brewery_clauseB",
+ "groups": [
+  {
+   "target": "bottling of ale batch B-44",
+   "parents": [
+    "The gravity reading must be stable",
+    "Cap the bottles",
+    "Store the crates"
+   ],
+   "logic": "AND",
+   "reason": "The policy explicitly states the gravity reading must be stable *before* bottling, and caps/crates are mandatory *after* bottling as sequential steps.",
+   "parse_error": "",
+   "cached": false,
+   "latency": 1.08
+  },
+  {
+   "target": "Cap the bottles",
+   "parents": [
+    "The gravity reading must be stable",
+    "bottling of ale batch B-44",
+    "Store the crates"
+   ],
+   "logic": "AND",
+   "reason": "The policy requires the gravity reading to be stable **before** bottling begins, and bottling is a prerequisite for capping bottles, which must precede crate storage.",
+   "parse_error": "",
+   "cached": false,
+   "latency": 1.103
+  },
+  {
+   "target": "Store the crates",
+   "parents": [
+    "The gravity reading must be stable",
+    "bottling of ale batch B-44",
+    "Cap the bottles"
+   ],
+   "logic": "AND",
+   "reason": "Policy requires stable gravity *and* bottling of B-44 *before* capping, which gates the target operation.",
+   "parse_error": "",
+   "cached": false,
+   "latency": 1.632
+  },
+  {
+   "target": "The gravity reading must be stable",
+   "parents": [
+    "bottling of ale batch B-44",
+    "Cap the bottles"
+   ],
+   "logic": "AND",
+   "reason": "The policy states that bottling begins *only* when gravity is stable, and explicitly lists capping as a subsequent step in the process.",
+   "parse_error": "",
+   "cached": false,
+   "latency": 1.53
+  }
+ ]
+}

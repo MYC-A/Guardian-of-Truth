@@ -1,0 +1,55 @@
+{
+ "case_id": "aquarium_fanout",
+ "groups": [
+  {
+   "target": "feeding the rays",
+   "parents": [
+    "Confirm the salinity in tank T-3 is within range",
+    "cleaning the display glass",
+    "Log the feeding"
+   ],
+   "logic": "AND",
+   "reason": "The policy explicitly requires salinity confirmation *before feeding* and *before cleaning*, and feeding must be logged afterward.",
+   "parse_error": "",
+   "cached": false,
+   "latency": 0.963
+  },
+  {
+   "target": "cleaning the display glass",
+   "parents": [
+    "Confirm the salinity in tank T-3 is within range",
+    "feeding the rays"
+   ],
+   "logic": "AND",
+   "reason": "Policy explicitly requires salinity check before both feeding and cleaning, implying both must occur.",
+   "parse_error": "",
+   "cached": false,
+   "latency": 1.589
+  },
+  {
+   "target": "Log the feeding",
+   "parents": [
+    "Confirm the salinity in tank T-3 is within range",
+    "feeding the rays"
+   ],
+   "logic": "AND",
+   "reason": "Both salinity confirmation and feeding the rays must occur sequentially before logging the feeding.",
+   "parse_error": "",
+   "cached": false,
+   "latency": 0.962
+  },
+  {
+   "target": "Confirm the salinity in tank T-3 is within range",
+   "parents": [
+    "feeding the rays",
+    "cleaning the display glass",
+    "Log the feeding"
+   ],
+   "logic": "AND",
+   "reason": "The policy explicitly states the salinity check must occur *before* both feeding and cleaning operations.",
+   "parse_error": "",
+   "cached": false,
+   "latency": 0.964
+  }
+ ]
+}

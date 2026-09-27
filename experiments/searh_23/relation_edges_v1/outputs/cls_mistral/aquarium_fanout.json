@@ -1,0 +1,199 @@
+{
+ "case_id": "aquarium_fanout",
+ "pairs": [
+  {
+   "from_span": "Confirm the salinity in tank T-3 is within range",
+   "to_span": "feeding the rays",
+   "from_role": "PRECONDITION_CHECK",
+   "to_role": "OPERATION_EFFECT",
+   "relation": "PRECONDITION",
+   "possible_relations": [
+    "PRECONDITION"
+   ],
+   "direction_confidence": "high",
+   "reason": "Event A is explicitly required to pass before Event B (feeding) can occur.",
+   "parse_error": "",
+   "raw": "{\n  \"relation\": \"PRECONDITION\",\n  \"possible_relations\": [],\n  \"direction_confidence\": \"high\",\n  \"reason\": \"Event A is explicitly required to pass before Event B (feeding) can occur.\"\n}",
+   "cached": false,
+   "latency": 0.912
+  },
+  {
+   "from_span": "Confirm the salinity in tank T-3 is within range",
+   "to_span": "cleaning the display glass",
+   "from_role": "PRECONDITION_CHECK",
+   "to_role": "OPERATION_EFFECT",
+   "relation": "EXCEPTION",
+   "possible_relations": [
+    "EXCEPTION",
+    "STATE_GATE"
+   ],
+   "direction_confidence": "high",
+   "reason": "Event A is a precondition for cleaning (glass) only if it fails; otherwise, it does not block Event B.",
+   "parse_error": "",
+   "raw": "{\n  \"relation\": \"EXCEPTION\",\n  \"possible_relations\": [\n    \"EXCEPTION\",\n    \"STATE_GATE\"\n  ],\n  \"direction_confidence\": \"high\",\n  \"reason\": \"Event A is a precondition for cleaning (glass) only if it fails; otherwise, it does not block Event B.\"\n}",
+   "cached": false,
+   "latency": 1.128
+  },
+  {
+   "from_span": "Confirm the salinity in tank T-3 is within range",
+   "to_span": "Log the feeding",
+   "from_role": "PRECONDITION_CHECK",
+   "to_role": "OPERATION_EFFECT",
+   "relation": "NOT_SUPPORTED",
+   "possible_relations": [
+    "NOT_SUPPORTED"
+   ],
+   "direction_confidence": "high",
+   "reason": "Event A is a precondition check for feeding/cleaning, while Event B is a logging operation; no direct relation type applies between them.",
+   "parse_error": "",
+   "raw": "{\n  \"relation\": \"NOT_SUPPORTED\",\n  \"possible_relations\": [],\n  \"direction_confidence\": \"high\",\n  \"reason\": \"Event A is a precondition check for feeding/cleaning, while Event B is a logging operation; no direct relation type applies between them.\"\n}",
+   "cached": false,
+   "latency": 1.133
+  },
+  {
+   "from_span": "feeding the rays",
+   "to_span": "Confirm the salinity in tank T-3 is within range",
+   "from_role": "OPERATION_EFFECT",
+   "to_role": "PRECONDITION_CHECK",
+   "relation": "PRECONDITION",
+   "possible_relations": [
+    "PRECONDITION"
+   ],
+   "direction_confidence": "high",
+   "reason": "Event B (salinity check) must pass before Event A (feeding) can occur, as explicitly stated in the policy.",
+   "parse_error": "",
+   "raw": "{\n  \"relation\": \"PRECONDITION\",\n  \"possible_relations\": [],\n  \"direction_confidence\": \"high\",\n  \"reason\": \"Event B (salinity check) must pass before Event A (feeding) can occur, as explicitly stated in the policy.\"\n}",
+   "cached": false,
+   "latency": 1.377
+  },
+  {
+   "from_span": "feeding the rays",
+   "to_span": "cleaning the display glass",
+   "from_role": "OPERATION_EFFECT",
+   "to_role": "OPERATION_EFFECT",
+   "relation": "NOT_SUPPORTED",
+   "possible_relations": [
+    "NOT_SUPPORTED"
+   ],
+   "direction_confidence": "low",
+   "reason": "The policy does not establish a direct operational or conditional relationship between feeding rays (Event A) and cleaning display glass (Event B).",
+   "parse_error": "",
+   "raw": "{\n  \"relation\": \"NOT_SUPPORTED\",\n  \"possible_relations\": [],\n  \"direction_confidence\": \"low\",\n  \"reason\": \"The policy does not establish a direct operational or conditional relationship between feeding rays (Event A) and cleaning display glass (Event B).\"\n}",
+   "cached": false,
+   "latency": 1.082
+  },
+  {
+   "from_span": "feeding the rays",
+   "to_span": "Log the feeding",
+   "from_role": "OPERATION_EFFECT",
+   "to_role": "OPERATION_EFFECT",
+   "relation": "RESPONSE",
+   "possible_relations": [
+    "RESPONSE"
+   ],
+   "direction_confidence": "high",
+   "reason": "Event B (logging) is obligatory *after* Event A (feeding) completes, as per the policy's instruction to log the feeding.",
+   "parse_error": "",
+   "raw": "{\n  \"relation\": \"RESPONSE\",\n  \"possible_relations\": [\"RESPONSE\"],\n  \"direction_confidence\": \"high\",\n  \"reason\": \"Event B (logging) is obligatory *after* Event A (feeding) completes, as per the policy's instruction to log the feeding.\"\n}",
+   "cached": false,
+   "latency": 1.101
+  },
+  {
+   "from_span": "cleaning the display glass",
+   "to_span": "Confirm the salinity in tank T-3 is within range",
+   "from_role": "OPERATION_EFFECT",
+   "to_role": "PRECONDITION_CHECK",
+   "relation": "PRECONDITION",
+   "possible_relations": [
+    "PRECONDITION"
+   ],
+   "direction_confidence": "high",
+   "reason": "Event B (salinity check) must be performed and pass before Event A (cleaning) can occur.",
+   "parse_error": "",
+   "raw": "{\n  \"relation\": \"PRECONDITION\",\n  \"possible_relations\": [],\n  \"direction_confidence\": \"high\",\n  \"reason\": \"Event B (salinity check) must be performed and pass before Event A (cleaning) can occur.\"\n}",
+   "cached": false,
+   "latency": 1.027
+  },
+  {
+   "from_span": "cleaning the display glass",
+   "to_span": "feeding the rays",
+   "from_role": "OPERATION_EFFECT",
+   "to_role": "OPERATION_EFFECT",
+   "relation": "ORDER_BEFORE",
+   "possible_relations": [
+    "ORDER_BEFORE",
+    "STATE_GATE"
+   ],
+   "direction_confidence": "high",
+   "reason": "Policy explicitly sequences salinity check before both feeding and cleaning, but only feeding is an actionable event.",
+   "parse_error": "",
+   "raw": "{\n  \"relation\": \"ORDER_BEFORE\",\n  \"possible_relations\": [\"ORDER_BEFORE\", \"STATE_GATE\"],\n  \"direction_confidence\": \"high\",\n  \"reason\": \"Policy explicitly sequences salinity check before both feeding and cleaning, but only feeding is an actionable event.\"\n}",
+   "cached": false,
+   "latency": 1.138
+  },
+  {
+   "from_span": "cleaning the display glass",
+   "to_span": "Log the feeding",
+   "from_role": "OPERATION_EFFECT",
+   "to_role": "OPERATION_EFFECT",
+   "relation": "NOT_SUPPORTED",
+   "possible_relations": [
+    "NOT_SUPPORTED"
+   ],
+   "direction_confidence": "high",
+   "reason": "No meaningful causal, conditional, or sequential link exists between glass cleaning (EVENT A) and feeding logging (EVENT B) in the policy.",
+   "parse_error": "",
+   "raw": "{\n  \"relation\": \"NOT_SUPPORTED\",\n  \"possible_relations\": [],\n  \"direction_confidence\": \"high\",\n  \"reason\": \"No meaningful causal, conditional, or sequential link exists between glass cleaning (EVENT A) and feeding logging (EVENT B) in the policy.\"\n}",
+   "cached": false,
+   "latency": 1.28
+  },
+  {
+   "from_span": "Log the feeding",
+   "to_span": "Confirm the salinity in tank T-3 is within range",
+   "from_role": "OPERATION_EFFECT",
+   "to_role": "PRECONDITION_CHECK",
+   "relation": "RESPONSE",
+   "possible_relations": [
+    "RESPONSE"
+   ],
+   "direction_confidence": "high",
+   "reason": "Event B (salinity check) triggers the obligation to log the feeding (Event A) in the husbandry journal.",
+   "parse_error": "",
+   "raw": "{\n  \"relation\": \"RESPONSE\",\n  \"possible_relations\": [],\n  \"direction_confidence\": \"high\",\n  \"reason\": \"Event B (salinity check) triggers the obligation to log the feeding (Event A) in the husbandry journal.\"\n}",
+   "cached": false,
+   "latency": 1.001
+  },
+  {
+   "from_span": "Log the feeding",
+   "to_span": "feeding the rays",
+   "from_role": "OPERATION_EFFECT",
+   "to_role": "OPERATION_EFFECT",
+   "relation": "RESPONSE",
+   "possible_relations": [
+    "RESPONSE"
+   ],
+   "direction_confidence": "high",
+   "reason": "Event A (logging) is triggered as an obligatory action after Event B (feeding) completes.",
+   "parse_error": "",
+   "raw": "{\n  \"relation\": \"RESPONSE\",\n  \"possible_relations\": [\"RESPONSE\"],\n  \"direction_confidence\": \"high\",\n  \"reason\": \"Event A (logging) is triggered as an obligatory action after Event B (feeding) completes.\"\n}",
+   "cached": false,
+   "latency": 0.987
+  },
+  {
+   "from_span": "Log the feeding",
+   "to_span": "cleaning the display glass",
+   "from_role": "OPERATION_EFFECT",
+   "to_role": "OPERATION_EFFECT",
+   "relation": "NOT_SUPPORTED",
+   "possible_relations": [
+    "NOT_SUPPORTED"
+   ],
+   "direction_confidence": "high",
+   "reason": "Events A and B are unrelated in the policy; neither triggers, gates, nor sequences the other.",
+   "parse_error": "",
+   "raw": "{\n  \"relation\": \"NOT_SUPPORTED\",\n  \"possible_relations\": [],\n  \"direction_confidence\": \"high\",\n  \"reason\": \"Events A and B are unrelated in the policy; neither triggers, gates, nor sequences the other.\"\n}",
+   "cached": false,
+   "latency": 1.023
+  }
+ ]
+}

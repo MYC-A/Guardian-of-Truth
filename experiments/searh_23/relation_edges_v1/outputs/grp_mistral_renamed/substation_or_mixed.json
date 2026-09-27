@@ -1,0 +1,72 @@
+{
+ "case_id": "substation_or_mixed",
+ "groups": [
+  {
+   "target": "the site manager approves the switching plan",
+   "parents": [
+    "the duty engineer signs the energisation waiver",
+    "energising bay bp-92",
+    "Trip the test current",
+    "Archive the switching order"
+   ],
+   "logic": "AND",
+   "reason": "The policy requires the site manager's approval *after* the duty engineer signs the waiver and *before* energising, with subsequent mandatory actions.",
+   "parse_error": "",
+   "cached": false,
+   "latency": 0.751
+  },
+  {
+   "target": "energising bay bp-92",
+   "parents": [
+    "the duty engineer signs the energisation waiver",
+    "the site manager approves the switching plan",
+    "Trip the test current",
+    "Archive the switching order"
+   ],
+   "logic": "AND",
+   "reason": "Policy requires **both** the duty engineer's waiver **or** site manager's approval **before** energising, plus subsequent actions (trip test current, archive order).",
+   "parse_error": "",
+   "cached": false,
+   "latency": 1.113
+  },
+  {
+   "target": "Trip the test current",
+   "parents": [
+    "the duty engineer signs the energisation waiver",
+    "the site manager approves the switching plan",
+    "energising bay bp-92"
+   ],
+   "logic": "AND",
+   "reason": "Policy requires **both** the duty engineer's waiver **or** site manager's approval **before** energising, and energisation must occur before tripping the test current.",
+   "parse_error": "",
+   "cached": false,
+   "latency": 0.846
+  },
+  {
+   "target": "the duty engineer signs the energisation waiver",
+   "parents": [
+    "the site manager approves the switching plan",
+    "energising bay bp-92",
+    "Trip the test current"
+   ],
+   "logic": "AND",
+   "reason": "The policy requires the duty engineer to sign the waiver **only if** the site manager approves the switching plan **and** energisation occurs, with additional sequential steps.",
+   "parse_error": "",
+   "cached": false,
+   "latency": 0.966
+  },
+  {
+   "target": "Archive the switching order",
+   "parents": [
+    "the site manager approves the switching plan",
+    "energising bay bp-92",
+    "Trip the test current"
+   ],
+   "logic": "AND",
+   "reason": "The policy requires both energisation of bay bp-92 and tripping the test current *after* it, with prior approval by the site manager (or waiver) as a precondition.",
+   "parse_error": "",
+   "cached": false,
+   "latency": 0.81
+  }
+ ]
+}

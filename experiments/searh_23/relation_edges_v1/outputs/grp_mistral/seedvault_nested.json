@@ -1,0 +1,56 @@
+{
+ "case_id": "seedvault_nested",
+ "groups": [
+  {
+   "target": "the curator has approved the request",
+   "parents": [
+    "Access seed vault V-2",
+    "the integrity seal has been inspected",
+    "the chamber has been pre-chilled"
+   ],
+   "logic": "AND",
+   "reason": "The policy explicitly requires all three conditions (approval, pre-chilling, and seal inspection) before access is granted.",
+   "parse_error": "",
+   "cached": false,
+   "latency": 0.826
+  },
+  {
+   "target": "the integrity seal has been inspected",
+   "parents": [
+    "Access seed vault V-2",
+    "the curator has approved the request",
+    "the chamber has been pre-chilled"
+   ],
+   "logic": "AND",
+   "reason": "The policy explicitly requires both curator approval and pre-chilling before the integrity seal inspection, which itself gates access.",
+   "parse_error": "",
+   "cached": false,
+   "latency": 1.021
+  },
+  {
+   "target": "the chamber has been pre-chilled",
+   "parents": [
+    "Access seed vault V-2",
+    "the integrity seal has been inspected"
+   ],
+   "logic": "AND",
+   "reason": "The policy explicitly requires both curator approval (implied by seal inspection) and pre-chilling before the target operation.",
+   "parse_error": "",
+   "cached": false,
+   "latency": 0.959
+  },
+  {
+   "target": "Access seed vault V-2",
+   "parents": [
+    "the curator has approved the request",
+    "the integrity seal has been inspected",
+    "the chamber has been pre-chilled"
+   ],
+   "logic": "AND",
+   "reason": "All three events are explicitly required as sequential prerequisites for accessing the vault.",
+   "parse_error": "",
+   "cached": false,
+   "latency": 0.883
+  }
+ ]
+}

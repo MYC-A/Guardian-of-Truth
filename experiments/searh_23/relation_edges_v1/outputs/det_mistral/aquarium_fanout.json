@@ -1,0 +1,149 @@
+{
+ "case_id": "aquarium_fanout",
+ "pairs": [
+  {
+   "from_span": "Confirm the salinity in tank T-3 is within range",
+   "to_span": "feeding the rays",
+   "from_role": "PRECONDITION_CHECK",
+   "to_role": "OPERATION_EFFECT",
+   "decision": "RELATED",
+   "reason": "Event A gates Event B as a precondition for feeding the rays.",
+   "parse_error": "",
+   "raw": "{\n  \"decision\": \"RELATED\",\n  \"reason\": \"Event A gates Event B as a precondition for feeding the rays.\"\n}",
+   "cached": true,
+   "latency": 0.881
+  },
+  {
+   "from_span": "Confirm the salinity in tank T-3 is within range",
+   "to_span": "cleaning the display glass",
+   "from_role": "PRECONDITION_CHECK",
+   "to_role": "OPERATION_EFFECT",
+   "decision": "RELATED",
+   "reason": "Event A gates Event B as a precondition for cleaning the display glass.",
+   "parse_error": "",
+   "raw": "{\n  \"decision\": \"RELATED\",\n  \"reason\": \"Event A gates Event B as a precondition for cleaning the display glass.\"\n}",
+   "cached": true,
+   "latency": 1.032
+  },
+  {
+   "from_span": "Confirm the salinity in tank T-3 is within range",
+   "to_span": "Log the feeding",
+   "from_role": "PRECONDITION_CHECK",
+   "to_role": "OPERATION_EFFECT",
+   "decision": "RELATED",
+   "reason": "Event A (salinity check) must be completed **before** Event B (feeding) as a precondition, gating its execution.",
+   "parse_error": "",
+   "raw": "{\n  \"decision\": \"RELATED\",\n  \"reason\": \"Event A (salinity check) must be completed **before** Event B (feeding) as a precondition, gating its execution.\"\n}",
+   "cached": true,
+   "latency": 4.255
+  },
+  {
+   "from_span": "feeding the rays",
+   "to_span": "Confirm the salinity in tank T-3 is within range",
+   "from_role": "OPERATION_EFFECT",
+   "to_role": "PRECONDITION_CHECK",
+   "decision": "RELATED",
+   "reason": "Event A (feeding) is explicitly stated to require Event B (salinity check) as a precondition in the policy.",
+   "parse_error": "",
+   "raw": "{\n  \"decision\": \"RELATED\",\n  \"reason\": \"Event A (feeding) is explicitly stated to require Event B (salinity check) as a precondition in the policy.\"\n}",
+   "cached": false,
+   "latency": 0.838
+  },
+  {
+   "from_span": "feeding the rays",
+   "to_span": "cleaning the display glass",
+   "from_role": "OPERATION_EFFECT",
+   "to_role": "OPERATION_EFFECT",
+   "decision": "RELATED",
+   "reason": "Both events are temporally ordered and share a prerequisite condition (salinity check) but are not explicitly gated or blocked by each other.",
+   "parse_error": "",
+   "raw": "{\n  \"decision\": \"RELATED\",\n  \"reason\": \"Both events are temporally ordered and share a prerequisite condition (salinity check) but are not explicitly gated or blocked by each other.\"\n}",
+   "cached": true,
+   "latency": 6.218
+  },
+  {
+   "from_span": "feeding the rays",
+   "to_span": "Log the feeding",
+   "from_role": "OPERATION_EFFECT",
+   "to_role": "OPERATION_EFFECT",
+   "decision": "RELATED",
+   "reason": "Event A (feeding the rays) explicitly triggers Event B (logging the feeding) as per the policy instruction.",
+   "parse_error": "",
+   "raw": "{\n  \"decision\": \"RELATED\",\n  \"reason\": \"Event A (feeding the rays) explicitly triggers Event B (logging the feeding) as per the policy instruction.\"\n}",
+   "cached": true,
+   "latency": 18.125
+  },
+  {
+   "from_span": "cleaning the display glass",
+   "to_span": "Confirm the salinity in tank T-3 is within range",
+   "from_role": "OPERATION_EFFECT",
+   "to_role": "PRECONDITION_CHECK",
+   "decision": "RELATED",
+   "reason": "Event A (cleaning) is explicitly stated to require Event B (salinity check) as a precondition in the policy.",
+   "parse_error": "",
+   "raw": "{\n  \"decision\": \"RELATED\",\n  \"reason\": \"Event A (cleaning) is explicitly stated to require Event B (salinity check) as a precondition in the policy.\"\n}",
+   "cached": false,
+   "latency": 0.928
+  },
+  {
+   "from_span": "cleaning the display glass",
+   "to_span": "feeding the rays",
+   "from_role": "OPERATION_EFFECT",
+   "to_role": "OPERATION_EFFECT",
+   "decision": "RELATED",
+   "reason": "Both events are explicitly tied to the precondition of confirming salinity in tank T-3, but neither gates nor blocks the other temporally.",
+   "parse_error": "",
+   "raw": "{\n  \"decision\": \"RELATED\",\n  \"reason\": \"Both events are explicitly tied to the precondition of confirming salinity in tank T-3, but neither gates nor blocks the other temporally.\"\n}",
+   "cached": true,
+   "latency": 1.219
+  },
+  {
+   "from_span": "cleaning the display glass",
+   "to_span": "Log the feeding",
+   "from_role": "OPERATION_EFFECT",
+   "to_role": "OPERATION_EFFECT",
+   "decision": "NOT_RELATED",
+   "reason": "The policy does not establish a direct regulatory or temporal link between Event A (cleaning) and Event B (logging feeding).",
+   "parse_error": "",
+   "raw": "{\n  \"decision\": \"NOT_RELATED\",\n  \"reason\": \"The policy does not establish a direct regulatory or temporal link between Event A (cleaning) and Event B (logging feeding).\"\n}",
+   "cached": true,
+   "latency": 1.342
+  },
+  {
+   "from_span": "Log the feeding",
+   "to_span": "Confirm the salinity in tank T-3 is within range",
+   "from_role": "OPERATION_EFFECT",
+   "to_role": "PRECONDITION_CHECK",
+   "decision": "RELATED",
+   "reason": "Event A (logging feeding) is explicitly stated as a required action *after* confirming salinity (Event B) in the policy.",
+   "parse_error": "",
+   "raw": "{\n  \"decision\": \"RELATED\",\n  \"reason\": \"Event A (logging feeding) is explicitly stated as a required action *after* confirming salinity (Event B) in the policy.\"\n}",
+   "cached": false,
+   "latency": 0.988
+  },
+  {
+   "from_span": "Log the feeding",
+   "to_span": "feeding the rays",
+   "from_role": "OPERATION_EFFECT",
+   "to_role": "OPERATION_EFFECT",
+   "decision": "RELATED",
+   "reason": "Event A (logging) is a required action *after* Event B (feeding) as per the policy.",
+   "parse_error": "",
+   "raw": "{\n  \"decision\": \"RELATED\",\n  \"reason\": \"Event A (logging) is a required action *after* Event B (feeding) as per the policy.\"\n}",
+   "cached": true,
+   "latency": 1.1
+  },
+  {
+   "from_span": "Log the feeding",
+   "to_span": "cleaning the display glass",
+   "from_role": "OPERATION_EFFECT",
+   "to_role": "OPERATION_EFFECT",
+   "decision": "NOT_RELATED",
+   "reason": "The policy links salinity checks to both events but does not establish a direct regulatory or temporal relation between Event A (feeding log) and Event B (glass cleaning).",
+   "parse_error": "",
+   "raw": "{\n  \"decision\": \"NOT_RELATED\",\n  \"reason\": \"The policy links salinity checks to both events but does not establish a direct regulatory or temporal relation between Event A (feeding log) and Event B (glass cleaning).\"\n}",
+   "cached": true,
+   "latency": 1.27
+  }
+ ]
+}

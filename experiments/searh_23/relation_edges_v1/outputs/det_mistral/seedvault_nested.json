@@ -1,0 +1,149 @@
+{
+ "case_id": "seedvault_nested",
+ "pairs": [
+  {
+   "from_span": "Access seed vault V-2",
+   "to_span": "the curator has approved the request",
+   "from_role": "OPERATION_EFFECT",
+   "to_role": "OPERATION_EFFECT",
+   "decision": "RELATED",
+   "reason": "Event A is explicitly gated by Event B (approval required before access).",
+   "parse_error": "",
+   "raw": "{\n  \"decision\": \"RELATED\",\n  \"reason\": \"Event A is explicitly gated by Event B (approval required before access).\"\n}",
+   "cached": true,
+   "latency": 1.109
+  },
+  {
+   "from_span": "Access seed vault V-2",
+   "to_span": "the integrity seal has been inspected",
+   "from_role": "OPERATION_EFFECT",
+   "to_role": "PRECONDITION_CHECK",
+   "decision": "RELATED",
+   "reason": "Event A (access) is explicitly gated by Event B (integrity inspection) as a precondition.",
+   "parse_error": "",
+   "raw": "{\n  \"decision\": \"RELATED\",\n  \"reason\": \"Event A (access) is explicitly gated by Event B (integrity inspection) as a precondition.\"\n}",
+   "cached": false,
+   "latency": 0.948
+  },
+  {
+   "from_span": "Access seed vault V-2",
+   "to_span": "the chamber has been pre-chilled",
+   "from_role": "OPERATION_EFFECT",
+   "to_role": "OPERATION_EFFECT",
+   "decision": "RELATED",
+   "reason": "Event A (accessing vault V-2) requires Event B (pre-chilling) as a prerequisite for integrity inspection.",
+   "parse_error": "",
+   "raw": "{\n  \"decision\": \"RELATED\",\n  \"reason\": \"Event A (accessing vault V-2) requires Event B (pre-chilling) as a prerequisite for integrity inspection.\"\n}",
+   "cached": true,
+   "latency": 2.134
+  },
+  {
+   "from_span": "the curator has approved the request",
+   "to_span": "Access seed vault V-2",
+   "from_role": "OPERATION_EFFECT",
+   "to_role": "OPERATION_EFFECT",
+   "decision": "RELATED",
+   "reason": "Event A gates Event B as approval is a mandatory prerequisite for access.",
+   "parse_error": "",
+   "raw": "{\n  \"decision\": \"RELATED\",\n  \"reason\": \"Event A gates Event B as approval is a mandatory prerequisite for access.\"\n}",
+   "cached": true,
+   "latency": 1.661
+  },
+  {
+   "from_span": "the curator has approved the request",
+   "to_span": "the integrity seal has been inspected",
+   "from_role": "OPERATION_EFFECT",
+   "to_role": "PRECONDITION_CHECK",
+   "decision": "RELATED",
+   "reason": "Event A (approval) and Event B (integrity inspection) are both **preconditions** that must occur **sequentially** before access is granted.",
+   "parse_error": "",
+   "raw": "{\n  \"decision\": \"RELATED\",\n  \"reason\": \"Event A (approval) and Event B (integrity inspection) are both **preconditions** that must occur **sequentially** before access is granted.\"\n}",
+   "cached": false,
+   "latency": 1.363
+  },
+  {
+   "from_span": "the curator has approved the request",
+   "to_span": "the chamber has been pre-chilled",
+   "from_role": "OPERATION_EFFECT",
+   "to_role": "OPERATION_EFFECT",
+   "decision": "NOT_RELATED",
+   "reason": "Event A (approval) and Event B (pre-chilling) are independent prerequisites for the same subsequent action (integrity inspection).",
+   "parse_error": "",
+   "raw": "{\n  \"decision\": \"NOT_RELATED\",\n  \"reason\": \"Event A (approval) and Event B (pre-chilling) are independent prerequisites for the same subsequent action (integrity inspection).\"\n}",
+   "cached": true,
+   "latency": 1.114
+  },
+  {
+   "from_span": "the integrity seal has been inspected",
+   "to_span": "Access seed vault V-2",
+   "from_role": "PRECONDITION_CHECK",
+   "to_role": "OPERATION_EFFECT",
+   "decision": "RELATED",
+   "reason": "Event A gates Event B as a mandatory precondition for access.",
+   "parse_error": "",
+   "raw": "{\n  \"decision\": \"RELATED\",\n  \"reason\": \"Event A gates Event B as a mandatory precondition for access.\"\n}",
+   "cached": true,
+   "latency": 0.866
+  },
+  {
+   "from_span": "the integrity seal has been inspected",
+   "to_span": "the curator has approved the request",
+   "from_role": "PRECONDITION_CHECK",
+   "to_role": "OPERATION_EFFECT",
+   "decision": "RELATED",
+   "reason": "Event A (integrity seal inspection) is a **precondition** that must occur alongside Event B (curator approval) to enable access.",
+   "parse_error": "",
+   "raw": "{\n  \"decision\": \"RELATED\",\n  \"reason\": \"Event A (integrity seal inspection) is a **precondition** that must occur alongside Event B (curator approval) to enable access.\"\n}",
+   "cached": true,
+   "latency": 1.061
+  },
+  {
+   "from_span": "the integrity seal has been inspected",
+   "to_span": "the chamber has been pre-chilled",
+   "from_role": "PRECONDITION_CHECK",
+   "to_role": "OPERATION_EFFECT",
+   "decision": "RELATED",
+   "reason": "Event A (integrity seal inspection) is explicitly stated to require Event B (pre-chilling) as a precondition.",
+   "parse_error": "",
+   "raw": "{\n  \"decision\": \"RELATED\",\n  \"reason\": \"Event A (integrity seal inspection) is explicitly stated to require Event B (pre-chilling) as a precondition.\"\n}",
+   "cached": true,
+   "latency": 1.142
+  },
+  {
+   "from_span": "the chamber has been pre-chilled",
+   "to_span": "Access seed vault V-2",
+   "from_role": "OPERATION_EFFECT",
+   "to_role": "OPERATION_EFFECT",
+   "decision": "RELATED",
+   "reason": "Event A (pre-chilling) enables the integrity inspection, which gates Event B (access).",
+   "parse_error": "",
+   "raw": "{\n  \"decision\": \"RELATED\",\n  \"reason\": \"Event A (pre-chilling) enables the integrity inspection, which gates Event B (access).\"\n}",
+   "cached": true,
+   "latency": 1.141
+  },
+  {
+   "from_span": "the chamber has been pre-chilled",
+   "to_span": "the curator has approved the request",
+   "from_role": "OPERATION_EFFECT",
+   "to_role": "OPERATION_EFFECT",
+   "decision": "RELATED",
+   "reason": "Event A (pre-chilling) enables the integrity inspection, which is a prerequisite for Event B (curator approval) to allow access.",
+   "parse_error": "",
+   "raw": "{\n  \"decision\": \"RELATED\",\n  \"reason\": \"Event A (pre-chilling) enables the integrity inspection, which is a prerequisite for Event B (curator approval) to allow access.\"\n}",
+   "cached": true,
+   "latency": 1.005
+  },
+  {
+   "from_span": "the chamber has been pre-chilled",
+   "to_span": "the integrity seal has been inspected",
+   "from_role": "OPERATION_EFFECT",
+   "to_role": "PRECONDITION_CHECK",
+   "decision": "RELATED",
+   "reason": "Event A (pre-chilling) is a **precondition** that **enables** Event B (integrity inspection) as per the policy.",
+   "parse_error": "",
+   "raw": "{\n  \"decision\": \"RELATED\",\n  \"reason\": \"Event A (pre-chilling) is a **precondition** that **enables** Event B (integrity inspection) as per the policy.\"\n}",
+   "cached": false,
+   "latency": 0.999
+  }
+ ]
+}

@@ -1,0 +1,55 @@
+{
+ "case_id": "glassblowing_mixed",
+ "groups": [
+  {
+   "target": "annealing the glass",
+   "parents": [
+    "Check the kiln temperature",
+    "pack the finished pieces",
+    "Etch the studio mark"
+   ],
+   "logic": "AND",
+   "reason": "The policy explicitly requires the kiln temperature check *before* annealing, and the other two events follow *after* annealing as mandatory steps.",
+   "parse_error": "",
+   "cached": true,
+   "latency": 0.969
+  },
+  {
+   "target": "pack the finished pieces",
+   "parents": [
+    "Check the kiln temperature",
+    "annealing the glass",
+    "Etch the studio mark"
+   ],
+   "logic": "AND",
+   "reason": "The policy explicitly requires sequential completion of all gating events before packing the finished pieces.",
+   "parse_error": "",
+   "cached": true,
+   "latency": 0.84
+  },
+  {
+   "target": "Etch the studio mark",
+   "parents": [
+    "Check the kiln temperature",
+    "annealing the glass"
+   ],
+   "logic": "AND",
+   "reason": "Both 'Check the kiln temperature' and 'annealing the glass' must occur sequentially before 'Etch the studio mark'.",
+   "parse_error": "",
+   "cached": true,
+   "latency": 1.317
+  },
+  {
+   "target": "Check the kiln temperature",
+   "parents": [
+    "annealing the glass",
+    "pack the finished pieces"
+   ],
+   "logic": "UNKNOWN",
+   "reason": "The policy does not explicitly link the target operation to the events as conditions; they are described as effects of other operations.",
+   "parse_error": "",
+   "cached": true,
+   "latency": 0.915
+  }
+ ]
+}

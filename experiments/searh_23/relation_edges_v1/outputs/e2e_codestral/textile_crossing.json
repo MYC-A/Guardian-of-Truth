@@ -1,0 +1,57 @@
+{
+ "case_id": "textile_crossing",
+ "graph": {
+  "events": [
+   {
+    "span": "The dye lot must be approved before weaving on loom L-12.",
+    "role": "PRECONDITION_CHECK"
+   },
+   {
+    "span": "The loom maintenance log must be cleared before weaving and before cutting the finished cloth.",
+    "role": "PRECONDITION_CHECK"
+   },
+   {
+    "span": "Weigh the fabric remnants for recycling.",
+    "role": "OPERATION_EFFECT"
+   }
+  ],
+  "edges": [
+   {
+    "from_span": "The dye lot must be approved before weaving on loom L-12.",
+    "to_span": "Runs the loom weaving job for the approved dye lot and registers the produced cloth roll.",
+    "relation": "PRECONDITION"
+   },
+   {
+    "from_span": "The loom maintenance log must be cleared before weaving and before cutting the finished cloth.",
+    "to_span": "Runs the loom weaving job for the approved dye lot and registers the produced cloth roll.",
+    "relation": "PRECONDITION"
+   },
+   {
+    "from_span": "The loom maintenance log must be cleared before weaving and before cutting the finished cloth.",
+    "to_span": "Cuts the finished cloth roll to the order sizes and records the cutting job.",
+    "relation": "PRECONDITION"
+   }
+  ],
+  "groups": [
+   {
+    "logic": "AND",
+    "members": [
+     "The dye lot must be approved before weaving on loom L-12.",
+     "The loom maintenance log must be cleared before weaving and before cutting the finished cloth."
+    ],
+    "target": "Runs the loom weaving job for the approved dye lot and registers the produced cloth roll."
+   },
+   {
+    "logic": "AND",
+    "members": [
+     "The dye lot must be approved before weaving on loom L-12.",
+     "The loom maintenance log must be cleared before weaving and before cutting the finished cloth."
+    ],
+    "target": "Cuts the finished cloth roll to the order sizes and records the cutting job."
+   }
+  ]
+ },
+ "parse_error": "",
+ "raw": "{\n  \"events\": [\n    {\"span\": \"The dye lot must be approved before weaving on loom L-12.\", \"role\": \"PRECONDITION_CHECK\"},\n    {\"span\": \"The loom maintenance log must be cleared before weaving and before cutting the finished cloth.\", \"role\": \"PRECONDITION_CHECK\"},\n    {\"span\": \"Weigh the fabric remnants for recycling.\", \"role\": \"OPERATION_EFFECT\"}\n  ],\n  \"edges\": [\n    {\"from_span\": \"The dye lot must be approved before weaving on loom L-12.\", \"to_span\": \"Runs the loom weaving job for the approved dye lot and registers the produced cloth roll.\", \"relation\": \"PRECONDITION\"},\n    {\"from_span\": \"The loom maintenance log must be cleared before weaving and before cutting the finished cloth.\", \"to_span\": \"Runs the loom weaving job for the approved dye lot and registers the produced cloth roll.\", \"relation\": \"PRECONDITION\"},\n    {\"from_span\": \"The loom maintenance log must be cleared before weaving and before cutting the finished cloth.\", \"to_span\": \"Cuts the finished cloth roll to the order sizes and records the cutting job.\", \"relation\": \"PRECONDITION\"}\n  ],\n  \"groups\": [\n    {\"logic\": \"AND\", \"members\": [\"The dye lot must be approved before weaving on loom L-12.\", \"The loom maintenance log must be cleared before weaving and before cutting the finished cloth.\"], \"target\": \"Runs the loom weaving job for the approved dye lot and registers the produced cloth roll.\"},\n    {\"logic\": \"AND\", \"members\": [\"The dye lot must be approved before weaving on loom L-12.\", \"The loom maintenance log must be cleared before weaving and before cutting the finished cloth.\"], \"target\": \"Cuts the finished cloth roll to the order sizes and records the cutting job.\"}\n  ]\n}",
+ "latency": 3.989
+}

@@ -1,0 +1,126 @@
+{
+ "case_id": "seedvault_nested",
+ "graph": {
+  "events": [
+   {
+    "span": "Access seed vault it-93 only after the curator has approved the request",
+    "role": "PRECONDITION_CHECK"
+   },
+   {
+    "span": "the integrity seal has been inspected",
+    "role": "PRECONDITION_CHECK"
+   },
+   {
+    "span": "the integrity inspection itself requires that the chamber has been pre-chilled",
+    "role": "PRECONDITION_CHECK"
+   },
+   {
+    "span": "Access seed vault it-93",
+    "role": "OPERATION_EFFECT"
+   },
+   {
+    "span": "the curator has approved the request",
+    "role": "STATE_OBSERVATION"
+   },
+   {
+    "span": "the integrity seal has been inspected",
+    "role": "STATE_OBSERVATION"
+   },
+   {
+    "span": "the chamber has been pre-chilled",
+    "role": "STATE_OBSERVATION"
+   },
+   {
+    "span": "Unlocks the seed vault chamber for an approved request and logs the entry session",
+    "role": "OPERATION_EFFECT"
+   },
+   {
+    "span": "Records the curator's approval of a seed vault access request",
+    "role": "OPERATION_EFFECT"
+   },
+   {
+    "span": "Examines the chamber integrity seal and returns whether it is intact",
+    "role": "OPERATION_EFFECT"
+   },
+   {
+    "span": "Starts the pre-chilling cycle of the vault chamber to the storage temperature",
+    "role": "OPERATION_EFFECT"
+   },
+   {
+    "span": "Returns whether an access request is pending, approved or rejected",
+    "role": "STATE_OBSERVATION"
+   },
+   {
+    "span": "Emails the vault access report to the registrar",
+    "role": "COMMUNICATION"
+   }
+  ],
+  "edges": [
+   {
+    "from_span": "the curator has approved the request",
+    "to_span": "Access seed vault it-93",
+    "relation": "PRECONDITION"
+   },
+   {
+    "from_span": "the integrity seal has been inspected",
+    "to_span": "Access seed vault it-93",
+    "relation": "PRECONDITION"
+   },
+   {
+    "from_span": "the chamber has been pre-chilled",
+    "to_span": "the integrity seal has been inspected",
+    "relation": "PRECONDITION"
+   },
+   {
+    "from_span": "Records the curator's approval of a seed vault access request",
+    "to_span": "the curator has approved the request",
+    "relation": "RESPONSE"
+   },
+   {
+    "from_span": "Examines the chamber integrity seal and returns whether it is intact",
+    "to_span": "the integrity seal has been inspected",
+    "relation": "RESPONSE"
+   },
+   {
+    "from_span": "Starts the pre-chilling cycle of the vault chamber to the storage temperature",
+    "to_span": "the chamber has been pre-chilled",
+    "relation": "RESPONSE"
+   },
+   {
+    "from_span": "Unlocks the seed vault chamber for an approved request and logs the entry session",
+    "to_span": "Access seed vault it-93",
+    "relation": "ORDER_AFTER"
+   },
+   {
+    "from_span": "Access seed vault it-93",
+    "to_span": "Emails the vault access report to the registrar",
+    "relation": "ORDER_BEFORE"
+   },
+   {
+    "from_span": "Unlocks the seed vault chamber for an approved request and logs the entry session",
+    "to_span": "Emails the vault access report to the registrar",
+    "relation": "ORDER_BEFORE"
+   }
+  ],
+  "groups": [
+   {
+    "logic": "AND",
+    "members": [
+     "the curator has approved the request",
+     "the integrity seal has been inspected"
+    ],
+    "target": "Access seed vault it-93"
+   },
+   {
+    "logic": "AND",
+    "members": [
+     "the chamber has been pre-chilled"
+    ],
+    "target": "the integrity seal has been inspected"
+   }
+  ]
+ },
+ "parse_error": "",
+ "raw": "{\n  \"events\": [\n    {\n      \"span\": \"Access seed vault it-93 only after the curator has approved the request\",\n      \"role\": \"PRECONDITION_CHECK\"\n    },\n    {\n      \"span\": \"the integrity seal has been inspected\",\n      \"role\": \"PRECONDITION_CHECK\"\n    },\n    {\n      \"span\": \"the integrity inspection itself requires that the chamber has been pre-chilled\",\n      \"role\": \"PRECONDITION_CHECK\"\n    },\n    {\n      \"span\": \"Access seed vault it-93\",\n      \"role\": \"OPERATION_EFFECT\"\n    },\n    {\n      \"span\": \"the curator has approved the request\",\n      \"role\": \"STATE_OBSERVATION\"\n    },\n    {\n      \"span\": \"the integrity seal has been inspected\",\n      \"role\": \"STATE_OBSERVATION\"\n    },\n    {\n      \"span\": \"the chamber has been pre-chilled\",\n      \"role\": \"STATE_OBSERVATION\"\n    },\n    {\n      \"span\": \"Unlocks the seed vault chamber for an approved request and logs the entry session\",\n      \"role\": \"OPERATION_EFFECT\"\n    },\n    {\n      \"span\": \"Records the curator's approval of a seed vault access request\",\n      \"role\": \"OPERATION_EFFECT\"\n    },\n    {\n      \"span\": \"Examines the chamber integrity seal and returns whether it is intact\",\n      \"role\": \"OPERATION_EFFECT\"\n    },\n    {\n      \"span\": \"Starts the pre-chilling cycle of the vault chamber to the storage temperature\",\n      \"role\": \"OPERATION_EFFECT\"\n    },\n    {\n      \"span\": \"Returns whether an access request is pending, approved or rejected\",\n      \"role\": \"STATE_OBSERVATION\"\n    },\n    {\n      \"span\": \"Emails the vault access report to the registrar\",\n      \"role\": \"COMMUNICATION\"\n    }\n  ],\n  \"edges\": [\n    {\n      \"from_span\": \"the curator has approved the request\",\n      \"to_span\": \"Access seed vault it-93\",\n      \"relation\": \"PRECONDITION\"\n    },\n    {\n      \"from_span\": \"the integrity seal has been inspected\",\n      \"to_span\": \"Access seed vault it-93\",\n      \"relation\": \"PRECONDITION\"\n    },\n    {\n      \"from_span\": \"the chamber has been pre-chilled\",\n      \"to_span\": \"the integrity seal has been inspected\",\n      \"relation\": \"PRECONDITION\"\n    },\n    {\n      \"from_span\": \"Records the curator's approval of a seed vault access request\",\n      \"to_span\": \"the curator has approved the request\",\n      \"relation\": \"RESPONSE\"\n    },\n    {\n      \"from_span\": \"Examines the chamber integrity seal and returns whether it is intact\",\n      \"to_span\": \"the integrity seal has been inspected\",\n      \"relation\": \"RESPONSE\"\n    },\n    {\n      \"from_span\": \"Starts the pre-chilling cycle of the vault chamber to the storage temperature\",\n      \"to_span\": \"the chamber has been pre-chilled\",\n      \"relation\": \"RESPONSE\"\n    },\n    {\n      \"from_span\": \"Unlocks the seed vault chamber for an approved request and logs the entry session\",\n      \"to_span\": \"Access seed vault it-93\",\n      \"relation\": \"ORDER_AFTER\"\n    },\n    {\n      \"from_span\": \"Access seed vault it-93\",\n      \"to_span\": \"Emails the vault access report to the registrar\",\n      \"relation\": \"ORDER_BEFORE\"\n    },\n    {\n      \"from_span\": \"Unlocks the seed vault chamber for an approved request and logs the entry session\",\n      \"to_span\": \"Emails the vault access report to the registrar\",\n      \"relation\": \"ORDER_BEFORE\"\n    }\n  ],\n  \"groups\": [\n    {\n      \"logic\": \"AND\",\n      \"members\": [\n        \"the curator has approved the request\",\n        \"the integrity seal has been inspected\"\n      ],\n      \"target\": \"Access seed vault it-93\"\n    },\n    {\n      \"logic\": \"AND\",\n      \"members\": [\n        \"the chamber has been pre-chilled\"\n      ],\n      \"target\": \"the integrity seal has been inspected\"\n    }\n  ]\n}",
+ "latency": 11.717
+}

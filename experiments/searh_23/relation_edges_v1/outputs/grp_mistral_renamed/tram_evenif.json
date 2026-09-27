@@ -1,0 +1,57 @@
+{
+ "case_id": "tram_evenif",
+ "groups": [
+  {
+   "target": "inspect the brake system",
+   "parents": [
+    "the depot alarm panel shows green",
+    "releasing tram jm-64",
+    "Record the release time"
+   ],
+   "logic": "AND",
+   "reason": "The policy mandates the brake inspection *only if* the alarm panel is green, and explicitly ties the release to recording the time.",
+   "parse_error": "",
+   "cached": false,
+   "latency": 0.933
+  },
+  {
+   "target": "releasing tram jm-64",
+   "parents": [
+    "the depot alarm panel shows green",
+    "inspect the brake system",
+    "Record the release time"
+   ],
+   "logic": "AND",
+   "reason": "Policy mandates all three events (alarm check, inspection, and time recording) before releasing the tram.",
+   "parse_error": "",
+   "cached": false,
+   "latency": 0.693
+  },
+  {
+   "target": "Record the release time",
+   "parents": [
+    "the depot alarm panel shows green",
+    "inspect the brake system",
+    "releasing tram jm-64"
+   ],
+   "logic": "AND",
+   "reason": "The policy mandates sequential compliance: alarm confirmation, inspection, and release must all occur before recording the release time.",
+   "parse_error": "",
+   "cached": false,
+   "latency": 0.769
+  },
+  {
+   "target": "the depot alarm panel shows green",
+   "parents": [
+    "inspect the brake system",
+    "releasing tram jm-64",
+    "Record the release time"
+   ],
+   "logic": "AND",
+   "reason": "The policy mandates all three events (inspection, release, and recording) as sequential requirements before the target operation.",
+   "parse_error": "",
+   "cached": false,
+   "latency": 1.025
+  }
+ ]
+}

@@ -1,0 +1,43 @@
+{
+ "case_id": "windfarm_distance",
+ "groups": [
+  {
+   "target": "any maintenance session on turbine jd-64",
+   "parents": [
+    "The blade inspection",
+    "Log the weather forecast",
+    "Maintenance sessions are scheduled"
+   ],
+   "logic": "AND",
+   "reason": "The blade inspection is a mandatory precondition, and weather logging is a required daily operation, while scheduling is a prerequisite for maintenance sessions.",
+   "parse_error": "",
+   "cached": false,
+   "latency": 0.713
+  },
+  {
+   "target": "Maintenance sessions are scheduled",
+   "parents": [
+    "The blade inspection",
+    "any maintenance session on turbine jd-64",
+    "Log the weather forecast"
+   ],
+   "logic": "AND",
+   "reason": "The policy explicitly requires blade inspection *before* maintenance and mandates weather logging as a separate daily operation, both gating the target.",
+   "parse_error": "",
+   "cached": false,
+   "latency": 0.728
+  },
+  {
+   "target": "The blade inspection",
+   "parents": [
+    "any maintenance session on turbine jd-64",
+    "Maintenance sessions are scheduled"
+   ],
+   "logic": "AND",
+   "reason": "The blade inspection is a mandatory precondition for *any* maintenance session on turbine jd-64, and scheduling is required for maintenance sessions.",
+   "parse_error": "",
+   "cached": false,
+   "latency": 0.779
+  }
+ ]
+}

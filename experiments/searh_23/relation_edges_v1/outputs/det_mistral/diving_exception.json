@@ -1,0 +1,149 @@
+{
+ "case_id": "diving_exception",
+ "pairs": [
+  {
+   "from_span": "refill the oxygen cylinders C-9",
+   "to_span": "the hydrostatic test certificate is on file",
+   "from_role": "OPERATION_EFFECT",
+   "to_role": "STATE_OBSERVATION",
+   "decision": "RELATED",
+   "reason": "Event A is explicitly **gated** by Event B (refill only allowed if certificate is on file).",
+   "parse_error": "",
+   "raw": "{\n  \"decision\": \"RELATED\",\n  \"reason\": \"Event A is explicitly **gated** by Event B (refill only allowed if certificate is on file).\"\n}",
+   "cached": false,
+   "latency": 0.861
+  },
+  {
+   "from_span": "refill the oxygen cylinders C-9",
+   "to_span": "Rinse the cylinders",
+   "from_role": "OPERATION_EFFECT",
+   "to_role": "OPERATION_EFFECT",
+   "decision": "RELATED",
+   "reason": "Event A (refill) explicitly **precedes** Event B (rinse) as the policy states 'after each refill'.",
+   "parse_error": "",
+   "raw": "{\n  \"decision\": \"RELATED\",\n  \"reason\": \"Event A (refill) explicitly **precedes** Event B (rinse) as the policy states 'after each refill'.\"\n}",
+   "cached": true,
+   "latency": 1.129
+  },
+  {
+   "from_span": "refill the oxygen cylinders C-9",
+   "to_span": "Log every refill",
+   "from_role": "OPERATION_EFFECT",
+   "to_role": "OPERATION_EFFECT",
+   "decision": "RELATED",
+   "reason": "Event A must precede Event B as logging (Event B) is required after every refill (Event A).",
+   "parse_error": "",
+   "raw": "{\n  \"decision\": \"RELATED\",\n  \"reason\": \"Event A must precede Event B as logging (Event B) is required after every refill (Event A).\"\n}",
+   "cached": true,
+   "latency": 0.88
+  },
+  {
+   "from_span": "the hydrostatic test certificate is on file",
+   "to_span": "refill the oxygen cylinders C-9",
+   "from_role": "STATE_OBSERVATION",
+   "to_role": "OPERATION_EFFECT",
+   "decision": "RELATED",
+   "reason": "Event A gates Event B by requiring the hydrostatic test certificate to be on file before refilling.",
+   "parse_error": "",
+   "raw": "{\n  \"decision\": \"RELATED\",\n  \"reason\": \"Event A gates Event B by requiring the hydrostatic test certificate to be on file before refilling.\"\n}",
+   "cached": true,
+   "latency": 0.899
+  },
+  {
+   "from_span": "the hydrostatic test certificate is on file",
+   "to_span": "Rinse the cylinders",
+   "from_role": "STATE_OBSERVATION",
+   "to_role": "OPERATION_EFFECT",
+   "decision": "RELATED",
+   "reason": "Event A gates the refill operation, which temporally precedes Event B (rinse) as per policy.",
+   "parse_error": "",
+   "raw": "{\n  \"decision\": \"RELATED\",\n  \"reason\": \"Event A gates the refill operation, which temporally precedes Event B (rinse) as per policy.\"\n}",
+   "cached": true,
+   "latency": 0.974
+  },
+  {
+   "from_span": "the hydrostatic test certificate is on file",
+   "to_span": "Log every refill",
+   "from_role": "STATE_OBSERVATION",
+   "to_role": "OPERATION_EFFECT",
+   "decision": "RELATED",
+   "reason": "Event A gates Event B by requiring the hydrostatic test certificate to be on file before refilling (which triggers logging in Event B).",
+   "parse_error": "",
+   "raw": "{\n  \"decision\": \"RELATED\",\n  \"reason\": \"Event A gates Event B by requiring the hydrostatic test certificate to be on file before refilling (which triggers logging in Event B).\"\n}",
+   "cached": true,
+   "latency": 1.019
+  },
+  {
+   "from_span": "Rinse the cylinders",
+   "to_span": "refill the oxygen cylinders C-9",
+   "from_role": "OPERATION_EFFECT",
+   "to_role": "OPERATION_EFFECT",
+   "decision": "RELATED",
+   "reason": "Event A (rinse) explicitly follows Event B (refill) in the policy as a mandatory temporal action.",
+   "parse_error": "",
+   "raw": "{\n  \"decision\": \"RELATED\",\n  \"reason\": \"Event A (rinse) explicitly follows Event B (refill) in the policy as a mandatory temporal action.\"\n}",
+   "cached": true,
+   "latency": 0.994
+  },
+  {
+   "from_span": "Rinse the cylinders",
+   "to_span": "the hydrostatic test certificate is on file",
+   "from_role": "OPERATION_EFFECT",
+   "to_role": "STATE_OBSERVATION",
+   "decision": "NOT_RELATED",
+   "reason": "Event A is a procedural step after refill, while Event B is a prerequisite condition for refill.",
+   "parse_error": "",
+   "raw": "{\n  \"decision\": \"NOT_RELATED\",\n  \"reason\": \"Event A is a procedural step after refill, while Event B is a prerequisite condition for refill.\"\n}",
+   "cached": false,
+   "latency": 1.062
+  },
+  {
+   "from_span": "Rinse the cylinders",
+   "to_span": "Log every refill",
+   "from_role": "OPERATION_EFFECT",
+   "to_role": "OPERATION_EFFECT",
+   "decision": "RELATED",
+   "reason": "Event A (rinse) explicitly precedes Event B (log) as part of the sequential refill process.",
+   "parse_error": "",
+   "raw": "{\n  \"decision\": \"RELATED\",\n  \"reason\": \"Event A (rinse) explicitly precedes Event B (log) as part of the sequential refill process.\"\n}",
+   "cached": true,
+   "latency": 1.066
+  },
+  {
+   "from_span": "Log every refill",
+   "to_span": "refill the oxygen cylinders C-9",
+   "from_role": "OPERATION_EFFECT",
+   "to_role": "OPERATION_EFFECT",
+   "decision": "RELATED",
+   "reason": "Event A (logging) is explicitly stated as a mandatory action *after* Event B (refilling) in the policy.",
+   "parse_error": "",
+   "raw": "{\n  \"decision\": \"RELATED\",\n  \"reason\": \"Event A (logging) is explicitly stated as a mandatory action *after* Event B (refilling) in the policy.\"\n}",
+   "cached": true,
+   "latency": 0.938
+  },
+  {
+   "from_span": "Log every refill",
+   "to_span": "the hydrostatic test certificate is on file",
+   "from_role": "OPERATION_EFFECT",
+   "to_role": "STATE_OBSERVATION",
+   "decision": "NOT_RELATED",
+   "reason": "Event A (logging) is a standalone procedural requirement independent of the condition in Event B (certificate validity).",
+   "parse_error": "",
+   "raw": "{\n  \"decision\": \"NOT_RELATED\",\n  \"reason\": \"Event A (logging) is a standalone procedural requirement independent of the condition in Event B (certificate validity).\"\n}",
+   "cached": false,
+   "latency": 1.099
+  },
+  {
+   "from_span": "Log every refill",
+   "to_span": "Rinse the cylinders",
+   "from_role": "OPERATION_EFFECT",
+   "to_role": "OPERATION_EFFECT",
+   "decision": "NOT_RELATED",
+   "reason": "The policy links Event A to logging and Event B to rinsing, but neither gates, precedes, enables, or triggers the other.",
+   "parse_error": "",
+   "raw": "{\n  \"decision\": \"NOT_RELATED\",\n  \"reason\": \"The policy links Event A to logging and Event B to rinsing, but neither gates, precedes, enables, or triggers the other.\"\n}",
+   "cached": true,
+   "latency": 1.043
+  }
+ ]
+}

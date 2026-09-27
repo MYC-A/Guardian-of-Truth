@@ -1,0 +1,149 @@
+{
+ "case_id": "brewery_clauseB",
+ "pairs": [
+  {
+   "from_span": "The gravity reading must be stable",
+   "to_span": "bottling of ale batch ns-99",
+   "from_role": "STATE_OBSERVATION",
+   "to_role": "OPERATION_EFFECT",
+   "decision": "RELATED",
+   "reason": "Event A gates Event B as bottling of ale batch ns-99 is only permitted when gravity is stable.",
+   "parse_error": "",
+   "raw": "{\n  \"decision\": \"RELATED\",\n  \"reason\": \"Event A gates Event B as bottling of ale batch ns-99 is only permitted when gravity is stable.\"\n}",
+   "cached": false,
+   "latency": 0.873
+  },
+  {
+   "from_span": "The gravity reading must be stable",
+   "to_span": "Cap the bottles",
+   "from_role": "STATE_OBSERVATION",
+   "to_role": "OPERATION_EFFECT",
+   "decision": "RELATED",
+   "reason": "Event A enables Event B by requiring stable gravity as a prerequisite for bottling.",
+   "parse_error": "",
+   "raw": "{\n  \"decision\": \"RELATED\",\n  \"reason\": \"Event A enables Event B by requiring stable gravity as a prerequisite for bottling.\"\n}",
+   "cached": false,
+   "latency": 0.807
+  },
+  {
+   "from_span": "The gravity reading must be stable",
+   "to_span": "Store the crates",
+   "from_role": "STATE_OBSERVATION",
+   "to_role": "OPERATION_EFFECT",
+   "decision": "RELATED",
+   "reason": "Event A enables Event B by requiring stable gravity as a prerequisite for bottling, which is a necessary step before storing crates.",
+   "parse_error": "",
+   "raw": "{\n  \"decision\": \"RELATED\",\n  \"reason\": \"Event A enables Event B by requiring stable gravity as a prerequisite for bottling, which is a necessary step before storing crates.\"\n}",
+   "cached": false,
+   "latency": 0.9
+  },
+  {
+   "from_span": "bottling of ale batch ns-99",
+   "to_span": "The gravity reading must be stable",
+   "from_role": "OPERATION_EFFECT",
+   "to_role": "STATE_OBSERVATION",
+   "decision": "RELATED",
+   "reason": "Event A is explicitly enabled only when Event B (stable gravity reading) is true.",
+   "parse_error": "",
+   "raw": "{\n  \"decision\": \"RELATED\",\n  \"reason\": \"Event A is explicitly enabled only when Event B (stable gravity reading) is true.\"\n}",
+   "cached": false,
+   "latency": 0.88
+  },
+  {
+   "from_span": "bottling of ale batch ns-99",
+   "to_span": "Cap the bottles",
+   "from_role": "OPERATION_EFFECT",
+   "to_role": "OPERATION_EFFECT",
+   "decision": "RELATED",
+   "reason": "Event A (bottling) must precede Event B (capping) as per the policy's sequential requirement.",
+   "parse_error": "",
+   "raw": "{\n  \"decision\": \"RELATED\",\n  \"reason\": \"Event A (bottling) must precede Event B (capping) as per the policy's sequential requirement.\"\n}",
+   "cached": false,
+   "latency": 1.068
+  },
+  {
+   "from_span": "bottling of ale batch ns-99",
+   "to_span": "Store the crates",
+   "from_role": "OPERATION_EFFECT",
+   "to_role": "OPERATION_EFFECT",
+   "decision": "RELATED",
+   "reason": "Event A (bottling) must precede Event B (storing crates) as bottling is a prerequisite for crate storage.",
+   "parse_error": "",
+   "raw": "{\n  \"decision\": \"RELATED\",\n  \"reason\": \"Event A (bottling) must precede Event B (storing crates) as bottling is a prerequisite for crate storage.\"\n}",
+   "cached": false,
+   "latency": 1.145
+  },
+  {
+   "from_span": "Cap the bottles",
+   "to_span": "The gravity reading must be stable",
+   "from_role": "OPERATION_EFFECT",
+   "to_role": "STATE_OBSERVATION",
+   "decision": "RELATED",
+   "reason": "Event A (capping) is enabled only after Event B (stable gravity reading) is confirmed by the policy.",
+   "parse_error": "",
+   "raw": "{\n  \"decision\": \"RELATED\",\n  \"reason\": \"Event A (capping) is enabled only after Event B (stable gravity reading) is confirmed by the policy.\"\n}",
+   "cached": false,
+   "latency": 0.897
+  },
+  {
+   "from_span": "Cap the bottles",
+   "to_span": "bottling of ale batch ns-99",
+   "from_role": "OPERATION_EFFECT",
+   "to_role": "OPERATION_EFFECT",
+   "decision": "RELATED",
+   "reason": "Event A (capping) is explicitly stated as a required step *after* bottling (Event B) begins, per the policy's sequential workflow.",
+   "parse_error": "",
+   "raw": "{\n  \"decision\": \"RELATED\",\n  \"reason\": \"Event A (capping) is explicitly stated as a required step *after* bottling (Event B) begins, per the policy's sequential workflow.\"\n}",
+   "cached": false,
+   "latency": 1.072
+  },
+  {
+   "from_span": "Cap the bottles",
+   "to_span": "Store the crates",
+   "from_role": "OPERATION_EFFECT",
+   "to_role": "OPERATION_EFFECT",
+   "decision": "NOT_RELATED",
+   "reason": "The policy does not establish a direct regulatory or temporal relationship between capping bottles (Event A) and storing crates (Event B).",
+   "parse_error": "",
+   "raw": "{\n  \"decision\": \"NOT_RELATED\",\n  \"reason\": \"The policy does not establish a direct regulatory or temporal relationship between capping bottles (Event A) and storing crates (Event B).\"\n}",
+   "cached": false,
+   "latency": 1.041
+  },
+  {
+   "from_span": "Store the crates",
+   "to_span": "The gravity reading must be stable",
+   "from_role": "OPERATION_EFFECT",
+   "to_role": "STATE_OBSERVATION",
+   "decision": "NOT_RELATED",
+   "reason": "The policy states no explicit temporal or regulatory dependency between crate storage and gravity stability.",
+   "parse_error": "",
+   "raw": "{\n  \"decision\": \"NOT_RELATED\",\n  \"reason\": \"The policy states no explicit temporal or regulatory dependency between crate storage and gravity stability.\"\n}",
+   "cached": false,
+   "latency": 0.778
+  },
+  {
+   "from_span": "Store the crates",
+   "to_span": "bottling of ale batch ns-99",
+   "from_role": "OPERATION_EFFECT",
+   "to_role": "OPERATION_EFFECT",
+   "decision": "RELATED",
+   "reason": "Event A (storing crates) is a required step *after* Event B (bottling) begins, as per the policy's sequential instruction.",
+   "parse_error": "",
+   "raw": "{\n  \"decision\": \"RELATED\",\n  \"reason\": \"Event A (storing crates) is a required step *after* Event B (bottling) begins, as per the policy's sequential instruction.\"\n}",
+   "cached": false,
+   "latency": 1.327
+  },
+  {
+   "from_span": "Store the crates",
+   "to_span": "Cap the bottles",
+   "from_role": "OPERATION_EFFECT",
+   "to_role": "OPERATION_EFFECT",
+   "decision": "RELATED",
+   "reason": "Event A (storing crates) follows Event B (capping bottles) in the policy sequence, indicating a temporal relation where B must occur before A.",
+   "parse_error": "",
+   "raw": "{\n  \"decision\": \"RELATED\",\n  \"reason\": \"Event A (storing crates) follows Event B (capping bottles) in the policy sequence, indicating a temporal relation where B must occur before A.\"\n}",
+   "cached": false,
+   "latency": 1.017
+  }
+ ]
+}

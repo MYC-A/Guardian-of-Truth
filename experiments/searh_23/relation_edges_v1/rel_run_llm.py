@@ -39,6 +39,10 @@ MODELS = {
     "codestral": "codestral-latest",
 }
 
+DIR_SYSTEM = ("You are a policy-compliance analyst. You judge only from the given "
+              "policy text. Answer strictly as a single JSON object, no extra "
+              "text.")
+
 SYSTEM = ("You are a policy-compliance analyst. You judge only from the given "
           "policy text and the event descriptions. Tool names are never shown; "
           "tool semantics come from the descriptions provided. Answer strictly "
@@ -98,6 +102,17 @@ def grp_user(case, target, parents):
             '"UNKNOWN", "reason": "one short sentence"}')
 
 
+def dir_user(case, a, b):
+    return (f"POLICY:\n{case['policy']}\n\n"
+            f"EVENT A: \"{a['source_span']}\" (role: {a['role']})\n"
+            f"EVENT B: \"{b['source_span']}\" (role: {b['role']})\n\n"
+            "Question: according to this policy, which event must happen "
+            "first, or acts as the prerequisite/trigger for the other? "
+            "If neither precedes the other in the policy, answer UNCLEAR.\n"
+            'Answer strictly as JSON: {"first": "A" or "B" or "UNCLEAR", '
+            '"reason": "one short sentence"}')
+
+
 def e2e_user(case):
     by_name = tools_by_name(case)
     catalog = "\n".join(f"- {render_tool(t)}" for t in case["tools"])
@@ -121,6 +136,54 @@ def e2e_user(case):
             '"..."}], "edges": [{"from_span": "...", "to_span": "...", '
             '"relation": "..."}], "groups": [{"logic": "AND" or "OR", '
             '"members": ["span", "..."], "target": "span"}]}')
+
+
+def detected_unordered_pairs(which, model_key):
+    """POST-HOC detector combo: (ce score >= 0.35 band) AND mistral RELATED.
+    Same rule as combo_band in rel_score.py (designed after opening the
+    original results)."""
+    from rel_common import FROZEN as FZ
+    import json as _json
+    gold_det = load_pairs_public(which, "DET_local")
+    mist = load_pairs_public(which, f"det_{model_key}")
+    cases = load_suite(which)
+    out = {}
+    for case in cases:
+        cid = case["case_id"]
+        m_ce = {(r["from_span"], r["to_span"]): r for r in gold_det.get(cid, [])}
+        m_mi = {(r["from_span"], r["to_span"]): r for r in mist.get(cid, [])}
+        ev_by_span = {e["source_span"]: e for e in case["events"]}
+        spans = [e["source_span"] for e in case["events"] if e["role"] != "OTHER"]
+        seen = set()
+        pairs = []
+        for i, a in enumerate(spans):
+            for b in spans[i + 1:]:
+                key = frozenset((a, b))
+                if key in seen:
+                    continue
+                seen.add(key)
+
+                def pos(x, y):
+                    ce_row = m_ce.get((x, y)) or {}
+                    ce_ok = ce_row.get("ce_decision") in ("RELATED", "UNKNOWN")
+                    mi_ok = (m_mi.get((x, y)) or {}).get("decision") == "RELATED"
+                    return ce_ok and mi_ok
+
+                if pos(a, b) or pos(b, a):
+                    pairs.append((ev_by_span[a], ev_by_span[b]))
+        out[cid] = pairs
+    return out
+
+
+def load_pairs_public(which, arm_dir):
+    outdir = out_dir(arm_dir + suffix_for(which))
+    pairs = {}
+    for f in sorted(outdir.glob("*.json")):
+        if f.name.startswith("_"):
+            continue
+        data = json.loads(f.read_text(encoding="utf-8"))
+        pairs[data["case_id"]] = data.get("pairs", [])
+    return pairs
 
 
 def run_phase(phase, model_key, which):
@@ -209,6 +272,26 @@ def run_phase(phase, model_key, which):
                                "cached": rec.get("cached", False),
                                "latency": rec.get("latency")})
             payload = {"case_id": case["case_id"], "groups": groups}
+
+        elif phase == "dir":
+            """POST-HOC direction arm: for every unordered pair detected by the
+            ce-band + mistral combo, ask which event happens first."""
+            det_pairs = detected_unordered_pairs(which, model_key)
+            rows = []
+            for a, b in det_pairs.get(case["case_id"], []):
+                rec = client.ask(DIR_SYSTEM, dir_user(case, a, b), max_tokens=200)
+                parsed, err = Mistral.parse_json(rec["raw"])
+                n_calls += 0 if rec.get("cached") else 1
+                first = parsed.get("first", "UNCLEAR") if parsed else "UNCLEAR"
+                if first not in ("A", "B", "UNCLEAR"):
+                    first = "UNCLEAR"
+                rows.append({"a_span": a["source_span"], "b_span": b["source_span"],
+                             "first": first,
+                             "reason": parsed.get("reason", "") if parsed else "",
+                             "parse_error": err,
+                             "cached": rec.get("cached", False),
+                             "latency": rec.get("latency")})
+            payload = {"case_id": case["case_id"], "pairs": rows}
 
         elif phase == "e2e":
             rec = client.ask(SYSTEM, e2e_user(case), max_tokens=2000)

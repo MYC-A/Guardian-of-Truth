@@ -1,0 +1,149 @@
+{
+ "case_id": "tram_evenif",
+ "pairs": [
+  {
+   "from_span": "the depot alarm panel shows green",
+   "to_span": "inspect the brake system",
+   "from_role": "STATE_OBSERVATION",
+   "to_role": "PRECONDITION_CHECK",
+   "decision": "RELATED",
+   "reason": "Event A does not block B; the policy explicitly states inspection (B) must occur regardless of the alarm panel status (A).",
+   "parse_error": "",
+   "raw": "{\n  \"decision\": \"RELATED\",\n  \"reason\": \"Event A does not block B; the policy explicitly states inspection (B) must occur regardless of the alarm panel status (A).\"\n}",
+   "cached": false,
+   "latency": 1.08
+  },
+  {
+   "from_span": "the depot alarm panel shows green",
+   "to_span": "releasing tram T-31",
+   "from_role": "STATE_OBSERVATION",
+   "to_role": "OPERATION_EFFECT",
+   "decision": "RELATED",
+   "reason": "Event A gates Event B by requiring inspection before release, despite the alarm panel's green status.",
+   "parse_error": "",
+   "raw": "{\n  \"decision\": \"RELATED\",\n  \"reason\": \"Event A gates Event B by requiring inspection before release, despite the alarm panel's green status.\"\n}",
+   "cached": true,
+   "latency": 0.815
+  },
+  {
+   "from_span": "the depot alarm panel shows green",
+   "to_span": "Record the release time",
+   "from_role": "STATE_OBSERVATION",
+   "to_role": "OPERATION_EFFECT",
+   "decision": "RELATED",
+   "reason": "Event A (inspection) **precedes** Event B (recording release time) as a mandatory step before release.",
+   "parse_error": "",
+   "raw": "{\n  \"decision\": \"RELATED\",\n  \"reason\": \"Event A (inspection) **precedes** Event B (recording release time) as a mandatory step before release.\"\n}",
+   "cached": true,
+   "latency": 1.124
+  },
+  {
+   "from_span": "inspect the brake system",
+   "to_span": "the depot alarm panel shows green",
+   "from_role": "PRECONDITION_CHECK",
+   "to_role": "STATE_OBSERVATION",
+   "decision": "RELATED",
+   "reason": "Event A (inspection) **precedes** Event B (alarm panel observation) as a mandatory precondition, regardless of B's state.",
+   "parse_error": "",
+   "raw": "{\n  \"decision\": \"RELATED\",\n  \"reason\": \"Event A (inspection) **precedes** Event B (alarm panel observation) as a mandatory precondition, regardless of B's state.\"\n}",
+   "cached": false,
+   "latency": 1.569
+  },
+  {
+   "from_span": "inspect the brake system",
+   "to_span": "releasing tram T-31",
+   "from_role": "PRECONDITION_CHECK",
+   "to_role": "OPERATION_EFFECT",
+   "decision": "RELATED",
+   "reason": "Policy explicitly states inspection must happen before release, implying A gates B.",
+   "parse_error": "",
+   "raw": "{\n  \"decision\": \"RELATED\",\n  \"relation\": {\n    \"type\": \"GATE\",\n    \"description\": \"Event A (brake inspection) must occur **before** Event B (release) and acts as a mandatory precondition.\"\n  },\n  \"reason\": \"Policy explicitly states inspection must happen before release, implying A gates B.\"\n}",
+   "cached": true,
+   "latency": 1.387
+  },
+  {
+   "from_span": "inspect the brake system",
+   "to_span": "Record the release time",
+   "from_role": "PRECONDITION_CHECK",
+   "to_role": "OPERATION_EFFECT",
+   "decision": "RELATED",
+   "reason": "Event A (inspection) must precede Event B (release time recording) as per the policy's sequential requirement.",
+   "parse_error": "",
+   "raw": "{\n  \"decision\": \"RELATED\",\n  \"reason\": \"Event A (inspection) must precede Event B (release time recording) as per the policy's sequential requirement.\"\n}",
+   "cached": true,
+   "latency": 0.868
+  },
+  {
+   "from_span": "releasing tram T-31",
+   "to_span": "the depot alarm panel shows green",
+   "from_role": "OPERATION_EFFECT",
+   "to_role": "STATE_OBSERVATION",
+   "decision": "RELATED",
+   "reason": "Event A (releasing tram T-31) is explicitly **preceded** by a mandatory inspection (implied by policy context), which is **enabled** only after observing Event B (alarm panel status), but **not triggered by it**—inspection is required regardless of the panel's state.",
+   "parse_error": "",
+   "raw": "{\n  \"decision\": \"RELATED\",\n  \"reason\": \"Event A (releasing tram T-31) is explicitly **preceded** by a mandatory inspection (implied by policy context), which is **enabled** only after observing Event B (alarm panel status), but **not triggered by it**—inspection is required regardless of the panel's state.\"\n}",
+   "cached": false,
+   "latency": 1.338
+  },
+  {
+   "from_span": "releasing tram T-31",
+   "to_span": "inspect the brake system",
+   "from_role": "OPERATION_EFFECT",
+   "to_role": "PRECONDITION_CHECK",
+   "decision": "RELATED",
+   "reason": "Event B (inspection) must occur **before** Event A (release) as a mandatory precondition.",
+   "parse_error": "",
+   "raw": "{\n  \"decision\": \"RELATED\",\n  \"reason\": \"Event B (inspection) must occur **before** Event A (release) as a mandatory precondition.\"\n}",
+   "cached": false,
+   "latency": 0.872
+  },
+  {
+   "from_span": "releasing tram T-31",
+   "to_span": "Record the release time",
+   "from_role": "OPERATION_EFFECT",
+   "to_role": "OPERATION_EFFECT",
+   "decision": "RELATED",
+   "reason": "Event A (releasing tram T-31) must precede Event B (recording the release time) as per the policy's sequential requirement.",
+   "parse_error": "",
+   "raw": "{\n  \"decision\": \"RELATED\",\n  \"reason\": \"Event A (releasing tram T-31) must precede Event B (recording the release time) as per the policy's sequential requirement.\"\n}",
+   "cached": true,
+   "latency": 0.996
+  },
+  {
+   "from_span": "Record the release time",
+   "to_span": "the depot alarm panel shows green",
+   "from_role": "OPERATION_EFFECT",
+   "to_role": "STATE_OBSERVATION",
+   "decision": "RELATED",
+   "reason": "Event A (recording release time) is explicitly required **after** Event B (alarm panel showing green) as part of the inspection-and-release procedure.",
+   "parse_error": "",
+   "raw": "{\n  \"decision\": \"RELATED\",\n  \"reason\": \"Event A (recording release time) is explicitly required **after** Event B (alarm panel showing green) as part of the inspection-and-release procedure.\"\n}",
+   "cached": false,
+   "latency": 1.2
+  },
+  {
+   "from_span": "Record the release time",
+   "to_span": "inspect the brake system",
+   "from_role": "OPERATION_EFFECT",
+   "to_role": "PRECONDITION_CHECK",
+   "decision": "RELATED",
+   "reason": "Event A (recording release time) temporally follows Event B (inspecting brakes) as a mandatory step after the inspection.",
+   "parse_error": "",
+   "raw": "{\n  \"decision\": \"RELATED\",\n  \"reason\": \"Event A (recording release time) temporally follows Event B (inspecting brakes) as a mandatory step after the inspection.\"\n}",
+   "cached": false,
+   "latency": 1.042
+  },
+  {
+   "from_span": "Record the release time",
+   "to_span": "releasing tram T-31",
+   "from_role": "OPERATION_EFFECT",
+   "to_role": "OPERATION_EFFECT",
+   "decision": "RELATED",
+   "reason": "Event A (recording release time) explicitly follows Event B (releasing tram T-31) as a mandatory action in the policy.",
+   "parse_error": "",
+   "raw": "{\n  \"decision\": \"RELATED\",\n  \"reason\": \"Event A (recording release time) explicitly follows Event B (releasing tram T-31) as a mandatory action in the policy.\"\n}",
+   "cached": true,
+   "latency": 0.994
+  }
+ ]
+}

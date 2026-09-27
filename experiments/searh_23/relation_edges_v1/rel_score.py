@@ -115,56 +115,67 @@ def load_pairs(which, arm_dir):
 
 
 def detection_metrics(which, arm_dir, decision_field="decision"):
+    """Relation DETECTION on the unordered pair space, per the brief:
+    'есть ли вообще смысловая связь между A и B' - a pair {a,b} is positive
+    iff a gold edge connects a and b in EITHER direction. Direction is a
+    CLASSIFICATION problem, not a detection problem.
+    Also reports per-direction diagnostics (direction blindness).
+    """
     gold = load_gold(which)
     pairs = load_pairs(which, arm_dir)
-    tp = fp = fn = tn = unk = n = 0
-    fnu = 0
+    tp = fp = fn = tn = 0
+    dir_blind = 0  # positives where only ONE direction answered RELATED
     per_case_fp = {}
     for gcase in gold:
         edges = gold_edge_map(gcase)
+        rev_edges = {(b, a) for (a, b) in edges}
         rows = pairs.get(gcase["case_id"], [])
         rowmap = {(r["from_span"], r["to_span"]): r for r in rows}
         universe = [(u["from"], u["to"]) for u in gcase["pair_universe"]]
+        seen_unordered = set()
         case_fp = []
         for (a, b) in universe:
-            n += 1
-            row = rowmap.get((a, b))
-            dec = (row or {}).get(decision_field, "UNKNOWN")
-            if dec == "UNKNOWN":
-                unk += 1
-            pos = (a, b) in edges
-            if dec == "RELATED":
-                if pos:
+            key = frozenset((a, b))
+            if key in seen_unordered:
+                continue
+            seen_unordered.add(key)
+            dec_ab = (rowmap.get((a, b)) or {}).get(decision_field, "UNKNOWN")
+            dec_ba = (rowmap.get((b, a)) or {}).get(decision_field, "UNKNOWN")
+            pred_pos = (dec_ab == "RELATED") or (dec_ba == "RELATED")
+            gold_pos = ((a, b) in edges) or ((b, a) in edges)
+            if gold_pos and (dec_ab == "RELATED") != (dec_ba == "RELATED"):
+                dir_blind += 1
+            if pred_pos:
+                if gold_pos:
                     tp += 1
                 else:
                     fp += 1
-                    case_fp.append((a, b))
+                    case_fp.append(tuple(sorted((a, b))))
             else:
-                if pos:
-                    if dec == "NOT_RELATED":
-                        fn += 1
-                    else:
-                        fnu += 1
+                if gold_pos:
+                    fn += 1
                 else:
                     tn += 1
         if case_fp:
             per_case_fp[gcase["case_id"]] = case_fp
     prec = tp / (tp + fp) if tp + fp else 0.0
-    pos_total = tp + fn + fnu
-    rec = tp / pos_total if pos_total else 0.0
+    rec = tp / (tp + fn) if tp + fn else 0.0
     f1 = 2 * prec * rec / (prec + rec) if prec + rec else 0.0
+    n_unordered = tp + fp + fn + tn
     return {
-        "tp": tp, "fp": fp, "fn_not_related": fn, "fn_unknown": fnu,
-        "tn": tn, "pairs": n, "positives": pos_total,
+        "tp": tp, "fp": fp, "fn": fn, "tn": tn,
+        "unordered_pairs": n_unordered, "positives": tp + fn,
         "precision": round(prec, 4), "recall": round(rec, 4),
-        "f1": round(f1, 4), "unknown_rate": round(unk / n, 4) if n else None,
+        "f1": round(f1, 4),
         "false_edge_rate": round(fp / (tp + fp), 4) if tp + fp else None,
+        "direction_blind_positives": dir_blind,
         "per_case_fp": {k: v for k, v in per_case_fp.items()},
     }
 
 
 def combo_detection(which, specs):
-    """Post-hoc detector combinations over the pair universe."""
+    """Post-hoc detector combinations over the unordered pair space
+    (symmetric detection semantics, same as detection_metrics)."""
     gold = load_gold(which)
     ce = load_pairs(which, "DET_local")
     nli = load_pairs(which, "DET_local")
@@ -173,45 +184,99 @@ def combo_detection(which, specs):
     result = {}
     for name, spec in specs.items():
         k, fields = spec
-        tp = fp = fnu = fnr = n = unk = 0
+        tp = fp = fn = 0
+        dir_blind = 0
         for gcase in gold:
             edges = gold_edge_map(gcase)
+
             def local_map(pairs):
                 return {(r["from_span"], r["to_span"]): r for r in pairs.get(gcase["case_id"], [])}
+
             m_ce, m_nli = local_map(ce), local_map(nli)
             m_mi, m_co = local_map(mist), local_map(cod)
-            for (a, b) in [(u["from"], u["to"]) for u in gcase["pair_universe"]]:
-                n += 1
+
+            def combo_dec(a, b):
                 rows = [m_ce.get((a, b)), m_nli.get((a, b)),
                         m_mi.get((a, b)), m_co.get((a, b))]
                 votes = [row.get(field) for row, field in zip(rows, fields)
                          if row is not None and field is not None]
                 rel = sum(1 for v in votes if v == "RELATED")
                 if rel >= k and votes:
-                    dec = "RELATED"
-                elif votes and all(v == "NOT_RELATED" for v in votes):
-                    dec = "NOT_RELATED"
+                    return "RELATED"
+                if votes and all(v == "NOT_RELATED" for v in votes):
+                    return "NOT_RELATED"
+                return "UNKNOWN"
+
+            seen = set()
+            for (a, b) in [(u["from"], u["to"]) for u in gcase["pair_universe"]]:
+                key = frozenset((a, b))
+                if key in seen:
+                    continue
+                seen.add(key)
+                dec_ab = combo_dec(a, b)
+                dec_ba = combo_dec(b, a)
+                pred_pos = (dec_ab == "RELATED") or (dec_ba == "RELATED")
+                gold_pos = ((a, b) in edges) or ((b, a) in edges)
+                if gold_pos and (dec_ab == "RELATED") != (dec_ba == "RELATED"):
+                    dir_blind += 1
+                if pred_pos:
+                    tp += gold_pos
+                    fp += (not gold_pos)
                 else:
-                    dec = "UNKNOWN"
-                if dec == "UNKNOWN":
-                    unk += 1
-                pos = (a, b) in edges
-                if dec == "RELATED":
-                    tp += pos
-                    fp += (not pos)
-                else:
-                    fnr += (pos and dec == "NOT_RELATED")
-                    fnu += (pos and dec == "UNKNOWN")
+                    fn += gold_pos
         prec = tp / (tp + fp) if tp + fp else 0.0
-        pos_total = tp + fnr + fnu
-        rec = tp / pos_total if pos_total else 0.0
+        rec = tp / (tp + fn) if tp + fn else 0.0
         result[name] = {
-            "tp": tp, "fp": fp, "fn_not_related": fnr, "fn_unknown": fnu,
+            "tp": tp, "fp": fp, "fn": fn,
             "precision": round(prec, 4), "recall": round(rec, 4),
             "f1": round(2 * prec * rec / (prec + rec), 4) if prec + rec else 0.0,
-            "unknown_rate": round(unk / n, 4) if n else None,
+            "direction_blind_positives": dir_blind,
         }
     return result
+
+
+def combo_band(which):
+    """POST-HOC combo designed after opening the original results:
+    RELATED iff (ce score >= 0.35, i.e. ce decision RELATED or UNKNOWN band)
+    AND mistral says RELATED. Motivation: mistral detection has high recall
+    but massive false-edge rate; the cross-encoder score is precise; their
+    agreement should keep recall while cutting false edges. Must be validated
+    on the untouched mini set before any integration claim."""
+    gold = load_gold(which)
+    ce = load_pairs(which, "DET_local")
+    mist = load_pairs(which, "det_mistral")
+    tp = fp = fn = 0
+    for gcase in gold:
+        edges = gold_edge_map(gcase)
+        m_ce = {(r["from_span"], r["to_span"]): r for r in ce.get(gcase["case_id"], [])}
+        m_mi = {(r["from_span"], r["to_span"]): r for r in mist.get(gcase["case_id"], [])}
+        seen = set()
+        for (a, b) in [(u["from"], u["to"]) for u in gcase["pair_universe"]]:
+            key = frozenset((a, b))
+            if key in seen:
+                continue
+            seen.add(key)
+
+            def pos(a, b):
+                ce_row = m_ce.get((a, b)) or {}
+                ce_ok = ce_row.get("ce_decision") in ("RELATED", "UNKNOWN")
+                mi_ok = (m_mi.get((a, b)) or {}).get("decision") == "RELATED"
+                return ce_ok and mi_ok
+
+            pred_pos = pos(a, b) or pos(b, a)
+            gold_pos = ((a, b) in edges) or ((b, a) in edges)
+            if pred_pos:
+                tp += gold_pos
+                fp += (not gold_pos)
+            else:
+                fn += gold_pos
+    prec = tp / (tp + fp) if tp + fp else 0.0
+    rec = tp / (tp + fn) if tp + fn else 0.0
+    return {"posthoc_ce_band_and_mistral": {
+        "tp": tp, "fp": fp, "fn": fn,
+        "precision": round(prec, 4), "recall": round(rec, 4),
+        "f1": round(2 * prec * rec / (prec + rec), 4) if prec + rec else 0.0,
+    }}
 
 
 def consensus_rule(k, fields):
@@ -236,12 +301,16 @@ def classification_metrics(which, arm_dir):
     pairs = load_pairs(which, arm_dir)
     exact = acceptable = set_any = total = 0
     direction_errors = 0
+    reversed_related = 0
     per_relation = {}
+    RELATED_TYPES = {"PRECONDITION", "STATE_GATE", "ORDER_BEFORE", "ORDER_AFTER",
+                     "RESPONSE", "EXCEPTION", "EVEN_IF"}
     for gcase in gold:
         rowmap = {(r["from_span"], r["to_span"]): r
                   for r in pairs.get(gcase["case_id"], [])}
         for e in gcase["edges"]:
             row = rowmap.get((e["from_span"], e["to_span"]))
+            rev_row = rowmap.get((e["to_span"], e["from_span"]))
             if row is None:
                 continue
             total += 1
@@ -262,12 +331,15 @@ def classification_metrics(which, arm_dir):
             if (e["relation"] == "ORDER_BEFORE" and rel == "ORDER_AFTER") or \
                (e["relation"] == "ORDER_AFTER" and rel == "ORDER_BEFORE"):
                 direction_errors += 1
+            if rev_row is not None and (rev_row.get("relation") in RELATED_TYPES):
+                reversed_related += 1
     return {
         "scored_pairs": total,
         "exact": round(exact / total, 4) if total else None,
         "acceptable": round(acceptable / total, 4) if total else None,
         "set_any_acceptable": round(set_any / total, 4) if total else None,
         "direction_errors": direction_errors,
+        "reversed_pair_related": reversed_related,
         "per_relation": per_relation,
     }
 
@@ -326,7 +398,7 @@ def e2e_metrics(which, arm_dir):
         n_pred_ev += len(pred_events)
         # greedy one-to-one span matching (longest gold spans first)
         used = set()
-        match_of = {}
+        matches = []  # (pred_event, gold_event)
         for pe in sorted(pred_events, key=lambda p: -len(p.get("span", ""))):
             best = None
             for ge in gcase["candidate_events"]:
@@ -336,14 +408,15 @@ def e2e_metrics(which, arm_dir):
                     best = ge
                     break
             if best is not None:
-                match_of[id(pe)] = best
+                matches.append((pe, best))
                 used.add(best["source_span"])
         ev_matched += len(used)
-        role_correct += sum(1 for pe, ge in match_of.items()
+        role_correct += sum(1 for pe, ge in matches
                             if pe.get("role") == ge["role"])
         # edges: map predicted endpoints to gold events through matched preds
         gold_edges = gold_edge_map(gcase)
         pred_edges = []
+        match_by_id = {id(pe): ge for pe, ge in matches}
         for e in graph.get("edges", []) or []:
             fs, ts = e.get("from_span", ""), e.get("to_span", "")
             fpe = next((pe for pe in pred_events if span_match(fs, pe.get("span", ""))), None)
@@ -351,7 +424,7 @@ def e2e_metrics(which, arm_dir):
             if fpe is None or tpe is None or fpe is tpe:
                 extra += 1
                 continue
-            fge, tge = match_of.get(id(fpe)), match_of.get(id(tpe))
+            fge, tge = match_by_id.get(id(fpe)), match_by_id.get(id(tpe))
             if fge is None or tge is None:
                 extra += 1
                 continue
@@ -398,8 +471,15 @@ def e2e_metrics(which, arm_dir):
 
 def pipeline_metrics(which, det_arm, cls_arm, retriever_arm=None, top_k=None,
                      det_field="decision"):
-    """Composed graph: edges = DET-RELATED pairs (optionally within retriever
-    top-k) typed by the CLS arm; groups from the GRP arm if present."""
+    """Composed graph over unordered pairs:
+      - a pair becomes an edge iff the DETECTOR answers RELATED in either
+        direction (symmetric detection);
+      - direction and type are resolved by the CLASSIFIER: the direction whose
+        classification is a related type wins; if both directions classify as
+        related types, BOTH directed edges are emitted (direction confusion
+        becomes visible as extra/direction-error edges);
+      - optional retriever top-k gating restricts candidate pairs.
+    """
     gold = load_gold(which)
     det = load_pairs(which, det_arm)
     cls = load_pairs(which, cls_arm)
@@ -408,9 +488,9 @@ def pipeline_metrics(which, det_arm, cls_arm, retriever_arm=None, top_k=None,
         ret_dir = OUTPUTS / (retriever_arm + suffix_for(which))
         ret = {f.stem: json.loads(f.read_text(encoding="utf-8"))["queries"]
                for f in ret_dir.glob("*.json") if not f.name.startswith("_")}
-    tp = fp = 0
-    type_correct = 0
-    fn = 0
+    RELATED_TYPES = {"PRECONDITION", "STATE_GATE", "ORDER_BEFORE", "ORDER_AFTER",
+                     "RESPONSE", "EXCEPTION", "EVEN_IF"}
+    tp = fp = fn = type_correct = direction_err = type_err = 0
     for gcase in gold:
         edges = gold_edge_map(gcase)
         dmap = {(r["from_span"], r["to_span"]): r for r in det.get(gcase["case_id"], [])}
@@ -421,32 +501,157 @@ def pipeline_metrics(which, det_arm, cls_arm, retriever_arm=None, top_k=None,
             for q in ret[gcase["case_id"]]:
                 ranked = sorted(q["candidates"], key=lambda c: c["rank_r4"])[:top_k]
                 allowed |= {(q["from_span"], c["to_span"]) for c in ranked}
+                allowed |= {(c["to_span"], q["from_span"]) for c in ranked}
+
+        def pair_allowed(a, b):
+            return allowed is None or (a, b) in allowed
+
+        seen = set()
+        emitted = []
         for (a, b) in [(u["from"], u["to"]) for u in gcase["pair_universe"]]:
-            row = dmap.get((a, b))
-            dec = (row or {}).get(det_field, "UNKNOWN")
-            if dec != "RELATED":
+            key = frozenset((a, b))
+            if key in seen:
                 continue
-            if allowed is not None and (a, b) not in allowed:
+            seen.add(key)
+            dec_ab = (dmap.get((a, b)) or {}).get(det_field, "UNKNOWN")
+            dec_ba = (dmap.get((b, a)) or {}).get(det_field, "UNKNOWN")
+            if dec_ab != "RELATED" and dec_ba != "RELATED":
                 continue
-            if (a, b) in edges:
+            for (x, y, dec) in ((a, b, dec_ab), (b, a, dec_ba)):
+                if dec != "RELATED" or not pair_allowed(x, y):
+                    continue
+                rel = (cmap.get((x, y)) or {}).get("relation", "UNKNOWN")
+                emitted.append((x, y, rel))
+        matched_keys = set()
+        for (x, y, rel) in emitted:
+            ge = edges.get((x, y))
+            if ge is not None:
+                matched_keys.add((x, y))
                 tp += 1
-                ge = edges[(a, b)]
                 acc = ge.get("acceptable", [ge["relation"]])
-                rel = (cmap.get((a, b)) or {}).get("relation", "UNKNOWN")
                 if rel in acc:
                     type_correct += 1
+                else:
+                    type_err += 1
+                    if (ge["relation"] == "ORDER_BEFORE" and rel == "ORDER_AFTER") or \
+                       (ge["relation"] == "ORDER_AFTER" and rel == "ORDER_BEFORE"):
+                        direction_err += 1
             else:
-                fp += 1
-        fn += len(edges) - sum(1 for (a, b) in edges
-                               if (dmap.get((a, b)) or {}).get(det_field) == "RELATED"
-                               and (allowed is None or (a, b) in allowed))
+                if edges.get((y, x)) is not None:
+                    direction_err += 1
+                    matched_keys.add((y, x))
+                else:
+                    fp += 1
+        fn += len(edges) - len(matched_keys)
     prec = tp / (tp + fp) if tp + fp else 0.0
     rec = tp / (tp + fn) if tp + fn else 0.0
     return {
-        "edges_detected": tp + fp, "edges_correct": tp, "edges_extra": fp,
-        "edges_missing": fn,
+        "edges_emitted": tp + fp, "edges_correct": tp, "edges_extra": fp,
+        "edges_missing": fn, "direction_errors": direction_err,
+        "type_errors": type_err,
         "edge_precision": round(prec, 4),
         "edge_recall": round(rec, 4),
+        "typed_correct": type_correct,
+        "typed_accuracy_given_edge": round(type_correct / tp, 4) if tp else None,
+    }
+
+
+def dirfix_pipeline_metrics(which, cls_arm="cls_mistral", dir_arm="dir_mistral"):
+    """POST-HOC pipeline: edges = ce-band+mistral detected unordered pairs;
+    direction resolved by the DIR arm (which event happens first), fallback to
+    role/text-position; type from the CLS arm on the resolved direction.
+    Exactly ONE directed edge per detected pair."""
+    gold = load_gold(which)
+    ce = load_pairs(which, "DET_local")
+    mist = load_pairs(which, "det_mistral")
+    cls = load_pairs(which, cls_arm)
+    dird = OUTPUTS / (dir_arm + suffix_for(which))
+    dir_pairs = {}
+    for f in dird.glob("*.json"):
+        if f.name.startswith("_"):
+            continue
+        data = json.loads(f.read_text(encoding="utf-8"))
+        dir_pairs[data["case_id"]] = {(r["a_span"], r["b_span"]): r for r in data.get("pairs", [])}
+    tp = fp = fn = type_correct = direction_err = type_err = 0
+    from rel_common import load_suite as _ls
+    cases = {c["case_id"]: c for c in _ls(which)}
+    for gcase in gold:
+        edges = gold_edge_map(gcase)
+        cid = gcase["case_id"]
+        case = cases.get(cid)
+        if case is None:
+            continue
+        m_ce = {(r["from_span"], r["to_span"]): r for r in ce.get(cid, [])}
+        m_mi = {(r["from_span"], r["to_span"]): r for r in mist.get(cid, [])}
+        cmap = {(r["from_span"], r["to_span"]): r for r in cls.get(cid, [])}
+        dmap = dir_pairs.get(cid, {})
+        ev_by_span = {e["source_span"]: e for e in case["events"]}
+        policy = case["policy"]
+
+        spans = [e["source_span"] for e in case["events"] if e["role"] != "OTHER"]
+        emitted = []
+        seen = set()
+        for i, a in enumerate(spans):
+            for b in spans[i + 1:]:
+                key = frozenset((a, b))
+                if key in seen:
+                    continue
+                seen.add(key)
+                ce_ab = (m_ce.get((a, b)) or {}).get("ce_decision") in ("RELATED", "UNKNOWN")
+                mi_ab = (m_mi.get((a, b)) or {}).get("decision") == "RELATED"
+                ce_ba = (m_ce.get((b, a)) or {}).get("ce_decision") in ("RELATED", "UNKNOWN")
+                mi_ba = (m_mi.get((b, a)) or {}).get("decision") == "RELATED"
+                if not ((ce_ab and mi_ab) or (ce_ba and mi_ba)):
+                    continue
+                # direction: DIR arm answer (stored per (a,b) presentation)
+                d = dmap.get((a, b)) or dmap.get((b, a))
+                first = d.get("first") if d else None
+                if first == "A":
+                    x, y = a, b
+                elif first == "B":
+                    x, y = b, a
+                else:
+                    # fallback: role prior, then text position
+                    ra, rb = ev_by_span[a]["role"], ev_by_span[b]["role"]
+                    ANT = {"PRECONDITION_CHECK", "STATE_OBSERVATION"}
+                    if ra in ANT and rb not in ANT:
+                        x, y = a, b
+                    elif rb in ANT and ra not in ANT:
+                        x, y = b, a
+                    elif policy.find(a) <= policy.find(b):
+                        x, y = a, b
+                    else:
+                        x, y = b, a
+                rel = (cmap.get((x, y)) or {}).get("relation", "UNKNOWN")
+                emitted.append((x, y, rel))
+        matched_keys = set()
+        for (x, y, rel) in emitted:
+            ge = edges.get((x, y))
+            if ge is not None:
+                matched_keys.add((x, y))
+                tp += 1
+                acc = ge.get("acceptable", [ge["relation"]])
+                if rel in acc:
+                    type_correct += 1
+                else:
+                    type_err += 1
+                    if (ge["relation"] == "ORDER_BEFORE" and rel == "ORDER_AFTER") or \
+                       (ge["relation"] == "ORDER_AFTER" and rel == "ORDER_BEFORE"):
+                        direction_err += 1
+            else:
+                if edges.get((y, x)) is not None:
+                    direction_err += 1
+                    matched_keys.add((y, x))
+                else:
+                    fp += 1
+        fn += len(edges) - len(matched_keys)
+    prec = tp / (tp + fp) if tp + fp else 0.0
+    rec = tp / (tp + fn) if tp + fn else 0.0
+    return {
+        "edges_emitted": tp + fp, "edges_correct": tp, "edges_extra": fp,
+        "edges_missing": fn, "direction_errors": direction_err,
+        "type_errors": type_err,
+        "edge_precision": round(prec, 4), "edge_recall": round(rec, 4),
         "typed_correct": type_correct,
         "typed_accuracy_given_edge": round(type_correct / tp, 4) if tp else None,
     }
@@ -550,6 +755,12 @@ def score_suite(which):
         det_arms.update(combo_detection(which, specs))
     except FileNotFoundError:
         pass
+    # post-hoc combo (designed after opening original results; to be validated
+    # on the untouched mini set): ce uncertain-band + mistral agreement
+    try:
+        det_arms.update(combo_band(which))
+    except FileNotFoundError:
+        pass
     report["detection"] = det_arms
 
     cls_arms = {}
@@ -572,7 +783,7 @@ def score_suite(which):
     for arm in ("e2e_mistral", "e2e_codestral"):
         try:
             e2e_arms[arm] = e2e_metrics(which, arm)
-        except FileNotFoundError:
+        except Exception:
             pass
     report["e2e"] = e2e_arms
 
@@ -584,8 +795,14 @@ def score_suite(which):
         pipe["codestral_stack"] = pipeline_metrics(which, "det_codestral", "cls_codestral")
         pipe["codestral_stack_top3"] = pipeline_metrics(
             which, "det_codestral", "cls_codestral", "R_retriever", 3)
-        pipe["ce_nli_mistral_cls_stack"] = pipeline_metrics(
-            which, "det_mistral", "cls_mistral")
+        pipe["ce_det_mistral_cls"] = pipeline_metrics(
+            which, "DET_local", "cls_mistral", det_field="ce_decision")
+        pipe["ce_det_mistral_cls_top3"] = pipeline_metrics(
+            which, "DET_local", "cls_mistral", "R_retriever", 3, det_field="ce_decision")
+    except Exception:
+        pass
+    try:
+        pipe["posthoc_band_det_dir_cls"] = dirfix_pipeline_metrics(which)
     except FileNotFoundError:
         pass
     report["pipeline"] = pipe

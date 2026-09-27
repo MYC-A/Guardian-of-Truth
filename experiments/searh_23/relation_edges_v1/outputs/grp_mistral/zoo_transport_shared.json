@@ -1,0 +1,57 @@
+{
+ "case_id": "zoo_transport_shared",
+ "groups": [
+  {
+   "target": "loading the animals",
+   "parents": [
+    "Scan the transport crate manifest K-14",
+    "dispatching the convoy",
+    "The shift supervisor signs the convoy release form"
+   ],
+   "logic": "AND",
+   "reason": "The policy explicitly requires scanning the manifest **before loading** and **before dispatching**, with the supervisor’s signature as a mandatory step in convoy release.",
+   "parse_error": "",
+   "cached": false,
+   "latency": 1.202
+  },
+  {
+   "target": "dispatching the convoy",
+   "parents": [
+    "Scan the transport crate manifest K-14",
+    "loading the animals",
+    "The shift supervisor signs the convoy release form"
+   ],
+   "logic": "AND",
+   "reason": "All three events are explicitly required before dispatching the convoy as per the policy.",
+   "parse_error": "",
+   "cached": false,
+   "latency": 0.923
+  },
+  {
+   "target": "The shift supervisor signs the convoy release form",
+   "parents": [
+    "Scan the transport crate manifest K-14",
+    "loading the animals",
+    "dispatching the convoy"
+   ],
+   "logic": "AND",
+   "reason": "The policy explicitly requires scanning the manifest **before** both loading and dispatching, and the target operation depends on all prior steps.",
+   "parse_error": "",
+   "cached": false,
+   "latency": 1.086
+  },
+  {
+   "target": "Scan the transport crate manifest K-14",
+   "parents": [
+    "loading the animals",
+    "dispatching the convoy",
+    "The shift supervisor signs the convoy release form"
+   ],
+   "logic": "AND",
+   "reason": "The policy mandates scanning the manifest **before** all three gated events (loading, dispatching, and supervisor signing).",
+   "parse_error": "",
+   "cached": false,
+   "latency": 1.027
+  }
+ ]
+}

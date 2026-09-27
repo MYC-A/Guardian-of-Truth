@@ -17,7 +17,25 @@ ROOT = Path(__file__).parent
 OC_DIR = ROOT.parent / "operation_check"
 sys.path.insert(0, str(OC_DIR))
 
-from oc_common import Mistral, write_usage  # noqa: E402
+from oc_common import Mistral  # noqa: E402
+
+
+def write_usage(arm: str, payload: dict):
+    """Usage writer that writes into THIS research's outputs tree (the
+    oc_common one would write into operation_check/outputs)."""
+    import json as _json
+    import time as _time
+    path = out_dir(arm) / "_usage.json"
+    existing = {}
+    if path.is_file():
+        try:
+            existing = _json.loads(path.read_text(encoding="utf-8"))
+        except ValueError:
+            existing = {}
+    existing.update(payload)
+    existing.setdefault("written_at", _time.strftime("%Y-%m-%dT%H:%M:%S%z"))
+    path.write_text(_json.dumps(existing, ensure_ascii=False, indent=1),
+                    encoding="utf-8")
 
 FROZEN = ROOT / "frozen"
 OUTPUTS = Path(os.environ.get("REL_OUTPUTS", ROOT / "outputs"))
