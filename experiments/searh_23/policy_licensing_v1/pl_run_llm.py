@@ -401,7 +401,7 @@ def phase_grp(client, suite, arm, det_dir):
                    if r.get("decision") == "RELATED"}
         parents_of = {}
         for e in case["events"]:
-            ps = [evmap[other] for other in case["events"]
+            ps = [evmap[other["eid"]] for other in case["events"]
                   if other["eid"] != e["eid"]
                   and frozenset((e["eid"], other["eid"])) in related]
             if len(ps) >= 2:
@@ -420,6 +420,30 @@ def phase_grp(client, suite, arm, det_dir):
     return n
 
 
+def _base_or_evidence_pairs(case, det, sig_map, detection):
+    """Candidate pairs for pipeline assembly: BASE combo or EVIDENCE arm.
+    (evidence rows carry the verbatim-checked judge decision)."""
+    CE_BAND = 0.35
+    if detection == "evidence":
+        evp = out_dir(f"ev_mistral{'' if os.environ.get('PL_SUITE','original')=='original' else '_'+os.environ.get('PL_SUITE','original')}") / f"{case['case_id']}.json"
+        evjp = out_dir(f"evjudge_mistral{'' if os.environ.get('PL_SUITE','original')=='original' else '_'+os.environ.get('PL_SUITE','original')}") / f"{case['case_id']}.json"
+        if not evjp.is_file():
+            return []
+        evj = json.loads(evjp.read_text(encoding="utf-8"))["rows"]
+        return [(r["a_eid"], r["b_eid"]) for r in evj
+                if r.get("decision") == "LICENSED"]
+    out = []
+    for r in det:
+        if r.get("decision") != "RELATED":
+            continue
+        key = frozenset((r["a_eid"], r["b_eid"]))
+        s = sig_map.get(key)
+        if s is None or max(s["ce_both_ab"], s["ce_both_ba"]) < CE_BAND:
+            continue
+        out.append((r["a_eid"], r["b_eid"]))
+    return out
+
+
 def phase_dir_pred(client, suite, arm, det_dir, pair_dir):
     """DIR on pairs DETECTED by the BASE combo (ce-band AND mistral RELATED),
     so pipelines can be assembled from predicted (not gold) edges."""
@@ -436,18 +460,13 @@ def phase_dir_pred(client, suite, arm, det_dir, pair_dir):
         det = json.loads(dpath.read_text(encoding="utf-8"))["rows"]
         sig = json.loads(spath.read_text(encoding="utf-8"))["pairs"]
         sig_map = {frozenset((r["a_eid"], r["b_eid"])): r for r in sig}
+        detection = os.environ.get("PL_DETECTION", "base")
         rows = []
-        for r in det:
-            if r.get("decision") != "RELATED":
-                continue
-            key = frozenset((r["a_eid"], r["b_eid"]))
-            s = sig_map.get(key)
-            if s is None or max(s["ce_both_ab"], s["ce_both_ba"]) < CE_BAND:
-                continue
-            a, b = evmap[r["a_eid"]], evmap[r["b_eid"]]
+        for a_eid, b_eid in _base_or_evidence_pairs(case, det, sig_map, detection):
+            a, b = evmap[a_eid], evmap[b_eid]
             rec = client.ask(SYSTEM, dir_user(case, a, b), max_tokens=220)
             ans, err = Mistral.parse_json(rec["raw"])
-            rows.append({"a_eid": r["a_eid"], "b_eid": r["b_eid"],
+            rows.append({"a_eid": a_eid, "b_eid": b_eid,
                          "first": (ans or {}).get("first"),
                          "reason": (ans or {}).get("reason"), "parse_error": err})
             n += 1
@@ -457,7 +476,8 @@ def phase_dir_pred(client, suite, arm, det_dir, pair_dir):
 
 
 def phase_cls_pred(client, suite, arm, det_dir, pair_dir, dir_dir):
-    """CLS on BASE-detected pairs in the DIR-resolved direction (pipeline typing)."""
+    """CLS on detected pairs (BASE or EVIDENCE per PL_DETECTION) in the
+    DIR-resolved direction (pipeline typing)."""
     outdir = out_dir(arm)
     n = 0
     CE_BAND = 0.35
@@ -476,19 +496,14 @@ def phase_cls_pred(client, suite, arm, det_dir, pair_dir, dir_dir):
         if ddirp.is_file():
             for r in json.loads(ddirp.read_text(encoding="utf-8"))["rows"]:
                 dirrows[frozenset((r["a_eid"], r["b_eid"]))] = r
+        detection = os.environ.get("PL_DETECTION", "base")
         rows = []
-        for r in det:
-            if r.get("decision") != "RELATED":
-                continue
-            key = frozenset((r["a_eid"], r["b_eid"]))
-            s = sig_map.get(key)
-            if s is None or max(s["ce_both_ab"], s["ce_both_ba"]) < CE_BAND:
-                continue
+        for a_eid, b_eid in _base_or_evidence_pairs(case, det, sig_map, detection):
+            key = frozenset((a_eid, b_eid))
             d = dirrows.get(key)
             first = (d or {}).get("first")
-            a_eid, b_eid = r["a_eid"], r["b_eid"]
             if first == "B":
-                a_eid, b_eid = r["b_eid"], r["a_eid"]
+                a_eid, b_eid = b_eid, a_eid
             a, b = evmap[a_eid], evmap[b_eid]
             rec = client.ask(SYSTEM, cls_user(case, a, b), max_tokens=300)
             ans, err = Mistral.parse_json(rec["raw"])
@@ -533,12 +548,14 @@ def main():
     elif phase == "dir":
         n = phase_dir(client, suite, arm)
     elif phase == "dir_pred":
+        arm = f"dir_pred_{os.environ.get('PL_DETECTION', 'base')}_{model_key}{suffix}"
         n = phase_dir_pred(client, suite, arm,
                            out_dir(f"det_{model_key}{suffix}"), pair_dir)
     elif phase == "cls_pred":
+        arm = f"cls_pred_{os.environ.get('PL_DETECTION', 'base')}_{model_key}{suffix}"
         n = phase_cls_pred(client, suite, arm,
                            out_dir(f"det_{model_key}{suffix}"), pair_dir,
-                           out_dir(f"dir_pred_{model_key}{suffix}"))
+                           out_dir(f"dir_pred_{os.environ.get('PL_DETECTION', 'base')}_{model_key}{suffix}"))
     elif phase == "grp":
         n = phase_grp(client, suite, arm, out_dir(f"det_{model_key}{suffix}"))
     elif phase == "cls":

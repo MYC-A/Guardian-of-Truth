@@ -62,8 +62,7 @@ MAPPING = {
 
 def decl_text_for_case(case, edges):
     """Build .decl syntax: activities + one constraint per typed edge."""
-    acts = sorted({e["eid"] for ed in edges
-                   for e in (ed["from_eid"], ed["to_eid"])})
+    acts = sorted({ed["from_eid"] for ed in edges} | {ed["to_eid"] for ed in edges})
     lines = [f"activity {a}" for a in acts]
     for ed in edges:
         rel = ed["relation"]
@@ -112,10 +111,10 @@ def bmc_program(events, edges, trace=None):
             rel = "ORDER_BEFORE"
         if rel in ("PRECONDITION", "STATE_GATE", "ORDER_BEFORE"):
             prog.append(f':- occ(P,"{b}"), not before("{a}","{b}",P).')
-            prog.append(f'before("{a}","{b}",P) :- occ(Q,"{a}"), Q < P.')
+            prog.append(f'before("{a}","{b}",P) :- pos(P), occ(Q,"{a}"), Q < P.')
         elif rel == "RESPONSE":
             prog.append(f':- occ(P,"{a}"), not after("{b}","{a}",P).')
-            prog.append(f'after("{b}","{a}",P) :- occ(Q,"{b}"), Q >= P.')
+            prog.append(f'after("{b}","{a}",P) :- pos(P), occ(Q,"{b}"), Q >= P.')
         elif rel == "EXCEPTION":
             prog.append(f':- occ(P,"{a}"), occ(Q,"{b}"), Q > P.')
         # EVEN_IF: no constraint
@@ -164,10 +163,10 @@ def synthesize_compliant_trace(events, edges):
     with ctl.solve(yield_=True) as hnd:
         for mdl in hnd:
             occ = {}
-            for a in mdl.symbols(atoms_only=True):
+            for a in mdl.symbols(atoms=True):
                 if a.name == "occ" and len(a.arguments) == 2:
                     p, e = a.arguments
-                    occ[p.number] = e.name.strip('"')
+                    occ[p.number] = e.string if str(e.type) == "SymbolType.String" else str(e).strip('"')
             return [occ[i] for i in sorted(occ)]
     return None
 

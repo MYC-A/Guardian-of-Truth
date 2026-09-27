@@ -216,16 +216,19 @@ def solve_clingo(events, cands, dir_map, grp_rows, support_fn):
     ctl.add("base", [], "\n".join(prog))
     ctl.ground([("base", [])])
     sel_pairs, orient = set(), set()
+    last_symbols = None
     with ctl.solve(yield_=True) as hnd:
-        for mdl in hnd:
-            for a in mdl.symbols(atoms_only=True):
-                if a.name == "sel":
-                    x, y = a.arguments
-                    sel_pairs.add(frozenset((ev_ids[x.number], ev_ids[y.number])))
-                elif a.name == "orient":
-                    x, y = a.arguments
-                    orient.add((ev_ids[x.number], ev_ids[y.number]))
-            break
+        for mdl in hnd:  # optimization: later models are the best ones
+            last_symbols = list(mdl.symbols(atoms=True))
+    if last_symbols is None:
+        return None, None
+    for a in last_symbols:
+        if a.name == "sel":
+            x, y = a.arguments
+            sel_pairs.add(frozenset((ev_ids[x.number], ev_ids[y.number])))
+        elif a.name == "orient":
+            x, y = a.arguments
+            orient.add((ev_ids[x.number], ev_ids[y.number]))
     sel = []
     for pair in sel_pairs:
         u, v = tuple(pair)

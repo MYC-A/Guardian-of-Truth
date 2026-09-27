@@ -70,8 +70,10 @@ class CaseData:
             d = read_json(base(arm + suffix) / f"{self.cid}.json")
             if d:
                 self.lw[arm] = {r["eid"]: r for r in d["rows"]}
-        self.dirp = read_json(base(f"dir_pred_mistral{suffix}") / f"{self.cid}.json")
-        self.clsp = read_json(base(f"cls_pred_mistral{suffix}") / f"{self.cid}.json")
+        self.dirp = read_json(base(f"dir_pred_base_mistral{suffix}") / f"{self.cid}.json")
+        self.dirp_ev = read_json(base(f"dir_pred_evidence_mistral{suffix}") / f"{self.cid}.json")
+        self.clsp = read_json(base(f"cls_pred_base_mistral{suffix}") / f"{self.cid}.json")
+        self.clsp_ev = read_json(base(f"cls_pred_evidence_mistral{suffix}") / f"{self.cid}.json")
         self.grp = read_json(base(f"grp_mistral{suffix}") / f"{self.cid}.json")
         self.cfgate = read_json(base(f"cfgate_mistral{suffix}") / f"{self.cid}.json")
         self.solver = None
@@ -134,22 +136,34 @@ class CaseData:
                     return "RELATED"
         return "UNKNOWN"
 
-    def dec_listwise_pair(self, key, arm="listwise_mistral"):
-        """Pair decision from listwise selections (either direction)."""
+    def dec_listwise_pair(self, key, arm="listwise_mistral", mode="either"):
+        """Pair decision from listwise selections.
+        mode='either': RELATED if any direction selected the other.
+        mode='consensus': RELATED only if BOTH directions selected each other
+        (kills one-sided thematic bindings)."""
         a_eid, b_eid = tuple(key)
+        hit_ab = hit_ba = None
         for src, tgt in ((a_eid, b_eid), (b_eid, a_eid)):
             row = self.lw.get(arm, {}).get(src)
             if not row:
                 continue
             cands = row.get("candidates", [])
-            sel = [cands[int(s) - 1] for s in row.get("selected", [])
-                   if s.isdigit() and 1 <= int(s) <= len(cands)]
-            if tgt in sel:
+            sel_idx = [int(s) - 1 for s in row.get("selected", [])
+                       if str(s).isdigit() and 1 <= int(s) <= len(cands)]
+            selected = {cands[i] for i in sel_idx}
+            if src == a_eid:
+                hit_ab = tgt in selected
+            else:
+                hit_ba = tgt in selected
+        if mode == "consensus":
+            if hit_ab and hit_ba:
                 return "RELATED"
-            if tgt in cands and row.get("decision") in ("NONE", "SOME", "MULTIPLE"):
-                pass  # candidate seen and not selected -> negative evidence
-        # explicit negative: the pair was a candidate in some listwise query
-        # and not selected
+            if hit_ab is False or hit_ba is False:
+                return "NOT_RELATED"  # at least one side saw and rejected
+            return "UNKNOWN"
+        if hit_ab or hit_ba:
+            return "RELATED"
+        # explicit negative: candidate seen and not selected on at least one side
         for src, tgt in ((a_eid, b_eid), (b_eid, a_eid)):
             row = self.lw.get(arm, {}).get(src)
             if row and tgt in row.get("candidates", []) and row.get("selected") is not None:
@@ -491,44 +505,49 @@ def cf_metrics(cds):
 
 
 def cf_gate_metrics(cds):
-    """Inference-time CF gate (pl_run_cf_gate) applied to BASE edges."""
+    """Inference-time CF gate (pl_run_cf_gate) applied to BASE edges.
+    ce_gate is the usable gate; llm_gate is the diagnostic (expected to be
+    mostly WORLD_DRIVEN - that is the mechanism finding)."""
     per_split = {}
     for split in SPLITS + ("ALL",):
         sel = cds if split == "ALL" else [c for c in cds if c.case["split"] == split]
-        licensed = world = unverif = no_alt = 0
-        tp_l = fp_l = tp_w = fp_w = 0
-        for c in sel:
-            if not c.cfgate:
-                continue
-            for r in c.cfgate["rows"]:
-                key = frozenset((r["a_eid"], r["b_eid"]))
-                gold = key in c.gold_pairs
-                g = r.get("gate")
-                if g == "LICENSED":
-                    licensed += 1
-                    if gold:
-                        tp_l += 1
-                    else:
-                        fp_l += 1
-                elif g == "WORLD_DRIVEN":
-                    world += 1
-                    if gold:
-                        tp_w += 1
-                    else:
-                        fp_w += 1
-                elif g == "UNVERIFIED_CF":
-                    unverif += 1
-                elif g == "NO_ALTERNATIVE":
-                    no_alt += 1
-        per_split[split] = {
-            "licensed": licensed, "world_driven": world,
-            "unverified_cf": unverif, "no_alternative": no_alt,
-            "precision_if_keep_licensed_only": round(tp_l / (tp_l + fp_l), 4)
-            if tp_l + fp_l else None,
-            "precision_if_keep_all": round((tp_l + tp_w) / max(1, tp_l + tp_w + fp_l + fp_w), 4),
-            "tp_licensed": tp_l, "fp_licensed": fp_l,
-            "tp_world": tp_w, "fp_world": fp_w,
-        }
+        stats = {}
+        for gate_field, keep in (("ce_gate", "ce"), ("llm_gate", "llm")):
+            licensed = world = unverif = no_alt = 0
+            tp_l = fp_l = tp_w = fp_w = 0
+            for c in sel:
+                if not c.cfgate:
+                    continue
+                for r in c.cfgate["rows"]:
+                    key = frozenset((r["a_eid"], r["b_eid"]))
+                    gold = key in c.gold_pairs
+                    g = r.get(gate_field)
+                    if g == "LICENSED":
+                        licensed += 1
+                        if gold:
+                            tp_l += 1
+                        else:
+                            fp_l += 1
+                    elif g == "WORLD_DRIVEN":
+                        world += 1
+                        if gold:
+                            tp_w += 1
+                        else:
+                            fp_w += 1
+                    elif g == "UNVERIFIED_CF":
+                        unverif += 1
+                    elif g == "NO_ALTERNATIVE":
+                        no_alt += 1
+            stats[keep] = {
+                "licensed": licensed, "world_driven": world,
+                "unverified_cf": unverif, "no_alternative": no_alt,
+                "precision_if_keep_licensed_only": round(tp_l / (tp_l + fp_l), 4)
+                if tp_l + fp_l else None,
+                "precision_if_keep_all": round((tp_l + tp_w) / max(1, tp_l + tp_w + fp_l + fp_w), 4),
+                "tp_licensed": tp_l, "fp_licensed": fp_l,
+                "tp_world": tp_w, "fp_world": fp_w,
+            }
+        per_split[split] = stats
     return per_split
 
 
@@ -620,6 +639,7 @@ def assemble_pipeline(cd: CaseData, detection="base", gate=None):
     deciders = {
         "base": cd.dec_base,
         "listwise": cd.dec_listwise_pair,
+        "listwise_consensus": lambda k: cd.dec_listwise_pair(k, mode="consensus"),
         "evidence": cd.dec_ev,
         "qa": cd.dec_qa_pair,
     }
@@ -635,7 +655,8 @@ def assemble_pipeline(cd: CaseData, detection="base", gate=None):
             continue
         # direction
         dirrow = None
-        if cd.dirp:
+        dirp = cd.dirp_ev if detection == "evidence" else cd.dirp
+        if dirp:
             for r in cd.dirp["rows"]:
                 if frozenset((r["a_eid"], r["b_eid"])) == key:
                     dirrow = r
@@ -656,17 +677,14 @@ def assemble_pipeline(cd: CaseData, detection="base", gate=None):
                 a_eid, b_eid = b_eid, a_eid
             elif cd.evmap[a_eid]["span_start"] > cd.evmap[b_eid]["span_start"]:
                 a_eid, b_eid = b_eid, a_eid
-        # counterfactual gate
+        # counterfactual gate (ce_gate is the usable gate; llm_gate diagnostic)
         if gate == "cf" and cd.cfgate:
             g = None
             for r in cd.cfgate["rows"]:
                 if frozenset((r["a_eid"], r["b_eid"])) == key:
-                    g = r.get("gate")
+                    g = r.get("ce_gate")
                     break
-            if g == "WORLD_DRIVEN":
-                unknowns.append(sorted(key))
-                continue
-            if g == "UNVERIFIED_CF":
+            if g in ("WORLD_DRIVEN", "UNVERIFIED_CF"):
                 unknowns.append(sorted(key))
                 continue
         edges.append((a_eid, b_eid))
@@ -700,8 +718,9 @@ def pipeline_metrics(cds, detection="base", gate=None):
                     missing += 1
                     ok = False
             # typing on correct-endpoint edges
-            if c.clsp:
-                for r in c.clsp["rows"]:
+            clsp = c.clsp_ev if detection == "evidence" else c.clsp
+            if clsp:
+                for r in clsp["rows"]:
                     key = (r["a_eid"], r["b_eid"])
                     if key in pred or (key[1], key[0]) in pred:
                         gold_edge = next((e for e in c.case["edges"]
@@ -743,6 +762,7 @@ def main():
         "EVIDENCE(ev+judge)": lambda c, k: c.dec_ev(k),
         "QA-derived": lambda c, k: c.dec_qa_pair(k),
         "LISTWISE-derived": lambda c, k: c.dec_listwise_pair(k),
+        "LISTWISE-consensus": lambda c, k: c.dec_listwise_pair(k, mode="consensus"),
     }
     report["detection"] = {}
     for name, dec in arms.items():
@@ -798,6 +818,7 @@ def main():
     report["pipelines"] = {
         "BASE": pipeline_metrics(cds, "base"),
         "A_listwise": pipeline_metrics(cds, "listwise"),
+        "A_listwise_consensus": pipeline_metrics(cds, "listwise_consensus"),
         "B_evidence": pipeline_metrics(cds, "evidence"),
         "C_qa": pipeline_metrics(cds, "qa"),
         "BASE+cf_gate": pipeline_metrics(cds, "base", gate="cf"),

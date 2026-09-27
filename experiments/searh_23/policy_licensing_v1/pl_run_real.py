@@ -100,7 +100,12 @@ def main():
         for (i, j), d in det.items():
             if d != "RELATED" or ce[(i, j)] < CE_BAND:
                 continue
-            a, b = pred[i], pred[j]
+            a = {"source_span": pred[i]["span"], "role": pred[i]["role"],
+                 "governed_tools": pred[i].get("governed_tools", []),
+                 "span_start": pred[i]["span_start"]}
+            b = {"source_span": pred[j]["span"], "role": pred[j]["role"],
+                 "governed_tools": pred[j].get("governed_tools", []),
+                 "span_start": pred[j]["span_start"]}
             rec = client.ask(SYSTEM, dir_user_span(case, a, b), max_tokens=220)
             n_calls += 1
             ans, _ = Mistral.parse_json(rec["raw"])
@@ -147,6 +152,7 @@ def main():
             if not got and not got_r:
                 missing += 1
 
+        print(f"[{case['case_id']}] pred={len(pred)} matched={len(matches)} pairs={len(ce)}", flush=True)
         ev_p = sum(1 for i in range(len(pred))
                    if pred[i]["role"] in ("OPERATION_EFFECT", "PRECONDITION_CHECK",
                                           "STATE_OBSERVATION", "COMMUNICATION"))

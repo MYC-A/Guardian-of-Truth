@@ -157,7 +157,8 @@ def np_candidates(policy, sentence, words, verb):
                 continue
             span = policy[st:en]
             if span.strip() and len(span.split()) >= 2:
-                out.append({"span": span, "np_of_verb": verb.lemma,
+                out.append({"span": span, "start": st, "end": en,
+                            "np_of_verb": verb.lemma,
                             "dep_in_verb": rel, "is_np": True,
                             "role_hypothesis": "UNKNOWN"})
     return out
