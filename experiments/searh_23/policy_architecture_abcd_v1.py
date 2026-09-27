@@ -135,6 +135,7 @@ SYSTEMS = {
     "B_detail": "Given ONE extracted policy head, compile only that head using the full original policy and tool catalog. " + DIRECT_IR + " Return exactly one directive inside directives; preserve shared context when it applies.",
     "C_macro": "Req2LTL/OnionL stage I: identify the GLOBAL temporal/mode scope before decomposing the clause. Return JSON {\"scope\":\"GLOBAL|MODE|EVENTUAL\",\"scope_quote\":\"exact source substring or empty\",\"clause\":\"the remaining natural-language clause\"}. Default GLOBAL when no overarching scope. A local BEFORE or ONLY IF is a relation within the clause, not a global scope.",
     "C_node": "Req2LTL/OnionL stage II: examine ONLY the outermost semantic construct of this clause. Return JSON {\"op\":\"ATOM|AND|OR|GATE|ORDER|PERMIT|FORBID|EXCEPT|EVEN_IF\",\"left\":\"standalone child clause or empty\",\"right\":\"standalone child clause or empty\"}. ATOM has no children. PERMIT/FORBID unary: left is the governed action. AND/OR combine independent or condition clauses. GATE: left is governed action, right is required condition. ORDER: left is earlier operation, right is governed later operation. EXCEPT: left is base direction, right is exception. EVEN_IF: left is base direction, right is concession that does not cancel it. Choose outermost relation; recurse on children later. Preserve negation and the original scope; do not infer a new directive from a necessary condition.",
+    "D_rephrase": "NL2Logic preprocessing: rephrase the policy into clear natural language ONLY where an explicit quantifier or pronoun needs disambiguation. Keep every independent directive, condition, exception and temporal relation. Do not simplify a prohibition into permission. Return JSON {\"rephrased\":\"complete policy in natural language\"}. If no rephrase is needed, copy the input unchanged. This is an input-normalization step, not a logic translation.",
     "D_select": "NL2Logic-style parser selector: classify ONLY this current clause as ATOMIC, QUANTIFIED, LOGICAL or NEGATION. A logical clause has an outermost AND/OR/ONLY_IF/IF/BEFORE/EXCEPT/EVEN_IF/PERMIT/FORBID relation. QUANTIFIED is an explicit all/every/each/no entity scope, not merely an indefinite noun. Return JSON {\"type\":\"ATOMIC|QUANTIFIED|LOGICAL|NEGATION\"}.",
     "D_logical": "NL2Logic-style specialized logical parser: identify ONLY the outermost operator and rewrite its operands as standalone child clauses. Return JSON {\"op\":\"AND|OR|GATE|ORDER|PERMIT|FORBID|EXCEPT|EVEN_IF\",\"left\":\"child clause or empty\",\"right\":\"child clause or empty\"}. GATE: left governed action, right necessary condition. ORDER: left earlier operation, right later governed operation. PERMIT/FORBID unary: left governed action. EXCEPT and EVEN_IF: left base direction, right exception/concession. Do not parse nested operators here; children will be parsed recursively. Never treat a lookup as executing a later action.",
     "D_quantified": "NL2Logic-style quantified parser: extract only the outermost explicit quantifier and rewrite the remaining clause using a variable if needed. Return JSON {\"quantifier\":\"FORALL|EXISTS\",\"variable\":\"x\",\"clause\":\"remaining standalone clause\"}. Preserve inner conditions for later recursive parsing.",
@@ -456,7 +457,11 @@ def run_one(protocol: dict, model: MistralRaw, arm: str, case: dict) -> dict:
         directives, es = compile_tree(tree)
         errors.extend(es)
     else:
-        tree = recurse(rec, policy, "D")
+        rephrased = rec.ask("D_rephrase", {"policy": policy}).get("rephrased")
+        if not isinstance(rephrased, str) or not rephrased.strip():
+            rephrased = policy
+            errors.append("invalid_rephrase")
+        tree = recurse(rec, rephrased, "D")
         directives, es = compile_tree(tree)
         errors.extend(es)
     result = {"case_id": case["id"], "arm": arm, "model": model.model,
