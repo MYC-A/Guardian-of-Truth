@@ -1,0 +1,242 @@
+{
+  "systems": {
+    "boundaries": "You see ONE original policy and a CODE-ENUMERATED list of possible\ncut IDs with left/right source context. Choose ONLY IDs where a new independent\ndirective or descriptive assertion begins. Return one JSON object only:\n{\"split_ids\":[\"candidate id\",...]}.\nKeep IDs sorted in original source order. Never invent a new boundary.\nSplit contrasting permission/prohibition and independent instructions.\nDo not separate an action from its IF/ONLY IF/AFTER condition. Do not split\nan AND between prerequisites of the SAME action. Do not split a first and\nsecond business operation if they form ONE ordering rule. A later sentence\nthat merely restates an earlier rule may remain separate as a source assertion;\ndo not derive any NEW rule from it. Do not choose tools or judge a case.\n"
+  },
+  "tasks": [
+    {
+      "id": "retail_cancel",
+      "query": {
+        "policy": "An order can only be cancelled if its status is 'pending', and you should check its status before taking the action.",
+        "candidate_cuts": [
+          {
+            "id": "b0",
+            "offset": 59,
+            "left": "rder can only be cancelled if its status is 'pending', ",
+            "right": "and you should check its status before taking the action."
+          }
+        ]
+      },
+      "expected_split_ids": [
+        "b0"
+      ]
+    },
+    {
+      "id": "retail_modify",
+      "query": {
+        "policy": "An order can only be modified if its status is 'pending', and you should check its status before taking the action.",
+        "candidate_cuts": [
+          {
+            "id": "b0",
+            "offset": 58,
+            "left": "order can only be modified if its status is 'pending', ",
+            "right": "and you should check its status before taking the action."
+          }
+        ]
+      },
+      "expected_split_ids": [
+        "b0"
+      ]
+    },
+    {
+      "id": "retail_exchange",
+      "query": {
+        "policy": "An order can only be exchanged if its status is 'delivered', and you should check its status before taking the action. In particular, remember to remind the customer to confirm they have provided all items to be exchanged.",
+        "candidate_cuts": [
+          {
+            "id": "b0",
+            "offset": 61,
+            "left": "er can only be exchanged if its status is 'delivered', ",
+            "right": "and you should check its status before taking the action. In particula"
+          },
+          {
+            "id": "b1",
+            "offset": 119,
+            "left": " you should check its status before taking the action. ",
+            "right": "In particular, remember to remind the customer to confirm they have pr"
+          }
+        ]
+      },
+      "expected_split_ids": [
+        "b0",
+        "b1"
+      ]
+    },
+    {
+      "id": "airline_baggage",
+      "query": {
+        "policy": "- The user can add but not remove checked bags.",
+        "candidate_cuts": [
+          {
+            "id": "b0",
+            "offset": 19,
+            "left": "- The user can add ",
+            "right": "but not remove checked bags."
+          }
+        ]
+      },
+      "expected_split_ids": [
+        "b0"
+      ]
+    },
+    {
+      "id": "airline_passenger_count",
+      "query": {
+        "policy": "- The user can modify passengers but cannot modify the number of passengers.",
+        "candidate_cuts": [
+          {
+            "id": "b0",
+            "offset": 33,
+            "left": "- The user can modify passengers ",
+            "right": "but cannot modify the number of passengers."
+          }
+        ]
+      },
+      "expected_split_ids": [
+        "b0"
+      ]
+    },
+    {
+      "id": "telecom_resume",
+      "query": {
+        "policy": "You are not allowed to lift the suspension if the line's contract end date is in the past, even if the user has paid all their overdue bills.",
+        "candidate_cuts": []
+      },
+      "expected_split_ids": []
+    },
+    {
+      "id": "telecom_payment_request",
+      "query": {
+        "policy": "- The send payement request tool will not check if the bill is overdue. You should always check that the bill is overdue before sending a payment request.",
+        "candidate_cuts": [
+          {
+            "id": "b0",
+            "offset": 72,
+            "left": "nt request tool will not check if the bill is overdue. ",
+            "right": "You should always check that the bill is overdue before sending a paym"
+          }
+        ]
+      },
+      "expected_split_ids": [
+        "b0"
+      ]
+    },
+    {
+      "id": "records_dev",
+      "query": {
+        "policy": "A document may be published only after its owner approval check has returned approved for that document AND the latest classification check for the same document reports public. Submitting a publication request does not publish it.",
+        "candidate_cuts": [
+          {
+            "id": "b0",
+            "offset": 104,
+            "left": "approval check has returned approved for that document ",
+            "right": "AND the latest classification check for the same document reports publ"
+          },
+          {
+            "id": "b1",
+            "offset": 178,
+            "left": "sification check for the same document reports public. ",
+            "right": "Submitting a publication request does not publish it."
+          }
+        ]
+      },
+      "expected_split_ids": [
+        "b1"
+      ]
+    },
+    {
+      "id": "hotel_cancellation_order",
+      "query": {
+        "policy": "For paid reservations, process cancellation FIRST and the refund SECOND; never refund before cancelling.",
+        "candidate_cuts": [
+          {
+            "id": "b0",
+            "offset": 50,
+            "left": "For paid reservations, process cancellation FIRST ",
+            "right": "and the refund SECOND; never refund before cancelling."
+          },
+          {
+            "id": "b1",
+            "offset": 73,
+            "left": "ons, process cancellation FIRST and the refund SECOND; ",
+            "right": "never refund before cancelling."
+          }
+        ]
+      },
+      "expected_split_ids": [
+        "b1"
+      ]
+    },
+    {
+      "id": "parcel_handover_transfer",
+      "query": {
+        "policy": "A parcel may be handed over only after its barcode check has returned valid AND its latest custody check reports ready. Filing a handover request does not hand it over.",
+        "candidate_cuts": [
+          {
+            "id": "b0",
+            "offset": 76,
+            "left": "d over only after its barcode check has returned valid ",
+            "right": "AND its latest custody check reports ready. Filing a handover request "
+          },
+          {
+            "id": "b1",
+            "offset": 120,
+            "left": "rned valid AND its latest custody check reports ready. ",
+            "right": "Filing a handover request does not hand it over."
+          }
+        ]
+      },
+      "expected_split_ids": [
+        "b1"
+      ]
+    },
+    {
+      "id": "credit_preview_new",
+      "query": {
+        "policy": "You may preview a credit, but you must never issue a credit without recorded approval.",
+        "candidate_cuts": [
+          {
+            "id": "b0",
+            "offset": 26,
+            "left": "You may preview a credit, ",
+            "right": "but you must never issue a credit without recorded approval."
+          }
+        ]
+      },
+      "expected_split_ids": [
+        "b0"
+      ]
+    },
+    {
+      "id": "archive_release_new",
+      "query": {
+        "policy": "An archive may only be released after its retention status is checked. Release through either publish_archive or publish_public_copy; filing a release request is not release.",
+        "candidate_cuts": [
+          {
+            "id": "b0",
+            "offset": 71,
+            "left": "nly be released after its retention status is checked. ",
+            "right": "Release through either publish_archive or publish_public_copy; filing "
+          },
+          {
+            "id": "b1",
+            "offset": 110,
+            "left": "tus is checked. Release through either publish_archive ",
+            "right": "or publish_public_copy; filing a release request is not release."
+          },
+          {
+            "id": "b2",
+            "offset": 134,
+            "left": "through either publish_archive or publish_public_copy; ",
+            "right": "filing a release request is not release."
+          }
+        ]
+      },
+      "expected_split_ids": [
+        "b0",
+        "b2"
+      ]
+    }
+  ],
+  "max_tokens": 160,
+  "note": "post-hoc viewed clauses; original bytes are preserved by construction"
+}
