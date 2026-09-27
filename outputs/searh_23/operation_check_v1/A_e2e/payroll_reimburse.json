@@ -1,0 +1,66 @@
+{
+ "case_id": "payroll_reimburse",
+ "model": "ministral-14b-latest",
+ "served_model": "ministral-14b-latest",
+ "events": [
+  {
+   "span": "A tuition reimbursement is paid",
+   "role": "OPERATION_EFFECT",
+   "governed_tools": [
+    "pay_reimbursement"
+   ]
+  },
+  {
+   "span": "the employee's claim P-301 has been approved by the payroll officer",
+   "role": "STATE_OBSERVATION",
+   "governed_tools": [
+    "read_approval_status"
+   ]
+  },
+  {
+   "span": "Submitting a claim",
+   "role": "OPERATION_EFFECT",
+   "governed_tools": [
+    "submit_claim"
+   ]
+  },
+  {
+   "span": "The payroll calendar runs biweekly",
+   "role": "STATE_OBSERVATION",
+   "governed_tools": [
+    "read_payroll_calendar"
+   ]
+  }
+ ],
+ "edges": [
+  {
+   "condition_span": "the employee's claim P-301 has been approved by the payroll officer",
+   "operation_span": "A tuition reimbursement is paid",
+   "relation": "GATE"
+  },
+  {
+   "condition_span": "Submitting a claim",
+   "operation_span": "A tuition reimbursement is paid",
+   "relation": "EVEN_IF"
+  },
+  {
+   "condition_span": "The payroll calendar runs biweekly",
+   "operation_span": "A tuition reimbursement is paid",
+   "relation": "ORDER_BEFORE"
+  }
+ ],
+ "format_errors": [],
+ "parse_error": "",
+ "finish_reason": "stop",
+ "usage": {
+  "prompt_tokens": 592,
+  "total_tokens": 933,
+  "completion_tokens": 341,
+  "prompt_tokens_details": {
+   "cached_tokens": 0
+  },
+  "service_tier": "standard"
+ },
+ "latency": 5.999,
+ "cached": false
+}

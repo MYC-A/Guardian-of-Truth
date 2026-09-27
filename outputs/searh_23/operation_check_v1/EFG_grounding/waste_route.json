@@ -1,0 +1,925 @@
+{
+ "case_id": "waste_route",
+ "renderings_without_names": {
+  "collect_bin": "Empties a bin into the collection truck and records the pickup. Input parameters: bin_id: string. Output: collected: boolean.",
+  "read_fill_sensor": "Reads the fill percentage reported by a bin's sensor. Input parameters: bin_id: string. Output: percent: number.",
+  "read_route_manifest": "Reads the pickup manifest for a route. Input parameters: route: string. Output: bins: array.",
+  "read_pickup_result": "Reads whether the last pickup of a bin succeeded. Input parameters: bin_id: string. Output: succeeded: boolean."
+ },
+ "tool_type_probe": {
+  "collect_bin": {
+   "mutate": 0.962,
+   "verify": 0.626,
+   "read": 0.0001,
+   "message": 0.9877,
+   "top": "message"
+  },
+  "read_fill_sensor": {
+   "mutate": 0.0001,
+   "verify": 0.0017,
+   "read": 0.0003,
+   "message": 0.0105,
+   "top": "message"
+  },
+  "read_route_manifest": {
+   "mutate": 0.0015,
+   "verify": 0.0043,
+   "read": 0.0005,
+   "message": 0.5406,
+   "top": "message"
+  },
+  "read_pickup_result": {
+   "mutate": 0.0003,
+   "verify": 0.6261,
+   "read": 0.0017,
+   "message": 0.0175,
+   "top": "verify"
+  }
+ },
+ "gold_span_grounding": [
+  {
+   "span": "Collect bin T-18 on route North",
+   "embed_rank": [
+    [
+     "read_route_manifest",
+     0.6075
+    ],
+    [
+     "collect_bin",
+     0.6057
+    ],
+    [
+     "read_pickup_result",
+     0.5323
+    ],
+    [
+     "read_fill_sensor",
+     0.4581
+    ]
+   ],
+   "rerank_rank": [
+    [
+     "collect_bin",
+     -4.707
+    ],
+    [
+     "read_route_manifest",
+     -5.713
+    ],
+    [
+     "read_pickup_result",
+     -8.569
+    ],
+    [
+     "read_fill_sensor",
+     -9.738
+    ]
+   ],
+   "nli": {
+    "collect_bin": {
+     "REALIZES_OPERATION": 0.0003,
+     "CHECKS_PRECONDITION": 0.0004,
+     "OBSERVES_STATE": 0.0009,
+     "COMMUNICATES": 0.0008,
+     "label": "UNRELATED",
+     "max_e": 0.0009
+    },
+    "read_fill_sensor": {
+     "REALIZES_OPERATION": 0.0004,
+     "CHECKS_PRECONDITION": 0.0006,
+     "OBSERVES_STATE": 0.0006,
+     "COMMUNICATES": 0.0,
+     "label": "UNRELATED",
+     "max_e": 0.0006
+    },
+    "read_route_manifest": {
+     "REALIZES_OPERATION": 0.0005,
+     "CHECKS_PRECONDITION": 0.0007,
+     "OBSERVES_STATE": 0.0011,
+     "COMMUNICATES": 0.0008,
+     "label": "UNRELATED",
+     "max_e": 0.0011
+    },
+    "read_pickup_result": {
+     "REALIZES_OPERATION": 0.0003,
+     "CHECKS_PRECONDITION": 0.0003,
+     "OBSERVES_STATE": 0.0004,
+     "COMMUNICATES": 0.0005,
+     "label": "UNRELATED",
+     "max_e": 0.0005
+    }
+   }
+  },
+  {
+   "span": "its fill sensor reports at least eighty percent",
+   "embed_rank": [
+    [
+     "read_fill_sensor",
+     0.5939
+    ],
+    [
+     "collect_bin",
+     0.4393
+    ],
+    [
+     "read_pickup_result",
+     0.4213
+    ],
+    [
+     "read_route_manifest",
+     0.3934
+    ]
+   ],
+   "rerank_rank": [
+    [
+     "read_fill_sensor",
+     0.318
+    ],
+    [
+     "read_route_manifest",
+     -10.193
+    ],
+    [
+     "read_pickup_result",
+     -10.193
+    ],
+    [
+     "collect_bin",
+     -10.197
+    ]
+   ],
+   "nli": {
+    "collect_bin": {
+     "REALIZES_OPERATION": 0.0002,
+     "CHECKS_PRECONDITION": 0.0005,
+     "OBSERVES_STATE": 0.0001,
+     "COMMUNICATES": 0.0004,
+     "label": "UNRELATED",
+     "max_e": 0.0005
+    },
+    "read_fill_sensor": {
+     "REALIZES_OPERATION": 0.0002,
+     "CHECKS_PRECONDITION": 0.0002,
+     "OBSERVES_STATE": 0.0003,
+     "COMMUNICATES": 0.0002,
+     "label": "UNRELATED",
+     "max_e": 0.0003
+    },
+    "read_route_manifest": {
+     "REALIZES_OPERATION": 0.0003,
+     "CHECKS_PRECONDITION": 0.0002,
+     "OBSERVES_STATE": 0.0002,
+     "COMMUNICATES": 0.0001,
+     "label": "UNRELATED",
+     "max_e": 0.0003
+    },
+    "read_pickup_result": {
+     "REALIZES_OPERATION": 0.0005,
+     "CHECKS_PRECONDITION": 0.0004,
+     "OBSERVES_STATE": 0.0004,
+     "COMMUNICATES": 0.0004,
+     "label": "UNRELATED",
+     "max_e": 0.0005
+    }
+   }
+  },
+  {
+   "span": "Emptying bin T-19",
+   "embed_rank": [
+    [
+     "collect_bin",
+     0.6523
+    ],
+    [
+     "read_pickup_result",
+     0.5585
+    ],
+    [
+     "read_route_manifest",
+     0.4846
+    ],
+    [
+     "read_fill_sensor",
+     0.4714
+    ]
+   ],
+   "rerank_rank": [
+    [
+     "collect_bin",
+     -3.426
+    ],
+    [
+     "read_pickup_result",
+     -6.031
+    ],
+    [
+     "read_fill_sensor",
+     -9.995
+    ],
+    [
+     "read_route_manifest",
+     -10.191
+    ]
+   ],
+   "nli": {
+    "collect_bin": {
+     "REALIZES_OPERATION": 0.0003,
+     "CHECKS_PRECONDITION": 0.0008,
+     "OBSERVES_STATE": 0.0008,
+     "COMMUNICATES": 0.0017,
+     "label": "UNRELATED",
+     "max_e": 0.0017
+    },
+    "read_fill_sensor": {
+     "REALIZES_OPERATION": 0.0,
+     "CHECKS_PRECONDITION": 0.0001,
+     "OBSERVES_STATE": 0.0003,
+     "COMMUNICATES": 0.0,
+     "label": "UNRELATED",
+     "max_e": 0.0003
+    },
+    "read_route_manifest": {
+     "REALIZES_OPERATION": 0.0001,
+     "CHECKS_PRECONDITION": 0.0006,
+     "OBSERVES_STATE": 0.0001,
+     "COMMUNICATES": 0.0001,
+     "label": "UNRELATED",
+     "max_e": 0.0006
+    },
+    "read_pickup_result": {
+     "REALIZES_OPERATION": 0.0002,
+     "CHECKS_PRECONDITION": 0.0009,
+     "OBSERVES_STATE": 0.001,
+     "COMMUNICATES": 0.0005,
+     "label": "UNRELATED",
+     "max_e": 0.001
+    }
+   }
+  },
+  {
+   "span": "its sensor reading",
+   "embed_rank": [
+    [
+     "read_fill_sensor",
+     0.5657
+    ],
+    [
+     "read_pickup_result",
+     0.5279
+    ],
+    [
+     "read_route_manifest",
+     0.4974
+    ],
+    [
+     "collect_bin",
+     0.4287
+    ]
+   ],
+   "rerank_rank": [
+    [
+     "read_fill_sensor",
+     -1.32
+    ],
+    [
+     "read_route_manifest",
+     -9.545
+    ],
+    [
+     "collect_bin",
+     -10.195
+    ],
+    [
+     "read_pickup_result",
+     -10.197
+    ]
+   ],
+   "nli": {
+    "collect_bin": {
+     "REALIZES_OPERATION": 0.0014,
+     "CHECKS_PRECONDITION": 0.002,
+     "OBSERVES_STATE": 0.0029,
+     "COMMUNICATES": 0.0008,
+     "label": "UNRELATED",
+     "max_e": 0.0029
+    },
+    "read_fill_sensor": {
+     "REALIZES_OPERATION": 0.9697,
+     "CHECKS_PRECONDITION": 0.004,
+     "OBSERVES_STATE": 0.9869,
+     "COMMUNICATES": 0.9763,
+     "label": "OBSERVES_STATE",
+     "max_e": 0.9869
+    },
+    "read_route_manifest": {
+     "REALIZES_OPERATION": 0.0994,
+     "CHECKS_PRECONDITION": 0.0125,
+     "OBSERVES_STATE": 0.0005,
+     "COMMUNICATES": 0.0062,
+     "label": "UNRELATED",
+     "max_e": 0.0994
+    },
+    "read_pickup_result": {
+     "REALIZES_OPERATION": 0.0315,
+     "CHECKS_PRECONDITION": 0.9016,
+     "OBSERVES_STATE": 0.0329,
+     "COMMUNICATES": 0.7348,
+     "label": "CHECKS_PRECONDITION",
+     "max_e": 0.9016
+    }
+   }
+  }
+ ],
+ "b_candidate_grounding": [
+  {
+   "span": "Collect bin T-18 on route North",
+   "b_features": {
+    "dep": "root",
+    "mark": null,
+    "deontic": [],
+    "neg": false,
+    "passive": false,
+    "imperative": true,
+    "root": true,
+    "role_hypothesis": "OPERATION_EFFECT",
+    "even": false
+   },
+   "embed_rank": [
+    [
+     "read_route_manifest",
+     0.6075
+    ],
+    [
+     "collect_bin",
+     0.6057
+    ],
+    [
+     "read_pickup_result",
+     0.5323
+    ],
+    [
+     "read_fill_sensor",
+     0.4581
+    ]
+   ],
+   "rerank_rank": [
+    [
+     "collect_bin",
+     -4.707
+    ],
+    [
+     "read_route_manifest",
+     -5.713
+    ],
+    [
+     "read_pickup_result",
+     -8.569
+    ],
+    [
+     "read_fill_sensor",
+     -9.738
+    ]
+   ],
+   "nli": {
+    "collect_bin": {
+     "REALIZES_OPERATION": 0.0003,
+     "CHECKS_PRECONDITION": 0.0004,
+     "OBSERVES_STATE": 0.0009,
+     "COMMUNICATES": 0.0008,
+     "label": "UNRELATED",
+     "max_e": 0.0009
+    },
+    "read_fill_sensor": {
+     "REALIZES_OPERATION": 0.0004,
+     "CHECKS_PRECONDITION": 0.0006,
+     "OBSERVES_STATE": 0.0006,
+     "COMMUNICATES": 0.0,
+     "label": "UNRELATED",
+     "max_e": 0.0006
+    },
+    "read_route_manifest": {
+     "REALIZES_OPERATION": 0.0005,
+     "CHECKS_PRECONDITION": 0.0007,
+     "OBSERVES_STATE": 0.0011,
+     "COMMUNICATES": 0.0008,
+     "label": "UNRELATED",
+     "max_e": 0.0011
+    },
+    "read_pickup_result": {
+     "REALIZES_OPERATION": 0.0003,
+     "CHECKS_PRECONDITION": 0.0003,
+     "OBSERVES_STATE": 0.0004,
+     "COMMUNICATES": 0.0005,
+     "label": "UNRELATED",
+     "max_e": 0.0005
+    }
+   }
+  },
+  {
+   "span": "bin T-18",
+   "b_features": {
+    "dep": null,
+    "mark": null,
+    "deontic": null,
+    "neg": null,
+    "passive": null,
+    "imperative": null,
+    "root": null,
+    "role_hypothesis": "UNKNOWN",
+    "even": null
+   },
+   "embed_rank": [
+    [
+     "collect_bin",
+     0.5399
+    ],
+    [
+     "read_pickup_result",
+     0.5247
+    ],
+    [
+     "read_route_manifest",
+     0.479
+    ],
+    [
+     "read_fill_sensor",
+     0.469
+    ]
+   ],
+   "rerank_rank": [
+    [
+     "read_route_manifest",
+     -8.801
+    ],
+    [
+     "collect_bin",
+     -9.045
+    ],
+    [
+     "read_fill_sensor",
+     -9.216
+    ],
+    [
+     "read_pickup_result",
+     -9.604
+    ]
+   ],
+   "nli": {
+    "collect_bin": {
+     "REALIZES_OPERATION": 0.0006,
+     "CHECKS_PRECONDITION": 0.0018,
+     "OBSERVES_STATE": 0.0008,
+     "COMMUNICATES": 0.0016,
+     "label": "UNRELATED",
+     "max_e": 0.0018
+    },
+    "read_fill_sensor": {
+     "REALIZES_OPERATION": 0.0008,
+     "CHECKS_PRECONDITION": 0.0011,
+     "OBSERVES_STATE": 0.0008,
+     "COMMUNICATES": 0.0014,
+     "label": "UNRELATED",
+     "max_e": 0.0014
+    },
+    "read_route_manifest": {
+     "REALIZES_OPERATION": 0.0009,
+     "CHECKS_PRECONDITION": 0.0006,
+     "OBSERVES_STATE": 0.0007,
+     "COMMUNICATES": 0.0053,
+     "label": "UNRELATED",
+     "max_e": 0.0053
+    },
+    "read_pickup_result": {
+     "REALIZES_OPERATION": 0.0008,
+     "CHECKS_PRECONDITION": 0.0007,
+     "OBSERVES_STATE": 0.0013,
+     "COMMUNICATES": 0.002,
+     "label": "UNRELATED",
+     "max_e": 0.002
+    }
+   }
+  },
+  {
+   "span": "route North",
+   "b_features": {
+    "dep": null,
+    "mark": null,
+    "deontic": null,
+    "neg": null,
+    "passive": null,
+    "imperative": null,
+    "root": null,
+    "role_hypothesis": "UNKNOWN",
+    "even": null
+   },
+   "embed_rank": [
+    [
+     "read_route_manifest",
+     0.5136
+    ],
+    [
+     "collect_bin",
+     0.3613
+    ],
+    [
+     "read_pickup_result",
+     0.3467
+    ],
+    [
+     "read_fill_sensor",
+     0.3006
+    ]
+   ],
+   "rerank_rank": [
+    [
+     "read_route_manifest",
+     -4.778
+    ],
+    [
+     "read_fill_sensor",
+     -10.193
+    ],
+    [
+     "read_pickup_result",
+     -10.196
+    ],
+    [
+     "collect_bin",
+     -10.197
+    ]
+   ],
+   "nli": {
+    "collect_bin": {
+     "REALIZES_OPERATION": 0.0003,
+     "CHECKS_PRECONDITION": 0.0003,
+     "OBSERVES_STATE": 0.0002,
+     "COMMUNICATES": 0.0,
+     "label": "UNRELATED",
+     "max_e": 0.0003
+    },
+    "read_fill_sensor": {
+     "REALIZES_OPERATION": 0.0,
+     "CHECKS_PRECONDITION": 0.0001,
+     "OBSERVES_STATE": 0.0003,
+     "COMMUNICATES": 0.0,
+     "label": "UNRELATED",
+     "max_e": 0.0003
+    },
+    "read_route_manifest": {
+     "REALIZES_OPERATION": 0.0005,
+     "CHECKS_PRECONDITION": 0.0005,
+     "OBSERVES_STATE": 0.0014,
+     "COMMUNICATES": 0.0014,
+     "label": "UNRELATED",
+     "max_e": 0.0014
+    },
+    "read_pickup_result": {
+     "REALIZES_OPERATION": 0.0002,
+     "CHECKS_PRECONDITION": 0.0001,
+     "OBSERVES_STATE": 0.0002,
+     "COMMUNICATES": 0.0,
+     "label": "UNRELATED",
+     "max_e": 0.0002
+    }
+   }
+  },
+  {
+   "span": "only if its fill sensor reports at least eighty percent",
+   "b_features": {
+    "dep": "advcl",
+    "mark": "if",
+    "deontic": [],
+    "neg": false,
+    "passive": false,
+    "imperative": false,
+    "root": false,
+    "role_hypothesis": "PRECONDITION_CHECK",
+    "even": false
+   },
+   "embed_rank": [
+    [
+     "read_fill_sensor",
+     0.6061
+    ],
+    [
+     "collect_bin",
+     0.4561
+    ],
+    [
+     "read_pickup_result",
+     0.4494
+    ],
+    [
+     "read_route_manifest",
+     0.3993
+    ]
+   ],
+   "rerank_rank": [
+    [
+     "read_fill_sensor",
+     -1.386
+    ],
+    [
+     "read_route_manifest",
+     -10.193
+    ],
+    [
+     "read_pickup_result",
+     -10.194
+    ],
+    [
+     "collect_bin",
+     -10.197
+    ]
+   ],
+   "nli": {
+    "collect_bin": {
+     "REALIZES_OPERATION": 0.0001,
+     "CHECKS_PRECONDITION": 0.0005,
+     "OBSERVES_STATE": 0.0001,
+     "COMMUNICATES": 0.0002,
+     "label": "UNRELATED",
+     "max_e": 0.0005
+    },
+    "read_fill_sensor": {
+     "REALIZES_OPERATION": 0.0,
+     "CHECKS_PRECONDITION": 0.0002,
+     "OBSERVES_STATE": 0.0002,
+     "COMMUNICATES": 0.0,
+     "label": "UNRELATED",
+     "max_e": 0.0002
+    },
+    "read_route_manifest": {
+     "REALIZES_OPERATION": 0.0001,
+     "CHECKS_PRECONDITION": 0.0002,
+     "OBSERVES_STATE": 0.0001,
+     "COMMUNICATES": 0.0001,
+     "label": "UNRELATED",
+     "max_e": 0.0002
+    },
+    "read_pickup_result": {
+     "REALIZES_OPERATION": 0.0001,
+     "CHECKS_PRECONDITION": 0.0004,
+     "OBSERVES_STATE": 0.0002,
+     "COMMUNICATES": 0.0001,
+     "label": "UNRELATED",
+     "max_e": 0.0004
+    }
+   }
+  },
+  {
+   "span": "its fill sensor",
+   "b_features": {
+    "dep": null,
+    "mark": null,
+    "deontic": null,
+    "neg": null,
+    "passive": null,
+    "imperative": null,
+    "root": null,
+    "role_hypothesis": "UNKNOWN",
+    "even": null
+   },
+   "embed_rank": [
+    [
+     "read_fill_sensor",
+     0.5703
+    ],
+    [
+     "collect_bin",
+     0.4977
+    ],
+    [
+     "read_pickup_result",
+     0.4562
+    ],
+    [
+     "read_route_manifest",
+     0.4399
+    ]
+   ],
+   "rerank_rank": [
+    [
+     "read_fill_sensor",
+     -1.476
+    ],
+    [
+     "read_pickup_result",
+     -10.194
+    ],
+    [
+     "read_route_manifest",
+     -10.195
+    ],
+    [
+     "collect_bin",
+     -10.197
+    ]
+   ],
+   "nli": {
+    "collect_bin": {
+     "REALIZES_OPERATION": 0.0006,
+     "CHECKS_PRECONDITION": 0.0035,
+     "OBSERVES_STATE": 0.0003,
+     "COMMUNICATES": 0.0058,
+     "label": "UNRELATED",
+     "max_e": 0.0058
+    },
+    "read_fill_sensor": {
+     "REALIZES_OPERATION": 0.9563,
+     "CHECKS_PRECONDITION": 0.0041,
+     "OBSERVES_STATE": 0.9909,
+     "COMMUNICATES": 0.9743,
+     "label": "OBSERVES_STATE",
+     "max_e": 0.9909
+    },
+    "read_route_manifest": {
+     "REALIZES_OPERATION": 0.0005,
+     "CHECKS_PRECONDITION": 0.0021,
+     "OBSERVES_STATE": 0.0,
+     "COMMUNICATES": 0.0002,
+     "label": "UNRELATED",
+     "max_e": 0.0021
+    },
+    "read_pickup_result": {
+     "REALIZES_OPERATION": 0.0075,
+     "CHECKS_PRECONDITION": 0.003,
+     "OBSERVES_STATE": 0.0089,
+     "COMMUNICATES": 0.0198,
+     "label": "UNRELATED",
+     "max_e": 0.0198
+    }
+   }
+  },
+  {
+   "span": "least eighty percent",
+   "b_features": {
+    "dep": null,
+    "mark": null,
+    "deontic": null,
+    "neg": null,
+    "passive": null,
+    "imperative": null,
+    "root": null,
+    "role_hypothesis": "UNKNOWN",
+    "even": null
+   },
+   "embed_rank": [
+    [
+     "read_fill_sensor",
+     0.4828
+    ],
+    [
+     "read_pickup_result",
+     0.3838
+    ],
+    [
+     "collect_bin",
+     0.3658
+    ],
+    [
+     "read_route_manifest",
+     0.3564
+    ]
+   ],
+   "rerank_rank": [
+    [
+     "read_fill_sensor",
+     -6.82
+    ],
+    [
+     "collect_bin",
+     -10.193
+    ],
+    [
+     "read_route_manifest",
+     -10.193
+    ],
+    [
+     "read_pickup_result",
+     -10.193
+    ]
+   ],
+   "nli": {
+    "collect_bin": {
+     "REALIZES_OPERATION": 0.8996,
+     "CHECKS_PRECONDITION": 0.0126,
+     "OBSERVES_STATE": 0.2989,
+     "COMMUNICATES": 0.9183,
+     "label": "COMMUNICATES",
+     "max_e": 0.9183
+    },
+    "read_fill_sensor": {
+     "REALIZES_OPERATION": 0.0007,
+     "CHECKS_PRECONDITION": 0.0006,
+     "OBSERVES_STATE": 0.0048,
+     "COMMUNICATES": 0.0009,
+     "label": "UNRELATED",
+     "max_e": 0.0048
+    },
+    "read_route_manifest": {
+     "REALIZES_OPERATION": 0.0122,
+     "CHECKS_PRECONDITION": 0.0013,
+     "OBSERVES_STATE": 0.012,
+     "COMMUNICATES": 0.1046,
+     "label": "UNRELATED",
+     "max_e": 0.1046
+    },
+    "read_pickup_result": {
+     "REALIZES_OPERATION": 0.0914,
+     "CHECKS_PRECONDITION": 0.0047,
+     "OBSERVES_STATE": 0.033,
+     "COMMUNICATES": 0.0053,
+     "label": "UNRELATED",
+     "max_e": 0.0914
+    }
+   }
+  },
+  {
+   "span": "Emptying bin T-19 may happen regardless of its sensor reading",
+   "b_features": {
+    "dep": "root",
+    "mark": null,
+    "deontic": [
+     "may"
+    ],
+    "neg": false,
+    "passive": false,
+    "imperative": false,
+    "root": true,
+    "role_hypothesis": "OPERATION_EFFECT",
+    "even": false
+   },
+   "embed_rank": [
+    [
+     "collect_bin",
+     0.6258
+    ],
+    [
+     "read_pickup_result",
+     0.5993
+    ],
+    [
+     "read_fill_sensor",
+     0.5342
+    ],
+    [
+     "read_route_manifest",
+     0.5044
+    ]
+   ],
+   "rerank_rank": [
+    [
+     "read_fill_sensor",
+     -4.784
+    ],
+    [
+     "read_pickup_result",
+     -6.357
+    ],
+    [
+     "collect_bin",
+     -7.826
+    ],
+    [
+     "read_route_manifest",
+     -9.577
+    ]
+   ],
+   "nli": {
+    "collect_bin": {
+     "REALIZES_OPERATION": 0.0018,
+     "CHECKS_PRECONDITION": 0.0012,
+     "OBSERVES_STATE": 0.0032,
+     "COMMUNICATES": 0.0028,
+     "label": "UNRELATED",
+     "max_e": 0.0032
+    },
+    "read_fill_sensor": {
+     "REALIZES_OPERATION": 0.0,
+     "CHECKS_PRECONDITION": 0.0,
+     "OBSERVES_STATE": 0.0001,
+     "COMMUNICATES": 0.0,
+     "label": "UNRELATED",
+     "max_e": 0.0001
+    },
+    "read_route_manifest": {
+     "REALIZES_OPERATION": 0.0001,
+     "CHECKS_PRECONDITION": 0.0005,
+     "OBSERVES_STATE": 0.0014,
+     "COMMUNICATES": 0.0,
+     "label": "UNRELATED",
+     "max_e": 0.0014
+    },
+    "read_pickup_result": {
+     "REALIZES_OPERATION": 0.0001,
+     "CHECKS_PRECONDITION": 0.0007,
+     "OBSERVES_STATE": 0.0035,
+     "COMMUNICATES": 0.0,
+     "label": "UNRELATED",
+     "max_e": 0.0035
+    }
+   }
+  }
+ ]
+}

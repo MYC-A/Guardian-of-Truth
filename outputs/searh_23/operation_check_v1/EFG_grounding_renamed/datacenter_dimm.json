@@ -1,0 +1,850 @@
+{
+ "case_id": "datacenter_dimm",
+ "renderings_without_names": {
+  "tool_o90": "Reads the power state of a rack: energized or de-energized. Input parameters: rack_id: string. Output: state: string.",
+  "tool_y14": "Removes a failed DIMM from a server and updates the fault ticket. Input parameters: rack_id: string, slot: string. Output: removed: boolean.",
+  "tool_u49": "Writes a removed part's serial number to the parts ledger. Input parameters: serial: string. Output: logged: boolean.",
+  "tool_c34": "Reads past entries from the parts ledger. Input parameters: none. Output: entries: array."
+ },
+ "tool_type_probe": {
+  "tool_o90": {
+   "mutate": 0.0034,
+   "verify": 0.0032,
+   "read": 0.0048,
+   "message": 0.0373,
+   "top": "message"
+  },
+  "tool_y14": {
+   "mutate": 0.0133,
+   "verify": 0.9694,
+   "read": 0.0,
+   "message": 0.9784,
+   "top": "message"
+  },
+  "tool_u49": {
+   "mutate": 0.9276,
+   "verify": 0.0163,
+   "read": 0.0,
+   "message": 0.9639,
+   "top": "message"
+  },
+  "tool_c34": {
+   "mutate": 0.0109,
+   "verify": 0.003,
+   "read": 0.9458,
+   "message": 0.0344,
+   "top": "read"
+  }
+ },
+ "gold_span_grounding": [
+  {
+   "span": "Observe that rack os-78 is de-energized",
+   "embed_rank": [
+    [
+     "tool_o90",
+     0.7076
+    ],
+    [
+     "tool_y14",
+     0.6127
+    ],
+    [
+     "tool_u49",
+     0.4663
+    ],
+    [
+     "tool_c34",
+     0.4527
+    ]
+   ],
+   "rerank_rank": [
+    [
+     "tool_o90",
+     -0.556
+    ],
+    [
+     "tool_y14",
+     -9.86
+    ],
+    [
+     "tool_c34",
+     -10.196
+    ],
+    [
+     "tool_u49",
+     -10.197
+    ]
+   ],
+   "nli": {
+    "tool_o90": {
+     "REALIZES_OPERATION": 0.0015,
+     "CHECKS_PRECONDITION": 0.0036,
+     "OBSERVES_STATE": 0.0011,
+     "COMMUNICATES": 0.0031,
+     "label": "UNRELATED",
+     "max_e": 0.0036
+    },
+    "tool_y14": {
+     "REALIZES_OPERATION": 0.001,
+     "CHECKS_PRECONDITION": 0.0013,
+     "OBSERVES_STATE": 0.0005,
+     "COMMUNICATES": 0.0009,
+     "label": "UNRELATED",
+     "max_e": 0.0013
+    },
+    "tool_u49": {
+     "REALIZES_OPERATION": 0.0021,
+     "CHECKS_PRECONDITION": 0.0022,
+     "OBSERVES_STATE": 0.0091,
+     "COMMUNICATES": 0.0002,
+     "label": "UNRELATED",
+     "max_e": 0.0091
+    },
+    "tool_c34": {
+     "REALIZES_OPERATION": 0.0023,
+     "CHECKS_PRECONDITION": 0.0016,
+     "OBSERVES_STATE": 0.0013,
+     "COMMUNICATES": 0.0002,
+     "label": "UNRELATED",
+     "max_e": 0.0023
+    }
+   }
+  },
+  {
+   "span": "remove the failed DIMM",
+   "embed_rank": [
+    [
+     "tool_y14",
+     0.7386
+    ],
+    [
+     "tool_u49",
+     0.5426
+    ],
+    [
+     "tool_c34",
+     0.4704
+    ],
+    [
+     "tool_o90",
+     0.4213
+    ]
+   ],
+   "rerank_rank": [
+    [
+     "tool_y14",
+     6.645
+    ],
+    [
+     "tool_u49",
+     -5.78
+    ],
+    [
+     "tool_c34",
+     -8.835
+    ],
+    [
+     "tool_o90",
+     -9.666
+    ]
+   ],
+   "nli": {
+    "tool_o90": {
+     "REALIZES_OPERATION": 0.0,
+     "CHECKS_PRECONDITION": 0.0002,
+     "OBSERVES_STATE": 0.0006,
+     "COMMUNICATES": 0.0,
+     "label": "UNRELATED",
+     "max_e": 0.0006
+    },
+    "tool_y14": {
+     "REALIZES_OPERATION": 0.996,
+     "CHECKS_PRECONDITION": 0.8791,
+     "OBSERVES_STATE": 0.9811,
+     "COMMUNICATES": 0.9893,
+     "label": "REALIZES_OPERATION",
+     "max_e": 0.996
+    },
+    "tool_u49": {
+     "REALIZES_OPERATION": 0.0005,
+     "CHECKS_PRECONDITION": 0.0035,
+     "OBSERVES_STATE": 0.0032,
+     "COMMUNICATES": 0.0024,
+     "label": "UNRELATED",
+     "max_e": 0.0035
+    },
+    "tool_c34": {
+     "REALIZES_OPERATION": 0.0015,
+     "CHECKS_PRECONDITION": 0.002,
+     "OBSERVES_STATE": 0.006,
+     "COMMUNICATES": 0.0007,
+     "label": "UNRELATED",
+     "max_e": 0.006
+    }
+   }
+  },
+  {
+   "span": "Log the DIMM serial in the parts ledger",
+   "embed_rank": [
+    [
+     "tool_u49",
+     0.7563
+    ],
+    [
+     "tool_c34",
+     0.6247
+    ],
+    [
+     "tool_y14",
+     0.5612
+    ],
+    [
+     "tool_o90",
+     0.5193
+    ]
+   ],
+   "rerank_rank": [
+    [
+     "tool_u49",
+     -1.261
+    ],
+    [
+     "tool_y14",
+     -4.741
+    ],
+    [
+     "tool_c34",
+     -5.44
+    ],
+    [
+     "tool_o90",
+     -8.593
+    ]
+   ],
+   "nli": {
+    "tool_o90": {
+     "REALIZES_OPERATION": 0.0001,
+     "CHECKS_PRECONDITION": 0.0004,
+     "OBSERVES_STATE": 0.0015,
+     "COMMUNICATES": 0.0,
+     "label": "UNRELATED",
+     "max_e": 0.0015
+    },
+    "tool_y14": {
+     "REALIZES_OPERATION": 0.0004,
+     "CHECKS_PRECONDITION": 0.0201,
+     "OBSERVES_STATE": 0.0017,
+     "COMMUNICATES": 0.0004,
+     "label": "UNRELATED",
+     "max_e": 0.0201
+    },
+    "tool_u49": {
+     "REALIZES_OPERATION": 0.0085,
+     "CHECKS_PRECONDITION": 0.0073,
+     "OBSERVES_STATE": 0.0322,
+     "COMMUNICATES": 0.014,
+     "label": "UNRELATED",
+     "max_e": 0.0322
+    },
+    "tool_c34": {
+     "REALIZES_OPERATION": 0.0039,
+     "CHECKS_PRECONDITION": 0.0046,
+     "OBSERVES_STATE": 0.0066,
+     "COMMUNICATES": 0.0079,
+     "label": "UNRELATED",
+     "max_e": 0.0079
+    }
+   }
+  }
+ ],
+ "b_candidate_grounding": [
+  {
+   "span": "Observe that rack os-78 is de-energized, then remove the failed DIMM",
+   "b_features": {
+    "dep": "root",
+    "mark": null,
+    "deontic": [],
+    "neg": false,
+    "passive": false,
+    "imperative": true,
+    "root": true,
+    "role_hypothesis": "OPERATION_EFFECT",
+    "even": false
+   },
+   "embed_rank": [
+    [
+     "tool_y14",
+     0.7546
+    ],
+    [
+     "tool_o90",
+     0.6388
+    ],
+    [
+     "tool_u49",
+     0.5104
+    ],
+    [
+     "tool_c34",
+     0.4713
+    ]
+   ],
+   "rerank_rank": [
+    [
+     "tool_y14",
+     3.741
+    ],
+    [
+     "tool_o90",
+     -1.674
+    ],
+    [
+     "tool_u49",
+     -9.825
+    ],
+    [
+     "tool_c34",
+     -10.196
+    ]
+   ],
+   "nli": {
+    "tool_o90": {
+     "REALIZES_OPERATION": 0.0002,
+     "CHECKS_PRECONDITION": 0.0008,
+     "OBSERVES_STATE": 0.0004,
+     "COMMUNICATES": 0.0005,
+     "label": "UNRELATED",
+     "max_e": 0.0008
+    },
+    "tool_y14": {
+     "REALIZES_OPERATION": 0.0009,
+     "CHECKS_PRECONDITION": 0.0014,
+     "OBSERVES_STATE": 0.0005,
+     "COMMUNICATES": 0.0019,
+     "label": "UNRELATED",
+     "max_e": 0.0019
+    },
+    "tool_u49": {
+     "REALIZES_OPERATION": 0.0021,
+     "CHECKS_PRECONDITION": 0.0039,
+     "OBSERVES_STATE": 0.0065,
+     "COMMUNICATES": 0.0063,
+     "label": "UNRELATED",
+     "max_e": 0.0065
+    },
+    "tool_c34": {
+     "REALIZES_OPERATION": 0.0017,
+     "CHECKS_PRECONDITION": 0.0024,
+     "OBSERVES_STATE": 0.0008,
+     "COMMUNICATES": 0.0019,
+     "label": "UNRELATED",
+     "max_e": 0.0024
+    }
+   }
+  },
+  {
+   "span": "that rack os-78 is de-energized, then remove the failed DIMM",
+   "b_features": {
+    "dep": "ccomp",
+    "mark": null,
+    "deontic": [],
+    "neg": false,
+    "passive": true,
+    "imperative": false,
+    "root": false,
+    "role_hypothesis": "UNKNOWN",
+    "even": false
+   },
+   "embed_rank": [
+    [
+     "tool_y14",
+     0.7436
+    ],
+    [
+     "tool_o90",
+     0.5981
+    ],
+    [
+     "tool_u49",
+     0.5135
+    ],
+    [
+     "tool_c34",
+     0.4609
+    ]
+   ],
+   "rerank_rank": [
+    [
+     "tool_y14",
+     2.882
+    ],
+    [
+     "tool_o90",
+     -1.247
+    ],
+    [
+     "tool_u49",
+     -9.594
+    ],
+    [
+     "tool_c34",
+     -10.197
+    ]
+   ],
+   "nli": {
+    "tool_o90": {
+     "REALIZES_OPERATION": 0.0002,
+     "CHECKS_PRECONDITION": 0.0003,
+     "OBSERVES_STATE": 0.0002,
+     "COMMUNICATES": 0.0005,
+     "label": "UNRELATED",
+     "max_e": 0.0005
+    },
+    "tool_y14": {
+     "REALIZES_OPERATION": 0.0012,
+     "CHECKS_PRECONDITION": 0.0017,
+     "OBSERVES_STATE": 0.0011,
+     "COMMUNICATES": 0.0016,
+     "label": "UNRELATED",
+     "max_e": 0.0017
+    },
+    "tool_u49": {
+     "REALIZES_OPERATION": 0.0027,
+     "CHECKS_PRECONDITION": 0.0036,
+     "OBSERVES_STATE": 0.003,
+     "COMMUNICATES": 0.003,
+     "label": "UNRELATED",
+     "max_e": 0.0036
+    },
+    "tool_c34": {
+     "REALIZES_OPERATION": 0.0018,
+     "CHECKS_PRECONDITION": 0.0014,
+     "OBSERVES_STATE": 0.0008,
+     "COMMUNICATES": 0.0007,
+     "label": "UNRELATED",
+     "max_e": 0.0018
+    }
+   }
+  },
+  {
+   "span": "rack os-78",
+   "b_features": {
+    "dep": null,
+    "mark": null,
+    "deontic": null,
+    "neg": null,
+    "passive": null,
+    "imperative": null,
+    "root": null,
+    "role_hypothesis": "UNKNOWN",
+    "even": null
+   },
+   "embed_rank": [
+    [
+     "tool_y14",
+     0.5779
+    ],
+    [
+     "tool_o90",
+     0.5395
+    ],
+    [
+     "tool_u49",
+     0.4693
+    ],
+    [
+     "tool_c34",
+     0.4597
+    ]
+   ],
+   "rerank_rank": [
+    [
+     "tool_o90",
+     -5.766
+    ],
+    [
+     "tool_y14",
+     -6.072
+    ],
+    [
+     "tool_u49",
+     -7.067
+    ],
+    [
+     "tool_c34",
+     -9.28
+    ]
+   ],
+   "nli": {
+    "tool_o90": {
+     "REALIZES_OPERATION": 0.0006,
+     "CHECKS_PRECONDITION": 0.0013,
+     "OBSERVES_STATE": 0.0011,
+     "COMMUNICATES": 0.0019,
+     "label": "UNRELATED",
+     "max_e": 0.0019
+    },
+    "tool_y14": {
+     "REALIZES_OPERATION": 0.0006,
+     "CHECKS_PRECONDITION": 0.0026,
+     "OBSERVES_STATE": 0.0011,
+     "COMMUNICATES": 0.0011,
+     "label": "UNRELATED",
+     "max_e": 0.0026
+    },
+    "tool_u49": {
+     "REALIZES_OPERATION": 0.0015,
+     "CHECKS_PRECONDITION": 0.0031,
+     "OBSERVES_STATE": 0.0009,
+     "COMMUNICATES": 0.0057,
+     "label": "UNRELATED",
+     "max_e": 0.0057
+    },
+    "tool_c34": {
+     "REALIZES_OPERATION": 0.0058,
+     "CHECKS_PRECONDITION": 0.0012,
+     "OBSERVES_STATE": 0.0123,
+     "COMMUNICATES": 0.0005,
+     "label": "UNRELATED",
+     "max_e": 0.0123
+    }
+   }
+  },
+  {
+   "span": "then remove the failed DIMM",
+   "b_features": {
+    "dep": "conj",
+    "mark": null,
+    "deontic": [],
+    "neg": false,
+    "passive": false,
+    "imperative": true,
+    "root": false,
+    "role_hypothesis": "UNKNOWN",
+    "even": false
+   },
+   "embed_rank": [
+    [
+     "tool_y14",
+     0.7283
+    ],
+    [
+     "tool_u49",
+     0.5537
+    ],
+    [
+     "tool_c34",
+     0.4737
+    ],
+    [
+     "tool_o90",
+     0.4323
+    ]
+   ],
+   "rerank_rank": [
+    [
+     "tool_y14",
+     5.935
+    ],
+    [
+     "tool_u49",
+     -6.142
+    ],
+    [
+     "tool_c34",
+     -8.837
+    ],
+    [
+     "tool_o90",
+     -9.938
+    ]
+   ],
+   "nli": {
+    "tool_o90": {
+     "REALIZES_OPERATION": 0.0001,
+     "CHECKS_PRECONDITION": 0.0003,
+     "OBSERVES_STATE": 0.0004,
+     "COMMUNICATES": 0.0001,
+     "label": "UNRELATED",
+     "max_e": 0.0004
+    },
+    "tool_y14": {
+     "REALIZES_OPERATION": 0.9921,
+     "CHECKS_PRECONDITION": 0.939,
+     "OBSERVES_STATE": 0.9865,
+     "COMMUNICATES": 0.988,
+     "label": "REALIZES_OPERATION",
+     "max_e": 0.9921
+    },
+    "tool_u49": {
+     "REALIZES_OPERATION": 0.0013,
+     "CHECKS_PRECONDITION": 0.0031,
+     "OBSERVES_STATE": 0.0025,
+     "COMMUNICATES": 0.004,
+     "label": "UNRELATED",
+     "max_e": 0.004
+    },
+    "tool_c34": {
+     "REALIZES_OPERATION": 0.0017,
+     "CHECKS_PRECONDITION": 0.0018,
+     "OBSERVES_STATE": 0.0044,
+     "COMMUNICATES": 0.0055,
+     "label": "UNRELATED",
+     "max_e": 0.0055
+    }
+   }
+  },
+  {
+   "span": "Log the DIMM serial in the parts ledger after removal",
+   "b_features": {
+    "dep": "root",
+    "mark": null,
+    "deontic": [],
+    "neg": false,
+    "passive": false,
+    "imperative": true,
+    "root": true,
+    "role_hypothesis": "OPERATION_EFFECT",
+    "even": false
+   },
+   "embed_rank": [
+    [
+     "tool_u49",
+     0.793
+    ],
+    [
+     "tool_y14",
+     0.6437
+    ],
+    [
+     "tool_c34",
+     0.6343
+    ],
+    [
+     "tool_o90",
+     0.5294
+    ]
+   ],
+   "rerank_rank": [
+    [
+     "tool_u49",
+     1.638
+    ],
+    [
+     "tool_y14",
+     -3.337
+    ],
+    [
+     "tool_c34",
+     -6.184
+    ],
+    [
+     "tool_o90",
+     -9.89
+    ]
+   ],
+   "nli": {
+    "tool_o90": {
+     "REALIZES_OPERATION": 0.0,
+     "CHECKS_PRECONDITION": 0.0003,
+     "OBSERVES_STATE": 0.0013,
+     "COMMUNICATES": 0.0,
+     "label": "UNRELATED",
+     "max_e": 0.0013
+    },
+    "tool_y14": {
+     "REALIZES_OPERATION": 0.0041,
+     "CHECKS_PRECONDITION": 0.082,
+     "OBSERVES_STATE": 0.0283,
+     "COMMUNICATES": 0.0128,
+     "label": "UNRELATED",
+     "max_e": 0.082
+    },
+    "tool_u49": {
+     "REALIZES_OPERATION": 0.0094,
+     "CHECKS_PRECONDITION": 0.0061,
+     "OBSERVES_STATE": 0.0278,
+     "COMMUNICATES": 0.0145,
+     "label": "UNRELATED",
+     "max_e": 0.0278
+    },
+    "tool_c34": {
+     "REALIZES_OPERATION": 0.0017,
+     "CHECKS_PRECONDITION": 0.0017,
+     "OBSERVES_STATE": 0.0027,
+     "COMMUNICATES": 0.0057,
+     "label": "UNRELATED",
+     "max_e": 0.0057
+    }
+   }
+  },
+  {
+   "span": "DIMM serial",
+   "b_features": {
+    "dep": null,
+    "mark": null,
+    "deontic": null,
+    "neg": null,
+    "passive": null,
+    "imperative": null,
+    "root": null,
+    "role_hypothesis": "UNKNOWN",
+    "even": null
+   },
+   "embed_rank": [
+    [
+     "tool_u49",
+     0.628
+    ],
+    [
+     "tool_y14",
+     0.581
+    ],
+    [
+     "tool_c34",
+     0.4851
+    ],
+    [
+     "tool_o90",
+     0.474
+    ]
+   ],
+   "rerank_rank": [
+    [
+     "tool_y14",
+     -3.065
+    ],
+    [
+     "tool_u49",
+     -6.651
+    ],
+    [
+     "tool_c34",
+     -9.12
+    ],
+    [
+     "tool_o90",
+     -10.115
+    ]
+   ],
+   "nli": {
+    "tool_o90": {
+     "REALIZES_OPERATION": 0.0004,
+     "CHECKS_PRECONDITION": 0.0046,
+     "OBSERVES_STATE": 0.2474,
+     "COMMUNICATES": 0.0001,
+     "label": "UNRELATED",
+     "max_e": 0.2474
+    },
+    "tool_y14": {
+     "REALIZES_OPERATION": 0.9711,
+     "CHECKS_PRECONDITION": 0.978,
+     "OBSERVES_STATE": 0.9741,
+     "COMMUNICATES": 0.9805,
+     "label": "COMMUNICATES",
+     "max_e": 0.9805
+    },
+    "tool_u49": {
+     "REALIZES_OPERATION": 0.0431,
+     "CHECKS_PRECONDITION": 0.0118,
+     "OBSERVES_STATE": 0.5537,
+     "COMMUNICATES": 0.965,
+     "label": "COMMUNICATES",
+     "max_e": 0.965
+    },
+    "tool_c34": {
+     "REALIZES_OPERATION": 0.0288,
+     "CHECKS_PRECONDITION": 0.0088,
+     "OBSERVES_STATE": 0.6447,
+     "COMMUNICATES": 0.0012,
+     "label": "OBSERVES_STATE",
+     "max_e": 0.6447
+    }
+   }
+  },
+  {
+   "span": "parts ledger",
+   "b_features": {
+    "dep": null,
+    "mark": null,
+    "deontic": null,
+    "neg": null,
+    "passive": null,
+    "imperative": null,
+    "root": null,
+    "role_hypothesis": "UNKNOWN",
+    "even": null
+   },
+   "embed_rank": [
+    [
+     "tool_u49",
+     0.7183
+    ],
+    [
+     "tool_c34",
+     0.7016
+    ],
+    [
+     "tool_o90",
+     0.4527
+    ],
+    [
+     "tool_y14",
+     0.445
+    ]
+   ],
+   "rerank_rank": [
+    [
+     "tool_u49",
+     0.842
+    ],
+    [
+     "tool_c34",
+     0.487
+    ],
+    [
+     "tool_o90",
+     -9.813
+    ],
+    [
+     "tool_y14",
+     -10.197
+    ]
+   ],
+   "nli": {
+    "tool_o90": {
+     "REALIZES_OPERATION": 0.0001,
+     "CHECKS_PRECONDITION": 0.001,
+     "OBSERVES_STATE": 0.0022,
+     "COMMUNICATES": 0.0001,
+     "label": "UNRELATED",
+     "max_e": 0.0022
+    },
+    "tool_y14": {
+     "REALIZES_OPERATION": 0.0041,
+     "CHECKS_PRECONDITION": 0.5209,
+     "OBSERVES_STATE": 0.0152,
+     "COMMUNICATES": 0.0062,
+     "label": "CHECKS_PRECONDITION",
+     "max_e": 0.5209
+    },
+    "tool_u49": {
+     "REALIZES_OPERATION": 0.9694,
+     "CHECKS_PRECONDITION": 0.0066,
+     "OBSERVES_STATE": 0.9565,
+     "COMMUNICATES": 0.9853,
+     "label": "COMMUNICATES",
+     "max_e": 0.9853
+    },
+    "tool_c34": {
+     "REALIZES_OPERATION": 0.9817,
+     "CHECKS_PRECONDITION": 0.008,
+     "OBSERVES_STATE": 0.9913,
+     "COMMUNICATES": 0.0974,
+     "label": "OBSERVES_STATE",
+     "max_e": 0.9913
+    }
+   }
+  }
+ ]
+}

@@ -1,0 +1,74 @@
+{
+ "case_id": "grain_elevator",
+ "model": "ministral-14b-latest",
+ "served_model": "ministral-14b-latest",
+ "events": [
+  {
+   "span": "Weigh the grain delivery before unloading it into silo S-2",
+   "role": "OPERATION_EFFECT",
+   "governed_tools": [
+    "weigh_truck"
+   ]
+  },
+  {
+   "span": "unloading it into silo S-2",
+   "role": "OPERATION_EFFECT",
+   "governed_tools": [
+    "unload_silo"
+   ]
+  },
+  {
+   "span": "The moisture reading must be recorded for every delivery",
+   "role": "OPERATION_EFFECT",
+   "governed_tools": [
+    "read_moisture",
+    "record_moisture"
+   ]
+  },
+  {
+   "span": "Notify the dispatcher when a delivery is rejected",
+   "role": "COMMUNICATION",
+   "governed_tools": [
+    "notify_dispatcher"
+   ]
+  },
+  {
+   "span": "a delivery is rejected",
+   "role": "OPERATION_EFFECT",
+   "governed_tools": [
+    "reject_delivery"
+   ]
+  }
+ ],
+ "edges": [
+  {
+   "condition_span": "Weigh the grain delivery before unloading it into silo S-2",
+   "operation_span": "unloading it into silo S-2",
+   "relation": "ORDER_BEFORE"
+  },
+  {
+   "condition_span": "The moisture reading must be recorded for every delivery",
+   "operation_span": "unloading it into silo S-2",
+   "relation": "GATE"
+  },
+  {
+   "condition_span": "a delivery is rejected",
+   "operation_span": "Notify the dispatcher when a delivery is rejected",
+   "relation": "GATE"
+  }
+ ],
+ "format_errors": [],
+ "parse_error": "",
+ "finish_reason": "stop",
+ "usage": {
+  "prompt_tokens": 648,
+  "total_tokens": 1044,
+  "completion_tokens": 396,
+  "prompt_tokens_details": {
+   "cached_tokens": 0
+  },
+  "service_tier": "standard"
+ },
+ "latency": 6.039,
+ "cached": false
+}

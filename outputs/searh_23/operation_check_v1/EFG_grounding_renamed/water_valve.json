@@ -1,0 +1,766 @@
+{
+ "case_id": "water_valve",
+ "renderings_without_names": {
+  "tool_j42": "Actuates the distribution valve and records the open event in the plant log. Input parameters: valve_id: string. Output: opened: boolean.",
+  "tool_a27": "Reads the current turbidity sensor value for a tank in NTU. Input parameters: tank_id: string. Output: ntu: number.",
+  "tool_l78": "Records an operator override request against a tank alarm. Input parameters: tank_id: string, reason: string. Output: logged: boolean.",
+  "tool_y90": "Reads whether the distribution valve is currently open or closed. Input parameters: valve_id: string. Output: state: string."
+ },
+ "tool_type_probe": {
+  "tool_j42": {
+   "mutate": 0.017,
+   "verify": 0.0136,
+   "read": 0.0,
+   "message": 0.9769,
+   "top": "message"
+  },
+  "tool_a27": {
+   "mutate": 0.0001,
+   "verify": 0.0006,
+   "read": 0.0004,
+   "message": 0.0215,
+   "top": "message"
+  },
+  "tool_l78": {
+   "mutate": 0.0022,
+   "verify": 0.9227,
+   "read": 0.0,
+   "message": 0.9724,
+   "top": "message"
+  },
+  "tool_y90": {
+   "mutate": 0.0045,
+   "verify": 0.0485,
+   "read": 0.0022,
+   "message": 0.0267,
+   "top": "verify"
+  }
+ },
+ "gold_span_grounding": [
+  {
+   "span": "Open the distribution valve",
+   "embed_rank": [
+    [
+     "tool_j42",
+     0.7262
+    ],
+    [
+     "tool_y90",
+     0.6883
+    ],
+    [
+     "tool_a27",
+     0.4334
+    ],
+    [
+     "tool_l78",
+     0.4104
+    ]
+   ],
+   "rerank_rank": [
+    [
+     "tool_y90",
+     3.511
+    ],
+    [
+     "tool_j42",
+     3.315
+    ],
+    [
+     "tool_l78",
+     -10.194
+    ],
+    [
+     "tool_a27",
+     -10.196
+    ]
+   ],
+   "nli": {
+    "tool_j42": {
+     "REALIZES_OPERATION": 0.9947,
+     "CHECKS_PRECONDITION": 0.0177,
+     "OBSERVES_STATE": 0.9857,
+     "COMMUNICATES": 0.9946,
+     "label": "REALIZES_OPERATION",
+     "max_e": 0.9947
+    },
+    "tool_a27": {
+     "REALIZES_OPERATION": 0.0001,
+     "CHECKS_PRECONDITION": 0.0001,
+     "OBSERVES_STATE": 0.0001,
+     "COMMUNICATES": 0.0,
+     "label": "UNRELATED",
+     "max_e": 0.0001
+    },
+    "tool_l78": {
+     "REALIZES_OPERATION": 0.0004,
+     "CHECKS_PRECONDITION": 0.0026,
+     "OBSERVES_STATE": 0.0049,
+     "COMMUNICATES": 0.0063,
+     "label": "UNRELATED",
+     "max_e": 0.0063
+    },
+    "tool_y90": {
+     "REALIZES_OPERATION": 0.0132,
+     "CHECKS_PRECONDITION": 0.8749,
+     "OBSERVES_STATE": 0.9736,
+     "COMMUNICATES": 0.488,
+     "label": "OBSERVES_STATE",
+     "max_e": 0.9736
+    }
+   }
+  },
+  {
+   "span": "the turbidity reading for tg-91 is below 0.3 NTU",
+   "embed_rank": [
+    [
+     "tool_a27",
+     0.6931
+    ],
+    [
+     "tool_y90",
+     0.4474
+    ],
+    [
+     "tool_l78",
+     0.397
+    ],
+    [
+     "tool_j42",
+     0.3959
+    ]
+   ],
+   "rerank_rank": [
+    [
+     "tool_a27",
+     -3.885
+    ],
+    [
+     "tool_y90",
+     -10.167
+    ],
+    [
+     "tool_l78",
+     -10.18
+    ],
+    [
+     "tool_j42",
+     -10.196
+    ]
+   ],
+   "nli": {
+    "tool_j42": {
+     "REALIZES_OPERATION": 0.0009,
+     "CHECKS_PRECONDITION": 0.001,
+     "OBSERVES_STATE": 0.0007,
+     "COMMUNICATES": 0.0008,
+     "label": "UNRELATED",
+     "max_e": 0.001
+    },
+    "tool_a27": {
+     "REALIZES_OPERATION": 0.0011,
+     "CHECKS_PRECONDITION": 0.0008,
+     "OBSERVES_STATE": 0.0018,
+     "COMMUNICATES": 0.001,
+     "label": "UNRELATED",
+     "max_e": 0.0018
+    },
+    "tool_l78": {
+     "REALIZES_OPERATION": 0.0011,
+     "CHECKS_PRECONDITION": 0.0016,
+     "OBSERVES_STATE": 0.001,
+     "COMMUNICATES": 0.0004,
+     "label": "UNRELATED",
+     "max_e": 0.0016
+    },
+    "tool_y90": {
+     "REALIZES_OPERATION": 0.0015,
+     "CHECKS_PRECONDITION": 0.0005,
+     "OBSERVES_STATE": 0.0007,
+     "COMMUNICATES": 0.0002,
+     "label": "UNRELATED",
+     "max_e": 0.0015
+    }
+   }
+  },
+  {
+   "span": "An operator override",
+   "embed_rank": [
+    [
+     "tool_l78",
+     0.6579
+    ],
+    [
+     "tool_j42",
+     0.4649
+    ],
+    [
+     "tool_a27",
+     0.4403
+    ],
+    [
+     "tool_y90",
+     0.4331
+    ]
+   ],
+   "rerank_rank": [
+    [
+     "tool_l78",
+     1.533
+    ],
+    [
+     "tool_j42",
+     -9.0
+    ],
+    [
+     "tool_a27",
+     -10.194
+    ],
+    [
+     "tool_y90",
+     -10.197
+    ]
+   ],
+   "nli": {
+    "tool_j42": {
+     "REALIZES_OPERATION": 0.0017,
+     "CHECKS_PRECONDITION": 0.0034,
+     "OBSERVES_STATE": 0.0452,
+     "COMMUNICATES": 0.0086,
+     "label": "UNRELATED",
+     "max_e": 0.0452
+    },
+    "tool_a27": {
+     "REALIZES_OPERATION": 0.0001,
+     "CHECKS_PRECONDITION": 0.0002,
+     "OBSERVES_STATE": 0.0004,
+     "COMMUNICATES": 0.0,
+     "label": "UNRELATED",
+     "max_e": 0.0004
+    },
+    "tool_l78": {
+     "REALIZES_OPERATION": 0.9737,
+     "CHECKS_PRECONDITION": 0.7497,
+     "OBSERVES_STATE": 0.9733,
+     "COMMUNICATES": 0.9921,
+     "label": "COMMUNICATES",
+     "max_e": 0.9921
+    },
+    "tool_y90": {
+     "REALIZES_OPERATION": 0.0003,
+     "CHECKS_PRECONDITION": 0.0004,
+     "OBSERVES_STATE": 0.0024,
+     "COMMUNICATES": 0.0001,
+     "label": "UNRELATED",
+     "max_e": 0.0024
+    }
+   }
+  }
+ ],
+ "b_candidate_grounding": [
+  {
+   "span": "Open the distribution valve",
+   "b_features": {
+    "dep": "root",
+    "mark": null,
+    "deontic": [],
+    "neg": false,
+    "passive": false,
+    "imperative": true,
+    "root": true,
+    "role_hypothesis": "OPERATION_EFFECT",
+    "even": false
+   },
+   "embed_rank": [
+    [
+     "tool_j42",
+     0.7262
+    ],
+    [
+     "tool_y90",
+     0.6883
+    ],
+    [
+     "tool_a27",
+     0.4334
+    ],
+    [
+     "tool_l78",
+     0.4104
+    ]
+   ],
+   "rerank_rank": [
+    [
+     "tool_y90",
+     3.511
+    ],
+    [
+     "tool_j42",
+     3.315
+    ],
+    [
+     "tool_l78",
+     -10.194
+    ],
+    [
+     "tool_a27",
+     -10.196
+    ]
+   ],
+   "nli": {
+    "tool_j42": {
+     "REALIZES_OPERATION": 0.9947,
+     "CHECKS_PRECONDITION": 0.0177,
+     "OBSERVES_STATE": 0.9857,
+     "COMMUNICATES": 0.9946,
+     "label": "REALIZES_OPERATION",
+     "max_e": 0.9947
+    },
+    "tool_a27": {
+     "REALIZES_OPERATION": 0.0001,
+     "CHECKS_PRECONDITION": 0.0001,
+     "OBSERVES_STATE": 0.0001,
+     "COMMUNICATES": 0.0,
+     "label": "UNRELATED",
+     "max_e": 0.0001
+    },
+    "tool_l78": {
+     "REALIZES_OPERATION": 0.0004,
+     "CHECKS_PRECONDITION": 0.0026,
+     "OBSERVES_STATE": 0.0049,
+     "COMMUNICATES": 0.0063,
+     "label": "UNRELATED",
+     "max_e": 0.0063
+    },
+    "tool_y90": {
+     "REALIZES_OPERATION": 0.0132,
+     "CHECKS_PRECONDITION": 0.8749,
+     "OBSERVES_STATE": 0.9736,
+     "COMMUNICATES": 0.488,
+     "label": "OBSERVES_STATE",
+     "max_e": 0.9736
+    }
+   }
+  },
+  {
+   "span": "distribution valve",
+   "b_features": {
+    "dep": null,
+    "mark": null,
+    "deontic": null,
+    "neg": null,
+    "passive": null,
+    "imperative": null,
+    "root": null,
+    "role_hypothesis": "UNKNOWN",
+    "even": null
+   },
+   "embed_rank": [
+    [
+     "tool_j42",
+     0.6435
+    ],
+    [
+     "tool_y90",
+     0.6291
+    ],
+    [
+     "tool_a27",
+     0.4285
+    ],
+    [
+     "tool_l78",
+     0.3968
+    ]
+   ],
+   "rerank_rank": [
+    [
+     "tool_j42",
+     2.027
+    ],
+    [
+     "tool_y90",
+     1.857
+    ],
+    [
+     "tool_a27",
+     -10.195
+    ],
+    [
+     "tool_l78",
+     -10.196
+    ]
+   ],
+   "nli": {
+    "tool_j42": {
+     "REALIZES_OPERATION": 0.9944,
+     "CHECKS_PRECONDITION": 0.032,
+     "OBSERVES_STATE": 0.9913,
+     "COMMUNICATES": 0.995,
+     "label": "COMMUNICATES",
+     "max_e": 0.995
+    },
+    "tool_a27": {
+     "REALIZES_OPERATION": 0.0004,
+     "CHECKS_PRECONDITION": 0.0003,
+     "OBSERVES_STATE": 0.0042,
+     "COMMUNICATES": 0.0001,
+     "label": "UNRELATED",
+     "max_e": 0.0042
+    },
+    "tool_l78": {
+     "REALIZES_OPERATION": 0.0006,
+     "CHECKS_PRECONDITION": 0.0102,
+     "OBSERVES_STATE": 0.0063,
+     "COMMUNICATES": 0.0017,
+     "label": "UNRELATED",
+     "max_e": 0.0102
+    },
+    "tool_y90": {
+     "REALIZES_OPERATION": 0.9619,
+     "CHECKS_PRECONDITION": 0.9638,
+     "OBSERVES_STATE": 0.9872,
+     "COMMUNICATES": 0.968,
+     "label": "OBSERVES_STATE",
+     "max_e": 0.9872
+    }
+   }
+  },
+  {
+   "span": "only if the turbidity reading for tg-91 is below 0.3 NTU",
+   "b_features": {
+    "dep": "advcl",
+    "mark": "if",
+    "deontic": [],
+    "neg": false,
+    "passive": false,
+    "imperative": false,
+    "root": false,
+    "role_hypothesis": "STATE_OBSERVATION",
+    "even": false
+   },
+   "embed_rank": [
+    [
+     "tool_a27",
+     0.6924
+    ],
+    [
+     "tool_y90",
+     0.4891
+    ],
+    [
+     "tool_l78",
+     0.4434
+    ],
+    [
+     "tool_j42",
+     0.4276
+    ]
+   ],
+   "rerank_rank": [
+    [
+     "tool_a27",
+     -4.707
+    ],
+    [
+     "tool_y90",
+     -9.779
+    ],
+    [
+     "tool_l78",
+     -10.195
+    ],
+    [
+     "tool_j42",
+     -10.196
+    ]
+   ],
+   "nli": {
+    "tool_j42": {
+     "REALIZES_OPERATION": 0.0004,
+     "CHECKS_PRECONDITION": 0.0013,
+     "OBSERVES_STATE": 0.0007,
+     "COMMUNICATES": 0.0015,
+     "label": "UNRELATED",
+     "max_e": 0.0015
+    },
+    "tool_a27": {
+     "REALIZES_OPERATION": 0.0002,
+     "CHECKS_PRECONDITION": 0.0006,
+     "OBSERVES_STATE": 0.0009,
+     "COMMUNICATES": 0.0,
+     "label": "UNRELATED",
+     "max_e": 0.0009
+    },
+    "tool_l78": {
+     "REALIZES_OPERATION": 0.0003,
+     "CHECKS_PRECONDITION": 0.0014,
+     "OBSERVES_STATE": 0.0004,
+     "COMMUNICATES": 0.0003,
+     "label": "UNRELATED",
+     "max_e": 0.0014
+    },
+    "tool_y90": {
+     "REALIZES_OPERATION": 0.0006,
+     "CHECKS_PRECONDITION": 0.0006,
+     "OBSERVES_STATE": 0.0004,
+     "COMMUNICATES": 0.0,
+     "label": "UNRELATED",
+     "max_e": 0.0006
+    }
+   }
+  },
+  {
+   "span": "turbidity reading for tg-91",
+   "b_features": {
+    "dep": null,
+    "mark": null,
+    "deontic": null,
+    "neg": null,
+    "passive": null,
+    "imperative": null,
+    "root": null,
+    "role_hypothesis": "UNKNOWN",
+    "even": null
+   },
+   "embed_rank": [
+    [
+     "tool_a27",
+     0.703
+    ],
+    [
+     "tool_y90",
+     0.4649
+    ],
+    [
+     "tool_l78",
+     0.4363
+    ],
+    [
+     "tool_j42",
+     0.4142
+    ]
+   ],
+   "rerank_rank": [
+    [
+     "tool_a27",
+     -6.132
+    ],
+    [
+     "tool_l78",
+     -10.089
+    ],
+    [
+     "tool_y90",
+     -10.15
+    ],
+    [
+     "tool_j42",
+     -10.197
+    ]
+   ],
+   "nli": {
+    "tool_j42": {
+     "REALIZES_OPERATION": 0.004,
+     "CHECKS_PRECONDITION": 0.0018,
+     "OBSERVES_STATE": 0.0025,
+     "COMMUNICATES": 0.0088,
+     "label": "UNRELATED",
+     "max_e": 0.0088
+    },
+    "tool_a27": {
+     "REALIZES_OPERATION": 0.0042,
+     "CHECKS_PRECONDITION": 0.0033,
+     "OBSERVES_STATE": 0.049,
+     "COMMUNICATES": 0.007,
+     "label": "UNRELATED",
+     "max_e": 0.049
+    },
+    "tool_l78": {
+     "REALIZES_OPERATION": 0.0009,
+     "CHECKS_PRECONDITION": 0.0025,
+     "OBSERVES_STATE": 0.0023,
+     "COMMUNICATES": 0.0006,
+     "label": "UNRELATED",
+     "max_e": 0.0025
+    },
+    "tool_y90": {
+     "REALIZES_OPERATION": 0.0018,
+     "CHECKS_PRECONDITION": 0.0018,
+     "OBSERVES_STATE": 0.0036,
+     "COMMUNICATES": 0.0043,
+     "label": "UNRELATED",
+     "max_e": 0.0043
+    }
+   }
+  },
+  {
+   "span": "An operator override does not open the valve",
+   "b_features": {
+    "dep": "root",
+    "mark": null,
+    "deontic": [],
+    "neg": true,
+    "passive": false,
+    "imperative": false,
+    "root": true,
+    "role_hypothesis": "OPERATION_EFFECT",
+    "even": false
+   },
+   "embed_rank": [
+    [
+     "tool_j42",
+     0.6545
+    ],
+    [
+     "tool_l78",
+     0.6311
+    ],
+    [
+     "tool_y90",
+     0.6221
+    ],
+    [
+     "tool_a27",
+     0.4576
+    ]
+   ],
+   "rerank_rank": [
+    [
+     "tool_y90",
+     -2.4
+    ],
+    [
+     "tool_l78",
+     -4.213
+    ],
+    [
+     "tool_j42",
+     -5.767
+    ],
+    [
+     "tool_a27",
+     -10.197
+    ]
+   ],
+   "nli": {
+    "tool_j42": {
+     "REALIZES_OPERATION": 0.0005,
+     "CHECKS_PRECONDITION": 0.0111,
+     "OBSERVES_STATE": 0.0012,
+     "COMMUNICATES": 0.0011,
+     "label": "UNRELATED",
+     "max_e": 0.0111
+    },
+    "tool_a27": {
+     "REALIZES_OPERATION": 0.0008,
+     "CHECKS_PRECONDITION": 0.0006,
+     "OBSERVES_STATE": 0.0011,
+     "COMMUNICATES": 0.0,
+     "label": "UNRELATED",
+     "max_e": 0.0011
+    },
+    "tool_l78": {
+     "REALIZES_OPERATION": 0.0013,
+     "CHECKS_PRECONDITION": 0.0206,
+     "OBSERVES_STATE": 0.0173,
+     "COMMUNICATES": 0.0761,
+     "label": "UNRELATED",
+     "max_e": 0.0761
+    },
+    "tool_y90": {
+     "REALIZES_OPERATION": 0.0004,
+     "CHECKS_PRECONDITION": 0.001,
+     "OBSERVES_STATE": 0.002,
+     "COMMUNICATES": 0.0007,
+     "label": "UNRELATED",
+     "max_e": 0.002
+    }
+   }
+  },
+  {
+   "span": "operator override",
+   "b_features": {
+    "dep": null,
+    "mark": null,
+    "deontic": null,
+    "neg": null,
+    "passive": null,
+    "imperative": null,
+    "root": null,
+    "role_hypothesis": "UNKNOWN",
+    "even": null
+   },
+   "embed_rank": [
+    [
+     "tool_l78",
+     0.6611
+    ],
+    [
+     "tool_j42",
+     0.4538
+    ],
+    [
+     "tool_a27",
+     0.4269
+    ],
+    [
+     "tool_y90",
+     0.4219
+    ]
+   ],
+   "rerank_rank": [
+    [
+     "tool_l78",
+     1.943
+    ],
+    [
+     "tool_j42",
+     -9.659
+    ],
+    [
+     "tool_a27",
+     -10.194
+    ],
+    [
+     "tool_y90",
+     -10.197
+    ]
+   ],
+   "nli": {
+    "tool_j42": {
+     "REALIZES_OPERATION": 0.0008,
+     "CHECKS_PRECONDITION": 0.0023,
+     "OBSERVES_STATE": 0.0038,
+     "COMMUNICATES": 0.0056,
+     "label": "UNRELATED",
+     "max_e": 0.0056
+    },
+    "tool_a27": {
+     "REALIZES_OPERATION": 0.0001,
+     "CHECKS_PRECONDITION": 0.0002,
+     "OBSERVES_STATE": 0.0003,
+     "COMMUNICATES": 0.0,
+     "label": "UNRELATED",
+     "max_e": 0.0003
+    },
+    "tool_l78": {
+     "REALIZES_OPERATION": 0.8894,
+     "CHECKS_PRECONDITION": 0.0428,
+     "OBSERVES_STATE": 0.8862,
+     "COMMUNICATES": 0.9897,
+     "label": "COMMUNICATES",
+     "max_e": 0.9897
+    },
+    "tool_y90": {
+     "REALIZES_OPERATION": 0.0003,
+     "CHECKS_PRECONDITION": 0.0006,
+     "OBSERVES_STATE": 0.0018,
+     "COMMUNICATES": 0.0001,
+     "label": "UNRELATED",
+     "max_e": 0.0018
+    }
+   }
+  }
+ ]
+}

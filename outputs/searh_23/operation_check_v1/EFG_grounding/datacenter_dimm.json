@@ -1,0 +1,850 @@
+{
+ "case_id": "datacenter_dimm",
+ "renderings_without_names": {
+  "read_rack_power": "Reads the power state of a rack: energized or de-energized. Input parameters: rack_id: string. Output: state: string.",
+  "remove_dimm": "Removes a failed DIMM from a server and updates the fault ticket. Input parameters: rack_id: string, slot: string. Output: removed: boolean.",
+  "log_part": "Writes a removed part's serial number to the parts ledger. Input parameters: serial: string. Output: logged: boolean.",
+  "read_parts_ledger": "Reads past entries from the parts ledger. Input parameters: none. Output: entries: array."
+ },
+ "tool_type_probe": {
+  "read_rack_power": {
+   "mutate": 0.0034,
+   "verify": 0.0032,
+   "read": 0.0048,
+   "message": 0.0373,
+   "top": "message"
+  },
+  "remove_dimm": {
+   "mutate": 0.0133,
+   "verify": 0.9694,
+   "read": 0.0,
+   "message": 0.9784,
+   "top": "message"
+  },
+  "log_part": {
+   "mutate": 0.9276,
+   "verify": 0.0163,
+   "read": 0.0,
+   "message": 0.9639,
+   "top": "message"
+  },
+  "read_parts_ledger": {
+   "mutate": 0.0109,
+   "verify": 0.003,
+   "read": 0.9458,
+   "message": 0.0344,
+   "top": "read"
+  }
+ },
+ "gold_span_grounding": [
+  {
+   "span": "Observe that rack R-31 is de-energized",
+   "embed_rank": [
+    [
+     "read_rack_power",
+     0.7187
+    ],
+    [
+     "remove_dimm",
+     0.6209
+    ],
+    [
+     "log_part",
+     0.4788
+    ],
+    [
+     "read_parts_ledger",
+     0.453
+    ]
+   ],
+   "rerank_rank": [
+    [
+     "read_rack_power",
+     -1.527
+    ],
+    [
+     "read_parts_ledger",
+     -10.193
+    ],
+    [
+     "log_part",
+     -10.193
+    ],
+    [
+     "remove_dimm",
+     -10.196
+    ]
+   ],
+   "nli": {
+    "read_rack_power": {
+     "REALIZES_OPERATION": 0.0014,
+     "CHECKS_PRECONDITION": 0.0032,
+     "OBSERVES_STATE": 0.0017,
+     "COMMUNICATES": 0.0039,
+     "label": "UNRELATED",
+     "max_e": 0.0039
+    },
+    "remove_dimm": {
+     "REALIZES_OPERATION": 0.0007,
+     "CHECKS_PRECONDITION": 0.0011,
+     "OBSERVES_STATE": 0.0004,
+     "COMMUNICATES": 0.0017,
+     "label": "UNRELATED",
+     "max_e": 0.0017
+    },
+    "log_part": {
+     "REALIZES_OPERATION": 0.0031,
+     "CHECKS_PRECONDITION": 0.0019,
+     "OBSERVES_STATE": 0.0042,
+     "COMMUNICATES": 0.0008,
+     "label": "UNRELATED",
+     "max_e": 0.0042
+    },
+    "read_parts_ledger": {
+     "REALIZES_OPERATION": 0.0016,
+     "CHECKS_PRECONDITION": 0.0014,
+     "OBSERVES_STATE": 0.001,
+     "COMMUNICATES": 0.0003,
+     "label": "UNRELATED",
+     "max_e": 0.0016
+    }
+   }
+  },
+  {
+   "span": "remove the failed DIMM",
+   "embed_rank": [
+    [
+     "remove_dimm",
+     0.7386
+    ],
+    [
+     "log_part",
+     0.5426
+    ],
+    [
+     "read_parts_ledger",
+     0.4704
+    ],
+    [
+     "read_rack_power",
+     0.4213
+    ]
+   ],
+   "rerank_rank": [
+    [
+     "remove_dimm",
+     6.645
+    ],
+    [
+     "log_part",
+     -5.78
+    ],
+    [
+     "read_parts_ledger",
+     -8.835
+    ],
+    [
+     "read_rack_power",
+     -9.666
+    ]
+   ],
+   "nli": {
+    "read_rack_power": {
+     "REALIZES_OPERATION": 0.0,
+     "CHECKS_PRECONDITION": 0.0002,
+     "OBSERVES_STATE": 0.0006,
+     "COMMUNICATES": 0.0,
+     "label": "UNRELATED",
+     "max_e": 0.0006
+    },
+    "remove_dimm": {
+     "REALIZES_OPERATION": 0.996,
+     "CHECKS_PRECONDITION": 0.8791,
+     "OBSERVES_STATE": 0.9811,
+     "COMMUNICATES": 0.9893,
+     "label": "REALIZES_OPERATION",
+     "max_e": 0.996
+    },
+    "log_part": {
+     "REALIZES_OPERATION": 0.0005,
+     "CHECKS_PRECONDITION": 0.0035,
+     "OBSERVES_STATE": 0.0032,
+     "COMMUNICATES": 0.0024,
+     "label": "UNRELATED",
+     "max_e": 0.0035
+    },
+    "read_parts_ledger": {
+     "REALIZES_OPERATION": 0.0015,
+     "CHECKS_PRECONDITION": 0.002,
+     "OBSERVES_STATE": 0.006,
+     "COMMUNICATES": 0.0007,
+     "label": "UNRELATED",
+     "max_e": 0.006
+    }
+   }
+  },
+  {
+   "span": "Log the DIMM serial in the parts ledger",
+   "embed_rank": [
+    [
+     "log_part",
+     0.7563
+    ],
+    [
+     "read_parts_ledger",
+     0.6247
+    ],
+    [
+     "remove_dimm",
+     0.5612
+    ],
+    [
+     "read_rack_power",
+     0.5193
+    ]
+   ],
+   "rerank_rank": [
+    [
+     "log_part",
+     -1.261
+    ],
+    [
+     "remove_dimm",
+     -4.741
+    ],
+    [
+     "read_parts_ledger",
+     -5.44
+    ],
+    [
+     "read_rack_power",
+     -8.593
+    ]
+   ],
+   "nli": {
+    "read_rack_power": {
+     "REALIZES_OPERATION": 0.0001,
+     "CHECKS_PRECONDITION": 0.0004,
+     "OBSERVES_STATE": 0.0015,
+     "COMMUNICATES": 0.0,
+     "label": "UNRELATED",
+     "max_e": 0.0015
+    },
+    "remove_dimm": {
+     "REALIZES_OPERATION": 0.0004,
+     "CHECKS_PRECONDITION": 0.0201,
+     "OBSERVES_STATE": 0.0017,
+     "COMMUNICATES": 0.0004,
+     "label": "UNRELATED",
+     "max_e": 0.0201
+    },
+    "log_part": {
+     "REALIZES_OPERATION": 0.0085,
+     "CHECKS_PRECONDITION": 0.0073,
+     "OBSERVES_STATE": 0.0322,
+     "COMMUNICATES": 0.014,
+     "label": "UNRELATED",
+     "max_e": 0.0322
+    },
+    "read_parts_ledger": {
+     "REALIZES_OPERATION": 0.0039,
+     "CHECKS_PRECONDITION": 0.0046,
+     "OBSERVES_STATE": 0.0066,
+     "COMMUNICATES": 0.0079,
+     "label": "UNRELATED",
+     "max_e": 0.0079
+    }
+   }
+  }
+ ],
+ "b_candidate_grounding": [
+  {
+   "span": "Observe that rack R-31 is de-energized, then remove the failed DIMM",
+   "b_features": {
+    "dep": "root",
+    "mark": null,
+    "deontic": [],
+    "neg": false,
+    "passive": false,
+    "imperative": true,
+    "root": true,
+    "role_hypothesis": "OPERATION_EFFECT",
+    "even": false
+   },
+   "embed_rank": [
+    [
+     "remove_dimm",
+     0.7703
+    ],
+    [
+     "read_rack_power",
+     0.647
+    ],
+    [
+     "log_part",
+     0.5194
+    ],
+    [
+     "read_parts_ledger",
+     0.4721
+    ]
+   ],
+   "rerank_rank": [
+    [
+     "remove_dimm",
+     2.612
+    ],
+    [
+     "read_rack_power",
+     -2.365
+    ],
+    [
+     "read_parts_ledger",
+     -10.194
+    ],
+    [
+     "log_part",
+     -10.195
+    ]
+   ],
+   "nli": {
+    "read_rack_power": {
+     "REALIZES_OPERATION": 0.0002,
+     "CHECKS_PRECONDITION": 0.0008,
+     "OBSERVES_STATE": 0.0004,
+     "COMMUNICATES": 0.0005,
+     "label": "UNRELATED",
+     "max_e": 0.0008
+    },
+    "remove_dimm": {
+     "REALIZES_OPERATION": 0.0009,
+     "CHECKS_PRECONDITION": 0.0013,
+     "OBSERVES_STATE": 0.0005,
+     "COMMUNICATES": 0.0016,
+     "label": "UNRELATED",
+     "max_e": 0.0016
+    },
+    "log_part": {
+     "REALIZES_OPERATION": 0.0014,
+     "CHECKS_PRECONDITION": 0.0029,
+     "OBSERVES_STATE": 0.0032,
+     "COMMUNICATES": 0.004,
+     "label": "UNRELATED",
+     "max_e": 0.004
+    },
+    "read_parts_ledger": {
+     "REALIZES_OPERATION": 0.0016,
+     "CHECKS_PRECONDITION": 0.0022,
+     "OBSERVES_STATE": 0.0009,
+     "COMMUNICATES": 0.002,
+     "label": "UNRELATED",
+     "max_e": 0.0022
+    }
+   }
+  },
+  {
+   "span": "that rack R-31 is de-energized, then remove the failed DIMM",
+   "b_features": {
+    "dep": "ccomp",
+    "mark": null,
+    "deontic": [],
+    "neg": false,
+    "passive": true,
+    "imperative": false,
+    "root": false,
+    "role_hypothesis": "UNKNOWN",
+    "even": false
+   },
+   "embed_rank": [
+    [
+     "remove_dimm",
+     0.7608
+    ],
+    [
+     "read_rack_power",
+     0.6104
+    ],
+    [
+     "log_part",
+     0.5232
+    ],
+    [
+     "read_parts_ledger",
+     0.4575
+    ]
+   ],
+   "rerank_rank": [
+    [
+     "remove_dimm",
+     1.585
+    ],
+    [
+     "read_rack_power",
+     -1.859
+    ],
+    [
+     "log_part",
+     -10.182
+    ],
+    [
+     "read_parts_ledger",
+     -10.196
+    ]
+   ],
+   "nli": {
+    "read_rack_power": {
+     "REALIZES_OPERATION": 0.0002,
+     "CHECKS_PRECONDITION": 0.0003,
+     "OBSERVES_STATE": 0.0002,
+     "COMMUNICATES": 0.0005,
+     "label": "UNRELATED",
+     "max_e": 0.0005
+    },
+    "remove_dimm": {
+     "REALIZES_OPERATION": 0.0011,
+     "CHECKS_PRECONDITION": 0.0016,
+     "OBSERVES_STATE": 0.0011,
+     "COMMUNICATES": 0.0012,
+     "label": "UNRELATED",
+     "max_e": 0.0016
+    },
+    "log_part": {
+     "REALIZES_OPERATION": 0.0015,
+     "CHECKS_PRECONDITION": 0.0027,
+     "OBSERVES_STATE": 0.0018,
+     "COMMUNICATES": 0.0016,
+     "label": "UNRELATED",
+     "max_e": 0.0027
+    },
+    "read_parts_ledger": {
+     "REALIZES_OPERATION": 0.0014,
+     "CHECKS_PRECONDITION": 0.0013,
+     "OBSERVES_STATE": 0.0009,
+     "COMMUNICATES": 0.0007,
+     "label": "UNRELATED",
+     "max_e": 0.0014
+    }
+   }
+  },
+  {
+   "span": "rack R-31",
+   "b_features": {
+    "dep": null,
+    "mark": null,
+    "deontic": null,
+    "neg": null,
+    "passive": null,
+    "imperative": null,
+    "root": null,
+    "role_hypothesis": "UNKNOWN",
+    "even": null
+   },
+   "embed_rank": [
+    [
+     "remove_dimm",
+     0.5594
+    ],
+    [
+     "read_rack_power",
+     0.5236
+    ],
+    [
+     "log_part",
+     0.4522
+    ],
+    [
+     "read_parts_ledger",
+     0.4438
+    ]
+   ],
+   "rerank_rank": [
+    [
+     "read_rack_power",
+     -7.369
+    ],
+    [
+     "remove_dimm",
+     -8.082
+    ],
+    [
+     "read_parts_ledger",
+     -10.194
+    ],
+    [
+     "log_part",
+     -10.195
+    ]
+   ],
+   "nli": {
+    "read_rack_power": {
+     "REALIZES_OPERATION": 0.0011,
+     "CHECKS_PRECONDITION": 0.0015,
+     "OBSERVES_STATE": 0.0025,
+     "COMMUNICATES": 0.0029,
+     "label": "UNRELATED",
+     "max_e": 0.0029
+    },
+    "remove_dimm": {
+     "REALIZES_OPERATION": 0.0008,
+     "CHECKS_PRECONDITION": 0.0022,
+     "OBSERVES_STATE": 0.0016,
+     "COMMUNICATES": 0.0023,
+     "label": "UNRELATED",
+     "max_e": 0.0023
+    },
+    "log_part": {
+     "REALIZES_OPERATION": 0.0014,
+     "CHECKS_PRECONDITION": 0.0025,
+     "OBSERVES_STATE": 0.0012,
+     "COMMUNICATES": 0.0036,
+     "label": "UNRELATED",
+     "max_e": 0.0036
+    },
+    "read_parts_ledger": {
+     "REALIZES_OPERATION": 0.0033,
+     "CHECKS_PRECONDITION": 0.0008,
+     "OBSERVES_STATE": 0.0039,
+     "COMMUNICATES": 0.0006,
+     "label": "UNRELATED",
+     "max_e": 0.0039
+    }
+   }
+  },
+  {
+   "span": "then remove the failed DIMM",
+   "b_features": {
+    "dep": "conj",
+    "mark": null,
+    "deontic": [],
+    "neg": false,
+    "passive": false,
+    "imperative": true,
+    "root": false,
+    "role_hypothesis": "UNKNOWN",
+    "even": false
+   },
+   "embed_rank": [
+    [
+     "remove_dimm",
+     0.7283
+    ],
+    [
+     "log_part",
+     0.5537
+    ],
+    [
+     "read_parts_ledger",
+     0.4737
+    ],
+    [
+     "read_rack_power",
+     0.4323
+    ]
+   ],
+   "rerank_rank": [
+    [
+     "remove_dimm",
+     5.935
+    ],
+    [
+     "log_part",
+     -6.142
+    ],
+    [
+     "read_parts_ledger",
+     -8.837
+    ],
+    [
+     "read_rack_power",
+     -9.938
+    ]
+   ],
+   "nli": {
+    "read_rack_power": {
+     "REALIZES_OPERATION": 0.0001,
+     "CHECKS_PRECONDITION": 0.0003,
+     "OBSERVES_STATE": 0.0004,
+     "COMMUNICATES": 0.0001,
+     "label": "UNRELATED",
+     "max_e": 0.0004
+    },
+    "remove_dimm": {
+     "REALIZES_OPERATION": 0.9921,
+     "CHECKS_PRECONDITION": 0.939,
+     "OBSERVES_STATE": 0.9865,
+     "COMMUNICATES": 0.988,
+     "label": "REALIZES_OPERATION",
+     "max_e": 0.9921
+    },
+    "log_part": {
+     "REALIZES_OPERATION": 0.0013,
+     "CHECKS_PRECONDITION": 0.0031,
+     "OBSERVES_STATE": 0.0025,
+     "COMMUNICATES": 0.004,
+     "label": "UNRELATED",
+     "max_e": 0.004
+    },
+    "read_parts_ledger": {
+     "REALIZES_OPERATION": 0.0017,
+     "CHECKS_PRECONDITION": 0.0018,
+     "OBSERVES_STATE": 0.0044,
+     "COMMUNICATES": 0.0055,
+     "label": "UNRELATED",
+     "max_e": 0.0055
+    }
+   }
+  },
+  {
+   "span": "Log the DIMM serial in the parts ledger after removal",
+   "b_features": {
+    "dep": "root",
+    "mark": null,
+    "deontic": [],
+    "neg": false,
+    "passive": false,
+    "imperative": true,
+    "root": true,
+    "role_hypothesis": "OPERATION_EFFECT",
+    "even": false
+   },
+   "embed_rank": [
+    [
+     "log_part",
+     0.793
+    ],
+    [
+     "remove_dimm",
+     0.6437
+    ],
+    [
+     "read_parts_ledger",
+     0.6343
+    ],
+    [
+     "read_rack_power",
+     0.5294
+    ]
+   ],
+   "rerank_rank": [
+    [
+     "log_part",
+     1.638
+    ],
+    [
+     "remove_dimm",
+     -3.337
+    ],
+    [
+     "read_parts_ledger",
+     -6.184
+    ],
+    [
+     "read_rack_power",
+     -9.89
+    ]
+   ],
+   "nli": {
+    "read_rack_power": {
+     "REALIZES_OPERATION": 0.0,
+     "CHECKS_PRECONDITION": 0.0003,
+     "OBSERVES_STATE": 0.0013,
+     "COMMUNICATES": 0.0,
+     "label": "UNRELATED",
+     "max_e": 0.0013
+    },
+    "remove_dimm": {
+     "REALIZES_OPERATION": 0.0041,
+     "CHECKS_PRECONDITION": 0.082,
+     "OBSERVES_STATE": 0.0283,
+     "COMMUNICATES": 0.0128,
+     "label": "UNRELATED",
+     "max_e": 0.082
+    },
+    "log_part": {
+     "REALIZES_OPERATION": 0.0094,
+     "CHECKS_PRECONDITION": 0.0061,
+     "OBSERVES_STATE": 0.0278,
+     "COMMUNICATES": 0.0145,
+     "label": "UNRELATED",
+     "max_e": 0.0278
+    },
+    "read_parts_ledger": {
+     "REALIZES_OPERATION": 0.0017,
+     "CHECKS_PRECONDITION": 0.0017,
+     "OBSERVES_STATE": 0.0027,
+     "COMMUNICATES": 0.0057,
+     "label": "UNRELATED",
+     "max_e": 0.0057
+    }
+   }
+  },
+  {
+   "span": "DIMM serial",
+   "b_features": {
+    "dep": null,
+    "mark": null,
+    "deontic": null,
+    "neg": null,
+    "passive": null,
+    "imperative": null,
+    "root": null,
+    "role_hypothesis": "UNKNOWN",
+    "even": null
+   },
+   "embed_rank": [
+    [
+     "log_part",
+     0.628
+    ],
+    [
+     "remove_dimm",
+     0.581
+    ],
+    [
+     "read_parts_ledger",
+     0.4851
+    ],
+    [
+     "read_rack_power",
+     0.474
+    ]
+   ],
+   "rerank_rank": [
+    [
+     "remove_dimm",
+     -3.065
+    ],
+    [
+     "log_part",
+     -6.651
+    ],
+    [
+     "read_parts_ledger",
+     -9.12
+    ],
+    [
+     "read_rack_power",
+     -10.115
+    ]
+   ],
+   "nli": {
+    "read_rack_power": {
+     "REALIZES_OPERATION": 0.0004,
+     "CHECKS_PRECONDITION": 0.0046,
+     "OBSERVES_STATE": 0.2474,
+     "COMMUNICATES": 0.0001,
+     "label": "UNRELATED",
+     "max_e": 0.2474
+    },
+    "remove_dimm": {
+     "REALIZES_OPERATION": 0.9711,
+     "CHECKS_PRECONDITION": 0.978,
+     "OBSERVES_STATE": 0.9741,
+     "COMMUNICATES": 0.9805,
+     "label": "COMMUNICATES",
+     "max_e": 0.9805
+    },
+    "log_part": {
+     "REALIZES_OPERATION": 0.0431,
+     "CHECKS_PRECONDITION": 0.0118,
+     "OBSERVES_STATE": 0.5537,
+     "COMMUNICATES": 0.965,
+     "label": "COMMUNICATES",
+     "max_e": 0.965
+    },
+    "read_parts_ledger": {
+     "REALIZES_OPERATION": 0.0288,
+     "CHECKS_PRECONDITION": 0.0088,
+     "OBSERVES_STATE": 0.6447,
+     "COMMUNICATES": 0.0012,
+     "label": "OBSERVES_STATE",
+     "max_e": 0.6447
+    }
+   }
+  },
+  {
+   "span": "parts ledger",
+   "b_features": {
+    "dep": null,
+    "mark": null,
+    "deontic": null,
+    "neg": null,
+    "passive": null,
+    "imperative": null,
+    "root": null,
+    "role_hypothesis": "UNKNOWN",
+    "even": null
+   },
+   "embed_rank": [
+    [
+     "log_part",
+     0.7183
+    ],
+    [
+     "read_parts_ledger",
+     0.7016
+    ],
+    [
+     "read_rack_power",
+     0.4527
+    ],
+    [
+     "remove_dimm",
+     0.445
+    ]
+   ],
+   "rerank_rank": [
+    [
+     "log_part",
+     0.842
+    ],
+    [
+     "read_parts_ledger",
+     0.487
+    ],
+    [
+     "read_rack_power",
+     -9.813
+    ],
+    [
+     "remove_dimm",
+     -10.197
+    ]
+   ],
+   "nli": {
+    "read_rack_power": {
+     "REALIZES_OPERATION": 0.0001,
+     "CHECKS_PRECONDITION": 0.001,
+     "OBSERVES_STATE": 0.0022,
+     "COMMUNICATES": 0.0001,
+     "label": "UNRELATED",
+     "max_e": 0.0022
+    },
+    "remove_dimm": {
+     "REALIZES_OPERATION": 0.0041,
+     "CHECKS_PRECONDITION": 0.5209,
+     "OBSERVES_STATE": 0.0152,
+     "COMMUNICATES": 0.0062,
+     "label": "CHECKS_PRECONDITION",
+     "max_e": 0.5209
+    },
+    "log_part": {
+     "REALIZES_OPERATION": 0.9694,
+     "CHECKS_PRECONDITION": 0.0066,
+     "OBSERVES_STATE": 0.9565,
+     "COMMUNICATES": 0.9853,
+     "label": "COMMUNICATES",
+     "max_e": 0.9853
+    },
+    "read_parts_ledger": {
+     "REALIZES_OPERATION": 0.9817,
+     "CHECKS_PRECONDITION": 0.008,
+     "OBSERVES_STATE": 0.9913,
+     "COMMUNICATES": 0.0974,
+     "label": "OBSERVES_STATE",
+     "max_e": 0.9913
+    }
+   }
+  }
+ ]
+}

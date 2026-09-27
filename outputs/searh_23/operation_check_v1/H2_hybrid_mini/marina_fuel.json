@@ -1,0 +1,155 @@
+{
+ "case_id": "marina_fuel",
+ "events": [
+  {
+   "span": "Unless the tidal clearance for berth B-3 is confirmed by the harbour office",
+   "role": "PRECONDITION_CHECK",
+   "governed_tools": [
+    "read_clearance"
+   ],
+   "dep": "advcl",
+   "mark": "unless"
+  },
+  {
+   "span": "tidal clearance for berth B-3",
+   "role": "PRECONDITION_CHECK",
+   "governed_tools": [
+    "read_clearance"
+   ],
+   "is_np": true,
+   "np_of_verb": "confirm",
+   "dep_in_verb": "nsubj",
+   "case_lemma": null
+  },
+  {
+   "span": "harbour office",
+   "role": "STATE_OBSERVATION",
+   "governed_tools": [
+    "read_clearance"
+   ],
+   "is_np": true,
+   "np_of_verb": "confirm",
+   "dep_in_verb": "obl",
+   "case_lemma": "by"
+  },
+  {
+   "span": "do not pump fuel into the vessel",
+   "role": "OPERATION_EFFECT",
+   "governed_tools": [
+    "pump_fuel"
+   ],
+   "dep": "root",
+   "mark": null
+  },
+  {
+   "span": "Spillage reports must be filed after each pumping session",
+   "role": "OPERATION_EFFECT",
+   "governed_tools": [
+    "file_spillage_report"
+   ],
+   "dep": "root",
+   "mark": null
+  },
+  {
+   "span": "Spillage reports",
+   "role": "OPERATION_EFFECT",
+   "governed_tools": [
+    "file_spillage_report"
+   ],
+   "is_np": true,
+   "np_of_verb": "file",
+   "dep_in_verb": "nsubj",
+   "case_lemma": null
+  },
+  {
+   "span": "pumping session",
+   "role": "OPERATION_EFFECT",
+   "governed_tools": [
+    "read_fuel_log"
+   ],
+   "is_np": true,
+   "np_of_verb": "file",
+   "dep_in_verb": "obl",
+   "case_lemma": "after"
+  }
+ ],
+ "edges": [
+  {
+   "condition_span": "Unless the tidal clearance for berth B-3 is confirmed by the harbour office",
+   "operation_span": "do not pump fuel into the vessel",
+   "relation": "EXCEPTION",
+   "source": "mark:unless"
+  },
+  {
+   "condition_span": "pumping session",
+   "operation_span": "Spillage reports must be filed after each pumping session",
+   "relation": "ORDER_BEFORE",
+   "source": "obl:after"
+  }
+ ],
+ "details": [
+  {
+   "span": "Unless the tidal clearance for berth B-3 is confirmed by the harbour office",
+   "resolver_label": "CHECKS_PRECONDITION",
+   "top3": [
+    "read_clearance",
+    "pump_fuel",
+    "read_fuel_log"
+   ]
+  },
+  {
+   "span": "tidal clearance for berth B-3",
+   "resolver_label": "CHECKS_PRECONDITION",
+   "top3": [
+    "read_clearance",
+    "file_spillage_report",
+    "pump_fuel"
+   ]
+  },
+  {
+   "span": "harbour office",
+   "resolver_label": "OBSERVES_STATE",
+   "top3": [
+    "read_clearance",
+    "pump_fuel",
+    "read_fuel_log"
+   ]
+  },
+  {
+   "span": "do not pump fuel into the vessel",
+   "resolver_label": "REALIZES_OPERATION",
+   "top3": [
+    "pump_fuel",
+    "read_fuel_log",
+    "file_spillage_report"
+   ]
+  },
+  {
+   "span": "Spillage reports must be filed after each pumping session",
+   "resolver_label": "REALIZES_OPERATION",
+   "top3": [
+    "file_spillage_report",
+    "read_fuel_log",
+    "pump_fuel"
+   ]
+  },
+  {
+   "span": "Spillage reports",
+   "resolver_label": "REALIZES_OPERATION",
+   "top3": [
+    "file_spillage_report",
+    "read_fuel_log",
+    "read_clearance"
+   ]
+  },
+  {
+   "span": "pumping session",
+   "resolver_label": "REALIZES_OPERATION",
+   "top3": [
+    "read_fuel_log",
+    "file_spillage_report",
+    "pump_fuel"
+   ]
+  }
+ ]
+}

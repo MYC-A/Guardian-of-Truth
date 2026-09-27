@@ -1,0 +1,59 @@
+{
+ "case_id": "payroll_reimburse",
+ "model": "codestral-latest",
+ "served_model": "codestral-latest",
+ "events": [
+  {
+   "span": "A tuition reimbursement is paid",
+   "role": "OPERATION_EFFECT",
+   "governed_tools": [
+    "pay_reimbursement"
+   ]
+  },
+  {
+   "span": "after the employee's claim P-301 has been approved by the payroll officer",
+   "role": "PRECONDITION_CHECK",
+   "governed_tools": [
+    "read_approval_status"
+   ]
+  },
+  {
+   "span": "Submitting a claim alone does not pay it",
+   "role": "OTHER",
+   "governed_tools": []
+  },
+  {
+   "span": "The payroll calendar runs biweekly",
+   "role": "STATE_OBSERVATION",
+   "governed_tools": [
+    "read_payroll_calendar"
+   ]
+  }
+ ],
+ "edges": [
+  {
+   "condition_span": "after the employee's claim P-301 has been approved by the payroll officer",
+   "operation_span": "A tuition reimbursement is paid",
+   "relation": "GATE"
+  },
+  {
+   "condition_span": "The payroll calendar runs biweekly",
+   "operation_span": "A tuition reimbursement is paid",
+   "relation": "ORDER_BEFORE"
+  }
+ ],
+ "format_errors": [],
+ "parse_error": "",
+ "finish_reason": "stop",
+ "usage": {
+  "prompt_tokens": 592,
+  "total_tokens": 845,
+  "completion_tokens": 253,
+  "prompt_tokens_details": {
+   "cached_tokens": 228
+  },
+  "service_tier": "standard"
+ },
+ "latency": 3.193,
+ "cached": false
+}

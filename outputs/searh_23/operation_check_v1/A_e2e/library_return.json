@@ -1,0 +1,59 @@
+{
+ "case_id": "library_return",
+ "model": "ministral-14b-latest",
+ "served_model": "ministral-14b-latest",
+ "events": [
+  {
+   "span": "the returned volume R-9 is scanned",
+   "role": "OPERATION_EFFECT",
+   "governed_tools": [
+    "scan_return"
+   ]
+  },
+  {
+   "span": "release the hold on the borrower's account",
+   "role": "OPERATION_EFFECT",
+   "governed_tools": [
+    "release_hold"
+   ]
+  },
+  {
+   "span": "Rare volumes must be inspected by the conservation desk",
+   "role": "PRECONDITION_CHECK",
+   "governed_tools": [
+    "inspect_volume"
+   ]
+  },
+  {
+   "span": "before re-shelving",
+   "role": "STATE_OBSERVATION",
+   "governed_tools": []
+  }
+ ],
+ "edges": [
+  {
+   "condition_span": "the returned volume R-9 is scanned",
+   "operation_span": "release the hold on the borrower's account",
+   "relation": "ORDER_BEFORE"
+  },
+  {
+   "condition_span": "Rare volumes must be inspected by the conservation desk",
+   "operation_span": "re-shelving",
+   "relation": "GATE"
+  }
+ ],
+ "format_errors": [],
+ "parse_error": "",
+ "finish_reason": "stop",
+ "usage": {
+  "prompt_tokens": 609,
+  "total_tokens": 889,
+  "completion_tokens": 280,
+  "prompt_tokens_details": {
+   "cached_tokens": 0
+  },
+  "service_tier": "standard"
+ },
+ "latency": 3.583,
+ "cached": false
+}

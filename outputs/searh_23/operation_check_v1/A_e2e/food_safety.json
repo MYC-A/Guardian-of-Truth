@@ -1,0 +1,57 @@
+{
+ "case_id": "food_safety",
+ "model": "ministral-14b-latest",
+ "served_model": "ministral-14b-latest",
+ "events": [
+  {
+   "span": "Kitchen staff may reheat a held batch once.",
+   "role": "OPERATION_EFFECT",
+   "governed_tools": [
+    "reheat_batch"
+   ]
+  },
+  {
+   "span": "Discarding the temperature log for batch B-19 is forbidden.",
+   "role": "OTHER",
+   "governed_tools": []
+  },
+  {
+   "span": "The holding cooler runs at 4 degrees Celsius.",
+   "role": "STATE_OBSERVATION",
+   "governed_tools": []
+  },
+  {
+   "span": "a held batch",
+   "role": "PRECONDITION_CHECK",
+   "governed_tools": [
+    "read_batch_status"
+   ]
+  }
+ ],
+ "edges": [
+  {
+   "condition_span": "a held batch",
+   "operation_span": "reheat a held batch once",
+   "relation": "GATE"
+  },
+  {
+   "condition_span": "Discarding the temperature log for batch B-19 is forbidden",
+   "operation_span": "reheat a held batch once",
+   "relation": "EVEN_IF"
+  }
+ ],
+ "format_errors": [],
+ "parse_error": "",
+ "finish_reason": "stop",
+ "usage": {
+  "prompt_tokens": 541,
+  "total_tokens": 803,
+  "completion_tokens": 262,
+  "prompt_tokens_details": {
+   "cached_tokens": 228
+  },
+  "service_tier": "standard"
+ },
+ "latency": 3.217,
+ "cached": false
+}

@@ -1,0 +1,61 @@
+{
+ "case_id": "payroll_reimburse",
+ "model": "ministral-14b-latest",
+ "served_model": "ministral-14b-latest",
+ "events": [
+  {
+   "span": "A tuition reimbursement is paid",
+   "role": "OPERATION_EFFECT",
+   "governed_tools": [
+    "tool_o11"
+   ]
+  },
+  {
+   "span": "the employee's claim tt-97 has been approved by the payroll officer",
+   "role": "STATE_OBSERVATION",
+   "governed_tools": [
+    "tool_i48"
+   ]
+  },
+  {
+   "span": "Submitting a claim alone does not pay it",
+   "role": "OTHER",
+   "governed_tools": []
+  },
+  {
+   "span": "Submitting a claim",
+   "role": "OPERATION_EFFECT",
+   "governed_tools": [
+    "tool_e79"
+   ]
+  }
+ ],
+ "edges": [
+  {
+   "condition_span": "the employee's claim tt-97 has been approved by the payroll officer",
+   "operation_span": "A tuition reimbursement is paid",
+   "relation": "GATE"
+  },
+  {
+   "condition_span": "Submitting a claim",
+   "operation_span": "A tuition reimbursement is paid",
+   "relation": "EVEN_IF"
+  }
+ ],
+ "format_errors": [
+  "span_not_substring"
+ ],
+ "parse_error": "",
+ "finish_reason": "stop",
+ "usage": {
+  "prompt_tokens": 590,
+  "total_tokens": 921,
+  "completion_tokens": 331,
+  "prompt_tokens_details": {
+   "cached_tokens": 228
+  },
+  "service_tier": "standard"
+ },
+ "latency": 3.725,
+ "cached": false
+}

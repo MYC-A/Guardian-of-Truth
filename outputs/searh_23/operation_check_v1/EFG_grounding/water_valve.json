@@ -1,0 +1,766 @@
+{
+ "case_id": "water_valve",
+ "renderings_without_names": {
+  "open_valve": "Actuates the distribution valve and records the open event in the plant log. Input parameters: valve_id: string. Output: opened: boolean.",
+  "read_turbidity": "Reads the current turbidity sensor value for a tank in NTU. Input parameters: tank_id: string. Output: ntu: number.",
+  "log_override": "Records an operator override request against a tank alarm. Input parameters: tank_id: string, reason: string. Output: logged: boolean.",
+  "read_valve_state": "Reads whether the distribution valve is currently open or closed. Input parameters: valve_id: string. Output: state: string."
+ },
+ "tool_type_probe": {
+  "open_valve": {
+   "mutate": 0.017,
+   "verify": 0.0136,
+   "read": 0.0,
+   "message": 0.9769,
+   "top": "message"
+  },
+  "read_turbidity": {
+   "mutate": 0.0001,
+   "verify": 0.0006,
+   "read": 0.0004,
+   "message": 0.0215,
+   "top": "message"
+  },
+  "log_override": {
+   "mutate": 0.0022,
+   "verify": 0.9227,
+   "read": 0.0,
+   "message": 0.9724,
+   "top": "message"
+  },
+  "read_valve_state": {
+   "mutate": 0.0045,
+   "verify": 0.0485,
+   "read": 0.0022,
+   "message": 0.0267,
+   "top": "verify"
+  }
+ },
+ "gold_span_grounding": [
+  {
+   "span": "Open the distribution valve",
+   "embed_rank": [
+    [
+     "open_valve",
+     0.7262
+    ],
+    [
+     "read_valve_state",
+     0.6883
+    ],
+    [
+     "read_turbidity",
+     0.4334
+    ],
+    [
+     "log_override",
+     0.4104
+    ]
+   ],
+   "rerank_rank": [
+    [
+     "read_valve_state",
+     3.511
+    ],
+    [
+     "open_valve",
+     3.315
+    ],
+    [
+     "log_override",
+     -10.194
+    ],
+    [
+     "read_turbidity",
+     -10.196
+    ]
+   ],
+   "nli": {
+    "open_valve": {
+     "REALIZES_OPERATION": 0.9947,
+     "CHECKS_PRECONDITION": 0.0177,
+     "OBSERVES_STATE": 0.9857,
+     "COMMUNICATES": 0.9946,
+     "label": "REALIZES_OPERATION",
+     "max_e": 0.9947
+    },
+    "read_turbidity": {
+     "REALIZES_OPERATION": 0.0001,
+     "CHECKS_PRECONDITION": 0.0001,
+     "OBSERVES_STATE": 0.0001,
+     "COMMUNICATES": 0.0,
+     "label": "UNRELATED",
+     "max_e": 0.0001
+    },
+    "log_override": {
+     "REALIZES_OPERATION": 0.0004,
+     "CHECKS_PRECONDITION": 0.0026,
+     "OBSERVES_STATE": 0.0049,
+     "COMMUNICATES": 0.0063,
+     "label": "UNRELATED",
+     "max_e": 0.0063
+    },
+    "read_valve_state": {
+     "REALIZES_OPERATION": 0.0132,
+     "CHECKS_PRECONDITION": 0.8749,
+     "OBSERVES_STATE": 0.9736,
+     "COMMUNICATES": 0.488,
+     "label": "OBSERVES_STATE",
+     "max_e": 0.9736
+    }
+   }
+  },
+  {
+   "span": "the turbidity reading for tank-12 is below 0.3 NTU",
+   "embed_rank": [
+    [
+     "read_turbidity",
+     0.7511
+    ],
+    [
+     "read_valve_state",
+     0.4876
+    ],
+    [
+     "log_override",
+     0.4495
+    ],
+    [
+     "open_valve",
+     0.4326
+    ]
+   ],
+   "rerank_rank": [
+    [
+     "read_turbidity",
+     -3.032
+    ],
+    [
+     "log_override",
+     -10.067
+    ],
+    [
+     "open_valve",
+     -10.197
+    ],
+    [
+     "read_valve_state",
+     -10.197
+    ]
+   ],
+   "nli": {
+    "open_valve": {
+     "REALIZES_OPERATION": 0.0006,
+     "CHECKS_PRECONDITION": 0.0007,
+     "OBSERVES_STATE": 0.0006,
+     "COMMUNICATES": 0.0005,
+     "label": "UNRELATED",
+     "max_e": 0.0007
+    },
+    "read_turbidity": {
+     "REALIZES_OPERATION": 0.0014,
+     "CHECKS_PRECONDITION": 0.0007,
+     "OBSERVES_STATE": 0.0016,
+     "COMMUNICATES": 0.001,
+     "label": "UNRELATED",
+     "max_e": 0.0016
+    },
+    "log_override": {
+     "REALIZES_OPERATION": 0.0008,
+     "CHECKS_PRECONDITION": 0.0008,
+     "OBSERVES_STATE": 0.0006,
+     "COMMUNICATES": 0.0008,
+     "label": "UNRELATED",
+     "max_e": 0.0008
+    },
+    "read_valve_state": {
+     "REALIZES_OPERATION": 0.0008,
+     "CHECKS_PRECONDITION": 0.0004,
+     "OBSERVES_STATE": 0.0005,
+     "COMMUNICATES": 0.0001,
+     "label": "UNRELATED",
+     "max_e": 0.0008
+    }
+   }
+  },
+  {
+   "span": "An operator override",
+   "embed_rank": [
+    [
+     "log_override",
+     0.6579
+    ],
+    [
+     "open_valve",
+     0.4649
+    ],
+    [
+     "read_turbidity",
+     0.4403
+    ],
+    [
+     "read_valve_state",
+     0.4331
+    ]
+   ],
+   "rerank_rank": [
+    [
+     "log_override",
+     1.533
+    ],
+    [
+     "open_valve",
+     -9.0
+    ],
+    [
+     "read_turbidity",
+     -10.194
+    ],
+    [
+     "read_valve_state",
+     -10.197
+    ]
+   ],
+   "nli": {
+    "open_valve": {
+     "REALIZES_OPERATION": 0.0017,
+     "CHECKS_PRECONDITION": 0.0034,
+     "OBSERVES_STATE": 0.0452,
+     "COMMUNICATES": 0.0086,
+     "label": "UNRELATED",
+     "max_e": 0.0452
+    },
+    "read_turbidity": {
+     "REALIZES_OPERATION": 0.0001,
+     "CHECKS_PRECONDITION": 0.0002,
+     "OBSERVES_STATE": 0.0004,
+     "COMMUNICATES": 0.0,
+     "label": "UNRELATED",
+     "max_e": 0.0004
+    },
+    "log_override": {
+     "REALIZES_OPERATION": 0.9737,
+     "CHECKS_PRECONDITION": 0.7497,
+     "OBSERVES_STATE": 0.9733,
+     "COMMUNICATES": 0.9921,
+     "label": "COMMUNICATES",
+     "max_e": 0.9921
+    },
+    "read_valve_state": {
+     "REALIZES_OPERATION": 0.0003,
+     "CHECKS_PRECONDITION": 0.0004,
+     "OBSERVES_STATE": 0.0024,
+     "COMMUNICATES": 0.0001,
+     "label": "UNRELATED",
+     "max_e": 0.0024
+    }
+   }
+  }
+ ],
+ "b_candidate_grounding": [
+  {
+   "span": "Open the distribution valve",
+   "b_features": {
+    "dep": "root",
+    "mark": null,
+    "deontic": [],
+    "neg": false,
+    "passive": false,
+    "imperative": true,
+    "root": true,
+    "role_hypothesis": "OPERATION_EFFECT",
+    "even": false
+   },
+   "embed_rank": [
+    [
+     "open_valve",
+     0.7262
+    ],
+    [
+     "read_valve_state",
+     0.6883
+    ],
+    [
+     "read_turbidity",
+     0.4334
+    ],
+    [
+     "log_override",
+     0.4104
+    ]
+   ],
+   "rerank_rank": [
+    [
+     "read_valve_state",
+     3.511
+    ],
+    [
+     "open_valve",
+     3.315
+    ],
+    [
+     "log_override",
+     -10.194
+    ],
+    [
+     "read_turbidity",
+     -10.196
+    ]
+   ],
+   "nli": {
+    "open_valve": {
+     "REALIZES_OPERATION": 0.9947,
+     "CHECKS_PRECONDITION": 0.0177,
+     "OBSERVES_STATE": 0.9857,
+     "COMMUNICATES": 0.9946,
+     "label": "REALIZES_OPERATION",
+     "max_e": 0.9947
+    },
+    "read_turbidity": {
+     "REALIZES_OPERATION": 0.0001,
+     "CHECKS_PRECONDITION": 0.0001,
+     "OBSERVES_STATE": 0.0001,
+     "COMMUNICATES": 0.0,
+     "label": "UNRELATED",
+     "max_e": 0.0001
+    },
+    "log_override": {
+     "REALIZES_OPERATION": 0.0004,
+     "CHECKS_PRECONDITION": 0.0026,
+     "OBSERVES_STATE": 0.0049,
+     "COMMUNICATES": 0.0063,
+     "label": "UNRELATED",
+     "max_e": 0.0063
+    },
+    "read_valve_state": {
+     "REALIZES_OPERATION": 0.0132,
+     "CHECKS_PRECONDITION": 0.8749,
+     "OBSERVES_STATE": 0.9736,
+     "COMMUNICATES": 0.488,
+     "label": "OBSERVES_STATE",
+     "max_e": 0.9736
+    }
+   }
+  },
+  {
+   "span": "distribution valve",
+   "b_features": {
+    "dep": null,
+    "mark": null,
+    "deontic": null,
+    "neg": null,
+    "passive": null,
+    "imperative": null,
+    "root": null,
+    "role_hypothesis": "UNKNOWN",
+    "even": null
+   },
+   "embed_rank": [
+    [
+     "open_valve",
+     0.6435
+    ],
+    [
+     "read_valve_state",
+     0.6291
+    ],
+    [
+     "read_turbidity",
+     0.4285
+    ],
+    [
+     "log_override",
+     0.3968
+    ]
+   ],
+   "rerank_rank": [
+    [
+     "open_valve",
+     2.027
+    ],
+    [
+     "read_valve_state",
+     1.857
+    ],
+    [
+     "read_turbidity",
+     -10.195
+    ],
+    [
+     "log_override",
+     -10.196
+    ]
+   ],
+   "nli": {
+    "open_valve": {
+     "REALIZES_OPERATION": 0.9944,
+     "CHECKS_PRECONDITION": 0.032,
+     "OBSERVES_STATE": 0.9913,
+     "COMMUNICATES": 0.995,
+     "label": "COMMUNICATES",
+     "max_e": 0.995
+    },
+    "read_turbidity": {
+     "REALIZES_OPERATION": 0.0004,
+     "CHECKS_PRECONDITION": 0.0003,
+     "OBSERVES_STATE": 0.0042,
+     "COMMUNICATES": 0.0001,
+     "label": "UNRELATED",
+     "max_e": 0.0042
+    },
+    "log_override": {
+     "REALIZES_OPERATION": 0.0006,
+     "CHECKS_PRECONDITION": 0.0102,
+     "OBSERVES_STATE": 0.0063,
+     "COMMUNICATES": 0.0017,
+     "label": "UNRELATED",
+     "max_e": 0.0102
+    },
+    "read_valve_state": {
+     "REALIZES_OPERATION": 0.9619,
+     "CHECKS_PRECONDITION": 0.9638,
+     "OBSERVES_STATE": 0.9872,
+     "COMMUNICATES": 0.968,
+     "label": "OBSERVES_STATE",
+     "max_e": 0.9872
+    }
+   }
+  },
+  {
+   "span": "only if the turbidity reading for tank-12 is below 0.3 NTU",
+   "b_features": {
+    "dep": "advcl",
+    "mark": "if",
+    "deontic": [],
+    "neg": false,
+    "passive": false,
+    "imperative": false,
+    "root": false,
+    "role_hypothesis": "STATE_OBSERVATION",
+    "even": false
+   },
+   "embed_rank": [
+    [
+     "read_turbidity",
+     0.7308
+    ],
+    [
+     "read_valve_state",
+     0.5145
+    ],
+    [
+     "log_override",
+     0.4889
+    ],
+    [
+     "open_valve",
+     0.4491
+    ]
+   ],
+   "rerank_rank": [
+    [
+     "read_turbidity",
+     -3.92
+    ],
+    [
+     "log_override",
+     -10.016
+    ],
+    [
+     "read_valve_state",
+     -10.196
+    ],
+    [
+     "open_valve",
+     -10.197
+    ]
+   ],
+   "nli": {
+    "open_valve": {
+     "REALIZES_OPERATION": 0.0004,
+     "CHECKS_PRECONDITION": 0.0009,
+     "OBSERVES_STATE": 0.0005,
+     "COMMUNICATES": 0.001,
+     "label": "UNRELATED",
+     "max_e": 0.001
+    },
+    "read_turbidity": {
+     "REALIZES_OPERATION": 0.0003,
+     "CHECKS_PRECONDITION": 0.0006,
+     "OBSERVES_STATE": 0.001,
+     "COMMUNICATES": 0.0001,
+     "label": "UNRELATED",
+     "max_e": 0.001
+    },
+    "log_override": {
+     "REALIZES_OPERATION": 0.0004,
+     "CHECKS_PRECONDITION": 0.001,
+     "OBSERVES_STATE": 0.0004,
+     "COMMUNICATES": 0.0015,
+     "label": "UNRELATED",
+     "max_e": 0.0015
+    },
+    "read_valve_state": {
+     "REALIZES_OPERATION": 0.0006,
+     "CHECKS_PRECONDITION": 0.0005,
+     "OBSERVES_STATE": 0.0004,
+     "COMMUNICATES": 0.0001,
+     "label": "UNRELATED",
+     "max_e": 0.0006
+    }
+   }
+  },
+  {
+   "span": "turbidity reading for tank-12",
+   "b_features": {
+    "dep": null,
+    "mark": null,
+    "deontic": null,
+    "neg": null,
+    "passive": null,
+    "imperative": null,
+    "root": null,
+    "role_hypothesis": "UNKNOWN",
+    "even": null
+   },
+   "embed_rank": [
+    [
+     "read_turbidity",
+     0.7618
+    ],
+    [
+     "read_valve_state",
+     0.4953
+    ],
+    [
+     "log_override",
+     0.4828
+    ],
+    [
+     "open_valve",
+     0.4385
+    ]
+   ],
+   "rerank_rank": [
+    [
+     "read_turbidity",
+     -3.483
+    ],
+    [
+     "log_override",
+     -10.051
+    ],
+    [
+     "open_valve",
+     -10.195
+    ],
+    [
+     "read_valve_state",
+     -10.196
+    ]
+   ],
+   "nli": {
+    "open_valve": {
+     "REALIZES_OPERATION": 0.0027,
+     "CHECKS_PRECONDITION": 0.0023,
+     "OBSERVES_STATE": 0.0058,
+     "COMMUNICATES": 0.0091,
+     "label": "UNRELATED",
+     "max_e": 0.0091
+    },
+    "read_turbidity": {
+     "REALIZES_OPERATION": 0.0017,
+     "CHECKS_PRECONDITION": 0.0015,
+     "OBSERVES_STATE": 0.0032,
+     "COMMUNICATES": 0.0028,
+     "label": "UNRELATED",
+     "max_e": 0.0032
+    },
+    "log_override": {
+     "REALIZES_OPERATION": 0.0028,
+     "CHECKS_PRECONDITION": 0.0046,
+     "OBSERVES_STATE": 0.0068,
+     "COMMUNICATES": 0.0103,
+     "label": "UNRELATED",
+     "max_e": 0.0103
+    },
+    "read_valve_state": {
+     "REALIZES_OPERATION": 0.0017,
+     "CHECKS_PRECONDITION": 0.0025,
+     "OBSERVES_STATE": 0.004,
+     "COMMUNICATES": 0.0041,
+     "label": "UNRELATED",
+     "max_e": 0.0041
+    }
+   }
+  },
+  {
+   "span": "An operator override does not open the valve",
+   "b_features": {
+    "dep": "root",
+    "mark": null,
+    "deontic": [],
+    "neg": true,
+    "passive": false,
+    "imperative": false,
+    "root": true,
+    "role_hypothesis": "OPERATION_EFFECT",
+    "even": false
+   },
+   "embed_rank": [
+    [
+     "open_valve",
+     0.6545
+    ],
+    [
+     "log_override",
+     0.6311
+    ],
+    [
+     "read_valve_state",
+     0.6221
+    ],
+    [
+     "read_turbidity",
+     0.4576
+    ]
+   ],
+   "rerank_rank": [
+    [
+     "read_valve_state",
+     -2.4
+    ],
+    [
+     "log_override",
+     -4.213
+    ],
+    [
+     "open_valve",
+     -5.767
+    ],
+    [
+     "read_turbidity",
+     -10.197
+    ]
+   ],
+   "nli": {
+    "open_valve": {
+     "REALIZES_OPERATION": 0.0005,
+     "CHECKS_PRECONDITION": 0.0111,
+     "OBSERVES_STATE": 0.0012,
+     "COMMUNICATES": 0.0011,
+     "label": "UNRELATED",
+     "max_e": 0.0111
+    },
+    "read_turbidity": {
+     "REALIZES_OPERATION": 0.0008,
+     "CHECKS_PRECONDITION": 0.0006,
+     "OBSERVES_STATE": 0.0011,
+     "COMMUNICATES": 0.0,
+     "label": "UNRELATED",
+     "max_e": 0.0011
+    },
+    "log_override": {
+     "REALIZES_OPERATION": 0.0013,
+     "CHECKS_PRECONDITION": 0.0206,
+     "OBSERVES_STATE": 0.0173,
+     "COMMUNICATES": 0.0761,
+     "label": "UNRELATED",
+     "max_e": 0.0761
+    },
+    "read_valve_state": {
+     "REALIZES_OPERATION": 0.0004,
+     "CHECKS_PRECONDITION": 0.001,
+     "OBSERVES_STATE": 0.002,
+     "COMMUNICATES": 0.0007,
+     "label": "UNRELATED",
+     "max_e": 0.002
+    }
+   }
+  },
+  {
+   "span": "operator override",
+   "b_features": {
+    "dep": null,
+    "mark": null,
+    "deontic": null,
+    "neg": null,
+    "passive": null,
+    "imperative": null,
+    "root": null,
+    "role_hypothesis": "UNKNOWN",
+    "even": null
+   },
+   "embed_rank": [
+    [
+     "log_override",
+     0.6611
+    ],
+    [
+     "open_valve",
+     0.4538
+    ],
+    [
+     "read_turbidity",
+     0.4269
+    ],
+    [
+     "read_valve_state",
+     0.4219
+    ]
+   ],
+   "rerank_rank": [
+    [
+     "log_override",
+     1.943
+    ],
+    [
+     "open_valve",
+     -9.659
+    ],
+    [
+     "read_turbidity",
+     -10.194
+    ],
+    [
+     "read_valve_state",
+     -10.197
+    ]
+   ],
+   "nli": {
+    "open_valve": {
+     "REALIZES_OPERATION": 0.0008,
+     "CHECKS_PRECONDITION": 0.0023,
+     "OBSERVES_STATE": 0.0038,
+     "COMMUNICATES": 0.0056,
+     "label": "UNRELATED",
+     "max_e": 0.0056
+    },
+    "read_turbidity": {
+     "REALIZES_OPERATION": 0.0001,
+     "CHECKS_PRECONDITION": 0.0002,
+     "OBSERVES_STATE": 0.0003,
+     "COMMUNICATES": 0.0,
+     "label": "UNRELATED",
+     "max_e": 0.0003
+    },
+    "log_override": {
+     "REALIZES_OPERATION": 0.8894,
+     "CHECKS_PRECONDITION": 0.0428,
+     "OBSERVES_STATE": 0.8862,
+     "COMMUNICATES": 0.9897,
+     "label": "COMMUNICATES",
+     "max_e": 0.9897
+    },
+    "read_valve_state": {
+     "REALIZES_OPERATION": 0.0003,
+     "CHECKS_PRECONDITION": 0.0006,
+     "OBSERVES_STATE": 0.0018,
+     "COMMUNICATES": 0.0001,
+     "label": "UNRELATED",
+     "max_e": 0.0018
+    }
+   }
+  }
+ ]
+}

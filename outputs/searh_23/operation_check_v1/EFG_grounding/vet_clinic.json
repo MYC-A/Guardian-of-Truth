@@ -1,0 +1,2113 @@
+{
+ "case_id": "vet_clinic",
+ "renderings_without_names": {
+  "admit_animal": "Creates an admission record for an animal in the clinic system and assigns it a kennel. Input parameters: animal_id: string. Output: admission_id: string.",
+  "verify_vaccination": "Compares the vaccination certificate on file against the required immunisation schedule and returns whether it is satisfied. Does not modify records. Input parameters: animal_id: string. Output: satisfied: boolean.",
+  "groom_animal": "Books and performs the grooming service for an admitted animal. Input parameters: animal_id: string. Output: groomed: boolean.",
+  "board_animal": "Assigns the animal to an overnight boarding slot and starts the stay. Input parameters: animal_id: string. Output: stay_id: string.",
+  "read_owner_contact": "Reads the owner's registered contact details from the patient file. Input parameters: animal_id: string. Output: phone: string, email: string.",
+  "return_animal": "Releases the animal back to the owner and closes the admission record. Input parameters: animal_id: string. Output: closed: boolean.",
+  "read_kennel_log": "Reads the kennel occupancy log for the clinic. Input parameters: none. Output: entries: array."
+ },
+ "tool_type_probe": {
+  "admit_animal": {
+   "mutate": 0.0521,
+   "verify": 0.001,
+   "read": 0.0,
+   "message": 0.516,
+   "top": "message"
+  },
+  "verify_vaccination": {
+   "mutate": 0.0004,
+   "verify": 0.9945,
+   "read": 0.9937,
+   "message": 0.9134,
+   "top": "verify"
+  },
+  "groom_animal": {
+   "mutate": 0.0059,
+   "verify": 0.9716,
+   "read": 0.0005,
+   "message": 0.9488,
+   "top": "verify"
+  },
+  "board_animal": {
+   "mutate": 0.0099,
+   "verify": 0.0018,
+   "read": 0.0,
+   "message": 0.9292,
+   "top": "message"
+  },
+  "read_owner_contact": {
+   "mutate": 0.0125,
+   "verify": 0.0017,
+   "read": 0.0004,
+   "message": 0.9372,
+   "top": "message"
+  },
+  "return_animal": {
+   "mutate": 0.969,
+   "verify": 0.024,
+   "read": 0.0001,
+   "message": 0.9505,
+   "top": "mutate"
+  },
+  "read_kennel_log": {
+   "mutate": 0.0078,
+   "verify": 0.0081,
+   "read": 0.961,
+   "message": 0.9135,
+   "top": "read"
+  }
+ },
+ "gold_span_grounding": [
+  {
+   "span": "Admit animal A-118",
+   "embed_rank": [
+    [
+     "admit_animal",
+     0.6686
+    ],
+    [
+     "return_animal",
+     0.6407
+    ],
+    [
+     "board_animal",
+     0.6264
+    ],
+    [
+     "groom_animal",
+     0.6159
+    ],
+    [
+     "read_owner_contact",
+     0.6127
+    ],
+    [
+     "verify_vaccination",
+     0.6045
+    ],
+    [
+     "read_kennel_log",
+     0.4917
+    ]
+   ],
+   "rerank_rank": [
+    [
+     "return_animal",
+     -3.493
+    ],
+    [
+     "groom_animal",
+     -4.304
+    ],
+    [
+     "admit_animal",
+     -4.806
+    ],
+    [
+     "board_animal",
+     -5.498
+    ],
+    [
+     "read_owner_contact",
+     -7.794
+    ],
+    [
+     "read_kennel_log",
+     -9.299
+    ],
+    [
+     "verify_vaccination",
+     -9.815
+    ]
+   ],
+   "nli": {
+    "admit_animal": {
+     "REALIZES_OPERATION": 0.0002,
+     "CHECKS_PRECONDITION": 0.0006,
+     "OBSERVES_STATE": 0.0009,
+     "COMMUNICATES": 0.001,
+     "label": "UNRELATED",
+     "max_e": 0.001
+    },
+    "verify_vaccination": {
+     "REALIZES_OPERATION": 0.0004,
+     "CHECKS_PRECONDITION": 0.0003,
+     "OBSERVES_STATE": 0.0003,
+     "COMMUNICATES": 0.0009,
+     "label": "UNRELATED",
+     "max_e": 0.0009
+    },
+    "groom_animal": {
+     "REALIZES_OPERATION": 0.0004,
+     "CHECKS_PRECONDITION": 0.001,
+     "OBSERVES_STATE": 0.0008,
+     "COMMUNICATES": 0.0019,
+     "label": "UNRELATED",
+     "max_e": 0.0019
+    },
+    "board_animal": {
+     "REALIZES_OPERATION": 0.0003,
+     "CHECKS_PRECONDITION": 0.0012,
+     "OBSERVES_STATE": 0.0014,
+     "COMMUNICATES": 0.0011,
+     "label": "UNRELATED",
+     "max_e": 0.0014
+    },
+    "read_owner_contact": {
+     "REALIZES_OPERATION": 0.0003,
+     "CHECKS_PRECONDITION": 0.0006,
+     "OBSERVES_STATE": 0.0009,
+     "COMMUNICATES": 0.0003,
+     "label": "UNRELATED",
+     "max_e": 0.0009
+    },
+    "return_animal": {
+     "REALIZES_OPERATION": 0.0002,
+     "CHECKS_PRECONDITION": 0.0015,
+     "OBSERVES_STATE": 0.0013,
+     "COMMUNICATES": 0.0026,
+     "label": "UNRELATED",
+     "max_e": 0.0026
+    },
+    "read_kennel_log": {
+     "REALIZES_OPERATION": 0.001,
+     "CHECKS_PRECONDITION": 0.0013,
+     "OBSERVES_STATE": 0.0017,
+     "COMMUNICATES": 0.0011,
+     "label": "UNRELATED",
+     "max_e": 0.0017
+    }
+   }
+  },
+  {
+   "span": "its vaccination certificate has been verified",
+   "embed_rank": [
+    [
+     "verify_vaccination",
+     0.711
+    ],
+    [
+     "read_owner_contact",
+     0.497
+    ],
+    [
+     "groom_animal",
+     0.4903
+    ],
+    [
+     "admit_animal",
+     0.4879
+    ],
+    [
+     "return_animal",
+     0.4696
+    ],
+    [
+     "board_animal",
+     0.4435
+    ],
+    [
+     "read_kennel_log",
+     0.3799
+    ]
+   ],
+   "rerank_rank": [
+    [
+     "verify_vaccination",
+     -3.028
+    ],
+    [
+     "read_owner_contact",
+     -8.409
+    ],
+    [
+     "admit_animal",
+     -9.192
+    ],
+    [
+     "board_animal",
+     -10.193
+    ],
+    [
+     "read_kennel_log",
+     -10.194
+    ],
+    [
+     "return_animal",
+     -10.196
+    ],
+    [
+     "groom_animal",
+     -10.197
+    ]
+   ],
+   "nli": {
+    "admit_animal": {
+     "REALIZES_OPERATION": 0.001,
+     "CHECKS_PRECONDITION": 0.0013,
+     "OBSERVES_STATE": 0.0011,
+     "COMMUNICATES": 0.0007,
+     "label": "UNRELATED",
+     "max_e": 0.0013
+    },
+    "verify_vaccination": {
+     "REALIZES_OPERATION": 0.9924,
+     "CHECKS_PRECONDITION": 0.9955,
+     "OBSERVES_STATE": 0.9949,
+     "COMMUNICATES": 0.9838,
+     "label": "CHECKS_PRECONDITION",
+     "max_e": 0.9955
+    },
+    "groom_animal": {
+     "REALIZES_OPERATION": 0.0095,
+     "CHECKS_PRECONDITION": 0.038,
+     "OBSERVES_STATE": 0.0099,
+     "COMMUNICATES": 0.0026,
+     "label": "UNRELATED",
+     "max_e": 0.038
+    },
+    "board_animal": {
+     "REALIZES_OPERATION": 0.0006,
+     "CHECKS_PRECONDITION": 0.0014,
+     "OBSERVES_STATE": 0.0012,
+     "COMMUNICATES": 0.0004,
+     "label": "UNRELATED",
+     "max_e": 0.0014
+    },
+    "read_owner_contact": {
+     "REALIZES_OPERATION": 0.0023,
+     "CHECKS_PRECONDITION": 0.0039,
+     "OBSERVES_STATE": 0.0016,
+     "COMMUNICATES": 0.0004,
+     "label": "UNRELATED",
+     "max_e": 0.0039
+    },
+    "return_animal": {
+     "REALIZES_OPERATION": 0.0009,
+     "CHECKS_PRECONDITION": 0.0021,
+     "OBSERVES_STATE": 0.0006,
+     "COMMUNICATES": 0.0013,
+     "label": "UNRELATED",
+     "max_e": 0.0021
+    },
+    "read_kennel_log": {
+     "REALIZES_OPERATION": 0.003,
+     "CHECKS_PRECONDITION": 0.0078,
+     "OBSERVES_STATE": 0.0036,
+     "COMMUNICATES": 0.0006,
+     "label": "UNRELATED",
+     "max_e": 0.0078
+    }
+   }
+  },
+  {
+   "span": "grooming",
+   "embed_rank": [
+    [
+     "groom_animal",
+     0.6875
+    ],
+    [
+     "board_animal",
+     0.4541
+    ],
+    [
+     "admit_animal",
+     0.4183
+    ],
+    [
+     "read_owner_contact",
+     0.3963
+    ],
+    [
+     "return_animal",
+     0.3891
+    ],
+    [
+     "read_kennel_log",
+     0.3628
+    ],
+    [
+     "verify_vaccination",
+     0.3621
+    ]
+   ],
+   "rerank_rank": [
+    [
+     "groom_animal",
+     0.218
+    ],
+    [
+     "read_kennel_log",
+     -10.193
+    ],
+    [
+     "return_animal",
+     -10.193
+    ],
+    [
+     "board_animal",
+     -10.193
+    ],
+    [
+     "read_owner_contact",
+     -10.193
+    ],
+    [
+     "verify_vaccination",
+     -10.193
+    ],
+    [
+     "admit_animal",
+     -10.194
+    ]
+   ],
+   "nli": {
+    "admit_animal": {
+     "REALIZES_OPERATION": 0.9947,
+     "CHECKS_PRECONDITION": 0.0019,
+     "OBSERVES_STATE": 0.9822,
+     "COMMUNICATES": 0.9952,
+     "label": "COMMUNICATES",
+     "max_e": 0.9952
+    },
+    "verify_vaccination": {
+     "REALIZES_OPERATION": 0.0001,
+     "CHECKS_PRECONDITION": 0.0002,
+     "OBSERVES_STATE": 0.0004,
+     "COMMUNICATES": 0.0002,
+     "label": "UNRELATED",
+     "max_e": 0.0004
+    },
+    "groom_animal": {
+     "REALIZES_OPERATION": 0.9967,
+     "CHECKS_PRECONDITION": 0.9857,
+     "OBSERVES_STATE": 0.9894,
+     "COMMUNICATES": 0.995,
+     "label": "REALIZES_OPERATION",
+     "max_e": 0.9967
+    },
+    "board_animal": {
+     "REALIZES_OPERATION": 0.0072,
+     "CHECKS_PRECONDITION": 0.0009,
+     "OBSERVES_STATE": 0.0055,
+     "COMMUNICATES": 0.3738,
+     "label": "UNKNOWN",
+     "max_e": 0.3738
+    },
+    "read_owner_contact": {
+     "REALIZES_OPERATION": 0.0032,
+     "CHECKS_PRECONDITION": 0.001,
+     "OBSERVES_STATE": 0.01,
+     "COMMUNICATES": 0.0213,
+     "label": "UNRELATED",
+     "max_e": 0.0213
+    },
+    "return_animal": {
+     "REALIZES_OPERATION": 0.0184,
+     "CHECKS_PRECONDITION": 0.0031,
+     "OBSERVES_STATE": 0.0044,
+     "COMMUNICATES": 0.6546,
+     "label": "COMMUNICATES",
+     "max_e": 0.6546
+    },
+    "read_kennel_log": {
+     "REALIZES_OPERATION": 0.9911,
+     "CHECKS_PRECONDITION": 0.8033,
+     "OBSERVES_STATE": 0.9962,
+     "COMMUNICATES": 0.9893,
+     "label": "OBSERVES_STATE",
+     "max_e": 0.9962
+    }
+   }
+  },
+  {
+   "span": "boarding",
+   "embed_rank": [
+    [
+     "board_animal",
+     0.6312
+    ],
+    [
+     "groom_animal",
+     0.5352
+    ],
+    [
+     "read_kennel_log",
+     0.4846
+    ],
+    [
+     "return_animal",
+     0.4612
+    ],
+    [
+     "admit_animal",
+     0.4595
+    ],
+    [
+     "verify_vaccination",
+     0.4242
+    ],
+    [
+     "read_owner_contact",
+     0.4018
+    ]
+   ],
+   "rerank_rank": [
+    [
+     "board_animal",
+     -2.007
+    ],
+    [
+     "admit_animal",
+     -10.091
+    ],
+    [
+     "return_animal",
+     -10.173
+    ],
+    [
+     "verify_vaccination",
+     -10.196
+    ],
+    [
+     "read_owner_contact",
+     -10.197
+    ],
+    [
+     "read_kennel_log",
+     -10.197
+    ],
+    [
+     "groom_animal",
+     -10.197
+    ]
+   ],
+   "nli": {
+    "admit_animal": {
+     "REALIZES_OPERATION": 0.2234,
+     "CHECKS_PRECONDITION": 0.0012,
+     "OBSERVES_STATE": 0.0076,
+     "COMMUNICATES": 0.9829,
+     "label": "COMMUNICATES",
+     "max_e": 0.9829
+    },
+    "verify_vaccination": {
+     "REALIZES_OPERATION": 0.0002,
+     "CHECKS_PRECONDITION": 0.0014,
+     "OBSERVES_STATE": 0.0006,
+     "COMMUNICATES": 0.0004,
+     "label": "UNRELATED",
+     "max_e": 0.0014
+    },
+    "groom_animal": {
+     "REALIZES_OPERATION": 0.1169,
+     "CHECKS_PRECONDITION": 0.958,
+     "OBSERVES_STATE": 0.7096,
+     "COMMUNICATES": 0.985,
+     "label": "COMMUNICATES",
+     "max_e": 0.985
+    },
+    "board_animal": {
+     "REALIZES_OPERATION": 0.9788,
+     "CHECKS_PRECONDITION": 0.0007,
+     "OBSERVES_STATE": 0.0194,
+     "COMMUNICATES": 0.9891,
+     "label": "COMMUNICATES",
+     "max_e": 0.9891
+    },
+    "read_owner_contact": {
+     "REALIZES_OPERATION": 0.0019,
+     "CHECKS_PRECONDITION": 0.0016,
+     "OBSERVES_STATE": 0.0072,
+     "COMMUNICATES": 0.0858,
+     "label": "UNRELATED",
+     "max_e": 0.0858
+    },
+    "return_animal": {
+     "REALIZES_OPERATION": 0.0167,
+     "CHECKS_PRECONDITION": 0.0166,
+     "OBSERVES_STATE": 0.0217,
+     "COMMUNICATES": 0.9923,
+     "label": "COMMUNICATES",
+     "max_e": 0.9923
+    },
+    "read_kennel_log": {
+     "REALIZES_OPERATION": 0.0463,
+     "CHECKS_PRECONDITION": 0.0334,
+     "OBSERVES_STATE": 0.9857,
+     "COMMUNICATES": 0.9778,
+     "label": "OBSERVES_STATE",
+     "max_e": 0.9857
+    }
+   }
+  },
+  {
+   "span": "Confirm the owner's contact details",
+   "embed_rank": [
+    [
+     "read_owner_contact",
+     0.6739
+    ],
+    [
+     "groom_animal",
+     0.517
+    ],
+    [
+     "return_animal",
+     0.5148
+    ],
+    [
+     "board_animal",
+     0.493
+    ],
+    [
+     "verify_vaccination",
+     0.4525
+    ],
+    [
+     "admit_animal",
+     0.4432
+    ],
+    [
+     "read_kennel_log",
+     0.3856
+    ]
+   ],
+   "rerank_rank": [
+    [
+     "read_owner_contact",
+     -0.068
+    ],
+    [
+     "return_animal",
+     -6.556
+    ],
+    [
+     "read_kennel_log",
+     -10.193
+    ],
+    [
+     "verify_vaccination",
+     -10.193
+    ],
+    [
+     "groom_animal",
+     -10.194
+    ],
+    [
+     "board_animal",
+     -10.195
+    ],
+    [
+     "admit_animal",
+     -10.197
+    ]
+   ],
+   "nli": {
+    "admit_animal": {
+     "REALIZES_OPERATION": 0.0002,
+     "CHECKS_PRECONDITION": 0.0015,
+     "OBSERVES_STATE": 0.0011,
+     "COMMUNICATES": 0.0001,
+     "label": "UNRELATED",
+     "max_e": 0.0015
+    },
+    "verify_vaccination": {
+     "REALIZES_OPERATION": 0.0,
+     "CHECKS_PRECONDITION": 0.0,
+     "OBSERVES_STATE": 0.0001,
+     "COMMUNICATES": 0.0,
+     "label": "UNRELATED",
+     "max_e": 0.0001
+    },
+    "groom_animal": {
+     "REALIZES_OPERATION": 0.009,
+     "CHECKS_PRECONDITION": 0.9735,
+     "OBSERVES_STATE": 0.6918,
+     "COMMUNICATES": 0.0008,
+     "label": "CHECKS_PRECONDITION",
+     "max_e": 0.9735
+    },
+    "board_animal": {
+     "REALIZES_OPERATION": 0.0001,
+     "CHECKS_PRECONDITION": 0.0056,
+     "OBSERVES_STATE": 0.0002,
+     "COMMUNICATES": 0.0001,
+     "label": "UNRELATED",
+     "max_e": 0.0056
+    },
+    "read_owner_contact": {
+     "REALIZES_OPERATION": 0.7319,
+     "CHECKS_PRECONDITION": 0.0717,
+     "OBSERVES_STATE": 0.9811,
+     "COMMUNICATES": 0.0777,
+     "label": "OBSERVES_STATE",
+     "max_e": 0.9811
+    },
+    "return_animal": {
+     "REALIZES_OPERATION": 0.0025,
+     "CHECKS_PRECONDITION": 0.0101,
+     "OBSERVES_STATE": 0.0032,
+     "COMMUNICATES": 0.0138,
+     "label": "UNRELATED",
+     "max_e": 0.0138
+    },
+    "read_kennel_log": {
+     "REALIZES_OPERATION": 0.0003,
+     "CHECKS_PRECONDITION": 0.0097,
+     "OBSERVES_STATE": 0.0029,
+     "COMMUNICATES": 0.0001,
+     "label": "UNRELATED",
+     "max_e": 0.0097
+    }
+   }
+  },
+  {
+   "span": "returning the animal",
+   "embed_rank": [
+    [
+     "return_animal",
+     0.6784
+    ],
+    [
+     "groom_animal",
+     0.6421
+    ],
+    [
+     "board_animal",
+     0.6308
+    ],
+    [
+     "verify_vaccination",
+     0.5976
+    ],
+    [
+     "admit_animal",
+     0.5943
+    ],
+    [
+     "read_owner_contact",
+     0.5922
+    ],
+    [
+     "read_kennel_log",
+     0.4692
+    ]
+   ],
+   "rerank_rank": [
+    [
+     "return_animal",
+     -0.966
+    ],
+    [
+     "board_animal",
+     -4.631
+    ],
+    [
+     "verify_vaccination",
+     -4.719
+    ],
+    [
+     "admit_animal",
+     -5.815
+    ],
+    [
+     "groom_animal",
+     -6.017
+    ],
+    [
+     "read_owner_contact",
+     -6.203
+    ],
+    [
+     "read_kennel_log",
+     -8.464
+    ]
+   ],
+   "nli": {
+    "admit_animal": {
+     "REALIZES_OPERATION": 0.0023,
+     "CHECKS_PRECONDITION": 0.0019,
+     "OBSERVES_STATE": 0.0008,
+     "COMMUNICATES": 0.0003,
+     "label": "UNRELATED",
+     "max_e": 0.0023
+    },
+    "verify_vaccination": {
+     "REALIZES_OPERATION": 0.9909,
+     "CHECKS_PRECONDITION": 0.9939,
+     "OBSERVES_STATE": 0.9932,
+     "COMMUNICATES": 0.9832,
+     "label": "CHECKS_PRECONDITION",
+     "max_e": 0.9939
+    },
+    "groom_animal": {
+     "REALIZES_OPERATION": 0.0405,
+     "CHECKS_PRECONDITION": 0.0786,
+     "OBSERVES_STATE": 0.1001,
+     "COMMUNICATES": 0.0006,
+     "label": "UNRELATED",
+     "max_e": 0.1001
+    },
+    "board_animal": {
+     "REALIZES_OPERATION": 0.0071,
+     "CHECKS_PRECONDITION": 0.0047,
+     "OBSERVES_STATE": 0.0053,
+     "COMMUNICATES": 0.0013,
+     "label": "UNRELATED",
+     "max_e": 0.0071
+    },
+    "read_owner_contact": {
+     "REALIZES_OPERATION": 0.0006,
+     "CHECKS_PRECONDITION": 0.0013,
+     "OBSERVES_STATE": 0.0057,
+     "COMMUNICATES": 0.0009,
+     "label": "UNRELATED",
+     "max_e": 0.0057
+    },
+    "return_animal": {
+     "REALIZES_OPERATION": 0.9934,
+     "CHECKS_PRECONDITION": 0.0035,
+     "OBSERVES_STATE": 0.0156,
+     "COMMUNICATES": 0.9932,
+     "label": "REALIZES_OPERATION",
+     "max_e": 0.9934
+    },
+    "read_kennel_log": {
+     "REALIZES_OPERATION": 0.0009,
+     "CHECKS_PRECONDITION": 0.0035,
+     "OBSERVES_STATE": 0.0153,
+     "COMMUNICATES": 0.0004,
+     "label": "UNRELATED",
+     "max_e": 0.0153
+    }
+   }
+  }
+ ],
+ "b_candidate_grounding": [
+  {
+   "span": "Admit animal A-118",
+   "b_features": {
+    "dep": "root",
+    "mark": null,
+    "deontic": [],
+    "neg": false,
+    "passive": false,
+    "imperative": true,
+    "root": true,
+    "role_hypothesis": "OPERATION_EFFECT",
+    "even": false
+   },
+   "embed_rank": [
+    [
+     "admit_animal",
+     0.6686
+    ],
+    [
+     "return_animal",
+     0.6407
+    ],
+    [
+     "board_animal",
+     0.6264
+    ],
+    [
+     "groom_animal",
+     0.6159
+    ],
+    [
+     "read_owner_contact",
+     0.6127
+    ],
+    [
+     "verify_vaccination",
+     0.6045
+    ],
+    [
+     "read_kennel_log",
+     0.4917
+    ]
+   ],
+   "rerank_rank": [
+    [
+     "return_animal",
+     -3.493
+    ],
+    [
+     "groom_animal",
+     -4.304
+    ],
+    [
+     "admit_animal",
+     -4.806
+    ],
+    [
+     "board_animal",
+     -5.498
+    ],
+    [
+     "read_owner_contact",
+     -7.794
+    ],
+    [
+     "read_kennel_log",
+     -9.299
+    ],
+    [
+     "verify_vaccination",
+     -9.815
+    ]
+   ],
+   "nli": {
+    "admit_animal": {
+     "REALIZES_OPERATION": 0.0002,
+     "CHECKS_PRECONDITION": 0.0006,
+     "OBSERVES_STATE": 0.0009,
+     "COMMUNICATES": 0.001,
+     "label": "UNRELATED",
+     "max_e": 0.001
+    },
+    "verify_vaccination": {
+     "REALIZES_OPERATION": 0.0004,
+     "CHECKS_PRECONDITION": 0.0003,
+     "OBSERVES_STATE": 0.0003,
+     "COMMUNICATES": 0.0009,
+     "label": "UNRELATED",
+     "max_e": 0.0009
+    },
+    "groom_animal": {
+     "REALIZES_OPERATION": 0.0004,
+     "CHECKS_PRECONDITION": 0.001,
+     "OBSERVES_STATE": 0.0008,
+     "COMMUNICATES": 0.0019,
+     "label": "UNRELATED",
+     "max_e": 0.0019
+    },
+    "board_animal": {
+     "REALIZES_OPERATION": 0.0003,
+     "CHECKS_PRECONDITION": 0.0012,
+     "OBSERVES_STATE": 0.0014,
+     "COMMUNICATES": 0.0011,
+     "label": "UNRELATED",
+     "max_e": 0.0014
+    },
+    "read_owner_contact": {
+     "REALIZES_OPERATION": 0.0003,
+     "CHECKS_PRECONDITION": 0.0006,
+     "OBSERVES_STATE": 0.0009,
+     "COMMUNICATES": 0.0003,
+     "label": "UNRELATED",
+     "max_e": 0.0009
+    },
+    "return_animal": {
+     "REALIZES_OPERATION": 0.0002,
+     "CHECKS_PRECONDITION": 0.0015,
+     "OBSERVES_STATE": 0.0013,
+     "COMMUNICATES": 0.0026,
+     "label": "UNRELATED",
+     "max_e": 0.0026
+    },
+    "read_kennel_log": {
+     "REALIZES_OPERATION": 0.001,
+     "CHECKS_PRECONDITION": 0.0013,
+     "OBSERVES_STATE": 0.0017,
+     "COMMUNICATES": 0.0011,
+     "label": "UNRELATED",
+     "max_e": 0.0017
+    }
+   }
+  },
+  {
+   "span": "animal A-118",
+   "b_features": {
+    "dep": null,
+    "mark": null,
+    "deontic": null,
+    "neg": null,
+    "passive": null,
+    "imperative": null,
+    "root": null,
+    "role_hypothesis": "UNKNOWN",
+    "even": null
+   },
+   "embed_rank": [
+    [
+     "return_animal",
+     0.5246
+    ],
+    [
+     "board_animal",
+     0.5111
+    ],
+    [
+     "read_owner_contact",
+     0.5064
+    ],
+    [
+     "groom_animal",
+     0.5031
+    ],
+    [
+     "verify_vaccination",
+     0.4937
+    ],
+    [
+     "admit_animal",
+     0.4833
+    ],
+    [
+     "read_kennel_log",
+     0.3851
+    ]
+   ],
+   "rerank_rank": [
+    [
+     "return_animal",
+     -7.844
+    ],
+    [
+     "board_animal",
+     -8.57
+    ],
+    [
+     "read_owner_contact",
+     -8.684
+    ],
+    [
+     "admit_animal",
+     -8.851
+    ],
+    [
+     "groom_animal",
+     -8.941
+    ],
+    [
+     "verify_vaccination",
+     -9.095
+    ],
+    [
+     "read_kennel_log",
+     -9.832
+    ]
+   ],
+   "nli": {
+    "admit_animal": {
+     "REALIZES_OPERATION": 0.0002,
+     "CHECKS_PRECONDITION": 0.0005,
+     "OBSERVES_STATE": 0.0012,
+     "COMMUNICATES": 0.0007,
+     "label": "UNRELATED",
+     "max_e": 0.0012
+    },
+    "verify_vaccination": {
+     "REALIZES_OPERATION": 0.0003,
+     "CHECKS_PRECONDITION": 0.0003,
+     "OBSERVES_STATE": 0.0003,
+     "COMMUNICATES": 0.0005,
+     "label": "UNRELATED",
+     "max_e": 0.0005
+    },
+    "groom_animal": {
+     "REALIZES_OPERATION": 0.001,
+     "CHECKS_PRECONDITION": 0.0011,
+     "OBSERVES_STATE": 0.0015,
+     "COMMUNICATES": 0.003,
+     "label": "UNRELATED",
+     "max_e": 0.003
+    },
+    "board_animal": {
+     "REALIZES_OPERATION": 0.0005,
+     "CHECKS_PRECONDITION": 0.0013,
+     "OBSERVES_STATE": 0.0018,
+     "COMMUNICATES": 0.0009,
+     "label": "UNRELATED",
+     "max_e": 0.0018
+    },
+    "read_owner_contact": {
+     "REALIZES_OPERATION": 0.0006,
+     "CHECKS_PRECONDITION": 0.0008,
+     "OBSERVES_STATE": 0.0011,
+     "COMMUNICATES": 0.0015,
+     "label": "UNRELATED",
+     "max_e": 0.0015
+    },
+    "return_animal": {
+     "REALIZES_OPERATION": 0.0004,
+     "CHECKS_PRECONDITION": 0.0025,
+     "OBSERVES_STATE": 0.0015,
+     "COMMUNICATES": 0.0013,
+     "label": "UNRELATED",
+     "max_e": 0.0025
+    },
+    "read_kennel_log": {
+     "REALIZES_OPERATION": 0.0105,
+     "CHECKS_PRECONDITION": 0.0018,
+     "OBSERVES_STATE": 0.0014,
+     "COMMUNICATES": 0.0067,
+     "label": "UNRELATED",
+     "max_e": 0.0105
+    }
+   }
+  },
+  {
+   "span": "only after its vaccination certificate has been verified",
+   "b_features": {
+    "dep": "advcl",
+    "mark": "after",
+    "deontic": [],
+    "neg": false,
+    "passive": true,
+    "imperative": false,
+    "root": false,
+    "role_hypothesis": "OPERATION_EFFECT",
+    "even": false
+   },
+   "embed_rank": [
+    [
+     "verify_vaccination",
+     0.7156
+    ],
+    [
+     "return_animal",
+     0.5153
+    ],
+    [
+     "groom_animal",
+     0.5022
+    ],
+    [
+     "read_owner_contact",
+     0.4972
+    ],
+    [
+     "admit_animal",
+     0.4904
+    ],
+    [
+     "board_animal",
+     0.481
+    ],
+    [
+     "read_kennel_log",
+     0.3929
+    ]
+   ],
+   "rerank_rank": [
+    [
+     "verify_vaccination",
+     -4.434
+    ],
+    [
+     "read_owner_contact",
+     -8.501
+    ],
+    [
+     "admit_animal",
+     -9.458
+    ],
+    [
+     "return_animal",
+     -9.82
+    ],
+    [
+     "board_animal",
+     -10.196
+    ],
+    [
+     "read_kennel_log",
+     -10.196
+    ],
+    [
+     "groom_animal",
+     -10.197
+    ]
+   ],
+   "nli": {
+    "admit_animal": {
+     "REALIZES_OPERATION": 0.0002,
+     "CHECKS_PRECONDITION": 0.002,
+     "OBSERVES_STATE": 0.001,
+     "COMMUNICATES": 0.0003,
+     "label": "UNRELATED",
+     "max_e": 0.002
+    },
+    "verify_vaccination": {
+     "REALIZES_OPERATION": 0.9769,
+     "CHECKS_PRECONDITION": 0.9944,
+     "OBSERVES_STATE": 0.9844,
+     "COMMUNICATES": 0.986,
+     "label": "CHECKS_PRECONDITION",
+     "max_e": 0.9944
+    },
+    "groom_animal": {
+     "REALIZES_OPERATION": 0.004,
+     "CHECKS_PRECONDITION": 0.0365,
+     "OBSERVES_STATE": 0.0035,
+     "COMMUNICATES": 0.0199,
+     "label": "UNRELATED",
+     "max_e": 0.0365
+    },
+    "board_animal": {
+     "REALIZES_OPERATION": 0.0001,
+     "CHECKS_PRECONDITION": 0.0019,
+     "OBSERVES_STATE": 0.0001,
+     "COMMUNICATES": 0.0004,
+     "label": "UNRELATED",
+     "max_e": 0.0019
+    },
+    "read_owner_contact": {
+     "REALIZES_OPERATION": 0.0003,
+     "CHECKS_PRECONDITION": 0.0028,
+     "OBSERVES_STATE": 0.0005,
+     "COMMUNICATES": 0.0022,
+     "label": "UNRELATED",
+     "max_e": 0.0028
+    },
+    "return_animal": {
+     "REALIZES_OPERATION": 0.0002,
+     "CHECKS_PRECONDITION": 0.0029,
+     "OBSERVES_STATE": 0.0003,
+     "COMMUNICATES": 0.0033,
+     "label": "UNRELATED",
+     "max_e": 0.0033
+    },
+    "read_kennel_log": {
+     "REALIZES_OPERATION": 0.0004,
+     "CHECKS_PRECONDITION": 0.0072,
+     "OBSERVES_STATE": 0.0008,
+     "COMMUNICATES": 0.0064,
+     "label": "UNRELATED",
+     "max_e": 0.0072
+    }
+   }
+  },
+  {
+   "span": "its vaccination certificate",
+   "b_features": {
+    "dep": null,
+    "mark": null,
+    "deontic": null,
+    "neg": null,
+    "passive": null,
+    "imperative": null,
+    "root": null,
+    "role_hypothesis": "UNKNOWN",
+    "even": null
+   },
+   "embed_rank": [
+    [
+     "verify_vaccination",
+     0.6881
+    ],
+    [
+     "read_owner_contact",
+     0.5003
+    ],
+    [
+     "admit_animal",
+     0.5
+    ],
+    [
+     "groom_animal",
+     0.4675
+    ],
+    [
+     "return_animal",
+     0.445
+    ],
+    [
+     "board_animal",
+     0.4416
+    ],
+    [
+     "read_kennel_log",
+     0.3837
+    ]
+   ],
+   "rerank_rank": [
+    [
+     "verify_vaccination",
+     0.589
+    ],
+    [
+     "admit_animal",
+     -7.546
+    ],
+    [
+     "read_owner_contact",
+     -8.355
+    ],
+    [
+     "board_animal",
+     -10.193
+    ],
+    [
+     "read_kennel_log",
+     -10.193
+    ],
+    [
+     "groom_animal",
+     -10.196
+    ],
+    [
+     "return_animal",
+     -10.197
+    ]
+   ],
+   "nli": {
+    "admit_animal": {
+     "REALIZES_OPERATION": 0.0007,
+     "CHECKS_PRECONDITION": 0.0008,
+     "OBSERVES_STATE": 0.0045,
+     "COMMUNICATES": 0.0018,
+     "label": "UNRELATED",
+     "max_e": 0.0045
+    },
+    "verify_vaccination": {
+     "REALIZES_OPERATION": 0.9922,
+     "CHECKS_PRECONDITION": 0.9965,
+     "OBSERVES_STATE": 0.9959,
+     "COMMUNICATES": 0.9956,
+     "label": "CHECKS_PRECONDITION",
+     "max_e": 0.9965
+    },
+    "groom_animal": {
+     "REALIZES_OPERATION": 0.0539,
+     "CHECKS_PRECONDITION": 0.0898,
+     "OBSERVES_STATE": 0.0201,
+     "COMMUNICATES": 0.0558,
+     "label": "UNRELATED",
+     "max_e": 0.0898
+    },
+    "board_animal": {
+     "REALIZES_OPERATION": 0.0029,
+     "CHECKS_PRECONDITION": 0.001,
+     "OBSERVES_STATE": 0.0011,
+     "COMMUNICATES": 0.0045,
+     "label": "UNRELATED",
+     "max_e": 0.0045
+    },
+    "read_owner_contact": {
+     "REALIZES_OPERATION": 0.0169,
+     "CHECKS_PRECONDITION": 0.0045,
+     "OBSERVES_STATE": 0.0166,
+     "COMMUNICATES": 0.005,
+     "label": "UNRELATED",
+     "max_e": 0.0169
+    },
+    "return_animal": {
+     "REALIZES_OPERATION": 0.001,
+     "CHECKS_PRECONDITION": 0.0026,
+     "OBSERVES_STATE": 0.0018,
+     "COMMUNICATES": 0.0117,
+     "label": "UNRELATED",
+     "max_e": 0.0117
+    },
+    "read_kennel_log": {
+     "REALIZES_OPERATION": 0.0071,
+     "CHECKS_PRECONDITION": 0.0151,
+     "OBSERVES_STATE": 0.0282,
+     "COMMUNICATES": 0.0226,
+     "label": "UNRELATED",
+     "max_e": 0.0282
+    }
+   }
+  },
+  {
+   "span": "The same certificate check is required before both grooming and boarding",
+   "b_features": {
+    "dep": "root",
+    "mark": null,
+    "deontic": [],
+    "neg": false,
+    "passive": true,
+    "imperative": false,
+    "root": true,
+    "role_hypothesis": "OPERATION_EFFECT",
+    "even": false
+   },
+   "embed_rank": [
+    [
+     "groom_animal",
+     0.6152
+    ],
+    [
+     "verify_vaccination",
+     0.5603
+    ],
+    [
+     "board_animal",
+     0.5333
+    ],
+    [
+     "admit_animal",
+     0.518
+    ],
+    [
+     "return_animal",
+     0.4618
+    ],
+    [
+     "read_owner_contact",
+     0.4376
+    ],
+    [
+     "read_kennel_log",
+     0.4194
+    ]
+   ],
+   "rerank_rank": [
+    [
+     "groom_animal",
+     -5.677
+    ],
+    [
+     "verify_vaccination",
+     -8.082
+    ],
+    [
+     "board_animal",
+     -8.282
+    ],
+    [
+     "return_animal",
+     -10.159
+    ],
+    [
+     "admit_animal",
+     -10.195
+    ],
+    [
+     "read_kennel_log",
+     -10.196
+    ],
+    [
+     "read_owner_contact",
+     -10.197
+    ]
+   ],
+   "nli": {
+    "admit_animal": {
+     "REALIZES_OPERATION": 0.0029,
+     "CHECKS_PRECONDITION": 0.0011,
+     "OBSERVES_STATE": 0.0062,
+     "COMMUNICATES": 0.0041,
+     "label": "UNRELATED",
+     "max_e": 0.0062
+    },
+    "verify_vaccination": {
+     "REALIZES_OPERATION": 0.0002,
+     "CHECKS_PRECONDITION": 0.0003,
+     "OBSERVES_STATE": 0.0003,
+     "COMMUNICATES": 0.0004,
+     "label": "UNRELATED",
+     "max_e": 0.0004
+    },
+    "groom_animal": {
+     "REALIZES_OPERATION": 0.0058,
+     "CHECKS_PRECONDITION": 0.037,
+     "OBSERVES_STATE": 0.0071,
+     "COMMUNICATES": 0.0054,
+     "label": "UNRELATED",
+     "max_e": 0.037
+    },
+    "board_animal": {
+     "REALIZES_OPERATION": 0.0013,
+     "CHECKS_PRECONDITION": 0.0013,
+     "OBSERVES_STATE": 0.0012,
+     "COMMUNICATES": 0.002,
+     "label": "UNRELATED",
+     "max_e": 0.002
+    },
+    "read_owner_contact": {
+     "REALIZES_OPERATION": 0.0015,
+     "CHECKS_PRECONDITION": 0.0007,
+     "OBSERVES_STATE": 0.003,
+     "COMMUNICATES": 0.0012,
+     "label": "UNRELATED",
+     "max_e": 0.003
+    },
+    "return_animal": {
+     "REALIZES_OPERATION": 0.0025,
+     "CHECKS_PRECONDITION": 0.0052,
+     "OBSERVES_STATE": 0.0033,
+     "COMMUNICATES": 0.0051,
+     "label": "UNRELATED",
+     "max_e": 0.0052
+    },
+    "read_kennel_log": {
+     "REALIZES_OPERATION": 0.0055,
+     "CHECKS_PRECONDITION": 0.0035,
+     "OBSERVES_STATE": 0.0104,
+     "COMMUNICATES": 0.0023,
+     "label": "UNRELATED",
+     "max_e": 0.0104
+    }
+   }
+  },
+  {
+   "span": "same certificate check",
+   "b_features": {
+    "dep": null,
+    "mark": null,
+    "deontic": null,
+    "neg": null,
+    "passive": null,
+    "imperative": null,
+    "root": null,
+    "role_hypothesis": "UNKNOWN",
+    "even": null
+   },
+   "embed_rank": [
+    [
+     "verify_vaccination",
+     0.6014
+    ],
+    [
+     "read_owner_contact",
+     0.4467
+    ],
+    [
+     "admit_animal",
+     0.4279
+    ],
+    [
+     "return_animal",
+     0.4183
+    ],
+    [
+     "groom_animal",
+     0.4118
+    ],
+    [
+     "board_animal",
+     0.4011
+    ],
+    [
+     "read_kennel_log",
+     0.3831
+    ]
+   ],
+   "rerank_rank": [
+    [
+     "verify_vaccination",
+     -5.245
+    ],
+    [
+     "admit_animal",
+     -8.265
+    ],
+    [
+     "return_animal",
+     -10.01
+    ],
+    [
+     "read_owner_contact",
+     -10.12
+    ],
+    [
+     "board_animal",
+     -10.193
+    ],
+    [
+     "groom_animal",
+     -10.196
+    ],
+    [
+     "read_kennel_log",
+     -10.197
+    ]
+   ],
+   "nli": {
+    "admit_animal": {
+     "REALIZES_OPERATION": 0.0259,
+     "CHECKS_PRECONDITION": 0.0006,
+     "OBSERVES_STATE": 0.0023,
+     "COMMUNICATES": 0.0005,
+     "label": "UNRELATED",
+     "max_e": 0.0259
+    },
+    "verify_vaccination": {
+     "REALIZES_OPERATION": 0.9856,
+     "CHECKS_PRECONDITION": 0.9943,
+     "OBSERVES_STATE": 0.9933,
+     "COMMUNICATES": 0.9873,
+     "label": "CHECKS_PRECONDITION",
+     "max_e": 0.9943
+    },
+    "groom_animal": {
+     "REALIZES_OPERATION": 0.0465,
+     "CHECKS_PRECONDITION": 0.9745,
+     "OBSERVES_STATE": 0.9752,
+     "COMMUNICATES": 0.0893,
+     "label": "OBSERVES_STATE",
+     "max_e": 0.9752
+    },
+    "board_animal": {
+     "REALIZES_OPERATION": 0.006,
+     "CHECKS_PRECONDITION": 0.0013,
+     "OBSERVES_STATE": 0.0003,
+     "COMMUNICATES": 0.0026,
+     "label": "UNRELATED",
+     "max_e": 0.006
+    },
+    "read_owner_contact": {
+     "REALIZES_OPERATION": 0.0142,
+     "CHECKS_PRECONDITION": 0.0058,
+     "OBSERVES_STATE": 0.1264,
+     "COMMUNICATES": 0.0019,
+     "label": "UNRELATED",
+     "max_e": 0.1264
+    },
+    "return_animal": {
+     "REALIZES_OPERATION": 0.0078,
+     "CHECKS_PRECONDITION": 0.0051,
+     "OBSERVES_STATE": 0.0061,
+     "COMMUNICATES": 0.04,
+     "label": "UNRELATED",
+     "max_e": 0.04
+    },
+    "read_kennel_log": {
+     "REALIZES_OPERATION": 0.0462,
+     "CHECKS_PRECONDITION": 0.0131,
+     "OBSERVES_STATE": 0.3979,
+     "COMMUNICATES": 0.0483,
+     "label": "UNKNOWN",
+     "max_e": 0.3979
+    }
+   }
+  },
+  {
+   "span": "grooming and boarding",
+   "b_features": {
+    "dep": null,
+    "mark": null,
+    "deontic": null,
+    "neg": null,
+    "passive": null,
+    "imperative": null,
+    "root": null,
+    "role_hypothesis": "UNKNOWN",
+    "even": null
+   },
+   "embed_rank": [
+    [
+     "groom_animal",
+     0.6524
+    ],
+    [
+     "board_animal",
+     0.5737
+    ],
+    [
+     "admit_animal",
+     0.4565
+    ],
+    [
+     "read_kennel_log",
+     0.4405
+    ],
+    [
+     "return_animal",
+     0.4252
+    ],
+    [
+     "verify_vaccination",
+     0.408
+    ],
+    [
+     "read_owner_contact",
+     0.3985
+    ]
+   ],
+   "rerank_rank": [
+    [
+     "groom_animal",
+     -3.162
+    ],
+    [
+     "board_animal",
+     -5.752
+    ],
+    [
+     "read_owner_contact",
+     -10.137
+    ],
+    [
+     "return_animal",
+     -10.168
+    ],
+    [
+     "admit_animal",
+     -10.192
+    ],
+    [
+     "verify_vaccination",
+     -10.194
+    ],
+    [
+     "read_kennel_log",
+     -10.197
+    ]
+   ],
+   "nli": {
+    "admit_animal": {
+     "REALIZES_OPERATION": 0.9927,
+     "CHECKS_PRECONDITION": 0.0023,
+     "OBSERVES_STATE": 0.9791,
+     "COMMUNICATES": 0.9941,
+     "label": "COMMUNICATES",
+     "max_e": 0.9941
+    },
+    "verify_vaccination": {
+     "REALIZES_OPERATION": 0.0,
+     "CHECKS_PRECONDITION": 0.0,
+     "OBSERVES_STATE": 0.0,
+     "COMMUNICATES": 0.0,
+     "label": "UNRELATED",
+     "max_e": 0.0
+    },
+    "groom_animal": {
+     "REALIZES_OPERATION": 0.9947,
+     "CHECKS_PRECONDITION": 0.9857,
+     "OBSERVES_STATE": 0.9889,
+     "COMMUNICATES": 0.9921,
+     "label": "REALIZES_OPERATION",
+     "max_e": 0.9947
+    },
+    "board_animal": {
+     "REALIZES_OPERATION": 0.0075,
+     "CHECKS_PRECONDITION": 0.0014,
+     "OBSERVES_STATE": 0.0052,
+     "COMMUNICATES": 0.8728,
+     "label": "COMMUNICATES",
+     "max_e": 0.8728
+    },
+    "read_owner_contact": {
+     "REALIZES_OPERATION": 0.0008,
+     "CHECKS_PRECONDITION": 0.0008,
+     "OBSERVES_STATE": 0.0067,
+     "COMMUNICATES": 0.0079,
+     "label": "UNRELATED",
+     "max_e": 0.0079
+    },
+    "return_animal": {
+     "REALIZES_OPERATION": 0.0561,
+     "CHECKS_PRECONDITION": 0.0107,
+     "OBSERVES_STATE": 0.0386,
+     "COMMUNICATES": 0.8847,
+     "label": "COMMUNICATES",
+     "max_e": 0.8847
+    },
+    "read_kennel_log": {
+     "REALIZES_OPERATION": 0.8772,
+     "CHECKS_PRECONDITION": 0.5396,
+     "OBSERVES_STATE": 0.9932,
+     "COMMUNICATES": 0.9761,
+     "label": "OBSERVES_STATE",
+     "max_e": 0.9932
+    }
+   }
+  },
+  {
+   "span": "Confirm the owner's contact details",
+   "b_features": {
+    "dep": "root",
+    "mark": null,
+    "deontic": [],
+    "neg": false,
+    "passive": false,
+    "imperative": true,
+    "root": true,
+    "role_hypothesis": "OPERATION_EFFECT",
+    "even": false
+   },
+   "embed_rank": [
+    [
+     "read_owner_contact",
+     0.6739
+    ],
+    [
+     "groom_animal",
+     0.517
+    ],
+    [
+     "return_animal",
+     0.5148
+    ],
+    [
+     "board_animal",
+     0.493
+    ],
+    [
+     "verify_vaccination",
+     0.4525
+    ],
+    [
+     "admit_animal",
+     0.4432
+    ],
+    [
+     "read_kennel_log",
+     0.3856
+    ]
+   ],
+   "rerank_rank": [
+    [
+     "read_owner_contact",
+     -0.068
+    ],
+    [
+     "return_animal",
+     -6.556
+    ],
+    [
+     "read_kennel_log",
+     -10.193
+    ],
+    [
+     "verify_vaccination",
+     -10.193
+    ],
+    [
+     "groom_animal",
+     -10.194
+    ],
+    [
+     "board_animal",
+     -10.195
+    ],
+    [
+     "admit_animal",
+     -10.197
+    ]
+   ],
+   "nli": {
+    "admit_animal": {
+     "REALIZES_OPERATION": 0.0002,
+     "CHECKS_PRECONDITION": 0.0015,
+     "OBSERVES_STATE": 0.0011,
+     "COMMUNICATES": 0.0001,
+     "label": "UNRELATED",
+     "max_e": 0.0015
+    },
+    "verify_vaccination": {
+     "REALIZES_OPERATION": 0.0,
+     "CHECKS_PRECONDITION": 0.0,
+     "OBSERVES_STATE": 0.0001,
+     "COMMUNICATES": 0.0,
+     "label": "UNRELATED",
+     "max_e": 0.0001
+    },
+    "groom_animal": {
+     "REALIZES_OPERATION": 0.009,
+     "CHECKS_PRECONDITION": 0.9735,
+     "OBSERVES_STATE": 0.6918,
+     "COMMUNICATES": 0.0008,
+     "label": "CHECKS_PRECONDITION",
+     "max_e": 0.9735
+    },
+    "board_animal": {
+     "REALIZES_OPERATION": 0.0001,
+     "CHECKS_PRECONDITION": 0.0056,
+     "OBSERVES_STATE": 0.0002,
+     "COMMUNICATES": 0.0001,
+     "label": "UNRELATED",
+     "max_e": 0.0056
+    },
+    "read_owner_contact": {
+     "REALIZES_OPERATION": 0.7319,
+     "CHECKS_PRECONDITION": 0.0717,
+     "OBSERVES_STATE": 0.9811,
+     "COMMUNICATES": 0.0777,
+     "label": "OBSERVES_STATE",
+     "max_e": 0.9811
+    },
+    "return_animal": {
+     "REALIZES_OPERATION": 0.0025,
+     "CHECKS_PRECONDITION": 0.0101,
+     "OBSERVES_STATE": 0.0032,
+     "COMMUNICATES": 0.0138,
+     "label": "UNRELATED",
+     "max_e": 0.0138
+    },
+    "read_kennel_log": {
+     "REALIZES_OPERATION": 0.0003,
+     "CHECKS_PRECONDITION": 0.0097,
+     "OBSERVES_STATE": 0.0029,
+     "COMMUNICATES": 0.0001,
+     "label": "UNRELATED",
+     "max_e": 0.0097
+    }
+   }
+  },
+  {
+   "span": "owner's contact details",
+   "b_features": {
+    "dep": null,
+    "mark": null,
+    "deontic": null,
+    "neg": null,
+    "passive": null,
+    "imperative": null,
+    "root": null,
+    "role_hypothesis": "UNKNOWN",
+    "even": null
+   },
+   "embed_rank": [
+    [
+     "read_owner_contact",
+     0.6612
+    ],
+    [
+     "return_animal",
+     0.5005
+    ],
+    [
+     "groom_animal",
+     0.4907
+    ],
+    [
+     "board_animal",
+     0.4902
+    ],
+    [
+     "admit_animal",
+     0.4395
+    ],
+    [
+     "read_kennel_log",
+     0.4263
+    ],
+    [
+     "verify_vaccination",
+     0.4066
+    ]
+   ],
+   "rerank_rank": [
+    [
+     "read_owner_contact",
+     1.784
+    ],
+    [
+     "return_animal",
+     -4.939
+    ],
+    [
+     "admit_animal",
+     -9.632
+    ],
+    [
+     "groom_animal",
+     -10.157
+    ],
+    [
+     "verify_vaccination",
+     -10.194
+    ],
+    [
+     "board_animal",
+     -10.196
+    ],
+    [
+     "read_kennel_log",
+     -10.197
+    ]
+   ],
+   "nli": {
+    "admit_animal": {
+     "REALIZES_OPERATION": 0.0004,
+     "CHECKS_PRECONDITION": 0.0004,
+     "OBSERVES_STATE": 0.0005,
+     "COMMUNICATES": 0.0002,
+     "label": "UNRELATED",
+     "max_e": 0.0005
+    },
+    "verify_vaccination": {
+     "REALIZES_OPERATION": 0.0,
+     "CHECKS_PRECONDITION": 0.0,
+     "OBSERVES_STATE": 0.0001,
+     "COMMUNICATES": 0.0,
+     "label": "UNRELATED",
+     "max_e": 0.0001
+    },
+    "groom_animal": {
+     "REALIZES_OPERATION": 0.0234,
+     "CHECKS_PRECONDITION": 0.5944,
+     "OBSERVES_STATE": 0.8748,
+     "COMMUNICATES": 0.0005,
+     "label": "OBSERVES_STATE",
+     "max_e": 0.8748
+    },
+    "board_animal": {
+     "REALIZES_OPERATION": 0.0007,
+     "CHECKS_PRECONDITION": 0.0001,
+     "OBSERVES_STATE": 0.0001,
+     "COMMUNICATES": 0.0002,
+     "label": "UNRELATED",
+     "max_e": 0.0007
+    },
+    "read_owner_contact": {
+     "REALIZES_OPERATION": 0.9927,
+     "CHECKS_PRECONDITION": 0.0147,
+     "OBSERVES_STATE": 0.9951,
+     "COMMUNICATES": 0.971,
+     "label": "OBSERVES_STATE",
+     "max_e": 0.9951
+    },
+    "return_animal": {
+     "REALIZES_OPERATION": 0.1649,
+     "CHECKS_PRECONDITION": 0.0152,
+     "OBSERVES_STATE": 0.0468,
+     "COMMUNICATES": 0.1685,
+     "label": "UNRELATED",
+     "max_e": 0.1685
+    },
+    "read_kennel_log": {
+     "REALIZES_OPERATION": 0.0005,
+     "CHECKS_PRECONDITION": 0.0098,
+     "OBSERVES_STATE": 0.0007,
+     "COMMUNICATES": 0.0002,
+     "label": "UNRELATED",
+     "max_e": 0.0098
+    }
+   }
+  },
+  {
+   "span": "before returning the animal",
+   "b_features": {
+    "dep": "advcl",
+    "mark": "before",
+    "deontic": [],
+    "neg": false,
+    "passive": false,
+    "imperative": false,
+    "root": false,
+    "role_hypothesis": "OPERATION_EFFECT",
+    "even": false
+   },
+   "embed_rank": [
+    [
+     "return_animal",
+     0.6411
+    ],
+    [
+     "groom_animal",
+     0.6233
+    ],
+    [
+     "board_animal",
+     0.6157
+    ],
+    [
+     "verify_vaccination",
+     0.5846
+    ],
+    [
+     "admit_animal",
+     0.5713
+    ],
+    [
+     "read_owner_contact",
+     0.5595
+    ],
+    [
+     "read_kennel_log",
+     0.4642
+    ]
+   ],
+   "rerank_rank": [
+    [
+     "return_animal",
+     -1.75
+    ],
+    [
+     "board_animal",
+     -3.965
+    ],
+    [
+     "admit_animal",
+     -5.359
+    ],
+    [
+     "groom_animal",
+     -5.878
+    ],
+    [
+     "verify_vaccination",
+     -6.18
+    ],
+    [
+     "read_owner_contact",
+     -6.745
+    ],
+    [
+     "read_kennel_log",
+     -7.902
+    ]
+   ],
+   "nli": {
+    "admit_animal": {
+     "REALIZES_OPERATION": 0.439,
+     "CHECKS_PRECONDITION": 0.0032,
+     "OBSERVES_STATE": 0.0058,
+     "COMMUNICATES": 0.0083,
+     "label": "UNKNOWN",
+     "max_e": 0.439
+    },
+    "verify_vaccination": {
+     "REALIZES_OPERATION": 0.9864,
+     "CHECKS_PRECONDITION": 0.9945,
+     "OBSERVES_STATE": 0.9938,
+     "COMMUNICATES": 0.9806,
+     "label": "CHECKS_PRECONDITION",
+     "max_e": 0.9945
+    },
+    "groom_animal": {
+     "REALIZES_OPERATION": 0.0049,
+     "CHECKS_PRECONDITION": 0.9644,
+     "OBSERVES_STATE": 0.0825,
+     "COMMUNICATES": 0.0446,
+     "label": "CHECKS_PRECONDITION",
+     "max_e": 0.9644
+    },
+    "board_animal": {
+     "REALIZES_OPERATION": 0.0872,
+     "CHECKS_PRECONDITION": 0.0036,
+     "OBSERVES_STATE": 0.0025,
+     "COMMUNICATES": 0.0216,
+     "label": "UNRELATED",
+     "max_e": 0.0872
+    },
+    "read_owner_contact": {
+     "REALIZES_OPERATION": 0.0015,
+     "CHECKS_PRECONDITION": 0.0018,
+     "OBSERVES_STATE": 0.0047,
+     "COMMUNICATES": 0.0072,
+     "label": "UNRELATED",
+     "max_e": 0.0072
+    },
+    "return_animal": {
+     "REALIZES_OPERATION": 0.9933,
+     "CHECKS_PRECONDITION": 0.0049,
+     "OBSERVES_STATE": 0.1734,
+     "COMMUNICATES": 0.994,
+     "label": "COMMUNICATES",
+     "max_e": 0.994
+    },
+    "read_kennel_log": {
+     "REALIZES_OPERATION": 0.0016,
+     "CHECKS_PRECONDITION": 0.0059,
+     "OBSERVES_STATE": 0.0032,
+     "COMMUNICATES": 0.0104,
+     "label": "UNRELATED",
+     "max_e": 0.0104
+    }
+   }
+  }
+ ]
+}

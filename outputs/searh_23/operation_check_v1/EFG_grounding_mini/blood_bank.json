@@ -1,0 +1,923 @@
+{
+ "case_id": "blood_bank",
+ "renderings_without_names": {
+  "collect_donation": "Collects a blood donation from a donor and starts processing. Input parameters: donor_id: string. Output: donation_id: string.",
+  "read_interview_status": "Reads whether the screening interview for a donor is complete. Input parameters: donor_id: string. Output: completed: boolean.",
+  "read_haemoglobin": "Reads the measured haemoglobin value for a donor. Input parameters: donor_id: string. Output: g_dl: number.",
+  "notify_donor": "Sends a deferral notice to the donor. Input parameters: donor_id: string. Output: sent: boolean."
+ },
+ "tool_type_probe": {
+  "collect_donation": {
+   "mutate": 0.003,
+   "verify": 0.0076,
+   "read": 0.0,
+   "message": 0.7151,
+   "top": "message"
+  },
+  "read_interview_status": {
+   "mutate": 0.0084,
+   "verify": 0.9893,
+   "read": 0.0004,
+   "message": 0.0429,
+   "top": "verify"
+  },
+  "read_haemoglobin": {
+   "mutate": 0.0002,
+   "verify": 0.0011,
+   "read": 0.0002,
+   "message": 0.0202,
+   "top": "message"
+  },
+  "notify_donor": {
+   "mutate": 0.8944,
+   "verify": 0.8157,
+   "read": 0.0001,
+   "message": 0.9775,
+   "top": "message"
+  }
+ },
+ "gold_span_grounding": [
+  {
+   "span": "Collect the donation from donor D-88",
+   "embed_rank": [
+    [
+     "collect_donation",
+     0.704
+    ],
+    [
+     "notify_donor",
+     0.5964
+    ],
+    [
+     "read_haemoglobin",
+     0.5927
+    ],
+    [
+     "read_interview_status",
+     0.5632
+    ]
+   ],
+   "rerank_rank": [
+    [
+     "collect_donation",
+     -1.673
+    ],
+    [
+     "notify_donor",
+     -6.593
+    ],
+    [
+     "read_haemoglobin",
+     -9.219
+    ],
+    [
+     "read_interview_status",
+     -9.796
+    ]
+   ],
+   "nli": {
+    "collect_donation": {
+     "REALIZES_OPERATION": 0.0007,
+     "CHECKS_PRECONDITION": 0.0014,
+     "OBSERVES_STATE": 0.0014,
+     "COMMUNICATES": 0.0015,
+     "label": "UNRELATED",
+     "max_e": 0.0015
+    },
+    "read_interview_status": {
+     "REALIZES_OPERATION": 0.0002,
+     "CHECKS_PRECONDITION": 0.0005,
+     "OBSERVES_STATE": 0.0011,
+     "COMMUNICATES": 0.0,
+     "label": "UNRELATED",
+     "max_e": 0.0011
+    },
+    "read_haemoglobin": {
+     "REALIZES_OPERATION": 0.0003,
+     "CHECKS_PRECONDITION": 0.0011,
+     "OBSERVES_STATE": 0.0015,
+     "COMMUNICATES": 0.0001,
+     "label": "UNRELATED",
+     "max_e": 0.0015
+    },
+    "notify_donor": {
+     "REALIZES_OPERATION": 0.0004,
+     "CHECKS_PRECONDITION": 0.0023,
+     "OBSERVES_STATE": 0.003,
+     "COMMUNICATES": 0.0052,
+     "label": "UNRELATED",
+     "max_e": 0.0052
+    }
+   }
+  },
+  {
+   "span": "the screening interview has been completed",
+   "embed_rank": [
+    [
+     "read_interview_status",
+     0.6676
+    ],
+    [
+     "collect_donation",
+     0.4733
+    ],
+    [
+     "notify_donor",
+     0.4513
+    ],
+    [
+     "read_haemoglobin",
+     0.4435
+    ]
+   ],
+   "rerank_rank": [
+    [
+     "read_interview_status",
+     2.323
+    ],
+    [
+     "read_haemoglobin",
+     -10.194
+    ],
+    [
+     "collect_donation",
+     -10.195
+    ],
+    [
+     "notify_donor",
+     -10.197
+    ]
+   ],
+   "nli": {
+    "collect_donation": {
+     "REALIZES_OPERATION": 0.0023,
+     "CHECKS_PRECONDITION": 0.0016,
+     "OBSERVES_STATE": 0.0001,
+     "COMMUNICATES": 0.0002,
+     "label": "UNRELATED",
+     "max_e": 0.0023
+    },
+    "read_interview_status": {
+     "REALIZES_OPERATION": 0.9838,
+     "CHECKS_PRECONDITION": 0.9941,
+     "OBSERVES_STATE": 0.9956,
+     "COMMUNICATES": 0.9512,
+     "label": "OBSERVES_STATE",
+     "max_e": 0.9956
+    },
+    "read_haemoglobin": {
+     "REALIZES_OPERATION": 0.0008,
+     "CHECKS_PRECONDITION": 0.0005,
+     "OBSERVES_STATE": 0.0007,
+     "COMMUNICATES": 0.0002,
+     "label": "UNRELATED",
+     "max_e": 0.0008
+    },
+    "notify_donor": {
+     "REALIZES_OPERATION": 0.0035,
+     "CHECKS_PRECONDITION": 0.0015,
+     "OBSERVES_STATE": 0.0021,
+     "COMMUNICATES": 0.0039,
+     "label": "UNRELATED",
+     "max_e": 0.0039
+    }
+   }
+  },
+  {
+   "span": "the haemoglobin reading is above the threshold",
+   "embed_rank": [
+    [
+     "read_haemoglobin",
+     0.6646
+    ],
+    [
+     "read_interview_status",
+     0.518
+    ],
+    [
+     "collect_donation",
+     0.4908
+    ],
+    [
+     "notify_donor",
+     0.4216
+    ]
+   ],
+   "rerank_rank": [
+    [
+     "read_haemoglobin",
+     -4.433
+    ],
+    [
+     "notify_donor",
+     -8.295
+    ],
+    [
+     "read_interview_status",
+     -10.035
+    ],
+    [
+     "collect_donation",
+     -10.09
+    ]
+   ],
+   "nli": {
+    "collect_donation": {
+     "REALIZES_OPERATION": 0.0014,
+     "CHECKS_PRECONDITION": 0.0014,
+     "OBSERVES_STATE": 0.0007,
+     "COMMUNICATES": 0.0006,
+     "label": "UNRELATED",
+     "max_e": 0.0014
+    },
+    "read_interview_status": {
+     "REALIZES_OPERATION": 0.0008,
+     "CHECKS_PRECONDITION": 0.0005,
+     "OBSERVES_STATE": 0.0007,
+     "COMMUNICATES": 0.0009,
+     "label": "UNRELATED",
+     "max_e": 0.0009
+    },
+    "read_haemoglobin": {
+     "REALIZES_OPERATION": 0.0024,
+     "CHECKS_PRECONDITION": 0.0008,
+     "OBSERVES_STATE": 0.0033,
+     "COMMUNICATES": 0.0006,
+     "label": "UNRELATED",
+     "max_e": 0.0033
+    },
+    "notify_donor": {
+     "REALIZES_OPERATION": 0.0003,
+     "CHECKS_PRECONDITION": 0.0003,
+     "OBSERVES_STATE": 0.0004,
+     "COMMUNICATES": 0.0008,
+     "label": "UNRELATED",
+     "max_e": 0.0008
+    }
+   }
+  },
+  {
+   "span": "Notify the donor of any deferral",
+   "embed_rank": [
+    [
+     "notify_donor",
+     0.8064
+    ],
+    [
+     "collect_donation",
+     0.6085
+    ],
+    [
+     "read_interview_status",
+     0.579
+    ],
+    [
+     "read_haemoglobin",
+     0.5146
+    ]
+   ],
+   "rerank_rank": [
+    [
+     "notify_donor",
+     5.182
+    ],
+    [
+     "collect_donation",
+     -5.843
+    ],
+    [
+     "read_interview_status",
+     -5.972
+    ],
+    [
+     "read_haemoglobin",
+     -7.287
+    ]
+   ],
+   "nli": {
+    "collect_donation": {
+     "REALIZES_OPERATION": 0.0004,
+     "CHECKS_PRECONDITION": 0.0009,
+     "OBSERVES_STATE": 0.0001,
+     "COMMUNICATES": 0.0002,
+     "label": "UNRELATED",
+     "max_e": 0.0009
+    },
+    "read_interview_status": {
+     "REALIZES_OPERATION": 0.0003,
+     "CHECKS_PRECONDITION": 0.0007,
+     "OBSERVES_STATE": 0.0052,
+     "COMMUNICATES": 0.0,
+     "label": "UNRELATED",
+     "max_e": 0.0052
+    },
+    "read_haemoglobin": {
+     "REALIZES_OPERATION": 0.0002,
+     "CHECKS_PRECONDITION": 0.0002,
+     "OBSERVES_STATE": 0.0001,
+     "COMMUNICATES": 0.0001,
+     "label": "UNRELATED",
+     "max_e": 0.0002
+    },
+    "notify_donor": {
+     "REALIZES_OPERATION": 0.9939,
+     "CHECKS_PRECONDITION": 0.6776,
+     "OBSERVES_STATE": 0.9904,
+     "COMMUNICATES": 0.9865,
+     "label": "REALIZES_OPERATION",
+     "max_e": 0.9939
+    }
+   }
+  }
+ ],
+ "b_candidate_grounding": [
+  {
+   "span": "Collect the donation from donor D-88",
+   "b_features": {
+    "dep": "root",
+    "mark": null,
+    "deontic": [],
+    "neg": false,
+    "passive": false,
+    "imperative": true,
+    "root": true,
+    "role_hypothesis": "OPERATION_EFFECT",
+    "even": false
+   },
+   "embed_rank": [
+    [
+     "collect_donation",
+     0.704
+    ],
+    [
+     "notify_donor",
+     0.5964
+    ],
+    [
+     "read_haemoglobin",
+     0.5927
+    ],
+    [
+     "read_interview_status",
+     0.5632
+    ]
+   ],
+   "rerank_rank": [
+    [
+     "collect_donation",
+     -1.673
+    ],
+    [
+     "notify_donor",
+     -6.593
+    ],
+    [
+     "read_haemoglobin",
+     -9.219
+    ],
+    [
+     "read_interview_status",
+     -9.796
+    ]
+   ],
+   "nli": {
+    "collect_donation": {
+     "REALIZES_OPERATION": 0.0007,
+     "CHECKS_PRECONDITION": 0.0014,
+     "OBSERVES_STATE": 0.0014,
+     "COMMUNICATES": 0.0015,
+     "label": "UNRELATED",
+     "max_e": 0.0015
+    },
+    "read_interview_status": {
+     "REALIZES_OPERATION": 0.0002,
+     "CHECKS_PRECONDITION": 0.0005,
+     "OBSERVES_STATE": 0.0011,
+     "COMMUNICATES": 0.0,
+     "label": "UNRELATED",
+     "max_e": 0.0011
+    },
+    "read_haemoglobin": {
+     "REALIZES_OPERATION": 0.0003,
+     "CHECKS_PRECONDITION": 0.0011,
+     "OBSERVES_STATE": 0.0015,
+     "COMMUNICATES": 0.0001,
+     "label": "UNRELATED",
+     "max_e": 0.0015
+    },
+    "notify_donor": {
+     "REALIZES_OPERATION": 0.0004,
+     "CHECKS_PRECONDITION": 0.0023,
+     "OBSERVES_STATE": 0.003,
+     "COMMUNICATES": 0.0052,
+     "label": "UNRELATED",
+     "max_e": 0.0052
+    }
+   }
+  },
+  {
+   "span": "only after the screening interview has been completed and the haemoglobin reading is above the threshold",
+   "b_features": {
+    "dep": "advcl",
+    "mark": "after",
+    "deontic": [],
+    "neg": false,
+    "passive": true,
+    "imperative": false,
+    "root": false,
+    "role_hypothesis": "OPERATION_EFFECT",
+    "even": false
+   },
+   "embed_rank": [
+    [
+     "read_interview_status",
+     0.6576
+    ],
+    [
+     "read_haemoglobin",
+     0.6004
+    ],
+    [
+     "collect_donation",
+     0.5102
+    ],
+    [
+     "notify_donor",
+     0.4655
+    ]
+   ],
+   "rerank_rank": [
+    [
+     "read_interview_status",
+     -3.132
+    ],
+    [
+     "read_haemoglobin",
+     -4.927
+    ],
+    [
+     "notify_donor",
+     -9.811
+    ],
+    [
+     "collect_donation",
+     -10.197
+    ]
+   ],
+   "nli": {
+    "collect_donation": {
+     "REALIZES_OPERATION": 0.0003,
+     "CHECKS_PRECONDITION": 0.0016,
+     "OBSERVES_STATE": 0.0004,
+     "COMMUNICATES": 0.0014,
+     "label": "UNRELATED",
+     "max_e": 0.0016
+    },
+    "read_interview_status": {
+     "REALIZES_OPERATION": 0.0003,
+     "CHECKS_PRECONDITION": 0.0005,
+     "OBSERVES_STATE": 0.0006,
+     "COMMUNICATES": 0.0006,
+     "label": "UNRELATED",
+     "max_e": 0.0006
+    },
+    "read_haemoglobin": {
+     "REALIZES_OPERATION": 0.0002,
+     "CHECKS_PRECONDITION": 0.0008,
+     "OBSERVES_STATE": 0.0005,
+     "COMMUNICATES": 0.0004,
+     "label": "UNRELATED",
+     "max_e": 0.0008
+    },
+    "notify_donor": {
+     "REALIZES_OPERATION": 0.0003,
+     "CHECKS_PRECONDITION": 0.0009,
+     "OBSERVES_STATE": 0.0003,
+     "COMMUNICATES": 0.0011,
+     "label": "UNRELATED",
+     "max_e": 0.0011
+    }
+   }
+  },
+  {
+   "span": "screening interview",
+   "b_features": {
+    "dep": null,
+    "mark": null,
+    "deontic": null,
+    "neg": null,
+    "passive": null,
+    "imperative": null,
+    "root": null,
+    "role_hypothesis": "UNKNOWN",
+    "even": null
+   },
+   "embed_rank": [
+    [
+     "read_interview_status",
+     0.5848
+    ],
+    [
+     "notify_donor",
+     0.4325
+    ],
+    [
+     "read_haemoglobin",
+     0.4116
+    ],
+    [
+     "collect_donation",
+     0.4113
+    ]
+   ],
+   "rerank_rank": [
+    [
+     "read_interview_status",
+     1.263
+    ],
+    [
+     "collect_donation",
+     -10.193
+    ],
+    [
+     "read_haemoglobin",
+     -10.193
+    ],
+    [
+     "notify_donor",
+     -10.195
+    ]
+   ],
+   "nli": {
+    "collect_donation": {
+     "REALIZES_OPERATION": 0.0013,
+     "CHECKS_PRECONDITION": 0.0032,
+     "OBSERVES_STATE": 0.0001,
+     "COMMUNICATES": 0.0002,
+     "label": "UNRELATED",
+     "max_e": 0.0032
+    },
+    "read_interview_status": {
+     "REALIZES_OPERATION": 0.9909,
+     "CHECKS_PRECONDITION": 0.9928,
+     "OBSERVES_STATE": 0.9949,
+     "COMMUNICATES": 0.9899,
+     "label": "OBSERVES_STATE",
+     "max_e": 0.9949
+    },
+    "read_haemoglobin": {
+     "REALIZES_OPERATION": 0.0012,
+     "CHECKS_PRECONDITION": 0.001,
+     "OBSERVES_STATE": 0.0049,
+     "COMMUNICATES": 0.0023,
+     "label": "UNRELATED",
+     "max_e": 0.0049
+    },
+    "notify_donor": {
+     "REALIZES_OPERATION": 0.0009,
+     "CHECKS_PRECONDITION": 0.0039,
+     "OBSERVES_STATE": 0.0029,
+     "COMMUNICATES": 0.0112,
+     "label": "UNRELATED",
+     "max_e": 0.0112
+    }
+   }
+  },
+  {
+   "span": "the haemoglobin reading is above the threshold",
+   "b_features": {
+    "dep": "conj",
+    "mark": null,
+    "deontic": [],
+    "neg": false,
+    "passive": false,
+    "imperative": false,
+    "root": false,
+    "role_hypothesis": "STATE_OBSERVATION",
+    "even": false
+   },
+   "embed_rank": [
+    [
+     "read_haemoglobin",
+     0.6646
+    ],
+    [
+     "read_interview_status",
+     0.518
+    ],
+    [
+     "collect_donation",
+     0.4908
+    ],
+    [
+     "notify_donor",
+     0.4216
+    ]
+   ],
+   "rerank_rank": [
+    [
+     "read_haemoglobin",
+     -4.433
+    ],
+    [
+     "notify_donor",
+     -8.295
+    ],
+    [
+     "read_interview_status",
+     -10.035
+    ],
+    [
+     "collect_donation",
+     -10.09
+    ]
+   ],
+   "nli": {
+    "collect_donation": {
+     "REALIZES_OPERATION": 0.0014,
+     "CHECKS_PRECONDITION": 0.0014,
+     "OBSERVES_STATE": 0.0007,
+     "COMMUNICATES": 0.0006,
+     "label": "UNRELATED",
+     "max_e": 0.0014
+    },
+    "read_interview_status": {
+     "REALIZES_OPERATION": 0.0008,
+     "CHECKS_PRECONDITION": 0.0005,
+     "OBSERVES_STATE": 0.0007,
+     "COMMUNICATES": 0.0009,
+     "label": "UNRELATED",
+     "max_e": 0.0009
+    },
+    "read_haemoglobin": {
+     "REALIZES_OPERATION": 0.0024,
+     "CHECKS_PRECONDITION": 0.0008,
+     "OBSERVES_STATE": 0.0033,
+     "COMMUNICATES": 0.0006,
+     "label": "UNRELATED",
+     "max_e": 0.0033
+    },
+    "notify_donor": {
+     "REALIZES_OPERATION": 0.0003,
+     "CHECKS_PRECONDITION": 0.0003,
+     "OBSERVES_STATE": 0.0004,
+     "COMMUNICATES": 0.0008,
+     "label": "UNRELATED",
+     "max_e": 0.0008
+    }
+   }
+  },
+  {
+   "span": "haemoglobin reading",
+   "b_features": {
+    "dep": null,
+    "mark": null,
+    "deontic": null,
+    "neg": null,
+    "passive": null,
+    "imperative": null,
+    "root": null,
+    "role_hypothesis": "UNKNOWN",
+    "even": null
+   },
+   "embed_rank": [
+    [
+     "read_haemoglobin",
+     0.7153
+    ],
+    [
+     "read_interview_status",
+     0.5353
+    ],
+    [
+     "collect_donation",
+     0.4844
+    ],
+    [
+     "notify_donor",
+     0.3866
+    ]
+   ],
+   "rerank_rank": [
+    [
+     "read_haemoglobin",
+     2.816
+    ],
+    [
+     "read_interview_status",
+     -8.82
+    ],
+    [
+     "notify_donor",
+     -9.829
+    ],
+    [
+     "collect_donation",
+     -10.141
+    ]
+   ],
+   "nli": {
+    "collect_donation": {
+     "REALIZES_OPERATION": 0.0076,
+     "CHECKS_PRECONDITION": 0.007,
+     "OBSERVES_STATE": 0.0194,
+     "COMMUNICATES": 0.182,
+     "label": "UNRELATED",
+     "max_e": 0.182
+    },
+    "read_interview_status": {
+     "REALIZES_OPERATION": 0.0007,
+     "CHECKS_PRECONDITION": 0.0375,
+     "OBSERVES_STATE": 0.0084,
+     "COMMUNICATES": 0.0005,
+     "label": "UNRELATED",
+     "max_e": 0.0375
+    },
+    "read_haemoglobin": {
+     "REALIZES_OPERATION": 0.9938,
+     "CHECKS_PRECONDITION": 0.0037,
+     "OBSERVES_STATE": 0.9938,
+     "COMMUNICATES": 0.9914,
+     "label": "OBSERVES_STATE",
+     "max_e": 0.9938
+    },
+    "notify_donor": {
+     "REALIZES_OPERATION": 0.0001,
+     "CHECKS_PRECONDITION": 0.0009,
+     "OBSERVES_STATE": 0.0004,
+     "COMMUNICATES": 0.0024,
+     "label": "UNRELATED",
+     "max_e": 0.0024
+    }
+   }
+  },
+  {
+   "span": "Notify the donor of any deferral",
+   "b_features": {
+    "dep": "root",
+    "mark": null,
+    "deontic": [],
+    "neg": false,
+    "passive": false,
+    "imperative": true,
+    "root": true,
+    "role_hypothesis": "OPERATION_EFFECT",
+    "even": false
+   },
+   "embed_rank": [
+    [
+     "notify_donor",
+     0.8064
+    ],
+    [
+     "collect_donation",
+     0.6085
+    ],
+    [
+     "read_interview_status",
+     0.579
+    ],
+    [
+     "read_haemoglobin",
+     0.5146
+    ]
+   ],
+   "rerank_rank": [
+    [
+     "notify_donor",
+     5.182
+    ],
+    [
+     "collect_donation",
+     -5.843
+    ],
+    [
+     "read_interview_status",
+     -5.972
+    ],
+    [
+     "read_haemoglobin",
+     -7.287
+    ]
+   ],
+   "nli": {
+    "collect_donation": {
+     "REALIZES_OPERATION": 0.0004,
+     "CHECKS_PRECONDITION": 0.0009,
+     "OBSERVES_STATE": 0.0001,
+     "COMMUNICATES": 0.0002,
+     "label": "UNRELATED",
+     "max_e": 0.0009
+    },
+    "read_interview_status": {
+     "REALIZES_OPERATION": 0.0003,
+     "CHECKS_PRECONDITION": 0.0007,
+     "OBSERVES_STATE": 0.0052,
+     "COMMUNICATES": 0.0,
+     "label": "UNRELATED",
+     "max_e": 0.0052
+    },
+    "read_haemoglobin": {
+     "REALIZES_OPERATION": 0.0002,
+     "CHECKS_PRECONDITION": 0.0002,
+     "OBSERVES_STATE": 0.0001,
+     "COMMUNICATES": 0.0001,
+     "label": "UNRELATED",
+     "max_e": 0.0002
+    },
+    "notify_donor": {
+     "REALIZES_OPERATION": 0.9939,
+     "CHECKS_PRECONDITION": 0.6776,
+     "OBSERVES_STATE": 0.9904,
+     "COMMUNICATES": 0.9865,
+     "label": "REALIZES_OPERATION",
+     "max_e": 0.9939
+    }
+   }
+  },
+  {
+   "span": "donor of any deferral",
+   "b_features": {
+    "dep": null,
+    "mark": null,
+    "deontic": null,
+    "neg": null,
+    "passive": null,
+    "imperative": null,
+    "root": null,
+    "role_hypothesis": "UNKNOWN",
+    "even": null
+   },
+   "embed_rank": [
+    [
+     "notify_donor",
+     0.6985
+    ],
+    [
+     "collect_donation",
+     0.6013
+    ],
+    [
+     "read_interview_status",
+     0.5388
+    ],
+    [
+     "read_haemoglobin",
+     0.5087
+    ]
+   ],
+   "rerank_rank": [
+    [
+     "notify_donor",
+     1.443
+    ],
+    [
+     "collect_donation",
+     -7.185
+    ],
+    [
+     "read_haemoglobin",
+     -7.405
+    ],
+    [
+     "read_interview_status",
+     -7.589
+    ]
+   ],
+   "nli": {
+    "collect_donation": {
+     "REALIZES_OPERATION": 0.1625,
+     "CHECKS_PRECONDITION": 0.0071,
+     "OBSERVES_STATE": 0.0209,
+     "COMMUNICATES": 0.03,
+     "label": "UNRELATED",
+     "max_e": 0.1625
+    },
+    "read_interview_status": {
+     "REALIZES_OPERATION": 0.0029,
+     "CHECKS_PRECONDITION": 0.01,
+     "OBSERVES_STATE": 0.0665,
+     "COMMUNICATES": 0.001,
+     "label": "UNRELATED",
+     "max_e": 0.0665
+    },
+    "read_haemoglobin": {
+     "REALIZES_OPERATION": 0.0171,
+     "CHECKS_PRECONDITION": 0.0011,
+     "OBSERVES_STATE": 0.0043,
+     "COMMUNICATES": 0.0052,
+     "label": "UNRELATED",
+     "max_e": 0.0171
+    },
+    "notify_donor": {
+     "REALIZES_OPERATION": 0.9471,
+     "CHECKS_PRECONDITION": 0.8451,
+     "OBSERVES_STATE": 0.9734,
+     "COMMUNICATES": 0.983,
+     "label": "COMMUNICATES",
+     "max_e": 0.983
+    }
+   }
+  }
+ ]
+}

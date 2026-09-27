@@ -1,0 +1,66 @@
+{
+ "case_id": "badge_office",
+ "model": "ministral-14b-latest",
+ "served_model": "ministral-14b-latest",
+ "events": [
+  {
+   "span": "the visitor's identity document has been scanned",
+   "role": "STATE_OBSERVATION",
+   "governed_tools": [
+    "scan_document"
+   ]
+  },
+  {
+   "span": "Issue the temporary badge for visitor V-55",
+   "role": "OPERATION_EFFECT",
+   "governed_tools": [
+    "issue_badge"
+   ]
+  },
+  {
+   "span": "The same scan is required before issuing the parking token",
+   "role": "PRECONDITION_CHECK",
+   "governed_tools": [
+    "scan_document"
+   ]
+  },
+  {
+   "span": "issuing the parking token",
+   "role": "OPERATION_EFFECT",
+   "governed_tools": [
+    "issue_token"
+   ]
+  },
+  {
+   "span": "The badge printer prints badges but does not register access",
+   "role": "OTHER",
+   "governed_tools": []
+  }
+ ],
+ "edges": [
+  {
+   "condition_span": "the visitor's identity document has been scanned",
+   "operation_span": "Issue the temporary badge for visitor V-55",
+   "relation": "ORDER_BEFORE"
+  },
+  {
+   "condition_span": "The same scan is required before issuing the parking token",
+   "operation_span": "issuing the parking token",
+   "relation": "GATE"
+  }
+ ],
+ "format_errors": [],
+ "parse_error": "",
+ "finish_reason": "stop",
+ "usage": {
+  "prompt_tokens": 536,
+  "total_tokens": 860,
+  "completion_tokens": 324,
+  "prompt_tokens_details": {
+   "cached_tokens": 0
+  },
+  "service_tier": "standard"
+ },
+ "latency": 2.917,
+ "cached": false
+}

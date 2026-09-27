@@ -1,0 +1,1109 @@
+{
+ "case_id": "library_return",
+ "renderings_without_names": {
+  "scan_return": "Registers a returned volume by scanning its barcode and updates the loan record. Input parameters: volume_id: string. Output: registered: boolean.",
+  "release_hold": "Removes the pending hold from the borrower's account. Input parameters: borrower_id: string. Output: released: boolean.",
+  "inspect_volume": "Records the conservation desk's inspection verdict for a volume: accepted for shelving or rejected for treatment. Input parameters: volume_id: string. Output: verdict: string.",
+  "shelve_volume": "Places a volume on its designated shelf and updates the stack map. Input parameters: volume_id: string, shelf: string. Output: shelved: boolean.",
+  "read_hold_queue": "Reads the list of active holds on a borrower's account. Input parameters: borrower_id: string. Output: holds: array."
+ },
+ "tool_type_probe": {
+  "scan_return": {
+   "mutate": 0.9763,
+   "verify": 0.7621,
+   "read": 0.0,
+   "message": 0.9632,
+   "top": "mutate"
+  },
+  "release_hold": {
+   "mutate": 0.9647,
+   "verify": 0.77,
+   "read": 0.0,
+   "message": 0.4563,
+   "top": "mutate"
+  },
+  "inspect_volume": {
+   "mutate": 0.0022,
+   "verify": 0.9655,
+   "read": 0.0001,
+   "message": 0.9201,
+   "top": "verify"
+  },
+  "shelve_volume": {
+   "mutate": 0.0022,
+   "verify": 0.0343,
+   "read": 0.0,
+   "message": 0.0111,
+   "top": "verify"
+  },
+  "read_hold_queue": {
+   "mutate": 0.0007,
+   "verify": 0.0081,
+   "read": 0.001,
+   "message": 0.0429,
+   "top": "message"
+  }
+ },
+ "gold_span_grounding": [
+  {
+   "span": "the returned volume R-9 is scanned",
+   "embed_rank": [
+    [
+     "inspect_volume",
+     0.6129
+    ],
+    [
+     "scan_return",
+     0.6065
+    ],
+    [
+     "shelve_volume",
+     0.5221
+    ],
+    [
+     "read_hold_queue",
+     0.4348
+    ],
+    [
+     "release_hold",
+     0.3862
+    ]
+   ],
+   "rerank_rank": [
+    [
+     "scan_return",
+     -0.969
+    ],
+    [
+     "inspect_volume",
+     -8.199
+    ],
+    [
+     "shelve_volume",
+     -8.749
+    ],
+    [
+     "release_hold",
+     -9.321
+    ],
+    [
+     "read_hold_queue",
+     -10.19
+    ]
+   ],
+   "nli": {
+    "scan_return": {
+     "REALIZES_OPERATION": 0.0006,
+     "CHECKS_PRECONDITION": 0.0008,
+     "OBSERVES_STATE": 0.0007,
+     "COMMUNICATES": 0.0011,
+     "label": "UNRELATED",
+     "max_e": 0.0011
+    },
+    "release_hold": {
+     "REALIZES_OPERATION": 0.0005,
+     "CHECKS_PRECONDITION": 0.0015,
+     "OBSERVES_STATE": 0.0008,
+     "COMMUNICATES": 0.0003,
+     "label": "UNRELATED",
+     "max_e": 0.0015
+    },
+    "inspect_volume": {
+     "REALIZES_OPERATION": 0.0004,
+     "CHECKS_PRECONDITION": 0.0014,
+     "OBSERVES_STATE": 0.0011,
+     "COMMUNICATES": 0.0012,
+     "label": "UNRELATED",
+     "max_e": 0.0014
+    },
+    "shelve_volume": {
+     "REALIZES_OPERATION": 0.0005,
+     "CHECKS_PRECONDITION": 0.0007,
+     "OBSERVES_STATE": 0.0007,
+     "COMMUNICATES": 0.0001,
+     "label": "UNRELATED",
+     "max_e": 0.0007
+    },
+    "read_hold_queue": {
+     "REALIZES_OPERATION": 0.0001,
+     "CHECKS_PRECONDITION": 0.0006,
+     "OBSERVES_STATE": 0.0001,
+     "COMMUNICATES": 0.0,
+     "label": "UNRELATED",
+     "max_e": 0.0006
+    }
+   }
+  },
+  {
+   "span": "release the hold on the borrower's account",
+   "embed_rank": [
+    [
+     "release_hold",
+     0.8275
+    ],
+    [
+     "read_hold_queue",
+     0.6464
+    ],
+    [
+     "scan_return",
+     0.4998
+    ],
+    [
+     "shelve_volume",
+     0.4742
+    ],
+    [
+     "inspect_volume",
+     0.4299
+    ]
+   ],
+   "rerank_rank": [
+    [
+     "release_hold",
+     4.109
+    ],
+    [
+     "read_hold_queue",
+     0.576
+    ],
+    [
+     "scan_return",
+     -8.053
+    ],
+    [
+     "shelve_volume",
+     -10.174
+    ],
+    [
+     "inspect_volume",
+     -10.197
+    ]
+   ],
+   "nli": {
+    "scan_return": {
+     "REALIZES_OPERATION": 0.0004,
+     "CHECKS_PRECONDITION": 0.0147,
+     "OBSERVES_STATE": 0.0141,
+     "COMMUNICATES": 0.003,
+     "label": "UNRELATED",
+     "max_e": 0.0147
+    },
+    "release_hold": {
+     "REALIZES_OPERATION": 0.9778,
+     "CHECKS_PRECONDITION": 0.8195,
+     "OBSERVES_STATE": 0.9665,
+     "COMMUNICATES": 0.9767,
+     "label": "REALIZES_OPERATION",
+     "max_e": 0.9778
+    },
+    "inspect_volume": {
+     "REALIZES_OPERATION": 0.0,
+     "CHECKS_PRECONDITION": 0.0056,
+     "OBSERVES_STATE": 0.0001,
+     "COMMUNICATES": 0.0,
+     "label": "UNRELATED",
+     "max_e": 0.0056
+    },
+    "shelve_volume": {
+     "REALIZES_OPERATION": 0.0001,
+     "CHECKS_PRECONDITION": 0.0005,
+     "OBSERVES_STATE": 0.0002,
+     "COMMUNICATES": 0.0002,
+     "label": "UNRELATED",
+     "max_e": 0.0005
+    },
+    "read_hold_queue": {
+     "REALIZES_OPERATION": 0.0008,
+     "CHECKS_PRECONDITION": 0.0048,
+     "OBSERVES_STATE": 0.001,
+     "COMMUNICATES": 0.0001,
+     "label": "UNRELATED",
+     "max_e": 0.0048
+    }
+   }
+  },
+  {
+   "span": "Rare volumes must be inspected by the conservation desk",
+   "embed_rank": [
+    [
+     "inspect_volume",
+     0.6336
+    ],
+    [
+     "shelve_volume",
+     0.4994
+    ],
+    [
+     "scan_return",
+     0.4802
+    ],
+    [
+     "read_hold_queue",
+     0.4076
+    ],
+    [
+     "release_hold",
+     0.3693
+    ]
+   ],
+   "rerank_rank": [
+    [
+     "inspect_volume",
+     -0.234
+    ],
+    [
+     "scan_return",
+     -9.101
+    ],
+    [
+     "shelve_volume",
+     -9.921
+    ],
+    [
+     "read_hold_queue",
+     -10.194
+    ],
+    [
+     "release_hold",
+     -10.194
+    ]
+   ],
+   "nli": {
+    "scan_return": {
+     "REALIZES_OPERATION": 0.0012,
+     "CHECKS_PRECONDITION": 0.0027,
+     "OBSERVES_STATE": 0.0037,
+     "COMMUNICATES": 0.0008,
+     "label": "UNRELATED",
+     "max_e": 0.0037
+    },
+    "release_hold": {
+     "REALIZES_OPERATION": 0.001,
+     "CHECKS_PRECONDITION": 0.0219,
+     "OBSERVES_STATE": 0.0041,
+     "COMMUNICATES": 0.0006,
+     "label": "UNRELATED",
+     "max_e": 0.0219
+    },
+    "inspect_volume": {
+     "REALIZES_OPERATION": 0.0055,
+     "CHECKS_PRECONDITION": 0.0055,
+     "OBSERVES_STATE": 0.0091,
+     "COMMUNICATES": 0.0061,
+     "label": "UNRELATED",
+     "max_e": 0.0091
+    },
+    "shelve_volume": {
+     "REALIZES_OPERATION": 0.0003,
+     "CHECKS_PRECONDITION": 0.0006,
+     "OBSERVES_STATE": 0.0007,
+     "COMMUNICATES": 0.0002,
+     "label": "UNRELATED",
+     "max_e": 0.0007
+    },
+    "read_hold_queue": {
+     "REALIZES_OPERATION": 0.001,
+     "CHECKS_PRECONDITION": 0.0015,
+     "OBSERVES_STATE": 0.0027,
+     "COMMUNICATES": 0.0006,
+     "label": "UNRELATED",
+     "max_e": 0.0027
+    }
+   }
+  },
+  {
+   "span": "re-shelving",
+   "embed_rank": [
+    [
+     "shelve_volume",
+     0.597
+    ],
+    [
+     "inspect_volume",
+     0.4919
+    ],
+    [
+     "scan_return",
+     0.4139
+    ],
+    [
+     "release_hold",
+     0.4014
+    ],
+    [
+     "read_hold_queue",
+     0.3666
+    ]
+   ],
+   "rerank_rank": [
+    [
+     "shelve_volume",
+     -6.324
+    ],
+    [
+     "inspect_volume",
+     -7.32
+    ],
+    [
+     "release_hold",
+     -9.564
+    ],
+    [
+     "scan_return",
+     -10.154
+    ],
+    [
+     "read_hold_queue",
+     -10.197
+    ]
+   ],
+   "nli": {
+    "scan_return": {
+     "REALIZES_OPERATION": 0.3018,
+     "CHECKS_PRECONDITION": 0.5996,
+     "OBSERVES_STATE": 0.9349,
+     "COMMUNICATES": 0.7682,
+     "label": "OBSERVES_STATE",
+     "max_e": 0.9349
+    },
+    "release_hold": {
+     "REALIZES_OPERATION": 0.2744,
+     "CHECKS_PRECONDITION": 0.1256,
+     "OBSERVES_STATE": 0.8595,
+     "COMMUNICATES": 0.9762,
+     "label": "COMMUNICATES",
+     "max_e": 0.9762
+    },
+    "inspect_volume": {
+     "REALIZES_OPERATION": 0.0384,
+     "CHECKS_PRECONDITION": 0.1727,
+     "OBSERVES_STATE": 0.9905,
+     "COMMUNICATES": 0.9885,
+     "label": "OBSERVES_STATE",
+     "max_e": 0.9905
+    },
+    "shelve_volume": {
+     "REALIZES_OPERATION": 0.9946,
+     "CHECKS_PRECONDITION": 0.1212,
+     "OBSERVES_STATE": 0.9694,
+     "COMMUNICATES": 0.9898,
+     "label": "REALIZES_OPERATION",
+     "max_e": 0.9946
+    },
+    "read_hold_queue": {
+     "REALIZES_OPERATION": 0.0002,
+     "CHECKS_PRECONDITION": 0.0008,
+     "OBSERVES_STATE": 0.0027,
+     "COMMUNICATES": 0.0001,
+     "label": "UNRELATED",
+     "max_e": 0.0027
+    }
+   }
+  }
+ ],
+ "b_candidate_grounding": [
+  {
+   "span": "After the returned volume R-9 is scanned",
+   "b_features": {
+    "dep": "advcl",
+    "mark": "after",
+    "deontic": [],
+    "neg": false,
+    "passive": true,
+    "imperative": false,
+    "root": false,
+    "role_hypothesis": "OPERATION_EFFECT",
+    "even": false
+   },
+   "embed_rank": [
+    [
+     "scan_return",
+     0.6225
+    ],
+    [
+     "inspect_volume",
+     0.6012
+    ],
+    [
+     "shelve_volume",
+     0.5256
+    ],
+    [
+     "read_hold_queue",
+     0.428
+    ],
+    [
+     "release_hold",
+     0.4093
+    ]
+   ],
+   "rerank_rank": [
+    [
+     "scan_return",
+     -2.494
+    ],
+    [
+     "inspect_volume",
+     -8.381
+    ],
+    [
+     "shelve_volume",
+     -9.032
+    ],
+    [
+     "release_hold",
+     -9.409
+    ],
+    [
+     "read_hold_queue",
+     -10.195
+    ]
+   ],
+   "nli": {
+    "scan_return": {
+     "REALIZES_OPERATION": 0.0006,
+     "CHECKS_PRECONDITION": 0.0012,
+     "OBSERVES_STATE": 0.0008,
+     "COMMUNICATES": 0.0019,
+     "label": "UNRELATED",
+     "max_e": 0.0019
+    },
+    "release_hold": {
+     "REALIZES_OPERATION": 0.0001,
+     "CHECKS_PRECONDITION": 0.0007,
+     "OBSERVES_STATE": 0.0005,
+     "COMMUNICATES": 0.0003,
+     "label": "UNRELATED",
+     "max_e": 0.0007
+    },
+    "inspect_volume": {
+     "REALIZES_OPERATION": 0.0004,
+     "CHECKS_PRECONDITION": 0.001,
+     "OBSERVES_STATE": 0.0008,
+     "COMMUNICATES": 0.0013,
+     "label": "UNRELATED",
+     "max_e": 0.0013
+    },
+    "shelve_volume": {
+     "REALIZES_OPERATION": 0.0004,
+     "CHECKS_PRECONDITION": 0.0007,
+     "OBSERVES_STATE": 0.0006,
+     "COMMUNICATES": 0.0004,
+     "label": "UNRELATED",
+     "max_e": 0.0007
+    },
+    "read_hold_queue": {
+     "REALIZES_OPERATION": 0.0001,
+     "CHECKS_PRECONDITION": 0.0005,
+     "OBSERVES_STATE": 0.0002,
+     "COMMUNICATES": 0.0001,
+     "label": "UNRELATED",
+     "max_e": 0.0005
+    }
+   }
+  },
+  {
+   "span": "release the hold on the borrower's account",
+   "b_features": {
+    "dep": "root",
+    "mark": null,
+    "deontic": [],
+    "neg": false,
+    "passive": false,
+    "imperative": true,
+    "root": true,
+    "role_hypothesis": "OPERATION_EFFECT",
+    "even": false
+   },
+   "embed_rank": [
+    [
+     "release_hold",
+     0.8275
+    ],
+    [
+     "read_hold_queue",
+     0.6464
+    ],
+    [
+     "scan_return",
+     0.4998
+    ],
+    [
+     "shelve_volume",
+     0.4742
+    ],
+    [
+     "inspect_volume",
+     0.4299
+    ]
+   ],
+   "rerank_rank": [
+    [
+     "release_hold",
+     4.109
+    ],
+    [
+     "read_hold_queue",
+     0.576
+    ],
+    [
+     "scan_return",
+     -8.053
+    ],
+    [
+     "shelve_volume",
+     -10.174
+    ],
+    [
+     "inspect_volume",
+     -10.197
+    ]
+   ],
+   "nli": {
+    "scan_return": {
+     "REALIZES_OPERATION": 0.0004,
+     "CHECKS_PRECONDITION": 0.0147,
+     "OBSERVES_STATE": 0.0141,
+     "COMMUNICATES": 0.003,
+     "label": "UNRELATED",
+     "max_e": 0.0147
+    },
+    "release_hold": {
+     "REALIZES_OPERATION": 0.9778,
+     "CHECKS_PRECONDITION": 0.8195,
+     "OBSERVES_STATE": 0.9665,
+     "COMMUNICATES": 0.9767,
+     "label": "REALIZES_OPERATION",
+     "max_e": 0.9778
+    },
+    "inspect_volume": {
+     "REALIZES_OPERATION": 0.0,
+     "CHECKS_PRECONDITION": 0.0056,
+     "OBSERVES_STATE": 0.0001,
+     "COMMUNICATES": 0.0,
+     "label": "UNRELATED",
+     "max_e": 0.0056
+    },
+    "shelve_volume": {
+     "REALIZES_OPERATION": 0.0001,
+     "CHECKS_PRECONDITION": 0.0005,
+     "OBSERVES_STATE": 0.0002,
+     "COMMUNICATES": 0.0002,
+     "label": "UNRELATED",
+     "max_e": 0.0005
+    },
+    "read_hold_queue": {
+     "REALIZES_OPERATION": 0.0008,
+     "CHECKS_PRECONDITION": 0.0048,
+     "OBSERVES_STATE": 0.001,
+     "COMMUNICATES": 0.0001,
+     "label": "UNRELATED",
+     "max_e": 0.0048
+    }
+   }
+  },
+  {
+   "span": "borrower's account",
+   "b_features": {
+    "dep": null,
+    "mark": null,
+    "deontic": null,
+    "neg": null,
+    "passive": null,
+    "imperative": null,
+    "root": null,
+    "role_hypothesis": "UNKNOWN",
+    "even": null
+   },
+   "embed_rank": [
+    [
+     "read_hold_queue",
+     0.6933
+    ],
+    [
+     "release_hold",
+     0.6685
+    ],
+    [
+     "scan_return",
+     0.4987
+    ],
+    [
+     "inspect_volume",
+     0.4603
+    ],
+    [
+     "shelve_volume",
+     0.4135
+    ]
+   ],
+   "rerank_rank": [
+    [
+     "read_hold_queue",
+     1.663
+    ],
+    [
+     "release_hold",
+     1.386
+    ],
+    [
+     "scan_return",
+     -4.998
+    ],
+    [
+     "inspect_volume",
+     -10.195
+    ],
+    [
+     "shelve_volume",
+     -10.196
+    ]
+   ],
+   "nli": {
+    "scan_return": {
+     "REALIZES_OPERATION": 0.7041,
+     "CHECKS_PRECONDITION": 0.1513,
+     "OBSERVES_STATE": 0.9716,
+     "COMMUNICATES": 0.909,
+     "label": "OBSERVES_STATE",
+     "max_e": 0.9716
+    },
+    "release_hold": {
+     "REALIZES_OPERATION": 0.9491,
+     "CHECKS_PRECONDITION": 0.2957,
+     "OBSERVES_STATE": 0.9813,
+     "COMMUNICATES": 0.9861,
+     "label": "COMMUNICATES",
+     "max_e": 0.9861
+    },
+    "inspect_volume": {
+     "REALIZES_OPERATION": 0.0001,
+     "CHECKS_PRECONDITION": 0.0006,
+     "OBSERVES_STATE": 0.0001,
+     "COMMUNICATES": 0.0,
+     "label": "UNRELATED",
+     "max_e": 0.0006
+    },
+    "shelve_volume": {
+     "REALIZES_OPERATION": 0.0007,
+     "CHECKS_PRECONDITION": 0.0007,
+     "OBSERVES_STATE": 0.0002,
+     "COMMUNICATES": 0.0001,
+     "label": "UNRELATED",
+     "max_e": 0.0007
+    },
+    "read_hold_queue": {
+     "REALIZES_OPERATION": 0.9837,
+     "CHECKS_PRECONDITION": 0.9758,
+     "OBSERVES_STATE": 0.9949,
+     "COMMUNICATES": 0.9639,
+     "label": "OBSERVES_STATE",
+     "max_e": 0.9949
+    }
+   }
+  },
+  {
+   "span": "Rare volumes must be inspected by the conservation desk",
+   "b_features": {
+    "dep": "root",
+    "mark": null,
+    "deontic": [
+     "must"
+    ],
+    "neg": false,
+    "passive": true,
+    "imperative": false,
+    "root": true,
+    "role_hypothesis": "OPERATION_EFFECT",
+    "even": false
+   },
+   "embed_rank": [
+    [
+     "inspect_volume",
+     0.6336
+    ],
+    [
+     "shelve_volume",
+     0.4994
+    ],
+    [
+     "scan_return",
+     0.4802
+    ],
+    [
+     "read_hold_queue",
+     0.4076
+    ],
+    [
+     "release_hold",
+     0.3693
+    ]
+   ],
+   "rerank_rank": [
+    [
+     "inspect_volume",
+     -0.234
+    ],
+    [
+     "scan_return",
+     -9.101
+    ],
+    [
+     "shelve_volume",
+     -9.921
+    ],
+    [
+     "read_hold_queue",
+     -10.194
+    ],
+    [
+     "release_hold",
+     -10.194
+    ]
+   ],
+   "nli": {
+    "scan_return": {
+     "REALIZES_OPERATION": 0.0012,
+     "CHECKS_PRECONDITION": 0.0027,
+     "OBSERVES_STATE": 0.0037,
+     "COMMUNICATES": 0.0008,
+     "label": "UNRELATED",
+     "max_e": 0.0037
+    },
+    "release_hold": {
+     "REALIZES_OPERATION": 0.001,
+     "CHECKS_PRECONDITION": 0.0219,
+     "OBSERVES_STATE": 0.0041,
+     "COMMUNICATES": 0.0006,
+     "label": "UNRELATED",
+     "max_e": 0.0219
+    },
+    "inspect_volume": {
+     "REALIZES_OPERATION": 0.0055,
+     "CHECKS_PRECONDITION": 0.0055,
+     "OBSERVES_STATE": 0.0091,
+     "COMMUNICATES": 0.0061,
+     "label": "UNRELATED",
+     "max_e": 0.0091
+    },
+    "shelve_volume": {
+     "REALIZES_OPERATION": 0.0003,
+     "CHECKS_PRECONDITION": 0.0006,
+     "OBSERVES_STATE": 0.0007,
+     "COMMUNICATES": 0.0002,
+     "label": "UNRELATED",
+     "max_e": 0.0007
+    },
+    "read_hold_queue": {
+     "REALIZES_OPERATION": 0.001,
+     "CHECKS_PRECONDITION": 0.0015,
+     "OBSERVES_STATE": 0.0027,
+     "COMMUNICATES": 0.0006,
+     "label": "UNRELATED",
+     "max_e": 0.0027
+    }
+   }
+  },
+  {
+   "span": "Rare volumes",
+   "b_features": {
+    "dep": null,
+    "mark": null,
+    "deontic": null,
+    "neg": null,
+    "passive": null,
+    "imperative": null,
+    "root": null,
+    "role_hypothesis": "UNKNOWN",
+    "even": null
+   },
+   "embed_rank": [
+    [
+     "shelve_volume",
+     0.5168
+    ],
+    [
+     "inspect_volume",
+     0.5138
+    ],
+    [
+     "scan_return",
+     0.4786
+    ],
+    [
+     "read_hold_queue",
+     0.4377
+    ],
+    [
+     "release_hold",
+     0.3604
+    ]
+   ],
+   "rerank_rank": [
+    [
+     "inspect_volume",
+     -5.871
+    ],
+    [
+     "scan_return",
+     -7.078
+    ],
+    [
+     "shelve_volume",
+     -8.136
+    ],
+    [
+     "read_hold_queue",
+     -10.197
+    ],
+    [
+     "release_hold",
+     -10.197
+    ]
+   ],
+   "nli": {
+    "scan_return": {
+     "REALIZES_OPERATION": 0.9849,
+     "CHECKS_PRECONDITION": 0.3718,
+     "OBSERVES_STATE": 0.9818,
+     "COMMUNICATES": 0.9813,
+     "label": "REALIZES_OPERATION",
+     "max_e": 0.9849
+    },
+    "release_hold": {
+     "REALIZES_OPERATION": 0.0006,
+     "CHECKS_PRECONDITION": 0.0017,
+     "OBSERVES_STATE": 0.0017,
+     "COMMUNICATES": 0.0008,
+     "label": "UNRELATED",
+     "max_e": 0.0017
+    },
+    "inspect_volume": {
+     "REALIZES_OPERATION": 0.0148,
+     "CHECKS_PRECONDITION": 0.0063,
+     "OBSERVES_STATE": 0.0337,
+     "COMMUNICATES": 0.0088,
+     "label": "UNRELATED",
+     "max_e": 0.0337
+    },
+    "shelve_volume": {
+     "REALIZES_OPERATION": 0.0097,
+     "CHECKS_PRECONDITION": 0.0012,
+     "OBSERVES_STATE": 0.0043,
+     "COMMUNICATES": 0.0066,
+     "label": "UNRELATED",
+     "max_e": 0.0097
+    },
+    "read_hold_queue": {
+     "REALIZES_OPERATION": 0.0001,
+     "CHECKS_PRECONDITION": 0.001,
+     "OBSERVES_STATE": 0.0006,
+     "COMMUNICATES": 0.0001,
+     "label": "UNRELATED",
+     "max_e": 0.001
+    }
+   }
+  },
+  {
+   "span": "conservation desk",
+   "b_features": {
+    "dep": null,
+    "mark": null,
+    "deontic": null,
+    "neg": null,
+    "passive": null,
+    "imperative": null,
+    "root": null,
+    "role_hypothesis": "UNKNOWN",
+    "even": null
+   },
+   "embed_rank": [
+    [
+     "inspect_volume",
+     0.5458
+    ],
+    [
+     "shelve_volume",
+     0.4518
+    ],
+    [
+     "scan_return",
+     0.391
+    ],
+    [
+     "read_hold_queue",
+     0.3698
+    ],
+    [
+     "release_hold",
+     0.3463
+    ]
+   ],
+   "rerank_rank": [
+    [
+     "inspect_volume",
+     3.029
+    ],
+    [
+     "read_hold_queue",
+     -10.193
+    ],
+    [
+     "release_hold",
+     -10.194
+    ],
+    [
+     "scan_return",
+     -10.197
+    ],
+    [
+     "shelve_volume",
+     -10.197
+    ]
+   ],
+   "nli": {
+    "scan_return": {
+     "REALIZES_OPERATION": 0.0008,
+     "CHECKS_PRECONDITION": 0.0042,
+     "OBSERVES_STATE": 0.0003,
+     "COMMUNICATES": 0.0004,
+     "label": "UNRELATED",
+     "max_e": 0.0042
+    },
+    "release_hold": {
+     "REALIZES_OPERATION": 0.0116,
+     "CHECKS_PRECONDITION": 0.0043,
+     "OBSERVES_STATE": 0.0105,
+     "COMMUNICATES": 0.0116,
+     "label": "UNRELATED",
+     "max_e": 0.0116
+    },
+    "inspect_volume": {
+     "REALIZES_OPERATION": 0.988,
+     "CHECKS_PRECONDITION": 0.7912,
+     "OBSERVES_STATE": 0.9929,
+     "COMMUNICATES": 0.9828,
+     "label": "OBSERVES_STATE",
+     "max_e": 0.9929
+    },
+    "shelve_volume": {
+     "REALIZES_OPERATION": 0.0036,
+     "CHECKS_PRECONDITION": 0.0013,
+     "OBSERVES_STATE": 0.0024,
+     "COMMUNICATES": 0.0004,
+     "label": "UNRELATED",
+     "max_e": 0.0036
+    },
+    "read_hold_queue": {
+     "REALIZES_OPERATION": 0.0015,
+     "CHECKS_PRECONDITION": 0.0014,
+     "OBSERVES_STATE": 0.0067,
+     "COMMUNICATES": 0.0001,
+     "label": "UNRELATED",
+     "max_e": 0.0067
+    }
+   }
+  },
+  {
+   "span": "before re-shelving",
+   "b_features": {
+    "dep": "advcl",
+    "mark": "before",
+    "deontic": [],
+    "neg": false,
+    "passive": false,
+    "imperative": false,
+    "root": false,
+    "role_hypothesis": "OPERATION_EFFECT",
+    "even": false
+   },
+   "embed_rank": [
+    [
+     "shelve_volume",
+     0.5807
+    ],
+    [
+     "inspect_volume",
+     0.5042
+    ],
+    [
+     "release_hold",
+     0.4494
+    ],
+    [
+     "scan_return",
+     0.4292
+    ],
+    [
+     "read_hold_queue",
+     0.3989
+    ]
+   ],
+   "rerank_rank": [
+    [
+     "inspect_volume",
+     -5.885
+    ],
+    [
+     "shelve_volume",
+     -7.198
+    ],
+    [
+     "release_hold",
+     -10.041
+    ],
+    [
+     "scan_return",
+     -10.195
+    ],
+    [
+     "read_hold_queue",
+     -10.196
+    ]
+   ],
+   "nli": {
+    "scan_return": {
+     "REALIZES_OPERATION": 0.0664,
+     "CHECKS_PRECONDITION": 0.6546,
+     "OBSERVES_STATE": 0.9572,
+     "COMMUNICATES": 0.0296,
+     "label": "OBSERVES_STATE",
+     "max_e": 0.9572
+    },
+    "release_hold": {
+     "REALIZES_OPERATION": 0.0306,
+     "CHECKS_PRECONDITION": 0.4339,
+     "OBSERVES_STATE": 0.3519,
+     "COMMUNICATES": 0.2832,
+     "label": "UNKNOWN",
+     "max_e": 0.4339
+    },
+    "inspect_volume": {
+     "REALIZES_OPERATION": 0.8627,
+     "CHECKS_PRECONDITION": 0.1437,
+     "OBSERVES_STATE": 0.992,
+     "COMMUNICATES": 0.9847,
+     "label": "OBSERVES_STATE",
+     "max_e": 0.992
+    },
+    "shelve_volume": {
+     "REALIZES_OPERATION": 0.9878,
+     "CHECKS_PRECONDITION": 0.1589,
+     "OBSERVES_STATE": 0.9681,
+     "COMMUNICATES": 0.8448,
+     "label": "REALIZES_OPERATION",
+     "max_e": 0.9878
+    },
+    "read_hold_queue": {
+     "REALIZES_OPERATION": 0.0005,
+     "CHECKS_PRECONDITION": 0.0026,
+     "OBSERVES_STATE": 0.0012,
+     "COMMUNICATES": 0.0004,
+     "label": "UNRELATED",
+     "max_e": 0.0026
+    }
+   }
+  }
+ ]
+}

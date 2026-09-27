@@ -1,0 +1,73 @@
+{
+ "case_id": "pushback_or",
+ "model": "ministral-14b-latest",
+ "served_model": "ministral-14b-latest",
+ "events": [
+  {
+   "span": "Push back flight F-224",
+   "role": "OPERATION_EFFECT",
+   "governed_tools": [
+    "push_back"
+   ]
+  },
+  {
+   "span": "the weight report has been signed",
+   "role": "STATE_OBSERVATION",
+   "governed_tools": [
+    "read_weight_report"
+   ]
+  },
+  {
+   "span": "a load controller waiver has been issued",
+   "role": "STATE_OBSERVATION",
+   "governed_tools": [
+    "read_waiver"
+   ]
+  },
+  {
+   "span": "Towing the aircraft to the hangar",
+   "role": "OPERATION_EFFECT",
+   "governed_tools": [
+    "tow_aircraft"
+   ]
+  },
+  {
+   "span": "does not release the parking brake",
+   "role": "STATE_OBSERVATION",
+   "governed_tools": [
+    "read_brake_state"
+   ]
+  }
+ ],
+ "edges": [
+  {
+   "condition_span": "the weight report has been signed",
+   "operation_span": "Push back flight F-224",
+   "relation": "GATE"
+  },
+  {
+   "condition_span": "a load controller waiver has been issued",
+   "operation_span": "Push back flight F-224",
+   "relation": "GATE"
+  },
+  {
+   "condition_span": "Towing the aircraft to the hangar",
+   "operation_span": "does not release the parking brake",
+   "relation": "ORDER_BEFORE"
+  }
+ ],
+ "format_errors": [],
+ "parse_error": "",
+ "finish_reason": "stop",
+ "usage": {
+  "prompt_tokens": 605,
+  "total_tokens": 977,
+  "completion_tokens": 372,
+  "prompt_tokens_details": {
+   "cached_tokens": 0
+  },
+  "service_tier": "standard"
+ },
+ "latency": 4.396,
+ "cached": false
+}

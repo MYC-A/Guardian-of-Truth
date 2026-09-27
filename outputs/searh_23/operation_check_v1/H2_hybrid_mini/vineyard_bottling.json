@@ -1,0 +1,127 @@
+{
+ "case_id": "vineyard_bottling",
+ "events": [
+  {
+   "span": "Bottle the reserve batch",
+   "role": "OPERATION_EFFECT",
+   "governed_tools": [
+    "bottle_batch"
+   ],
+   "dep": "root",
+   "mark": null
+  },
+  {
+   "span": "reserve batch",
+   "role": "OPERATION_EFFECT",
+   "governed_tools": [
+    "read_lab_result"
+   ],
+   "is_np": true,
+   "np_of_verb": "bottle",
+   "dep_in_verb": "obj",
+   "case_lemma": null
+  },
+  {
+   "span": "only if the laboratory stability test has passed",
+   "role": "PRECONDITION_CHECK",
+   "governed_tools": [
+    "read_lab_result"
+   ],
+   "dep": "advcl",
+   "mark": "if"
+  },
+  {
+   "span": "laboratory stability test",
+   "role": "STATE_OBSERVATION",
+   "governed_tools": [
+    "read_lab_result"
+   ],
+   "is_np": true,
+   "np_of_verb": "pass",
+   "dep_in_verb": "nsubj",
+   "case_lemma": null
+  },
+  {
+   "span": "Capping a bottle without the test voids lot L-7",
+   "role": "OPERATION_EFFECT",
+   "governed_tools": [
+    "cap_bottle"
+   ],
+   "dep": "root",
+   "mark": null
+  },
+  {
+   "span": "lot L-7",
+   "role": "OTHER",
+   "governed_tools": [],
+   "is_np": true,
+   "np_of_verb": "void",
+   "dep_in_verb": "obj",
+   "case_lemma": null
+  }
+ ],
+ "edges": [
+  {
+   "condition_span": "only if the laboratory stability test has passed",
+   "operation_span": "Bottle the reserve batch",
+   "relation": "GATE",
+   "source": "mark:if"
+  }
+ ],
+ "details": [
+  {
+   "span": "Bottle the reserve batch",
+   "resolver_label": "REALIZES_OPERATION",
+   "top3": [
+    "bottle_batch",
+    "read_lab_result",
+    "cap_bottle"
+   ]
+  },
+  {
+   "span": "reserve batch",
+   "resolver_label": "REALIZES_OPERATION",
+   "top3": [
+    "read_lab_result",
+    "bottle_batch",
+    "void_lot"
+   ]
+  },
+  {
+   "span": "only if the laboratory stability test has passed",
+   "resolver_label": "CHECKS_PRECONDITION",
+   "top3": [
+    "read_lab_result",
+    "void_lot",
+    "bottle_batch"
+   ]
+  },
+  {
+   "span": "laboratory stability test",
+   "resolver_label": "OBSERVES_STATE",
+   "top3": [
+    "read_lab_result",
+    "void_lot",
+    "bottle_batch"
+   ]
+  },
+  {
+   "span": "Capping a bottle without the test voids lot L-7",
+   "resolver_label": "REALIZES_OPERATION",
+   "top3": [
+    "cap_bottle",
+    "void_lot",
+    "bottle_batch"
+   ]
+  },
+  {
+   "span": "lot L-7",
+   "resolver_label": "UNRELATED",
+   "top3": [
+    "void_lot",
+    "read_lab_result",
+    "bottle_batch"
+   ]
+  }
+ ]
+}

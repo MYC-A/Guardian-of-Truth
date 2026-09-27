@@ -1,0 +1,59 @@
+{
+ "case_id": "railway_signal",
+ "model": "ministral-14b-latest",
+ "served_model": "ministral-14b-latest",
+ "events": [
+  {
+   "span": "Route clearance for signal M-4 must be given",
+   "role": "PRECONDITION_CHECK",
+   "governed_tools": [
+    "grant_route_clearance"
+   ]
+  },
+  {
+   "span": "the main signal is cleared",
+   "role": "OPERATION_EFFECT",
+   "governed_tools": [
+    "clear_main_signal"
+   ]
+  },
+  {
+   "span": "Clearing the shunt signal",
+   "role": "OPERATION_EFFECT",
+   "governed_tools": [
+    "clear_shunt_signal"
+   ]
+  },
+  {
+   "span": "does not authorize a train movement",
+   "role": "STATE_OBSERVATION",
+   "governed_tools": []
+  }
+ ],
+ "edges": [
+  {
+   "condition_span": "Route clearance for signal M-4 must be given",
+   "operation_span": "the main signal is cleared",
+   "relation": "GATE"
+  },
+  {
+   "condition_span": "Clearing the shunt signal",
+   "operation_span": "does not authorize a train movement",
+   "relation": "EVEN_IF"
+  }
+ ],
+ "format_errors": [],
+ "parse_error": "",
+ "finish_reason": "stop",
+ "usage": {
+  "prompt_tokens": 545,
+  "total_tokens": 816,
+  "completion_tokens": 271,
+  "prompt_tokens_details": {
+   "cached_tokens": 0
+  },
+  "service_tier": "standard"
+ },
+ "latency": 3.665,
+ "cached": false
+}

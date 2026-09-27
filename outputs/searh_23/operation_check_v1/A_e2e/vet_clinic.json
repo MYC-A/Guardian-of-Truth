@@ -1,0 +1,86 @@
+{
+ "case_id": "vet_clinic",
+ "model": "ministral-14b-latest",
+ "served_model": "ministral-14b-latest",
+ "events": [
+  {
+   "span": "Admit animal A-118",
+   "role": "OPERATION_EFFECT",
+   "governed_tools": [
+    "admit_animal"
+   ]
+  },
+  {
+   "span": "its vaccination certificate has been verified",
+   "role": "PRECONDITION_CHECK",
+   "governed_tools": [
+    "verify_vaccination"
+   ]
+  },
+  {
+   "span": "Confirm the owner's contact details",
+   "role": "PRECONDITION_CHECK",
+   "governed_tools": [
+    "read_owner_contact"
+   ]
+  },
+  {
+   "span": "before returning the animal",
+   "role": "PRECONDITION_CHECK",
+   "governed_tools": [
+    "read_owner_contact"
+   ]
+  },
+  {
+   "span": "returning the animal",
+   "role": "OPERATION_EFFECT",
+   "governed_tools": [
+    "return_animal"
+   ]
+  },
+  {
+   "span": "grooming",
+   "role": "OPERATION_EFFECT",
+   "governed_tools": [
+    "groom_animal"
+   ]
+  },
+  {
+   "span": "boarding",
+   "role": "OPERATION_EFFECT",
+   "governed_tools": [
+    "board_animal"
+   ]
+  }
+ ],
+ "edges": [
+  {
+   "condition_span": "its vaccination certificate has been verified",
+   "operation_span": "Admit animal A-118",
+   "relation": "GATE"
+  },
+  {
+   "condition_span": "Confirm the owner's contact details before returning the animal",
+   "operation_span": "returning the animal",
+   "relation": "GATE"
+  }
+ ],
+ "format_errors": [
+  "span_not_substring",
+  "cond_not_substring",
+  "cond_not_substring"
+ ],
+ "parse_error": "",
+ "finish_reason": "stop",
+ "usage": {
+  "prompt_tokens": 710,
+  "total_tokens": 1231,
+  "completion_tokens": 521,
+  "prompt_tokens_details": {
+   "cached_tokens": 0
+  },
+  "service_tier": "standard"
+ },
+ "latency": 10.244,
+ "cached": false
+}

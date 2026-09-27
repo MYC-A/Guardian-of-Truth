@@ -1,0 +1,682 @@
+{
+ "case_id": "grid_breaker",
+ "renderings_without_names": {
+  "close_breaker": "Closes the feeder breaker and energizes the feeder. Input parameters: feeder_id: string. Output: closed: boolean.",
+  "close_tie_breaker": "Closes the parallel tie breaker between feeders; does not energize a feeder by itself. Input parameters: feeder_id: string. Output: closed: boolean.",
+  "read_permit_status": "Reads whether an isolation permit for a feeder is currently active. Input parameters: feeder_id: string. Output: active: boolean.",
+  "read_feeder_state": "Reads the current energization state of a feeder. Input parameters: feeder_id: string. Output: state: string."
+ },
+ "tool_type_probe": {
+  "close_breaker": {
+   "mutate": 0.007,
+   "verify": 0.4573,
+   "read": 0.0001,
+   "message": 0.8933,
+   "top": "message"
+  },
+  "close_tie_breaker": {
+   "mutate": 0.0015,
+   "verify": 0.936,
+   "read": 0.001,
+   "message": 0.0375,
+   "top": "verify"
+  },
+  "read_permit_status": {
+   "mutate": 0.0008,
+   "verify": 0.9799,
+   "read": 0.0013,
+   "message": 0.0206,
+   "top": "verify"
+  },
+  "read_feeder_state": {
+   "mutate": 0.0017,
+   "verify": 0.0008,
+   "read": 0.0051,
+   "message": 0.0254,
+   "top": "message"
+  }
+ },
+ "gold_span_grounding": [
+  {
+   "span": "close the breaker",
+   "embed_rank": [
+    [
+     "close_breaker",
+     0.722
+    ],
+    [
+     "close_tie_breaker",
+     0.6179
+    ],
+    [
+     "read_feeder_state",
+     0.4656
+    ],
+    [
+     "read_permit_status",
+     0.4434
+    ]
+   ],
+   "rerank_rank": [
+    [
+     "close_breaker",
+     2.931
+    ],
+    [
+     "close_tie_breaker",
+     2.304
+    ],
+    [
+     "read_feeder_state",
+     -10.197
+    ],
+    [
+     "read_permit_status",
+     -10.197
+    ]
+   ],
+   "nli": {
+    "close_breaker": {
+     "REALIZES_OPERATION": 0.98,
+     "CHECKS_PRECONDITION": 0.0046,
+     "OBSERVES_STATE": 0.0079,
+     "COMMUNICATES": 0.9851,
+     "label": "COMMUNICATES",
+     "max_e": 0.9851
+    },
+    "close_tie_breaker": {
+     "REALIZES_OPERATION": 0.9682,
+     "CHECKS_PRECONDITION": 0.004,
+     "OBSERVES_STATE": 0.007,
+     "COMMUNICATES": 0.9822,
+     "label": "COMMUNICATES",
+     "max_e": 0.9822
+    },
+    "read_permit_status": {
+     "REALIZES_OPERATION": 0.0002,
+     "CHECKS_PRECONDITION": 0.0035,
+     "OBSERVES_STATE": 0.0082,
+     "COMMUNICATES": 0.0014,
+     "label": "UNRELATED",
+     "max_e": 0.0082
+    },
+    "read_feeder_state": {
+     "REALIZES_OPERATION": 0.0002,
+     "CHECKS_PRECONDITION": 0.0002,
+     "OBSERVES_STATE": 0.0016,
+     "COMMUNICATES": 0.0001,
+     "label": "UNRELATED",
+     "max_e": 0.0016
+    }
+   }
+  },
+  {
+   "span": "the isolation permit for feeder F-8 is active",
+   "embed_rank": [
+    [
+     "read_permit_status",
+     0.6973
+    ],
+    [
+     "close_breaker",
+     0.5399
+    ],
+    [
+     "read_feeder_state",
+     0.5215
+    ],
+    [
+     "close_tie_breaker",
+     0.518
+    ]
+   ],
+   "rerank_rank": [
+    [
+     "read_permit_status",
+     1.405
+    ],
+    [
+     "close_breaker",
+     -7.498
+    ],
+    [
+     "close_tie_breaker",
+     -8.627
+    ],
+    [
+     "read_feeder_state",
+     -8.724
+    ]
+   ],
+   "nli": {
+    "close_breaker": {
+     "REALIZES_OPERATION": 0.0028,
+     "CHECKS_PRECONDITION": 0.006,
+     "OBSERVES_STATE": 0.009,
+     "COMMUNICATES": 0.004,
+     "label": "UNRELATED",
+     "max_e": 0.009
+    },
+    "close_tie_breaker": {
+     "REALIZES_OPERATION": 0.0021,
+     "CHECKS_PRECONDITION": 0.0026,
+     "OBSERVES_STATE": 0.0047,
+     "COMMUNICATES": 0.0022,
+     "label": "UNRELATED",
+     "max_e": 0.0047
+    },
+    "read_permit_status": {
+     "REALIZES_OPERATION": 0.0007,
+     "CHECKS_PRECONDITION": 0.0007,
+     "OBSERVES_STATE": 0.0015,
+     "COMMUNICATES": 0.0012,
+     "label": "UNRELATED",
+     "max_e": 0.0015
+    },
+    "read_feeder_state": {
+     "REALIZES_OPERATION": 0.0011,
+     "CHECKS_PRECONDITION": 0.0005,
+     "OBSERVES_STATE": 0.002,
+     "COMMUNICATES": 0.0007,
+     "label": "UNRELATED",
+     "max_e": 0.002
+    }
+   }
+  },
+  {
+   "span": "Closing the tie breaker",
+   "embed_rank": [
+    [
+     "close_tie_breaker",
+     0.6656
+    ],
+    [
+     "close_breaker",
+     0.5288
+    ],
+    [
+     "read_feeder_state",
+     0.3987
+    ],
+    [
+     "read_permit_status",
+     0.3986
+    ]
+   ],
+   "rerank_rank": [
+    [
+     "close_tie_breaker",
+     1.741
+    ],
+    [
+     "close_breaker",
+     -3.004
+    ],
+    [
+     "read_permit_status",
+     -10.193
+    ],
+    [
+     "read_feeder_state",
+     -10.194
+    ]
+   ],
+   "nli": {
+    "close_breaker": {
+     "REALIZES_OPERATION": 0.8866,
+     "CHECKS_PRECONDITION": 0.0107,
+     "OBSERVES_STATE": 0.0197,
+     "COMMUNICATES": 0.9684,
+     "label": "COMMUNICATES",
+     "max_e": 0.9684
+    },
+    "close_tie_breaker": {
+     "REALIZES_OPERATION": 0.9803,
+     "CHECKS_PRECONDITION": 0.0057,
+     "OBSERVES_STATE": 0.0108,
+     "COMMUNICATES": 0.9859,
+     "label": "COMMUNICATES",
+     "max_e": 0.9859
+    },
+    "read_permit_status": {
+     "REALIZES_OPERATION": 0.0002,
+     "CHECKS_PRECONDITION": 0.0019,
+     "OBSERVES_STATE": 0.0134,
+     "COMMUNICATES": 0.004,
+     "label": "UNRELATED",
+     "max_e": 0.0134
+    },
+    "read_feeder_state": {
+     "REALIZES_OPERATION": 0.0001,
+     "CHECKS_PRECONDITION": 0.0002,
+     "OBSERVES_STATE": 0.0006,
+     "COMMUNICATES": 0.0002,
+     "label": "UNRELATED",
+     "max_e": 0.0006
+    }
+   }
+  }
+ ],
+ "b_candidate_grounding": [
+  {
+   "span": "Unless the isolation permit for feeder F-8 is active",
+   "b_features": {
+    "dep": "advcl",
+    "mark": "unless",
+    "deontic": [],
+    "neg": false,
+    "passive": false,
+    "imperative": false,
+    "root": false,
+    "role_hypothesis": "STATE_OBSERVATION",
+    "even": false
+   },
+   "embed_rank": [
+    [
+     "read_permit_status",
+     0.748
+    ],
+    [
+     "close_breaker",
+     0.5824
+    ],
+    [
+     "close_tie_breaker",
+     0.5612
+    ],
+    [
+     "read_feeder_state",
+     0.5493
+    ]
+   ],
+   "rerank_rank": [
+    [
+     "read_permit_status",
+     0.987
+    ],
+    [
+     "close_breaker",
+     -6.628
+    ],
+    [
+     "close_tie_breaker",
+     -7.778
+    ],
+    [
+     "read_feeder_state",
+     -7.896
+    ]
+   ],
+   "nli": {
+    "close_breaker": {
+     "REALIZES_OPERATION": 0.0012,
+     "CHECKS_PRECONDITION": 0.0045,
+     "OBSERVES_STATE": 0.006,
+     "COMMUNICATES": 0.0088,
+     "label": "UNRELATED",
+     "max_e": 0.0088
+    },
+    "close_tie_breaker": {
+     "REALIZES_OPERATION": 0.0028,
+     "CHECKS_PRECONDITION": 0.0053,
+     "OBSERVES_STATE": 0.0054,
+     "COMMUNICATES": 0.0074,
+     "label": "UNRELATED",
+     "max_e": 0.0074
+    },
+    "read_permit_status": {
+     "REALIZES_OPERATION": 0.0008,
+     "CHECKS_PRECONDITION": 0.0013,
+     "OBSERVES_STATE": 0.0026,
+     "COMMUNICATES": 0.0018,
+     "label": "UNRELATED",
+     "max_e": 0.0026
+    },
+    "read_feeder_state": {
+     "REALIZES_OPERATION": 0.0012,
+     "CHECKS_PRECONDITION": 0.0006,
+     "OBSERVES_STATE": 0.0006,
+     "COMMUNICATES": 0.0004,
+     "label": "UNRELATED",
+     "max_e": 0.0012
+    }
+   }
+  },
+  {
+   "span": "isolation permit for feeder F-8",
+   "b_features": {
+    "dep": null,
+    "mark": null,
+    "deontic": null,
+    "neg": null,
+    "passive": null,
+    "imperative": null,
+    "root": null,
+    "role_hypothesis": "UNKNOWN",
+    "even": null
+   },
+   "embed_rank": [
+    [
+     "read_permit_status",
+     0.6504
+    ],
+    [
+     "close_breaker",
+     0.5256
+    ],
+    [
+     "close_tie_breaker",
+     0.5197
+    ],
+    [
+     "read_feeder_state",
+     0.5026
+    ]
+   ],
+   "rerank_rank": [
+    [
+     "read_permit_status",
+     -1.899
+    ],
+    [
+     "close_breaker",
+     -7.724
+    ],
+    [
+     "read_feeder_state",
+     -8.728
+    ],
+    [
+     "close_tie_breaker",
+     -8.95
+    ]
+   ],
+   "nli": {
+    "close_breaker": {
+     "REALIZES_OPERATION": 0.0025,
+     "CHECKS_PRECONDITION": 0.0019,
+     "OBSERVES_STATE": 0.0033,
+     "COMMUNICATES": 0.0018,
+     "label": "UNRELATED",
+     "max_e": 0.0033
+    },
+    "close_tie_breaker": {
+     "REALIZES_OPERATION": 0.0013,
+     "CHECKS_PRECONDITION": 0.0018,
+     "OBSERVES_STATE": 0.0037,
+     "COMMUNICATES": 0.0016,
+     "label": "UNRELATED",
+     "max_e": 0.0037
+    },
+    "read_permit_status": {
+     "REALIZES_OPERATION": 0.0004,
+     "CHECKS_PRECONDITION": 0.0005,
+     "OBSERVES_STATE": 0.0009,
+     "COMMUNICATES": 0.0009,
+     "label": "UNRELATED",
+     "max_e": 0.0009
+    },
+    "read_feeder_state": {
+     "REALIZES_OPERATION": 0.0003,
+     "CHECKS_PRECONDITION": 0.0002,
+     "OBSERVES_STATE": 0.0008,
+     "COMMUNICATES": 0.0002,
+     "label": "UNRELATED",
+     "max_e": 0.0008
+    }
+   }
+  },
+  {
+   "span": "do not close the breaker",
+   "b_features": {
+    "dep": "root",
+    "mark": null,
+    "deontic": [],
+    "neg": true,
+    "passive": false,
+    "imperative": true,
+    "root": true,
+    "role_hypothesis": "OPERATION_EFFECT",
+    "even": false
+   },
+   "embed_rank": [
+    [
+     "close_breaker",
+     0.6587
+    ],
+    [
+     "close_tie_breaker",
+     0.604
+    ],
+    [
+     "read_permit_status",
+     0.4545
+    ],
+    [
+     "read_feeder_state",
+     0.4517
+    ]
+   ],
+   "rerank_rank": [
+    [
+     "close_tie_breaker",
+     0.668
+    ],
+    [
+     "close_breaker",
+     0.288
+    ],
+    [
+     "read_feeder_state",
+     -10.196
+    ],
+    [
+     "read_permit_status",
+     -10.197
+    ]
+   ],
+   "nli": {
+    "close_breaker": {
+     "REALIZES_OPERATION": 0.0003,
+     "CHECKS_PRECONDITION": 0.0083,
+     "OBSERVES_STATE": 0.0009,
+     "COMMUNICATES": 0.0002,
+     "label": "UNRELATED",
+     "max_e": 0.0083
+    },
+    "close_tie_breaker": {
+     "REALIZES_OPERATION": 0.0005,
+     "CHECKS_PRECONDITION": 0.0062,
+     "OBSERVES_STATE": 0.0021,
+     "COMMUNICATES": 0.0003,
+     "label": "UNRELATED",
+     "max_e": 0.0062
+    },
+    "read_permit_status": {
+     "REALIZES_OPERATION": 0.0005,
+     "CHECKS_PRECONDITION": 0.0016,
+     "OBSERVES_STATE": 0.0056,
+     "COMMUNICATES": 0.0009,
+     "label": "UNRELATED",
+     "max_e": 0.0056
+    },
+    "read_feeder_state": {
+     "REALIZES_OPERATION": 0.0003,
+     "CHECKS_PRECONDITION": 0.0002,
+     "OBSERVES_STATE": 0.0006,
+     "COMMUNICATES": 0.0003,
+     "label": "UNRELATED",
+     "max_e": 0.0006
+    }
+   }
+  },
+  {
+   "span": "Closing the tie breaker does not energize feeder F-8",
+   "b_features": {
+    "dep": "root",
+    "mark": null,
+    "deontic": [],
+    "neg": true,
+    "passive": false,
+    "imperative": false,
+    "root": true,
+    "role_hypothesis": "OPERATION_EFFECT",
+    "even": false
+   },
+   "embed_rank": [
+    [
+     "close_tie_breaker",
+     0.7141
+    ],
+    [
+     "close_breaker",
+     0.6081
+    ],
+    [
+     "read_feeder_state",
+     0.5322
+    ],
+    [
+     "read_permit_status",
+     0.5165
+    ]
+   ],
+   "rerank_rank": [
+    [
+     "close_tie_breaker",
+     2.29
+    ],
+    [
+     "close_breaker",
+     -0.699
+    ],
+    [
+     "read_feeder_state",
+     -5.346
+    ],
+    [
+     "read_permit_status",
+     -8.871
+    ]
+   ],
+   "nli": {
+    "close_breaker": {
+     "REALIZES_OPERATION": 0.0003,
+     "CHECKS_PRECONDITION": 0.0014,
+     "OBSERVES_STATE": 0.0002,
+     "COMMUNICATES": 0.0002,
+     "label": "UNRELATED",
+     "max_e": 0.0014
+    },
+    "close_tie_breaker": {
+     "REALIZES_OPERATION": 0.0006,
+     "CHECKS_PRECONDITION": 0.0006,
+     "OBSERVES_STATE": 0.0005,
+     "COMMUNICATES": 0.0009,
+     "label": "UNRELATED",
+     "max_e": 0.0009
+    },
+    "read_permit_status": {
+     "REALIZES_OPERATION": 0.0006,
+     "CHECKS_PRECONDITION": 0.0021,
+     "OBSERVES_STATE": 0.0032,
+     "COMMUNICATES": 0.0023,
+     "label": "UNRELATED",
+     "max_e": 0.0032
+    },
+    "read_feeder_state": {
+     "REALIZES_OPERATION": 0.0003,
+     "CHECKS_PRECONDITION": 0.0005,
+     "OBSERVES_STATE": 0.0006,
+     "COMMUNICATES": 0.0007,
+     "label": "UNRELATED",
+     "max_e": 0.0007
+    }
+   }
+  },
+  {
+   "span": "feeder F-8",
+   "b_features": {
+    "dep": null,
+    "mark": null,
+    "deontic": null,
+    "neg": null,
+    "passive": null,
+    "imperative": null,
+    "root": null,
+    "role_hypothesis": "UNKNOWN",
+    "even": null
+   },
+   "embed_rank": [
+    [
+     "read_permit_status",
+     0.5504
+    ],
+    [
+     "read_feeder_state",
+     0.5316
+    ],
+    [
+     "close_breaker",
+     0.5206
+    ],
+    [
+     "close_tie_breaker",
+     0.507
+    ]
+   ],
+   "rerank_rank": [
+    [
+     "close_breaker",
+     -3.728
+    ],
+    [
+     "read_feeder_state",
+     -4.6
+    ],
+    [
+     "read_permit_status",
+     -5.816
+    ],
+    [
+     "close_tie_breaker",
+     -6.872
+    ]
+   ],
+   "nli": {
+    "close_breaker": {
+     "REALIZES_OPERATION": 0.0008,
+     "CHECKS_PRECONDITION": 0.0017,
+     "OBSERVES_STATE": 0.0024,
+     "COMMUNICATES": 0.0013,
+     "label": "UNRELATED",
+     "max_e": 0.0024
+    },
+    "close_tie_breaker": {
+     "REALIZES_OPERATION": 0.0008,
+     "CHECKS_PRECONDITION": 0.0013,
+     "OBSERVES_STATE": 0.0016,
+     "COMMUNICATES": 0.0014,
+     "label": "UNRELATED",
+     "max_e": 0.0016
+    },
+    "read_permit_status": {
+     "REALIZES_OPERATION": 0.0005,
+     "CHECKS_PRECONDITION": 0.0009,
+     "OBSERVES_STATE": 0.0012,
+     "COMMUNICATES": 0.0014,
+     "label": "UNRELATED",
+     "max_e": 0.0014
+    },
+    "read_feeder_state": {
+     "REALIZES_OPERATION": 0.0006,
+     "CHECKS_PRECONDITION": 0.0006,
+     "OBSERVES_STATE": 0.0012,
+     "COMMUNICATES": 0.0016,
+     "label": "UNRELATED",
+     "max_e": 0.0016
+    }
+   }
+  }
+ ]
+}

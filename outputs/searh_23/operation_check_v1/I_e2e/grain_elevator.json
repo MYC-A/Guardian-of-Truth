@@ -1,0 +1,83 @@
+{
+ "case_id": "grain_elevator",
+ "model": "codestral-latest",
+ "served_model": "codestral-latest",
+ "events": [
+  {
+   "span": "Weigh the grain delivery",
+   "role": "OPERATION_EFFECT",
+   "governed_tools": [
+    "weigh_truck"
+   ]
+  },
+  {
+   "span": "before unloading it into silo S-2",
+   "role": "PRECONDITION_CHECK",
+   "governed_tools": []
+  },
+  {
+   "span": "unloading it into silo S-2",
+   "role": "OPERATION_EFFECT",
+   "governed_tools": [
+    "unload_silo"
+   ]
+  },
+  {
+   "span": "The moisture reading must be recorded",
+   "role": "OPERATION_EFFECT",
+   "governed_tools": [
+    "record_moisture"
+   ]
+  },
+  {
+   "span": "Notify the dispatcher",
+   "role": "COMMUNICATION",
+   "governed_tools": [
+    "notify_dispatcher"
+   ]
+  },
+  {
+   "span": "when a delivery is rejected",
+   "role": "STATE_OBSERVATION",
+   "governed_tools": [
+    "reject_delivery"
+   ]
+  }
+ ],
+ "edges": [
+  {
+   "condition_span": "Weigh the grain delivery",
+   "operation_span": "before unloading it into silo S-2",
+   "relation": "ORDER_BEFORE"
+  },
+  {
+   "condition_span": "before unloading it into silo S-2",
+   "operation_span": "unloading it into silo S-2",
+   "relation": "GATE"
+  },
+  {
+   "condition_span": "The moisture reading must be recorded",
+   "operation_span": "unloading it into silo S-2",
+   "relation": "ORDER_BEFORE"
+  },
+  {
+   "condition_span": "Notify the dispatcher",
+   "operation_span": "when a delivery is rejected",
+   "relation": "ORDER_AFTER"
+  }
+ ],
+ "format_errors": [],
+ "parse_error": "",
+ "finish_reason": "stop",
+ "usage": {
+  "prompt_tokens": 648,
+  "total_tokens": 1027,
+  "completion_tokens": 379,
+  "prompt_tokens_details": {
+   "cached_tokens": 228
+  },
+  "service_tier": "standard"
+ },
+ "latency": 3.284,
+ "cached": false
+}

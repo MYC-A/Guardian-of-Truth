@@ -1,0 +1,841 @@
+{
+ "case_id": "pharmacy_dispense",
+ "renderings_without_names": {
+  "tool_w68": "Compares the dispense request against the electronic prescription record and returns whether they match; no record is changed. Input parameters: request_id: string. Output: match: boolean.",
+  "tool_r56": "Releases a medication from the cabinet and marks it as dispensed in the inventory. Input parameters: request_id: string. Output: dispensed: boolean.",
+  "tool_j61": "Sends a substitution notice to the prescriber's messaging address. Input parameters: request_id: string. Output: sent: boolean.",
+  "tool_g71": "Reads past dispense events for a medication from the audit log. Input parameters: medication_id: string. Output: events: array."
+ },
+ "tool_type_probe": {
+  "tool_w68": {
+   "mutate": 0.0259,
+   "verify": 0.9904,
+   "read": 0.9947,
+   "message": 0.0735,
+   "top": "read"
+  },
+  "tool_r56": {
+   "mutate": 0.9775,
+   "verify": 0.93,
+   "read": 0.0001,
+   "message": 0.9848,
+   "top": "message"
+  },
+  "tool_j61": {
+   "mutate": 0.1851,
+   "verify": 0.9578,
+   "read": 0.0,
+   "message": 0.9802,
+   "top": "message"
+  },
+  "tool_g71": {
+   "mutate": 0.0003,
+   "verify": 0.0008,
+   "read": 0.005,
+   "message": 0.0781,
+   "top": "message"
+  }
+ },
+ "gold_span_grounding": [
+  {
+   "span": "verify the prescription match",
+   "embed_rank": [
+    [
+     "tool_w68",
+     0.7176
+    ],
+    [
+     "tool_g71",
+     0.5661
+    ],
+    [
+     "tool_r56",
+     0.5622
+    ],
+    [
+     "tool_j61",
+     0.541
+    ]
+   ],
+   "rerank_rank": [
+    [
+     "tool_w68",
+     1.627
+    ],
+    [
+     "tool_j61",
+     -4.768
+    ],
+    [
+     "tool_r56",
+     -6.3
+    ],
+    [
+     "tool_g71",
+     -7.379
+    ]
+   ],
+   "nli": {
+    "tool_w68": {
+     "REALIZES_OPERATION": 0.991,
+     "CHECKS_PRECONDITION": 0.993,
+     "OBSERVES_STATE": 0.992,
+     "COMMUNICATES": 0.9864,
+     "label": "CHECKS_PRECONDITION",
+     "max_e": 0.993
+    },
+    "tool_r56": {
+     "REALIZES_OPERATION": 0.0323,
+     "CHECKS_PRECONDITION": 0.0364,
+     "OBSERVES_STATE": 0.0131,
+     "COMMUNICATES": 0.1687,
+     "label": "UNRELATED",
+     "max_e": 0.1687
+    },
+    "tool_j61": {
+     "REALIZES_OPERATION": 0.0447,
+     "CHECKS_PRECONDITION": 0.3698,
+     "OBSERVES_STATE": 0.373,
+     "COMMUNICATES": 0.0947,
+     "label": "UNKNOWN",
+     "max_e": 0.373
+    },
+    "tool_g71": {
+     "REALIZES_OPERATION": 0.0029,
+     "CHECKS_PRECONDITION": 0.0036,
+     "OBSERVES_STATE": 0.0147,
+     "COMMUNICATES": 0.0039,
+     "label": "UNRELATED",
+     "max_e": 0.0147
+    }
+   }
+  },
+  {
+   "span": "dispensing medication gy-96",
+   "embed_rank": [
+    [
+     "tool_r56",
+     0.65
+    ],
+    [
+     "tool_g71",
+     0.5805
+    ],
+    [
+     "tool_w68",
+     0.561
+    ],
+    [
+     "tool_j61",
+     0.5038
+    ]
+   ],
+   "rerank_rank": [
+    [
+     "tool_r56",
+     -4.761
+    ],
+    [
+     "tool_g71",
+     -7.856
+    ],
+    [
+     "tool_w68",
+     -8.125
+    ],
+    [
+     "tool_j61",
+     -8.131
+    ]
+   ],
+   "nli": {
+    "tool_w68": {
+     "REALIZES_OPERATION": 0.002,
+     "CHECKS_PRECONDITION": 0.0015,
+     "OBSERVES_STATE": 0.0055,
+     "COMMUNICATES": 0.0037,
+     "label": "UNRELATED",
+     "max_e": 0.0055
+    },
+    "tool_r56": {
+     "REALIZES_OPERATION": 0.0011,
+     "CHECKS_PRECONDITION": 0.0027,
+     "OBSERVES_STATE": 0.0025,
+     "COMMUNICATES": 0.0024,
+     "label": "UNRELATED",
+     "max_e": 0.0027
+    },
+    "tool_j61": {
+     "REALIZES_OPERATION": 0.0011,
+     "CHECKS_PRECONDITION": 0.0032,
+     "OBSERVES_STATE": 0.0124,
+     "COMMUNICATES": 0.0012,
+     "label": "UNRELATED",
+     "max_e": 0.0124
+    },
+    "tool_g71": {
+     "REALIZES_OPERATION": 0.001,
+     "CHECKS_PRECONDITION": 0.0007,
+     "OBSERVES_STATE": 0.0018,
+     "COMMUNICATES": 0.0013,
+     "label": "UNRELATED",
+     "max_e": 0.0018
+    }
+   }
+  },
+  {
+   "span": "dispensing a substitute",
+   "embed_rank": [
+    [
+     "tool_r56",
+     0.6572
+    ],
+    [
+     "tool_j61",
+     0.6296
+    ],
+    [
+     "tool_w68",
+     0.574
+    ],
+    [
+     "tool_g71",
+     0.5575
+    ]
+   ],
+   "rerank_rank": [
+    [
+     "tool_j61",
+     -2.31
+    ],
+    [
+     "tool_r56",
+     -2.909
+    ],
+    [
+     "tool_w68",
+     -4.356
+    ],
+    [
+     "tool_g71",
+     -6.179
+    ]
+   ],
+   "nli": {
+    "tool_w68": {
+     "REALIZES_OPERATION": 0.0156,
+     "CHECKS_PRECONDITION": 0.0371,
+     "OBSERVES_STATE": 0.9521,
+     "COMMUNICATES": 0.1088,
+     "label": "OBSERVES_STATE",
+     "max_e": 0.9521
+    },
+    "tool_r56": {
+     "REALIZES_OPERATION": 0.7686,
+     "CHECKS_PRECONDITION": 0.0227,
+     "OBSERVES_STATE": 0.6606,
+     "COMMUNICATES": 0.9709,
+     "label": "COMMUNICATES",
+     "max_e": 0.9709
+    },
+    "tool_j61": {
+     "REALIZES_OPERATION": 0.9905,
+     "CHECKS_PRECONDITION": 0.9613,
+     "OBSERVES_STATE": 0.9849,
+     "COMMUNICATES": 0.9859,
+     "label": "REALIZES_OPERATION",
+     "max_e": 0.9905
+    },
+    "tool_g71": {
+     "REALIZES_OPERATION": 0.0471,
+     "CHECKS_PRECONDITION": 0.0028,
+     "OBSERVES_STATE": 0.9257,
+     "COMMUNICATES": 0.0033,
+     "label": "OBSERVES_STATE",
+     "max_e": 0.9257
+    }
+   }
+  },
+  {
+   "span": "notify the prescriber",
+   "embed_rank": [
+    [
+     "tool_j61",
+     0.6722
+    ],
+    [
+     "tool_r56",
+     0.5966
+    ],
+    [
+     "tool_g71",
+     0.5943
+    ],
+    [
+     "tool_w68",
+     0.5447
+    ]
+   ],
+   "rerank_rank": [
+    [
+     "tool_j61",
+     0.204
+    ],
+    [
+     "tool_r56",
+     -2.91
+    ],
+    [
+     "tool_w68",
+     -5.346
+    ],
+    [
+     "tool_g71",
+     -5.863
+    ]
+   ],
+   "nli": {
+    "tool_w68": {
+     "REALIZES_OPERATION": 0.0167,
+     "CHECKS_PRECONDITION": 0.9906,
+     "OBSERVES_STATE": 0.9881,
+     "COMMUNICATES": 0.0003,
+     "label": "CHECKS_PRECONDITION",
+     "max_e": 0.9906
+    },
+    "tool_r56": {
+     "REALIZES_OPERATION": 0.17,
+     "CHECKS_PRECONDITION": 0.0668,
+     "OBSERVES_STATE": 0.3052,
+     "COMMUNICATES": 0.0367,
+     "label": "UNRELATED",
+     "max_e": 0.3052
+    },
+    "tool_j61": {
+     "REALIZES_OPERATION": 0.9877,
+     "CHECKS_PRECONDITION": 0.8121,
+     "OBSERVES_STATE": 0.9792,
+     "COMMUNICATES": 0.9732,
+     "label": "REALIZES_OPERATION",
+     "max_e": 0.9877
+    },
+    "tool_g71": {
+     "REALIZES_OPERATION": 0.0033,
+     "CHECKS_PRECONDITION": 0.0018,
+     "OBSERVES_STATE": 0.9459,
+     "COMMUNICATES": 0.0,
+     "label": "OBSERVES_STATE",
+     "max_e": 0.9459
+    }
+   }
+  }
+ ],
+ "b_candidate_grounding": [
+  {
+   "span": "The pharmacist must verify the prescription match",
+   "b_features": {
+    "dep": "root",
+    "mark": null,
+    "deontic": [
+     "must"
+    ],
+    "neg": false,
+    "passive": false,
+    "imperative": false,
+    "root": true,
+    "role_hypothesis": "OPERATION_EFFECT",
+    "even": false
+   },
+   "embed_rank": [
+    [
+     "tool_w68",
+     0.6717
+    ],
+    [
+     "tool_r56",
+     0.5639
+    ],
+    [
+     "tool_g71",
+     0.5095
+    ],
+    [
+     "tool_j61",
+     0.499
+    ]
+   ],
+   "rerank_rank": [
+    [
+     "tool_w68",
+     -2.616
+    ],
+    [
+     "tool_j61",
+     -4.788
+    ],
+    [
+     "tool_r56",
+     -5.173
+    ],
+    [
+     "tool_g71",
+     -6.67
+    ]
+   ],
+   "nli": {
+    "tool_w68": {
+     "REALIZES_OPERATION": 0.0279,
+     "CHECKS_PRECONDITION": 0.961,
+     "OBSERVES_STATE": 0.9797,
+     "COMMUNICATES": 0.0398,
+     "label": "OBSERVES_STATE",
+     "max_e": 0.9797
+    },
+    "tool_r56": {
+     "REALIZES_OPERATION": 0.006,
+     "CHECKS_PRECONDITION": 0.0144,
+     "OBSERVES_STATE": 0.0087,
+     "COMMUNICATES": 0.0207,
+     "label": "UNRELATED",
+     "max_e": 0.0207
+    },
+    "tool_j61": {
+     "REALIZES_OPERATION": 0.0062,
+     "CHECKS_PRECONDITION": 0.0091,
+     "OBSERVES_STATE": 0.018,
+     "COMMUNICATES": 0.0169,
+     "label": "UNRELATED",
+     "max_e": 0.018
+    },
+    "tool_g71": {
+     "REALIZES_OPERATION": 0.001,
+     "CHECKS_PRECONDITION": 0.0024,
+     "OBSERVES_STATE": 0.0046,
+     "COMMUNICATES": 0.0009,
+     "label": "UNRELATED",
+     "max_e": 0.0046
+    }
+   }
+  },
+  {
+   "span": "prescription match",
+   "b_features": {
+    "dep": null,
+    "mark": null,
+    "deontic": null,
+    "neg": null,
+    "passive": null,
+    "imperative": null,
+    "root": null,
+    "role_hypothesis": "UNKNOWN",
+    "even": null
+   },
+   "embed_rank": [
+    [
+     "tool_w68",
+     0.6974
+    ],
+    [
+     "tool_g71",
+     0.5544
+    ],
+    [
+     "tool_r56",
+     0.5416
+    ],
+    [
+     "tool_j61",
+     0.5184
+    ]
+   ],
+   "rerank_rank": [
+    [
+     "tool_w68",
+     2.084
+    ],
+    [
+     "tool_j61",
+     -6.166
+    ],
+    [
+     "tool_r56",
+     -6.908
+    ],
+    [
+     "tool_g71",
+     -8.662
+    ]
+   ],
+   "nli": {
+    "tool_w68": {
+     "REALIZES_OPERATION": 0.9917,
+     "CHECKS_PRECONDITION": 0.9942,
+     "OBSERVES_STATE": 0.9896,
+     "COMMUNICATES": 0.9908,
+     "label": "CHECKS_PRECONDITION",
+     "max_e": 0.9942
+    },
+    "tool_r56": {
+     "REALIZES_OPERATION": 0.9726,
+     "CHECKS_PRECONDITION": 0.0892,
+     "OBSERVES_STATE": 0.7934,
+     "COMMUNICATES": 0.9889,
+     "label": "COMMUNICATES",
+     "max_e": 0.9889
+    },
+    "tool_j61": {
+     "REALIZES_OPERATION": 0.9299,
+     "CHECKS_PRECONDITION": 0.7478,
+     "OBSERVES_STATE": 0.9575,
+     "COMMUNICATES": 0.9298,
+     "label": "OBSERVES_STATE",
+     "max_e": 0.9575
+    },
+    "tool_g71": {
+     "REALIZES_OPERATION": 0.0466,
+     "CHECKS_PRECONDITION": 0.0017,
+     "OBSERVES_STATE": 0.8075,
+     "COMMUNICATES": 0.1422,
+     "label": "OBSERVES_STATE",
+     "max_e": 0.8075
+    }
+   }
+  },
+  {
+   "span": "before dispensing medication gy-96",
+   "b_features": {
+    "dep": "advcl",
+    "mark": "before",
+    "deontic": [],
+    "neg": false,
+    "passive": false,
+    "imperative": false,
+    "root": false,
+    "role_hypothesis": "OPERATION_EFFECT",
+    "even": false
+   },
+   "embed_rank": [
+    [
+     "tool_r56",
+     0.6187
+    ],
+    [
+     "tool_g71",
+     0.5792
+    ],
+    [
+     "tool_w68",
+     0.545
+    ],
+    [
+     "tool_j61",
+     0.4989
+    ]
+   ],
+   "rerank_rank": [
+    [
+     "tool_r56",
+     -4.635
+    ],
+    [
+     "tool_g71",
+     -6.772
+    ],
+    [
+     "tool_w68",
+     -7.295
+    ],
+    [
+     "tool_j61",
+     -7.922
+    ]
+   ],
+   "nli": {
+    "tool_w68": {
+     "REALIZES_OPERATION": 0.0015,
+     "CHECKS_PRECONDITION": 0.001,
+     "OBSERVES_STATE": 0.0027,
+     "COMMUNICATES": 0.0037,
+     "label": "UNRELATED",
+     "max_e": 0.0037
+    },
+    "tool_r56": {
+     "REALIZES_OPERATION": 0.0007,
+     "CHECKS_PRECONDITION": 0.0017,
+     "OBSERVES_STATE": 0.0011,
+     "COMMUNICATES": 0.0031,
+     "label": "UNRELATED",
+     "max_e": 0.0031
+    },
+    "tool_j61": {
+     "REALIZES_OPERATION": 0.0003,
+     "CHECKS_PRECONDITION": 0.0016,
+     "OBSERVES_STATE": 0.0031,
+     "COMMUNICATES": 0.0008,
+     "label": "UNRELATED",
+     "max_e": 0.0031
+    },
+    "tool_g71": {
+     "REALIZES_OPERATION": 0.0008,
+     "CHECKS_PRECONDITION": 0.0005,
+     "OBSERVES_STATE": 0.0003,
+     "COMMUNICATES": 0.0004,
+     "label": "UNRELATED",
+     "max_e": 0.0008
+    }
+   }
+  },
+  {
+   "span": "medication gy-96",
+   "b_features": {
+    "dep": null,
+    "mark": null,
+    "deontic": null,
+    "neg": null,
+    "passive": null,
+    "imperative": null,
+    "root": null,
+    "role_hypothesis": "UNKNOWN",
+    "even": null
+   },
+   "embed_rank": [
+    [
+     "tool_g71",
+     0.5037
+    ],
+    [
+     "tool_r56",
+     0.4967
+    ],
+    [
+     "tool_w68",
+     0.4644
+    ],
+    [
+     "tool_j61",
+     0.4318
+    ]
+   ],
+   "rerank_rank": [
+    [
+     "tool_r56",
+     -8.492
+    ],
+    [
+     "tool_j61",
+     -10.139
+    ],
+    [
+     "tool_w68",
+     -10.182
+    ],
+    [
+     "tool_g71",
+     -10.197
+    ]
+   ],
+   "nli": {
+    "tool_w68": {
+     "REALIZES_OPERATION": 0.0017,
+     "CHECKS_PRECONDITION": 0.0018,
+     "OBSERVES_STATE": 0.0035,
+     "COMMUNICATES": 0.0049,
+     "label": "UNRELATED",
+     "max_e": 0.0049
+    },
+    "tool_r56": {
+     "REALIZES_OPERATION": 0.0006,
+     "CHECKS_PRECONDITION": 0.0015,
+     "OBSERVES_STATE": 0.0016,
+     "COMMUNICATES": 0.0011,
+     "label": "UNRELATED",
+     "max_e": 0.0016
+    },
+    "tool_j61": {
+     "REALIZES_OPERATION": 0.0014,
+     "CHECKS_PRECONDITION": 0.0038,
+     "OBSERVES_STATE": 0.0062,
+     "COMMUNICATES": 0.0011,
+     "label": "UNRELATED",
+     "max_e": 0.0062
+    },
+    "tool_g71": {
+     "REALIZES_OPERATION": 0.0004,
+     "CHECKS_PRECONDITION": 0.0006,
+     "OBSERVES_STATE": 0.0007,
+     "COMMUNICATES": 0.0047,
+     "label": "UNRELATED",
+     "max_e": 0.0047
+    }
+   }
+  },
+  {
+   "span": "When dispensing a substitute",
+   "b_features": {
+    "dep": "advcl",
+    "mark": "when",
+    "deontic": [],
+    "neg": false,
+    "passive": false,
+    "imperative": false,
+    "root": false,
+    "role_hypothesis": "OPERATION_EFFECT",
+    "even": false
+   },
+   "embed_rank": [
+    [
+     "tool_r56",
+     0.657
+    ],
+    [
+     "tool_j61",
+     0.6245
+    ],
+    [
+     "tool_w68",
+     0.5872
+    ],
+    [
+     "tool_g71",
+     0.5818
+    ]
+   ],
+   "rerank_rank": [
+    [
+     "tool_j61",
+     -2.16
+    ],
+    [
+     "tool_r56",
+     -3.655
+    ],
+    [
+     "tool_w68",
+     -4.339
+    ],
+    [
+     "tool_g71",
+     -6.344
+    ]
+   ],
+   "nli": {
+    "tool_w68": {
+     "REALIZES_OPERATION": 0.0115,
+     "CHECKS_PRECONDITION": 0.0111,
+     "OBSERVES_STATE": 0.0575,
+     "COMMUNICATES": 0.0357,
+     "label": "UNRELATED",
+     "max_e": 0.0575
+    },
+    "tool_r56": {
+     "REALIZES_OPERATION": 0.1448,
+     "CHECKS_PRECONDITION": 0.0326,
+     "OBSERVES_STATE": 0.9049,
+     "COMMUNICATES": 0.9524,
+     "label": "COMMUNICATES",
+     "max_e": 0.9524
+    },
+    "tool_j61": {
+     "REALIZES_OPERATION": 0.9725,
+     "CHECKS_PRECONDITION": 0.9584,
+     "OBSERVES_STATE": 0.9551,
+     "COMMUNICATES": 0.9851,
+     "label": "COMMUNICATES",
+     "max_e": 0.9851
+    },
+    "tool_g71": {
+     "REALIZES_OPERATION": 0.0311,
+     "CHECKS_PRECONDITION": 0.0022,
+     "OBSERVES_STATE": 0.0745,
+     "COMMUNICATES": 0.0039,
+     "label": "UNRELATED",
+     "max_e": 0.0745
+    }
+   }
+  },
+  {
+   "span": "notify the prescriber",
+   "b_features": {
+    "dep": "root",
+    "mark": null,
+    "deontic": [],
+    "neg": false,
+    "passive": false,
+    "imperative": true,
+    "root": true,
+    "role_hypothesis": "OPERATION_EFFECT",
+    "even": false
+   },
+   "embed_rank": [
+    [
+     "tool_j61",
+     0.6722
+    ],
+    [
+     "tool_r56",
+     0.5966
+    ],
+    [
+     "tool_g71",
+     0.5943
+    ],
+    [
+     "tool_w68",
+     0.5447
+    ]
+   ],
+   "rerank_rank": [
+    [
+     "tool_j61",
+     0.204
+    ],
+    [
+     "tool_r56",
+     -2.91
+    ],
+    [
+     "tool_w68",
+     -5.346
+    ],
+    [
+     "tool_g71",
+     -5.863
+    ]
+   ],
+   "nli": {
+    "tool_w68": {
+     "REALIZES_OPERATION": 0.0167,
+     "CHECKS_PRECONDITION": 0.9906,
+     "OBSERVES_STATE": 0.9881,
+     "COMMUNICATES": 0.0003,
+     "label": "CHECKS_PRECONDITION",
+     "max_e": 0.9906
+    },
+    "tool_r56": {
+     "REALIZES_OPERATION": 0.17,
+     "CHECKS_PRECONDITION": 0.0668,
+     "OBSERVES_STATE": 0.3052,
+     "COMMUNICATES": 0.0367,
+     "label": "UNRELATED",
+     "max_e": 0.3052
+    },
+    "tool_j61": {
+     "REALIZES_OPERATION": 0.9877,
+     "CHECKS_PRECONDITION": 0.8121,
+     "OBSERVES_STATE": 0.9792,
+     "COMMUNICATES": 0.9732,
+     "label": "REALIZES_OPERATION",
+     "max_e": 0.9877
+    },
+    "tool_g71": {
+     "REALIZES_OPERATION": 0.0033,
+     "CHECKS_PRECONDITION": 0.0018,
+     "OBSERVES_STATE": 0.9459,
+     "COMMUNICATES": 0.0,
+     "label": "OBSERVES_STATE",
+     "max_e": 0.9459
+    }
+   }
+  }
+ ]
+}

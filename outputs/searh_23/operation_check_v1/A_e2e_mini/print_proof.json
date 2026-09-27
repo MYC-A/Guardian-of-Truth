@@ -1,0 +1,61 @@
+{
+ "case_id": "print_proof",
+ "model": "ministral-14b-latest",
+ "served_model": "ministral-14b-latest",
+ "events": [
+  {
+   "span": "start the print run",
+   "role": "OPERATION_EFFECT",
+   "governed_tools": [
+    "start_run"
+   ]
+  },
+  {
+   "span": "the proof for job J-31 has been approved by the client",
+   "role": "STATE_OBSERVATION",
+   "governed_tools": [
+    "read_proof_approval"
+   ]
+  },
+  {
+   "span": "Reprinting a rejected proof",
+   "role": "OPERATION_EFFECT",
+   "governed_tools": [
+    "reprint_proof"
+   ]
+  },
+  {
+   "span": "a supervisor's note",
+   "role": "STATE_OBSERVATION",
+   "governed_tools": [
+    "read_supervisor_notes"
+   ]
+  }
+ ],
+ "edges": [
+  {
+   "condition_span": "the proof for job J-31 has been approved by the client",
+   "operation_span": "start the print run",
+   "relation": "GATE"
+  },
+  {
+   "condition_span": "a supervisor's note",
+   "operation_span": "Reprinting a rejected proof",
+   "relation": "EXCEPTION"
+  }
+ ],
+ "format_errors": [],
+ "parse_error": "",
+ "finish_reason": "stop",
+ "usage": {
+  "prompt_tokens": 542,
+  "total_tokens": 826,
+  "completion_tokens": 284,
+  "prompt_tokens_details": {
+   "cached_tokens": 228
+  },
+  "service_tier": "standard"
+ },
+ "latency": 2.503,
+ "cached": false
+}

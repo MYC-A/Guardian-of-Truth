@@ -1,0 +1,54 @@
+{
+ "case_id": "datacenter_dimm",
+ "model": "codestral-latest",
+ "served_model": "codestral-latest",
+ "events": [
+  {
+   "span": "Observe that rack R-31 is de-energized",
+   "role": "STATE_OBSERVATION",
+   "governed_tools": [
+    "read_rack_power"
+   ]
+  },
+  {
+   "span": "remove the failed DIMM",
+   "role": "OPERATION_EFFECT",
+   "governed_tools": [
+    "remove_dimm"
+   ]
+  },
+  {
+   "span": "Log the DIMM serial in the parts ledger after removal",
+   "role": "OPERATION_EFFECT",
+   "governed_tools": [
+    "log_part"
+   ]
+  }
+ ],
+ "edges": [
+  {
+   "condition_span": "Observe that rack R-31 is de-energized",
+   "operation_span": "remove the failed DIMM",
+   "relation": "GATE"
+  },
+  {
+   "condition_span": "remove the failed DIMM",
+   "operation_span": "Log the DIMM serial in the parts ledger after removal",
+   "relation": "ORDER_BEFORE"
+  }
+ ],
+ "format_errors": [],
+ "parse_error": "",
+ "finish_reason": "stop",
+ "usage": {
+  "prompt_tokens": 549,
+  "total_tokens": 808,
+  "completion_tokens": 259,
+  "prompt_tokens_details": {
+   "cached_tokens": 228
+  },
+  "service_tier": "standard"
+ },
+ "latency": 2.024,
+ "cached": false
+}

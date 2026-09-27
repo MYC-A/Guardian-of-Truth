@@ -1,0 +1,768 @@
+{
+ "case_id": "food_safety",
+ "renderings_without_names": {
+  "reheat_batch": "Reheats a held food batch to serving temperature and records the reheat cycle. Input parameters: batch_id: string. Output: reheated: boolean.",
+  "read_temperature_log": "Reads the temperature log entries for a batch. Input parameters: batch_id: string. Output: entries: array.",
+  "discard_log_record": "Permanently deletes a temperature log entry for a batch. Input parameters: batch_id: string. Output: deleted: boolean.",
+  "read_batch_status": "Reads the holding status of a food batch. Input parameters: batch_id: string. Output: status: string."
+ },
+ "tool_type_probe": {
+  "reheat_batch": {
+   "mutate": 0.0265,
+   "verify": 0.0756,
+   "read": 0.0,
+   "message": 0.9547,
+   "top": "message"
+  },
+  "read_temperature_log": {
+   "mutate": 0.0004,
+   "verify": 0.0014,
+   "read": 0.0006,
+   "message": 0.0968,
+   "top": "message"
+  },
+  "discard_log_record": {
+   "mutate": 0.0117,
+   "verify": 0.0084,
+   "read": 0.0001,
+   "message": 0.0285,
+   "top": "message"
+  },
+  "read_batch_status": {
+   "mutate": 0.0008,
+   "verify": 0.4175,
+   "read": 0.0011,
+   "message": 0.0827,
+   "top": "verify"
+  }
+ },
+ "gold_span_grounding": [
+  {
+   "span": "reheat a held batch",
+   "embed_rank": [
+    [
+     "reheat_batch",
+     0.7991
+    ],
+    [
+     "read_batch_status",
+     0.5961
+    ],
+    [
+     "read_temperature_log",
+     0.5852
+    ],
+    [
+     "discard_log_record",
+     0.5795
+    ]
+   ],
+   "rerank_rank": [
+    [
+     "reheat_batch",
+     6.457
+    ],
+    [
+     "read_batch_status",
+     -4.842
+    ],
+    [
+     "discard_log_record",
+     -6.278
+    ],
+    [
+     "read_temperature_log",
+     -6.575
+    ]
+   ],
+   "nli": {
+    "reheat_batch": {
+     "REALIZES_OPERATION": 0.9961,
+     "CHECKS_PRECONDITION": 0.0183,
+     "OBSERVES_STATE": 0.987,
+     "COMMUNICATES": 0.9908,
+     "label": "REALIZES_OPERATION",
+     "max_e": 0.9961
+    },
+    "read_temperature_log": {
+     "REALIZES_OPERATION": 0.0004,
+     "CHECKS_PRECONDITION": 0.0011,
+     "OBSERVES_STATE": 0.0026,
+     "COMMUNICATES": 0.0001,
+     "label": "UNRELATED",
+     "max_e": 0.0026
+    },
+    "discard_log_record": {
+     "REALIZES_OPERATION": 0.0001,
+     "CHECKS_PRECONDITION": 0.0005,
+     "OBSERVES_STATE": 0.0003,
+     "COMMUNICATES": 0.0,
+     "label": "UNRELATED",
+     "max_e": 0.0005
+    },
+    "read_batch_status": {
+     "REALIZES_OPERATION": 0.0002,
+     "CHECKS_PRECONDITION": 0.0019,
+     "OBSERVES_STATE": 0.0058,
+     "COMMUNICATES": 0.0018,
+     "label": "UNRELATED",
+     "max_e": 0.0058
+    }
+   }
+  },
+  {
+   "span": "Discarding the temperature log for batch B-19",
+   "embed_rank": [
+    [
+     "discard_log_record",
+     0.7186
+    ],
+    [
+     "read_temperature_log",
+     0.6733
+    ],
+    [
+     "reheat_batch",
+     0.5958
+    ],
+    [
+     "read_batch_status",
+     0.5195
+    ]
+   ],
+   "rerank_rank": [
+    [
+     "discard_log_record",
+     -0.161
+    ],
+    [
+     "read_temperature_log",
+     -1.999
+    ],
+    [
+     "reheat_batch",
+     -6.362
+    ],
+    [
+     "read_batch_status",
+     -7.342
+    ]
+   ],
+   "nli": {
+    "reheat_batch": {
+     "REALIZES_OPERATION": 0.0001,
+     "CHECKS_PRECONDITION": 0.0034,
+     "OBSERVES_STATE": 0.0006,
+     "COMMUNICATES": 0.0,
+     "label": "UNRELATED",
+     "max_e": 0.0034
+    },
+    "read_temperature_log": {
+     "REALIZES_OPERATION": 0.0012,
+     "CHECKS_PRECONDITION": 0.0016,
+     "OBSERVES_STATE": 0.0069,
+     "COMMUNICATES": 0.0004,
+     "label": "UNRELATED",
+     "max_e": 0.0069
+    },
+    "discard_log_record": {
+     "REALIZES_OPERATION": 0.0005,
+     "CHECKS_PRECONDITION": 0.0008,
+     "OBSERVES_STATE": 0.0008,
+     "COMMUNICATES": 0.0029,
+     "label": "UNRELATED",
+     "max_e": 0.0029
+    },
+    "read_batch_status": {
+     "REALIZES_OPERATION": 0.0003,
+     "CHECKS_PRECONDITION": 0.0008,
+     "OBSERVES_STATE": 0.0017,
+     "COMMUNICATES": 0.0003,
+     "label": "UNRELATED",
+     "max_e": 0.0017
+    }
+   }
+  },
+  {
+   "span": "The holding cooler runs at 4 degrees Celsius",
+   "embed_rank": [
+    [
+     "reheat_batch",
+     0.4899
+    ],
+    [
+     "read_temperature_log",
+     0.4629
+    ],
+    [
+     "read_batch_status",
+     0.4262
+    ],
+    [
+     "discard_log_record",
+     0.3833
+    ]
+   ],
+   "rerank_rank": [
+    [
+     "reheat_batch",
+     -5.307
+    ],
+    [
+     "discard_log_record",
+     -7.355
+    ],
+    [
+     "read_temperature_log",
+     -7.689
+    ],
+    [
+     "read_batch_status",
+     -7.785
+    ]
+   ],
+   "nli": {
+    "reheat_batch": {
+     "REALIZES_OPERATION": 0.0004,
+     "CHECKS_PRECONDITION": 0.0011,
+     "OBSERVES_STATE": 0.0008,
+     "COMMUNICATES": 0.0027,
+     "label": "UNRELATED",
+     "max_e": 0.0027
+    },
+    "read_temperature_log": {
+     "REALIZES_OPERATION": 0.0004,
+     "CHECKS_PRECONDITION": 0.0009,
+     "OBSERVES_STATE": 0.001,
+     "COMMUNICATES": 0.0012,
+     "label": "UNRELATED",
+     "max_e": 0.0012
+    },
+    "discard_log_record": {
+     "REALIZES_OPERATION": 0.0005,
+     "CHECKS_PRECONDITION": 0.0022,
+     "OBSERVES_STATE": 0.0006,
+     "COMMUNICATES": 0.001,
+     "label": "UNRELATED",
+     "max_e": 0.0022
+    },
+    "read_batch_status": {
+     "REALIZES_OPERATION": 0.0006,
+     "CHECKS_PRECONDITION": 0.0006,
+     "OBSERVES_STATE": 0.0006,
+     "COMMUNICATES": 0.001,
+     "label": "UNRELATED",
+     "max_e": 0.001
+    }
+   }
+  }
+ ],
+ "b_candidate_grounding": [
+  {
+   "span": "Kitchen staff may reheat a held batch once",
+   "b_features": {
+    "dep": "root",
+    "mark": "once",
+    "deontic": [
+     "may"
+    ],
+    "neg": false,
+    "passive": false,
+    "imperative": false,
+    "root": true,
+    "role_hypothesis": "OPERATION_EFFECT",
+    "even": false
+   },
+   "embed_rank": [
+    [
+     "reheat_batch",
+     0.7178
+    ],
+    [
+     "read_batch_status",
+     0.513
+    ],
+    [
+     "discard_log_record",
+     0.4763
+    ],
+    [
+     "read_temperature_log",
+     0.4706
+    ]
+   ],
+   "rerank_rank": [
+    [
+     "reheat_batch",
+     1.193
+    ],
+    [
+     "read_batch_status",
+     -6.552
+    ],
+    [
+     "read_temperature_log",
+     -9.813
+    ],
+    [
+     "discard_log_record",
+     -9.839
+    ]
+   ],
+   "nli": {
+    "reheat_batch": {
+     "REALIZES_OPERATION": 0.9743,
+     "CHECKS_PRECONDITION": 0.0867,
+     "OBSERVES_STATE": 0.8924,
+     "COMMUNICATES": 0.9517,
+     "label": "REALIZES_OPERATION",
+     "max_e": 0.9743
+    },
+    "read_temperature_log": {
+     "REALIZES_OPERATION": 0.0017,
+     "CHECKS_PRECONDITION": 0.0016,
+     "OBSERVES_STATE": 0.0033,
+     "COMMUNICATES": 0.0013,
+     "label": "UNRELATED",
+     "max_e": 0.0033
+    },
+    "discard_log_record": {
+     "REALIZES_OPERATION": 0.0005,
+     "CHECKS_PRECONDITION": 0.0059,
+     "OBSERVES_STATE": 0.0007,
+     "COMMUNICATES": 0.0004,
+     "label": "UNRELATED",
+     "max_e": 0.0059
+    },
+    "read_batch_status": {
+     "REALIZES_OPERATION": 0.0012,
+     "CHECKS_PRECONDITION": 0.0029,
+     "OBSERVES_STATE": 0.0018,
+     "COMMUNICATES": 0.0014,
+     "label": "UNRELATED",
+     "max_e": 0.0029
+    }
+   }
+  },
+  {
+   "span": "Kitchen staff",
+   "b_features": {
+    "dep": null,
+    "mark": null,
+    "deontic": null,
+    "neg": null,
+    "passive": null,
+    "imperative": null,
+    "root": null,
+    "role_hypothesis": "UNKNOWN",
+    "even": null
+   },
+   "embed_rank": [
+    [
+     "reheat_batch",
+     0.4568
+    ],
+    [
+     "read_batch_status",
+     0.3995
+    ],
+    [
+     "read_temperature_log",
+     0.3875
+    ],
+    [
+     "discard_log_record",
+     0.3361
+    ]
+   ],
+   "rerank_rank": [
+    [
+     "reheat_batch",
+     -9.497
+    ],
+    [
+     "discard_log_record",
+     -10.193
+    ],
+    [
+     "read_temperature_log",
+     -10.193
+    ],
+    [
+     "read_batch_status",
+     -10.197
+    ]
+   ],
+   "nli": {
+    "reheat_batch": {
+     "REALIZES_OPERATION": 0.0214,
+     "CHECKS_PRECONDITION": 0.0049,
+     "OBSERVES_STATE": 0.0027,
+     "COMMUNICATES": 0.0107,
+     "label": "UNRELATED",
+     "max_e": 0.0214
+    },
+    "read_temperature_log": {
+     "REALIZES_OPERATION": 0.0019,
+     "CHECKS_PRECONDITION": 0.0006,
+     "OBSERVES_STATE": 0.0003,
+     "COMMUNICATES": 0.0001,
+     "label": "UNRELATED",
+     "max_e": 0.0019
+    },
+    "discard_log_record": {
+     "REALIZES_OPERATION": 0.0016,
+     "CHECKS_PRECONDITION": 0.0004,
+     "OBSERVES_STATE": 0.0004,
+     "COMMUNICATES": 0.0001,
+     "label": "UNRELATED",
+     "max_e": 0.0016
+    },
+    "read_batch_status": {
+     "REALIZES_OPERATION": 0.0126,
+     "CHECKS_PRECONDITION": 0.0023,
+     "OBSERVES_STATE": 0.0013,
+     "COMMUNICATES": 0.0026,
+     "label": "UNRELATED",
+     "max_e": 0.0126
+    }
+   }
+  },
+  {
+   "span": "Discarding the temperature log for batch B-19 is forbidden",
+   "b_features": {
+    "dep": "root",
+    "mark": null,
+    "deontic": [],
+    "neg": false,
+    "passive": true,
+    "imperative": false,
+    "root": true,
+    "role_hypothesis": "OPERATION_EFFECT",
+    "even": false
+   },
+   "embed_rank": [
+    [
+     "discard_log_record",
+     0.7272
+    ],
+    [
+     "read_temperature_log",
+     0.6635
+    ],
+    [
+     "reheat_batch",
+     0.5992
+    ],
+    [
+     "read_batch_status",
+     0.5336
+    ]
+   ],
+   "rerank_rank": [
+    [
+     "discard_log_record",
+     -1.196
+    ],
+    [
+     "read_temperature_log",
+     -3.266
+    ],
+    [
+     "reheat_batch",
+     -8.038
+    ],
+    [
+     "read_batch_status",
+     -8.656
+    ]
+   ],
+   "nli": {
+    "reheat_batch": {
+     "REALIZES_OPERATION": 0.0,
+     "CHECKS_PRECONDITION": 0.001,
+     "OBSERVES_STATE": 0.0,
+     "COMMUNICATES": 0.0,
+     "label": "UNRELATED",
+     "max_e": 0.001
+    },
+    "read_temperature_log": {
+     "REALIZES_OPERATION": 0.0001,
+     "CHECKS_PRECONDITION": 0.0003,
+     "OBSERVES_STATE": 0.0001,
+     "COMMUNICATES": 0.0,
+     "label": "UNRELATED",
+     "max_e": 0.0003
+    },
+    "discard_log_record": {
+     "REALIZES_OPERATION": 0.0002,
+     "CHECKS_PRECONDITION": 0.0007,
+     "OBSERVES_STATE": 0.0002,
+     "COMMUNICATES": 0.0001,
+     "label": "UNRELATED",
+     "max_e": 0.0007
+    },
+    "read_batch_status": {
+     "REALIZES_OPERATION": 0.0001,
+     "CHECKS_PRECONDITION": 0.0005,
+     "OBSERVES_STATE": 0.0005,
+     "COMMUNICATES": 0.0,
+     "label": "UNRELATED",
+     "max_e": 0.0005
+    }
+   }
+  },
+  {
+   "span": "The holding cooler runs at 4 degrees Celsius",
+   "b_features": {
+    "dep": "root",
+    "mark": null,
+    "deontic": [],
+    "neg": false,
+    "passive": false,
+    "imperative": false,
+    "root": true,
+    "role_hypothesis": "OPERATION_EFFECT",
+    "even": false
+   },
+   "embed_rank": [
+    [
+     "reheat_batch",
+     0.4899
+    ],
+    [
+     "read_temperature_log",
+     0.4629
+    ],
+    [
+     "read_batch_status",
+     0.4262
+    ],
+    [
+     "discard_log_record",
+     0.3833
+    ]
+   ],
+   "rerank_rank": [
+    [
+     "reheat_batch",
+     -5.307
+    ],
+    [
+     "discard_log_record",
+     -7.355
+    ],
+    [
+     "read_temperature_log",
+     -7.689
+    ],
+    [
+     "read_batch_status",
+     -7.785
+    ]
+   ],
+   "nli": {
+    "reheat_batch": {
+     "REALIZES_OPERATION": 0.0004,
+     "CHECKS_PRECONDITION": 0.0011,
+     "OBSERVES_STATE": 0.0008,
+     "COMMUNICATES": 0.0027,
+     "label": "UNRELATED",
+     "max_e": 0.0027
+    },
+    "read_temperature_log": {
+     "REALIZES_OPERATION": 0.0004,
+     "CHECKS_PRECONDITION": 0.0009,
+     "OBSERVES_STATE": 0.001,
+     "COMMUNICATES": 0.0012,
+     "label": "UNRELATED",
+     "max_e": 0.0012
+    },
+    "discard_log_record": {
+     "REALIZES_OPERATION": 0.0005,
+     "CHECKS_PRECONDITION": 0.0022,
+     "OBSERVES_STATE": 0.0006,
+     "COMMUNICATES": 0.001,
+     "label": "UNRELATED",
+     "max_e": 0.0022
+    },
+    "read_batch_status": {
+     "REALIZES_OPERATION": 0.0006,
+     "CHECKS_PRECONDITION": 0.0006,
+     "OBSERVES_STATE": 0.0006,
+     "COMMUNICATES": 0.001,
+     "label": "UNRELATED",
+     "max_e": 0.001
+    }
+   }
+  },
+  {
+   "span": "holding cooler",
+   "b_features": {
+    "dep": null,
+    "mark": null,
+    "deontic": null,
+    "neg": null,
+    "passive": null,
+    "imperative": null,
+    "root": null,
+    "role_hypothesis": "UNKNOWN",
+    "even": null
+   },
+   "embed_rank": [
+    [
+     "reheat_batch",
+     0.4971
+    ],
+    [
+     "read_batch_status",
+     0.4682
+    ],
+    [
+     "read_temperature_log",
+     0.4416
+    ],
+    [
+     "discard_log_record",
+     0.428
+    ]
+   ],
+   "rerank_rank": [
+    [
+     "reheat_batch",
+     -3.128
+    ],
+    [
+     "read_batch_status",
+     -7.216
+    ],
+    [
+     "discard_log_record",
+     -9.812
+    ],
+    [
+     "read_temperature_log",
+     -10.19
+    ]
+   ],
+   "nli": {
+    "reheat_batch": {
+     "REALIZES_OPERATION": 0.7373,
+     "CHECKS_PRECONDITION": 0.2256,
+     "OBSERVES_STATE": 0.9839,
+     "COMMUNICATES": 0.9777,
+     "label": "OBSERVES_STATE",
+     "max_e": 0.9839
+    },
+    "read_temperature_log": {
+     "REALIZES_OPERATION": 0.0055,
+     "CHECKS_PRECONDITION": 0.0046,
+     "OBSERVES_STATE": 0.0262,
+     "COMMUNICATES": 0.0007,
+     "label": "UNRELATED",
+     "max_e": 0.0262
+    },
+    "discard_log_record": {
+     "REALIZES_OPERATION": 0.0081,
+     "CHECKS_PRECONDITION": 0.0113,
+     "OBSERVES_STATE": 0.0094,
+     "COMMUNICATES": 0.0374,
+     "label": "UNRELATED",
+     "max_e": 0.0374
+    },
+    "read_batch_status": {
+     "REALIZES_OPERATION": 0.0366,
+     "CHECKS_PRECONDITION": 0.0179,
+     "OBSERVES_STATE": 0.0457,
+     "COMMUNICATES": 0.2444,
+     "label": "UNRELATED",
+     "max_e": 0.2444
+    }
+   }
+  },
+  {
+   "span": "4 degrees Celsius",
+   "b_features": {
+    "dep": null,
+    "mark": null,
+    "deontic": null,
+    "neg": null,
+    "passive": null,
+    "imperative": null,
+    "root": null,
+    "role_hypothesis": "UNKNOWN",
+    "even": null
+   },
+   "embed_rank": [
+    [
+     "reheat_batch",
+     0.4905
+    ],
+    [
+     "read_temperature_log",
+     0.4901
+    ],
+    [
+     "read_batch_status",
+     0.3979
+    ],
+    [
+     "discard_log_record",
+     0.3838
+    ]
+   ],
+   "rerank_rank": [
+    [
+     "reheat_batch",
+     -5.383
+    ],
+    [
+     "discard_log_record",
+     -5.605
+    ],
+    [
+     "read_temperature_log",
+     -5.87
+    ],
+    [
+     "read_batch_status",
+     -10.183
+    ]
+   ],
+   "nli": {
+    "reheat_batch": {
+     "REALIZES_OPERATION": 0.0003,
+     "CHECKS_PRECONDITION": 0.0003,
+     "OBSERVES_STATE": 0.0004,
+     "COMMUNICATES": 0.0011,
+     "label": "UNRELATED",
+     "max_e": 0.0011
+    },
+    "read_temperature_log": {
+     "REALIZES_OPERATION": 0.0003,
+     "CHECKS_PRECONDITION": 0.0003,
+     "OBSERVES_STATE": 0.0004,
+     "COMMUNICATES": 0.0009,
+     "label": "UNRELATED",
+     "max_e": 0.0009
+    },
+    "discard_log_record": {
+     "REALIZES_OPERATION": 0.0002,
+     "CHECKS_PRECONDITION": 0.0003,
+     "OBSERVES_STATE": 0.0003,
+     "COMMUNICATES": 0.0008,
+     "label": "UNRELATED",
+     "max_e": 0.0008
+    },
+    "read_batch_status": {
+     "REALIZES_OPERATION": 0.0002,
+     "CHECKS_PRECONDITION": 0.0001,
+     "OBSERVES_STATE": 0.0001,
+     "COMMUNICATES": 0.0001,
+     "label": "UNRELATED",
+     "max_e": 0.0002
+    }
+   }
+  }
+ ]
+}

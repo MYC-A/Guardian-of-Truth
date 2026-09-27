@@ -1,0 +1,66 @@
+{
+ "case_id": "vineyard_bottling",
+ "model": "ministral-14b-latest",
+ "served_model": "ministral-14b-latest",
+ "events": [
+  {
+   "span": "Bottle the reserve batch",
+   "role": "OPERATION_EFFECT",
+   "governed_tools": [
+    "bottle_batch"
+   ]
+  },
+  {
+   "span": "laboratory stability test has passed",
+   "role": "STATE_OBSERVATION",
+   "governed_tools": [
+    "read_lab_result"
+   ]
+  },
+  {
+   "span": "Capping a bottle",
+   "role": "OPERATION_EFFECT",
+   "governed_tools": [
+    "cap_bottle"
+   ]
+  },
+  {
+   "span": "voids lot L-7",
+   "role": "OPERATION_EFFECT",
+   "governed_tools": [
+    "void_lot"
+   ]
+  }
+ ],
+ "edges": [
+  {
+   "condition_span": "laboratory stability test has passed",
+   "operation_span": "Bottle the reserve batch",
+   "relation": "GATE"
+  },
+  {
+   "condition_span": "laboratory stability test has passed",
+   "operation_span": "Capping a bottle",
+   "relation": "EXCEPTION"
+  },
+  {
+   "condition_span": "Capping a bottle without the test",
+   "operation_span": "voids lot L-7",
+   "relation": "ORDER_BEFORE"
+  }
+ ],
+ "format_errors": [],
+ "parse_error": "",
+ "finish_reason": "stop",
+ "usage": {
+  "prompt_tokens": 535,
+  "total_tokens": 847,
+  "completion_tokens": 312,
+  "prompt_tokens_details": {
+   "cached_tokens": 0
+  },
+  "service_tier": "standard"
+ },
+ "latency": 4.75,
+ "cached": false
+}

@@ -1,0 +1,768 @@
+{
+ "case_id": "claim_approval",
+ "renderings_without_names": {
+  "approve_claim": "Records the approval decision on an insurance claim. Input parameters: claim_id: string. Output: approved: boolean.",
+  "read_report_attachment": "Reads whether the adjuster's field report is attached to a claim. Input parameters: claim_id: string. Output: attached: boolean.",
+  "audit_claim_history": "Reads a claim's full audit trail including past approval events. Input parameters: claim_id: string. Output: trail: array.",
+  "create_claim": "Creates a new insurance claim record. Input parameters: policy_id: string. Output: claim_id: string."
+ },
+ "tool_type_probe": {
+  "approve_claim": {
+   "mutate": 0.7036,
+   "verify": 0.0428,
+   "read": 0.0,
+   "message": 0.6481,
+   "top": "mutate"
+  },
+  "read_report_attachment": {
+   "mutate": 0.011,
+   "verify": 0.9686,
+   "read": 0.0021,
+   "message": 0.0182,
+   "top": "verify"
+  },
+  "audit_claim_history": {
+   "mutate": 0.0003,
+   "verify": 0.0023,
+   "read": 0.0002,
+   "message": 0.0376,
+   "top": "message"
+  },
+  "create_claim": {
+   "mutate": 0.9268,
+   "verify": 0.0019,
+   "read": 0.0,
+   "message": 0.2059,
+   "top": "mutate"
+  }
+ },
+ "gold_span_grounding": [
+  {
+   "span": "Approve claim C-301",
+   "embed_rank": [
+    [
+     "approve_claim",
+     0.6529
+    ],
+    [
+     "audit_claim_history",
+     0.5902
+    ],
+    [
+     "read_report_attachment",
+     0.5576
+    ],
+    [
+     "create_claim",
+     0.5517
+    ]
+   ],
+   "rerank_rank": [
+    [
+     "audit_claim_history",
+     -4.622
+    ],
+    [
+     "approve_claim",
+     -4.934
+    ],
+    [
+     "read_report_attachment",
+     -5.54
+    ],
+    [
+     "create_claim",
+     -7.57
+    ]
+   ],
+   "nli": {
+    "approve_claim": {
+     "REALIZES_OPERATION": 0.0003,
+     "CHECKS_PRECONDITION": 0.0005,
+     "OBSERVES_STATE": 0.0006,
+     "COMMUNICATES": 0.0009,
+     "label": "UNRELATED",
+     "max_e": 0.0009
+    },
+    "read_report_attachment": {
+     "REALIZES_OPERATION": 0.0002,
+     "CHECKS_PRECONDITION": 0.0004,
+     "OBSERVES_STATE": 0.0004,
+     "COMMUNICATES": 0.0005,
+     "label": "UNRELATED",
+     "max_e": 0.0005
+    },
+    "audit_claim_history": {
+     "REALIZES_OPERATION": 0.0006,
+     "CHECKS_PRECONDITION": 0.0007,
+     "OBSERVES_STATE": 0.0006,
+     "COMMUNICATES": 0.001,
+     "label": "UNRELATED",
+     "max_e": 0.001
+    },
+    "create_claim": {
+     "REALIZES_OPERATION": 0.0003,
+     "CHECKS_PRECONDITION": 0.0004,
+     "OBSERVES_STATE": 0.0002,
+     "COMMUNICATES": 0.0005,
+     "label": "UNRELATED",
+     "max_e": 0.0005
+    }
+   }
+  },
+  {
+   "span": "the adjuster's field report is attached",
+   "embed_rank": [
+    [
+     "read_report_attachment",
+     0.665
+    ],
+    [
+     "approve_claim",
+     0.4993
+    ],
+    [
+     "audit_claim_history",
+     0.483
+    ],
+    [
+     "create_claim",
+     0.4796
+    ]
+   ],
+   "rerank_rank": [
+    [
+     "read_report_attachment",
+     5.914
+    ],
+    [
+     "audit_claim_history",
+     -7.886
+    ],
+    [
+     "approve_claim",
+     -9.103
+    ],
+    [
+     "create_claim",
+     -9.203
+    ]
+   ],
+   "nli": {
+    "approve_claim": {
+     "REALIZES_OPERATION": 0.0054,
+     "CHECKS_PRECONDITION": 0.005,
+     "OBSERVES_STATE": 0.0027,
+     "COMMUNICATES": 0.0,
+     "label": "UNRELATED",
+     "max_e": 0.0054
+    },
+    "read_report_attachment": {
+     "REALIZES_OPERATION": 0.9828,
+     "CHECKS_PRECONDITION": 0.9917,
+     "OBSERVES_STATE": 0.9955,
+     "COMMUNICATES": 0.4563,
+     "label": "OBSERVES_STATE",
+     "max_e": 0.9955
+    },
+    "audit_claim_history": {
+     "REALIZES_OPERATION": 0.0004,
+     "CHECKS_PRECONDITION": 0.0024,
+     "OBSERVES_STATE": 0.0001,
+     "COMMUNICATES": 0.0,
+     "label": "UNRELATED",
+     "max_e": 0.0024
+    },
+    "create_claim": {
+     "REALIZES_OPERATION": 0.0122,
+     "CHECKS_PRECONDITION": 0.0009,
+     "OBSERVES_STATE": 0.0003,
+     "COMMUNICATES": 0.0001,
+     "label": "UNRELATED",
+     "max_e": 0.0122
+    }
+   }
+  },
+  {
+   "span": "The claim audit trail may be consulted",
+   "embed_rank": [
+    [
+     "audit_claim_history",
+     0.7015
+    ],
+    [
+     "read_report_attachment",
+     0.6319
+    ],
+    [
+     "approve_claim",
+     0.6228
+    ],
+    [
+     "create_claim",
+     0.5716
+    ]
+   ],
+   "rerank_rank": [
+    [
+     "audit_claim_history",
+     0.341
+    ],
+    [
+     "read_report_attachment",
+     -6.031
+    ],
+    [
+     "create_claim",
+     -6.276
+    ],
+    [
+     "approve_claim",
+     -6.861
+    ]
+   ],
+   "nli": {
+    "approve_claim": {
+     "REALIZES_OPERATION": 0.0147,
+     "CHECKS_PRECONDITION": 0.0433,
+     "OBSERVES_STATE": 0.0116,
+     "COMMUNICATES": 0.0134,
+     "label": "UNRELATED",
+     "max_e": 0.0433
+    },
+    "read_report_attachment": {
+     "REALIZES_OPERATION": 0.9556,
+     "CHECKS_PRECONDITION": 0.9824,
+     "OBSERVES_STATE": 0.9927,
+     "COMMUNICATES": 0.0107,
+     "label": "OBSERVES_STATE",
+     "max_e": 0.9927
+    },
+    "audit_claim_history": {
+     "REALIZES_OPERATION": 0.993,
+     "CHECKS_PRECONDITION": 0.8867,
+     "OBSERVES_STATE": 0.9872,
+     "COMMUNICATES": 0.0524,
+     "label": "REALIZES_OPERATION",
+     "max_e": 0.993
+    },
+    "create_claim": {
+     "REALIZES_OPERATION": 0.0037,
+     "CHECKS_PRECONDITION": 0.0032,
+     "OBSERVES_STATE": 0.0002,
+     "COMMUNICATES": 0.0003,
+     "label": "UNRELATED",
+     "max_e": 0.0037
+    }
+   }
+  }
+ ],
+ "b_candidate_grounding": [
+  {
+   "span": "Approve claim C-301",
+   "b_features": {
+    "dep": "root",
+    "mark": null,
+    "deontic": [],
+    "neg": false,
+    "passive": false,
+    "imperative": true,
+    "root": true,
+    "role_hypothesis": "OPERATION_EFFECT",
+    "even": false
+   },
+   "embed_rank": [
+    [
+     "approve_claim",
+     0.6529
+    ],
+    [
+     "audit_claim_history",
+     0.5902
+    ],
+    [
+     "read_report_attachment",
+     0.5576
+    ],
+    [
+     "create_claim",
+     0.5517
+    ]
+   ],
+   "rerank_rank": [
+    [
+     "audit_claim_history",
+     -4.622
+    ],
+    [
+     "approve_claim",
+     -4.934
+    ],
+    [
+     "read_report_attachment",
+     -5.54
+    ],
+    [
+     "create_claim",
+     -7.57
+    ]
+   ],
+   "nli": {
+    "approve_claim": {
+     "REALIZES_OPERATION": 0.0003,
+     "CHECKS_PRECONDITION": 0.0005,
+     "OBSERVES_STATE": 0.0006,
+     "COMMUNICATES": 0.0009,
+     "label": "UNRELATED",
+     "max_e": 0.0009
+    },
+    "read_report_attachment": {
+     "REALIZES_OPERATION": 0.0002,
+     "CHECKS_PRECONDITION": 0.0004,
+     "OBSERVES_STATE": 0.0004,
+     "COMMUNICATES": 0.0005,
+     "label": "UNRELATED",
+     "max_e": 0.0005
+    },
+    "audit_claim_history": {
+     "REALIZES_OPERATION": 0.0006,
+     "CHECKS_PRECONDITION": 0.0007,
+     "OBSERVES_STATE": 0.0006,
+     "COMMUNICATES": 0.001,
+     "label": "UNRELATED",
+     "max_e": 0.001
+    },
+    "create_claim": {
+     "REALIZES_OPERATION": 0.0003,
+     "CHECKS_PRECONDITION": 0.0004,
+     "OBSERVES_STATE": 0.0002,
+     "COMMUNICATES": 0.0005,
+     "label": "UNRELATED",
+     "max_e": 0.0005
+    }
+   }
+  },
+  {
+   "span": "claim C-301",
+   "b_features": {
+    "dep": null,
+    "mark": null,
+    "deontic": null,
+    "neg": null,
+    "passive": null,
+    "imperative": null,
+    "root": null,
+    "role_hypothesis": "UNKNOWN",
+    "even": null
+   },
+   "embed_rank": [
+    [
+     "approve_claim",
+     0.5473
+    ],
+    [
+     "audit_claim_history",
+     0.5432
+    ],
+    [
+     "create_claim",
+     0.5321
+    ],
+    [
+     "read_report_attachment",
+     0.5301
+    ]
+   ],
+   "rerank_rank": [
+    [
+     "read_report_attachment",
+     -4.608
+    ],
+    [
+     "audit_claim_history",
+     -5.668
+    ],
+    [
+     "create_claim",
+     -5.859
+    ],
+    [
+     "approve_claim",
+     -6.43
+    ]
+   ],
+   "nli": {
+    "approve_claim": {
+     "REALIZES_OPERATION": 0.0002,
+     "CHECKS_PRECONDITION": 0.0005,
+     "OBSERVES_STATE": 0.0003,
+     "COMMUNICATES": 0.0006,
+     "label": "UNRELATED",
+     "max_e": 0.0006
+    },
+    "read_report_attachment": {
+     "REALIZES_OPERATION": 0.0001,
+     "CHECKS_PRECONDITION": 0.0003,
+     "OBSERVES_STATE": 0.0002,
+     "COMMUNICATES": 0.0008,
+     "label": "UNRELATED",
+     "max_e": 0.0008
+    },
+    "audit_claim_history": {
+     "REALIZES_OPERATION": 0.0002,
+     "CHECKS_PRECONDITION": 0.0006,
+     "OBSERVES_STATE": 0.0005,
+     "COMMUNICATES": 0.002,
+     "label": "UNRELATED",
+     "max_e": 0.002
+    },
+    "create_claim": {
+     "REALIZES_OPERATION": 0.0001,
+     "CHECKS_PRECONDITION": 0.0003,
+     "OBSERVES_STATE": 0.0001,
+     "COMMUNICATES": 0.0013,
+     "label": "UNRELATED",
+     "max_e": 0.0013
+    }
+   }
+  },
+  {
+   "span": "only after the adjuster's field report is attached",
+   "b_features": {
+    "dep": "advcl",
+    "mark": "after",
+    "deontic": [],
+    "neg": false,
+    "passive": true,
+    "imperative": false,
+    "root": false,
+    "role_hypothesis": "OPERATION_EFFECT",
+    "even": false
+   },
+   "embed_rank": [
+    [
+     "read_report_attachment",
+     0.6905
+    ],
+    [
+     "audit_claim_history",
+     0.5098
+    ],
+    [
+     "approve_claim",
+     0.5064
+    ],
+    [
+     "create_claim",
+     0.4638
+    ]
+   ],
+   "rerank_rank": [
+    [
+     "read_report_attachment",
+     2.264
+    ],
+    [
+     "audit_claim_history",
+     -8.738
+    ],
+    [
+     "approve_claim",
+     -9.429
+    ],
+    [
+     "create_claim",
+     -9.689
+    ]
+   ],
+   "nli": {
+    "approve_claim": {
+     "REALIZES_OPERATION": 0.0002,
+     "CHECKS_PRECONDITION": 0.001,
+     "OBSERVES_STATE": 0.0001,
+     "COMMUNICATES": 0.0001,
+     "label": "UNRELATED",
+     "max_e": 0.001
+    },
+    "read_report_attachment": {
+     "REALIZES_OPERATION": 0.0164,
+     "CHECKS_PRECONDITION": 0.978,
+     "OBSERVES_STATE": 0.9141,
+     "COMMUNICATES": 0.0533,
+     "label": "CHECKS_PRECONDITION",
+     "max_e": 0.978
+    },
+    "audit_claim_history": {
+     "REALIZES_OPERATION": 0.0001,
+     "CHECKS_PRECONDITION": 0.0005,
+     "OBSERVES_STATE": 0.0,
+     "COMMUNICATES": 0.0,
+     "label": "UNRELATED",
+     "max_e": 0.0005
+    },
+    "create_claim": {
+     "REALIZES_OPERATION": 0.0002,
+     "CHECKS_PRECONDITION": 0.001,
+     "OBSERVES_STATE": 0.0,
+     "COMMUNICATES": 0.0001,
+     "label": "UNRELATED",
+     "max_e": 0.001
+    }
+   }
+  },
+  {
+   "span": "adjuster's field report",
+   "b_features": {
+    "dep": null,
+    "mark": null,
+    "deontic": null,
+    "neg": null,
+    "passive": null,
+    "imperative": null,
+    "root": null,
+    "role_hypothesis": "UNKNOWN",
+    "even": null
+   },
+   "embed_rank": [
+    [
+     "read_report_attachment",
+     0.62
+    ],
+    [
+     "audit_claim_history",
+     0.491
+    ],
+    [
+     "approve_claim",
+     0.4854
+    ],
+    [
+     "create_claim",
+     0.4621
+    ]
+   ],
+   "rerank_rank": [
+    [
+     "read_report_attachment",
+     3.349
+    ],
+    [
+     "audit_claim_history",
+     -8.357
+    ],
+    [
+     "approve_claim",
+     -10.04
+    ],
+    [
+     "create_claim",
+     -10.094
+    ]
+   ],
+   "nli": {
+    "approve_claim": {
+     "REALIZES_OPERATION": 0.0009,
+     "CHECKS_PRECONDITION": 0.0088,
+     "OBSERVES_STATE": 0.0027,
+     "COMMUNICATES": 0.0003,
+     "label": "UNRELATED",
+     "max_e": 0.0088
+    },
+    "read_report_attachment": {
+     "REALIZES_OPERATION": 0.9795,
+     "CHECKS_PRECONDITION": 0.9904,
+     "OBSERVES_STATE": 0.9952,
+     "COMMUNICATES": 0.9379,
+     "label": "OBSERVES_STATE",
+     "max_e": 0.9952
+    },
+    "audit_claim_history": {
+     "REALIZES_OPERATION": 0.0011,
+     "CHECKS_PRECONDITION": 0.0019,
+     "OBSERVES_STATE": 0.0005,
+     "COMMUNICATES": 0.0,
+     "label": "UNRELATED",
+     "max_e": 0.0019
+    },
+    "create_claim": {
+     "REALIZES_OPERATION": 0.0243,
+     "CHECKS_PRECONDITION": 0.0004,
+     "OBSERVES_STATE": 0.0,
+     "COMMUNICATES": 0.0003,
+     "label": "UNRELATED",
+     "max_e": 0.0243
+    }
+   }
+  },
+  {
+   "span": "The claim audit trail may be consulted at any time",
+   "b_features": {
+    "dep": "root",
+    "mark": null,
+    "deontic": [
+     "may"
+    ],
+    "neg": false,
+    "passive": true,
+    "imperative": false,
+    "root": true,
+    "role_hypothesis": "OPERATION_EFFECT",
+    "even": false
+   },
+   "embed_rank": [
+    [
+     "audit_claim_history",
+     0.6873
+    ],
+    [
+     "approve_claim",
+     0.6134
+    ],
+    [
+     "read_report_attachment",
+     0.6107
+    ],
+    [
+     "create_claim",
+     0.5619
+    ]
+   ],
+   "rerank_rank": [
+    [
+     "audit_claim_history",
+     -2.266
+    ],
+    [
+     "approve_claim",
+     -7.069
+    ],
+    [
+     "read_report_attachment",
+     -7.082
+    ],
+    [
+     "create_claim",
+     -7.441
+    ]
+   ],
+   "nli": {
+    "approve_claim": {
+     "REALIZES_OPERATION": 0.002,
+     "CHECKS_PRECONDITION": 0.0029,
+     "OBSERVES_STATE": 0.0007,
+     "COMMUNICATES": 0.0012,
+     "label": "UNRELATED",
+     "max_e": 0.0029
+    },
+    "read_report_attachment": {
+     "REALIZES_OPERATION": 0.0096,
+     "CHECKS_PRECONDITION": 0.0166,
+     "OBSERVES_STATE": 0.0239,
+     "COMMUNICATES": 0.0009,
+     "label": "UNRELATED",
+     "max_e": 0.0239
+    },
+    "audit_claim_history": {
+     "REALIZES_OPERATION": 0.0176,
+     "CHECKS_PRECONDITION": 0.0032,
+     "OBSERVES_STATE": 0.0154,
+     "COMMUNICATES": 0.0002,
+     "label": "UNRELATED",
+     "max_e": 0.0176
+    },
+    "create_claim": {
+     "REALIZES_OPERATION": 0.0029,
+     "CHECKS_PRECONDITION": 0.0015,
+     "OBSERVES_STATE": 0.0002,
+     "COMMUNICATES": 0.0002,
+     "label": "UNRELATED",
+     "max_e": 0.0029
+    }
+   }
+  },
+  {
+   "span": "claim audit trail",
+   "b_features": {
+    "dep": null,
+    "mark": null,
+    "deontic": null,
+    "neg": null,
+    "passive": null,
+    "imperative": null,
+    "root": null,
+    "role_hypothesis": "UNKNOWN",
+    "even": null
+   },
+   "embed_rank": [
+    [
+     "audit_claim_history",
+     0.7641
+    ],
+    [
+     "approve_claim",
+     0.654
+    ],
+    [
+     "read_report_attachment",
+     0.6533
+    ],
+    [
+     "create_claim",
+     0.6083
+    ]
+   ],
+   "rerank_rank": [
+    [
+     "audit_claim_history",
+     4.804
+    ],
+    [
+     "create_claim",
+     -4.178
+    ],
+    [
+     "read_report_attachment",
+     -4.257
+    ],
+    [
+     "approve_claim",
+     -4.619
+    ]
+   ],
+   "nli": {
+    "approve_claim": {
+     "REALIZES_OPERATION": 0.3001,
+     "CHECKS_PRECONDITION": 0.2395,
+     "OBSERVES_STATE": 0.7698,
+     "COMMUNICATES": 0.9831,
+     "label": "COMMUNICATES",
+     "max_e": 0.9831
+    },
+    "read_report_attachment": {
+     "REALIZES_OPERATION": 0.02,
+     "CHECKS_PRECONDITION": 0.9812,
+     "OBSERVES_STATE": 0.9834,
+     "COMMUNICATES": 0.1649,
+     "label": "OBSERVES_STATE",
+     "max_e": 0.9834
+    },
+    "audit_claim_history": {
+     "REALIZES_OPERATION": 0.9937,
+     "CHECKS_PRECONDITION": 0.0272,
+     "OBSERVES_STATE": 0.996,
+     "COMMUNICATES": 0.9845,
+     "label": "OBSERVES_STATE",
+     "max_e": 0.996
+    },
+    "create_claim": {
+     "REALIZES_OPERATION": 0.0343,
+     "CHECKS_PRECONDITION": 0.001,
+     "OBSERVES_STATE": 0.0001,
+     "COMMUNICATES": 0.3435,
+     "label": "UNRELATED",
+     "max_e": 0.3435
+    }
+   }
+  }
+ ]
+}

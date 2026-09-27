@@ -1,0 +1,54 @@
+{
+ "case_id": "water_valve",
+ "model": "ministral-14b-latest",
+ "served_model": "ministral-14b-latest",
+ "events": [
+  {
+   "span": "Open the distribution valve",
+   "role": "OPERATION_EFFECT",
+   "governed_tools": [
+    "open_valve"
+   ]
+  },
+  {
+   "span": "the turbidity reading for tank-12 is below 0.3 NTU",
+   "role": "STATE_OBSERVATION",
+   "governed_tools": [
+    "read_turbidity"
+   ]
+  },
+  {
+   "span": "An operator override does not open the valve",
+   "role": "COMMUNICATION",
+   "governed_tools": [
+    "log_override"
+   ]
+  }
+ ],
+ "edges": [
+  {
+   "condition_span": "the turbidity reading for tank-12 is below 0.3 NTU",
+   "operation_span": "Open the distribution valve",
+   "relation": "GATE"
+  },
+  {
+   "condition_span": "An operator override",
+   "operation_span": "Open the distribution valve",
+   "relation": "EVEN_IF"
+  }
+ ],
+ "format_errors": [],
+ "parse_error": "",
+ "finish_reason": "stop",
+ "usage": {
+  "prompt_tokens": 551,
+  "total_tokens": 792,
+  "completion_tokens": 241,
+  "prompt_tokens_details": {
+   "cached_tokens": 228
+  },
+  "service_tier": "standard"
+ },
+ "latency": 4.455,
+ "cached": false
+}

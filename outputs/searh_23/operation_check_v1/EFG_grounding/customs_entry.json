@@ -1,0 +1,766 @@
+{
+ "case_id": "customs_entry",
+ "renderings_without_names": {
+  "classify_consignment": "Assigns a tariff classification code to a consignment and records it on the entry. Input parameters: entry_id: string. Output: code: string.",
+  "collect_duty": "Charges and collects the import duty for a customs entry. Input parameters: entry_id: string. Output: charged: boolean.",
+  "audit_entry": "Reads the full entry record including classification and duty events for compliance review. Input parameters: entry_id: string. Output: record: object.",
+  "read_tariff": "Reads the customs tariff schedule. Input parameters: query: string. Output: codes: array."
+ },
+ "tool_type_probe": {
+  "classify_consignment": {
+   "mutate": 0.698,
+   "verify": 0.0008,
+   "read": 0.0,
+   "message": 0.1159,
+   "top": "mutate"
+  },
+  "collect_duty": {
+   "mutate": 0.7129,
+   "verify": 0.5318,
+   "read": 0.0,
+   "message": 0.9511,
+   "top": "message"
+  },
+  "audit_entry": {
+   "mutate": 0.0099,
+   "verify": 0.0047,
+   "read": 0.0004,
+   "message": 0.2111,
+   "top": "message"
+  },
+  "read_tariff": {
+   "mutate": 0.0136,
+   "verify": 0.0212,
+   "read": 0.0013,
+   "message": 0.7429,
+   "top": "message"
+  }
+ },
+ "gold_span_grounding": [
+  {
+   "span": "Classify the consignment under the customs tariff",
+   "embed_rank": [
+    [
+     "classify_consignment",
+     0.7148
+    ],
+    [
+     "read_tariff",
+     0.6919
+    ],
+    [
+     "collect_duty",
+     0.6622
+    ],
+    [
+     "audit_entry",
+     0.4834
+    ]
+   ],
+   "rerank_rank": [
+    [
+     "classify_consignment",
+     -0.173
+    ],
+    [
+     "read_tariff",
+     -3.677
+    ],
+    [
+     "collect_duty",
+     -5.195
+    ],
+    [
+     "audit_entry",
+     -7.672
+    ]
+   ],
+   "nli": {
+    "classify_consignment": {
+     "REALIZES_OPERATION": 0.9703,
+     "CHECKS_PRECONDITION": 0.0026,
+     "OBSERVES_STATE": 0.9522,
+     "COMMUNICATES": 0.9511,
+     "label": "REALIZES_OPERATION",
+     "max_e": 0.9703
+    },
+    "collect_duty": {
+     "REALIZES_OPERATION": 0.9202,
+     "CHECKS_PRECONDITION": 0.9771,
+     "OBSERVES_STATE": 0.9765,
+     "COMMUNICATES": 0.6565,
+     "label": "CHECKS_PRECONDITION",
+     "max_e": 0.9771
+    },
+    "audit_entry": {
+     "REALIZES_OPERATION": 0.0048,
+     "CHECKS_PRECONDITION": 0.004,
+     "OBSERVES_STATE": 0.011,
+     "COMMUNICATES": 0.0117,
+     "label": "UNRELATED",
+     "max_e": 0.0117
+    },
+    "read_tariff": {
+     "REALIZES_OPERATION": 0.0042,
+     "CHECKS_PRECONDITION": 0.0114,
+     "OBSERVES_STATE": 0.7171,
+     "COMMUNICATES": 0.0256,
+     "label": "OBSERVES_STATE",
+     "max_e": 0.7171
+    }
+   }
+  },
+  {
+   "span": "collect the import duty",
+   "embed_rank": [
+    [
+     "collect_duty",
+     0.7382
+    ],
+    [
+     "read_tariff",
+     0.6636
+    ],
+    [
+     "classify_consignment",
+     0.5592
+    ],
+    [
+     "audit_entry",
+     0.498
+    ]
+   ],
+   "rerank_rank": [
+    [
+     "collect_duty",
+     3.088
+    ],
+    [
+     "read_tariff",
+     -6.228
+    ],
+    [
+     "classify_consignment",
+     -6.689
+    ],
+    [
+     "audit_entry",
+     -6.786
+    ]
+   ],
+   "nli": {
+    "classify_consignment": {
+     "REALIZES_OPERATION": 0.0025,
+     "CHECKS_PRECONDITION": 0.0005,
+     "OBSERVES_STATE": 0.0012,
+     "COMMUNICATES": 0.0008,
+     "label": "UNRELATED",
+     "max_e": 0.0025
+    },
+    "collect_duty": {
+     "REALIZES_OPERATION": 0.9776,
+     "CHECKS_PRECONDITION": 0.0595,
+     "OBSERVES_STATE": 0.0129,
+     "COMMUNICATES": 0.9828,
+     "label": "COMMUNICATES",
+     "max_e": 0.9828
+    },
+    "audit_entry": {
+     "REALIZES_OPERATION": 0.0027,
+     "CHECKS_PRECONDITION": 0.0013,
+     "OBSERVES_STATE": 0.0046,
+     "COMMUNICATES": 0.0009,
+     "label": "UNRELATED",
+     "max_e": 0.0046
+    },
+    "read_tariff": {
+     "REALIZES_OPERATION": 0.0107,
+     "CHECKS_PRECONDITION": 0.0158,
+     "OBSERVES_STATE": 0.8719,
+     "COMMUNICATES": 0.18,
+     "label": "OBSERVES_STATE",
+     "max_e": 0.8719
+    }
+   }
+  },
+  {
+   "span": "Auditing the entry record",
+   "embed_rank": [
+    [
+     "audit_entry",
+     0.7237
+    ],
+    [
+     "classify_consignment",
+     0.6536
+    ],
+    [
+     "collect_duty",
+     0.6238
+    ],
+    [
+     "read_tariff",
+     0.5532
+    ]
+   ],
+   "rerank_rank": [
+    [
+     "audit_entry",
+     0.382
+    ],
+    [
+     "classify_consignment",
+     -2.845
+    ],
+    [
+     "collect_duty",
+     -7.531
+    ],
+    [
+     "read_tariff",
+     -10.19
+    ]
+   ],
+   "nli": {
+    "classify_consignment": {
+     "REALIZES_OPERATION": 0.0197,
+     "CHECKS_PRECONDITION": 0.0011,
+     "OBSERVES_STATE": 0.0117,
+     "COMMUNICATES": 0.0095,
+     "label": "UNRELATED",
+     "max_e": 0.0197
+    },
+    "collect_duty": {
+     "REALIZES_OPERATION": 0.0084,
+     "CHECKS_PRECONDITION": 0.0625,
+     "OBSERVES_STATE": 0.0112,
+     "COMMUNICATES": 0.0024,
+     "label": "UNRELATED",
+     "max_e": 0.0625
+    },
+    "audit_entry": {
+     "REALIZES_OPERATION": 0.9725,
+     "CHECKS_PRECONDITION": 0.1826,
+     "OBSERVES_STATE": 0.9862,
+     "COMMUNICATES": 0.9626,
+     "label": "OBSERVES_STATE",
+     "max_e": 0.9862
+    },
+    "read_tariff": {
+     "REALIZES_OPERATION": 0.0677,
+     "CHECKS_PRECONDITION": 0.0252,
+     "OBSERVES_STATE": 0.8574,
+     "COMMUNICATES": 0.1574,
+     "label": "OBSERVES_STATE",
+     "max_e": 0.8574
+    }
+   }
+  }
+ ],
+ "b_candidate_grounding": [
+  {
+   "span": "Classify the consignment under the customs tariff and collect the import duty for entry E-401",
+   "b_features": {
+    "dep": "root",
+    "mark": null,
+    "deontic": [],
+    "neg": false,
+    "passive": false,
+    "imperative": true,
+    "root": true,
+    "role_hypothesis": "OPERATION_EFFECT",
+    "even": false
+   },
+   "embed_rank": [
+    [
+     "collect_duty",
+     0.7407
+    ],
+    [
+     "classify_consignment",
+     0.7255
+    ],
+    [
+     "read_tariff",
+     0.6942
+    ],
+    [
+     "audit_entry",
+     0.5605
+    ]
+   ],
+   "rerank_rank": [
+    [
+     "classify_consignment",
+     0.29
+    ],
+    [
+     "collect_duty",
+     -0.265
+    ],
+    [
+     "read_tariff",
+     -4.43
+    ],
+    [
+     "audit_entry",
+     -6.671
+    ]
+   ],
+   "nli": {
+    "classify_consignment": {
+     "REALIZES_OPERATION": 0.0003,
+     "CHECKS_PRECONDITION": 0.0004,
+     "OBSERVES_STATE": 0.0003,
+     "COMMUNICATES": 0.0006,
+     "label": "UNRELATED",
+     "max_e": 0.0006
+    },
+    "collect_duty": {
+     "REALIZES_OPERATION": 0.0006,
+     "CHECKS_PRECONDITION": 0.0011,
+     "OBSERVES_STATE": 0.001,
+     "COMMUNICATES": 0.0011,
+     "label": "UNRELATED",
+     "max_e": 0.0011
+    },
+    "audit_entry": {
+     "REALIZES_OPERATION": 0.0007,
+     "CHECKS_PRECONDITION": 0.0009,
+     "OBSERVES_STATE": 0.001,
+     "COMMUNICATES": 0.0012,
+     "label": "UNRELATED",
+     "max_e": 0.0012
+    },
+    "read_tariff": {
+     "REALIZES_OPERATION": 0.0003,
+     "CHECKS_PRECONDITION": 0.0005,
+     "OBSERVES_STATE": 0.0008,
+     "COMMUNICATES": 0.0004,
+     "label": "UNRELATED",
+     "max_e": 0.0008
+    }
+   }
+  },
+  {
+   "span": "customs tariff",
+   "b_features": {
+    "dep": null,
+    "mark": null,
+    "deontic": null,
+    "neg": null,
+    "passive": null,
+    "imperative": null,
+    "root": null,
+    "role_hypothesis": "UNKNOWN",
+    "even": null
+   },
+   "embed_rank": [
+    [
+     "read_tariff",
+     0.704
+    ],
+    [
+     "collect_duty",
+     0.6916
+    ],
+    [
+     "classify_consignment",
+     0.5639
+    ],
+    [
+     "audit_entry",
+     0.3955
+    ]
+   ],
+   "rerank_rank": [
+    [
+     "read_tariff",
+     1.648
+    ],
+    [
+     "collect_duty",
+     -4.09
+    ],
+    [
+     "classify_consignment",
+     -5.057
+    ],
+    [
+     "audit_entry",
+     -10.197
+    ]
+   ],
+   "nli": {
+    "classify_consignment": {
+     "REALIZES_OPERATION": 0.0123,
+     "CHECKS_PRECONDITION": 0.0004,
+     "OBSERVES_STATE": 0.0323,
+     "COMMUNICATES": 0.0834,
+     "label": "UNRELATED",
+     "max_e": 0.0834
+    },
+    "collect_duty": {
+     "REALIZES_OPERATION": 0.9544,
+     "CHECKS_PRECONDITION": 0.9738,
+     "OBSERVES_STATE": 0.9777,
+     "COMMUNICATES": 0.9406,
+     "label": "OBSERVES_STATE",
+     "max_e": 0.9777
+    },
+    "audit_entry": {
+     "REALIZES_OPERATION": 0.002,
+     "CHECKS_PRECONDITION": 0.0006,
+     "OBSERVES_STATE": 0.0027,
+     "COMMUNICATES": 0.0004,
+     "label": "UNRELATED",
+     "max_e": 0.0027
+    },
+    "read_tariff": {
+     "REALIZES_OPERATION": 0.9854,
+     "CHECKS_PRECONDITION": 0.6465,
+     "OBSERVES_STATE": 0.9951,
+     "COMMUNICATES": 0.9832,
+     "label": "OBSERVES_STATE",
+     "max_e": 0.9951
+    }
+   }
+  },
+  {
+   "span": "collect the import duty for entry E-401",
+   "b_features": {
+    "dep": "conj",
+    "mark": null,
+    "deontic": [],
+    "neg": false,
+    "passive": false,
+    "imperative": true,
+    "root": false,
+    "role_hypothesis": "UNKNOWN",
+    "even": false
+   },
+   "embed_rank": [
+    [
+     "collect_duty",
+     0.7495
+    ],
+    [
+     "read_tariff",
+     0.6422
+    ],
+    [
+     "classify_consignment",
+     0.6007
+    ],
+    [
+     "audit_entry",
+     0.5785
+    ]
+   ],
+   "rerank_rank": [
+    [
+     "collect_duty",
+     -1.238
+    ],
+    [
+     "classify_consignment",
+     -6.682
+    ],
+    [
+     "read_tariff",
+     -7.697
+    ],
+    [
+     "audit_entry",
+     -7.802
+    ]
+   ],
+   "nli": {
+    "classify_consignment": {
+     "REALIZES_OPERATION": 0.0003,
+     "CHECKS_PRECONDITION": 0.0003,
+     "OBSERVES_STATE": 0.0003,
+     "COMMUNICATES": 0.0006,
+     "label": "UNRELATED",
+     "max_e": 0.0006
+    },
+    "collect_duty": {
+     "REALIZES_OPERATION": 0.0006,
+     "CHECKS_PRECONDITION": 0.001,
+     "OBSERVES_STATE": 0.0007,
+     "COMMUNICATES": 0.0014,
+     "label": "UNRELATED",
+     "max_e": 0.0014
+    },
+    "audit_entry": {
+     "REALIZES_OPERATION": 0.0006,
+     "CHECKS_PRECONDITION": 0.0006,
+     "OBSERVES_STATE": 0.0009,
+     "COMMUNICATES": 0.0022,
+     "label": "UNRELATED",
+     "max_e": 0.0022
+    },
+    "read_tariff": {
+     "REALIZES_OPERATION": 0.0003,
+     "CHECKS_PRECONDITION": 0.0005,
+     "OBSERVES_STATE": 0.0014,
+     "COMMUNICATES": 0.0007,
+     "label": "UNRELATED",
+     "max_e": 0.0014
+    }
+   }
+  },
+  {
+   "span": "import duty",
+   "b_features": {
+    "dep": null,
+    "mark": null,
+    "deontic": null,
+    "neg": null,
+    "passive": null,
+    "imperative": null,
+    "root": null,
+    "role_hypothesis": "UNKNOWN",
+    "even": null
+   },
+   "embed_rank": [
+    [
+     "collect_duty",
+     0.7447
+    ],
+    [
+     "read_tariff",
+     0.6464
+    ],
+    [
+     "classify_consignment",
+     0.5652
+    ],
+    [
+     "audit_entry",
+     0.4807
+    ]
+   ],
+   "rerank_rank": [
+    [
+     "collect_duty",
+     1.967
+    ],
+    [
+     "read_tariff",
+     -7.38
+    ],
+    [
+     "audit_entry",
+     -8.277
+    ],
+    [
+     "classify_consignment",
+     -8.383
+    ]
+   ],
+   "nli": {
+    "classify_consignment": {
+     "REALIZES_OPERATION": 0.0299,
+     "CHECKS_PRECONDITION": 0.0004,
+     "OBSERVES_STATE": 0.002,
+     "COMMUNICATES": 0.0065,
+     "label": "UNRELATED",
+     "max_e": 0.0299
+    },
+    "collect_duty": {
+     "REALIZES_OPERATION": 0.9845,
+     "CHECKS_PRECONDITION": 0.9806,
+     "OBSERVES_STATE": 0.9652,
+     "COMMUNICATES": 0.9885,
+     "label": "COMMUNICATES",
+     "max_e": 0.9885
+    },
+    "audit_entry": {
+     "REALIZES_OPERATION": 0.4763,
+     "CHECKS_PRECONDITION": 0.0107,
+     "OBSERVES_STATE": 0.9762,
+     "COMMUNICATES": 0.1091,
+     "label": "OBSERVES_STATE",
+     "max_e": 0.9762
+    },
+    "read_tariff": {
+     "REALIZES_OPERATION": 0.0644,
+     "CHECKS_PRECONDITION": 0.0214,
+     "OBSERVES_STATE": 0.9836,
+     "COMMUNICATES": 0.9717,
+     "label": "OBSERVES_STATE",
+     "max_e": 0.9836
+    }
+   }
+  },
+  {
+   "span": "entry E-401",
+   "b_features": {
+    "dep": null,
+    "mark": null,
+    "deontic": null,
+    "neg": null,
+    "passive": null,
+    "imperative": null,
+    "root": null,
+    "role_hypothesis": "UNKNOWN",
+    "even": null
+   },
+   "embed_rank": [
+    [
+     "audit_entry",
+     0.5745
+    ],
+    [
+     "classify_consignment",
+     0.5618
+    ],
+    [
+     "collect_duty",
+     0.5453
+    ],
+    [
+     "read_tariff",
+     0.5244
+    ]
+   ],
+   "rerank_rank": [
+    [
+     "classify_consignment",
+     -5.009
+    ],
+    [
+     "collect_duty",
+     -6.81
+    ],
+    [
+     "audit_entry",
+     -7.136
+    ],
+    [
+     "read_tariff",
+     -7.963
+    ]
+   ],
+   "nli": {
+    "classify_consignment": {
+     "REALIZES_OPERATION": 0.0002,
+     "CHECKS_PRECONDITION": 0.0002,
+     "OBSERVES_STATE": 0.0002,
+     "COMMUNICATES": 0.0007,
+     "label": "UNRELATED",
+     "max_e": 0.0007
+    },
+    "collect_duty": {
+     "REALIZES_OPERATION": 0.0003,
+     "CHECKS_PRECONDITION": 0.0006,
+     "OBSERVES_STATE": 0.0007,
+     "COMMUNICATES": 0.001,
+     "label": "UNRELATED",
+     "max_e": 0.001
+    },
+    "audit_entry": {
+     "REALIZES_OPERATION": 0.0003,
+     "CHECKS_PRECONDITION": 0.0003,
+     "OBSERVES_STATE": 0.0007,
+     "COMMUNICATES": 0.0024,
+     "label": "UNRELATED",
+     "max_e": 0.0024
+    },
+    "read_tariff": {
+     "REALIZES_OPERATION": 0.0005,
+     "CHECKS_PRECONDITION": 0.0004,
+     "OBSERVES_STATE": 0.0008,
+     "COMMUNICATES": 0.0012,
+     "label": "UNRELATED",
+     "max_e": 0.0012
+    }
+   }
+  },
+  {
+   "span": "Auditing the entry record does not complete either step",
+   "b_features": {
+    "dep": "root",
+    "mark": null,
+    "deontic": [],
+    "neg": true,
+    "passive": false,
+    "imperative": false,
+    "root": true,
+    "role_hypothesis": "OPERATION_EFFECT",
+    "even": false
+   },
+   "embed_rank": [
+    [
+     "audit_entry",
+     0.6454
+    ],
+    [
+     "collect_duty",
+     0.5726
+    ],
+    [
+     "classify_consignment",
+     0.5565
+    ],
+    [
+     "read_tariff",
+     0.4791
+    ]
+   ],
+   "rerank_rank": [
+    [
+     "audit_entry",
+     -4.475
+    ],
+    [
+     "classify_consignment",
+     -7.639
+    ],
+    [
+     "collect_duty",
+     -8.88
+    ],
+    [
+     "read_tariff",
+     -10.197
+    ]
+   ],
+   "nli": {
+    "classify_consignment": {
+     "REALIZES_OPERATION": 0.0,
+     "CHECKS_PRECONDITION": 0.0,
+     "OBSERVES_STATE": 0.0,
+     "COMMUNICATES": 0.0,
+     "label": "UNRELATED",
+     "max_e": 0.0
+    },
+    "collect_duty": {
+     "REALIZES_OPERATION": 0.0,
+     "CHECKS_PRECONDITION": 0.0003,
+     "OBSERVES_STATE": 0.0,
+     "COMMUNICATES": 0.0,
+     "label": "UNRELATED",
+     "max_e": 0.0003
+    },
+    "audit_entry": {
+     "REALIZES_OPERATION": 0.0,
+     "CHECKS_PRECONDITION": 0.0006,
+     "OBSERVES_STATE": 0.0,
+     "COMMUNICATES": 0.0,
+     "label": "UNRELATED",
+     "max_e": 0.0006
+    },
+    "read_tariff": {
+     "REALIZES_OPERATION": 0.0001,
+     "CHECKS_PRECONDITION": 0.0029,
+     "OBSERVES_STATE": 0.0002,
+     "COMMUNICATES": 0.0001,
+     "label": "UNRELATED",
+     "max_e": 0.0029
+    }
+   }
+  }
+ ]
+}

@@ -1,0 +1,76 @@
+{
+ "case_id": "blood_bank",
+ "model": "ministral-14b-latest",
+ "served_model": "ministral-14b-latest",
+ "events": [
+  {
+   "span": "Collect the donation from donor D-88",
+   "role": "OPERATION_EFFECT",
+   "governed_tools": [
+    "collect_donation"
+   ]
+  },
+  {
+   "span": "screening interview has been completed",
+   "role": "STATE_OBSERVATION",
+   "governed_tools": [
+    "read_interview_status"
+   ]
+  },
+  {
+   "span": "the haemoglobin reading is above the threshold",
+   "role": "STATE_OBSERVATION",
+   "governed_tools": [
+    "read_haemoglobin"
+   ]
+  },
+  {
+   "span": "Notify the donor of any deferral",
+   "role": "COMMUNICATION",
+   "governed_tools": [
+    "notify_donor"
+   ]
+  }
+ ],
+ "edges": [
+  {
+   "condition_span": "screening interview has been completed",
+   "operation_span": "Collect the donation from donor D-88",
+   "relation": "GATE"
+  },
+  {
+   "condition_span": "the haemoglobin reading is above the threshold",
+   "operation_span": "Collect the donation from donor D-88",
+   "relation": "GATE"
+  },
+  {
+   "condition_span": "screening interview has been completed",
+   "operation_span": "Collect the donation from donor D-88",
+   "relation": "ORDER_BEFORE"
+  },
+  {
+   "condition_span": "the haemoglobin reading is above the threshold",
+   "operation_span": "Collect the donation from donor D-88",
+   "relation": "ORDER_BEFORE"
+  },
+  {
+   "condition_span": "the haemoglobin reading is above the threshold",
+   "operation_span": "Notify the donor of any deferral",
+   "relation": "EXCEPTION"
+  }
+ ],
+ "format_errors": [],
+ "parse_error": "",
+ "finish_reason": "stop",
+ "usage": {
+  "prompt_tokens": 544,
+  "total_tokens": 965,
+  "completion_tokens": 421,
+  "prompt_tokens_details": {
+   "cached_tokens": 228
+  },
+  "service_tier": "standard"
+ },
+ "latency": 4.745,
+ "cached": false
+}

@@ -1,0 +1,766 @@
+{
+ "case_id": "customs_entry",
+ "renderings_without_names": {
+  "tool_b46": "Assigns a tariff classification code to a consignment and records it on the entry. Input parameters: entry_id: string. Output: code: string.",
+  "tool_m14": "Charges and collects the import duty for a customs entry. Input parameters: entry_id: string. Output: charged: boolean.",
+  "tool_m74": "Reads the full entry record including classification and duty events for compliance review. Input parameters: entry_id: string. Output: record: object.",
+  "tool_r61": "Reads the customs tariff schedule. Input parameters: query: string. Output: codes: array."
+ },
+ "tool_type_probe": {
+  "tool_b46": {
+   "mutate": 0.698,
+   "verify": 0.0008,
+   "read": 0.0,
+   "message": 0.1159,
+   "top": "mutate"
+  },
+  "tool_m14": {
+   "mutate": 0.7129,
+   "verify": 0.5318,
+   "read": 0.0,
+   "message": 0.9511,
+   "top": "message"
+  },
+  "tool_m74": {
+   "mutate": 0.0099,
+   "verify": 0.0047,
+   "read": 0.0004,
+   "message": 0.2111,
+   "top": "message"
+  },
+  "tool_r61": {
+   "mutate": 0.0136,
+   "verify": 0.0212,
+   "read": 0.0013,
+   "message": 0.7429,
+   "top": "message"
+  }
+ },
+ "gold_span_grounding": [
+  {
+   "span": "Classify the consignment under the customs tariff",
+   "embed_rank": [
+    [
+     "tool_b46",
+     0.7148
+    ],
+    [
+     "tool_r61",
+     0.6919
+    ],
+    [
+     "tool_m14",
+     0.6622
+    ],
+    [
+     "tool_m74",
+     0.4834
+    ]
+   ],
+   "rerank_rank": [
+    [
+     "tool_b46",
+     -0.173
+    ],
+    [
+     "tool_r61",
+     -3.677
+    ],
+    [
+     "tool_m14",
+     -5.195
+    ],
+    [
+     "tool_m74",
+     -7.672
+    ]
+   ],
+   "nli": {
+    "tool_b46": {
+     "REALIZES_OPERATION": 0.9703,
+     "CHECKS_PRECONDITION": 0.0026,
+     "OBSERVES_STATE": 0.9522,
+     "COMMUNICATES": 0.9511,
+     "label": "REALIZES_OPERATION",
+     "max_e": 0.9703
+    },
+    "tool_m14": {
+     "REALIZES_OPERATION": 0.9202,
+     "CHECKS_PRECONDITION": 0.9771,
+     "OBSERVES_STATE": 0.9765,
+     "COMMUNICATES": 0.6565,
+     "label": "CHECKS_PRECONDITION",
+     "max_e": 0.9771
+    },
+    "tool_m74": {
+     "REALIZES_OPERATION": 0.0048,
+     "CHECKS_PRECONDITION": 0.004,
+     "OBSERVES_STATE": 0.011,
+     "COMMUNICATES": 0.0117,
+     "label": "UNRELATED",
+     "max_e": 0.0117
+    },
+    "tool_r61": {
+     "REALIZES_OPERATION": 0.0042,
+     "CHECKS_PRECONDITION": 0.0114,
+     "OBSERVES_STATE": 0.7171,
+     "COMMUNICATES": 0.0256,
+     "label": "OBSERVES_STATE",
+     "max_e": 0.7171
+    }
+   }
+  },
+  {
+   "span": "collect the import duty",
+   "embed_rank": [
+    [
+     "tool_m14",
+     0.7382
+    ],
+    [
+     "tool_r61",
+     0.6636
+    ],
+    [
+     "tool_b46",
+     0.5592
+    ],
+    [
+     "tool_m74",
+     0.498
+    ]
+   ],
+   "rerank_rank": [
+    [
+     "tool_m14",
+     3.088
+    ],
+    [
+     "tool_r61",
+     -6.228
+    ],
+    [
+     "tool_b46",
+     -6.689
+    ],
+    [
+     "tool_m74",
+     -6.786
+    ]
+   ],
+   "nli": {
+    "tool_b46": {
+     "REALIZES_OPERATION": 0.0025,
+     "CHECKS_PRECONDITION": 0.0005,
+     "OBSERVES_STATE": 0.0012,
+     "COMMUNICATES": 0.0008,
+     "label": "UNRELATED",
+     "max_e": 0.0025
+    },
+    "tool_m14": {
+     "REALIZES_OPERATION": 0.9776,
+     "CHECKS_PRECONDITION": 0.0595,
+     "OBSERVES_STATE": 0.0129,
+     "COMMUNICATES": 0.9828,
+     "label": "COMMUNICATES",
+     "max_e": 0.9828
+    },
+    "tool_m74": {
+     "REALIZES_OPERATION": 0.0027,
+     "CHECKS_PRECONDITION": 0.0013,
+     "OBSERVES_STATE": 0.0046,
+     "COMMUNICATES": 0.0009,
+     "label": "UNRELATED",
+     "max_e": 0.0046
+    },
+    "tool_r61": {
+     "REALIZES_OPERATION": 0.0107,
+     "CHECKS_PRECONDITION": 0.0158,
+     "OBSERVES_STATE": 0.8719,
+     "COMMUNICATES": 0.18,
+     "label": "OBSERVES_STATE",
+     "max_e": 0.8719
+    }
+   }
+  },
+  {
+   "span": "Auditing the entry record",
+   "embed_rank": [
+    [
+     "tool_m74",
+     0.7237
+    ],
+    [
+     "tool_b46",
+     0.6536
+    ],
+    [
+     "tool_m14",
+     0.6238
+    ],
+    [
+     "tool_r61",
+     0.5532
+    ]
+   ],
+   "rerank_rank": [
+    [
+     "tool_m74",
+     0.382
+    ],
+    [
+     "tool_b46",
+     -2.845
+    ],
+    [
+     "tool_m14",
+     -7.531
+    ],
+    [
+     "tool_r61",
+     -10.19
+    ]
+   ],
+   "nli": {
+    "tool_b46": {
+     "REALIZES_OPERATION": 0.0197,
+     "CHECKS_PRECONDITION": 0.0011,
+     "OBSERVES_STATE": 0.0117,
+     "COMMUNICATES": 0.0095,
+     "label": "UNRELATED",
+     "max_e": 0.0197
+    },
+    "tool_m14": {
+     "REALIZES_OPERATION": 0.0084,
+     "CHECKS_PRECONDITION": 0.0625,
+     "OBSERVES_STATE": 0.0112,
+     "COMMUNICATES": 0.0024,
+     "label": "UNRELATED",
+     "max_e": 0.0625
+    },
+    "tool_m74": {
+     "REALIZES_OPERATION": 0.9725,
+     "CHECKS_PRECONDITION": 0.1826,
+     "OBSERVES_STATE": 0.9862,
+     "COMMUNICATES": 0.9626,
+     "label": "OBSERVES_STATE",
+     "max_e": 0.9862
+    },
+    "tool_r61": {
+     "REALIZES_OPERATION": 0.0677,
+     "CHECKS_PRECONDITION": 0.0252,
+     "OBSERVES_STATE": 0.8574,
+     "COMMUNICATES": 0.1574,
+     "label": "OBSERVES_STATE",
+     "max_e": 0.8574
+    }
+   }
+  }
+ ],
+ "b_candidate_grounding": [
+  {
+   "span": "Classify the consignment under the customs tariff and collect the import duty for entry uw-66",
+   "b_features": {
+    "dep": "root",
+    "mark": null,
+    "deontic": [],
+    "neg": false,
+    "passive": false,
+    "imperative": true,
+    "root": true,
+    "role_hypothesis": "OPERATION_EFFECT",
+    "even": false
+   },
+   "embed_rank": [
+    [
+     "tool_m14",
+     0.7254
+    ],
+    [
+     "tool_b46",
+     0.707
+    ],
+    [
+     "tool_r61",
+     0.6671
+    ],
+    [
+     "tool_m74",
+     0.5474
+    ]
+   ],
+   "rerank_rank": [
+    [
+     "tool_b46",
+     -0.9
+    ],
+    [
+     "tool_m14",
+     -1.057
+    ],
+    [
+     "tool_r61",
+     -5.285
+    ],
+    [
+     "tool_m74",
+     -7.177
+    ]
+   ],
+   "nli": {
+    "tool_b46": {
+     "REALIZES_OPERATION": 0.0005,
+     "CHECKS_PRECONDITION": 0.0005,
+     "OBSERVES_STATE": 0.0007,
+     "COMMUNICATES": 0.001,
+     "label": "UNRELATED",
+     "max_e": 0.001
+    },
+    "tool_m14": {
+     "REALIZES_OPERATION": 0.0007,
+     "CHECKS_PRECONDITION": 0.0015,
+     "OBSERVES_STATE": 0.0014,
+     "COMMUNICATES": 0.0015,
+     "label": "UNRELATED",
+     "max_e": 0.0015
+    },
+    "tool_m74": {
+     "REALIZES_OPERATION": 0.0014,
+     "CHECKS_PRECONDITION": 0.0017,
+     "OBSERVES_STATE": 0.0018,
+     "COMMUNICATES": 0.0023,
+     "label": "UNRELATED",
+     "max_e": 0.0023
+    },
+    "tool_r61": {
+     "REALIZES_OPERATION": 0.0006,
+     "CHECKS_PRECONDITION": 0.001,
+     "OBSERVES_STATE": 0.0013,
+     "COMMUNICATES": 0.0008,
+     "label": "UNRELATED",
+     "max_e": 0.0013
+    }
+   }
+  },
+  {
+   "span": "customs tariff",
+   "b_features": {
+    "dep": null,
+    "mark": null,
+    "deontic": null,
+    "neg": null,
+    "passive": null,
+    "imperative": null,
+    "root": null,
+    "role_hypothesis": "UNKNOWN",
+    "even": null
+   },
+   "embed_rank": [
+    [
+     "tool_r61",
+     0.704
+    ],
+    [
+     "tool_m14",
+     0.6916
+    ],
+    [
+     "tool_b46",
+     0.5639
+    ],
+    [
+     "tool_m74",
+     0.3955
+    ]
+   ],
+   "rerank_rank": [
+    [
+     "tool_r61",
+     1.648
+    ],
+    [
+     "tool_m14",
+     -4.09
+    ],
+    [
+     "tool_b46",
+     -5.057
+    ],
+    [
+     "tool_m74",
+     -10.197
+    ]
+   ],
+   "nli": {
+    "tool_b46": {
+     "REALIZES_OPERATION": 0.0123,
+     "CHECKS_PRECONDITION": 0.0004,
+     "OBSERVES_STATE": 0.0323,
+     "COMMUNICATES": 0.0834,
+     "label": "UNRELATED",
+     "max_e": 0.0834
+    },
+    "tool_m14": {
+     "REALIZES_OPERATION": 0.9544,
+     "CHECKS_PRECONDITION": 0.9738,
+     "OBSERVES_STATE": 0.9777,
+     "COMMUNICATES": 0.9406,
+     "label": "OBSERVES_STATE",
+     "max_e": 0.9777
+    },
+    "tool_m74": {
+     "REALIZES_OPERATION": 0.002,
+     "CHECKS_PRECONDITION": 0.0006,
+     "OBSERVES_STATE": 0.0027,
+     "COMMUNICATES": 0.0004,
+     "label": "UNRELATED",
+     "max_e": 0.0027
+    },
+    "tool_r61": {
+     "REALIZES_OPERATION": 0.9854,
+     "CHECKS_PRECONDITION": 0.6465,
+     "OBSERVES_STATE": 0.9951,
+     "COMMUNICATES": 0.9832,
+     "label": "OBSERVES_STATE",
+     "max_e": 0.9951
+    }
+   }
+  },
+  {
+   "span": "collect the import duty for entry uw-66",
+   "b_features": {
+    "dep": "conj",
+    "mark": null,
+    "deontic": [],
+    "neg": false,
+    "passive": false,
+    "imperative": true,
+    "root": false,
+    "role_hypothesis": "UNKNOWN",
+    "even": false
+   },
+   "embed_rank": [
+    [
+     "tool_m14",
+     0.7274
+    ],
+    [
+     "tool_r61",
+     0.6101
+    ],
+    [
+     "tool_b46",
+     0.5936
+    ],
+    [
+     "tool_m74",
+     0.5579
+    ]
+   ],
+   "rerank_rank": [
+    [
+     "tool_m14",
+     -1.351
+    ],
+    [
+     "tool_b46",
+     -8.507
+    ],
+    [
+     "tool_m74",
+     -8.619
+    ],
+    [
+     "tool_r61",
+     -9.112
+    ]
+   ],
+   "nli": {
+    "tool_b46": {
+     "REALIZES_OPERATION": 0.0006,
+     "CHECKS_PRECONDITION": 0.0004,
+     "OBSERVES_STATE": 0.0002,
+     "COMMUNICATES": 0.0005,
+     "label": "UNRELATED",
+     "max_e": 0.0006
+    },
+    "tool_m14": {
+     "REALIZES_OPERATION": 0.0008,
+     "CHECKS_PRECONDITION": 0.0011,
+     "OBSERVES_STATE": 0.0009,
+     "COMMUNICATES": 0.002,
+     "label": "UNRELATED",
+     "max_e": 0.002
+    },
+    "tool_m74": {
+     "REALIZES_OPERATION": 0.001,
+     "CHECKS_PRECONDITION": 0.0011,
+     "OBSERVES_STATE": 0.0015,
+     "COMMUNICATES": 0.0046,
+     "label": "UNRELATED",
+     "max_e": 0.0046
+    },
+    "tool_r61": {
+     "REALIZES_OPERATION": 0.0008,
+     "CHECKS_PRECONDITION": 0.0012,
+     "OBSERVES_STATE": 0.0029,
+     "COMMUNICATES": 0.0016,
+     "label": "UNRELATED",
+     "max_e": 0.0029
+    }
+   }
+  },
+  {
+   "span": "import duty",
+   "b_features": {
+    "dep": null,
+    "mark": null,
+    "deontic": null,
+    "neg": null,
+    "passive": null,
+    "imperative": null,
+    "root": null,
+    "role_hypothesis": "UNKNOWN",
+    "even": null
+   },
+   "embed_rank": [
+    [
+     "tool_m14",
+     0.7447
+    ],
+    [
+     "tool_r61",
+     0.6464
+    ],
+    [
+     "tool_b46",
+     0.5652
+    ],
+    [
+     "tool_m74",
+     0.4807
+    ]
+   ],
+   "rerank_rank": [
+    [
+     "tool_m14",
+     1.967
+    ],
+    [
+     "tool_r61",
+     -7.38
+    ],
+    [
+     "tool_m74",
+     -8.277
+    ],
+    [
+     "tool_b46",
+     -8.383
+    ]
+   ],
+   "nli": {
+    "tool_b46": {
+     "REALIZES_OPERATION": 0.0299,
+     "CHECKS_PRECONDITION": 0.0004,
+     "OBSERVES_STATE": 0.002,
+     "COMMUNICATES": 0.0065,
+     "label": "UNRELATED",
+     "max_e": 0.0299
+    },
+    "tool_m14": {
+     "REALIZES_OPERATION": 0.9845,
+     "CHECKS_PRECONDITION": 0.9806,
+     "OBSERVES_STATE": 0.9652,
+     "COMMUNICATES": 0.9885,
+     "label": "COMMUNICATES",
+     "max_e": 0.9885
+    },
+    "tool_m74": {
+     "REALIZES_OPERATION": 0.4763,
+     "CHECKS_PRECONDITION": 0.0107,
+     "OBSERVES_STATE": 0.9762,
+     "COMMUNICATES": 0.1091,
+     "label": "OBSERVES_STATE",
+     "max_e": 0.9762
+    },
+    "tool_r61": {
+     "REALIZES_OPERATION": 0.0644,
+     "CHECKS_PRECONDITION": 0.0214,
+     "OBSERVES_STATE": 0.9836,
+     "COMMUNICATES": 0.9717,
+     "label": "OBSERVES_STATE",
+     "max_e": 0.9836
+    }
+   }
+  },
+  {
+   "span": "entry uw-66",
+   "b_features": {
+    "dep": null,
+    "mark": null,
+    "deontic": null,
+    "neg": null,
+    "passive": null,
+    "imperative": null,
+    "root": null,
+    "role_hypothesis": "UNKNOWN",
+    "even": null
+   },
+   "embed_rank": [
+    [
+     "tool_m74",
+     0.506
+    ],
+    [
+     "tool_b46",
+     0.4963
+    ],
+    [
+     "tool_m14",
+     0.4792
+    ],
+    [
+     "tool_r61",
+     0.442
+    ]
+   ],
+   "rerank_rank": [
+    [
+     "tool_b46",
+     -6.72
+    ],
+    [
+     "tool_m74",
+     -8.081
+    ],
+    [
+     "tool_m14",
+     -8.242
+    ],
+    [
+     "tool_r61",
+     -8.796
+    ]
+   ],
+   "nli": {
+    "tool_b46": {
+     "REALIZES_OPERATION": 0.0003,
+     "CHECKS_PRECONDITION": 0.0002,
+     "OBSERVES_STATE": 0.0001,
+     "COMMUNICATES": 0.0019,
+     "label": "UNRELATED",
+     "max_e": 0.0019
+    },
+    "tool_m14": {
+     "REALIZES_OPERATION": 0.0005,
+     "CHECKS_PRECONDITION": 0.0011,
+     "OBSERVES_STATE": 0.0012,
+     "COMMUNICATES": 0.0024,
+     "label": "UNRELATED",
+     "max_e": 0.0024
+    },
+    "tool_m74": {
+     "REALIZES_OPERATION": 0.0008,
+     "CHECKS_PRECONDITION": 0.0006,
+     "OBSERVES_STATE": 0.0012,
+     "COMMUNICATES": 0.0078,
+     "label": "UNRELATED",
+     "max_e": 0.0078
+    },
+    "tool_r61": {
+     "REALIZES_OPERATION": 0.0014,
+     "CHECKS_PRECONDITION": 0.0011,
+     "OBSERVES_STATE": 0.0021,
+     "COMMUNICATES": 0.009,
+     "label": "UNRELATED",
+     "max_e": 0.009
+    }
+   }
+  },
+  {
+   "span": "Auditing the entry record does not complete either step",
+   "b_features": {
+    "dep": "root",
+    "mark": null,
+    "deontic": [],
+    "neg": true,
+    "passive": false,
+    "imperative": false,
+    "root": true,
+    "role_hypothesis": "OPERATION_EFFECT",
+    "even": false
+   },
+   "embed_rank": [
+    [
+     "tool_m74",
+     0.6454
+    ],
+    [
+     "tool_m14",
+     0.5726
+    ],
+    [
+     "tool_b46",
+     0.5565
+    ],
+    [
+     "tool_r61",
+     0.4791
+    ]
+   ],
+   "rerank_rank": [
+    [
+     "tool_m74",
+     -4.475
+    ],
+    [
+     "tool_b46",
+     -7.639
+    ],
+    [
+     "tool_m14",
+     -8.88
+    ],
+    [
+     "tool_r61",
+     -10.197
+    ]
+   ],
+   "nli": {
+    "tool_b46": {
+     "REALIZES_OPERATION": 0.0,
+     "CHECKS_PRECONDITION": 0.0,
+     "OBSERVES_STATE": 0.0,
+     "COMMUNICATES": 0.0,
+     "label": "UNRELATED",
+     "max_e": 0.0
+    },
+    "tool_m14": {
+     "REALIZES_OPERATION": 0.0,
+     "CHECKS_PRECONDITION": 0.0003,
+     "OBSERVES_STATE": 0.0,
+     "COMMUNICATES": 0.0,
+     "label": "UNRELATED",
+     "max_e": 0.0003
+    },
+    "tool_m74": {
+     "REALIZES_OPERATION": 0.0,
+     "CHECKS_PRECONDITION": 0.0006,
+     "OBSERVES_STATE": 0.0,
+     "COMMUNICATES": 0.0,
+     "label": "UNRELATED",
+     "max_e": 0.0006
+    },
+    "tool_r61": {
+     "REALIZES_OPERATION": 0.0001,
+     "CHECKS_PRECONDITION": 0.0029,
+     "OBSERVES_STATE": 0.0002,
+     "COMMUNICATES": 0.0001,
+     "label": "UNRELATED",
+     "max_e": 0.0029
+    }
+   }
+  }
+ ]
+}

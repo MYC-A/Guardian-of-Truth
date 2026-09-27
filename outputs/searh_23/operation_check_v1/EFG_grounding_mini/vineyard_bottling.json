@@ -1,0 +1,766 @@
+{
+ "case_id": "vineyard_bottling",
+ "renderings_without_names": {
+  "bottle_batch": "Fills and seals bottles from a wine batch. Input parameters: batch_id: string. Output: bottled: boolean.",
+  "read_lab_result": "Reads the latest laboratory stability test result for a batch. Input parameters: batch_id: string. Output: passed: boolean.",
+  "cap_bottle": "Caps a single bottle on the bench line. Input parameters: bottle_id: string. Output: capped: boolean.",
+  "void_lot": "Marks a lot as void in the production ledger. Input parameters: lot_id: string. Output: voided: boolean."
+ },
+ "tool_type_probe": {
+  "bottle_batch": {
+   "mutate": 0.0059,
+   "verify": 0.7181,
+   "read": 0.0,
+   "message": 0.0998,
+   "top": "verify"
+  },
+  "read_lab_result": {
+   "mutate": 0.0003,
+   "verify": 0.9829,
+   "read": 0.0019,
+   "message": 0.28,
+   "top": "verify"
+  },
+  "cap_bottle": {
+   "mutate": 0.0057,
+   "verify": 0.8646,
+   "read": 0.0002,
+   "message": 0.9365,
+   "top": "message"
+  },
+  "void_lot": {
+   "mutate": 0.8989,
+   "verify": 0.0189,
+   "read": 0.0001,
+   "message": 0.6876,
+   "top": "mutate"
+  }
+ },
+ "gold_span_grounding": [
+  {
+   "span": "Bottle the reserve batch",
+   "embed_rank": [
+    [
+     "bottle_batch",
+     0.7296
+    ],
+    [
+     "cap_bottle",
+     0.6721
+    ],
+    [
+     "void_lot",
+     0.5598
+    ],
+    [
+     "read_lab_result",
+     0.4944
+    ]
+   ],
+   "rerank_rank": [
+    [
+     "bottle_batch",
+     -4.215
+    ],
+    [
+     "read_lab_result",
+     -6.928
+    ],
+    [
+     "cap_bottle",
+     -7.271
+    ],
+    [
+     "void_lot",
+     -10.197
+    ]
+   ],
+   "nli": {
+    "bottle_batch": {
+     "REALIZES_OPERATION": 0.7672,
+     "CHECKS_PRECONDITION": 0.1649,
+     "OBSERVES_STATE": 0.7757,
+     "COMMUNICATES": 0.8679,
+     "label": "COMMUNICATES",
+     "max_e": 0.8679
+    },
+    "read_lab_result": {
+     "REALIZES_OPERATION": 0.0002,
+     "CHECKS_PRECONDITION": 0.0069,
+     "OBSERVES_STATE": 0.0273,
+     "COMMUNICATES": 0.0012,
+     "label": "UNRELATED",
+     "max_e": 0.0273
+    },
+    "cap_bottle": {
+     "REALIZES_OPERATION": 0.0154,
+     "CHECKS_PRECONDITION": 0.0216,
+     "OBSERVES_STATE": 0.0156,
+     "COMMUNICATES": 0.0433,
+     "label": "UNRELATED",
+     "max_e": 0.0433
+    },
+    "void_lot": {
+     "REALIZES_OPERATION": 0.0008,
+     "CHECKS_PRECONDITION": 0.0074,
+     "OBSERVES_STATE": 0.0127,
+     "COMMUNICATES": 0.0195,
+     "label": "UNRELATED",
+     "max_e": 0.0195
+    }
+   }
+  },
+  {
+   "span": "the laboratory stability test has passed",
+   "embed_rank": [
+    [
+     "read_lab_result",
+     0.6358
+    ],
+    [
+     "void_lot",
+     0.4336
+    ],
+    [
+     "cap_bottle",
+     0.4319
+    ],
+    [
+     "bottle_batch",
+     0.4078
+    ]
+   ],
+   "rerank_rank": [
+    [
+     "read_lab_result",
+     2.769
+    ],
+    [
+     "void_lot",
+     -9.388
+    ],
+    [
+     "bottle_batch",
+     -10.195
+    ],
+    [
+     "cap_bottle",
+     -10.197
+    ]
+   ],
+   "nli": {
+    "bottle_batch": {
+     "REALIZES_OPERATION": 0.0012,
+     "CHECKS_PRECONDITION": 0.0018,
+     "OBSERVES_STATE": 0.001,
+     "COMMUNICATES": 0.001,
+     "label": "UNRELATED",
+     "max_e": 0.0018
+    },
+    "read_lab_result": {
+     "REALIZES_OPERATION": 0.995,
+     "CHECKS_PRECONDITION": 0.9935,
+     "OBSERVES_STATE": 0.9968,
+     "COMMUNICATES": 0.9682,
+     "label": "OBSERVES_STATE",
+     "max_e": 0.9968
+    },
+    "cap_bottle": {
+     "REALIZES_OPERATION": 0.0037,
+     "CHECKS_PRECONDITION": 0.005,
+     "OBSERVES_STATE": 0.0062,
+     "COMMUNICATES": 0.0041,
+     "label": "UNRELATED",
+     "max_e": 0.0062
+    },
+    "void_lot": {
+     "REALIZES_OPERATION": 0.0002,
+     "CHECKS_PRECONDITION": 0.0018,
+     "OBSERVES_STATE": 0.0001,
+     "COMMUNICATES": 0.0003,
+     "label": "UNRELATED",
+     "max_e": 0.0018
+    }
+   }
+  },
+  {
+   "span": "Capping a bottle",
+   "embed_rank": [
+    [
+     "cap_bottle",
+     0.7622
+    ],
+    [
+     "bottle_batch",
+     0.6356
+    ],
+    [
+     "void_lot",
+     0.4451
+    ],
+    [
+     "read_lab_result",
+     0.3498
+    ]
+   ],
+   "rerank_rank": [
+    [
+     "cap_bottle",
+     3.148
+    ],
+    [
+     "bottle_batch",
+     -3.976
+    ],
+    [
+     "read_lab_result",
+     -8.493
+    ],
+    [
+     "void_lot",
+     -10.195
+    ]
+   ],
+   "nli": {
+    "bottle_batch": {
+     "REALIZES_OPERATION": 0.9952,
+     "CHECKS_PRECONDITION": 0.9741,
+     "OBSERVES_STATE": 0.984,
+     "COMMUNICATES": 0.9931,
+     "label": "REALIZES_OPERATION",
+     "max_e": 0.9952
+    },
+    "read_lab_result": {
+     "REALIZES_OPERATION": 0.0002,
+     "CHECKS_PRECONDITION": 0.0049,
+     "OBSERVES_STATE": 0.0043,
+     "COMMUNICATES": 0.0009,
+     "label": "UNRELATED",
+     "max_e": 0.0049
+    },
+    "cap_bottle": {
+     "REALIZES_OPERATION": 0.9921,
+     "CHECKS_PRECONDITION": 0.6659,
+     "OBSERVES_STATE": 0.2158,
+     "COMMUNICATES": 0.9922,
+     "label": "COMMUNICATES",
+     "max_e": 0.9922
+    },
+    "void_lot": {
+     "REALIZES_OPERATION": 0.0005,
+     "CHECKS_PRECONDITION": 0.0018,
+     "OBSERVES_STATE": 0.0019,
+     "COMMUNICATES": 0.0007,
+     "label": "UNRELATED",
+     "max_e": 0.0019
+    }
+   }
+  }
+ ],
+ "b_candidate_grounding": [
+  {
+   "span": "Bottle the reserve batch",
+   "b_features": {
+    "dep": "root",
+    "mark": null,
+    "deontic": [],
+    "neg": false,
+    "passive": false,
+    "imperative": true,
+    "root": true,
+    "role_hypothesis": "OPERATION_EFFECT",
+    "even": false
+   },
+   "embed_rank": [
+    [
+     "bottle_batch",
+     0.7296
+    ],
+    [
+     "cap_bottle",
+     0.6721
+    ],
+    [
+     "void_lot",
+     0.5598
+    ],
+    [
+     "read_lab_result",
+     0.4944
+    ]
+   ],
+   "rerank_rank": [
+    [
+     "bottle_batch",
+     -4.215
+    ],
+    [
+     "read_lab_result",
+     -6.928
+    ],
+    [
+     "cap_bottle",
+     -7.271
+    ],
+    [
+     "void_lot",
+     -10.197
+    ]
+   ],
+   "nli": {
+    "bottle_batch": {
+     "REALIZES_OPERATION": 0.7672,
+     "CHECKS_PRECONDITION": 0.1649,
+     "OBSERVES_STATE": 0.7757,
+     "COMMUNICATES": 0.8679,
+     "label": "COMMUNICATES",
+     "max_e": 0.8679
+    },
+    "read_lab_result": {
+     "REALIZES_OPERATION": 0.0002,
+     "CHECKS_PRECONDITION": 0.0069,
+     "OBSERVES_STATE": 0.0273,
+     "COMMUNICATES": 0.0012,
+     "label": "UNRELATED",
+     "max_e": 0.0273
+    },
+    "cap_bottle": {
+     "REALIZES_OPERATION": 0.0154,
+     "CHECKS_PRECONDITION": 0.0216,
+     "OBSERVES_STATE": 0.0156,
+     "COMMUNICATES": 0.0433,
+     "label": "UNRELATED",
+     "max_e": 0.0433
+    },
+    "void_lot": {
+     "REALIZES_OPERATION": 0.0008,
+     "CHECKS_PRECONDITION": 0.0074,
+     "OBSERVES_STATE": 0.0127,
+     "COMMUNICATES": 0.0195,
+     "label": "UNRELATED",
+     "max_e": 0.0195
+    }
+   }
+  },
+  {
+   "span": "reserve batch",
+   "b_features": {
+    "dep": null,
+    "mark": null,
+    "deontic": null,
+    "neg": null,
+    "passive": null,
+    "imperative": null,
+    "root": null,
+    "role_hypothesis": "UNKNOWN",
+    "even": null
+   },
+   "embed_rank": [
+    [
+     "bottle_batch",
+     0.6335
+    ],
+    [
+     "void_lot",
+     0.5698
+    ],
+    [
+     "cap_bottle",
+     0.537
+    ],
+    [
+     "read_lab_result",
+     0.5214
+    ]
+   ],
+   "rerank_rank": [
+    [
+     "read_lab_result",
+     -7.1
+    ],
+    [
+     "bottle_batch",
+     -7.493
+    ],
+    [
+     "void_lot",
+     -10.194
+    ],
+    [
+     "cap_bottle",
+     -10.195
+    ]
+   ],
+   "nli": {
+    "bottle_batch": {
+     "REALIZES_OPERATION": 0.918,
+     "CHECKS_PRECONDITION": 0.1607,
+     "OBSERVES_STATE": 0.3783,
+     "COMMUNICATES": 0.5374,
+     "label": "REALIZES_OPERATION",
+     "max_e": 0.918
+    },
+    "read_lab_result": {
+     "REALIZES_OPERATION": 0.0252,
+     "CHECKS_PRECONDITION": 0.9778,
+     "OBSERVES_STATE": 0.941,
+     "COMMUNICATES": 0.0856,
+     "label": "CHECKS_PRECONDITION",
+     "max_e": 0.9778
+    },
+    "cap_bottle": {
+     "REALIZES_OPERATION": 0.0367,
+     "CHECKS_PRECONDITION": 0.0129,
+     "OBSERVES_STATE": 0.0159,
+     "COMMUNICATES": 0.0272,
+     "label": "UNRELATED",
+     "max_e": 0.0367
+    },
+    "void_lot": {
+     "REALIZES_OPERATION": 0.0155,
+     "CHECKS_PRECONDITION": 0.0095,
+     "OBSERVES_STATE": 0.0086,
+     "COMMUNICATES": 0.1727,
+     "label": "UNRELATED",
+     "max_e": 0.1727
+    }
+   }
+  },
+  {
+   "span": "only if the laboratory stability test has passed",
+   "b_features": {
+    "dep": "advcl",
+    "mark": "if",
+    "deontic": [],
+    "neg": false,
+    "passive": false,
+    "imperative": false,
+    "root": false,
+    "role_hypothesis": "PRECONDITION_CHECK",
+    "even": false
+   },
+   "embed_rank": [
+    [
+     "read_lab_result",
+     0.6423
+    ],
+    [
+     "void_lot",
+     0.4881
+    ],
+    [
+     "cap_bottle",
+     0.454
+    ],
+    [
+     "bottle_batch",
+     0.4249
+    ]
+   ],
+   "rerank_rank": [
+    [
+     "read_lab_result",
+     -0.767
+    ],
+    [
+     "void_lot",
+     -10.187
+    ],
+    [
+     "bottle_batch",
+     -10.193
+    ],
+    [
+     "cap_bottle",
+     -10.196
+    ]
+   ],
+   "nli": {
+    "bottle_batch": {
+     "REALIZES_OPERATION": 0.0005,
+     "CHECKS_PRECONDITION": 0.0009,
+     "OBSERVES_STATE": 0.0001,
+     "COMMUNICATES": 0.0006,
+     "label": "UNRELATED",
+     "max_e": 0.0009
+    },
+    "read_lab_result": {
+     "REALIZES_OPERATION": 0.9714,
+     "CHECKS_PRECONDITION": 0.984,
+     "OBSERVES_STATE": 0.9859,
+     "COMMUNICATES": 0.9667,
+     "label": "OBSERVES_STATE",
+     "max_e": 0.9859
+    },
+    "cap_bottle": {
+     "REALIZES_OPERATION": 0.0036,
+     "CHECKS_PRECONDITION": 0.0032,
+     "OBSERVES_STATE": 0.001,
+     "COMMUNICATES": 0.0185,
+     "label": "UNRELATED",
+     "max_e": 0.0185
+    },
+    "void_lot": {
+     "REALIZES_OPERATION": 0.0004,
+     "CHECKS_PRECONDITION": 0.001,
+     "OBSERVES_STATE": 0.0002,
+     "COMMUNICATES": 0.0008,
+     "label": "UNRELATED",
+     "max_e": 0.001
+    }
+   }
+  },
+  {
+   "span": "laboratory stability test",
+   "b_features": {
+    "dep": null,
+    "mark": null,
+    "deontic": null,
+    "neg": null,
+    "passive": null,
+    "imperative": null,
+    "root": null,
+    "role_hypothesis": "UNKNOWN",
+    "even": null
+   },
+   "embed_rank": [
+    [
+     "read_lab_result",
+     0.6542
+    ],
+    [
+     "void_lot",
+     0.4329
+    ],
+    [
+     "cap_bottle",
+     0.43
+    ],
+    [
+     "bottle_batch",
+     0.4006
+    ]
+   ],
+   "rerank_rank": [
+    [
+     "read_lab_result",
+     3.249
+    ],
+    [
+     "void_lot",
+     -9.623
+    ],
+    [
+     "bottle_batch",
+     -10.193
+    ],
+    [
+     "cap_bottle",
+     -10.196
+    ]
+   ],
+   "nli": {
+    "bottle_batch": {
+     "REALIZES_OPERATION": 0.0026,
+     "CHECKS_PRECONDITION": 0.0055,
+     "OBSERVES_STATE": 0.003,
+     "COMMUNICATES": 0.0106,
+     "label": "UNRELATED",
+     "max_e": 0.0106
+    },
+    "read_lab_result": {
+     "REALIZES_OPERATION": 0.9949,
+     "CHECKS_PRECONDITION": 0.9885,
+     "OBSERVES_STATE": 0.9963,
+     "COMMUNICATES": 0.9901,
+     "label": "OBSERVES_STATE",
+     "max_e": 0.9963
+    },
+    "cap_bottle": {
+     "REALIZES_OPERATION": 0.0045,
+     "CHECKS_PRECONDITION": 0.0217,
+     "OBSERVES_STATE": 0.0086,
+     "COMMUNICATES": 0.0169,
+     "label": "UNRELATED",
+     "max_e": 0.0217
+    },
+    "void_lot": {
+     "REALIZES_OPERATION": 0.0022,
+     "CHECKS_PRECONDITION": 0.003,
+     "OBSERVES_STATE": 0.0003,
+     "COMMUNICATES": 0.0079,
+     "label": "UNRELATED",
+     "max_e": 0.0079
+    }
+   }
+  },
+  {
+   "span": "Capping a bottle without the test voids lot L-7",
+   "b_features": {
+    "dep": "root",
+    "mark": null,
+    "deontic": [],
+    "neg": false,
+    "passive": false,
+    "imperative": false,
+    "root": true,
+    "role_hypothesis": "OPERATION_EFFECT",
+    "even": false
+   },
+   "embed_rank": [
+    [
+     "cap_bottle",
+     0.6543
+    ],
+    [
+     "bottle_batch",
+     0.6082
+    ],
+    [
+     "void_lot",
+     0.5907
+    ],
+    [
+     "read_lab_result",
+     0.4806
+    ]
+   ],
+   "rerank_rank": [
+    [
+     "cap_bottle",
+     -4.378
+    ],
+    [
+     "void_lot",
+     -5.104
+    ],
+    [
+     "bottle_batch",
+     -8.821
+    ],
+    [
+     "read_lab_result",
+     -10.081
+    ]
+   ],
+   "nli": {
+    "bottle_batch": {
+     "REALIZES_OPERATION": 0.0001,
+     "CHECKS_PRECONDITION": 0.0003,
+     "OBSERVES_STATE": 0.0002,
+     "COMMUNICATES": 0.0001,
+     "label": "UNRELATED",
+     "max_e": 0.0003
+    },
+    "read_lab_result": {
+     "REALIZES_OPERATION": 0.0,
+     "CHECKS_PRECONDITION": 0.0008,
+     "OBSERVES_STATE": 0.0003,
+     "COMMUNICATES": 0.0001,
+     "label": "UNRELATED",
+     "max_e": 0.0008
+    },
+    "cap_bottle": {
+     "REALIZES_OPERATION": 0.0001,
+     "CHECKS_PRECONDITION": 0.0003,
+     "OBSERVES_STATE": 0.0002,
+     "COMMUNICATES": 0.0001,
+     "label": "UNRELATED",
+     "max_e": 0.0003
+    },
+    "void_lot": {
+     "REALIZES_OPERATION": 0.0002,
+     "CHECKS_PRECONDITION": 0.0011,
+     "OBSERVES_STATE": 0.0008,
+     "COMMUNICATES": 0.0007,
+     "label": "UNRELATED",
+     "max_e": 0.0011
+    }
+   }
+  },
+  {
+   "span": "lot L-7",
+   "b_features": {
+    "dep": null,
+    "mark": null,
+    "deontic": null,
+    "neg": null,
+    "passive": null,
+    "imperative": null,
+    "root": null,
+    "role_hypothesis": "UNKNOWN",
+    "even": null
+   },
+   "embed_rank": [
+    [
+     "void_lot",
+     0.4763
+    ],
+    [
+     "bottle_batch",
+     0.3959
+    ],
+    [
+     "cap_bottle",
+     0.3731
+    ],
+    [
+     "read_lab_result",
+     0.3558
+    ]
+   ],
+   "rerank_rank": [
+    [
+     "void_lot",
+     -6.059
+    ],
+    [
+     "read_lab_result",
+     -10.196
+    ],
+    [
+     "bottle_batch",
+     -10.196
+    ],
+    [
+     "cap_bottle",
+     -10.197
+    ]
+   ],
+   "nli": {
+    "bottle_batch": {
+     "REALIZES_OPERATION": 0.0015,
+     "CHECKS_PRECONDITION": 0.002,
+     "OBSERVES_STATE": 0.0021,
+     "COMMUNICATES": 0.0007,
+     "label": "UNRELATED",
+     "max_e": 0.0021
+    },
+    "read_lab_result": {
+     "REALIZES_OPERATION": 0.0015,
+     "CHECKS_PRECONDITION": 0.0011,
+     "OBSERVES_STATE": 0.0019,
+     "COMMUNICATES": 0.0015,
+     "label": "UNRELATED",
+     "max_e": 0.0019
+    },
+    "cap_bottle": {
+     "REALIZES_OPERATION": 0.0011,
+     "CHECKS_PRECONDITION": 0.0017,
+     "OBSERVES_STATE": 0.0011,
+     "COMMUNICATES": 0.005,
+     "label": "UNRELATED",
+     "max_e": 0.005
+    },
+    "void_lot": {
+     "REALIZES_OPERATION": 0.001,
+     "CHECKS_PRECONDITION": 0.0026,
+     "OBSERVES_STATE": 0.0022,
+     "COMMUNICATES": 0.0019,
+     "label": "UNRELATED",
+     "max_e": 0.0026
+    }
+   }
+  }
+ ]
+}

@@ -1,0 +1,59 @@
+{
+ "case_id": "pharmacy_dispense",
+ "model": "codestral-latest",
+ "served_model": "codestral-latest",
+ "events": [
+  {
+   "span": "verify the prescription match",
+   "role": "PRECONDITION_CHECK",
+   "governed_tools": [
+    "verify_prescription"
+   ]
+  },
+  {
+   "span": "before dispensing medication M-9",
+   "role": "OPERATION_EFFECT",
+   "governed_tools": [
+    "dispense_medication"
+   ]
+  },
+  {
+   "span": "When dispensing a substitute",
+   "role": "STATE_OBSERVATION",
+   "governed_tools": []
+  },
+  {
+   "span": "notify the prescriber",
+   "role": "COMMUNICATION",
+   "governed_tools": [
+    "notify_prescriber"
+   ]
+  }
+ ],
+ "edges": [
+  {
+   "condition_span": "verify the prescription match",
+   "operation_span": "before dispensing medication M-9",
+   "relation": "GATE"
+  },
+  {
+   "condition_span": "When dispensing a substitute",
+   "operation_span": "notify the prescriber",
+   "relation": "GATE"
+  }
+ ],
+ "format_errors": [],
+ "parse_error": "",
+ "finish_reason": "stop",
+ "usage": {
+  "prompt_tokens": 553,
+  "total_tokens": 763,
+  "completion_tokens": 210,
+  "prompt_tokens_details": {
+   "cached_tokens": 228
+  },
+  "service_tier": "standard"
+ },
+ "latency": 2.036,
+ "cached": false
+}
