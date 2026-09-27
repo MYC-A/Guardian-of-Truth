@@ -517,3 +517,28 @@ change occurred. Frozen protocols, raw responses, per-case errors and limits
 are in `docs/searh_23/SOURCE_POLICY_COMPILATION_2026-09-26.md`.
 The full research handoff is in
 `docs/searh_23/CURRENT_RESEARCH_PROBLEM_2026-09-26.md`.
+
+## 25. Staged policy tree and as-of effect claims (2026-09-27)
+
+The user's staged-parser proposal was implemented as two frozen diagnostic
+protocols on the new Vast server through the configured Mistral API. V1
+misclassified four of five conjunction clauses as an ordering between actions:
+its 2/8 exact score consisted solely of pre-model exception/numeric abstains.
+After viewing V1, the V2 prompt explicitly separated checks/approvals from
+business operations. On the original clauses plus two new authored transfer
+clauses it got 10/10 typed-field IR scores. A manual source-span audit found
+two action quotes that actually named prerequisites. A post-hoc conservative
+span-overlap gate withdrew both to UNKNOWN, leaving 8/10 accepted, including
+the two code-only abstains. This is a promising narrow repair, not a complete
+policy compiler.
+
+The unchanged V2 scope prompt selected a valid exact action quote and full
+tool set on 5/7 previously viewed original public46 clauses. It cannot encode
+a policy that governs three modification tools, and it labels several
+prohibitions as `PRECONDITION`. No full benchmark or entry-point promotion was
+run. A separate typed-effect proof helper now cuts the event ledger at the
+answer time; audit success, a generic `completed` status, or a later result
+cannot establish an earlier replacement claim. It depends on an application
+authored effect contract and a correctly typed claim. Protocols, raw outputs,
+cost, case-level failures and limits are in
+`docs/searh_23/STAGED_POLICY_TREE_AND_EFFECT_CLAIMS_2026-09-27.md`.

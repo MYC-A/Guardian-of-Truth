@@ -8,6 +8,7 @@ import pytest
 from guardian_truth.vnext.bound_tool_effects_v2 import (
     BoundContract, BoundRegistry, FieldEquality, evaluate_bound_t1,
 )
+from guardian_truth.vnext.effect_claim_asof_v1 import prove_effect_claim_asof
 from guardian_truth.vnext.integrity import canonical
 from guardian_truth.vnext.normalize import tool_identity
 from guardian_truth.vnext.ordered_effects_v1 import (
@@ -161,3 +162,31 @@ def test_sandbox_post_state_oracle_distinguishes_completed_audit_from_replacemen
             OrderedEffectQuery(target.event_id, QUERY_ACTION, QUERY_APPROVAL))
         assert (evidence.action is Truth.TRUE) == ("SD-101" in state["replaced"])
         assert evidence.prerequisite_before_action is Truth.TRUE
+
+
+def test_effect_claim_uses_only_contract_proven_results_before_answer():
+    ledger = replay([APPROVAL, AUDIT, REPLACEMENT])
+    replacement = next(event for event in ledger.events
+                       if event.kind == "call" and event.tool == IDENTITIES["replace_item"])
+    before_replacement = prove_effect_claim_asof(
+        ledger, REGISTRY, QUERY_ACTION, "SD-101", answer_before_index=replacement.index)
+    before_result = prove_effect_claim_asof(
+        ledger, REGISTRY, QUERY_ACTION, "SD-101", answer_before_index=replacement.index + 1)
+    after_result = prove_effect_claim_asof(
+        ledger, REGISTRY, QUERY_ACTION, "SD-101", answer_before_index=len(ledger.events))
+    assert before_replacement.fact is Truth.UNKNOWN
+    assert before_result.fact is Truth.UNKNOWN and before_result.matching_call_ids
+    assert after_result.fact is Truth.TRUE and after_result.proving_result_ids
+    assert before_result.claim_status == "NOT_ESTABLISHED"
+    assert after_result.claim_status == "SUPPORTED"
+    assert prove_effect_claim_asof(ledger, REGISTRY, QUERY_ACTION, "SD-999",
+                                 answer_before_index=len(ledger.events)).fact is Truth.UNKNOWN
+
+
+def test_completed_tool_status_and_audit_are_not_replacement_proof():
+    ledger = replay([APPROVAL, AUDIT,
+                     step("replace_item", result={"status": "completed"})])
+    proof = prove_effect_claim_asof(ledger, REGISTRY, QUERY_ACTION, "SD-101",
+                                   answer_before_index=len(ledger.events))
+    assert proof.observed_result_ids and not proof.proving_result_ids
+    assert proof.fact is Truth.UNKNOWN and proof.claim_status == "NOT_ESTABLISHED"

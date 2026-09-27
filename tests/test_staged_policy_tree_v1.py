@@ -7,6 +7,7 @@ from pathlib import Path
 sys.path.insert(0, str(Path(__file__).resolve().parents[1] / "experiments/searh_23"))
 
 from build_policy_atoms_v1 import SPECS  # noqa: E402
+from staged_source_role_gate_v1 import disjoint  # noqa: E402
 from staged_policy_tree_v1 import inventory_spans, unique_span, unsupported_reason, valid_binding  # noqa: E402
 
 
@@ -44,3 +45,9 @@ def test_binding_is_limited_to_declared_boolean_evidence() -> None:
     guess = {"evidence_tool": "get_authorization_limit", "join_key": "account_id",
              "result_field": "limit", "required_value": True, "temporal": "LATEST"}
     assert not valid_binding(guess, numeric["tools"], ["account_id"])
+
+
+def test_action_quote_cannot_reuse_prerequisite_source_span() -> None:
+    action = {"start": 10, "end": 20}
+    assert not disjoint(action, {"start": 12, "end": 16})
+    assert disjoint(action, {"start": 20, "end": 25})
