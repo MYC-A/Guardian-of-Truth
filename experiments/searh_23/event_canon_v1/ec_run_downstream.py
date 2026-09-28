@@ -124,8 +124,10 @@ def main():
     fdir = "FRONTEND" if which == "original" else "FRONTEND_renamed"
     t0 = time.time()
     n_calls = 0
+    tag = os.environ.get("EC_TAG", "")
     res_dir = out_dir(f"DOWNSTREAM_{mode}" + (f"_{trackb_name}" if trackb_name else "")
                       + ("_ms" if multispan else "")
+                      + tag
                       + ("" if which == "original" else "_renamed"))
     for case in suite:
         cid_ = case["case_id"]
@@ -134,6 +136,9 @@ def main():
             continue
         nodes = _attach_and_return(mode, load_nodes(mode, case, trackb_dir, fdir),
                                    case, fdir)
+        frontend_events = json.loads(
+            (out_dir(fdir) / f"{case['case_id']}.json")
+            .read_text(encoding="utf-8"))["events"]
         policy = case["policy"]
         apath = out_dir("ALIGNMENT") / f"{cid_}.json"
         align = {r["i"]: r for r in json.loads(
@@ -158,16 +163,48 @@ def main():
             return " ".join(render_tool(by_name[t]) for t in n["governed_tools"]
                             if t in by_name)
 
-        pairs = []
-        for i in range(len(nodes)):
-            for j in range(i + 1, len(nodes)):
-                a, b = nodes[i], nodes[j]
-                sa = sent_of(a["start"]) or a["span"]
-                tb = f"{b['span']}. {sent_of(b['start'])} {tool_text(b)}".strip()
-                pairs.append(((i, j), (sa, tb)))
-        scores = rer.predict([p[1] for p in pairs], batch_size=32,
-                             convert_to_numpy=True) if pairs else []
-        ce = {p[0]: float(s) for p, s in zip(pairs, scores)}
+        if mode == "raw":
+            pairs = []
+            for i in range(len(nodes)):
+                for j in range(i + 1, len(nodes)):
+                    a, b = nodes[i], nodes[j]
+                    sa = sent_of(a["start"]) or a["span"]
+                    tb = f"{b['span']}. {sent_of(b['start'])} {tool_text(b)}".strip()
+                    pairs.append(((i, j), (sa, tb)))
+            scores = rer.predict([p[1] for p in pairs], batch_size=32,
+                                 convert_to_numpy=True) if pairs else []
+            ce = {p[0]: float(s) for p, s in zip(pairs, scores)}
+        else:
+            # member-level CE gating: a node pair passes the band iff ANY
+            # member pair does (canonical nodes inherit mention-level
+            # viability; fixes cross-sentence binding loss when the node's
+            # min-start anchor sentence differs from the binding sentence)
+            mpairs, owners = [], []
+            for i in range(len(nodes)):
+                for j in range(len(nodes)):
+                    if i >= j:
+                        continue
+                    for mi, mem_a in enumerate(nodes[i]["members"]):
+                        for mj, mem_b in enumerate(nodes[j]["members"]):
+                            ia = int(mem_a[1:]) if mem_a[1:].isdigit() else None
+                            ib = int(mem_b[1:]) if mem_b[1:].isdigit() else None
+                            if ia is None or ib is None:
+                                continue
+                            fe = frontend_events
+                            sa = sent_of(fe[ia]["span_start"]) or fe[ia]["span"]
+                            tb = (f"{fe[ib]['span']}. "
+                                  f"{sent_of(fe[ib]['span_start'])} "
+                                  f"{tool_text(nodes[j])}").strip()
+                            mpairs.append((sa, tb))
+                            owners.append((i, j))
+            scores = rer.predict(mpairs, batch_size=32,
+                                 convert_to_numpy=True) if mpairs else []
+            ce = {}
+            best = {}
+            for (i, j), sc in zip(owners, scores):
+                best[(i, j)] = max(best.get((i, j), -1e9), float(sc))
+            for (i, j), sc in best.items():
+                ce[(i, j)] = sc
         # evidence pipeline on CE-band pairs
         edges = []
         for (i, j), sc in ce.items():
