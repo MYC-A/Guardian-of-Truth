@@ -161,10 +161,10 @@ def main():
                           verbose=False, use_gpu=True)
     nli_tok = AutoTokenizer.from_pretrained(
         "cross-encoder/nli-deberta-v3-base",
-        cache_folder="/workspace/guardian/hf_cache")
+        cache_dir="/workspace/guardian/hf_cache")
     nli_model = AutoModelForSequenceClassification.from_pretrained(
         "cross-encoder/nli-deberta-v3-base",
-        cache_folder="/workspace/guardian/hf_cache").to(device).eval()
+        cache_dir="/workspace/guardian/hf_cache").to(device).eval()
 
     suite = load_suite(which)
     t0 = time.time()
