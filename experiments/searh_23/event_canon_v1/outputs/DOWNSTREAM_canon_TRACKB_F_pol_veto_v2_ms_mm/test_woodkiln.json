@@ -1,0 +1,252 @@
+{
+ "case_id": "test_woodkiln",
+ "nodes": [
+  {
+   "node_id": "N00",
+   "span": "Load the kiln with stacked planks",
+   "role": "OPERATION_EFFECT",
+   "members": [
+    "P00"
+   ]
+  },
+  {
+   "node_id": "N01",
+   "span": "Begin the drying cycle",
+   "role": "OPERATION_EFFECT",
+   "members": [
+    "P01",
+    "P02"
+   ]
+  },
+  {
+   "node_id": "N02",
+   "span": "only after the moisture probe is calibrated",
+   "role": "PRECONDITION_CHECK",
+   "members": [
+    "P03"
+   ]
+  },
+  {
+   "node_id": "N03",
+   "span": "moisture probe",
+   "role": "STATE_OBSERVATION",
+   "members": [
+    "P04"
+   ]
+  },
+  {
+   "node_id": "N04",
+   "span": "Monitor the moisture level every six hours",
+   "role": "STATE_OBSERVATION",
+   "members": [
+    "P05"
+   ]
+  },
+  {
+   "node_id": "N05",
+   "span": "moisture level",
+   "role": "STATE_OBSERVATION",
+   "members": [
+    "P06",
+    "P08"
+   ]
+  },
+  {
+   "node_id": "N06",
+   "span": "six hours",
+   "role": "UNKNOWN",
+   "members": [
+    "P07"
+   ]
+  },
+  {
+   "node_id": "N07",
+   "span": "twelve percent",
+   "role": "UNKNOWN",
+   "members": [
+    "P09"
+   ]
+  },
+  {
+   "node_id": "N08",
+   "span": "extend the cycle by one day",
+   "role": "OPERATION_EFFECT",
+   "members": [
+    "P10",
+    "P11"
+   ]
+  },
+  {
+   "node_id": "N09",
+   "span": "End the cycle",
+   "role": "PRECONDITION_CHECK",
+   "members": [
+    "P12",
+    "P13"
+   ]
+  },
+  {
+   "node_id": "N10",
+   "span": "eight percent",
+   "role": "UNKNOWN",
+   "members": [
+    "P14"
+   ]
+  },
+  {
+   "node_id": "N11",
+   "span": "Cool the timber",
+   "role": "OPERATION_EFFECT",
+   "members": [
+    "P15"
+   ]
+  },
+  {
+   "node_id": "N12",
+   "span": "before unloading and stamp each plank after cooling",
+   "role": "OPERATION_EFFECT",
+   "members": [
+    "P16",
+    "P17"
+   ]
+  }
+ ],
+ "edges": [
+  {
+   "u": "N02",
+   "v": "N01",
+   "u_members": [
+    "P03"
+   ],
+   "v_members": [
+    "P01",
+    "P02"
+   ],
+   "ce": 0.9998,
+   "evidence": "\"Begin the drying cycle only after the moisture probe is calibrated.\"",
+   "relation": "PRECONDITION",
+   "dir_first": "B"
+  },
+  {
+   "u": "N03",
+   "v": "N01",
+   "u_members": [
+    "P04"
+   ],
+   "v_members": [
+    "P01",
+    "P02"
+   ],
+   "ce": 0.9997,
+   "evidence": "\"Begin the drying cycle only after the moisture probe is calibrated.\"",
+   "relation": "PRECONDITION",
+   "dir_first": "B"
+  },
+  {
+   "u": "N02",
+   "v": "N03",
+   "u_members": [
+    "P03"
+   ],
+   "v_members": [
+    "P04"
+   ],
+   "ce": 0.9997,
+   "evidence": "\"Begin the drying cycle only after the moisture probe is calibrated\"",
+   "relation": "PRECONDITION",
+   "dir_first": "A"
+  },
+  {
+   "u": "N05",
+   "v": "N06",
+   "u_members": [
+    "P06",
+    "P08"
+   ],
+   "v_members": [
+    "P07"
+   ],
+   "ce": 0.9986,
+   "evidence": "Monitor the moisture level every six hours.",
+   "relation": "ORDER_BEFORE",
+   "dir_first": "UNKNOWN"
+  },
+  {
+   "u": "N05",
+   "v": "N07",
+   "u_members": [
+    "P06",
+    "P08"
+   ],
+   "v_members": [
+    "P09"
+   ],
+   "ce": 0.9999,
+   "evidence": "If the moisture level exceeds twelve percent, extend the cycle by one day.",
+   "relation": "EXCEPTION",
+   "dir_first": "UNKNOWN"
+  },
+  {
+   "u": "N05",
+   "v": "N08",
+   "u_members": [
+    "P06",
+    "P08"
+   ],
+   "v_members": [
+    "P10",
+    "P11"
+   ],
+   "ce": 0.9999,
+   "evidence": "If the moisture level exceeds twelve percent, extend the cycle by one day.",
+   "relation": "PRECONDITION",
+   "dir_first": "A"
+  },
+  {
+   "u": "N05",
+   "v": "N09",
+   "u_members": [
+    "P06",
+    "P08"
+   ],
+   "v_members": [
+    "P12",
+    "P13"
+   ],
+   "ce": 0.6644,
+   "evidence": "Monitor the moisture level every six hours. If the moisture level exceeds twelve percent, extend the cycle by one day. End the cycle when the moisture level falls below eight percent.",
+   "relation": "PRECONDITION",
+   "dir_first": "A"
+  },
+  {
+   "u": "N07",
+   "v": "N08",
+   "u_members": [
+    "P09"
+   ],
+   "v_members": [
+    "P10",
+    "P11"
+   ],
+   "ce": 0.9999,
+   "evidence": "If the moisture level exceeds twelve percent, extend the cycle by one day.",
+   "relation": "PRECONDITION",
+   "dir_first": "A"
+  },
+  {
+   "u": "N11",
+   "v": "N12",
+   "u_members": [
+    "P15"
+   ],
+   "v_members": [
+    "P16",
+    "P17"
+   ],
+   "ce": 0.9997,
+   "evidence": "\"Cool the timber before unloading and stamp each plank after cooling.\"",
+   "relation": "ORDER_BEFORE",
+   "dir_first": "A"
+  }
+ ]
+}

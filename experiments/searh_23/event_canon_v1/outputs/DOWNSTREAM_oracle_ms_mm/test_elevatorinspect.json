@@ -1,0 +1,93 @@
+{
+ "case_id": "test_elevatorinspect",
+ "nodes": [
+  {
+   "node_id": "OE1",
+   "span": "Test the brake system",
+   "role": "OPERATION_EFFECT",
+   "members": [
+    "P00",
+    "P05",
+    "P07"
+   ]
+  },
+  {
+   "node_id": "OE2",
+   "span": "before each inspection certificate is issued",
+   "role": "PRECONDITION_CHECK",
+   "members": [
+    "P02",
+    "P06"
+   ]
+  },
+  {
+   "node_id": "OE5",
+   "span": "The brake test engages the governor",
+   "role": "OPERATION_EFFECT",
+   "members": [
+    "P04",
+    "P08"
+   ]
+  },
+  {
+   "node_id": "OE8",
+   "span": "A suspended certificate is reinstated after a retest",
+   "role": "OPERATION_EFFECT",
+   "members": [
+    "P09"
+   ]
+  }
+ ],
+ "edges": [
+  {
+   "u": "OE2",
+   "v": "OE1",
+   "u_members": [
+    "P02",
+    "P06"
+   ],
+   "v_members": [
+    "P00",
+    "P05",
+    "P07"
+   ],
+   "ce": 0.9996,
+   "evidence": "\"Test the brake system before each inspection certificate is issued.\"",
+   "relation": "ORDER_BEFORE",
+   "dir_first": "B"
+  },
+  {
+   "u": "OE1",
+   "v": "OE5",
+   "u_members": [
+    "P00",
+    "P05",
+    "P07"
+   ],
+   "v_members": [
+    "P04",
+    "P08"
+   ],
+   "ce": 0.9983,
+   "evidence": "\"The brake test engages the governor. Issue the certificate only if the brakes are tested and the governor is engaged.\"",
+   "relation": "ORDER_BEFORE",
+   "dir_first": "A"
+  },
+  {
+   "u": "OE2",
+   "v": "OE5",
+   "u_members": [
+    "P02",
+    "P06"
+   ],
+   "v_members": [
+    "P04",
+    "P08"
+   ],
+   "ce": 0.9966,
+   "evidence": "\"Test the brake system before each inspection certificate is issued. The brake test engages the governor. Issue the certificate only if the brakes are tested and the governor is engaged.\"",
+   "relation": "PRECONDITION",
+   "dir_first": "A"
+  }
+ ]
+}
