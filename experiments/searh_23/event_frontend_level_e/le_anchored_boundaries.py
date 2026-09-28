@@ -27,10 +27,10 @@ def source_region(policy: str, anchor: int) -> tuple[int,int]:
     return next((a,b) for a,b in zip(cuts,cuts[1:]) if a <= anchor < b)
 
 
-def anchored_span(policy, sentence, head):
+def anchored_span(policy, sentence, head, source_bounds=None):
     by_id = {w.id: w for w in sentence.words}
     children = {i: [w for w in sentence.words if w.head == i] for i in by_id}
-    lo, hi = source_region(policy, head.start_char)
+    lo, hi = source_bounds or source_region(policy, head.start_char)
     excluded, kept = [], []
 
     def visit(word):

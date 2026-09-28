@@ -12,6 +12,7 @@ def run():
     eventgold=json.loads((HERE/"frozen/eventness_gold.json").read_text(encoding="utf-8"))
     identitygold=json.loads((HERE/"frozen/identity_gold.json").read_text(encoding="utf-8"))
     identityinputs={r["id"]:r for r in json.loads((HERE/"frozen/identity_inputs.json").read_text(encoding="utf-8"))}
+    casefamilies={r["case_id"]:r["family"] for r in json.loads((HERE/"frozen/frozen_cases.json").read_text(encoding="utf-8"))}
     e1={}
     for arm in ("A1_ud","A3_amr","A4_llm","A5_hybrid"):
         rows=[]
@@ -26,14 +27,15 @@ def run():
         errors=[]; by_family={}
         for path in sorted(folder.glob("*.json")):
             r=json.loads(path.read_text(encoding="utf-8")); g=identitygold[r["id"]]; inp=identityinputs[r["id"]]
-            count=by_family.setdefault(inp["family"]+" / "+inp["variant"],Counter())
+            family=inp.get("family",casefamilies[inp["case_id"]])
+            count=by_family.setdefault(family+" / "+inp["variant"],Counter())
             count["n"]+=1
             count["exact"]+=g==r["label"]
             count["same_tp"]+=g==r["label"]=="SAME_EVENT"
             count["same_fp"]+=g!="SAME_EVENT" and r["label"]=="SAME_EVENT"
             count["same_fn"]+=g=="SAME_EVENT" and r["label"]!="SAME_EVENT"
             if g!=r["label"]:
-                errors.append({"id":r["id"],"gold":g,"pred":r["label"],"family":inp["family"],
+                errors.append({"id":r["id"],"gold":g,"pred":r["label"],"family":family,
                                "variant":inp["variant"],"span_a":inp["a"]["span"],
                                "span_b":inp["b"]["span"],"reason":r.get("reason","")})
         e2[folder.name]={"families":{k:dict(v) for k,v in by_family.items()},"errors":errors}
