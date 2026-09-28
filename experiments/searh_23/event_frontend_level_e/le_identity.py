@@ -58,7 +58,6 @@ def ud_core(nlp, policy: str, mention: dict) -> dict:
             continue
         dep = w.deprel.split(":")[0]
         if dep in {"nsubj", "csubj"}:
-            (patient if mode == "REFERENCE" else actor)  # no-op for readability
             if mode == "REFERENCE":
                 patient = w.lemma or w.text
             else:
