@@ -1,0 +1,7032 @@
+[
+ {
+  "case_id": "dev_marina",
+  "domain": "marina fuel dock",
+  "family": "passive_reference+nominalization",
+  "split": "dev",
+  "policy": "Inspect the fuel hose before every refuelling. The hose must be replaced if the inspection finds a crack. Fuel the vessel only after the hose is inspected. Record the fuel volume in the logbook.",
+  "tools": [
+   {
+    "name": "inspect_hose",
+    "description": "Inspects a marine fuel hose for cracks and wear using a pressure test.",
+    "input": {
+     "hose_id": "string"
+    },
+    "output": {
+     "status": "string",
+     "has_crack": "boolean"
+    }
+   },
+   {
+    "name": "replace_hose",
+    "description": "Replaces a worn fuel hose with a new certified hose on the dock.",
+    "input": {
+     "hose_id": "string",
+     "new_hose_id": "string"
+    },
+    "output": {
+     "replaced": "boolean"
+    }
+   },
+   {
+    "name": "fuel_vessel",
+    "description": "Pumps fuel from the dock tank into a vessel's fuel tank.",
+    "input": {
+     "vessel_id": "string",
+     "liters": "number"
+    },
+    "output": {
+     "liters_dispensed": "number"
+    }
+   },
+   {
+    "name": "log_fuel_volume",
+    "description": "Writes the dispensed fuel volume into the marina logbook.",
+    "input": {
+     "vessel_id": "string",
+     "liters": "number"
+    },
+    "output": {
+     "entry_id": "string"
+    }
+   }
+  ],
+  "mentions": [
+   {
+    "mid": "m1",
+    "span": "Inspect the fuel hose",
+    "start": 0,
+    "end": 21,
+    "cid": "E1",
+    "sentence_index": 0
+   },
+   {
+    "mid": "m2",
+    "span": "The hose must be replaced",
+    "start": 47,
+    "end": 72,
+    "cid": "E2",
+    "sentence_index": 1
+   },
+   {
+    "mid": "m3",
+    "span": "the inspection finds a crack",
+    "start": 76,
+    "end": 104,
+    "cid": "E1",
+    "sentence_index": 1
+   },
+   {
+    "mid": "m4",
+    "span": "the hose is inspected",
+    "start": 133,
+    "end": 154,
+    "cid": "E1",
+    "sentence_index": 2
+   },
+   {
+    "mid": "m5",
+    "span": "Fuel the vessel",
+    "start": 106,
+    "end": 121,
+    "cid": "E3",
+    "sentence_index": 2
+   },
+   {
+    "mid": "m6",
+    "span": "Record the fuel volume",
+    "start": 156,
+    "end": 178,
+    "cid": "E4",
+    "sentence_index": 3
+   }
+  ],
+  "canonical_events": [
+   {
+    "cid": "E1",
+    "predicate": "inspect",
+    "role": "OPERATION_EFFECT",
+    "governed_tools": [
+     "inspect_hose"
+    ]
+   },
+   {
+    "cid": "E2",
+    "predicate": "replace",
+    "role": "OPERATION_EFFECT",
+    "governed_tools": [
+     "replace_hose"
+    ]
+   },
+   {
+    "cid": "E3",
+    "predicate": "fuel",
+    "role": "OPERATION_EFFECT",
+    "governed_tools": [
+     "fuel_vessel"
+    ]
+   },
+   {
+    "cid": "E4",
+    "predicate": "record",
+    "role": "COMMUNICATION",
+    "governed_tools": [
+     "log_fuel_volume"
+    ]
+   }
+  ],
+  "related_pairs": [],
+  "ambiguous_pairs": [],
+  "edges": [
+   {
+    "from_cid": "E1",
+    "to_cid": "E3",
+    "relation": "PRECONDITION",
+    "acceptable": [
+     "PRECONDITION"
+    ],
+    "evidence": [
+     {
+      "start": 106,
+      "end": 154,
+      "text": "Fuel the vessel only after the hose is inspected"
+     }
+    ]
+   },
+   {
+    "from_cid": "E1",
+    "to_cid": "E2",
+    "relation": "RESPONSE",
+    "acceptable": [
+     "RESPONSE"
+    ],
+    "evidence": [
+     {
+      "start": 47,
+      "end": 104,
+      "text": "The hose must be replaced if the inspection finds a crack"
+     }
+    ]
+   }
+  ],
+  "cf_of": null,
+  "notes": "active op + passive reference inside binding clause + nominalization 'the inspection' -> all SAME (E1). The exact duplicate pattern seen in the laundry real-track failure."
+ },
+ {
+  "case_id": "dev_bakery",
+  "domain": "artisan bakery",
+  "family": "nominalization_subtype_split+repeated_occurrence",
+  "split": "dev",
+  "policy": "Proof each dough batch for two hours. The proofing of sourdough batches takes four hours. Bake the loaves only after the dough has been proofed. Sweep the oven deck before each bake and sweep it again after each bake.",
+  "tools": [
+   {
+    "name": "proof_dough",
+    "description": "Holds a dough batch in the proofing cabinet at controlled temperature and humidity.",
+    "input": {
+     "batch_id": "string",
+     "hours": "number"
+    },
+    "output": {
+     "proofed": "boolean"
+    }
+   },
+   {
+    "name": "bake_bread",
+    "description": "Bakes proofed loaves in the deck oven at a set temperature.",
+    "input": {
+     "batch_id": "string",
+     "temperature": "number"
+    },
+    "output": {
+     "baked": "boolean"
+    }
+   },
+   {
+    "name": "sweep_oven",
+    "description": "Sweeps flour and crumbs from the oven deck with a bench brush.",
+    "input": {
+     "deck_id": "string"
+    },
+    "output": {
+     "cleaned": "boolean"
+    }
+   }
+  ],
+  "mentions": [
+   {
+    "mid": "m1",
+    "span": "Proof each dough batch",
+    "start": 0,
+    "end": 22,
+    "cid": "E1",
+    "sentence_index": 0
+   },
+   {
+    "mid": "m2",
+    "span": "The proofing of sourdough batches",
+    "start": 38,
+    "end": 71,
+    "cid": "E2",
+    "sentence_index": 1
+   },
+   {
+    "mid": "m3",
+    "span": "Bake the loaves",
+    "start": 90,
+    "end": 105,
+    "cid": "E3",
+    "sentence_index": 2
+   },
+   {
+    "mid": "m4",
+    "span": "the dough has been proofed",
+    "start": 117,
+    "end": 143,
+    "cid": "E1",
+    "sentence_index": 2
+   },
+   {
+    "mid": "m5",
+    "span": "Sweep the oven deck",
+    "start": 145,
+    "end": 164,
+    "cid": "E4",
+    "sentence_index": 3
+   },
+   {
+    "mid": "m6",
+    "span": "sweep it again",
+    "start": 186,
+    "end": 200,
+    "cid": "E5",
+    "sentence_index": 3
+   },
+   {
+    "mid": "m7a",
+    "span": "each bake",
+    "start": 172,
+    "end": 181,
+    "cid": "E3",
+    "sentence_index": 3
+   },
+   {
+    "mid": "m7b",
+    "span": "each bake",
+    "start": 207,
+    "end": 216,
+    "cid": "E3",
+    "sentence_index": 3
+   }
+  ],
+  "canonical_events": [
+   {
+    "cid": "E1",
+    "predicate": "proof",
+    "role": "OPERATION_EFFECT",
+    "governed_tools": [
+     "proof_dough"
+    ]
+   },
+   {
+    "cid": "E2",
+    "predicate": "proof_sourdough",
+    "role": "OPERATION_EFFECT",
+    "governed_tools": [
+     "proof_dough"
+    ]
+   },
+   {
+    "cid": "E3",
+    "predicate": "bake",
+    "role": "OPERATION_EFFECT",
+    "governed_tools": [
+     "bake_bread"
+    ]
+   },
+   {
+    "cid": "E4",
+    "predicate": "sweep_before",
+    "role": "OPERATION_EFFECT",
+    "governed_tools": [
+     "sweep_oven"
+    ]
+   },
+   {
+    "cid": "E5",
+    "predicate": "sweep_after",
+    "role": "OPERATION_EFFECT",
+    "governed_tools": [
+     "sweep_oven"
+    ]
+   }
+  ],
+  "related_pairs": [
+   [
+    "E4",
+    "E5"
+   ],
+   [
+    "E1",
+    "E2"
+   ]
+  ],
+  "ambiguous_pairs": [],
+  "edges": [
+   {
+    "from_cid": "E1",
+    "to_cid": "E3",
+    "relation": "PRECONDITION",
+    "acceptable": [
+     "PRECONDITION",
+     "ORDER_BEFORE"
+    ],
+    "evidence": [
+     {
+      "start": 90,
+      "end": 143,
+      "text": "Bake the loaves only after the dough has been proofed"
+     }
+    ]
+   }
+  ],
+  "cf_of": null,
+  "notes": "verb/nominalization SAME vs subtype split (sourdough = RELATED_BUT_DIFFERENT); 'sweep it again' anaphora+second occurrence -> separate canonical event; 'each bake' x2 -> generic bake references."
+ },
+ {
+  "case_id": "dev_photolab",
+  "domain": "photo development lab",
+  "family": "action_vs_state+negation",
+  "split": "dev",
+  "policy": "Develop each film roll in the tank line. A roll is considered developed only after the fixing bath completes. Print the negatives only if the film is developed. Discard any roll that is not developed by closing time.",
+  "tools": [
+   {
+    "name": "develop_film",
+    "description": "Runs a film roll through the development tank line with developer and stop baths.",
+    "input": {
+     "roll_id": "string"
+    },
+    "output": {
+     "developed": "boolean"
+    }
+   },
+   {
+    "name": "fix_film",
+    "description": "Runs the fixing bath that stabilises a developed film roll.",
+    "input": {
+     "roll_id": "string"
+    },
+    "output": {
+     "fixed": "boolean"
+    }
+   },
+   {
+    "name": "print_negatives",
+    "description": "Prints negatives onto photographic paper in the darkroom enlarger.",
+    "input": {
+     "roll_id": "string"
+    },
+    "output": {
+     "prints": "number"
+    }
+   },
+   {
+    "name": "discard_roll",
+    "description": "Discards a film roll into the waste container.",
+    "input": {
+     "roll_id": "string"
+    },
+    "output": {
+     "discarded": "boolean"
+    }
+   }
+  ],
+  "mentions": [
+   {
+    "mid": "m1",
+    "span": "Develop each film roll",
+    "start": 0,
+    "end": 22,
+    "cid": "E1",
+    "sentence_index": 0
+   },
+   {
+    "mid": "m2",
+    "span": "A roll is considered developed",
+    "start": 41,
+    "end": 71,
+    "cid": "E2",
+    "sentence_index": 1
+   },
+   {
+    "mid": "m3",
+    "span": "the fixing bath completes",
+    "start": 83,
+    "end": 108,
+    "cid": "E3",
+    "sentence_index": 1
+   },
+   {
+    "mid": "m4",
+    "span": "the film is developed",
+    "start": 138,
+    "end": 159,
+    "cid": "E2",
+    "sentence_index": 2
+   },
+   {
+    "mid": "m5",
+    "span": "Print the negatives",
+    "start": 110,
+    "end": 129,
+    "cid": "E5",
+    "sentence_index": 2
+   },
+   {
+    "mid": "m6",
+    "span": "Discard any roll that is not developed by closing time",
+    "start": 161,
+    "end": 215,
+    "cid": "E6",
+    "sentence_index": 3
+   },
+   {
+    "mid": "m7",
+    "span": "that is not developed by closing time",
+    "start": 178,
+    "end": 215,
+    "cid": "E4",
+    "sentence_index": 3
+   }
+  ],
+  "canonical_events": [
+   {
+    "cid": "E1",
+    "predicate": "develop",
+    "role": "OPERATION_EFFECT",
+    "governed_tools": [
+     "develop_film"
+    ]
+   },
+   {
+    "cid": "E2",
+    "predicate": "developed_state",
+    "role": "STATE_OBSERVATION",
+    "governed_tools": [
+     "develop_film"
+    ]
+   },
+   {
+    "cid": "E3",
+    "predicate": "complete_fixing_bath",
+    "role": "OPERATION_EFFECT",
+    "governed_tools": [
+     "fix_film"
+    ]
+   },
+   {
+    "cid": "E4",
+    "predicate": "not_developed_state",
+    "role": "STATE_OBSERVATION",
+    "governed_tools": [
+     "develop_film"
+    ]
+   },
+   {
+    "cid": "E5",
+    "predicate": "print",
+    "role": "OPERATION_EFFECT",
+    "governed_tools": [
+     "print_negatives"
+    ]
+   },
+   {
+    "cid": "E6",
+    "predicate": "discard",
+    "role": "OPERATION_EFFECT",
+    "governed_tools": [
+     "discard_roll"
+    ]
+   }
+  ],
+  "related_pairs": [
+   [
+    "E1",
+    "E2"
+   ],
+   [
+    "E2",
+    "E4"
+   ]
+  ],
+  "ambiguous_pairs": [],
+  "edges": [
+   {
+    "from_cid": "E3",
+    "to_cid": "E2",
+    "relation": "ORDER_BEFORE",
+    "acceptable": [
+     "ORDER_BEFORE",
+     "PRECONDITION"
+    ],
+    "evidence": [
+     {
+      "start": 41,
+      "end": 108,
+      "text": "A roll is considered developed only after the fixing bath completes"
+     }
+    ]
+   },
+   {
+    "from_cid": "E2",
+    "to_cid": "E5",
+    "relation": "STATE_GATE",
+    "acceptable": [
+     "STATE_GATE"
+    ],
+    "evidence": [
+     {
+      "start": 110,
+      "end": 159,
+      "text": "Print the negatives only if the film is developed"
+     }
+    ]
+   },
+   {
+    "from_cid": "E4",
+    "to_cid": "E6",
+    "relation": "STATE_GATE",
+    "acceptable": [
+     "STATE_GATE"
+    ],
+    "evidence": [
+     {
+      "start": 161,
+      "end": 215,
+      "text": "Discard any roll that is not developed by closing time"
+     }
+    ]
+   }
+  ],
+  "cf_of": null,
+  "notes": "action (develop) vs result state (is developed) vs negated state (not developed): three distinct canonical events, pairwise RELATED."
+ },
+ {
+  "case_id": "dev_dental",
+  "domain": "dental laboratory",
+  "family": "anaphora_this+entity_split",
+  "split": "dev",
+  "policy": "Fabricate each crown from the digital scan. This fabrication must be completed within two days. Polish the crown before the glaze is applied. Polish the bridge separately, since bridge polishing uses a finer compound.",
+  "tools": [
+   {
+    "name": "fabricate_crown",
+    "description": "Mills a dental crown from a digital scan file on the milling unit.",
+    "input": {
+     "scan_id": "string"
+    },
+    "output": {
+     "crown_id": "string"
+    }
+   },
+   {
+    "name": "polish_restoration",
+    "description": "Polishes a dental restoration with pumice on the lathe.",
+    "input": {
+     "item_id": "string"
+    },
+    "output": {
+     "polished": "boolean"
+    }
+   },
+   {
+    "name": "apply_glaze",
+    "description": "Applies the glaze layer to a restoration and fires it in the furnace.",
+    "input": {
+     "item_id": "string"
+    },
+    "output": {
+     "glazed": "boolean"
+    }
+   }
+  ],
+  "mentions": [
+   {
+    "mid": "m1",
+    "span": "Fabricate each crown",
+    "start": 0,
+    "end": 20,
+    "cid": "E1",
+    "sentence_index": 0
+   },
+   {
+    "mid": "m2",
+    "span": "This fabrication",
+    "start": 44,
+    "end": 60,
+    "cid": "E1",
+    "sentence_index": 1
+   },
+   {
+    "mid": "m3",
+    "span": "Polish the crown",
+    "start": 96,
+    "end": 112,
+    "cid": "E2",
+    "sentence_index": 2
+   },
+   {
+    "mid": "m4",
+    "span": "the glaze is applied",
+    "start": 120,
+    "end": 140,
+    "cid": "E4",
+    "sentence_index": 2
+   },
+   {
+    "mid": "m5",
+    "span": "Polish the bridge",
+    "start": 142,
+    "end": 159,
+    "cid": "E3",
+    "sentence_index": 3
+   },
+   {
+    "mid": "m6",
+    "span": "bridge polishing",
+    "start": 178,
+    "end": 194,
+    "cid": "E3",
+    "sentence_index": 3
+   }
+  ],
+  "canonical_events": [
+   {
+    "cid": "E1",
+    "predicate": "fabricate",
+    "role": "OPERATION_EFFECT",
+    "governed_tools": [
+     "fabricate_crown"
+    ]
+   },
+   {
+    "cid": "E2",
+    "predicate": "polish_crown",
+    "role": "OPERATION_EFFECT",
+    "governed_tools": [
+     "polish_restoration"
+    ]
+   },
+   {
+    "cid": "E3",
+    "predicate": "polish_bridge",
+    "role": "OPERATION_EFFECT",
+    "governed_tools": [
+     "polish_restoration"
+    ]
+   },
+   {
+    "cid": "E4",
+    "predicate": "apply_glaze",
+    "role": "OPERATION_EFFECT",
+    "governed_tools": [
+     "apply_glaze"
+    ]
+   }
+  ],
+  "related_pairs": [
+   [
+    "E2",
+    "E3"
+   ]
+  ],
+  "ambiguous_pairs": [],
+  "edges": [
+   {
+    "from_cid": "E2",
+    "to_cid": "E4",
+    "relation": "ORDER_BEFORE",
+    "acceptable": [
+     "ORDER_BEFORE"
+    ],
+    "evidence": [
+     {
+      "start": 96,
+      "end": 140,
+      "text": "Polish the crown before the glaze is applied"
+     }
+    ]
+   }
+  ],
+  "cf_of": null,
+  "notes": "'This fabrication' anaphora -> SAME; polish-crown vs polish-bridge same predicate different entity -> RELATED_BUT_DIFFERENT; nominalization 'bridge polishing' -> SAME as verb mention."
+ },
+ {
+  "case_id": "dev_schoolbus",
+  "domain": "school bus fleet",
+  "family": "same_predicate_different_entity",
+  "split": "dev",
+  "policy": "Inspect bus 12 each Monday. The inspection of bus 12 covers the brakes and lights. Inspect bus 7 each Tuesday. Both inspections are logged in the maintenance system.",
+  "tools": [
+   {
+    "name": "inspect_bus",
+    "description": "Performs a safety inspection of a school bus covering brakes and lights.",
+    "input": {
+     "bus_id": "string"
+    },
+    "output": {
+     "passed": "boolean",
+     "defects": "array"
+    }
+   },
+   {
+    "name": "log_maintenance",
+    "description": "Writes a maintenance record into the fleet maintenance system.",
+    "input": {
+     "bus_id": "string",
+     "result": "string"
+    },
+    "output": {
+     "entry_id": "string"
+    }
+   }
+  ],
+  "mentions": [
+   {
+    "mid": "m1",
+    "span": "Inspect bus 12",
+    "start": 0,
+    "end": 14,
+    "cid": "E1",
+    "sentence_index": 0
+   },
+   {
+    "mid": "m2",
+    "span": "The inspection of bus 12",
+    "start": 28,
+    "end": 52,
+    "cid": "E1",
+    "sentence_index": 1
+   },
+   {
+    "mid": "m3",
+    "span": "Inspect bus 7",
+    "start": 83,
+    "end": 96,
+    "cid": "E2",
+    "sentence_index": 2
+   },
+   {
+    "mid": "m4",
+    "span": "Both inspections are logged in the maintenance system",
+    "start": 111,
+    "end": 164,
+    "cid": "E3",
+    "sentence_index": 3
+   }
+  ],
+  "canonical_events": [
+   {
+    "cid": "E1",
+    "predicate": "inspect_bus12",
+    "role": "OPERATION_EFFECT",
+    "governed_tools": [
+     "inspect_bus"
+    ]
+   },
+   {
+    "cid": "E2",
+    "predicate": "inspect_bus7",
+    "role": "OPERATION_EFFECT",
+    "governed_tools": [
+     "inspect_bus"
+    ]
+   },
+   {
+    "cid": "E3",
+    "predicate": "log",
+    "role": "COMMUNICATION",
+    "governed_tools": [
+     "log_maintenance"
+    ]
+   }
+  ],
+  "related_pairs": [
+   [
+    "E1",
+    "E2"
+   ]
+  ],
+  "ambiguous_pairs": [],
+  "edges": [
+   {
+    "from_cid": "E1",
+    "to_cid": "E3",
+    "relation": "RESPONSE",
+    "acceptable": [
+     "RESPONSE"
+    ],
+    "evidence": [
+     {
+      "start": 111,
+      "end": 164,
+      "text": "Both inspections are logged in the maintenance system"
+     }
+    ]
+   },
+   {
+    "from_cid": "E2",
+    "to_cid": "E3",
+    "relation": "RESPONSE",
+    "acceptable": [
+     "RESPONSE"
+    ],
+    "evidence": [
+     {
+      "start": 111,
+      "end": 164,
+      "text": "Both inspections are logged in the maintenance system"
+     }
+    ]
+   }
+  ],
+  "cf_of": null,
+  "notes": "plural subject 'Both inspections' is a trap: the clause is the LOGGING event (E3); the plural NP itself is not annotated as a mention."
+ },
+ {
+  "case_id": "dev_moving",
+  "domain": "moving company",
+  "family": "actor_split+ambiguous_agent",
+  "split": "dev",
+  "policy": "The crew packs each item in the morning. Packing by the customer is permitted only for clothing. The crew loads the truck only after every item is packed. Items packed by the customer must be labelled.",
+  "tools": [
+   {
+    "name": "pack_items",
+    "description": "Packs household items into moving boxes with protective wrap.",
+    "input": {
+     "room_id": "string"
+    },
+    "output": {
+     "boxes": "number"
+    }
+   },
+   {
+    "name": "load_truck",
+    "description": "Loads packed boxes onto the moving truck with a tail-lift.",
+    "input": {
+     "truck_id": "string"
+    },
+    "output": {
+     "loaded": "boolean"
+    }
+   },
+   {
+    "name": "label_box",
+    "description": "Attaches a printed label with destination room to a moving box.",
+    "input": {
+     "box_id": "string",
+     "room": "string"
+    },
+    "output": {
+     "labelled": "boolean"
+    }
+   }
+  ],
+  "mentions": [
+   {
+    "mid": "m1",
+    "span": "The crew packs each item",
+    "start": 0,
+    "end": 24,
+    "cid": "E1",
+    "sentence_index": 0
+   },
+   {
+    "mid": "m2",
+    "span": "Packing by the customer",
+    "start": 41,
+    "end": 64,
+    "cid": "E2",
+    "sentence_index": 1
+   },
+   {
+    "mid": "m3",
+    "span": "every item is packed",
+    "start": 133,
+    "end": 153,
+    "cid": "E1",
+    "sentence_index": 2
+   },
+   {
+    "mid": "m4",
+    "span": "The crew loads the truck",
+    "start": 97,
+    "end": 121,
+    "cid": "E3",
+    "sentence_index": 2
+   },
+   {
+    "mid": "m5",
+    "span": "Items packed by the customer must be labelled",
+    "start": 155,
+    "end": 200,
+    "cid": "E4",
+    "sentence_index": 3
+   },
+   {
+    "mid": "m6",
+    "span": "packed by the customer",
+    "start": 161,
+    "end": 183,
+    "cid": "E2",
+    "sentence_index": 3
+   }
+  ],
+  "canonical_events": [
+   {
+    "cid": "E1",
+    "predicate": "pack_crew",
+    "role": "OPERATION_EFFECT",
+    "governed_tools": [
+     "pack_items"
+    ]
+   },
+   {
+    "cid": "E2",
+    "predicate": "pack_customer",
+    "role": "OPERATION_EFFECT",
+    "governed_tools": [
+     "pack_items"
+    ]
+   },
+   {
+    "cid": "E3",
+    "predicate": "load_truck",
+    "role": "OPERATION_EFFECT",
+    "governed_tools": [
+     "load_truck"
+    ]
+   },
+   {
+    "cid": "E4",
+    "predicate": "label",
+    "role": "OPERATION_EFFECT",
+    "governed_tools": [
+     "label_box"
+    ]
+   }
+  ],
+  "related_pairs": [
+   [
+    "E1",
+    "E2"
+   ]
+  ],
+  "ambiguous_pairs": [
+   [
+    "m3",
+    "m2"
+   ]
+  ],
+  "edges": [
+   {
+    "from_cid": "E1",
+    "to_cid": "E3",
+    "relation": "PRECONDITION",
+    "acceptable": [
+     "PRECONDITION",
+     "ORDER_BEFORE"
+    ],
+    "evidence": [
+     {
+      "start": 97,
+      "end": 153,
+      "text": "The crew loads the truck only after every item is packed"
+     }
+    ]
+   }
+  ],
+  "cf_of": null,
+  "notes": "actor split (crew vs customer) with participial passive reference; 'every item is packed' has implicit agent - gold AMBIGUOUS vs customer packing."
+ },
+ {
+  "case_id": "dev_foodbank",
+  "domain": "food bank distribution",
+  "family": "communication+artifact_traps",
+  "split": "dev",
+  "policy": "Weigh each donation crate at intake. Email the donor a receipt for every weighed crate. The emailed receipt must state the crate weight. Store the crate in the dry room after the receipt is sent.",
+  "tools": [
+   {
+    "name": "weigh_crate",
+    "description": "Weighs a donation crate on the platform scale at intake.",
+    "input": {
+     "crate_id": "string"
+    },
+    "output": {
+     "weight_kg": "number"
+    }
+   },
+   {
+    "name": "email_receipt",
+    "description": "Sends a donation receipt to a donor by email.",
+    "input": {
+     "donor_id": "string",
+     "crate_id": "string"
+    },
+    "output": {
+     "sent": "boolean"
+    }
+   },
+   {
+    "name": "store_crate",
+    "description": "Moves a donation crate into the dry storage room.",
+    "input": {
+     "crate_id": "string"
+    },
+    "output": {
+     "stored": "boolean"
+    }
+   }
+  ],
+  "mentions": [
+   {
+    "mid": "m1",
+    "span": "Weigh each donation crate",
+    "start": 0,
+    "end": 25,
+    "cid": "E1",
+    "sentence_index": 0
+   },
+   {
+    "mid": "m2",
+    "span": "Email the donor a receipt",
+    "start": 37,
+    "end": 62,
+    "cid": "E2",
+    "sentence_index": 1
+   },
+   {
+    "mid": "m3",
+    "span": "Store the crate in the dry room",
+    "start": 137,
+    "end": 168,
+    "cid": "E4",
+    "sentence_index": 3
+   },
+   {
+    "mid": "m4",
+    "span": "the receipt is sent",
+    "start": 175,
+    "end": 194,
+    "cid": "E2",
+    "sentence_index": 3
+   }
+  ],
+  "canonical_events": [
+   {
+    "cid": "E1",
+    "predicate": "weigh",
+    "role": "OPERATION_EFFECT",
+    "governed_tools": [
+     "weigh_crate"
+    ]
+   },
+   {
+    "cid": "E2",
+    "predicate": "email_receipt",
+    "role": "COMMUNICATION",
+    "governed_tools": [
+     "email_receipt"
+    ]
+   },
+   {
+    "cid": "E4",
+    "predicate": "store",
+    "role": "OPERATION_EFFECT",
+    "governed_tools": [
+     "store_crate"
+    ]
+   }
+  ],
+  "related_pairs": [],
+  "ambiguous_pairs": [],
+  "edges": [
+   {
+    "from_cid": "E1",
+    "to_cid": "E2",
+    "relation": "RESPONSE",
+    "acceptable": [
+     "RESPONSE"
+    ],
+    "evidence": [
+     {
+      "start": 37,
+      "end": 86,
+      "text": "Email the donor a receipt for every weighed crate"
+     }
+    ]
+   },
+   {
+    "from_cid": "E2",
+    "to_cid": "E4",
+    "relation": "ORDER_BEFORE",
+    "acceptable": [
+     "ORDER_BEFORE",
+     "PRECONDITION"
+    ],
+    "evidence": [
+     {
+      "start": 137,
+      "end": 194,
+      "text": "Store the crate in the dry room after the receipt is sent"
+     }
+    ]
+   }
+  ],
+  "cf_of": null,
+  "notes": "artifact traps: 'every weighed crate', 'The emailed receipt', 'the crate weight' are entity references, not event mentions. 'the receipt is sent' passive -> SAME as email op."
+ },
+ {
+  "case_id": "dev_coffeeroast",
+  "domain": "coffee roastery",
+  "family": "required_vs_performed+polarity",
+  "split": "dev",
+  "policy": "The roaster must log every roast profile. Yesterday the roaster logged the Ethiopian batch but skipped the Kenyan batch. Exclude any unlogged profile from the blend. Notify the head roaster when a batch is skipped.",
+  "tools": [
+   {
+    "name": "log_roast",
+    "description": "Records a roast profile with temperature curve in the roastery log.",
+    "input": {
+     "batch_id": "string",
+     "profile": "string"
+    },
+    "output": {
+     "entry_id": "string"
+    }
+   },
+   {
+    "name": "exclude_profile",
+    "description": "Marks a roast profile as excluded from the house blend.",
+    "input": {
+     "batch_id": "string"
+    },
+    "output": {
+     "excluded": "boolean"
+    }
+   },
+   {
+    "name": "notify_roaster",
+    "description": "Sends a notification message to the head roaster.",
+    "input": {
+     "message": "string"
+    },
+    "output": {
+     "sent": "boolean"
+    }
+   }
+  ],
+  "mentions": [
+   {
+    "mid": "m1",
+    "span": "The roaster must log every roast profile",
+    "start": 0,
+    "end": 40,
+    "cid": "E1",
+    "sentence_index": 0
+   },
+   {
+    "mid": "m2",
+    "span": "the roaster logged the Ethiopian batch",
+    "start": 52,
+    "end": 90,
+    "cid": "E2",
+    "sentence_index": 1
+   },
+   {
+    "mid": "m3",
+    "span": "skipped the Kenyan batch",
+    "start": 95,
+    "end": 119,
+    "cid": "E3",
+    "sentence_index": 1
+   },
+   {
+    "mid": "m4",
+    "span": "Exclude any unlogged profile",
+    "start": 121,
+    "end": 149,
+    "cid": "E5",
+    "sentence_index": 2
+   },
+   {
+    "mid": "m5",
+    "span": "Notify the head roaster",
+    "start": 166,
+    "end": 189,
+    "cid": "E6",
+    "sentence_index": 3
+   },
+   {
+    "mid": "m6",
+    "span": "a batch is skipped",
+    "start": 195,
+    "end": 213,
+    "cid": "E3",
+    "sentence_index": 3
+   }
+  ],
+  "canonical_events": [
+   {
+    "cid": "E1",
+    "predicate": "log_required",
+    "role": "COMMUNICATION",
+    "governed_tools": [
+     "log_roast"
+    ]
+   },
+   {
+    "cid": "E2",
+    "predicate": "log_performed",
+    "role": "COMMUNICATION",
+    "governed_tools": [
+     "log_roast"
+    ]
+   },
+   {
+    "cid": "E3",
+    "predicate": "skip",
+    "role": "OTHER",
+    "governed_tools": [
+     "log_roast"
+    ]
+   },
+   {
+    "cid": "E5",
+    "predicate": "exclude",
+    "role": "OPERATION_EFFECT",
+    "governed_tools": [
+     "exclude_profile"
+    ]
+   },
+   {
+    "cid": "E6",
+    "predicate": "notify",
+    "role": "COMMUNICATION",
+    "governed_tools": [
+     "notify_roaster"
+    ]
+   }
+  ],
+  "related_pairs": [
+   [
+    "E1",
+    "E3"
+   ],
+   [
+    "E1",
+    "E2"
+   ],
+   [
+    "E2",
+    "E3"
+   ]
+  ],
+  "ambiguous_pairs": [],
+  "edges": [
+   {
+    "from_cid": "E3",
+    "to_cid": "E6",
+    "relation": "RESPONSE",
+    "acceptable": [
+     "RESPONSE"
+    ],
+    "evidence": [
+     {
+      "start": 166,
+      "end": 213,
+      "text": "Notify the head roaster when a batch is skipped"
+     }
+    ]
+   }
+  ],
+  "cf_of": null,
+  "notes": "required (must log) vs performed (logged Ethiopian) vs skipped (Kenyan): three related-but-different canonical events; 'unlogged' adjective trap."
+ },
+ {
+  "case_id": "dev_locksmith",
+  "domain": "locksmith service",
+  "family": "cross_sentence+nominalization",
+  "split": "dev",
+  "policy": "Register every key cut in the ledger. Registration of master keys goes to the central archive instead. Key registration must include the customer ID. Master keys may be cut only after the customer ID is verified. Audit the ledger each quarter.",
+  "tools": [
+   {
+    "name": "register_key",
+    "description": "Records a cut key with its customer reference in the ledger or archive.",
+    "input": {
+     "key_id": "string",
+     "customer_id": "string"
+    },
+    "output": {
+     "entry_id": "string"
+    }
+   },
+   {
+    "name": "cut_key",
+    "description": "Cuts a key blank to a pattern on the key machine.",
+    "input": {
+     "pattern_id": "string",
+     "blank_id": "string"
+    },
+    "output": {
+     "key_id": "string"
+    }
+   },
+   {
+    "name": "verify_customer",
+    "description": "Verifies a customer's identity document against the shop records.",
+    "input": {
+     "customer_id": "string"
+    },
+    "output": {
+     "verified": "boolean"
+    }
+   },
+   {
+    "name": "audit_ledger",
+    "description": "Audits the key ledger for completeness and correct references.",
+    "input": {
+     "quarter": "string"
+    },
+    "output": {
+     "findings": "array"
+    }
+   }
+  ],
+  "mentions": [
+   {
+    "mid": "m1",
+    "span": "Register every key cut",
+    "start": 0,
+    "end": 22,
+    "cid": "E1",
+    "sentence_index": 0
+   },
+   {
+    "mid": "m2",
+    "span": "Registration of master keys",
+    "start": 38,
+    "end": 65,
+    "cid": "E2",
+    "sentence_index": 1
+   },
+   {
+    "mid": "m3",
+    "span": "Key registration",
+    "start": 103,
+    "end": 119,
+    "cid": "E1",
+    "sentence_index": 2
+   },
+   {
+    "mid": "m4",
+    "span": "Master keys may be cut",
+    "start": 150,
+    "end": 172,
+    "cid": "E4",
+    "sentence_index": 3
+   },
+   {
+    "mid": "m5",
+    "span": "the customer ID is verified",
+    "start": 184,
+    "end": 211,
+    "cid": "E5",
+    "sentence_index": 3
+   },
+   {
+    "mid": "m6",
+    "span": "Audit the ledger",
+    "start": 213,
+    "end": 229,
+    "cid": "E6",
+    "sentence_index": 4
+   }
+  ],
+  "canonical_events": [
+   {
+    "cid": "E1",
+    "predicate": "register_key",
+    "role": "COMMUNICATION",
+    "governed_tools": [
+     "register_key"
+    ]
+   },
+   {
+    "cid": "E2",
+    "predicate": "register_master_key",
+    "role": "COMMUNICATION",
+    "governed_tools": [
+     "register_key"
+    ]
+   },
+   {
+    "cid": "E4",
+    "predicate": "cut_master_key",
+    "role": "OPERATION_EFFECT",
+    "governed_tools": [
+     "cut_key"
+    ]
+   },
+   {
+    "cid": "E5",
+    "predicate": "verify_customer",
+    "role": "PRECONDITION_CHECK",
+    "governed_tools": [
+     "verify_customer"
+    ]
+   },
+   {
+    "cid": "E6",
+    "predicate": "audit",
+    "role": "PRECONDITION_CHECK",
+    "governed_tools": [
+     "audit_ledger"
+    ]
+   }
+  ],
+  "related_pairs": [
+   [
+    "E1",
+    "E2"
+   ]
+  ],
+  "ambiguous_pairs": [],
+  "edges": [
+   {
+    "from_cid": "E5",
+    "to_cid": "E4",
+    "relation": "PRECONDITION",
+    "acceptable": [
+     "PRECONDITION"
+    ],
+    "evidence": [
+     {
+      "start": 150,
+      "end": 211,
+      "text": "Master keys may be cut only after the customer ID is verified"
+     }
+    ]
+   }
+  ],
+  "cf_of": null,
+  "notes": "'Key registration' nominalization across sentence boundary -> SAME; 'Registration of master keys' same predicate different object -> RELATED."
+ },
+ {
+  "case_id": "dev_chimney",
+  "domain": "chimney sweeping service",
+  "family": "temporal_repeated+nominal",
+  "split": "dev",
+  "policy": "Sweep each chimney in May. The May sweep removes soot from the flue. Sweep the same chimney again in November. The November sweep includes a nest inspection. Invoice the client after each sweep.",
+  "tools": [
+   {
+    "name": "sweep_chimney",
+    "description": "Sweeps soot and debris from a chimney flue with rotary brushes.",
+    "input": {
+     "chimney_id": "string"
+    },
+    "output": {
+     "swept": "boolean"
+    }
+   },
+   {
+    "name": "inspect_nest",
+    "description": "Inspects a chimney cap and flue for bird nests with a borescope.",
+    "input": {
+     "chimney_id": "string"
+    },
+    "output": {
+     "nest_found": "boolean"
+    }
+   },
+   {
+    "name": "invoice_client",
+    "description": "Issues an invoice to the client for a completed service.",
+    "input": {
+     "client_id": "string",
+     "service": "string"
+    },
+    "output": {
+     "invoice_id": "string"
+    }
+   }
+  ],
+  "mentions": [
+   {
+    "mid": "m1",
+    "span": "Sweep each chimney in May",
+    "start": 0,
+    "end": 25,
+    "cid": "E1",
+    "sentence_index": 0
+   },
+   {
+    "mid": "m2",
+    "span": "The May sweep",
+    "start": 27,
+    "end": 40,
+    "cid": "E1",
+    "sentence_index": 1
+   },
+   {
+    "mid": "m3",
+    "span": "Sweep the same chimney again",
+    "start": 69,
+    "end": 97,
+    "cid": "E2",
+    "sentence_index": 2
+   },
+   {
+    "mid": "m4",
+    "span": "The November sweep",
+    "start": 111,
+    "end": 129,
+    "cid": "E2",
+    "sentence_index": 3
+   },
+   {
+    "mid": "m5",
+    "span": "a nest inspection",
+    "start": 139,
+    "end": 156,
+    "cid": "E3",
+    "sentence_index": 3
+   },
+   {
+    "mid": "m6",
+    "span": "Invoice the client",
+    "start": 158,
+    "end": 176,
+    "cid": "E4",
+    "sentence_index": 4
+   }
+  ],
+  "canonical_events": [
+   {
+    "cid": "E1",
+    "predicate": "sweep_may",
+    "role": "OPERATION_EFFECT",
+    "governed_tools": [
+     "sweep_chimney"
+    ]
+   },
+   {
+    "cid": "E2",
+    "predicate": "sweep_november",
+    "role": "OPERATION_EFFECT",
+    "governed_tools": [
+     "sweep_chimney"
+    ]
+   },
+   {
+    "cid": "E3",
+    "predicate": "inspect_nest",
+    "role": "PRECONDITION_CHECK",
+    "governed_tools": [
+     "inspect_nest"
+    ]
+   },
+   {
+    "cid": "E4",
+    "predicate": "invoice",
+    "role": "COMMUNICATION",
+    "governed_tools": [
+     "invoice_client"
+    ]
+   }
+  ],
+  "related_pairs": [
+   [
+    "E1",
+    "E2"
+   ],
+   [
+    "E2",
+    "E3"
+   ]
+  ],
+  "ambiguous_pairs": [],
+  "edges": [
+   {
+    "from_cid": "E1",
+    "to_cid": "E4",
+    "relation": "RESPONSE",
+    "acceptable": [
+     "RESPONSE",
+     "ORDER_AFTER"
+    ],
+    "evidence": [
+     {
+      "start": 158,
+      "end": 193,
+      "text": "Invoice the client after each sweep"
+     }
+    ]
+   },
+   {
+    "from_cid": "E2",
+    "to_cid": "E4",
+    "relation": "RESPONSE",
+    "acceptable": [
+     "RESPONSE",
+     "ORDER_AFTER"
+    ],
+    "evidence": [
+     {
+      "start": 158,
+      "end": 193,
+      "text": "Invoice the client after each sweep"
+     }
+    ]
+   }
+  ],
+  "cf_of": null,
+  "notes": "same predicate + same entity + different season -> two canonical events (repeated occurrences); 'The May sweep'/'The November sweep' nominals bind to their instance."
+ },
+ {
+  "case_id": "calib_costume",
+  "domain": "costume rental shop",
+  "family": "participial_trap+negated_state",
+  "split": "calib",
+  "policy": "Sanitize every returned costume before storage. Log each sanitized costume at the sanitizing station. Costumes that are not sanitized are quarantined.",
+  "tools": [
+   {
+    "name": "sanitize_costume",
+    "description": "Cleans a returned costume with hot-water sanitisation in the washer.",
+    "input": {
+     "costume_id": "string"
+    },
+    "output": {
+     "sanitized": "boolean"
+    }
+   },
+   {
+    "name": "log_costume",
+    "description": "Records a costume status entry at the sanitizing station terminal.",
+    "input": {
+     "costume_id": "string",
+     "status": "string"
+    },
+    "output": {
+     "entry_id": "string"
+    }
+   },
+   {
+    "name": "quarantine_costume",
+    "description": "Moves a costume into the quarantine rack pending sanitisation.",
+    "input": {
+     "costume_id": "string"
+    },
+    "output": {
+     "quarantined": "boolean"
+    }
+   }
+  ],
+  "mentions": [
+   {
+    "mid": "m1",
+    "span": "Sanitize every returned costume",
+    "start": 0,
+    "end": 31,
+    "cid": "E1",
+    "sentence_index": 0
+   },
+   {
+    "mid": "m2",
+    "span": "Log each sanitized costume",
+    "start": 48,
+    "end": 74,
+    "cid": "E3",
+    "sentence_index": 1
+   },
+   {
+    "mid": "m3",
+    "span": "Costumes that are not sanitized are quarantined",
+    "start": 102,
+    "end": 149,
+    "cid": "E4",
+    "sentence_index": 2
+   },
+   {
+    "mid": "m4",
+    "span": "that are not sanitized",
+    "start": 111,
+    "end": 133,
+    "cid": "E2",
+    "sentence_index": 2
+   }
+  ],
+  "canonical_events": [
+   {
+    "cid": "E1",
+    "predicate": "sanitize",
+    "role": "OPERATION_EFFECT",
+    "governed_tools": [
+     "sanitize_costume"
+    ]
+   },
+   {
+    "cid": "E2",
+    "predicate": "not_sanitized_state",
+    "role": "STATE_OBSERVATION",
+    "governed_tools": [
+     "sanitize_costume"
+    ]
+   },
+   {
+    "cid": "E3",
+    "predicate": "log",
+    "role": "COMMUNICATION",
+    "governed_tools": [
+     "log_costume"
+    ]
+   },
+   {
+    "cid": "E4",
+    "predicate": "quarantine",
+    "role": "OPERATION_EFFECT",
+    "governed_tools": [
+     "quarantine_costume"
+    ]
+   }
+  ],
+  "related_pairs": [
+   [
+    "E1",
+    "E2"
+   ]
+  ],
+  "ambiguous_pairs": [],
+  "edges": [
+   {
+    "from_cid": "E2",
+    "to_cid": "E4",
+    "relation": "STATE_GATE",
+    "acceptable": [
+     "STATE_GATE"
+    ],
+    "evidence": [
+     {
+      "start": 102,
+      "end": 149,
+      "text": "Costumes that are not sanitized are quarantined"
+     }
+    ]
+   }
+  ],
+  "cf_of": null,
+  "notes": "'each sanitized costume' inside the log clause is a participial entity trap; the acl 'that are not sanitized' is the negated-state mention."
+ },
+ {
+  "case_id": "calib_stagelighting",
+  "domain": "stage lighting rental",
+  "family": "pronoun_ambiguity",
+  "split": "calib",
+  "policy": "Test each fog machine before rental. The test of fog machines includes a warm-up cycle. It must be documented in the rental file. Test each spotlight after every repair. Attach the test results to the rental file.",
+  "tools": [
+   {
+    "name": "test_device",
+    "description": "Runs a functional safety test on a stage device.",
+    "input": {
+     "device_id": "string"
+    },
+    "output": {
+     "passed": "boolean"
+    }
+   },
+   {
+    "name": "document_result",
+    "description": "Writes a test documentation entry into the rental file.",
+    "input": {
+     "device_id": "string",
+     "result": "string"
+    },
+    "output": {
+     "entry_id": "string"
+    }
+   },
+   {
+    "name": "attach_file",
+    "description": "Attaches a results document to the paper rental file.",
+    "input": {
+     "file_id": "string",
+     "document_id": "string"
+    },
+    "output": {
+     "attached": "boolean"
+    }
+   }
+  ],
+  "mentions": [
+   {
+    "mid": "m1",
+    "span": "Test each fog machine",
+    "start": 0,
+    "end": 21,
+    "cid": "E1",
+    "sentence_index": 0
+   },
+   {
+    "mid": "m2",
+    "span": "The test of fog machines",
+    "start": 37,
+    "end": 61,
+    "cid": "E1",
+    "sentence_index": 1
+   },
+   {
+    "mid": "m3",
+    "span": "a warm-up cycle",
+    "start": 71,
+    "end": 86,
+    "cid": "E5",
+    "sentence_index": 1
+   },
+   {
+    "mid": "m4",
+    "span": "It must be documented in the rental file",
+    "start": 88,
+    "end": 128,
+    "cid": "E6",
+    "sentence_index": 2
+   },
+   {
+    "mid": "m5",
+    "span": "It",
+    "start": 88,
+    "end": 90,
+    "cid": "E1",
+    "sentence_index": 2
+   },
+   {
+    "mid": "m6",
+    "span": "Test each spotlight",
+    "start": 130,
+    "end": 149,
+    "cid": "E2",
+    "sentence_index": 3
+   },
+   {
+    "mid": "m7",
+    "span": "Attach the test results to the rental file",
+    "start": 170,
+    "end": 212,
+    "cid": "E4",
+    "sentence_index": 4
+   }
+  ],
+  "canonical_events": [
+   {
+    "cid": "E1",
+    "predicate": "test_fog_machine",
+    "role": "OPERATION_EFFECT",
+    "governed_tools": [
+     "test_device"
+    ]
+   },
+   {
+    "cid": "E2",
+    "predicate": "test_spotlight",
+    "role": "OPERATION_EFFECT",
+    "governed_tools": [
+     "test_device"
+    ]
+   },
+   {
+    "cid": "E4",
+    "predicate": "attach",
+    "role": "COMMUNICATION",
+    "governed_tools": [
+     "attach_file"
+    ]
+   },
+   {
+    "cid": "E5",
+    "predicate": "warm_up",
+    "role": "OPERATION_EFFECT",
+    "governed_tools": [
+     "test_device"
+    ]
+   },
+   {
+    "cid": "E6",
+    "predicate": "document",
+    "role": "COMMUNICATION",
+    "governed_tools": [
+     "document_result"
+    ]
+   }
+  ],
+  "related_pairs": [
+   [
+    "E1",
+    "E2"
+   ]
+  ],
+  "ambiguous_pairs": [
+   [
+    "m5",
+    "m3"
+   ]
+  ],
+  "edges": [
+   {
+    "from_cid": "E1",
+    "to_cid": "E6",
+    "relation": "RESPONSE",
+    "acceptable": [
+     "RESPONSE"
+    ],
+    "evidence": [
+     {
+      "start": 88,
+      "end": 128,
+      "text": "It must be documented in the rental file"
+     }
+    ]
+   },
+   {
+    "from_cid": "E1",
+    "to_cid": "E4",
+    "relation": "RESPONSE",
+    "acceptable": [
+     "RESPONSE"
+    ],
+    "evidence": [
+     {
+      "start": 170,
+      "end": 212,
+      "text": "Attach the test results to the rental file"
+     }
+    ]
+   },
+   {
+    "from_cid": "E2",
+    "to_cid": "E4",
+    "relation": "RESPONSE",
+    "acceptable": [
+     "RESPONSE"
+    ],
+    "evidence": [
+     {
+      "start": 170,
+      "end": 212,
+      "text": "Attach the test results to the rental file"
+     }
+    ]
+   }
+  ],
+  "cf_of": null,
+  "notes": "pronoun 'It': gold best-guess antecedent is the fog-machine test; pair (It, warm-up cycle) is genuinely AMBIGUOUS."
+ },
+ {
+  "case_id": "calib_surf",
+  "domain": "surf school",
+  "family": "action_vs_check",
+  "split": "calib",
+  "policy": "Check the wave height before each lesson. The check uses the harbour board. Launch the lesson only after the wave height is checked. Observe the students during the lesson.",
+  "tools": [
+   {
+    "name": "check_waves",
+    "description": "Reads the current wave height from the harbour board feed.",
+    "input": {
+     "station_id": "string"
+    },
+    "output": {
+     "wave_height_m": "number"
+    }
+   },
+   {
+    "name": "launch_lesson",
+    "description": "Starts a surf lesson session on the beach for a booked group.",
+    "input": {
+     "lesson_id": "string"
+    },
+    "output": {
+     "started": "boolean"
+    }
+   },
+   {
+    "name": "observe_students",
+    "description": "Observes students in the water during a lesson and records safety notes.",
+    "input": {
+     "lesson_id": "string"
+    },
+    "output": {
+     "notes": "string"
+    }
+   }
+  ],
+  "mentions": [
+   {
+    "mid": "m1",
+    "span": "Check the wave height",
+    "start": 0,
+    "end": 21,
+    "cid": "E1",
+    "sentence_index": 0
+   },
+   {
+    "mid": "m2",
+    "span": "The check",
+    "start": 42,
+    "end": 51,
+    "cid": "E1",
+    "sentence_index": 1
+   },
+   {
+    "mid": "m3",
+    "span": "Launch the lesson",
+    "start": 76,
+    "end": 93,
+    "cid": "E2",
+    "sentence_index": 2
+   },
+   {
+    "mid": "m4",
+    "span": "the wave height is checked",
+    "start": 105,
+    "end": 131,
+    "cid": "E1",
+    "sentence_index": 2
+   },
+   {
+    "mid": "m5",
+    "span": "Observe the students",
+    "start": 133,
+    "end": 153,
+    "cid": "E3",
+    "sentence_index": 3
+   }
+  ],
+  "canonical_events": [
+   {
+    "cid": "E1",
+    "predicate": "check_waves",
+    "role": "PRECONDITION_CHECK",
+    "governed_tools": [
+     "check_waves"
+    ]
+   },
+   {
+    "cid": "E2",
+    "predicate": "launch",
+    "role": "OPERATION_EFFECT",
+    "governed_tools": [
+     "launch_lesson"
+    ]
+   },
+   {
+    "cid": "E3",
+    "predicate": "observe",
+    "role": "STATE_OBSERVATION",
+    "governed_tools": [
+     "observe_students"
+    ]
+   }
+  ],
+  "related_pairs": [],
+  "ambiguous_pairs": [],
+  "edges": [
+   {
+    "from_cid": "E1",
+    "to_cid": "E2",
+    "relation": "PRECONDITION",
+    "acceptable": [
+     "PRECONDITION"
+    ],
+    "evidence": [
+     {
+      "start": 76,
+      "end": 131,
+      "text": "Launch the lesson only after the wave height is checked"
+     }
+    ]
+   }
+  ],
+  "cf_of": null,
+  "notes": "check action with anaphoric NP 'The check' and passive reference 'is checked' - all one event."
+ },
+ {
+  "case_id": "calib_bookrestoration",
+  "domain": "book restoration studio",
+  "family": "anaphora_this+nested_object",
+  "split": "calib",
+  "policy": "Assess each damaged book on arrival. This assessment determines the repair method. Repair the book only after the conservator approves the assessment. Books awaiting approval are stored in the holding room.",
+  "tools": [
+   {
+    "name": "assess_book",
+    "description": "Assesses the condition of a damaged book and proposes a repair method.",
+    "input": {
+     "book_id": "string"
+    },
+    "output": {
+     "condition": "string",
+     "method": "string"
+    }
+   },
+   {
+    "name": "approve_repair",
+    "description": "Records the conservator's approval of a proposed repair assessment.",
+    "input": {
+     "assessment_id": "string"
+    },
+    "output": {
+     "approved": "boolean"
+    }
+   },
+   {
+    "name": "repair_book",
+    "description": "Executes the approved repair method on a book.",
+    "input": {
+     "book_id": "string",
+     "method": "string"
+    },
+    "output": {
+     "repaired": "boolean"
+    }
+   },
+   {
+    "name": "store_book",
+    "description": "Places a book in the holding room shelf.",
+    "input": {
+     "book_id": "string"
+    },
+    "output": {
+     "stored": "boolean"
+    }
+   }
+  ],
+  "mentions": [
+   {
+    "mid": "m1",
+    "span": "Assess each damaged book",
+    "start": 0,
+    "end": 24,
+    "cid": "E1",
+    "sentence_index": 0
+   },
+   {
+    "mid": "m2",
+    "span": "This assessment",
+    "start": 37,
+    "end": 52,
+    "cid": "E1",
+    "sentence_index": 1
+   },
+   {
+    "mid": "m3",
+    "span": "the conservator approves the assessment",
+    "start": 110,
+    "end": 149,
+    "cid": "E5",
+    "sentence_index": 2
+   },
+   {
+    "mid": "m3b",
+    "span": "the assessment",
+    "start": 135,
+    "end": 149,
+    "cid": "E1",
+    "sentence_index": 2
+   },
+   {
+    "mid": "m4",
+    "span": "Repair the book",
+    "start": 83,
+    "end": 98,
+    "cid": "E6",
+    "sentence_index": 2
+   },
+   {
+    "mid": "m5",
+    "span": "Books awaiting approval are stored in the holding room",
+    "start": 151,
+    "end": 205,
+    "cid": "E4",
+    "sentence_index": 3
+   }
+  ],
+  "canonical_events": [
+   {
+    "cid": "E1",
+    "predicate": "assess",
+    "role": "PRECONDITION_CHECK",
+    "governed_tools": [
+     "assess_book"
+    ]
+   },
+   {
+    "cid": "E5",
+    "predicate": "approve",
+    "role": "OPERATION_EFFECT",
+    "governed_tools": [
+     "approve_repair"
+    ]
+   },
+   {
+    "cid": "E6",
+    "predicate": "repair",
+    "role": "OPERATION_EFFECT",
+    "governed_tools": [
+     "repair_book"
+    ]
+   },
+   {
+    "cid": "E4",
+    "predicate": "store",
+    "role": "OPERATION_EFFECT",
+    "governed_tools": [
+     "store_book"
+    ]
+   }
+  ],
+  "related_pairs": [
+   [
+    "E1",
+    "E5"
+   ]
+  ],
+  "ambiguous_pairs": [],
+  "edges": [
+   {
+    "from_cid": "E5",
+    "to_cid": "E6",
+    "relation": "PRECONDITION",
+    "acceptable": [
+     "PRECONDITION"
+    ],
+    "evidence": [
+     {
+      "start": 83,
+      "end": 149,
+      "text": "Repair the book only after the conservator approves the assessment"
+     }
+    ]
+   }
+  ],
+  "cf_of": null,
+  "notes": "nested object nominal 'the assessment' inside the approval clause refers back to E1 across sentences; 'awaiting approval' participial trap."
+ },
+ {
+  "case_id": "val_oliveoil",
+  "domain": "olive oil mill",
+  "family": "naturalistic_multiple_similar_ops",
+  "split": "val",
+  "policy": "Wash the olives before pressing. Press the washed olives within six hours of delivery. The pressing of late-harvest olives is scheduled separately. Filter the oil after pressing and filter it again before bottling. Bottle the oil only in dark glass. Send each batch certificate to the buyer after bottling.",
+  "tools": [
+   {
+    "name": "wash_olives",
+    "description": "Washes delivered olives in the washing line to remove leaves and soil.",
+    "input": {
+     "lot_id": "string"
+    },
+    "output": {
+     "washed": "boolean"
+    }
+   },
+   {
+    "name": "press_olives",
+    "description": "Presses washed olives in the decanter to extract raw oil.",
+    "input": {
+     "lot_id": "string"
+    },
+    "output": {
+     "raw_oil_liters": "number"
+    }
+   },
+   {
+    "name": "filter_oil",
+    "description": "Filters the oil through the plate filter to remove suspended solids.",
+    "input": {
+     "tank_id": "string"
+    },
+    "output": {
+     "filtered": "boolean"
+    }
+   },
+   {
+    "name": "bottle_oil",
+    "description": "Fills filtered oil into dark glass bottles on the bottling line.",
+    "input": {
+     "tank_id": "string",
+     "bottles": "number"
+    },
+    "output": {
+     "filled": "boolean"
+    }
+   },
+   {
+    "name": "send_certificate",
+    "description": "Sends the batch analysis certificate to the buyer by email.",
+    "input": {
+     "batch_id": "string",
+     "buyer_id": "string"
+    },
+    "output": {
+     "sent": "boolean"
+    }
+   }
+  ],
+  "mentions": [
+   {
+    "mid": "m1",
+    "span": "Wash the olives",
+    "start": 0,
+    "end": 15,
+    "cid": "E1",
+    "sentence_index": 0
+   },
+   {
+    "mid": "m2",
+    "span": "Press the washed olives",
+    "start": 33,
+    "end": 56,
+    "cid": "E2",
+    "sentence_index": 1
+   },
+   {
+    "mid": "m3",
+    "span": "pressing",
+    "start": 23,
+    "end": 31,
+    "cid": "E2",
+    "sentence_index": 0
+   },
+   {
+    "mid": "m4",
+    "span": "The pressing of late-harvest olives",
+    "start": 87,
+    "end": 122,
+    "cid": "E3",
+    "sentence_index": 2
+   },
+   {
+    "mid": "m5",
+    "span": "Filter the oil after pressing",
+    "start": 148,
+    "end": 177,
+    "cid": "E4",
+    "sentence_index": 3
+   },
+   {
+    "mid": "m6",
+    "span": "filter it again",
+    "start": 182,
+    "end": 197,
+    "cid": "E5",
+    "sentence_index": 3
+   },
+   {
+    "mid": "m7",
+    "span": "Bottle the oil",
+    "start": 215,
+    "end": 229,
+    "cid": "E6",
+    "sentence_index": 4
+   },
+   {
+    "mid": "m8",
+    "span": "bottling",
+    "start": 205,
+    "end": 213,
+    "cid": "E6",
+    "sentence_index": 3
+   },
+   {
+    "mid": "m9",
+    "span": "bottling",
+    "start": 297,
+    "end": 305,
+    "cid": "E6",
+    "sentence_index": 5
+   },
+   {
+    "mid": "m10",
+    "span": "Send each batch certificate to the buyer",
+    "start": 250,
+    "end": 290,
+    "cid": "E7",
+    "sentence_index": 5
+   }
+  ],
+  "canonical_events": [
+   {
+    "cid": "E1",
+    "predicate": "wash",
+    "role": "OPERATION_EFFECT",
+    "governed_tools": [
+     "wash_olives"
+    ]
+   },
+   {
+    "cid": "E2",
+    "predicate": "press_olives",
+    "role": "OPERATION_EFFECT",
+    "governed_tools": [
+     "press_olives"
+    ]
+   },
+   {
+    "cid": "E3",
+    "predicate": "press_late_harvest",
+    "role": "OPERATION_EFFECT",
+    "governed_tools": [
+     "press_olives"
+    ]
+   },
+   {
+    "cid": "E4",
+    "predicate": "filter_first",
+    "role": "OPERATION_EFFECT",
+    "governed_tools": [
+     "filter_oil"
+    ]
+   },
+   {
+    "cid": "E5",
+    "predicate": "filter_second",
+    "role": "OPERATION_EFFECT",
+    "governed_tools": [
+     "filter_oil"
+    ]
+   },
+   {
+    "cid": "E6",
+    "predicate": "bottle",
+    "role": "OPERATION_EFFECT",
+    "governed_tools": [
+     "bottle_oil"
+    ]
+   },
+   {
+    "cid": "E7",
+    "predicate": "send_certificate",
+    "role": "COMMUNICATION",
+    "governed_tools": [
+     "send_certificate"
+    ]
+   }
+  ],
+  "related_pairs": [
+   [
+    "E4",
+    "E5"
+   ],
+   [
+    "E2",
+    "E3"
+   ]
+  ],
+  "ambiguous_pairs": [],
+  "edges": [
+   {
+    "from_cid": "E1",
+    "to_cid": "E2",
+    "relation": "ORDER_BEFORE",
+    "acceptable": [
+     "ORDER_BEFORE",
+     "PRECONDITION"
+    ],
+    "evidence": [
+     {
+      "start": 0,
+      "end": 31,
+      "text": "Wash the olives before pressing"
+     }
+    ]
+   },
+   {
+    "from_cid": "E6",
+    "to_cid": "E7",
+    "relation": "RESPONSE",
+    "acceptable": [
+     "RESPONSE",
+     "ORDER_AFTER"
+    ],
+    "evidence": [
+     {
+      "start": 250,
+      "end": 305,
+      "text": "Send each batch certificate to the buyer after bottling"
+     }
+    ]
+   }
+  ],
+  "cf_of": null,
+  "notes": "naturalistic chain with same-family predicates (press x2 subtype, filter x2 occurrence) and bare gerund nominals."
+ },
+ {
+  "case_id": "val_hydroponic",
+  "domain": "hydroponic farm",
+  "family": "naturalistic_repeated_monitoring",
+  "split": "val",
+  "policy": "Measure the pH of each tank every morning. The measurement is recorded automatically. Correct the pH only if the reading drifts beyond 6.5. Measure the pH again after each correction. Harvest the lettuce weekly and log the harvest weight.",
+  "tools": [
+   {
+    "name": "measure_ph",
+    "description": "Measures the pH value of a nutrient tank with the probe array.",
+    "input": {
+     "tank_id": "string"
+    },
+    "output": {
+     "ph": "number"
+    }
+   },
+   {
+    "name": "correct_ph",
+    "description": "Doses pH adjuster into a nutrient tank to bring pH back in range.",
+    "input": {
+     "tank_id": "string",
+     "delta": "number"
+    },
+    "output": {
+     "corrected": "boolean"
+    }
+   },
+   {
+    "name": "harvest_lettuce",
+    "description": "Cuts and collects mature lettuce heads from a growing channel.",
+    "input": {
+     "channel_id": "string"
+    },
+    "output": {
+     "kg_harvested": "number"
+    }
+   },
+   {
+    "name": "log_weight",
+    "description": "Writes the harvested weight into the farm log.",
+    "input": {
+     "channel_id": "string",
+     "kg": "number"
+    },
+    "output": {
+     "entry_id": "string"
+    }
+   }
+  ],
+  "mentions": [
+   {
+    "mid": "m1",
+    "span": "Measure the pH of each tank",
+    "start": 0,
+    "end": 27,
+    "cid": "E1",
+    "sentence_index": 0
+   },
+   {
+    "mid": "m2",
+    "span": "The measurement",
+    "start": 43,
+    "end": 58,
+    "cid": "E1",
+    "sentence_index": 1
+   },
+   {
+    "mid": "m3",
+    "span": "Correct the pH",
+    "start": 86,
+    "end": 100,
+    "cid": "E2",
+    "sentence_index": 2
+   },
+   {
+    "mid": "m4",
+    "span": "the reading drifts beyond 6.5",
+    "start": 109,
+    "end": 138,
+    "cid": "E6",
+    "sentence_index": 2
+   },
+   {
+    "mid": "m5",
+    "span": "Measure the pH again",
+    "start": 140,
+    "end": 160,
+    "cid": "E3",
+    "sentence_index": 3
+   },
+   {
+    "mid": "m6",
+    "span": "Harvest the lettuce",
+    "start": 184,
+    "end": 203,
+    "cid": "E4",
+    "sentence_index": 4
+   },
+   {
+    "mid": "m7",
+    "span": "log the harvest weight",
+    "start": 215,
+    "end": 237,
+    "cid": "E5",
+    "sentence_index": 4
+   }
+  ],
+  "canonical_events": [
+   {
+    "cid": "E1",
+    "predicate": "measure_morning",
+    "role": "STATE_OBSERVATION",
+    "governed_tools": [
+     "measure_ph"
+    ]
+   },
+   {
+    "cid": "E2",
+    "predicate": "correct_ph",
+    "role": "OPERATION_EFFECT",
+    "governed_tools": [
+     "correct_ph"
+    ]
+   },
+   {
+    "cid": "E3",
+    "predicate": "measure_after_correction",
+    "role": "STATE_OBSERVATION",
+    "governed_tools": [
+     "measure_ph"
+    ]
+   },
+   {
+    "cid": "E4",
+    "predicate": "harvest",
+    "role": "OPERATION_EFFECT",
+    "governed_tools": [
+     "harvest_lettuce"
+    ]
+   },
+   {
+    "cid": "E5",
+    "predicate": "log_weight",
+    "role": "COMMUNICATION",
+    "governed_tools": [
+     "log_weight"
+    ]
+   },
+   {
+    "cid": "E6",
+    "predicate": "drift_state",
+    "role": "STATE_OBSERVATION",
+    "governed_tools": [
+     "measure_ph"
+    ]
+   }
+  ],
+  "related_pairs": [
+   [
+    "E4",
+    "E5"
+   ],
+   [
+    "E1",
+    "E3"
+   ]
+  ],
+  "ambiguous_pairs": [],
+  "edges": [
+   {
+    "from_cid": "E2",
+    "to_cid": "E3",
+    "relation": "RESPONSE",
+    "acceptable": [
+     "RESPONSE",
+     "ORDER_AFTER"
+    ],
+    "evidence": [
+     {
+      "start": 140,
+      "end": 182,
+      "text": "Measure the pH again after each correction"
+     }
+    ]
+   },
+   {
+    "from_cid": "E4",
+    "to_cid": "E5",
+    "relation": "RESPONSE",
+    "acceptable": [
+     "RESPONSE"
+    ],
+    "evidence": [
+     {
+      "start": 184,
+      "end": 237,
+      "text": "Harvest the lettuce weekly and log the harvest weight"
+     }
+    ]
+   }
+  ],
+  "cf_of": null,
+  "notes": "pre-correction vs post-correction measurements are two instances; 'The measurement' anaphor binds to the morning one."
+ },
+ {
+  "case_id": "val_icecream",
+  "domain": "ice cream factory",
+  "family": "passive+nominal+action_vs_check",
+  "split": "val",
+  "policy": "Pasteurize the base mix before churning. The base mix is pasteurized at 72 degrees. Churn the mix only after pasteurization completes. Do not churn a batch that failed the pasteurization check.",
+  "tools": [
+   {
+    "name": "pasteurize_mix",
+    "description": "Heats the ice cream base mix to pasteurisation temperature in the vat.",
+    "input": {
+     "batch_id": "string",
+     "temperature_c": "number"
+    },
+    "output": {
+     "pasteurized": "boolean"
+    }
+   },
+   {
+    "name": "churn_mix",
+    "description": "Churns the pasteurized base mix in the batch freezer to ice cream.",
+    "input": {
+     "batch_id": "string"
+    },
+    "output": {
+     "churned": "boolean"
+    }
+   },
+   {
+    "name": "check_pasteurization",
+    "description": "Verifies from vat records whether a batch was correctly pasteurized.",
+    "input": {
+     "batch_id": "string"
+    },
+    "output": {
+     "passed": "boolean"
+    }
+   }
+  ],
+  "mentions": [
+   {
+    "mid": "m1",
+    "span": "Pasteurize the base mix",
+    "start": 0,
+    "end": 23,
+    "cid": "E1",
+    "sentence_index": 0
+   },
+   {
+    "mid": "m2",
+    "span": "The base mix is pasteurized",
+    "start": 41,
+    "end": 68,
+    "cid": "E1",
+    "sentence_index": 1
+   },
+   {
+    "mid": "m3",
+    "span": "Churn the mix",
+    "start": 84,
+    "end": 97,
+    "cid": "E2",
+    "sentence_index": 2
+   },
+   {
+    "mid": "m4",
+    "span": "pasteurization completes",
+    "start": 109,
+    "end": 133,
+    "cid": "E1",
+    "sentence_index": 2
+   },
+   {
+    "mid": "m5",
+    "span": "Do not churn a batch",
+    "start": 135,
+    "end": 155,
+    "cid": "E2",
+    "sentence_index": 3
+   },
+   {
+    "mid": "m6",
+    "span": "that failed the pasteurization check",
+    "start": 156,
+    "end": 192,
+    "cid": "E5",
+    "sentence_index": 3
+   },
+   {
+    "mid": "m6b",
+    "span": "the pasteurization check",
+    "start": 168,
+    "end": 192,
+    "cid": "E4",
+    "sentence_index": 3
+   }
+  ],
+  "canonical_events": [
+   {
+    "cid": "E1",
+    "predicate": "pasteurize",
+    "role": "OPERATION_EFFECT",
+    "governed_tools": [
+     "pasteurize_mix"
+    ]
+   },
+   {
+    "cid": "E2",
+    "predicate": "churn",
+    "role": "OPERATION_EFFECT",
+    "governed_tools": [
+     "churn_mix"
+    ]
+   },
+   {
+    "cid": "E4",
+    "predicate": "check_pasteurization",
+    "role": "PRECONDITION_CHECK",
+    "governed_tools": [
+     "check_pasteurization"
+    ]
+   },
+   {
+    "cid": "E5",
+    "predicate": "failed_check_state",
+    "role": "STATE_OBSERVATION",
+    "governed_tools": [
+     "check_pasteurization"
+    ]
+   }
+  ],
+  "related_pairs": [
+   [
+    "E4",
+    "E5"
+   ],
+   [
+    "E1",
+    "E4"
+   ]
+  ],
+  "ambiguous_pairs": [],
+  "edges": [
+   {
+    "from_cid": "E1",
+    "to_cid": "E2",
+    "relation": "PRECONDITION",
+    "acceptable": [
+     "PRECONDITION",
+     "ORDER_BEFORE"
+    ],
+    "evidence": [
+     {
+      "start": 84,
+      "end": 133,
+      "text": "Churn the mix only after pasteurization completes"
+     }
+    ]
+   },
+   {
+    "from_cid": "E5",
+    "to_cid": "E2",
+    "relation": "EXCEPTION",
+    "acceptable": [
+     "EXCEPTION"
+    ],
+    "evidence": [
+     {
+      "start": 135,
+      "end": 192,
+      "text": "Do not churn a batch that failed the pasteurization check"
+     }
+    ]
+   }
+  ],
+  "cf_of": null,
+  "notes": "action (pasteurize) vs the pasteurization CHECK (verify) vs failed-check state; prohibition clause references the same generic churn event."
+ },
+ {
+  "case_id": "val_goldsmith",
+  "domain": "goldsmith workshop",
+  "family": "actor_split+polarity",
+  "split": "val",
+  "policy": "The goldsmith certifies each ingot before sale. Certification by the apprentice is not valid. Polish the ingot only after it is certified. The appraisal is performed by the valuer, not by the goldsmith.",
+  "tools": [
+   {
+    "name": "certify_ingot",
+    "description": "Issues the assay certificate for a finished precious-metal ingot.",
+    "input": {
+     "ingot_id": "string",
+     "assayer": "string"
+    },
+    "output": {
+     "certificate_id": "string"
+    }
+   },
+   {
+    "name": "polish_ingot",
+    "description": "Polishes an ingot to mirror finish with the buffing wheel.",
+    "input": {
+     "ingot_id": "string"
+    },
+    "output": {
+     "polished": "boolean"
+    }
+   },
+   {
+    "name": "appraise_ingot",
+    "description": "Determines the market value of an ingot for insurance.",
+    "input": {
+     "ingot_id": "string"
+    },
+    "output": {
+     "value": "number"
+    }
+   }
+  ],
+  "mentions": [
+   {
+    "mid": "m1",
+    "span": "The goldsmith certifies each ingot",
+    "start": 0,
+    "end": 34,
+    "cid": "E1",
+    "sentence_index": 0
+   },
+   {
+    "mid": "m2",
+    "span": "Certification by the apprentice",
+    "start": 48,
+    "end": 79,
+    "cid": "E2",
+    "sentence_index": 1
+   },
+   {
+    "mid": "m3",
+    "span": "Polish the ingot",
+    "start": 94,
+    "end": 110,
+    "cid": "E4",
+    "sentence_index": 2
+   },
+   {
+    "mid": "m4",
+    "span": "it is certified",
+    "start": 122,
+    "end": 137,
+    "cid": "E1",
+    "sentence_index": 2
+   },
+   {
+    "mid": "m5",
+    "span": "The appraisal is performed by the valuer",
+    "start": 139,
+    "end": 179,
+    "cid": "E5",
+    "sentence_index": 3
+   }
+  ],
+  "canonical_events": [
+   {
+    "cid": "E1",
+    "predicate": "certify_goldsmith",
+    "role": "OPERATION_EFFECT",
+    "governed_tools": [
+     "certify_ingot"
+    ]
+   },
+   {
+    "cid": "E2",
+    "predicate": "certify_apprentice",
+    "role": "OPERATION_EFFECT",
+    "governed_tools": [
+     "certify_ingot"
+    ]
+   },
+   {
+    "cid": "E4",
+    "predicate": "polish",
+    "role": "OPERATION_EFFECT",
+    "governed_tools": [
+     "polish_ingot"
+    ]
+   },
+   {
+    "cid": "E5",
+    "predicate": "appraise",
+    "role": "OPERATION_EFFECT",
+    "governed_tools": [
+     "appraise_ingot"
+    ]
+   }
+  ],
+  "related_pairs": [
+   [
+    "E1",
+    "E2"
+   ]
+  ],
+  "ambiguous_pairs": [],
+  "edges": [
+   {
+    "from_cid": "E1",
+    "to_cid": "E4",
+    "relation": "PRECONDITION",
+    "acceptable": [
+     "PRECONDITION"
+    ],
+    "evidence": [
+     {
+      "start": 94,
+      "end": 137,
+      "text": "Polish the ingot only after it is certified"
+     }
+    ]
+   }
+  ],
+  "cf_of": null,
+  "notes": "goldsmith vs apprentice certification: same predicate, different actor; negated validity in between; 'not by the goldsmith' ellipsis inside appraisal clause."
+ },
+ {
+  "case_id": "val_golfcourse",
+  "domain": "golf course maintenance",
+  "family": "temporal_anchors+repeat_nominal",
+  "split": "val",
+  "policy": "Mow the fairways on Mondays. The Monday mowing is done with wide decks. Mow the greens each morning only after the dew has lifted. Mowing of the greens uses a dedicated reel mower. Aerate the greens in April and repeat the aeration in September.",
+  "tools": [
+   {
+    "name": "mow_fairway",
+    "description": "Mows fairway grass with a wide-deck ride-on mower.",
+    "input": {
+     "hole_ids": "array"
+    },
+    "output": {
+     "mowed": "boolean"
+    }
+   },
+   {
+    "name": "mow_green",
+    "description": "Mows putting-green turf with a dedicated reel mower.",
+    "input": {
+     "green_ids": "array"
+    },
+    "output": {
+     "mowed": "boolean"
+    }
+   },
+   {
+    "name": "aerate_green",
+    "description": "Aerates green turf with hollow tines to relieve compaction.",
+    "input": {
+     "green_ids": "array"
+    },
+    "output": {
+     "aerated": "boolean"
+    }
+   }
+  ],
+  "mentions": [
+   {
+    "mid": "m1",
+    "span": "Mow the fairways",
+    "start": 0,
+    "end": 16,
+    "cid": "E1",
+    "sentence_index": 0
+   },
+   {
+    "mid": "m2",
+    "span": "The Monday mowing",
+    "start": 29,
+    "end": 46,
+    "cid": "E1",
+    "sentence_index": 1
+   },
+   {
+    "mid": "m3",
+    "span": "Mow the greens",
+    "start": 72,
+    "end": 86,
+    "cid": "E2",
+    "sentence_index": 2
+   },
+   {
+    "mid": "m4",
+    "span": "the dew has lifted",
+    "start": 111,
+    "end": 129,
+    "cid": "E5",
+    "sentence_index": 2
+   },
+   {
+    "mid": "m5",
+    "span": "Mowing of the greens",
+    "start": 131,
+    "end": 151,
+    "cid": "E2",
+    "sentence_index": 3
+   },
+   {
+    "mid": "m6",
+    "span": "Aerate the greens",
+    "start": 181,
+    "end": 198,
+    "cid": "E3",
+    "sentence_index": 4
+   },
+   {
+    "mid": "m7",
+    "span": "repeat the aeration",
+    "start": 212,
+    "end": 231,
+    "cid": "E4",
+    "sentence_index": 4
+   },
+   {
+    "mid": "m7b",
+    "span": "the aeration",
+    "start": 219,
+    "end": 231,
+    "cid": "E3",
+    "sentence_index": 4
+   }
+  ],
+  "canonical_events": [
+   {
+    "cid": "E1",
+    "predicate": "mow_fairways",
+    "role": "OPERATION_EFFECT",
+    "governed_tools": [
+     "mow_fairway"
+    ]
+   },
+   {
+    "cid": "E2",
+    "predicate": "mow_greens",
+    "role": "OPERATION_EFFECT",
+    "governed_tools": [
+     "mow_green"
+    ]
+   },
+   {
+    "cid": "E3",
+    "predicate": "aerate_april",
+    "role": "OPERATION_EFFECT",
+    "governed_tools": [
+     "aerate_green"
+    ]
+   },
+   {
+    "cid": "E4",
+    "predicate": "aerate_september",
+    "role": "OPERATION_EFFECT",
+    "governed_tools": [
+     "aerate_green"
+    ]
+   },
+   {
+    "cid": "E5",
+    "predicate": "dew_lifted_state",
+    "role": "STATE_OBSERVATION",
+    "governed_tools": [
+     "mow_green"
+    ]
+   }
+  ],
+  "related_pairs": [
+   [
+    "E1",
+    "E2"
+   ],
+   [
+    "E3",
+    "E4"
+   ]
+  ],
+  "ambiguous_pairs": [],
+  "edges": [
+   {
+    "from_cid": "E5",
+    "to_cid": "E2",
+    "relation": "STATE_GATE",
+    "acceptable": [
+     "STATE_GATE"
+    ],
+    "evidence": [
+     {
+      "start": 72,
+      "end": 129,
+      "text": "Mow the greens each morning only after the dew has lifted"
+     }
+    ]
+   }
+  ],
+  "cf_of": null,
+  "notes": "fairway vs green mowing (entity split); April vs September aeration with 'repeat the aeration' where the inner NP binds to the April instance while the verb phrase is the September one."
+ },
+ {
+  "case_id": "val_petgrooming",
+  "domain": "pet grooming salon",
+  "family": "action_vs_completion_state+artifact",
+  "split": "val",
+  "policy": "Bath each dog before the haircut. Notify the owner when the haircut is complete. The notification includes the pick-up time. Record the vaccination status of each dog at intake.",
+  "tools": [
+   {
+    "name": "bath_dog",
+    "description": "Bathes a dog in the grooming tub with canine shampoo.",
+    "input": {
+     "dog_id": "string"
+    },
+    "output": {
+     "bathed": "boolean"
+    }
+   },
+   {
+    "name": "cut_hair",
+    "description": "Cuts and styles a dog's coat with grooming clippers.",
+    "input": {
+     "dog_id": "string"
+    },
+    "output": {
+     "cut": "boolean"
+    }
+   },
+   {
+    "name": "notify_owner",
+    "description": "Sends an SMS to the dog's owner that the groom is finished.",
+    "input": {
+     "dog_id": "string",
+     "message": "string"
+    },
+    "output": {
+     "sent": "boolean"
+    }
+   },
+   {
+    "name": "record_status",
+    "description": "Records a dog's vaccination documents at intake.",
+    "input": {
+     "dog_id": "string",
+     "vaccination_doc": "string"
+    },
+    "output": {
+     "entry_id": "string"
+    }
+   }
+  ],
+  "mentions": [
+   {
+    "mid": "m1",
+    "span": "Bath each dog",
+    "start": 0,
+    "end": 13,
+    "cid": "E1",
+    "sentence_index": 0
+   },
+   {
+    "mid": "m2",
+    "span": "the haircut",
+    "start": 21,
+    "end": 32,
+    "cid": "E2",
+    "sentence_index": 0
+   },
+   {
+    "mid": "m3",
+    "span": "Notify the owner",
+    "start": 34,
+    "end": 50,
+    "cid": "E3",
+    "sentence_index": 1
+   },
+   {
+    "mid": "m4",
+    "span": "the haircut is complete",
+    "start": 56,
+    "end": 79,
+    "cid": "E6",
+    "sentence_index": 1
+   },
+   {
+    "mid": "m6",
+    "span": "Record the vaccination status of each dog",
+    "start": 125,
+    "end": 166,
+    "cid": "E5",
+    "sentence_index": 3
+   }
+  ],
+  "canonical_events": [
+   {
+    "cid": "E1",
+    "predicate": "bath",
+    "role": "OPERATION_EFFECT",
+    "governed_tools": [
+     "bath_dog"
+    ]
+   },
+   {
+    "cid": "E2",
+    "predicate": "haircut",
+    "role": "OPERATION_EFFECT",
+    "governed_tools": [
+     "cut_hair"
+    ]
+   },
+   {
+    "cid": "E3",
+    "predicate": "notify",
+    "role": "COMMUNICATION",
+    "governed_tools": [
+     "notify_owner"
+    ]
+   },
+   {
+    "cid": "E5",
+    "predicate": "record_status",
+    "role": "COMMUNICATION",
+    "governed_tools": [
+     "record_status"
+    ]
+   },
+   {
+    "cid": "E6",
+    "predicate": "haircut_complete_state",
+    "role": "STATE_OBSERVATION",
+    "governed_tools": [
+     "cut_hair"
+    ]
+   }
+  ],
+  "related_pairs": [
+   [
+    "E2",
+    "E6"
+   ]
+  ],
+  "ambiguous_pairs": [],
+  "edges": [
+   {
+    "from_cid": "E1",
+    "to_cid": "E2",
+    "relation": "ORDER_BEFORE",
+    "acceptable": [
+     "ORDER_BEFORE",
+     "PRECONDITION"
+    ],
+    "evidence": [
+     {
+      "start": 0,
+      "end": 32,
+      "text": "Bath each dog before the haircut"
+     }
+    ]
+   },
+   {
+    "from_cid": "E6",
+    "to_cid": "E3",
+    "relation": "RESPONSE",
+    "acceptable": [
+     "RESPONSE"
+    ],
+    "evidence": [
+     {
+      "start": 34,
+      "end": 79,
+      "text": "Notify the owner when the haircut is complete"
+     }
+    ]
+   }
+  ],
+  "cf_of": null,
+  "notes": "haircut action vs haircut-complete state; 'The notification includes...' is an artifact-description sentence (no event mention); 'vaccination status' compound-noun trap."
+ },
+ {
+  "case_id": "val_escaperoom",
+  "domain": "escape room venue",
+  "family": "generic_vs_specific+plural_trap",
+  "split": "val",
+  "policy": "Reset the cipher room after each session. Reset the library room after each session as well. Inspect the props whenever a room is reset. The cipher reset takes priority when both resets are due at the same time.",
+  "tools": [
+   {
+    "name": "reset_room",
+    "description": "Restores an escape room to its initial state after a session.",
+    "input": {
+     "room_id": "string"
+    },
+    "output": {
+     "reset": "boolean"
+    }
+   },
+   {
+    "name": "inspect_props",
+    "description": "Inspects room props for damage and missing parts.",
+    "input": {
+     "room_id": "string"
+    },
+    "output": {
+     "findings": "array"
+    }
+   }
+  ],
+  "mentions": [
+   {
+    "mid": "m1",
+    "span": "Reset the cipher room",
+    "start": 0,
+    "end": 21,
+    "cid": "E1",
+    "sentence_index": 0
+   },
+   {
+    "mid": "m2",
+    "span": "Reset the library room",
+    "start": 42,
+    "end": 64,
+    "cid": "E2",
+    "sentence_index": 1
+   },
+   {
+    "mid": "m3",
+    "span": "a room is reset",
+    "start": 120,
+    "end": 135,
+    "cid": "E3",
+    "sentence_index": 2
+   },
+   {
+    "mid": "m4",
+    "span": "Inspect the props",
+    "start": 93,
+    "end": 110,
+    "cid": "E4",
+    "sentence_index": 2
+   },
+   {
+    "mid": "m5",
+    "span": "The cipher reset",
+    "start": 137,
+    "end": 153,
+    "cid": "E1",
+    "sentence_index": 3
+   }
+  ],
+  "canonical_events": [
+   {
+    "cid": "E1",
+    "predicate": "reset_cipher",
+    "role": "OPERATION_EFFECT",
+    "governed_tools": [
+     "reset_room"
+    ]
+   },
+   {
+    "cid": "E2",
+    "predicate": "reset_library",
+    "role": "OPERATION_EFFECT",
+    "governed_tools": [
+     "reset_room"
+    ]
+   },
+   {
+    "cid": "E3",
+    "predicate": "reset_generic",
+    "role": "OPERATION_EFFECT",
+    "governed_tools": [
+     "reset_room"
+    ]
+   },
+   {
+    "cid": "E4",
+    "predicate": "inspect_props",
+    "role": "PRECONDITION_CHECK",
+    "governed_tools": [
+     "inspect_props"
+    ]
+   }
+  ],
+  "related_pairs": [
+   [
+    "E1",
+    "E3"
+   ],
+   [
+    "E1",
+    "E2"
+   ],
+   [
+    "E2",
+    "E3"
+   ]
+  ],
+  "ambiguous_pairs": [],
+  "edges": [
+   {
+    "from_cid": "E3",
+    "to_cid": "E4",
+    "relation": "RESPONSE",
+    "acceptable": [
+     "RESPONSE"
+    ],
+    "evidence": [
+     {
+      "start": 93,
+      "end": 135,
+      "text": "Inspect the props whenever a room is reset"
+     }
+    ]
+   }
+  ],
+  "cf_of": null,
+  "notes": "generic conditional reset ('whenever a room is reset') vs room-specific resets: type-instance relations, all RELATED_BUT_DIFFERENT; 'both resets' plural trap."
+ },
+ {
+  "case_id": "val_blooddonation",
+  "domain": "blood donation center",
+  "family": "state_gate+negation+nominal",
+  "split": "val",
+  "policy": "Screen each donor before collection. The screening is valid for one day. Collect the unit only after the donor is screened. Label the unit at the bedside immediately after collection. A unit that is not labelled within one hour is discarded.",
+  "tools": [
+   {
+    "name": "screen_donor",
+    "description": "Screens a donor with the health questionnaire and haemoglobin test.",
+    "input": {
+     "donor_id": "string"
+    },
+    "output": {
+     "eligible": "boolean"
+    }
+   },
+   {
+    "name": "collect_unit",
+    "description": "Collects a blood unit from a screened donor into the pack.",
+    "input": {
+     "donor_id": "string"
+    },
+    "output": {
+     "unit_id": "string"
+    }
+   },
+   {
+    "name": "label_unit",
+    "description": "Labels a collected blood unit at the bedside with the donor's details.",
+    "input": {
+     "unit_id": "string"
+    },
+    "output": {
+     "labelled": "boolean"
+    }
+   },
+   {
+    "name": "discard_unit",
+    "description": "Discards a blood unit into the clinical waste container.",
+    "input": {
+     "unit_id": "string"
+    },
+    "output": {
+     "discarded": "boolean"
+    }
+   }
+  ],
+  "mentions": [
+   {
+    "mid": "m1",
+    "span": "Screen each donor",
+    "start": 0,
+    "end": 17,
+    "cid": "E1",
+    "sentence_index": 0
+   },
+   {
+    "mid": "m2",
+    "span": "The screening",
+    "start": 37,
+    "end": 50,
+    "cid": "E1",
+    "sentence_index": 1
+   },
+   {
+    "mid": "m3",
+    "span": "Collect the unit",
+    "start": 73,
+    "end": 89,
+    "cid": "E2",
+    "sentence_index": 2
+   },
+   {
+    "mid": "m4",
+    "span": "the donor is screened",
+    "start": 101,
+    "end": 122,
+    "cid": "E1",
+    "sentence_index": 2
+   },
+   {
+    "mid": "m5",
+    "span": "Label the unit",
+    "start": 124,
+    "end": 138,
+    "cid": "E3",
+    "sentence_index": 3
+   },
+   {
+    "mid": "m6",
+    "span": "collection",
+    "start": 25,
+    "end": 35,
+    "cid": "E2",
+    "sentence_index": 0
+   },
+   {
+    "mid": "m6b",
+    "span": "collection",
+    "start": 172,
+    "end": 182,
+    "cid": "E2",
+    "sentence_index": 3
+   },
+   {
+    "mid": "m7",
+    "span": "A unit that is not labelled within one hour is discarded",
+    "start": 184,
+    "end": 240,
+    "cid": "E4",
+    "sentence_index": 4
+   },
+   {
+    "mid": "m8",
+    "span": "that is not labelled within one hour",
+    "start": 191,
+    "end": 227,
+    "cid": "E5",
+    "sentence_index": 4
+   }
+  ],
+  "canonical_events": [
+   {
+    "cid": "E1",
+    "predicate": "screen",
+    "role": "PRECONDITION_CHECK",
+    "governed_tools": [
+     "screen_donor"
+    ]
+   },
+   {
+    "cid": "E2",
+    "predicate": "collect",
+    "role": "OPERATION_EFFECT",
+    "governed_tools": [
+     "collect_unit"
+    ]
+   },
+   {
+    "cid": "E3",
+    "predicate": "label",
+    "role": "OPERATION_EFFECT",
+    "governed_tools": [
+     "label_unit"
+    ]
+   },
+   {
+    "cid": "E4",
+    "predicate": "discard",
+    "role": "OPERATION_EFFECT",
+    "governed_tools": [
+     "discard_unit"
+    ]
+   },
+   {
+    "cid": "E5",
+    "predicate": "not_labelled_state",
+    "role": "STATE_OBSERVATION",
+    "governed_tools": [
+     "label_unit"
+    ]
+   }
+  ],
+  "related_pairs": [
+   [
+    "E3",
+    "E5"
+   ]
+  ],
+  "ambiguous_pairs": [],
+  "edges": [
+   {
+    "from_cid": "E1",
+    "to_cid": "E2",
+    "relation": "PRECONDITION",
+    "acceptable": [
+     "PRECONDITION"
+    ],
+    "evidence": [
+     {
+      "start": 73,
+      "end": 122,
+      "text": "Collect the unit only after the donor is screened"
+     }
+    ]
+   },
+   {
+    "from_cid": "E2",
+    "to_cid": "E3",
+    "relation": "ORDER_BEFORE",
+    "acceptable": [
+     "ORDER_BEFORE",
+     "RESPONSE"
+    ],
+    "evidence": [
+     {
+      "start": 124,
+      "end": 182,
+      "text": "Label the unit at the bedside immediately after collection"
+     }
+    ]
+   },
+   {
+    "from_cid": "E5",
+    "to_cid": "E4",
+    "relation": "STATE_GATE",
+    "acceptable": [
+     "STATE_GATE"
+    ],
+    "evidence": [
+     {
+      "start": 184,
+      "end": 240,
+      "text": "A unit that is not labelled within one hour is discarded"
+     }
+    ]
+   }
+  ],
+  "cf_of": null,
+  "notes": "'collection' appears twice (before / immediately after) - both bind to the same generic collection event."
+ },
+ {
+  "case_id": "test_deicing",
+  "domain": "airport de-icing service",
+  "family": "entity_swap",
+  "split": "test",
+  "policy": "De-ice the left wing before departure. The de-icing of the right wing may be deferred to the hold-over point. Spray the wings only after the aircraft is parked. Record the fluid type for each wing that is sprayed.",
+  "tools": [
+   {
+    "name": "deice_wing",
+    "description": "Sprays de-icing fluid onto an aircraft wing with the boom nozzle.",
+    "input": {
+     "aircraft_id": "string",
+     "wing": "string",
+     "fluid_type": "string"
+    },
+    "output": {
+     "deiced": "boolean"
+    }
+   },
+   {
+    "name": "spray_wing",
+    "description": "Applies a fluid layer to wing surfaces with the handheld sprayer.",
+    "input": {
+     "aircraft_id": "string",
+     "surface": "string"
+    },
+    "output": {
+     "sprayed": "boolean"
+    }
+   },
+   {
+    "name": "record_fluid",
+    "description": "Records the fluid type used per aircraft surface in the station log.",
+    "input": {
+     "aircraft_id": "string",
+     "surface": "string",
+     "fluid_type": "string"
+    },
+    "output": {
+     "entry_id": "string"
+    }
+   }
+  ],
+  "mentions": [
+   {
+    "mid": "m1",
+    "span": "De-ice the left wing",
+    "start": 0,
+    "end": 20,
+    "cid": "E1",
+    "sentence_index": 0
+   },
+   {
+    "mid": "m2",
+    "span": "The de-icing of the right wing",
+    "start": 39,
+    "end": 69,
+    "cid": "E2",
+    "sentence_index": 1
+   },
+   {
+    "mid": "m3",
+    "span": "Spray the wings",
+    "start": 110,
+    "end": 125,
+    "cid": "E3",
+    "sentence_index": 2
+   },
+   {
+    "mid": "m4",
+    "span": "the aircraft is parked",
+    "start": 137,
+    "end": 159,
+    "cid": "E6",
+    "sentence_index": 2
+   },
+   {
+    "mid": "m5",
+    "span": "Record the fluid type",
+    "start": 161,
+    "end": 182,
+    "cid": "E5",
+    "sentence_index": 3
+   }
+  ],
+  "canonical_events": [
+   {
+    "cid": "E1",
+    "predicate": "deice_left_wing",
+    "role": "OPERATION_EFFECT",
+    "governed_tools": [
+     "deice_wing"
+    ]
+   },
+   {
+    "cid": "E2",
+    "predicate": "deice_right_wing",
+    "role": "OPERATION_EFFECT",
+    "governed_tools": [
+     "deice_wing"
+    ]
+   },
+   {
+    "cid": "E3",
+    "predicate": "spray_wings",
+    "role": "OPERATION_EFFECT",
+    "governed_tools": [
+     "spray_wing"
+    ]
+   },
+   {
+    "cid": "E5",
+    "predicate": "record_fluid",
+    "role": "COMMUNICATION",
+    "governed_tools": [
+     "record_fluid"
+    ]
+   },
+   {
+    "cid": "E6",
+    "predicate": "parked_state",
+    "role": "STATE_OBSERVATION",
+    "governed_tools": [
+     "spray_wing"
+    ]
+   }
+  ],
+  "related_pairs": [
+   [
+    "E1",
+    "E2"
+   ]
+  ],
+  "ambiguous_pairs": [],
+  "edges": [
+   {
+    "from_cid": "E6",
+    "to_cid": "E3",
+    "relation": "STATE_GATE",
+    "acceptable": [
+     "STATE_GATE"
+    ],
+    "evidence": [
+     {
+      "start": 110,
+      "end": 159,
+      "text": "Spray the wings only after the aircraft is parked"
+     }
+    ]
+   }
+  ],
+  "cf_of": "test_deicing_cf",
+  "notes": "left-wing vs right-wing de-icing: same predicate, different entity -> RELATED_BUT_DIFFERENT. 'each wing that is sprayed' participial trap."
+ },
+ {
+  "case_id": "test_deicing_cf",
+  "domain": "airport de-icing service",
+  "family": "entity_swap_cf",
+  "split": "test",
+  "policy": "De-ice the left wing before departure. The de-icing of the left wing may be deferred to the hold-over point. Spray the wings only after the aircraft is parked. Record the fluid type for each wing that is sprayed.",
+  "tools": [
+   {
+    "name": "deice_wing",
+    "description": "Sprays de-icing fluid onto an aircraft wing with the boom nozzle.",
+    "input": {
+     "aircraft_id": "string",
+     "wing": "string",
+     "fluid_type": "string"
+    },
+    "output": {
+     "deiced": "boolean"
+    }
+   },
+   {
+    "name": "spray_wing",
+    "description": "Applies a fluid layer to wing surfaces with the handheld sprayer.",
+    "input": {
+     "aircraft_id": "string",
+     "surface": "string"
+    },
+    "output": {
+     "sprayed": "boolean"
+    }
+   },
+   {
+    "name": "record_fluid",
+    "description": "Records the fluid type used per aircraft surface in the station log.",
+    "input": {
+     "aircraft_id": "string",
+     "surface": "string",
+     "fluid_type": "string"
+    },
+    "output": {
+     "entry_id": "string"
+    }
+   }
+  ],
+  "mentions": [
+   {
+    "mid": "m1",
+    "span": "De-ice the left wing",
+    "start": 0,
+    "end": 20,
+    "cid": "E1",
+    "sentence_index": 0
+   },
+   {
+    "mid": "m2",
+    "span": "The de-icing of the left wing",
+    "start": 39,
+    "end": 68,
+    "cid": "E1",
+    "sentence_index": 1
+   },
+   {
+    "mid": "m3",
+    "span": "Spray the wings",
+    "start": 109,
+    "end": 124,
+    "cid": "E3",
+    "sentence_index": 2
+   },
+   {
+    "mid": "m4",
+    "span": "the aircraft is parked",
+    "start": 136,
+    "end": 158,
+    "cid": "E6",
+    "sentence_index": 2
+   },
+   {
+    "mid": "m5",
+    "span": "Record the fluid type",
+    "start": 160,
+    "end": 181,
+    "cid": "E5",
+    "sentence_index": 3
+   }
+  ],
+  "canonical_events": [
+   {
+    "cid": "E1",
+    "predicate": "deice_left_wing",
+    "role": "OPERATION_EFFECT",
+    "governed_tools": [
+     "deice_wing"
+    ]
+   },
+   {
+    "cid": "E3",
+    "predicate": "spray_wings",
+    "role": "OPERATION_EFFECT",
+    "governed_tools": [
+     "spray_wing"
+    ]
+   },
+   {
+    "cid": "E5",
+    "predicate": "record_fluid",
+    "role": "COMMUNICATION",
+    "governed_tools": [
+     "record_fluid"
+    ]
+   },
+   {
+    "cid": "E6",
+    "predicate": "parked_state",
+    "role": "STATE_OBSERVATION",
+    "governed_tools": [
+     "spray_wing"
+    ]
+   }
+  ],
+  "related_pairs": [],
+  "ambiguous_pairs": [],
+  "edges": [
+   {
+    "from_cid": "E6",
+    "to_cid": "E3",
+    "relation": "STATE_GATE",
+    "acceptable": [
+     "STATE_GATE"
+    ],
+    "evidence": [
+     {
+      "start": 109,
+      "end": 158,
+      "text": "Spray the wings only after the aircraft is parked"
+     }
+    ]
+   }
+  ],
+  "cf_of": "test_deicing",
+  "notes": "CF of test_deicing: 'right wing' -> 'left wing'. The nominal now corefers with the imperative mention (SAME_EVENT)."
+ },
+ {
+  "case_id": "test_cardetailing",
+  "domain": "car detailing shop",
+  "family": "action_vs_observation",
+  "split": "test",
+  "policy": "Wash the vehicle before polishing. The wash bay attendant observes whether the vehicle was washed. Polish the vehicle only after it is washed. Photograph the finished vehicle for the customer file.",
+  "tools": [
+   {
+    "name": "wash_vehicle",
+    "description": "Washes a vehicle with foam and pressure water in the wash bay.",
+    "input": {
+     "vehicle_id": "string"
+    },
+    "output": {
+     "washed": "boolean"
+    }
+   },
+   {
+    "name": "observe_wash",
+    "description": "Observes and records whether the wash stage was completed correctly.",
+    "input": {
+     "vehicle_id": "string"
+    },
+    "output": {
+     "observed": "boolean"
+    }
+   },
+   {
+    "name": "polish_vehicle",
+    "description": "Polishes vehicle paint with the rotary polisher and compound.",
+    "input": {
+     "vehicle_id": "string"
+    },
+    "output": {
+     "polished": "boolean"
+    }
+   },
+   {
+    "name": "photograph_vehicle",
+    "description": "Photographs the finished vehicle for the customer file.",
+    "input": {
+     "vehicle_id": "string"
+    },
+    "output": {
+     "photo_ids": "array"
+    }
+   }
+  ],
+  "mentions": [
+   {
+    "mid": "m1",
+    "span": "Wash the vehicle",
+    "start": 0,
+    "end": 16,
+    "cid": "E1",
+    "sentence_index": 0
+   },
+   {
+    "mid": "m2",
+    "span": "The wash bay attendant observes whether the vehicle was washed",
+    "start": 35,
+    "end": 97,
+    "cid": "E2",
+    "sentence_index": 1
+   },
+   {
+    "mid": "m2b",
+    "span": "the vehicle was washed",
+    "start": 75,
+    "end": 97,
+    "cid": "E1",
+    "sentence_index": 1
+   },
+   {
+    "mid": "m3",
+    "span": "Polish the vehicle",
+    "start": 99,
+    "end": 117,
+    "cid": "E3",
+    "sentence_index": 2
+   },
+   {
+    "mid": "m4",
+    "span": "it is washed",
+    "start": 129,
+    "end": 141,
+    "cid": "E1",
+    "sentence_index": 2
+   },
+   {
+    "mid": "m5",
+    "span": "Photograph the finished vehicle",
+    "start": 143,
+    "end": 174,
+    "cid": "E5",
+    "sentence_index": 3
+   }
+  ],
+  "canonical_events": [
+   {
+    "cid": "E1",
+    "predicate": "wash",
+    "role": "OPERATION_EFFECT",
+    "governed_tools": [
+     "wash_vehicle"
+    ]
+   },
+   {
+    "cid": "E2",
+    "predicate": "observe_wash",
+    "role": "STATE_OBSERVATION",
+    "governed_tools": [
+     "observe_wash"
+    ]
+   },
+   {
+    "cid": "E3",
+    "predicate": "polish",
+    "role": "OPERATION_EFFECT",
+    "governed_tools": [
+     "polish_vehicle"
+    ]
+   },
+   {
+    "cid": "E5",
+    "predicate": "photograph",
+    "role": "OPERATION_EFFECT",
+    "governed_tools": [
+     "photograph_vehicle"
+    ]
+   }
+  ],
+  "related_pairs": [
+   [
+    "E1",
+    "E2"
+   ]
+  ],
+  "ambiguous_pairs": [],
+  "edges": [
+   {
+    "from_cid": "E1",
+    "to_cid": "E3",
+    "relation": "PRECONDITION",
+    "acceptable": [
+     "PRECONDITION",
+     "ORDER_BEFORE"
+    ],
+    "evidence": [
+     {
+      "start": 99,
+      "end": 141,
+      "text": "Polish the vehicle only after it is washed"
+     }
+    ]
+   }
+  ],
+  "cf_of": null,
+  "notes": "the OBSERVATION of the wash is a different event from the wash itself (RELATED); nested 'the vehicle was washed' refers to the wash."
+ },
+ {
+  "case_id": "test_taxidispatch",
+  "domain": "taxi dispatch center",
+  "family": "actor_split",
+  "split": "test",
+  "policy": "The dispatcher assigns each ride to a driver. The assignment by the driver is prohibited. Send the passenger a confirmation after each ride is assigned. Cancel rides that are not confirmed within ten minutes.",
+  "tools": [
+   {
+    "name": "assign_ride",
+    "description": "Assigns a ride request to an available driver in the dispatch board.",
+    "input": {
+     "ride_id": "string",
+     "driver_id": "string"
+    },
+    "output": {
+     "assigned": "boolean"
+    }
+   },
+   {
+    "name": "send_confirmation",
+    "description": "Sends a ride confirmation message to the passenger.",
+    "input": {
+     "ride_id": "string",
+     "passenger_id": "string"
+    },
+    "output": {
+     "sent": "boolean"
+    }
+   },
+   {
+    "name": "cancel_ride",
+    "description": "Cancels a ride in the dispatch system.",
+    "input": {
+     "ride_id": "string"
+    },
+    "output": {
+     "cancelled": "boolean"
+    }
+   }
+  ],
+  "mentions": [
+   {
+    "mid": "m1",
+    "span": "The dispatcher assigns each ride",
+    "start": 0,
+    "end": 32,
+    "cid": "E1",
+    "sentence_index": 0
+   },
+   {
+    "mid": "m2",
+    "span": "The assignment by the driver",
+    "start": 46,
+    "end": 74,
+    "cid": "E2",
+    "sentence_index": 1
+   },
+   {
+    "mid": "m3",
+    "span": "each ride is assigned",
+    "start": 130,
+    "end": 151,
+    "cid": "E1",
+    "sentence_index": 2
+   },
+   {
+    "mid": "m4",
+    "span": "Send the passenger a confirmation",
+    "start": 90,
+    "end": 123,
+    "cid": "E4",
+    "sentence_index": 2
+   },
+   {
+    "mid": "m5",
+    "span": "Cancel rides",
+    "start": 153,
+    "end": 165,
+    "cid": "E5",
+    "sentence_index": 3
+   },
+   {
+    "mid": "m6",
+    "span": "are not confirmed within ten minutes",
+    "start": 171,
+    "end": 207,
+    "cid": "E6",
+    "sentence_index": 3
+   }
+  ],
+  "canonical_events": [
+   {
+    "cid": "E1",
+    "predicate": "assign_dispatcher",
+    "role": "OPERATION_EFFECT",
+    "governed_tools": [
+     "assign_ride"
+    ]
+   },
+   {
+    "cid": "E2",
+    "predicate": "assign_driver",
+    "role": "OPERATION_EFFECT",
+    "governed_tools": [
+     "assign_ride"
+    ]
+   },
+   {
+    "cid": "E4",
+    "predicate": "send_confirmation",
+    "role": "COMMUNICATION",
+    "governed_tools": [
+     "send_confirmation"
+    ]
+   },
+   {
+    "cid": "E5",
+    "predicate": "cancel",
+    "role": "OPERATION_EFFECT",
+    "governed_tools": [
+     "cancel_ride"
+    ]
+   },
+   {
+    "cid": "E6",
+    "predicate": "not_confirmed_state",
+    "role": "STATE_OBSERVATION",
+    "governed_tools": [
+     "send_confirmation"
+    ]
+   }
+  ],
+  "related_pairs": [
+   [
+    "E1",
+    "E2"
+   ],
+   [
+    "E4",
+    "E6"
+   ]
+  ],
+  "ambiguous_pairs": [],
+  "edges": [
+   {
+    "from_cid": "E1",
+    "to_cid": "E4",
+    "relation": "RESPONSE",
+    "acceptable": [
+     "RESPONSE"
+    ],
+    "evidence": [
+     {
+      "start": 90,
+      "end": 151,
+      "text": "Send the passenger a confirmation after each ride is assigned"
+     }
+    ]
+   },
+   {
+    "from_cid": "E6",
+    "to_cid": "E5",
+    "relation": "STATE_GATE",
+    "acceptable": [
+     "STATE_GATE"
+    ],
+    "evidence": [
+     {
+      "start": 153,
+      "end": 207,
+      "text": "Cancel rides that are not confirmed within ten minutes"
+     }
+    ]
+   }
+  ],
+  "cf_of": "test_taxidispatch_cf",
+  "notes": "dispatcher-assigns vs driver-assigns: same predicate, different actor -> RELATED_BUT_DIFFERENT."
+ },
+ {
+  "case_id": "test_taxidispatch_cf",
+  "domain": "taxi dispatch center",
+  "family": "actor_swap_cf",
+  "split": "test",
+  "policy": "The dispatcher assigns each ride to a driver. The assignment by the dispatcher is recorded in the shift log. Send the passenger a confirmation after each ride is assigned. Cancel rides that are not confirmed within ten minutes.",
+  "tools": [
+   {
+    "name": "assign_ride",
+    "description": "Assigns a ride request to an available driver in the dispatch board.",
+    "input": {
+     "ride_id": "string",
+     "driver_id": "string"
+    },
+    "output": {
+     "assigned": "boolean"
+    }
+   },
+   {
+    "name": "send_confirmation",
+    "description": "Sends a ride confirmation message to the passenger.",
+    "input": {
+     "ride_id": "string",
+     "passenger_id": "string"
+    },
+    "output": {
+     "sent": "boolean"
+    }
+   },
+   {
+    "name": "cancel_ride",
+    "description": "Cancels a ride in the dispatch system.",
+    "input": {
+     "ride_id": "string"
+    },
+    "output": {
+     "cancelled": "boolean"
+    }
+   },
+   {
+    "name": "log_shift",
+    "description": "Writes a dispatch event entry into the shift log.",
+    "input": {
+     "ride_id": "string",
+     "event": "string"
+    },
+    "output": {
+     "entry_id": "string"
+    }
+   }
+  ],
+  "mentions": [
+   {
+    "mid": "m1",
+    "span": "The dispatcher assigns each ride",
+    "start": 0,
+    "end": 32,
+    "cid": "E1",
+    "sentence_index": 0
+   },
+   {
+    "mid": "m2",
+    "span": "The assignment by the dispatcher",
+    "start": 46,
+    "end": 78,
+    "cid": "E1",
+    "sentence_index": 1
+   },
+   {
+    "mid": "m2c",
+    "span": "The assignment by the dispatcher is recorded in the shift log",
+    "start": 46,
+    "end": 107,
+    "cid": "E7",
+    "sentence_index": 1
+   },
+   {
+    "mid": "m3",
+    "span": "each ride is assigned",
+    "start": 149,
+    "end": 170,
+    "cid": "E1",
+    "sentence_index": 2
+   },
+   {
+    "mid": "m4",
+    "span": "Send the passenger a confirmation",
+    "start": 109,
+    "end": 142,
+    "cid": "E4",
+    "sentence_index": 2
+   },
+   {
+    "mid": "m5",
+    "span": "Cancel rides",
+    "start": 172,
+    "end": 184,
+    "cid": "E5",
+    "sentence_index": 3
+   },
+   {
+    "mid": "m6",
+    "span": "are not confirmed within ten minutes",
+    "start": 190,
+    "end": 226,
+    "cid": "E6",
+    "sentence_index": 3
+   }
+  ],
+  "canonical_events": [
+   {
+    "cid": "E1",
+    "predicate": "assign_dispatcher",
+    "role": "OPERATION_EFFECT",
+    "governed_tools": [
+     "assign_ride"
+    ]
+   },
+   {
+    "cid": "E7",
+    "predicate": "record_shift_log",
+    "role": "COMMUNICATION",
+    "governed_tools": [
+     "log_shift"
+    ]
+   },
+   {
+    "cid": "E4",
+    "predicate": "send_confirmation",
+    "role": "COMMUNICATION",
+    "governed_tools": [
+     "send_confirmation"
+    ]
+   },
+   {
+    "cid": "E5",
+    "predicate": "cancel",
+    "role": "OPERATION_EFFECT",
+    "governed_tools": [
+     "cancel_ride"
+    ]
+   },
+   {
+    "cid": "E6",
+    "predicate": "not_confirmed_state",
+    "role": "STATE_OBSERVATION",
+    "governed_tools": [
+     "send_confirmation"
+    ]
+   }
+  ],
+  "related_pairs": [
+   [
+    "E4",
+    "E6"
+   ]
+  ],
+  "ambiguous_pairs": [],
+  "edges": [
+   {
+    "from_cid": "E1",
+    "to_cid": "E4",
+    "relation": "RESPONSE",
+    "acceptable": [
+     "RESPONSE"
+    ],
+    "evidence": [
+     {
+      "start": 109,
+      "end": 170,
+      "text": "Send the passenger a confirmation after each ride is assigned"
+     }
+    ]
+   },
+   {
+    "from_cid": "E1",
+    "to_cid": "E7",
+    "relation": "RESPONSE",
+    "acceptable": [
+     "RESPONSE"
+    ],
+    "evidence": [
+     {
+      "start": 46,
+      "end": 107,
+      "text": "The assignment by the dispatcher is recorded in the shift log"
+     }
+    ]
+   },
+   {
+    "from_cid": "E6",
+    "to_cid": "E5",
+    "relation": "STATE_GATE",
+    "acceptable": [
+     "STATE_GATE"
+    ],
+    "evidence": [
+     {
+      "start": 172,
+      "end": 226,
+      "text": "Cancel rides that are not confirmed within ten minutes"
+     }
+    ]
+   }
+  ],
+  "cf_of": "test_taxidispatch",
+  "notes": "CF of test_taxidispatch: 'by the driver' -> 'by the dispatcher'. The nominal now corefers with E1 (SAME_EVENT); a new shift-log event carries the clause."
+ },
+ {
+  "case_id": "test_vaccineclinic",
+  "domain": "vaccination clinic",
+  "family": "temporal_anchor",
+  "split": "test",
+  "policy": "Check the cooler temperature before each delivery. The check before delivery is logged in the cold-chain register. Vaccinate each patient only after the consent form is signed. Discard a dose that was not administered within one hour.",
+  "tools": [
+   {
+    "name": "check_cooler",
+    "description": "Reads and verifies the cooler temperature against the 2-8 degree range.",
+    "input": {
+     "cooler_id": "string"
+    },
+    "output": {
+     "temperature_c": "number",
+     "in_range": "boolean"
+    }
+   },
+   {
+    "name": "log_check",
+    "description": "Writes a temperature-check entry into the cold-chain register.",
+    "input": {
+     "cooler_id": "string",
+     "reading": "number"
+    },
+    "output": {
+     "entry_id": "string"
+    }
+   },
+   {
+    "name": "vaccinate_patient",
+    "description": "Administers a vaccine dose to a patient.",
+    "input": {
+     "patient_id": "string",
+     "dose_id": "string"
+    },
+    "output": {
+     "administered": "boolean"
+    }
+   },
+   {
+    "name": "discard_dose",
+    "description": "Discards an unadministered vaccine dose into the sharps waste.",
+    "input": {
+     "dose_id": "string"
+    },
+    "output": {
+     "discarded": "boolean"
+    }
+   }
+  ],
+  "mentions": [
+   {
+    "mid": "m1",
+    "span": "Check the cooler temperature",
+    "start": 0,
+    "end": 28,
+    "cid": "E1",
+    "sentence_index": 0
+   },
+   {
+    "mid": "m2",
+    "span": "The check before delivery",
+    "start": 51,
+    "end": 76,
+    "cid": "E1",
+    "sentence_index": 1
+   },
+   {
+    "mid": "m3",
+    "span": "The check before delivery is logged in the cold-chain register",
+    "start": 51,
+    "end": 113,
+    "cid": "E3",
+    "sentence_index": 1
+   },
+   {
+    "mid": "m4",
+    "span": "Vaccinate each patient",
+    "start": 115,
+    "end": 137,
+    "cid": "E4",
+    "sentence_index": 2
+   },
+   {
+    "mid": "m5",
+    "span": "the consent form is signed",
+    "start": 149,
+    "end": 175,
+    "cid": "E5",
+    "sentence_index": 2
+   },
+   {
+    "mid": "m6",
+    "span": "Discard a dose",
+    "start": 177,
+    "end": 191,
+    "cid": "E6",
+    "sentence_index": 3
+   },
+   {
+    "mid": "m7",
+    "span": "was not administered within one hour",
+    "start": 197,
+    "end": 233,
+    "cid": "E7",
+    "sentence_index": 3
+   }
+  ],
+  "canonical_events": [
+   {
+    "cid": "E1",
+    "predicate": "check_cooler",
+    "role": "PRECONDITION_CHECK",
+    "governed_tools": [
+     "check_cooler"
+    ]
+   },
+   {
+    "cid": "E3",
+    "predicate": "log_check",
+    "role": "COMMUNICATION",
+    "governed_tools": [
+     "log_check"
+    ]
+   },
+   {
+    "cid": "E4",
+    "predicate": "vaccinate",
+    "role": "OPERATION_EFFECT",
+    "governed_tools": [
+     "vaccinate_patient"
+    ]
+   },
+   {
+    "cid": "E5",
+    "predicate": "sign_consent",
+    "role": "OPERATION_EFFECT",
+    "governed_tools": [
+     "vaccinate_patient"
+    ]
+   },
+   {
+    "cid": "E6",
+    "predicate": "discard",
+    "role": "OPERATION_EFFECT",
+    "governed_tools": [
+     "discard_dose"
+    ]
+   },
+   {
+    "cid": "E7",
+    "predicate": "not_administered_state",
+    "role": "STATE_OBSERVATION",
+    "governed_tools": [
+     "vaccinate_patient"
+    ]
+   }
+  ],
+  "related_pairs": [
+   [
+    "E4",
+    "E7"
+   ]
+  ],
+  "ambiguous_pairs": [],
+  "edges": [
+   {
+    "from_cid": "E5",
+    "to_cid": "E4",
+    "relation": "PRECONDITION",
+    "acceptable": [
+     "PRECONDITION"
+    ],
+    "evidence": [
+     {
+      "start": 115,
+      "end": 175,
+      "text": "Vaccinate each patient only after the consent form is signed"
+     }
+    ]
+   },
+   {
+    "from_cid": "E7",
+    "to_cid": "E6",
+    "relation": "STATE_GATE",
+    "acceptable": [
+     "STATE_GATE"
+    ],
+    "evidence": [
+     {
+      "start": 177,
+      "end": 233,
+      "text": "Discard a dose that was not administered within one hour"
+     }
+    ]
+   }
+  ],
+  "cf_of": "test_vaccineclinic_cf",
+  "notes": "'The check before delivery' binds to the pre-delivery check event (SAME with the imperative); the full logging clause is a separate log event."
+ },
+ {
+  "case_id": "test_vaccineclinic_cf",
+  "domain": "vaccination clinic",
+  "family": "temporal_anchor_cf",
+  "split": "test",
+  "policy": "Check the cooler temperature before each delivery. The check after delivery is logged in the cold-chain register. Vaccinate each patient only after the consent form is signed. Discard a dose that was not administered within one hour.",
+  "tools": [
+   {
+    "name": "check_cooler",
+    "description": "Reads and verifies the cooler temperature against the 2-8 degree range.",
+    "input": {
+     "cooler_id": "string"
+    },
+    "output": {
+     "temperature_c": "number",
+     "in_range": "boolean"
+    }
+   },
+   {
+    "name": "log_check",
+    "description": "Writes a temperature-check entry into the cold-chain register.",
+    "input": {
+     "cooler_id": "string",
+     "reading": "number"
+    },
+    "output": {
+     "entry_id": "string"
+    }
+   },
+   {
+    "name": "vaccinate_patient",
+    "description": "Administers a vaccine dose to a patient.",
+    "input": {
+     "patient_id": "string",
+     "dose_id": "string"
+    },
+    "output": {
+     "administered": "boolean"
+    }
+   },
+   {
+    "name": "discard_dose",
+    "description": "Discards an unadministered vaccine dose into the sharps waste.",
+    "input": {
+     "dose_id": "string"
+    },
+    "output": {
+     "discarded": "boolean"
+    }
+   }
+  ],
+  "mentions": [
+   {
+    "mid": "m1",
+    "span": "Check the cooler temperature",
+    "start": 0,
+    "end": 28,
+    "cid": "E1",
+    "sentence_index": 0
+   },
+   {
+    "mid": "m2",
+    "span": "The check after delivery",
+    "start": 51,
+    "end": 75,
+    "cid": "E2",
+    "sentence_index": 1
+   },
+   {
+    "mid": "m3",
+    "span": "The check after delivery is logged in the cold-chain register",
+    "start": 51,
+    "end": 112,
+    "cid": "E3",
+    "sentence_index": 1
+   },
+   {
+    "mid": "m4",
+    "span": "Vaccinate each patient",
+    "start": 114,
+    "end": 136,
+    "cid": "E4",
+    "sentence_index": 2
+   },
+   {
+    "mid": "m5",
+    "span": "the consent form is signed",
+    "start": 148,
+    "end": 174,
+    "cid": "E5",
+    "sentence_index": 2
+   },
+   {
+    "mid": "m6",
+    "span": "Discard a dose",
+    "start": 176,
+    "end": 190,
+    "cid": "E6",
+    "sentence_index": 3
+   },
+   {
+    "mid": "m7",
+    "span": "was not administered within one hour",
+    "start": 196,
+    "end": 232,
+    "cid": "E7",
+    "sentence_index": 3
+   }
+  ],
+  "canonical_events": [
+   {
+    "cid": "E1",
+    "predicate": "check_cooler_before",
+    "role": "PRECONDITION_CHECK",
+    "governed_tools": [
+     "check_cooler"
+    ]
+   },
+   {
+    "cid": "E2",
+    "predicate": "check_cooler_after",
+    "role": "STATE_OBSERVATION",
+    "governed_tools": [
+     "check_cooler"
+    ]
+   },
+   {
+    "cid": "E3",
+    "predicate": "log_check",
+    "role": "COMMUNICATION",
+    "governed_tools": [
+     "log_check"
+    ]
+   },
+   {
+    "cid": "E4",
+    "predicate": "vaccinate",
+    "role": "OPERATION_EFFECT",
+    "governed_tools": [
+     "vaccinate_patient"
+    ]
+   },
+   {
+    "cid": "E5",
+    "predicate": "sign_consent",
+    "role": "OPERATION_EFFECT",
+    "governed_tools": [
+     "vaccinate_patient"
+    ]
+   },
+   {
+    "cid": "E6",
+    "predicate": "discard",
+    "role": "OPERATION_EFFECT",
+    "governed_tools": [
+     "discard_dose"
+    ]
+   },
+   {
+    "cid": "E7",
+    "predicate": "not_administered_state",
+    "role": "STATE_OBSERVATION",
+    "governed_tools": [
+     "vaccinate_patient"
+    ]
+   }
+  ],
+  "related_pairs": [
+   [
+    "E4",
+    "E7"
+   ],
+   [
+    "E1",
+    "E2"
+   ]
+  ],
+  "ambiguous_pairs": [],
+  "edges": [
+   {
+    "from_cid": "E5",
+    "to_cid": "E4",
+    "relation": "PRECONDITION",
+    "acceptable": [
+     "PRECONDITION"
+    ],
+    "evidence": [
+     {
+      "start": 114,
+      "end": 174,
+      "text": "Vaccinate each patient only after the consent form is signed"
+     }
+    ]
+   },
+   {
+    "from_cid": "E7",
+    "to_cid": "E6",
+    "relation": "STATE_GATE",
+    "acceptable": [
+     "STATE_GATE"
+    ],
+    "evidence": [
+     {
+      "start": 176,
+      "end": 232,
+      "text": "Discard a dose that was not administered within one hour"
+     }
+    ]
+   }
+  ],
+  "cf_of": "test_vaccineclinic",
+  "notes": "CF of test_vaccineclinic: 'before delivery' -> 'after delivery' in the logged check. The temporal anchor now separates two check instances (SAME -> RELATED_BUT_DIFFERENT)."
+ },
+ {
+  "case_id": "test_feedlot",
+  "domain": "cattle feedlot",
+  "family": "polarity_flip",
+  "split": "test",
+  "policy": "Weigh pen seven on Monday morning. Log the weighing in the register if the pen is weighed. Ship the pen only after the weighing is logged. Alert the head office if the pen is not weighed.",
+  "tools": [
+   {
+    "name": "weigh_pen",
+    "description": "Weighs a cattle pen on the livestock scale and records the weight.",
+    "input": {
+     "pen_id": "string"
+    },
+    "output": {
+     "weight_kg": "number"
+    }
+   },
+   {
+    "name": "log_weighing",
+    "description": "Writes a weighing entry into the feedlot register.",
+    "input": {
+     "pen_id": "string",
+     "weight_kg": "number"
+    },
+    "output": {
+     "entry_id": "string"
+    }
+   },
+   {
+    "name": "ship_cattle",
+    "description": "Loads a cattle pen onto the transport truck for shipping.",
+    "input": {
+     "pen_id": "string"
+    },
+    "output": {
+     "shipped": "boolean"
+    }
+   },
+   {
+    "name": "alert_office",
+    "description": "Sends an alert message to the head office.",
+    "input": {
+     "message": "string"
+    },
+    "output": {
+     "sent": "boolean"
+    }
+   }
+  ],
+  "mentions": [
+   {
+    "mid": "m1",
+    "span": "Weigh pen seven",
+    "start": 0,
+    "end": 15,
+    "cid": "E1",
+    "sentence_index": 0
+   },
+   {
+    "mid": "m2",
+    "span": "Log the weighing in the register",
+    "start": 35,
+    "end": 67,
+    "cid": "E3",
+    "sentence_index": 1
+   },
+   {
+    "mid": "m2b",
+    "span": "the weighing",
+    "start": 39,
+    "end": 51,
+    "cid": "E1",
+    "sentence_index": 1
+   },
+   {
+    "mid": "m3",
+    "span": "the pen is weighed",
+    "start": 71,
+    "end": 89,
+    "cid": "E1",
+    "sentence_index": 1
+   },
+   {
+    "mid": "m4",
+    "span": "the weighing is logged",
+    "start": 115,
+    "end": 137,
+    "cid": "E3",
+    "sentence_index": 2
+   },
+   {
+    "mid": "m5",
+    "span": "Ship the pen",
+    "start": 91,
+    "end": 103,
+    "cid": "E4",
+    "sentence_index": 2
+   },
+   {
+    "mid": "m6",
+    "span": "Alert the head office",
+    "start": 139,
+    "end": 160,
+    "cid": "E2",
+    "sentence_index": 3
+   },
+   {
+    "mid": "m7",
+    "span": "the pen is not weighed",
+    "start": 164,
+    "end": 186,
+    "cid": "E5",
+    "sentence_index": 3
+   }
+  ],
+  "canonical_events": [
+   {
+    "cid": "E1",
+    "predicate": "weigh",
+    "role": "OPERATION_EFFECT",
+    "governed_tools": [
+     "weigh_pen"
+    ]
+   },
+   {
+    "cid": "E2",
+    "predicate": "alert",
+    "role": "COMMUNICATION",
+    "governed_tools": [
+     "alert_office"
+    ]
+   },
+   {
+    "cid": "E3",
+    "predicate": "log_weighing",
+    "role": "COMMUNICATION",
+    "governed_tools": [
+     "log_weighing"
+    ]
+   },
+   {
+    "cid": "E4",
+    "predicate": "ship",
+    "role": "OPERATION_EFFECT",
+    "governed_tools": [
+     "ship_cattle"
+    ]
+   },
+   {
+    "cid": "E5",
+    "predicate": "not_weighed_state",
+    "role": "STATE_OBSERVATION",
+    "governed_tools": [
+     "weigh_pen"
+    ]
+   }
+  ],
+  "related_pairs": [
+   [
+    "E1",
+    "E5"
+   ]
+  ],
+  "ambiguous_pairs": [],
+  "edges": [
+   {
+    "from_cid": "E1",
+    "to_cid": "E3",
+    "relation": "RESPONSE",
+    "acceptable": [
+     "RESPONSE"
+    ],
+    "evidence": [
+     {
+      "start": 35,
+      "end": 89,
+      "text": "Log the weighing in the register if the pen is weighed"
+     }
+    ]
+   },
+   {
+    "from_cid": "E3",
+    "to_cid": "E4",
+    "relation": "PRECONDITION",
+    "acceptable": [
+     "PRECONDITION"
+    ],
+    "evidence": [
+     {
+      "start": 91,
+      "end": 137,
+      "text": "Ship the pen only after the weighing is logged"
+     }
+    ]
+   },
+   {
+    "from_cid": "E5",
+    "to_cid": "E2",
+    "relation": "RESPONSE",
+    "acceptable": [
+     "RESPONSE"
+    ],
+    "evidence": [
+     {
+      "start": 139,
+      "end": 186,
+      "text": "Alert the head office if the pen is not weighed"
+     }
+    ]
+   }
+  ],
+  "cf_of": "test_feedlot_cf",
+  "notes": "positive passive 'the pen is weighed' corefers with the weighing prescription; negated 'is not weighed' is a distinct state event."
+ },
+ {
+  "case_id": "test_feedlot_cf",
+  "domain": "cattle feedlot",
+  "family": "polarity_flip_cf",
+  "split": "test",
+  "policy": "Weigh pen seven on Monday morning. Log the weighing in the register if the pen is not weighed. Ship the pen only after the weighing is logged. Alert the head office if the pen is not weighed.",
+  "tools": [
+   {
+    "name": "weigh_pen",
+    "description": "Weighs a cattle pen on the livestock scale and records the weight.",
+    "input": {
+     "pen_id": "string"
+    },
+    "output": {
+     "weight_kg": "number"
+    }
+   },
+   {
+    "name": "log_weighing",
+    "description": "Writes a weighing entry into the feedlot register.",
+    "input": {
+     "pen_id": "string",
+     "weight_kg": "number"
+    },
+    "output": {
+     "entry_id": "string"
+    }
+   },
+   {
+    "name": "ship_cattle",
+    "description": "Loads a cattle pen onto the transport truck for shipping.",
+    "input": {
+     "pen_id": "string"
+    },
+    "output": {
+     "shipped": "boolean"
+    }
+   },
+   {
+    "name": "alert_office",
+    "description": "Sends an alert message to the head office.",
+    "input": {
+     "message": "string"
+    },
+    "output": {
+     "sent": "boolean"
+    }
+   }
+  ],
+  "mentions": [
+   {
+    "mid": "m1",
+    "span": "Weigh pen seven",
+    "start": 0,
+    "end": 15,
+    "cid": "E1",
+    "sentence_index": 0
+   },
+   {
+    "mid": "m2",
+    "span": "Log the weighing in the register",
+    "start": 35,
+    "end": 67,
+    "cid": "E3",
+    "sentence_index": 1
+   },
+   {
+    "mid": "m2b",
+    "span": "the weighing",
+    "start": 39,
+    "end": 51,
+    "cid": "E1",
+    "sentence_index": 1
+   },
+   {
+    "mid": "m3",
+    "span": "the pen is not weighed",
+    "start": 71,
+    "end": 93,
+    "cid": "E5",
+    "sentence_index": 1
+   },
+   {
+    "mid": "m4",
+    "span": "the weighing is logged",
+    "start": 119,
+    "end": 141,
+    "cid": "E3",
+    "sentence_index": 2
+   },
+   {
+    "mid": "m5",
+    "span": "Ship the pen",
+    "start": 95,
+    "end": 107,
+    "cid": "E4",
+    "sentence_index": 2
+   },
+   {
+    "mid": "m6",
+    "span": "Alert the head office",
+    "start": 143,
+    "end": 164,
+    "cid": "E2",
+    "sentence_index": 3
+   },
+   {
+    "mid": "m7",
+    "span": "the pen is not weighed",
+    "start": 168,
+    "end": 190,
+    "cid": "E5",
+    "sentence_index": 3
+   }
+  ],
+  "canonical_events": [
+   {
+    "cid": "E1",
+    "predicate": "weigh",
+    "role": "OPERATION_EFFECT",
+    "governed_tools": [
+     "weigh_pen"
+    ]
+   },
+   {
+    "cid": "E2",
+    "predicate": "alert",
+    "role": "COMMUNICATION",
+    "governed_tools": [
+     "alert_office"
+    ]
+   },
+   {
+    "cid": "E3",
+    "predicate": "log_weighing",
+    "role": "COMMUNICATION",
+    "governed_tools": [
+     "log_weighing"
+    ]
+   },
+   {
+    "cid": "E4",
+    "predicate": "ship",
+    "role": "OPERATION_EFFECT",
+    "governed_tools": [
+     "ship_cattle"
+    ]
+   },
+   {
+    "cid": "E5",
+    "predicate": "not_weighed_state",
+    "role": "STATE_OBSERVATION",
+    "governed_tools": [
+     "weigh_pen"
+    ]
+   }
+  ],
+  "related_pairs": [
+   [
+    "E1",
+    "E5"
+   ]
+  ],
+  "ambiguous_pairs": [],
+  "edges": [
+   {
+    "from_cid": "E5",
+    "to_cid": "E3",
+    "relation": "RESPONSE",
+    "acceptable": [
+     "RESPONSE"
+    ],
+    "evidence": [
+     {
+      "start": 35,
+      "end": 93,
+      "text": "Log the weighing in the register if the pen is not weighed"
+     }
+    ]
+   },
+   {
+    "from_cid": "E3",
+    "to_cid": "E4",
+    "relation": "PRECONDITION",
+    "acceptable": [
+     "PRECONDITION"
+    ],
+    "evidence": [
+     {
+      "start": 95,
+      "end": 141,
+      "text": "Ship the pen only after the weighing is logged"
+     }
+    ]
+   },
+   {
+    "from_cid": "E5",
+    "to_cid": "E2",
+    "relation": "RESPONSE",
+    "acceptable": [
+     "RESPONSE"
+    ],
+    "evidence": [
+     {
+      "start": 143,
+      "end": 190,
+      "text": "Alert the head office if the pen is not weighed"
+     }
+    ]
+   }
+  ],
+  "cf_of": "test_feedlot",
+  "notes": "CF of test_feedlot: one word 'not' inserted. 'the pen is not weighed' no longer corefers with the weighing prescription; the critical pair flips SAME -> RELATED_BUT_DIFFERENT."
+ },
+ {
+  "case_id": "test_cemetery",
+  "domain": "cemetery groundskeeping",
+  "family": "nominalization_chain+action_vs_state",
+  "split": "test",
+  "policy": "Inter each coffin in the assigned plot. The interment of unmarked coffins requires a supervisor sign-off. Record the plot number after each interment. Level the ground above the grave once the interment is complete.",
+  "tools": [
+   {
+    "name": "inter_coffin",
+    "description": "Places a coffin into the assigned plot and refills the grave.",
+    "input": {
+     "plot_id": "string",
+     "coffin_id": "string"
+    },
+    "output": {
+     "interred": "boolean"
+    }
+   },
+   {
+    "name": "sign_off",
+    "description": "Records a supervisor sign-off approving an interment.",
+    "input": {
+     "plot_id": "string"
+    },
+    "output": {
+     "approved": "boolean"
+    }
+   },
+   {
+    "name": "record_plot",
+    "description": "Writes the plot number into the burial register.",
+    "input": {
+     "plot_id": "string"
+    },
+    "output": {
+     "entry_id": "string"
+    }
+   },
+   {
+    "name": "level_ground",
+    "description": "Levels the ground above a grave with the compacting roller.",
+    "input": {
+     "plot_id": "string"
+    },
+    "output": {
+     "levelled": "boolean"
+    }
+   }
+  ],
+  "mentions": [
+   {
+    "mid": "m1",
+    "span": "Inter each coffin",
+    "start": 0,
+    "end": 17,
+    "cid": "E1",
+    "sentence_index": 0
+   },
+   {
+    "mid": "m2",
+    "span": "The interment of unmarked coffins",
+    "start": 40,
+    "end": 73,
+    "cid": "E2",
+    "sentence_index": 1
+   },
+   {
+    "mid": "m3",
+    "span": "a supervisor sign-off",
+    "start": 83,
+    "end": 104,
+    "cid": "E5",
+    "sentence_index": 1
+   },
+   {
+    "mid": "m4",
+    "span": "Record the plot number",
+    "start": 106,
+    "end": 128,
+    "cid": "E3",
+    "sentence_index": 2
+   },
+   {
+    "mid": "m5",
+    "span": "each interment",
+    "start": 135,
+    "end": 149,
+    "cid": "E1",
+    "sentence_index": 2
+   },
+   {
+    "mid": "m6",
+    "span": "Level the ground above the grave",
+    "start": 151,
+    "end": 183,
+    "cid": "E4",
+    "sentence_index": 3
+   },
+   {
+    "mid": "m7",
+    "span": "the interment is complete",
+    "start": 189,
+    "end": 214,
+    "cid": "E6",
+    "sentence_index": 3
+   }
+  ],
+  "canonical_events": [
+   {
+    "cid": "E1",
+    "predicate": "inter_coffin",
+    "role": "OPERATION_EFFECT",
+    "governed_tools": [
+     "inter_coffin"
+    ]
+   },
+   {
+    "cid": "E2",
+    "predicate": "inter_unmarked",
+    "role": "OPERATION_EFFECT",
+    "governed_tools": [
+     "inter_coffin"
+    ]
+   },
+   {
+    "cid": "E3",
+    "predicate": "record_plot",
+    "role": "COMMUNICATION",
+    "governed_tools": [
+     "record_plot"
+    ]
+   },
+   {
+    "cid": "E4",
+    "predicate": "level_ground",
+    "role": "OPERATION_EFFECT",
+    "governed_tools": [
+     "level_ground"
+    ]
+   },
+   {
+    "cid": "E5",
+    "predicate": "sign_off",
+    "role": "OPERATION_EFFECT",
+    "governed_tools": [
+     "sign_off"
+    ]
+   },
+   {
+    "cid": "E6",
+    "predicate": "interment_complete_state",
+    "role": "STATE_OBSERVATION",
+    "governed_tools": [
+     "inter_coffin"
+    ]
+   }
+  ],
+  "related_pairs": [
+   [
+    "E1",
+    "E2"
+   ],
+   [
+    "E1",
+    "E6"
+   ]
+  ],
+  "ambiguous_pairs": [],
+  "edges": [
+   {
+    "from_cid": "E1",
+    "to_cid": "E3",
+    "relation": "RESPONSE",
+    "acceptable": [
+     "RESPONSE",
+     "ORDER_AFTER"
+    ],
+    "evidence": [
+     {
+      "start": 106,
+      "end": 149,
+      "text": "Record the plot number after each interment"
+     }
+    ]
+   },
+   {
+    "from_cid": "E5",
+    "to_cid": "E2",
+    "relation": "PRECONDITION",
+    "acceptable": [
+     "PRECONDITION"
+    ],
+    "evidence": [
+     {
+      "start": 40,
+      "end": 104,
+      "text": "The interment of unmarked coffins requires a supervisor sign-off"
+     }
+    ]
+   },
+   {
+    "from_cid": "E6",
+    "to_cid": "E4",
+    "relation": "STATE_GATE",
+    "acceptable": [
+     "STATE_GATE"
+    ],
+    "evidence": [
+     {
+      "start": 151,
+      "end": 214,
+      "text": "Level the ground above the grave once the interment is complete"
+     }
+    ]
+   }
+  ],
+  "cf_of": null,
+  "notes": "'each interment' (event nominal, SAME) vs 'the interment is complete' (completion state, RELATED) - the minimal contrast pair for nominal-vs-state references."
+ },
+ {
+  "case_id": "test_elevatorinspect",
+  "domain": "elevator inspection service",
+  "family": "state_vs_action+retest",
+  "split": "test",
+  "policy": "Test the brake system before each inspection certificate is issued. The brake test engages the governor. Issue the certificate only if the brakes are tested and the governor is engaged. A suspended certificate is reinstated after a retest.",
+  "tools": [
+   {
+    "name": "test_brakes",
+    "description": "Runs the elevator brake system test on the controller bench.",
+    "input": {
+     "elevator_id": "string"
+    },
+    "output": {
+     "passed": "boolean"
+    }
+   },
+   {
+    "name": "issue_certificate",
+    "description": "Issues an inspection certificate for an elevator.",
+    "input": {
+     "elevator_id": "string",
+     "result": "string"
+    },
+    "output": {
+     "certificate_id": "string"
+    }
+   },
+   {
+    "name": "retest_brakes",
+    "description": "Repeats the elevator brake test after a suspension is lifted.",
+    "input": {
+     "elevator_id": "string"
+    },
+    "output": {
+     "passed": "boolean"
+    }
+   }
+  ],
+  "mentions": [
+   {
+    "mid": "m1",
+    "span": "Test the brake system",
+    "start": 0,
+    "end": 21,
+    "cid": "E1",
+    "sentence_index": 0
+   },
+   {
+    "mid": "m2",
+    "span": "each inspection certificate is issued",
+    "start": 29,
+    "end": 66,
+    "cid": "E2",
+    "sentence_index": 0
+   },
+   {
+    "mid": "m3",
+    "span": "The brake test engages the governor",
+    "start": 68,
+    "end": 103,
+    "cid": "E5",
+    "sentence_index": 1
+   },
+   {
+    "mid": "m3b",
+    "span": "The brake test",
+    "start": 68,
+    "end": 82,
+    "cid": "E1",
+    "sentence_index": 1
+   },
+   {
+    "mid": "m4",
+    "span": "Issue the certificate",
+    "start": 105,
+    "end": 126,
+    "cid": "E2",
+    "sentence_index": 2
+   },
+   {
+    "mid": "m5",
+    "span": "the brakes are tested",
+    "start": 135,
+    "end": 156,
+    "cid": "E1",
+    "sentence_index": 2
+   },
+   {
+    "mid": "m6",
+    "span": "the governor is engaged",
+    "start": 161,
+    "end": 184,
+    "cid": "E5",
+    "sentence_index": 2
+   },
+   {
+    "mid": "m7",
+    "span": "A suspended certificate is reinstated",
+    "start": 186,
+    "end": 223,
+    "cid": "E8",
+    "sentence_index": 3
+   },
+   {
+    "mid": "m8",
+    "span": "a retest",
+    "start": 230,
+    "end": 238,
+    "cid": "E7",
+    "sentence_index": 3
+   }
+  ],
+  "canonical_events": [
+   {
+    "cid": "E1",
+    "predicate": "test_brakes",
+    "role": "OPERATION_EFFECT",
+    "governed_tools": [
+     "test_brakes"
+    ]
+   },
+   {
+    "cid": "E2",
+    "predicate": "issue_certificate",
+    "role": "OPERATION_EFFECT",
+    "governed_tools": [
+     "issue_certificate"
+    ]
+   },
+   {
+    "cid": "E5",
+    "predicate": "engage_governor",
+    "role": "STATE_OBSERVATION",
+    "governed_tools": [
+     "test_brakes"
+    ]
+   },
+   {
+    "cid": "E7",
+    "predicate": "retest",
+    "role": "OPERATION_EFFECT",
+    "governed_tools": [
+     "retest_brakes"
+    ]
+   },
+   {
+    "cid": "E8",
+    "predicate": "reinstate_certificate",
+    "role": "OPERATION_EFFECT",
+    "governed_tools": [
+     "issue_certificate"
+    ]
+   }
+  ],
+  "related_pairs": [
+   [
+    "E1",
+    "E7"
+   ]
+  ],
+  "ambiguous_pairs": [],
+  "edges": [
+   {
+    "from_cid": "E1",
+    "to_cid": "E2",
+    "relation": "PRECONDITION",
+    "acceptable": [
+     "PRECONDITION"
+    ],
+    "evidence": [
+     {
+      "start": 105,
+      "end": 184,
+      "text": "Issue the certificate only if the brakes are tested and the governor is engaged"
+     }
+    ]
+   },
+   {
+    "from_cid": "E5",
+    "to_cid": "E2",
+    "relation": "PRECONDITION",
+    "acceptable": [
+     "PRECONDITION"
+    ],
+    "evidence": [
+     {
+      "start": 105,
+      "end": 184,
+      "text": "Issue the certificate only if the brakes are tested and the governor is engaged"
+     }
+    ]
+   },
+   {
+    "from_cid": "E7",
+    "to_cid": "E8",
+    "relation": "ORDER_BEFORE",
+    "acceptable": [
+     "ORDER_BEFORE",
+     "PRECONDITION"
+    ],
+    "evidence": [
+     {
+      "start": 186,
+      "end": 238,
+      "text": "A suspended certificate is reinstated after a retest"
+     }
+    ]
+   }
+  ],
+  "cf_of": null,
+  "notes": "'The brake test' nominal binds to the test event while the clause itself is the governor engagement; 'a retest' is a second test instance (RELATED)."
+ },
+ {
+  "case_id": "test_lasertag",
+  "domain": "laser tag arena",
+  "family": "repeated_occurrence+anaphora",
+  "split": "test",
+  "policy": "Reset each vest at closing. The reset discharges the battery. Charge the vest before the next session and reset it again after that session. Log every reset in the arena diary.",
+  "tools": [
+   {
+    "name": "reset_vest",
+    "description": "Restores a laser-tag vest to its default game configuration.",
+    "input": {
+     "vest_id": "string"
+    },
+    "output": {
+     "reset": "boolean"
+    }
+   },
+   {
+    "name": "charge_vest",
+    "description": "Charges a vest battery in the charging rack.",
+    "input": {
+     "vest_id": "string"
+    },
+    "output": {
+     "charged": "boolean"
+    }
+   },
+   {
+    "name": "log_reset",
+    "description": "Writes a vest reset entry in the arena diary.",
+    "input": {
+     "vest_id": "string"
+    },
+    "output": {
+     "entry_id": "string"
+    }
+   }
+  ],
+  "mentions": [
+   {
+    "mid": "m1",
+    "span": "Reset each vest",
+    "start": 0,
+    "end": 15,
+    "cid": "E1",
+    "sentence_index": 0
+   },
+   {
+    "mid": "m2",
+    "span": "The reset",
+    "start": 28,
+    "end": 37,
+    "cid": "E1",
+    "sentence_index": 1
+   },
+   {
+    "mid": "m3",
+    "span": "The reset discharges the battery",
+    "start": 28,
+    "end": 60,
+    "cid": "E5",
+    "sentence_index": 1
+   },
+   {
+    "mid": "m4",
+    "span": "Charge the vest",
+    "start": 62,
+    "end": 77,
+    "cid": "E2",
+    "sentence_index": 2
+   },
+   {
+    "mid": "m5",
+    "span": "reset it again",
+    "start": 106,
+    "end": 120,
+    "cid": "E3",
+    "sentence_index": 2
+   },
+   {
+    "mid": "m6",
+    "span": "Log every reset",
+    "start": 141,
+    "end": 156,
+    "cid": "E6",
+    "sentence_index": 3
+   }
+  ],
+  "canonical_events": [
+   {
+    "cid": "E1",
+    "predicate": "reset_closing",
+    "role": "OPERATION_EFFECT",
+    "governed_tools": [
+     "reset_vest"
+    ]
+   },
+   {
+    "cid": "E2",
+    "predicate": "charge",
+    "role": "OPERATION_EFFECT",
+    "governed_tools": [
+     "charge_vest"
+    ]
+   },
+   {
+    "cid": "E3",
+    "predicate": "reset_after_session",
+    "role": "OPERATION_EFFECT",
+    "governed_tools": [
+     "reset_vest"
+    ]
+   },
+   {
+    "cid": "E5",
+    "predicate": "discharge_battery",
+    "role": "OTHER",
+    "governed_tools": [
+     "reset_vest"
+    ]
+   },
+   {
+    "cid": "E6",
+    "predicate": "log_reset",
+    "role": "COMMUNICATION",
+    "governed_tools": [
+     "log_reset"
+    ]
+   }
+  ],
+  "related_pairs": [
+   [
+    "E1",
+    "E3"
+   ]
+  ],
+  "ambiguous_pairs": [],
+  "edges": [
+   {
+    "from_cid": "E1",
+    "to_cid": "E5",
+    "relation": "RESPONSE",
+    "acceptable": [
+     "RESPONSE"
+    ],
+    "evidence": [
+     {
+      "start": 28,
+      "end": 60,
+      "text": "The reset discharges the battery"
+     }
+    ]
+   }
+  ],
+  "cf_of": null,
+  "notes": "'The reset' anaphora binds to the closing reset while 'reset it again' is a second occurrence; 'every reset' plural trap inside the log clause."
+ },
+ {
+  "case_id": "test_hotairballoon",
+  "domain": "hot air balloon rides",
+  "family": "weather_check_vs_flight_ops",
+  "split": "test",
+  "policy": "Check the wind speed before every launch. Repeat the check if conditions change. Inflate the envelope only after the wind check passes. The pilot briefs the passengers before boarding. Ground the balloon if the wind speed exceeds twenty knots.",
+  "tools": [
+   {
+    "name": "check_wind",
+    "description": "Measures the wind speed at the launch field with the anemometer.",
+    "input": {
+     "field_id": "string"
+    },
+    "output": {
+     "wind_speed_kn": "number"
+    }
+   },
+   {
+    "name": "inflate_envelope",
+    "description": "Inflates the balloon envelope with the inflation fan.",
+    "input": {
+     "balloon_id": "string"
+    },
+    "output": {
+     "inflated": "boolean"
+    }
+   },
+   {
+    "name": "brief_passengers",
+    "description": "Gives the pre-flight safety briefing to the passengers.",
+    "input": {
+     "flight_id": "string"
+    },
+    "output": {
+     "briefed": "boolean"
+    }
+   },
+   {
+    "name": "ground_balloon",
+    "description": "Interrupts the flight and lands the balloon immediately.",
+    "input": {
+     "balloon_id": "string"
+    },
+    "output": {
+     "grounded": "boolean"
+    }
+   }
+  ],
+  "mentions": [
+   {
+    "mid": "m1",
+    "span": "Check the wind speed",
+    "start": 0,
+    "end": 20,
+    "cid": "E1",
+    "sentence_index": 0
+   },
+   {
+    "mid": "m2",
+    "span": "Repeat the check",
+    "start": 42,
+    "end": 58,
+    "cid": "E2",
+    "sentence_index": 1
+   },
+   {
+    "mid": "m2b",
+    "span": "the check",
+    "start": 49,
+    "end": 58,
+    "cid": "E1",
+    "sentence_index": 1
+   },
+   {
+    "mid": "m3",
+    "span": "Inflate the envelope",
+    "start": 81,
+    "end": 101,
+    "cid": "E3",
+    "sentence_index": 2
+   },
+   {
+    "mid": "m4",
+    "span": "the wind check passes",
+    "start": 113,
+    "end": 134,
+    "cid": "E1",
+    "sentence_index": 2
+   },
+   {
+    "mid": "m5",
+    "span": "The pilot briefs the passengers",
+    "start": 136,
+    "end": 167,
+    "cid": "E5",
+    "sentence_index": 3
+   },
+   {
+    "mid": "m6",
+    "span": "Ground the balloon",
+    "start": 185,
+    "end": 203,
+    "cid": "E6",
+    "sentence_index": 4
+   },
+   {
+    "mid": "m7",
+    "span": "the wind speed exceeds twenty knots",
+    "start": 207,
+    "end": 242,
+    "cid": "E7",
+    "sentence_index": 4
+   }
+  ],
+  "canonical_events": [
+   {
+    "cid": "E1",
+    "predicate": "check_wind",
+    "role": "PRECONDITION_CHECK",
+    "governed_tools": [
+     "check_wind"
+    ]
+   },
+   {
+    "cid": "E2",
+    "predicate": "repeat_check",
+    "role": "PRECONDITION_CHECK",
+    "governed_tools": [
+     "check_wind"
+    ]
+   },
+   {
+    "cid": "E3",
+    "predicate": "inflate",
+    "role": "OPERATION_EFFECT",
+    "governed_tools": [
+     "inflate_envelope"
+    ]
+   },
+   {
+    "cid": "E5",
+    "predicate": "brief",
+    "role": "COMMUNICATION",
+    "governed_tools": [
+     "brief_passengers"
+    ]
+   },
+   {
+    "cid": "E6",
+    "predicate": "ground",
+    "role": "OPERATION_EFFECT",
+    "governed_tools": [
+     "ground_balloon"
+    ]
+   },
+   {
+    "cid": "E7",
+    "predicate": "wind_exceeds_state",
+    "role": "STATE_OBSERVATION",
+    "governed_tools": [
+     "check_wind"
+    ]
+   }
+  ],
+  "related_pairs": [
+   [
+    "E1",
+    "E2"
+   ]
+  ],
+  "ambiguous_pairs": [],
+  "edges": [
+   {
+    "from_cid": "E1",
+    "to_cid": "E3",
+    "relation": "PRECONDITION",
+    "acceptable": [
+     "PRECONDITION"
+    ],
+    "evidence": [
+     {
+      "start": 81,
+      "end": 134,
+      "text": "Inflate the envelope only after the wind check passes"
+     }
+    ]
+   },
+   {
+    "from_cid": "E7",
+    "to_cid": "E6",
+    "relation": "STATE_GATE",
+    "acceptable": [
+     "STATE_GATE"
+    ],
+    "evidence": [
+     {
+      "start": 185,
+      "end": 242,
+      "text": "Ground the balloon if the wind speed exceeds twenty knots"
+     }
+    ]
+   }
+  ],
+  "cf_of": null,
+  "notes": "'Repeat the check': the verb phrase is the repeated check (new instance) while the inner NP 'the check' binds to the original check - nested split gold."
+ },
+ {
+  "case_id": "test_woodkiln",
+  "domain": "wood kiln drying",
+  "family": "naturalistic_long_nested_conditions",
+  "split": "test",
+  "policy": "Load the kiln with stacked planks. Begin the drying cycle only after the moisture probe is calibrated. Monitor the moisture level every six hours. If the moisture level exceeds twelve percent, extend the cycle by one day. End the cycle when the moisture level falls below eight percent. Cool the timber before unloading and stamp each plank after cooling.",
+  "tools": [
+   {
+    "name": "load_kiln",
+    "description": "Loads stacked planks onto the kiln trolleys.",
+    "input": {
+     "batch_id": "string"
+    },
+    "output": {
+     "loaded": "boolean"
+    }
+   },
+   {
+    "name": "calibrate_probe",
+    "description": "Calibrates the moisture probe against the reference standard.",
+    "input": {
+     "probe_id": "string"
+    },
+    "output": {
+     "calibrated": "boolean"
+    }
+   },
+   {
+    "name": "monitor_moisture",
+    "description": "Logs the kiln moisture reading at set intervals.",
+    "input": {
+     "kiln_id": "string"
+    },
+    "output": {
+     "moisture_pct": "number"
+    }
+   },
+   {
+    "name": "extend_cycle",
+    "description": "Extends the drying cycle duration in the kiln controller.",
+    "input": {
+     "cycle_id": "string",
+     "days": "number"
+    },
+    "output": {
+     "extended": "boolean"
+    }
+   },
+   {
+    "name": "end_cycle",
+    "description": "Ends the drying cycle and releases the heat schedule.",
+    "input": {
+     "cycle_id": "string"
+    },
+    "output": {
+     "ended": "boolean"
+    }
+   },
+   {
+    "name": "cool_timber",
+    "description": "Cools the timber stack with the kiln fans before unloading.",
+    "input": {
+     "batch_id": "string"
+    },
+    "output": {
+     "cooled": "boolean"
+    }
+   },
+   {
+    "name": "stamp_plank",
+    "description": "Stamps each dried plank with the batch and grade mark.",
+    "input": {
+     "plank_id": "string"
+    },
+    "output": {
+     "stamped": "boolean"
+    }
+   }
+  ],
+  "mentions": [
+   {
+    "mid": "m1",
+    "span": "Load the kiln",
+    "start": 0,
+    "end": 13,
+    "cid": "E1",
+    "sentence_index": 0
+   },
+   {
+    "mid": "m2",
+    "span": "Begin the drying cycle",
+    "start": 35,
+    "end": 57,
+    "cid": "E2",
+    "sentence_index": 1
+   },
+   {
+    "mid": "m3",
+    "span": "the moisture probe is calibrated",
+    "start": 69,
+    "end": 101,
+    "cid": "E3",
+    "sentence_index": 1
+   },
+   {
+    "mid": "m4",
+    "span": "Monitor the moisture level",
+    "start": 103,
+    "end": 129,
+    "cid": "E4",
+    "sentence_index": 2
+   },
+   {
+    "mid": "m5",
+    "span": "the moisture level exceeds twelve percent",
+    "start": 150,
+    "end": 191,
+    "cid": "E10",
+    "sentence_index": 3
+   },
+   {
+    "mid": "m6",
+    "span": "extend the cycle",
+    "start": 193,
+    "end": 209,
+    "cid": "E5",
+    "sentence_index": 3
+   },
+   {
+    "mid": "m7",
+    "span": "End the cycle",
+    "start": 222,
+    "end": 235,
+    "cid": "E6",
+    "sentence_index": 4
+   },
+   {
+    "mid": "m8",
+    "span": "the moisture level falls below eight percent",
+    "start": 241,
+    "end": 285,
+    "cid": "E11",
+    "sentence_index": 4
+   },
+   {
+    "mid": "m9",
+    "span": "Cool the timber",
+    "start": 287,
+    "end": 302,
+    "cid": "E7",
+    "sentence_index": 5
+   },
+   {
+    "mid": "m10",
+    "span": "unloading",
+    "start": 310,
+    "end": 319,
+    "cid": "E9",
+    "sentence_index": 5
+   },
+   {
+    "mid": "m11",
+    "span": "stamp each plank",
+    "start": 324,
+    "end": 340,
+    "cid": "E8",
+    "sentence_index": 5
+   },
+   {
+    "mid": "m12",
+    "span": "cooling",
+    "start": 347,
+    "end": 354,
+    "cid": "E7",
+    "sentence_index": 5
+   }
+  ],
+  "canonical_events": [
+   {
+    "cid": "E1",
+    "predicate": "load_kiln",
+    "role": "OPERATION_EFFECT",
+    "governed_tools": [
+     "load_kiln"
+    ]
+   },
+   {
+    "cid": "E2",
+    "predicate": "begin_cycle",
+    "role": "OPERATION_EFFECT",
+    "governed_tools": [
+     "load_kiln"
+    ]
+   },
+   {
+    "cid": "E3",
+    "predicate": "calibrate_probe",
+    "role": "OPERATION_EFFECT",
+    "governed_tools": [
+     "calibrate_probe"
+    ]
+   },
+   {
+    "cid": "E4",
+    "predicate": "monitor_moisture",
+    "role": "STATE_OBSERVATION",
+    "governed_tools": [
+     "monitor_moisture"
+    ]
+   },
+   {
+    "cid": "E5",
+    "predicate": "extend_cycle",
+    "role": "OPERATION_EFFECT",
+    "governed_tools": [
+     "extend_cycle"
+    ]
+   },
+   {
+    "cid": "E6",
+    "predicate": "end_cycle",
+    "role": "OPERATION_EFFECT",
+    "governed_tools": [
+     "end_cycle"
+    ]
+   },
+   {
+    "cid": "E7",
+    "predicate": "cool_timber",
+    "role": "OPERATION_EFFECT",
+    "governed_tools": [
+     "cool_timber"
+    ]
+   },
+   {
+    "cid": "E8",
+    "predicate": "stamp_plank",
+    "role": "OPERATION_EFFECT",
+    "governed_tools": [
+     "stamp_plank"
+    ]
+   },
+   {
+    "cid": "E9",
+    "predicate": "unload",
+    "role": "OPERATION_EFFECT",
+    "governed_tools": [
+     "load_kiln"
+    ]
+   },
+   {
+    "cid": "E10",
+    "predicate": "moisture_high_state",
+    "role": "STATE_OBSERVATION",
+    "governed_tools": [
+     "monitor_moisture"
+    ]
+   },
+   {
+    "cid": "E11",
+    "predicate": "moisture_low_state",
+    "role": "STATE_OBSERVATION",
+    "governed_tools": [
+     "monitor_moisture"
+    ]
+   }
+  ],
+  "related_pairs": [
+   [
+    "E10",
+    "E11"
+   ]
+  ],
+  "ambiguous_pairs": [],
+  "edges": [
+   {
+    "from_cid": "E3",
+    "to_cid": "E2",
+    "relation": "PRECONDITION",
+    "acceptable": [
+     "PRECONDITION"
+    ],
+    "evidence": [
+     {
+      "start": 35,
+      "end": 101,
+      "text": "Begin the drying cycle only after the moisture probe is calibrated"
+     }
+    ]
+   },
+   {
+    "from_cid": "E10",
+    "to_cid": "E5",
+    "relation": "STATE_GATE",
+    "acceptable": [
+     "STATE_GATE"
+    ],
+    "evidence": [
+     {
+      "start": 147,
+      "end": 220,
+      "text": "If the moisture level exceeds twelve percent, extend the cycle by one day"
+     }
+    ]
+   },
+   {
+    "from_cid": "E11",
+    "to_cid": "E6",
+    "relation": "STATE_GATE",
+    "acceptable": [
+     "STATE_GATE"
+    ],
+    "evidence": [
+     {
+      "start": 222,
+      "end": 285,
+      "text": "End the cycle when the moisture level falls below eight percent"
+     }
+    ]
+   },
+   {
+    "from_cid": "E7",
+    "to_cid": "E9",
+    "relation": "ORDER_BEFORE",
+    "acceptable": [
+     "ORDER_BEFORE",
+     "PRECONDITION"
+    ],
+    "evidence": [
+     {
+      "start": 287,
+      "end": 319,
+      "text": "Cool the timber before unloading"
+     }
+    ]
+   },
+   {
+    "from_cid": "E7",
+    "to_cid": "E8",
+    "relation": "ORDER_BEFORE",
+    "acceptable": [
+     "ORDER_BEFORE",
+     "RESPONSE"
+    ],
+    "evidence": [
+     {
+      "start": 324,
+      "end": 354,
+      "text": "stamp each plank after cooling"
+     }
+    ]
+   }
+  ],
+  "cf_of": null,
+  "notes": "long naturalistic case: two threshold states of the same measured quantity are RELATED_BUT_DIFFERENT; gerund 'unloading'/'cooling' references."
+ },
+ {
+  "case_id": "test_mountainhut",
+  "domain": "mountain hut logistics",
+  "family": "naturalistic_communication_provisioning",
+  "split": "test",
+  "policy": "The hut keeper orders supplies every second Monday. The order is confirmed by the supplier within two days. Radio the valley station when the order is confirmed. The supply flight drops the crates on Wednesday. The hut keeper inventories each crate after the drop. Repeat the inventory if a crate is damaged.",
+  "tools": [
+   {
+    "name": "order_supplies",
+    "description": "Places the hut supply order with the valley supplier.",
+    "input": {
+     "hut_id": "string",
+     "items": "array"
+    },
+    "output": {
+     "order_id": "string"
+    }
+   },
+   {
+    "name": "confirm_order",
+    "description": "Confirms a supply order from the supplier side.",
+    "input": {
+     "order_id": "string"
+    },
+    "output": {
+     "confirmed": "boolean"
+    }
+   },
+   {
+    "name": "radio_station",
+    "description": "Sends a radio message to the valley station.",
+    "input": {
+     "message": "string"
+    },
+    "output": {
+     "sent": "boolean"
+    }
+   },
+   {
+    "name": "drop_crates",
+    "description": "Drops the supply crates at the hut pad from the supply flight.",
+    "input": {
+     "flight_id": "string"
+    },
+    "output": {
+     "dropped": "boolean"
+    }
+   },
+   {
+    "name": "inventory_crate",
+    "description": "Inventories the contents of a delivered crate.",
+    "input": {
+     "crate_id": "string"
+    },
+    "output": {
+     "items_received": "array"
+    }
+   }
+  ],
+  "mentions": [
+   {
+    "mid": "m1",
+    "span": "The hut keeper orders supplies",
+    "start": 0,
+    "end": 30,
+    "cid": "E1",
+    "sentence_index": 0
+   },
+   {
+    "mid": "m2",
+    "span": "The order is confirmed by the supplier",
+    "start": 52,
+    "end": 90,
+    "cid": "E2",
+    "sentence_index": 1
+   },
+   {
+    "mid": "m2b",
+    "span": "The order",
+    "start": 52,
+    "end": 61,
+    "cid": "E1",
+    "sentence_index": 1
+   },
+   {
+    "mid": "m3",
+    "span": "Radio the valley station",
+    "start": 108,
+    "end": 132,
+    "cid": "E3",
+    "sentence_index": 2
+   },
+   {
+    "mid": "m4",
+    "span": "the order is confirmed",
+    "start": 138,
+    "end": 160,
+    "cid": "E2",
+    "sentence_index": 2
+   },
+   {
+    "mid": "m5",
+    "span": "The supply flight drops the crates",
+    "start": 162,
+    "end": 196,
+    "cid": "E4",
+    "sentence_index": 3
+   },
+   {
+    "mid": "m6",
+    "span": "The hut keeper inventories each crate",
+    "start": 211,
+    "end": 248,
+    "cid": "E5",
+    "sentence_index": 4
+   },
+   {
+    "mid": "m7",
+    "span": "the drop",
+    "start": 255,
+    "end": 263,
+    "cid": "E4",
+    "sentence_index": 4
+   },
+   {
+    "mid": "m8",
+    "span": "Repeat the inventory",
+    "start": 265,
+    "end": 285,
+    "cid": "E6",
+    "sentence_index": 5
+   },
+   {
+    "mid": "m8b",
+    "span": "the inventory",
+    "start": 272,
+    "end": 285,
+    "cid": "E5",
+    "sentence_index": 5
+   },
+   {
+    "mid": "m9",
+    "span": "a crate is damaged",
+    "start": 289,
+    "end": 307,
+    "cid": "E7",
+    "sentence_index": 5
+   }
+  ],
+  "canonical_events": [
+   {
+    "cid": "E1",
+    "predicate": "order_supplies",
+    "role": "OPERATION_EFFECT",
+    "governed_tools": [
+     "order_supplies"
+    ]
+   },
+   {
+    "cid": "E2",
+    "predicate": "confirm_order",
+    "role": "OPERATION_EFFECT",
+    "governed_tools": [
+     "confirm_order"
+    ]
+   },
+   {
+    "cid": "E3",
+    "predicate": "radio",
+    "role": "COMMUNICATION",
+    "governed_tools": [
+     "radio_station"
+    ]
+   },
+   {
+    "cid": "E4",
+    "predicate": "drop_crates",
+    "role": "OPERATION_EFFECT",
+    "governed_tools": [
+     "drop_crates"
+    ]
+   },
+   {
+    "cid": "E5",
+    "predicate": "inventory_crate",
+    "role": "OPERATION_EFFECT",
+    "governed_tools": [
+     "inventory_crate"
+    ]
+   },
+   {
+    "cid": "E6",
+    "predicate": "repeat_inventory",
+    "role": "OPERATION_EFFECT",
+    "governed_tools": [
+     "inventory_crate"
+    ]
+   },
+   {
+    "cid": "E7",
+    "predicate": "damaged_state",
+    "role": "STATE_OBSERVATION",
+    "governed_tools": [
+     "inventory_crate"
+    ]
+   }
+  ],
+  "related_pairs": [
+   [
+    "E5",
+    "E6"
+   ]
+  ],
+  "ambiguous_pairs": [],
+  "edges": [
+   {
+    "from_cid": "E2",
+    "to_cid": "E3",
+    "relation": "RESPONSE",
+    "acceptable": [
+     "RESPONSE"
+    ],
+    "evidence": [
+     {
+      "start": 108,
+      "end": 160,
+      "text": "Radio the valley station when the order is confirmed"
+     }
+    ]
+   },
+   {
+    "from_cid": "E4",
+    "to_cid": "E5",
+    "relation": "ORDER_BEFORE",
+    "acceptable": [
+     "ORDER_BEFORE",
+     "RESPONSE"
+    ],
+    "evidence": [
+     {
+      "start": 211,
+      "end": 263,
+      "text": "The hut keeper inventories each crate after the drop"
+     }
+    ]
+   },
+   {
+    "from_cid": "E7",
+    "to_cid": "E6",
+    "relation": "STATE_GATE",
+    "acceptable": [
+     "STATE_GATE"
+    ],
+    "evidence": [
+     {
+      "start": 265,
+      "end": 307,
+      "text": "Repeat the inventory if a crate is damaged"
+     }
+    ]
+   }
+  ],
+  "cf_of": null,
+  "notes": "'The order' nested NP binds to the ordering event while the clause is the confirmation; 'the drop' nominal -> SAME as the crate drop; 'Repeat the inventory' second occurrence vs 'the inventory' first."
+ },
+ {
+  "case_id": "test_engraving",
+  "domain": "engraving shop",
+  "family": "misleading_tool_names",
+  "split": "test",
+  "policy": "Engrave each trophy with the winner's name. The engraving of silver trophies requires a slower bit speed. Cut the pattern before engraving. Polish the plate after the pattern is cut.",
+  "tools": [
+   {
+    "name": "validate_plaque",
+    "description": "Engraves text onto metal plates and trophies with a rotary engraving bit.",
+    "input": {
+     "item_id": "string",
+     "text": "string"
+    },
+    "output": {
+     "engraved": "boolean"
+    }
+   },
+   {
+    "name": "audit_pattern",
+    "description": "Cuts a decorative pattern into a metal blank using a jeweller's saw.",
+    "input": {
+     "pattern_id": "string"
+    },
+    "output": {
+     "cut": "boolean"
+    }
+   },
+   {
+    "name": "process_item",
+    "description": "Polishes a metal surface with a buffing wheel.",
+    "input": {
+     "item_id": "string"
+    },
+    "output": {
+     "polished": "boolean"
+    }
+   }
+  ],
+  "mentions": [
+   {
+    "mid": "m1",
+    "span": "Engrave each trophy",
+    "start": 0,
+    "end": 19,
+    "cid": "E1",
+    "sentence_index": 0
+   },
+   {
+    "mid": "m2",
+    "span": "The engraving of silver trophies",
+    "start": 44,
+    "end": 76,
+    "cid": "E2",
+    "sentence_index": 1
+   },
+   {
+    "mid": "m3",
+    "span": "Cut the pattern",
+    "start": 106,
+    "end": 121,
+    "cid": "E3",
+    "sentence_index": 2
+   },
+   {
+    "mid": "m4",
+    "span": "engraving",
+    "start": 48,
+    "end": 57,
+    "cid": "E1",
+    "sentence_index": 1
+   },
+   {
+    "mid": "m5",
+    "span": "Polish the plate",
+    "start": 140,
+    "end": 156,
+    "cid": "E4",
+    "sentence_index": 3
+   },
+   {
+    "mid": "m6",
+    "span": "the pattern is cut",
+    "start": 163,
+    "end": 181,
+    "cid": "E3",
+    "sentence_index": 3
+   }
+  ],
+  "canonical_events": [
+   {
+    "cid": "E1",
+    "predicate": "engrave_trophy",
+    "role": "OPERATION_EFFECT",
+    "governed_tools": [
+     "validate_plaque"
+    ]
+   },
+   {
+    "cid": "E2",
+    "predicate": "engrave_silver",
+    "role": "OPERATION_EFFECT",
+    "governed_tools": [
+     "validate_plaque"
+    ]
+   },
+   {
+    "cid": "E3",
+    "predicate": "cut_pattern",
+    "role": "OPERATION_EFFECT",
+    "governed_tools": [
+     "audit_pattern"
+    ]
+   },
+   {
+    "cid": "E4",
+    "predicate": "polish",
+    "role": "OPERATION_EFFECT",
+    "governed_tools": [
+     "process_item"
+    ]
+   }
+  ],
+  "related_pairs": [
+   [
+    "E1",
+    "E2"
+   ]
+  ],
+  "ambiguous_pairs": [],
+  "edges": [
+   {
+    "from_cid": "E3",
+    "to_cid": "E1",
+    "relation": "ORDER_BEFORE",
+    "acceptable": [
+     "ORDER_BEFORE",
+     "PRECONDITION"
+    ],
+    "evidence": [
+     {
+      "start": 106,
+      "end": 138,
+      "text": "Cut the pattern before engraving"
+     }
+    ]
+   },
+   {
+    "from_cid": "E3",
+    "to_cid": "E4",
+    "relation": "ORDER_BEFORE",
+    "acceptable": [
+     "ORDER_BEFORE",
+     "PRECONDITION"
+    ],
+    "evidence": [
+     {
+      "start": 140,
+      "end": 181,
+      "text": "Polish the plate after the pattern is cut"
+     }
+    ]
+   }
+  ],
+  "cf_of": null,
+  "notes": "misleading tool names ('validate_plaque' actually engraves, 'audit_pattern' actually cuts, 'process_item' polishes) - identity must come from policy text, not tool names."
+ }
+]
