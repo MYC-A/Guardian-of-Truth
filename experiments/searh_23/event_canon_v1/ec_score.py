@@ -309,12 +309,14 @@ def tune_thresholds():
         cfg[name] = {"arm": arm, "key": key, "tau": best[2],
                      "dev_f1": best[0], "dev_p": best[1]}
     # arm F candidate recall on dev
-    fdata = load_llm_arm("F_judge")
-    fdev = {c: v for c, v in fdata.items() if c in gold}
+    fdata = {}
+    for p in sorted(out_dir("F_judge").glob("*.json")):
+        d = json.loads(p.read_text(encoding="utf-8"))
+        if isinstance(d, dict):
+            fdata[p.stem] = d
     rec = miss = 0
     for cid_, pairs in gold.items():
-        cands = {tuple(x) for x in fdata.get(cid_, {}).get("candidates", [])} \
-            if isinstance(fdata.get(cid_), dict) else set()
+        cands = {tuple(x) for x in fdata.get(cid_, {}).get("candidates", [])}
         for gp in pairs:
             if gp["label"] in ("AMBIGUOUS",):
                 continue
