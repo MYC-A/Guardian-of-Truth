@@ -24,6 +24,7 @@ from ec_common import load_suite, out_dir, write_usage
 
 
 def main():
+    import os
     import torch
     from sentence_transformers import CrossEncoder
     import stanza
@@ -34,10 +35,11 @@ def main():
                           verbose=False, use_gpu=True)
     client = Mistral(model="ministral-14b-latest",
                      cache_dir=out_dir("_cache"))
-    outdir = out_dir("FRONTEND")
+    which = os.environ.get("EC_SUITE", "original")
+    outdir = out_dir("FRONTEND" if which == "original" else "FRONTEND_renamed")
     t0 = time.time()
     n_calls = 0
-    for case in load_suite("original"):
+    for case in load_suite(which):
         path = outdir / f"{case['case_id']}.json"
         if path.is_file():
             continue
@@ -85,7 +87,8 @@ def main():
         print(f"[{case['case_id']}] {len(cands)} candidates -> {len(events)} events",
               flush=True)
 
-    write_usage("FRONTEND", {"phase": "frontend", "model": "ministral-14b-latest",
+    write_usage("FRONTEND" if which == "original" else "FRONTEND_renamed",
+                {"phase": "frontend", "model": "ministral-14b-latest",
                              "calls": n_calls,
                              "wall_seconds": round(time.time() - t0, 1)})
     print(f"frontend done: {n_calls} resolver calls")

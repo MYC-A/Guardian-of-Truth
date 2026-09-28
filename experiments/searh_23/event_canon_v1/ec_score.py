@@ -223,7 +223,7 @@ def load_llm_arm(arm_dir, pairs_field="pairs"):
 def gold_pairs_by_case(split=None):
     pg = load_pairs_gold()
     suite = load_suite("original")
-    if split:
+    if split and split != "ALL":
         keep = {c["case_id"] for c in suite if c["split"] == split}
         pg = {k: v for k, v in pg.items() if k in keep}
     return pg
@@ -335,6 +335,59 @@ def tune_thresholds():
     return cfg
 
 
+def hybrid_pairs(mode):
+    """Deterministic compositions of stored E_xamr + F_judge outputs.
+
+    and: SAME iff both say SAME; DIFFERENT if either says DIFFERENT;
+         else RELATED if either says RELATED; else UNKNOWN
+    or : SAME iff either says SAME; DIFFERENT iff both DIFFERENT;
+         else RELATED if either says RELATED; else UNKNOWN
+    """
+    e_dir = out_dir("E_xamr")
+    e_pairs = {}
+    if e_dir.is_dir():
+        e_pairs = {p.stem.replace("_pairs", ""): json.loads(
+            p.read_text(encoding="utf-8"))
+            for p in sorted(e_dir.glob("*_pairs.json"))}
+    f_pairs = {}
+    f_dir = out_dir("F_judge")
+    if f_dir.is_dir():
+        f_pairs = {p.stem: json.loads(p.read_text(encoding="utf-8"))
+                   ["pairs"] for p in sorted(f_dir.glob("*.json"))}
+    out = {}
+    for cid_, f_recs in f_pairs.items():
+        emap = {(r["a"], r["b"]): r["label"] for r in e_pairs.get(cid_, [])}
+        rows = []
+        for r in f_recs:
+            key = (r["a"], r["b"])
+            e_lab = emap.get(key) or emap.get((r["b"], r["a"])) or "UNKNOWN"
+            f_lab = r["label"]
+            if mode == "and":
+                if f_lab == "SAME_EVENT" and e_lab == "SAME_EVENT":
+                    lab = "SAME_EVENT"
+                elif "DIFFERENT" in (f_lab, e_lab):
+                    lab = "DIFFERENT"
+                elif "RELATED" in (f_lab, e_lab):
+                    lab = "RELATED_BUT_DIFFERENT"
+                else:
+                    lab = "UNKNOWN"
+            elif mode == "or":
+                if "SAME_EVENT" in (f_lab, e_lab):
+                    lab = "SAME_EVENT"
+                elif f_lab == "DIFFERENT" and e_lab == "DIFFERENT":
+                    lab = "DIFFERENT"
+                elif "RELATED" in (f_lab, e_lab):
+                    lab = "RELATED_BUT_DIFFERENT"
+                else:
+                    lab = "UNKNOWN"
+            else:
+                raise SystemExit("mode must be and/or")
+            rows.append({"a": r["a"], "b": r["b"], "label": lab,
+                         "e_label": e_lab, "f_label": f_lab})
+        out[cid_] = rows
+    return out
+
+
 def cmd_pairs():
     gold_all = gold_pairs_by_case()
     arms = {
@@ -353,6 +406,10 @@ def cmd_pairs():
     if f_dir.is_dir():
         arms["F_judge"] = {p.stem: json.loads(p.read_text(encoding="utf-8"))
                            ["pairs"] for p in sorted(f_dir.glob("*.json"))}
+    arms["H_EF_and"] = hybrid_pairs("and")
+    arms["H_EF_or"] = hybrid_pairs("or")
+    arms["H_EF_and"] = hybrid_pairs("and")
+    arms["H_EF_or"] = hybrid_pairs("or")
     cfg_path = out_dir("SCORE") / "thresholds_dev.json"
     cfg = json.loads(cfg_path.read_text(encoding="utf-8")) \
         if cfg_path.is_file() else {}
@@ -413,6 +470,8 @@ def cmd_cf():
     if f_dir.is_dir():
         arms["F_judge"] = {p.stem: json.loads(p.read_text(encoding="utf-8"))
                            ["pairs"] for p in sorted(f_dir.glob("*.json"))}
+    arms["H_EF_and"] = hybrid_pairs("and")
+    arms["H_EF_or"] = hybrid_pairs("or")
     cfg_path = out_dir("SCORE") / "thresholds_dev.json"
     if cfg_path.is_file():
         cfg = json.loads(cfg_path.read_text(encoding="utf-8"))
@@ -430,38 +489,27 @@ def cmd_cf():
     for arm, pred in arms.items():
         rows = []
         for a_id, b_id in twins:
-            for pa, pb in [(a_id, b_id), (b_id, a_id)]:
-                # find pairs where gold differs between the twins
-                ga = {(p["a"], p["b"]): p["label"] for p in pg[pa]}
-                gb = {(p["a"], p["b"]): p["label"] for p in pg[pb]}
-                # mentions are identical across twins; compare by span text
-                ma = {m["mid"]: m["span"] for m in suite[pa]["mentions"]}
-                mb = {m["mid"]: m["span"] for m in suite[pb]["mentions"]}
-                span_to_mid_b = {}
-                for m in suite[pb]["mentions"]:
-                    span_to_mid_b.setdefault(m["span"], []).append(m["mid"])
-                for (x, y), lab_a in ga.items():
-                    if lab_a == "AMBIGUOUS":
-                        continue
-                    # map x,y to twin-b mids by span (skip duplicated spans)
-                    if len(span_to_mid_b.get(ma[x], [])) != 1 or \
-                            len(span_to_mid_b.get(ma[y], [])) != 1:
-                        continue
-                    xb = span_to_mid_b[ma[x]][0]
-                    yb = span_to_mid_b[ma[y]][0]
-                    lab_b = gb.get((xb, yb)) or gb.get((yb, xb))
-                    if lab_b is None or lab_b == lab_a:
-                        continue
-                    pa_rec = next((r for r in pred.get(pa, [])
-                                   if {r["a"], r["b"]} == {x, y}), None)
-                    pb_rec = next((r for r in pred.get(pb, [])
-                                   if {r["a"], r["b"]} == {xb, yb}), None)
-                    la = pa_rec.get("label") if pa_rec else "MISSING"
-                    lb = pb_rec.get("label") if pb_rec else "MISSING"
-                    ok = (la == lab_a) and (lb == lab_b)
-                    rows.append({"pair": (pa, pb), "mentions": (ma[x], ma[y]),
-                                 "gold_a": lab_a, "gold_b": lab_b,
-                                 "pred_a": la, "pred_b": lb, "ok": ok})
+            ga = {(p["a"], p["b"]): p["label"] for p in pg[a_id]}
+            gb = {(p["a"], p["b"]): p["label"] for p in pg[b_id]}
+            ma = {m["mid"]: m["span"] for m in suite[a_id]["mentions"]}
+            # twins keep consistent mention ids by design (the controlled
+            # edit changes the span text / cluster, not the mid)
+            for (x, y), lab_a in ga.items():
+                lab_b = gb.get((x, y)) or gb.get((y, x))
+                if lab_b is None or lab_b == "AMBIGUOUS" or lab_a == "AMBIGUOUS":
+                    continue
+                if lab_b == lab_a:
+                    continue
+                pa_rec = next((r for r in pred.get(a_id, [])
+                               if {r["a"], r["b"]} == {x, y}), None)
+                pb_rec = next((r for r in pred.get(b_id, [])
+                               if {r["a"], r["b"]} == {x, y}), None)
+                la = pa_rec.get("label") if pa_rec else "MISSING"
+                lb = pb_rec.get("label") if pb_rec else "MISSING"
+                ok = (la == lab_a) and (lb == lab_b)
+                rows.append({"pair": (a_id, b_id), "mentions": (ma[x], ma[y]),
+                             "gold_a": lab_a, "gold_b": lab_b,
+                             "pred_a": la, "pred_b": lb, "ok": ok})
         n_ok = sum(1 for r in rows if r["ok"])
         out[arm] = {"n_critical": len(rows), "n_ok": n_ok,
                     "rate": round(n_ok / max(1, len(rows)), 4),
@@ -491,6 +539,8 @@ def cmd_clusters():
     if f_dir.is_dir():
         arms["F_judge"] = {p.stem: json.loads(p.read_text(encoding="utf-8"))
                            ["pairs"] for p in sorted(f_dir.glob("*.json"))}
+    arms["H_EF_and"] = hybrid_pairs("and")
+    arms["H_EF_or"] = hybrid_pairs("or")
     cfg_path = out_dir("SCORE") / "thresholds_dev.json"
     if cfg_path.is_file():
         cfg = json.loads(cfg_path.read_text(encoding="utf-8"))
@@ -556,7 +606,80 @@ def cmd_clusters():
                   f"FM={s['false_merge_total']:3d} MM={s['missed_merge_total']:3d}")
 
 
+def cmd_ablate_d():
+    """Feature ablation for arm D (stored UD signatures): progressively
+    enabled signature fields (pre-registered order)."""
+    from ec_feats import lemma_family_match
+    suite = load_suite("original")
+
+    def compare(sa, sb, fields):
+        if not sa["predicate"] or not sb["predicate"]:
+            return "UNKNOWN"
+        if not lemma_family_match(sa["predicate"], sb["predicate"]):
+            return "DIFFERENT"
+        if "polarity" in fields and sa["polarity"] != sb["polarity"]:
+            return "RELATED_BUT_DIFFERENT"
+        if "entities" in fields:
+            ea, eb = set(sa["entities"]), set(sb["entities"])
+            if ea and eb and not (ea & eb):
+                return "RELATED_BUT_DIFFERENT"
+        if "temporal" in fields:
+            ta, tb = sa.get("temporal"), sb.get("temporal")
+            if ta and tb and ta != tb:
+                return "RELATED_BUT_DIFFERENT"
+        if "args" in fields:
+            aa, ab = set(sa["args"]), set(sb["args"])
+            if aa and ab and not (aa <= ab or ab <= aa):
+                return "RELATED_BUT_DIFFERENT"
+        if "mods" in fields:
+            if set(sa.get("mods", [])) != set(sb.get("mods", [])):
+                return "RELATED_BUT_DIFFERENT"
+        return "SAME_EVENT"
+
+    stages = [("predicate_only", []),
+              ("+polarity", ["polarity"]),
+              ("+entities", ["polarity", "entities"]),
+              ("+temporal", ["polarity", "entities", "temporal"]),
+              ("+args", ["polarity", "entities", "temporal", "args"]),
+              ("+mods(full)", ["polarity", "entities", "temporal", "args",
+                               "mods"])]
+    report = {}
+    for split in ("dev", "val", "test", "ALL"):
+        gold = gold_pairs_by_case(split)
+        report[split] = {}
+        for name, fields in stages:
+            cm = {g: {p: 0 for p in CLASSES} for g in CLASSES}
+            for cid_, pairs in gold.items():
+                sp = out_dir("ARMS_original") / "D_ud" / f"{cid_}_sigs.json"
+                if not sp.is_file():
+                    continue
+                sigs = json.loads(sp.read_text(encoding="utf-8"))
+                for gp in pairs:
+                    pl = compare(sigs.get(gp["a"], {}), sigs.get(gp["b"], {}),
+                                 fields)
+                    cm[gp["label"]][pl] += 1
+            tp = cm["SAME_EVENT"]["SAME_EVENT"]
+            fp = sum(cm[g]["SAME_EVENT"] for g in CLASSES
+                     if g not in ("SAME_EVENT", "AMBIGUOUS"))
+            fn = sum(cm["SAME_EVENT"][p] for p in CLASSES
+                     if p not in ("SAME_EVENT", "AMBIGUOUS"))
+            p = tp / (tp + fp) if tp + fp else 0.0
+            r = tp / (tp + fn) if tp + fn else 0.0
+            report[split][name] = {"p": round(p, 4), "r": round(r, 4),
+                                   "f1": round(2 * p * r / (p + r)
+                                               if p + r else 0, 4),
+                                   "dangerous": cm["RELATED_BUT_DIFFERENT"]["SAME_EVENT"]}
+    out_dir("SCORE").joinpath("d_ablation.json").write_text(
+        json.dumps(report, indent=1), encoding="utf-8")
+    for split in report:
+        print(f"===== {split} =====")
+        for name, m in report[split].items():
+            print(f"D {name:14s} P={m['p']:.3f} R={m['r']:.3f} "
+                  f"F1={m['f1']:.3f} dangerous={m['dangerous']}")
+
+
 if __name__ == "__main__":
     cmd = sys.argv[1] if len(sys.argv) > 1 else "toy"
     {"toy": toy, "tune": tune_thresholds, "pairs": cmd_pairs,
-     "cf": cmd_cf, "clusters": cmd_clusters}[cmd]()
+     "cf": cmd_cf, "clusters": cmd_clusters,
+     "ablate_d": cmd_ablate_d}[cmd]()
