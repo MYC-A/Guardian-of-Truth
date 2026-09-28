@@ -1,0 +1,116 @@
+{
+ "case_id": "calib_bookrestoration",
+ "nodes": [
+  {
+   "node_id": "N00",
+   "span": "Assess each damaged book on arrival",
+   "role": "STATE_OBSERVATION",
+   "members": [
+    "P00",
+    "P01"
+   ]
+  },
+  {
+   "node_id": "N01",
+   "span": "repair method",
+   "role": "OPERATION_EFFECT",
+   "members": [
+    "P02"
+   ]
+  },
+  {
+   "node_id": "N02",
+   "span": "Repair the book",
+   "role": "OPERATION_EFFECT",
+   "members": [
+    "P03"
+   ]
+  },
+  {
+   "node_id": "N03",
+   "span": "only after the conservator approves the assessment",
+   "role": "PRECONDITION_CHECK",
+   "members": [
+    "P04",
+    "P05"
+   ]
+  },
+  {
+   "node_id": "N04",
+   "span": "Books awaiting approval are stored in the holding room",
+   "role": "OPERATION_EFFECT",
+   "members": [
+    "P06"
+   ]
+  },
+  {
+   "node_id": "N05",
+   "span": "holding room",
+   "role": "OPERATION_EFFECT",
+   "members": [
+    "P07"
+   ]
+  }
+ ],
+ "edges": [
+  {
+   "u": "N00",
+   "v": "N01",
+   "u_members": [
+    "P00",
+    "P01"
+   ],
+   "v_members": [
+    "P02"
+   ],
+   "ce": 0.7305,
+   "evidence": "This assessment determines the repair method.",
+   "relation": "ORDER_BEFORE",
+   "dir_first": "A"
+  },
+  {
+   "u": "N00",
+   "v": "N02",
+   "u_members": [
+    "P00",
+    "P01"
+   ],
+   "v_members": [
+    "P03"
+   ],
+   "ce": 0.8547,
+   "evidence": "\"Repair the book only after the conservator approves the assessment.\"",
+   "relation": "PRECONDITION",
+   "dir_first": "A"
+  },
+  {
+   "u": "N03",
+   "v": "N02",
+   "u_members": [
+    "P04",
+    "P05"
+   ],
+   "v_members": [
+    "P03"
+   ],
+   "ce": 0.9999,
+   "evidence": "Repair the book only after the conservator approves the assessment.",
+   "relation": "PRECONDITION",
+   "dir_first": "B"
+  },
+  {
+   "u": "N04",
+   "v": "N05",
+   "u_members": [
+    "P06"
+   ],
+   "v_members": [
+    "P07"
+   ],
+   "ce": 0.9992,
+   "evidence": "Books awaiting approval are stored in the holding room.",
+   "relation": "NOT_SUPPORTED",
+   "dir_first": "A"
+  }
+ ]
+}

@@ -37,6 +37,15 @@ from ec_common import load_suite, out_dir, write_usage, MODELS
 CE_BAND = 0.35
 
 
+def _attach_member_spans(nodes, frontend_dir, case):
+    data = json.loads((frontend_dir / f"{case['case_id']}.json")
+                      .read_text(encoding="utf-8"))["events"]
+    for n in nodes:
+        n["member_spans"] = [data[int(m[1:])]["span"] for m in n["members"]
+                             if m.startswith("P") and m[1:].isdigit()]
+    return nodes
+
+
 def load_nodes(mode, case, trackb_dir=None, fdir="FRONTEND"):
     """Return list of node dicts: node_id, span, start, role, governed_tools,
     members (predicted mention ids)."""
@@ -79,11 +88,22 @@ def load_nodes(mode, case, trackb_dir=None, fdir="FRONTEND"):
     raise SystemExit(f"unknown mode {mode}")
 
 
-def node_event_view(case, n):
+def _attach_and_return(mode, nodes, case, fdir):
+    if mode != "raw":
+        _attach_member_spans(nodes, out_dir(fdir), case)
+    return nodes
+
+
+def node_event_view(case, n, multispan=False):
     by_name = {t["name"]: t for t in case["tools"]}
     tools = " ".join(render_tool(by_name[t]) for t in n["governed_tools"]
                      if t in by_name)
-    return {"source_span": n["span"], "role": n["role"],
+    span = n["span"]
+    if multispan and len(n.get("member_spans", [])) > 1:
+        spans = sorted(set(n["member_spans"]), key=len)
+        alt = "; ".join('"' + x + '"' for x in spans[1:])
+        span = '"' + spans[0] + '" (also referenced as: ' + alt + ")"
+    return {"source_span": span, "role": n["role"],
             "governed_tools": n["governed_tools"], "span_start": n["start"],
             "tool_semantics": tools}
 
@@ -98,19 +118,22 @@ def main():
                        cache_folder="/workspace/guardian/hf_cache")
     client = Mistral(model=MODELS["mistral"], cache_dir=out_dir("_cache"))
     which = os.environ.get("EC_SUITE", "original")
+    multispan = os.environ.get("EC_MULTISPAN", "0") == "1"
     trackb_dir = out_dir(trackb_name) if trackb_name else None
     suite = load_suite(which)
     fdir = "FRONTEND" if which == "original" else "FRONTEND_renamed"
     t0 = time.time()
     n_calls = 0
     res_dir = out_dir(f"DOWNSTREAM_{mode}" + (f"_{trackb_name}" if trackb_name else "")
+                      + ("_ms" if multispan else "")
                       + ("" if which == "original" else "_renamed"))
     for case in suite:
         cid_ = case["case_id"]
         outpath = res_dir / f"{cid_}.json"
         if outpath.is_file():
             continue
-        nodes = load_nodes(mode, case, trackb_dir, fdir)
+        nodes = _attach_and_return(mode, load_nodes(mode, case, trackb_dir, fdir),
+                                   case, fdir)
         policy = case["policy"]
         apath = out_dir("ALIGNMENT") / f"{cid_}.json"
         align = {r["i"]: r for r in json.loads(
@@ -151,7 +174,8 @@ def main():
             if sc < CE_BAND:
                 continue
             a, b = nodes[i], nodes[j]
-            ev_a, ev_b = node_event_view(case, a), node_event_view(case, b)
+            ev_a, ev_b = (node_event_view(case, a, multispan),
+                          node_event_view(case, b, multispan))
             rec = client.ask(SYSTEM, ev_user(case, ev_a, ev_b), max_tokens=260)
             n_calls += 1
             ans, _ = Mistral.parse_json(rec["raw"])
@@ -181,10 +205,10 @@ def main():
                 elif a["start"] > b["start"]:
                     u, v = j, i
             # relation type
-            rec4 = client.ask(SYSTEM, cls_user(case,
-                                               node_event_view(case, nodes[u]),
-                                               node_event_view(case, nodes[v])),
-                              max_tokens=240)
+            rec4 = client.ask(SYSTEM, cls_user(
+                case, node_event_view(case, nodes[u], multispan),
+                node_event_view(case, nodes[v], multispan)),
+                max_tokens=240)
             n_calls += 1
             ans4, _ = Mistral.parse_json(rec4["raw"])
             edges.append({"u": nodes[u]["node_id"], "v": nodes[v]["node_id"],
