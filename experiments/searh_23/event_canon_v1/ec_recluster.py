@@ -26,6 +26,8 @@ def main():
     method = sys.argv[3] if len(sys.argv) > 3 else "veto"
     dst.mkdir(parents=True, exist_ok=True)
     for p in sorted(src.glob("*.json")):
+        if p.name == "_usage.json":
+            continue
         data = json.loads(p.read_text(encoding="utf-8"))
         assign = build_clusters(data["pair_src"], method)
         nodes = cluster_to_nodes(None, data["mentions"], assign)
