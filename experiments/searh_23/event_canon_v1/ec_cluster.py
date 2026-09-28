@@ -18,8 +18,11 @@ from __future__ import annotations
 import json
 from pathlib import Path
 
-LABEL_SCORE = {"SAME_EVENT": 1.0, "UNKNOWN": 0.5,
+LABEL_SCORE = {"SAME_EVENT": 1.0, "UNKNOWN": 0.4,
                "RELATED_BUT_DIFFERENT": 0.25, "DIFFERENT": 0.0}
+# UNKNOWN (0.4) stays BELOW the default merge threshold (0.5): uncertain
+# pairs must not merge (discipline: uncertain -> SAME is forbidden); they
+# also do not veto (only definite DIFFERENT/RELATED veto).
 
 
 def pair_score(rec, score_key=None):
