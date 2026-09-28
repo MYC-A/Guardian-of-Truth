@@ -452,8 +452,9 @@ def run_llm_arm(case: TrajectoryCase, arm: str, proposer) -> ArmOutput:
         for item in raw_facts:
             if not isinstance(item, dict):
                 continue
-            if (item.get("entity_field"), item.get("json_path"),
-                    item.get("value_json")) in strict_keys:
+            key = (item.get("entity_field"), item.get("json_path"),
+                   item.get("value_json"))
+            if all(isinstance(part, str) for part in key) and key in strict_keys:
                 continue  # already parsed strictly
             candidate = _lenient_candidate(item, ec)
             if candidate is not None:

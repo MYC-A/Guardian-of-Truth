@@ -26,6 +26,9 @@ from .types import (Authority, EffectClass, EffectStrength, Provenance, Truth,
                     WorldFact)
 
 # Which result types can witness which mutation-side strength.
+# OBSERVED is on the read axis: what the result REPORTS is observable in any
+# non-failure result that carries the value ("pending"/"queued" statuses are
+# legitimate observed states, not only async acceptances).
 _STRENGTH_WITNESS: dict[EffectStrength, frozenset[ResultType]] = {
     EffectStrength.REQUESTED: frozenset({ResultType.ASYNC_ACCEPTED,
                                          ResultType.BUSINESS_STATE}),
@@ -35,7 +38,8 @@ _STRENGTH_WITNESS: dict[EffectStrength, frozenset[ResultType]] = {
     EffectStrength.CONFIRMED: frozenset({ResultType.BUSINESS_STATE,
                                          ResultType.OBSERVATION}),
     EffectStrength.OBSERVED: frozenset({ResultType.OBSERVATION,
-                                        ResultType.BUSINESS_STATE}),
+                                        ResultType.BUSINESS_STATE,
+                                        ResultType.ASYNC_ACCEPTED}),
     EffectStrength.NONE: frozenset(),
 }
 
