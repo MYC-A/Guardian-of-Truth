@@ -104,7 +104,7 @@ def calibrate():
     config["calibration"] = {"threshold": best["threshold"], "options": options,
                              "selection": "max precision, min dangerous, max TP, max threshold"}
     (OUT / "selected_config.json").write_text(json.dumps(config, indent=2) + "\n", encoding="utf-8")
-    print(json.dumps(config["calibration"], flush=True))
+    print(json.dumps(config["calibration"]), flush=True)
 
 
 def test():
