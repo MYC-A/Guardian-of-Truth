@@ -1,0 +1,691 @@
+{
+ "banking_async_001": {
+  "gold_facts": [
+   {
+    "predicate": "account.card.status",
+    "entity_type": "account",
+    "entity_id": "ACC-41",
+    "value": "\"processing\"",
+    "truth": "TRUE",
+    "strength": "REQUESTED",
+    "provenance": {
+     "call_id": "c1",
+     "json_path": "$.status"
+    }
+   },
+   {
+    "predicate": "account.status",
+    "entity_type": "account",
+    "entity_id": "ACC-41",
+    "value": "\"processing\"",
+    "truth": "TRUE",
+    "strength": "REQUESTED",
+    "provenance": {
+     "call_id": "c1",
+     "json_path": "$.status"
+    }
+   },
+   {
+    "predicate": "account.request_ref",
+    "entity_type": "account",
+    "entity_id": "ACC-41",
+    "value": "\"pr-9\"",
+    "truth": "TRUE",
+    "strength": "REQUESTED",
+    "provenance": {
+     "call_id": "c1",
+     "json_path": "$.request_ref"
+    }
+   }
+  ],
+  "unsupported_candidate_facts": [
+   {
+    "predicate": "account.completed",
+    "entity_type": "account",
+    "entity_id": "ACC-41",
+    "value": null,
+    "truth": "UNKNOWN"
+   }
+  ],
+  "contradicted_facts": [],
+  "temporal_queries": []
+ },
+ "retail_audit_001": {
+  "gold_facts": [
+   {
+    "predicate": "order.audit_written",
+    "entity_type": "order",
+    "entity_id": "#9001",
+    "value": "\"a-1042\"",
+    "truth": "TRUE",
+    "strength": "EXECUTED",
+    "provenance": {
+     "call_id": "c1",
+     "json_path": "$.audit_id"
+    }
+   }
+  ],
+  "unsupported_candidate_facts": [
+   {
+    "predicate": "order.cancelled",
+    "entity_type": "order",
+    "entity_id": "#9001",
+    "value": null,
+    "truth": "UNKNOWN"
+   }
+  ],
+  "contradicted_facts": [],
+  "temporal_queries": []
+ },
+ "airline_confobs_001": {
+  "gold_facts": [
+   {
+    "predicate": "reservation.status",
+    "entity_type": "reservation",
+    "entity_id": "ZFA04Y",
+    "value": "\"pending\"",
+    "truth": "TRUE",
+    "strength": "OBSERVED",
+    "provenance": {
+     "call_id": "c1",
+     "json_path": "$.status"
+    }
+   },
+   {
+    "predicate": "reservation.status",
+    "entity_type": "reservation",
+    "entity_id": "ZFA04Y",
+    "value": "\"cancelled\"",
+    "truth": "TRUE",
+    "strength": "OBSERVED",
+    "provenance": {
+     "call_id": "c2",
+     "json_path": "$.status"
+    }
+   }
+  ],
+  "unsupported_candidate_facts": [],
+  "contradicted_facts": [],
+  "temporal_queries": [
+   {
+    "query": "LATEST",
+    "entity_type": "reservation",
+    "entity_id": "ZFA04Y",
+    "predicate": "reservation.status",
+    "expected": "\"cancelled\""
+   }
+  ]
+ },
+ "shipping_gso_001": {
+  "gold_facts": [],
+  "unsupported_candidate_facts": [
+   {
+    "predicate": "parcel.dispatched",
+    "entity_type": "parcel",
+    "entity_id": "PK-512",
+    "value": null,
+    "truth": "UNKNOWN"
+   }
+  ],
+  "contradicted_facts": [],
+  "temporal_queries": []
+ },
+ "airline_conf_001": {
+  "gold_facts": [
+   {
+    "predicate": "reservation.status",
+    "entity_type": "reservation",
+    "entity_id": "ZFW11X",
+    "value": "\"cancelled\"",
+    "truth": "TRUE",
+    "strength": "EXECUTED",
+    "provenance": {
+     "call_id": "c1",
+     "json_path": "$.status"
+    },
+    "valid_from": 1
+   },
+   {
+    "predicate": "reservation.status",
+    "entity_type": "reservation",
+    "entity_id": "ZFW11X",
+    "value": "\"cancelled\"",
+    "truth": "TRUE",
+    "strength": "OBSERVED",
+    "provenance": {
+     "call_id": "c2",
+     "json_path": "$.status"
+    },
+    "valid_from": 3
+   }
+  ],
+  "unsupported_candidate_facts": [],
+  "contradicted_facts": [],
+  "temporal_queries": [
+   {
+    "query": "LATEST",
+    "entity_type": "reservation",
+    "entity_id": "ZFW11X",
+    "predicate": "reservation.status",
+    "expected": "\"cancelled\""
+   }
+  ]
+ },
+ "banking_contra_001": {
+  "gold_facts": [
+   {
+    "predicate": "account.status",
+    "entity_type": "account",
+    "entity_id": "ACC-45",
+    "value": "\"closed\"",
+    "truth": "TRUE",
+    "strength": "EXECUTED",
+    "provenance": {
+     "call_id": "c1",
+     "json_path": "$.status"
+    },
+    "valid_from": 1
+   },
+   {
+    "predicate": "account.status",
+    "entity_type": "account",
+    "entity_id": "ACC-45",
+    "value": "\"open\"",
+    "truth": "TRUE",
+    "strength": "OBSERVED",
+    "provenance": {
+     "call_id": "c2",
+     "json_path": "$.status"
+    },
+    "valid_from": 3
+   },
+   {
+    "predicate": "account.balance",
+    "entity_type": "account",
+    "entity_id": "ACC-45",
+    "value": "10",
+    "truth": "TRUE",
+    "strength": "OBSERVED",
+    "provenance": {
+     "call_id": "c2",
+     "json_path": "$.balance"
+    }
+   }
+  ],
+  "unsupported_candidate_facts": [],
+  "contradicted_facts": [],
+  "temporal_queries": [
+   {
+    "query": "LATEST",
+    "entity_type": "account",
+    "entity_id": "ACC-45",
+    "predicate": "account.status",
+    "expected": "\"open\""
+   }
+  ]
+ },
+ "banking_mal_001": {
+  "gold_facts": [],
+  "unsupported_candidate_facts": [
+   {
+    "predicate": "account.closed",
+    "entity_type": "account",
+    "entity_id": "ACC-46",
+    "value": null,
+    "truth": "UNKNOWN"
+   }
+  ],
+  "contradicted_facts": [],
+  "temporal_queries": []
+ },
+ "telecom_fail_001": {
+  "gold_facts": [],
+  "unsupported_candidate_facts": [
+   {
+    "predicate": "line.suspended",
+    "entity_type": "line",
+    "entity_id": "LN-77",
+    "value": null,
+    "truth": "UNKNOWN"
+   }
+  ],
+  "contradicted_facts": [],
+  "temporal_queries": []
+ },
+ "airline_post_001": {
+  "gold_facts": [
+   {
+    "predicate": "reservation.status",
+    "entity_type": "reservation",
+    "entity_id": "ZFA04Y",
+    "value": "\"cancelled\"",
+    "truth": "TRUE",
+    "strength": "EXECUTED",
+    "provenance": {
+     "call_id": "c1",
+     "json_path": "$.status"
+    }
+   }
+  ],
+  "unsupported_candidate_facts": [
+   {
+    "predicate": "reservation.replaced",
+    "entity_type": "reservation",
+    "entity_id": "ZFA04Y",
+    "value": null,
+    "truth": "UNKNOWN"
+   }
+  ],
+  "contradicted_facts": [],
+  "temporal_queries": []
+ },
+ "retail_notify_001": {
+  "gold_facts": [
+   {
+    "predicate": "user.notified",
+    "entity_type": "user",
+    "entity_id": "usr_77",
+    "value": "\"m-88\"",
+    "truth": "TRUE",
+    "strength": "EXECUTED",
+    "provenance": {
+     "call_id": "c1",
+     "json_path": "$.message_id"
+    }
+   }
+  ],
+  "unsupported_candidate_facts": [
+   {
+    "predicate": "order.cancelled",
+    "entity_type": "user",
+    "entity_id": "usr_77",
+    "value": null,
+    "truth": "UNKNOWN"
+   }
+  ],
+  "contradicted_facts": [],
+  "temporal_queries": []
+ },
+ "retail_partial_001": {
+  "gold_facts": [
+   {
+    "predicate": "order.status",
+    "entity_type": "order",
+    "entity_id": "#9005",
+    "value": "\"partially_updated\"",
+    "truth": "TRUE",
+    "strength": "EXECUTED",
+    "provenance": {
+     "call_id": "c1",
+     "json_path": "$.status"
+    }
+   }
+  ],
+  "unsupported_candidate_facts": [
+   {
+    "predicate": "order.fully_updated",
+    "entity_type": "order",
+    "entity_id": "#9005",
+    "value": null,
+    "truth": "UNKNOWN"
+   }
+  ],
+  "contradicted_facts": [],
+  "temporal_queries": []
+ },
+ "telecom_read_001": {
+  "gold_facts": [
+   {
+    "predicate": "line.status",
+    "entity_type": "line",
+    "entity_id": "LN-80",
+    "value": "\"suspended\"",
+    "truth": "TRUE",
+    "strength": "OBSERVED",
+    "provenance": {
+     "call_id": "c1",
+     "json_path": "$.status"
+    }
+   },
+   {
+    "predicate": "line.plan",
+    "entity_type": "line",
+    "entity_id": "LN-80",
+    "value": "\"basic\"",
+    "truth": "TRUE",
+    "strength": "OBSERVED",
+    "provenance": {
+     "call_id": "c1",
+     "json_path": "$.plan"
+    }
+   }
+  ],
+  "unsupported_candidate_facts": [],
+  "contradicted_facts": [],
+  "temporal_queries": []
+ },
+ "telecom_renid_001": {
+  "gold_facts": [
+   {
+    "predicate": "line.status",
+    "entity_type": "line",
+    "entity_id": "LN-88",
+    "value": "\"pending\"",
+    "truth": "TRUE",
+    "strength": "OBSERVED",
+    "provenance": {
+     "call_id": "c1",
+     "json_path": "$.status"
+    }
+   },
+   {
+    "predicate": "line.status",
+    "entity_type": "line",
+    "entity_id": "LN-88",
+    "value": "\"cancelled\"",
+    "truth": "TRUE",
+    "strength": "EXECUTED",
+    "provenance": {
+     "call_id": "c2",
+     "json_path": "$.status"
+    }
+   }
+  ],
+  "unsupported_candidate_facts": [],
+  "contradicted_facts": [],
+  "temporal_queries": []
+ },
+ "airline_repeat_001": {
+  "gold_facts": [
+   {
+    "predicate": "reservation.status",
+    "entity_type": "reservation",
+    "entity_id": "ZFA04Y",
+    "value": "\"cancelled\"",
+    "truth": "TRUE",
+    "strength": "EXECUTED",
+    "provenance": {
+     "call_id": "c1",
+     "json_path": "$.status"
+    }
+   }
+  ],
+  "unsupported_candidate_facts": [],
+  "contradicted_facts": [],
+  "temporal_queries": [
+   {
+    "query": "LATEST",
+    "entity_type": "reservation",
+    "entity_id": "ZFA04Y",
+    "predicate": "reservation.status",
+    "expected": "\"cancelled\""
+   }
+  ]
+ },
+ "banking_req_001": {
+  "gold_facts": [
+   {
+    "predicate": "account.card_request.status",
+    "entity_type": "account",
+    "entity_id": "ACC-33",
+    "value": "\"created\"",
+    "truth": "TRUE",
+    "strength": "REQUESTED",
+    "provenance": {
+     "call_id": "c1",
+     "json_path": "$.status"
+    }
+   },
+   {
+    "predicate": "account.request_id",
+    "entity_type": "account",
+    "entity_id": "ACC-33",
+    "value": "\"ci-05\"",
+    "truth": "TRUE",
+    "strength": "REQUESTED",
+    "provenance": {
+     "call_id": "c1",
+     "json_path": "$.request_id"
+    }
+   },
+   {
+    "predicate": "account.status",
+    "entity_type": "account",
+    "entity_id": "ACC-33",
+    "value": "\"created\"",
+    "truth": "TRUE",
+    "strength": "REQUESTED",
+    "provenance": {
+     "call_id": "c1",
+     "json_path": "$.status"
+    }
+   }
+  ],
+  "unsupported_candidate_facts": [
+   {
+    "predicate": "account.processed",
+    "entity_type": "account",
+    "entity_id": "ACC-33",
+    "value": null,
+    "truth": "UNKNOWN"
+   },
+   {
+    "predicate": "account.refunded",
+    "entity_type": "account",
+    "entity_id": "ACC-33",
+    "value": null,
+    "truth": "UNKNOWN"
+   }
+  ],
+  "contradicted_facts": [],
+  "temporal_queries": []
+ },
+ "retail_noecho_001": {
+  "gold_facts": [],
+  "unsupported_candidate_facts": [
+   {
+    "predicate": "order.status",
+    "entity_type": "order",
+    "entity_id": "#9008",
+    "value": null,
+    "truth": "UNKNOWN"
+   }
+  ],
+  "contradicted_facts": [],
+  "temporal_queries": []
+ },
+ "generic_sddo_001": {
+  "gold_facts": [
+   {
+    "predicate": "record.status",
+    "entity_type": "record",
+    "entity_id": "REC-1-2",
+    "value": "\"archived\"",
+    "truth": "TRUE",
+    "strength": "EXECUTED",
+    "provenance": {
+     "call_id": "c2",
+     "json_path": "$.status"
+    }
+   }
+  ],
+  "unsupported_candidate_facts": [
+   {
+    "predicate": "record.status",
+    "entity_type": "record",
+    "entity_id": "REC-1",
+    "value": null,
+    "truth": "UNKNOWN"
+   }
+  ],
+  "contradicted_facts": [],
+  "temporal_queries": []
+ },
+ "generic_srdc_001": {
+  "gold_facts": [
+   {
+    "predicate": "case.status",
+    "entity_type": "case",
+    "entity_id": "CS-408",
+    "value": "\"escalated\"",
+    "truth": "TRUE",
+    "strength": "OBSERVED",
+    "provenance": {
+     "call_id": "c1",
+     "json_path": "$.status"
+    }
+   },
+   {
+    "predicate": "case.status",
+    "entity_type": "case",
+    "entity_id": "CS-408",
+    "value": "\"escalated\"",
+    "truth": "TRUE",
+    "strength": "EXECUTED",
+    "provenance": {
+     "call_id": "c2",
+     "json_path": "$.status"
+    }
+   }
+  ],
+  "unsupported_candidate_facts": [],
+  "contradicted_facts": [],
+  "temporal_queries": []
+ },
+ "telecom_stale_001": {
+  "gold_facts": [
+   {
+    "predicate": "line.status",
+    "entity_type": "line",
+    "entity_id": "LN-86",
+    "value": "\"active\"",
+    "truth": "TRUE",
+    "strength": "OBSERVED",
+    "provenance": {
+     "call_id": "c1",
+     "json_path": "$.status"
+    }
+   },
+   {
+    "predicate": "line.status",
+    "entity_type": "line",
+    "entity_id": "LN-86",
+    "value": "\"suspended\"",
+    "truth": "TRUE",
+    "strength": "EXECUTED",
+    "provenance": {
+     "call_id": "c2",
+     "json_path": "$.status"
+    }
+   },
+   {
+    "predicate": "line.status",
+    "entity_type": "line",
+    "entity_id": "LN-86",
+    "value": "\"suspended\"",
+    "truth": "TRUE",
+    "strength": "OBSERVED",
+    "provenance": {
+     "call_id": "c3",
+     "json_path": "$.status"
+    }
+   },
+   {
+    "predicate": "line.tier",
+    "entity_type": "line",
+    "entity_id": "LN-86",
+    "value": "\"standard\"",
+    "truth": "TRUE",
+    "strength": "OBSERVED",
+    "provenance": {
+     "call_id": "c1",
+     "json_path": "$.tier"
+    }
+   }
+  ],
+  "unsupported_candidate_facts": [],
+  "contradicted_facts": [],
+  "temporal_queries": [
+   {
+    "query": "LATEST",
+    "entity_type": "line",
+    "entity_id": "LN-86",
+    "predicate": "line.status",
+    "expected": "\"suspended\""
+   },
+   {
+    "query": "PRIOR_TRUE",
+    "entity_type": "line",
+    "entity_id": "LN-86",
+    "predicate": "line.status",
+    "expected": "TRUE",
+    "as_of": 2,
+    "value": "\"active\""
+   },
+   {
+    "query": "AT_TIME",
+    "entity_type": "line",
+    "entity_id": "LN-86",
+    "predicate": "line.status",
+    "expected": "\"active\"",
+    "as_of": 1
+   },
+   {
+    "query": "AT_TIME",
+    "entity_type": "line",
+    "entity_id": "LN-86",
+    "predicate": "line.status",
+    "expected": "\"suspended\"",
+    "as_of": 3
+   }
+  ]
+ },
+ "telecom_went_001": {
+  "gold_facts": [],
+  "unsupported_candidate_facts": [
+   {
+    "predicate": "line.status",
+    "entity_type": "line",
+    "entity_id": "LN-84",
+    "value": null,
+    "truth": "UNKNOWN"
+   },
+   {
+    "predicate": "line.status",
+    "entity_type": "line",
+    "entity_id": "LN-85",
+    "value": null,
+    "truth": "UNKNOWN"
+   }
+  ],
+  "contradicted_facts": [],
+  "temporal_queries": []
+ },
+ "retail_wfld_001": {
+  "gold_facts": [
+   {
+    "predicate": "order.last_operation",
+    "entity_type": "order",
+    "entity_id": "#9011",
+    "value": "\"cancel\"",
+    "truth": "TRUE",
+    "strength": "EXECUTED",
+    "provenance": {
+     "call_id": "c1",
+     "json_path": "$.last_operation"
+    }
+   }
+  ],
+  "unsupported_candidate_facts": [
+   {
+    "predicate": "order.status",
+    "entity_type": "order",
+    "entity_id": "#9011",
+    "value": null,
+    "truth": "UNKNOWN"
+   }
+  ],
+  "contradicted_facts": [],
+  "temporal_queries": []
+ }
+}
