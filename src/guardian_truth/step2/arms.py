@@ -28,6 +28,7 @@ import json
 from dataclasses import dataclass, field
 
 from .ledger import FactLedger, Proposition, ProbeAnswer
+from .proposer import parse_proposal
 from .result_types import (ASYNC_VALUES, STATE_KEYS, classify_payload,
                            json_path_get, scalar_to_json)
 from .types import (Authority, EffectClass, EffectStrength, FactEvent,
@@ -66,15 +67,25 @@ class ArmOutput:
 # --------------------------------------------------------------- utilities ----
 
 def _mask_names(case: TrajectoryCase) -> tuple[dict, dict]:
-    """Return (catalog by name with masked names, mask mapping)."""
+    """Mask tool names with opaque labels assigned by FIRST APPEARANCE in the
+    trajectory (not alphabetically), so that an opaque rename of the catalog
+    produces a byte-identical prompt: name-blindness is invariant by
+    construction, and the rename check verifies the implementation only."""
     catalog = {t["name"]: dict(t) for t in case.tools}
+    order: list[str] = []
+    for event in (*case.calls, *case.results):
+        if event.tool not in order:
+            order.append(event.tool)
+    for name in catalog:
+        if name not in order:
+            order.append(name)
     mask = {}
-    for i, (name, tool) in enumerate(sorted(catalog.items())):
+    for i, name in enumerate(order):
         masked = f"tool_{i:02d}"
         mask[name] = masked
-        tool["name"] = masked
+        catalog[name]["name"] = masked
         # descriptions that literally name the tool would leak; mask mentions
-        tool["description"] = tool.get("description", "").replace(name, masked)
+        catalog[name]["description"] = catalog[name].get("description", "").replace(name, masked)
     return catalog, mask
 
 
@@ -358,7 +369,8 @@ def arm_I_contract(case: TrajectoryCase) -> ArmOutput:
                 entity_field=entity_field, entity_value=entity_value,
                 value_json=post["value_json"], json_path=post["json_path"],
                 strength=EffectStrength(post.get("strength", "EXECUTED")),
-                effect_class=EffectClass(contract.get("effect_class", "UPDATE")))
+                effect_class=EffectClass(contract.get("effect_class", "UPDATE")),
+                contract_bound=bool(contract.get("result_bindings")))
             verdict = verify_candidate(case, call, result, candidate)
             if isinstance(verdict, VerifiedFact):
                 if contract.get("documented_contract"):
@@ -405,42 +417,63 @@ def arm_I_contract(case: TrajectoryCase) -> ArmOutput:
 # ------------------------------------------------------------- LLM arms -------
 
 def run_llm_arm(case: TrajectoryCase, arm: str, proposer) -> ArmOutput:
-    """Arms A/B/C/E propose via LLM. Arm H additionally witnesses.
-
-    A/B/C proposals are counted as ESTABLISHED (ungrounded) — that is the
-    diagnostic. E proposals are recorded but only H establishes them.
+    """Arms A/B/C/E propose via LLM and are counted as ESTABLISHED without a
+    witness (the diagnostic: what the LLM alone claims). Arm H runs the same
+    name-blind proposals as E through the deterministic witness — only
+    witnessed facts enter its ledger.
     """
     out = ArmOutput(arm, case.case_id)
-    if arm == "H_hybrid":
-        base = run_llm_arm(case, "E_nameblind", proposer)
-        out.verified = list(base.verified)
-        out.rejected = list(base.rejected)
-        out.proposal_meta = dict(base.proposal_meta)
-        out.errors = list(base.errors)
-        return out
-    catalog, mask = _mask_names(case) if arm == "E_nameblind" else (_catalog(case), {})
-    include_results = arm in ("C_full", "E_nameblind")
+    witness = arm == "H_hybrid"
+    base_arm = "E_nameblind" if arm == "H_hybrid" else arm
+    catalog, mask = _mask_names(case) if base_arm == "E_nameblind" else (_catalog(case), {})
+    include_results = base_arm in ("C_full", "E_nameblind")
     for call, result in _pair(case):
         tool = catalog.get(call.tool, {"name": call.tool, "description": ""})
         view_tool = dict(tool)
-        if arm == "E_nameblind":
+        if base_arm == "E_nameblind":
             view_tool["name"] = mask.get(call.tool, call.tool)
         try:
             answer = proposer.ask(
-                SYSTEM_PROMPT_ARM(arm),
-                build_arm_prompt(arm, view_tool, call.payload,
+                SYSTEM_PROMPT_ARM(base_arm),
+                build_arm_prompt(base_arm, view_tool, call.payload,
                                  result if include_results else None))
         except Exception as exc:  # transport failures become UNKNOWN, never guesses
             out.errors.append(f"{call.call_id}: {type(exc).__name__}: {exc}")
             continue
         proposal = parse_proposal(answer)
+        # lenient recovery: the model may omit predicate/entity_type
+        try:
+            ec = proposal.effect_class
+        except Exception:
+            ec = EffectClass.UNKNOWN
+        recovered = []
+        raw_facts = (answer.get("value") or {}).get("facts") or []
+        strict_keys = {(f.entity_field, f.json_path, f.value_json) for f in proposal.facts}
+        for item in raw_facts:
+            if not isinstance(item, dict):
+                continue
+            if (item.get("entity_field"), item.get("json_path"),
+                    item.get("value_json")) in strict_keys:
+                continue  # already parsed strictly
+            candidate = _lenient_candidate(item, ec)
+            if candidate is not None:
+                recovered.append(candidate)
+        all_facts = list(proposal.facts) + recovered
         out.proposal_meta[call.call_id] = {
             "result_type": proposal.result_type.value,
             "effect_class": proposal.effect_class.value,
             "effect_strength": proposal.effect_strength.value,
-            "n_facts": len(proposal.facts)}
-        for candidate in proposal.facts:
-            if arm in ("A_name_desc", "B_desc_schema", "C_full"):
+            "n_facts": len(all_facts),
+            "n_strict": len(proposal.facts),
+            "n_recovered": len(recovered)}
+        for candidate in all_facts:
+            if witness:  # H: every proposal must pass the deterministic witness
+                verdict = verify_candidate(case, call, result, candidate)
+                if isinstance(verdict, VerifiedFact):
+                    out.verified.append(verdict)
+                else:
+                    out.rejected.append(verdict)
+            else:  # A/B/C/E: unwitnessed proposals, counted as established
                 out.ungrounded.append({
                     "call_id": call.call_id, "tool": mask.get(call.tool, call.tool),
                     "predicate": candidate.predicate,
@@ -453,12 +486,6 @@ def run_llm_arm(case: TrajectoryCase, arm: str, proposer) -> ArmOutput:
                                    "json_path": candidate.json_path,
                                    "authority": "NONE"},
                 })
-            else:  # E: proposals await the witness
-                verdict = verify_candidate(case, call, result, candidate)
-                if isinstance(verdict, VerifiedFact):
-                    out.verified.append(verdict)
-                else:
-                    out.rejected.append(verdict)
     return out
 
 
@@ -493,14 +520,23 @@ def build_arm_prompt(arm: str, tool: dict, arguments, result) -> str:
 
 PROMPT_TAIL = (
     "TASK: propose what world facts this one tool interaction could prove. "
-    "For each fact cite entity_field (an argument field name), entity_value "
-    "(the literal argument value), value_json (the exact scalar found in the "
-    "result, JSON-encoded) and json_path (exact result path like $.status). "
-    "strength must be REQUESTED, INITIATED, EXECUTED, CONFIRMED or OBSERVED. "
-    "A generic success acknowledgement or a tool NAME alone proves nothing "
-    "about business state; async statuses (queued/processing/pending/"
-    "scheduled/created) prove at most REQUESTED/INITIATED. If nothing is "
-    "provable, return an empty facts list. Never invent fields or values.")
+    "Return strict JSON: {\"result_type\": \"...\", \"effect_class\": \"...\", "
+    "\"effect_strength\": \"...\", \"facts\": [...]}. Each fact MUST contain "
+    "ALL of these keys: \"predicate\" (entity-type-prefixed fact name, e.g. "
+    "\"order.status\"), \"entity_type\" (e.g. \"order\"), \"entity_field\" "
+    "(an argument field name), \"entity_value\" (the literal argument value, "
+    "or \"\" if absent), \"value_json\" (the exact scalar found in the result, "
+    "JSON-encoded), \"json_path\" (exact result path like \"$.status\"), "
+    "\"strength\" (REQUESTED, INITIATED, EXECUTED, CONFIRMED or OBSERVED). "
+    "Example fact: {\"predicate\":\"order.status\",\"entity_type\":\"order\","
+    "\"entity_field\":\"order_id\",\"entity_value\":\"#9001\","
+    "\"value_json\":\"\\\"cancelled\\\"\",\"json_path\":\"$.status\","
+    "\"strength\":\"EXECUTED\"}. A generic success acknowledgement or a tool "
+    "NAME alone proves nothing about business state; async statuses "
+    "(queued/processing/pending/scheduled/created) prove at most "
+    "REQUESTED/INITIATED. If nothing is provable, return an empty facts "
+    "list. Never invent fields, values or paths that are not literally "
+    "present in the given data.")
 
 
 def _render_schema(tool: dict) -> str:
@@ -517,6 +553,43 @@ def _render_schema(tool: dict) -> str:
             desc = f" — {spec['description']}" if spec.get("description") else ""
             lines.append(f"  {name}: {spec.get('type', 'string')}{req}{enum}{desc}")
     return "\n".join(lines)
+
+
+def _lenient_candidate(item: dict, effect_class: EffectClass) -> CandidateFact | None:
+    """Build a candidate even when the model omitted predicate/entity_type:
+    derive them from entity_field and the json_path leaf."""
+    required = ("entity_field", "entity_value", "value_json", "json_path")
+    if any(not isinstance(item.get(k), str) for k in required):
+        return None
+    entity_field = item["entity_field"]
+    entity_value = item["entity_value"]
+    if not entity_field:
+        return None
+    try:
+        decoded = json.loads(item["value_json"])
+    except (ValueError, TypeError):
+        return None
+    if decoded is not None and not isinstance(decoded, (str, int, float, bool)):
+        return None
+    try:
+        strength = EffectStrength(item.get("strength", "NONE"))
+    except ValueError:
+        return None
+    if strength is EffectStrength.NONE:
+        return None
+    path = item["json_path"]
+    leaf = path.lstrip("$").split(".")[-1].split("[")[0] if path else ""
+    predicate = item.get("predicate") or (
+        f"{_entity_type(entity_field)}.{leaf}" if leaf else None)
+    if not predicate:
+        return None
+    entity_type = item.get("entity_type") or _entity_type(entity_field)
+    return CandidateFact(
+        predicate=predicate, entity_type=entity_type,
+        entity_field=entity_field, entity_value=entity_value or "",
+        value_json=item["value_json"], json_path=path,
+        strength=strength, effect_class=effect_class,
+        is_observation=strength is EffectStrength.OBSERVED)
 
 
 # ------------------------------------------------------------- J layer -------

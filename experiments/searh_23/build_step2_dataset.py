@@ -226,16 +226,17 @@ def fam_request_creation(domain, tools, cat_prefix, req_tool, entity_arg, entity
 
 def fam_audit_logging(domain, tools, cat_prefix, audit_tool, business_tool,
                       entity_arg, entity_id, business_pred, audit_payload=None):
+    """Audit success: the business predicate stays UNKNOWN. The audit record
+    id is a result-born entity with its own binding question (follow-up)."""
     traj = [
         call(0, "c1", audit_tool, {entity_arg: entity_id, "action": "cancel"}),
         result(1, "c1", audit_tool, audit_payload or {"success": True, "audit_id": "a-1042"}),
     ]
     return case(cat_prefix, "audit_logging", domain, tools, traj,
-                gold_facts=[gold(f"{_etype(entity_arg)}.audit_written", _etype(entity_arg),
-                                 entity_id, '"a-1042"', strength="EXECUTED",
-                                 call_id="c1", json_path="$.audit_id")],
+                gold_facts=[],
                 unsupported=[neg(business_pred, _etype(entity_arg), entity_id)],
-                notes="audit success != business action success")
+                notes="audit success != business action success; audit_id is a "
+                      "result-born entity, out of scope for entity-echo binding")
 
 
 def fam_notification(domain, tools, cat_prefix, notify_tool, entity_arg, entity_id,
@@ -245,10 +246,10 @@ def fam_notification(domain, tools, cat_prefix, notify_tool, entity_arg, entity_
         result(1, "c1", notify_tool, {"success": True, "message_id": "m-88"}),
     ]
     return case(cat_prefix, "notification_sent", domain, tools, traj,
-                gold_facts=[gold(f"{_etype(entity_arg)}.notified", _etype(entity_arg),
-                                 entity_id, '"m-88"', strength="EXECUTED",
-                                 call_id="c1", json_path="$.message_id")],
-                unsupported=[neg(business_pred, _etype(entity_arg), entity_id)])
+                gold_facts=[],
+                unsupported=[neg(business_pred, _etype(entity_arg), entity_id)],
+                notes="notification sent != business action; message_id is a "
+                      "result-born entity")
 
 
 def fam_mutation_failure(domain, tools, cat_prefix, mut_tool, entity_arg, entity_id,

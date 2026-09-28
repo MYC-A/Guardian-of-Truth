@@ -103,6 +103,20 @@ def score_case(case: dict, arm_output: dict, temporal_answers: list[dict] | None
 
     established = ([v["fact"] for v in arm_output.get("verified", [])]
                    + arm_output.get("ungrounded", []))
+    # Deduplicate by triple: a repeated mutation or a confirming read restates
+    # the same fact; event-sourced duplicates must not double-count.
+    seen_triples: set[tuple] = set()
+    deduped = []
+    for fact in established:
+        if not isinstance(fact.get("value"), str):
+            fact = dict(fact, value=str(fact.get("value")))
+        triple = (fact.get("predicate"), str(fact.get("entity_id") or fact.get("entity_value")),
+                  _norm_value(str(fact.get("value"))))
+        if triple in seen_triples:
+            continue
+        seen_triples.add(triple)
+        deduped.append(fact)
+    established = deduped
     score.established_total = len(established)
 
     matched_gold_ids: set[int] = set()

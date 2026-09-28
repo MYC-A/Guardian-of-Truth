@@ -95,6 +95,13 @@ def answer_temporal(ledger: FactLedger, case: dict) -> list[dict]:
     return out
 
 
+def make_proposer(args, env_file_attr: str = "env_file"):
+    """Build the cached Mistral proposer (cache under outputs/searh_23/step2_evidence_v1)."""
+    cache_dir = getattr(args, "cache_dir", None) or \
+        "outputs/searh_23/step2_evidence_v1/llm_cache"
+    return MistralProposer(Path(getattr(args, env_file_attr)), cache_dir=cache_dir)
+
+
 def cmd_run(args) -> None:
     cases = load_cases(Path(args.input))
     out_path = Path(args.output)
@@ -106,7 +113,7 @@ def cmd_run(args) -> None:
     needs_llm = any(a in ("A_name_desc", "B_desc_schema", "C_full",
                           "E_nameblind", "H_hybrid") for a in arms)
     if needs_llm:
-        proposer = MistralProposer(Path(args.env_file))
+        proposer = make_proposer(args)
     rows = []
     started = time.time()
     for i, case in enumerate(cases):
@@ -140,6 +147,7 @@ def cmd_run(args) -> None:
             "cases": len(cases), "rows": len(rows),
             "elapsed_s": round(time.time() - started, 1),
             "llm_calls": proposer.calls if proposer else 0,
+            "llm_cache_hits": proposer.cache_hits if proposer else 0,
             "prompt_tokens": proposer.prompt_tokens if proposer else 0,
             "completion_tokens": proposer.completion_tokens if proposer else 0}
     print(json.dumps(meta, ensure_ascii=False, indent=1))
@@ -194,7 +202,7 @@ def cmd_rename_check(args) -> None:
     renamed = load_cases(Path(args.renamed))
     proposer = None
     if args.arm in ("A_name_desc", "B_desc_schema", "C_full", "E_nameblind", "H_hybrid"):
-        proposer = MistralProposer(Path(args.env_file))
+        proposer = make_proposer(args)
     same, diff, total = 0, 0, 0
     details = []
     for rc in renamed:
@@ -230,7 +238,7 @@ def cmd_cf_check(args) -> None:
     cfs = load_cases(Path(args.cf))
     proposer = None
     if args.arm in ("A_name_desc", "B_desc_schema", "C_full", "E_nameblind", "H_hybrid"):
-        proposer = MistralProposer(Path(args.env_file))
+        proposer = make_proposer(args)
     flipped, stable, total = 0, 0, 0
     details = []
     for cf in cfs:
@@ -294,6 +302,7 @@ def main() -> None:
     run.add_argument("--output", required=True)
     run.add_argument("--arms", default="D_result_only,F_structural,G_extractive,I_contract")
     run.add_argument("--env-file", default="/workspace/guardian/secrets/mistral.env")
+    run.add_argument("--cache-dir", default="outputs/searh_23/step2_evidence_v1/llm_cache")
     run.add_argument("--j-layer", action="store_true")
     run.set_defaults(func=cmd_run)
 
@@ -310,6 +319,7 @@ def main() -> None:
     ren.add_argument("--arm", required=True)
     ren.add_argument("--output", required=True)
     ren.add_argument("--env-file", default="/workspace/guardian/secrets/mistral.env")
+    ren.add_argument("--cache-dir", default="outputs/searh_23/step2_evidence_v1/llm_cache")
     ren.set_defaults(func=cmd_rename_check)
 
     cf = sub.add_parser("cf-check")
@@ -318,6 +328,7 @@ def main() -> None:
     cf.add_argument("--arm", required=True)
     cf.add_argument("--output", required=True)
     cf.add_argument("--env-file", default="/workspace/guardian/secrets/mistral.env")
+    cf.add_argument("--cache-dir", default="outputs/searh_23/step2_evidence_v1/llm_cache")
     cf.set_defaults(func=cmd_cf_check)
 
     probe = sub.add_parser("claim-probe")

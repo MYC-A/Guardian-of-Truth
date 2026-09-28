@@ -17,6 +17,7 @@ the pinned env file, never printed.
 
 from __future__ import annotations
 
+import hashlib
 import json
 import os
 import re
@@ -103,9 +104,14 @@ def _json_object(raw: str) -> dict:
 
 
 class MistralProposer:
-    """Rate-limited Mistral client for effect proposals."""
+    """Rate-limited Mistral client for effect proposals with on-disk cache.
 
-    def __init__(self, env_file: Path | None = None, min_interval: float = 1.2):
+    The cache key is the sha256 of (system, user, model); identical requests
+    are never billed twice. This also makes arm H reuse arm E's calls.
+    """
+
+    def __init__(self, env_file: Path | None = None, min_interval: float = 1.2,
+                 cache_dir: str | None = None):
         s = mistral_settings(env_file)
         self.model = s["MISTRAL_MODEL"]
         self.key = s["MISTRAL_API_KEY"]
@@ -116,8 +122,22 @@ class MistralProposer:
         self.calls = 0
         self.prompt_tokens = 0
         self.completion_tokens = 0
+        self.cache_hits = 0
+        self.cache_dir = Path(cache_dir) if cache_dir else None
+        if self.cache_dir:
+            self.cache_dir.mkdir(parents=True, exist_ok=True)
+
+    def _cache_key(self, system: str, user: str) -> str:
+        return hashlib.sha256(
+            json.dumps({"s": system, "u": user, "m": self.model},
+                       ensure_ascii=False).encode()).hexdigest()
 
     def ask(self, system: str, user: str, *, max_tokens: int = 700) -> dict:
+        key = self._cache_key(system, user)
+        cached = self._cache_get(key)
+        if cached is not None:
+            self.cache_hits += 1
+            return cached
         payload = {"model": self.model, "temperature": 0, "max_tokens": max_tokens,
                    "messages": [{"role": "system", "content": system},
                                 {"role": "user", "content": user}],
@@ -155,9 +175,31 @@ class MistralProposer:
         self.prompt_tokens += int(usage.get("prompt_tokens", 0) or 0)
         self.completion_tokens += int(usage.get("completion_tokens", 0) or 0)
         choice = body["choices"][0]
-        return {"value": _json_object(choice["message"]["content"]),
-                "finish_reason": choice.get("finish_reason"),
-                "usage": usage}
+        answer = {"value": _json_object(choice["message"]["content"]),
+                  "finish_reason": choice.get("finish_reason"),
+                  "usage": usage}
+        self._cache_put(key, answer)
+        return answer
+
+    def _cache_get(self, key: str) -> dict | None:
+        if self.cache_dir is None:
+            return None
+        path = self.cache_dir / f"{key}.json"
+        if path.is_file():
+            try:
+                return json.loads(path.read_text(encoding="utf-8"))
+            except (ValueError, OSError):
+                return None
+        return None
+
+    def _cache_put(self, key: str, answer: dict) -> None:
+        if self.cache_dir is None:
+            return
+        path = self.cache_dir / f"{key}.json"
+        try:
+            path.write_text(json.dumps(answer, ensure_ascii=False), encoding="utf-8")
+        except OSError:
+            pass
 
 
 # ---------------------------------------------------------------- prompts ----

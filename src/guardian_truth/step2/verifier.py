@@ -59,6 +59,7 @@ class CandidateFact:
     strength: EffectStrength
     effect_class: EffectClass = EffectClass.UNKNOWN
     is_observation: bool = False
+    contract_bound: bool = False  # documented contract joins call/result entities
 
     def as_dict(self) -> dict:
         return {"predicate": self.predicate, "entity_type": self.entity_type,
@@ -96,6 +97,26 @@ def _decode_value(value_json: str):
         return None, False
 
 
+def _result_id_echoes(payload: Any) -> list[str]:
+    """Collect values of id-shaped fields in the result (bounded depth)."""
+    out: list[str] = []
+
+    def walk(node, depth=0):
+        if depth > 3 or not isinstance(node, dict):
+            return
+        for key, value in node.items():
+            if isinstance(value, str) and (key.endswith("_id") or key.endswith("_ids")
+                                            or key in ("id", "ref", "reference")):
+                out.append(value)
+            elif isinstance(value, dict):
+                walk(value, depth + 1)
+            elif isinstance(value, list) and value and isinstance(value[0], str):
+                out.extend(value[:8])
+
+    walk(payload)
+    return out
+
+
 def verify_candidate(case: "TrajectoryCase", call: "CallEvent", result: "ResultEvent",
                      candidate: CandidateFact) -> VerifiedFact | Rejected:
     """Run the full witness on one candidate fact. Pure, deterministic."""
@@ -129,6 +150,27 @@ def verify_candidate(case: "TrajectoryCase", call: "CallEvent", result: "ResultE
         if arg_value is None or str(arg_value) != candidate.entity_value:
             return Rejected(candidate, "ENTITY_MISMATCH",
                             f"call argument {candidate.entity_field}={arg_value!r} != {candidate.entity_value!r}")
+    # 5b. result-side entity echo: if the result names entity ids explicitly,
+    # the claimed entity must be among them; a same-key field carrying a
+    # different id is an explicit contradiction. A result with no id-shaped
+    # content leaves the entity unbound — honest UNKNOWN — unless a
+    # documented contract already joins call and result entities.
+    if not candidate.contract_bound:
+        same_key = None
+        if candidate.entity_field and isinstance(result.payload, dict):
+            same_key = result.payload.get(candidate.entity_field)
+        idish = _result_id_echoes(result.payload)
+        if same_key is not None and str(same_key) != candidate.entity_value:
+            return Rejected(candidate, "ENTITY_MISMATCH",
+                            f"result {candidate.entity_field}={same_key!r} != claimed {candidate.entity_value!r}")
+        if candidate.entity_value in idish:
+            pass  # positive echo somewhere in the result
+        elif idish:
+            return Rejected(candidate, "ENTITY_MISMATCH",
+                            f"result names other entities {idish[:3]!r}, not {candidate.entity_value!r}")
+        elif candidate.entity_field:
+            return Rejected(candidate, "ENTITY_UNBOUND",
+                            "result carries no entity echo; entity binding unproven")
     # 6. strength witnessing
     allowed = _STRENGTH_WITNESS.get(candidate.strength, frozenset())
     if result_type not in allowed:
