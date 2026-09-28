@@ -1,0 +1,194 @@
+{
+  "case_id": "e_archive",
+  "mentions": [
+    {
+      "mid": "P00",
+      "span": "Scan manuscript X",
+      "start": 0,
+      "end": 17,
+      "sentence_index": 0,
+      "role": "OPERATION_EFFECT",
+      "governed_tools": [
+        "scan_manuscript"
+      ],
+      "is_np": false
+    },
+    {
+      "mid": "P01",
+      "span": "Approve the scan for publication",
+      "start": 19,
+      "end": 51,
+      "sentence_index": 1,
+      "role": "OPERATION_EFFECT",
+      "governed_tools": [
+        "approve_scan"
+      ],
+      "is_np": false
+    },
+    {
+      "mid": "P02",
+      "span": "Publish the scan only after approval",
+      "start": 53,
+      "end": 89,
+      "sentence_index": 2,
+      "role": "OPERATION_EFFECT",
+      "governed_tools": [
+        "approve_scan"
+      ],
+      "is_np": false
+    },
+    {
+      "mid": "P03",
+      "span": "only after approval",
+      "start": 70,
+      "end": 89,
+      "sentence_index": 2,
+      "role": "PRECONDITION_CHECK",
+      "governed_tools": [
+        "approve_scan"
+      ],
+      "is_np": true
+    },
+    {
+      "mid": "P05",
+      "span": "scan file",
+      "start": 95,
+      "end": 104,
+      "sentence_index": 3,
+      "role": "OPERATION_EFFECT",
+      "governed_tools": [
+        "publish_scan"
+      ],
+      "is_np": true
+    }
+  ],
+  "assign": {
+    "P01": 0,
+    "P03": 0,
+    "P02": 1
+  },
+  "nodes": [
+    {
+      "node_id": "N00",
+      "cluster": "s_P00",
+      "members": [
+        "P00"
+      ],
+      "span": "Scan manuscript X",
+      "role": "OPERATION_EFFECT",
+      "governed_tools": [
+        "scan_manuscript"
+      ],
+      "start": 0
+    },
+    {
+      "node_id": "N01",
+      "cluster": 0,
+      "members": [
+        "P01",
+        "P03"
+      ],
+      "span": "Approve the scan for publication",
+      "role": "PRECONDITION_CHECK",
+      "governed_tools": [
+        "approve_scan"
+      ],
+      "start": 19
+    },
+    {
+      "node_id": "N02",
+      "cluster": 1,
+      "members": [
+        "P02"
+      ],
+      "span": "Publish the scan only after approval",
+      "role": "OPERATION_EFFECT",
+      "governed_tools": [
+        "approve_scan"
+      ],
+      "start": 53
+    },
+    {
+      "node_id": "N03",
+      "cluster": "s_P05",
+      "members": [
+        "P05"
+      ],
+      "span": "scan file",
+      "role": "OPERATION_EFFECT",
+      "governed_tools": [
+        "publish_scan"
+      ],
+      "start": 95
+    }
+  ],
+  "pair_src": [
+    {
+      "a": "P00",
+      "b": "P01",
+      "label": "RELATED_BUT_DIFFERENT",
+      "reason": "Different predicates ('Scan' vs 'Approve') and distinct actions on the same object ('manuscript X' vs 'the scan')."
+    },
+    {
+      "a": "P00",
+      "b": "P02",
+      "label": "RELATED_BUT_DIFFERENT",
+      "reason": "Mention A is a directive to *scan* manuscript X, while mention B refers to *publishing* the scan (a subsequent, distinct action)."
+    },
+    {
+      "a": "P00",
+      "b": "P03",
+      "label": "RELATED_BUT_DIFFERENT",
+      "reason": "Mention A is an action ('Scan manuscript X'), while mention B ('only after approval') refers to a condition on publishing, not the scanning itself."
+    },
+    {
+      "a": "P00",
+      "b": "P05",
+      "label": "RELATED_BUT_DIFFERENT",
+      "reason": "Mention A specifies scanning a *manuscript* ('manuscript X'), while mention B refers generically to a *scan file* as an artifact, without explicit manuscript linkage."
+    },
+    {
+      "a": "P01",
+      "b": "P02",
+      "label": "RELATED_BUT_DIFFERENT",
+      "reason": "Mention A is an imperative to *approve*, while mention B is a conditional *publication* action dependent on approval (distinct predicates and participants)."
+    },
+    {
+      "a": "P01",
+      "b": "P03",
+      "label": "SAME_EVENT",
+      "reason": "Both mentions refer to the same approval action ('Approve the scan for publication') with 'only after approval' nominally referencing it."
+    },
+    {
+      "a": "P01",
+      "b": "P05",
+      "label": "RELATED_BUT_DIFFERENT",
+      "reason": "Mention A refers to an *approval action* on the scan, while mention B refers to the *scan file itself* as an artifact, not the act of scanning."
+    },
+    {
+      "a": "P02",
+      "b": "P03",
+      "label": "SAME_EVENT",
+      "reason": "Both spans refer to the same conditional timing ('after approval') for the singular event of publishing the scan."
+    },
+    {
+      "a": "P02",
+      "b": "P05",
+      "label": "RELATED_BUT_DIFFERENT",
+      "reason": "Mention A refers to the *action* of publishing, while mention B refers to the *resulting artifact* ('scan file')."
+    },
+    {
+      "a": "P03",
+      "b": "P05",
+      "label": "DIFFERENT",
+      "reason": "Mention A refers to the *approval* event, while mention B refers to the *scan file* (a static artifact, not an event)."
+    }
+  ],
+  "retained": [
+    "P00",
+    "P01",
+    "P02",
+    "P03",
+    "P05"
+  ]
+}

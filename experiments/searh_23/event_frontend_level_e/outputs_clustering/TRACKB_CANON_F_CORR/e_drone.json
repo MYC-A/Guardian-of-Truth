@@ -1,0 +1,437 @@
+{
+  "case_id": "e_drone",
+  "mentions": [
+    {
+      "mid": "P00",
+      "span": "Approve flight 17",
+      "start": 0,
+      "end": 17,
+      "sentence_index": 0,
+      "role": "OPERATION_EFFECT",
+      "governed_tools": [
+        "approve_flight"
+      ],
+      "is_np": false
+    },
+    {
+      "mid": "P01",
+      "span": "flight 17",
+      "start": 8,
+      "end": 17,
+      "sentence_index": 0,
+      "role": "UNKNOWN",
+      "governed_tools": [
+        "approve_flight"
+      ],
+      "is_np": true
+    },
+    {
+      "mid": "P02",
+      "span": "Launch drone 17",
+      "start": 19,
+      "end": 34,
+      "sentence_index": 1,
+      "role": "OPERATION_EFFECT",
+      "governed_tools": [
+        "launch_drone"
+      ],
+      "is_np": false
+    },
+    {
+      "mid": "P03",
+      "span": "drone 17",
+      "start": 26,
+      "end": 34,
+      "sentence_index": 1,
+      "role": "UNKNOWN",
+      "governed_tools": [
+        "launch_drone"
+      ],
+      "is_np": true
+    },
+    {
+      "mid": "P04",
+      "span": "only after the flight approval is recorded",
+      "start": 35,
+      "end": 77,
+      "sentence_index": 1,
+      "role": "PRECONDITION_CHECK",
+      "governed_tools": [
+        "approve_flight"
+      ],
+      "is_np": false
+    },
+    {
+      "mid": "P05",
+      "span": "flight approval",
+      "start": 50,
+      "end": 65,
+      "sentence_index": 1,
+      "role": "OPERATION_EFFECT",
+      "governed_tools": [
+        "approve_flight"
+      ],
+      "is_np": true
+    },
+    {
+      "mid": "P06",
+      "span": "An approval request is a document and does not approve a flight",
+      "start": 79,
+      "end": 142,
+      "sentence_index": 2,
+      "role": "UNKNOWN",
+      "governed_tools": [
+        "read_request"
+      ],
+      "is_np": false
+    },
+    {
+      "mid": "P07",
+      "span": "approval request",
+      "start": 82,
+      "end": 98,
+      "sentence_index": 2,
+      "role": "UNKNOWN",
+      "governed_tools": [
+        "read_request"
+      ],
+      "is_np": true
+    },
+    {
+      "mid": "P08",
+      "span": "does not approve a flight",
+      "start": 117,
+      "end": 142,
+      "sentence_index": 2,
+      "role": "PRECONDITION_CHECK",
+      "governed_tools": [
+        "approve_flight"
+      ],
+      "is_np": false
+    }
+  ],
+  "assign": {
+    "P00": 0,
+    "P01": 0,
+    "P02": 1,
+    "P03": 2,
+    "P04": 3,
+    "P05": 3,
+    "P06": 4,
+    "P07": 5,
+    "P08": 6
+  },
+  "nodes": [
+    {
+      "node_id": "N00",
+      "cluster": 0,
+      "members": [
+        "P00",
+        "P01"
+      ],
+      "span": "Approve flight 17",
+      "role": "OPERATION_EFFECT",
+      "governed_tools": [
+        "approve_flight"
+      ],
+      "start": 0
+    },
+    {
+      "node_id": "N01",
+      "cluster": 1,
+      "members": [
+        "P02"
+      ],
+      "span": "Launch drone 17",
+      "role": "OPERATION_EFFECT",
+      "governed_tools": [
+        "launch_drone"
+      ],
+      "start": 19
+    },
+    {
+      "node_id": "N02",
+      "cluster": 2,
+      "members": [
+        "P03"
+      ],
+      "span": "drone 17",
+      "role": "UNKNOWN",
+      "governed_tools": [
+        "launch_drone"
+      ],
+      "start": 26
+    },
+    {
+      "node_id": "N03",
+      "cluster": 3,
+      "members": [
+        "P04",
+        "P05"
+      ],
+      "span": "only after the flight approval is recorded",
+      "role": "PRECONDITION_CHECK",
+      "governed_tools": [
+        "approve_flight"
+      ],
+      "start": 35
+    },
+    {
+      "node_id": "N04",
+      "cluster": 4,
+      "members": [
+        "P06"
+      ],
+      "span": "An approval request is a document and does not approve a flight",
+      "role": "UNKNOWN",
+      "governed_tools": [
+        "read_request"
+      ],
+      "start": 79
+    },
+    {
+      "node_id": "N05",
+      "cluster": 5,
+      "members": [
+        "P07"
+      ],
+      "span": "approval request",
+      "role": "UNKNOWN",
+      "governed_tools": [
+        "read_request"
+      ],
+      "start": 82
+    },
+    {
+      "node_id": "N06",
+      "cluster": 6,
+      "members": [
+        "P08"
+      ],
+      "span": "does not approve a flight",
+      "role": "PRECONDITION_CHECK",
+      "governed_tools": [
+        "approve_flight"
+      ],
+      "start": 117
+    }
+  ],
+  "pair_src": [
+    {
+      "a": "P00",
+      "b": "P01",
+      "label": "SAME_EVENT",
+      "reason": "Both spans explicitly refer to the same imperative action ('Approve flight 17') with identical phrasing and context."
+    },
+    {
+      "a": "P00",
+      "b": "P02",
+      "label": "RELATED_BUT_DIFFERENT",
+      "reason": "Different predicates ('Approve' vs. 'Launch') and sequential occurrence ('only after the flight approval is recorded')."
+    },
+    {
+      "a": "P00",
+      "b": "P03",
+      "label": "RELATED_BUT_DIFFERENT",
+      "reason": "Mention A refers to the *approval* of flight 17, while mention B refers to the *launch* of drone 17 as a distinct action."
+    },
+    {
+      "a": "P00",
+      "b": "P04",
+      "label": "RELATED_BUT_DIFFERENT",
+      "reason": "Mention A is an imperative to *approve flight 17*, while mention B refers to a *recorded flight approval* (a distinct administrative action)."
+    },
+    {
+      "a": "P00",
+      "b": "P05",
+      "label": "SAME_EVENT",
+      "reason": "Both refer to the same occurrence of 'approving flight 17' (imperative vs. nominalized reference)."
+    },
+    {
+      "a": "P00",
+      "b": "P06",
+      "label": "RELATED_BUT_DIFFERENT",
+      "reason": "Mention A refers to the act of *approving* flight 17, while mention B clarifies that an *approval request* (document) does not perform the approval itself."
+    },
+    {
+      "a": "P00",
+      "b": "P08",
+      "label": "RELATED_BUT_DIFFERENT",
+      "reason": "Mention A is a positive imperative ('Approve flight 17'), while mention B explicitly negates approval as a *document* ('does not approve a flight')."
+    },
+    {
+      "a": "P01",
+      "b": "P02",
+      "label": "RELATED_BUT_DIFFERENT",
+      "reason": "Different predicates ('flight' vs. 'launch drone') and distinct actions ('approve flight 17' vs. 'launch drone 17')."
+    },
+    {
+      "a": "P01",
+      "b": "P03",
+      "label": "DIFFERENT",
+      "reason": "Different entities ('flight 17' vs. 'drone 17') with distinct approval and launch conditions."
+    },
+    {
+      "a": "P01",
+      "b": "P04",
+      "label": "RELATED_BUT_DIFFERENT",
+      "reason": "Mention A is an imperative to *approve* flight 17, while mention B refers to a *recorded flight approval* (a subsequent administrative action)."
+    },
+    {
+      "a": "P01",
+      "b": "P05",
+      "label": "RELATED_BUT_DIFFERENT",
+      "reason": "Mention A is an imperative to *approve* Flight 17, while mention B refers to the *recording* of that approval as a prerequisite for another action."
+    },
+    {
+      "a": "P01",
+      "b": "P06",
+      "label": "RELATED_BUT_DIFFERENT",
+      "reason": "Mention A refers to the *approval* of flight 17, while mention B clarifies that the *document* (approval request) does not itself approve the flight."
+    },
+    {
+      "a": "P01",
+      "b": "P08",
+      "label": "DIFFERENT",
+      "reason": "Mention A refers to a specific approval of *flight 17*, while mention B explicitly denies that a request document *approves a flight* (generic negation)."
+    },
+    {
+      "a": "P02",
+      "b": "P03",
+      "label": "RELATED_BUT_DIFFERENT",
+      "reason": "Mention A is an explicit action ('Launch drone 17'), while mention B is a nominal reference ('drone 17') without a verb, implying a distinct entity or state."
+    },
+    {
+      "a": "P02",
+      "b": "P04",
+      "label": "RELATED_BUT_DIFFERENT",
+      "reason": "Mention A is an **action** ('Launch drone 17'), while mention B is a **conditional time constraint** ('only after the flight approval is recorded')."
+    },
+    {
+      "a": "P02",
+      "b": "P05",
+      "label": "RELATED_BUT_DIFFERENT",
+      "reason": "One is the *approval* of flight 17 (a decision), the other is the *launch* of drone 17 (an action)."
+    },
+    {
+      "a": "P02",
+      "b": "P06",
+      "label": "DIFFERENT",
+      "reason": "Mention A refers to the *launch* of drone 17, while mention B discusses the *approval request* as a document, not the launch itself."
+    },
+    {
+      "a": "P02",
+      "b": "P07",
+      "label": "RELATED_BUT_DIFFERENT",
+      "reason": "One is the *approval request* (a document), the other is the *flight approval* (an action/state)."
+    },
+    {
+      "a": "P02",
+      "b": "P08",
+      "label": "RELATED_BUT_DIFFERENT",
+      "reason": "Mention A is an *action* ('Launch drone 17'), while mention B is a *negation of approval* ('does not approve a flight'), targeting different predicates ('launch' vs. 'approve')."
+    },
+    {
+      "a": "P03",
+      "b": "P04",
+      "label": "RELATED_BUT_DIFFERENT",
+      "reason": "Mention A is the *launch* of drone 17, while mention B is the *approval* condition, not the launch itself."
+    },
+    {
+      "a": "P03",
+      "b": "P05",
+      "label": "RELATED_BUT_DIFFERENT",
+      "reason": "Mention A refers to the *launch of drone 17*, while mention B refers to the *approval process* (a prerequisite action, not the same event)."
+    },
+    {
+      "a": "P03",
+      "b": "P06",
+      "label": "RELATED_BUT_DIFFERENT",
+      "reason": "Mention A refers to the *launch* of drone 17, while mention B clarifies that an *approval request* (document) does not constitute approval of the flight itself."
+    },
+    {
+      "a": "P03",
+      "b": "P07",
+      "label": "RELATED_BUT_DIFFERENT",
+      "reason": "Mention A refers to the *launch* of drone 17, while mention B refers to the *approval request* (a document), not the approval itself."
+    },
+    {
+      "a": "P03",
+      "b": "P08",
+      "label": "RELATED_BUT_DIFFERENT",
+      "reason": "Mention A refers to a *specific flight approval* ('Approve flight 17'), while mention B negates the *generic act of approving* ('does not approve a flight')."
+    },
+    {
+      "a": "P04",
+      "b": "P05",
+      "label": "SAME_EVENT",
+      "reason": "Both refer to the singular 'flight approval' action required before launching drone 17."
+    },
+    {
+      "a": "P04",
+      "b": "P06",
+      "label": "RELATED_BUT_DIFFERENT",
+      "reason": "Mention A refers to *recording* the flight approval (an action), while mention B clarifies that an *approval request* (a document) does not constitute approval (a distinct conceptual state)."
+    },
+    {
+      "a": "P04",
+      "b": "P07",
+      "label": "RELATED_BUT_DIFFERENT",
+      "reason": "Mention A refers to the *recording* of flight approval (a completed administrative action), while mention B refers to the *request* for approval (a preceding document/action)."
+    },
+    {
+      "a": "P04",
+      "b": "P08",
+      "label": "RELATED_BUT_DIFFERENT",
+      "reason": "Mention A refers to the *recording* of flight approval (an action of documentation), while mention B refers to the *absence* of approval as an act (a negated event)."
+    },
+    {
+      "a": "P05",
+      "b": "P06",
+      "label": "RELATED_BUT_DIFFERENT",
+      "reason": "Mention A refers to the *act of approving* ('flight approval'), while mention B clarifies that an *approval request* (a document) does not constitute approval itself."
+    },
+    {
+      "a": "P05",
+      "b": "P07",
+      "label": "RELATED_BUT_DIFFERENT",
+      "reason": "'flight approval' is an action/state granting permission, while 'approval request' is a *document* (a distinct precursor to approval)"
+    },
+    {
+      "a": "P05",
+      "b": "P08",
+      "label": "DIFFERENT",
+      "reason": "One is a positive action ('approve'), the other explicitly negates approval ('does not approve')."
+    },
+    {
+      "a": "P06",
+      "b": "P07",
+      "label": "RELATED_BUT_DIFFERENT",
+      "reason": "Mention A describes the *absence* of approval (a document does not approve), while mention B refers generically to the *existence* of an approval request."
+    },
+    {
+      "a": "P06",
+      "b": "P08",
+      "label": "RELATED_BUT_DIFFERENT",
+      "reason": "Mention A defines *approval request* as a *document* (non-event), while mention B describes a *flight approval* as an *action* (event)."
+    },
+    {
+      "a": "P07",
+      "b": "P08",
+      "label": "RELATED_BUT_DIFFERENT",
+      "reason": "One refers to the *request* (a document), the other to the *approval* (a flight-granting action) being absent."
+    }
+  ],
+  "retained_eventness": {
+    "P00": "EVENT",
+    "P01": "ENTITY_ARTIFACT",
+    "P02": "EVENT",
+    "P03": "ENTITY_ARTIFACT",
+    "P04": "EVENT_REFERENCE",
+    "P05": "ENTITY_ARTIFACT",
+    "P06": "ENTITY_ARTIFACT",
+    "P07": "ENTITY_ARTIFACT",
+    "P08": "EVENT"
+  },
+  "algorithm": "exact_clique_partition"
+}

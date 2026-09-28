@@ -1,0 +1,179 @@
+{
+  "case_id": "e_aquarium",
+  "mentions": [
+    {
+      "mid": "P00",
+      "span": "Open the exhibit",
+      "start": 17,
+      "end": 33,
+      "sentence_index": 1,
+      "role": "OPERATION_EFFECT",
+      "governed_tools": [
+        "open_exhibit"
+      ],
+      "is_np": false
+    },
+    {
+      "mid": "P01",
+      "span": "only after the water test is complete",
+      "start": 34,
+      "end": 71,
+      "sentence_index": 1,
+      "role": "PRECONDITION_CHECK",
+      "governed_tools": [
+        "test_water"
+      ],
+      "is_np": false
+    },
+    {
+      "mid": "P02",
+      "span": "water test",
+      "start": 49,
+      "end": 59,
+      "sentence_index": 1,
+      "role": "PRECONDITION_CHECK",
+      "governed_tools": [
+        "test_water"
+      ],
+      "is_np": true
+    }
+  ],
+  "assign": {},
+  "nodes": [
+    {
+      "node_id": "N00",
+      "cluster": "s_P00",
+      "members": [
+        "P00"
+      ],
+      "span": "Open the exhibit",
+      "role": "OPERATION_EFFECT",
+      "governed_tools": [
+        "open_exhibit"
+      ],
+      "start": 17
+    },
+    {
+      "node_id": "N01",
+      "cluster": "s_P01",
+      "members": [
+        "P01"
+      ],
+      "span": "only after the water test is complete",
+      "role": "PRECONDITION_CHECK",
+      "governed_tools": [
+        "test_water"
+      ],
+      "start": 34
+    },
+    {
+      "node_id": "N02",
+      "cluster": "s_P02",
+      "members": [
+        "P02"
+      ],
+      "span": "water test",
+      "role": "PRECONDITION_CHECK",
+      "governed_tools": [
+        "test_water"
+      ],
+      "start": 49
+    }
+  ],
+  "pair_src": [
+    {
+      "a": "P00",
+      "b": "P01",
+      "input": {
+        "mention_a": "Open the exhibit",
+        "core_a": {
+          "predicate": "open",
+          "mode": "ACTION"
+        },
+        "mention_b": "only after the water test is complete",
+        "core_b": {
+          "predicate": "complete",
+          "mode": "UNKNOWN"
+        }
+      },
+      "label": "DIFFERENT",
+      "reason": "Mention_b describes a *condition* (completion of a test) rather than an action or event; unrelated predicates.",
+      "raw": "{\n  \"label\": \"DIFFERENT\",\n  \"reason\": \"Mention_b describes a *condition* (completion of a test) rather than an action or event; unrelated predicates.\"\n}",
+      "usage": {
+        "prompt_tokens": 179,
+        "total_tokens": 222,
+        "completion_tokens": 43,
+        "prompt_tokens_details": {
+          "cached_tokens": 100
+        },
+        "service_tier": "standard"
+      },
+      "error": ""
+    },
+    {
+      "a": "P00",
+      "b": "P02",
+      "input": {
+        "mention_a": "Open the exhibit",
+        "core_a": {
+          "predicate": "open",
+          "mode": "ACTION"
+        },
+        "mention_b": "water test",
+        "core_b": {
+          "predicate": "test",
+          "mode": "REFERENCE"
+        }
+      },
+      "label": "DIFFERENT",
+      "reason": "Different predicates ('open' vs. 'test') and unrelated actions ('exhibit' vs. 'water').",
+      "raw": "{\n  \"label\": \"DIFFERENT\",\n  \"reason\": \"Different predicates ('open' vs. 'test') and unrelated actions ('exhibit' vs. 'water').\"\n}",
+      "usage": {
+        "prompt_tokens": 175,
+        "total_tokens": 217,
+        "completion_tokens": 42,
+        "prompt_tokens_details": {
+          "cached_tokens": 100
+        },
+        "service_tier": "standard"
+      },
+      "error": ""
+    },
+    {
+      "a": "P01",
+      "b": "P02",
+      "input": {
+        "mention_a": "only after the water test is complete",
+        "core_a": {
+          "predicate": "complete",
+          "mode": "UNKNOWN"
+        },
+        "mention_b": "water test",
+        "core_b": {
+          "predicate": "test",
+          "mode": "REFERENCE"
+        }
+      },
+      "label": "RELATED_BUT_DIFFERENT",
+      "reason": "Mention A refers to the *completion* of the water test, while mention B refers to the *testing action* itself.",
+      "raw": "{\n  \"label\": \"RELATED_BUT_DIFFERENT\",\n  \"reason\": \"Mention A refers to the *completion* of the water test, while mention B refers to the *testing action* itself.\"\n}",
+      "usage": {
+        "prompt_tokens": 179,
+        "total_tokens": 229,
+        "completion_tokens": 50,
+        "prompt_tokens_details": {
+          "cached_tokens": 100
+        },
+        "service_tier": "standard"
+      },
+      "error": ""
+    }
+  ],
+  "retained_eventness": {
+    "P00": "EVENT",
+    "P01": "STATE",
+    "P02": "EVENT_REFERENCE",
+    "P03": "ENTITY_ARTIFACT",
+    "P04": "ENTITY_ARTIFACT"
+  }
+}

@@ -1,0 +1,146 @@
+{
+  "case_id": "e_drone",
+  "mentions": [
+    {
+      "mid": "P00",
+      "span": "Approve flight 17",
+      "start": 0,
+      "end": 17,
+      "sentence_index": 0,
+      "role": "OPERATION_EFFECT",
+      "governed_tools": [
+        "approve_flight"
+      ],
+      "is_np": false
+    },
+    {
+      "mid": "P02",
+      "span": "Launch drone 17",
+      "start": 19,
+      "end": 34,
+      "sentence_index": 1,
+      "role": "OPERATION_EFFECT",
+      "governed_tools": [
+        "launch_drone"
+      ],
+      "is_np": false
+    },
+    {
+      "mid": "P04",
+      "span": "only after the flight approval is recorded",
+      "start": 35,
+      "end": 77,
+      "sentence_index": 1,
+      "role": "PRECONDITION_CHECK",
+      "governed_tools": [
+        "approve_flight"
+      ],
+      "is_np": false
+    },
+    {
+      "mid": "P08",
+      "span": "does not approve a flight",
+      "start": 117,
+      "end": 142,
+      "sentence_index": 2,
+      "role": "PRECONDITION_CHECK",
+      "governed_tools": [
+        "approve_flight"
+      ],
+      "is_np": false
+    }
+  ],
+  "assign": {},
+  "nodes": [
+    {
+      "node_id": "N00",
+      "cluster": "s_P00",
+      "members": [
+        "P00"
+      ],
+      "span": "Approve flight 17",
+      "role": "OPERATION_EFFECT",
+      "governed_tools": [
+        "approve_flight"
+      ],
+      "start": 0
+    },
+    {
+      "node_id": "N01",
+      "cluster": "s_P02",
+      "members": [
+        "P02"
+      ],
+      "span": "Launch drone 17",
+      "role": "OPERATION_EFFECT",
+      "governed_tools": [
+        "launch_drone"
+      ],
+      "start": 19
+    },
+    {
+      "node_id": "N02",
+      "cluster": "s_P04",
+      "members": [
+        "P04"
+      ],
+      "span": "only after the flight approval is recorded",
+      "role": "PRECONDITION_CHECK",
+      "governed_tools": [
+        "approve_flight"
+      ],
+      "start": 35
+    },
+    {
+      "node_id": "N03",
+      "cluster": "s_P08",
+      "members": [
+        "P08"
+      ],
+      "span": "does not approve a flight",
+      "role": "PRECONDITION_CHECK",
+      "governed_tools": [
+        "approve_flight"
+      ],
+      "start": 117
+    }
+  ],
+  "pair_src": [
+    {
+      "a": "P00",
+      "b": "P02",
+      "label": "RELATED_BUT_DIFFERENT",
+      "reason": "Different predicates ('Approve' vs. 'Launch') and sequential occurrence ('only after the flight approval is recorded')."
+    },
+    {
+      "a": "P00",
+      "b": "P04",
+      "label": "RELATED_BUT_DIFFERENT",
+      "reason": "Mention A is an imperative to *approve flight 17*, while mention B refers to a *recorded flight approval* (a distinct administrative action)."
+    },
+    {
+      "a": "P00",
+      "b": "P08",
+      "label": "RELATED_BUT_DIFFERENT",
+      "reason": "Mention A is a positive imperative ('Approve flight 17'), while mention B explicitly negates approval as a *document* ('does not approve a flight')."
+    },
+    {
+      "a": "P02",
+      "b": "P04",
+      "label": "RELATED_BUT_DIFFERENT",
+      "reason": "Mention A is an **action** ('Launch drone 17'), while mention B is a **conditional time constraint** ('only after the flight approval is recorded')."
+    },
+    {
+      "a": "P02",
+      "b": "P08",
+      "label": "RELATED_BUT_DIFFERENT",
+      "reason": "Mention A is an *action* ('Launch drone 17'), while mention B is a *negation of approval* ('does not approve a flight'), targeting different predicates ('launch' vs. 'approve')."
+    },
+    {
+      "a": "P04",
+      "b": "P08",
+      "label": "RELATED_BUT_DIFFERENT",
+      "reason": "Mention A refers to the *recording* of flight approval (an action of documentation), while mention B refers to the *absence* of approval as an act (a negated event)."
+    }
+  ]
+}

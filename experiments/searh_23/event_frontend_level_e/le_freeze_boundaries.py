@@ -51,14 +51,14 @@ def main():
         path = frozen / name
         if path.exists():
             raise RuntimeError(f"already frozen: {path}")
-        path.write_text(json.dumps(data, ensure_ascii=False, indent=2) + "\n", encoding="utf-8")
+        path.write_text(json.dumps(data, ensure_ascii=False, indent=2) + "\n", encoding="utf-8", newline="\n")
     manifest = {"n_cases": len(inputs), "n_cores": sum(map(len,gold.values())),
                 "scope": "new author-written boundary controls; not full event inventory or downstream",
                 "metrics": ["required_core_coverage", "clean_core_coverage", "multi_core_candidates", "cross_sentence_candidates"],
                 "algorithm_constraint": "sentence terminals + child-clause exclusion + head-containing contiguous chunk; no domain lexicon",
                 "hashes": {name: hashlib.sha256((frozen/name).read_bytes()).hexdigest()
                            for name in ("boundary_inputs.json", "boundary_gold.json")}}
-    (frozen / "boundary_manifest.json").write_text(json.dumps(manifest, indent=2)+"\n", encoding="utf-8")
+    (frozen / "boundary_manifest.json").write_text(json.dumps(manifest, indent=2)+"\n", encoding="utf-8", newline="\n")
     print(json.dumps(manifest, indent=2))
 
 

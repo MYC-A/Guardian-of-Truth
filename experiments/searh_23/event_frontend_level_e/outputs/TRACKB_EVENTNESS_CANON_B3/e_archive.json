@@ -1,0 +1,178 @@
+{
+  "case_id": "e_archive",
+  "mentions": [
+    {
+      "mid": "P00",
+      "span": "Publish the scan only after approval",
+      "start": 53,
+      "end": 89,
+      "sentence_index": 2,
+      "role": "OPERATION_EFFECT",
+      "governed_tools": [
+        "approve_scan"
+      ],
+      "is_np": false
+    },
+    {
+      "mid": "P01",
+      "span": "only after approval",
+      "start": 70,
+      "end": 89,
+      "sentence_index": 2,
+      "role": "PRECONDITION_CHECK",
+      "governed_tools": [
+        "approve_scan"
+      ],
+      "is_np": true
+    },
+    {
+      "mid": "P03",
+      "span": "scan file",
+      "start": 95,
+      "end": 104,
+      "sentence_index": 3,
+      "role": "OPERATION_EFFECT",
+      "governed_tools": [
+        "publish_scan"
+      ],
+      "is_np": true
+    }
+  ],
+  "assign": {},
+  "nodes": [
+    {
+      "node_id": "N00",
+      "cluster": "s_P00",
+      "members": [
+        "P00"
+      ],
+      "span": "Publish the scan only after approval",
+      "role": "OPERATION_EFFECT",
+      "governed_tools": [
+        "approve_scan"
+      ],
+      "start": 53
+    },
+    {
+      "node_id": "N01",
+      "cluster": "s_P01",
+      "members": [
+        "P01"
+      ],
+      "span": "only after approval",
+      "role": "PRECONDITION_CHECK",
+      "governed_tools": [
+        "approve_scan"
+      ],
+      "start": 70
+    },
+    {
+      "node_id": "N02",
+      "cluster": "s_P03",
+      "members": [
+        "P03"
+      ],
+      "span": "scan file",
+      "role": "OPERATION_EFFECT",
+      "governed_tools": [
+        "publish_scan"
+      ],
+      "start": 95
+    }
+  ],
+  "pair_src": [
+    {
+      "a": "P00",
+      "b": "P01",
+      "input": {
+        "mention_a": "Publish the scan only after approval",
+        "core_a": {
+          "predicate": "publish",
+          "mode": "ACTION"
+        },
+        "mention_b": "only after approval",
+        "core_b": {
+          "predicate": "approv",
+          "mode": "REFERENCE"
+        }
+      },
+      "label": "RELATED_BUT_DIFFERENT",
+      "reason": "Mention_b refers to a condition ('approval') rather than the action ('publish') itself.",
+      "raw": "{\n  \"label\": \"RELATED_BUT_DIFFERENT\",\n  \"reason\": \"Mention_b refers to a condition ('approval') rather than the action ('publish') itself.\"\n}",
+      "usage": {
+        "prompt_tokens": 180,
+        "total_tokens": 222,
+        "completion_tokens": 42,
+        "prompt_tokens_details": {
+          "cached_tokens": 0
+        },
+        "service_tier": "standard"
+      },
+      "error": ""
+    },
+    {
+      "a": "P00",
+      "b": "P03",
+      "input": {
+        "mention_a": "Publish the scan only after approval",
+        "core_a": {
+          "predicate": "publish",
+          "mode": "ACTION"
+        },
+        "mention_b": "scan file",
+        "core_b": {
+          "predicate": "file",
+          "mode": "REFERENCE"
+        }
+      },
+      "label": "DIFFERENT",
+      "reason": "Mention A describes an action ('publish') with a conditional ('after approval'), while mention B is a mere reference to an object ('scan file') without any action or context.",
+      "raw": "{\n  \"label\": \"DIFFERENT\",\n  \"reason\": \"Mention A describes an action ('publish') with a conditional ('after approval'), while mention B is a mere reference to an object ('scan file') without any action or context.\"\n}",
+      "usage": {
+        "prompt_tokens": 178,
+        "total_tokens": 232,
+        "completion_tokens": 54,
+        "prompt_tokens_details": {
+          "cached_tokens": 0
+        },
+        "service_tier": "standard"
+      },
+      "error": ""
+    },
+    {
+      "a": "P01",
+      "b": "P03",
+      "input": {
+        "mention_a": "only after approval",
+        "core_a": {
+          "predicate": "approv",
+          "mode": "REFERENCE"
+        },
+        "mention_b": "scan file",
+        "core_b": {
+          "predicate": "file",
+          "mode": "REFERENCE"
+        }
+      },
+      "label": "DIFFERENT",
+      "reason": "Different predicates ('approv' vs. 'file') and no shared event context",
+      "raw": "{\n  \"label\": \"DIFFERENT\",\n  \"reason\": \"Different predicates ('approv' vs. 'file') and no shared event context\"\n}",
+      "usage": {
+        "prompt_tokens": 177,
+        "total_tokens": 212,
+        "completion_tokens": 35,
+        "prompt_tokens_details": {
+          "cached_tokens": 100
+        },
+        "service_tier": "standard"
+      },
+      "error": ""
+    }
+  ],
+  "retained_eventness": {
+    "P00": "EVENT",
+    "P01": "EVENT_REFERENCE",
+    "P02": "ENTITY_ARTIFACT",
+    "P03": "EVENT"
+  }
+}

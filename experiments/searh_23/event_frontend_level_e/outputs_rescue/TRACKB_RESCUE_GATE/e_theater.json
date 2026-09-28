@@ -1,0 +1,137 @@
+{
+  "case_id": "e_theater",
+  "mentions": [
+    {
+      "mid": "P00",
+      "span": "Rig spotlight A",
+      "start": 0,
+      "end": 15,
+      "sentence_index": 0,
+      "role": "OPERATION_EFFECT",
+      "governed_tools": [
+        "rig_spotlight"
+      ],
+      "is_np": false
+    },
+    {
+      "mid": "P01",
+      "span": "Check the rigging",
+      "start": 17,
+      "end": 34,
+      "sentence_index": 1,
+      "role": "PRECONDITION_CHECK",
+      "governed_tools": [
+        "check_rigging"
+      ],
+      "is_np": false
+    },
+    {
+      "mid": "P02",
+      "span": "Activate spotlight A",
+      "start": 36,
+      "end": 56,
+      "sentence_index": 2,
+      "role": "OPERATION_EFFECT",
+      "governed_tools": [
+        "activate_spotlight"
+      ],
+      "is_np": false
+    },
+    {
+      "mid": "P04",
+      "span": "only after the check is complete",
+      "start": 57,
+      "end": 89,
+      "sentence_index": 2,
+      "role": "PRECONDITION_CHECK",
+      "governed_tools": [
+        "check_rigging"
+      ],
+      "is_np": false
+    }
+  ],
+  "assign": {
+    "P01": 0,
+    "P04": 0
+  },
+  "nodes": [
+    {
+      "node_id": "N00",
+      "cluster": "s_P00",
+      "members": [
+        "P00"
+      ],
+      "span": "Rig spotlight A",
+      "role": "OPERATION_EFFECT",
+      "governed_tools": [
+        "rig_spotlight"
+      ],
+      "start": 0
+    },
+    {
+      "node_id": "N01",
+      "cluster": 0,
+      "members": [
+        "P01",
+        "P04"
+      ],
+      "span": "Check the rigging",
+      "role": "PRECONDITION_CHECK",
+      "governed_tools": [
+        "check_rigging"
+      ],
+      "start": 17
+    },
+    {
+      "node_id": "N02",
+      "cluster": "s_P02",
+      "members": [
+        "P02"
+      ],
+      "span": "Activate spotlight A",
+      "role": "OPERATION_EFFECT",
+      "governed_tools": [
+        "activate_spotlight"
+      ],
+      "start": 36
+    }
+  ],
+  "pair_src": [
+    {
+      "a": "P00",
+      "b": "P01",
+      "label": "RELATED_BUT_DIFFERENT",
+      "reason": "Mention A is a directive to *rig* spotlight A, while mention B is a separate *check* of the rigging."
+    },
+    {
+      "a": "P00",
+      "b": "P02",
+      "label": "RELATED_BUT_DIFFERENT",
+      "reason": "Mention A refers to the *state* of 'spotlight A' being rigged, while mention B describes the *action* of activating it."
+    },
+    {
+      "a": "P01",
+      "b": "P02",
+      "label": "RELATED_BUT_DIFFERENT",
+      "reason": "Different predicates ('Check' vs 'Activate') and distinct actions on the same entity ('rigging' vs 'spotlight A')."
+    },
+    {
+      "a": "P01",
+      "b": "P04",
+      "label": "SAME_EVENT",
+      "reason": "Both refer to the singular 'check the rigging' action, with the second span ('the check') nominally referencing the first."
+    },
+    {
+      "a": "P02",
+      "b": "P04",
+      "label": "RELATED_BUT_DIFFERENT",
+      "reason": "Mention A is an **action** ('Activate spotlight A'), while mention B is a **temporal condition** ('only after the check is complete') modifying that action."
+    }
+  ],
+  "retained": [
+    "P00",
+    "P01",
+    "P02",
+    "P04"
+  ]
+}

@@ -1,0 +1,144 @@
+{
+  "case_id": "e_aquarium",
+  "mentions": [
+    {
+      "mid": "P00",
+      "span": "Test tank water",
+      "start": 0,
+      "end": 15,
+      "sentence_index": 0,
+      "role": "STATE_OBSERVATION",
+      "governed_tools": [
+        "test_water"
+      ],
+      "is_np": false
+    },
+    {
+      "mid": "P01",
+      "span": "Open the exhibit",
+      "start": 17,
+      "end": 33,
+      "sentence_index": 1,
+      "role": "OPERATION_EFFECT",
+      "governed_tools": [
+        "open_exhibit"
+      ],
+      "is_np": false
+    },
+    {
+      "mid": "P02",
+      "span": "only after the water test is complete",
+      "start": 34,
+      "end": 71,
+      "sentence_index": 1,
+      "role": "PRECONDITION_CHECK",
+      "governed_tools": [
+        "test_water"
+      ],
+      "is_np": false
+    },
+    {
+      "mid": "P03",
+      "span": "water test",
+      "start": 49,
+      "end": 59,
+      "sentence_index": 1,
+      "role": "OPERATION_EFFECT",
+      "governed_tools": [
+        "test_water"
+      ],
+      "is_np": true
+    }
+  ],
+  "assign": {
+    "P00": 0,
+    "P03": 0,
+    "P02": 1
+  },
+  "nodes": [
+    {
+      "node_id": "N00",
+      "cluster": 0,
+      "members": [
+        "P00",
+        "P03"
+      ],
+      "span": "Test tank water",
+      "role": "STATE_OBSERVATION",
+      "governed_tools": [
+        "test_water"
+      ],
+      "start": 0
+    },
+    {
+      "node_id": "N01",
+      "cluster": "s_P01",
+      "members": [
+        "P01"
+      ],
+      "span": "Open the exhibit",
+      "role": "OPERATION_EFFECT",
+      "governed_tools": [
+        "open_exhibit"
+      ],
+      "start": 17
+    },
+    {
+      "node_id": "N02",
+      "cluster": 1,
+      "members": [
+        "P02"
+      ],
+      "span": "only after the water test is complete",
+      "role": "PRECONDITION_CHECK",
+      "governed_tools": [
+        "test_water"
+      ],
+      "start": 34
+    }
+  ],
+  "pair_src": [
+    {
+      "a": "P00",
+      "b": "P01",
+      "label": "DIFFERENT",
+      "reason": "Mention A refers to a *state* ('water' in the tank), while mention B is an *action* ('open the exhibit') with a distinct trigger ('after the water test is complete')."
+    },
+    {
+      "a": "P00",
+      "b": "P02",
+      "label": "RELATED_BUT_DIFFERENT",
+      "reason": "Mention A is a nominal reference to the *water test* event, while mention B describes a *completion condition* for opening the exhibit, implying a distinct temporal or procedural relationship."
+    },
+    {
+      "a": "P00",
+      "b": "P03",
+      "label": "SAME_EVENT",
+      "reason": "Both refer to the same occurrence of testing water in the tank ('Test tank water' vs. 'water test')."
+    },
+    {
+      "a": "P01",
+      "b": "P02",
+      "label": "RELATED_BUT_DIFFERENT",
+      "reason": "Mention A is an **imperative action** ('Open the exhibit'), while mention B is a **conditional time constraint** ('only after the water test is complete') referring to the same event's timing."
+    },
+    {
+      "a": "P01",
+      "b": "P03",
+      "label": "RELATED_BUT_DIFFERENT",
+      "reason": "One is an **action** ('Open the exhibit') and the other is a **condition** ('water test') that must be completed before the action occurs."
+    },
+    {
+      "a": "P02",
+      "b": "P03",
+      "label": "SAME_EVENT",
+      "reason": "Both refer to the same prescribed occurrence ('water test') as a condition for opening the exhibit."
+    }
+  ],
+  "retained": [
+    "P00",
+    "P01",
+    "P02",
+    "P03"
+  ]
+}

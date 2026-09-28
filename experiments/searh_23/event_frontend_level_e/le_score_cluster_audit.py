@@ -84,7 +84,7 @@ def score_case(data,labels):
 def run():
     result={}
     case_ids={c["case_id"] for c in json.loads((HERE/"frozen/frozen_cases.json").read_text(encoding="utf-8"))}
-    for rootname in ("outputs","outputs_fixed","outputs_rescue"):
+    for rootname in ("outputs","outputs_fixed","outputs_rescue","outputs_clustering"):
         root=HERE/rootname; arms={}
         for folder in sorted(root.glob("TRACKB_*")):
             total=Counter(); rows={}

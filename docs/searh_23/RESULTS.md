@@ -1,5 +1,18 @@
 # SEARCH_23 — Results (final matrix)
 
+**Обновление 2026-09-28 (Level E, frontend/Step 1):** на 10 новых авторских
+policy завершены 14 основных downstream рукавов и exploratory clustering
+replay. Строгая оценка считает уникальные направленные gold edges и не
+зачитывает смешанные узлы. RAW: 9 правильных/43 лишних/1 пропуск;
+EVENTNESS_ONLY: 9/14/1, P .173→.391 при R .900. Gate+canonicalization
+имеет P .750 ценой R .600. FULL GOLD nodes: 9/3/1 — даже правильные узлы
+не устраняют привязку настоящей цитаты к другому действию. CE fine-tune
+имеет 0TP на новых E2; opaque resolver дал 0/63 role changes при rename.
+В тесте выявлен конфликт ontology ACTION↔completion-state; sealed gold
+сохранён. Это графовые метрики исследовательского набора, не TP/FP public46.
+`scripts/predict.py` не менялся. Полные raw, ошибки и ограничения:
+[EVENT_FRONTEND_LEVEL_E_RESEARCH_2026-09-28.md](EVENT_FRONTEND_LEVEL_E_RESEARCH_2026-09-28.md).
+
 **Обновление 2026-09-27 (другая задача, policy parser):** замороженное
 сравнение A/B/E на 10 новых policy показало `exact IR = 0/10` у всех трёх.
 Новый source-first E обеспечил точные source offsets по конструкции, но нашёл

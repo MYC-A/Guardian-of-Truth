@@ -1,0 +1,138 @@
+{
+  "case_id": "e_fleet",
+  "mentions": [
+    {
+      "mid": "P00",
+      "span": "Charge van 3. Check the charger log",
+      "start": 0,
+      "end": 35,
+      "sentence_index": 0,
+      "role": "PRECONDITION_CHECK",
+      "governed_tools": [
+        "check_log"
+      ],
+      "is_np": false
+    },
+    {
+      "mid": "P02",
+      "span": "Check the charger log",
+      "start": 14,
+      "end": 35,
+      "sentence_index": 1,
+      "role": "PRECONDITION_CHECK",
+      "governed_tools": [
+        "check_log"
+      ],
+      "is_np": false
+    },
+    {
+      "mid": "P04",
+      "span": "only after the log check is complete",
+      "start": 52,
+      "end": 88,
+      "sentence_index": 2,
+      "role": "PRECONDITION_CHECK",
+      "governed_tools": [
+        "check_log"
+      ],
+      "is_np": false
+    },
+    {
+      "mid": "P05",
+      "span": "log check",
+      "start": 67,
+      "end": 76,
+      "sentence_index": 2,
+      "role": "PRECONDITION_CHECK",
+      "governed_tools": [
+        "check_log"
+      ],
+      "is_np": true
+    }
+  ],
+  "assign": {
+    "P00": 0,
+    "P02": 1,
+    "P04": 1,
+    "P05": 1
+  },
+  "nodes": [
+    {
+      "node_id": "N00",
+      "cluster": 0,
+      "members": [
+        "P00"
+      ],
+      "span": "Charge van 3. Check the charger log",
+      "role": "PRECONDITION_CHECK",
+      "governed_tools": [
+        "check_log"
+      ],
+      "start": 0
+    },
+    {
+      "node_id": "N01",
+      "cluster": 1,
+      "members": [
+        "P02",
+        "P04",
+        "P05"
+      ],
+      "span": "Check the charger log",
+      "role": "PRECONDITION_CHECK",
+      "governed_tools": [
+        "check_log"
+      ],
+      "start": 14
+    }
+  ],
+  "pair_src": [
+    {
+      "a": "P00",
+      "b": "P02",
+      "label": "RELATED_BUT_DIFFERENT",
+      "reason": "One is an *action* ('Charge van 3') and the other is a *verification* ('Check the charger log') of that action."
+    },
+    {
+      "a": "P00",
+      "b": "P04",
+      "label": "RELATED_BUT_DIFFERENT",
+      "reason": "Mention A is an imperative to *check the charger log*, while mention B refers to a *completion state* of that check ('log check is complete')."
+    },
+    {
+      "a": "P00",
+      "b": "P05",
+      "label": "RELATED_BUT_DIFFERENT",
+      "reason": "Mention A is an imperative action ('Charge van 3'), while mention B is a check ('log check') of the charger's operation, not the charging itself."
+    },
+    {
+      "a": "P02",
+      "b": "P04",
+      "label": "SAME_EVENT",
+      "reason": "Both refer to the same 'check the charger log' action, with the second mentioning it as a completed condition ('log check is complete')."
+    },
+    {
+      "a": "P02",
+      "b": "P05",
+      "label": "SAME_EVENT",
+      "reason": "Both refer to the same action ('Check the charger log') with identical participants and time, where the second ('log check') is a nominalized reference to the first."
+    },
+    {
+      "a": "P04",
+      "b": "P05",
+      "label": "SAME_EVENT",
+      "reason": "Both refer to the same prescribed occurrence ('log check') as a condition for dispatching van 3."
+    }
+  ],
+  "retained_eventness": {
+    "P00": "EVENT",
+    "P01": "ENTITY_ARTIFACT",
+    "P02": "EVENT",
+    "P03": "ENTITY_ARTIFACT",
+    "P04": "EVENT_REFERENCE",
+    "P05": "EVENT",
+    "P06": "ENTITY_ARTIFACT",
+    "P07": "ENTITY_ARTIFACT"
+  },
+  "algorithm": "complete_link"
+}

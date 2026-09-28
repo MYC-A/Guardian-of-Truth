@@ -54,7 +54,7 @@ def score_root(root: Path, cases: dict) -> dict:
 def main():
     cases = {c["case_id"]: c for c in json.loads((HERE / "frozen" / "frozen_cases.json").read_text(encoding="utf-8"))}
     result = {}
-    for name in ("outputs", "outputs_fixed", "outputs_rescue"):
+    for name in ("outputs", "outputs_fixed", "outputs_rescue", "outputs_clustering"):
         root = HERE / name
         if root.exists() and (root / "ALIGNMENT").exists():
             result[name] = score_root(root, cases)

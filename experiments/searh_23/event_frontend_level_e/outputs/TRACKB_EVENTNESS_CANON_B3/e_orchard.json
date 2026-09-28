@@ -1,0 +1,284 @@
+{
+  "case_id": "e_orchard",
+  "mentions": [
+    {
+      "mid": "P00",
+      "span": "Verify the spray record on Tuesday",
+      "start": 23,
+      "end": 57,
+      "sentence_index": 1,
+      "role": "PRECONDITION_CHECK",
+      "governed_tools": [
+        "verify_record"
+      ],
+      "is_np": false
+    },
+    {
+      "mid": "P02",
+      "span": "Spray row 4 again on Friday, but only after verification",
+      "start": 59,
+      "end": 115,
+      "sentence_index": 2,
+      "role": "UNKNOWN",
+      "governed_tools": [
+        "verify_record"
+      ],
+      "is_np": false
+    },
+    {
+      "mid": "P04",
+      "span": "Friday, but only after verification",
+      "start": 80,
+      "end": 115,
+      "sentence_index": 2,
+      "role": "UNKNOWN",
+      "governed_tools": [
+        "verify_record"
+      ],
+      "is_np": true
+    },
+    {
+      "mid": "P05",
+      "span": "only after verification",
+      "start": 92,
+      "end": 115,
+      "sentence_index": 2,
+      "role": "PRECONDITION_CHECK",
+      "governed_tools": [
+        "verify_record"
+      ],
+      "is_np": true
+    }
+  ],
+  "assign": {
+    "P00": 0,
+    "P05": 0,
+    "P04": 1
+  },
+  "nodes": [
+    {
+      "node_id": "N00",
+      "cluster": 0,
+      "members": [
+        "P00",
+        "P05"
+      ],
+      "span": "Verify the spray record on Tuesday",
+      "role": "PRECONDITION_CHECK",
+      "governed_tools": [
+        "verify_record"
+      ],
+      "start": 23
+    },
+    {
+      "node_id": "N01",
+      "cluster": "s_P02",
+      "members": [
+        "P02"
+      ],
+      "span": "Spray row 4 again on Friday, but only after verification",
+      "role": "UNKNOWN",
+      "governed_tools": [
+        "verify_record"
+      ],
+      "start": 59
+    },
+    {
+      "node_id": "N02",
+      "cluster": 1,
+      "members": [
+        "P04"
+      ],
+      "span": "Friday, but only after verification",
+      "role": "UNKNOWN",
+      "governed_tools": [
+        "verify_record"
+      ],
+      "start": 80
+    }
+  ],
+  "pair_src": [
+    {
+      "a": "P00",
+      "b": "P02",
+      "input": {
+        "mention_a": "Verify the spray record on Tuesday",
+        "core_a": {
+          "predicate": "verify",
+          "mode": "ACTION"
+        },
+        "mention_b": "Spray row 4 again on Friday, but only after verification",
+        "core_b": {
+          "predicate": "spray",
+          "mode": "ACTION"
+        }
+      },
+      "label": "DIFFERENT",
+      "reason": "Different predicates ('verify' vs. 'spray') and distinct actions.",
+      "raw": "{\n  \"label\": \"DIFFERENT\",\n  \"reason\": \"Different predicates ('verify' vs. 'spray') and distinct actions.\"\n}",
+      "usage": {
+        "prompt_tokens": 189,
+        "total_tokens": 222,
+        "completion_tokens": 33,
+        "prompt_tokens_details": {
+          "cached_tokens": 0
+        },
+        "service_tier": "standard"
+      },
+      "error": ""
+    },
+    {
+      "a": "P00",
+      "b": "P04",
+      "input": {
+        "mention_a": "Verify the spray record on Tuesday",
+        "core_a": {
+          "predicate": "verify",
+          "mode": "ACTION"
+        },
+        "mention_b": "Friday, but only after verification",
+        "core_b": {
+          "predicate": "verific",
+          "mode": "REFERENCE"
+        }
+      },
+      "label": "RELATED_BUT_DIFFERENT",
+      "reason": "Different days (Tuesday vs. Friday) and distinct roles (action vs. reference to a prior action)",
+      "raw": "{\n  \"label\": \"RELATED_BUT_DIFFERENT\",\n  \"reason\": \"Different days (Tuesday vs. Friday) and distinct roles (action vs. reference to a prior action)\"\n}",
+      "usage": {
+        "prompt_tokens": 183,
+        "total_tokens": 227,
+        "completion_tokens": 44,
+        "prompt_tokens_details": {
+          "cached_tokens": 100
+        },
+        "service_tier": "standard"
+      },
+      "error": ""
+    },
+    {
+      "a": "P00",
+      "b": "P05",
+      "input": {
+        "mention_a": "Verify the spray record on Tuesday",
+        "core_a": {
+          "predicate": "verify",
+          "mode": "ACTION"
+        },
+        "mention_b": "only after verification",
+        "core_b": {
+          "predicate": "verific",
+          "mode": "REFERENCE"
+        }
+      },
+      "label": "SAME_EVENT",
+      "reason": "Both refer to the same verification action, with 'verify' and 'verification' as active/passive/nominal variants.",
+      "raw": "{\n  \"label\": \"SAME_EVENT\",\n  \"reason\": \"Both refer to the same verification action, with 'verify' and 'verification' as active/passive/nominal variants.\"\n}",
+      "usage": {
+        "prompt_tokens": 180,
+        "total_tokens": 224,
+        "completion_tokens": 44,
+        "prompt_tokens_details": {
+          "cached_tokens": 0
+        },
+        "service_tier": "standard"
+      },
+      "error": ""
+    },
+    {
+      "a": "P02",
+      "b": "P04",
+      "input": {
+        "mention_a": "Spray row 4 again on Friday, but only after verification",
+        "core_a": {
+          "predicate": "spray",
+          "mode": "ACTION"
+        },
+        "mention_b": "Friday, but only after verification",
+        "core_b": {
+          "predicate": "verific",
+          "mode": "REFERENCE"
+        }
+      },
+      "label": "RELATED_BUT_DIFFERENT",
+      "reason": "Different predicates ('spray' vs. 'verific') indicate distinct actions, though temporally linked.",
+      "raw": "{\n  \"label\": \"RELATED_BUT_DIFFERENT\",\n  \"reason\": \"Different predicates ('spray' vs. 'verific') indicate distinct actions, though temporally linked.\"\n}",
+      "usage": {
+        "prompt_tokens": 191,
+        "total_tokens": 235,
+        "completion_tokens": 44,
+        "prompt_tokens_details": {
+          "cached_tokens": 0
+        },
+        "service_tier": "standard"
+      },
+      "error": ""
+    },
+    {
+      "a": "P02",
+      "b": "P05",
+      "input": {
+        "mention_a": "Spray row 4 again on Friday, but only after verification",
+        "core_a": {
+          "predicate": "spray",
+          "mode": "ACTION"
+        },
+        "mention_b": "only after verification",
+        "core_b": {
+          "predicate": "verific",
+          "mode": "REFERENCE"
+        }
+      },
+      "label": "RELATED_BUT_DIFFERENT",
+      "reason": "Mention B refers to a condition ('verification') rather than the action ('spray') itself.",
+      "raw": "{\n  \"label\": \"RELATED_BUT_DIFFERENT\",\n  \"reason\": \"Mention B refers to a condition ('verification') rather than the action ('spray') itself.\"\n}",
+      "usage": {
+        "prompt_tokens": 188,
+        "total_tokens": 232,
+        "completion_tokens": 44,
+        "prompt_tokens_details": {
+          "cached_tokens": 0
+        },
+        "service_tier": "standard"
+      },
+      "error": ""
+    },
+    {
+      "a": "P04",
+      "b": "P05",
+      "input": {
+        "mention_a": "Friday, but only after verification",
+        "core_a": {
+          "predicate": "verific",
+          "mode": "REFERENCE"
+        },
+        "mention_b": "only after verification",
+        "core_b": {
+          "predicate": "verific",
+          "mode": "REFERENCE"
+        }
+      },
+      "label": "SAME_EVENT",
+      "reason": "Both refer to the same conditional verification process, with 'Friday' in mention_a being a contextual modifier, not an action or distinct event.",
+      "raw": "{\n  \"label\": \"SAME_EVENT\",\n  \"reason\": \"Both refer to the same conditional verification process, with 'Friday' in mention_a being a contextual modifier, not an action or distinct event.\"\n}",
+      "usage": {
+        "prompt_tokens": 182,
+        "total_tokens": 227,
+        "completion_tokens": 45,
+        "prompt_tokens_details": {
+          "cached_tokens": 100
+        },
+        "service_tier": "standard"
+      },
+      "error": ""
+    }
+  ],
+  "retained_eventness": {
+    "P00": "EVENT",
+    "P01": "ENTITY_ARTIFACT",
+    "P02": "EVENT",
+    "P03": "ENTITY_ARTIFACT",
+    "P04": "STATE",
+    "P05": "EVENT_REFERENCE"
+  }
+}

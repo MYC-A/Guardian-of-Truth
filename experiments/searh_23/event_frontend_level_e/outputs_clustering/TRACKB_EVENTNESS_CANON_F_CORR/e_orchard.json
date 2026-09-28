@@ -1,0 +1,136 @@
+{
+  "case_id": "e_orchard",
+  "mentions": [
+    {
+      "mid": "P00",
+      "span": "Verify the spray record on Tuesday",
+      "start": 23,
+      "end": 57,
+      "sentence_index": 1,
+      "role": "PRECONDITION_CHECK",
+      "governed_tools": [
+        "verify_record"
+      ],
+      "is_np": false
+    },
+    {
+      "mid": "P02",
+      "span": "Spray row 4 again on Friday, but only after verification",
+      "start": 59,
+      "end": 115,
+      "sentence_index": 2,
+      "role": "UNKNOWN",
+      "governed_tools": [
+        "verify_record"
+      ],
+      "is_np": false
+    },
+    {
+      "mid": "P04",
+      "span": "Friday, but only after verification",
+      "start": 80,
+      "end": 115,
+      "sentence_index": 2,
+      "role": "UNKNOWN",
+      "governed_tools": [
+        "verify_record"
+      ],
+      "is_np": true
+    },
+    {
+      "mid": "P05",
+      "span": "only after verification",
+      "start": 92,
+      "end": 115,
+      "sentence_index": 2,
+      "role": "PRECONDITION_CHECK",
+      "governed_tools": [
+        "verify_record"
+      ],
+      "is_np": true
+    }
+  ],
+  "assign": {
+    "P00": 0,
+    "P02": 1,
+    "P04": 1,
+    "P05": 1
+  },
+  "nodes": [
+    {
+      "node_id": "N00",
+      "cluster": 0,
+      "members": [
+        "P00"
+      ],
+      "span": "Verify the spray record on Tuesday",
+      "role": "PRECONDITION_CHECK",
+      "governed_tools": [
+        "verify_record"
+      ],
+      "start": 23
+    },
+    {
+      "node_id": "N01",
+      "cluster": 1,
+      "members": [
+        "P02",
+        "P04",
+        "P05"
+      ],
+      "span": "Spray row 4 again on Friday, but only after verification",
+      "role": "PRECONDITION_CHECK",
+      "governed_tools": [
+        "verify_record"
+      ],
+      "start": 59
+    }
+  ],
+  "pair_src": [
+    {
+      "a": "P00",
+      "b": "P02",
+      "label": "RELATED_BUT_DIFFERENT",
+      "reason": "Mention A refers to verifying the *spray record* (a check of documentation), while mention B refers to *verification* as a precondition for spraying (an action)."
+    },
+    {
+      "a": "P00",
+      "b": "P04",
+      "label": "RELATED_BUT_DIFFERENT",
+      "reason": "Mention A refers to verifying the spray record on Tuesday, while mention B refers to spraying row 4 again on Friday *after verification*, indicating a distinct later event."
+    },
+    {
+      "a": "P00",
+      "b": "P05",
+      "label": "RELATED_BUT_DIFFERENT",
+      "reason": "Mention A is a standalone verification instruction, while mention B ('only after verification') refers to a *subsequent* conditional action (re-spraying) dependent on verification, implying distinct e"
+    },
+    {
+      "a": "P02",
+      "b": "P04",
+      "label": "SAME_EVENT",
+      "reason": "Both spans refer to the same conditional action ('Spray row 4 again on Friday, but only after verification')."
+    },
+    {
+      "a": "P02",
+      "b": "P05",
+      "label": "SAME_EVENT",
+      "reason": "Both refer to the same verification step required before spraying row 4 again."
+    },
+    {
+      "a": "P04",
+      "b": "P05",
+      "label": "SAME_EVENT",
+      "reason": "Both refer to the *verification* (of the spray record) as a prerequisite for spraying row 4 on Friday."
+    }
+  ],
+  "retained_eventness": {
+    "P00": "EVENT",
+    "P01": "ENTITY_ARTIFACT",
+    "P02": "EVENT",
+    "P03": "ENTITY_ARTIFACT",
+    "P04": "STATE",
+    "P05": "EVENT_REFERENCE"
+  },
+  "algorithm": "exact_clique_partition"
+}
