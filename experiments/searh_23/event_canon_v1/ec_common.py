@@ -13,7 +13,7 @@ sys.path.insert(0, str(PL_DIR))
 
 from pl_common import Mistral, render_tool, tools_by_name  # noqa: E402
 
-FROZEN = ROOT / "frozen"
+FROZEN = Path(os.environ.get("EC_FROZEN", ROOT / "frozen"))
 OUTPUTS = Path(os.environ.get("EC_OUTPUTS", ROOT / "outputs"))
 
 _SENT_SPLIT = re.compile(r"(?<=[.!?])\s+")
