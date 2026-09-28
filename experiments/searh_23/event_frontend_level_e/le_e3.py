@@ -82,6 +82,8 @@ def assemble() -> None:
             if name == "CANON_F":
                 nodes = base["nodes"]
                 pair_src = base["pair_src"]
+                subset = mentions
+                assignment = base["assign"]
             else:
                 gated = name.startswith("EVENTNESS")
                 subset = [m for m in mentions if not gated or elabs[m["mid"]] in EVENTLIKE]
@@ -94,7 +96,8 @@ def assemble() -> None:
                     assignment = build_clusters(pair_src, "veto")
                 nodes = cluster_to_nodes(case, subset, assignment)
             dst.parent.mkdir(parents=True, exist_ok=True)
-            dst.write_text(json.dumps({"case_id": cid, "nodes": nodes, "pair_src": pair_src,
+            dst.write_text(json.dumps({"case_id": cid, "mentions": subset,
+                                       "assign": assignment, "nodes": nodes, "pair_src": pair_src,
                                        "retained_eventness": elabs}, ensure_ascii=False, indent=2) + "\n", encoding="utf-8")
             print(cid, name, len(nodes), flush=True)
 

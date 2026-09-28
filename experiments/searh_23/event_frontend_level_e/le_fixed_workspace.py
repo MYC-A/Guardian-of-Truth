@@ -59,8 +59,9 @@ def main():
             nodes = cluster_to_nodes(case, subset, assign)
             dest = TARGET / f"TRACKB_{name}"
             dest.mkdir(parents=True, exist_ok=True)
-            (dest / f"{cid}.json").write_text(json.dumps({"case_id": cid, "nodes": nodes,
-                        "pair_src": pairs}, ensure_ascii=False, indent=2) + "\n", encoding="utf-8")
+            (dest / f"{cid}.json").write_text(json.dumps({"case_id": cid, "mentions": subset,
+                        "assign": assign, "nodes": nodes, "pair_src": pairs},
+                        ensure_ascii=False, indent=2) + "\n", encoding="utf-8")
     (TARGET / "frontend_comparison.json").write_text(json.dumps(summary, indent=2) + "\n", encoding="utf-8")
     print(json.dumps(summary, indent=2))
 
