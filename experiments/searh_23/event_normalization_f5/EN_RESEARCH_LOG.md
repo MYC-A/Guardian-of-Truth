@@ -217,3 +217,89 @@ v10 verdict from the audit: the win decomposes into
   A sanitation (recall .93-1.0, generalizes — F3/F4 same level as dev),
   B consolidation (precision at nodes, zero false merges, generalizes),
   C relation guards (dev-heavy precision, weakest transfer of the three).
+
+## D3. Identity arms on dev benchmarks (2026-09-29)
+
+Deterministic arms (ec = EC-frozen 789 pairs / fa = A-layer mentions on
+F-suites, 413 pairs; fa label dist SAME 55 / RELATED 104 / DIFF 126 /
+AMBIG 128):
+
+| arm | ec F1 | ec P | ec R | ec dangerous | fa F1 | fa dangerous |
+|-----|-------|------|------|--------------|-------|--------------|
+| A_lex | .409 | .276 | .787 | 98 | .451 | 28 |
+| B_emb (bge-base) | .446 | .369 | .562 | 37 | .443 | 39 |
+| C_ce (bge-reranker) | .184 | .101 | 1.0 | 613 | .235 | 126 |
+| H_v10 (compatible_nodes) | .555 | .450 | .725 | 22 | .569 | 3 |
+| D_pred | .530 | .475 | .600 | 12 | .496 | 6 |
+| D_no_mode (pred+ent+args+polarity+temporal) | .569 | .684 | .487 | 3 | .509 | 3 |
+| D_all (surface mode conflict) | .519 | .667 | .425 | 3 | .509 | 3 |
+| I_H_and_D | .496 | .653 | .400 | 3 | .509 | 3 |
+
+KEY IR FINDING: surface-derived event_mode conflates VOICE facets
+(passive state of the same action = SAME) with MODE distinctions
+(check/record = DIFFERENT). With mode-conflict restricted to
+CHECK/RECORD-vs-other, D_all recall recovered .087→.425 (ec) at
+constant precision. The IR features that matter for SAME_EVENT:
+predicate lemma (recall driver), entities/arguments (precision driver),
+polarity (precision), CHECK/RECORD mode (precision); modality and
+actor add nothing at this data scale.
+
+C_ce reranker: template saturation confirmed (predicts SAME for
+everything at best-F1 threshold; known negative from EC phase).
+
+## D4. H.1-H.4 ablation arms on old suites (2026-09-29)
+
+H.1/H.2 (clause-mate discipline, replay of saved outputs):
+| suite | v10 P/R | +H12 P/R | kill-only P/R |
+|-------|---------|----------|---------------|
+| main | .920/1.000 | .905/.826 | .905/.826 |
+| F2 | .636/.875 | .778/.875 | .778/.875 |
+| F3 (v8) | .538/.778 | .600/.667 | .600/.667 |
+| F4 | .700/.875 | .750/.750 | .857/.750 |
+VERDICT: NOT PROMOTED. Naive clause segmentation (commas/and/or) kills
+true edges (main -0.174 R); the residual multi-clause extras in
+F3/F4 (2-3 edges) are too few and heterogeneous for one clause-level
+mechanism. Honest negative result: the W1 report's H.1/H.2 residual
+classes are real but the proposed fix does not transfer.
+
+H.3 (POS-anchored SVO signature) / H.4 (derivational artifact nouns +
+stem variants), node level:
+| suite | v10 junk/prec | +H3 | +H4 |
+|-------|---------------|-----|-----|
+| main | 2/.973 | 2/.951 (recall .939→.917) | 1/.983 (recall .939→.903) |
+| F3 | 1/.960 | = | 0/1.0 (recall .933→.867) |
+| F4 | 3/.867 | 0/1.0 (recall unchanged) | 2/.917 |
+VERDICT: H.3 PROMOTED to v11 (fixes the F4 determiner-subject junk class
+with zero recall cost on sealed suites; tiny dev cost). H.4 NOT
+PROMOTED: derivational artifact filter over-kills real nodes
+(recall -0.03..-0.07 on main/F3) — the 'count'/'tally' noun list
+extension would be exactly the dev-specific tuning the directive
+forbids.
+
+v11 CANDIDATE (frozen BEFORE any F5 inference): v10 + H.3 only.
+
+## D5. F5 sealed suite frozen (2026-09-29, BEFORE inference)
+
+- 20 policies (6 known-mechanism K / 6 recombination R / 8 new N),
+  182 mentions, 82 canonical events, 36 gold edges, 219 gold pairs
+  (SAME 21 / RELATED 93 / DIFFERENT 105; no gold-AMBIGUOUS: gold is
+  decisive; AMBIGUOUS measured as classifier abstention).
+- 5 CF minimal-pair twins (action-vs-check, object split,
+  action-vs-recording, required-vs-repeat, nominalization-vs-artifact).
+- 6 renamed cases (batch→cartridge, inspection→calibration, weigh→
+  measure, cleaning→polishing, log→ledger, vessel→reactor).
+- Manifest sha 4546acef92c08ce3... (full sha in f5_frozen/
+  f5_manifest.json). Gold conventions documented in manifest.
+- Pre-registered F5 arms: (1) v10 full pipeline; (2) v11 = v10+H.3;
+  (3) identity arms A/B/C/D/H/F4way on F5 pairs; (4) modular
+  architecture (A-layer + H∧F identity + veto clustering) feeding the
+  SAME frozen relation stack; (5) external baselines (LingMess-coref;
+  MAVEN-ERE trigger tagger; SECURE/fast-coref documented blockers);
+  (6) oracle decomposition A/B/C/D; (7) rename suite runs; (8) CF
+  twins. Relation stack (E3v3 extractor/judge, CE band, DIR/CLS
+  fallbacks, relation gates) FROZEN — no changes for F5.
+- Prediction (pre-registered): if v10 is a generalizable architecture,
+  F5 edge P/R should land within ~0.15 of the F3/F4 range (P .64-.75,
+  R .75-.78); identity pair F1 for H_v10 around .5-.6 with low
+  dangerous merges; F4way should beat deterministic arms by ~.1 F1.
+  If F5 P/R collapses below .5, the overfit hypothesis is confirmed.
