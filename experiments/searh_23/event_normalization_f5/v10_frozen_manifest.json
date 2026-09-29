@@ -1,0 +1,57 @@
+{
+  "name": "V10_FROZEN",
+  "frozen_at": "2026-09-29",
+  "commit": "df4f9508f11451e45cd76ed18dfd30e15495f395",
+  "branch": "codex/step1-working-architecture-20260929",
+  "phase": "step1_working_v1 (W1)",
+  "pipeline_entry": "experiments/searh_23/step1_working_v1/w1_pipe3.py",
+  "environment": {
+    "gpu": "NVIDIA RTX 3090 24GB",
+    "venv": "/workspace/guardian/venv",
+    "llm": {"model": "ministral-14b-latest", "temperature": 0,
+            "response_format": "json_object"},
+    "cross_encoder": {"model": "BAAI/bge-reranker-base", "device": "cuda",
+                      "batch_size": 32, "max_length": 512},
+    "thresholds": {"CE_BAND": 0.35}
+  },
+  "frontend": {
+    "arm": "LLM_SG",
+    "script": "experiments/searh_23/event_ie_frontends_v1/lf_llm_frontends.py",
+    "system_prompt": "LLM_SG_SYSTEM (schema-guided typed mention graph, name-blind)",
+    "hygiene": "w1_hygiene.py (deterministic, zero LLM)",
+    "boundary_normalizer": "w1_bnorm.py KEEP/NORMALIZE/SPLIT/DROP + predicate anchor",
+    "normalizer_cache_dirs": ["W1_BNORM_383f5df9", "W1_BNORM (mtime-latest rule)"]
+  },
+  "relation_stack_frozen_this_phase": {
+    "extractor": "E3v3 (all surface forms + type + arguments in prompt)",
+    "verifier": "verify_certificate_v3 ladder (a any-form-in-rel; b positional extractor anchors CE-gated; c clause repair; d via_reference)",
+    "judge": "E3_JUDGE_SYSTEM_V3 q1-q5 with co-precondition + typing rules",
+    "direction_fallback": "pl_run_llm dir_user",
+    "type_fallback": "pl_run_llm cls_user",
+    "gates_v10": ["no_trigger_connective", "object_containment_gate",
+                  "cross_sentence_gate", "coordination_gate",
+                  "same_action_facet_suppression", "self_loop_gate",
+                  "shared_form_gate", "recording_state_containment",
+                  "edge_consolidation_effective_endpoint"],
+    "note": "NONE of these may change for improving F5 in this phase (directive section 16)"
+  },
+  "results": {
+    "dev_main_F": {"P": 0.958, "R": 1.000, "correct": 23, "extra": 1,
+                   "missing": 0, "exact": "14/15"},
+    "F2_checkpoint": {"P": 0.600, "R": 0.750},
+    "F3_sealed_v8": {"P": 0.636, "R": 0.778, "correct": 7, "extra": 4,
+                     "missing": 2, "exact": "3/5",
+                     "frozen_at_commit": "dce04fd0", "sha": "91619dc945aa8bb4"},
+    "F4_sealed_v10": {"P": 0.750, "R": 0.750, "correct": 6, "extra": 2,
+                      "missing": 2, "exact": "2/5",
+                      "frozen_at_commit": "4c430563",
+                      "sha": "e6b04a0e8a911965"},
+    "cert_units_regression": "17/22"
+  },
+  "saved_outputs_used_for_replay": {
+    "W1_DOWN10_LLM_SG": ["main F (f_*, 15)", "F2 (g_*, 5)", "F4 (i_*, 5)"],
+    "W1_DOWN8_LLM_SG": ["main F (f_*)", "F2 (g_*)", "F3 (h_*, 5)"],
+    "W1_DOWN3..9": ["main F ablation ladder", "F2 partial"]
+  },
+  "rule": "After this manifest v10 is immutable. All variants (v10+H1..H4, v11, modular arms) are experimental arms. Dev main F is development-only; the generalization claim requires F5 sealed + rename + counterfactual."
+}
