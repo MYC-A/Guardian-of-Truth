@@ -46,7 +46,9 @@ def run():
             path=HERE/'outputs'/label/'W1_DOWN10_LLM_SG'/f"{row['case_id']}.json"
             r=score_case(row,json.loads(path.read_text(encoding='utf-8')))
             cases[row['case_id']]=r
-            tp+=r['correct_unique']; fp+=r['extra_strict']; fn+=r['missing_directed']
+            tp+=r['counts'].get('correct_unique',0)
+            fp+=r['counts'].get('extra_strict',0)
+            fn+=r['counts'].get('missing_directed',0)
         data[label]={'correct':tp,'extra':fp,'missing':fn,'precision':tp/(tp+fp) if tp+fp else None,
                      'recall':tp/(tp+fn) if tp+fn else None,'cases':cases}
     out=HERE/'outputs'
