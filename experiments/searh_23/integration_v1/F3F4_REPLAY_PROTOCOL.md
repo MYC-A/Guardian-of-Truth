@@ -31,3 +31,18 @@ scores have not yet been computed. Run the unguarded W1 v10 on all five F3
 inputs now, with a fresh output root and the unchanged hardcoded model
 `ministral-14b-latest`, before comparing F3. Keep F4's saved v10 outputs.
 The F3 comparison remains a retrospective regression, not a holdout.
+
+## Input correction before accepting scores
+
+The copied source tree has no F3/F4 files under the required
+`event_ie_frontends_v1/outputs/LLM_SG` path. `build_nodes_v3` therefore
+returned empty graphs for **both** the just-run F3 baseline and guarded
+F3/F4. Those runs are retained as failed setup diagnostics and their 0 scores
+are invalid for the algorithm comparison. The checked-in F4 baseline uses a
+frontend whose saved intermediate files are absent; it also cannot serve as a
+matched-input arm.
+
+Generate LLM_SG, hygiene and bnorm once on the same ten frozen inputs, then
+run v10 baseline and guarded v10 from these identical new intermediates into
+separate fresh output roots. Score only these paired outputs. Do not tune
+any component after reading scores.
