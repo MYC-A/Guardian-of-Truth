@@ -1,0 +1,23 @@
+{
+  "protocol": "development interface controls; frozen before audit",
+  "event_pairs": [
+    {"id":"different_number", "a":"Load wagon 12", "b":"Load wagon 13", "expected_compatible":false},
+    {"id":"different_letter", "a":"Inspect panel A", "b":"Inspect panel B", "expected_compatible":false},
+    {"id":"different_opaque_id", "a":"Scan parcel ZX-41", "b":"Scan parcel ZX-42", "expected_compatible":false},
+    {"id":"different_occurrence", "a":"Drain tank 3 on Monday", "b":"Drain tank 3 on Tuesday", "expected_compatible":false},
+    {"id":"same_surface", "a":"Load wagon 12", "b":"Load wagon 12", "expected_compatible":true},
+    {"id":"active_passive", "a":"Inspect panel A", "b":"panel A is inspected", "expected_compatible":true},
+    {"id":"action_about_action", "a":"Paint panel A", "b":"Record the painting of panel A", "expected_compatible":false},
+    {"id":"different_actions", "a":"Weigh the crate", "b":"Move the crate", "expected_compatible":false}
+  ],
+  "fact_controls": [
+    {"id":"unbound_predicate", "predicate":"unit.replaced", "path":"$.status", "value_json":"\"completed\"", "strength":"EXECUTED", "is_observation":false, "contract_bound":false, "expected_legacy_safe":false},
+    {"id":"unbound_confirmation", "predicate":"unit.status", "path":"$.status", "value_json":"\"completed\"", "strength":"CONFIRMED", "is_observation":false, "contract_bound":false, "expected_legacy_safe":false},
+    {"id":"proposer_claims_read_authority", "predicate":"unit.status", "path":"$.status", "value_json":"\"completed\"", "strength":"OBSERVED", "is_observation":true, "contract_bound":false, "expected_legacy_safe":false},
+    {"id":"wrong_result_tool", "predicate":"unit.status", "path":"$.status", "value_json":"\"completed\"", "strength":"OBSERVED", "is_observation":false, "contract_bound":false, "result_tool":"other_tool", "expected_legacy_safe":false},
+    {"id":"model_bypasses_entity_echo", "predicate":"unit.status", "path":"$.status", "value_json":"\"completed\"", "strength":"OBSERVED", "is_observation":false, "contract_bound":true, "no_entity_echo":true, "expected_legacy_safe":false},
+    {"id":"wrong_value", "predicate":"unit.status", "path":"$.status", "value_json":"\"different\"", "strength":"OBSERVED", "is_observation":false, "contract_bound":false, "expected_legacy_safe":false},
+    {"id":"wrong_path", "predicate":"unit.status", "path":"$.missing", "value_json":"\"completed\"", "strength":"OBSERVED", "is_observation":false, "contract_bound":false, "expected_legacy_safe":false},
+    {"id":"real_field_report", "predicate":"unit.status", "path":"$.status", "value_json":"\"completed\"", "strength":"OBSERVED", "is_observation":false, "contract_bound":false, "expected_legacy_safe":true}
+  ]
+}
