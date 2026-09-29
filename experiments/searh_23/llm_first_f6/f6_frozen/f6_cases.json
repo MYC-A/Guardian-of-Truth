@@ -1,0 +1,3191 @@
+{
+ "cases": [
+  {
+   "case_id": "m_tram",
+   "domain": "tram depot rail grinding",
+   "family": "m_active_passive_nominal_record",
+   "policy": "Grind the rail joints on line 2. Trams may pass once the joints have been ground. Grinding of the joints is logged in the depot ledger. The depot ledger is a bound book.",
+   "tools": [
+    {
+     "name": "grind_rail_joints",
+     "description": "Grinds the rail joints of one tram line.",
+     "input": {
+      "line_id": "string"
+     },
+     "output": {
+      "status": "string"
+     }
+    },
+    {
+     "name": "run_tram_service",
+     "description": "Runs one tram across the line.",
+     "input": {
+      "tram_id": "string"
+     },
+     "output": {
+      "status": "string"
+     }
+    },
+    {
+     "name": "log_grinding",
+     "description": "Writes one grinding entry into the depot ledger.",
+     "input": {
+      "line_id": "string"
+     },
+     "output": {
+      "entry_id": "string"
+     }
+    },
+    {
+     "name": "inspect_rail_wear",
+     "description": "Reads the wear level of the rail joints.",
+     "input": {
+      "line_id": "string"
+     },
+     "output": {
+      "wear_mm": "number"
+     }
+    }
+   ],
+   "mentions": [
+    [
+     "Grind the rail joints",
+     "EVENT",
+     "G1",
+     "ACTION"
+    ],
+    [
+     "the rail joints",
+     "ENTITY",
+     null,
+     "OTHER"
+    ],
+    [
+     "line 2",
+     "ENTITY",
+     null,
+     "OTHER"
+    ],
+    [
+     "Trams may pass",
+     "EVENT",
+     "G2",
+     "ACTION"
+    ],
+    [
+     "the joints have been ground",
+     "STATE_OR_FACET",
+     "G1",
+     "STATE"
+    ],
+    [
+     "Grinding of the joints",
+     "EVENT_REFERENCE",
+     "G1",
+     "REFERENCE_TO_EVENT"
+    ],
+    [
+     "Grinding of the joints is logged in the depot ledger",
+     "EVENT",
+     "G3",
+     "RECORD",
+     {
+      "embeds": "Grinding of the joints"
+     }
+    ],
+    [
+     "The depot ledger",
+     "ARTIFACT",
+     null,
+     "OTHER"
+    ],
+    [
+     "a bound book",
+     "ENTITY",
+     null,
+     "OTHER"
+    ]
+   ],
+   "normative_edges": [
+    [
+     "G1",
+     "G2",
+     [
+      "STATE_GATE",
+      "PRECONDITION"
+     ],
+     "Trams may pass once the joints have been ground"
+    ]
+   ],
+   "related_pairs": [
+    [
+     "G1",
+     "G3"
+    ]
+   ],
+   "ambiguous_pairs": [],
+   "notes": "active->passive->nominalization chain; recording clause as RECORD event (nested reference); final sentence is descriptive non-policy."
+  },
+  {
+   "case_id": "m_balloon",
+   "domain": "hot air balloon launch",
+   "family": "m_result_state_coordination",
+   "policy": "Inflate the envelope before sunrise. The envelope must be taut. Launch the balloon only after the envelope is taut and the burner is lit.",
+   "tools": [
+    {
+     "name": "inflate_envelope",
+     "description": "Inflates one balloon envelope.",
+     "input": {
+      "balloon_id": "string"
+     },
+     "output": {
+      "status": "string"
+     }
+    },
+    {
+     "name": "light_burner",
+     "description": "Lights the burner of one balloon.",
+     "input": {
+      "balloon_id": "string"
+     },
+     "output": {
+      "status": "string"
+     }
+    },
+    {
+     "name": "launch_balloon",
+     "description": "Launches one balloon.",
+     "input": {
+      "balloon_id": "string"
+     },
+     "output": {
+      "status": "string"
+     }
+    },
+    {
+     "name": "read_envelope_pressure",
+     "description": "Reads the pressure gauge of one envelope.",
+     "input": {
+      "balloon_id": "string"
+     },
+     "output": {
+      "pressure": "number"
+     }
+    }
+   ],
+   "mentions": [
+    [
+     "Inflate the envelope",
+     "EVENT",
+     "B1",
+     "ACTION"
+    ],
+    [
+     "the envelope",
+     "ENTITY",
+     null,
+     "OTHER"
+    ],
+    [
+     "before sunrise",
+     "ENTITY",
+     null,
+     "OTHER"
+    ],
+    [
+     "The envelope must be taut",
+     "STATE_OR_FACET",
+     "B2",
+     "STATE"
+    ],
+    [
+     "Launch the balloon",
+     "EVENT",
+     "B3",
+     "ACTION"
+    ],
+    [
+     "the balloon",
+     "ENTITY",
+     null,
+     "OTHER"
+    ],
+    [
+     "the envelope is taut",
+     "STATE_OR_FACET",
+     "B2",
+     "STATE"
+    ],
+    [
+     "the burner is lit",
+     "STATE_OR_FACET",
+     "B4",
+     "STATE"
+    ],
+    [
+     "the burner",
+     "ENTITY",
+     null,
+     "OTHER"
+    ]
+   ],
+   "normative_edges": [
+    [
+     "B2",
+     "B3",
+     [
+      "STATE_GATE",
+      "PRECONDITION"
+     ],
+     "Launch the balloon only after the envelope is taut and the burner is lit"
+    ],
+    [
+     "B4",
+     "B3",
+     [
+      "STATE_GATE",
+      "PRECONDITION"
+     ],
+     "Launch the balloon only after the envelope is taut and the burner is lit"
+    ]
+   ],
+   "related_pairs": [
+    [
+     "B1",
+     "B2"
+    ]
+   ],
+   "ambiguous_pairs": [],
+   "notes": "adjectival result state own cid (RELATED to inflate); coordinated AND state gates; state-vs-action distinction."
+  },
+  {
+   "case_id": "m_dentallab",
+   "domain": "dental laboratory sterilization",
+   "family": "m_nominal_subject_artifact_flow",
+   "policy": "Sterilization of the instruments is required before each appointment. Autoclave the instruments at 134 degrees. The autoclave printout confirms each sterilized tray. Seat the patient only after the printout is filed.",
+   "tools": [
+    {
+     "name": "autoclave_instruments",
+     "description": "Sterilizes one instrument tray in the autoclave.",
+     "input": {
+      "tray_id": "string"
+     },
+     "output": {
+      "status": "string"
+     }
+    },
+    {
+     "name": "file_printout",
+     "description": "Files one autoclave printout.",
+     "input": {
+      "tray_id": "string"
+     },
+     "output": {
+      "entry_id": "string"
+     }
+    },
+    {
+     "name": "seat_patient",
+     "description": "Seats one patient in the chair.",
+     "input": {
+      "patient_id": "string"
+     },
+     "output": {
+      "status": "string"
+     }
+    },
+    {
+     "name": "read_printout",
+     "description": "Reads one autoclave printout.",
+     "input": {
+      "tray_id": "string"
+     },
+     "output": {
+      "cycles": "number"
+     }
+    }
+   ],
+   "mentions": [
+    [
+     "Sterilization of the instruments",
+     "EVENT_REFERENCE",
+     "D1",
+     "REFERENCE_TO_EVENT"
+    ],
+    [
+     "each appointment",
+     "ENTITY",
+     null,
+     "OTHER"
+    ],
+    [
+     "Autoclave the instruments",
+     "EVENT",
+     "D1",
+     "ACTION"
+    ],
+    [
+     "the instruments",
+     "ENTITY",
+     null,
+     "OTHER"
+    ],
+    [
+     "134 degrees",
+     "ENTITY",
+     null,
+     "OTHER"
+    ],
+    [
+     "The autoclave printout",
+     "ARTIFACT",
+     null,
+     "OTHER"
+    ],
+    [
+     "each sterilized tray",
+     "EVENT_REFERENCE",
+     null,
+     "REFERENCE_TO_EVENT"
+    ],
+    [
+     "Seat the patient",
+     "EVENT",
+     "D3",
+     "ACTION"
+    ],
+    [
+     "the patient",
+     "ENTITY",
+     null,
+     "OTHER"
+    ],
+    [
+     "the printout is filed",
+     "STATE_OR_FACET",
+     "D4",
+     "STATE"
+    ]
+   ],
+   "normative_edges": [
+    [
+     "D4",
+     "D3",
+     [
+      "STATE_GATE",
+      "PRECONDITION"
+     ],
+     "Seat the patient only after the printout is filed"
+    ]
+   ],
+   "related_pairs": [
+    [
+     "D1",
+     "D4"
+    ]
+   ],
+   "ambiguous_pairs": [],
+   "notes": "subject nominalization shares cid with the imperative (SAME_EVENT pair); artifact-subject 'confirms' sentence is the junk class (participle NP, no cid); artifact-filing state gates seating."
+  },
+  {
+   "case_id": "m_observatory",
+   "domain": "observatory dome operation",
+   "family": "m_check_vs_state_readout",
+   "policy": "Open the dome only if the sky meter reads clear. Read the sky meter before opening the dome. Record the reading in the night report.",
+   "tools": [
+    {
+     "name": "open_dome",
+     "description": "Opens one observatory dome.",
+     "input": {
+      "dome_id": "string"
+     },
+     "output": {
+      "status": "string"
+     }
+    },
+    {
+     "name": "read_sky_meter",
+     "description": "Reads one sky meter and returns the reading.",
+     "input": {
+      "meter_id": "string"
+     },
+     "output": {
+      "reading": "string"
+     }
+    },
+    {
+     "name": "write_night_report",
+     "description": "Appends one entry to the night report.",
+     "input": {
+      "entry": "string"
+     },
+     "output": {
+      "entry_id": "string"
+     }
+    },
+    {
+     "name": "calibrate_sky_meter",
+     "description": "Calibrates one sky meter.",
+     "input": {
+      "meter_id": "string"
+     },
+     "output": {
+      "status": "string"
+     }
+    }
+   ],
+   "mentions": [
+    [
+     "Open the dome",
+     "EVENT",
+     "O1",
+     "ACTION"
+    ],
+    [
+     "the dome",
+     "ENTITY",
+     null,
+     "OTHER"
+    ],
+    [
+     "the sky meter reads clear",
+     "STATE_OR_FACET",
+     "O2",
+     "STATE"
+    ],
+    [
+     "the sky meter",
+     "ENTITY",
+     null,
+     "OTHER"
+    ],
+    [
+     "Read the sky meter",
+     "CHECK",
+     "O3",
+     "CHECK"
+    ],
+    [
+     "opening the dome",
+     "EVENT_REFERENCE",
+     "O1",
+     "REFERENCE_TO_EVENT"
+    ],
+    [
+     "Record the reading",
+     "EVENT",
+     "O4",
+     "RECORD"
+    ],
+    [
+     "the reading",
+     "EVENT_REFERENCE",
+     "O3",
+     "REFERENCE_TO_EVENT"
+    ],
+    [
+     "the night report",
+     "ARTIFACT",
+     null,
+     "OTHER"
+    ]
+   ],
+   "normative_edges": [
+    [
+     "O2",
+     "O1",
+     [
+      "STATE_GATE",
+      "PRECONDITION"
+     ],
+     "Open the dome only if the sky meter reads clear"
+    ],
+    [
+     "O3",
+     "O1",
+     [
+      "ORDER_BEFORE"
+     ],
+     "Read the sky meter before opening the dome"
+    ]
+   ],
+   "related_pairs": [
+    [
+     "O2",
+     "O3"
+    ],
+    [
+     "O3",
+     "O4"
+    ]
+   ],
+   "ambiguous_pairs": [],
+   "notes": "check-of-state vs state readout: 'the sky meter reads clear' (state O2) vs 'Read the sky meter' (check O3) - directive class 'check of a state vs execution of the action producing that state'; gerund reference; record flow."
+  },
+  {
+   "case_id": "m_mint",
+   "domain": "mint coin striking",
+   "family": "m_same_object_diff_predicates",
+   "policy": "Weigh the coin blanks. Anneal the coin blanks. Strike the coins only after both steps are complete.",
+   "tools": [
+    {
+     "name": "weigh_blanks",
+     "description": "Weighs one set of coin blanks.",
+     "input": {
+      "set_id": "string"
+     },
+     "output": {
+      "grams": "number"
+     }
+    },
+    {
+     "name": "anneal_blanks",
+     "description": "Anneals one set of coin blanks.",
+     "input": {
+      "set_id": "string"
+     },
+     "output": {
+      "status": "string"
+     }
+    },
+    {
+     "name": "strike_coins",
+     "description": "Strikes one batch of coins.",
+     "input": {
+      "batch_id": "string"
+     },
+     "output": {
+      "count": "number"
+     }
+    },
+    {
+     "name": "log_blank_weight",
+     "description": "Records the weight of one set of coin blanks.",
+     "input": {
+      "set_id": "string"
+     },
+     "output": {
+      "entry_id": "string"
+     }
+    }
+   ],
+   "mentions": [
+    [
+     "Weigh the coin blanks",
+     "CHECK",
+     "M1",
+     "CHECK"
+    ],
+    [
+     "the coin blanks",
+     "ENTITY",
+     null,
+     "OTHER"
+    ],
+    [
+     "Anneal the coin blanks",
+     "EVENT",
+     "M2",
+     "ACTION"
+    ],
+    [
+     "Strike the coins",
+     "EVENT",
+     "M3",
+     "ACTION"
+    ],
+    [
+     "the coins",
+     "ENTITY",
+     null,
+     "OTHER"
+    ],
+    [
+     "both steps are complete",
+     "STATE_OR_FACET",
+     "M4",
+     "STATE"
+    ]
+   ],
+   "normative_edges": [
+    [
+     "M4",
+     "M3",
+     [
+      "STATE_GATE",
+      "PRECONDITION"
+     ],
+     "Strike the coins only after both steps are complete"
+    ]
+   ],
+   "related_pairs": [
+    [
+     "M1",
+     "M4"
+    ],
+    [
+     "M2",
+     "M4"
+    ]
+   ],
+   "ambiguous_pairs": [],
+   "notes": "same object under three different predicates (weigh/anneal/strike); elliptical plural state reference 'both steps'."
+  },
+  {
+   "case_id": "m_coral",
+   "domain": "coral reef survey",
+   "family": "m_same_predicate_diff_objects",
+   "policy": "Tag the staghorn colonies before surveying the reef flat. Tag the brain corals after the survey. Photograph every tagged colony.",
+   "tools": [
+    {
+     "name": "tag_colony",
+     "description": "Tags one coral colony.",
+     "input": {
+      "colony_id": "string"
+     },
+     "output": {
+      "tag_id": "string"
+     }
+    },
+    {
+     "name": "survey_reef",
+     "description": "Surveys one section of reef flat.",
+     "input": {
+      "section_id": "string"
+     },
+     "output": {
+      "report": "string"
+     }
+    },
+    {
+     "name": "photograph_colony",
+     "description": "Photographs one coral colony.",
+     "input": {
+      "colony_id": "string"
+     },
+     "output": {
+      "photo_id": "string"
+     }
+    },
+    {
+     "name": "log_survey",
+     "description": "Records one survey entry in the reef log.",
+     "input": {
+      "section_id": "string"
+     },
+     "output": {
+      "entry_id": "string"
+     }
+    }
+   ],
+   "mentions": [
+    [
+     "Tag the staghorn colonies",
+     "EVENT",
+     "C1",
+     "ACTION"
+    ],
+    [
+     "the staghorn colonies",
+     "ENTITY",
+     null,
+     "OTHER"
+    ],
+    [
+     "surveying the reef flat",
+     "EVENT",
+     "C3",
+     "ACTION"
+    ],
+    [
+     "the reef flat",
+     "ENTITY",
+     null,
+     "OTHER"
+    ],
+    [
+     "Tag the brain corals",
+     "EVENT",
+     "C2",
+     "ACTION"
+    ],
+    [
+     "the brain corals",
+     "ENTITY",
+     null,
+     "OTHER"
+    ],
+    [
+     "the survey",
+     "EVENT_REFERENCE",
+     "C3",
+     "REFERENCE_TO_EVENT"
+    ],
+    [
+     "Photograph every tagged colony",
+     "EVENT",
+     "C4",
+     "ACTION"
+    ],
+    [
+     "every tagged colony",
+     "EVENT_REFERENCE",
+     null,
+     "REFERENCE_TO_EVENT"
+    ]
+   ],
+   "normative_edges": [
+    [
+     "C1",
+     "C3",
+     [
+      "ORDER_BEFORE"
+     ],
+     "Tag the staghorn colonies before surveying the reef flat"
+    ],
+    [
+     "C3",
+     "C2",
+     [
+      "ORDER_BEFORE",
+      "PRECONDITION"
+     ],
+     "Tag the brain corals after the survey"
+    ]
+   ],
+   "related_pairs": [],
+   "ambiguous_pairs": [],
+   "notes": "same predicate on different objects = two events (hard negative pair, NO related); gerund survey clause is the only mention of the survey; noun reference 'the survey' to a gerund-mentioned action."
+  },
+  {
+   "case_id": "m_sluice",
+   "domain": "dam sluice gate operation",
+   "family": "m_verify_embedded_passive_pronoun",
+   "policy": "Operate the sluice gate only after it has been inspected. Inspect the gate weekly. Verify that the inspection is logged.",
+   "tools": [
+    {
+     "name": "inspect_gate",
+     "description": "Inspects one sluice gate.",
+     "input": {
+      "gate_id": "string"
+     },
+     "output": {
+      "status": "string"
+     }
+    },
+    {
+     "name": "operate_gate",
+     "description": "Operates one sluice gate.",
+     "input": {
+      "gate_id": "string"
+     },
+     "output": {
+      "status": "string"
+     }
+    },
+    {
+     "name": "log_inspection",
+     "description": "Writes one inspection entry into the gate log.",
+     "input": {
+      "gate_id": "string"
+     },
+     "output": {
+      "entry_id": "string"
+     }
+    },
+    {
+     "name": "read_gate_log",
+     "description": "Reads the gate log for one sluice gate.",
+     "input": {
+      "gate_id": "string"
+     },
+     "output": {
+      "entries": "number"
+     }
+    }
+   ],
+   "mentions": [
+    [
+     "Operate the sluice gate",
+     "EVENT",
+     "S2",
+     "ACTION"
+    ],
+    [
+     "the sluice gate",
+     "ENTITY",
+     null,
+     "OTHER"
+    ],
+    [
+     "it has been inspected",
+     "STATE_OR_FACET",
+     "S1",
+     "STATE"
+    ],
+    [
+     "Inspect the gate",
+     "CHECK",
+     "S1",
+     "CHECK"
+    ],
+    [
+     "the gate",
+     "ENTITY",
+     null,
+     "OTHER"
+    ],
+    [
+     "Verify that the inspection is logged",
+     "CHECK",
+     "S4",
+     "CHECK",
+     {
+      "embeds": "the inspection is logged"
+     }
+    ],
+    [
+     "the inspection is logged",
+     "EVENT",
+     "S3",
+     "RECORD"
+    ],
+    [
+     "the inspection",
+     "EVENT_REFERENCE",
+     "S1",
+     "REFERENCE_TO_EVENT"
+    ]
+   ],
+   "normative_edges": [
+    [
+     "S1",
+     "S2",
+     [
+      "STATE_GATE",
+      "PRECONDITION"
+     ],
+     "Operate the sluice gate only after it has been inspected"
+    ]
+   ],
+   "related_pairs": [
+    [
+     "S1",
+     "S3"
+    ],
+    [
+     "S1",
+     "S4"
+    ],
+    [
+     "S3",
+     "S4"
+    ]
+   ],
+   "ambiguous_pairs": [],
+   "notes": "pronoun-subject passive facet cross-sentence (it has been inspected -> S1); nested VERIFY over a recording passive; triple nesting verify > record > reference."
+  },
+  {
+   "case_id": "m_foundry",
+   "domain": "foundry melt pouring",
+   "family": "m_irregular_morphology_modal_passive",
+   "policy": "Sweep the foundry floor before each shift. The floor must be swept and the ladles must be preheated. Pour the melt only after the floor is swept and the ladles are preheated.",
+   "tools": [
+    {
+     "name": "sweep_floor",
+     "description": "Sweeps one foundry floor.",
+     "input": {
+      "zone_id": "string"
+     },
+     "output": {
+      "status": "string"
+     }
+    },
+    {
+     "name": "preheat_ladle",
+     "description": "Preheats one ladle.",
+     "input": {
+      "ladle_id": "string"
+     },
+     "output": {
+      "temp_c": "number"
+     }
+    },
+    {
+     "name": "pour_melt",
+     "description": "Pours one ladle of melt.",
+     "input": {
+      "ladle_id": "string"
+     },
+     "output": {
+      "cast_id": "string"
+     }
+    },
+    {
+     "name": "log_floor_check",
+     "description": "Records one floor check in the foundry log.",
+     "input": {
+      "zone_id": "string"
+     },
+     "output": {
+      "entry_id": "string"
+     }
+    }
+   ],
+   "mentions": [
+    [
+     "Sweep the foundry floor",
+     "EVENT",
+     "F1",
+     "ACTION"
+    ],
+    [
+     "the foundry floor",
+     "ENTITY",
+     null,
+     "OTHER"
+    ],
+    [
+     "each shift",
+     "ENTITY",
+     null,
+     "OTHER"
+    ],
+    [
+     "The floor must be swept",
+     "STATE_OR_FACET",
+     "F1",
+     "STATE"
+    ],
+    [
+     "the floor is swept",
+     "STATE_OR_FACET",
+     "F1",
+     "STATE"
+    ],
+    [
+     "the ladles must be preheated",
+     "STATE_OR_FACET",
+     "F2",
+     "STATE"
+    ],
+    [
+     "the ladles are preheated",
+     "STATE_OR_FACET",
+     "F2",
+     "STATE"
+    ],
+    [
+     "the ladles",
+     "ENTITY",
+     null,
+     "OTHER"
+    ],
+    [
+     "Pour the melt",
+     "EVENT",
+     "F3",
+     "ACTION"
+    ],
+    [
+     "the melt",
+     "ENTITY",
+     null,
+     "OTHER"
+    ]
+   ],
+   "normative_edges": [
+    [
+     "F1",
+     "F3",
+     [
+      "STATE_GATE",
+      "PRECONDITION"
+     ],
+     "Pour the melt only after the floor is swept and the ladles are preheated"
+    ],
+    [
+     "F2",
+     "F3",
+     [
+      "STATE_GATE",
+      "PRECONDITION"
+     ],
+     "Pour the melt only after the floor is swept and the ladles are preheated"
+    ]
+   ],
+   "related_pairs": [],
+   "ambiguous_pairs": [],
+   "notes": "irregular morphology sweep->swept (imperative, modal passive, result passive all one cid); preheat has no active mention (referenced only via modal/result passives, own cid); coordinated gates."
+  },
+  {
+   "case_id": "l_deicing",
+   "domain": "aircraft de-icing",
+   "family": "l_negation_forbidden_until",
+   "policy": "De-ice both wings before dawn. Pushback is forbidden until both wings are de-iced. Notify the tower if either wing is skipped.",
+   "tools": [
+    {
+     "name": "deice_wing",
+     "description": "De-ices one aircraft wing.",
+     "input": {
+      "wing_id": "string"
+     },
+     "output": {
+      "status": "string"
+     }
+    },
+    {
+     "name": "request_pushback",
+     "description": "Requests pushback clearance for one aircraft.",
+     "input": {
+      "aircraft_id": "string"
+     },
+     "output": {
+      "clearance": "string"
+     }
+    },
+    {
+     "name": "notify_tower",
+     "description": "Notifies the tower about one aircraft.",
+     "input": {
+      "aircraft_id": "string"
+     },
+     "output": {
+      "status": "string"
+     }
+    },
+    {
+     "name": "read_wing_sensor",
+     "description": "Reads the ice sensor of one wing.",
+     "input": {
+      "wing_id": "string"
+     },
+     "output": {
+      "ice_mm": "number"
+     }
+    }
+   ],
+   "mentions": [
+    [
+     "De-ice both wings",
+     "EVENT",
+     "W1",
+     "ACTION"
+    ],
+    [
+     "both wings",
+     "ENTITY",
+     null,
+     "OTHER"
+    ],
+    [
+     "before dawn",
+     "ENTITY",
+     null,
+     "OTHER"
+    ],
+    [
+     "Pushback is forbidden",
+     "EVENT",
+     "W2",
+     "ACTION"
+    ],
+    [
+     "both wings are de-iced",
+     "STATE_OR_FACET",
+     "W1",
+     "STATE"
+    ],
+    [
+     "Notify the tower",
+     "EVENT",
+     "W3",
+     "COMMUNICATION"
+    ],
+    [
+     "the tower",
+     "ENTITY",
+     null,
+     "OTHER"
+    ],
+    [
+     "either wing is skipped",
+     "STATE_OR_FACET",
+     "W4",
+     "STATE"
+    ]
+   ],
+   "normative_edges": [
+    [
+     "W1",
+     "W2",
+     [
+      "STATE_GATE",
+      "PRECONDITION"
+     ],
+     "Pushback is forbidden until both wings are de-iced"
+    ],
+    [
+     "W4",
+     "W3",
+     [
+      "STATE_GATE",
+      "RESPONSE"
+     ],
+     "Notify the tower if either wing is skipped"
+    ]
+   ],
+   "related_pairs": [
+    [
+     "W1",
+     "W4"
+    ]
+   ],
+   "ambiguous_pairs": [],
+   "notes": "negation via 'forbidden until'; nominalization-subject prohibition clause; outcome state 'either wing is skipped' own cid; conditional communication."
+  },
+  {
+   "case_id": "l_funicular",
+   "domain": "funicular railway",
+   "family": "l_only_if_unless_same_state",
+   "policy": "Run the funicular only if the brake test is passed. Perform the brake test each morning. Do not carry passengers unless the brakes have passed the test.",
+   "tools": [
+    {
+     "name": "perform_brake_test",
+     "description": "Performs one brake test on the funicular.",
+     "input": {
+      "car_id": "string"
+     },
+     "output": {
+      "passed": "boolean"
+     }
+    },
+    {
+     "name": "run_funicular",
+     "description": "Runs the funicular for one trip.",
+     "input": {
+      "car_id": "string"
+     },
+     "output": {
+      "status": "string"
+     }
+    },
+    {
+     "name": "board_passengers",
+     "description": "Boards one group of passengers.",
+     "input": {
+      "group_id": "string"
+     },
+     "output": {
+      "status": "string"
+     }
+    },
+    {
+     "name": "read_brake_log",
+     "description": "Reads the brake test log of the funicular.",
+     "input": {
+      "car_id": "string"
+     },
+     "output": {
+      "last_passed": "string"
+     }
+    }
+   ],
+   "mentions": [
+    [
+     "Run the funicular",
+     "EVENT",
+     "R1",
+     "ACTION"
+    ],
+    [
+     "the funicular",
+     "ENTITY",
+     null,
+     "OTHER"
+    ],
+    [
+     "the brake test is passed",
+     "STATE_OR_FACET",
+     "R3",
+     "STATE"
+    ],
+    [
+     "Perform the brake test",
+     "CHECK",
+     "R2",
+     "CHECK"
+    ],
+    [
+     "the brake test",
+     "ENTITY",
+     null,
+     "OTHER"
+    ],
+    [
+     "each morning",
+     "ENTITY",
+     null,
+     "OTHER"
+    ],
+    [
+     "carry passengers",
+     "EVENT",
+     "R4",
+     "ACTION"
+    ],
+    [
+     "the brakes have passed the test",
+     "STATE_OR_FACET",
+     "R3",
+     "STATE"
+    ],
+    [
+     "the brakes",
+     "ENTITY",
+     null,
+     "OTHER"
+    ]
+   ],
+   "normative_edges": [
+    [
+     "R3",
+     "R1",
+     [
+      "STATE_GATE",
+      "PRECONDITION"
+     ],
+     "Run the funicular only if the brake test is passed"
+    ],
+    [
+     "R3",
+     "R4",
+     [
+      "EXCEPTION",
+      "STATE_GATE"
+     ],
+     "Do not carry passengers unless the brakes have passed the test"
+    ]
+   ],
+   "related_pairs": [
+    [
+     "R2",
+     "R3"
+    ]
+   ],
+   "ambiguous_pairs": [],
+   "notes": "same passed-state gates two different actions via only-if and unless, with two different surface forms of the state; negated imperative mention without 'Do not'."
+  },
+  {
+   "case_id": "l_algae",
+   "domain": "algae bioreactor",
+   "family": "l_or_alternatives_threshold",
+   "policy": "Purge the reactor if the cell density exceeds 40 units. Harvest the algae or dilute the medium within one hour of the purge. The harvest log records either action.",
+   "tools": [
+    {
+     "name": "purge_reactor",
+     "description": "Purges one algae reactor.",
+     "input": {
+      "reactor_id": "string"
+     },
+     "output": {
+      "status": "string"
+     }
+    },
+    {
+     "name": "harvest_algae",
+     "description": "Harvests the algae from one reactor.",
+     "input": {
+      "reactor_id": "string"
+     },
+     "output": {
+      "grams": "number"
+     }
+    },
+    {
+     "name": "dilute_medium",
+     "description": "Dilutes the medium of one reactor.",
+     "input": {
+      "reactor_id": "string"
+     },
+     "output": {
+      "volume_l": "number"
+     }
+    },
+    {
+     "name": "read_density_meter",
+     "description": "Reads the density meter of one reactor.",
+     "input": {
+      "reactor_id": "string"
+     },
+     "output": {
+      "units": "number"
+     }
+    }
+   ],
+   "mentions": [
+    [
+     "Purge the reactor",
+     "EVENT",
+     "A1",
+     "ACTION"
+    ],
+    [
+     "the reactor",
+     "ENTITY",
+     null,
+     "OTHER"
+    ],
+    [
+     "the cell density exceeds 40 units",
+     "STATE_OR_FACET",
+     "A2",
+     "STATE"
+    ],
+    [
+     "Harvest the algae",
+     "EVENT",
+     "A3",
+     "ACTION"
+    ],
+    [
+     "the algae",
+     "ENTITY",
+     null,
+     "OTHER"
+    ],
+    [
+     "dilute the medium",
+     "EVENT",
+     "A4",
+     "ACTION"
+    ],
+    [
+     "the medium",
+     "ENTITY",
+     null,
+     "OTHER"
+    ],
+    [
+     "one hour",
+     "ENTITY",
+     null,
+     "OTHER"
+    ],
+    [
+     "the purge",
+     "EVENT_REFERENCE",
+     "A1",
+     "REFERENCE_TO_EVENT"
+    ],
+    [
+     "The harvest log",
+     "ARTIFACT",
+     null,
+     "OTHER"
+    ],
+    [
+     "either action",
+     "EVENT_REFERENCE",
+     null,
+     "REFERENCE_TO_EVENT"
+    ]
+   ],
+   "normative_edges": [
+    [
+     "A2",
+     "A1",
+     [
+      "STATE_GATE"
+     ],
+     "Purge the reactor if the cell density exceeds 40 units"
+    ],
+    [
+     "A1",
+     "A3",
+     [
+      "RESPONSE",
+      "ORDER_BEFORE"
+     ],
+     "Harvest the algae or dilute the medium within one hour of the purge"
+    ],
+    [
+     "A1",
+     "A4",
+     [
+      "RESPONSE",
+      "ORDER_BEFORE"
+     ],
+     "Harvest the algae or dilute the medium within one hour of the purge"
+    ]
+   ],
+   "related_pairs": [],
+   "ambiguous_pairs": [],
+   "notes": "OR alternatives share the antecedent but get NO edge between them (F5 convention); numeric threshold; artifact-subject 'records either action' junk class."
+  },
+  {
+   "case_id": "l_bloodbank",
+   "domain": "blood bank plasma",
+   "family": "l_temporal_window_unless_record",
+   "policy": "Collect each plasma donation. Chill the plasma within six hours of collection. Discard the unit unless it is chilled in time. Record the discard in the wastage file.",
+   "tools": [
+    {
+     "name": "collect_plasma",
+     "description": "Collects one plasma donation.",
+     "input": {
+      "donor_id": "string"
+     },
+     "output": {
+      "unit_id": "string"
+     }
+    },
+    {
+     "name": "chill_plasma",
+     "description": "Chills one plasma unit.",
+     "input": {
+      "unit_id": "string"
+     },
+     "output": {
+      "temp_c": "number"
+     }
+    },
+    {
+     "name": "discard_unit",
+     "description": "Discards one plasma unit.",
+     "input": {
+      "unit_id": "string"
+     },
+     "output": {
+      "status": "string"
+     }
+    },
+    {
+     "name": "record_wastage",
+     "description": "Records one discard in the wastage file.",
+     "input": {
+      "unit_id": "string"
+     },
+     "output": {
+      "entry_id": "string"
+     }
+    }
+   ],
+   "mentions": [
+    [
+     "Collect each plasma donation",
+     "EVENT",
+     "P0",
+     "ACTION"
+    ],
+    [
+     "each plasma donation",
+     "ENTITY",
+     null,
+     "OTHER"
+    ],
+    [
+     "Chill the plasma",
+     "EVENT",
+     "P1",
+     "ACTION"
+    ],
+    [
+     "the plasma",
+     "ENTITY",
+     null,
+     "OTHER"
+    ],
+    [
+     "six hours",
+     "ENTITY",
+     null,
+     "OTHER"
+    ],
+    [
+     "collection",
+     "EVENT_REFERENCE",
+     "P0",
+     "REFERENCE_TO_EVENT"
+    ],
+    [
+     "Discard the unit",
+     "EVENT",
+     "P2",
+     "ACTION"
+    ],
+    [
+     "the unit",
+     "ENTITY",
+     null,
+     "OTHER"
+    ],
+    [
+     "it is chilled in time",
+     "STATE_OR_FACET",
+     "P1",
+     "STATE"
+    ],
+    [
+     "Record the discard",
+     "EVENT",
+     "P3",
+     "RECORD"
+    ],
+    [
+     "the discard",
+     "EVENT_REFERENCE",
+     "P2",
+     "REFERENCE_TO_EVENT"
+    ],
+    [
+     "the wastage file",
+     "ARTIFACT",
+     null,
+     "OTHER"
+    ]
+   ],
+   "normative_edges": [
+    [
+     "P0",
+     "P1",
+     [
+      "ORDER_BEFORE"
+     ],
+     "Chill the plasma within six hours of collection"
+    ],
+    [
+     "P1",
+     "P2",
+     [
+      "EXCEPTION",
+      "STATE_GATE"
+     ],
+     "Discard the unit unless it is chilled in time"
+    ],
+    [
+     "P2",
+     "P3",
+     [
+      "RESPONSE",
+      "ORDER_BEFORE"
+     ],
+     "Record the discard in the wastage file"
+    ]
+   ],
+   "related_pairs": [],
+   "ambiguous_pairs": [],
+   "notes": "temporal window ('within X of nominalization'); unless-exception over pronoun passive facet; record-after-action chain."
+  },
+  {
+   "case_id": "l_artillery",
+   "domain": "artillery range safety",
+   "family": "l_only_if_coordinated_state_gates",
+   "policy": "Zero the guns before live firing. Live firing is permitted only if the range is clear and the red flag is hoisted. Lower the flag if firing is cancelled.",
+   "tools": [
+    {
+     "name": "zero_guns",
+     "description": "Zeros one set of guns.",
+     "input": {
+      "battery_id": "string"
+     },
+     "output": {
+      "offset": "string"
+     }
+    },
+    {
+     "name": "fire_live_rounds",
+     "description": "Fires live rounds on one range.",
+     "input": {
+      "range_id": "string"
+     },
+     "output": {
+      "rounds": "number"
+     }
+    },
+    {
+     "name": "hoist_red_flag",
+     "description": "Hoists the red flag on one range.",
+     "input": {
+      "range_id": "string"
+     },
+     "output": {
+      "status": "string"
+     }
+    },
+    {
+     "name": "lower_flag",
+     "description": "Lowers the flag on one range.",
+     "input": {
+      "range_id": "string"
+     },
+     "output": {
+      "status": "string"
+     }
+    }
+   ],
+   "mentions": [
+    [
+     "Zero the guns",
+     "EVENT",
+     "Z1",
+     "ACTION"
+    ],
+    [
+     "the guns",
+     "ENTITY",
+     null,
+     "OTHER"
+    ],
+    [
+     "Live firing is permitted",
+     "EVENT",
+     "Z2",
+     "ACTION"
+    ],
+    [
+     "the range is clear",
+     "STATE_OR_FACET",
+     "Z3",
+     "STATE"
+    ],
+    [
+     "the range",
+     "ENTITY",
+     null,
+     "OTHER"
+    ],
+    [
+     "the red flag is hoisted",
+     "STATE_OR_FACET",
+     "Z4",
+     "STATE"
+    ],
+    [
+     "the red flag",
+     "ENTITY",
+     null,
+     "OTHER"
+    ],
+    [
+     "Lower the flag",
+     "EVENT",
+     "Z5",
+     "ACTION"
+    ],
+    [
+     "firing is cancelled",
+     "STATE_OR_FACET",
+     "Z6",
+     "STATE"
+    ]
+   ],
+   "normative_edges": [
+    [
+     "Z1",
+     "Z2",
+     [
+      "ORDER_BEFORE"
+     ],
+     "Zero the guns before live firing"
+    ],
+    [
+     "Z3",
+     "Z2",
+     [
+      "STATE_GATE",
+      "PRECONDITION"
+     ],
+     "Live firing is permitted only if the range is clear and the red flag is hoisted"
+    ],
+    [
+     "Z4",
+     "Z2",
+     [
+      "STATE_GATE",
+      "PRECONDITION"
+     ],
+     "Live firing is permitted only if the range is clear and the red flag is hoisted"
+    ],
+    [
+     "Z6",
+     "Z5",
+     [
+      "STATE_GATE",
+      "RESPONSE"
+     ],
+     "Lower the flag if firing is cancelled"
+    ]
+   ],
+   "related_pairs": [
+    [
+     "Z2",
+     "Z6"
+    ]
+   ],
+   "ambiguous_pairs": [],
+   "notes": "nominalization-subject permission clause; coordinated state gates; cancellation outcome state own cid; flag hoisted state has no active mention."
+  },
+  {
+   "case_id": "l_olive",
+   "domain": "olive oil mill",
+   "family": "l_gerund_pronoun_descriptive",
+   "policy": "Press the olives within two days of harvest. Wash the olives before pressing them. The press house is a listed building.",
+   "tools": [
+    {
+     "name": "wash_olives",
+     "description": "Washes one crate of olives.",
+     "input": {
+      "crate_id": "string"
+     },
+     "output": {
+      "status": "string"
+     }
+    },
+    {
+     "name": "press_olives",
+     "description": "Presses one crate of olives.",
+     "input": {
+      "crate_id": "string"
+     },
+     "output": {
+      "litres": "number"
+     }
+    },
+    {
+     "name": "record_batch",
+     "description": "Records one pressing batch in the mill book.",
+     "input": {
+      "crate_id": "string"
+     },
+     "output": {
+      "entry_id": "string"
+     }
+    },
+    {
+     "name": "read_moisture",
+     "description": "Reads the moisture of one crate of olives.",
+     "input": {
+      "crate_id": "string"
+     },
+     "output": {
+      "pct": "number"
+     }
+    }
+   ],
+   "mentions": [
+    [
+     "Press the olives",
+     "EVENT",
+     "V1",
+     "ACTION"
+    ],
+    [
+     "the olives",
+     "ENTITY",
+     null,
+     "OTHER"
+    ],
+    [
+     "two days",
+     "ENTITY",
+     null,
+     "OTHER"
+    ],
+    [
+     "harvest",
+     "EVENT_REFERENCE",
+     null,
+     "REFERENCE_TO_EVENT"
+    ],
+    [
+     "Wash the olives",
+     "EVENT",
+     "V2",
+     "ACTION"
+    ],
+    [
+     "pressing them",
+     "EVENT_REFERENCE",
+     "V1",
+     "REFERENCE_TO_EVENT"
+    ],
+    [
+     "The press house",
+     "ENTITY",
+     null,
+     "OTHER"
+    ],
+    [
+     "a listed building",
+     "ENTITY",
+     null,
+     "OTHER"
+    ]
+   ],
+   "normative_edges": [
+    [
+     "V2",
+     "V1",
+     [
+      "ORDER_BEFORE",
+      "PRECONDITION"
+     ],
+     "Wash the olives before pressing them"
+    ]
+   ],
+   "related_pairs": [],
+   "ambiguous_pairs": [],
+   "notes": "gerund+pronoun reference; descriptive non-policy final sentence; 'harvest' referenced-only nominalization (no cid, F5 junk-class convention for reference-only nominals)."
+  },
+  {
+   "case_id": "l_snowroute",
+   "domain": "snow route maintenance",
+   "family": "l_same_predicate_roads_completion",
+   "policy": "Plough the north road before 06:00. Plough the south road after the north road is cleared. Grit both roads once ploughing is complete.",
+   "tools": [
+    {
+     "name": "plough_road",
+     "description": "Ploughs one road.",
+     "input": {
+      "road_id": "string"
+     },
+     "output": {
+      "status": "string"
+     }
+    },
+    {
+     "name": "grit_road",
+     "description": "Grits one road.",
+     "input": {
+      "road_id": "string"
+     },
+     "output": {
+      "kg": "number"
+     }
+    },
+    {
+     "name": "check_road_status",
+     "description": "Reads the clearance status of one road.",
+     "input": {
+      "road_id": "string"
+     },
+     "output": {
+      "cleared": "boolean"
+     }
+    },
+    {
+     "name": "log_plough",
+     "description": "Writes one ploughing entry in the route log.",
+     "input": {
+      "road_id": "string"
+     },
+     "output": {
+      "entry_id": "string"
+     }
+    }
+   ],
+   "mentions": [
+    [
+     "Plough the north road",
+     "EVENT",
+     "N1",
+     "ACTION"
+    ],
+    [
+     "the north road",
+     "ENTITY",
+     null,
+     "OTHER"
+    ],
+    [
+     "Plough the south road",
+     "EVENT",
+     "N2",
+     "ACTION"
+    ],
+    [
+     "the south road",
+     "ENTITY",
+     null,
+     "OTHER"
+    ],
+    [
+     "the north road is cleared",
+     "STATE_OR_FACET",
+     "N3",
+     "STATE"
+    ],
+    [
+     "Grit both roads",
+     "EVENT",
+     "N4",
+     "ACTION"
+    ],
+    [
+     "both roads",
+     "ENTITY",
+     null,
+     "OTHER"
+    ],
+    [
+     "ploughing is complete",
+     "STATE_OR_FACET",
+     "N5",
+     "STATE"
+    ]
+   ],
+   "normative_edges": [
+    [
+     "N3",
+     "N2",
+     [
+      "STATE_GATE",
+      "PRECONDITION"
+     ],
+     "Plough the south road after the north road is cleared"
+    ],
+    [
+     "N5",
+     "N4",
+     [
+      "STATE_GATE"
+     ],
+     "Grit both roads once ploughing is complete"
+    ]
+   ],
+   "related_pairs": [
+    [
+     "N1",
+     "N3"
+    ],
+    [
+     "N1",
+     "N5"
+    ],
+    [
+     "N2",
+     "N5"
+    ]
+   ],
+   "ambiguous_pairs": [],
+   "notes": "same predicate on two objects; result state via a DIFFERENT predicate ('is cleared' vs 'Plough') own cid; completion state of both ploughings; multiple operations."
+  },
+  {
+   "case_id": "l_roastery",
+   "domain": "coffee roastery",
+   "family": "l_may_permission_negation_record",
+   "policy": "Roast the beans at 205 degrees. Cooling may begin once the beans are roasted. Do not open the drum before cooling is finished. The roast sheet is filed by the roaster.",
+   "tools": [
+    {
+     "name": "roast_beans",
+     "description": "Roasts one drum of beans.",
+     "input": {
+      "drum_id": "string"
+     },
+     "output": {
+      "status": "string"
+     }
+    },
+    {
+     "name": "open_drum",
+     "description": "Opens one roaster drum.",
+     "input": {
+      "drum_id": "string"
+     },
+     "output": {
+      "status": "string"
+     }
+    },
+    {
+     "name": "file_roast_sheet",
+     "description": "Files one roast sheet.",
+     "input": {
+      "drum_id": "string"
+     },
+     "output": {
+      "entry_id": "string"
+     }
+    },
+    {
+     "name": "read_drum_temp",
+     "description": "Reads the drum temperature of one roaster.",
+     "input": {
+      "drum_id": "string"
+     },
+     "output": {
+      "temp_c": "number"
+     }
+    }
+   ],
+   "mentions": [
+    [
+     "Roast the beans",
+     "EVENT",
+     "K1",
+     "ACTION"
+    ],
+    [
+     "the beans",
+     "ENTITY",
+     null,
+     "OTHER"
+    ],
+    [
+     "205 degrees",
+     "ENTITY",
+     null,
+     "OTHER"
+    ],
+    [
+     "Cooling may begin",
+     "EVENT",
+     "K2",
+     "ACTION"
+    ],
+    [
+     "the beans are roasted",
+     "STATE_OR_FACET",
+     "K1",
+     "STATE"
+    ],
+    [
+     "open the drum",
+     "EVENT",
+     "K3",
+     "ACTION"
+    ],
+    [
+     "the drum",
+     "ENTITY",
+     null,
+     "OTHER"
+    ],
+    [
+     "cooling is finished",
+     "STATE_OR_FACET",
+     "K4",
+     "STATE"
+    ],
+    [
+     "The roast sheet is filed by the roaster",
+     "EVENT",
+     "K5",
+     "RECORD"
+    ],
+    [
+     "the roaster",
+     "ENTITY",
+     null,
+     "OTHER"
+    ]
+   ],
+   "normative_edges": [
+    [
+     "K1",
+     "K2",
+     [
+      "STATE_GATE",
+      "PRECONDITION"
+     ],
+     "Cooling may begin once the beans are roasted"
+    ],
+    [
+     "K4",
+     "K3",
+     [
+      "STATE_GATE"
+     ],
+     "Do not open the drum before cooling is finished"
+    ]
+   ],
+   "related_pairs": [
+    [
+     "K2",
+     "K4"
+    ],
+    [
+     "K1",
+     "K5"
+    ]
+   ],
+   "ambiguous_pairs": [],
+   "notes": "may-permission via nominalization subject; negated order; completion state own cid; artifact-subject recording passive IS a gold RECORD event here (F6 convention change vs F5 r_fountain)."
+  },
+  {
+   "case_id": "s_telegraph",
+   "domain": "harbour telegraph soundings",
+   "family": "s_quoted_reported_communication",
+   "policy": "The harbormaster orders the crew to sound the depth every hour. Sound the depth as ordered. Log each sounding in the tide book.",
+   "tools": [
+    {
+     "name": "sound_depth",
+     "description": "Sounds the depth at one station.",
+     "input": {
+      "station_id": "string"
+     },
+     "output": {
+      "metres": "number"
+     }
+    },
+    {
+     "name": "log_sounding",
+     "description": "Writes one sounding in the tide book.",
+     "input": {
+      "station_id": "string"
+     },
+     "output": {
+      "entry_id": "string"
+     }
+    },
+    {
+     "name": "relay_order",
+     "description": "Relays one order from the harbormaster.",
+     "input": {
+      "order_id": "string"
+     },
+     "output": {
+      "status": "string"
+     }
+    },
+    {
+     "name": "read_tide_book",
+     "description": "Reads one tide book entry.",
+     "input": {
+      "station_id": "string"
+     },
+     "output": {
+      "metres": "number"
+     }
+    }
+   ],
+   "mentions": [
+    [
+     "The harbormaster orders the crew to sound the depth",
+     "EVENT",
+     "T0",
+     "COMMUNICATION",
+     {
+      "embeds": "sound the depth"
+     }
+    ],
+    [
+     "The harbormaster",
+     "ENTITY",
+     null,
+     "OTHER"
+    ],
+    [
+     "the crew",
+     "ENTITY",
+     null,
+     "OTHER"
+    ],
+    [
+     "sound the depth",
+     "EVENT",
+     "T1",
+     "ACTION"
+    ],
+    [
+     "every hour",
+     "ENTITY",
+     null,
+     "OTHER"
+    ],
+    [
+     "Sound the depth",
+     "EVENT",
+     "T1",
+     "ACTION"
+    ],
+    [
+     "as ordered",
+     "EVENT_REFERENCE",
+     "T0",
+     "REFERENCE_TO_EVENT"
+    ],
+    [
+     "Log each sounding",
+     "EVENT",
+     "T2",
+     "RECORD"
+    ],
+    [
+     "each sounding",
+     "EVENT_REFERENCE",
+     "T1",
+     "REFERENCE_TO_EVENT"
+    ],
+    [
+     "the tide book",
+     "ARTIFACT",
+     null,
+     "OTHER"
+    ]
+   ],
+   "normative_edges": [
+    [
+     "T1",
+     "T2",
+     [
+      "RESPONSE",
+      "ORDER_BEFORE"
+     ],
+     "Log each sounding in the tide book"
+    ]
+   ],
+   "related_pairs": [
+    [
+     "T0",
+     "T1"
+    ]
+   ],
+   "ambiguous_pairs": [],
+   "notes": "quoted/reported action: the embedded 'sound the depth' shares cid with the direct imperative (reported == prescribed action, hard SAME pair); communication event with 'as ordered' reference to it."
+  },
+  {
+   "case_id": "s_cheese",
+   "domain": "cheese vat house",
+   "family": "s_anaphora_repetition_record",
+   "policy": "Coagulate the milk in vat 3. Repeat this step for vat 4. Add the cultures only after each coagulation is complete. The cheese maker records every coagulation.",
+   "tools": [
+    {
+     "name": "coagulate_milk",
+     "description": "Coagulates the milk in one vat.",
+     "input": {
+      "vat_id": "string"
+     },
+     "output": {
+      "status": "string"
+     }
+    },
+    {
+     "name": "add_cultures",
+     "description": "Adds cultures to one vat.",
+     "input": {
+      "vat_id": "string"
+     },
+     "output": {
+      "status": "string"
+     }
+    },
+    {
+     "name": "record_coagulation",
+     "description": "Records one coagulation in the vat log.",
+     "input": {
+      "vat_id": "string"
+     },
+     "output": {
+      "entry_id": "string"
+     }
+    },
+    {
+     "name": "read_vat_temp",
+     "description": "Reads the temperature of one vat.",
+     "input": {
+      "vat_id": "string"
+     },
+     "output": {
+      "temp_c": "number"
+     }
+    }
+   ],
+   "mentions": [
+    [
+     "Coagulate the milk in vat 3",
+     "EVENT",
+     "H1",
+     "ACTION"
+    ],
+    [
+     "the milk",
+     "ENTITY",
+     null,
+     "OTHER"
+    ],
+    [
+     "vat 3",
+     "ENTITY",
+     null,
+     "OTHER"
+    ],
+    [
+     "Repeat this step",
+     "EVENT",
+     "H1b",
+     "ACTION"
+    ],
+    [
+     "this step",
+     "EVENT_REFERENCE",
+     "H1",
+     "REFERENCE_TO_EVENT"
+    ],
+    [
+     "vat 4",
+     "ENTITY",
+     null,
+     "OTHER"
+    ],
+    [
+     "Add the cultures",
+     "EVENT",
+     "H2",
+     "ACTION"
+    ],
+    [
+     "the cultures",
+     "ENTITY",
+     null,
+     "OTHER"
+    ],
+    [
+     "each coagulation is complete",
+     "STATE_OR_FACET",
+     "H4",
+     "STATE"
+    ],
+    [
+     "The cheese maker records every coagulation",
+     "EVENT",
+     "H3",
+     "RECORD"
+    ],
+    [
+     "The cheese maker",
+     "ENTITY",
+     null,
+     "OTHER"
+    ],
+    [
+     "every coagulation",
+     "EVENT_REFERENCE",
+     "H1",
+     "REFERENCE_TO_EVENT"
+    ]
+   ],
+   "normative_edges": [
+    [
+     "H4",
+     "H2",
+     [
+      "STATE_GATE",
+      "PRECONDITION"
+     ],
+     "Add the cultures only after each coagulation is complete"
+    ]
+   ],
+   "related_pairs": [
+    [
+     "H1",
+     "H1b"
+    ],
+    [
+     "H1",
+     "H4"
+    ],
+    [
+     "H1b",
+     "H4"
+    ],
+    [
+     "H1",
+     "H3"
+    ]
+   ],
+   "ambiguous_pairs": [],
+   "notes": "'this step' anaphora; repetition clause = separate occurrence cid (RELATED); human-subject recording clause; plural nominal reference covers both occurrences."
+  },
+  {
+   "case_id": "s_elevator",
+   "domain": "elevator maintenance",
+   "family": "s_cross_sentence_passive_chain",
+   "policy": "Service the elevator motor quarterly. The inspector signs the service report. Renew the certificate only after the report is signed. Run the car only while the certificate is current.",
+   "tools": [
+    {
+     "name": "service_motor",
+     "description": "Services one elevator motor.",
+     "input": {
+      "car_id": "string"
+     },
+     "output": {
+      "status": "string"
+     }
+    },
+    {
+     "name": "sign_service_report",
+     "description": "Signs one service report.",
+     "input": {
+      "report_id": "string"
+     },
+     "output": {
+      "status": "string"
+     }
+    },
+    {
+     "name": "renew_certificate",
+     "description": "Renews the service certificate of one elevator.",
+     "input": {
+      "car_id": "string"
+     },
+     "output": {
+      "valid_until": "string"
+     }
+    },
+    {
+     "name": "run_elevator",
+     "description": "Runs one elevator car.",
+     "input": {
+      "car_id": "string"
+     },
+     "output": {
+      "status": "string"
+     }
+    }
+   ],
+   "mentions": [
+    [
+     "Service the elevator motor",
+     "EVENT",
+     "E1",
+     "ACTION"
+    ],
+    [
+     "the elevator motor",
+     "ENTITY",
+     null,
+     "OTHER"
+    ],
+    [
+     "The inspector",
+     "ENTITY",
+     null,
+     "OTHER"
+    ],
+    [
+     "signs the service report",
+     "EVENT",
+     "E2",
+     "RECORD"
+    ],
+    [
+     "the service report",
+     "ARTIFACT",
+     null,
+     "OTHER"
+    ],
+    [
+     "Renew the certificate",
+     "EVENT",
+     "E4",
+     "ACTION"
+    ],
+    [
+     "the certificate",
+     "ENTITY",
+     null,
+     "OTHER"
+    ],
+    [
+     "the report is signed",
+     "STATE_OR_FACET",
+     "E2",
+     "STATE"
+    ],
+    [
+     "Run the car",
+     "EVENT",
+     "E5",
+     "ACTION"
+    ],
+    [
+     "the car",
+     "ENTITY",
+     null,
+     "OTHER"
+    ],
+    [
+     "the certificate is current",
+     "STATE_OR_FACET",
+     "E6",
+     "STATE"
+    ]
+   ],
+   "normative_edges": [
+    [
+     "E2",
+     "E4",
+     [
+      "PRECONDITION",
+      "ORDER_BEFORE"
+     ],
+     "Renew the certificate only after the report is signed"
+    ],
+    [
+     "E6",
+     "E5",
+     [
+      "STATE_GATE"
+     ],
+     "Run the car only while the certificate is current"
+    ]
+   ],
+   "related_pairs": [
+    [
+     "E1",
+     "E2"
+    ],
+    [
+     "E4",
+     "E6"
+    ]
+   ],
+   "ambiguous_pairs": [],
+   "notes": "cross-sentence passive facet ('the report is signed' shares the signing cid); 'only while' duration gate; currency state own cid; signing typed RECORD."
+  },
+  {
+   "case_id": "s_herbarium",
+   "domain": "herbarium specimen mounting",
+   "family": "s_hypothetical_conditional",
+   "policy": "Mount each herbarium sheet. If a specimen is damaged, photograph it before mounting. Report any damage to the registrar.",
+   "tools": [
+    {
+     "name": "mount_sheet",
+     "description": "Mounts one herbarium sheet.",
+     "input": {
+      "sheet_id": "string"
+     },
+     "output": {
+      "status": "string"
+     }
+    },
+    {
+     "name": "photograph_specimen",
+     "description": "Photographs one specimen.",
+     "input": {
+      "sheet_id": "string"
+     },
+     "output": {
+      "photo_id": "string"
+     }
+    },
+    {
+     "name": "report_damage",
+     "description": "Reports one damaged specimen to the registrar.",
+     "input": {
+      "sheet_id": "string"
+     },
+     "output": {
+      "report_id": "string"
+     }
+    },
+    {
+     "name": "read_specimen_label",
+     "description": "Reads the label of one specimen sheet.",
+     "input": {
+      "sheet_id": "string"
+     },
+     "output": {
+      "species": "string"
+     }
+    }
+   ],
+   "mentions": [
+    [
+     "Mount each herbarium sheet",
+     "EVENT",
+     "U1",
+     "ACTION"
+    ],
+    [
+     "each herbarium sheet",
+     "ENTITY",
+     null,
+     "OTHER"
+    ],
+    [
+     "a specimen is damaged",
+     "STATE_OR_FACET",
+     "U2",
+     "STATE"
+    ],
+    [
+     "a specimen",
+     "ENTITY",
+     null,
+     "OTHER"
+    ],
+    [
+     "photograph it",
+     "EVENT",
+     "U3",
+     "ACTION"
+    ],
+    [
+     "mounting",
+     "EVENT_REFERENCE",
+     "U1",
+     "REFERENCE_TO_EVENT"
+    ],
+    [
+     "Report any damage",
+     "EVENT",
+     "U4",
+     "COMMUNICATION"
+    ],
+    [
+     "any damage",
+     "EVENT_REFERENCE",
+     "U2",
+     "REFERENCE_TO_EVENT"
+    ],
+    [
+     "the registrar",
+     "ENTITY",
+     null,
+     "OTHER"
+    ]
+   ],
+   "normative_edges": [
+    [
+     "U2",
+     "U3",
+     [
+      "STATE_GATE"
+     ],
+     "If a specimen is damaged, photograph it before mounting"
+    ],
+    [
+     "U3",
+     "U1",
+     [
+      "ORDER_BEFORE"
+     ],
+     "photograph it before mounting"
+    ]
+   ],
+   "related_pairs": [
+    [
+     "U2",
+     "U4"
+    ]
+   ],
+   "ambiguous_pairs": [],
+   "notes": "hypothetical/conditional action with pronoun object; bare gerund reference; damage-state referenced by a communication event."
+  },
+  {
+   "case_id": "s_radio",
+   "domain": "radio station transmissions",
+   "family": "s_confirmation_communication",
+   "policy": "Broadcast the weather bulletin at noon. Confirm that the bulletin was transmitted. Notify the regulator if confirmation fails.",
+   "tools": [
+    {
+     "name": "broadcast_bulletin",
+     "description": "Broadcasts one weather bulletin.",
+     "input": {
+      "bulletin_id": "string"
+     },
+     "output": {
+      "status": "string"
+     }
+    },
+    {
+     "name": "confirm_transmission",
+     "description": "Confirms one bulletin transmission.",
+     "input": {
+      "bulletin_id": "string"
+     },
+     "output": {
+      "confirmed": "boolean"
+     }
+    },
+    {
+     "name": "notify_regulator",
+     "description": "Notifies the regulator about one station.",
+     "input": {
+      "station_id": "string"
+     },
+     "output": {
+      "status": "string"
+     }
+    },
+    {
+     "name": "read_transmitter_log",
+     "description": "Reads the transmitter log of one station.",
+     "input": {
+      "station_id": "string"
+     },
+     "output": {
+      "last_tx": "string"
+     }
+    }
+   ],
+   "mentions": [
+    [
+     "Broadcast the weather bulletin",
+     "EVENT",
+     "M1",
+     "COMMUNICATION"
+    ],
+    [
+     "the weather bulletin",
+     "ENTITY",
+     null,
+     "OTHER"
+    ],
+    [
+     "at noon",
+     "ENTITY",
+     null,
+     "OTHER"
+    ],
+    [
+     "Confirm that the bulletin was transmitted",
+     "CHECK",
+     "M2",
+     "CHECK",
+     {
+      "embeds": "the bulletin was transmitted"
+     }
+    ],
+    [
+     "the bulletin was transmitted",
+     "STATE_OR_FACET",
+     "M1",
+     "STATE"
+    ],
+    [
+     "Notify the regulator",
+     "EVENT",
+     "M3",
+     "COMMUNICATION"
+    ],
+    [
+     "the regulator",
+     "ENTITY",
+     null,
+     "OTHER"
+    ],
+    [
+     "confirmation fails",
+     "STATE_OR_FACET",
+     "M4",
+     "STATE"
+    ]
+   ],
+   "normative_edges": [
+    [
+     "M4",
+     "M3",
+     [
+      "STATE_GATE",
+      "RESPONSE"
+     ],
+     "Notify the regulator if confirmation fails"
+    ]
+   ],
+   "related_pairs": [
+    [
+     "M1",
+     "M2"
+    ],
+    [
+     "M2",
+     "M4"
+    ]
+   ],
+   "ambiguous_pairs": [],
+   "notes": "directive confirmation example; embedded state expressed with a SYNONYM predicate ('transmitted' vs 'Broadcast') sharing the cid (synonym-voice facet); failure outcome state own cid."
+  },
+  {
+   "case_id": "s_fishery",
+   "domain": "river fishery survey",
+   "family": "s_entity_ids_forward_reference",
+   "policy": "Weigh fish 44 before tagging it. Tag fish 44 at the upstream station. Tag fish 45 only at the downstream station. Record the weight of fish 44.",
+   "tools": [
+    {
+     "name": "weigh_fish",
+     "description": "Weighs one fish.",
+     "input": {
+      "fish_id": "string"
+     },
+     "output": {
+      "grams": "number"
+     }
+    },
+    {
+     "name": "tag_fish",
+     "description": "Tags one fish.",
+     "input": {
+      "fish_id": "string"
+     },
+     "output": {
+      "tag_id": "string"
+     }
+    },
+    {
+     "name": "record_weight",
+     "description": "Records the weight of one fish.",
+     "input": {
+      "fish_id": "string"
+     },
+     "output": {
+      "entry_id": "string"
+     }
+    },
+    {
+     "name": "read_scale",
+     "description": "Reads the scale at one station.",
+     "input": {
+      "station_id": "string"
+     },
+     "output": {
+      "grams": "number"
+     }
+    }
+   ],
+   "mentions": [
+    [
+     "Weigh fish 44",
+     "CHECK",
+     "W1",
+     "CHECK"
+    ],
+    [
+     "fish 44",
+     "ENTITY",
+     null,
+     "OTHER"
+    ],
+    [
+     "tagging it",
+     "EVENT_REFERENCE",
+     "T1",
+     "REFERENCE_TO_EVENT"
+    ],
+    [
+     "Tag fish 44",
+     "EVENT",
+     "T1",
+     "ACTION"
+    ],
+    [
+     "the upstream station",
+     "ENTITY",
+     null,
+     "OTHER"
+    ],
+    [
+     "Tag fish 45",
+     "EVENT",
+     "T2",
+     "ACTION"
+    ],
+    [
+     "fish 45",
+     "ENTITY",
+     null,
+     "OTHER"
+    ],
+    [
+     "the downstream station",
+     "ENTITY",
+     null,
+     "OTHER"
+    ],
+    [
+     "Record the weight",
+     "EVENT",
+     "R1",
+     "RECORD"
+    ],
+    [
+     "the weight",
+     "EVENT_REFERENCE",
+     "W1",
+     "REFERENCE_TO_EVENT"
+    ]
+   ],
+   "normative_edges": [
+    [
+     "W1",
+     "T1",
+     [
+      "ORDER_BEFORE",
+      "PRECONDITION"
+     ],
+     "Weigh fish 44 before tagging it"
+    ],
+    [
+     "W1",
+     "R1",
+     [
+      "RESPONSE",
+      "ORDER_BEFORE"
+     ],
+     "Record the weight of fish 44"
+    ]
+   ],
+   "related_pairs": [],
+   "ambiguous_pairs": [],
+   "notes": "entity IDs that matter (fish 44 vs fish 45, same predicate -> DIFFERENT events, no relation); forward gerund reference ('tagging it' before the imperative appears)."
+  },
+  {
+   "case_id": "s_incubator",
+   "domain": "laboratory incubator",
+   "family": "s_check_of_state_vs_action",
+   "policy": "Warm the incubator to 37 degrees. Check that the incubator is warm before loading the samples.",
+   "tools": [
+    {
+     "name": "warm_incubator",
+     "description": "Warms one incubator to a set temperature.",
+     "input": {
+      "incubator_id": "string",
+      "temp_c": "number"
+     },
+     "output": {
+      "status": "string"
+     }
+    },
+    {
+     "name": "load_samples",
+     "description": "Loads one rack of samples into the incubator.",
+     "input": {
+      "incubator_id": "string"
+     },
+     "output": {
+      "status": "string"
+     }
+    },
+    {
+     "name": "check_incubator_temp",
+     "description": "Reads the temperature of one incubator.",
+     "input": {
+      "incubator_id": "string"
+     },
+     "output": {
+      "temp_c": "number"
+     }
+    },
+    {
+     "name": "log_temperature",
+     "description": "Records one temperature reading in the incubator log.",
+     "input": {
+      "incubator_id": "string"
+     },
+     "output": {
+      "entry_id": "string"
+     }
+    }
+   ],
+   "mentions": [
+    [
+     "Warm the incubator",
+     "EVENT",
+     "I1",
+     "ACTION"
+    ],
+    [
+     "the incubator",
+     "ENTITY",
+     null,
+     "OTHER"
+    ],
+    [
+     "37 degrees",
+     "ENTITY",
+     null,
+     "OTHER"
+    ],
+    [
+     "Check that the incubator is warm",
+     "CHECK",
+     "I2",
+     "CHECK",
+     {
+      "embeds": "the incubator is warm"
+     }
+    ],
+    [
+     "the incubator is warm",
+     "STATE_OR_FACET",
+     "I3",
+     "STATE"
+    ],
+    [
+     "loading the samples",
+     "EVENT",
+     "I4",
+     "ACTION"
+    ],
+    [
+     "the samples",
+     "ENTITY",
+     null,
+     "OTHER"
+    ]
+   ],
+   "normative_edges": [
+    [
+     "I3",
+     "I4",
+     [
+      "STATE_GATE",
+      "PRECONDITION"
+     ],
+     "Check that the incubator is warm before loading the samples"
+    ]
+   ],
+   "related_pairs": [
+    [
+     "I1",
+     "I3"
+    ],
+    [
+     "I1",
+     "I2"
+    ],
+    [
+     "I2",
+     "I3"
+    ]
+   ],
+   "ambiguous_pairs": [],
+   "notes": "directive class 'check of a state vs execution of the action producing that state': warming (I1) vs warm state (I3) vs check-of-state (I2); the gate endpoint is the STATE (F5 r_ewaste convention)."
+  },
+  {
+   "case_id": "s_radar",
+   "domain": "radar array calibration",
+   "family": "s_repetition_completion",
+   "policy": "Calibrate the radar array each Monday. Repeat the calibration if drift is detected. Power the array only after the second calibration is complete.",
+   "tools": [
+    {
+     "name": "calibrate_array",
+     "description": "Calibrates one radar array.",
+     "input": {
+      "array_id": "string"
+     },
+     "output": {
+      "status": "string"
+     }
+    },
+    {
+     "name": "repeat_calibration",
+     "description": "Repeats one calibration run.",
+     "input": {
+      "array_id": "string"
+     },
+     "output": {
+      "status": "string"
+     }
+    },
+    {
+     "name": "power_array",
+     "description": "Powers one radar array.",
+     "input": {
+      "array_id": "string"
+     },
+     "output": {
+      "status": "string"
+     }
+    },
+    {
+     "name": "read_drift_report",
+     "description": "Reads the drift report of one array.",
+     "input": {
+      "array_id": "string"
+     },
+     "output": {
+      "drift_mm": "number"
+     }
+    }
+   ],
+   "mentions": [
+    [
+     "Calibrate the radar array",
+     "EVENT",
+     "D1",
+     "ACTION"
+    ],
+    [
+     "the radar array",
+     "ENTITY",
+     null,
+     "OTHER"
+    ],
+    [
+     "each Monday",
+     "ENTITY",
+     null,
+     "OTHER"
+    ],
+    [
+     "Repeat the calibration",
+     "EVENT",
+     "D2",
+     "ACTION"
+    ],
+    [
+     "the calibration",
+     "EVENT_REFERENCE",
+     "D1",
+     "REFERENCE_TO_EVENT"
+    ],
+    [
+     "drift is detected",
+     "STATE_OR_FACET",
+     "D3",
+     "STATE"
+    ],
+    [
+     "Power the array",
+     "EVENT",
+     "D4",
+     "ACTION"
+    ],
+    [
+     "the array",
+     "ENTITY",
+     null,
+     "OTHER"
+    ],
+    [
+     "the second calibration is complete",
+     "STATE_OR_FACET",
+     "D5",
+     "STATE"
+    ]
+   ],
+   "normative_edges": [
+    [
+     "D3",
+     "D2",
+     [
+      "STATE_GATE"
+     ],
+     "Repeat the calibration if drift is detected"
+    ],
+    [
+     "D5",
+     "D4",
+     [
+      "STATE_GATE"
+     ],
+     "Power the array only after the second calibration is complete"
+    ]
+   ],
+   "related_pairs": [
+    [
+     "D1",
+     "D2"
+    ],
+    [
+     "D2",
+     "D5"
+    ]
+   ],
+   "ambiguous_pairs": [],
+   "notes": "repetition = separate occurrence (RELATED); ordinal 'second' marks the repeat; completion state of the REPEAT gates power-on; detection state without an explicit detect action."
+  }
+ ]
+}

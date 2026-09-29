@@ -1,0 +1,764 @@
+{
+ "cases": [
+  {
+   "case_id": "m_mint_ren",
+   "domain": "mint coin striking",
+   "family": "m_same_object_diff_predicates_renamed",
+   "policy": "Weigh the medal discs. Anneal the medal discs. Strike the medals only after both steps are complete.",
+   "tools": [
+    {
+     "name": "weigh_discs",
+     "description": "Weighs one set of medal discs.",
+     "input": {
+      "set_id": "string"
+     },
+     "output": {
+      "grams": "number"
+     }
+    },
+    {
+     "name": "anneal_discs",
+     "description": "Anneals one set of medal discs.",
+     "input": {
+      "set_id": "string"
+     },
+     "output": {
+      "status": "string"
+     }
+    },
+    {
+     "name": "strike_medals",
+     "description": "Strikes one batch of coins.",
+     "input": {
+      "batch_id": "string"
+     },
+     "output": {
+      "count": "number"
+     }
+    },
+    {
+     "name": "log_disc_weight",
+     "description": "Records the weight of one set of medal discs.",
+     "input": {
+      "set_id": "string"
+     },
+     "output": {
+      "entry_id": "string"
+     }
+    }
+   ],
+   "mentions": [
+    [
+     "Weigh the medal discs",
+     "CHECK",
+     "M1",
+     "CHECK"
+    ],
+    [
+     "the medal discs",
+     "ENTITY",
+     null,
+     "OTHER"
+    ],
+    [
+     "Anneal the medal discs",
+     "EVENT",
+     "M2",
+     "ACTION"
+    ],
+    [
+     "Strike the medals",
+     "EVENT",
+     "M3",
+     "ACTION"
+    ],
+    [
+     "the medals",
+     "ENTITY",
+     null,
+     "OTHER"
+    ],
+    [
+     "both steps are complete",
+     "STATE_OR_FACET",
+     "M4",
+     "STATE"
+    ]
+   ],
+   "normative_edges": [
+    [
+     "M4",
+     "M3",
+     [
+      "STATE_GATE",
+      "PRECONDITION"
+     ],
+     "Strike the medals only after both steps are complete"
+    ]
+   ],
+   "related_pairs": [
+    [
+     "M1",
+     "M4"
+    ],
+    [
+     "M2",
+     "M4"
+    ]
+   ],
+   "ambiguous_pairs": [],
+   "notes": "same object under three different predicates (weigh/anneal/strike); elliptical plural state reference 'both steps'."
+  },
+  {
+   "case_id": "m_coral_ren",
+   "domain": "coral reef survey",
+   "family": "m_same_predicate_diff_objects_renamed",
+   "policy": "Tag the gorgonian fans before surveying the lagoon shelf. Tag the mound corals after the survey. Photograph every tagged colony.",
+   "tools": [
+    {
+     "name": "tag_colony",
+     "description": "Tags one coral colony.",
+     "input": {
+      "colony_id": "string"
+     },
+     "output": {
+      "tag_id": "string"
+     }
+    },
+    {
+     "name": "survey_reef",
+     "description": "Surveys one section of reef flat.",
+     "input": {
+      "section_id": "string"
+     },
+     "output": {
+      "report": "string"
+     }
+    },
+    {
+     "name": "photograph_colony",
+     "description": "Photographs one coral colony.",
+     "input": {
+      "colony_id": "string"
+     },
+     "output": {
+      "photo_id": "string"
+     }
+    },
+    {
+     "name": "log_survey",
+     "description": "Records one survey entry in the reef log.",
+     "input": {
+      "section_id": "string"
+     },
+     "output": {
+      "entry_id": "string"
+     }
+    }
+   ],
+   "mentions": [
+    [
+     "Tag the gorgonian fans",
+     "EVENT",
+     "C1",
+     "ACTION"
+    ],
+    [
+     "the gorgonian fans",
+     "ENTITY",
+     null,
+     "OTHER"
+    ],
+    [
+     "surveying the lagoon shelf",
+     "EVENT",
+     "C3",
+     "ACTION"
+    ],
+    [
+     "the lagoon shelf",
+     "ENTITY",
+     null,
+     "OTHER"
+    ],
+    [
+     "Tag the mound corals",
+     "EVENT",
+     "C2",
+     "ACTION"
+    ],
+    [
+     "the mound corals",
+     "ENTITY",
+     null,
+     "OTHER"
+    ],
+    [
+     "the survey",
+     "EVENT_REFERENCE",
+     "C3",
+     "REFERENCE_TO_EVENT"
+    ],
+    [
+     "Photograph every tagged colony",
+     "EVENT",
+     "C4",
+     "ACTION"
+    ],
+    [
+     "every tagged colony",
+     "EVENT_REFERENCE",
+     null,
+     "REFERENCE_TO_EVENT"
+    ]
+   ],
+   "normative_edges": [
+    [
+     "C1",
+     "C3",
+     [
+      "ORDER_BEFORE"
+     ],
+     "Tag the gorgonian fans before surveying the lagoon shelf"
+    ],
+    [
+     "C3",
+     "C2",
+     [
+      "ORDER_BEFORE",
+      "PRECONDITION"
+     ],
+     "Tag the mound corals after the survey"
+    ]
+   ],
+   "related_pairs": [],
+   "ambiguous_pairs": [],
+   "notes": "same predicate on different objects = two events (hard negative pair, NO related); gerund survey clause is the only mention of the survey; noun reference 'the survey' to a gerund-mentioned action."
+  },
+  {
+   "case_id": "m_sluice_ren",
+   "domain": "dam sluice gate operation",
+   "family": "m_verify_embedded_passive_pronoun_renamed",
+   "policy": "Operate the penstock valve only after it has been inspected. Inspect the valve weekly. Verify that the inspection is logged.",
+   "tools": [
+    {
+     "name": "inspect_valve",
+     "description": "Inspects one penstock valve.",
+     "input": {
+      "gate_id": "string"
+     },
+     "output": {
+      "status": "string"
+     }
+    },
+    {
+     "name": "operate_valve",
+     "description": "Operates one penstock valve.",
+     "input": {
+      "gate_id": "string"
+     },
+     "output": {
+      "status": "string"
+     }
+    },
+    {
+     "name": "log_valve_inspection",
+     "description": "Writes one inspection entry into the gate log.",
+     "input": {
+      "gate_id": "string"
+     },
+     "output": {
+      "entry_id": "string"
+     }
+    },
+    {
+     "name": "read_valve_log",
+     "description": "Reads the gate log for one penstock valve.",
+     "input": {
+      "gate_id": "string"
+     },
+     "output": {
+      "entries": "number"
+     }
+    }
+   ],
+   "mentions": [
+    [
+     "Operate the penstock valve",
+     "EVENT",
+     "S2",
+     "ACTION"
+    ],
+    [
+     "the penstock valve",
+     "ENTITY",
+     null,
+     "OTHER"
+    ],
+    [
+     "it has been inspected",
+     "STATE_OR_FACET",
+     "S1",
+     "STATE"
+    ],
+    [
+     "Inspect the valve",
+     "CHECK",
+     "S1",
+     "CHECK"
+    ],
+    [
+     "the valve",
+     "ENTITY",
+     null,
+     "OTHER"
+    ],
+    [
+     "Verify that the inspection is logged",
+     "CHECK",
+     "S4",
+     "CHECK",
+     {
+      "embeds": "the inspection is logged"
+     }
+    ],
+    [
+     "the inspection is logged",
+     "EVENT",
+     "S3",
+     "RECORD"
+    ],
+    [
+     "the inspection",
+     "EVENT_REFERENCE",
+     "S1",
+     "REFERENCE_TO_EVENT"
+    ]
+   ],
+   "normative_edges": [
+    [
+     "S1",
+     "S2",
+     [
+      "STATE_GATE",
+      "PRECONDITION"
+     ],
+     "Operate the penstock valve only after it has been inspected"
+    ]
+   ],
+   "related_pairs": [
+    [
+     "S1",
+     "S3"
+    ],
+    [
+     "S1",
+     "S4"
+    ],
+    [
+     "S3",
+     "S4"
+    ]
+   ],
+   "ambiguous_pairs": [],
+   "notes": "pronoun-subject passive facet cross-sentence (it has been inspected -> S1); nested VERIFY over a recording passive; triple nesting verify > record > reference."
+  },
+  {
+   "case_id": "l_roastery_ren",
+   "domain": "coffee roastery",
+   "family": "l_may_permission_negation_record_renamed",
+   "policy": "Roast the granules at 205 degrees. Cooling may begin once the granules are roasted. Do not open the drum before cooling is finished. The roast ledger is filed by the operator.",
+   "tools": [
+    {
+     "name": "roast_granules",
+     "description": "Roasts one drum of beans.",
+     "input": {
+      "drum_id": "string"
+     },
+     "output": {
+      "status": "string"
+     }
+    },
+    {
+     "name": "open_drum",
+     "description": "Opens one roaster drum.",
+     "input": {
+      "drum_id": "string"
+     },
+     "output": {
+      "status": "string"
+     }
+    },
+    {
+     "name": "file_roast_ledger",
+     "description": "Files one roast sheet.",
+     "input": {
+      "drum_id": "string"
+     },
+     "output": {
+      "entry_id": "string"
+     }
+    },
+    {
+     "name": "read_drum_temp",
+     "description": "Reads the drum temperature of one roaster.",
+     "input": {
+      "drum_id": "string"
+     },
+     "output": {
+      "temp_c": "number"
+     }
+    }
+   ],
+   "mentions": [
+    [
+     "Roast the granules",
+     "EVENT",
+     "K1",
+     "ACTION"
+    ],
+    [
+     "the granules",
+     "ENTITY",
+     null,
+     "OTHER"
+    ],
+    [
+     "205 degrees",
+     "ENTITY",
+     null,
+     "OTHER"
+    ],
+    [
+     "Cooling may begin",
+     "EVENT",
+     "K2",
+     "ACTION"
+    ],
+    [
+     "the granules are roasted",
+     "STATE_OR_FACET",
+     "K1",
+     "STATE"
+    ],
+    [
+     "open the drum",
+     "EVENT",
+     "K3",
+     "ACTION"
+    ],
+    [
+     "the drum",
+     "ENTITY",
+     null,
+     "OTHER"
+    ],
+    [
+     "cooling is finished",
+     "STATE_OR_FACET",
+     "K4",
+     "STATE"
+    ],
+    [
+     "The roast ledger is filed by the operator",
+     "EVENT",
+     "K5",
+     "RECORD"
+    ],
+    [
+     "the operator",
+     "ENTITY",
+     null,
+     "OTHER"
+    ]
+   ],
+   "normative_edges": [
+    [
+     "K1",
+     "K2",
+     [
+      "STATE_GATE",
+      "PRECONDITION"
+     ],
+     "Cooling may begin once the granules are roasted"
+    ],
+    [
+     "K4",
+     "K3",
+     [
+      "STATE_GATE"
+     ],
+     "Do not open the drum before cooling is finished"
+    ]
+   ],
+   "related_pairs": [
+    [
+     "K2",
+     "K4"
+    ],
+    [
+     "K1",
+     "K5"
+    ]
+   ],
+   "ambiguous_pairs": [],
+   "notes": "may-permission via nominalization subject; negated order; completion state own cid; artifact-subject recording passive IS a gold RECORD event here (F6 convention change vs F5 r_fountain)."
+  },
+  {
+   "case_id": "s_fishery_ren",
+   "domain": "river fishery survey",
+   "family": "s_entity_ids_forward_reference_renamed",
+   "policy": "Weigh seal 12 before tagging it. Tag seal 12 at the upstream station. Tag seal 13 only at the downstream station. Record the weight of seal 12.",
+   "tools": [
+    {
+     "name": "weigh_seal",
+     "description": "Weighs one fish.",
+     "input": {
+      "fish_id": "string"
+     },
+     "output": {
+      "grams": "number"
+     }
+    },
+    {
+     "name": "tag_seal",
+     "description": "Tags one fish.",
+     "input": {
+      "fish_id": "string"
+     },
+     "output": {
+      "tag_id": "string"
+     }
+    },
+    {
+     "name": "record_seal_weight",
+     "description": "Records the weight of one fish.",
+     "input": {
+      "fish_id": "string"
+     },
+     "output": {
+      "entry_id": "string"
+     }
+    },
+    {
+     "name": "read_scale",
+     "description": "Reads the scale at one station.",
+     "input": {
+      "station_id": "string"
+     },
+     "output": {
+      "grams": "number"
+     }
+    }
+   ],
+   "mentions": [
+    [
+     "Weigh seal 12",
+     "CHECK",
+     "W1",
+     "CHECK"
+    ],
+    [
+     "seal 12",
+     "ENTITY",
+     null,
+     "OTHER"
+    ],
+    [
+     "tagging it",
+     "EVENT_REFERENCE",
+     "T1",
+     "REFERENCE_TO_EVENT"
+    ],
+    [
+     "Tag seal 12",
+     "EVENT",
+     "T1",
+     "ACTION"
+    ],
+    [
+     "the upstream station",
+     "ENTITY",
+     null,
+     "OTHER"
+    ],
+    [
+     "Tag seal 13",
+     "EVENT",
+     "T2",
+     "ACTION"
+    ],
+    [
+     "seal 13",
+     "ENTITY",
+     null,
+     "OTHER"
+    ],
+    [
+     "the downstream station",
+     "ENTITY",
+     null,
+     "OTHER"
+    ],
+    [
+     "Record the weight",
+     "EVENT",
+     "R1",
+     "RECORD"
+    ],
+    [
+     "the weight",
+     "EVENT_REFERENCE",
+     "W1",
+     "REFERENCE_TO_EVENT"
+    ]
+   ],
+   "normative_edges": [
+    [
+     "W1",
+     "T1",
+     [
+      "ORDER_BEFORE",
+      "PRECONDITION"
+     ],
+     "Weigh seal 12 before tagging it"
+    ],
+    [
+     "W1",
+     "R1",
+     [
+      "RESPONSE",
+      "ORDER_BEFORE"
+     ],
+     "Record the weight of seal 12"
+    ]
+   ],
+   "related_pairs": [],
+   "ambiguous_pairs": [],
+   "notes": "entity IDs that matter (fish 44 vs fish 45, same predicate -> DIFFERENT events, no relation); forward gerund reference ('tagging it' before the imperative appears)."
+  },
+  {
+   "case_id": "s_incubator_ren",
+   "domain": "laboratory incubator",
+   "family": "s_check_of_state_vs_action_renamed",
+   "policy": "Warm the proofing cabinet to 37 degrees. Check that the proofing cabinet is warm before loading the trays.",
+   "tools": [
+    {
+     "name": "warm_cabinet",
+     "description": "Warms one incubator to a set temperature.",
+     "input": {
+      "incubator_id": "string",
+      "temp_c": "number"
+     },
+     "output": {
+      "status": "string"
+     }
+    },
+    {
+     "name": "load_trays",
+     "description": "Loads one rack of samples into the incubator.",
+     "input": {
+      "incubator_id": "string"
+     },
+     "output": {
+      "status": "string"
+     }
+    },
+    {
+     "name": "check_cabinet_temp",
+     "description": "Reads the temperature of one incubator.",
+     "input": {
+      "incubator_id": "string"
+     },
+     "output": {
+      "temp_c": "number"
+     }
+    },
+    {
+     "name": "log_cabinet_temp",
+     "description": "Records one temperature reading in the cabinet log.",
+     "input": {
+      "incubator_id": "string"
+     },
+     "output": {
+      "entry_id": "string"
+     }
+    }
+   ],
+   "mentions": [
+    [
+     "Warm the proofing cabinet",
+     "EVENT",
+     "I1",
+     "ACTION"
+    ],
+    [
+     "the proofing cabinet",
+     "ENTITY",
+     null,
+     "OTHER"
+    ],
+    [
+     "37 degrees",
+     "ENTITY",
+     null,
+     "OTHER"
+    ],
+    [
+     "Check that the proofing cabinet is warm",
+     "CHECK",
+     "I2",
+     "CHECK",
+     {
+      "embeds": "the proofing cabinet is warm"
+     }
+    ],
+    [
+     "the proofing cabinet is warm",
+     "STATE_OR_FACET",
+     "I3",
+     "STATE"
+    ],
+    [
+     "loading the trays",
+     "EVENT",
+     "I4",
+     "ACTION"
+    ],
+    [
+     "the trays",
+     "ENTITY",
+     null,
+     "OTHER"
+    ]
+   ],
+   "normative_edges": [
+    [
+     "I3",
+     "I4",
+     [
+      "STATE_GATE",
+      "PRECONDITION"
+     ],
+     "Check that the proofing cabinet is warm before loading the trays"
+    ]
+   ],
+   "related_pairs": [
+    [
+     "I1",
+     "I3"
+    ],
+    [
+     "I1",
+     "I2"
+    ],
+    [
+     "I2",
+     "I3"
+    ]
+   ],
+   "ambiguous_pairs": [],
+   "notes": "directive class 'check of a state vs execution of the action producing that state': warming (I1) vs warm state (I3) vs check-of-state (I2); the gate endpoint is the STATE (F5 r_ewaste convention)."
+  }
+ ]
+}
