@@ -162,7 +162,74 @@ Node defects: 14 None-label + 5 MIXED nodes; mechanism classes:
   matches the gold cid structure (Feed/Weigh separate, Log-the-inspection
   separate, act+state clusters merged, distractors dropped).
 
-STATUS: dev inference running (W1_DOWN4_LLM_SG).
+## D3. Iterations 3-8 on dev (main F, 15 cases): summary table
+
+| arm | P | R | correct | extra | missing | exact | change |
+|-----|---|---|---------|-------|---------|-------|--------|
+| baseline DOWN_LLM_SG_E3 | .167 | .174 | 4 | 20 | 19 | 2/15 | frozen previous phase |
+| W1_DOWN3 (v3) | .270 | .739 | 17 | 46 | 6 | 1/15 | ladder verifier + channels + variants |
+| W1_DOWN4 (v4) | .423 | .478 | 11 | 15 | 12 | 4/15 | consolidation v1 (over-merge bugs) |
+| W1_DOWN5 (v5) | .412 | .913 | 21 | 30 | 2 | 5/15 | action-lemma compat + harvesting + trailing spawn |
+| W1_DOWN6 (v6) | .618 | .913 | 21 | 13 | 2 | 6/15 | asymmetric state-of-act, same-action suppression, coordination gate, deontic attach |
+| W1_DOWN7 (v7) | .778 | .913 | 21 | 6 | 2 | 11/15 | effective-endpoint dedup, no-connective gate, aux fragments |
+| **W1_DOWN8 (v8)** | **.808** | **.913** | **21** | **5** | **2** | **12/15** | tightened no-connective ('only at' is not gating), object-containment gate |
+
+Target reference (directive): strict edge P >= ~0.80, R >= ~0.70 -> REACHED on dev
+(P .808, R .913; typed 18/21; exact graphs 12/15).
+
+Residual dev errors (5 extra + 2 missing):
+- f_planet E1->E2 licensed with REVERSED direction ('only while' simultaneity
+  confuses the judge's q4) -> 1 extra + 1 missing;
+- f_planet E3->E1 object-containment judge over-licensing -> killed in v8?
+  (f_pool/f_pit class), remaining: f_pool 3 edges with REAL textual evidence
+  ('Test the level before reopening') against ultra-sparse gold (gold has
+  only 1 edge for the case) - gold-boundary semantics, documented residual;
+- f_bottling E1->E2 missing: 'Label each crate and pack each crate after
+  capping' - 'after capping' attachment scope ambiguity (gold scopes the
+  connective over the whole coordination, the judge reads it as attaching
+  to 'pack' only).
+
+## H1 DECISION: PROMOTE. The working architecture is:
+
+  LLM_SG frontend (schema-guided proposer, frozen)
+  -> deterministic hygiene (grounding + connective strip)
+  -> LLM boundary normalizer (extractive-subspan discipline, KEEP-drops)
+  -> deterministic node construction:
+       form VARIANTS (original/article/predicate-only/subject-extended/
+         negation-strip), subject re-attachment (copula/modal/aux-initial),
+         trailing-clause spawning (states + gerunds out of overlong spans),
+         bnorm keep-override (indicative copula states),
+         junk filters (taxonomy/deontic/identity-negation/modal-copula/
+           artifact-subject-comm-verb/participle fragments),
+         relation HARVESTING (all frontend candidates by span/root),
+         frontend-relation unions VETOED by action compatibility
+           (asymmetric state-of-act, recording guard, 'again' veto),
+         deterministic consolidation (action-lemma + args, subject-position
+           substring, adjacent subject-predicate with recording guard)
+  -> pair proposal: CE band OR same-sentence OR entity-bridge,
+     with same-action facet suppression
+  -> E3v3 certificate: extractor (all surface forms + type + arguments)
+     -> deterministic verification LADDER:
+        (a) any-form in relation_text -> (b) positional extractor anchors
+        (CE-gated for cross-sentence) -> (c) clause repair -> (d)
+        via_reference -> judge
+     -> judge v3 (anchor context, co-precondition rule, typing rule)
+     -> relation-level gates: no-connective, coordination,
+        object-containment, NOT_SUPPORTED
+  -> direction/CLS fallbacks (frozen pl machinery)
+  -> licensed-edge consolidation (effective-endpoint compatibility)
+
+## Validation sequence (2026-09-29): F2 checkpoint + F3 sealed
+
+F3 SEALED suite frozen BEFORE any F3 inference (commit dce04fd0):
+5 new domains (greenhouse/bakery/aquarium/printing press/orchard),
+9 gold edges, hard features: coordinated state gates, unless-exception +
+in-which-case response, check-result state gate + deontic requirement +
+modal recording mention-only event, deontic permission with bare-subject
+reference, repetition ('again') + gerund ref + conditional gate, implicit-
+order traps (NO edge), identity-negation distractors. SHA 91619dc945aa8bb4.
+
+STATUS: F2 + F3 chains running.
 
 ## H2. Node certificate (directive §7-§9)
 

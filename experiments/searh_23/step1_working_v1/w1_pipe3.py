@@ -1038,15 +1038,16 @@ def main() -> None:
     from sentence_transformers import CrossEncoder
 
     arm = sys.argv[1] if len(sys.argv) > 1 else "LLM_SG"
-    fname = ("level_f2_cases.json" if os.environ.get("LF_SUITE") == "f2"
-             else "level_f_cases.json")
+    fname = {"f2": "level_f2_cases.json", "f3": "level_f3_cases.json",
+             "f4": "level_f4_cases.json"}.get(
+        os.environ.get("LF_SUITE"), "level_f_cases.json")
     gold = {c["case_id"]: c for c in json.loads(
         (IE / "frozen" / fname).read_text(encoding="utf-8"))}
     rer = CrossEncoder("BAAI/bge-reranker-base", device="cuda",
                        max_length=512,
                        cache_folder="/workspace/guardian/hf_cache")
     client = Mistral(model="ministral-14b-latest", cache_dir=OUT / "_cache")
-    outdir = OUT / f"W1_DOWN7_{arm}"
+    outdir = OUT / f"W1_DOWN10_{arm}"
     outdir.mkdir(parents=True, exist_ok=True)
 
     def ask(system, user, max_tokens=600):
@@ -1202,7 +1203,8 @@ def main() -> None:
                 # connective states no normative relation (implicit
                 # procedure order is not licensed)
                 if licensed and v.get("relation_text") and not re.search(
-                        r"\b(only|after|before|if|when|unless|until|"
+                        r"\b(only\s+after|only\s+if|only\s+when|"
+                        r"only\s+while|after|before|if|when|unless|until|"
                         r"while|once|provided|upon|in\s+which\s+case)\b",
                         v["relation_text"], re.I):
                     licensed = False
@@ -1215,8 +1217,83 @@ def main() -> None:
                 if licensed and v.get("a_anchor") and v.get("b_anchor") \
                         and v.get("relation_text"):
                     rel_t = v["relation_text"]
+                    for anc_x, anc_y in ((v["a_anchor"], v["b_anchor"]),
+                                         (v["b_anchor"], v["a_anchor"])):
+                        if anc_x and anc_y and anc_x != anc_y \
+                                and anc_y.startswith(anc_x) \
+                                and (_form_kind(anc_y) == "act"
+                                     or RECORDING_PRED.search(anc_y)):
+                            licensed = False
+                            rec["judge_note"] = "object_containment_gate"
+                            rec["gate"] = "object_position"
+                            break
+                    if not licensed:
+                        pass
+                    # v9a: both in-rel anchors must sit in ONE sentence of
+                    # the policy (a relation clause is single-sentence;
+                    # multi-sentence quotes are extractor over-quoting on
+                    # implicit-order pairs)
+                    if licensed:
+                        sa = span_in(policy, v["a_anchor"])
+                        sb = span_in(policy, v["b_anchor"])
+                        if sa and sb:
+                            s1 = sent_span(policy, sa[0])
+                            s2 = sent_span(policy, sb[0])
+                            if s1 != s2:
+                                licensed = False
+                                rec["judge_note"] = "cross_sentence_gate"
+                                rec["gate"] = "single_sentence"
+                    # v9b: connective-side direction override - the anchor
+                    # inside the subordinate connective clause is the
+                    # antecedent (gate/source/earlier) for gating
+                    # connectives; the anchor after 'before' is the later
                     pa = rel_t.find(v["a_anchor"])
                     pb = rel_t.find(v["b_anchor"])
+                    if licensed and pa >= 0 and pb >= 0:
+                        conn = None
+                        for m in re.finditer(
+                                r"\b(only\s+after|only\s+if|only\s+when|"
+                                r"only\s+while|after|before|if|when|"
+                                r"unless|until|while|once|provided|"
+                                r"in\s+which\s+case)\b", rel_t, re.I):
+                            lo, hi = min(pa, pb), max(pa, pb)
+                            if m.start() > lo and m.end() < hi:
+                                conn = (m.start(), m.end(),
+                                        re.sub(r"\s+", " ",
+                                               m.group(0).lower()))
+                                break
+                        if conn:
+                            c_lo, c_hi, c_txt = conn
+                            after_conn = "a" if pa > c_hi else (
+                                "b" if pb > c_hi else None)
+                            if after_conn is None:
+                                after_conn = "a" if pa < c_lo else "b"
+                            # subordinate anchor (after connective):
+                            #   gating connectives -> antecedent (first)
+                            #   'before' -> later (the main clause first)
+                            #   'in which case' -> the clause BEFORE it is
+                            #   the antecedent
+                            if c_txt == "before":
+                                # 'X before Y': X earlier;
+                                # 'Do not X before Y': Y earlier
+                                negated = bool(re.search(
+                                    r"\b(do\s+not|don't|never|"
+                                    r"forbidden|prohibited)\b",
+                                    rel_t, re.I))
+                                if negated:
+                                    antecedent = after_conn
+                                else:
+                                    antecedent = ("b" if after_conn == "a"
+                                                  else "a")
+                            elif c_txt == "in which case":
+                                antecedent = "a" if pa < c_lo else "b"
+                            else:
+                                antecedent = after_conn
+                            rec["conn_side"] = {"connective": c_txt,
+                                                "antecedent": antecedent}
+                            rec["judge_direction"] = direction
+                            direction = ("A_TO_B" if antecedent == "a"
+                                         else "B_TO_A")
                     if pa >= 0 and pb >= 0:
                         lo, hi = min(pa, pb), max(pa, pb)
                         between = rel_t[lo:hi]
@@ -1350,7 +1427,7 @@ def main() -> None:
                                    indent=1) + "\n", encoding="utf-8")
         print(cid_, len(nodes), "nodes ->", len(edges), "edges",
               f"({len(pair_log)} pairs logged)", flush=True)
-    print("W1 DOWN7", arm, "done")
+    print("W1 DOWN10", arm, "done")
 
 
 if __name__ == "__main__":

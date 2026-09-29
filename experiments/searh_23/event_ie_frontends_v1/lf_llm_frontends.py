@@ -74,6 +74,10 @@ def load_suite(which: str) -> list[dict]:
     if suite == "f2":
         fname = ("level_f2_cases.json" if which == "original"
                  else "level_f2_cases_renamed.json")
+    elif suite == "f3":
+        fname = "level_f3_cases.json"
+    elif suite == "f4":
+        fname = "level_f4_cases.json"
     else:
         fname = ("level_f_cases.json" if which == "original"
                  else "level_f_cases_renamed.json")

@@ -1,0 +1,384 @@
+{
+ "case_id": "h_bakery",
+ "arm": "LLM_SG",
+ "ev_arm": "E3V3",
+ "nodes": [
+  {
+   "node_id": "N01",
+   "span": "Proof the dough",
+   "type": "EVENT",
+   "start": 0,
+   "members": [
+    "c01"
+   ],
+   "member_spans": [
+    "Proof the dough",
+    "Proof the dough at room temperature"
+   ]
+  },
+  {
+   "node_id": "N02",
+   "span": "Bake the loaves",
+   "type": "EVENT_REFERENCE",
+   "start": 37,
+   "members": [
+    "c02",
+    "c09"
+   ],
+   "member_spans": [
+    "Bake the loaves",
+    "baking"
+   ]
+  },
+  {
+   "node_id": "N03",
+   "span": "the dough has collapsed",
+   "type": "EVENT_REFERENCE",
+   "start": 60,
+   "members": [
+    "c07"
+   ],
+   "member_spans": [
+    "the dough has collapsed"
+   ]
+  },
+  {
+   "node_id": "N04",
+   "span": "discard the batch",
+   "type": "EVENT_REFERENCE",
+   "start": 99,
+   "members": [
+    "c04",
+    "c08",
+    "c05_b0"
+   ],
+   "member_spans": [
+    "discard the batch",
+    "Discarding",
+    "Discarding is"
+   ]
+  },
+  {
+   "node_id": "N05",
+   "span": "the bake sheet lists each loaf",
+   "type": "EVENT",
+   "start": -1,
+   "members": [
+    "c06"
+   ],
+   "member_spans": [
+    "the bake sheet lists each loaf"
+   ]
+  }
+ ],
+ "edges": [
+  {
+   "u": "N01",
+   "v": "N02",
+   "u_members": [
+    "c01"
+   ],
+   "v_members": [
+    "c02",
+    "c09"
+   ],
+   "u_span": "Proof the dough",
+   "v_span": "Bake the loaves",
+   "relation": "ORDER_BEFORE",
+   "direction": "A_TO_B",
+   "ce": 0.0007,
+   "detail": {
+    "certificate": {
+     "a_anchor": "\"Proof the dough at room temperature\"",
+     "b_anchor": "\"Bake the loaves\"",
+     "a_in_relation": "\"Proof the dough\"",
+     "b_in_relation": "\"baking\"",
+     "a_via_reference": null,
+     "b_via_reference": null,
+     "relation_text": "\"Proof the dough at room temperature. Bake the loaves unless the dough has collapsed, in which case discard the batch.\"",
+     "direction": "A_TO_B",
+     "relation_type": "PRECONDITION"
+    },
+    "verify": {
+     "verdict": "SUPPORTED",
+     "reason": "both_forms_in_rel",
+     "a_anchor": "Proof the dough",
+     "b_anchor": "Bake the loaves",
+     "relation_text": "Proof the dough at room temperature. Bake the loaves unless the dough has collapsed, in which case discard the batch.",
+     "direction": "A_TO_B",
+     "relation_type": "PRECONDITION"
+    }
+   }
+  },
+  {
+   "u": "N02",
+   "v": "N03",
+   "u_members": [
+    "c02",
+    "c09"
+   ],
+   "v_members": [
+    "c07"
+   ],
+   "u_span": "Bake the loaves",
+   "v_span": "the dough has collapsed",
+   "relation": "EXCEPTION",
+   "direction": "B_TO_A",
+   "ce": 0.9999,
+   "detail": {
+    "certificate": {
+     "a_anchor": "Bake the loaves",
+     "b_anchor": "the dough has collapsed",
+     "a_in_relation": "baking",
+     "b_in_relation": "the dough has collapsed",
+     "a_via_reference": null,
+     "b_via_reference": null,
+     "relation_text": "Bake the loaves unless the dough has collapsed",
+     "direction": "B_TO_A",
+     "relation_type": "EXCEPTION"
+    },
+    "verify": {
+     "verdict": "SUPPORTED",
+     "reason": "both_forms_in_rel",
+     "a_anchor": "Bake the loaves",
+     "b_anchor": "the dough has collapsed",
+     "relation_text": "Bake the loaves unless the dough has collapsed",
+     "direction": "B_TO_A",
+     "relation_type": "EXCEPTION"
+    }
+   }
+  },
+  {
+   "u": "N02",
+   "v": "N04",
+   "u_members": [
+    "c02",
+    "c09"
+   ],
+   "v_members": [
+    "c04",
+    "c08",
+    "c05_b0"
+   ],
+   "u_span": "Bake the loaves",
+   "v_span": "discard the batch",
+   "relation": "EXCEPTION",
+   "direction": "A_TO_B",
+   "ce": 0.9995,
+   "detail": {
+    "certificate": {
+     "a_anchor": "\"Bake the loaves\"",
+     "b_anchor": "\"discard the batch\"",
+     "a_in_relation": "\"baking\"",
+     "b_in_relation": "\"discard\"",
+     "a_via_reference": null,
+     "b_via_reference": null,
+     "relation_text": "\"Bake the loaves unless the dough has collapsed, in which case discard the batch.\"",
+     "direction": "B_TO_A",
+     "relation_type": "EXCEPTION"
+    },
+    "verify": {
+     "verdict": "SUPPORTED",
+     "reason": "both_forms_in_rel",
+     "a_anchor": "Bake the loaves",
+     "b_anchor": "discard the batch",
+     "relation_text": "Bake the loaves unless the dough has collapsed, in which case discard the batch.",
+     "direction": "B_TO_A",
+     "relation_type": "EXCEPTION"
+    }
+   }
+  },
+  {
+   "u": "N03",
+   "v": "N04",
+   "u_members": [
+    "c07"
+   ],
+   "v_members": [
+    "c04",
+    "c08",
+    "c05_b0"
+   ],
+   "u_span": "the dough has collapsed",
+   "v_span": "discard the batch",
+   "relation": "EXCEPTION",
+   "direction": "B_TO_A",
+   "ce": 0.9995,
+   "detail": {
+    "certificate": {
+     "a_anchor": "\"the dough has collapsed\"",
+     "b_anchor": "\"discard the batch\"",
+     "a_in_relation": "\"the dough has collapsed\"",
+     "b_in_relation": "\"discard the batch\"",
+     "a_via_reference": null,
+     "b_via_reference": null,
+     "relation_text": "\"Bake the loaves unless the dough has collapsed, in which case discard the batch.\"",
+     "direction": "A_TO_B",
+     "relation_type": "EXCEPTION"
+    },
+    "verify": {
+     "verdict": "SUPPORTED",
+     "reason": "both_forms_in_rel",
+     "a_anchor": "the dough has collapsed",
+     "b_anchor": "discard the batch",
+     "relation_text": "Bake the loaves unless the dough has collapsed, in which case discard the batch.",
+     "direction": "A_TO_B",
+     "relation_type": "EXCEPTION"
+    }
+   }
+  }
+ ],
+ "pairs": [
+  {
+   "u": "N01",
+   "v": "N02",
+   "u_span": "Proof the dough",
+   "v_span": "Bake the loaves",
+   "ce": 0.0007,
+   "channels": [
+    "entity_bridge"
+   ],
+   "stage": "licensed",
+   "verify": "SUPPORTED",
+   "verify_reason": "both_forms_in_rel",
+   "judge": {
+    "q1_where_is_a": "Proof the dough at room temperature",
+    "q2_where_is_b": "Bake the loaves",
+    "q3_relation_between_these_two": "YES",
+    "q4_direction": "A_TO_B",
+    "q5_relation_type": "ORDER_BEFORE"
+   },
+   "direction": "A_TO_B",
+   "relation": "ORDER_BEFORE"
+  },
+  {
+   "u": "N01",
+   "v": "N03",
+   "u_span": "Proof the dough",
+   "v_span": "the dough has collapsed",
+   "ce": 0.0184,
+   "channels": [
+    "entity_bridge"
+   ],
+   "stage": "certificate",
+   "verify": "UNSUPPORTED",
+   "verify_reason": "endpoint_not_represented"
+  },
+  {
+   "u": "N01",
+   "v": "N04",
+   "u_span": "Proof the dough",
+   "v_span": "discard the batch",
+   "ce": 0.0004,
+   "channels": [
+    "entity_bridge"
+   ],
+   "stage": "certificate",
+   "verify": "UNSUPPORTED",
+   "verify_reason": "relation_text_not_connecting_both_endpoints"
+  },
+  {
+   "u": "N01",
+   "v": "N05",
+   "u_span": "Proof the dough",
+   "v_span": "the bake sheet lists each loaf",
+   "ce": 0.0001,
+   "stage": "ce_band"
+  },
+  {
+   "u": "N02",
+   "v": "N03",
+   "u_span": "Bake the loaves",
+   "v_span": "the dough has collapsed",
+   "ce": 0.9999,
+   "channels": [
+    "same_sentence",
+    "entity_bridge"
+   ],
+   "stage": "licensed",
+   "verify": "SUPPORTED",
+   "verify_reason": "both_forms_in_rel",
+   "judge": {
+    "q1_where_is_a": "\"Bake the loaves\"",
+    "q2_where_is_b": "\"the dough has collapsed\"",
+    "q3_relation_between_these_two": "YES",
+    "q4_direction": "B_TO_A",
+    "q5_relation_type": "EXCEPTION"
+   },
+   "direction": "B_TO_A",
+   "relation": "EXCEPTION"
+  },
+  {
+   "u": "N02",
+   "v": "N04",
+   "u_span": "Bake the loaves",
+   "v_span": "discard the batch",
+   "ce": 0.9995,
+   "channels": [
+    "same_sentence",
+    "entity_bridge"
+   ],
+   "stage": "licensed",
+   "verify": "SUPPORTED",
+   "verify_reason": "both_forms_in_rel",
+   "judge": {
+    "q1_where_is_a": "Bake the loaves",
+    "q2_where_is_b": "discard the batch",
+    "q3_relation_between_these_two": "YES",
+    "q4_direction": "UNKNOWN",
+    "q5_relation_type": "EXCEPTION"
+   },
+   "direction": "A_TO_B",
+   "relation": "EXCEPTION"
+  },
+  {
+   "u": "N03",
+   "v": "N04",
+   "u_span": "the dough has collapsed",
+   "v_span": "discard the batch",
+   "ce": 0.9995,
+   "channels": [
+    "same_sentence",
+    "entity_bridge"
+   ],
+   "stage": "licensed",
+   "verify": "SUPPORTED",
+   "verify_reason": "both_forms_in_rel",
+   "judge": {
+    "q1_where_is_a": "the dough has collapsed",
+    "q2_where_is_b": "discard the batch",
+    "q3_relation_between_these_two": "YES",
+    "q4_direction": "B_TO_A",
+    "q5_relation_type": "EXCEPTION"
+   },
+   "direction": "B_TO_A",
+   "relation": "EXCEPTION"
+  },
+  {
+   "u": "N03",
+   "v": "N05",
+   "u_span": "the dough has collapsed",
+   "v_span": "the bake sheet lists each loaf",
+   "ce": 0.0263,
+   "channels": [
+    "entity_bridge"
+   ],
+   "stage": "certificate",
+   "verify": "UNSUPPORTED",
+   "verify_reason": "no_relation"
+  },
+  {
+   "u": "N04",
+   "v": "N05",
+   "u_span": "discard the batch",
+   "v_span": "the bake sheet lists each loaf",
+   "ce": 0.0263,
+   "channels": [
+    "entity_bridge"
+   ],
+   "stage": "certificate",
+   "verify": "UNSUPPORTED",
+   "verify_reason": "no_relation"
+  }
+ ]
+}

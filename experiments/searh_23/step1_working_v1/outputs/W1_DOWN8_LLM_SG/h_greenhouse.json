@@ -1,0 +1,254 @@
+{
+ "case_id": "h_greenhouse",
+ "arm": "LLM_SG",
+ "ev_arm": "E3V3",
+ "nodes": [
+  {
+   "node_id": "N01",
+   "span": "Vent the greenhouse",
+   "type": "EVENT_REFERENCE",
+   "start": 0,
+   "members": [
+    "c01",
+    "c05"
+   ],
+   "member_spans": [
+    "Vent the greenhouse",
+    "Vent the greenhouse in the morning",
+    "the ventilation"
+   ]
+  },
+  {
+   "node_id": "N02",
+   "span": "Mist the seedlings",
+   "type": "EVENT",
+   "start": 36,
+   "members": [
+    "c04_b0"
+   ],
+   "member_spans": [
+    "Mist the seedlings"
+   ]
+  },
+  {
+   "node_id": "N03",
+   "span": "the ventilation is complete",
+   "type": "EVENT",
+   "start": 66,
+   "members": [
+    "c04_b1"
+   ],
+   "member_spans": [
+    "the ventilation is complete",
+    "is complete"
+   ]
+  },
+  {
+   "node_id": "N04",
+   "span": "the humidity log is signed",
+   "type": "EVENT",
+   "start": 98,
+   "members": [
+    "c04_b2"
+   ],
+   "member_spans": [
+    "the humidity log is signed",
+    "is signed"
+   ]
+  }
+ ],
+ "edges": [
+  {
+   "u": "N01",
+   "v": "N02",
+   "u_members": [
+    "c01",
+    "c05"
+   ],
+   "v_members": [
+    "c04_b0"
+   ],
+   "u_span": "Vent the greenhouse",
+   "v_span": "Mist the seedlings",
+   "relation": "ORDER_BEFORE",
+   "direction": "A_TO_B",
+   "ce": 0.9988,
+   "detail": {
+    "certificate": {
+     "a_anchor": "\"Vent the greenhouse in the morning\"",
+     "b_anchor": "\"Mist the seedlings\"",
+     "a_in_relation": "\"the ventilation\"",
+     "b_in_relation": "\"Mist the seedlings\"",
+     "a_via_reference": null,
+     "b_via_reference": null,
+     "relation_text": "\"Mist the seedlings only after the ventilation is complete and the humidity log is signed\"",
+     "direction": "A_TO_B",
+     "relation_type": "ORDER_BEFORE"
+    },
+    "verify": {
+     "verdict": "SUPPORTED",
+     "reason": "both_forms_in_rel",
+     "a_anchor": "the ventilation",
+     "b_anchor": "Mist the seedlings",
+     "relation_text": "Mist the seedlings only after the ventilation is complete and the humidity log is signed",
+     "direction": "A_TO_B",
+     "relation_type": "ORDER_BEFORE"
+    }
+   }
+  },
+  {
+   "u": "N02",
+   "v": "N04",
+   "u_members": [
+    "c04_b0"
+   ],
+   "v_members": [
+    "c04_b2"
+   ],
+   "u_span": "Mist the seedlings",
+   "v_span": "the humidity log is signed",
+   "relation": "ORDER_BEFORE",
+   "direction": "B_TO_A",
+   "ce": 0.9981,
+   "detail": {
+    "certificate": {
+     "a_anchor": "Mist the seedlings",
+     "b_anchor": "the humidity log is signed",
+     "a_in_relation": "Mist the seedlings",
+     "b_in_relation": "the humidity log is signed",
+     "a_via_reference": null,
+     "b_via_reference": null,
+     "relation_text": "Mist the seedlings only after the ventilation is complete and the humidity log is signed",
+     "direction": "B_TO_A",
+     "relation_type": "ORDER_BEFORE"
+    },
+    "verify": {
+     "verdict": "SUPPORTED",
+     "reason": "both_forms_in_rel",
+     "a_anchor": "Mist the seedlings",
+     "b_anchor": "the humidity log is signed",
+     "relation_text": "Mist the seedlings only after the ventilation is complete and the humidity log is signed",
+     "direction": "B_TO_A",
+     "relation_type": "ORDER_BEFORE"
+    }
+   }
+  }
+ ],
+ "pairs": [
+  {
+   "u": "N01",
+   "v": "N02",
+   "u_span": "Vent the greenhouse",
+   "v_span": "Mist the seedlings",
+   "ce": 0.9988,
+   "channels": [
+    "same_sentence",
+    "entity_bridge"
+   ],
+   "stage": "licensed",
+   "verify": "SUPPORTED",
+   "verify_reason": "both_forms_in_rel",
+   "judge": {
+    "q1_where_is_a": "the ventilation is complete",
+    "q2_where_is_b": "Mist the seedlings",
+    "q3_relation_between_these_two": "YES",
+    "q4_direction": "A_TO_B",
+    "q5_relation_type": "ORDER_BEFORE"
+   },
+   "direction": "A_TO_B",
+   "relation": "ORDER_BEFORE"
+  },
+  {
+   "u": "N01",
+   "v": "N04",
+   "u_span": "Vent the greenhouse",
+   "v_span": "the humidity log is signed",
+   "ce": 0.9981,
+   "channels": [
+    "same_sentence",
+    "entity_bridge"
+   ],
+   "stage": "judge",
+   "verify": "SUPPORTED",
+   "verify_reason": "both_forms_in_rel",
+   "judge": {
+    "q1_where_is_a": "the ventilation is complete",
+    "q2_where_is_b": "the humidity log is signed",
+    "q3_relation_between_these_two": "YES",
+    "q4_direction": "A_TO_B",
+    "q5_relation_type": "PRECONDITION"
+   },
+   "judge_note": "coordination_gate",
+   "gate": "coprecondition"
+  },
+  {
+   "u": "N02",
+   "v": "N03",
+   "u_span": "Mist the seedlings",
+   "v_span": "the ventilation is complete",
+   "ce": 0.9986,
+   "channels": [
+    "same_sentence",
+    "entity_bridge"
+   ],
+   "stage": "licensed",
+   "verify": "SUPPORTED",
+   "verify_reason": "both_forms_in_rel",
+   "judge": {
+    "q1_where_is_a": "Mist the seedlings",
+    "q2_where_is_b": "the ventilation is complete",
+    "q3_relation_between_these_two": "YES",
+    "q4_direction": "B_TO_A",
+    "q5_relation_type": "ORDER_BEFORE"
+   },
+   "direction": "B_TO_A",
+   "relation": "ORDER_BEFORE"
+  },
+  {
+   "u": "N02",
+   "v": "N04",
+   "u_span": "Mist the seedlings",
+   "v_span": "the humidity log is signed",
+   "ce": 0.9981,
+   "channels": [
+    "same_sentence",
+    "entity_bridge"
+   ],
+   "stage": "licensed",
+   "verify": "SUPPORTED",
+   "verify_reason": "both_forms_in_rel",
+   "judge": {
+    "q1_where_is_a": "Mist the seedlings",
+    "q2_where_is_b": "the humidity log is signed",
+    "q3_relation_between_these_two": "YES",
+    "q4_direction": "B_TO_A",
+    "q5_relation_type": "ORDER_BEFORE"
+   },
+   "direction": "B_TO_A",
+   "relation": "ORDER_BEFORE"
+  },
+  {
+   "u": "N03",
+   "v": "N04",
+   "u_span": "the ventilation is complete",
+   "v_span": "the humidity log is signed",
+   "ce": 0.9981,
+   "channels": [
+    "same_sentence",
+    "entity_bridge"
+   ],
+   "stage": "judge",
+   "verify": "SUPPORTED",
+   "verify_reason": "both_forms_in_rel",
+   "judge": {
+    "q1_where_is_a": "the ventilation is complete",
+    "q2_where_is_b": "the humidity log is signed",
+    "q3_relation_between_these_two": "YES",
+    "q4_direction": "UNKNOWN",
+    "q5_relation_type": "ORDER_BEFORE"
+   },
+   "judge_note": "coordination_gate",
+   "gate": "coprecondition"
+  }
+ ]
+}

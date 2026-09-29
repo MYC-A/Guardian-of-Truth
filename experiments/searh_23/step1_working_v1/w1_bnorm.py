@@ -64,8 +64,9 @@ Answer strictly as JSON:
 
 
 def load_suite() -> list[dict]:
-    fname = ("level_f2_cases.json" if os.environ.get("LF_SUITE") == "f2"
-             else "level_f_cases.json")
+    fname = {"f2": "level_f2_cases.json", "f3": "level_f3_cases.json",
+         "f4": "level_f4_cases.json"}.get(
+        os.environ.get("LF_SUITE"), "level_f_cases.json")
     return json.loads((IE / "frozen" / fname).read_text(encoding="utf-8"))
 
 
