@@ -77,10 +77,31 @@ class RuntimeProofLayer:
         if entity is None:
             return answer('UNKNOWN','target_entity_not_scalar')
         # The query is cut BEFORE the target action; later reads cannot rescue it.
-        view=self.ledger.latest(rule.condition_entity_type,entity,
-                                rule.condition_predicate,as_of=target.index-1)
+        scoped=FactLedger()
+        uncertain_indices=[]
+        for entry in self.ledger.events:
+            f=entry.fact
+            if (f.key()!=(rule.condition_entity_type,entity,rule.condition_predicate)
+                    or entry.index>=target.index):
+                continue
+            sources=[c for c in self.case.calls if c.call_id==f.provenance.call_id]
+            if len(sources)!=1 or not isinstance(sources[0].payload,dict):
+                uncertain_indices.append(entry.index); continue
+            source=sources[0].payload
+            # Join all scope dimensions BEFORE selecting the latest value.
+            # A newer approval for quantity 70 must not overwrite quantity 50.
+            if any(a not in target.payload or b not in source for a,b in rule.argument_joins):
+                uncertain_indices.append(entry.index); continue
+            if any(scalar_to_json(target.payload[a])!=scalar_to_json(source[b])
+                   for a,b in rule.argument_joins):
+                continue
+            scoped.append(entry)
+        view=scoped.latest(rule.condition_entity_type,entity,
+                           rule.condition_predicate,as_of=target.index-1)
         if view.truth is Truth.UNKNOWN or view.provenance is None:
             return answer('UNKNOWN','no_prior_semantically_bound_evidence')
+        if any(i>=view.observed_at for i in uncertain_indices):
+            return answer('UNKNOWN','newer_condition_scope_unproven',view)
         evidence_calls=[c for c in self.case.calls if c.call_id==view.provenance.call_id]
         if len(evidence_calls)!=1 or not isinstance(evidence_calls[0].payload,dict):
             return answer('UNKNOWN','evidence_call_ambiguous',view)
