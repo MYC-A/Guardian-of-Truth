@@ -574,20 +574,42 @@ def build_nodes_v3(arm: str, case: dict) -> list[dict]:
                         "arguments": c.get("arguments") or []}
     # type filter + junk filters (n3 family, any form)
     kept = {}
+    deontic_killed: list[tuple[str, str]] = []
     for k, s in survivors.items():
         if s["type"] not in EVENTLIKE:
             continue
         forms = s["forms"]
         if MODAL_COPULA_START.match(s["span"].strip()):
             continue  # deontic restatement, not a state object
-        if any(TAXONOMY_PRED.search(f) or DEONTIC_ADJ.search(f)
-               or IDENTITY_NEG.search(f)
+        if all(len(f.split()) <= 2 and re.match(r"^[a-z]+ed$",
+                                                 f.strip(), re.I)
                for f in forms):
-            continue  # taxonomy / deontic / identity-negation statements
+            continue  # bare participle fragment ('repeated')
+        if any(DEONTIC_ADJ.search(f) for f in forms):
+            m = re.match(r"^(.{2,60}?)\s+(is|are|was|were)\b",
+                         s["span"], re.I)
+            if m:
+                deontic_killed.append((m.group(1).strip(), s["span"]))
+            continue  # deontic modality, not a state object
+        if any(TAXONOMY_PRED.search(f) or IDENTITY_NEG.search(f)
+               for f in forms):
+            continue  # taxonomy / identity-negation statements
         if any(ARTIFACT_SUBJ.match(f) and COMM_VERB.search(f)
                for f in forms):
             continue  # artifact-subject recording sentences
         kept[k] = s
+    # deontic subject attachment: 'Repair is permitted ...' anchors the
+    # Repair act node (its bare subject is a reference to that act)
+    for subj, clause in deontic_killed:
+        if not _in_policy(policy, subj):
+            continue
+        for k, s in kept.items():
+            if compatible_nodes([subj], s["forms"] or [s["span"]]):
+                for extra in (subj, clause):
+                    if extra not in s["forms"] and \
+                            _in_policy(policy, extra):
+                        s["forms"].append(extra)
+                break
     # merge survivors sharing the same primary span (bnorm/b1 duplication)
     by_span: dict[str, list[str]] = defaultdict(list)
     for k, s in kept.items():
@@ -629,27 +651,10 @@ def build_nodes_v3(arm: str, case: dict) -> list[dict]:
             parent[ry] = rx
 
     def union_compatible(x: str, y: str) -> bool:
-        """Action-compatibility for frontend-proposed unions: the linked
-        candidates must be the same action (action-lemma match), or a
-        copula state whose SUBJECT head or PREDICATE participle matches
-        the target action ('the tower is drained' ~ Drain)."""
+        """Action-compatibility for frontend-proposed unions."""
         sx, sy = kept[x], kept[y]
-        sigs_x = [action_signature(f) for f in
-                  (sx["forms"] or [sx["span"]])]
-        sigs_y = [action_signature(f) for f in
-                  (sy["forms"] or [sy["span"]])]
-        for (ax, argsx) in sigs_x:
-            for (ay, argsy) in sigs_y:
-                shared = {t for t in (argsx & argsy) if not t.isdigit()}
-                if ax and ay and ax == ay and \
-                        (shared or not argsx or not argsy):
-                    return True
-                # state-of-act: the state's subject/predicate argument IS
-                # the other side's action ('the dyeing is fixed' ~ Dye,
-                # 'the scrapes are dry' ~ Scrape)
-                if ax and ay and (ay in argsx or ax in argsy):
-                    return True
-        return False
+        return compatible_nodes(sx["forms"] or [sx["span"]],
+                                sy["forms"] or [sy["span"]])
 
     for k, s in kept.items():
         for r in s["relations"]:
@@ -720,6 +725,55 @@ OP_ON_MENTION = {
     "archive", "register", "verify", "check", "confirm", "certify",
     "validate", "test", "inspect", "review", "approve", "keep",
     "enter", "monitor", "audit"}
+
+
+def _form_kind(span: str) -> str:
+    """'state' (copula clause / predicate fragment), 'ref'
+    (determiner-NP / gerund), or 'act' (verb-initial clause)."""
+    s = (span or "").strip()
+    if not s:
+        return "ref"
+    if COPULA_START.match(s):
+        return "state"
+    if re.match(r"^(is|are|was|were)\b", s, re.I):
+        return "state"
+    if re.match(r"^(.{3,60}?)\s+(is|are|was|were)\s+(not\s+)?(.+)$",
+                s, re.I):
+        return "state"          # full copula clause with a subject
+    if re.match(r"^(the|a|an|this|that|each|every)\b", s, re.I):
+        return "ref"
+    if re.match(r"^[a-z]+ing\b", s, re.I) and len(s.split()) <= 2:
+        return "ref"
+    return "act"
+
+
+def compatible_nodes(forms_x: list[str], forms_y: list[str]) -> bool:
+    """Action-compatibility between two form sets: same action lemma
+    (with argument overlap or an argument-less side), OR a state/ref
+    form whose SUBJECT argument IS the other side's action (asymmetric:
+    an act whose OBJECT is the other action - 'Record the annealing' -
+    is an operation ABOUT it, not a facet of it)."""
+    sigs_x = [action_signature(f) for f in forms_x]
+    sigs_y = [action_signature(f) for f in forms_y]
+    for (ax, argsx), fx in zip(sigs_x, forms_x):
+        for (ay, argsy), fy in zip(sigs_y, forms_y):
+            shared = {t for t in (argsx & argsy) if not t.isdigit()}
+            if ax and ay and _lemma_match(ax, ay) and \
+                    (shared or not argsx or not argsy):
+                return True
+            kx, ky = _form_kind(fx), _form_kind(fy)
+            if ax and ay:
+                # recording states ('X is logged/filed') are events ABOUT
+                # X, not facets of X
+                if RECORDING_PRED.search(fx) or RECORDING_PRED.search(fy):
+                    continue
+                if kx in ("state", "ref") and \
+                        any(_lemma_match(ay, t) for t in argsx):
+                    return True      # fx is a state/ref ABOUT ay's action
+                if ky in ("state", "ref") and \
+                        any(_lemma_match(ax, t) for t in argsy):
+                    return True      # fy is a state/ref ABOUT ax's action
+    return False
 
 
 def _norm_lemma(t: str) -> str:
@@ -992,7 +1046,7 @@ def main() -> None:
                        max_length=512,
                        cache_folder="/workspace/guardian/hf_cache")
     client = Mistral(model="ministral-14b-latest", cache_dir=OUT / "_cache")
-    outdir = OUT / f"W1_DOWN5_{arm}"
+    outdir = OUT / f"W1_DOWN6_{arm}"
     outdir.mkdir(parents=True, exist_ok=True)
 
     def ask(system, user, max_tokens=600):
@@ -1072,6 +1126,11 @@ def main() -> None:
                 if set(nodes[i]["member_spans"]) & \
                         set(nodes[j]["member_spans"]):
                     continue  # shared form gate (v3)
+                if compatible_nodes(nodes[i]["member_spans"] or
+                                    [nodes[i]["span"]],
+                                    nodes[j]["member_spans"] or
+                                    [nodes[j]["span"]]):
+                    continue  # same-action facets: semantic, not normative
                 for ma in nodes[i]["member_spans"] or [nodes[i]["span"]]:
                     for mb in nodes[j]["member_spans"] or [nodes[j]["span"]]:
                         ra, rb = span_in(policy, ma), span_in(policy, mb)
@@ -1139,6 +1198,28 @@ def main() -> None:
                     direction = judge.get("q4_direction", "UNKNOWN")
                     rel = judge.get("q5_relation_type", "UNKNOWN")
                 rec["judge"] = judge
+                # coordination gate: if the two in-rel anchors sit on the
+                # same side of any gating connective, separated only by
+                # 'and'/'or', they are coordinated co-preconditions /
+                # co-effects of a third action - not a relation between
+                # each other
+                if licensed and v.get("a_anchor") and v.get("b_anchor") \
+                        and v.get("relation_text"):
+                    rel_t = v["relation_text"]
+                    pa = rel_t.find(v["a_anchor"])
+                    pb = rel_t.find(v["b_anchor"])
+                    if pa >= 0 and pb >= 0:
+                        lo, hi = min(pa, pb), max(pa, pb)
+                        between = rel_t[lo:hi]
+                        gating = re.search(
+                            r"\b(only\s+after|only\s+if|only\s+when|"
+                            r"after|before|if|when|unless|until|while|"
+                            r"once|provided)\b", between, re.I)
+                        coord = re.search(r"\b(and|or)\b", between, re.I)
+                        if coord and not gating:
+                            licensed = False
+                            rec["judge_note"] = "coordination_gate"
+                            rec["gate"] = "coprecondition"
             if not licensed:
                 pair_log.append(rec)
                 continue
@@ -1159,6 +1240,10 @@ def main() -> None:
                         direction = "B_TO_A"
                     else:
                         direction = "A_TO_B"
+            if rel in ("NOT_SUPPORTED", "NONE"):
+                rec["stage"] = "not_supported_relation"
+                pair_log.append(rec)
+                continue
             if rel in (None, "UNKNOWN"):
                 if direction == "B_TO_A":
                     cls_a, cls_b = ev_b, ev_a
@@ -1177,6 +1262,45 @@ def main() -> None:
             rec["direction"] = direction
             rec["relation"] = rel
             pair_log.append(rec)
+        # licensed-edge consolidation: edges sharing an endpoint whose
+        # other endpoints are action-compatible facets of one object
+        # (act-node + state-node licensing the same relation) collapse
+        # into one edge (highest CE kept)
+        by_v: dict[str, list[dict]] = defaultdict(list)
+        for e in edges:
+            by_v[e["v"]].append(e)
+        drop = set()
+        for v_id, group in by_v.items():
+            for a in range(len(group)):
+                for b in range(a + 1, len(group)):
+                    e1, e2 = group[a], group[b]
+                    if id(e2) in drop or id(e1) in drop:
+                        continue
+                    u1 = next((n for n in nodes if n["node_id"] ==
+                               e1["u"]), None)
+                    u2 = next((n for n in nodes if n["node_id"] ==
+                               e2["u"]), None)
+                    if u1 and u2 and compatible_nodes(
+                            u1["member_spans"], u2["member_spans"]):
+                        drop.add(id(e1 if e1["ce"] <= e2["ce"] else e2))
+        by_u: dict[str, list[dict]] = defaultdict(list)
+        for e in edges:
+            by_u[e["u"]].append(e)
+        for u_id, group in by_u.items():
+            for a in range(len(group)):
+                for b in range(a + 1, len(group)):
+                    e1, e2 = group[a], group[b]
+                    if id(e2) in drop or id(e1) in drop:
+                        continue
+                    v1 = next((n for n in nodes if n["node_id"] ==
+                               e1["v"]), None)
+                    v2 = next((n for n in nodes if n["node_id"] ==
+                               e2["v"]), None)
+                    if v1 and v2 and compatible_nodes(
+                            v1["member_spans"], v2["member_spans"]):
+                        drop.add(id(e1 if e1["ce"] <= e2["ce"] else e2))
+        if drop:
+            edges = [e for e in edges if id(e) not in drop]
         path.write_text(json.dumps({"case_id": cid_, "arm": arm,
                                     "ev_arm": "E3V3",
                                     "nodes": [{"node_id": n["node_id"],
@@ -1191,7 +1315,7 @@ def main() -> None:
                                    indent=1) + "\n", encoding="utf-8")
         print(cid_, len(nodes), "nodes ->", len(edges), "edges",
               f"({len(pair_log)} pairs logged)", flush=True)
-    print("W1 DOWN5", arm, "done")
+    print("W1 DOWN6", arm, "done")
 
 
 if __name__ == "__main__":
