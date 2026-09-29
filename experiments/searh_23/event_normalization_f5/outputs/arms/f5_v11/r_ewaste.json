@@ -1,0 +1,408 @@
+{
+ "case_id": "r_ewaste",
+ "arm": "LLM_SG",
+ "ev_arm": "E3V3",
+ "nodes": [
+  {
+   "node_id": "N01",
+   "span": "Test each donated board",
+   "type": "EVENT",
+   "start": 0,
+   "members": [
+    "c01"
+   ],
+   "member_spans": [
+    "Test each donated board"
+   ]
+  },
+  {
+   "node_id": "N02",
+   "span": "Verify that each board passed the test",
+   "type": "CHECK",
+   "start": 25,
+   "members": [
+    "c03"
+   ],
+   "member_spans": [
+    "Verify that each board passed the test"
+   ]
+  },
+  {
+   "node_id": "N03",
+   "span": "each board passed the test",
+   "type": "EVENT_REFERENCE",
+   "start": 37,
+   "members": [
+    "c08",
+    "c02"
+   ],
+   "member_spans": [
+    "each board passed the test",
+    "passed the test"
+   ]
+  },
+  {
+   "node_id": "N04",
+   "span": "dismantling it",
+   "type": "EVENT_REFERENCE",
+   "start": 71,
+   "members": [
+    "c04"
+   ],
+   "member_spans": [
+    "dismantling it"
+   ]
+  },
+  {
+   "node_id": "N05",
+   "span": "Record the test result",
+   "type": "EVENT",
+   "start": 87,
+   "members": [
+    "c05"
+   ],
+   "member_spans": [
+    "Record the test result",
+    "Record the test result in the intake sheet"
+   ]
+  },
+  {
+   "node_id": "N06",
+   "span": "Dismantle only verified boards",
+   "type": "EVENT",
+   "start": 131,
+   "members": [
+    "c06"
+   ],
+   "member_spans": [
+    "Dismantle only verified boards"
+   ]
+  }
+ ],
+ "edges": [
+  {
+   "u": "N02",
+   "v": "N03",
+   "u_members": [
+    "c03"
+   ],
+   "v_members": [
+    "c08",
+    "c02"
+   ],
+   "u_span": "Verify that each board passed the test",
+   "v_span": "each board passed the test",
+   "relation": "PRECONDITION",
+   "direction": "B_TO_A",
+   "ce": 0.9948,
+   "detail": {
+    "certificate": {
+     "a_anchor": "Verify that each board passed the test",
+     "b_anchor": "each board passed the test",
+     "a_in_relation": "Verify that each board passed the test",
+     "b_in_relation": "passed the test",
+     "a_via_reference": null,
+     "b_via_reference": null,
+     "relation_text": "Verify that each board passed the test before dismantling it.",
+     "direction": "A_TO_B",
+     "relation_type": "PRECONDITION"
+    },
+    "verify": {
+     "verdict": "SUPPORTED",
+     "reason": "both_forms_in_rel",
+     "a_anchor": "Verify that each board passed the test",
+     "b_anchor": "each board passed the test",
+     "relation_text": "Verify that each board passed the test before dismantling it.",
+     "direction": "A_TO_B",
+     "relation_type": "PRECONDITION"
+    }
+   }
+  },
+  {
+   "u": "N03",
+   "v": "N04",
+   "u_members": [
+    "c08",
+    "c02"
+   ],
+   "v_members": [
+    "c04"
+   ],
+   "u_span": "each board passed the test",
+   "v_span": "dismantling it",
+   "relation": "ORDER_BEFORE",
+   "direction": "A_TO_B",
+   "ce": 0.9875,
+   "detail": {
+    "certificate": {
+     "a_anchor": "\"each board passed the test\"",
+     "b_anchor": "\"dismantling it\"",
+     "a_in_relation": "\"passed the test\"",
+     "b_in_relation": "\"dismantle\"",
+     "a_via_reference": null,
+     "b_via_reference": null,
+     "relation_text": "\"Verify that each board passed the test before dismantling it.\"",
+     "direction": "A_TO_B",
+     "relation_type": "ORDER_BEFORE"
+    },
+    "verify": {
+     "verdict": "SUPPORTED",
+     "reason": "both_forms_in_rel",
+     "a_anchor": "each board passed the test",
+     "b_anchor": "dismantling it",
+     "relation_text": "Verify that each board passed the test before dismantling it.",
+     "direction": "A_TO_B",
+     "relation_type": "ORDER_BEFORE"
+    }
+   }
+  },
+  {
+   "u": "N04",
+   "v": "N06",
+   "u_members": [
+    "c04"
+   ],
+   "v_members": [
+    "c06"
+   ],
+   "u_span": "dismantling it",
+   "v_span": "Dismantle only verified boards",
+   "relation": "PRECONDITION",
+   "direction": "B_TO_A",
+   "ce": 0.869,
+   "detail": {
+    "certificate": {
+     "a_anchor": "\"dismantling it\"",
+     "b_anchor": "\"Dismantle only verified boards\"",
+     "a_in_relation": "NO_ANCHOR",
+     "b_in_relation": "\"dismantling\"",
+     "a_via_reference": null,
+     "b_via_reference": "\"before dismantling it\"",
+     "relation_text": "\"Verify that each board passed the test **before dismantling it**\"",
+     "direction": "B_TO_A",
+     "relation_type": "ORDER_BEFORE"
+    },
+    "verify": {
+     "verdict": "UNKNOWN",
+     "reason": "via_reference_pending_judge",
+     "a_anchor": "dismantling it",
+     "b_anchor": "before dismantling it",
+     "relation_text": "Verify that each board passed the test before dismantling it",
+     "direction": "B_TO_A",
+     "relation_type": "ORDER_BEFORE"
+    }
+   }
+  }
+ ],
+ "pairs": [
+  {
+   "u": "N01",
+   "v": "N02",
+   "u_span": "Test each donated board",
+   "v_span": "Verify that each board passed the test",
+   "ce": 0.5853,
+   "channels": [
+    "entity_bridge"
+   ],
+   "stage": "certificate",
+   "verify": "UNSUPPORTED",
+   "verify_reason": "relation_text_not_connecting_both_endpoints"
+  },
+  {
+   "u": "N01",
+   "v": "N04",
+   "u_span": "Test each donated board",
+   "v_span": "dismantling it",
+   "ce": 0.1255,
+   "channels": [
+    "entity_bridge"
+   ],
+   "stage": "certificate",
+   "verify": "UNSUPPORTED",
+   "verify_reason": "positional_path_ce_gate"
+  },
+  {
+   "u": "N01",
+   "v": "N05",
+   "u_span": "Test each donated board",
+   "v_span": "Record the test result",
+   "ce": 0.0002,
+   "channels": [
+    "entity_bridge"
+   ],
+   "stage": "certificate",
+   "verify": "UNSUPPORTED",
+   "verify_reason": "no_relation"
+  },
+  {
+   "u": "N01",
+   "v": "N06",
+   "u_span": "Test each donated board",
+   "v_span": "Dismantle only verified boards",
+   "ce": 0.0013,
+   "stage": "ce_band"
+  },
+  {
+   "u": "N02",
+   "v": "N03",
+   "u_span": "Verify that each board passed the test",
+   "v_span": "each board passed the test",
+   "ce": 0.9948,
+   "channels": [
+    "same_sentence",
+    "entity_bridge"
+   ],
+   "stage": "licensed",
+   "verify": "SUPPORTED",
+   "verify_reason": "both_forms_in_rel",
+   "judge": {
+    "q1_where_is_a": "Verify that each board passed the test",
+    "q2_where_is_b": "passed the test",
+    "q3_relation_between_these_two": "YES",
+    "q4_direction": "B_TO_A",
+    "q5_relation_type": "PRECONDITION"
+   },
+   "direction": "B_TO_A",
+   "relation": "PRECONDITION"
+  },
+  {
+   "u": "N02",
+   "v": "N04",
+   "u_span": "Verify that each board passed the test",
+   "v_span": "dismantling it",
+   "ce": 0.9875,
+   "channels": [
+    "same_sentence",
+    "entity_bridge"
+   ],
+   "stage": "judge",
+   "verify": "SUPPORTED",
+   "verify_reason": "extractor_anchors_positional",
+   "judge": {
+    "q1_where_is_a": "verified boards",
+    "q2_where_is_b": "Dismantle only",
+    "q3_relation_between_these_two": "YES",
+    "q4_direction": "A_TO_B",
+    "q5_relation_type": "PRECONDITION"
+   },
+   "judge_note": "no_trigger_connective"
+  },
+  {
+   "u": "N02",
+   "v": "N05",
+   "u_span": "Verify that each board passed the test",
+   "v_span": "Record the test result",
+   "ce": 0.0007,
+   "channels": [
+    "entity_bridge"
+   ],
+   "stage": "certificate",
+   "verify": "UNSUPPORTED",
+   "verify_reason": "relation_text_not_connecting_both_endpoints"
+  },
+  {
+   "u": "N02",
+   "v": "N06",
+   "u_span": "Verify that each board passed the test",
+   "v_span": "Dismantle only verified boards",
+   "ce": 0.869,
+   "channels": [],
+   "stage": "certificate",
+   "verify": "UNSUPPORTED",
+   "verify_reason": "relation_text_not_connecting_both_endpoints"
+  },
+  {
+   "u": "N03",
+   "v": "N04",
+   "u_span": "each board passed the test",
+   "v_span": "dismantling it",
+   "ce": 0.9875,
+   "channels": [
+    "same_sentence",
+    "entity_bridge"
+   ],
+   "stage": "licensed",
+   "verify": "SUPPORTED",
+   "verify_reason": "both_forms_in_rel",
+   "judge": {
+    "q1_where_is_a": "each board passed the test",
+    "q2_where_is_b": "dismantling it",
+    "q3_relation_between_these_two": "YES",
+    "q4_direction": "A_TO_B",
+    "q5_relation_type": "ORDER_BEFORE"
+   },
+   "conn_side": {
+    "connective": "before",
+    "antecedent": "a"
+   },
+   "judge_direction": "A_TO_B",
+   "direction": "A_TO_B",
+   "relation": "ORDER_BEFORE"
+  },
+  {
+   "u": "N03",
+   "v": "N05",
+   "u_span": "each board passed the test",
+   "v_span": "Record the test result",
+   "ce": 0.0007,
+   "channels": [
+    "entity_bridge"
+   ],
+   "stage": "certificate",
+   "verify": "UNKNOWN",
+   "verify_reason": "relation_text_not_verbatim"
+  },
+  {
+   "u": "N03",
+   "v": "N06",
+   "u_span": "each board passed the test",
+   "v_span": "Dismantle only verified boards",
+   "ce": 0.869,
+   "channels": [],
+   "stage": "certificate",
+   "verify": "UNKNOWN",
+   "verify_reason": "relation_text_not_verbatim"
+  },
+  {
+   "u": "N04",
+   "v": "N05",
+   "u_span": "dismantling it",
+   "v_span": "Record the test result",
+   "ce": 0.0007,
+   "channels": [
+    "entity_bridge"
+   ],
+   "stage": "certificate",
+   "verify": "UNSUPPORTED",
+   "verify_reason": "relation_text_not_connecting_both_endpoints"
+  },
+  {
+   "u": "N04",
+   "v": "N06",
+   "u_span": "dismantling it",
+   "v_span": "Dismantle only verified boards",
+   "ce": 0.869,
+   "channels": [],
+   "stage": "licensed",
+   "verify": "UNKNOWN",
+   "verify_reason": "via_reference_pending_judge",
+   "judge": {
+    "q1_where_is_a": "dismantling it",
+    "q2_where_is_b": "passed the test",
+    "q3_relation_between_these_two": "YES",
+    "q4_direction": "B_TO_A",
+    "q5_relation_type": "PRECONDITION"
+   },
+   "direction": "B_TO_A",
+   "relation": "PRECONDITION"
+  },
+  {
+   "u": "N05",
+   "v": "N06",
+   "u_span": "Record the test result",
+   "v_span": "Dismantle only verified boards",
+   "ce": 0.0008,
+   "stage": "ce_band"
+  }
+ ]
+}

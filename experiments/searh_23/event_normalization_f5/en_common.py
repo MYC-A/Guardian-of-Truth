@@ -164,23 +164,31 @@ def _muc(pred_clusters: list[set], gold_clusters: list[set]) -> tuple:
 
 
 def _ceaf_entity(pred_clusters: list[set], gold_clusters: list[set]) -> tuple:
-    """CEAF-E with one-to-one greedy alignment (adequate for small sets)."""
-    import itertools
+    """CEAF-E with one-to-one GREEDY alignment by descending overlap.
 
+    (The 2026-09-29 original used exhaustive itertools.permutations -
+    infeasible beyond ~10 clusters; fixed to greedy, which matches the
+    docstring and is standard practice. Logged in EN_RESEARCH_LOG.)"""
     def score(a: set, b: set) -> float:
         return len(a & b)
-    n = min(len(pred_clusters), len(gold_clusters))
-    if n == 0:
+    if not pred_clusters or not gold_clusters:
         return 1.0, 0.0, 0.0
-    best = None
-    for perm in itertools.permutations(range(len(gold_clusters)), n):
-        s = sum(score(pred_clusters[i], gold_clusters[j])
-                for i, j in enumerate(perm[:n]))
-        if best is None or s > best[0]:
-            best = (s, perm)
-    s, perm = best
-    aligned = sum(1 for i, j in enumerate(perm)
-                  if score(pred_clusters[i], gold_clusters[j]) > 0)
+    pairs = sorted(((score(p, g), i, j)
+                    for i, p in enumerate(pred_clusters)
+                    for j, g in enumerate(gold_clusters)),
+                   reverse=True)
+    used_p, used_g = set(), set()
+    s = 0.0
+    aligned = 0
+    for sc, i, j in pairs:
+        if sc <= 0:
+            break
+        if i in used_p or j in used_g:
+            continue
+        used_p.add(i)
+        used_g.add(j)
+        s += sc
+        aligned += 1
     total_pred = sum(len(c) for c in pred_clusters) or 1
     total_gold = sum(len(c) for c in gold_clusters) or 1
     p = s / total_pred

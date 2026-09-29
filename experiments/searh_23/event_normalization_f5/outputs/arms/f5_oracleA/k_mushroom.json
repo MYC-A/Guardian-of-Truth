@@ -1,0 +1,224 @@
+{
+ "case_id": "k_mushroom",
+ "arm": "LLM_SG",
+ "ev_arm": "E3V3",
+ "nodes": [
+  {
+   "node_id": "N01",
+   "span": "Pasteurize the substrate",
+   "type": "EVENT",
+   "start": 0,
+   "members": [
+    "m01",
+    "m04"
+   ],
+   "member_spans": [
+    "Pasteurize the substrate",
+    "pasteurizing"
+   ]
+  },
+  {
+   "node_id": "N02",
+   "span": "Spawn the beds",
+   "type": "EVENT",
+   "start": 26,
+   "members": [
+    "m03"
+   ],
+   "member_spans": [
+    "Spawn the beds"
+   ]
+  },
+  {
+   "node_id": "N03",
+   "span": "Harvest the flush",
+   "type": "EVENT",
+   "start": 61,
+   "members": [
+    "m05"
+   ],
+   "member_spans": [
+    "Harvest the flush"
+   ]
+  },
+  {
+   "node_id": "N04",
+   "span": "the caps open",
+   "type": "STATE_OR_FACET",
+   "start": 84,
+   "members": [
+    "m06"
+   ],
+   "member_spans": [
+    "the caps open"
+   ]
+  }
+ ],
+ "edges": [
+  {
+   "u": "N01",
+   "v": "N02",
+   "u_members": [
+    "m01",
+    "m04"
+   ],
+   "v_members": [
+    "m03"
+   ],
+   "u_span": "Pasteurize the substrate",
+   "v_span": "Spawn the beds",
+   "relation": "ORDER_BEFORE",
+   "direction": "A_TO_B",
+   "ce": 0.9912,
+   "detail": {
+    "certificate": {
+     "a_anchor": "pasteurizing",
+     "b_anchor": "Spawn the beds",
+     "a_in_relation": "pasteurizing",
+     "b_in_relation": "Spawn the beds",
+     "a_via_reference": null,
+     "b_via_reference": null,
+     "relation_text": "Spawn the beds after pasteurizing",
+     "direction": "A_TO_B",
+     "relation_type": "ORDER_BEFORE"
+    },
+    "verify": {
+     "verdict": "SUPPORTED",
+     "reason": "both_forms_in_rel",
+     "a_anchor": "pasteurizing",
+     "b_anchor": "Spawn the beds",
+     "relation_text": "Spawn the beds after pasteurizing",
+     "direction": "A_TO_B",
+     "relation_type": "ORDER_BEFORE"
+    }
+   }
+  },
+  {
+   "u": "N03",
+   "v": "N04",
+   "u_members": [
+    "m05"
+   ],
+   "v_members": [
+    "m06"
+   ],
+   "u_span": "Harvest the flush",
+   "v_span": "the caps open",
+   "relation": "STATE_GATE",
+   "direction": "B_TO_A",
+   "ce": 0.9775,
+   "detail": {
+    "certificate": {
+     "a_anchor": "Harvest the flush",
+     "b_anchor": "the caps open",
+     "a_in_relation": "Harvest the flush",
+     "b_in_relation": "when the caps open",
+     "a_via_reference": null,
+     "b_via_reference": null,
+     "relation_text": "Harvest the flush when the caps open",
+     "direction": "B_TO_A",
+     "relation_type": "STATE_GATE"
+    },
+    "verify": {
+     "verdict": "SUPPORTED",
+     "reason": "both_forms_in_rel",
+     "a_anchor": "Harvest the flush",
+     "b_anchor": "the caps open",
+     "relation_text": "Harvest the flush when the caps open",
+     "direction": "B_TO_A",
+     "relation_type": "STATE_GATE"
+    }
+   }
+  }
+ ],
+ "pairs": [
+  {
+   "u": "N01",
+   "v": "N02",
+   "u_span": "Pasteurize the substrate",
+   "v_span": "Spawn the beds",
+   "ce": 0.9912,
+   "channels": [
+    "same_sentence",
+    "entity_bridge"
+   ],
+   "stage": "licensed",
+   "verify": "SUPPORTED",
+   "verify_reason": "both_forms_in_rel",
+   "judge": {
+    "q1_where_is_a": "pasteurizing",
+    "q2_where_is_b": "Spawn the beds",
+    "q3_relation_between_these_two": "YES",
+    "q4_direction": "A_TO_B",
+    "q5_relation_type": "ORDER_BEFORE"
+   },
+   "conn_side": {
+    "connective": "after",
+    "antecedent": "a"
+   },
+   "judge_direction": "A_TO_B",
+   "direction": "A_TO_B",
+   "relation": "ORDER_BEFORE"
+  },
+  {
+   "u": "N01",
+   "v": "N03",
+   "u_span": "Pasteurize the substrate",
+   "v_span": "Harvest the flush",
+   "ce": 0.0003,
+   "stage": "ce_band"
+  },
+  {
+   "u": "N01",
+   "v": "N04",
+   "u_span": "Pasteurize the substrate",
+   "v_span": "the caps open",
+   "ce": 0.0647,
+   "stage": "ce_band"
+  },
+  {
+   "u": "N02",
+   "v": "N03",
+   "u_span": "Spawn the beds",
+   "v_span": "Harvest the flush",
+   "ce": 0.0001,
+   "stage": "ce_band"
+  },
+  {
+   "u": "N02",
+   "v": "N04",
+   "u_span": "Spawn the beds",
+   "v_span": "the caps open",
+   "ce": 0.0647,
+   "stage": "ce_band"
+  },
+  {
+   "u": "N03",
+   "v": "N04",
+   "u_span": "Harvest the flush",
+   "v_span": "the caps open",
+   "ce": 0.9775,
+   "channels": [
+    "same_sentence",
+    "entity_bridge"
+   ],
+   "stage": "licensed",
+   "verify": "SUPPORTED",
+   "verify_reason": "both_forms_in_rel",
+   "judge": {
+    "q1_where_is_a": "Harvest the flush",
+    "q2_where_is_b": "the caps open",
+    "q3_relation_between_these_two": "YES",
+    "q4_direction": "B_TO_A",
+    "q5_relation_type": "STATE_GATE"
+   },
+   "conn_side": {
+    "connective": "when",
+    "antecedent": "b"
+   },
+   "judge_direction": "B_TO_A",
+   "direction": "B_TO_A",
+   "relation": "STATE_GATE"
+  }
+ ]
+}

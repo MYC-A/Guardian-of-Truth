@@ -1,0 +1,203 @@
+{
+ "case_id": "k_lighthouse",
+ "arm": "LLM_SG",
+ "ev_arm": "E3V3",
+ "nodes": [
+  {
+   "node_id": "N01",
+   "span": "Clean the lens housing",
+   "type": "EVENT",
+   "start": 0,
+   "members": [
+    "m01",
+    "m05"
+   ],
+   "member_spans": [
+    "Clean the lens housing",
+    "the lens housing is cleaned"
+   ]
+  },
+  {
+   "node_id": "N02",
+   "span": "Relight the beacon",
+   "type": "EVENT",
+   "start": 35,
+   "members": [
+    "m04"
+   ],
+   "member_spans": [
+    "Relight the beacon"
+   ]
+  },
+  {
+   "node_id": "N03",
+   "span": "the keeper's entry is filed",
+   "type": "EVENT",
+   "start": 97,
+   "members": [
+    "m06"
+   ],
+   "member_spans": [
+    "the keeper's entry is filed"
+   ]
+  }
+ ],
+ "edges": [
+  {
+   "u": "N01",
+   "v": "N02",
+   "u_members": [
+    "m01",
+    "m05"
+   ],
+   "v_members": [
+    "m04"
+   ],
+   "u_span": "Clean the lens housing",
+   "v_span": "Relight the beacon",
+   "relation": "ORDER_BEFORE",
+   "direction": "A_TO_B",
+   "ce": 0.9953,
+   "detail": {
+    "certificate": {
+     "a_anchor": "\"Clean the lens housing\"",
+     "b_anchor": "\"Relight the beacon\"",
+     "a_in_relation": "\"the lens housing is cleaned\"",
+     "b_in_relation": "\"Relight the beacon\"",
+     "a_via_reference": null,
+     "b_via_reference": null,
+     "relation_text": "\"Relight the beacon only after the lens housing is cleaned and the keeper's entry is filed.\"",
+     "direction": "B_TO_A",
+     "relation_type": "ORDER_BEFORE"
+    },
+    "verify": {
+     "verdict": "SUPPORTED",
+     "reason": "both_forms_in_rel",
+     "a_anchor": "the lens housing is cleaned",
+     "b_anchor": "Relight the beacon",
+     "relation_text": "Relight the beacon only after the lens housing is cleaned and the keeper's entry is filed.",
+     "direction": "B_TO_A",
+     "relation_type": "ORDER_BEFORE"
+    }
+   }
+  },
+  {
+   "u": "N02",
+   "v": "N03",
+   "u_members": [
+    "m04"
+   ],
+   "v_members": [
+    "m06"
+   ],
+   "u_span": "Relight the beacon",
+   "v_span": "the keeper's entry is filed",
+   "relation": "ORDER_BEFORE",
+   "direction": "B_TO_A",
+   "ce": 0.9992,
+   "detail": {
+    "certificate": {
+     "a_anchor": "\"Relight the beacon\"",
+     "b_anchor": "\"the keeper's entry is filed\"",
+     "a_in_relation": "\"Relight the beacon\"",
+     "b_in_relation": "\"the keeper's entry is filed\"",
+     "a_via_reference": null,
+     "b_via_reference": null,
+     "relation_text": "\"Relight the beacon only after the lens housing is cleaned and the keeper's entry is filed\"",
+     "direction": "B_TO_A",
+     "relation_type": "ORDER_BEFORE"
+    },
+    "verify": {
+     "verdict": "SUPPORTED",
+     "reason": "both_forms_in_rel",
+     "a_anchor": "Relight the beacon",
+     "b_anchor": "the keeper's entry is filed",
+     "relation_text": "Relight the beacon only after the lens housing is cleaned and the keeper's entry is filed",
+     "direction": "B_TO_A",
+     "relation_type": "ORDER_BEFORE"
+    }
+   }
+  }
+ ],
+ "pairs": [
+  {
+   "u": "N01",
+   "v": "N02",
+   "u_span": "Clean the lens housing",
+   "v_span": "Relight the beacon",
+   "ce": 0.9953,
+   "channels": [
+    "same_sentence",
+    "entity_bridge"
+   ],
+   "stage": "licensed",
+   "verify": "SUPPORTED",
+   "verify_reason": "both_forms_in_rel",
+   "judge": {
+    "q1_where_is_a": "the lens housing is cleaned",
+    "q2_where_is_b": "Relight the beacon",
+    "q3_relation_between_these_two": "YES",
+    "q4_direction": "A_TO_B",
+    "q5_relation_type": "ORDER_BEFORE"
+   },
+   "conn_side": {
+    "connective": "only after",
+    "antecedent": "a"
+   },
+   "judge_direction": "A_TO_B",
+   "direction": "A_TO_B",
+   "relation": "ORDER_BEFORE"
+  },
+  {
+   "u": "N01",
+   "v": "N03",
+   "u_span": "Clean the lens housing",
+   "v_span": "the keeper's entry is filed",
+   "ce": 0.9992,
+   "channels": [
+    "same_sentence",
+    "entity_bridge"
+   ],
+   "stage": "judge",
+   "verify": "SUPPORTED",
+   "verify_reason": "both_forms_in_rel",
+   "judge": {
+    "q1_where_is_a": "the lens housing is cleaned",
+    "q2_where_is_b": "the keeper's entry is filed",
+    "q3_relation_between_these_two": "YES",
+    "q4_direction": "A_TO_B",
+    "q5_relation_type": "ORDER_BEFORE"
+   },
+   "judge_note": "coordination_gate",
+   "gate": "coprecondition"
+  },
+  {
+   "u": "N02",
+   "v": "N03",
+   "u_span": "Relight the beacon",
+   "v_span": "the keeper's entry is filed",
+   "ce": 0.9992,
+   "channels": [
+    "same_sentence",
+    "entity_bridge"
+   ],
+   "stage": "licensed",
+   "verify": "SUPPORTED",
+   "verify_reason": "both_forms_in_rel",
+   "judge": {
+    "q1_where_is_a": "Relight the beacon",
+    "q2_where_is_b": "the keeper's entry is filed",
+    "q3_relation_between_these_two": "YES",
+    "q4_direction": "B_TO_A",
+    "q5_relation_type": "ORDER_BEFORE"
+   },
+   "conn_side": {
+    "connective": "only after",
+    "antecedent": "b"
+   },
+   "judge_direction": "B_TO_A",
+   "direction": "B_TO_A",
+   "relation": "ORDER_BEFORE"
+  }
+ ]
+}

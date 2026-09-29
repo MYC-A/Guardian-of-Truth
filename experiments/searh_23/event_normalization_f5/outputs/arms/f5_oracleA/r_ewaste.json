@@ -1,0 +1,195 @@
+{
+ "case_id": "r_ewaste",
+ "arm": "LLM_SG",
+ "ev_arm": "E3V3",
+ "nodes": [
+  {
+   "node_id": "N01",
+   "span": "Test each donated board",
+   "type": "CHECK",
+   "start": 0,
+   "members": [
+    "m01",
+    "m06"
+   ],
+   "member_spans": [
+    "Test each donated board",
+    "the test result"
+   ]
+  },
+  {
+   "node_id": "N02",
+   "span": "each board passed the test",
+   "type": "EVENT_REFERENCE",
+   "start": 37,
+   "members": [
+    "m03",
+    "m09"
+   ],
+   "member_spans": [
+    "each board passed the test",
+    "verified boards"
+   ]
+  },
+  {
+   "node_id": "N03",
+   "span": "dismantling it",
+   "type": "EVENT",
+   "start": 71,
+   "members": [
+    "m04",
+    "m08"
+   ],
+   "member_spans": [
+    "dismantling it",
+    "Dismantle"
+   ]
+  },
+  {
+   "node_id": "N04",
+   "span": "Record the test result",
+   "type": "EVENT",
+   "start": 87,
+   "members": [
+    "m05"
+   ],
+   "member_spans": [
+    "Record the test result"
+   ]
+  }
+ ],
+ "edges": [
+  {
+   "u": "N01",
+   "v": "N04",
+   "u_members": [
+    "m01",
+    "m06"
+   ],
+   "v_members": [
+    "m05"
+   ],
+   "u_span": "Test each donated board",
+   "v_span": "Record the test result",
+   "relation": "ORDER_BEFORE",
+   "direction": "A_TO_B",
+   "ce": 0.9991,
+   "detail": {
+    "certificate": {
+     "a_anchor": "Test each donated board",
+     "b_anchor": "Record the test result",
+     "a_in_relation": "the test",
+     "b_in_relation": "Record the test result",
+     "a_via_reference": null,
+     "b_via_reference": null,
+     "relation_text": "Verify that each board passed the test before dismantling it. Record the test result in the intake sheet.",
+     "direction": "A_TO_B",
+     "relation_type": "ORDER_BEFORE"
+    },
+    "verify": {
+     "verdict": "SUPPORTED",
+     "reason": "both_forms_in_rel",
+     "a_anchor": "the test result",
+     "b_anchor": "Record the test result",
+     "relation_text": "Verify that each board passed the test before dismantling it. Record the test result in the intake sheet.",
+     "direction": "A_TO_B",
+     "relation_type": "ORDER_BEFORE"
+    }
+   }
+  }
+ ],
+ "pairs": [
+  {
+   "u": "N01",
+   "v": "N03",
+   "u_span": "Test each donated board",
+   "v_span": "dismantling it",
+   "ce": 0.1255,
+   "channels": [
+    "entity_bridge"
+   ],
+   "stage": "certificate",
+   "verify": "UNSUPPORTED",
+   "verify_reason": "positional_path_ce_gate"
+  },
+  {
+   "u": "N01",
+   "v": "N04",
+   "u_span": "Test each donated board",
+   "v_span": "Record the test result",
+   "ce": 0.9991,
+   "channels": [
+    "same_sentence",
+    "entity_bridge"
+   ],
+   "stage": "licensed",
+   "verify": "SUPPORTED",
+   "verify_reason": "both_forms_in_rel",
+   "judge": {
+    "q1_where_is_a": "the test",
+    "q2_where_is_b": "Record the test result",
+    "q3_relation_between_these_two": "YES",
+    "q4_direction": "A_TO_B",
+    "q5_relation_type": "ORDER_BEFORE"
+   },
+   "direction": "A_TO_B",
+   "relation": "ORDER_BEFORE"
+  },
+  {
+   "u": "N02",
+   "v": "N03",
+   "u_span": "each board passed the test",
+   "v_span": "dismantling it",
+   "ce": 0.9997,
+   "channels": [
+    "same_sentence",
+    "entity_bridge"
+   ],
+   "stage": "judge",
+   "verify": "SUPPORTED",
+   "verify_reason": "both_forms_in_rel",
+   "judge": {
+    "q1_where_is_a": "verified boards",
+    "q2_where_is_b": "Dismantle",
+    "q3_relation_between_these_two": "YES",
+    "q4_direction": "A_TO_B",
+    "q5_relation_type": "PRECONDITION"
+   },
+   "judge_note": "no_trigger_connective"
+  },
+  {
+   "u": "N02",
+   "v": "N04",
+   "u_span": "each board passed the test",
+   "v_span": "Record the test result",
+   "ce": 0.0007,
+   "channels": [
+    "entity_bridge"
+   ],
+   "stage": "certificate",
+   "verify": "UNSUPPORTED",
+   "verify_reason": "relation_text_not_connecting_both_endpoints"
+  },
+  {
+   "u": "N03",
+   "v": "N04",
+   "u_span": "dismantling it",
+   "v_span": "Record the test result",
+   "ce": 0.0007,
+   "channels": [
+    "entity_bridge"
+   ],
+   "stage": "judge",
+   "verify": "SUPPORTED",
+   "verify_reason": "both_forms_in_rel",
+   "judge": {
+    "q1_where_is_a": "Dismantle only verified boards",
+    "q2_where_is_b": "Record the test result in the intake sheet",
+    "q3_relation_between_these_two": "YES",
+    "q4_direction": "B_TO_A",
+    "q5_relation_type": "PRECONDITION"
+   },
+   "judge_note": "no_trigger_connective"
+  }
+ ]
+}

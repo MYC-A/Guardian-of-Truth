@@ -303,3 +303,109 @@ v11 CANDIDATE (frozen BEFORE any F5 inference): v10 + H.3 only.
   R .75-.78); identity pair F1 for H_v10 around .5-.6 with low
   dangerous merges; F4way should beat deterministic arms by ~.1 F1.
   If F5 P/R collapses below .5, the overfit hypothesis is confirmed.
+
+## D6. F5 single-round execution (2026-09-29, all pre-registered arms)
+
+Infrastructure: byte-verbatim exec-replay of the frozen w1_pipe3.py main()
+loop with swapped node builders (smoke-verified: dev f_bottling reproduces
+saved W1_DOWN10 nodes/edges/pair-log exactly). Deterministic full-format
+conversion of the frozen compact F5 files committed BEFORE inference
+(level_f5_cases.json sha 00a97f9f..., level_f5r a600cbd2...).
+
+Execution incidents (documented, none retro-tuned on F5 results):
+- builder-signature crash (4 arms wrote nothing before the fix; re-run
+  from per-case resumability; no results existed to leak);
+- en_common._ceaf_entity exhaustive permutations hang -> greedy alignment
+  fix (metric utility, not pipeline); cluster metrics switched to per-case
+  macro-average (B3/MUC/CEAF are per-document).
+
+External ECR baselines (§6): LingMess (local longformer-large weights,
+transformers-5 shims: eager attention + tied-weight attrs) and coreferee
+1.5.0 BOTH actually run; fast-coref/CRAC (Google Drive 404 + gdown empty
+nested folders), biu-nlp/fcoref (HF gated 401), SECURE, MAVEN-ERE
+trigger tagger = documented blockers.
+
+## D7. F5 results (scorer: en_f5_score.py, strict W1 semantics)
+
+Graph level (36 gold edges over 20 policies):
+| arm | P | R | correct/extra/missing | exact | CoNLL | FM | junk | recall |
+|-----|---|---|------------------------|-------|-------|----|------|--------|
+| v10 | .406 | .361 | 13/19/23 | 6/20 | .803 | 6 | 14 | .768 |
+| v11 (=v10+H.3) | .452 | .389 | 14/17/22 | 6/20 | .801 | 5 | 12 | .784 |
+| oracleA (gold nodes + frozen stack) | .800 | .667 | 24/6/12 | 9/20 | 1.0 | 0 | 0 | 1.0 |
+| oracleB (A-layer + gold identity) | .483 | .389 | 14/15/22 | 5/20 | .891 | 0 | 30 | .864 |
+| modular (A-layer + H∧F identity) | .429 | .250 | 9/12/27 | 3/20 | .724 | 11 | 8 | .614 |
+
+Identity level (219 gold pairs): D_pred F1 .667 (0 dangerous), F4way
+.651 (0 dangerous), H_v10 .612 (1 dangerous), D-family .632, B_emb .473
+(dev-locked), C_ce .175 (template saturation reproduces), A_lex .300.
+Deterministic identity TRANSFERS at/above dev level (dev: D_all .519/.509,
+H .555/.569).
+
+F4way dev->F5: .692/.555 (ec/fa) -> .651; parity with deterministic arms
+(dev advantage did not transfer). F4way's 4-way confusion is informative:
+79/93 RELATED correct, 56 DIFFERENT->RELATED drift, only 8 RELATED->SAME.
+
+Clustering: F4way/veto on gold mentions CoNLL .7503 (B3 F .924);
+A-layer H∧F clustering: 68 clusters, 17 false merges, purity .8619.
+
+Oracle decomposition (v10): node_ceiling 23/36 (.639) > proposal 21 (.583)
+> licensed 13 (.361); licensing efficiency .619. THE NODE LAYER IS THE
+BOTTLENECK: 13/23 recall loss attributable to missing/mixed nodes.
+
+Rename (6 cases): v10 structural identity 4/6, v11 5/6. f5r graphs:
+v10 P .364/R .286, v11 P .500/R .357 (vs original-case equivalents).
+
+CF twins: best system 1/5 both-sides-correct. Named classes: check-
+embedding (all systems merge 'verifies that X was inspected' with X);
+irregular passive morphology (feed->fed missed by H/D); same-predicate-
+different-object FALSE MERGE by v10/v11 nodes (Feed otters/red pandas);
+substring lemma trap (weigh/weight) caught by raw H, fixed by full
+pipeline; H.3 regression on 'The cleaning is logged' (v11 merges, v10
+correctly separates).
+
+Guard replay on F5 pair logs (C-transfer): guards still kill mostly
+extras (ce_band 43 extra / 2 gold; certificate 26/5; no_trigger 6/4;
+cross_sentence 5/0; coordination 4/0) - the guards transfer as precision
+filters but cannot recover recall lost upstream.
+
+Failure taxonomy (v10): node_missing_mention 21 > edge_extra_judge 18 >
+node_junk 14 > node_false_merge 6 > edge_missing_cert/judge/gate 8 >
+false_split 2 > not_proposed 2 > wrong_direction 1.
+
+## D8. Pre-registered prediction verdicts
+
+| prediction | verdict |
+|-----------|---------|
+| (i) F5 P/R within ~0.15 of F3/F4 | FALSIFIED (P .406 vs .64-.75, R .361 vs .75-.78) |
+| (ii) H_v10 identity F1 .5-.6, low dangerous | CONFIRMED (.612 / 1) |
+| (iii) F4way beats deterministic ~.1 F1 | FALSIFIED (parity .651 vs .667) |
+| collapse below .5 = overfit | CONFIRMED at graph level (P .406, R .361) |
+
+## D9. Interpretation (written before opening any F5 fix work; F5 stays sealed)
+
+The overfit verdict applies to the v10 GRAPH pipeline as a whole, but the
+oracle arms decompose the failure and it is NOT uniform:
+- the frozen relation stack fed gold nodes: P .800 / R .667 (oracleA) -
+  transfers; licensing on clean nodes is the strongest transferring part;
+- the deterministic identity layer: pair F1 .61-.67 at dev level, CoNLL
+  .80 ~ dev .776 - transfers;
+- the A-layer sanitation (frontend + bnorm): cluster recall .768 (dev
+  .939), 14 junk nodes (dev 2), 21 uncovered gold cids, and caps
+  oracleB at ~.47-.45 even with GOLD identity - DOES NOT TRANSFER;
+- the residual licensing gap on clean nodes (oracleA R .667 vs dev
+  pipeline R 1.000) shows judge/gate calibration is partly dev-tuned too.
+Conclusion: v10 is a sound normalization CORE wrapped in a sanitation
+layer that was implicitly fitted to dev-family mention-extraction failure
+modes. The directive's A/B/C modular hypothesis is confirmed in the
+attribution sense (the layers separate cleanly by transfer behavior),
+but the pre-registered modular arm does not fix it (the A-layer noise
+dominates everything downstream).
+
+D9 amendment (final numbers): modular arm P .429 / R .250 (worse than
+v10/v11: cluster recall .614, 11 false merges — H∧F on noisy spans
+under- AND over-merges); oracleB final P .483 / R .389 (perfect
+identity buys +.03P/+0R over v11 — identity is at its ceiling given the
+mentions). The strong form of the modularity hypothesis is refuted;
+v10's monolithic consolidation is the better identity engine on real
+frontend output.

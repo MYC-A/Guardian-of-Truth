@@ -1,0 +1,581 @@
+{
+ "case_id": "n_vetsurgery",
+ "arm": "LLM_SG",
+ "ev_arm": "E3V3",
+ "nodes": [
+  {
+   "node_id": "N01",
+   "span": "Sedate the animal",
+   "type": "EVENT",
+   "start": 51,
+   "members": [
+    "c02",
+    "c07"
+   ],
+   "member_spans": [
+    "Sedate the animal",
+    "the sedation"
+   ]
+  },
+  {
+   "node_id": "N02",
+   "span": "the heart rate exceeds 240",
+   "type": "STATE_OR_FACET",
+   "start": 76,
+   "members": [
+    "c13"
+   ],
+   "member_spans": [
+    "the heart rate exceeds 240",
+    "unless the heart rate exceeds 240"
+   ]
+  },
+  {
+   "node_id": "N03",
+   "span": "postpone the sedation",
+   "type": "EVENT",
+   "start": 118,
+   "members": [
+    "c04"
+   ],
+   "member_spans": [
+    "postpone the sedation"
+   ]
+  },
+  {
+   "node_id": "N04",
+   "span": "notify the surgeon",
+   "type": "EVENT",
+   "start": 144,
+   "members": [
+    "c05"
+   ],
+   "member_spans": [
+    "notify the surgeon"
+   ]
+  },
+  {
+   "node_id": "N05",
+   "span": "proceed with the sedation",
+   "type": "EVENT",
+   "start": 174,
+   "members": [
+    "c06"
+   ],
+   "member_spans": [
+    "proceed with the sedation"
+   ]
+  },
+  {
+   "node_id": "N06",
+   "span": "Admit the animal",
+   "type": "EVENT",
+   "start": 0,
+   "members": [
+    "c01"
+   ],
+   "member_spans": [
+    "Admit the animal",
+    "Admit the animal within two hours of the referral"
+   ]
+  }
+ ],
+ "edges": [
+  {
+   "u": "N01",
+   "v": "N03",
+   "u_members": [
+    "c02",
+    "c07"
+   ],
+   "v_members": [
+    "c04"
+   ],
+   "u_span": "Sedate the animal",
+   "v_span": "postpone the sedation",
+   "relation": "EXCEPTION",
+   "direction": "B_TO_A",
+   "ce": 0.9995,
+   "detail": {
+    "certificate": {
+     "a_anchor": "\"Sedate the animal\"",
+     "b_anchor": "\"postpone the sedation\"",
+     "a_in_relation": "\"the sedation\"",
+     "b_in_relation": "\"postpone the sedation\"",
+     "a_via_reference": null,
+     "b_via_reference": null,
+     "relation_text": "\"in which case postpone the sedation and notify the surgeon\"",
+     "direction": "B_TO_A",
+     "relation_type": "EXCEPTION"
+    },
+    "verify": {
+     "verdict": "SUPPORTED",
+     "reason": "both_forms_in_rel",
+     "a_anchor": "the sedation",
+     "b_anchor": "postpone the sedation",
+     "relation_text": "in which case postpone the sedation and notify the surgeon",
+     "direction": "B_TO_A",
+     "relation_type": "EXCEPTION"
+    }
+   }
+  },
+  {
+   "u": "N02",
+   "v": "N03",
+   "u_members": [
+    "c13"
+   ],
+   "v_members": [
+    "c04"
+   ],
+   "u_span": "the heart rate exceeds 240",
+   "v_span": "postpone the sedation",
+   "relation": "STATE_GATE",
+   "direction": "A_TO_B",
+   "ce": 0.9995,
+   "detail": {
+    "certificate": {
+     "a_anchor": "\"unless the heart rate exceeds 240\"",
+     "b_anchor": "\"postpone the sedation\"",
+     "a_in_relation": "\"the heart rate exceeds 240\"",
+     "b_in_relation": "\"postpone the sedation\"",
+     "a_via_reference": null,
+     "b_via_reference": null,
+     "relation_text": "\"in which case postpone the sedation\"",
+     "direction": "A_TO_B",
+     "relation_type": "EXCEPTION"
+    },
+    "verify": {
+     "verdict": "SUPPORTED",
+     "reason": "clause_repair_covering_span",
+     "a_anchor": "the heart rate exceeds 240",
+     "b_anchor": "postpone the sedation",
+     "relation_text": "the heart rate exceeds 240; in which case postpone the sedation",
+     "direction": "A_TO_B",
+     "relation_type": "EXCEPTION"
+    }
+   }
+  },
+  {
+   "u": "N02",
+   "v": "N04",
+   "u_members": [
+    "c13"
+   ],
+   "v_members": [
+    "c05"
+   ],
+   "u_span": "the heart rate exceeds 240",
+   "v_span": "notify the surgeon",
+   "relation": "STATE_GATE",
+   "direction": "A_TO_B",
+   "ce": 0.9996,
+   "detail": {
+    "certificate": {
+     "a_anchor": "the heart rate exceeds 240",
+     "b_anchor": "notify the surgeon",
+     "a_in_relation": "the heart rate exceeds 240",
+     "b_in_relation": "notify the surgeon",
+     "a_via_reference": null,
+     "b_via_reference": null,
+     "relation_text": "in which case postpone the sedation and **notify the surgeon**; otherwise proceed with the sedation",
+     "direction": "A_TO_B",
+     "relation_type": "EXCEPTION"
+    },
+    "verify": {
+     "verdict": "SUPPORTED",
+     "reason": "clause_repair_covering_span",
+     "a_anchor": "the heart rate exceeds 240",
+     "b_anchor": "notify the surgeon",
+     "relation_text": "the heart rate exceeds 240; in which case postpone the sedation and notify the surgeon",
+     "direction": "A_TO_B",
+     "relation_type": "EXCEPTION"
+    }
+   }
+  },
+  {
+   "u": "N02",
+   "v": "N05",
+   "u_members": [
+    "c13"
+   ],
+   "v_members": [
+    "c06"
+   ],
+   "u_span": "the heart rate exceeds 240",
+   "v_span": "proceed with the sedation",
+   "relation": "EXCEPTION",
+   "direction": "A_TO_B",
+   "ce": 0.9989,
+   "detail": {
+    "certificate": {
+     "a_anchor": "\"unless the heart rate exceeds 240\"",
+     "b_anchor": "\"proceed with the sedation\"",
+     "a_in_relation": "\"the heart rate exceeds 240\"",
+     "b_in_relation": "\"proceed with the sedation\"",
+     "a_via_reference": null,
+     "b_via_reference": null,
+     "relation_text": "\"otherwise proceed with the sedation\"",
+     "direction": "B_TO_A",
+     "relation_type": "EXCEPTION"
+    },
+    "verify": {
+     "verdict": "SUPPORTED",
+     "reason": "clause_repair_covering_span",
+     "a_anchor": "the heart rate exceeds 240",
+     "b_anchor": "proceed with the sedation",
+     "relation_text": "the heart rate exceeds 240; in which case postpone the sedation and notify the surgeon; otherwise proceed with the sedation",
+     "direction": "B_TO_A",
+     "relation_type": "EXCEPTION"
+    }
+   }
+  },
+  {
+   "u": "N04",
+   "v": "N05",
+   "u_members": [
+    "c05"
+   ],
+   "v_members": [
+    "c06"
+   ],
+   "u_span": "notify the surgeon",
+   "v_span": "proceed with the sedation",
+   "relation": "EXCEPTION",
+   "direction": "B_TO_A",
+   "ce": 0.9989,
+   "detail": {
+    "certificate": {
+     "a_anchor": "\"notify the surgeon\"",
+     "b_anchor": "\"proceed with the sedation\"",
+     "a_in_relation": "\"notify the surgeon\"",
+     "b_in_relation": "\"proceed with the sedation\"",
+     "a_via_reference": null,
+     "b_via_reference": null,
+     "relation_text": "\"in which case postpone the sedation and notify the surgeon; otherwise proceed with the sedation\"",
+     "direction": "B_TO_A",
+     "relation_type": "EXCEPTION"
+    },
+    "verify": {
+     "verdict": "SUPPORTED",
+     "reason": "both_forms_in_rel",
+     "a_anchor": "notify the surgeon",
+     "b_anchor": "proceed with the sedation",
+     "relation_text": "in which case postpone the sedation and notify the surgeon; otherwise proceed with the sedation",
+     "direction": "B_TO_A",
+     "relation_type": "EXCEPTION"
+    }
+   }
+  }
+ ],
+ "pairs": [
+  {
+   "u": "N01",
+   "v": "N02",
+   "u_span": "Sedate the animal",
+   "v_span": "the heart rate exceeds 240",
+   "ce": 0.9994,
+   "channels": [
+    "same_sentence",
+    "entity_bridge"
+   ],
+   "stage": "certificate",
+   "verify": "UNKNOWN",
+   "verify_reason": "relation_text_not_verbatim"
+  },
+  {
+   "u": "N01",
+   "v": "N03",
+   "u_span": "Sedate the animal",
+   "v_span": "postpone the sedation",
+   "ce": 0.9995,
+   "channels": [
+    "same_sentence",
+    "entity_bridge"
+   ],
+   "stage": "licensed",
+   "verify": "SUPPORTED",
+   "verify_reason": "both_forms_in_rel",
+   "judge": {
+    "q1_where_is_a": "the sedation",
+    "q2_where_is_b": "postpone the sedation",
+    "q3_relation_between_these_two": "YES",
+    "q4_direction": "B_TO_A",
+    "q5_relation_type": "EXCEPTION"
+   },
+   "direction": "B_TO_A",
+   "relation": "EXCEPTION"
+  },
+  {
+   "u": "N01",
+   "v": "N04",
+   "u_span": "Sedate the animal",
+   "v_span": "notify the surgeon",
+   "ce": 0.9996,
+   "channels": [
+    "same_sentence",
+    "entity_bridge"
+   ],
+   "stage": "judge",
+   "verify": "SUPPORTED",
+   "verify_reason": "both_forms_in_rel",
+   "judge": {
+    "q1_where_is_a": "the sedation",
+    "q2_where_is_b": "notify the surgeon",
+    "q3_relation_between_these_two": "YES",
+    "q4_direction": "A_TO_B",
+    "q5_relation_type": "ORDER_BEFORE"
+   },
+   "judge_note": "coordination_gate",
+   "gate": "coprecondition"
+  },
+  {
+   "u": "N01",
+   "v": "N05",
+   "u_span": "Sedate the animal",
+   "v_span": "proceed with the sedation",
+   "ce": 0.9989,
+   "channels": [
+    "same_sentence",
+    "entity_bridge"
+   ],
+   "stage": "judge",
+   "verify": "SUPPORTED",
+   "verify_reason": "both_forms_in_rel",
+   "judge_note": "semantic_link_routing",
+   "judge": {
+    "q1_where_is_a": "the sedation",
+    "q2_where_is_b": "proceed with the sedation",
+    "q3_relation_between_these_two": "YES",
+    "q4_direction": "B_TO_A",
+    "q5_relation_type": "SEMANTIC_LINK"
+   }
+  },
+  {
+   "u": "N01",
+   "v": "N06",
+   "u_span": "Sedate the animal",
+   "v_span": "Admit the animal",
+   "ce": 0.0065,
+   "channels": [
+    "entity_bridge"
+   ],
+   "stage": "judge",
+   "verify": "SUPPORTED",
+   "verify_reason": "both_forms_in_rel",
+   "judge_note": "verifier_q3_no",
+   "judge": {
+    "q1_where_is_a": "Sedate the animal",
+    "q2_where_is_b": "Admit the animal within two hours of the referral",
+    "q3_relation_between_these_two": "NO",
+    "q4_direction": "UNKNOWN",
+    "q5_relation_type": "UNKNOWN"
+   }
+  },
+  {
+   "u": "N02",
+   "v": "N03",
+   "u_span": "the heart rate exceeds 240",
+   "v_span": "postpone the sedation",
+   "ce": 0.9995,
+   "channels": [
+    "same_sentence",
+    "entity_bridge"
+   ],
+   "stage": "licensed",
+   "verify": "SUPPORTED",
+   "verify_reason": "clause_repair_covering_span",
+   "judge": {
+    "q1_where_is_a": "the heart rate exceeds 240",
+    "q2_where_is_b": "postpone the sedation",
+    "q3_relation_between_these_two": "YES",
+    "q4_direction": "A_TO_B",
+    "q5_relation_type": "STATE_GATE"
+   },
+   "conn_side": {
+    "connective": "in which case",
+    "antecedent": "a"
+   },
+   "judge_direction": "A_TO_B",
+   "direction": "A_TO_B",
+   "relation": "STATE_GATE"
+  },
+  {
+   "u": "N02",
+   "v": "N04",
+   "u_span": "the heart rate exceeds 240",
+   "v_span": "notify the surgeon",
+   "ce": 0.9996,
+   "channels": [
+    "same_sentence",
+    "entity_bridge"
+   ],
+   "stage": "licensed",
+   "verify": "SUPPORTED",
+   "verify_reason": "clause_repair_covering_span",
+   "judge": {
+    "q1_where_is_a": "the heart rate exceeds 240",
+    "q2_where_is_b": "notify the surgeon",
+    "q3_relation_between_these_two": "YES",
+    "q4_direction": "A_TO_B",
+    "q5_relation_type": "STATE_GATE"
+   },
+   "conn_side": {
+    "connective": "in which case",
+    "antecedent": "a"
+   },
+   "judge_direction": "A_TO_B",
+   "direction": "A_TO_B",
+   "relation": "STATE_GATE"
+  },
+  {
+   "u": "N02",
+   "v": "N05",
+   "u_span": "the heart rate exceeds 240",
+   "v_span": "proceed with the sedation",
+   "ce": 0.9989,
+   "channels": [
+    "same_sentence",
+    "entity_bridge"
+   ],
+   "stage": "licensed",
+   "verify": "SUPPORTED",
+   "verify_reason": "clause_repair_covering_span",
+   "judge": {
+    "q1_where_is_a": "the heart rate exceeds 240",
+    "q2_where_is_b": "proceed with the sedation",
+    "q3_relation_between_these_two": "YES",
+    "q4_direction": "B_TO_A",
+    "q5_relation_type": "EXCEPTION"
+   },
+   "conn_side": {
+    "connective": "in which case",
+    "antecedent": "a"
+   },
+   "judge_direction": "B_TO_A",
+   "direction": "A_TO_B",
+   "relation": "EXCEPTION"
+  },
+  {
+   "u": "N02",
+   "v": "N06",
+   "u_span": "the heart rate exceeds 240",
+   "v_span": "Admit the animal",
+   "ce": 0.0065,
+   "channels": [
+    "entity_bridge"
+   ],
+   "stage": "certificate",
+   "verify": "UNSUPPORTED",
+   "verify_reason": "relation_text_not_connecting_both_endpoints"
+  },
+  {
+   "u": "N03",
+   "v": "N04",
+   "u_span": "postpone the sedation",
+   "v_span": "notify the surgeon",
+   "ce": 0.9996,
+   "channels": [
+    "same_sentence",
+    "entity_bridge"
+   ],
+   "stage": "judge",
+   "verify": "SUPPORTED",
+   "verify_reason": "both_forms_in_rel",
+   "judge": {
+    "q1_where_is_a": "postpone the sedation",
+    "q2_where_is_b": "notify the surgeon",
+    "q3_relation_between_these_two": "YES",
+    "q4_direction": "A_TO_B",
+    "q5_relation_type": "ORDER_BEFORE"
+   },
+   "judge_note": "coordination_gate",
+   "gate": "coprecondition"
+  },
+  {
+   "u": "N03",
+   "v": "N05",
+   "u_span": "postpone the sedation",
+   "v_span": "proceed with the sedation",
+   "ce": 0.9989,
+   "channels": [
+    "same_sentence",
+    "entity_bridge"
+   ],
+   "stage": "judge",
+   "verify": "SUPPORTED",
+   "verify_reason": "both_forms_in_rel",
+   "judge": {
+    "q1_where_is_a": "postpone the sedation",
+    "q2_where_is_b": "proceed with the sedation",
+    "q3_relation_between_these_two": "YES",
+    "q4_direction": "UNKNOWN",
+    "q5_relation_type": "ORDER_BEFORE"
+   },
+   "judge_note": "coordination_gate",
+   "gate": "coprecondition"
+  },
+  {
+   "u": "N03",
+   "v": "N06",
+   "u_span": "postpone the sedation",
+   "v_span": "Admit the animal",
+   "ce": 0.0065,
+   "channels": [
+    "entity_bridge"
+   ],
+   "stage": "certificate",
+   "verify": "UNSUPPORTED",
+   "verify_reason": "no_relation"
+  },
+  {
+   "u": "N04",
+   "v": "N05",
+   "u_span": "notify the surgeon",
+   "v_span": "proceed with the sedation",
+   "ce": 0.9989,
+   "channels": [
+    "same_sentence",
+    "entity_bridge"
+   ],
+   "stage": "licensed",
+   "verify": "SUPPORTED",
+   "verify_reason": "both_forms_in_rel",
+   "judge": {
+    "q1_where_is_a": "notify the surgeon",
+    "q2_where_is_b": "proceed with the sedation",
+    "q3_relation_between_these_two": "YES",
+    "q4_direction": "B_TO_A",
+    "q5_relation_type": "EXCEPTION"
+   },
+   "direction": "B_TO_A",
+   "relation": "EXCEPTION"
+  },
+  {
+   "u": "N04",
+   "v": "N06",
+   "u_span": "notify the surgeon",
+   "v_span": "Admit the animal",
+   "ce": 0.0065,
+   "channels": [
+    "entity_bridge"
+   ],
+   "stage": "certificate",
+   "verify": "UNSUPPORTED",
+   "verify_reason": "no_relation"
+  },
+  {
+   "u": "N05",
+   "v": "N06",
+   "u_span": "proceed with the sedation",
+   "v_span": "Admit the animal",
+   "ce": 0.0065,
+   "channels": [
+    "entity_bridge"
+   ],
+   "stage": "certificate",
+   "verify": "UNSUPPORTED",
+   "verify_reason": "no_relation"
+  }
+ ]
+}

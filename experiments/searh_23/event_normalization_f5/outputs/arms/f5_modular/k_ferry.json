@@ -1,0 +1,295 @@
+{
+ "case_id": "k_ferry",
+ "arm": "LLM_SG",
+ "ev_arm": "E3V3",
+ "nodes": [
+  {
+   "node_id": "N01",
+   "span": "Cancel the crossing",
+   "type": "EVENT",
+   "start": 42,
+   "members": [
+    "c03"
+   ],
+   "member_spans": [
+    "Cancel the crossing"
+   ]
+  },
+  {
+   "node_id": "N02",
+   "span": "the visibility exceeds one mile",
+   "type": "CHECK",
+   "start": 69,
+   "members": [
+    "c04"
+   ],
+   "member_spans": [
+    "the visibility exceeds one mile",
+    "unless the visibility exceeds one mile"
+   ]
+  },
+  {
+   "node_id": "N03",
+   "span": "the captain must notify the port office",
+   "type": "EVENT",
+   "start": 116,
+   "members": [
+    "c06"
+   ],
+   "member_spans": [
+    "the captain must notify the port office",
+    "in which case the captain must notify the port office"
+   ]
+  },
+  {
+   "node_id": "N04",
+   "span": "Sail the 07:00 crossing",
+   "type": "EVENT",
+   "start": 0,
+   "members": [
+    "c01"
+   ],
+   "member_spans": [
+    "Sail the 07:00 crossing"
+   ]
+  }
+ ],
+ "edges": [
+  {
+   "u": "N01",
+   "v": "N02",
+   "u_members": [
+    "c03"
+   ],
+   "v_members": [
+    "c04"
+   ],
+   "u_span": "Cancel the crossing",
+   "v_span": "the visibility exceeds one mile",
+   "relation": "STATE_GATE",
+   "direction": "B_TO_A",
+   "ce": 0.9994,
+   "detail": {
+    "certificate": {
+     "a_anchor": "\"Cancel the crossing\"",
+     "b_anchor": "\"unless the visibility exceeds one mile\"",
+     "a_in_relation": "\"Cancel the crossing\"",
+     "b_in_relation": "\"unless the visibility exceeds one mile\"",
+     "a_via_reference": null,
+     "b_via_reference": null,
+     "relation_text": "\"Cancel the crossing unless the visibility exceeds one mile\"",
+     "direction": "B_TO_A",
+     "relation_type": "EXCEPTION"
+    },
+    "verify": {
+     "verdict": "SUPPORTED",
+     "reason": "both_forms_in_rel",
+     "a_anchor": "Cancel the crossing",
+     "b_anchor": "the visibility exceeds one mile",
+     "relation_text": "Cancel the crossing unless the visibility exceeds one mile",
+     "direction": "B_TO_A",
+     "relation_type": "EXCEPTION"
+    }
+   }
+  },
+  {
+   "u": "N01",
+   "v": "N03",
+   "u_members": [
+    "c03"
+   ],
+   "v_members": [
+    "c06"
+   ],
+   "u_span": "Cancel the crossing",
+   "v_span": "the captain must notify the port office",
+   "relation": "EXCEPTION",
+   "direction": "B_TO_A",
+   "ce": 0.9997,
+   "detail": {
+    "certificate": {
+     "a_anchor": "\"Cancel the crossing\"",
+     "b_anchor": "\"the captain must notify the port office\"",
+     "a_in_relation": "\"Cancel the crossing\"",
+     "b_in_relation": "\"the captain must notify the port office\"",
+     "a_via_reference": null,
+     "b_via_reference": null,
+     "relation_text": "\"Cancel the crossing unless the visibility exceeds one mile; in which case the captain must notify the port office.\"",
+     "direction": "B_TO_A",
+     "relation_type": "EXCEPTION"
+    },
+    "verify": {
+     "verdict": "SUPPORTED",
+     "reason": "both_forms_in_rel",
+     "a_anchor": "Cancel the crossing",
+     "b_anchor": "the captain must notify the port office",
+     "relation_text": "Cancel the crossing unless the visibility exceeds one mile; in which case the captain must notify the port office.",
+     "direction": "B_TO_A",
+     "relation_type": "EXCEPTION"
+    }
+   }
+  },
+  {
+   "u": "N02",
+   "v": "N03",
+   "u_members": [
+    "c04"
+   ],
+   "v_members": [
+    "c06"
+   ],
+   "u_span": "the visibility exceeds one mile",
+   "v_span": "the captain must notify the port office",
+   "relation": "STATE_GATE",
+   "direction": "A_TO_B",
+   "ce": 0.9997,
+   "detail": {
+    "certificate": {
+     "a_anchor": "\"unless the visibility exceeds one mile\"",
+     "b_anchor": "\"in which case the captain must notify the port office\"",
+     "a_in_relation": "\"the visibility exceeds one mile\"",
+     "b_in_relation": "\"the captain must notify the port office\"",
+     "a_via_reference": null,
+     "b_via_reference": null,
+     "relation_text": "\"Cancel the crossing unless the visibility exceeds one mile; in which case the captain must notify the port office.\"",
+     "direction": "A_TO_B",
+     "relation_type": "PRECONDITION"
+    },
+    "verify": {
+     "verdict": "SUPPORTED",
+     "reason": "both_forms_in_rel",
+     "a_anchor": "the visibility exceeds one mile",
+     "b_anchor": "the captain must notify the port office",
+     "relation_text": "Cancel the crossing unless the visibility exceeds one mile; in which case the captain must notify the port office.",
+     "direction": "A_TO_B",
+     "relation_type": "PRECONDITION"
+    }
+   }
+  }
+ ],
+ "pairs": [
+  {
+   "u": "N01",
+   "v": "N02",
+   "u_span": "Cancel the crossing",
+   "v_span": "the visibility exceeds one mile",
+   "ce": 0.9994,
+   "channels": [
+    "same_sentence",
+    "entity_bridge"
+   ],
+   "stage": "licensed",
+   "verify": "SUPPORTED",
+   "verify_reason": "both_forms_in_rel",
+   "judge": {
+    "q1_where_is_a": "Cancel the crossing",
+    "q2_where_is_b": "the visibility exceeds one mile",
+    "q3_relation_between_these_two": "YES",
+    "q4_direction": "B_TO_A",
+    "q5_relation_type": "STATE_GATE"
+   },
+   "conn_side": {
+    "connective": "unless",
+    "antecedent": "b"
+   },
+   "judge_direction": "B_TO_A",
+   "direction": "B_TO_A",
+   "relation": "STATE_GATE"
+  },
+  {
+   "u": "N01",
+   "v": "N03",
+   "u_span": "Cancel the crossing",
+   "v_span": "the captain must notify the port office",
+   "ce": 0.9997,
+   "channels": [
+    "same_sentence",
+    "entity_bridge"
+   ],
+   "stage": "licensed",
+   "verify": "SUPPORTED",
+   "verify_reason": "both_forms_in_rel",
+   "judge": {
+    "q1_where_is_a": "Cancel the crossing",
+    "q2_where_is_b": "the captain must notify the port office",
+    "q3_relation_between_these_two": "YES",
+    "q4_direction": "B_TO_A",
+    "q5_relation_type": "EXCEPTION"
+   },
+   "conn_side": {
+    "connective": "unless",
+    "antecedent": "b"
+   },
+   "judge_direction": "B_TO_A",
+   "direction": "B_TO_A",
+   "relation": "EXCEPTION"
+  },
+  {
+   "u": "N01",
+   "v": "N04",
+   "u_span": "Cancel the crossing",
+   "v_span": "Sail the 07:00 crossing",
+   "ce": 0.0005,
+   "channels": [
+    "entity_bridge"
+   ],
+   "stage": "certificate",
+   "verify": "UNSUPPORTED",
+   "verify_reason": "relation_text_not_connecting_both_endpoints"
+  },
+  {
+   "u": "N02",
+   "v": "N03",
+   "u_span": "the visibility exceeds one mile",
+   "v_span": "the captain must notify the port office",
+   "ce": 0.9997,
+   "channels": [
+    "same_sentence",
+    "entity_bridge"
+   ],
+   "stage": "licensed",
+   "verify": "SUPPORTED",
+   "verify_reason": "both_forms_in_rel",
+   "judge": {
+    "q1_where_is_a": "the visibility exceeds one mile",
+    "q2_where_is_b": "the captain must notify the port office",
+    "q3_relation_between_these_two": "YES",
+    "q4_direction": "A_TO_B",
+    "q5_relation_type": "STATE_GATE"
+   },
+   "conn_side": {
+    "connective": "in which case",
+    "antecedent": "a"
+   },
+   "judge_direction": "A_TO_B",
+   "direction": "A_TO_B",
+   "relation": "STATE_GATE"
+  },
+  {
+   "u": "N02",
+   "v": "N04",
+   "u_span": "the visibility exceeds one mile",
+   "v_span": "Sail the 07:00 crossing",
+   "ce": 0.0005,
+   "channels": [
+    "entity_bridge"
+   ],
+   "stage": "certificate",
+   "verify": "UNSUPPORTED",
+   "verify_reason": "positional_path_ce_gate"
+  },
+  {
+   "u": "N03",
+   "v": "N04",
+   "u_span": "the captain must notify the port office",
+   "v_span": "Sail the 07:00 crossing",
+   "ce": 0.0005,
+   "channels": [
+    "entity_bridge"
+   ],
+   "stage": "certificate",
+   "verify": "UNSUPPORTED",
+   "verify_reason": "relation_text_not_connecting_both_endpoints"
+  }
+ ]
+}

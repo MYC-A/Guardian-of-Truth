@@ -1,0 +1,136 @@
+{
+ "case_id": "r_solarfarm",
+ "arm": "LLM_SG",
+ "ev_arm": "E3V3",
+ "nodes": [
+  {
+   "node_id": "N01",
+   "span": "Wash the panel strings",
+   "type": "EVENT",
+   "start": 0,
+   "members": [
+    "c01"
+   ],
+   "member_spans": [
+    "Wash the panel strings"
+   ]
+  },
+  {
+   "node_id": "N02",
+   "span": "Clean the inverters",
+   "type": "EVENT",
+   "start": 39,
+   "members": [
+    "c03"
+   ],
+   "member_spans": [
+    "Clean the inverters"
+   ]
+  },
+  {
+   "node_id": "N03",
+   "span": "the thermal camera flags overheating",
+   "type": "STATE_OR_FACET",
+   "start": 67,
+   "members": [
+    "c04",
+    "c05",
+    "c06"
+   ],
+   "member_spans": [
+    "the thermal camera flags overheating",
+    "if the thermal camera flags overheating",
+    "Flagging",
+    "Flagging is performed",
+    "is performed"
+   ]
+  }
+ ],
+ "edges": [
+  {
+   "u": "N02",
+   "v": "N03",
+   "u_members": [
+    "c03"
+   ],
+   "v_members": [
+    "c04",
+    "c05",
+    "c06"
+   ],
+   "u_span": "Clean the inverters",
+   "v_span": "the thermal camera flags overheating",
+   "relation": "STATE_GATE",
+   "direction": "B_TO_A",
+   "ce": 0.9999,
+   "detail": {
+    "certificate": {
+     "a_anchor": "Clean the inverters",
+     "b_anchor": "the thermal camera flags overheating",
+     "a_in_relation": "Clean the inverters",
+     "b_in_relation": "the thermal camera flags overheating",
+     "a_via_reference": null,
+     "b_via_reference": null,
+     "relation_text": "Clean the inverters only if the thermal camera flags overheating",
+     "direction": "B_TO_A",
+     "relation_type": "PRECONDITION"
+    },
+    "verify": {
+     "verdict": "SUPPORTED",
+     "reason": "both_forms_in_rel",
+     "a_anchor": "Clean the inverters",
+     "b_anchor": "the thermal camera flags overheating",
+     "relation_text": "Clean the inverters only if the thermal camera flags overheating",
+     "direction": "B_TO_A",
+     "relation_type": "PRECONDITION"
+    }
+   }
+  }
+ ],
+ "pairs": [
+  {
+   "u": "N01",
+   "v": "N02",
+   "u_span": "Wash the panel strings",
+   "v_span": "Clean the inverters",
+   "ce": 0.0014,
+   "stage": "ce_band"
+  },
+  {
+   "u": "N01",
+   "v": "N03",
+   "u_span": "Wash the panel strings",
+   "v_span": "the thermal camera flags overheating",
+   "ce": 0.0006,
+   "stage": "ce_band"
+  },
+  {
+   "u": "N02",
+   "v": "N03",
+   "u_span": "Clean the inverters",
+   "v_span": "the thermal camera flags overheating",
+   "ce": 0.9999,
+   "channels": [
+    "same_sentence",
+    "entity_bridge"
+   ],
+   "stage": "licensed",
+   "verify": "SUPPORTED",
+   "verify_reason": "both_forms_in_rel",
+   "judge": {
+    "q1_where_is_a": "Clean the inverters",
+    "q2_where_is_b": "the thermal camera flags overheating",
+    "q3_relation_between_these_two": "YES",
+    "q4_direction": "B_TO_A",
+    "q5_relation_type": "STATE_GATE"
+   },
+   "conn_side": {
+    "connective": "only if",
+    "antecedent": "b"
+   },
+   "judge_direction": "B_TO_A",
+   "direction": "B_TO_A",
+   "relation": "STATE_GATE"
+  }
+ ]
+}

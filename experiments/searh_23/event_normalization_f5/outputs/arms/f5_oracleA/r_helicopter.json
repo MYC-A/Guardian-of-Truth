@@ -1,0 +1,231 @@
+{
+ "case_id": "r_helicopter",
+ "arm": "LLM_SG",
+ "ev_arm": "E3V3",
+ "nodes": [
+  {
+   "node_id": "N01",
+   "span": "Inspect the hoist cable",
+   "type": "CHECK",
+   "start": 0,
+   "members": [
+    "m01"
+   ],
+   "member_spans": [
+    "Inspect the hoist cable"
+   ]
+  },
+  {
+   "node_id": "N02",
+   "span": "Replace the hoist cable",
+   "type": "EVENT",
+   "start": 46,
+   "members": [
+    "m04",
+    "m07"
+   ],
+   "member_spans": [
+    "Replace the hoist cable",
+    "the hoist cable is replaced"
+   ]
+  },
+  {
+   "node_id": "N03",
+   "span": "the inspection finds fraying",
+   "type": "STATE_OR_FACET",
+   "start": 73,
+   "members": [
+    "m05"
+   ],
+   "member_spans": [
+    "the inspection finds fraying"
+   ]
+  },
+  {
+   "node_id": "N04",
+   "span": "schedule a mission",
+   "type": "EVENT",
+   "start": 110,
+   "members": [
+    "m08"
+   ],
+   "member_spans": [
+    "schedule a mission"
+   ]
+  }
+ ],
+ "edges": [
+  {
+   "u": "N01",
+   "v": "N04",
+   "u_members": [
+    "m01"
+   ],
+   "v_members": [
+    "m08"
+   ],
+   "u_span": "Inspect the hoist cable",
+   "v_span": "schedule a mission",
+   "relation": "PRECONDITION",
+   "direction": "A_TO_B",
+   "ce": 0.8567,
+   "detail": {
+    "certificate": {
+     "a_anchor": "Inspect the hoist cable",
+     "b_anchor": "schedule a mission",
+     "a_in_relation": "the hoist cable is replaced",
+     "b_in_relation": "schedule a mission",
+     "a_via_reference": null,
+     "b_via_reference": null,
+     "relation_text": "Do not schedule a mission before the hoist cable is replaced",
+     "direction": "A_TO_B",
+     "relation_type": "PRECONDITION"
+    },
+    "verify": {
+     "verdict": "SUPPORTED",
+     "reason": "extractor_anchors_positional",
+     "a_anchor": "the hoist cable is replaced",
+     "b_anchor": "schedule a mission",
+     "relation_text": "Do not schedule a mission before the hoist cable is replaced",
+     "direction": "A_TO_B",
+     "relation_type": "PRECONDITION"
+    }
+   }
+  },
+  {
+   "u": "N02",
+   "v": "N04",
+   "u_members": [
+    "m04",
+    "m07"
+   ],
+   "v_members": [
+    "m08"
+   ],
+   "u_span": "Replace the hoist cable",
+   "v_span": "schedule a mission",
+   "relation": "PRECONDITION",
+   "direction": "A_TO_B",
+   "ce": 0.9995,
+   "detail": {
+    "certificate": {
+     "a_anchor": "\"Replace the hoist cable\"",
+     "b_anchor": "\"schedule a mission\"",
+     "a_in_relation": "\"the hoist cable is replaced\"",
+     "b_in_relation": "\"a mission\"",
+     "a_via_reference": null,
+     "b_via_reference": null,
+     "relation_text": "\"Do not schedule a mission before the hoist cable is replaced.\"",
+     "direction": "A_TO_B",
+     "relation_type": "PRECONDITION"
+    },
+    "verify": {
+     "verdict": "SUPPORTED",
+     "reason": "both_forms_in_rel",
+     "a_anchor": "the hoist cable is replaced",
+     "b_anchor": "schedule a mission",
+     "relation_text": "Do not schedule a mission before the hoist cable is replaced.",
+     "direction": "A_TO_B",
+     "relation_type": "PRECONDITION"
+    }
+   }
+  }
+ ],
+ "pairs": [
+  {
+   "u": "N01",
+   "v": "N02",
+   "u_span": "Inspect the hoist cable",
+   "v_span": "Replace the hoist cable",
+   "ce": 0.8046,
+   "channels": [
+    "entity_bridge"
+   ],
+   "stage": "certificate",
+   "verify": "UNSUPPORTED",
+   "verify_reason": "relation_text_not_connecting_both_endpoints"
+  },
+  {
+   "u": "N01",
+   "v": "N04",
+   "u_span": "Inspect the hoist cable",
+   "v_span": "schedule a mission",
+   "ce": 0.8567,
+   "channels": [
+    "entity_bridge"
+   ],
+   "stage": "licensed",
+   "verify": "SUPPORTED",
+   "verify_reason": "extractor_anchors_positional",
+   "judge": {
+    "q1_where_is_a": "the hoist cable is replaced",
+    "q2_where_is_b": "schedule a mission",
+    "q3_relation_between_these_two": "YES",
+    "q4_direction": "A_TO_B",
+    "q5_relation_type": "PRECONDITION"
+   },
+   "conn_side": {
+    "connective": "before",
+    "antecedent": "a"
+   },
+   "judge_direction": "A_TO_B",
+   "direction": "A_TO_B",
+   "relation": "PRECONDITION"
+  },
+  {
+   "u": "N02",
+   "v": "N03",
+   "u_span": "Replace the hoist cable",
+   "v_span": "the inspection finds fraying",
+   "ce": 0.9979,
+   "channels": [
+    "same_sentence",
+    "entity_bridge"
+   ],
+   "stage": "certificate",
+   "verify": "UNSUPPORTED",
+   "verify_reason": "relation_text_not_connecting_both_endpoints"
+  },
+  {
+   "u": "N02",
+   "v": "N04",
+   "u_span": "Replace the hoist cable",
+   "v_span": "schedule a mission",
+   "ce": 0.9995,
+   "channels": [
+    "same_sentence",
+    "entity_bridge"
+   ],
+   "stage": "licensed",
+   "verify": "SUPPORTED",
+   "verify_reason": "both_forms_in_rel",
+   "judge": {
+    "q1_where_is_a": "the hoist cable is replaced",
+    "q2_where_is_b": "schedule a mission",
+    "q3_relation_between_these_two": "YES",
+    "q4_direction": "A_TO_B",
+    "q5_relation_type": "PRECONDITION"
+   },
+   "conn_side": {
+    "connective": "before",
+    "antecedent": "a"
+   },
+   "judge_direction": "A_TO_B",
+   "direction": "A_TO_B",
+   "relation": "PRECONDITION"
+  },
+  {
+   "u": "N03",
+   "v": "N04",
+   "u_span": "the inspection finds fraying",
+   "v_span": "schedule a mission",
+   "ce": 0.075,
+   "channels": [
+    "entity_bridge"
+   ],
+   "stage": "certificate",
+   "verify": "UNSUPPORTED",
+   "verify_reason": "positional_path_ce_gate"
+  }
+ ]
+}

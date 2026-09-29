@@ -1,0 +1,352 @@
+{
+ "case_id": "n_maple",
+ "arm": "LLM_SG",
+ "ev_arm": "E3V3",
+ "nodes": [
+  {
+   "node_id": "N01",
+   "span": "the filtering",
+   "type": "EVENT_REFERENCE",
+   "start": -1,
+   "members": [
+    "c05"
+   ],
+   "member_spans": [
+    "the filtering"
+   ]
+  },
+  {
+   "node_id": "N02",
+   "span": "Boil the sap",
+   "type": "EVENT",
+   "start": 28,
+   "members": [
+    "c02",
+    "spawn_0"
+   ],
+   "member_spans": [
+    "Boil the sap",
+    "Boil the sap when the sugar content exceeds two percent",
+    "boiling it"
+   ]
+  },
+  {
+   "node_id": "N03",
+   "span": "Filter the syrup",
+   "type": "EVENT",
+   "start": 85,
+   "members": [
+    "c04"
+   ],
+   "member_spans": [
+    "Filter the syrup"
+   ]
+  },
+  {
+   "node_id": "N04",
+   "span": "is repeated",
+   "type": "STATE_OR_FACET",
+   "start": 134,
+   "members": [
+    "c06"
+   ],
+   "member_spans": [
+    "is repeated",
+    "The filtering is repeated"
+   ]
+  },
+  {
+   "node_id": "N05",
+   "span": "the syrup remains cloudy",
+   "type": "STATE_OR_FACET",
+   "start": 149,
+   "members": [
+    "c07"
+   ],
+   "member_spans": [
+    "the syrup remains cloudy"
+   ]
+  },
+  {
+   "node_id": "N06",
+   "span": "Tap the maples",
+   "type": "EVENT",
+   "start": 0,
+   "members": [
+    "c01"
+   ],
+   "member_spans": [
+    "Tap the maples",
+    "Tap the maples in February"
+   ]
+  }
+ ],
+ "edges": [
+  {
+   "u": "N02",
+   "v": "N03",
+   "u_members": [
+    "c02",
+    "spawn_0"
+   ],
+   "v_members": [
+    "c04"
+   ],
+   "u_span": "Boil the sap",
+   "v_span": "Filter the syrup",
+   "relation": "ORDER_BEFORE",
+   "direction": "A_TO_B",
+   "ce": 0.9973,
+   "detail": {
+    "certificate": {
+     "a_anchor": "\"Boil the sap when the sugar content exceeds two percent\"",
+     "b_anchor": "\"Filter the syrup\"",
+     "a_in_relation": "\"boiling it\"",
+     "b_in_relation": "\"Filter the syrup\"",
+     "a_via_reference": null,
+     "b_via_reference": null,
+     "relation_text": "\"Filter the syrup after boiling it.\"",
+     "direction": "A_TO_B",
+     "relation_type": "ORDER_AFTER"
+    },
+    "verify": {
+     "verdict": "SUPPORTED",
+     "reason": "both_forms_in_rel",
+     "a_anchor": "boiling it",
+     "b_anchor": "Filter the syrup",
+     "relation_text": "Filter the syrup after boiling it.",
+     "direction": "A_TO_B",
+     "relation_type": "ORDER_AFTER"
+    }
+   }
+  },
+  {
+   "u": "N04",
+   "v": "N05",
+   "u_members": [
+    "c06"
+   ],
+   "v_members": [
+    "c07"
+   ],
+   "u_span": "is repeated",
+   "v_span": "the syrup remains cloudy",
+   "relation": "STATE_GATE",
+   "direction": "B_TO_A",
+   "ce": 0.9977,
+   "detail": {
+    "certificate": {
+     "a_anchor": "The filtering is repeated",
+     "b_anchor": "the syrup remains cloudy",
+     "a_in_relation": "is repeated",
+     "b_in_relation": "the syrup remains cloudy",
+     "a_via_reference": null,
+     "b_via_reference": null,
+     "relation_text": "The filtering is repeated if the syrup remains cloudy",
+     "direction": "B_TO_A",
+     "relation_type": "PRECONDITION"
+    },
+    "verify": {
+     "verdict": "SUPPORTED",
+     "reason": "both_forms_in_rel",
+     "a_anchor": "is repeated",
+     "b_anchor": "the syrup remains cloudy",
+     "relation_text": "The filtering is repeated if the syrup remains cloudy",
+     "direction": "B_TO_A",
+     "relation_type": "PRECONDITION"
+    }
+   }
+  }
+ ],
+ "pairs": [
+  {
+   "u": "N01",
+   "v": "N02",
+   "u_span": "the filtering",
+   "v_span": "Boil the sap",
+   "ce": 0.0016,
+   "channels": [
+    "entity_bridge"
+   ],
+   "stage": "certificate",
+   "verify": "UNSUPPORTED",
+   "verify_reason": "positional_path_ce_gate"
+  },
+  {
+   "u": "N01",
+   "v": "N05",
+   "u_span": "the filtering",
+   "v_span": "the syrup remains cloudy",
+   "ce": 0.9977,
+   "channels": [
+    "same_sentence",
+    "entity_bridge"
+   ],
+   "stage": "licensed",
+   "verify": "SUPPORTED",
+   "verify_reason": "both_forms_in_rel",
+   "judge": {
+    "q1_where_is_a": "the filtering",
+    "q2_where_is_b": "the syrup remains cloudy",
+    "q3_relation_between_these_two": "YES",
+    "q4_direction": "B_TO_A",
+    "q5_relation_type": "STATE_GATE"
+   },
+   "direction": "B_TO_A",
+   "relation": "STATE_GATE"
+  },
+  {
+   "u": "N01",
+   "v": "N06",
+   "u_span": "the filtering",
+   "v_span": "Tap the maples",
+   "ce": 0.0,
+   "stage": "ce_band"
+  },
+  {
+   "u": "N02",
+   "v": "N03",
+   "u_span": "Boil the sap",
+   "v_span": "Filter the syrup",
+   "ce": 0.9973,
+   "channels": [
+    "same_sentence",
+    "entity_bridge"
+   ],
+   "stage": "licensed",
+   "verify": "SUPPORTED",
+   "verify_reason": "both_forms_in_rel",
+   "judge": {
+    "q1_where_is_a": "boiling it",
+    "q2_where_is_b": "Filter the syrup",
+    "q3_relation_between_these_two": "YES",
+    "q4_direction": "A_TO_B",
+    "q5_relation_type": "ORDER_BEFORE"
+   },
+   "conn_side": {
+    "connective": "after",
+    "antecedent": "a"
+   },
+   "judge_direction": "A_TO_B",
+   "direction": "A_TO_B",
+   "relation": "ORDER_BEFORE"
+  },
+  {
+   "u": "N02",
+   "v": "N04",
+   "u_span": "Boil the sap",
+   "v_span": "is repeated",
+   "ce": 0.4071,
+   "channels": [
+    "entity_bridge"
+   ],
+   "stage": "judge",
+   "verify": "SUPPORTED",
+   "verify_reason": "both_forms_in_rel",
+   "judge": {
+    "q1_where_is_a": "boiling it",
+    "q2_where_is_b": "The filtering is repeated",
+    "q3_relation_between_these_two": "YES",
+    "q4_direction": "A_TO_B",
+    "q5_relation_type": "ORDER_BEFORE"
+   },
+   "judge_note": "cross_sentence_gate",
+   "gate": "single_sentence"
+  },
+  {
+   "u": "N02",
+   "v": "N05",
+   "u_span": "Boil the sap",
+   "v_span": "the syrup remains cloudy",
+   "ce": 0.2197,
+   "channels": [
+    "entity_bridge"
+   ],
+   "stage": "judge",
+   "verify": "SUPPORTED",
+   "verify_reason": "both_forms_in_rel",
+   "judge": {
+    "q1_where_is_a": "boiling it",
+    "q2_where_is_b": "the syrup remains cloudy",
+    "q3_relation_between_these_two": "YES",
+    "q4_direction": "A_TO_B",
+    "q5_relation_type": "PRECONDITION"
+   },
+   "judge_note": "cross_sentence_gate",
+   "gate": "single_sentence"
+  },
+  {
+   "u": "N02",
+   "v": "N06",
+   "u_span": "Boil the sap",
+   "v_span": "Tap the maples",
+   "ce": 0.0001,
+   "stage": "ce_band"
+  },
+  {
+   "u": "N03",
+   "v": "N05",
+   "u_span": "Filter the syrup",
+   "v_span": "the syrup remains cloudy",
+   "ce": 0.2197,
+   "channels": [
+    "entity_bridge"
+   ],
+   "stage": "certificate",
+   "verify": "UNSUPPORTED",
+   "verify_reason": "positional_path_ce_gate"
+  },
+  {
+   "u": "N03",
+   "v": "N06",
+   "u_span": "Filter the syrup",
+   "v_span": "Tap the maples",
+   "ce": 0.0,
+   "stage": "ce_band"
+  },
+  {
+   "u": "N04",
+   "v": "N05",
+   "u_span": "is repeated",
+   "v_span": "the syrup remains cloudy",
+   "ce": 0.9977,
+   "channels": [
+    "same_sentence",
+    "entity_bridge"
+   ],
+   "stage": "licensed",
+   "verify": "SUPPORTED",
+   "verify_reason": "both_forms_in_rel",
+   "judge": {
+    "q1_where_is_a": "is repeated",
+    "q2_where_is_b": "the syrup remains cloudy",
+    "q3_relation_between_these_two": "YES",
+    "q4_direction": "B_TO_A",
+    "q5_relation_type": "STATE_GATE"
+   },
+   "conn_side": {
+    "connective": "if",
+    "antecedent": "b"
+   },
+   "judge_direction": "B_TO_A",
+   "direction": "B_TO_A",
+   "relation": "STATE_GATE"
+  },
+  {
+   "u": "N04",
+   "v": "N06",
+   "u_span": "is repeated",
+   "v_span": "Tap the maples",
+   "ce": 0.0,
+   "stage": "ce_band"
+  },
+  {
+   "u": "N05",
+   "v": "N06",
+   "u_span": "the syrup remains cloudy",
+   "v_span": "Tap the maples",
+   "ce": 0.0,
+   "stage": "ce_band"
+  }
+ ]
+}

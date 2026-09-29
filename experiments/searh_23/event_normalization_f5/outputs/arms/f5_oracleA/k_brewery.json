@@ -1,0 +1,120 @@
+{
+ "case_id": "k_brewery",
+ "arm": "LLM_SG",
+ "ev_arm": "E3V3",
+ "nodes": [
+  {
+   "node_id": "N01",
+   "span": "Sanitize the fermenters",
+   "type": "EVENT",
+   "start": 0,
+   "members": [
+    "m01"
+   ],
+   "member_spans": [
+    "Sanitize the fermenters"
+   ]
+  },
+  {
+   "node_id": "N02",
+   "span": "Bottle the batch",
+   "type": "EVENT",
+   "start": 79,
+   "members": [
+    "m05"
+   ],
+   "member_spans": [
+    "Bottle the batch"
+   ]
+  },
+  {
+   "node_id": "N03",
+   "span": "the sanitation log is complete",
+   "type": "STATE_OR_FACET",
+   "start": 107,
+   "members": [
+    "m06"
+   ],
+   "member_spans": [
+    "the sanitation log is complete"
+   ]
+  }
+ ],
+ "edges": [
+  {
+   "u": "N02",
+   "v": "N03",
+   "u_members": [
+    "m05"
+   ],
+   "v_members": [
+    "m06"
+   ],
+   "u_span": "Bottle the batch",
+   "v_span": "the sanitation log is complete",
+   "relation": "STATE_GATE",
+   "direction": "B_TO_A",
+   "ce": 0.9972,
+   "detail": {
+    "certificate": {
+     "a_anchor": "\"Bottle the batch\"",
+     "b_anchor": "\"the sanitation log is complete\"",
+     "a_in_relation": "\"Bottle the batch\"",
+     "b_in_relation": "\"the sanitation log is complete\"",
+     "a_via_reference": null,
+     "b_via_reference": null,
+     "relation_text": "\"Bottle the batch only after the sanitation log is complete.\"",
+     "direction": "B_TO_A",
+     "relation_type": "ORDER_BEFORE"
+    },
+    "verify": {
+     "verdict": "SUPPORTED",
+     "reason": "both_forms_in_rel",
+     "a_anchor": "Bottle the batch",
+     "b_anchor": "the sanitation log is complete",
+     "relation_text": "Bottle the batch only after the sanitation log is complete.",
+     "direction": "B_TO_A",
+     "relation_type": "ORDER_BEFORE"
+    }
+   }
+  }
+ ],
+ "pairs": [
+  {
+   "u": "N01",
+   "v": "N02",
+   "u_span": "Sanitize the fermenters",
+   "v_span": "Bottle the batch",
+   "ce": 0.0154,
+   "stage": "ce_band"
+  },
+  {
+   "u": "N02",
+   "v": "N03",
+   "u_span": "Bottle the batch",
+   "v_span": "the sanitation log is complete",
+   "ce": 0.9972,
+   "channels": [
+    "same_sentence",
+    "entity_bridge"
+   ],
+   "stage": "licensed",
+   "verify": "SUPPORTED",
+   "verify_reason": "both_forms_in_rel",
+   "judge": {
+    "q1_where_is_a": "Bottle the batch",
+    "q2_where_is_b": "the sanitation log is complete",
+    "q3_relation_between_these_two": "YES",
+    "q4_direction": "B_TO_A",
+    "q5_relation_type": "STATE_GATE"
+   },
+   "conn_side": {
+    "connective": "only after",
+    "antecedent": "b"
+   },
+   "judge_direction": "B_TO_A",
+   "direction": "B_TO_A",
+   "relation": "STATE_GATE"
+  }
+ ]
+}

@@ -1,0 +1,207 @@
+{
+ "case_id": "r_fountain_ren",
+ "arm": "LLM_SG",
+ "ev_arm": "E3V3",
+ "nodes": [
+  {
+   "node_id": "N01",
+   "span": "Drain the fountain basin",
+   "type": "STATE_OR_FACET",
+   "start": 0,
+   "members": [
+    "c01",
+    "c04",
+    "c03",
+    "c05"
+   ],
+   "member_spans": [
+    "Drain the fountain basin",
+    "the draining",
+    "the basin is drained",
+    "is drained",
+    "is logged",
+    "is logged by the maintenance desk",
+    "The draining is logged",
+    "The draining is logged by the maintenance desk"
+   ]
+  },
+  {
+   "node_id": "N02",
+   "span": "Scrub the tiles",
+   "type": "EVENT",
+   "start": 26,
+   "members": [
+    "c02",
+    "c07"
+   ],
+   "member_spans": [
+    "Scrub the tiles",
+    "scrubbing"
+   ]
+  },
+  {
+   "node_id": "N03",
+   "span": "Refill the basin",
+   "type": "EVENT",
+   "start": 118,
+   "members": [
+    "c06"
+   ],
+   "member_spans": [
+    "Refill the basin"
+   ]
+  }
+ ],
+ "edges": [
+  {
+   "u": "N01",
+   "v": "N02",
+   "u_members": [
+    "c01",
+    "c04",
+    "c03",
+    "c05"
+   ],
+   "v_members": [
+    "c02",
+    "c07"
+   ],
+   "u_span": "Drain the fountain basin",
+   "v_span": "Scrub the tiles",
+   "relation": "STATE_GATE",
+   "direction": "A_TO_B",
+   "ce": 0.9989,
+   "detail": {
+    "certificate": {
+     "a_anchor": "the basin is drained",
+     "b_anchor": "scrubbing",
+     "a_in_relation": "the basin is drained",
+     "b_in_relation": "scrubbing",
+     "a_via_reference": null,
+     "b_via_reference": null,
+     "relation_text": "Scrub the tiles while the basin is drained.",
+     "direction": "B_TO_A",
+     "relation_type": "ORDER_BEFORE"
+    },
+    "verify": {
+     "verdict": "SUPPORTED",
+     "reason": "both_forms_in_rel",
+     "a_anchor": "the basin is drained",
+     "b_anchor": "Scrub the tiles",
+     "relation_text": "Scrub the tiles while the basin is drained.",
+     "direction": "B_TO_A",
+     "relation_type": "ORDER_BEFORE"
+    }
+   }
+  },
+  {
+   "u": "N02",
+   "v": "N03",
+   "u_members": [
+    "c02",
+    "c07"
+   ],
+   "v_members": [
+    "c06"
+   ],
+   "u_span": "Scrub the tiles",
+   "v_span": "Refill the basin",
+   "relation": "ORDER_BEFORE",
+   "direction": "A_TO_B",
+   "ce": 0.9997,
+   "detail": {
+    "certificate": {
+     "a_anchor": "Scrub the tiles",
+     "b_anchor": "Refill the basin",
+     "a_in_relation": "scrubbing",
+     "b_in_relation": "Refill the basin",
+     "a_via_reference": null,
+     "b_via_reference": null,
+     "relation_text": "Refill the basin only after scrubbing.",
+     "direction": "A_TO_B",
+     "relation_type": "ORDER_BEFORE"
+    },
+    "verify": {
+     "verdict": "SUPPORTED",
+     "reason": "both_forms_in_rel",
+     "a_anchor": "scrubbing",
+     "b_anchor": "Refill the basin",
+     "relation_text": "Refill the basin only after scrubbing.",
+     "direction": "A_TO_B",
+     "relation_type": "ORDER_BEFORE"
+    }
+   }
+  }
+ ],
+ "pairs": [
+  {
+   "u": "N01",
+   "v": "N02",
+   "u_span": "Drain the fountain basin",
+   "v_span": "Scrub the tiles",
+   "ce": 0.9989,
+   "channels": [
+    "same_sentence",
+    "entity_bridge"
+   ],
+   "stage": "licensed",
+   "verify": "SUPPORTED",
+   "verify_reason": "both_forms_in_rel",
+   "judge": {
+    "q1_where_is_a": "the basin is drained",
+    "q2_where_is_b": "Scrub the tiles",
+    "q3_relation_between_these_two": "YES",
+    "q4_direction": "A_TO_B",
+    "q5_relation_type": "STATE_GATE"
+   },
+   "conn_side": {
+    "connective": "while",
+    "antecedent": "a"
+   },
+   "judge_direction": "A_TO_B",
+   "direction": "A_TO_B",
+   "relation": "STATE_GATE"
+  },
+  {
+   "u": "N01",
+   "v": "N03",
+   "u_span": "Drain the fountain basin",
+   "v_span": "Refill the basin",
+   "ce": 0.5566,
+   "channels": [
+    "entity_bridge"
+   ],
+   "stage": "certificate",
+   "verify": "UNSUPPORTED",
+   "verify_reason": "relation_text_not_connecting_both_endpoints"
+  },
+  {
+   "u": "N02",
+   "v": "N03",
+   "u_span": "Scrub the tiles",
+   "v_span": "Refill the basin",
+   "ce": 0.9997,
+   "channels": [
+    "same_sentence",
+    "entity_bridge"
+   ],
+   "stage": "licensed",
+   "verify": "SUPPORTED",
+   "verify_reason": "both_forms_in_rel",
+   "judge": {
+    "q1_where_is_a": "scrubbing",
+    "q2_where_is_b": "Refill the basin",
+    "q3_relation_between_these_two": "YES",
+    "q4_direction": "A_TO_B",
+    "q5_relation_type": "ORDER_BEFORE"
+   },
+   "conn_side": {
+    "connective": "only after",
+    "antecedent": "a"
+   },
+   "judge_direction": "A_TO_B",
+   "direction": "A_TO_B",
+   "relation": "ORDER_BEFORE"
+  }
+ ]
+}

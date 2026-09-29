@@ -1,0 +1,295 @@
+{
+ "case_id": "n_chemistry",
+ "arm": "LLM_SG",
+ "ev_arm": "E3V3",
+ "nodes": [
+  {
+   "node_id": "N01",
+   "span": "Neutralize the acid bath",
+   "type": "EVENT",
+   "start": 0,
+   "members": [
+    "m01",
+    "m09"
+   ],
+   "member_spans": [
+    "Neutralize the acid bath",
+    "neutralizing"
+   ]
+  },
+  {
+   "node_id": "N02",
+   "span": "the pH falls below 5.0",
+   "type": "STATE_OR_FACET",
+   "start": 28,
+   "members": [
+    "m03"
+   ],
+   "member_spans": [
+    "the pH falls below 5.0"
+   ]
+  },
+  {
+   "node_id": "N03",
+   "span": "rises above 9.0",
+   "type": "STATE_OR_FACET",
+   "start": 54,
+   "members": [
+    "m04"
+   ],
+   "member_spans": [
+    "rises above 9.0"
+   ]
+  },
+  {
+   "node_id": "N04",
+   "span": "drain the bath",
+   "type": "EVENT",
+   "start": 78,
+   "members": [
+    "m05"
+   ],
+   "member_spans": [
+    "drain the bath"
+   ]
+  },
+  {
+   "node_id": "N05",
+   "span": "refill it with buffer",
+   "type": "EVENT",
+   "start": 96,
+   "members": [
+    "m06"
+   ],
+   "member_spans": [
+    "refill it with buffer"
+   ]
+  }
+ ],
+ "edges": [
+  {
+   "u": "N01",
+   "v": "N02",
+   "u_members": [
+    "m01",
+    "m09"
+   ],
+   "v_members": [
+    "m03"
+   ],
+   "u_span": "Neutralize the acid bath",
+   "v_span": "the pH falls below 5.0",
+   "relation": "STATE_GATE",
+   "direction": "B_TO_A",
+   "ce": 0.9968,
+   "detail": {
+    "certificate": {
+     "a_anchor": "Neutralize the acid bath",
+     "b_anchor": "the pH falls below 5.0",
+     "a_in_relation": "neutralizing",
+     "b_in_relation": "the pH falls below 5.0",
+     "a_via_reference": null,
+     "b_via_reference": null,
+     "relation_text": "Neutralize the acid bath if the pH falls below 5.0 or rises above 9.0.",
+     "direction": "B_TO_A",
+     "relation_type": "STATE_GATE"
+    },
+    "verify": {
+     "verdict": "SUPPORTED",
+     "reason": "both_forms_in_rel",
+     "a_anchor": "Neutralize the acid bath",
+     "b_anchor": "the pH falls below 5.0",
+     "relation_text": "Neutralize the acid bath if the pH falls below 5.0 or rises above 9.0.",
+     "direction": "B_TO_A",
+     "relation_type": "STATE_GATE"
+    }
+   }
+  }
+ ],
+ "pairs": [
+  {
+   "u": "N01",
+   "v": "N02",
+   "u_span": "Neutralize the acid bath",
+   "v_span": "the pH falls below 5.0",
+   "ce": 0.9968,
+   "channels": [
+    "same_sentence",
+    "entity_bridge"
+   ],
+   "stage": "licensed",
+   "verify": "SUPPORTED",
+   "verify_reason": "both_forms_in_rel",
+   "judge": {
+    "q1_where_is_a": "Neutralize the acid bath",
+    "q2_where_is_b": "the pH falls below 5.0",
+    "q3_relation_between_these_two": "YES",
+    "q4_direction": "B_TO_A",
+    "q5_relation_type": "STATE_GATE"
+   },
+   "conn_side": {
+    "connective": "if",
+    "antecedent": "b"
+   },
+   "judge_direction": "B_TO_A",
+   "direction": "B_TO_A",
+   "relation": "STATE_GATE"
+  },
+  {
+   "u": "N01",
+   "v": "N03",
+   "u_span": "Neutralize the acid bath",
+   "v_span": "rises above 9.0",
+   "ce": 0.412,
+   "channels": [],
+   "stage": "certificate",
+   "verify": "UNSUPPORTED",
+   "verify_reason": "endpoint_not_represented"
+  },
+  {
+   "u": "N01",
+   "v": "N04",
+   "u_span": "Neutralize the acid bath",
+   "v_span": "drain the bath",
+   "ce": 0.9998,
+   "channels": [
+    "same_sentence",
+    "entity_bridge"
+   ],
+   "stage": "judge",
+   "verify": "SUPPORTED",
+   "verify_reason": "both_forms_in_rel",
+   "judge_note": "verifier_q3_no",
+   "judge": {
+    "q1_where_is_a": "neutralizing",
+    "q2_where_is_b": "drain the bath",
+    "q3_relation_between_these_two": "NO",
+    "q4_direction": "UNKNOWN",
+    "q5_relation_type": "UNKNOWN"
+   }
+  },
+  {
+   "u": "N01",
+   "v": "N05",
+   "u_span": "Neutralize the acid bath",
+   "v_span": "refill it with buffer",
+   "ce": 0.9987,
+   "channels": [
+    "same_sentence",
+    "entity_bridge"
+   ],
+   "stage": "judge",
+   "verify": "SUPPORTED",
+   "verify_reason": "both_forms_in_rel",
+   "judge_note": "verifier_q3_no",
+   "judge": {
+    "q1_where_is_a": "neutralizing",
+    "q2_where_is_b": "refill it with buffer",
+    "q3_relation_between_these_two": "NO",
+    "q4_direction": "UNKNOWN",
+    "q5_relation_type": "UNKNOWN"
+   }
+  },
+  {
+   "u": "N02",
+   "v": "N03",
+   "u_span": "the pH falls below 5.0",
+   "v_span": "rises above 9.0",
+   "ce": 0.412,
+   "channels": [],
+   "stage": "judge",
+   "verify": "SUPPORTED",
+   "verify_reason": "both_forms_in_rel",
+   "judge_note": "semantic_link_routing",
+   "judge": {
+    "q1_where_is_a": "the pH falls below 5.0",
+    "q2_where_is_b": "rises above 9.0",
+    "q3_relation_between_these_two": "YES",
+    "q4_direction": "UNKNOWN",
+    "q5_relation_type": "SEMANTIC_LINK"
+   }
+  },
+  {
+   "u": "N02",
+   "v": "N04",
+   "u_span": "the pH falls below 5.0",
+   "v_span": "drain the bath",
+   "ce": 0.2331,
+   "channels": [
+    "entity_bridge"
+   ],
+   "stage": "judge",
+   "verify": "SUPPORTED",
+   "verify_reason": "both_forms_in_rel",
+   "judge": {
+    "q1_where_is_a": "the pH falls below 5.0",
+    "q2_where_is_b": "drain the bath",
+    "q3_relation_between_these_two": "YES",
+    "q4_direction": "A_TO_B",
+    "q5_relation_type": "STATE_GATE"
+   },
+   "judge_note": "coordination_gate",
+   "gate": "coprecondition"
+  },
+  {
+   "u": "N02",
+   "v": "N05",
+   "u_span": "the pH falls below 5.0",
+   "v_span": "refill it with buffer",
+   "ce": 0.236,
+   "channels": [
+    "entity_bridge"
+   ],
+   "stage": "judge",
+   "verify": "SUPPORTED",
+   "verify_reason": "both_forms_in_rel",
+   "judge": {
+    "q1_where_is_a": "the pH falls below 5.0",
+    "q2_where_is_b": "refill it with buffer",
+    "q3_relation_between_these_two": "YES",
+    "q4_direction": "A_TO_B",
+    "q5_relation_type": "STATE_GATE"
+   },
+   "judge_note": "coordination_gate",
+   "gate": "coprecondition"
+  },
+  {
+   "u": "N03",
+   "v": "N04",
+   "u_span": "rises above 9.0",
+   "v_span": "drain the bath",
+   "ce": 0.0,
+   "stage": "ce_band"
+  },
+  {
+   "u": "N03",
+   "v": "N05",
+   "u_span": "rises above 9.0",
+   "v_span": "refill it with buffer",
+   "ce": 0.0,
+   "stage": "ce_band"
+  },
+  {
+   "u": "N04",
+   "v": "N05",
+   "u_span": "drain the bath",
+   "v_span": "refill it with buffer",
+   "ce": 0.9987,
+   "channels": [
+    "same_sentence",
+    "entity_bridge"
+   ],
+   "stage": "judge",
+   "verify": "SUPPORTED",
+   "verify_reason": "both_forms_in_rel",
+   "judge_note": "verifier_q3_no",
+   "judge": {
+    "q1_where_is_a": "drain the bath",
+    "q2_where_is_b": "refill it with buffer",
+    "q3_relation_between_these_two": "NO",
+    "q4_direction": "UNKNOWN",
+    "q5_relation_type": "UNKNOWN"
+   }
+  }
+ ]
+}
