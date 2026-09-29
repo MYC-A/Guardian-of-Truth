@@ -1,0 +1,314 @@
+{
+ "case_id": "g_watertower",
+ "arm": "LLM_SG",
+ "ev_arm": "E3V2",
+ "nodes": [
+  {
+   "node_id": "N01",
+   "span": "Clean the interior",
+   "type": "EVENT",
+   "start": 15,
+   "members": [
+    "c02",
+    "c05"
+   ],
+   "member_spans": [
+    "Clean the interior",
+    "the cleaning"
+   ]
+  },
+  {
+   "node_id": "N02",
+   "span": "the tower is drained",
+   "type": "EVENT",
+   "start": 45,
+   "members": [
+    "c03",
+    "c01"
+   ],
+   "member_spans": [
+    "the tower is drained",
+    "Drain tower 4"
+   ]
+  },
+  {
+   "node_id": "N03",
+   "span": "the cleaning certificate confirms the cleaning",
+   "type": "STATE_OR_FACET",
+   "start": 67,
+   "members": [
+    "c04"
+   ],
+   "member_spans": [
+    "the cleaning certificate confirms the cleaning"
+   ]
+  },
+  {
+   "node_id": "N04",
+   "span": "Refill the tower",
+   "type": "EVENT",
+   "start": 115,
+   "members": [
+    "c06_b0"
+   ],
+   "member_spans": [
+    "Refill the tower"
+   ]
+  },
+  {
+   "node_id": "N05",
+   "span": "the interior is clean",
+   "type": "EVENT",
+   "start": 138,
+   "members": [
+    "c06_b1"
+   ],
+   "member_spans": [
+    "the interior is clean"
+   ]
+  }
+ ],
+ "edges": [
+  {
+   "u": "N01",
+   "v": "N03",
+   "u_members": [
+    "c02",
+    "c05"
+   ],
+   "v_members": [
+    "c04"
+   ],
+   "u_span": "Clean the interior",
+   "v_span": "the cleaning certificate confirms the cleaning",
+   "relation": "STATE_GATE",
+   "direction": "B_TO_A",
+   "ce": 0.993,
+   "detail": {
+    "certificate": {
+     "a_anchor": "Clean the interior",
+     "b_anchor": "the cleaning certificate confirms the cleaning",
+     "a_in_relation": "the cleaning",
+     "b_in_relation": "the cleaning certificate confirms the cleaning",
+     "a_via_reference": null,
+     "b_via_reference": null,
+     "relation_text": "The cleaning certificate confirms the cleaning.",
+     "direction": "A_TO_B",
+     "relation_type": "RESPONSE"
+    },
+    "verify": {
+     "fields_present": {},
+     "verdict": "SUPPORTED",
+     "reason": null,
+     "grounded": {
+      "a_forms": [
+       [
+        15,
+        33
+       ],
+       [
+        101,
+        113
+       ]
+      ],
+      "b_forms": [
+       [
+        67,
+        113
+       ]
+      ],
+      "a_in_relation": [
+       101,
+       113
+      ],
+      "b_in_relation": [
+       67,
+       113
+      ],
+      "relation_text": [
+       67,
+       114
+      ]
+     },
+     "direction": "A_TO_B",
+     "relation_type": "RESPONSE"
+    }
+   }
+  },
+  {
+   "u": "N04",
+   "v": "N05",
+   "u_members": [
+    "c06_b0"
+   ],
+   "v_members": [
+    "c06_b1"
+   ],
+   "u_span": "Refill the tower",
+   "v_span": "the interior is clean",
+   "relation": "ORDER_BEFORE",
+   "direction": "B_TO_A",
+   "ce": 0.9905,
+   "detail": {
+    "certificate": {
+     "a_anchor": "Refill the tower after the interior is clean",
+     "b_anchor": "the interior is clean",
+     "a_in_relation": "Refill the tower",
+     "b_in_relation": "the interior is clean",
+     "a_via_reference": null,
+     "b_via_reference": null,
+     "relation_text": "Refill the tower after the interior is clean",
+     "direction": "B_TO_A",
+     "relation_type": "ORDER_BEFORE"
+    },
+    "verify": {
+     "fields_present": {},
+     "verdict": "SUPPORTED",
+     "reason": null,
+     "grounded": {
+      "a_forms": [
+       [
+        115,
+        131
+       ]
+      ],
+      "b_forms": [
+       [
+        138,
+        159
+       ]
+      ],
+      "a_in_relation": [
+       115,
+       131
+      ],
+      "b_in_relation": [
+       138,
+       159
+      ],
+      "relation_text": [
+       115,
+       159
+      ]
+     },
+     "direction": "B_TO_A",
+     "relation_type": "ORDER_BEFORE"
+    }
+   }
+  }
+ ],
+ "pairs": [
+  {
+   "u": "N01",
+   "v": "N02",
+   "u_span": "Clean the interior",
+   "v_span": "the tower is drained",
+   "ce": 0.9967,
+   "stage": "certificate",
+   "verify": "UNSUPPORTED",
+   "verify_reason": "relation_text_not_connecting_both_endpoints"
+  },
+  {
+   "u": "N01",
+   "v": "N03",
+   "u_span": "Clean the interior",
+   "v_span": "the cleaning certificate confirms the cleaning",
+   "ce": 0.993,
+   "stage": "licensed",
+   "verify": "SUPPORTED",
+   "verify_reason": null,
+   "judge": {
+    "q1_where_is_a": "the cleaning",
+    "q2_where_is_b": "the cleaning certificate confirms the cleaning",
+    "q3_relation_between_these_two": "YES",
+    "q4_direction": "B_TO_A",
+    "q5_relation_type": "STATE_GATE"
+   },
+   "direction": "B_TO_A",
+   "relation": "STATE_GATE"
+  },
+  {
+   "u": "N01",
+   "v": "N04",
+   "u_span": "Clean the interior",
+   "v_span": "Refill the tower",
+   "ce": 0.5849,
+   "stage": "certificate",
+   "verify": "UNSUPPORTED",
+   "verify_reason": "relation_text_not_connecting_both_endpoints"
+  },
+  {
+   "u": "N01",
+   "v": "N05",
+   "u_span": "Clean the interior",
+   "v_span": "the interior is clean",
+   "ce": 0.9183,
+   "stage": "certificate",
+   "verify": "UNSUPPORTED",
+   "verify_reason": "relation_text_not_connecting_both_endpoints"
+  },
+  {
+   "u": "N02",
+   "v": "N03",
+   "u_span": "the tower is drained",
+   "v_span": "the cleaning certificate confirms the cleaning",
+   "ce": 0.2788,
+   "stage": "ce_band"
+  },
+  {
+   "u": "N02",
+   "v": "N04",
+   "u_span": "the tower is drained",
+   "v_span": "Refill the tower",
+   "ce": 0.5849,
+   "stage": "certificate",
+   "verify": "UNSUPPORTED",
+   "verify_reason": "relation_text_not_connecting_both_endpoints"
+  },
+  {
+   "u": "N02",
+   "v": "N05",
+   "u_span": "the tower is drained",
+   "v_span": "the interior is clean",
+   "ce": 0.9183,
+   "stage": "certificate",
+   "verify": "UNSUPPORTED",
+   "verify_reason": "relation_text_not_connecting_both_endpoints"
+  },
+  {
+   "u": "N03",
+   "v": "N04",
+   "u_span": "the cleaning certificate confirms the cleaning",
+   "v_span": "Refill the tower",
+   "ce": 0.0,
+   "stage": "ce_band"
+  },
+  {
+   "u": "N03",
+   "v": "N05",
+   "u_span": "the cleaning certificate confirms the cleaning",
+   "v_span": "the interior is clean",
+   "ce": 0.0002,
+   "stage": "ce_band"
+  },
+  {
+   "u": "N04",
+   "v": "N05",
+   "u_span": "Refill the tower",
+   "v_span": "the interior is clean",
+   "ce": 0.9905,
+   "stage": "licensed",
+   "verify": "SUPPORTED",
+   "verify_reason": null,
+   "judge": {
+    "q1_where_is_a": "Refill the tower",
+    "q2_where_is_b": "the interior is clean",
+    "q3_relation_between_these_two": "YES",
+    "q4_direction": "B_TO_A",
+    "q5_relation_type": "ORDER_BEFORE"
+   },
+   "direction": "B_TO_A",
+   "relation": "ORDER_BEFORE"
+  }
+ ]
+}
