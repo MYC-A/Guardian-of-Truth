@@ -76,7 +76,7 @@ ARTIFACT_SUBJ = re.compile(
     rf"|record\b|log\b|document\b|confirm\b|list\b|state\b|certify\b|"
     rf"indicate\b|show\b)", re.I)
 MODAL_START = re.compile(
-    r"^(may|must|can|could|should|will|shall)\s+[a-z]+", re.I)
+    r"^(may|must|can|could|should|will|shall|has|have|had)\s+[a-z]+", re.I)
 TRAILING_CLAUSE = re.compile(
     r"\b(only\s+if|only\s+when|only\s+after|if|when|unless|until|"
     r"while|once|after|before)\s+(.+)$", re.I)
@@ -833,7 +833,7 @@ def action_signature(span: str) -> tuple[str | None, set[str]]:
     # modal-subject existential: 'X may/must/will VERB' -> X is the action
     for k, t in enumerate(toks):
         if t.lower() in {"may", "must", "can", "could", "should", "will",
-                          "shall"}:
+                          "shall", "has", "have", "had"}:
             if k > 0:
                 subj = [x for x in toks[:k] if x.lower() not in STOP]
                 if subj:
@@ -1046,7 +1046,7 @@ def main() -> None:
                        max_length=512,
                        cache_folder="/workspace/guardian/hf_cache")
     client = Mistral(model="ministral-14b-latest", cache_dir=OUT / "_cache")
-    outdir = OUT / f"W1_DOWN6_{arm}"
+    outdir = OUT / f"W1_DOWN7_{arm}"
     outdir.mkdir(parents=True, exist_ok=True)
 
     def ask(system, user, max_tokens=600):
@@ -1198,6 +1198,15 @@ def main() -> None:
                     direction = judge.get("q4_direction", "UNKNOWN")
                     rel = judge.get("q5_relation_type", "UNKNOWN")
                 rec["judge"] = judge
+                # no-connective gate: a relation_text without any gating
+                # connective states no normative relation (implicit
+                # procedure order is not licensed)
+                if licensed and v.get("relation_text") and not re.search(
+                        r"\b(only|after|before|if|when|unless|until|"
+                        r"while|once|provided|upon|in\s+which\s+case)\b",
+                        v["relation_text"], re.I):
+                    licensed = False
+                    rec["judge_note"] = "no_trigger_connective"
                 # coordination gate: if the two in-rel anchors sit on the
                 # same side of any gating connective, separated only by
                 # 'and'/'or', they are coordinated co-preconditions /
@@ -1214,7 +1223,8 @@ def main() -> None:
                         gating = re.search(
                             r"\b(only\s+after|only\s+if|only\s+when|"
                             r"after|before|if|when|unless|until|while|"
-                            r"once|provided)\b", between, re.I)
+                            r"once|provided|in\s+which\s+case)\b",
+                            between, re.I)
                         coord = re.search(r"\b(and|or)\b", between, re.I)
                         if coord and not gating:
                             licensed = False
@@ -1299,6 +1309,31 @@ def main() -> None:
                     if v1 and v2 and compatible_nodes(
                             v1["member_spans"], v2["member_spans"]):
                         drop.add(id(e1 if e1["ce"] <= e2["ce"] else e2))
+        # effective-endpoint duplicate consolidation: edges mapping to
+        # the same (compatible endpoint) pair in either orientation
+        def eff(e):
+            a = next((n for n in nodes if n["node_id"] == e["u"]), None)
+            b = next((n for n in nodes if n["node_id"] == e["v"]), None)
+            if e.get("direction") == "B_TO_A":
+                return b, a
+            return a, b
+
+        for a1 in range(len(edges)):
+            for b1 in range(a1 + 1, len(edges)):
+                e1, e2 = edges[a1], edges[b1]
+                if id(e1) in drop or id(e2) in drop:
+                    continue
+                (ua, va), (ub, vb) = eff(e1), eff(e2)
+                if None in (ua, va, ub, vb):
+                    continue
+                same_dir = compatible_nodes(
+                    ua["member_spans"], ub["member_spans"]) and \
+                    compatible_nodes(va["member_spans"], vb["member_spans"])
+                rev_dir = compatible_nodes(
+                    ua["member_spans"], vb["member_spans"]) and \
+                    compatible_nodes(va["member_spans"], ub["member_spans"])
+                if same_dir or rev_dir:
+                    drop.add(id(e1 if e1["ce"] <= e2["ce"] else e2))
         if drop:
             edges = [e for e in edges if id(e) not in drop]
         path.write_text(json.dumps({"case_id": cid_, "arm": arm,
@@ -1315,7 +1350,7 @@ def main() -> None:
                                    indent=1) + "\n", encoding="utf-8")
         print(cid_, len(nodes), "nodes ->", len(edges), "edges",
               f"({len(pair_log)} pairs logged)", flush=True)
-    print("W1 DOWN6", arm, "done")
+    print("W1 DOWN7", arm, "done")
 
 
 if __name__ == "__main__":
