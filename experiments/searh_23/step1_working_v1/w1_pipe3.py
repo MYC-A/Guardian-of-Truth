@@ -71,8 +71,15 @@ COMM_VERB = re.compile(
 ARTIFACT_SUBJ = re.compile(
     rf"^(?:[Tt]he\s+|[Aa]\s+|[Aa]n\s+)?[A-Za-z0-9'\- ]*?"
     rf"\b(?:{ARTIFACT_HEAD})\s+"
-    rf"(?:is|are|was|were|records|logs|documents|confirms|lists|states|"
-    rf"certifies|indicates|shows|must|should|may|shall|will)\b", re.I)
+    rf"(?:records?|logs?|documents?|confirms?|lists?|states?|certifies?|"
+    rf"indicates?|shows?|must\s+|should\s+|may\s+|shall\s+|will\s+"
+    rf"|record\b|log\b|document\b|confirm\b|list\b|state\b|certify\b|"
+    rf"indicate\b|show\b)", re.I)
+MODAL_START = re.compile(
+    r"^(may|must|can|could|should|will|shall)\s+[a-z]+", re.I)
+TRAILING_CLAUSE = re.compile(
+    r"\b(only\s+if|only\s+when|only\s+after|if|when|unless|until|"
+    r"while|once|after|before)\s+(.+)$", re.I)
 STOP = {"the", "and", "or", "only", "after", "before", "when", "if",
         "unless", "until", "must", "may", "shall", "should", "with",
         "for", "from", "into", "upon", "during", "each", "every",
@@ -384,11 +391,13 @@ def _grounded_forms(policy: str, base: str, orig: str | None,
             stripped = base.strip()[m.end():].strip()
             if _in_policy(policy, stripped) and stripped not in forms:
                 forms.append(stripped)
-    # subject-extended variant for predicate-initial spans (b2)
-    if base and COPULA_START.match(base.strip()):
-        ext = subject_extend(policy, base)
-        if ext and ext not in forms:
-            forms.append(ext)
+    # subject-extended variant for predicate/modal-initial forms (b2):
+    # 'may start' -> 'Molding may start'; 'is contaminated' -> subject
+    for f in list(forms):
+        if COPULA_START.match(f.strip()) or MODAL_START.match(f.strip()):
+            ext = subject_extend(policy, f)
+            if ext and ext not in forms:
+                forms.append(ext)
     return [f for f in forms if f and f.strip()]
 
 
@@ -424,6 +433,52 @@ def subject_extend(policy: str, span: str) -> str | None:
     return ext if _in_policy(policy, ext) else None
 
 
+def _harvest_relations(orig: dict, hyg: dict, root: str, base: str) \
+        -> list[dict]:
+    """All frontend relations from candidates sharing the root cid, the
+    base span, or the bnorm merged_from list (bnorm dedupe drops the
+    relations of the candidates it merges away)."""
+    rels: list[dict] = []
+    seen = set()
+    for c in list(orig.values()) + list(hyg.values()):
+        same = (c.get("cid_local") == root
+                or (c.get("span") or "").strip() == base.strip())
+        if not same:
+            continue
+        for r in c.get("relations") or []:
+            key = json.dumps(r, sort_keys=True)
+            if key not in seen:
+                seen.add(key)
+                rels.append(r)
+    return rels
+
+
+def _spawn_trailing(policy: str, span: str) -> list[dict]:
+    """If a span embeds CONNECTIVE + trailing clause, return candidate
+    spawns for the trailing material (state clauses / gerunds)."""
+    out = []
+    m = TRAILING_CLAUSE.search(span)
+    if not m:
+        return out
+    tail = m.group(2).strip().rstrip(".,;")
+    if not tail or tail.lower() == span.lower():
+        return out
+    if not _in_policy(policy, tail):
+        return out
+    if COPULA_ANY.search(tail) and len(COPULA_ANY.findall(tail)) == 1:
+        base = tail
+        if COPULA_START.match(tail):
+            ext = subject_extend(policy, tail)
+            if ext:
+                base = ext
+        out.append({"span": base, "type": "STATE_OR_FACET",
+                    "spawn": "trailing_state"})
+    elif re.match(r"^[a-z]+ing\b", tail, re.I):
+        out.append({"span": tail, "type": "EVENT_REFERENCE",
+                    "spawn": "trailing_ref"})
+    return out
+
+
 def build_nodes_v3(arm: str, case: dict) -> list[dict]:
     policy = case["policy"]
     cid = case["case_id"]
@@ -438,6 +493,7 @@ def build_nodes_v3(arm: str, case: dict) -> list[dict]:
             bn = _load(f)
             break
     survivors: dict[str, dict] = {}
+    spawned: list[dict] = []
     for c in bn:
         if c.get("bnorm_decision") == "DROP":
             continue
@@ -445,18 +501,48 @@ def build_nodes_v3(arm: str, case: dict) -> list[dict]:
         base = c.get("span") or ""
         dec = c.get("bnorm_decision") or "KEEP"
         o = orig.get(root) or hyg.get(root) or {}
-        variants = _grounded_forms(policy, base, o.get("span"), dec)
+        orig_span = o.get("span")
+        # an overlong original that embeds a foreign trailing clause must
+        # NOT become a member form (it contaminates the node and creates
+        # self-pairs); its trailing clause is spawned as its own candidate
+        embeds_foreign = False
+        if orig_span and orig_span != base and dec != "SPLIT":
+            for sp in _spawn_trailing(policy, orig_span):
+                spawned.append(sp)
+            if _spawn_trailing(policy, orig_span):
+                embeds_foreign = True
+        for sp in _spawn_trailing(policy, base) if base != orig_span else []:
+            spawned.append(sp)
+        variants = _grounded_forms(policy, base,
+                                   None if embeds_foreign else orig_span,
+                                   dec)
         if not variants:
             continue
+        rels = _harvest_relations(orig, hyg, root, base) or \
+            (c.get("relations") or [])
         survivors[c["cid_local"]] = {
             "cid_local": c["cid_local"], "root": root,
             "span": variants[0], "forms": variants,
             "type": c.get("type") or o.get("type") or "UNKNOWN",
-            "relations": c.get("relations") or o.get("relations") or [],
+            "relations": rels,
             "start": policy.find(variants[0]),
             "arguments": [g for g in (c.get("arguments") or
                                       o.get("arguments") or [])
                           if isinstance(g.get("span"), str)]}
+    # spawned trailing candidates (states / refs from overlong spans)
+    existing_spans = {s["span"] for s in survivors.values()}
+    for i, sp in enumerate(spawned):
+        if sp["span"] in existing_spans:
+            continue
+        base = sp["span"]
+        variants = _grounded_forms(policy, base, None, "KEEP")
+        if not variants:
+            continue
+        survivors[f"spawn_{i}"] = {
+            "cid_local": f"spawn_{i}", "root": f"spawn_{i}",
+            "span": variants[0], "forms": variants,
+            "type": sp["type"], "relations": [],
+            "start": policy.find(variants[0]), "arguments": []}
     # b1: keep-override for dropped indicative state clauses
     present_roots = {s["root"] for s in survivors.values()}
     for k, c in hyg.items():
@@ -542,6 +628,29 @@ def build_nodes_v3(arm: str, case: dict) -> list[dict]:
         if rx != ry:
             parent[ry] = rx
 
+    def union_compatible(x: str, y: str) -> bool:
+        """Action-compatibility for frontend-proposed unions: the linked
+        candidates must be the same action (action-lemma match), or a
+        copula state whose SUBJECT head or PREDICATE participle matches
+        the target action ('the tower is drained' ~ Drain)."""
+        sx, sy = kept[x], kept[y]
+        sigs_x = [action_signature(f) for f in
+                  (sx["forms"] or [sx["span"]])]
+        sigs_y = [action_signature(f) for f in
+                  (sy["forms"] or [sy["span"]])]
+        for (ax, argsx) in sigs_x:
+            for (ay, argsy) in sigs_y:
+                shared = {t for t in (argsx & argsy) if not t.isdigit()}
+                if ax and ay and ax == ay and \
+                        (shared or not argsx or not argsy):
+                    return True
+                # state-of-act: the state's subject/predicate argument IS
+                # the other side's action ('the dyeing is fixed' ~ Dye,
+                # 'the scrapes are dry' ~ Scrape)
+                if ax and ay and (ay in argsx or ax in argsy):
+                    return True
+        return False
+
     for k, s in kept.items():
         for r in s["relations"]:
             if r.get("type") in ("SAME_EVENT", "REFERENCE_OF") \
@@ -551,6 +660,8 @@ def build_nodes_v3(arm: str, case: dict) -> list[dict]:
                             or re.search(r"\bagain\b", tgt["span"],
                                          re.I)):
                     continue  # repetition = distinct event instance
+                if not union_compatible(k, r["to"]):
+                    continue  # frontend link vetoed by action mismatch
                 union(k, r["to"])
     groups: dict[str, list] = defaultdict(list)
     for k, s in kept.items():
@@ -613,7 +724,9 @@ OP_ON_MENTION = {
 
 def _norm_lemma(t: str) -> str:
     t = t.lower()
-    for suf in ("ing", "ied", "ed", "es", "s"):
+    for suf in ("ation", "ition", "ution", "ion", "ment", "ance",
+                "ence", "ness", "ity", "ing", "ied", "ed", "es", "s",
+                "e"):
         if t.endswith(suf) and len(t) - len(suf) >= 3:
             t = t[: -len(suf)]
             if suf == "ing" and len(t) >= 4 and t[-1] == t[-2]:
@@ -622,10 +735,29 @@ def _norm_lemma(t: str) -> str:
     return t
 
 
+def _lemma_match(a: str | None, b: str | None) -> bool:
+    """Crude morphological identity: stems equal, or one stem is a
+    >=4-char prefix of the other with a residual derivational suffix
+    (inspect ~ inspection, store ~ storage, scrape ~ scraping)."""
+    if not a or not b:
+        return False
+    sa, sb = _norm_lemma(a), _norm_lemma(b)
+    if sa == sb:
+        return True
+    if len(sa) > len(sb) and sa.startswith(sb) and len(sb) >= 4:
+        return True
+    if len(sb) > len(sa) and sb.startswith(sa) and len(sa) >= 4:
+        return True
+    return False
+
+
 def action_signature(span: str) -> tuple[str | None, set[str]]:
     """(action lemma, argument lemmas) of one surface form.
     - imperative/gerund/verbal: first non-determiner token is the action;
     - copula clause: participle/adjective after the copula is the action;
+    - modal-subject existential ('Molding may start'): the SUBJECT head
+      is the action;
+    - modal-initial fragment ('may start'): the verb after the modal;
     - NP reference: head noun (last token) is the action.
     """
     s = (span or "").strip()
@@ -644,6 +776,18 @@ def action_signature(span: str) -> tuple[str | None, set[str]]:
         return (_norm_lemma(pred[0]) if pred else None), \
             {_norm_lemma(t) for t in subj_toks}
     toks = s.split()
+    # modal-subject existential: 'X may/must/will VERB' -> X is the action
+    for k, t in enumerate(toks):
+        if t.lower() in {"may", "must", "can", "could", "should", "will",
+                          "shall"}:
+            if k > 0:
+                subj = [x for x in toks[:k] if x.lower() not in STOP]
+                if subj:
+                    return _norm_lemma(subj[-1]), \
+                        {_norm_lemma(x) for x in subj[:-1]}
+            # modal-initial fragment: verb after the modal is the action
+            rest = [x for x in toks[k + 1:] if x.lower() not in STOP]
+            return (_norm_lemma(rest[0]) if rest else None), set()
     if toks and toks[0].lower() not in {"the", "a", "an", "each",
                                           "every", "this", "that"}:
         return _norm_lemma(toks[0]), \
@@ -715,32 +859,34 @@ def consolidate_nodes(nodes: list[dict], policy: str) -> list[dict]:
                 for (aj, argsj) in sig_forms[j]:
                     shared = {x for x in (argsi & argsj)
                               if not x.isdigit()}
-                    if ai and aj and ai == aj and \
+                    if ai and aj and _lemma_match(ai, aj) and \
                             (shared or not argsi or not argsj):
                         why = "action_lemma"
                         break
                 if why:
                     break
-            # (2) substring containment of a form (guarded: the
-            # container must not be an operation-on-mention clause -
-            # 'Log the inspection', 'X is logged', 'verify that X
-            # passed' are their OWN events about the contained mention)
+            # (2) substring containment of a form, SUBJECT-POSITION
+            # only (the contained form starts the container: 'the
+            # salinity check' in 'the salinity check passes'). A
+            # contained form in OBJECT position ('the alignment' in
+            # 'Renew the alignment') is a different event's argument.
+            # The container must not be an operation-on-mention clause.
             if why is None:
                 for fi in identity_forms(i):
                     for fj in identity_forms(j):
-                        if fi == fj:
+                        if fi == fj or not fj.startswith(fi):
                             continue
-                        container = fj if fi in fj else (fi if fj in fi
-                                                          else None)
-                        if not container:
-                            continue
-                        head = container.split()[0].lower() \
+                        head = fj.split()[0].lower() \
                             .strip(".,;:'\"")
-                        ca, _ = action_signature(container)
-                        if RECORDING_PRED.search(container) \
+                        ca, cargs = action_signature(fj)
+                        ai_f, _ = action_signature(fi)
+                        if RECORDING_PRED.search(fj) \
                                 or head in OP_ON_MENTION or ca in \
                                 OP_ON_MENTION:
                             continue
+                        if ai_f and any(_lemma_match(ai_f, x)
+                                        for x in cargs):
+                            continue  # object-position containment
                         if len(_lemmas(fi) & _lemmas(fj)) >= 1:
                             why = "substring_form"
                             break
@@ -846,7 +992,7 @@ def main() -> None:
                        max_length=512,
                        cache_folder="/workspace/guardian/hf_cache")
     client = Mistral(model="ministral-14b-latest", cache_dir=OUT / "_cache")
-    outdir = OUT / f"W1_DOWN4_{arm}"
+    outdir = OUT / f"W1_DOWN5_{arm}"
     outdir.mkdir(parents=True, exist_ok=True)
 
     def ask(system, user, max_tokens=600):
@@ -1045,7 +1191,7 @@ def main() -> None:
                                    indent=1) + "\n", encoding="utf-8")
         print(cid_, len(nodes), "nodes ->", len(edges), "edges",
               f"({len(pair_log)} pairs logged)", flush=True)
-    print("W1 DOWN4", arm, "done")
+    print("W1 DOWN5", arm, "done")
 
 
 if __name__ == "__main__":

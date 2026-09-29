@@ -116,7 +116,53 @@ LLM layer (prompts):
 Regression gate: w1_cert_units (22 frozen adversarial items) must be >= E3 baseline
 (15/22) before any downstream run.
 
-STATUS: implementation.
+RESULT (gate, 2026-09-29): 17/22 >= 15/22 PASS. All 9 positives SUPPORTED;
+3 negatives missed through the judge (cf_neg_09 argument-as-endpoint,
+cf_neg_12, cf_neg_14). First v3 verifier version (any-form ONLY) scored
+0/22 - root cause: single-form unit endpoints require the v1 positional
+extractor-anchor path; fixed by the verification LADDER (a) forms-in-rel
+-> (b) positional extractor anchors -> (c) clause repair -> (d)
+via_reference->judge.
+
+## D2. Dev run v3 (main F): P .270 / R .739 (correct 17, extra 46)
+
+Recall fixed (was 4/23), precision now the bottleneck. Extra attribution:
+contaminated_or_junk_endpoint 25, unsupported_edge 13, duplicate_gold_edge 8.
+Node defects: 14 None-label + 5 MIXED nodes; mechanism classes:
+- taxonomy-missed junk ('The feeding roster is a document', 'is a document')
+  - subject noun ('roster'/'tally') not in artifact list;
+- act/state/ref node MULTIPLICITY -> duplicate gold edges + self-loops
+  (E1 licensed via act-node AND via state-node);
+- fragment nodes ('passes', 'is filed', 'start') without subject;
+- modal/deontic restatements ('must be repeated', 'Repair is permitted');
+- identity-negation distractors ('X is not Y', 'is a separate event');
+- overlong-form lemma poisoning + argument-sharing over-merge
+  (Feed/Weigh the red pandas) in early consolidation prototypes.
+
+## D1-v4. Iteration 3 changes (commit 580afbc1, before dev inference)
+
+- consolidate_nodes() deterministic H4 core:
+  (1) action-lemma match + >=1 shared NON-NUMERIC argument lemma
+      (merges act/gerund/passive-state facets of the SAME action;
+      keeps argument-sharing DIFFERENT actions apart);
+  (2) substring merge guarded by OP_ON_MENTION ('Log the inspection',
+      'verify that X passed' are events ABOUT the contained mention);
+  (3) adjacent subject-predicate attachment guarded by RECORDING_PRED
+      ('X is logged' = logging event, not facet of X);
+  - 'again' repetition veto (distinct event instances never merge);
+  - identity lemmas computed from connective-free short forms only
+    (overlong originals are anchors, not identity evidence).
+- junk filters: taxonomy predication (any subject), deontic adjectives,
+  identity-negation, modal-copula fragments, artifact-subject + comm-verb
+  with modals/inflections;
+- negation-strip variant ('Do not X' -> 'X');
+- p1b CE gate: positional extractor-anchor paths require CE band or
+  same-sentence co-occurrence; structural and via_reference paths stay open.
+- Local deterministic validation (both suites): every case's node set now
+  matches the gold cid structure (Feed/Weigh separate, Log-the-inspection
+  separate, act+state clusters merged, distractors dropped).
+
+STATUS: dev inference running (W1_DOWN4_LLM_SG).
 
 ## H2. Node certificate (directive §7-§9)
 
