@@ -186,7 +186,7 @@ def main() -> None:
 
     arm = sys.argv[1] if len(sys.argv) > 1 else "LLM_SG"
     ev_arm = sys.argv[2] if len(sys.argv) > 2 else "E1"
-    which = os.environ.get("LF_SUITE", "original")
+    which = os.environ.get("LF_WHICH", "original")
     gold = load_gold(which)
     rer = CrossEncoder("BAAI/bge-reranker-base", device="cuda",
                        max_length=512,
