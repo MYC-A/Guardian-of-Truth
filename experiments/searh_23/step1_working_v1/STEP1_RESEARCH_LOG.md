@@ -247,3 +247,27 @@ measure false-trusted-nodes and real-node-recall before/after gate (directive §
 example metrics).
 
 STATUS: pending.
+
+## D4. Final iterations and sealed validations (2026-09-29)
+
+- v9 (same-sentence anchor rule + connective-side direction override):
+  dev P .958 / R 1.000 / exact 14/15 (BOTH missing edges recovered: the
+  implicit-order traps died at the same-sentence gate; the flipped
+  directions died at the connective-side override).
+- v10 (+ recording-state containment): dev unchanged; F2 P .600 / R .750.
+- F3 SEALED (v8, frozen dce04fd0): P .636 / R .778, 7/9 gold, exact 3/5.
+- F4 SEALED (v10, frozen 4c430563, sha e6b04a0e8a911965): P .750 / R .750,
+  6/8 gold, exact 2/5. Residuals: 2 extras (multi-clause bridging pair;
+  determiner-subject SVO fragment intercept) + 2 missing (fragment twin
+  not merged; gerund-only node lost the imperative form) - all four are
+  named mechanism classes with deterministic fixes (see report H).
+- Rename invariance on v10: NOT re-run this cycle (pending; the previous
+  phase's LLM_SG+E3 was rename-invariant 15/15 on edges and the v10
+  prompts contain no tool names, but the claim needs a fresh run).
+- Cert-units regression: 17/22 (gate passed at every prompt change).
+
+DECISION: cycle complete. Report:
+STEP1_WORKING_ARCHITECTURE_RESEARCH_2026-09-29.md. Next cycle candidates:
+clause-mate pair discipline (H.1/H.2), POS-anchored subject/verb split for
+determiner-subject SVO states (H.3), artifact-noun + variant fallbacks
+(H.4), gold-convention unification for 'unless' suites, rename re-run.

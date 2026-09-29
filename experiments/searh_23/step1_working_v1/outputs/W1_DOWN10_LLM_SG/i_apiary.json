@@ -1,0 +1,253 @@
+{
+ "case_id": "i_apiary",
+ "arm": "LLM_SG",
+ "ev_arm": "E3V3",
+ "nodes": [
+  {
+   "node_id": "N01",
+   "span": "Inspect the hive frames",
+   "type": "EVENT",
+   "start": 0,
+   "members": [
+    "c01"
+   ],
+   "member_spans": [
+    "Inspect the hive frames"
+   ]
+  },
+  {
+   "node_id": "N02",
+   "span": "Harvest the honey",
+   "type": "EVENT",
+   "start": 34,
+   "members": [
+    "c02"
+   ],
+   "member_spans": [
+    "Harvest the honey"
+   ]
+  },
+  {
+   "node_id": "N03",
+   "span": "the queen is seen",
+   "type": "CHECK",
+   "start": 63,
+   "members": [
+    "c05_b0"
+   ],
+   "member_spans": [
+    "the queen is seen",
+    "is seen"
+   ]
+  },
+  {
+   "node_id": "N04",
+   "span": "the hive log is updated",
+   "type": "CHECK",
+   "start": 85,
+   "members": [
+    "c05_b1"
+   ],
+   "member_spans": [
+    "the hive log is updated",
+    "is updated"
+   ]
+  }
+ ],
+ "edges": [
+  {
+   "u": "N02",
+   "v": "N03",
+   "u_members": [
+    "c02"
+   ],
+   "v_members": [
+    "c05_b0"
+   ],
+   "u_span": "Harvest the honey",
+   "v_span": "the queen is seen",
+   "relation": "PRECONDITION",
+   "direction": "B_TO_A",
+   "ce": 0.9977,
+   "detail": {
+    "certificate": {
+     "a_anchor": "Harvest the honey",
+     "b_anchor": "the queen is seen",
+     "a_in_relation": "Harvest the honey",
+     "b_in_relation": "the queen is seen",
+     "a_via_reference": null,
+     "b_via_reference": null,
+     "relation_text": "Harvest the honey only after the queen is seen",
+     "direction": "B_TO_A",
+     "relation_type": "ORDER_BEFORE"
+    },
+    "verify": {
+     "verdict": "SUPPORTED",
+     "reason": "both_forms_in_rel",
+     "a_anchor": "Harvest the honey",
+     "b_anchor": "the queen is seen",
+     "relation_text": "Harvest the honey only after the queen is seen",
+     "direction": "B_TO_A",
+     "relation_type": "ORDER_BEFORE"
+    }
+   }
+  },
+  {
+   "u": "N02",
+   "v": "N04",
+   "u_members": [
+    "c02"
+   ],
+   "v_members": [
+    "c05_b1"
+   ],
+   "u_span": "Harvest the honey",
+   "v_span": "the hive log is updated",
+   "relation": "ORDER_BEFORE",
+   "direction": "B_TO_A",
+   "ce": 0.999,
+   "detail": {
+    "certificate": {
+     "a_anchor": "\"Harvest the honey\"",
+     "b_anchor": "\"the hive log is updated\"",
+     "a_in_relation": "\"Harvest the honey\"",
+     "b_in_relation": "\"the hive log is updated\"",
+     "a_via_reference": null,
+     "b_via_reference": null,
+     "relation_text": "\"Harvest the honey only after the queen is seen and the hive log is updated\"",
+     "direction": "B_TO_A",
+     "relation_type": "ORDER_BEFORE"
+    },
+    "verify": {
+     "verdict": "SUPPORTED",
+     "reason": "both_forms_in_rel",
+     "a_anchor": "Harvest the honey",
+     "b_anchor": "the hive log is updated",
+     "relation_text": "Harvest the honey only after the queen is seen and the hive log is updated",
+     "direction": "B_TO_A",
+     "relation_type": "ORDER_BEFORE"
+    }
+   }
+  }
+ ],
+ "pairs": [
+  {
+   "u": "N01",
+   "v": "N02",
+   "u_span": "Inspect the hive frames",
+   "v_span": "Harvest the honey",
+   "ce": 0.0003,
+   "channels": [
+    "entity_bridge"
+   ],
+   "stage": "certificate",
+   "verify": "UNSUPPORTED",
+   "verify_reason": "relation_text_not_connecting_both_endpoints"
+  },
+  {
+   "u": "N01",
+   "v": "N03",
+   "u_span": "Inspect the hive frames",
+   "v_span": "the queen is seen",
+   "ce": 0.0005,
+   "channels": [
+    "entity_bridge"
+   ],
+   "stage": "certificate",
+   "verify": "UNSUPPORTED",
+   "verify_reason": "relation_text_not_connecting_both_endpoints"
+  },
+  {
+   "u": "N01",
+   "v": "N04",
+   "u_span": "Inspect the hive frames",
+   "v_span": "the hive log is updated",
+   "ce": 0.172,
+   "channels": [
+    "entity_bridge"
+   ],
+   "stage": "certificate",
+   "verify": "UNSUPPORTED",
+   "verify_reason": "relation_text_not_connecting_both_endpoints"
+  },
+  {
+   "u": "N02",
+   "v": "N03",
+   "u_span": "Harvest the honey",
+   "v_span": "the queen is seen",
+   "ce": 0.9977,
+   "channels": [
+    "same_sentence",
+    "entity_bridge"
+   ],
+   "stage": "licensed",
+   "verify": "SUPPORTED",
+   "verify_reason": "both_forms_in_rel",
+   "judge": {
+    "q1_where_is_a": "\"Harvest the honey\"",
+    "q2_where_is_b": "\"the queen is seen\"",
+    "q3_relation_between_these_two": "YES",
+    "q4_direction": "B_TO_A",
+    "q5_relation_type": "PRECONDITION"
+   },
+   "conn_side": {
+    "connective": "only after",
+    "antecedent": "b"
+   },
+   "judge_direction": "B_TO_A",
+   "direction": "B_TO_A",
+   "relation": "PRECONDITION"
+  },
+  {
+   "u": "N02",
+   "v": "N04",
+   "u_span": "Harvest the honey",
+   "v_span": "the hive log is updated",
+   "ce": 0.999,
+   "channels": [
+    "same_sentence",
+    "entity_bridge"
+   ],
+   "stage": "licensed",
+   "verify": "SUPPORTED",
+   "verify_reason": "both_forms_in_rel",
+   "judge": {
+    "q1_where_is_a": "Harvest the honey",
+    "q2_where_is_b": "the hive log is updated",
+    "q3_relation_between_these_two": "YES",
+    "q4_direction": "B_TO_A",
+    "q5_relation_type": "ORDER_BEFORE"
+   },
+   "conn_side": {
+    "connective": "only after",
+    "antecedent": "b"
+   },
+   "judge_direction": "B_TO_A",
+   "direction": "B_TO_A",
+   "relation": "ORDER_BEFORE"
+  },
+  {
+   "u": "N03",
+   "v": "N04",
+   "u_span": "the queen is seen",
+   "v_span": "the hive log is updated",
+   "ce": 0.999,
+   "channels": [
+    "same_sentence",
+    "entity_bridge"
+   ],
+   "stage": "judge",
+   "verify": "SUPPORTED",
+   "verify_reason": "both_forms_in_rel",
+   "judge": {
+    "q1_where_is_a": "the queen is seen",
+    "q2_where_is_b": "the hive log is updated",
+    "q3_relation_between_these_two": "YES",
+    "q4_direction": "UNKNOWN",
+    "q5_relation_type": "ORDER_BEFORE"
+   },
+   "judge_note": "coordination_gate",
+   "gate": "coprecondition"
+  }
+ ]
+}

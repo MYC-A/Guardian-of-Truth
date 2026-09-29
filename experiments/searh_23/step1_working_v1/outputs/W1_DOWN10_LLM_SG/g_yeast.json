@@ -1,0 +1,308 @@
+{
+ "case_id": "g_yeast",
+ "arm": "LLM_SG",
+ "ev_arm": "E3V3",
+ "nodes": [
+  {
+   "node_id": "N01",
+   "span": "Streak the plate",
+   "type": "EVENT",
+   "start": 0,
+   "members": [
+    "c01"
+   ],
+   "member_spans": [
+    "Streak the plate"
+   ]
+  },
+  {
+   "node_id": "N02",
+   "span": "Incubate the plate",
+   "type": "EVENT",
+   "start": 18,
+   "members": [
+    "c02"
+   ],
+   "member_spans": [
+    "Incubate the plate",
+    "Incubate the plate at thirty degrees"
+   ]
+  },
+  {
+   "node_id": "N03",
+   "span": "is contaminated",
+   "type": "STATE_OR_FACET",
+   "start": 74,
+   "members": [
+    "c03"
+   ],
+   "member_spans": [
+    "is contaminated",
+    "the culture is contaminated"
+   ]
+  },
+  {
+   "node_id": "N04",
+   "span": "discard the plate",
+   "type": "EVENT_REFERENCE",
+   "start": 105,
+   "members": [
+    "c04",
+    "c05"
+   ],
+   "member_spans": [
+    "discard the plate",
+    "Discarding"
+   ]
+  }
+ ],
+ "edges": [
+  {
+   "u": "N02",
+   "v": "N03",
+   "u_members": [
+    "c02"
+   ],
+   "v_members": [
+    "c03"
+   ],
+   "u_span": "Incubate the plate",
+   "v_span": "is contaminated",
+   "relation": "EXCEPTION",
+   "direction": "B_TO_A",
+   "ce": 0.9989,
+   "detail": {
+    "certificate": {
+     "a_anchor": "Incubate the plate at thirty degrees",
+     "b_anchor": "the culture is contaminated",
+     "a_in_relation": "Incubate the plate",
+     "b_in_relation": "contaminated",
+     "a_via_reference": null,
+     "b_via_reference": null,
+     "relation_text": "Incubate the plate at thirty degrees unless the culture is contaminated",
+     "direction": "B_TO_A",
+     "relation_type": "EXCEPTION"
+    },
+    "verify": {
+     "verdict": "SUPPORTED",
+     "reason": "both_forms_in_rel",
+     "a_anchor": "Incubate the plate",
+     "b_anchor": "is contaminated",
+     "relation_text": "Incubate the plate at thirty degrees unless the culture is contaminated",
+     "direction": "B_TO_A",
+     "relation_type": "EXCEPTION"
+    }
+   }
+  },
+  {
+   "u": "N02",
+   "v": "N04",
+   "u_members": [
+    "c02"
+   ],
+   "v_members": [
+    "c04",
+    "c05"
+   ],
+   "u_span": "Incubate the plate",
+   "v_span": "discard the plate",
+   "relation": "EXCEPTION",
+   "direction": "B_TO_A",
+   "ce": 0.9973,
+   "detail": {
+    "certificate": {
+     "a_anchor": "\"Incubate the plate at thirty degrees\"",
+     "b_anchor": "\"discard the plate\"",
+     "a_in_relation": "\"incubate\"",
+     "b_in_relation": "\"discarding\"",
+     "a_via_reference": null,
+     "b_via_reference": null,
+     "relation_text": "\"unless the culture is contaminated, in which case discard the plate\"",
+     "direction": "B_TO_A",
+     "relation_type": "EXCEPTION"
+    },
+    "verify": {
+     "verdict": "SUPPORTED",
+     "reason": "clause_repair_covering_span",
+     "a_anchor": "Incubate the plate",
+     "b_anchor": "discard the plate",
+     "relation_text": "Incubate the plate at thirty degrees unless the culture is contaminated, in which case discard the plate",
+     "direction": "B_TO_A",
+     "relation_type": "EXCEPTION"
+    }
+   }
+  },
+  {
+   "u": "N03",
+   "v": "N04",
+   "u_members": [
+    "c03"
+   ],
+   "v_members": [
+    "c04",
+    "c05"
+   ],
+   "u_span": "is contaminated",
+   "v_span": "discard the plate",
+   "relation": "EXCEPTION",
+   "direction": "A_TO_B",
+   "ce": 0.9973,
+   "detail": {
+    "certificate": {
+     "a_anchor": "\"the culture is contaminated\"",
+     "b_anchor": "\"discard the plate\"",
+     "a_in_relation": "\"contaminated\"",
+     "b_in_relation": "\"discard the plate\"",
+     "a_via_reference": null,
+     "b_via_reference": null,
+     "relation_text": "\"unless the culture is contaminated, in which case discard the plate\"",
+     "direction": "A_TO_B",
+     "relation_type": "EXCEPTION"
+    },
+    "verify": {
+     "verdict": "SUPPORTED",
+     "reason": "both_forms_in_rel",
+     "a_anchor": "is contaminated",
+     "b_anchor": "discard the plate",
+     "relation_text": "unless the culture is contaminated, in which case discard the plate",
+     "direction": "A_TO_B",
+     "relation_type": "EXCEPTION"
+    }
+   }
+  }
+ ],
+ "pairs": [
+  {
+   "u": "N01",
+   "v": "N02",
+   "u_span": "Streak the plate",
+   "v_span": "Incubate the plate",
+   "ce": 0.0082,
+   "channels": [
+    "entity_bridge"
+   ],
+   "stage": "judge",
+   "verify": "SUPPORTED",
+   "verify_reason": "both_forms_in_rel",
+   "judge": {
+    "q1_where_is_a": "Streak the plate",
+    "q2_where_is_b": "Incubate the plate at thirty degrees",
+    "q3_relation_between_these_two": "YES",
+    "q4_direction": "A_TO_B",
+    "q5_relation_type": "ORDER_BEFORE"
+   },
+   "judge_note": "cross_sentence_gate",
+   "gate": "single_sentence"
+  },
+  {
+   "u": "N01",
+   "v": "N03",
+   "u_span": "Streak the plate",
+   "v_span": "is contaminated",
+   "ce": 0.6476,
+   "channels": [
+    "entity_bridge"
+   ],
+   "stage": "certificate",
+   "verify": "UNSUPPORTED",
+   "verify_reason": "no_relation"
+  },
+  {
+   "u": "N01",
+   "v": "N04",
+   "u_span": "Streak the plate",
+   "v_span": "discard the plate",
+   "ce": 0.0183,
+   "channels": [
+    "entity_bridge"
+   ],
+   "stage": "certificate",
+   "verify": "UNSUPPORTED",
+   "verify_reason": "relation_text_not_connecting_both_endpoints"
+  },
+  {
+   "u": "N02",
+   "v": "N03",
+   "u_span": "Incubate the plate",
+   "v_span": "is contaminated",
+   "ce": 0.9989,
+   "channels": [
+    "same_sentence",
+    "entity_bridge"
+   ],
+   "stage": "licensed",
+   "verify": "SUPPORTED",
+   "verify_reason": "both_forms_in_rel",
+   "judge": {
+    "q1_where_is_a": "Incubate the plate",
+    "q2_where_is_b": "the culture is contaminated",
+    "q3_relation_between_these_two": "YES",
+    "q4_direction": "B_TO_A",
+    "q5_relation_type": "EXCEPTION"
+   },
+   "conn_side": {
+    "connective": "unless",
+    "antecedent": "b"
+   },
+   "judge_direction": "B_TO_A",
+   "direction": "B_TO_A",
+   "relation": "EXCEPTION"
+  },
+  {
+   "u": "N02",
+   "v": "N04",
+   "u_span": "Incubate the plate",
+   "v_span": "discard the plate",
+   "ce": 0.9973,
+   "channels": [
+    "same_sentence",
+    "entity_bridge"
+   ],
+   "stage": "licensed",
+   "verify": "SUPPORTED",
+   "verify_reason": "clause_repair_covering_span",
+   "judge": {
+    "q1_where_is_a": "Incubate the plate at thirty degrees",
+    "q2_where_is_b": "discard the plate",
+    "q3_relation_between_these_two": "YES",
+    "q4_direction": "B_TO_A",
+    "q5_relation_type": "EXCEPTION"
+   },
+   "conn_side": {
+    "connective": "unless",
+    "antecedent": "b"
+   },
+   "judge_direction": "B_TO_A",
+   "direction": "B_TO_A",
+   "relation": "EXCEPTION"
+  },
+  {
+   "u": "N03",
+   "v": "N04",
+   "u_span": "is contaminated",
+   "v_span": "discard the plate",
+   "ce": 0.9973,
+   "channels": [
+    "same_sentence",
+    "entity_bridge"
+   ],
+   "stage": "licensed",
+   "verify": "SUPPORTED",
+   "verify_reason": "both_forms_in_rel",
+   "judge": {
+    "q1_where_is_a": "the culture is contaminated",
+    "q2_where_is_b": "discard the plate",
+    "q3_relation_between_these_two": "YES",
+    "q4_direction": "A_TO_B",
+    "q5_relation_type": "EXCEPTION"
+   },
+   "conn_side": {
+    "connective": "in which case",
+    "antecedent": "a"
+   },
+   "judge_direction": "A_TO_B",
+   "direction": "A_TO_B",
+   "relation": "EXCEPTION"
+  }
+ ]
+}
