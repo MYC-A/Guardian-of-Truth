@@ -36,7 +36,7 @@ OUT = HERE / "outputs" / "score"
 OUT.mkdir(parents=True, exist_ok=True)
 
 ARMS = ["f6_oracle1", "f6_oracle2_mistralA", "f6_oracle3_mistralA",
-        "f6_v10", "f6_hyb_mistralA", "f6_rawsan"]
+        "f6_v10", "f6_hyb_mistralA", "f6_rawsan", "f6_rawsan2"]
 
 
 def load_gold(suite: str = "f6") -> dict[str, dict]:

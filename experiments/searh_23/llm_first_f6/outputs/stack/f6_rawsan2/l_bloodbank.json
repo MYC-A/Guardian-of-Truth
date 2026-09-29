@@ -1,0 +1,240 @@
+{
+ "case_id": "l_bloodbank",
+ "arm": "LLM_SG",
+ "ev_arm": "E3V3",
+ "nodes": [
+  {
+   "node_id": "N01",
+   "span": "Collect each plasma donation",
+   "type": "EVENT",
+   "start": 0,
+   "members": [
+    "c01"
+   ],
+   "member_spans": [
+    "Collect each plasma donation"
+   ]
+  },
+  {
+   "node_id": "N02",
+   "span": "Chill the plasma",
+   "type": "EVENT",
+   "start": 30,
+   "members": [
+    "c02"
+   ],
+   "member_spans": [
+    "Chill the plasma",
+    "Chill the plasma within six hours of collection"
+   ]
+  },
+  {
+   "node_id": "N03",
+   "span": "Discard the unit",
+   "type": "EVENT",
+   "start": 79,
+   "members": [
+    "c03"
+   ],
+   "member_spans": [
+    "Discard the unit"
+   ]
+  },
+  {
+   "node_id": "N04",
+   "span": "it is chilled",
+   "type": "STATE_OR_FACET",
+   "start": 103,
+   "members": [
+    "c04",
+    "spawn_0"
+   ],
+   "member_spans": [
+    "it is chilled",
+    "it is chilled in time"
+   ]
+  },
+  {
+   "node_id": "N05",
+   "span": "Record the discard",
+   "type": "EVENT",
+   "start": 126,
+   "members": [
+    "c05"
+   ],
+   "member_spans": [
+    "Record the discard",
+    "Record the discard in the wastage file"
+   ]
+  }
+ ],
+ "edges": [
+  {
+   "u": "N03",
+   "v": "N04",
+   "u_members": [
+    "c03"
+   ],
+   "v_members": [
+    "c04",
+    "spawn_0"
+   ],
+   "u_span": "Discard the unit",
+   "v_span": "it is chilled",
+   "relation": "STATE_GATE",
+   "direction": "B_TO_A",
+   "ce": 0.999,
+   "detail": {
+    "certificate": {
+     "a_anchor": "Discard the unit",
+     "b_anchor": "it is chilled in time",
+     "a_in_relation": "Discard the unit",
+     "b_in_relation": "it is chilled in time",
+     "a_via_reference": null,
+     "b_via_reference": null,
+     "relation_text": "Discard the unit unless it is chilled in time.",
+     "direction": "B_TO_A",
+     "relation_type": "EXCEPTION"
+    },
+    "verify": {
+     "verdict": "SUPPORTED",
+     "reason": "both_forms_in_rel",
+     "a_anchor": "Discard the unit",
+     "b_anchor": "it is chilled",
+     "relation_text": "Discard the unit unless it is chilled in time.",
+     "direction": "B_TO_A",
+     "relation_type": "EXCEPTION"
+    }
+   }
+  }
+ ],
+ "pairs": [
+  {
+   "u": "N01",
+   "v": "N02",
+   "u_span": "Collect each plasma donation",
+   "v_span": "Chill the plasma",
+   "ce": 0.0305,
+   "channels": [
+    "entity_bridge"
+   ],
+   "stage": "certificate",
+   "verify": "UNSUPPORTED",
+   "verify_reason": "relation_text_not_connecting_both_endpoints"
+  },
+  {
+   "u": "N01",
+   "v": "N03",
+   "u_span": "Collect each plasma donation",
+   "v_span": "Discard the unit",
+   "ce": 0.0,
+   "stage": "ce_band"
+  },
+  {
+   "u": "N01",
+   "v": "N04",
+   "u_span": "Collect each plasma donation",
+   "v_span": "it is chilled",
+   "ce": 0.0001,
+   "stage": "ce_band"
+  },
+  {
+   "u": "N01",
+   "v": "N05",
+   "u_span": "Collect each plasma donation",
+   "v_span": "Record the discard",
+   "ce": 0.0,
+   "stage": "ce_band"
+  },
+  {
+   "u": "N02",
+   "v": "N03",
+   "u_span": "Chill the plasma",
+   "v_span": "Discard the unit",
+   "ce": 0.0009,
+   "stage": "ce_band"
+  },
+  {
+   "u": "N02",
+   "v": "N04",
+   "u_span": "Chill the plasma",
+   "v_span": "it is chilled",
+   "ce": 0.5718,
+   "channels": [],
+   "stage": "certificate",
+   "verify": "UNSUPPORTED",
+   "verify_reason": "relation_text_not_connecting_both_endpoints"
+  },
+  {
+   "u": "N02",
+   "v": "N05",
+   "u_span": "Chill the plasma",
+   "v_span": "Record the discard",
+   "ce": 0.0001,
+   "stage": "ce_band"
+  },
+  {
+   "u": "N03",
+   "v": "N04",
+   "u_span": "Discard the unit",
+   "v_span": "it is chilled",
+   "ce": 0.999,
+   "channels": [
+    "same_sentence",
+    "entity_bridge"
+   ],
+   "stage": "licensed",
+   "verify": "SUPPORTED",
+   "verify_reason": "both_forms_in_rel",
+   "judge": {
+    "q1_where_is_a": "Discard the unit",
+    "q2_where_is_b": "it is chilled in time",
+    "q3_relation_between_these_two": "YES",
+    "q4_direction": "B_TO_A",
+    "q5_relation_type": "STATE_GATE"
+   },
+   "conn_side": {
+    "connective": "unless",
+    "antecedent": "b"
+   },
+   "judge_direction": "B_TO_A",
+   "direction": "B_TO_A",
+   "relation": "STATE_GATE"
+  },
+  {
+   "u": "N03",
+   "v": "N05",
+   "u_span": "Discard the unit",
+   "v_span": "Record the discard",
+   "ce": 0.0002,
+   "channels": [
+    "entity_bridge"
+   ],
+   "stage": "certificate",
+   "verify": "UNSUPPORTED",
+   "verify_reason": "relation_text_not_connecting_both_endpoints"
+  },
+  {
+   "u": "N04",
+   "v": "N05",
+   "u_span": "it is chilled",
+   "v_span": "Record the discard",
+   "ce": 0.0002,
+   "channels": [
+    "entity_bridge"
+   ],
+   "stage": "judge",
+   "verify": "SUPPORTED",
+   "verify_reason": "both_forms_in_rel",
+   "judge": {
+    "q1_where_is_a": "\"it is chilled in time\"",
+    "q2_where_is_b": "\"Record the discard in the wastage file\"",
+    "q3_relation_between_these_two": "YES",
+    "q4_direction": "A_TO_B",
+    "q5_relation_type": "STATE_GATE"
+   },
+   "judge_note": "cross_sentence_gate",
+   "gate": "single_sentence"
+  }
+ ]
+}

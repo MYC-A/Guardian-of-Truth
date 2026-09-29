@@ -1,0 +1,261 @@
+{
+ "case_id": "s_radar",
+ "arm": "LLM_SG",
+ "ev_arm": "E3V3",
+ "nodes": [
+  {
+   "node_id": "N01",
+   "span": "Calibrate the radar array",
+   "type": "EVENT",
+   "start": 0,
+   "members": [
+    "c01"
+   ],
+   "member_spans": [
+    "Calibrate the radar array",
+    "Calibrate the radar array each Monday."
+   ]
+  },
+  {
+   "node_id": "N02",
+   "span": "Repeat the calibration",
+   "type": "EVENT",
+   "start": 39,
+   "members": [
+    "c02_b0"
+   ],
+   "member_spans": [
+    "Repeat the calibration"
+   ]
+  },
+  {
+   "node_id": "N03",
+   "span": "drift is detected",
+   "type": "EVENT",
+   "start": 65,
+   "members": [
+    "c02_b1"
+   ],
+   "member_spans": [
+    "drift is detected",
+    "is detected"
+   ]
+  },
+  {
+   "node_id": "N04",
+   "span": "Power the array",
+   "type": "EVENT",
+   "start": 84,
+   "members": [
+    "c04"
+   ],
+   "member_spans": [
+    "Power the array"
+   ]
+  },
+  {
+   "node_id": "N05",
+   "span": "the second calibration is complete",
+   "type": "STATE_OR_FACET",
+   "start": 111,
+   "members": [
+    "c05"
+   ],
+   "member_spans": [
+    "the second calibration is complete",
+    "is complete"
+   ]
+  }
+ ],
+ "edges": [
+  {
+   "u": "N04",
+   "v": "N05",
+   "u_members": [
+    "c04"
+   ],
+   "v_members": [
+    "c05"
+   ],
+   "u_span": "Power the array",
+   "v_span": "the second calibration is complete",
+   "relation": "PRECONDITION",
+   "direction": "B_TO_A",
+   "ce": 0.9999,
+   "detail": {
+    "certificate": {
+     "a_anchor": "Power the array",
+     "b_anchor": "the second calibration is complete",
+     "a_in_relation": "Power the array",
+     "b_in_relation": "the second calibration is complete",
+     "a_via_reference": null,
+     "b_via_reference": null,
+     "relation_text": "Power the array only after the second calibration is complete",
+     "direction": "B_TO_A",
+     "relation_type": "ORDER_BEFORE"
+    },
+    "verify": {
+     "verdict": "SUPPORTED",
+     "reason": "both_forms_in_rel",
+     "a_anchor": "Power the array",
+     "b_anchor": "the second calibration is complete",
+     "relation_text": "Power the array only after the second calibration is complete",
+     "direction": "B_TO_A",
+     "relation_type": "ORDER_BEFORE"
+    }
+   }
+  }
+ ],
+ "pairs": [
+  {
+   "u": "N01",
+   "v": "N02",
+   "u_span": "Calibrate the radar array",
+   "v_span": "Repeat the calibration",
+   "ce": 0.0188,
+   "stage": "ce_band"
+  },
+  {
+   "u": "N01",
+   "v": "N03",
+   "u_span": "Calibrate the radar array",
+   "v_span": "drift is detected",
+   "ce": 0.0172,
+   "stage": "ce_band"
+  },
+  {
+   "u": "N01",
+   "v": "N04",
+   "u_span": "Calibrate the radar array",
+   "v_span": "Power the array",
+   "ce": 0.0274,
+   "channels": [
+    "entity_bridge"
+   ],
+   "stage": "certificate",
+   "verify": "UNSUPPORTED",
+   "verify_reason": "positional_path_ce_gate"
+  },
+  {
+   "u": "N02",
+   "v": "N03",
+   "u_span": "Repeat the calibration",
+   "v_span": "drift is detected",
+   "ce": 0.996,
+   "channels": [
+    "same_sentence",
+    "entity_bridge"
+   ],
+   "stage": "certificate",
+   "verify": "UNSUPPORTED",
+   "verify_reason": "endpoint_not_represented"
+  },
+  {
+   "u": "N02",
+   "v": "N04",
+   "u_span": "Repeat the calibration",
+   "v_span": "Power the array",
+   "ce": 0.0003,
+   "channels": [
+    "entity_bridge"
+   ],
+   "stage": "certificate",
+   "verify": "UNSUPPORTED",
+   "verify_reason": "positional_path_ce_gate"
+  },
+  {
+   "u": "N02",
+   "v": "N05",
+   "u_span": "Repeat the calibration",
+   "v_span": "the second calibration is complete",
+   "ce": 0.0667,
+   "channels": [
+    "entity_bridge"
+   ],
+   "stage": "judge",
+   "verify": "SUPPORTED",
+   "verify_reason": "both_forms_in_rel",
+   "judge": {
+    "q1_where_is_a": "Repeat the calibration",
+    "q2_where_is_b": "the second calibration is complete",
+    "q3_relation_between_these_two": "YES",
+    "q4_direction": "A_TO_B",
+    "q5_relation_type": "PRECONDITION"
+   },
+   "judge_note": "cross_sentence_gate",
+   "gate": "single_sentence"
+  },
+  {
+   "u": "N03",
+   "v": "N04",
+   "u_span": "drift is detected",
+   "v_span": "Power the array",
+   "ce": 0.0003,
+   "channels": [
+    "entity_bridge"
+   ],
+   "stage": "judge",
+   "verify": "SUPPORTED",
+   "verify_reason": "both_forms_in_rel",
+   "judge": {
+    "q1_where_is_a": "drift is detected",
+    "q2_where_is_b": "Power the array",
+    "q3_relation_between_these_two": "YES",
+    "q4_direction": "A_TO_B",
+    "q5_relation_type": "ORDER_BEFORE"
+   },
+   "judge_note": "cross_sentence_gate",
+   "gate": "single_sentence"
+  },
+  {
+   "u": "N03",
+   "v": "N05",
+   "u_span": "drift is detected",
+   "v_span": "the second calibration is complete",
+   "ce": 0.0667,
+   "channels": [
+    "entity_bridge"
+   ],
+   "stage": "judge",
+   "verify": "SUPPORTED",
+   "verify_reason": "both_forms_in_rel",
+   "judge": {
+    "q1_where_is_a": "drift is detected",
+    "q2_where_is_b": "the second calibration is complete",
+    "q3_relation_between_these_two": "YES",
+    "q4_direction": "A_TO_B",
+    "q5_relation_type": "ORDER_BEFORE"
+   },
+   "judge_note": "cross_sentence_gate",
+   "gate": "single_sentence"
+  },
+  {
+   "u": "N04",
+   "v": "N05",
+   "u_span": "Power the array",
+   "v_span": "the second calibration is complete",
+   "ce": 0.9999,
+   "channels": [
+    "same_sentence",
+    "entity_bridge"
+   ],
+   "stage": "licensed",
+   "verify": "SUPPORTED",
+   "verify_reason": "both_forms_in_rel",
+   "judge": {
+    "q1_where_is_a": "Power the array",
+    "q2_where_is_b": "the second calibration is complete",
+    "q3_relation_between_these_two": "YES",
+    "q4_direction": "B_TO_A",
+    "q5_relation_type": "PRECONDITION"
+   },
+   "conn_side": {
+    "connective": "only after",
+    "antecedent": "b"
+   },
+   "judge_direction": "B_TO_A",
+   "direction": "B_TO_A",
+   "relation": "PRECONDITION"
+  }
+ ]
+}

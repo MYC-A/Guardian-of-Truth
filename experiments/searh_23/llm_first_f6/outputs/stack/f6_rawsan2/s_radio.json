@@ -1,0 +1,173 @@
+{
+ "case_id": "s_radio",
+ "arm": "LLM_SG",
+ "ev_arm": "E3V3",
+ "nodes": [
+  {
+   "node_id": "N01",
+   "span": "Broadcast the weather bulletin",
+   "type": "EVENT",
+   "start": 0,
+   "members": [
+    "c01"
+   ],
+   "member_spans": [
+    "Broadcast the weather bulletin",
+    "Broadcast the weather bulletin at noon"
+   ]
+  },
+  {
+   "node_id": "N02",
+   "span": "Confirm that the bulletin was transmitted",
+   "type": "STATE_OR_FACET",
+   "start": 40,
+   "members": [
+    "c02",
+    "c03"
+   ],
+   "member_spans": [
+    "Confirm that the bulletin was transmitted",
+    "was transmitted",
+    "the bulletin was transmitted"
+   ]
+  },
+  {
+   "node_id": "N03",
+   "span": "Notify the regulator",
+   "type": "EVENT",
+   "start": 83,
+   "members": [
+    "c04_b0"
+   ],
+   "member_spans": [
+    "Notify the regulator"
+   ]
+  },
+  {
+   "node_id": "N04",
+   "span": "confirmation fails",
+   "type": "EVENT",
+   "start": 107,
+   "members": [
+    "c04_b1"
+   ],
+   "member_spans": [
+    "confirmation fails"
+   ]
+  }
+ ],
+ "edges": [
+  {
+   "u": "N03",
+   "v": "N04",
+   "u_members": [
+    "c04_b0"
+   ],
+   "v_members": [
+    "c04_b1"
+   ],
+   "u_span": "Notify the regulator",
+   "v_span": "confirmation fails",
+   "relation": "EXCEPTION",
+   "direction": "B_TO_A",
+   "ce": 0.9986,
+   "detail": {
+    "certificate": {
+     "a_anchor": "Notify the regulator if confirmation fails",
+     "b_anchor": "confirmation fails",
+     "a_in_relation": "Notify the regulator",
+     "b_in_relation": "confirmation fails",
+     "a_via_reference": null,
+     "b_via_reference": null,
+     "relation_text": "Notify the regulator if confirmation fails",
+     "direction": "B_TO_A",
+     "relation_type": "RESPONSE"
+    },
+    "verify": {
+     "verdict": "SUPPORTED",
+     "reason": "both_forms_in_rel",
+     "a_anchor": "Notify the regulator",
+     "b_anchor": "confirmation fails",
+     "relation_text": "Notify the regulator if confirmation fails",
+     "direction": "B_TO_A",
+     "relation_type": "RESPONSE"
+    }
+   }
+  }
+ ],
+ "pairs": [
+  {
+   "u": "N01",
+   "v": "N02",
+   "u_span": "Broadcast the weather bulletin",
+   "v_span": "Confirm that the bulletin was transmitted",
+   "ce": 0.0168,
+   "channels": [
+    "entity_bridge"
+   ],
+   "stage": "judge",
+   "verify": "SUPPORTED",
+   "verify_reason": "both_forms_in_rel",
+   "judge": {
+    "q1_where_is_a": "\"Broadcast the weather bulletin at noon\"",
+    "q2_where_is_b": "\"Confirm that the bulletin was transmitted\"",
+    "q3_relation_between_these_two": "YES",
+    "q4_direction": "A_TO_B",
+    "q5_relation_type": "ORDER_BEFORE"
+   },
+   "judge_note": "no_trigger_connective"
+  },
+  {
+   "u": "N01",
+   "v": "N03",
+   "u_span": "Broadcast the weather bulletin",
+   "v_span": "Notify the regulator",
+   "ce": 0.0,
+   "stage": "ce_band"
+  },
+  {
+   "u": "N01",
+   "v": "N04",
+   "u_span": "Broadcast the weather bulletin",
+   "v_span": "confirmation fails",
+   "ce": 0.0001,
+   "stage": "ce_band"
+  },
+  {
+   "u": "N02",
+   "v": "N03",
+   "u_span": "Confirm that the bulletin was transmitted",
+   "v_span": "Notify the regulator",
+   "ce": 0.0003,
+   "stage": "ce_band"
+  },
+  {
+   "u": "N03",
+   "v": "N04",
+   "u_span": "Notify the regulator",
+   "v_span": "confirmation fails",
+   "ce": 0.9986,
+   "channels": [
+    "same_sentence",
+    "entity_bridge"
+   ],
+   "stage": "licensed",
+   "verify": "SUPPORTED",
+   "verify_reason": "both_forms_in_rel",
+   "judge": {
+    "q1_where_is_a": "Notify the regulator",
+    "q2_where_is_b": "confirmation fails",
+    "q3_relation_between_these_two": "YES",
+    "q4_direction": "B_TO_A",
+    "q5_relation_type": "EXCEPTION"
+   },
+   "conn_side": {
+    "connective": "if",
+    "antecedent": "b"
+   },
+   "judge_direction": "B_TO_A",
+   "direction": "B_TO_A",
+   "relation": "EXCEPTION"
+  }
+ ]
+}
