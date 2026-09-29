@@ -1,0 +1,370 @@
+{
+ "case_id": "i_clinic",
+ "arm": "LLM_SG",
+ "ev_arm": "E3V3",
+ "nodes": [
+  {
+   "node_id": "N01",
+   "span": "Check the vaccine fridge",
+   "type": "EVENT",
+   "start": 0,
+   "members": [
+    "c01"
+   ],
+   "member_spans": [
+    "Check the vaccine fridge",
+    "Check the vaccine fridge each morning"
+   ]
+  },
+  {
+   "node_id": "N02",
+   "span": "Administer the vaccine",
+   "type": "EVENT",
+   "start": 39,
+   "members": [
+    "c02"
+   ],
+   "member_spans": [
+    "Administer the vaccine"
+   ]
+  },
+  {
+   "node_id": "N03",
+   "span": "the fridge temperature exceeds 8 degrees",
+   "type": "STATE_OR_FACET",
+   "start": 69,
+   "members": [
+    "c05"
+   ],
+   "member_spans": [
+    "the fridge temperature exceeds 8 degrees"
+   ]
+  },
+  {
+   "node_id": "N04",
+   "span": "quarantine the vials",
+   "type": "EVENT",
+   "start": 125,
+   "members": [
+    "c04"
+   ],
+   "member_spans": [
+    "quarantine the vials"
+   ]
+  },
+  {
+   "node_id": "N05",
+   "span": "record each quarantine",
+   "type": "EVENT",
+   "start": 172,
+   "members": [
+    "c07"
+   ],
+   "member_spans": [
+    "record each quarantine"
+   ]
+  }
+ ],
+ "edges": [
+  {
+   "u": "N02",
+   "v": "N03",
+   "u_members": [
+    "c02"
+   ],
+   "v_members": [
+    "c05"
+   ],
+   "u_span": "Administer the vaccine",
+   "v_span": "the fridge temperature exceeds 8 degrees",
+   "relation": "EXCEPTION",
+   "direction": "B_TO_A",
+   "ce": 0.9992,
+   "detail": {
+    "certificate": {
+     "a_anchor": "Administer the vaccine",
+     "b_anchor": "the fridge temperature exceeds 8 degrees",
+     "a_in_relation": "Administer the vaccine",
+     "b_in_relation": "the fridge temperature exceeds 8 degrees",
+     "a_via_reference": null,
+     "b_via_reference": null,
+     "relation_text": "Administer the vaccine unless the fridge temperature exceeds 8 degrees",
+     "direction": "B_TO_A",
+     "relation_type": "EXCEPTION"
+    },
+    "verify": {
+     "verdict": "SUPPORTED",
+     "reason": "both_forms_in_rel",
+     "a_anchor": "Administer the vaccine",
+     "b_anchor": "the fridge temperature exceeds 8 degrees",
+     "relation_text": "Administer the vaccine unless the fridge temperature exceeds 8 degrees",
+     "direction": "B_TO_A",
+     "relation_type": "EXCEPTION"
+    }
+   }
+  },
+  {
+   "u": "N02",
+   "v": "N04",
+   "u_members": [
+    "c02"
+   ],
+   "v_members": [
+    "c04"
+   ],
+   "u_span": "Administer the vaccine",
+   "v_span": "quarantine the vials",
+   "relation": "EXCEPTION",
+   "direction": "B_TO_A",
+   "ce": 0.9989,
+   "detail": {
+    "certificate": {
+     "a_anchor": "Administer the vaccine",
+     "b_anchor": "quarantine the vials",
+     "a_in_relation": "Administer the vaccine",
+     "b_in_relation": "quarantine the vials",
+     "a_via_reference": null,
+     "b_via_reference": null,
+     "relation_text": "Administer the vaccine unless the fridge temperature exceeds 8 degrees, in which case quarantine the vials.",
+     "direction": "B_TO_A",
+     "relation_type": "EXCEPTION"
+    },
+    "verify": {
+     "verdict": "SUPPORTED",
+     "reason": "both_forms_in_rel",
+     "a_anchor": "Administer the vaccine",
+     "b_anchor": "quarantine the vials",
+     "relation_text": "Administer the vaccine unless the fridge temperature exceeds 8 degrees, in which case quarantine the vials.",
+     "direction": "B_TO_A",
+     "relation_type": "EXCEPTION"
+    }
+   }
+  },
+  {
+   "u": "N03",
+   "v": "N04",
+   "u_members": [
+    "c05"
+   ],
+   "v_members": [
+    "c04"
+   ],
+   "u_span": "the fridge temperature exceeds 8 degrees",
+   "v_span": "quarantine the vials",
+   "relation": "EXCEPTION",
+   "direction": "A_TO_B",
+   "ce": 0.9989,
+   "detail": {
+    "certificate": {
+     "a_anchor": "\"the fridge temperature exceeds 8 degrees\"",
+     "b_anchor": "\"quarantine the vials\"",
+     "a_in_relation": "\"the fridge temperature exceeds 8 degrees\"",
+     "b_in_relation": "\"quarantine the vials\"",
+     "a_via_reference": null,
+     "b_via_reference": null,
+     "relation_text": "\"Administer the vaccine unless the fridge temperature exceeds 8 degrees, in which case quarantine the vials.\"",
+     "direction": "A_TO_B",
+     "relation_type": "EXCEPTION"
+    },
+    "verify": {
+     "verdict": "SUPPORTED",
+     "reason": "both_forms_in_rel",
+     "a_anchor": "the fridge temperature exceeds 8 degrees",
+     "b_anchor": "quarantine the vials",
+     "relation_text": "Administer the vaccine unless the fridge temperature exceeds 8 degrees, in which case quarantine the vials.",
+     "direction": "A_TO_B",
+     "relation_type": "EXCEPTION"
+    }
+   }
+  }
+ ],
+ "pairs": [
+  {
+   "u": "N01",
+   "v": "N02",
+   "u_span": "Check the vaccine fridge",
+   "v_span": "Administer the vaccine",
+   "ce": 0.1162,
+   "channels": [
+    "entity_bridge"
+   ],
+   "stage": "judge",
+   "verify": "SUPPORTED",
+   "verify_reason": "both_forms_in_rel",
+   "judge": {
+    "q1_where_is_a": "Check the vaccine fridge each morning",
+    "q2_where_is_b": "Administer the vaccine",
+    "q3_relation_between_these_two": "YES",
+    "q4_direction": "A_TO_B",
+    "q5_relation_type": "PRECONDITION"
+   },
+   "judge_note": "cross_sentence_gate",
+   "gate": "single_sentence"
+  },
+  {
+   "u": "N01",
+   "v": "N03",
+   "u_span": "Check the vaccine fridge",
+   "v_span": "the fridge temperature exceeds 8 degrees",
+   "ce": 0.6751,
+   "channels": [
+    "entity_bridge"
+   ],
+   "stage": "certificate",
+   "verify": "UNSUPPORTED",
+   "verify_reason": "no_relation"
+  },
+  {
+   "u": "N01",
+   "v": "N04",
+   "u_span": "Check the vaccine fridge",
+   "v_span": "quarantine the vials",
+   "ce": 0.0321,
+   "channels": [
+    "entity_bridge"
+   ],
+   "stage": "certificate",
+   "verify": "UNSUPPORTED",
+   "verify_reason": "relation_text_not_connecting_both_endpoints"
+  },
+  {
+   "u": "N01",
+   "v": "N05",
+   "u_span": "Check the vaccine fridge",
+   "v_span": "record each quarantine",
+   "ce": 0.0001,
+   "stage": "ce_band"
+  },
+  {
+   "u": "N02",
+   "v": "N03",
+   "u_span": "Administer the vaccine",
+   "v_span": "the fridge temperature exceeds 8 degrees",
+   "ce": 0.9992,
+   "channels": [
+    "same_sentence",
+    "entity_bridge"
+   ],
+   "stage": "licensed",
+   "verify": "SUPPORTED",
+   "verify_reason": "both_forms_in_rel",
+   "judge": {
+    "q1_where_is_a": "Administer the vaccine",
+    "q2_where_is_b": "the fridge temperature exceeds 8 degrees",
+    "q3_relation_between_these_two": "YES",
+    "q4_direction": "B_TO_A",
+    "q5_relation_type": "EXCEPTION"
+   },
+   "conn_side": {
+    "connective": "unless",
+    "antecedent": "b"
+   },
+   "judge_direction": "B_TO_A",
+   "direction": "B_TO_A",
+   "relation": "EXCEPTION"
+  },
+  {
+   "u": "N02",
+   "v": "N04",
+   "u_span": "Administer the vaccine",
+   "v_span": "quarantine the vials",
+   "ce": 0.9989,
+   "channels": [
+    "same_sentence",
+    "entity_bridge"
+   ],
+   "stage": "licensed",
+   "verify": "SUPPORTED",
+   "verify_reason": "both_forms_in_rel",
+   "judge": {
+    "q1_where_is_a": "Administer the vaccine",
+    "q2_where_is_b": "quarantine the vials",
+    "q3_relation_between_these_two": "YES",
+    "q4_direction": "B_TO_A",
+    "q5_relation_type": "EXCEPTION"
+   },
+   "conn_side": {
+    "connective": "unless",
+    "antecedent": "b"
+   },
+   "judge_direction": "B_TO_A",
+   "direction": "B_TO_A",
+   "relation": "EXCEPTION"
+  },
+  {
+   "u": "N02",
+   "v": "N05",
+   "u_span": "Administer the vaccine",
+   "v_span": "record each quarantine",
+   "ce": 0.0353,
+   "channels": [
+    "entity_bridge"
+   ],
+   "stage": "judge",
+   "verify": "SUPPORTED",
+   "verify_reason": "both_forms_in_rel",
+   "judge_note": "verifier_q3_no",
+   "judge": {
+    "q1_where_is_a": "Administer the vaccine",
+    "q2_where_is_b": "record each quarantine",
+    "q3_relation_between_these_two": "NO",
+    "q4_direction": "UNKNOWN",
+    "q5_relation_type": "UNKNOWN"
+   }
+  },
+  {
+   "u": "N03",
+   "v": "N04",
+   "u_span": "the fridge temperature exceeds 8 degrees",
+   "v_span": "quarantine the vials",
+   "ce": 0.9989,
+   "channels": [
+    "same_sentence",
+    "entity_bridge"
+   ],
+   "stage": "licensed",
+   "verify": "SUPPORTED",
+   "verify_reason": "both_forms_in_rel",
+   "judge": {
+    "q1_where_is_a": "the fridge temperature exceeds 8 degrees",
+    "q2_where_is_b": "quarantine the vials",
+    "q3_relation_between_these_two": "YES",
+    "q4_direction": "B_TO_A",
+    "q5_relation_type": "EXCEPTION"
+   },
+   "conn_side": {
+    "connective": "in which case",
+    "antecedent": "a"
+   },
+   "judge_direction": "B_TO_A",
+   "direction": "A_TO_B",
+   "relation": "EXCEPTION"
+  },
+  {
+   "u": "N03",
+   "v": "N05",
+   "u_span": "the fridge temperature exceeds 8 degrees",
+   "v_span": "record each quarantine",
+   "ce": 0.0353,
+   "channels": [
+    "entity_bridge"
+   ],
+   "stage": "certificate",
+   "verify": "UNSUPPORTED",
+   "verify_reason": "relation_text_not_connecting_both_endpoints"
+  },
+  {
+   "u": "N04",
+   "v": "N05",
+   "u_span": "quarantine the vials",
+   "v_span": "record each quarantine",
+   "ce": 0.0353,
+   "channels": [
+    "entity_bridge"
+   ],
+   "stage": "certificate",
+   "verify": "UNSUPPORTED",
+   "verify_reason": "relation_text_not_connecting_both_endpoints"
+  }
+ ]
+}

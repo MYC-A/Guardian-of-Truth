@@ -1,0 +1,127 @@
+{
+ "case_id": "f_bottling",
+ "arm": "FULL_GOLD",
+ "ev_arm": "E1",
+ "nodes": [
+  {
+   "node_id": "O01",
+   "span": "cap the bottles",
+   "type": "EVENT",
+   "start": 7,
+   "members": [
+    "m01",
+    "m06"
+   ],
+   "member_spans": [
+    "cap the bottles",
+    "after capping"
+   ]
+  },
+  {
+   "node_id": "O02",
+   "span": "the filler stops",
+   "type": "EVENT",
+   "start": 30,
+   "members": [
+    "m03"
+   ],
+   "member_spans": [
+    "the filler stops"
+   ]
+  },
+  {
+   "node_id": "O03",
+   "span": "Label each crate",
+   "type": "EVENT",
+   "start": 48,
+   "members": [
+    "m04"
+   ],
+   "member_spans": [
+    "Label each crate"
+   ]
+  },
+  {
+   "node_id": "O04",
+   "span": "pack each crate",
+   "type": "EVENT",
+   "start": 69,
+   "members": [
+    "m05"
+   ],
+   "member_spans": [
+    "pack each crate"
+   ]
+  }
+ ],
+ "edges": [
+  {
+   "u": "O01",
+   "v": "O02",
+   "u_members": [
+    "m01",
+    "m06"
+   ],
+   "v_members": [
+    "m03"
+   ],
+   "u_span": "cap the bottles",
+   "v_span": "the filler stops",
+   "relation": "EXCEPTION",
+   "direction": "B_TO_A",
+   "ce": 0.9941,
+   "detail": {
+    "evidence": "Do not cap the bottles before the filler stops.",
+    "judge": {
+     "decision": "LICENSED",
+     "reason": "The policy explicitly states that Event A ('after capping') must not occur before Event B ('the filler stops'), implying Event B must precede Event A."
+    }
+   }
+  },
+  {
+   "u": "O01",
+   "v": "O04",
+   "u_members": [
+    "m01",
+    "m06"
+   ],
+   "v_members": [
+    "m05"
+   ],
+   "u_span": "cap the bottles",
+   "v_span": "pack each crate",
+   "relation": "ORDER_BEFORE",
+   "direction": "A_TO_B",
+   "ce": 0.9864,
+   "detail": {
+    "evidence": "pack each crate after capping",
+    "judge": {
+     "decision": "LICENSED",
+     "reason": "The quote explicitly states 'pack each crate **after capping**', establishing a clear sequential relation where Event A (capping) precedes Event B (packing)."
+    }
+   }
+  },
+  {
+   "u": "O03",
+   "v": "O04",
+   "u_members": [
+    "m04"
+   ],
+   "v_members": [
+    "m05"
+   ],
+   "u_span": "Label each crate",
+   "v_span": "pack each crate",
+   "relation": "ORDER_BEFORE",
+   "direction": "A_TO_B",
+   "ce": 0.9864,
+   "detail": {
+    "evidence": "Label each crate and pack each crate after capping.",
+    "judge": {
+     "decision": "LICENSED",
+     "reason": "The policy explicitly states a sequential relation ('Label each crate **and** pack each crate after capping'), implying A (labeling) precedes B (packing)."
+    }
+   }
+  }
+ ]
+}

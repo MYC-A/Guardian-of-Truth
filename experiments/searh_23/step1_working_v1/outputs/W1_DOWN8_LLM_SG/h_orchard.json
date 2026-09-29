@@ -1,0 +1,213 @@
+{
+ "case_id": "h_orchard",
+ "arm": "LLM_SG",
+ "ev_arm": "E3V3",
+ "nodes": [
+  {
+   "node_id": "N01",
+   "span": "Prune the apple trees",
+   "type": "EVENT_REFERENCE",
+   "start": 0,
+   "members": [
+    "c01",
+    "c03"
+   ],
+   "member_spans": [
+    "Prune the apple trees",
+    "Prune the apple trees in March",
+    "pruning"
+   ]
+  },
+  {
+   "node_id": "N02",
+   "span": "Spray the orchard",
+   "type": "EVENT",
+   "start": 32,
+   "members": [
+    "c02"
+   ],
+   "member_spans": [
+    "Spray the orchard"
+   ]
+  },
+  {
+   "node_id": "N03",
+   "span": "Prune the trees again",
+   "type": "EVENT",
+   "start": 65,
+   "members": [
+    "c04"
+   ],
+   "member_spans": [
+    "Prune the trees again",
+    "Prune the trees again in August if the growth exceeds 20 centimetres"
+   ]
+  },
+  {
+   "node_id": "N04",
+   "span": "the growth exceeds 20 centimetres",
+   "type": "STATE_OR_FACET",
+   "start": 100,
+   "members": [
+    "c05"
+   ],
+   "member_spans": [
+    "the growth exceeds 20 centimetres"
+   ]
+  }
+ ],
+ "edges": [
+  {
+   "u": "N01",
+   "v": "N02",
+   "u_members": [
+    "c01",
+    "c03"
+   ],
+   "v_members": [
+    "c02"
+   ],
+   "u_span": "Prune the apple trees",
+   "v_span": "Spray the orchard",
+   "relation": "ORDER_BEFORE",
+   "direction": "A_TO_B",
+   "ce": 0.9981,
+   "detail": {
+    "certificate": {
+     "a_anchor": "Prune the apple trees in March",
+     "b_anchor": "Spray the orchard after pruning",
+     "a_in_relation": "pruning",
+     "b_in_relation": "Spray the orchard",
+     "a_via_reference": null,
+     "b_via_reference": null,
+     "relation_text": "Spray the orchard **after pruning**",
+     "direction": "B_TO_A",
+     "relation_type": "ORDER_BEFORE"
+    },
+    "verify": {
+     "verdict": "SUPPORTED",
+     "reason": "both_forms_in_rel",
+     "a_anchor": "pruning",
+     "b_anchor": "Spray the orchard",
+     "relation_text": "Spray the orchard after pruning",
+     "direction": "B_TO_A",
+     "relation_type": "ORDER_BEFORE"
+    }
+   }
+  },
+  {
+   "u": "N03",
+   "v": "N04",
+   "u_members": [
+    "c04"
+   ],
+   "v_members": [
+    "c05"
+   ],
+   "u_span": "Prune the trees again",
+   "v_span": "the growth exceeds 20 centimetres",
+   "relation": "STATE_GATE",
+   "direction": "B_TO_A",
+   "ce": 0.995,
+   "detail": {
+    "certificate": {
+     "a_anchor": "Prune the trees again in August if the growth exceeds 20 centimetres",
+     "b_anchor": "the growth exceeds 20 centimetres",
+     "a_in_relation": "Prune the trees again in August",
+     "b_in_relation": "the growth exceeds 20 centimetres",
+     "a_via_reference": null,
+     "b_via_reference": null,
+     "relation_text": "Prune the trees again in August **if the growth exceeds 20 centimetres**",
+     "direction": "B_TO_A",
+     "relation_type": "PRECONDITION"
+    },
+    "verify": {
+     "verdict": "SUPPORTED",
+     "reason": "both_forms_in_rel",
+     "a_anchor": "Prune the trees again",
+     "b_anchor": "the growth exceeds 20 centimetres",
+     "relation_text": "Prune the trees again in August if the growth exceeds 20 centimetres",
+     "direction": "B_TO_A",
+     "relation_type": "PRECONDITION"
+    }
+   }
+  }
+ ],
+ "pairs": [
+  {
+   "u": "N01",
+   "v": "N02",
+   "u_span": "Prune the apple trees",
+   "v_span": "Spray the orchard",
+   "ce": 0.9981,
+   "channels": [
+    "same_sentence",
+    "entity_bridge"
+   ],
+   "stage": "licensed",
+   "verify": "SUPPORTED",
+   "verify_reason": "both_forms_in_rel",
+   "judge": {
+    "q1_where_is_a": "pruning",
+    "q2_where_is_b": "Spray the orchard",
+    "q3_relation_between_these_two": "YES",
+    "q4_direction": "A_TO_B",
+    "q5_relation_type": "ORDER_BEFORE"
+   },
+   "direction": "A_TO_B",
+   "relation": "ORDER_BEFORE"
+  },
+  {
+   "u": "N01",
+   "v": "N04",
+   "u_span": "Prune the apple trees",
+   "v_span": "the growth exceeds 20 centimetres",
+   "ce": 0.1601,
+   "channels": [
+    "entity_bridge"
+   ],
+   "stage": "certificate",
+   "verify": "UNSUPPORTED",
+   "verify_reason": "positional_path_ce_gate"
+  },
+  {
+   "u": "N02",
+   "v": "N03",
+   "u_span": "Spray the orchard",
+   "v_span": "Prune the trees again",
+   "ce": 0.1742,
+   "stage": "ce_band"
+  },
+  {
+   "u": "N02",
+   "v": "N04",
+   "u_span": "Spray the orchard",
+   "v_span": "the growth exceeds 20 centimetres",
+   "ce": 0.1601,
+   "stage": "ce_band"
+  },
+  {
+   "u": "N03",
+   "v": "N04",
+   "u_span": "Prune the trees again",
+   "v_span": "the growth exceeds 20 centimetres",
+   "ce": 0.995,
+   "channels": [
+    "same_sentence",
+    "entity_bridge"
+   ],
+   "stage": "licensed",
+   "verify": "SUPPORTED",
+   "verify_reason": "both_forms_in_rel",
+   "judge": {
+    "q1_where_is_a": "Prune the trees again",
+    "q2_where_is_b": "the growth exceeds 20 centimetres",
+    "q3_relation_between_these_two": "YES",
+    "q4_direction": "B_TO_A",
+    "q5_relation_type": "STATE_GATE"
+   },
+   "direction": "B_TO_A",
+   "relation": "STATE_GATE"
+  }
+ ]
+}

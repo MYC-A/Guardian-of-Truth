@@ -1,0 +1,287 @@
+{
+ "case_id": "f_hvac",
+ "arm": "LLM_SG",
+ "ev_arm": "E3V3",
+ "nodes": [
+  {
+   "node_id": "N01",
+   "span": "Replace the filter",
+   "type": "EVENT",
+   "start": 0,
+   "members": [
+    "c01"
+   ],
+   "member_spans": [
+    "Replace the filter",
+    "Replace the filter monthly"
+   ]
+  },
+  {
+   "node_id": "N02",
+   "span": "shutting down the unit",
+   "type": "EVENT_REFERENCE",
+   "start": 35,
+   "members": [
+    "c02"
+   ],
+   "member_spans": [
+    "shutting down the unit"
+   ]
+  },
+  {
+   "node_id": "N03",
+   "span": "Replace the drive belt",
+   "type": "EVENT",
+   "start": 59,
+   "members": [
+    "c03"
+   ],
+   "member_spans": [
+    "Replace the drive belt"
+   ]
+  },
+  {
+   "node_id": "N04",
+   "span": "the unit is shut down",
+   "type": "STATE_OR_FACET",
+   "start": 93,
+   "members": [
+    "c04"
+   ],
+   "member_spans": [
+    "the unit is shut down",
+    "is shut down"
+   ]
+  }
+ ],
+ "edges": [
+  {
+   "u": "N01",
+   "v": "N02",
+   "u_members": [
+    "c01"
+   ],
+   "v_members": [
+    "c02"
+   ],
+   "u_span": "Replace the filter",
+   "v_span": "shutting down the unit",
+   "relation": "EXCEPTION",
+   "direction": "B_TO_A",
+   "ce": 0.9909,
+   "detail": {
+    "certificate": {
+     "a_anchor": "Replace the filter monthly",
+     "b_anchor": "shutting down the unit",
+     "a_in_relation": "Replace the filter",
+     "b_in_relation": "shutting down the unit",
+     "a_via_reference": null,
+     "b_via_reference": null,
+     "relation_text": "Replace the filter monthly **without shutting down the unit**",
+     "direction": "B_TO_A",
+     "relation_type": "EXCEPTION"
+    },
+    "verify": {
+     "verdict": "SUPPORTED",
+     "reason": "both_forms_in_rel",
+     "a_anchor": "Replace the filter",
+     "b_anchor": "shutting down the unit",
+     "relation_text": "Replace the filter monthly without shutting down the unit",
+     "direction": "B_TO_A",
+     "relation_type": "EXCEPTION"
+    }
+   }
+  },
+  {
+   "u": "N02",
+   "v": "N03",
+   "u_members": [
+    "c02"
+   ],
+   "v_members": [
+    "c03"
+   ],
+   "u_span": "shutting down the unit",
+   "v_span": "Replace the drive belt",
+   "relation": "ORDER_BEFORE",
+   "direction": "A_TO_B",
+   "ce": 0.0112,
+   "detail": {
+    "certificate": {
+     "a_anchor": "shutting down the unit",
+     "b_anchor": "Replace the drive belt",
+     "a_in_relation": "shut down",
+     "b_in_relation": "the drive belt",
+     "a_via_reference": null,
+     "b_via_reference": null,
+     "relation_text": "Replace the drive belt only after the unit is shut down.",
+     "direction": "B_TO_A",
+     "relation_type": "ORDER_BEFORE"
+    },
+    "verify": {
+     "verdict": "SUPPORTED",
+     "reason": "extractor_anchors_positional",
+     "a_anchor": "shut down",
+     "b_anchor": "the drive belt",
+     "relation_text": "Replace the drive belt only after the unit is shut down.",
+     "direction": "B_TO_A",
+     "relation_type": "ORDER_BEFORE"
+    }
+   }
+  },
+  {
+   "u": "N03",
+   "v": "N04",
+   "u_members": [
+    "c03"
+   ],
+   "v_members": [
+    "c04"
+   ],
+   "u_span": "Replace the drive belt",
+   "v_span": "the unit is shut down",
+   "relation": "PRECONDITION",
+   "direction": "B_TO_A",
+   "ce": 0.9984,
+   "detail": {
+    "certificate": {
+     "a_anchor": "\"Replace the drive belt\"",
+     "b_anchor": "\"the unit is shut down\"",
+     "a_in_relation": "\"the drive belt\"",
+     "b_in_relation": "\"the unit is shut down\"",
+     "a_via_reference": null,
+     "b_via_reference": null,
+     "relation_text": "\"Replace the drive belt only after the unit is shut down.\"",
+     "direction": "B_TO_A",
+     "relation_type": "ORDER_BEFORE"
+    },
+    "verify": {
+     "verdict": "SUPPORTED",
+     "reason": "both_forms_in_rel",
+     "a_anchor": "Replace the drive belt",
+     "b_anchor": "the unit is shut down",
+     "relation_text": "Replace the drive belt only after the unit is shut down.",
+     "direction": "B_TO_A",
+     "relation_type": "ORDER_BEFORE"
+    }
+   }
+  }
+ ],
+ "pairs": [
+  {
+   "u": "N01",
+   "v": "N02",
+   "u_span": "Replace the filter",
+   "v_span": "shutting down the unit",
+   "ce": 0.9909,
+   "channels": [
+    "same_sentence",
+    "entity_bridge"
+   ],
+   "stage": "licensed",
+   "verify": "SUPPORTED",
+   "verify_reason": "both_forms_in_rel",
+   "judge": {
+    "q1_where_is_a": "Replace the filter monthly",
+    "q2_where_is_b": "shutting down the unit",
+    "q3_relation_between_these_two": "YES",
+    "q4_direction": "B_TO_A",
+    "q5_relation_type": "EXCEPTION"
+   },
+   "direction": "B_TO_A",
+   "relation": "EXCEPTION"
+  },
+  {
+   "u": "N01",
+   "v": "N03",
+   "u_span": "Replace the filter",
+   "v_span": "Replace the drive belt",
+   "ce": 0.0112,
+   "channels": [
+    "entity_bridge"
+   ],
+   "stage": "certificate",
+   "verify": "UNSUPPORTED",
+   "verify_reason": "relation_text_not_connecting_both_endpoints"
+  },
+  {
+   "u": "N01",
+   "v": "N04",
+   "u_span": "Replace the filter",
+   "v_span": "the unit is shut down",
+   "ce": 0.0556,
+   "channels": [
+    "entity_bridge"
+   ],
+   "stage": "certificate",
+   "verify": "UNSUPPORTED",
+   "verify_reason": "relation_text_not_connecting_both_endpoints"
+  },
+  {
+   "u": "N02",
+   "v": "N03",
+   "u_span": "shutting down the unit",
+   "v_span": "Replace the drive belt",
+   "ce": 0.0112,
+   "channels": [
+    "entity_bridge"
+   ],
+   "stage": "licensed",
+   "verify": "SUPPORTED",
+   "verify_reason": "extractor_anchors_positional",
+   "judge": {
+    "q1_where_is_a": "shut down",
+    "q2_where_is_b": "Replace the drive belt",
+    "q3_relation_between_these_two": "YES",
+    "q4_direction": "A_TO_B",
+    "q5_relation_type": "ORDER_BEFORE"
+   },
+   "direction": "A_TO_B",
+   "relation": "ORDER_BEFORE"
+  },
+  {
+   "u": "N02",
+   "v": "N04",
+   "u_span": "shutting down the unit",
+   "v_span": "the unit is shut down",
+   "ce": 0.0556,
+   "channels": [
+    "entity_bridge"
+   ],
+   "stage": "judge",
+   "verify": "SUPPORTED",
+   "verify_reason": "extractor_anchors_positional",
+   "judge_note": "verifier_q1q2_not_in_evidence",
+   "judge": {
+    "q1_where_is_a": "NONE",
+    "q2_where_is_b": "the unit is shut down",
+    "q3_relation_between_these_two": "YES",
+    "q4_direction": "B_TO_A",
+    "q5_relation_type": "STATE_GATE"
+   }
+  },
+  {
+   "u": "N03",
+   "v": "N04",
+   "u_span": "Replace the drive belt",
+   "v_span": "the unit is shut down",
+   "ce": 0.9984,
+   "channels": [
+    "same_sentence",
+    "entity_bridge"
+   ],
+   "stage": "licensed",
+   "verify": "SUPPORTED",
+   "verify_reason": "both_forms_in_rel",
+   "judge": {
+    "q1_where_is_a": "Replace the drive belt",
+    "q2_where_is_b": "the unit is shut down",
+    "q3_relation_between_these_two": "YES",
+    "q4_direction": "B_TO_A",
+    "q5_relation_type": "PRECONDITION"
+   },
+   "direction": "B_TO_A",
+   "relation": "PRECONDITION"
+  }
+ ]
+}

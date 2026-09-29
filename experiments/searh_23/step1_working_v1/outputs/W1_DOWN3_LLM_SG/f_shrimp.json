@@ -1,0 +1,562 @@
+{
+ "case_id": "f_shrimp",
+ "arm": "LLM_SG",
+ "ev_arm": "E3V3",
+ "nodes": [
+  {
+   "node_id": "N01",
+   "span": "Measure the salinity",
+   "type": "EVENT",
+   "start": 0,
+   "members": [
+    "c01"
+   ],
+   "member_spans": [
+    "Measure the salinity",
+    "Measure the salinity each morning"
+   ]
+  },
+  {
+   "node_id": "N02",
+   "span": "Harvest the shrimp",
+   "type": "EVENT",
+   "start": 89,
+   "members": [
+    "c06_b0"
+   ],
+   "member_spans": [
+    "Harvest the shrimp"
+   ]
+  },
+  {
+   "node_id": "N03",
+   "span": "the salinity check",
+   "type": "EVENT",
+   "start": 119,
+   "members": [
+    "c04",
+    "c03"
+   ],
+   "member_spans": [
+    "the salinity check",
+    "the salinity reading must show 25 parts per thousand"
+   ]
+  },
+  {
+   "node_id": "N04",
+   "span": "the salinity check passes",
+   "type": "EVENT",
+   "start": 119,
+   "members": [
+    "c06_b1"
+   ],
+   "member_spans": [
+    "the salinity check passes"
+   ]
+  },
+  {
+   "node_id": "N05",
+   "span": "passes",
+   "type": "STATE_OR_FACET",
+   "start": 138,
+   "members": [
+    "c05"
+   ],
+   "member_spans": [
+    "passes"
+   ]
+  },
+  {
+   "node_id": "N06",
+   "span": "is a document",
+   "type": "STATE_OR_FACET",
+   "start": 165,
+   "members": [
+    "c08"
+   ],
+   "member_spans": [
+    "is a document",
+    "The harvest notice is a document"
+   ]
+  }
+ ],
+ "edges": [
+  {
+   "u": "N01",
+   "v": "N05",
+   "u_members": [
+    "c01"
+   ],
+   "v_members": [
+    "c05"
+   ],
+   "u_span": "Measure the salinity",
+   "v_span": "passes",
+   "relation": "STATE_GATE",
+   "direction": "A_TO_B",
+   "ce": 0.0002,
+   "detail": {
+    "certificate": {
+     "a_anchor": "\"Measure the salinity each morning\"",
+     "b_anchor": "\"passes\"",
+     "a_in_relation": "\"the salinity check\"",
+     "b_in_relation": "\"passes\"",
+     "a_via_reference": null,
+     "b_via_reference": null,
+     "relation_text": "\"Harvest the shrimp only after the salinity check passes.\"",
+     "direction": "A_TO_B",
+     "relation_type": "ORDER_BEFORE"
+    },
+    "verify": {
+     "verdict": "SUPPORTED",
+     "reason": "extractor_anchors_positional",
+     "a_anchor": "the salinity check",
+     "b_anchor": "passes",
+     "relation_text": "Harvest the shrimp only after the salinity check passes.",
+     "direction": "A_TO_B",
+     "relation_type": "ORDER_BEFORE"
+    }
+   }
+  },
+  {
+   "u": "N02",
+   "v": "N03",
+   "u_members": [
+    "c06_b0"
+   ],
+   "v_members": [
+    "c04",
+    "c03"
+   ],
+   "u_span": "Harvest the shrimp",
+   "v_span": "the salinity check",
+   "relation": "ORDER_BEFORE",
+   "direction": "B_TO_A",
+   "ce": 0.9975,
+   "detail": {
+    "certificate": {
+     "a_anchor": "\"Harvest the shrimp\"",
+     "b_anchor": "\"the salinity check\"",
+     "a_in_relation": "\"Harvest the shrimp\"",
+     "b_in_relation": "\"the salinity check\"",
+     "a_via_reference": null,
+     "b_via_reference": null,
+     "relation_text": "\"Harvest the shrimp only after the salinity check passes.\"",
+     "direction": "B_TO_A",
+     "relation_type": "ORDER_BEFORE"
+    },
+    "verify": {
+     "verdict": "SUPPORTED",
+     "reason": "both_forms_in_rel",
+     "a_anchor": "Harvest the shrimp",
+     "b_anchor": "the salinity check",
+     "relation_text": "Harvest the shrimp only after the salinity check passes.",
+     "direction": "B_TO_A",
+     "relation_type": "ORDER_BEFORE"
+    }
+   }
+  },
+  {
+   "u": "N02",
+   "v": "N04",
+   "u_members": [
+    "c06_b0"
+   ],
+   "v_members": [
+    "c06_b1"
+   ],
+   "u_span": "Harvest the shrimp",
+   "v_span": "the salinity check passes",
+   "relation": "ORDER_BEFORE",
+   "direction": "B_TO_A",
+   "ce": 0.996,
+   "detail": {
+    "certificate": {
+     "a_anchor": "Harvest the shrimp",
+     "b_anchor": "the salinity check passes",
+     "a_in_relation": "Harvest the shrimp",
+     "b_in_relation": "the salinity check passes",
+     "a_via_reference": null,
+     "b_via_reference": null,
+     "relation_text": "Harvest the shrimp only after the salinity check passes",
+     "direction": "B_TO_A",
+     "relation_type": "ORDER_BEFORE"
+    },
+    "verify": {
+     "verdict": "SUPPORTED",
+     "reason": "both_forms_in_rel",
+     "a_anchor": "Harvest the shrimp",
+     "b_anchor": "the salinity check passes",
+     "relation_text": "Harvest the shrimp only after the salinity check passes",
+     "direction": "B_TO_A",
+     "relation_type": "ORDER_BEFORE"
+    }
+   }
+  },
+  {
+   "u": "N02",
+   "v": "N05",
+   "u_members": [
+    "c06_b0"
+   ],
+   "v_members": [
+    "c05"
+   ],
+   "u_span": "Harvest the shrimp",
+   "v_span": "passes",
+   "relation": "PRECONDITION",
+   "direction": "B_TO_A",
+   "ce": 0.9987,
+   "detail": {
+    "certificate": {
+     "a_anchor": "\"Harvest the shrimp\"",
+     "b_anchor": "\"passes\"",
+     "a_in_relation": "\"Harvest the shrimp\"",
+     "b_in_relation": "\"the salinity check passes\"",
+     "a_via_reference": null,
+     "b_via_reference": null,
+     "relation_text": "\"Harvest the shrimp only after the salinity check passes.\"",
+     "direction": "B_TO_A",
+     "relation_type": "ORDER_BEFORE"
+    },
+    "verify": {
+     "verdict": "SUPPORTED",
+     "reason": "both_forms_in_rel",
+     "a_anchor": "Harvest the shrimp",
+     "b_anchor": "passes",
+     "relation_text": "Harvest the shrimp only after the salinity check passes.",
+     "direction": "B_TO_A",
+     "relation_type": "ORDER_BEFORE"
+    }
+   }
+  },
+  {
+   "u": "N03",
+   "v": "N04",
+   "u_members": [
+    "c04",
+    "c03"
+   ],
+   "v_members": [
+    "c06_b1"
+   ],
+   "u_span": "the salinity check",
+   "v_span": "the salinity check passes",
+   "relation": "PRECONDITION",
+   "direction": "A_TO_B",
+   "ce": 0.996,
+   "detail": {
+    "certificate": {
+     "a_anchor": "\"the salinity reading must show 25 parts per thousand\"",
+     "b_anchor": "\"the salinity check passes\"",
+     "a_in_relation": "\"the salinity reading must show 25 parts per thousand\"",
+     "b_in_relation": "\"the salinity check passes\"",
+     "a_via_reference": null,
+     "b_via_reference": null,
+     "relation_text": "\"Harvest the shrimp only after the salinity check passes.\"",
+     "direction": "B_TO_A",
+     "relation_type": "ORDER_BEFORE"
+    },
+    "verify": {
+     "verdict": "SUPPORTED",
+     "reason": "both_forms_in_rel",
+     "a_anchor": "the salinity check",
+     "b_anchor": "the salinity check passes",
+     "relation_text": "Harvest the shrimp only after the salinity check passes.",
+     "direction": "B_TO_A",
+     "relation_type": "ORDER_BEFORE"
+    }
+   }
+  },
+  {
+   "u": "N03",
+   "v": "N05",
+   "u_members": [
+    "c04",
+    "c03"
+   ],
+   "v_members": [
+    "c05"
+   ],
+   "u_span": "the salinity check",
+   "v_span": "passes",
+   "relation": "STATE_GATE",
+   "direction": "A_TO_B",
+   "ce": 0.9987,
+   "detail": {
+    "certificate": {
+     "a_anchor": "\"the salinity reading must show 25 parts per thousand\"",
+     "b_anchor": "\"passes\"",
+     "a_in_relation": "\"the salinity check\"",
+     "b_in_relation": "\"passes\"",
+     "a_via_reference": null,
+     "b_via_reference": null,
+     "relation_text": "\"Harvest the shrimp only after the salinity check passes.\"",
+     "direction": "B_TO_A",
+     "relation_type": "ORDER_BEFORE"
+    },
+    "verify": {
+     "verdict": "SUPPORTED",
+     "reason": "both_forms_in_rel",
+     "a_anchor": "the salinity check",
+     "b_anchor": "passes",
+     "relation_text": "Harvest the shrimp only after the salinity check passes.",
+     "direction": "B_TO_A",
+     "relation_type": "ORDER_BEFORE"
+    }
+   }
+  }
+ ],
+ "pairs": [
+  {
+   "u": "N01",
+   "v": "N02",
+   "u_span": "Measure the salinity",
+   "v_span": "Harvest the shrimp",
+   "ce": 0.0001,
+   "channels": [
+    "entity_bridge"
+   ],
+   "stage": "certificate",
+   "verify": "UNSUPPORTED",
+   "verify_reason": "relation_text_not_connecting_both_endpoints"
+  },
+  {
+   "u": "N01",
+   "v": "N03",
+   "u_span": "Measure the salinity",
+   "v_span": "the salinity check",
+   "ce": 0.0745,
+   "channels": [
+    "entity_bridge"
+   ],
+   "stage": "certificate",
+   "verify": "UNSUPPORTED",
+   "verify_reason": "relation_text_not_connecting_both_endpoints"
+  },
+  {
+   "u": "N01",
+   "v": "N04",
+   "u_span": "Measure the salinity",
+   "v_span": "the salinity check passes",
+   "ce": 0.0378,
+   "channels": [
+    "entity_bridge"
+   ],
+   "stage": "certificate",
+   "verify": "UNSUPPORTED",
+   "verify_reason": "relation_text_not_connecting_both_endpoints"
+  },
+  {
+   "u": "N01",
+   "v": "N05",
+   "u_span": "Measure the salinity",
+   "v_span": "passes",
+   "ce": 0.0002,
+   "channels": [
+    "entity_bridge"
+   ],
+   "stage": "licensed",
+   "verify": "SUPPORTED",
+   "verify_reason": "extractor_anchors_positional",
+   "judge": {
+    "q1_where_is_a": "the salinity check",
+    "q2_where_is_b": "passes",
+    "q3_relation_between_these_two": "YES",
+    "q4_direction": "A_TO_B",
+    "q5_relation_type": "STATE_GATE"
+   },
+   "direction": "A_TO_B",
+   "relation": "STATE_GATE"
+  },
+  {
+   "u": "N01",
+   "v": "N06",
+   "u_span": "Measure the salinity",
+   "v_span": "is a document",
+   "ce": 0.0,
+   "stage": "ce_band"
+  },
+  {
+   "u": "N02",
+   "v": "N03",
+   "u_span": "Harvest the shrimp",
+   "v_span": "the salinity check",
+   "ce": 0.9975,
+   "channels": [
+    "same_sentence",
+    "entity_bridge"
+   ],
+   "stage": "licensed",
+   "verify": "SUPPORTED",
+   "verify_reason": "both_forms_in_rel",
+   "judge": {
+    "q1_where_is_a": "Harvest the shrimp",
+    "q2_where_is_b": "the salinity check passes",
+    "q3_relation_between_these_two": "YES",
+    "q4_direction": "B_TO_A",
+    "q5_relation_type": "ORDER_BEFORE"
+   },
+   "direction": "B_TO_A",
+   "relation": "ORDER_BEFORE"
+  },
+  {
+   "u": "N02",
+   "v": "N04",
+   "u_span": "Harvest the shrimp",
+   "v_span": "the salinity check passes",
+   "ce": 0.996,
+   "channels": [
+    "same_sentence",
+    "entity_bridge"
+   ],
+   "stage": "licensed",
+   "verify": "SUPPORTED",
+   "verify_reason": "both_forms_in_rel",
+   "judge": {
+    "q1_where_is_a": "Harvest the shrimp",
+    "q2_where_is_b": "the salinity check passes",
+    "q3_relation_between_these_two": "YES",
+    "q4_direction": "B_TO_A",
+    "q5_relation_type": "ORDER_BEFORE"
+   },
+   "direction": "B_TO_A",
+   "relation": "ORDER_BEFORE"
+  },
+  {
+   "u": "N02",
+   "v": "N05",
+   "u_span": "Harvest the shrimp",
+   "v_span": "passes",
+   "ce": 0.9987,
+   "channels": [
+    "same_sentence",
+    "entity_bridge"
+   ],
+   "stage": "licensed",
+   "verify": "SUPPORTED",
+   "verify_reason": "both_forms_in_rel",
+   "judge": {
+    "q1_where_is_a": "Harvest the shrimp",
+    "q2_where_is_b": "the salinity check passes",
+    "q3_relation_between_these_two": "YES",
+    "q4_direction": "B_TO_A",
+    "q5_relation_type": "PRECONDITION"
+   },
+   "direction": "B_TO_A",
+   "relation": "PRECONDITION"
+  },
+  {
+   "u": "N02",
+   "v": "N06",
+   "u_span": "Harvest the shrimp",
+   "v_span": "is a document",
+   "ce": 0.1266,
+   "channels": [
+    "entity_bridge"
+   ],
+   "stage": "certificate",
+   "verify": "UNSUPPORTED",
+   "verify_reason": "no_relation"
+  },
+  {
+   "u": "N03",
+   "v": "N04",
+   "u_span": "the salinity check",
+   "v_span": "the salinity check passes",
+   "ce": 0.996,
+   "channels": [
+    "same_sentence",
+    "entity_bridge"
+   ],
+   "stage": "licensed",
+   "verify": "SUPPORTED",
+   "verify_reason": "both_forms_in_rel",
+   "judge": {
+    "q1_where_is_a": "the salinity check",
+    "q2_where_is_b": "the salinity check passes",
+    "q3_relation_between_these_two": "YES",
+    "q4_direction": "A_TO_B",
+    "q5_relation_type": "PRECONDITION"
+   },
+   "direction": "A_TO_B",
+   "relation": "PRECONDITION"
+  },
+  {
+   "u": "N03",
+   "v": "N05",
+   "u_span": "the salinity check",
+   "v_span": "passes",
+   "ce": 0.9987,
+   "channels": [
+    "same_sentence",
+    "entity_bridge"
+   ],
+   "stage": "licensed",
+   "verify": "SUPPORTED",
+   "verify_reason": "both_forms_in_rel",
+   "judge": {
+    "q1_where_is_a": "the salinity check",
+    "q2_where_is_b": "passes",
+    "q3_relation_between_these_two": "YES",
+    "q4_direction": "A_TO_B",
+    "q5_relation_type": "STATE_GATE"
+   },
+   "direction": "A_TO_B",
+   "relation": "STATE_GATE"
+  },
+  {
+   "u": "N03",
+   "v": "N06",
+   "u_span": "the salinity check",
+   "v_span": "is a document",
+   "ce": 0.1266,
+   "channels": [
+    "entity_bridge"
+   ],
+   "stage": "certificate",
+   "verify": "UNSUPPORTED",
+   "verify_reason": "relation_text_not_connecting_both_endpoints"
+  },
+  {
+   "u": "N04",
+   "v": "N05",
+   "u_span": "the salinity check passes",
+   "v_span": "passes",
+   "ce": 0.9987,
+   "channels": [
+    "same_sentence",
+    "entity_bridge"
+   ],
+   "stage": "certificate",
+   "verify": "UNSUPPORTED",
+   "verify_reason": "endpoint_not_represented"
+  },
+  {
+   "u": "N04",
+   "v": "N06",
+   "u_span": "the salinity check passes",
+   "v_span": "is a document",
+   "ce": 0.1266,
+   "channels": [
+    "entity_bridge"
+   ],
+   "stage": "certificate",
+   "verify": "UNSUPPORTED",
+   "verify_reason": "relation_text_not_connecting_both_endpoints"
+  },
+  {
+   "u": "N05",
+   "v": "N06",
+   "u_span": "passes",
+   "v_span": "is a document",
+   "ce": 0.1266,
+   "channels": [
+    "entity_bridge"
+   ],
+   "stage": "certificate",
+   "verify": "UNKNOWN",
+   "verify_reason": "relation_text_not_verbatim"
+  }
+ ]
+}

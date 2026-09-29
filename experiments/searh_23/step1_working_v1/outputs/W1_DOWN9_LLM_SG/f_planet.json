@@ -1,0 +1,212 @@
+{
+ "case_id": "f_planet",
+ "arm": "LLM_SG",
+ "ev_arm": "E3V3",
+ "nodes": [
+  {
+   "node_id": "N01",
+   "span": "Align the star projector",
+   "type": "EVENT",
+   "start": 0,
+   "members": [
+    "c01",
+    "c03",
+    "spawn_0"
+   ],
+   "member_spans": [
+    "Align the star projector",
+    "the alignment",
+    "The alignment session",
+    "The alignment session is valid",
+    "the alignment is valid",
+    "is valid"
+   ]
+  },
+  {
+   "node_id": "N02",
+   "span": "Present the evening show",
+   "type": "EVENT",
+   "start": 70,
+   "members": [
+    "c04",
+    "spawn_1"
+   ],
+   "member_spans": [
+    "Present the evening show",
+    "presenting"
+   ]
+  },
+  {
+   "node_id": "N03",
+   "span": "Renew the alignment",
+   "type": "EVENT",
+   "start": 130,
+   "members": [
+    "c05"
+   ],
+   "member_spans": [
+    "Renew the alignment"
+   ]
+  }
+ ],
+ "edges": [
+  {
+   "u": "N01",
+   "v": "N02",
+   "u_members": [
+    "c01",
+    "c03",
+    "spawn_0"
+   ],
+   "v_members": [
+    "c04",
+    "spawn_1"
+   ],
+   "u_span": "Align the star projector",
+   "v_span": "Present the evening show",
+   "relation": "STATE_GATE",
+   "direction": "A_TO_B",
+   "ce": 0.9973,
+   "detail": {
+    "certificate": {
+     "a_anchor": "Align the star projector",
+     "b_anchor": "Present the evening show",
+     "a_in_relation": "the alignment is valid",
+     "b_in_relation": "the evening show",
+     "a_via_reference": null,
+     "b_via_reference": null,
+     "relation_text": "Present the evening show only while the alignment is valid",
+     "direction": "B_TO_A",
+     "relation_type": "PRECONDITION"
+    },
+    "verify": {
+     "verdict": "SUPPORTED",
+     "reason": "both_forms_in_rel",
+     "a_anchor": "the alignment",
+     "b_anchor": "Present the evening show",
+     "relation_text": "Present the evening show only while the alignment is valid",
+     "direction": "B_TO_A",
+     "relation_type": "PRECONDITION"
+    }
+   }
+  },
+  {
+   "u": "N02",
+   "v": "N03",
+   "u_members": [
+    "c04",
+    "spawn_1"
+   ],
+   "v_members": [
+    "c05"
+   ],
+   "u_span": "Present the evening show",
+   "v_span": "Renew the alignment",
+   "relation": "ORDER_BEFORE",
+   "direction": "A_TO_B",
+   "ce": 0.9953,
+   "detail": {
+    "certificate": {
+     "a_anchor": "Present the evening show",
+     "b_anchor": "Renew the alignment",
+     "a_in_relation": "presenting",
+     "b_in_relation": "Renew the alignment",
+     "a_via_reference": null,
+     "b_via_reference": null,
+     "relation_text": "Renew the alignment after presenting",
+     "direction": "A_TO_B",
+     "relation_type": "ORDER_BEFORE"
+    },
+    "verify": {
+     "verdict": "SUPPORTED",
+     "reason": "both_forms_in_rel",
+     "a_anchor": "presenting",
+     "b_anchor": "Renew the alignment",
+     "relation_text": "Renew the alignment after presenting",
+     "direction": "A_TO_B",
+     "relation_type": "ORDER_BEFORE"
+    }
+   }
+  }
+ ],
+ "pairs": [
+  {
+   "u": "N01",
+   "v": "N02",
+   "u_span": "Align the star projector",
+   "v_span": "Present the evening show",
+   "ce": 0.9973,
+   "channels": [
+    "same_sentence",
+    "entity_bridge"
+   ],
+   "stage": "licensed",
+   "verify": "SUPPORTED",
+   "verify_reason": "both_forms_in_rel",
+   "judge": {
+    "q1_where_is_a": "\"the alignment is valid\"",
+    "q2_where_is_b": "\"Present the evening show\"",
+    "q3_relation_between_these_two": "YES",
+    "q4_direction": "A_TO_B",
+    "q5_relation_type": "STATE_GATE"
+   },
+   "conn_side": {
+    "connective": "only while",
+    "antecedent": "a"
+   },
+   "judge_direction": "A_TO_B",
+   "direction": "A_TO_B",
+   "relation": "STATE_GATE"
+  },
+  {
+   "u": "N01",
+   "v": "N03",
+   "u_span": "Align the star projector",
+   "v_span": "Renew the alignment",
+   "ce": 0.1244,
+   "channels": [
+    "entity_bridge"
+   ],
+   "stage": "judge",
+   "verify": "SUPPORTED",
+   "verify_reason": "both_forms_in_rel",
+   "judge": {
+    "q1_where_is_a": "the alignment",
+    "q2_where_is_b": "Renew the alignment",
+    "q3_relation_between_these_two": "YES",
+    "q4_direction": "B_TO_A",
+    "q5_relation_type": "ORDER_BEFORE"
+   },
+   "judge_note": "cross_sentence_gate",
+   "gate": "single_sentence"
+  },
+  {
+   "u": "N02",
+   "v": "N03",
+   "u_span": "Present the evening show",
+   "v_span": "Renew the alignment",
+   "ce": 0.9953,
+   "channels": [
+    "same_sentence",
+    "entity_bridge"
+   ],
+   "stage": "licensed",
+   "verify": "SUPPORTED",
+   "verify_reason": "both_forms_in_rel",
+   "judge": {
+    "q1_where_is_a": "presenting",
+    "q2_where_is_b": "Renew the alignment",
+    "q3_relation_between_these_two": "YES",
+    "q4_direction": "A_TO_B",
+    "q5_relation_type": "ORDER_BEFORE"
+   },
+   "conn_side": {
+    "connective": "after",
+    "antecedent": "a"
+   },
+   "judge_direction": "A_TO_B",
+   "direction": "A_TO_B",
+   "relation": "ORDER_BEFORE"
+  }
+ ]
+}

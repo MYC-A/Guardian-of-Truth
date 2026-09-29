@@ -1,0 +1,335 @@
+{
+ "case_id": "f_glass",
+ "arm": "LLM_SG",
+ "ev_arm": "E3V3",
+ "nodes": [
+  {
+   "node_id": "N01",
+   "span": "Anneal glass ornament",
+   "type": "EVENT",
+   "start": 0,
+   "members": [
+    "c06",
+    "c04"
+   ],
+   "member_spans": [
+    "Anneal glass ornament",
+    "the annealing"
+   ]
+  },
+  {
+   "node_id": "N02",
+   "span": "Record the annealing",
+   "type": "EVENT",
+   "start": 25,
+   "members": [
+    "c01"
+   ],
+   "member_spans": [
+    "Record the annealing",
+    "Record the annealing in the batch log"
+   ]
+  },
+  {
+   "node_id": "N03",
+   "span": "Pack the ornament",
+   "type": "EVENT",
+   "start": 64,
+   "members": [
+    "c02_b0"
+   ],
+   "member_spans": [
+    "Pack the ornament"
+   ]
+  },
+  {
+   "node_id": "N04",
+   "span": "the annealing is finished",
+   "type": "EVENT",
+   "start": 93,
+   "members": [
+    "c02_b1"
+   ],
+   "member_spans": [
+    "the annealing is finished",
+    "is finished"
+   ]
+  },
+  {
+   "node_id": "N05",
+   "span": "the log entry is stored",
+   "type": "STATE_OR_FACET",
+   "start": 123,
+   "members": [
+    "c05"
+   ],
+   "member_spans": [
+    "the log entry is stored",
+    "is stored"
+   ]
+  }
+ ],
+ "edges": [
+  {
+   "u": "N03",
+   "v": "N04",
+   "u_members": [
+    "c02_b0"
+   ],
+   "v_members": [
+    "c02_b1"
+   ],
+   "u_span": "Pack the ornament",
+   "v_span": "the annealing is finished",
+   "relation": "ORDER_BEFORE",
+   "direction": "B_TO_A",
+   "ce": 0.999,
+   "detail": {
+    "certificate": {
+     "a_anchor": "\"Pack the ornament\"",
+     "b_anchor": "\"the annealing is finished\"",
+     "a_in_relation": "\"Pack the ornament\"",
+     "b_in_relation": "\"the annealing is finished\"",
+     "a_via_reference": null,
+     "b_via_reference": null,
+     "relation_text": "\"Pack the ornament only after the annealing is finished\"",
+     "direction": "B_TO_A",
+     "relation_type": "ORDER_BEFORE"
+    },
+    "verify": {
+     "verdict": "SUPPORTED",
+     "reason": "both_forms_in_rel",
+     "a_anchor": "Pack the ornament",
+     "b_anchor": "the annealing is finished",
+     "relation_text": "Pack the ornament only after the annealing is finished",
+     "direction": "B_TO_A",
+     "relation_type": "ORDER_BEFORE"
+    }
+   }
+  },
+  {
+   "u": "N03",
+   "v": "N05",
+   "u_members": [
+    "c02_b0"
+   ],
+   "v_members": [
+    "c05"
+   ],
+   "u_span": "Pack the ornament",
+   "v_span": "the log entry is stored",
+   "relation": "ORDER_BEFORE",
+   "direction": "B_TO_A",
+   "ce": 0.9994,
+   "detail": {
+    "certificate": {
+     "a_anchor": "\"Pack the ornament\"",
+     "b_anchor": "\"the log entry is stored\"",
+     "a_in_relation": "\"Pack the ornament\"",
+     "b_in_relation": "\"the log entry is stored\"",
+     "a_via_reference": null,
+     "b_via_reference": null,
+     "relation_text": "\"Pack the ornament only after the annealing is finished and the log entry is stored\"",
+     "direction": "B_TO_A",
+     "relation_type": "ORDER_BEFORE"
+    },
+    "verify": {
+     "verdict": "SUPPORTED",
+     "reason": "both_forms_in_rel",
+     "a_anchor": "Pack the ornament",
+     "b_anchor": "the log entry is stored",
+     "relation_text": "Pack the ornament only after the annealing is finished and the log entry is stored",
+     "direction": "B_TO_A",
+     "relation_type": "ORDER_BEFORE"
+    }
+   }
+  }
+ ],
+ "pairs": [
+  {
+   "u": "N01",
+   "v": "N02",
+   "u_span": "Anneal glass ornament",
+   "v_span": "Record the annealing",
+   "ce": 0.9951,
+   "channels": [
+    "same_sentence",
+    "entity_bridge"
+   ],
+   "stage": "certificate",
+   "verify": "UNSUPPORTED",
+   "verify_reason": "relation_text_not_connecting_both_endpoints"
+  },
+  {
+   "u": "N01",
+   "v": "N03",
+   "u_span": "Anneal glass ornament",
+   "v_span": "Pack the ornament",
+   "ce": 0.0826,
+   "channels": [
+    "entity_bridge"
+   ],
+   "stage": "judge",
+   "verify": "SUPPORTED",
+   "verify_reason": "both_forms_in_rel",
+   "judge": {
+    "q1_where_is_a": "the annealing is finished",
+    "q2_where_is_b": "Pack the ornament",
+    "q3_relation_between_these_two": "YES",
+    "q4_direction": "A_TO_B",
+    "q5_relation_type": "ORDER_BEFORE"
+   },
+   "judge_note": "cross_sentence_gate",
+   "gate": "single_sentence"
+  },
+  {
+   "u": "N01",
+   "v": "N05",
+   "u_span": "Anneal glass ornament",
+   "v_span": "the log entry is stored",
+   "ce": 0.4088,
+   "channels": [
+    "entity_bridge"
+   ],
+   "stage": "judge",
+   "verify": "SUPPORTED",
+   "verify_reason": "both_forms_in_rel",
+   "judge": {
+    "q1_where_is_a": "the annealing is finished",
+    "q2_where_is_b": "the log entry is stored",
+    "q3_relation_between_these_two": "YES",
+    "q4_direction": "A_TO_B",
+    "q5_relation_type": "ORDER_BEFORE"
+   },
+   "judge_note": "coordination_gate",
+   "gate": "coprecondition"
+  },
+  {
+   "u": "N02",
+   "v": "N03",
+   "u_span": "Record the annealing",
+   "v_span": "Pack the ornament",
+   "ce": 0.0359,
+   "channels": [
+    "entity_bridge"
+   ],
+   "stage": "certificate",
+   "verify": "UNSUPPORTED",
+   "verify_reason": "positional_path_ce_gate"
+  },
+  {
+   "u": "N02",
+   "v": "N04",
+   "u_span": "Record the annealing",
+   "v_span": "the annealing is finished",
+   "ce": 0.0578,
+   "channels": [
+    "entity_bridge"
+   ],
+   "stage": "certificate",
+   "verify": "UNSUPPORTED",
+   "verify_reason": "positional_path_ce_gate"
+  },
+  {
+   "u": "N02",
+   "v": "N05",
+   "u_span": "Record the annealing",
+   "v_span": "the log entry is stored",
+   "ce": 0.4088,
+   "channels": [
+    "entity_bridge"
+   ],
+   "stage": "judge",
+   "verify": "SUPPORTED",
+   "verify_reason": "extractor_anchors_positional",
+   "judge": {
+    "q1_where_is_a": "the annealing is finished and the log entry is stored",
+    "q2_where_is_b": "the log entry is stored",
+    "q3_relation_between_these_two": "YES",
+    "q4_direction": "A_TO_B",
+    "q5_relation_type": "ORDER_BEFORE"
+   },
+   "judge_note": "coordination_gate",
+   "gate": "coprecondition"
+  },
+  {
+   "u": "N03",
+   "v": "N04",
+   "u_span": "Pack the ornament",
+   "v_span": "the annealing is finished",
+   "ce": 0.999,
+   "channels": [
+    "same_sentence",
+    "entity_bridge"
+   ],
+   "stage": "licensed",
+   "verify": "SUPPORTED",
+   "verify_reason": "both_forms_in_rel",
+   "judge": {
+    "q1_where_is_a": "Pack the ornament",
+    "q2_where_is_b": "the annealing is finished",
+    "q3_relation_between_these_two": "YES",
+    "q4_direction": "B_TO_A",
+    "q5_relation_type": "ORDER_BEFORE"
+   },
+   "conn_side": {
+    "connective": "only after",
+    "antecedent": "b"
+   },
+   "judge_direction": "B_TO_A",
+   "direction": "B_TO_A",
+   "relation": "ORDER_BEFORE"
+  },
+  {
+   "u": "N03",
+   "v": "N05",
+   "u_span": "Pack the ornament",
+   "v_span": "the log entry is stored",
+   "ce": 0.9994,
+   "channels": [
+    "same_sentence",
+    "entity_bridge"
+   ],
+   "stage": "licensed",
+   "verify": "SUPPORTED",
+   "verify_reason": "both_forms_in_rel",
+   "judge": {
+    "q1_where_is_a": "Pack the ornament",
+    "q2_where_is_b": "the log entry is stored",
+    "q3_relation_between_these_two": "YES",
+    "q4_direction": "B_TO_A",
+    "q5_relation_type": "ORDER_BEFORE"
+   },
+   "conn_side": {
+    "connective": "only after",
+    "antecedent": "b"
+   },
+   "judge_direction": "B_TO_A",
+   "direction": "B_TO_A",
+   "relation": "ORDER_BEFORE"
+  },
+  {
+   "u": "N04",
+   "v": "N05",
+   "u_span": "the annealing is finished",
+   "v_span": "the log entry is stored",
+   "ce": 0.9994,
+   "channels": [
+    "same_sentence",
+    "entity_bridge"
+   ],
+   "stage": "judge",
+   "verify": "SUPPORTED",
+   "verify_reason": "both_forms_in_rel",
+   "judge": {
+    "q1_where_is_a": "the annealing is finished",
+    "q2_where_is_b": "the log entry is stored",
+    "q3_relation_between_these_two": "YES",
+    "q4_direction": "A_TO_B",
+    "q5_relation_type": "ORDER_BEFORE"
+   },
+   "judge_note": "coordination_gate",
+   "gate": "coprecondition"
+  }
+ ]
+}
