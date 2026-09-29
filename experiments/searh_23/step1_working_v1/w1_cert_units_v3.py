@@ -16,7 +16,7 @@ from pathlib import Path
 HERE = Path(__file__).parent
 IE = HERE.parent / "event_ie_frontends_v1"
 PL = HERE.parent / "policy_licensing_v1"
-sys.path[:0] = [str(PL), str(HERE)]
+sys.path[:0] = [str(PL), str(IE), str(HERE)]
 from pl_common import Mistral  # noqa: E402
 from lf_certificate import sanitize_quote, span_in  # noqa: E402
 from w1_pipe3 import (E3_EXT_SYSTEM_V3, E3_JUDGE_SYSTEM_V3,  # noqa: E402
@@ -60,7 +60,7 @@ def main() -> None:
         b = {"source_span": it["edge"]["b"], "type": "UNKNOWN",
              "all_forms": [it["edge"]["b"]], "arguments": []}
         rec = {"id": it["id"], "family": it["family"],
-               "expected": it.get("expected_status")}
+               "expected": (it.get("gold") or {}).get("status")}
         t0 = time.time()
         cert = _ask(client, E3_EXT_SYSTEM_V3, e3_ext_user_v3(policy, a, b))
         rec["certificate"] = cert
@@ -104,11 +104,12 @@ def main() -> None:
         f = outdir / f"{it['id']}.json"
         if f.exists():
             r = json.loads(f.read_text(encoding="utf-8"))
-            exp = it.get("expected_status")
+            exp = (it.get("gold") or {}).get("status")
+            exp_dir = (it.get("gold") or {}).get("direction")
             got = r.get("verdict")
             if exp == got:
-                if exp == "SUPPORTED" and it.get("expected_direction"):
-                    if r.get("direction") == it["expected_direction"]:
+                if exp == "SUPPORTED" and exp_dir:
+                    if r.get("direction") == exp_dir:
                         correct += 1
                 else:
                     correct += 1

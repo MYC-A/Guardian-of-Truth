@@ -47,6 +47,9 @@ COPULA_START = re.compile(
     r"^(is|are|was|were|is\s+not|are\s+not|was\s+not|were\s+not)\b", re.I)
 COPULA_ANY = re.compile(
     r"\b(is|are|was|were)\s+(not\s+)?[\w'-]+", re.I)
+MODAL_COPULA_START = re.compile(
+    r"^(must|should|may|shall|will)\s+be\b", re.I)
+NEG_START = re.compile(r"^(do\s+not|does\s+not|don't|doesn't)\s+", re.I)
 SUBJECT_STRIP = re.compile(
     r"^(only\s+if|only\s+when|if|when|while|unless|until|after|before|once|"
     r"provided\s+that|in\s+which\s+case|that|which|and|or|but|so|then)\s+",
@@ -56,23 +59,31 @@ ARTIFACT_HEAD = ("log|certificate|note|record|report|master|form|file|"
 TAXONOMY_PRED = re.compile(
     r"\b(is|are|was|were)\s+(a|an|the)?\s*"
     r"(document|log|record|report|note|file|form|mandatory|optional|"
-    r"prohibited|required|forbidden)\b", re.I)
+    r"prohibited|required|forbidden|separate\s+event)\b", re.I)
+DEONTIC_ADJ = re.compile(
+    r"\b(is|are|was|were)\s+(not\s+)?"
+    r"(permitted|allowed|required|forbidden|prohibited|mandatory|"
+    r"optional|valid\s+for)\b", re.I)
 COMM_VERB = re.compile(
-    r"\b(records|logs|documents|confirms|lists|states|certifies|indicates|"
-    r"shows)\b", re.I)
+    r"\b(must\s+|should\s+|may\s+|will\s+|shall\s+)?"
+    r"(records?|logs?|documents?|confirms?|lists?|states?|certifies?|"
+    r"indicates?|shows?)\b", re.I)
 ARTIFACT_SUBJ = re.compile(
     rf"^(?:[Tt]he\s+|[Aa]\s+|[Aa]n\s+)?[A-Za-z0-9'\- ]*?"
     rf"\b(?:{ARTIFACT_HEAD})\s+"
     rf"(?:is|are|was|were|records|logs|documents|confirms|lists|states|"
-    rf"certifies|indicates|shows)\b", re.I)
+    rf"certifies|indicates|shows|must|should|may|shall|will)\b", re.I)
 STOP = {"the", "and", "or", "only", "after", "before", "when", "if",
-        "unless", "until", "must", "may", "shall", "should", "with", "for",
-        "from", "into", "upon", "during", "each", "every", "that", "which",
-        "case", "where", "then", "this", "these", "those", "was", "were",
-        "are", "is", "been", "being", "have", "has", "had", "not", "but",
-        "his", "her", "its", "their", "any", "all", "both", "also", "more",
-        "than", "less", "least", "most", "one", "two", "who", "what",
-        "whose", "while", "since", "because", "so", "such", "own"}
+        "unless", "until", "must", "may", "shall", "should", "with",
+        "for", "from", "into", "upon", "during", "each", "every",
+        "that", "which", "case", "where", "then", "this", "these",
+        "those", "was", "were", "are", "is", "been", "being", "have",
+        "has", "had", "not", "but", "his", "her", "its", "their",
+        "any", "all", "both", "also", "more", "than", "less", "least",
+        "most", "one", "two", "who", "what", "whose", "while", "since",
+        "because", "so", "such", "own", "at", "on", "in", "by", "to",
+        "as", "of", "a", "an", "be", "do", "does", "no", "nor",
+        "again", "per"}
 
 
 def tokens_of(text: str) -> set[str]:
@@ -198,8 +209,18 @@ def _find_in_window(policy: str, form: str, w0: int, w1: int):
 
 
 def verify_certificate_v3(policy: str, cert: dict, a: dict, b: dict) -> dict:
-    """Deterministic verification, any-form variant (v1) + clause repair
-    (v2) + via_reference channel (v3)."""
+    """Deterministic verification ladder:
+    1. rel verbatim (else UNKNOWN);
+    2. NO_ANCHOR / NO_RELATION -> UNSUPPORTED;
+    3. connection check, any sufficient path:
+       (a) any-form of both endpoints occurs inside rel (structural);
+       (b) extractor's a_in/b_in quotes located in policy and
+           positionally inside rel (v1 semantics; judge verifies
+           representation semantically via q1/q2);
+       (c) clause repair: expand rel to minimal covering span in its
+           sentence when both forms occur there;
+       (d) via_reference verbatim inside rel -> UNKNOWN pending judge.
+    """
     v = {"verdict": "UNKNOWN", "reason": None}
     cert = {k: sanitize_quote(x) for k, x in (cert or {}).items()}
     if cert.get("a_anchor") == "NO_ANCHOR" or cert.get("b_anchor") == \
@@ -232,6 +253,7 @@ def verify_certificate_v3(policy: str, cert: dict, a: dict, b: dict) -> dict:
                                                            w1)), None)
         return aa, bb
 
+    # (a) structural: any form of each endpoint inside relation_text
     a_hit, b_hit = anchors_in(rel[0], rel[1])
     if a_hit and b_hit:
         v.update({"verdict": "SUPPORTED", "reason": "both_forms_in_rel",
@@ -240,7 +262,26 @@ def verify_certificate_v3(policy: str, cert: dict, a: dict, b: dict) -> dict:
                   "direction": cert.get("direction", "UNKNOWN"),
                   "relation_type": cert.get("relation_type", "UNKNOWN")})
         return v
-    # v2: clause repair - expand to minimal covering span in the sentence
+    # (b) v1 positional check: extractor's in-relation quotes
+    def _pos_in(w, r):
+        if w is None:
+            return False
+        return r[0] <= w[0] and w[1] <= r[1]
+
+    a_in = span_in(policy, cert.get("a_in_relation")) \
+        if cert.get("a_in_relation") not in (None, "NO_ANCHOR") else None
+    b_in = span_in(policy, cert.get("b_in_relation")) \
+        if cert.get("b_in_relation") not in (None, "NO_ANCHOR") else None
+    if _pos_in(a_in, rel) and _pos_in(b_in, rel):
+        v.update({"verdict": "SUPPORTED",
+                  "reason": "extractor_anchors_positional",
+                  "a_anchor": cert.get("a_in_relation"),
+                  "b_anchor": cert.get("b_in_relation"),
+                  "relation_text": policy[rel[0]:rel[1]],
+                  "direction": cert.get("direction", "UNKNOWN"),
+                  "relation_type": cert.get("relation_type", "UNKNOWN")})
+        return v
+    # (c) clause repair - expand to minimal covering span in the sentence
     s0, s1 = sent_span(policy, rel[0])
     sa, sb = anchors_in(s0, s1)
     if sa and sb:
@@ -256,7 +297,20 @@ def verify_certificate_v3(policy: str, cert: dict, a: dict, b: dict) -> dict:
                       "direction": cert.get("direction", "UNKNOWN"),
                       "relation_type": cert.get("relation_type", "UNKNOWN")})
             return v
-    # v3: via_reference channel -> judge resolves
+    # (b2) positional check against the repaired window
+    if _pos_in(a_in, (s0, s1)) and _pos_in(b_in, (s0, s1)) and \
+            (a_in or b_in):
+        w0 = min(x[0] for x in (a_in, b_in) if x)
+        w1 = max(x[1] for x in (a_in, b_in) if x)
+        v.update({"verdict": "SUPPORTED",
+                  "reason": "extractor_anchors_sentence_repair",
+                  "a_anchor": cert.get("a_in_relation"),
+                  "b_anchor": cert.get("b_in_relation"),
+                  "relation_text": policy[w0:w1],
+                  "direction": cert.get("direction", "UNKNOWN"),
+                  "relation_type": cert.get("relation_type", "UNKNOWN")})
+        return v
+    # (d) via_reference channel -> judge resolves
     a_ref = cert.get("a_via_reference")
     b_ref = cert.get("b_via_reference")
     refs = []
@@ -265,11 +319,11 @@ def verify_certificate_v3(policy: str, cert: dict, a: dict, b: dict) -> dict:
             r = span_in(policy, ref)
             if r and rel[0] <= r[0] and r[1] <= rel[1]:
                 refs.append((name, ref))
-    if refs and (a_ref or b_ref):
+    if refs:
         got = {n for n, _ in refs}
         a_anchor = next((r for n, r in refs if n == "a"), a_hit)
         b_anchor = next((r for n, r in refs if n == "b"), b_hit)
-        if a_anchor and b_anchor:
+        if a_anchor and b_anchor and len(got) >= 1:
             v.update({"verdict": "UNKNOWN",
                       "reason": "via_reference_pending_judge",
                       "a_anchor": a_anchor, "b_anchor": b_anchor,
@@ -323,6 +377,13 @@ def _grounded_forms(policy: str, base: str, orig: str | None,
         pred = f"{m.group(2)} " + (m.group(3) or "") + m.group(4)
         if _in_policy(policy, pred) and pred not in forms:
             forms.append(pred)
+    # negation-strip variant: 'Do not X' -> 'X'
+    if base:
+        m = NEG_START.match(base.strip())
+        if m:
+            stripped = base.strip()[m.end():].strip()
+            if _in_policy(policy, stripped) and stripped not in forms:
+                forms.append(stripped)
     # subject-extended variant for predicate-initial spans (b2)
     if base and COPULA_START.match(base.strip()):
         ext = subject_extend(policy, base)
@@ -425,15 +486,21 @@ def build_nodes_v3(arm: str, case: dict) -> list[dict]:
                         "relations": c.get("relations") or [],
                         "start": policy.find(variants[0]),
                         "arguments": c.get("arguments") or []}
-    # type filter + artifact-subject taxonomy filter (n3, any form)
+    # type filter + junk filters (n3 family, any form)
     kept = {}
     for k, s in survivors.items():
         if s["type"] not in EVENTLIKE:
             continue
-        if any(ARTIFACT_SUBJ.match(f) and (TAXONOMY_PRED.search(f)
-                                           or COMM_VERB.search(f))
-               for f in s["forms"]):
-            continue
+        forms = s["forms"]
+        if MODAL_COPULA_START.match(s["span"].strip()):
+            continue  # deontic restatement, not a state object
+        if any(TAXONOMY_PRED.search(f) or DEONTIC_ADJ.search(f)
+               or IDENTITY_NEG.search(f)
+               for f in forms):
+            continue  # taxonomy / deontic / identity-negation statements
+        if any(ARTIFACT_SUBJ.match(f) and COMM_VERB.search(f)
+               for f in forms):
+            continue  # artifact-subject recording sentences
         kept[k] = s
     # merge survivors sharing the same primary span (bnorm/b1 duplication)
     by_span: dict[str, list[str]] = defaultdict(list)
@@ -479,6 +546,11 @@ def build_nodes_v3(arm: str, case: dict) -> list[dict]:
         for r in s["relations"]:
             if r.get("type") in ("SAME_EVENT", "REFERENCE_OF") \
                     and r.get("to") in parent:
+                tgt = kept.get(r["to"])
+                if tgt and (re.search(r"\bagain\b", s["span"], re.I)
+                            or re.search(r"\bagain\b", tgt["span"],
+                                         re.I)):
+                    continue  # repetition = distinct event instance
                 union(k, r["to"])
     groups: dict[str, list] = defaultdict(list)
     for k, s in kept.items():
@@ -505,7 +577,248 @@ def build_nodes_v3(arm: str, case: dict) -> list[dict]:
                                      "UNKNOWN"),
             "member_spans": forms,
             "arguments": [a for m in ms for a in m["arguments"]]})
-    return nodes
+    return consolidate_nodes(nodes, policy)
+
+
+def _lemmas(text: str) -> set[str]:
+    """Content lemmas with crude morphological normalization."""
+    out = set()
+    for t in re.findall(r"[a-z][a-z'-]{2,}", text.lower()):
+        if t in STOP:
+            continue
+        for suf in ("ing", "ied", "ed", "es", "s"):
+            if t.endswith(suf) and len(t) - len(suf) >= 3:
+                t = t[: -len(suf)]
+                break
+        out.add(t)
+    return out
+
+
+RECORDING_PRED = re.compile(
+    r"\b(is|are|was|were)\s+(not\s+)?"
+    r"(logged|filed|recorded|documented|reported|notified|archived|"
+    r"registered|entered)\b", re.I)
+CONNECTIVE_FORM = re.compile(
+    r"\b(only|if|when|unless|until|after|before|while|once|provided)\b",
+    re.I)
+IDENTITY_NEG = re.compile(
+    r"\b(is|are|was|were)\s+not\s+"
+    r"[a-z]+(ing|tion|ment|ance|ity|ness)\b", re.I)
+OP_ON_MENTION = {
+    "log", "file", "record", "document", "report", "notify",
+    "archive", "register", "verify", "check", "confirm", "certify",
+    "validate", "test", "inspect", "review", "approve", "keep",
+    "enter", "monitor", "audit"}
+
+
+def _norm_lemma(t: str) -> str:
+    t = t.lower()
+    for suf in ("ing", "ied", "ed", "es", "s"):
+        if t.endswith(suf) and len(t) - len(suf) >= 3:
+            t = t[: -len(suf)]
+            if suf == "ing" and len(t) >= 4 and t[-1] == t[-2]:
+                t = t[:-1]          # refuelling -> refuel
+            break
+    return t
+
+
+def action_signature(span: str) -> tuple[str | None, set[str]]:
+    """(action lemma, argument lemmas) of one surface form.
+    - imperative/gerund/verbal: first non-determiner token is the action;
+    - copula clause: participle/adjective after the copula is the action;
+    - NP reference: head noun (last token) is the action.
+    """
+    s = (span or "").strip()
+    if not s:
+        return None, set()
+    m = COPULA_START.match(s)
+    if m:
+        rest = s[m.end():].strip().split()
+        return (_norm_lemma(rest[0]) if rest else None), set()
+    m = re.match(r"^(.{3,60}?)\s+(is|are|was|were)\s+(not\s+)?(.+)$",
+                 s, re.I)
+    if m:
+        subj_toks = [t for t in m.group(1).split()
+                     if t.lower() not in STOP][:4]
+        pred = m.group(4).split()
+        return (_norm_lemma(pred[0]) if pred else None), \
+            {_norm_lemma(t) for t in subj_toks}
+    toks = s.split()
+    if toks and toks[0].lower() not in {"the", "a", "an", "each",
+                                          "every", "this", "that"}:
+        return _norm_lemma(toks[0]), \
+            {_norm_lemma(t) for t in toks[1:] if t.lower() not in STOP}
+    inner = [t for t in toks[1:] if t.lower() not in STOP] if len(toks) > 1 \
+        else toks
+    return (_norm_lemma(inner[-1]) if inner else None), \
+        {_norm_lemma(t) for t in inner[:-1]}
+
+
+def consolidate_nodes(nodes: list[dict], policy: str) -> list[dict]:
+    """Deterministic mention-level consolidation (H4 core):
+    - 2-lemma overlap merge (act / gerund / state-of-same-act);
+    - substring merge (fragment inside a fuller mention);
+    - adjacent subject-predicate attachment (predicate fragment
+      directly following another node's form).
+    Repetition markers ('again') never merge.
+    """
+    n = len(nodes)
+    parent = list(range(n))
+
+    def find(x):
+        while parent[x] != x:
+            parent[x] = parent[parent[x]]
+            x = parent[x]
+        return x
+
+    def union(a, b):
+        ra, rb = find(a), find(b)
+        if ra != rb:
+            parent[max(ra, rb)] = min(ra, rb)
+
+    def spans_of(i):
+        return nodes[i]["member_spans"] or [nodes[i]["span"]]
+
+    def identity_forms(i):
+        """Forms usable for identity comparison: short, connective-free."""
+        out = []
+        for f in spans_of(i):
+            if len(f.split()) <= 6 and not CONNECTIVE_FORM.search(f):
+                out.append(f)
+        return out or [nodes[i]["span"]]
+
+    def starts_of(i):
+        out = []
+        for f in spans_of(i):
+            r = span_in(policy, f)
+            if r:
+                out.append(r)
+        return out
+
+    pos = [starts_of(i) for i in range(n)]
+    sigs = [action_signature(nodes[i]["span"]) for i in range(n)]
+    sig_forms = [[action_signature(f) for f in identity_forms(i)]
+                 for i in range(n)]
+    merged_notes = []
+    for i in range(n):
+        for j in range(i + 1, n):
+            si, sj = nodes[i]["span"], nodes[j]["span"]
+            if re.search(r"\bagain\b", si, re.I) or \
+                    re.search(r"\bagain\b", sj, re.I):
+                continue
+            why = None
+            # (1) action-lemma match + argument overlap: merges act /
+            # gerund / passive-state facets of the SAME action while
+            # keeping argument-sharing DIFFERENT actions apart
+            # (Feed vs Weigh the red pandas)
+            for (ai, argsi) in sig_forms[i]:
+                for (aj, argsj) in sig_forms[j]:
+                    shared = {x for x in (argsi & argsj)
+                              if not x.isdigit()}
+                    if ai and aj and ai == aj and \
+                            (shared or not argsi or not argsj):
+                        why = "action_lemma"
+                        break
+                if why:
+                    break
+            # (2) substring containment of a form (guarded: the
+            # container must not be an operation-on-mention clause -
+            # 'Log the inspection', 'X is logged', 'verify that X
+            # passed' are their OWN events about the contained mention)
+            if why is None:
+                for fi in identity_forms(i):
+                    for fj in identity_forms(j):
+                        if fi == fj:
+                            continue
+                        container = fj if fi in fj else (fi if fj in fi
+                                                          else None)
+                        if not container:
+                            continue
+                        head = container.split()[0].lower() \
+                            .strip(".,;:'\"")
+                        ca, _ = action_signature(container)
+                        if RECORDING_PRED.search(container) \
+                                or head in OP_ON_MENTION or ca in \
+                                OP_ON_MENTION:
+                            continue
+                        if len(_lemmas(fi) & _lemmas(fj)) >= 1:
+                            why = "substring_form"
+                            break
+                    if why:
+                        break
+            # (3) adjacent subject-predicate attachment (guarded by
+            # the same recording-verb rule: 'X is logged' next to a
+            # form of X is the logging event, not a facet of X)
+            if why is None:
+                for (a0, a1) in pos[i]:
+                    for (b0, b1) in pos[j]:
+                        combo = policy[a0:b1] if a1 == b0 - 1 else (
+                            policy[b0:a1] if b1 == a0 - 1 else None)
+                        if combo is None:
+                            continue
+                        gap_ok = (a1 == b0 - 1 and
+                                  policy[a1:a1 + 1] == " ") or \
+                                 (b1 == a0 - 1 and
+                                  policy[b1:b1 + 1] == " ")
+                        if not gap_ok:
+                            continue
+                        frag_j = a1 == b0 - 1
+                        frag = spans_of(j)[0] if frag_j else spans_of(i)[0]
+                        if not (COPULA_START.match(frag.strip())
+                                or len(frag.split()) <= 2):
+                            continue
+                        if RECORDING_PRED.search(combo):
+                            continue
+                        why = "adjacent_predicate"
+                        tgt = i if frag_j else j
+                        if combo not in nodes[tgt]["member_spans"]:
+                            nodes[tgt]["member_spans"].append(combo)
+                        break
+                    if why:
+                        break
+            if why:
+                union(i, j)
+                merged_notes.append((i, j, why))
+    if not merged_notes:
+        return nodes
+    groups: dict[int, list] = defaultdict(list)
+    for i in range(n):
+        groups[find(i)].append(i)
+    out = []
+    for k, (root, idxs) in enumerate(sorted(groups.items(),
+                                            key=lambda kv: min(
+                                                nodes[i]["start"] if
+                                                nodes[i]["start"] >= 0 else
+                                                10 ** 6 for i in kv[1]))):
+        if len(idxs) == 1:
+            nd = dict(nodes[idxs[0]])
+            nd["node_id"] = f"N{k+1:02d}"
+            out.append(nd)
+            continue
+        ms = sorted(idxs, key=lambda i: nodes[i]["start"]
+                    if nodes[i]["start"] >= 0 else 10 ** 6)
+        forms: list[str] = []
+        members: list[str] = []
+        arguments: list[dict] = []
+        types = []
+        for i in ms:
+            for f in (nodes[i]["member_spans"] or [nodes[i]["span"]]):
+                if f not in forms:
+                    forms.append(f)
+            members += nodes[i]["members"]
+            arguments += nodes[i].get("arguments", [])
+            types.append(nodes[i]["type"])
+        out.append({
+            "node_id": f"N{k+1:02d}",
+            "members": members,
+            "span": forms[0], "start": nodes[ms[0]]["start"],
+            "type": max(set(types), key=types.count),
+            "role": TYPE_TO_ROLE.get(max(set(types), key=types.count),
+                                     "UNKNOWN"),
+            "member_spans": forms,
+            "arguments": arguments,
+            "consolidated_from": [nodes[i]["node_id"] for i in ms]})
+    return out
 
 
 def node_view_v3(case: dict, n: dict) -> dict:
@@ -533,7 +846,7 @@ def main() -> None:
                        max_length=512,
                        cache_folder="/workspace/guardian/hf_cache")
     client = Mistral(model="ministral-14b-latest", cache_dir=OUT / "_cache")
-    outdir = OUT / f"W1_DOWN3_{arm}"
+    outdir = OUT / f"W1_DOWN4_{arm}"
     outdir.mkdir(parents=True, exist_ok=True)
 
     def ask(system, user, max_tokens=600):
@@ -580,15 +893,14 @@ def main() -> None:
                             if t in by_name)
 
         # sentence + token maps for proposal channels (p1)
-        sent_idx = {}
         node_sents = []
         node_tokens = []
         for n in nodes:
             sset, tset = set(), set()
             for f in n["member_spans"] or [n["span"]]:
-                off = policy.find(f)
-                if off >= 0:
-                    s0, s1 = sent_span(policy, off)
+                r = span_in(policy, f)
+                if r:
+                    s0, s1 = sent_span(policy, r[0])
                     sset.add((s0, s1))
                     tset |= tokens_of(policy[s0:s1])
             node_sents.append(sset)
@@ -616,13 +928,12 @@ def main() -> None:
                     continue  # shared form gate (v3)
                 for ma in nodes[i]["member_spans"] or [nodes[i]["span"]]:
                     for mb in nodes[j]["member_spans"] or [nodes[j]["span"]]:
-                        oa = policy.find(ma)
-                        ob = policy.find(mb)
-                        if oa < 0 or ob < 0:
+                        ra, rb = span_in(policy, ma), span_in(policy, mb)
+                        if not ra or not rb:
                             continue
-                        sa = policy[sent_span(policy, oa)[0]:
-                                    sent_span(policy, oa)[1]].strip()
-                        tb = f"{mb}. {policy[sent_span(policy, ob)[0]: sent_span(policy, ob)[1]].strip()} {tool_text(nodes[j])}".strip()
+                        sa = policy[sent_span(policy, ra[0])[0]:
+                                    sent_span(policy, ra[0])[1]].strip()
+                        tb = f"{mb}. {policy[sent_span(policy, rb[0])[0]: sent_span(policy, rb[0])[1]].strip()} {tool_text(nodes[j])}".strip()
                         mpairs.append((sa, tb))
                         owners2.append((i, j))
         scores2 = rer.predict(mpairs, batch_size=32,
@@ -648,6 +959,15 @@ def main() -> None:
             cert = ask(E3_EXT_SYSTEM_V3, e3_ext_user_v3(policy, ev_a, ev_b),
                        500)
             v = verify_certificate_v3(policy, cert, ev_a, ev_b)
+            # p1b: positional extractor-anchor paths require topical
+            # coherence (CE band) or same-sentence co-occurrence;
+            # structural (a) and via_reference (d) paths stay open.
+            positional = v.get("reason") in (
+                "extractor_anchors_positional",
+                "extractor_anchors_sentence_repair")
+            if positional and sc < CE_BAND and "same_sentence" not in ch:
+                v = {"verdict": "UNSUPPORTED",
+                     "reason": "positional_path_ce_gate"}
             rec["verify"] = v["verdict"]
             rec["verify_reason"] = v.get("reason")
             licensed, direction, rel = False, None, None
@@ -725,7 +1045,7 @@ def main() -> None:
                                    indent=1) + "\n", encoding="utf-8")
         print(cid_, len(nodes), "nodes ->", len(edges), "edges",
               f"({len(pair_log)} pairs logged)", flush=True)
-    print("W1 DOWN3", arm, "done")
+    print("W1 DOWN4", arm, "done")
 
 
 if __name__ == "__main__":

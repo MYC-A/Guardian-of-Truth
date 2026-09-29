@@ -32,7 +32,15 @@ from pathlib import Path
 
 HERE = Path(__file__).parent
 IE = HERE.parent / "event_ie_frontends_v1"
-OUT = IE / "outputs"
+OUT = HERE / "outputs"
+
+
+def _arm_dir(arm: str) -> Path:
+    for base in (OUT, IE / "outputs"):
+        d = base / arm
+        if d.exists():
+            return d
+    return OUT / arm
 CE_BAND = 0.35
 
 
@@ -222,7 +230,7 @@ def main() -> None:
     suite = os.environ.get("LF_SUITE", "main")
     print(f"=== W1 loss budget (suite={suite}) ===")
     for arm in arms:
-        d = OUT / arm
+        d = _arm_dir(arm)
         if not d.exists():
             print(f"{arm}: MISSING")
             continue

@@ -1,0 +1,106 @@
+{
+ "case_id": "f_pit",
+ "arm": "LLM_SG",
+ "ev_arm": "E3V3",
+ "nodes": [
+  {
+   "node_id": "N01",
+   "span": "Change the front tyres",
+   "type": "EVENT",
+   "start": 0,
+   "members": [
+    "c01",
+    "c02",
+    "c05"
+   ],
+   "member_spans": [
+    "Change the front tyres",
+    "Change the front tyres during the first stop",
+    "Change the front tyres again",
+    "Change the front tyres again during the second stop",
+    "Each tyre change"
+   ]
+  },
+  {
+   "node_id": "N02",
+   "span": "Refuel the car",
+   "type": "EVENT",
+   "start": 99,
+   "members": [
+    "c03",
+    "c04"
+   ],
+   "member_spans": [
+    "Refuel the car",
+    "Refuel the car only at the second stop",
+    "Each refuelling"
+   ]
+  },
+  {
+   "node_id": "N03",
+   "span": "Each refuelling is a separate event from each tyre change",
+   "type": "STATE_OR_FACET",
+   "start": 139,
+   "members": [
+    "c06"
+   ],
+   "member_spans": [
+    "Each refuelling is a separate event from each tyre change",
+    "is a separate event from each tyre change"
+   ]
+  }
+ ],
+ "edges": [],
+ "pairs": [
+  {
+   "u": "N01",
+   "v": "N02",
+   "u_span": "Change the front tyres",
+   "v_span": "Refuel the car",
+   "ce": 0.9996,
+   "channels": [
+    "same_sentence",
+    "entity_bridge"
+   ],
+   "stage": "certificate",
+   "verify": "UNSUPPORTED",
+   "verify_reason": "no_relation"
+  },
+  {
+   "u": "N01",
+   "v": "N03",
+   "u_span": "Change the front tyres",
+   "v_span": "Each refuelling is a separate event from each tyre change",
+   "ce": 0.9999,
+   "channels": [
+    "same_sentence",
+    "entity_bridge"
+   ],
+   "stage": "judge",
+   "verify": "SUPPORTED",
+   "verify_reason": "both_forms_in_rel",
+   "judge_note": "verifier_q3_no",
+   "judge": {
+    "q1_where_is_a": "Each tyre change",
+    "q2_where_is_b": "Each refuelling is a separate event from each tyre change",
+    "q3_relation_between_these_two": "NO",
+    "q4_direction": "UNKNOWN",
+    "q5_relation_type": "SEMANTIC_LINK"
+   }
+  },
+  {
+   "u": "N02",
+   "v": "N03",
+   "u_span": "Refuel the car",
+   "v_span": "Each refuelling is a separate event from each tyre change",
+   "ce": 0.9999,
+   "channels": [
+    "same_sentence",
+    "entity_bridge"
+   ],
+   "stage": "certificate",
+   "verify": "UNSUPPORTED",
+   "verify_reason": "endpoint_not_represented"
+  }
+ ]
+}
