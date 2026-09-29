@@ -69,8 +69,14 @@ Answer strictly as JSON:
 
 
 def load_suite(which: str) -> list[dict]:
-    fname = ("level_f_cases.json" if which == "original"
-             else "level_f_cases_renamed.json")
+    import os
+    suite = os.environ.get("LF_SUITE", "main")
+    if suite == "f2":
+        fname = ("level_f2_cases.json" if which == "original"
+                 else "level_f2_cases_renamed.json")
+    else:
+        fname = ("level_f_cases.json" if which == "original"
+                 else "level_f_cases_renamed.json")
     return json.loads((HERE / "frozen" / fname).read_text(encoding="utf-8"))
 
 

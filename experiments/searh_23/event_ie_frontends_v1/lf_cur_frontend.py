@@ -146,12 +146,15 @@ def main() -> None:
                     f"SIMILAR TOOLS:\n" + "\n".join(tools3)
                     + "\n\nAnswer with JSON only: {\"label\": \"...\"}")
             ok, label = False, "UNKNOWN"
-            for _ in range(3):
+            for _ in range(4):
                 try:
                     rec = client.ask(RESOLVER_SYSTEM, user, max_tokens=120)
                     parsed, err = Mistral.parse_json(rec["raw"])
-                    if parsed and "label" in parsed:
-                        label = parsed["label"]
+                    lab = parsed.get("label", "UNKNOWN") if parsed else "UNKNOWN"
+                    if isinstance(lab, list) and lab:
+                        lab = str(lab[0])
+                    if isinstance(lab, str) and lab:
+                        label = lab.strip()
                         ok = True
                         break
                 except Exception:

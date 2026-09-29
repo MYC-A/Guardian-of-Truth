@@ -1,0 +1,197 @@
+{
+ "case_id": "f_pool",
+ "arm": "ORACLE_LINKS",
+ "ev_arm": "E3",
+ "nodes": [
+  {
+   "node_id": "O01",
+   "span": "Disinfect the pool",
+   "type": "EVENT",
+   "start": 0,
+   "members": [
+    "m01",
+    "m04",
+    "m09",
+    "m10"
+   ],
+   "member_spans": [
+    "Disinfect the pool",
+    "The disinfection level is acceptable",
+    "Acceptability",
+    "disinfection"
+   ]
+  },
+  {
+   "node_id": "O02",
+   "span": "Circulation must run",
+   "type": "EVENT",
+   "start": 20,
+   "members": [
+    "m03",
+    "m05"
+   ],
+   "member_spans": [
+    "Circulation must run",
+    "circulation has run"
+   ]
+  },
+  {
+   "node_id": "O03",
+   "span": "Test the level",
+   "type": "CHECK",
+   "start": 124,
+   "members": [
+    "m06"
+   ],
+   "member_spans": [
+    "Test the level"
+   ]
+  },
+  {
+   "node_id": "O04",
+   "span": "reopening",
+   "type": "EVENT",
+   "start": 146,
+   "members": [
+    "m08"
+   ],
+   "member_spans": [
+    "reopening"
+   ]
+  }
+ ],
+ "edges": [
+  {
+   "u": "O01",
+   "v": "O02",
+   "u_members": [
+    "m01",
+    "m04",
+    "m09",
+    "m10"
+   ],
+   "v_members": [
+    "m03",
+    "m05"
+   ],
+   "u_span": "Disinfect the pool",
+   "v_span": "Circulation must run",
+   "relation": "PRECONDITION",
+   "direction": "B_TO_A",
+   "ce": 0.9975,
+   "detail": {
+    "certificate": {
+     "a_anchor": "Disinfect the pool",
+     "b_anchor": "Circulation must run for one hour",
+     "a_in_relation": "disinfection",
+     "b_in_relation": "circulation has run",
+     "a_via_reference": null,
+     "b_via_reference": null,
+     "relation_text": "The disinfection level is acceptable only after circulation has run",
+     "direction": "B_TO_A",
+     "relation_type": "PRECONDITION"
+    },
+    "verify": {
+     "fields_present": {},
+     "verdict": "SUPPORTED",
+     "reason": null,
+     "grounded": {
+      "a_anchor": [
+       0,
+       18
+      ],
+      "b_anchor": [
+       20,
+       53
+      ],
+      "a_in_relation": [
+       59,
+       71
+      ],
+      "b_in_relation": [
+       103,
+       122
+      ],
+      "relation_text": [
+       55,
+       122
+      ]
+     },
+     "direction": "B_TO_A",
+     "relation_type": "PRECONDITION"
+    },
+    "judge": {
+     "q1_where_is_a": "\"The disinfection level is acceptable\"",
+     "q2_where_is_b": "\"circulation has run\"",
+     "q3_relation_between_these_two": "YES",
+     "q4_direction": "B_TO_A",
+     "q5_relation_type": "PRECONDITION"
+    }
+   }
+  },
+  {
+   "u": "O03",
+   "v": "O04",
+   "u_members": [
+    "m06"
+   ],
+   "v_members": [
+    "m08"
+   ],
+   "u_span": "Test the level",
+   "v_span": "reopening",
+   "relation": "PRECONDITION",
+   "direction": "A_TO_B",
+   "ce": 0.9964,
+   "detail": {
+    "certificate": {
+     "a_anchor": "Test the level before reopening",
+     "b_anchor": "reopening",
+     "a_in_relation": "Test the level",
+     "b_in_relation": "reopening",
+     "a_via_reference": null,
+     "b_via_reference": null,
+     "relation_text": "Test the level before reopening",
+     "direction": "A_TO_B",
+     "relation_type": "ORDER_BEFORE"
+    },
+    "verify": {
+     "fields_present": {},
+     "verdict": "SUPPORTED",
+     "reason": null,
+     "grounded": {
+      "a_anchor": [
+       124,
+       155
+      ],
+      "b_anchor": [
+       146,
+       155
+      ],
+      "a_in_relation": [
+       124,
+       138
+      ],
+      "b_in_relation": [
+       146,
+       155
+      ],
+      "relation_text": [
+       124,
+       155
+      ]
+     },
+     "direction": "A_TO_B",
+     "relation_type": "ORDER_BEFORE"
+    },
+    "judge": {
+     "q1_where_is_a": "\"Test the level\"",
+     "q2_where_is_b": "\"reopening\"",
+     "q3_relation_between_these_two": "YES",
+     "q4_direction": "A_TO_B",
+     "q5_relation_type": "PRECONDITION"
+    }
+   }
+  }
+ ]
+}

@@ -1,0 +1,161 @@
+{
+ "case_id": "f_pool",
+ "arm": "DEEPKE",
+ "ev_arm": "E1",
+ "nodes": [
+  {
+   "node_id": "N01",
+   "span": "run for one hour",
+   "type": "EVENT",
+   "start": 37,
+   "members": [
+    "c02"
+   ],
+   "member_spans": [
+    "run for one hour"
+   ]
+  },
+  {
+   "node_id": "N02",
+   "span": "disinfection level",
+   "type": "STATE_OR_FACET",
+   "start": 59,
+   "members": [
+    "c07"
+   ],
+   "member_spans": [
+    "disinfection level"
+   ]
+  },
+  {
+   "node_id": "N03",
+   "span": "acceptable",
+   "type": "STATE_OR_FACET",
+   "start": 81,
+   "members": [
+    "c06"
+   ],
+   "member_spans": [
+    "acceptable"
+   ]
+  },
+  {
+   "node_id": "N04",
+   "span": "acceptable only after circulation has run",
+   "type": "STATE_OR_FACET",
+   "start": 81,
+   "members": [
+    "c08"
+   ],
+   "member_spans": [
+    "acceptable only after circulation has run"
+   ]
+  },
+  {
+   "node_id": "N05",
+   "span": "circulation",
+   "type": "EVENT_REFERENCE",
+   "start": 103,
+   "members": [
+    "c05"
+   ],
+   "member_spans": [
+    "circulation"
+   ]
+  },
+  {
+   "node_id": "N06",
+   "span": "Test the level",
+   "type": "EVENT",
+   "start": 124,
+   "members": [
+    "c03"
+   ],
+   "member_spans": [
+    "Test the level"
+   ]
+  },
+  {
+   "node_id": "N07",
+   "span": "Test the level",
+   "type": "CHECK",
+   "start": 124,
+   "members": [
+    "c09"
+   ],
+   "member_spans": [
+    "Test the level"
+   ]
+  },
+  {
+   "node_id": "N08",
+   "span": "reopening",
+   "type": "EVENT",
+   "start": 146,
+   "members": [
+    "c04"
+   ],
+   "member_spans": [
+    "reopening"
+   ]
+  },
+  {
+   "node_id": "N09",
+   "span": "Disinfect the pool",
+   "type": "EVENT",
+   "start": 1000000,
+   "members": [
+    "c01"
+   ],
+   "member_spans": [
+    "Disinfect the pool"
+   ]
+  }
+ ],
+ "edges": [
+  {
+   "u": "N02",
+   "v": "N03",
+   "u_members": [
+    "c07"
+   ],
+   "v_members": [
+    "c06"
+   ],
+   "u_span": "disinfection level",
+   "v_span": "acceptable",
+   "relation": "STATE_GATE",
+   "direction": "A_TO_B",
+   "ce": 0.9995,
+   "detail": {
+    "evidence": "The disinfection level is acceptable only after circulation has run.",
+    "judge": {
+     "decision": "LICENSED",
+     "reason": "The quote explicitly states that 'disinfection level' (A) must be preceded by 'circulation has run' to be 'acceptable' (B), implying A gates B."
+    }
+   }
+  },
+  {
+   "u": "N06",
+   "v": "N08",
+   "u_members": [
+    "c03"
+   ],
+   "v_members": [
+    "c04"
+   ],
+   "u_span": "Test the level",
+   "v_span": "reopening",
+   "relation": "PRECONDITION",
+   "direction": "A_TO_B",
+   "ce": 0.9964,
+   "detail": {
+    "evidence": "Test the level before reopening.",
+    "judge": {
+     "decision": "LICENSED",
+     "reason": "The quote explicitly states that Event A ('Test the level') must occur before Event B ('reopening'), implying a gating/precedence relation."
+    }
+   }
+  }
+ ]
+}

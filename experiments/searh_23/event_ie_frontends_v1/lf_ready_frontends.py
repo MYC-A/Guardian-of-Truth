@@ -41,34 +41,40 @@ PHRASE = {
 PHRASE_TO_TYPE = {v: k for k, v in PHRASE.items()}
 TYPES = list(PHRASE)
 
-ONEKE_SYS = ("You are a helpful assistant. You are an expert in "
-             "information extraction. Please respond in the format of a "
-             "JSON string.")
+ONEKE_SYS = "You are a helpful assistant. 你是一个乐于助人的助手。"
+# Exact OneKE README instruction formats (NERen / EEen), batched schemas.
 ONEKE_NER_INSTR = (
-    "You are an expert in entity and mention recognition. Please extract "
-    "mentions that match the schema definition from the input. Return an "
-    "empty list if the mention type does not exist. Please respond in the "
-    "format of a JSON string. The schema types are: action or task to be "
-    "performed (an instruction or verbal clause describing an operation); "
-    "reference to an action or task (a noun phrase or pronoun pointing to "
-    "an action); state or condition of an action (a clause asserting that "
-    "something is complete, valid, passed, found or recorded); document, "
-    "report, log or record (an artifact); verification or checking action "
-    "(an action of verifying or testing something); physical object or "
-    "participant (an entity).")
+    "You are an expert in named entity recognition. Please extract "
+    "entities that match the schema definition from the input. Return an "
+    "empty list if the entity type does not exist. Please respond in the "
+    "format of a JSON string.")
 ONEKE_EE_INSTR = (
-    "You are an expert in event extraction. Please extract event triggers "
-    "(the verbal phrase expressing an action, verification or state) and "
-    "their arguments (the objects they act on) from the input. Return an "
-    "empty list if no events exist. Please respond in the format of a JSON "
-    "string like [{\"trigger\": \"...\", \"trigger_type\": \"action|"
-    "verification|state|reference|artifact\", \"arguments\": "
-    "[{\"role\": \"object\", \"text\": \"...\"}]}].")
+    "You are an expert in event extraction. Please extract events from "
+    "the input that conform to the schema definition. Return an empty "
+    "list for events that do not exist, and return NAN for arguments "
+    "that do not exist. If an argument has multiple values, please "
+    "return a list. Respond in the format of a JSON string.")
+ONEKE_EE_SCHEMA = [
+    {"event_type": PHRASE["EVENT"], "trigger": True,
+     "arguments": ["object", "actor", "location", "time or value"]},
+    {"event_type": PHRASE["CHECK"], "trigger": True,
+     "arguments": ["object"]},
+    {"event_type": PHRASE["STATE_OR_FACET"], "trigger": True,
+     "arguments": ["about"]},
+    {"event_type": PHRASE["EVENT_REFERENCE"], "trigger": True,
+     "arguments": []},
+]
 
 
 def load_suite(which: str) -> list[dict]:
-    fname = ("level_f_cases.json" if which == "original"
-             else "level_f_cases_renamed.json")
+    import os
+    suite = os.environ.get("LF_SUITE", "main")
+    if suite == "f2":
+        fname = ("level_f2_cases.json" if which == "original"
+                 else "level_f2_cases_renamed.json")
+    else:
+        fname = ("level_f_cases.json" if which == "original"
+                 else "level_f_cases_renamed.json")
     return json.loads((HERE / "frozen" / fname).read_text(encoding="utf-8"))
 
 
@@ -184,15 +190,29 @@ def run_uie(which: str, mode: str) -> None:
             res = ie_rel(policy)[0] or {}
             by_span = {c["span"]: c for c in candidates}
             for refs in res.get(PHRASE["EVENT_REFERENCE"], []):
-                # UIE nested returns {"object acted on"->...} or text pairs;
-                # handle the plain span pair form defensively
+                # UIE RE mode returns [{"text": ..., "relation": ...,
+                # "start"/"end" offsets of the HEAD entity}]; links to the
+                # tail appear as nested fields. Handle only well-formed
+                # dict/text forms defensively.
                 if isinstance(refs, dict):
-                    for target_list in refs.values():
-                        for tgt in target_list:
-                            a = by_span.get(refs.get("text", ""))
-                            b = by_span.get(tgt.get("text", "")
-                                            if isinstance(tgt, dict) else tgt)
-                            if a and b:
+                    head = refs.get("text") or refs.get("span")
+                    if not isinstance(head, str):
+                        continue
+                    a = by_span.get(head.strip())
+                    if a is None:
+                        continue
+                    for k, tv in refs.items():
+                        if k in ("text", "span", "start", "end",
+                                 "probability", "relation"):
+                            continue
+                        tl = tv if isinstance(tv, list) else [tv]
+                        for t in tl:
+                            ttext = t.get("text") if isinstance(t, dict) \
+                                else (t if isinstance(t, str) else None)
+                            if not ttext:
+                                continue
+                            b = by_span.get(ttext.strip())
+                            if b:
                                 a["relations"].append(
                                     {"to": b["cid_local"],
                                      "type": "REFERENCE_OF"})
@@ -264,7 +284,7 @@ def run_oneke(which: str, ee: bool = False) -> None:
     arm = "ONEKE_EE" if ee else "ONEKE"
     outdir = OUT / arm
     outdir.mkdir(parents=True, exist_ok=True)
-    schema = list(PHRASE.values())
+    schema = (ONEKE_EE_SCHEMA if ee else list(PHRASE.values()))
     for case in load_suite(which):
         path = outdir / f"{case['case_id']}.json"
         if path.exists():
@@ -281,33 +301,64 @@ def run_oneke(which: str, ee: bool = False) -> None:
             data = []
         if isinstance(data, dict):
             data = [data]
-        for i, item in enumerate(data, start=1):
+        i = 0
+        for item in data:
             if not isinstance(item, dict):
                 continue
-            if ee and "trigger" in item:
-                mtype = normalize_type(str(item.get("trigger_type", "")))
-                args = []
-                for a in item.get("arguments", []) or []:
-                    if isinstance(a, dict) and a.get("text"):
-                        off = find_offset(policy, a["text"])
-                        args.append({"role": a.get("role", "argument"),
-                                     "span": a["text"],
-                                     "start": off[0] if off else None,
-                                     "end": off[1] if off else None})
-                candidates.append(cand(
-                    f"c{i:02d}", str(item["trigger"]), mtype, policy,
-                    arguments=args,
-                    extra={"oneke_raw": item}))
-            else:
+            if ee and not any(isinstance(v, (list, dict))
+                              for v in item.values()):
+                # flat {type: [triggers]}
                 for key, vals in item.items():
                     mtype = normalize_type(key)
-                    if isinstance(vals, str):
-                        vals = [{"text": vals}]
-                    for v in vals or []:
+                    for v in (vals if isinstance(vals, list) else [vals]):
                         text = v.get("text") if isinstance(v, dict) else str(v)
-                        if text:
+                        if text and text != "NAN":
+                            i += 1
                             candidates.append(cand(
-                                f"c{i:02d}", str(text), mtype, policy,
+                                f"c{i:02d}", text, mtype, policy,
+                                extra={"raw_label": key}))
+                continue
+            # EE dict-of-triggers or NER {type: [spans]}
+            for key, vals in item.items():
+                mtype = normalize_type(key)
+                if isinstance(vals, str):
+                    vals = [vals]
+                if not isinstance(vals, list):
+                    vals = [vals]
+                for v in vals or []:
+                    if isinstance(v, dict) and "trigger" in v:
+                        text = str(v["trigger"])
+                        args = []
+                        argmap = v.get("arguments")
+                        if isinstance(argmap, dict):
+                            for role, aval in argmap.items():
+                                texts = aval if isinstance(aval, list) else [aval]
+                                for atext in texts:
+                                    if atext and atext != "NAN":
+                                        off = find_offset(policy, str(atext))
+                                        args.append({
+                                            "role": str(role),
+                                            "span": str(atext),
+                                            "start": off[0] if off else None,
+                                            "end": off[1] if off else None})
+                        else:
+                            for a in argmap or []:
+                                if isinstance(a, str):
+                                    off = find_offset(policy, a)
+                                    args.append({"role": "argument", "span": a,
+                                                 "start": off[0] if off else None,
+                                                 "end": off[1] if off else None})
+                        i += 1
+                        candidates.append(cand(
+                            f"c{i:02d}", text, mtype, policy,
+                            arguments=args, extra={"raw_label": key,
+                                                   "oneke_raw": v}))
+                    else:
+                        text = v.get("text") if isinstance(v, dict) else str(v)
+                        if text and text != "NAN":
+                            i += 1
+                            candidates.append(cand(
+                                f"c{i:02d}", text, mtype, policy,
                                 extra={"raw_label": key}))
         path.write_text(json.dumps({"case_id": case["case_id"], "arm": arm,
                                     "candidates": candidates,
