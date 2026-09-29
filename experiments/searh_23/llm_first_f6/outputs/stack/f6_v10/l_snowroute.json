@@ -1,0 +1,223 @@
+{
+ "case_id": "l_snowroute",
+ "arm": "LLM_SG",
+ "ev_arm": "E3V3",
+ "nodes": [
+  {
+   "node_id": "N01",
+   "span": "Plough the north road",
+   "type": "EVENT",
+   "start": 0,
+   "members": [
+    "c01",
+    "c02_b0"
+   ],
+   "member_spans": [
+    "Plough the north road",
+    "Plough the north road before 06:00",
+    "Plough the south road"
+   ]
+  },
+  {
+   "node_id": "N02",
+   "span": "the north road is cleared",
+   "type": "STATE_OR_FACET",
+   "start": 64,
+   "members": [
+    "c03",
+    "c04"
+   ],
+   "member_spans": [
+    "the north road is cleared",
+    "is cleared"
+   ]
+  },
+  {
+   "node_id": "N03",
+   "span": "Grit both roads",
+   "type": "EVENT",
+   "start": 91,
+   "members": [
+    "c05"
+   ],
+   "member_spans": [
+    "Grit both roads"
+   ]
+  },
+  {
+   "node_id": "N04",
+   "span": "ploughing is complete",
+   "type": "STATE_OR_FACET",
+   "start": 112,
+   "members": [
+    "c06",
+    "c07"
+   ],
+   "member_spans": [
+    "ploughing is complete",
+    "is complete"
+   ]
+  }
+ ],
+ "edges": [
+  {
+   "u": "N01",
+   "v": "N02",
+   "u_members": [
+    "c01",
+    "c02_b0"
+   ],
+   "v_members": [
+    "c03",
+    "c04"
+   ],
+   "u_span": "Plough the north road",
+   "v_span": "the north road is cleared",
+   "relation": "ORDER_BEFORE",
+   "direction": "B_TO_A",
+   "ce": 0.996,
+   "detail": {
+    "certificate": {
+     "a_anchor": "Plough the north road before 06:00",
+     "b_anchor": "the north road is cleared",
+     "a_in_relation": "Plough the north road",
+     "b_in_relation": "the north road is cleared",
+     "a_via_reference": null,
+     "b_via_reference": null,
+     "relation_text": "Plough the south road after the north road is cleared",
+     "direction": "B_TO_A",
+     "relation_type": "ORDER_BEFORE"
+    },
+    "verify": {
+     "verdict": "SUPPORTED",
+     "reason": "both_forms_in_rel",
+     "a_anchor": "Plough the south road",
+     "b_anchor": "the north road is cleared",
+     "relation_text": "Plough the south road after the north road is cleared",
+     "direction": "B_TO_A",
+     "relation_type": "ORDER_BEFORE"
+    }
+   }
+  },
+  {
+   "u": "N03",
+   "v": "N04",
+   "u_members": [
+    "c05"
+   ],
+   "v_members": [
+    "c06",
+    "c07"
+   ],
+   "u_span": "Grit both roads",
+   "v_span": "ploughing is complete",
+   "relation": "PRECONDITION",
+   "direction": "B_TO_A",
+   "ce": 0.9989,
+   "detail": {
+    "certificate": {
+     "a_anchor": "Grit both roads",
+     "b_anchor": "ploughing is complete",
+     "a_in_relation": "Grit both roads",
+     "b_in_relation": "ploughing is complete",
+     "a_via_reference": null,
+     "b_via_reference": null,
+     "relation_text": "Grit both roads once ploughing is complete",
+     "direction": "B_TO_A",
+     "relation_type": "PRECONDITION"
+    },
+    "verify": {
+     "verdict": "SUPPORTED",
+     "reason": "both_forms_in_rel",
+     "a_anchor": "Grit both roads",
+     "b_anchor": "ploughing is complete",
+     "relation_text": "Grit both roads once ploughing is complete",
+     "direction": "B_TO_A",
+     "relation_type": "PRECONDITION"
+    }
+   }
+  }
+ ],
+ "pairs": [
+  {
+   "u": "N01",
+   "v": "N02",
+   "u_span": "Plough the north road",
+   "v_span": "the north road is cleared",
+   "ce": 0.996,
+   "channels": [
+    "same_sentence",
+    "entity_bridge"
+   ],
+   "stage": "licensed",
+   "verify": "SUPPORTED",
+   "verify_reason": "both_forms_in_rel",
+   "judge": {
+    "q1_where_is_a": "Plough the south road",
+    "q2_where_is_b": "the north road is cleared",
+    "q3_relation_between_these_two": "YES",
+    "q4_direction": "B_TO_A",
+    "q5_relation_type": "ORDER_BEFORE"
+   },
+   "conn_side": {
+    "connective": "after",
+    "antecedent": "b"
+   },
+   "judge_direction": "B_TO_A",
+   "direction": "B_TO_A",
+   "relation": "ORDER_BEFORE"
+  },
+  {
+   "u": "N01",
+   "v": "N03",
+   "u_span": "Plough the north road",
+   "v_span": "Grit both roads",
+   "ce": 0.1726,
+   "stage": "ce_band"
+  },
+  {
+   "u": "N02",
+   "v": "N03",
+   "u_span": "the north road is cleared",
+   "v_span": "Grit both roads",
+   "ce": 0.1726,
+   "stage": "ce_band"
+  },
+  {
+   "u": "N02",
+   "v": "N04",
+   "u_span": "the north road is cleared",
+   "v_span": "ploughing is complete",
+   "ce": 0.083,
+   "stage": "ce_band"
+  },
+  {
+   "u": "N03",
+   "v": "N04",
+   "u_span": "Grit both roads",
+   "v_span": "ploughing is complete",
+   "ce": 0.9989,
+   "channels": [
+    "same_sentence",
+    "entity_bridge"
+   ],
+   "stage": "licensed",
+   "verify": "SUPPORTED",
+   "verify_reason": "both_forms_in_rel",
+   "judge": {
+    "q1_where_is_a": "Grit both roads",
+    "q2_where_is_b": "ploughing is complete",
+    "q3_relation_between_these_two": "YES",
+    "q4_direction": "B_TO_A",
+    "q5_relation_type": "PRECONDITION"
+   },
+   "conn_side": {
+    "connective": "once",
+    "antecedent": "b"
+   },
+   "judge_direction": "B_TO_A",
+   "direction": "B_TO_A",
+   "relation": "PRECONDITION"
+  }
+ ]
+}

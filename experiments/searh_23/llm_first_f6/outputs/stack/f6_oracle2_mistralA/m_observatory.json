@@ -1,0 +1,220 @@
+{
+ "case_id": "m_observatory",
+ "arm": "LLM_SG",
+ "ev_arm": "E3V3",
+ "nodes": [
+  {
+   "node_id": "N01",
+   "span": "Open the dome",
+   "type": "EVENT_REFERENCE",
+   "start": 0,
+   "members": [
+    "l01",
+    "l05"
+   ],
+   "member_spans": [
+    "Open the dome",
+    "before opening the dome"
+   ]
+  },
+  {
+   "node_id": "N02",
+   "span": "only if the sky meter reads clear",
+   "type": "STATE_OR_FACET",
+   "start": 14,
+   "members": [
+    "l03",
+    "l02"
+   ],
+   "member_spans": [
+    "only if the sky meter reads clear",
+    "the sky meter reads clear"
+   ]
+  },
+  {
+   "node_id": "N03",
+   "span": "Read the sky meter",
+   "type": "EVENT",
+   "start": 49,
+   "members": [
+    "l04"
+   ],
+   "member_spans": [
+    "Read the sky meter"
+   ]
+  },
+  {
+   "node_id": "N04",
+   "span": "Record the reading",
+   "type": "EVENT",
+   "start": 93,
+   "members": [
+    "l06"
+   ],
+   "member_spans": [
+    "Record the reading"
+   ]
+  },
+  {
+   "node_id": "N05",
+   "span": "in the night report",
+   "type": "EVENT_REFERENCE",
+   "start": 112,
+   "members": [
+    "l07"
+   ],
+   "member_spans": [
+    "in the night report"
+   ]
+  }
+ ],
+ "edges": [
+  {
+   "u": "N01",
+   "v": "N03",
+   "u_members": [
+    "l01",
+    "l05"
+   ],
+   "v_members": [
+    "l04"
+   ],
+   "u_span": "Open the dome",
+   "v_span": "Read the sky meter",
+   "relation": "PRECONDITION",
+   "direction": "B_TO_A",
+   "ce": 0.9994,
+   "detail": {
+    "certificate": {
+     "a_anchor": "before opening the dome",
+     "b_anchor": "Read the sky meter",
+     "a_in_relation": "opening the dome",
+     "b_in_relation": "Read the sky meter",
+     "a_via_reference": null,
+     "b_via_reference": null,
+     "relation_text": "Read the sky meter before opening the dome.",
+     "direction": "B_TO_A",
+     "relation_type": "ORDER_BEFORE"
+    },
+    "verify": {
+     "verdict": "SUPPORTED",
+     "reason": "both_forms_in_rel",
+     "a_anchor": "before opening the dome",
+     "b_anchor": "Read the sky meter",
+     "relation_text": "Read the sky meter before opening the dome.",
+     "direction": "B_TO_A",
+     "relation_type": "ORDER_BEFORE"
+    }
+   }
+  }
+ ],
+ "pairs": [
+  {
+   "u": "N01",
+   "v": "N02",
+   "u_span": "Open the dome",
+   "v_span": "only if the sky meter reads clear",
+   "ce": 0.9998,
+   "channels": [
+    "same_sentence",
+    "entity_bridge"
+   ],
+   "stage": "certificate",
+   "verify": "UNSUPPORTED",
+   "verify_reason": "relation_text_not_connecting_both_endpoints"
+  },
+  {
+   "u": "N01",
+   "v": "N03",
+   "u_span": "Open the dome",
+   "v_span": "Read the sky meter",
+   "ce": 0.9994,
+   "channels": [
+    "same_sentence",
+    "entity_bridge"
+   ],
+   "stage": "licensed",
+   "verify": "SUPPORTED",
+   "verify_reason": "both_forms_in_rel",
+   "judge": {
+    "q1_where_is_a": "opening the dome",
+    "q2_where_is_b": "Read the sky meter",
+    "q3_relation_between_these_two": "YES",
+    "q4_direction": "B_TO_A",
+    "q5_relation_type": "PRECONDITION"
+   },
+   "direction": "B_TO_A",
+   "relation": "PRECONDITION"
+  },
+  {
+   "u": "N01",
+   "v": "N04",
+   "u_span": "Open the dome",
+   "v_span": "Record the reading",
+   "ce": 0.0987,
+   "stage": "ce_band"
+  },
+  {
+   "u": "N01",
+   "v": "N05",
+   "u_span": "Open the dome",
+   "v_span": "in the night report",
+   "ce": 0.0006,
+   "stage": "ce_band"
+  },
+  {
+   "u": "N02",
+   "v": "N04",
+   "u_span": "only if the sky meter reads clear",
+   "v_span": "Record the reading",
+   "ce": 0.0025,
+   "stage": "ce_band"
+  },
+  {
+   "u": "N02",
+   "v": "N05",
+   "u_span": "only if the sky meter reads clear",
+   "v_span": "in the night report",
+   "ce": 0.0,
+   "stage": "ce_band"
+  },
+  {
+   "u": "N03",
+   "v": "N04",
+   "u_span": "Read the sky meter",
+   "v_span": "Record the reading",
+   "ce": 0.0987,
+   "stage": "ce_band"
+  },
+  {
+   "u": "N03",
+   "v": "N05",
+   "u_span": "Read the sky meter",
+   "v_span": "in the night report",
+   "ce": 0.0006,
+   "stage": "ce_band"
+  },
+  {
+   "u": "N04",
+   "v": "N05",
+   "u_span": "Record the reading",
+   "v_span": "in the night report",
+   "ce": 0.9944,
+   "channels": [
+    "same_sentence",
+    "entity_bridge"
+   ],
+   "stage": "judge",
+   "verify": "SUPPORTED",
+   "verify_reason": "both_forms_in_rel",
+   "judge": {
+    "q1_where_is_a": "Record the reading",
+    "q2_where_is_b": "in the night report",
+    "q3_relation_between_these_two": "YES",
+    "q4_direction": "A_TO_B",
+    "q5_relation_type": "ORDER_BEFORE"
+   },
+   "judge_note": "no_trigger_connective"
+  }
+ ]
+}

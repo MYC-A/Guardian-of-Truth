@@ -1,0 +1,177 @@
+{
+ "case_id": "l_deicing",
+ "arm": "LLM_SG",
+ "ev_arm": "E3V3",
+ "nodes": [
+  {
+   "node_id": "N01",
+   "span": "De-ice both wings",
+   "type": "EVENT",
+   "start": 0,
+   "members": [
+    "c01",
+    "c03"
+   ],
+   "member_spans": [
+    "De-ice both wings",
+    "De-ice both wings before dawn",
+    "both wings are de-iced",
+    "are de-iced"
+   ]
+  },
+  {
+   "node_id": "N02",
+   "span": "Pushback",
+   "type": "EVENT_REFERENCE",
+   "start": 31,
+   "members": [
+    "c07"
+   ],
+   "member_spans": [
+    "Pushback",
+    "Pushback is forbidden"
+   ]
+  },
+  {
+   "node_id": "N03",
+   "span": "Notify the tower",
+   "type": "EVENT",
+   "start": 83,
+   "members": [
+    "c06"
+   ],
+   "member_spans": [
+    "Notify the tower"
+   ]
+  },
+  {
+   "node_id": "N04",
+   "span": "either wing is skipped",
+   "type": "EVENT",
+   "start": 103,
+   "members": [
+    "c05"
+   ],
+   "member_spans": [
+    "either wing is skipped",
+    "is skipped"
+   ]
+  }
+ ],
+ "edges": [
+  {
+   "u": "N01",
+   "v": "N02",
+   "u_members": [
+    "c01",
+    "c03"
+   ],
+   "v_members": [
+    "c07"
+   ],
+   "u_span": "De-ice both wings",
+   "v_span": "Pushback",
+   "relation": "PRECONDITION",
+   "direction": "A_TO_B",
+   "ce": 0.9993,
+   "detail": {
+    "certificate": {
+     "a_anchor": "\"both wings are de-iced\"",
+     "b_anchor": "\"Pushback\"",
+     "a_in_relation": "\"both wings are de-iced\"",
+     "b_in_relation": "\"Pushback\"",
+     "a_via_reference": null,
+     "b_via_reference": null,
+     "relation_text": "\"Pushback is forbidden until both wings are de-iced\"",
+     "direction": "B_TO_A",
+     "relation_type": "STATE_GATE"
+    },
+    "verify": {
+     "verdict": "SUPPORTED",
+     "reason": "both_forms_in_rel",
+     "a_anchor": "both wings are de-iced",
+     "b_anchor": "Pushback",
+     "relation_text": "Pushback is forbidden until both wings are de-iced",
+     "direction": "B_TO_A",
+     "relation_type": "STATE_GATE"
+    }
+   }
+  }
+ ],
+ "pairs": [
+  {
+   "u": "N01",
+   "v": "N02",
+   "u_span": "De-ice both wings",
+   "v_span": "Pushback",
+   "ce": 0.9993,
+   "channels": [
+    "same_sentence",
+    "entity_bridge"
+   ],
+   "stage": "licensed",
+   "verify": "SUPPORTED",
+   "verify_reason": "both_forms_in_rel",
+   "judge": {
+    "q1_where_is_a": "both wings are de-iced",
+    "q2_where_is_b": "Pushback",
+    "q3_relation_between_these_two": "YES",
+    "q4_direction": "A_TO_B",
+    "q5_relation_type": "PRECONDITION"
+   },
+   "conn_side": {
+    "connective": "until",
+    "antecedent": "a"
+   },
+   "judge_direction": "A_TO_B",
+   "direction": "A_TO_B",
+   "relation": "PRECONDITION"
+  },
+  {
+   "u": "N01",
+   "v": "N03",
+   "u_span": "De-ice both wings",
+   "v_span": "Notify the tower",
+   "ce": 0.0006,
+   "stage": "ce_band"
+  },
+  {
+   "u": "N01",
+   "v": "N04",
+   "u_span": "De-ice both wings",
+   "v_span": "either wing is skipped",
+   "ce": 0.3461,
+   "stage": "ce_band"
+  },
+  {
+   "u": "N02",
+   "v": "N03",
+   "u_span": "Pushback",
+   "v_span": "Notify the tower",
+   "ce": 0.0006,
+   "stage": "ce_band"
+  },
+  {
+   "u": "N02",
+   "v": "N04",
+   "u_span": "Pushback",
+   "v_span": "either wing is skipped",
+   "ce": 0.2235,
+   "stage": "ce_band"
+  },
+  {
+   "u": "N03",
+   "v": "N04",
+   "u_span": "Notify the tower",
+   "v_span": "either wing is skipped",
+   "ce": 0.9981,
+   "channels": [
+    "same_sentence",
+    "entity_bridge"
+   ],
+   "stage": "certificate",
+   "verify": "UNSUPPORTED",
+   "verify_reason": "no_relation"
+  }
+ ]
+}

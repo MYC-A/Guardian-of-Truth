@@ -1,0 +1,145 @@
+{
+ "case_id": "m_tram",
+ "arm": "LLM_SG",
+ "ev_arm": "E3V3",
+ "nodes": [
+  {
+   "node_id": "N01",
+   "span": "Grind the rail joints",
+   "type": "STATE_OR_FACET",
+   "start": 0,
+   "members": [
+    "m01",
+    "m05",
+    "m06"
+   ],
+   "member_spans": [
+    "Grind the rail joints",
+    "the joints have been ground",
+    "Grinding of the joints"
+   ]
+  },
+  {
+   "node_id": "N02",
+   "span": "Trams may pass",
+   "type": "EVENT",
+   "start": 33,
+   "members": [
+    "m04"
+   ],
+   "member_spans": [
+    "Trams may pass"
+   ]
+  },
+  {
+   "node_id": "N03",
+   "span": "Grinding of the joints is logged in the depot ledger",
+   "type": "EVENT",
+   "start": 82,
+   "members": [
+    "m07"
+   ],
+   "member_spans": [
+    "Grinding of the joints is logged in the depot ledger"
+   ]
+  }
+ ],
+ "edges": [
+  {
+   "u": "N01",
+   "v": "N02",
+   "u_members": [
+    "m01",
+    "m05",
+    "m06"
+   ],
+   "v_members": [
+    "m04"
+   ],
+   "u_span": "Grind the rail joints",
+   "v_span": "Trams may pass",
+   "relation": "STATE_GATE",
+   "direction": "A_TO_B",
+   "ce": 0.9998,
+   "detail": {
+    "certificate": {
+     "a_anchor": "\"Grinding of the joints\"",
+     "b_anchor": "\"Trams may pass\"",
+     "a_in_relation": "\"the joints have been ground\"",
+     "b_in_relation": "\"Trams may pass\"",
+     "a_via_reference": null,
+     "b_via_reference": null,
+     "relation_text": "\"Trams may pass once the joints have been ground.\"",
+     "direction": "A_TO_B",
+     "relation_type": "STATE_GATE"
+    },
+    "verify": {
+     "verdict": "SUPPORTED",
+     "reason": "both_forms_in_rel",
+     "a_anchor": "the joints have been ground",
+     "b_anchor": "Trams may pass",
+     "relation_text": "Trams may pass once the joints have been ground.",
+     "direction": "A_TO_B",
+     "relation_type": "STATE_GATE"
+    }
+   }
+  }
+ ],
+ "pairs": [
+  {
+   "u": "N01",
+   "v": "N02",
+   "u_span": "Grind the rail joints",
+   "v_span": "Trams may pass",
+   "ce": 0.9998,
+   "channels": [
+    "same_sentence",
+    "entity_bridge"
+   ],
+   "stage": "licensed",
+   "verify": "SUPPORTED",
+   "verify_reason": "both_forms_in_rel",
+   "judge": {
+    "q1_where_is_a": "\"the joints have been ground\"",
+    "q2_where_is_b": "\"Trams may pass\"",
+    "q3_relation_between_these_two": "YES",
+    "q4_direction": "A_TO_B",
+    "q5_relation_type": "STATE_GATE"
+   },
+   "conn_side": {
+    "connective": "once",
+    "antecedent": "a"
+   },
+   "judge_direction": "A_TO_B",
+   "direction": "A_TO_B",
+   "relation": "STATE_GATE"
+  },
+  {
+   "u": "N01",
+   "v": "N03",
+   "u_span": "Grind the rail joints",
+   "v_span": "Grinding of the joints is logged in the depot ledger",
+   "ce": 0.9996,
+   "channels": [
+    "same_sentence",
+    "entity_bridge"
+   ],
+   "stage": "certificate",
+   "verify": "UNKNOWN",
+   "verify_reason": "relation_text_not_verbatim"
+  },
+  {
+   "u": "N02",
+   "v": "N03",
+   "u_span": "Trams may pass",
+   "v_span": "Grinding of the joints is logged in the depot ledger",
+   "ce": 0.0002,
+   "channels": [
+    "entity_bridge"
+   ],
+   "stage": "certificate",
+   "verify": "UNSUPPORTED",
+   "verify_reason": "positional_path_ce_gate"
+  }
+ ]
+}

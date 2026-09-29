@@ -1,0 +1,209 @@
+{
+ "case_id": "m_foundry",
+ "arm": "LLM_SG",
+ "ev_arm": "E3V3",
+ "nodes": [
+  {
+   "node_id": "N01",
+   "span": "Sweep the foundry floor",
+   "type": "STATE_OR_FACET",
+   "start": 0,
+   "members": [
+    "m01",
+    "m04",
+    "m05"
+   ],
+   "member_spans": [
+    "Sweep the foundry floor",
+    "The floor must be swept",
+    "the floor is swept"
+   ]
+  },
+  {
+   "node_id": "N02",
+   "span": "the ladles must be preheated",
+   "type": "STATE_OR_FACET",
+   "start": 71,
+   "members": [
+    "m06",
+    "m07"
+   ],
+   "member_spans": [
+    "the ladles must be preheated",
+    "the ladles are preheated"
+   ]
+  },
+  {
+   "node_id": "N03",
+   "span": "Pour the melt",
+   "type": "EVENT",
+   "start": 101,
+   "members": [
+    "m09"
+   ],
+   "member_spans": [
+    "Pour the melt"
+   ]
+  }
+ ],
+ "edges": [
+  {
+   "u": "N01",
+   "v": "N03",
+   "u_members": [
+    "m01",
+    "m04",
+    "m05"
+   ],
+   "v_members": [
+    "m09"
+   ],
+   "u_span": "Sweep the foundry floor",
+   "v_span": "Pour the melt",
+   "relation": "STATE_GATE",
+   "direction": "A_TO_B",
+   "ce": 0.9995,
+   "detail": {
+    "certificate": {
+     "a_anchor": "\"The floor must be swept\"",
+     "b_anchor": "\"Pour the melt\"",
+     "a_in_relation": "\"the floor is swept\"",
+     "b_in_relation": "\"Pour the melt\"",
+     "a_via_reference": null,
+     "b_via_reference": null,
+     "relation_text": "\"Pour the melt only after the floor is swept and the ladles are preheated.\"",
+     "direction": "A_TO_B",
+     "relation_type": "ORDER_BEFORE"
+    },
+    "verify": {
+     "verdict": "SUPPORTED",
+     "reason": "both_forms_in_rel",
+     "a_anchor": "the floor is swept",
+     "b_anchor": "Pour the melt",
+     "relation_text": "Pour the melt only after the floor is swept and the ladles are preheated.",
+     "direction": "A_TO_B",
+     "relation_type": "ORDER_BEFORE"
+    }
+   }
+  },
+  {
+   "u": "N02",
+   "v": "N03",
+   "u_members": [
+    "m06",
+    "m07"
+   ],
+   "v_members": [
+    "m09"
+   ],
+   "u_span": "the ladles must be preheated",
+   "v_span": "Pour the melt",
+   "relation": "PRECONDITION",
+   "direction": "A_TO_B",
+   "ce": 0.9995,
+   "detail": {
+    "certificate": {
+     "a_anchor": "\"the ladles must be preheated\"",
+     "b_anchor": "\"Pour the melt\"",
+     "a_in_relation": "\"the ladles are preheated\"",
+     "b_in_relation": "\"Pour the melt\"",
+     "a_via_reference": null,
+     "b_via_reference": null,
+     "relation_text": "\"Pour the melt only after the floor is swept and the ladles are preheated.\"",
+     "direction": "A_TO_B",
+     "relation_type": "ORDER_BEFORE"
+    },
+    "verify": {
+     "verdict": "SUPPORTED",
+     "reason": "both_forms_in_rel",
+     "a_anchor": "the ladles are preheated",
+     "b_anchor": "Pour the melt",
+     "relation_text": "Pour the melt only after the floor is swept and the ladles are preheated.",
+     "direction": "A_TO_B",
+     "relation_type": "ORDER_BEFORE"
+    }
+   }
+  }
+ ],
+ "pairs": [
+  {
+   "u": "N01",
+   "v": "N02",
+   "u_span": "Sweep the foundry floor",
+   "v_span": "the ladles must be preheated",
+   "ce": 0.9996,
+   "channels": [
+    "same_sentence",
+    "entity_bridge"
+   ],
+   "stage": "judge",
+   "verify": "SUPPORTED",
+   "verify_reason": "both_forms_in_rel",
+   "judge": {
+    "q1_where_is_a": "the floor is swept",
+    "q2_where_is_b": "the ladles are preheated",
+    "q3_relation_between_these_two": "YES",
+    "q4_direction": "UNKNOWN",
+    "q5_relation_type": "ORDER_BEFORE"
+   },
+   "judge_note": "coordination_gate",
+   "gate": "coprecondition"
+  },
+  {
+   "u": "N01",
+   "v": "N03",
+   "u_span": "Sweep the foundry floor",
+   "v_span": "Pour the melt",
+   "ce": 0.9995,
+   "channels": [
+    "same_sentence",
+    "entity_bridge"
+   ],
+   "stage": "licensed",
+   "verify": "SUPPORTED",
+   "verify_reason": "both_forms_in_rel",
+   "judge": {
+    "q1_where_is_a": "the floor is swept",
+    "q2_where_is_b": "Pour the melt",
+    "q3_relation_between_these_two": "YES",
+    "q4_direction": "A_TO_B",
+    "q5_relation_type": "STATE_GATE"
+   },
+   "conn_side": {
+    "connective": "only after",
+    "antecedent": "a"
+   },
+   "judge_direction": "A_TO_B",
+   "direction": "A_TO_B",
+   "relation": "STATE_GATE"
+  },
+  {
+   "u": "N02",
+   "v": "N03",
+   "u_span": "the ladles must be preheated",
+   "v_span": "Pour the melt",
+   "ce": 0.9995,
+   "channels": [
+    "same_sentence",
+    "entity_bridge"
+   ],
+   "stage": "licensed",
+   "verify": "SUPPORTED",
+   "verify_reason": "both_forms_in_rel",
+   "judge": {
+    "q1_where_is_a": "the ladles are preheated",
+    "q2_where_is_b": "Pour the melt",
+    "q3_relation_between_these_two": "YES",
+    "q4_direction": "A_TO_B",
+    "q5_relation_type": "PRECONDITION"
+   },
+   "conn_side": {
+    "connective": "only after",
+    "antecedent": "a"
+   },
+   "judge_direction": "A_TO_B",
+   "direction": "A_TO_B",
+   "relation": "PRECONDITION"
+  }
+ ]
+}

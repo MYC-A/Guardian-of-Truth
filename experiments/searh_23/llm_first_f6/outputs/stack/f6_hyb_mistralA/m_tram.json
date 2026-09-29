@@ -1,0 +1,247 @@
+{
+ "case_id": "m_tram",
+ "arm": "LLM_SG",
+ "ev_arm": "E3V3",
+ "nodes": [
+  {
+   "node_id": "N01",
+   "span": "Grind the rail joints on line 2",
+   "type": "EVENT",
+   "start": 0,
+   "members": [
+    "l01"
+   ],
+   "member_spans": [
+    "Grind the rail joints on line 2"
+   ]
+  },
+  {
+   "node_id": "N02",
+   "span": "Trams may pass once the joints have been ground",
+   "type": "STATE_OR_FACET",
+   "start": 33,
+   "members": [
+    "l02"
+   ],
+   "member_spans": [
+    "Trams may pass once the joints have been ground"
+   ]
+  },
+  {
+   "node_id": "N03",
+   "span": "the joints have been ground",
+   "type": "EVENT_REFERENCE",
+   "start": 53,
+   "members": [
+    "l03",
+    "l06"
+   ],
+   "member_spans": [
+    "the joints have been ground"
+   ]
+  },
+  {
+   "node_id": "N04",
+   "span": "Grinding of the joints is logged in the depot ledger",
+   "type": "EVENT",
+   "start": 82,
+   "members": [
+    "l04"
+   ],
+   "member_spans": [
+    "Grinding of the joints is logged in the depot ledger"
+   ]
+  },
+  {
+   "node_id": "N05",
+   "span": "the depot ledger is a bound book",
+   "type": "STATE_OR_FACET",
+   "start": 136,
+   "members": [
+    "l05"
+   ],
+   "member_spans": [
+    "the depot ledger is a bound book"
+   ]
+  }
+ ],
+ "edges": [
+  {
+   "u": "N01",
+   "v": "N02",
+   "u_members": [
+    "l01"
+   ],
+   "v_members": [
+    "l02"
+   ],
+   "u_span": "Grind the rail joints on line 2",
+   "v_span": "Trams may pass once the joints have been ground",
+   "relation": "PRECONDITION",
+   "direction": "A_TO_B",
+   "ce": 0.5508,
+   "detail": {
+    "certificate": {
+     "a_anchor": "Grind the rail joints on line 2",
+     "b_anchor": "Trams may pass once the joints have been ground",
+     "a_in_relation": "the joints have been ground",
+     "b_in_relation": "Trams may pass",
+     "a_via_reference": null,
+     "b_via_reference": null,
+     "relation_text": "Trams may pass once **the joints have been ground**",
+     "direction": "A_TO_B",
+     "relation_type": "STATE_GATE"
+    },
+    "verify": {
+     "verdict": "SUPPORTED",
+     "reason": "extractor_anchors_positional",
+     "a_anchor": "the joints have been ground",
+     "b_anchor": "Trams may pass",
+     "relation_text": "Trams may pass once the joints have been ground",
+     "direction": "A_TO_B",
+     "relation_type": "STATE_GATE"
+    }
+   }
+  }
+ ],
+ "pairs": [
+  {
+   "u": "N01",
+   "v": "N02",
+   "u_span": "Grind the rail joints on line 2",
+   "v_span": "Trams may pass once the joints have been ground",
+   "ce": 0.5508,
+   "channels": [
+    "entity_bridge"
+   ],
+   "stage": "licensed",
+   "verify": "SUPPORTED",
+   "verify_reason": "extractor_anchors_positional",
+   "judge": {
+    "q1_where_is_a": "\"the joints have been ground\"",
+    "q2_where_is_b": "\"Trams may pass\"",
+    "q3_relation_between_these_two": "YES",
+    "q4_direction": "A_TO_B",
+    "q5_relation_type": "PRECONDITION"
+   },
+   "conn_side": {
+    "connective": "once",
+    "antecedent": "a"
+   },
+   "judge_direction": "A_TO_B",
+   "direction": "A_TO_B",
+   "relation": "PRECONDITION"
+  },
+  {
+   "u": "N01",
+   "v": "N03",
+   "u_span": "Grind the rail joints on line 2",
+   "v_span": "the joints have been ground",
+   "ce": 0.0309,
+   "channels": [
+    "entity_bridge"
+   ],
+   "stage": "certificate",
+   "verify": "UNSUPPORTED",
+   "verify_reason": "relation_text_not_connecting_both_endpoints"
+  },
+  {
+   "u": "N01",
+   "v": "N04",
+   "u_span": "Grind the rail joints on line 2",
+   "v_span": "Grinding of the joints is logged in the depot ledger",
+   "ce": 0.1712,
+   "channels": [
+    "entity_bridge"
+   ],
+   "stage": "certificate",
+   "verify": "UNSUPPORTED",
+   "verify_reason": "positional_path_ce_gate"
+  },
+  {
+   "u": "N01",
+   "v": "N05",
+   "u_span": "Grind the rail joints on line 2",
+   "v_span": "the depot ledger is a bound book",
+   "ce": 0.0002,
+   "stage": "ce_band"
+  },
+  {
+   "u": "N02",
+   "v": "N03",
+   "u_span": "Trams may pass once the joints have been ground",
+   "v_span": "the joints have been ground",
+   "ce": 0.997,
+   "channels": [
+    "same_sentence",
+    "entity_bridge"
+   ],
+   "stage": "judge",
+   "verify": "SUPPORTED",
+   "verify_reason": "both_forms_in_rel",
+   "judge_note": "verifier_q1q2_not_in_evidence",
+   "judge": {
+    "q1_where_is_a": "NONE",
+    "q2_where_is_b": "the joints have been ground",
+    "q3_relation_between_these_two": "YES",
+    "q4_direction": "B_TO_A",
+    "q5_relation_type": "PRECONDITION"
+   }
+  },
+  {
+   "u": "N02",
+   "v": "N04",
+   "u_span": "Trams may pass once the joints have been ground",
+   "v_span": "Grinding of the joints is logged in the depot ledger",
+   "ce": 0.0002,
+   "channels": [
+    "entity_bridge"
+   ],
+   "stage": "certificate",
+   "verify": "UNKNOWN",
+   "verify_reason": "relation_text_not_verbatim"
+  },
+  {
+   "u": "N02",
+   "v": "N05",
+   "u_span": "Trams may pass once the joints have been ground",
+   "v_span": "the depot ledger is a bound book",
+   "ce": 0.0,
+   "stage": "ce_band"
+  },
+  {
+   "u": "N03",
+   "v": "N04",
+   "u_span": "the joints have been ground",
+   "v_span": "Grinding of the joints is logged in the depot ledger",
+   "ce": 0.0002,
+   "channels": [
+    "entity_bridge"
+   ],
+   "stage": "certificate",
+   "verify": "UNSUPPORTED",
+   "verify_reason": "no_relation"
+  },
+  {
+   "u": "N03",
+   "v": "N05",
+   "u_span": "the joints have been ground",
+   "v_span": "the depot ledger is a bound book",
+   "ce": 0.0,
+   "stage": "ce_band"
+  },
+  {
+   "u": "N04",
+   "v": "N05",
+   "u_span": "Grinding of the joints is logged in the depot ledger",
+   "v_span": "the depot ledger is a bound book",
+   "ce": 0.9151,
+   "channels": [
+    "entity_bridge"
+   ],
+   "stage": "certificate",
+   "verify": "UNSUPPORTED",
+   "verify_reason": "no_relation"
+  }
+ ]
+}

@@ -1,0 +1,124 @@
+{
+ "case_id": "l_roastery",
+ "arm": "LLM_SG",
+ "ev_arm": "E3V3",
+ "nodes": [
+  {
+   "node_id": "N01",
+   "span": "Roast the beans",
+   "type": "STATE_OR_FACET",
+   "start": 0,
+   "members": [
+    "c01",
+    "c02",
+    "c06"
+   ],
+   "member_spans": [
+    "Roast the beans",
+    "Roast the beans at 205 degrees",
+    "Cooling may begin once the beans are roasted",
+    "the beans are roasted",
+    "are roasted"
+   ]
+  },
+  {
+   "node_id": "N02",
+   "span": "Cooling may begin",
+   "type": "EVENT",
+   "start": 32,
+   "members": [
+    "c03_b0"
+   ],
+   "member_spans": [
+    "Cooling may begin"
+   ]
+  },
+  {
+   "node_id": "N03",
+   "span": "Do not open the drum",
+   "type": "STATE_OR_FACET",
+   "start": 78,
+   "members": [
+    "c05_b0",
+    "c04",
+    "c07"
+   ],
+   "member_spans": [
+    "Do not open the drum",
+    "open the drum",
+    "Do not open the drum before cooling is finished",
+    "open the drum before cooling is finished",
+    "cooling is finished",
+    "is finished"
+   ]
+  },
+  {
+   "node_id": "N04",
+   "span": "the roast sheet is filed by the roaster",
+   "type": "EVENT",
+   "start": -1,
+   "members": [
+    "c08"
+   ],
+   "member_spans": [
+    "the roast sheet is filed by the roaster",
+    "is filed by the roaster",
+    "The roast sheet is filed by the roaster"
+   ]
+  }
+ ],
+ "edges": [],
+ "pairs": [
+  {
+   "u": "N01",
+   "v": "N03",
+   "u_span": "Roast the beans",
+   "v_span": "Do not open the drum",
+   "ce": 0.0193,
+   "channels": [
+    "entity_bridge"
+   ],
+   "stage": "judge",
+   "verify": "SUPPORTED",
+   "verify_reason": "both_forms_in_rel",
+   "judge": {
+    "q1_where_is_a": "the beans are roasted",
+    "q2_where_is_b": "Do not open the drum before cooling is finished",
+    "q3_relation_between_these_two": "YES",
+    "q4_direction": "A_TO_B",
+    "q5_relation_type": "PRECONDITION"
+   },
+   "judge_note": "cross_sentence_gate",
+   "gate": "single_sentence"
+  },
+  {
+   "u": "N01",
+   "v": "N04",
+   "u_span": "Roast the beans",
+   "v_span": "the roast sheet is filed by the roaster",
+   "ce": 0.0081,
+   "channels": [
+    "entity_bridge"
+   ],
+   "stage": "certificate",
+   "verify": "UNSUPPORTED",
+   "verify_reason": "no_relation"
+  },
+  {
+   "u": "N02",
+   "v": "N04",
+   "u_span": "Cooling may begin",
+   "v_span": "the roast sheet is filed by the roaster",
+   "ce": 0.0008,
+   "stage": "ce_band"
+  },
+  {
+   "u": "N03",
+   "v": "N04",
+   "u_span": "Do not open the drum",
+   "v_span": "the roast sheet is filed by the roaster",
+   "ce": 0.0014,
+   "stage": "ce_band"
+  }
+ ]
+}

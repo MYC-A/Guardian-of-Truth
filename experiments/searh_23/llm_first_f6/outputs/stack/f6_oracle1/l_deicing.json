@@ -1,0 +1,181 @@
+{
+ "case_id": "l_deicing",
+ "arm": "LLM_SG",
+ "ev_arm": "E3V3",
+ "nodes": [
+  {
+   "node_id": "N01",
+   "span": "De-ice both wings",
+   "type": "STATE_OR_FACET",
+   "start": 0,
+   "members": [
+    "m01",
+    "m05"
+   ],
+   "member_spans": [
+    "De-ice both wings",
+    "both wings are de-iced"
+   ]
+  },
+  {
+   "node_id": "N02",
+   "span": "Pushback is forbidden",
+   "type": "EVENT",
+   "start": 31,
+   "members": [
+    "m04"
+   ],
+   "member_spans": [
+    "Pushback is forbidden"
+   ]
+  },
+  {
+   "node_id": "N03",
+   "span": "Notify the tower",
+   "type": "EVENT",
+   "start": 83,
+   "members": [
+    "m06"
+   ],
+   "member_spans": [
+    "Notify the tower"
+   ]
+  },
+  {
+   "node_id": "N04",
+   "span": "either wing is skipped",
+   "type": "STATE_OR_FACET",
+   "start": 103,
+   "members": [
+    "m08"
+   ],
+   "member_spans": [
+    "either wing is skipped"
+   ]
+  }
+ ],
+ "edges": [
+  {
+   "u": "N01",
+   "v": "N02",
+   "u_members": [
+    "m01",
+    "m05"
+   ],
+   "v_members": [
+    "m04"
+   ],
+   "u_span": "De-ice both wings",
+   "v_span": "Pushback is forbidden",
+   "relation": "STATE_GATE",
+   "direction": "A_TO_B",
+   "ce": 0.9993,
+   "detail": {
+    "certificate": {
+     "a_anchor": "both wings are de-iced",
+     "b_anchor": "Pushback is forbidden",
+     "a_in_relation": "both wings are de-iced",
+     "b_in_relation": "Pushback is forbidden",
+     "a_via_reference": null,
+     "b_via_reference": null,
+     "relation_text": "Pushback is forbidden until both wings are de-iced",
+     "direction": "A_TO_B",
+     "relation_type": "STATE_GATE"
+    },
+    "verify": {
+     "verdict": "SUPPORTED",
+     "reason": "both_forms_in_rel",
+     "a_anchor": "both wings are de-iced",
+     "b_anchor": "Pushback is forbidden",
+     "relation_text": "Pushback is forbidden until both wings are de-iced",
+     "direction": "A_TO_B",
+     "relation_type": "STATE_GATE"
+    }
+   }
+  }
+ ],
+ "pairs": [
+  {
+   "u": "N01",
+   "v": "N02",
+   "u_span": "De-ice both wings",
+   "v_span": "Pushback is forbidden",
+   "ce": 0.9993,
+   "channels": [
+    "same_sentence",
+    "entity_bridge"
+   ],
+   "stage": "licensed",
+   "verify": "SUPPORTED",
+   "verify_reason": "both_forms_in_rel",
+   "judge": {
+    "q1_where_is_a": "both wings are de-iced",
+    "q2_where_is_b": "Pushback is forbidden",
+    "q3_relation_between_these_two": "YES",
+    "q4_direction": "A_TO_B",
+    "q5_relation_type": "STATE_GATE"
+   },
+   "conn_side": {
+    "connective": "until",
+    "antecedent": "a"
+   },
+   "judge_direction": "A_TO_B",
+   "direction": "A_TO_B",
+   "relation": "STATE_GATE"
+  },
+  {
+   "u": "N01",
+   "v": "N03",
+   "u_span": "De-ice both wings",
+   "v_span": "Notify the tower",
+   "ce": 0.0006,
+   "stage": "ce_band"
+  },
+  {
+   "u": "N01",
+   "v": "N04",
+   "u_span": "De-ice both wings",
+   "v_span": "either wing is skipped",
+   "ce": 0.2235,
+   "stage": "ce_band"
+  },
+  {
+   "u": "N02",
+   "v": "N03",
+   "u_span": "Pushback is forbidden",
+   "v_span": "Notify the tower",
+   "ce": 0.0006,
+   "stage": "ce_band"
+  },
+  {
+   "u": "N02",
+   "v": "N04",
+   "u_span": "Pushback is forbidden",
+   "v_span": "either wing is skipped",
+   "ce": 0.2235,
+   "stage": "ce_band"
+  },
+  {
+   "u": "N03",
+   "v": "N04",
+   "u_span": "Notify the tower",
+   "v_span": "either wing is skipped",
+   "ce": 0.9981,
+   "channels": [
+    "same_sentence",
+    "entity_bridge"
+   ],
+   "stage": "judge",
+   "verify": "SUPPORTED",
+   "verify_reason": "both_forms_in_rel",
+   "judge_note": "verifier_q1q2_not_in_evidence",
+   "judge": {
+    "q1_where_is_a": "NONE",
+    "q2_where_is_b": "either wing is skipped",
+    "q3_relation_between_these_two": "YES",
+    "q4_direction": "B_TO_A",
+    "q5_relation_type": "EXCEPTION"
+   }
+  }
+ ]
+}

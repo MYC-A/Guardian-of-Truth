@@ -1,0 +1,147 @@
+{
+ "case_id": "m_foundry",
+ "arm": "LLM_SG",
+ "ev_arm": "E3V3",
+ "nodes": [
+  {
+   "node_id": "N01",
+   "span": "Sweep the foundry floor before each shift",
+   "type": "EVENT",
+   "start": 0,
+   "members": [
+    "l01"
+   ],
+   "member_spans": [
+    "Sweep the foundry floor before each shift"
+   ]
+  },
+  {
+   "node_id": "N02",
+   "span": "The floor must be swept",
+   "type": "STATE_OR_FACET",
+   "start": 43,
+   "members": [
+    "l02",
+    "l04",
+    "l05"
+   ],
+   "member_spans": [
+    "The floor must be swept",
+    "Pour the melt only after the floor is swept and the ladles are preheated",
+    "the floor is swept"
+   ]
+  },
+  {
+   "node_id": "N03",
+   "span": "the ladles must be preheated",
+   "type": "STATE_OR_FACET",
+   "start": 71,
+   "members": [
+    "l03",
+    "l06"
+   ],
+   "member_spans": [
+    "the ladles must be preheated",
+    "the ladles are preheated"
+   ]
+  }
+ ],
+ "edges": [
+  {
+   "u": "N02",
+   "v": "N03",
+   "u_members": [
+    "l02",
+    "l04",
+    "l05"
+   ],
+   "v_members": [
+    "l03",
+    "l06"
+   ],
+   "u_span": "The floor must be swept",
+   "v_span": "the ladles must be preheated",
+   "relation": "NOT_SUPPORTED",
+   "direction": "B_TO_A",
+   "ce": 0.9996,
+   "detail": {
+    "certificate": {
+     "a_anchor": "the floor is swept",
+     "b_anchor": "the ladles are preheated",
+     "a_in_relation": "the floor is swept",
+     "b_in_relation": "the ladles are preheated",
+     "a_via_reference": null,
+     "b_via_reference": null,
+     "relation_text": "Pour the melt only after **the floor is swept** and **the ladles are preheated**",
+     "direction": "A_TO_B",
+     "relation_type": "PRECONDITION"
+    },
+    "verify": {
+     "verdict": "SUPPORTED",
+     "reason": "both_forms_in_rel",
+     "a_anchor": "Pour the melt only after the floor is swept and the ladles are preheated",
+     "b_anchor": "the ladles are preheated",
+     "relation_text": "Pour the melt only after the floor is swept and the ladles are preheated",
+     "direction": "A_TO_B",
+     "relation_type": "PRECONDITION"
+    }
+   }
+  }
+ ],
+ "pairs": [
+  {
+   "u": "N01",
+   "v": "N02",
+   "u_span": "Sweep the foundry floor before each shift",
+   "v_span": "The floor must be swept",
+   "ce": 0.8777,
+   "channels": [
+    "entity_bridge"
+   ],
+   "stage": "certificate",
+   "verify": "UNSUPPORTED",
+   "verify_reason": "no_relation"
+  },
+  {
+   "u": "N01",
+   "v": "N03",
+   "u_span": "Sweep the foundry floor before each shift",
+   "v_span": "the ladles must be preheated",
+   "ce": 0.0571,
+   "channels": [
+    "entity_bridge"
+   ],
+   "stage": "certificate",
+   "verify": "UNSUPPORTED",
+   "verify_reason": "positional_path_ce_gate"
+  },
+  {
+   "u": "N02",
+   "v": "N03",
+   "u_span": "The floor must be swept",
+   "v_span": "the ladles must be preheated",
+   "ce": 0.9996,
+   "channels": [
+    "same_sentence",
+    "entity_bridge"
+   ],
+   "stage": "licensed",
+   "verify": "SUPPORTED",
+   "verify_reason": "both_forms_in_rel",
+   "judge": {
+    "q1_where_is_a": "the floor is swept",
+    "q2_where_is_b": "the ladles are preheated",
+    "q3_relation_between_these_two": "YES",
+    "q4_direction": "UNKNOWN",
+    "q5_relation_type": "UNKNOWN"
+   },
+   "conn_side": {
+    "connective": "only after",
+    "antecedent": "b"
+   },
+   "judge_direction": "UNKNOWN",
+   "direction": "B_TO_A",
+   "relation": "NOT_SUPPORTED"
+  }
+ ]
+}

@@ -1,0 +1,222 @@
+{
+ "case_id": "m_sluice",
+ "arm": "LLM_SG",
+ "ev_arm": "E3V3",
+ "nodes": [
+  {
+   "node_id": "N01",
+   "span": "Operate the sluice gate",
+   "type": "EVENT",
+   "start": 0,
+   "members": [
+    "m01"
+   ],
+   "member_spans": [
+    "Operate the sluice gate"
+   ]
+  },
+  {
+   "node_id": "N02",
+   "span": "it has been inspected",
+   "type": "EVENT_REFERENCE",
+   "start": 35,
+   "members": [
+    "m03",
+    "m04",
+    "m08"
+   ],
+   "member_spans": [
+    "it has been inspected",
+    "Inspect the gate",
+    "the inspection"
+   ]
+  },
+  {
+   "node_id": "N03",
+   "span": "Verify that the inspection is logged",
+   "type": "CHECK",
+   "start": 83,
+   "members": [
+    "m06"
+   ],
+   "member_spans": [
+    "Verify that the inspection is logged"
+   ]
+  },
+  {
+   "node_id": "N04",
+   "span": "the inspection is logged",
+   "type": "EVENT",
+   "start": 95,
+   "members": [
+    "m07"
+   ],
+   "member_spans": [
+    "the inspection is logged"
+   ]
+  }
+ ],
+ "edges": [
+  {
+   "u": "N01",
+   "v": "N02",
+   "u_members": [
+    "m01"
+   ],
+   "v_members": [
+    "m03",
+    "m04",
+    "m08"
+   ],
+   "u_span": "Operate the sluice gate",
+   "v_span": "it has been inspected",
+   "relation": "PRECONDITION",
+   "direction": "B_TO_A",
+   "ce": 0.997,
+   "detail": {
+    "certificate": {
+     "a_anchor": "Operate the sluice gate",
+     "b_anchor": "it has been inspected",
+     "a_in_relation": "Operate the sluice gate",
+     "b_in_relation": "it has been inspected",
+     "a_via_reference": null,
+     "b_via_reference": null,
+     "relation_text": "Operate the sluice gate only after it has been inspected",
+     "direction": "B_TO_A",
+     "relation_type": "ORDER_BEFORE"
+    },
+    "verify": {
+     "verdict": "SUPPORTED",
+     "reason": "both_forms_in_rel",
+     "a_anchor": "Operate the sluice gate",
+     "b_anchor": "it has been inspected",
+     "relation_text": "Operate the sluice gate only after it has been inspected",
+     "direction": "B_TO_A",
+     "relation_type": "ORDER_BEFORE"
+    }
+   }
+  },
+  {
+   "u": "N02",
+   "v": "N03",
+   "u_members": [
+    "m03",
+    "m04",
+    "m08"
+   ],
+   "v_members": [
+    "m06"
+   ],
+   "u_span": "it has been inspected",
+   "v_span": "Verify that the inspection is logged",
+   "relation": "ORDER_BEFORE",
+   "direction": "A_TO_B",
+   "ce": 0.9993,
+   "detail": {
+    "certificate": {
+     "a_anchor": "\"it has been inspected\"",
+     "b_anchor": "\"Verify that the inspection is logged\"",
+     "a_in_relation": "\"after it has been inspected\"",
+     "b_in_relation": "\"Operate the sluice gate\"",
+     "a_via_reference": null,
+     "b_via_reference": null,
+     "relation_text": "\"Operate the sluice gate only after it has been inspected\"",
+     "direction": "A_TO_B",
+     "relation_type": "ORDER_BEFORE"
+    },
+    "verify": {
+     "verdict": "SUPPORTED",
+     "reason": "extractor_anchors_positional",
+     "a_anchor": "after it has been inspected",
+     "b_anchor": "Operate the sluice gate",
+     "relation_text": "Operate the sluice gate only after it has been inspected",
+     "direction": "A_TO_B",
+     "relation_type": "ORDER_BEFORE"
+    }
+   }
+  }
+ ],
+ "pairs": [
+  {
+   "u": "N01",
+   "v": "N02",
+   "u_span": "Operate the sluice gate",
+   "v_span": "it has been inspected",
+   "ce": 0.997,
+   "channels": [
+    "same_sentence",
+    "entity_bridge"
+   ],
+   "stage": "licensed",
+   "verify": "SUPPORTED",
+   "verify_reason": "both_forms_in_rel",
+   "judge": {
+    "q1_where_is_a": "Operate the sluice gate",
+    "q2_where_is_b": "it has been inspected",
+    "q3_relation_between_these_two": "YES",
+    "q4_direction": "B_TO_A",
+    "q5_relation_type": "PRECONDITION"
+   },
+   "conn_side": {
+    "connective": "only after",
+    "antecedent": "b"
+   },
+   "judge_direction": "B_TO_A",
+   "direction": "B_TO_A",
+   "relation": "PRECONDITION"
+  },
+  {
+   "u": "N01",
+   "v": "N03",
+   "u_span": "Operate the sluice gate",
+   "v_span": "Verify that the inspection is logged",
+   "ce": 0.0354,
+   "stage": "ce_band"
+  },
+  {
+   "u": "N01",
+   "v": "N04",
+   "u_span": "Operate the sluice gate",
+   "v_span": "the inspection is logged",
+   "ce": 0.0257,
+   "stage": "ce_band"
+  },
+  {
+   "u": "N02",
+   "v": "N03",
+   "u_span": "it has been inspected",
+   "v_span": "Verify that the inspection is logged",
+   "ce": 0.9993,
+   "channels": [
+    "same_sentence",
+    "entity_bridge"
+   ],
+   "stage": "licensed",
+   "verify": "SUPPORTED",
+   "verify_reason": "extractor_anchors_positional",
+   "judge": {
+    "q1_where_is_a": "after it has been inspected",
+    "q2_where_is_b": "Operate the sluice gate",
+    "q3_relation_between_these_two": "YES",
+    "q4_direction": "A_TO_B",
+    "q5_relation_type": "ORDER_BEFORE"
+   },
+   "direction": "A_TO_B",
+   "relation": "ORDER_BEFORE"
+  },
+  {
+   "u": "N02",
+   "v": "N04",
+   "u_span": "it has been inspected",
+   "v_span": "the inspection is logged",
+   "ce": 0.9981,
+   "channels": [
+    "same_sentence",
+    "entity_bridge"
+   ],
+   "stage": "certificate",
+   "verify": "UNKNOWN",
+   "verify_reason": "relation_text_not_verbatim"
+  }
+ ]
+}

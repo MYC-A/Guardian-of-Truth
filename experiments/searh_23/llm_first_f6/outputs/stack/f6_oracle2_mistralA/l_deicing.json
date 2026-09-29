@@ -1,0 +1,135 @@
+{
+ "case_id": "l_deicing",
+ "arm": "LLM_SG",
+ "ev_arm": "E3V3",
+ "nodes": [
+  {
+   "node_id": "N01",
+   "span": "De-ice both wings before dawn",
+   "type": "STATE_OR_FACET",
+   "start": 0,
+   "members": [
+    "l01",
+    "l02",
+    "l04",
+    "l05"
+   ],
+   "member_spans": [
+    "De-ice both wings before dawn",
+    "both wings",
+    "until both wings are de-iced",
+    "both wings are de-iced"
+   ]
+  },
+  {
+   "node_id": "N02",
+   "span": "Pushback is forbidden",
+   "type": "STATE_OR_FACET",
+   "start": 31,
+   "members": [
+    "l03"
+   ],
+   "member_spans": [
+    "Pushback is forbidden"
+   ]
+  },
+  {
+   "node_id": "N03",
+   "span": "Notify the tower",
+   "type": "EVENT",
+   "start": 83,
+   "members": [
+    "l06"
+   ],
+   "member_spans": [
+    "Notify the tower"
+   ]
+  },
+  {
+   "node_id": "N04",
+   "span": "if either wing is skipped",
+   "type": "STATE_OR_FACET",
+   "start": 100,
+   "members": [
+    "l07",
+    "l08"
+   ],
+   "member_spans": [
+    "if either wing is skipped",
+    "either wing is skipped"
+   ]
+  }
+ ],
+ "edges": [],
+ "pairs": [
+  {
+   "u": "N01",
+   "v": "N02",
+   "u_span": "De-ice both wings before dawn",
+   "v_span": "Pushback is forbidden",
+   "ce": 0.9993,
+   "channels": [
+    "same_sentence",
+    "entity_bridge"
+   ],
+   "stage": "judge",
+   "verify": "SUPPORTED",
+   "verify_reason": "both_forms_in_rel",
+   "judge": {
+    "q1_where_is_a": "both wings are de-iced",
+    "q2_where_is_b": "Pushback is forbidden",
+    "q3_relation_between_these_two": "YES",
+    "q4_direction": "A_TO_B",
+    "q5_relation_type": "PRECONDITION"
+   },
+   "judge_note": "cross_sentence_gate",
+   "gate": "single_sentence"
+  },
+  {
+   "u": "N01",
+   "v": "N03",
+   "u_span": "De-ice both wings before dawn",
+   "v_span": "Notify the tower",
+   "ce": 0.0006,
+   "stage": "ce_band"
+  },
+  {
+   "u": "N01",
+   "v": "N04",
+   "u_span": "De-ice both wings before dawn",
+   "v_span": "if either wing is skipped",
+   "ce": 0.2235,
+   "stage": "ce_band"
+  },
+  {
+   "u": "N02",
+   "v": "N03",
+   "u_span": "Pushback is forbidden",
+   "v_span": "Notify the tower",
+   "ce": 0.0006,
+   "stage": "ce_band"
+  },
+  {
+   "u": "N02",
+   "v": "N04",
+   "u_span": "Pushback is forbidden",
+   "v_span": "if either wing is skipped",
+   "ce": 0.2235,
+   "stage": "ce_band"
+  },
+  {
+   "u": "N03",
+   "v": "N04",
+   "u_span": "Notify the tower",
+   "v_span": "if either wing is skipped",
+   "ce": 0.9982,
+   "channels": [
+    "same_sentence",
+    "entity_bridge"
+   ],
+   "stage": "certificate",
+   "verify": "UNSUPPORTED",
+   "verify_reason": "no_relation"
+  }
+ ]
+}

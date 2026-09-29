@@ -1,0 +1,195 @@
+{
+ "case_id": "m_observatory",
+ "arm": "LLM_SG",
+ "ev_arm": "E3V3",
+ "nodes": [
+  {
+   "node_id": "N01",
+   "span": "Open the dome",
+   "type": "EVENT",
+   "start": 0,
+   "members": [
+    "m01",
+    "m06"
+   ],
+   "member_spans": [
+    "Open the dome",
+    "opening the dome"
+   ]
+  },
+  {
+   "node_id": "N02",
+   "span": "the sky meter reads clear",
+   "type": "STATE_OR_FACET",
+   "start": 22,
+   "members": [
+    "m03"
+   ],
+   "member_spans": [
+    "the sky meter reads clear"
+   ]
+  },
+  {
+   "node_id": "N03",
+   "span": "Read the sky meter",
+   "type": "EVENT_REFERENCE",
+   "start": 49,
+   "members": [
+    "m05",
+    "m08"
+   ],
+   "member_spans": [
+    "Read the sky meter",
+    "the reading"
+   ]
+  },
+  {
+   "node_id": "N04",
+   "span": "Record the reading",
+   "type": "EVENT",
+   "start": 93,
+   "members": [
+    "m07"
+   ],
+   "member_spans": [
+    "Record the reading"
+   ]
+  }
+ ],
+ "edges": [
+  {
+   "u": "N01",
+   "v": "N02",
+   "u_members": [
+    "m01",
+    "m06"
+   ],
+   "v_members": [
+    "m03"
+   ],
+   "u_span": "Open the dome",
+   "v_span": "the sky meter reads clear",
+   "relation": "STATE_GATE",
+   "direction": "B_TO_A",
+   "ce": 0.9998,
+   "detail": {
+    "certificate": {
+     "a_anchor": "Open the dome",
+     "b_anchor": "the sky meter reads clear",
+     "a_in_relation": "opening the dome",
+     "b_in_relation": "the sky meter reads clear",
+     "a_via_reference": null,
+     "b_via_reference": null,
+     "relation_text": "Open the dome only if the sky meter reads clear.",
+     "direction": "B_TO_A",
+     "relation_type": "PRECONDITION"
+    },
+    "verify": {
+     "verdict": "SUPPORTED",
+     "reason": "both_forms_in_rel",
+     "a_anchor": "Open the dome",
+     "b_anchor": "the sky meter reads clear",
+     "relation_text": "Open the dome only if the sky meter reads clear.",
+     "direction": "B_TO_A",
+     "relation_type": "PRECONDITION"
+    }
+   }
+  }
+ ],
+ "pairs": [
+  {
+   "u": "N01",
+   "v": "N02",
+   "u_span": "Open the dome",
+   "v_span": "the sky meter reads clear",
+   "ce": 0.9998,
+   "channels": [
+    "same_sentence",
+    "entity_bridge"
+   ],
+   "stage": "licensed",
+   "verify": "SUPPORTED",
+   "verify_reason": "both_forms_in_rel",
+   "judge": {
+    "q1_where_is_a": "Open the dome",
+    "q2_where_is_b": "the sky meter reads clear",
+    "q3_relation_between_these_two": "YES",
+    "q4_direction": "B_TO_A",
+    "q5_relation_type": "STATE_GATE"
+   },
+   "conn_side": {
+    "connective": "only if",
+    "antecedent": "b"
+   },
+   "judge_direction": "B_TO_A",
+   "direction": "B_TO_A",
+   "relation": "STATE_GATE"
+  },
+  {
+   "u": "N01",
+   "v": "N03",
+   "u_span": "Open the dome",
+   "v_span": "Read the sky meter",
+   "ce": 0.9994,
+   "channels": [
+    "same_sentence",
+    "entity_bridge"
+   ],
+   "stage": "licensed",
+   "verify": "SUPPORTED",
+   "verify_reason": "both_forms_in_rel",
+   "judge": {
+    "q1_where_is_a": "opening the dome",
+    "q2_where_is_b": "Read the sky meter",
+    "q3_relation_between_these_two": "YES",
+    "q4_direction": "B_TO_A",
+    "q5_relation_type": "PRECONDITION"
+   },
+   "conn_side": {
+    "connective": "before",
+    "antecedent": "b"
+   },
+   "judge_direction": "B_TO_A",
+   "direction": "B_TO_A",
+   "relation": "PRECONDITION"
+  },
+  {
+   "u": "N01",
+   "v": "N04",
+   "u_span": "Open the dome",
+   "v_span": "Record the reading",
+   "ce": 0.0987,
+   "stage": "ce_band"
+  },
+  {
+   "u": "N02",
+   "v": "N04",
+   "u_span": "the sky meter reads clear",
+   "v_span": "Record the reading",
+   "ce": 0.0025,
+   "stage": "ce_band"
+  },
+  {
+   "u": "N03",
+   "v": "N04",
+   "u_span": "Read the sky meter",
+   "v_span": "Record the reading",
+   "ce": 0.9972,
+   "channels": [
+    "same_sentence",
+    "entity_bridge"
+   ],
+   "stage": "judge",
+   "verify": "SUPPORTED",
+   "verify_reason": "both_forms_in_rel",
+   "judge": {
+    "q1_where_is_a": "the reading",
+    "q2_where_is_b": "Record the reading in the night report",
+    "q3_relation_between_these_two": "YES",
+    "q4_direction": "A_TO_B",
+    "q5_relation_type": "PRECONDITION"
+   },
+   "judge_note": "no_trigger_connective"
+  }
+ ]
+}

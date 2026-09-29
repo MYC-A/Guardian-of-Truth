@@ -1,0 +1,304 @@
+{
+ "case_id": "l_roastery",
+ "arm": "LLM_SG",
+ "ev_arm": "E3V3",
+ "nodes": [
+  {
+   "node_id": "N01",
+   "span": "Roast the beans",
+   "type": "EVENT",
+   "start": 0,
+   "members": [
+    "c01",
+    "c02_b1"
+   ],
+   "member_spans": [
+    "Roast the beans",
+    "Roast the beans at 205 degrees",
+    "the beans are roasted",
+    "are roasted"
+   ]
+  },
+  {
+   "node_id": "N02",
+   "span": "Cooling may begin",
+   "type": "EVENT",
+   "start": 32,
+   "members": [
+    "c02_b0",
+    "c12"
+   ],
+   "member_spans": [
+    "Cooling may begin",
+    "cooling"
+   ]
+  },
+  {
+   "node_id": "N03",
+   "span": "open the drum",
+   "type": "EVENT",
+   "start": 85,
+   "members": [
+    "c04_b0"
+   ],
+   "member_spans": [
+    "open the drum"
+   ]
+  },
+  {
+   "node_id": "N04",
+   "span": "cooling is finished",
+   "type": "EVENT",
+   "start": 106,
+   "members": [
+    "c04_b1"
+   ],
+   "member_spans": [
+    "cooling is finished",
+    "is finished"
+   ]
+  },
+  {
+   "node_id": "N05",
+   "span": "the roast sheet is filed by the roaster",
+   "type": "EVENT",
+   "start": -1,
+   "members": [
+    "c06"
+   ],
+   "member_spans": [
+    "the roast sheet is filed by the roaster",
+    "is filed by the roaster",
+    "The roast sheet is filed by the roaster"
+   ]
+  }
+ ],
+ "edges": [
+  {
+   "u": "N01",
+   "v": "N02",
+   "u_members": [
+    "c01",
+    "c02_b1"
+   ],
+   "v_members": [
+    "c02_b0",
+    "c12"
+   ],
+   "u_span": "Roast the beans",
+   "v_span": "Cooling may begin",
+   "relation": "PRECONDITION",
+   "direction": "A_TO_B",
+   "ce": 0.9995,
+   "detail": {
+    "certificate": {
+     "a_anchor": "\"Roast the beans at 205 degrees\"",
+     "b_anchor": "\"Cooling may begin\"",
+     "a_in_relation": "\"the beans are roasted\"",
+     "b_in_relation": "\"cooling\"",
+     "a_via_reference": null,
+     "b_via_reference": null,
+     "relation_text": "\"Cooling may begin once the beans are roasted.\"",
+     "direction": "A_TO_B",
+     "relation_type": "STATE_GATE"
+    },
+    "verify": {
+     "verdict": "SUPPORTED",
+     "reason": "both_forms_in_rel",
+     "a_anchor": "the beans are roasted",
+     "b_anchor": "Cooling may begin",
+     "relation_text": "Cooling may begin once the beans are roasted.",
+     "direction": "A_TO_B",
+     "relation_type": "STATE_GATE"
+    }
+   }
+  },
+  {
+   "u": "N02",
+   "v": "N03",
+   "u_members": [
+    "c02_b0",
+    "c12"
+   ],
+   "v_members": [
+    "c04_b0"
+   ],
+   "u_span": "Cooling may begin",
+   "v_span": "open the drum",
+   "relation": "PRECONDITION",
+   "direction": "A_TO_B",
+   "ce": 0.9973,
+   "detail": {
+    "certificate": {
+     "a_anchor": "Cooling may begin",
+     "b_anchor": "open the drum",
+     "a_in_relation": "cooling",
+     "b_in_relation": "open the drum",
+     "a_via_reference": null,
+     "b_via_reference": null,
+     "relation_text": "Do not open the drum before cooling is finished.",
+     "direction": "A_TO_B",
+     "relation_type": "ORDER_BEFORE"
+    },
+    "verify": {
+     "verdict": "SUPPORTED",
+     "reason": "both_forms_in_rel",
+     "a_anchor": "cooling",
+     "b_anchor": "open the drum",
+     "relation_text": "Do not open the drum before cooling is finished.",
+     "direction": "A_TO_B",
+     "relation_type": "ORDER_BEFORE"
+    }
+   }
+  }
+ ],
+ "pairs": [
+  {
+   "u": "N01",
+   "v": "N02",
+   "u_span": "Roast the beans",
+   "v_span": "Cooling may begin",
+   "ce": 0.9995,
+   "channels": [
+    "same_sentence",
+    "entity_bridge"
+   ],
+   "stage": "licensed",
+   "verify": "SUPPORTED",
+   "verify_reason": "both_forms_in_rel",
+   "judge": {
+    "q1_where_is_a": "the beans are roasted",
+    "q2_where_is_b": "Cooling may begin",
+    "q3_relation_between_these_two": "YES",
+    "q4_direction": "A_TO_B",
+    "q5_relation_type": "PRECONDITION"
+   },
+   "conn_side": {
+    "connective": "once",
+    "antecedent": "a"
+   },
+   "judge_direction": "A_TO_B",
+   "direction": "A_TO_B",
+   "relation": "PRECONDITION"
+  },
+  {
+   "u": "N01",
+   "v": "N03",
+   "u_span": "Roast the beans",
+   "v_span": "open the drum",
+   "ce": 0.0034,
+   "channels": [
+    "entity_bridge"
+   ],
+   "stage": "certificate",
+   "verify": "UNSUPPORTED",
+   "verify_reason": "relation_text_not_connecting_both_endpoints"
+  },
+  {
+   "u": "N01",
+   "v": "N04",
+   "u_span": "Roast the beans",
+   "v_span": "cooling is finished",
+   "ce": 0.0374,
+   "channels": [
+    "entity_bridge"
+   ],
+   "stage": "certificate",
+   "verify": "UNSUPPORTED",
+   "verify_reason": "relation_text_not_connecting_both_endpoints"
+  },
+  {
+   "u": "N01",
+   "v": "N05",
+   "u_span": "Roast the beans",
+   "v_span": "the roast sheet is filed by the roaster",
+   "ce": 0.0081,
+   "channels": [
+    "entity_bridge"
+   ],
+   "stage": "certificate",
+   "verify": "UNSUPPORTED",
+   "verify_reason": "no_relation"
+  },
+  {
+   "u": "N02",
+   "v": "N03",
+   "u_span": "Cooling may begin",
+   "v_span": "open the drum",
+   "ce": 0.9973,
+   "channels": [
+    "same_sentence",
+    "entity_bridge"
+   ],
+   "stage": "licensed",
+   "verify": "SUPPORTED",
+   "verify_reason": "both_forms_in_rel",
+   "judge": {
+    "q1_where_is_a": "cooling is finished",
+    "q2_where_is_b": "open the drum",
+    "q3_relation_between_these_two": "YES",
+    "q4_direction": "A_TO_B",
+    "q5_relation_type": "PRECONDITION"
+   },
+   "conn_side": {
+    "connective": "before",
+    "antecedent": "a"
+   },
+   "judge_direction": "A_TO_B",
+   "direction": "A_TO_B",
+   "relation": "PRECONDITION"
+  },
+  {
+   "u": "N02",
+   "v": "N05",
+   "u_span": "Cooling may begin",
+   "v_span": "the roast sheet is filed by the roaster",
+   "ce": 0.0014,
+   "stage": "ce_band"
+  },
+  {
+   "u": "N03",
+   "v": "N04",
+   "u_span": "open the drum",
+   "v_span": "cooling is finished",
+   "ce": 0.9913,
+   "channels": [
+    "same_sentence",
+    "entity_bridge"
+   ],
+   "stage": "licensed",
+   "verify": "SUPPORTED",
+   "verify_reason": "both_forms_in_rel",
+   "judge": {
+    "q1_where_is_a": "open the drum",
+    "q2_where_is_b": "cooling is finished",
+    "q3_relation_between_these_two": "YES",
+    "q4_direction": "B_TO_A",
+    "q5_relation_type": "PRECONDITION"
+   },
+   "conn_side": {
+    "connective": "before",
+    "antecedent": "b"
+   },
+   "judge_direction": "B_TO_A",
+   "direction": "B_TO_A",
+   "relation": "PRECONDITION"
+  },
+  {
+   "u": "N03",
+   "v": "N05",
+   "u_span": "open the drum",
+   "v_span": "the roast sheet is filed by the roaster",
+   "ce": 0.0014,
+   "stage": "ce_band"
+  },
+  {
+   "u": "N04",
+   "v": "N05",
+   "u_span": "cooling is finished",
+   "v_span": "the roast sheet is filed by the roaster",
+   "ce": 0.0014,
+   "stage": "ce_band"
+  }
+ ]
+}

@@ -1,0 +1,165 @@
+{
+ "case_id": "s_incubator",
+ "arm": "LLM_SG",
+ "ev_arm": "E3V3",
+ "nodes": [
+  {
+   "node_id": "N01",
+   "span": "Warm the incubator",
+   "type": "EVENT",
+   "start": 0,
+   "members": [
+    "m01"
+   ],
+   "member_spans": [
+    "Warm the incubator"
+   ]
+  },
+  {
+   "node_id": "N02",
+   "span": "Check that the incubator is warm",
+   "type": "CHECK",
+   "start": 34,
+   "members": [
+    "m04"
+   ],
+   "member_spans": [
+    "Check that the incubator is warm"
+   ]
+  },
+  {
+   "node_id": "N03",
+   "span": "the incubator is warm",
+   "type": "STATE_OR_FACET",
+   "start": 45,
+   "members": [
+    "m05"
+   ],
+   "member_spans": [
+    "the incubator is warm"
+   ]
+  },
+  {
+   "node_id": "N04",
+   "span": "loading the samples",
+   "type": "EVENT",
+   "start": 74,
+   "members": [
+    "m06"
+   ],
+   "member_spans": [
+    "loading the samples"
+   ]
+  }
+ ],
+ "edges": [
+  {
+   "u": "N03",
+   "v": "N04",
+   "u_members": [
+    "m05"
+   ],
+   "v_members": [
+    "m06"
+   ],
+   "u_span": "the incubator is warm",
+   "v_span": "loading the samples",
+   "relation": "STATE_GATE",
+   "direction": "A_TO_B",
+   "ce": 0.9997,
+   "detail": {
+    "certificate": {
+     "a_anchor": "\"Check that the incubator is warm\"",
+     "b_anchor": "\"loading the samples\"",
+     "a_in_relation": "\"the incubator is warm\"",
+     "b_in_relation": "\"loading the samples\"",
+     "a_via_reference": null,
+     "b_via_reference": null,
+     "relation_text": "\"Check that the incubator is warm **before loading the samples**\"",
+     "direction": "A_TO_B",
+     "relation_type": "ORDER_BEFORE"
+    },
+    "verify": {
+     "verdict": "SUPPORTED",
+     "reason": "both_forms_in_rel",
+     "a_anchor": "the incubator is warm",
+     "b_anchor": "loading the samples",
+     "relation_text": "Check that the incubator is warm before loading the samples",
+     "direction": "A_TO_B",
+     "relation_type": "ORDER_BEFORE"
+    }
+   }
+  }
+ ],
+ "pairs": [
+  {
+   "u": "N01",
+   "v": "N04",
+   "u_span": "Warm the incubator",
+   "v_span": "loading the samples",
+   "ce": 0.0289,
+   "channels": [
+    "entity_bridge"
+   ],
+   "stage": "certificate",
+   "verify": "UNSUPPORTED",
+   "verify_reason": "positional_path_ce_gate"
+  },
+  {
+   "u": "N02",
+   "v": "N04",
+   "u_span": "Check that the incubator is warm",
+   "v_span": "loading the samples",
+   "ce": 0.9997,
+   "channels": [
+    "same_sentence",
+    "entity_bridge"
+   ],
+   "stage": "licensed",
+   "verify": "SUPPORTED",
+   "verify_reason": "both_forms_in_rel",
+   "judge": {
+    "q1_where_is_a": "Check that the incubator is warm",
+    "q2_where_is_b": "loading the samples",
+    "q3_relation_between_these_two": "YES",
+    "q4_direction": "A_TO_B",
+    "q5_relation_type": "PRECONDITION"
+   },
+   "conn_side": {
+    "connective": "before",
+    "antecedent": "a"
+   },
+   "judge_direction": "A_TO_B",
+   "direction": "A_TO_B",
+   "relation": "PRECONDITION"
+  },
+  {
+   "u": "N03",
+   "v": "N04",
+   "u_span": "the incubator is warm",
+   "v_span": "loading the samples",
+   "ce": 0.9997,
+   "channels": [
+    "same_sentence",
+    "entity_bridge"
+   ],
+   "stage": "licensed",
+   "verify": "SUPPORTED",
+   "verify_reason": "both_forms_in_rel",
+   "judge": {
+    "q1_where_is_a": "the incubator is warm",
+    "q2_where_is_b": "loading the samples",
+    "q3_relation_between_these_two": "YES",
+    "q4_direction": "A_TO_B",
+    "q5_relation_type": "STATE_GATE"
+   },
+   "conn_side": {
+    "connective": "before",
+    "antecedent": "a"
+   },
+   "judge_direction": "A_TO_B",
+   "direction": "A_TO_B",
+   "relation": "STATE_GATE"
+  }
+ ]
+}

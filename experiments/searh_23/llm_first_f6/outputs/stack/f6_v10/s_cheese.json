@@ -1,0 +1,146 @@
+{
+ "case_id": "s_cheese",
+ "arm": "LLM_SG",
+ "ev_arm": "E3V3",
+ "nodes": [
+  {
+   "node_id": "N01",
+   "span": "Coagulate the milk in vat 3",
+   "type": "EVENT",
+   "start": 0,
+   "members": [
+    "c01",
+    "c04",
+    "c03_b1",
+    "c05",
+    "c06"
+   ],
+   "member_spans": [
+    "Coagulate the milk in vat 3",
+    "each coagulation",
+    "each coagulation is complete",
+    "is complete",
+    "the cheese maker records every coagulation"
+   ]
+  },
+  {
+   "node_id": "N02",
+   "span": "Repeat this step",
+   "type": "EVENT",
+   "start": 29,
+   "members": [
+    "c02"
+   ],
+   "member_spans": [
+    "Repeat this step",
+    "Repeat this step for vat 4"
+   ]
+  },
+  {
+   "node_id": "N03",
+   "span": "Add the cultures",
+   "type": "EVENT",
+   "start": 57,
+   "members": [
+    "c03_b0"
+   ],
+   "member_spans": [
+    "Add the cultures"
+   ]
+  }
+ ],
+ "edges": [
+  {
+   "u": "N01",
+   "v": "N03",
+   "u_members": [
+    "c01",
+    "c04",
+    "c03_b1",
+    "c05",
+    "c06"
+   ],
+   "v_members": [
+    "c03_b0"
+   ],
+   "u_span": "Coagulate the milk in vat 3",
+   "v_span": "Add the cultures",
+   "relation": "ORDER_BEFORE",
+   "direction": "A_TO_B",
+   "ce": 0.9987,
+   "detail": {
+    "certificate": {
+     "a_anchor": "\"Coagulate the milk in vat 3\"",
+     "b_anchor": "\"Add the cultures\"",
+     "a_in_relation": "\"each coagulation is complete\"",
+     "b_in_relation": "\"Add the cultures\"",
+     "a_via_reference": null,
+     "b_via_reference": null,
+     "relation_text": "\"Add the cultures only after each coagulation is complete\"",
+     "direction": "A_TO_B",
+     "relation_type": "ORDER_BEFORE"
+    },
+    "verify": {
+     "verdict": "SUPPORTED",
+     "reason": "both_forms_in_rel",
+     "a_anchor": "each coagulation",
+     "b_anchor": "Add the cultures",
+     "relation_text": "Add the cultures only after each coagulation is complete",
+     "direction": "A_TO_B",
+     "relation_type": "ORDER_BEFORE"
+    }
+   }
+  }
+ ],
+ "pairs": [
+  {
+   "u": "N01",
+   "v": "N02",
+   "u_span": "Coagulate the milk in vat 3",
+   "v_span": "Repeat this step",
+   "ce": 0.01,
+   "channels": [
+    "entity_bridge"
+   ],
+   "stage": "certificate",
+   "verify": "UNKNOWN",
+   "verify_reason": "relation_text_not_verbatim"
+  },
+  {
+   "u": "N01",
+   "v": "N03",
+   "u_span": "Coagulate the milk in vat 3",
+   "v_span": "Add the cultures",
+   "ce": 0.9987,
+   "channels": [
+    "same_sentence",
+    "entity_bridge"
+   ],
+   "stage": "licensed",
+   "verify": "SUPPORTED",
+   "verify_reason": "both_forms_in_rel",
+   "judge": {
+    "q1_where_is_a": "each coagulation is complete",
+    "q2_where_is_b": "Add the cultures",
+    "q3_relation_between_these_two": "YES",
+    "q4_direction": "A_TO_B",
+    "q5_relation_type": "ORDER_BEFORE"
+   },
+   "conn_side": {
+    "connective": "only after",
+    "antecedent": "a"
+   },
+   "judge_direction": "A_TO_B",
+   "direction": "A_TO_B",
+   "relation": "ORDER_BEFORE"
+  },
+  {
+   "u": "N02",
+   "v": "N03",
+   "u_span": "Repeat this step",
+   "v_span": "Add the cultures",
+   "ce": 0.0032,
+   "stage": "ce_band"
+  }
+ ]
+}

@@ -1,0 +1,254 @@
+{
+ "case_id": "m_balloon",
+ "arm": "LLM_SG",
+ "ev_arm": "E3V3",
+ "nodes": [
+  {
+   "node_id": "N01",
+   "span": "Inflate the envelope",
+   "type": "EVENT",
+   "start": 0,
+   "members": [
+    "c01"
+   ],
+   "member_spans": [
+    "Inflate the envelope",
+    "Inflate the envelope before sunrise"
+   ]
+  },
+  {
+   "node_id": "N02",
+   "span": "Launch the balloon",
+   "type": "EVENT",
+   "start": 64,
+   "members": [
+    "c04_b0"
+   ],
+   "member_spans": [
+    "Launch the balloon"
+   ]
+  },
+  {
+   "node_id": "N03",
+   "span": "the envelope is taut",
+   "type": "STATE_OR_FACET",
+   "start": 94,
+   "members": [
+    "c05"
+   ],
+   "member_spans": [
+    "the envelope is taut",
+    "is taut"
+   ]
+  },
+  {
+   "node_id": "N04",
+   "span": "the burner is lit",
+   "type": "STATE_OR_FACET",
+   "start": 119,
+   "members": [
+    "c06"
+   ],
+   "member_spans": [
+    "the burner is lit",
+    "is lit"
+   ]
+  }
+ ],
+ "edges": [
+  {
+   "u": "N02",
+   "v": "N03",
+   "u_members": [
+    "c04_b0"
+   ],
+   "v_members": [
+    "c05"
+   ],
+   "u_span": "Launch the balloon",
+   "v_span": "the envelope is taut",
+   "relation": "STATE_GATE",
+   "direction": "B_TO_A",
+   "ce": 0.9991,
+   "detail": {
+    "certificate": {
+     "a_anchor": "Launch the balloon",
+     "b_anchor": "the envelope is taut",
+     "a_in_relation": "Launch the balloon",
+     "b_in_relation": "the envelope is taut",
+     "a_via_reference": null,
+     "b_via_reference": null,
+     "relation_text": "Launch the balloon only after the envelope is taut",
+     "direction": "B_TO_A",
+     "relation_type": "ORDER_BEFORE"
+    },
+    "verify": {
+     "verdict": "SUPPORTED",
+     "reason": "both_forms_in_rel",
+     "a_anchor": "Launch the balloon",
+     "b_anchor": "the envelope is taut",
+     "relation_text": "Launch the balloon only after the envelope is taut",
+     "direction": "B_TO_A",
+     "relation_type": "ORDER_BEFORE"
+    }
+   }
+  },
+  {
+   "u": "N02",
+   "v": "N04",
+   "u_members": [
+    "c04_b0"
+   ],
+   "v_members": [
+    "c06"
+   ],
+   "u_span": "Launch the balloon",
+   "v_span": "the burner is lit",
+   "relation": "PRECONDITION",
+   "direction": "B_TO_A",
+   "ce": 0.9985,
+   "detail": {
+    "certificate": {
+     "a_anchor": "\"Launch the balloon\"",
+     "b_anchor": "\"the burner is lit\"",
+     "a_in_relation": "\"Launch the balloon\"",
+     "b_in_relation": "\"the burner is lit\"",
+     "a_via_reference": null,
+     "b_via_reference": null,
+     "relation_text": "\"Launch the balloon only after the envelope is taut and the burner is lit\"",
+     "direction": "B_TO_A",
+     "relation_type": "ORDER_BEFORE"
+    },
+    "verify": {
+     "verdict": "SUPPORTED",
+     "reason": "both_forms_in_rel",
+     "a_anchor": "Launch the balloon",
+     "b_anchor": "the burner is lit",
+     "relation_text": "Launch the balloon only after the envelope is taut and the burner is lit",
+     "direction": "B_TO_A",
+     "relation_type": "ORDER_BEFORE"
+    }
+   }
+  }
+ ],
+ "pairs": [
+  {
+   "u": "N01",
+   "v": "N02",
+   "u_span": "Inflate the envelope",
+   "v_span": "Launch the balloon",
+   "ce": 0.0021,
+   "channels": [
+    "entity_bridge"
+   ],
+   "stage": "certificate",
+   "verify": "UNSUPPORTED",
+   "verify_reason": "positional_path_ce_gate"
+  },
+  {
+   "u": "N01",
+   "v": "N03",
+   "u_span": "Inflate the envelope",
+   "v_span": "the envelope is taut",
+   "ce": 0.0021,
+   "channels": [
+    "entity_bridge"
+   ],
+   "stage": "certificate",
+   "verify": "UNSUPPORTED",
+   "verify_reason": "relation_text_not_connecting_both_endpoints"
+  },
+  {
+   "u": "N01",
+   "v": "N04",
+   "u_span": "Inflate the envelope",
+   "v_span": "the burner is lit",
+   "ce": 0.0035,
+   "channels": [
+    "entity_bridge"
+   ],
+   "stage": "certificate",
+   "verify": "UNSUPPORTED",
+   "verify_reason": "positional_path_ce_gate"
+  },
+  {
+   "u": "N02",
+   "v": "N03",
+   "u_span": "Launch the balloon",
+   "v_span": "the envelope is taut",
+   "ce": 0.9991,
+   "channels": [
+    "same_sentence",
+    "entity_bridge"
+   ],
+   "stage": "licensed",
+   "verify": "SUPPORTED",
+   "verify_reason": "both_forms_in_rel",
+   "judge": {
+    "q1_where_is_a": "Launch the balloon",
+    "q2_where_is_b": "the envelope is taut",
+    "q3_relation_between_these_two": "YES",
+    "q4_direction": "B_TO_A",
+    "q5_relation_type": "STATE_GATE"
+   },
+   "conn_side": {
+    "connective": "only after",
+    "antecedent": "b"
+   },
+   "judge_direction": "B_TO_A",
+   "direction": "B_TO_A",
+   "relation": "STATE_GATE"
+  },
+  {
+   "u": "N02",
+   "v": "N04",
+   "u_span": "Launch the balloon",
+   "v_span": "the burner is lit",
+   "ce": 0.9985,
+   "channels": [
+    "same_sentence",
+    "entity_bridge"
+   ],
+   "stage": "licensed",
+   "verify": "SUPPORTED",
+   "verify_reason": "both_forms_in_rel",
+   "judge": {
+    "q1_where_is_a": "Launch the balloon",
+    "q2_where_is_b": "the burner is lit",
+    "q3_relation_between_these_two": "YES",
+    "q4_direction": "B_TO_A",
+    "q5_relation_type": "PRECONDITION"
+   },
+   "conn_side": {
+    "connective": "only after",
+    "antecedent": "b"
+   },
+   "judge_direction": "B_TO_A",
+   "direction": "B_TO_A",
+   "relation": "PRECONDITION"
+  },
+  {
+   "u": "N03",
+   "v": "N04",
+   "u_span": "the envelope is taut",
+   "v_span": "the burner is lit",
+   "ce": 0.9985,
+   "channels": [
+    "same_sentence",
+    "entity_bridge"
+   ],
+   "stage": "judge",
+   "verify": "SUPPORTED",
+   "verify_reason": "both_forms_in_rel",
+   "judge": {
+    "q1_where_is_a": "the envelope is taut",
+    "q2_where_is_b": "the burner is lit",
+    "q3_relation_between_these_two": "YES",
+    "q4_direction": "UNKNOWN",
+    "q5_relation_type": "STATE_GATE"
+   },
+   "judge_note": "coordination_gate",
+   "gate": "coprecondition"
+  }
+ ]
+}

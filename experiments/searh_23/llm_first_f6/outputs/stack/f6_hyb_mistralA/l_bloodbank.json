@@ -1,0 +1,192 @@
+{
+ "case_id": "l_bloodbank",
+ "arm": "LLM_SG",
+ "ev_arm": "E3V3",
+ "nodes": [
+  {
+   "node_id": "N01",
+   "span": "Collect each plasma donation",
+   "type": "EVENT_REFERENCE",
+   "start": 0,
+   "members": [
+    "l01",
+    "l07"
+   ],
+   "member_spans": [
+    "Collect each plasma donation",
+    "collection"
+   ]
+  },
+  {
+   "node_id": "N02",
+   "span": "Chill the plasma within six hours of collection",
+   "type": "EVENT",
+   "start": 30,
+   "members": [
+    "l02"
+   ],
+   "member_spans": [
+    "Chill the plasma within six hours of collection"
+   ]
+  },
+  {
+   "node_id": "N03",
+   "span": "Discard the unit unless it is chilled in time",
+   "type": "EVENT_REFERENCE",
+   "start": 79,
+   "members": [
+    "l03",
+    "l04",
+    "l06"
+   ],
+   "member_spans": [
+    "Discard the unit unless it is chilled in time",
+    "it is chilled in time",
+    "the discard"
+   ]
+  },
+  {
+   "node_id": "N04",
+   "span": "Record the discard in the wastage file",
+   "type": "EVENT",
+   "start": 126,
+   "members": [
+    "l05"
+   ],
+   "member_spans": [
+    "Record the discard in the wastage file"
+   ]
+  }
+ ],
+ "edges": [
+  {
+   "u": "N02",
+   "v": "N03",
+   "u_members": [
+    "l02"
+   ],
+   "v_members": [
+    "l03",
+    "l04",
+    "l06"
+   ],
+   "u_span": "Chill the plasma within six hours of collection",
+   "v_span": "Discard the unit unless it is chilled in time",
+   "relation": "EXCEPTION",
+   "direction": "A_TO_B",
+   "ce": 0.5718,
+   "detail": {
+    "certificate": {
+     "a_anchor": "\"Chill the plasma within six hours of collection\"",
+     "b_anchor": "\"Discard the unit unless it is chilled in time\"",
+     "a_in_relation": "\"it is chilled in time\"",
+     "b_in_relation": "\"Discard the unit\"",
+     "a_via_reference": null,
+     "b_via_reference": null,
+     "relation_text": "\"Discard the unit unless it is chilled in time.\"",
+     "direction": "A_TO_B",
+     "relation_type": "PRECONDITION"
+    },
+    "verify": {
+     "verdict": "SUPPORTED",
+     "reason": "extractor_anchors_positional",
+     "a_anchor": "it is chilled in time",
+     "b_anchor": "Discard the unit",
+     "relation_text": "Discard the unit unless it is chilled in time.",
+     "direction": "A_TO_B",
+     "relation_type": "PRECONDITION"
+    }
+   }
+  }
+ ],
+ "pairs": [
+  {
+   "u": "N01",
+   "v": "N02",
+   "u_span": "Collect each plasma donation",
+   "v_span": "Chill the plasma within six hours of collection",
+   "ce": 0.9987,
+   "channels": [
+    "same_sentence",
+    "entity_bridge"
+   ],
+   "stage": "certificate",
+   "verify": "UNSUPPORTED",
+   "verify_reason": "relation_text_not_connecting_both_endpoints"
+  },
+  {
+   "u": "N01",
+   "v": "N03",
+   "u_span": "Collect each plasma donation",
+   "v_span": "Discard the unit unless it is chilled in time",
+   "ce": 0.5718,
+   "channels": [],
+   "stage": "certificate",
+   "verify": "UNSUPPORTED",
+   "verify_reason": "relation_text_not_connecting_both_endpoints"
+  },
+  {
+   "u": "N01",
+   "v": "N04",
+   "u_span": "Collect each plasma donation",
+   "v_span": "Record the discard in the wastage file",
+   "ce": 0.0001,
+   "stage": "ce_band"
+  },
+  {
+   "u": "N02",
+   "v": "N03",
+   "u_span": "Chill the plasma within six hours of collection",
+   "v_span": "Discard the unit unless it is chilled in time",
+   "ce": 0.5718,
+   "channels": [],
+   "stage": "licensed",
+   "verify": "SUPPORTED",
+   "verify_reason": "extractor_anchors_positional",
+   "judge": {
+    "q1_where_is_a": "\"it is chilled in time\"",
+    "q2_where_is_b": "\"Discard the unit\"",
+    "q3_relation_between_these_two": "YES",
+    "q4_direction": "B_TO_A",
+    "q5_relation_type": "EXCEPTION"
+   },
+   "conn_side": {
+    "connective": "unless",
+    "antecedent": "a"
+   },
+   "judge_direction": "B_TO_A",
+   "direction": "A_TO_B",
+   "relation": "EXCEPTION"
+  },
+  {
+   "u": "N02",
+   "v": "N04",
+   "u_span": "Chill the plasma within six hours of collection",
+   "v_span": "Record the discard in the wastage file",
+   "ce": 0.0001,
+   "stage": "ce_band"
+  },
+  {
+   "u": "N03",
+   "v": "N04",
+   "u_span": "Discard the unit unless it is chilled in time",
+   "v_span": "Record the discard in the wastage file",
+   "ce": 0.9983,
+   "channels": [
+    "same_sentence",
+    "entity_bridge"
+   ],
+   "stage": "judge",
+   "verify": "SUPPORTED",
+   "verify_reason": "both_forms_in_rel",
+   "judge": {
+    "q1_where_is_a": "the discard",
+    "q2_where_is_b": "Record the discard in the wastage file",
+    "q3_relation_between_these_two": "YES",
+    "q4_direction": "A_TO_B",
+    "q5_relation_type": "ORDER_BEFORE"
+   },
+   "judge_note": "no_trigger_connective"
+  }
+ ]
+}

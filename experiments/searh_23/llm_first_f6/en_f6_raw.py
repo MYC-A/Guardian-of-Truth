@@ -74,6 +74,11 @@ def find_offset(policy: str, span: str) -> tuple[int, int] | None:
 def check_mention(policy: str, m: dict) -> dict:
     """Grounding check for ONE generated mention (directive 4/6)."""
     quote = m.get("quote") or m.get("span") or ""
+    if not isinstance(quote, str):
+        if isinstance(quote, dict):
+            quote = quote.get("quote") or quote.get("span") or ""
+        else:
+            quote = ""
     off = find_offset(policy, quote)
     m["quote"] = quote
     m["start"], m["end"] = (off if off else (None, None))
@@ -81,12 +86,21 @@ def check_mention(policy: str, m: dict) -> dict:
     m["case_variant"] = bool(off and policy.find(quote) < 0)
     m["grounded"] = off is not None
     args = m.get("arguments") or []
+    if isinstance(args, dict):
+        args = [args]
     ok_args = []
     for a in args:
+        if isinstance(a, str):
+            a = {"quote": a}
         if not isinstance(a, dict):
             continue
         aq = a.get("quote") or a.get("span") or ""
-        aoff = find_offset(policy, aq)
+        if not isinstance(aq, str):
+            if isinstance(aq, dict):
+                aq = aq.get("quote") or aq.get("span") or ""
+            else:
+                aq = ""
+        aoff = find_offset(policy, aq) if aq else None
         if aoff:
             ok_args.append({"role": a.get("role", "argument"),
                             "quote": aq, "start": aoff[0], "end": aoff[1]})
