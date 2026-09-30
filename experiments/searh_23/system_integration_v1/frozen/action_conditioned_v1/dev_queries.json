@@ -1,0 +1,156 @@
+[
+  {
+    "id": "depot",
+    "policy": "A parcel may be dispatched only if its inspection passed. Checking inspection does not dispatch the parcel.",
+    "governed_action": {
+      "tool": "dispatch_parcel",
+      "description": "Dispatches the parcel; state=dispatched means completion.",
+      "input_fields": [
+        "parcel_id"
+      ]
+    },
+    "condition_menu": [
+      {
+        "predicate": "parcel.dispatch_state",
+        "tool_description": "Reports the current dispatch state of this parcel.",
+        "entity_type": "parcel",
+        "input_fields": [
+          "parcel_id"
+        ]
+      },
+      {
+        "predicate": "parcel.inspection_passed",
+        "tool_description": "Reports whether this parcel passed inspection.",
+        "entity_type": "parcel",
+        "input_fields": [
+          "parcel_id"
+        ]
+      }
+    ]
+  },
+  {
+    "id": "payments",
+    "policy": "Refunds above 200 require recorded supervisor approval before processing. Creating a refund request does not process the refund.",
+    "governed_action": {
+      "tool": "process_refund",
+      "description": "Processes the refund; state=queued means pending and state=processed means completion.",
+      "input_fields": [
+        "amount",
+        "order_id"
+      ]
+    },
+    "condition_menu": [
+      {
+        "predicate": "order.approved",
+        "tool_description": "Reports recorded supervisor approval for an order and amount.",
+        "entity_type": "order",
+        "input_fields": [
+          "amount",
+          "order_id"
+        ]
+      }
+    ]
+  },
+  {
+    "id": "service",
+    "policy": "Approval must be confirmed before swapping a device. Looking up approval is allowed before confirmation.",
+    "governed_action": {
+      "tool": "perform_swap",
+      "description": "Swaps the device; state=swapped means completion.",
+      "input_fields": [
+        "device_id"
+      ]
+    },
+    "condition_menu": [
+      {
+        "predicate": "device.approved",
+        "tool_description": "Reports whether a device swap is approved.",
+        "entity_type": "device",
+        "input_fields": [
+          "device_id"
+        ]
+      }
+    ]
+  },
+  {
+    "id": "records",
+    "policy": "Publishing a record requires consent and identity confirmation. An emergency notice may be published without consent, but identity confirmation remains required.",
+    "governed_action": {
+      "tool": "publish_notice",
+      "description": "Publishes the notice; state=published means completion.",
+      "input_fields": [
+        "notice_id"
+      ]
+    },
+    "condition_menu": [
+      {
+        "predicate": "notice.consent",
+        "tool_description": "Reports consent for this notice.",
+        "entity_type": "notice",
+        "input_fields": [
+          "notice_id"
+        ]
+      },
+      {
+        "predicate": "notice.emergency",
+        "tool_description": "Reports whether this notice is recorded as an emergency.",
+        "entity_type": "notice",
+        "input_fields": [
+          "notice_id"
+        ]
+      },
+      {
+        "predicate": "notice.identity_confirmed",
+        "tool_description": "Reports identity confirmation for this notice.",
+        "entity_type": "notice",
+        "input_fields": [
+          "notice_id"
+        ]
+      }
+    ]
+  },
+  {
+    "id": "library",
+    "policy": "A manuscript may be archived only if its clearance is active.",
+    "governed_action": {
+      "tool": "archive_manuscript",
+      "description": "Archives one manuscript; result state=archived means completion.",
+      "input_fields": [
+        "manuscript_id"
+      ]
+    },
+    "condition_menu": [
+      {
+        "predicate": "manuscript.clearance_active",
+        "tool_description": "Reports manuscript.clearance_active for the specified manuscript.",
+        "entity_type": "manuscript",
+        "input_fields": [
+          "manuscript_id"
+        ]
+      }
+    ]
+  },
+  {
+    "id": "warehouse",
+    "policy": "A pallet may be released only if approval covers the requested quantity.",
+    "governed_action": {
+      "tool": "release_pallet",
+      "description": "Releases one pallet; result state=released means completion.",
+      "input_fields": [
+        "pallet_id",
+        "quantity"
+      ]
+    },
+    "condition_menu": [
+      {
+        "predicate": "pallet.seal_approved",
+        "tool_description": "Reports pallet.seal_approved for the specified pallet.",
+        "entity_type": "pallet",
+        "input_fields": [
+          "pallet_id",
+          "quantity"
+        ]
+      }
+    ]
+  }
+]
