@@ -34,7 +34,32 @@ def _goal(row: dict) -> ReviewedGoal:
                         tuple(d["candidate_calls"]), d["evidence_source"])
 
 
-def run() -> dict:
+def _abstention_causes(result: dict) -> list[str]:
+    """Report missing proof edges, not post-hoc semantic ground truth."""
+    if result["status"] != "UNKNOWN":
+        return []
+    causes = set()
+    if not result["policy"]["program_count"]:
+        causes.add("POLICY_PARSE:program_absent")
+    elif not result["policy"]["reviewed_scope_complete"]:
+        causes.add("POLICY_PARSE:scope_unreviewed")
+    if result["world"]["acquisition_issues"]:
+        causes.add("SEMANTIC_EFFECT_BINDING:contract_unacquired")
+    if not result["claims"]["inventory_complete"]:
+        causes.add("CLAIM_PARSE:inventory_incomplete")
+    for issue in result["claims"]["issues"]:
+        if "literal_entity_value_or_scope_unbound" in issue:
+            causes.add("CLAIM_BINDING:literal_scope_unbound")
+        if "negated_literal" in issue:
+            causes.add("CLAIM_PARSE:negation_unresolved")
+        if "uncovered_response_words" in issue:
+            causes.add("CLAIM_PARSE:response_uncovered")
+    if result["refusal_branch"]["status"] == "UNKNOWN":
+        causes.add("REACHABILITY:refusal_scope_unresolved")
+    return sorted(causes)
+
+
+def run(*, no_reachability: bool = False) -> dict:
     traj = HERE / "frozen" / "trajectories_v1"
     refusal = HERE / "frozen" / "refusal_v1"
     reviewed = load_reviewed_programs(HERE / "reviewed_policy_programs_dev.json")
@@ -59,8 +84,9 @@ def run() -> dict:
                 as_case(row), response=row["target_response"]["text"],
                 response_index=row["target_response"]["index"],
                 programs=programs, reviewed_policy_scope_complete=False,
-                reviewed_goal=_goal(row),
-                reviewed_refusal=row["reviewed_refusal"],
+                reviewed_goal=None if no_reachability else _goal(row),
+                reviewed_refusal=(None if no_reachability else
+                                  row["reviewed_refusal"]),
                 user_request=row["user_request"],
                 catalog_complete=row["completeness"]["catalog_complete"])
             rows.append({"suite": f"refusal_{split}",
@@ -78,6 +104,7 @@ def run() -> dict:
         expected = gold[(suite, row["case_id"])]
         got = row["prediction"]["status"]
         row["gold_verdict"] = expected
+        row["abstention_causes"] = _abstention_causes(row["prediction"])
         c = counts.setdefault(suite, Counter())
         c.update({"total": 1, "correct": int(got == expected),
                   "pred_" + got: 1, "gold_" + expected: 1,
@@ -85,9 +112,12 @@ def run() -> dict:
                   "error_hidden_unknown": int(got == "UNKNOWN"
                                               and expected == "ERROR")})
     report = {"track": "integrated_entry_point_with_declared_oracle_scopes",
+              "ablation": "without_reachability" if no_reachability else "full",
               "counts": {k: dict(v) for k, v in counts.items()},
               "per_case": rows}
-    path = HERE / "outputs" / "system_runtime_diagnostic.json"
+    path = (HERE / "outputs" /
+            ("system_runtime_no_reachability.json" if no_reachability
+             else "system_runtime_diagnostic.json"))
     path.write_text(json.dumps(report, ensure_ascii=False, indent=2) + "\n",
                     encoding="utf-8")
     print(json.dumps(report["counts"], ensure_ascii=False))
@@ -95,4 +125,6 @@ def run() -> dict:
 
 
 if __name__ == "__main__":
-    run()
+    if len(sys.argv) > 2 or (len(sys.argv) == 2 and sys.argv[1] != "--no-reachability"):
+        raise SystemExit("usage: eval_system_runtime.py [--no-reachability]")
+    run(no_reachability=len(sys.argv) == 2)

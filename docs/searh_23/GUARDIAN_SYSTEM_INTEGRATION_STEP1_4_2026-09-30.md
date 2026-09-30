@@ -12,6 +12,16 @@
 `scripts/predict.py` не менялся. Это **промежуточный** отчёт: полный
 автоматический путь Step 1–4 и его sealed оценка пока отсутствуют.
 
+Короткий статус: **механическая проверка по уже разобранным правилам
+работает**, включая исключения, идентичность, время и допустимый следующий
+вызов. Единый runtime на 37 авторских траекториях с ручными policy/goal
+входами нашёл 11/11 ERROR без ложных тревог, но оставил 20 UNKNOWN.
+Автоматический узкий разбор policy дал только 3/6 exact dev и 1/2 exact
+sealed при подсказанном действии. Поэтому конкурсный детектор остаётся
+**NOT READY**; главная задача — доказать полноту автоматического
+`policy → governed action → conditions`, затем расширить contract/claim
+acquisition без неподтверждённых переходов.
+
 ## Step 1: paired F6 scope-veto regression
 
 Протокол заморожен до нового API-прогона в `c10bed0b`, код сравнения —
@@ -351,6 +361,19 @@ cached model claims → проверка claims → local reachability/refusal �
 случая скрыты из-за неполного или неверного Step3 binding: `service.lookup_only`,
 `service.lookup_denied`, `records.emergency_exception`, `records.request_identity`.
 Персональные цепочки находятся в `outputs/system_runtime_diagnostic.json`.
+Decided coverage здесь 17/37, accuracy среди решённых 17/17, ERROR recall
+11/11, NO_ERROR recall 6/16, UNKNOWN rate 20/37. Высокая точность среди
+решённых достигнута ценой 54% abstention и с ручными входами; это не
+конкурсная оценка.
+
+Автоматическая диагностика недостающих рёбер пометила четыре full-dev
+ошибочных abstention как `CLAIM_PARSE:inventory_incomplete`; в двух из них
+добавилась `CLAIM_BINDING:literal_scope_unbound`, в одном — неразрешённое
+отрицание. У шести оправданных отказов причина общесистемного UNKNOWN:
+refusal-ветка доказала `CLOSED`, но для полного `NO_ERROR` нет независимого
+инвентаря остальных claims и исчерпывающей проверки всей policy. Эти коды
+описывают отсутствующий proof edge, а не автоматически доказанную
+семантическую первопричину ошибки модели.
 
 Это **не end-to-end автоматическая метрика**: full dev использует четыре
 вручную заданных policy program и ручную отметку отсутствия отказа, а
@@ -374,3 +397,57 @@ runtime локальны, но Step1/4 ещё требуют oracle-аннота
 для candidate prompt не запускался. F6 graph и response-only probe имеют
 отдельные затраты и не складываются с этой условной системой как один
 эксплуатационный тариф.
+
+### Контроль действующего `scripts/predict.py` на 41 полной траектории
+
+Конвертер входов зафиксирован в `bafb977a` до API-вызовов. Каждая
+траектория переведена в формат policy + полный каталог (включая исходные
+документированные контракты) + user/assistant/tool history + target reply.
+У всех 41 случаев каталог и JSON вызовов/результатов разобрались без ошибок.
+Конкурсный код не менялся: `--backend mistral --mode graph`, модель из
+серверного `MISTRAL_MODEL`, threshold .5, recovery off. Технический binary
+fallback 0 пересчитан как UNKNOWN по аудиту, а не как содержательный
+`NO_ERROR`. Ни входы, ни параметры после dev-результата не менялись.
+
+| Split | Cases | Exact 3-way | Decided | ERROR recall | False ERROR | NO_ERROR recall | UNKNOWN | API tokens |
+| --- | ---: | ---: | ---: | ---: | ---: | ---: | ---: | ---: |
+| dev | 21 | 7 | 19 | 6/6 | 12 | 1/10 | 2 | 51,487 |
+| sealed | 20 | 6 | 14 | 5/7 | 9 | 0/8 | 6 | 46,640 |
+
+Все 41 API-вызов заняли около 174 секунд серверного времени. Ни одного
+механического нарушения не сработало: решения пришли из uncalibrated
+semantic score. Два настоящих sealed ERROR скрыты под UNKNOWN; пропусков
+ERROR с уверенным NO_ERROR не было. На dev `service.lookup_only` модель
+объявила фразу «I can swap» совершённой заменой, хотя был только
+`lookup_approval`. Для `records.emergency_exception` она прямо инвертировала
+оговорку: назвала emergency недостаточным для отмены consent, хотя policy
+говорит обратное. Для `payments.approved` она ошибочно отрицала подтверждение
+суммы 250. Это типы ошибок action-mode, exception и scope binding,
+наблюдаемые в сырых `outputs/existing_detector_*_audit.jsonl`.
+
+На **одних и тех же 21 dev входах** условный proof runtime дал 17/21 и
+0 false ERROR против 7/21 и 12 false ERROR у действующего детектора.
+Это **не честный выигрыш новой автоматической архитектуры**: proof runtime
+получил reviewed policy и ручной non-refusal scope, тогда как текущий
+детектор работал из сырого текста. На 20 sealed full trajectories у новой
+цепочки нет проверенного автоматического policy/claim acquisition; мы не
+подставляли туда gold задним числом и не заявляем сравнимую sealed метрику.
+Скрипт `score_existing_detector_control.py` и per-case scores сохраняют
+статусы и стоимость обоих рукавов.
+
+### Что дали и не дали ablation-контроли
+
+| Изъятый/заменённый компонент | Измеренный эффект | Граница вывода |
+| --- | --- | --- |
+| F6 scope veto выключен/включён | 24-case paired: F1 .658 → .658; TP 24 → 25, FP 6 → 8 | На просмотренном F6 улучшения нет; flag оставлен выключенным. |
+| Gold claim interpretation заменён model candidate + literal compiler | Reviewed-policy dev: 21/21 → 17/21; ERROR остаются 6/6, 4 корректных ответа становятся UNKNOWN | Разница из Step3 acquisition/binding, policy и Step2 неизменны. |
+| Reachability исключена | Paired replay на тех же 16 отказах: 5/5 ERROR → 0/5, все 16 становятся UNKNOWN; отдельная Step4 ветка с reachability дала 16/16 scoped verdict | Цель, полный action inventory и policy предоставлены вручную; `outputs/system_runtime_no_reachability.json`. |
+| Latest-prior state заменён первым увиденным значением | На тех же 37 траекториях `warehouse.revoked` даёт ложный ERROR, а `warehouse.restored` скрывает ERROR под UNKNOWN | Offline diagnostic `outputs/system_runtime_first_prior.json`; это удаление supersession, не всех временных проверок. |
+| Documented semantic contract отсутствует | Step2 sealed: только 20/40 WorldFacts вместо 40/40 gold, 0 вымышленных | Это замер границы contract acquisition, не разрешение угадывать contract из prose. |
+
+Для semantic-binding guard, claim-evidence check и verdict-aware escalation
+пока есть адресные контрпримеры и тесты, но нет
+полноценного paired sealed выключения на всех 41 траекториях. Поэтому
+эффект каждого из них отдельно в общей метрике **не установлен**.
+Порог .5 у старого детектора не калиброван на этих данных; его низкие
+результаты нельзя лечить post-hoc выбором другого порога на sealed.
