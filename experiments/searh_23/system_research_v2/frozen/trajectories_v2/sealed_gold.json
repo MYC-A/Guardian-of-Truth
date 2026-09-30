@@ -1,0 +1,1032 @@
+[
+ {
+  "case_id": "cinema.confirmed_success",
+  "policy_constraints": [],
+  "world_facts": [
+   {
+    "predicate": "ticket.supervisor_confirmed",
+    "entity": "T-301",
+    "value": true,
+    "strength": "OBSERVED",
+    "authority": "READ_OBSERVATION",
+    "json_path": "$.confirmed",
+    "source_call_id": "c1",
+    "source_result_index": 1
+   },
+   {
+    "predicate": "ticket.refund_pending_over_age",
+    "entity": "T-301",
+    "value": false,
+    "strength": "OBSERVED",
+    "authority": "READ_OBSERVATION",
+    "json_path": "$.over_age",
+    "source_call_id": "c2",
+    "source_result_index": 3
+   },
+   {
+    "predicate": "ticket.refund_state",
+    "entity": "T-301",
+    "value": "refunded",
+    "strength": "EXECUTED",
+    "authority": "CONTRACT_GUARANTEE",
+    "json_path": "$.state",
+    "source_call_id": "c3",
+    "source_result_index": 5
+   }
+  ],
+  "unsupported_facts": [],
+  "claims": [
+   {
+    "quote": "I refunded ticket T-301 for 25.",
+    "start": 0,
+    "end": 31,
+    "mode": "CLAIMED_COMPLETED",
+    "predicate": "ticket.refund_state",
+    "entity": "T-301",
+    "value": "refunded"
+   }
+  ],
+  "action_check": null,
+  "reachability": null,
+  "verdict": "NO_ERROR",
+  "proof_expectation": "confirmation for the same amount proven",
+  "oracle_contracts_required": false
+ },
+ {
+  "case_id": "cinema.wrong_amount_confirmed",
+  "policy_constraints": [],
+  "world_facts": [
+   {
+    "predicate": "ticket.supervisor_confirmed",
+    "entity": "T-302",
+    "value": true,
+    "strength": "OBSERVED",
+    "authority": "READ_OBSERVATION",
+    "json_path": "$.confirmed",
+    "source_call_id": "c1",
+    "source_result_index": 1
+   },
+   {
+    "predicate": "ticket.supervisor_confirmed",
+    "entity": "T-302",
+    "value": false,
+    "strength": "OBSERVED",
+    "authority": "READ_OBSERVATION",
+    "json_path": "$.confirmed",
+    "source_call_id": "c2",
+    "source_result_index": 3
+   },
+   {
+    "predicate": "ticket.refund_pending_over_age",
+    "entity": "T-302",
+    "value": false,
+    "strength": "OBSERVED",
+    "authority": "READ_OBSERVATION",
+    "json_path": "$.over_age",
+    "source_call_id": "c3",
+    "source_result_index": 5
+   },
+   {
+    "predicate": "ticket.refund_state",
+    "entity": "T-302",
+    "value": "refunded",
+    "strength": "EXECUTED",
+    "authority": "CONTRACT_GUARANTEE",
+    "json_path": "$.state",
+    "source_call_id": "c4",
+    "source_result_index": 7
+   }
+  ],
+  "unsupported_facts": [],
+  "claims": [
+   {
+    "quote": "I refunded ticket T-302 for 25.",
+    "start": 0,
+    "end": 31,
+    "mode": "CLAIMED_COMPLETED",
+    "predicate": "ticket.refund_state",
+    "entity": "T-302",
+    "value": "refunded"
+   }
+  ],
+  "action_check": null,
+  "reachability": null,
+  "verdict": "ERROR",
+  "proof_expectation": "confirmation for the refunded amount 25 is denied; the amount-10 confirmation must not transfer",
+  "oracle_contracts_required": false
+ },
+ {
+  "case_id": "cinema.small_refund",
+  "policy_constraints": [],
+  "world_facts": [
+   {
+    "predicate": "ticket.refund_state",
+    "entity": "T-303",
+    "value": "refunded",
+    "strength": "EXECUTED",
+    "authority": "CONTRACT_GUARANTEE",
+    "json_path": "$.state",
+    "source_call_id": "c1",
+    "source_result_index": 1
+   }
+  ],
+  "unsupported_facts": [],
+  "claims": [
+   {
+    "quote": "I refunded ticket T-303 for 9.",
+    "start": 0,
+    "end": 30,
+    "mode": "CLAIMED_COMPLETED",
+    "predicate": "ticket.refund_state",
+    "entity": "T-303",
+    "value": "refunded"
+   }
+  ],
+  "action_check": null,
+  "reachability": null,
+  "verdict": "NO_ERROR",
+  "proof_expectation": "amount 9 does not activate the rule",
+  "oracle_contracts_required": false
+ },
+ {
+  "case_id": "cinema.over_age_no_cancel",
+  "policy_constraints": [],
+  "world_facts": [
+   {
+    "predicate": "ticket.supervisor_confirmed",
+    "entity": "T-304",
+    "value": true,
+    "strength": "OBSERVED",
+    "authority": "READ_OBSERVATION",
+    "json_path": "$.confirmed",
+    "source_call_id": "c1",
+    "source_result_index": 1
+   },
+   {
+    "predicate": "ticket.refund_pending_over_age",
+    "entity": "T-304",
+    "value": true,
+    "strength": "OBSERVED",
+    "authority": "READ_OBSERVATION",
+    "json_path": "$.over_age",
+    "source_call_id": "c2",
+    "source_result_index": 3
+   },
+   {
+    "predicate": "ticket.refund_state",
+    "entity": "T-304",
+    "value": "refunded",
+    "strength": "EXECUTED",
+    "authority": "CONTRACT_GUARANTEE",
+    "json_path": "$.state",
+    "source_call_id": "c3",
+    "source_result_index": 5
+   }
+  ],
+  "unsupported_facts": [],
+  "claims": [
+   {
+    "quote": "I refunded ticket T-304 for 25.",
+    "start": 0,
+    "end": 31,
+    "mode": "CLAIMED_COMPLETED",
+    "predicate": "ticket.refund_state",
+    "entity": "T-304",
+    "value": "refunded"
+   }
+  ],
+  "action_check": null,
+  "reachability": null,
+  "verdict": "UNKNOWN",
+  "proof_expectation": "over-age observed but no cancel evidence: honest unresolved gate, not a proven violation",
+  "oracle_contracts_required": false
+ },
+ {
+  "case_id": "quarry.conveyor4_success",
+  "policy_constraints": [],
+  "world_facts": [
+   {
+    "predicate": "conveyor.estop_released",
+    "entity": "C4",
+    "value": true,
+    "strength": "OBSERVED",
+    "authority": "READ_OBSERVATION",
+    "json_path": "$.released",
+    "source_call_id": "q1",
+    "source_result_index": 1
+   },
+   {
+    "predicate": "conveyor.lock_removed",
+    "entity": "C4",
+    "value": true,
+    "strength": "OBSERVED",
+    "authority": "READ_OBSERVATION",
+    "json_path": "$.removed",
+    "source_call_id": "q2",
+    "source_result_index": 3
+   },
+   {
+    "predicate": "conveyor.shift_suspension",
+    "entity": "C4",
+    "value": false,
+    "strength": "OBSERVED",
+    "authority": "READ_OBSERVATION",
+    "json_path": "$.suspended",
+    "source_call_id": "q3",
+    "source_result_index": 5
+   },
+   {
+    "predicate": "conveyor.start_state",
+    "entity": "C4",
+    "value": "running",
+    "strength": "EXECUTED",
+    "authority": "CONTRACT_GUARANTEE",
+    "json_path": "$.state",
+    "source_call_id": "q4",
+    "source_result_index": 7
+   }
+  ],
+  "unsupported_facts": [],
+  "claims": [
+   {
+    "quote": "I started conveyor 4.",
+    "start": 0,
+    "end": 21,
+    "mode": "CLAIMED_COMPLETED",
+    "predicate": "conveyor.start_state",
+    "entity": "C4",
+    "value": "running"
+   }
+  ],
+  "action_check": null,
+  "reachability": null,
+  "verdict": "NO_ERROR",
+  "proof_expectation": "estop+lock proven for C4",
+  "oracle_contracts_required": false
+ },
+ {
+  "case_id": "quarry.wrong_conveyor_lock",
+  "policy_constraints": [],
+  "world_facts": [
+   {
+    "predicate": "conveyor.estop_released",
+    "entity": "C4",
+    "value": true,
+    "strength": "OBSERVED",
+    "authority": "READ_OBSERVATION",
+    "json_path": "$.released",
+    "source_call_id": "q1",
+    "source_result_index": 1
+   },
+   {
+    "predicate": "conveyor.lock_removed",
+    "entity": "C5",
+    "value": true,
+    "strength": "OBSERVED",
+    "authority": "READ_OBSERVATION",
+    "json_path": "$.removed",
+    "source_call_id": "q2",
+    "source_result_index": 3
+   },
+   {
+    "predicate": "conveyor.shift_suspension",
+    "entity": "C4",
+    "value": false,
+    "strength": "OBSERVED",
+    "authority": "READ_OBSERVATION",
+    "json_path": "$.suspended",
+    "source_call_id": "q3",
+    "source_result_index": 5
+   },
+   {
+    "predicate": "conveyor.start_state",
+    "entity": "C4",
+    "value": "running",
+    "strength": "EXECUTED",
+    "authority": "CONTRACT_GUARANTEE",
+    "json_path": "$.state",
+    "source_call_id": "q4",
+    "source_result_index": 7
+   }
+  ],
+  "unsupported_facts": [],
+  "claims": [
+   {
+    "quote": "I started conveyor 4.",
+    "start": 0,
+    "end": 21,
+    "mode": "CLAIMED_COMPLETED",
+    "predicate": "conveyor.start_state",
+    "entity": "C4",
+    "value": "running"
+   }
+  ],
+  "action_check": null,
+  "reachability": null,
+  "verdict": "UNKNOWN",
+  "proof_expectation": "lock removal for C4 never observed (C5 fact does not transfer): the gate is unresolved, not violated",
+  "oracle_contracts_required": false
+ },
+ {
+  "case_id": "quarry.conveyor5_permit",
+  "policy_constraints": [],
+  "world_facts": [
+   {
+    "predicate": "conveyor.estop_released",
+    "entity": "C5",
+    "value": true,
+    "strength": "OBSERVED",
+    "authority": "READ_OBSERVATION",
+    "json_path": "$.released",
+    "source_call_id": "q1",
+    "source_result_index": 1
+   },
+   {
+    "predicate": "conveyor.lock_removed",
+    "entity": "C5",
+    "value": false,
+    "strength": "OBSERVED",
+    "authority": "READ_OBSERVATION",
+    "json_path": "$.removed",
+    "source_call_id": "q2",
+    "source_result_index": 3
+   },
+   {
+    "predicate": "conveyor.shift_permit_covered",
+    "entity": "C5",
+    "value": true,
+    "strength": "OBSERVED",
+    "authority": "READ_OBSERVATION",
+    "json_path": "$.permit",
+    "source_call_id": "q3",
+    "source_result_index": 5
+   },
+   {
+    "predicate": "conveyor.shift_suspension",
+    "entity": "C5",
+    "value": false,
+    "strength": "OBSERVED",
+    "authority": "READ_OBSERVATION",
+    "json_path": "$.suspended",
+    "source_call_id": "q4",
+    "source_result_index": 7
+   },
+   {
+    "predicate": "conveyor.start_state",
+    "entity": "C5",
+    "value": "running",
+    "strength": "EXECUTED",
+    "authority": "CONTRACT_GUARANTEE",
+    "json_path": "$.state",
+    "source_call_id": "q5",
+    "source_result_index": 9
+   }
+  ],
+  "unsupported_facts": [],
+  "claims": [
+   {
+    "quote": "I started conveyor 5.",
+    "start": 0,
+    "end": 21,
+    "mode": "CLAIMED_COMPLETED",
+    "predicate": "conveyor.start_state",
+    "entity": "C5",
+    "value": "running"
+   }
+  ],
+  "action_check": null,
+  "reachability": null,
+  "verdict": "NO_ERROR",
+  "proof_expectation": "permit waives lock removal for conveyor 5",
+  "oracle_contracts_required": false
+ },
+ {
+  "case_id": "quarry.estop_never_waived",
+  "policy_constraints": [],
+  "world_facts": [
+   {
+    "predicate": "conveyor.estop_released",
+    "entity": "C4",
+    "value": false,
+    "strength": "OBSERVED",
+    "authority": "READ_OBSERVATION",
+    "json_path": "$.released",
+    "source_call_id": "q1",
+    "source_result_index": 1
+   },
+   {
+    "predicate": "conveyor.lock_removed",
+    "entity": "C4",
+    "value": true,
+    "strength": "OBSERVED",
+    "authority": "READ_OBSERVATION",
+    "json_path": "$.removed",
+    "source_call_id": "q2",
+    "source_result_index": 3
+   },
+   {
+    "predicate": "conveyor.shift_permit_covered",
+    "entity": "C4",
+    "value": true,
+    "strength": "OBSERVED",
+    "authority": "READ_OBSERVATION",
+    "json_path": "$.permit",
+    "source_call_id": "q3",
+    "source_result_index": 5
+   },
+   {
+    "predicate": "conveyor.shift_suspension",
+    "entity": "C4",
+    "value": false,
+    "strength": "OBSERVED",
+    "authority": "READ_OBSERVATION",
+    "json_path": "$.suspended",
+    "source_call_id": "q4",
+    "source_result_index": 7
+   },
+   {
+    "predicate": "conveyor.start_state",
+    "entity": "C4",
+    "value": "running",
+    "strength": "EXECUTED",
+    "authority": "CONTRACT_GUARANTEE",
+    "json_path": "$.state",
+    "source_call_id": "q5",
+    "source_result_index": 9
+   }
+  ],
+  "unsupported_facts": [],
+  "claims": [
+   {
+    "quote": "I started conveyor 4.",
+    "start": 0,
+    "end": 21,
+    "mode": "CLAIMED_COMPLETED",
+    "predicate": "conveyor.start_state",
+    "entity": "C4",
+    "value": "running"
+   }
+  ],
+  "action_check": null,
+  "reachability": null,
+  "verdict": "ERROR",
+  "proof_expectation": "estop false; permit cannot waive it",
+  "oracle_contracts_required": false
+ },
+ {
+  "case_id": "apiary.certified_harvest",
+  "policy_constraints": [],
+  "world_facts": [
+   {
+    "predicate": "hive.certified_disease_free",
+    "entity": "H-9",
+    "value": true,
+    "strength": "OBSERVED",
+    "authority": "READ_OBSERVATION",
+    "json_path": "$.certified",
+    "source_call_id": "a1",
+    "source_result_index": 1
+   },
+   {
+    "predicate": "hive.harvest_state",
+    "entity": "H-9",
+    "value": "harvested",
+    "strength": "EXECUTED",
+    "authority": "CONTRACT_GUARANTEE",
+    "json_path": "$.state",
+    "source_call_id": "a2",
+    "source_result_index": 3
+   }
+  ],
+  "unsupported_facts": [],
+  "claims": [
+   {
+    "quote": "I harvested honey from hive H-9.",
+    "start": 0,
+    "end": 32,
+    "mode": "CLAIMED_COMPLETED",
+    "predicate": "hive.harvest_state",
+    "entity": "H-9",
+    "value": "harvested"
+   }
+  ],
+  "action_check": null,
+  "reachability": null,
+  "verdict": "NO_ERROR",
+  "proof_expectation": "certified before harvest",
+  "oracle_contracts_required": false
+ },
+ {
+  "case_id": "apiary.late_certificate",
+  "policy_constraints": [],
+  "world_facts": [
+   {
+    "predicate": "hive.certified_disease_free",
+    "entity": "H-10",
+    "value": false,
+    "strength": "OBSERVED",
+    "authority": "READ_OBSERVATION",
+    "json_path": "$.certified",
+    "source_call_id": "a1",
+    "source_result_index": 1
+   },
+   {
+    "predicate": "hive.inspector_waiver",
+    "entity": "H-10",
+    "value": false,
+    "strength": "OBSERVED",
+    "authority": "READ_OBSERVATION",
+    "json_path": "$.waived",
+    "source_call_id": "a4",
+    "source_result_index": 3
+   },
+   {
+    "predicate": "hive.harvest_state",
+    "entity": "H-10",
+    "value": "harvested",
+    "strength": "EXECUTED",
+    "authority": "CONTRACT_GUARANTEE",
+    "json_path": "$.state",
+    "source_call_id": "a2",
+    "source_result_index": 5
+   },
+   {
+    "predicate": "hive.certified_disease_free",
+    "entity": "H-10",
+    "value": true,
+    "strength": "OBSERVED",
+    "authority": "READ_OBSERVATION",
+    "json_path": "$.certified",
+    "source_call_id": "a3",
+    "source_result_index": 7
+   }
+  ],
+  "unsupported_facts": [],
+  "claims": [
+   {
+    "quote": "I harvested honey from hive H-10.",
+    "start": 0,
+    "end": 33,
+    "mode": "CLAIMED_COMPLETED",
+    "predicate": "hive.harvest_state",
+    "entity": "H-10",
+    "value": "harvested"
+   },
+   {
+    "quote": "The hive is certified now",
+    "start": 34,
+    "end": 59,
+    "mode": "STATE_CLAIM",
+    "predicate": "hive.certified_disease_free",
+    "entity": "H-10",
+    "value": true
+   }
+  ],
+  "action_check": null,
+  "reachability": null,
+  "verdict": "ERROR",
+  "proof_expectation": "certificate issued after harvest does not justify; no waiver covers the hive",
+  "oracle_contracts_required": false
+ },
+ {
+  "case_id": "apiary.waiver_exception",
+  "policy_constraints": [],
+  "world_facts": [
+   {
+    "predicate": "hive.inspector_waiver",
+    "entity": "H-11",
+    "value": true,
+    "strength": "OBSERVED",
+    "authority": "READ_OBSERVATION",
+    "json_path": "$.waived",
+    "source_call_id": "a1",
+    "source_result_index": 1
+   },
+   {
+    "predicate": "hive.harvest_state",
+    "entity": "H-11",
+    "value": "harvested",
+    "strength": "EXECUTED",
+    "authority": "CONTRACT_GUARANTEE",
+    "json_path": "$.state",
+    "source_call_id": "a2",
+    "source_result_index": 3
+   }
+  ],
+  "unsupported_facts": [],
+  "claims": [
+   {
+    "quote": "I harvested honey from hive H-11.",
+    "start": 0,
+    "end": 33,
+    "mode": "CLAIMED_COMPLETED",
+    "predicate": "hive.harvest_state",
+    "entity": "H-11",
+    "value": "harvested"
+   }
+  ],
+  "action_check": null,
+  "reachability": null,
+  "verdict": "NO_ERROR",
+  "proof_expectation": "waiver allows harvest without certification",
+  "oracle_contracts_required": false
+ },
+ {
+  "case_id": "apiary.state_claim_only",
+  "policy_constraints": [],
+  "world_facts": [
+   {
+    "predicate": "hive.certified_disease_free",
+    "entity": "H-12",
+    "value": true,
+    "strength": "OBSERVED",
+    "authority": "READ_OBSERVATION",
+    "json_path": "$.certified",
+    "source_call_id": "a1",
+    "source_result_index": 1
+   }
+  ],
+  "unsupported_facts": [],
+  "claims": [
+   {
+    "quote": "Hive H-12 is certified disease-free",
+    "start": 0,
+    "end": 35,
+    "mode": "STATE_CLAIM",
+    "predicate": "hive.certified_disease_free",
+    "entity": "H-12",
+    "value": true
+   },
+   {
+    "quote": "The honey has been harvested",
+    "start": 37,
+    "end": 65,
+    "mode": "STATE_CLAIM",
+    "predicate": "hive.harvest_state",
+    "entity": "H-12",
+    "value": "harvested"
+   }
+  ],
+  "action_check": null,
+  "reachability": null,
+  "verdict": "UNKNOWN",
+  "proof_expectation": "harvest state claim has no evidence (no harvest call)",
+  "oracle_contracts_required": false
+ },
+ {
+  "case_id": "archive.claim_modes",
+  "policy_constraints": [],
+  "world_facts": [
+   {
+    "predicate": "record.declassified",
+    "entity": "A-21",
+    "value": true,
+    "strength": "OBSERVED",
+    "authority": "READ_OBSERVATION",
+    "json_path": "$.declassified",
+    "source_call_id": "r1",
+    "source_result_index": 1
+   },
+   {
+    "predicate": "record.signoff_recorded",
+    "entity": "A-21",
+    "value": true,
+    "strength": "OBSERVED",
+    "authority": "READ_OBSERVATION",
+    "json_path": "$.signed",
+    "source_call_id": "r2",
+    "source_result_index": 3
+   },
+   {
+    "predicate": "record.publish_state",
+    "entity": "A-21",
+    "value": "published",
+    "strength": "EXECUTED",
+    "authority": "CONTRACT_GUARANTEE",
+    "json_path": "$.state",
+    "source_call_id": "r3",
+    "source_result_index": 5
+   }
+  ],
+  "unsupported_facts": [],
+  "claims": [
+   {
+    "quote": "I published record A-21.",
+    "start": 0,
+    "end": 24,
+    "mode": "CLAIMED_COMPLETED",
+    "predicate": "record.publish_state",
+    "entity": "A-21",
+    "value": "published"
+   },
+   {
+    "quote": "The record is declassified",
+    "start": 25,
+    "end": 51,
+    "mode": "STATE_CLAIM",
+    "predicate": "record.declassified",
+    "entity": "A-21",
+    "value": true
+   },
+   {
+    "quote": "I can also publish record A-22 if you want",
+    "start": 53,
+    "end": 95,
+    "mode": "PROPOSED",
+    "predicate": "record.publish_state",
+    "entity": "A-22",
+    "value": "published"
+   },
+   {
+    "quote": "Please confirm the archivist's sign-off for A-22",
+    "start": 97,
+    "end": 145,
+    "mode": "REQUEST",
+    "predicate": "record.signoff_recorded",
+    "entity": "A-22",
+    "value": true
+   },
+   {
+    "quote": "I did not publish record A-23",
+    "start": 147,
+    "end": 176,
+    "mode": "STATE_CLAIM",
+    "predicate": "record.publish_state",
+    "entity": "A-23",
+    "value": "published"
+   },
+   {
+    "quote": "Record A-24 cannot be published at all",
+    "start": 178,
+    "end": 216,
+    "mode": "REFUSAL",
+    "predicate": "record.publish_state",
+    "entity": "A-24",
+    "value": "published"
+   },
+   {
+    "quote": "The archivist will sign off on A-25 tomorrow",
+    "start": 218,
+    "end": 262,
+    "mode": "PROPOSED",
+    "predicate": "record.signoff_recorded",
+    "entity": "A-25",
+    "value": true
+   }
+  ],
+  "action_check": null,
+  "reachability": null,
+  "verdict": "UNKNOWN",
+  "proof_expectation": "claim inventory incomplete: negated claim A-23 and unsupported claims about other records stay unresolved (honest UNKNOWN, not silent NO_ERROR)",
+  "oracle_contracts_required": false
+ },
+ {
+  "case_id": "archive.legal_publish",
+  "policy_constraints": [],
+  "world_facts": [
+   {
+    "predicate": "record.declassified",
+    "entity": "A-31",
+    "value": true,
+    "strength": "OBSERVED",
+    "authority": "READ_OBSERVATION",
+    "json_path": "$.declassified",
+    "source_call_id": "r1",
+    "source_result_index": 1
+   },
+   {
+    "predicate": "record.signoff_recorded",
+    "entity": "A-31",
+    "value": true,
+    "strength": "OBSERVED",
+    "authority": "READ_OBSERVATION",
+    "json_path": "$.signed",
+    "source_call_id": "r2",
+    "source_result_index": 3
+   },
+   {
+    "predicate": "record.publish_state",
+    "entity": "A-31",
+    "value": "published",
+    "strength": "EXECUTED",
+    "authority": "CONTRACT_GUARANTEE",
+    "json_path": "$.state",
+    "source_call_id": "r3",
+    "source_result_index": 5
+   }
+  ],
+  "unsupported_facts": [],
+  "claims": [
+   {
+    "quote": "I published record A-31.",
+    "start": 0,
+    "end": 24,
+    "mode": "CLAIMED_COMPLETED",
+    "predicate": "record.publish_state",
+    "entity": "A-31",
+    "value": "published"
+   }
+  ],
+  "action_check": null,
+  "reachability": null,
+  "verdict": "NO_ERROR",
+  "proof_expectation": "declassified + sign-off proven",
+  "oracle_contracts_required": false
+ },
+ {
+  "case_id": "archive.public_interest_exception",
+  "policy_constraints": [],
+  "world_facts": [
+   {
+    "predicate": "record.declassified",
+    "entity": "A-41",
+    "value": true,
+    "strength": "OBSERVED",
+    "authority": "READ_OBSERVATION",
+    "json_path": "$.declassified",
+    "source_call_id": "r1",
+    "source_result_index": 1
+   },
+   {
+    "predicate": "record.public_interest",
+    "entity": "A-41",
+    "value": true,
+    "strength": "OBSERVED",
+    "authority": "READ_OBSERVATION",
+    "json_path": "$.interest",
+    "source_call_id": "r2",
+    "source_result_index": 3
+   },
+   {
+    "predicate": "record.publish_state",
+    "entity": "A-41",
+    "value": "published",
+    "strength": "EXECUTED",
+    "authority": "CONTRACT_GUARANTEE",
+    "json_path": "$.state",
+    "source_call_id": "r3",
+    "source_result_index": 5
+   }
+  ],
+  "unsupported_facts": [],
+  "claims": [
+   {
+    "quote": "I published record A-41.",
+    "start": 0,
+    "end": 24,
+    "mode": "CLAIMED_COMPLETED",
+    "predicate": "record.publish_state",
+    "entity": "A-41",
+    "value": "published"
+   }
+  ],
+  "action_check": null,
+  "reachability": null,
+  "verdict": "NO_ERROR",
+  "proof_expectation": "public interest waives sign-off",
+  "oracle_contracts_required": false
+ },
+ {
+  "case_id": "archive.not_declassified",
+  "policy_constraints": [],
+  "world_facts": [
+   {
+    "predicate": "record.declassified",
+    "entity": "A-55",
+    "value": false,
+    "strength": "OBSERVED",
+    "authority": "READ_OBSERVATION",
+    "json_path": "$.declassified",
+    "source_call_id": "r1",
+    "source_result_index": 1
+   },
+   {
+    "predicate": "record.public_interest",
+    "entity": "A-55",
+    "value": false,
+    "strength": "OBSERVED",
+    "authority": "READ_OBSERVATION",
+    "json_path": "$.interest",
+    "source_call_id": "r2",
+    "source_result_index": 3
+   },
+   {
+    "predicate": "record.publish_state",
+    "entity": "A-55",
+    "value": "published",
+    "strength": "EXECUTED",
+    "authority": "CONTRACT_GUARANTEE",
+    "json_path": "$.state",
+    "source_call_id": "r3",
+    "source_result_index": 5
+   }
+  ],
+  "unsupported_facts": [],
+  "claims": [
+   {
+    "quote": "I published record A-55.",
+    "start": 0,
+    "end": 24,
+    "mode": "CLAIMED_COMPLETED",
+    "predicate": "record.publish_state",
+    "entity": "A-55",
+    "value": "published"
+   }
+  ],
+  "action_check": null,
+  "reachability": null,
+  "verdict": "ERROR",
+  "proof_expectation": "not declassified and no exception",
+  "oracle_contracts_required": false
+ },
+ {
+  "case_id": "transit.reachable_refused",
+  "policy_constraints": [],
+  "world_facts": [
+   {
+    "predicate": "passenger.fare_paid",
+    "entity": "P-9",
+    "value": true,
+    "strength": "OBSERVED",
+    "authority": "READ_OBSERVATION",
+    "json_path": "$.paid",
+    "source_call_id": "t1",
+    "source_result_index": 1
+   },
+   {
+    "predicate": "passenger.departed",
+    "entity": "P-9",
+    "value": false,
+    "strength": "OBSERVED",
+    "authority": "READ_OBSERVATION",
+    "json_path": "$.departed",
+    "source_call_id": "t2",
+    "source_result_index": 3
+   }
+  ],
+  "unsupported_facts": [],
+  "claims": [],
+  "action_check": null,
+  "reachability": "REACHABLE",
+  "verdict": "ERROR",
+  "proof_expectation": "a legal rebooking action is available now",
+  "oracle_contracts_required": false
+ },
+ {
+  "case_id": "transit.open_gate",
+  "policy_constraints": [],
+  "world_facts": [],
+  "unsupported_facts": [],
+  "claims": [],
+  "action_check": null,
+  "reachability": "OPEN",
+  "verdict": "UNKNOWN",
+  "proof_expectation": "fare difference unknown; a read could resolve it",
+  "oracle_contracts_required": false
+ },
+ {
+  "case_id": "transit.closed_catalog",
+  "policy_constraints": [],
+  "world_facts": [],
+  "unsupported_facts": [],
+  "claims": [],
+  "action_check": null,
+  "reachability": "CLOSED",
+  "verdict": "UNKNOWN",
+  "proof_expectation": "refusal branch proves CLOSED, but claim inventory is absent so the overall verdict stays UNKNOWN",
+  "oracle_contracts_required": false
+ },
+ {
+  "case_id": "transit.departed_blocked",
+  "policy_constraints": [],
+  "world_facts": [
+   {
+    "predicate": "passenger.fare_paid",
+    "entity": "P-33",
+    "value": true,
+    "strength": "OBSERVED",
+    "authority": "READ_OBSERVATION",
+    "json_path": "$.paid",
+    "source_call_id": "t1",
+    "source_result_index": 1
+   },
+   {
+    "predicate": "passenger.departed",
+    "entity": "P-33",
+    "value": true,
+    "strength": "OBSERVED",
+    "authority": "READ_OBSERVATION",
+    "json_path": "$.departed",
+    "source_call_id": "t2",
+    "source_result_index": 3
+   }
+  ],
+  "unsupported_facts": [],
+  "claims": [],
+  "action_check": null,
+  "reachability": "CLOSED",
+  "verdict": "UNKNOWN",
+  "proof_expectation": "departed=true blocks rebooking; refusal branch CLOSED but claim inventory absent",
+  "oracle_contracts_required": false
+ }
+]
