@@ -53,6 +53,9 @@ def _atom(query: dict, program: ReviewedProgram, target: CallEvent,
     required = scalar_to_json(query["value"])
     if entity is None or required is None:
         return _answer("UNKNOWN", "atom_value_not_scalar")
+    atom_ref = {"predicate": query["predicate"], "entity_type": query["entity_type"],
+                "entity_id": entity, "required_value": required,
+                "scope_joins": query["scope_joins"]}
     joins = query["scope_joins"]
     if not isinstance(joins, dict) or not all(isinstance(k, str) and isinstance(v, str)
                                                for k, v in joins.items()):
@@ -85,14 +88,17 @@ def _atom(query: dict, program: ReviewedProgram, target: CallEvent,
     view = scoped.latest(query["entity_type"], entity, query["predicate"],
                          as_of=target.index - 1)
     if view.truth is Truth.UNKNOWN or view.provenance is None:
-        return _answer("UNKNOWN", "no_prior_scoped_fact", cutoff=target.index - 1)
+        return _answer("UNKNOWN", "no_prior_scoped_fact", cutoff=target.index - 1,
+                       atom=atom_ref)
     if any(index >= view.observed_at for index in unresolved_time):
-        return _answer("UNKNOWN", "newer_scope_unresolved", fact=view.as_dict())
+        return _answer("UNKNOWN", "newer_scope_unresolved", fact=view.as_dict(),
+                       atom=atom_ref)
     if view.strength is None or view.strength.value not in allowed:
-        return _answer("UNKNOWN", "condition_strength_unproven", fact=view.as_dict())
+        return _answer("UNKNOWN", "condition_strength_unproven", fact=view.as_dict(),
+                       atom=atom_ref)
     return _answer("SATISFIED" if view.value == required else "VIOLATION",
                    "latest_prior_scoped_fact", required_value=required,
-                   fact=view.as_dict(), cutoff=target.index - 1)
+                   fact=view.as_dict(), cutoff=target.index - 1, atom=atom_ref)
 
 
 def _gate(node: dict, program: ReviewedProgram, target: CallEvent,
@@ -136,7 +142,7 @@ def _gate(node: dict, program: ReviewedProgram, target: CallEvent,
 
 
 def check_call(program: ReviewedProgram, case: TrajectoryCase, target: CallEvent,
-               facts: tuple[VerifiedFact, ...]) -> dict:
+               facts: tuple[VerifiedFact, ...], *, hypothetical: bool = False) -> dict:
     """Prove an attempted governed call's prerequisites as of call time."""
     source = {"quote": program.policy, "start": 0, "end": len(program.policy),
               "review": program.evidence_source}
@@ -149,8 +155,9 @@ def check_call(program: ReviewedProgram, case: TrajectoryCase, target: CallEvent
         return _answer("UNKNOWN", "governed_producer_unverified", source=source)
     if target.tool != program.governed_tool:
         return _answer("NOT_APPLICABLE", "different_tool", source=source)
-    if ([c for c in case.calls if c.call_id == target.call_id] != [target]
-            or target.actor != "assistant"):
+    present = [c for c in case.calls if c.call_id == target.call_id]
+    valid_target = (not present if hypothetical else present == [target])
+    if not valid_target or target.actor != "assistant":
         return _answer("UNKNOWN", "target_call_unverified", source=source)
     if program.when is not None:
         guard = program.when
@@ -169,7 +176,7 @@ def check_call(program: ReviewedProgram, case: TrajectoryCase, target: CallEvent
     proof = _gate(program.gate, program, target, case, facts)
     return {**proof, "target_call_id": target.call_id,
             "target_index": target.index, "cutoff": target.index - 1,
-            "source": source}
+            "source": source, "hypothetical": hypothetical}
 
 
 def load_reviewed_programs(path) -> tuple[ReviewedProgram, ...]:
