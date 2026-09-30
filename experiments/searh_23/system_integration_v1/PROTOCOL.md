@@ -19,10 +19,15 @@ exact graphs, contamination, and every changed case. Test the identity
 controls that motivated the port. This is regression on viewed F6, not a
 fresh holdout. No tuning after reading the F6 result.
 
-F6 converted input in this Windows checkout has SHA256
-`8937b3c92df546112be879c4bff8c6c7e4321c3db454bd9a0e1804ef9647bb29`.
-The original conversion manifest lists a different digest; verify the
-actual bytes and scoring input before claiming exact replay.
+F6 converted input has SHA256
+`8937b3c92df546112be879c4bff8c6c7e4321c3db454bd9a0e1804ef9647bb29`
+over the file bytes. The conversion manifest stores SHA256 of the same
+parsed JSON re-serialized with sorted keys:
+`737a9602841336876480e9c3d483a966c05f1f3c5a0a12f71a15ff93556df88c`.
+These match when calculated by the two documented methods. Historical F6
+node construction has an unordered-set type tie; use the same fixed
+`PYTHONHASHSEED=0` for a newly paired control and intervention, and keep
+the archived F6 result as a separate historical reference.
 
 ## System path and trust boundary
 
