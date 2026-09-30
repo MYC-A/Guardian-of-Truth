@@ -112,14 +112,35 @@ SHA256 — в `experiments/searh_23/system_integration_v1/frozen/trajectories_v1
 решения общей проблемы NL contract acquisition. Таймаут/ошибка не создают
 WorldFact даже при наличии похожего поля в payload.
 
+## Step 2: one-shot sealed check and raw observation boundary
+
+The documented-contract compiler was unchanged after the dev check. Its first
+sealed evaluation returned **20/40 exact facts, 0 extra, 20 missing**
+(precision 1.000, recall .500). Two held-out families have only prose tool
+descriptions; the compiler deliberately cannot infer semantic contracts from
+them. This is a coverage failure, not evidence that those tool results contain
+no useful information. The 41/41 dev result applies only where the authored
+catalog supplies explicit structured contracts. Neither score measures a
+complete Guardian verdict. The sealed score is recorded as-is in
+`outputs/step2_documented_sealed.json`; no post-result compiler tuning is
+allowed on this split.
+
+`integration/observations.py` now retains transport-verified scalar JSON
+fields from all uniquely paired tool results, including prose-only tools and
+failure payloads. It records the exact call, result index, path, value and
+payload type. This is source data only: it assigns no business predicate,
+entity scope, effect strength or authority. Three boundary tests pass. The
+next semantic acquisition stage must remain separately measured and must not
+promote a model guess into a reviewed contract.
+
 ## Остальные этапы
 
 Step 3: существующие claim extractors пока не подключены к этому runtime
 и не измерены на общей замороженной trajectory suite. Step 4: доказанная
 достижимость допустимого продолжения и отказ пока не подключены. Нет
 end-to-end TP/FP/FN/UNKNOWN, общей стоимости, multi-policy и ablation
-Step 3/4. Следующее решение — заморозить 30–50 полных траекторий с
-разделением dev/sealed и per-stage gold **до** настройки Step 3/4;
-затем измерить автоматический путь отдельно от oracle-контрактов.
+Step 3/4. Набор из 41 траектории уже заморожен; следующий шаг — связать
+Step 3/4 с текущим журналом фактов, отдельно измеряя автоматический путь
+и ablation с заранее заданными контрактами.
 
 Текущий статус: **NOT READY** как конкурсный интегрированный детектор.
