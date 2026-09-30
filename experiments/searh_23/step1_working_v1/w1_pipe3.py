@@ -36,6 +36,11 @@ from pl_common import Mistral, render_tool  # noqa: E402
 from lf_certificate import sanitize_quote, span_in  # noqa: E402
 
 OUT = HERE / "outputs"
+SCOPE_GUARD = os.environ.get("W1_SCOPE_GUARD", "0") == "1"
+if SCOPE_GUARD:
+    sys.path.insert(0, str(HERE.parents[2] / "src"))
+    from guardian_truth.integration.scope import scope_conflict
+
 CE_BAND = 0.35
 EVENTLIKE = {"EVENT", "EVENT_REFERENCE", "STATE_OR_FACET", "CHECK",
              "UNKNOWN"}
@@ -648,6 +653,12 @@ def build_nodes_v3(arm: str, case: dict) -> list[dict]:
     def union(x, y):
         rx, ry = find(x), find(y)
         if rx != ry:
+            if SCOPE_GUARD:
+                left = [k for k in kept if find(k) == rx]
+                right = [k for k in kept if find(k) == ry]
+                if any(scope_conflict(kept[a]["forms"], kept[b]["forms"], action_signature)
+                       for a in left for b in right):
+                    return
             parent[ry] = rx
 
     def union_compatible(x: str, y: str) -> bool:
@@ -753,6 +764,8 @@ def compatible_nodes(forms_x: list[str], forms_y: list[str]) -> bool:
     form whose SUBJECT argument IS the other side's action (asymmetric:
     an act whose OBJECT is the other action - 'Record the annealing' -
     is an operation ABOUT it, not a facet of it)."""
+    if SCOPE_GUARD and scope_conflict(forms_x, forms_y, action_signature):
+        return False
     sigs_x = [action_signature(f) for f in forms_x]
     sigs_y = [action_signature(f) for f in forms_y]
     for (ax, argsx), fx in zip(sigs_x, forms_x):
@@ -872,7 +885,14 @@ def consolidate_nodes(nodes: list[dict], policy: str) -> list[dict]:
     def union(a, b):
         ra, rb = find(a), find(b)
         if ra != rb:
+            if SCOPE_GUARD:
+                left = [i for i in range(n) if find(i) == ra]
+                right = [i for i in range(n) if find(i) == rb]
+                if any(scope_conflict(identity_forms(i), identity_forms(j), action_signature)
+                       for i in left for j in right):
+                    return False
             parent[max(ra, rb)] = min(ra, rb)
+        return True
 
     def spans_of(i):
         return nodes[i]["member_spans"] or [nodes[i]["span"]]
@@ -977,8 +997,8 @@ def consolidate_nodes(nodes: list[dict], policy: str) -> list[dict]:
                     if why:
                         break
             if why:
-                union(i, j)
-                merged_notes.append((i, j, why))
+                if union(i, j):
+                    merged_notes.append((i, j, why))
     if not merged_notes:
         return nodes
     groups: dict[int, list] = defaultdict(list)
@@ -1041,13 +1061,16 @@ def main() -> None:
     fname = {"f2": "level_f2_cases.json", "f3": "level_f3_cases.json",
              "f4": "level_f4_cases.json"}.get(
         os.environ.get("LF_SUITE"), "level_f_cases.json")
-    gold = {c["case_id"]: c for c in json.loads(
-        (IE / "frozen" / fname).read_text(encoding="utf-8"))}
+    inputs = Path(os.environ.get("W1_INPUTS", IE / "frozen" / fname))
+    gold = {c["case_id"]: c for c in json.loads(inputs.read_text(encoding="utf-8"))}
     rer = CrossEncoder("BAAI/bge-reranker-base", device="cuda",
                        max_length=512,
                        cache_folder="/workspace/guardian/hf_cache")
     client = Mistral(model="ministral-14b-latest", cache_dir=OUT / "_cache")
-    outdir = OUT / f"W1_DOWN10_{arm}"
+    run_root = Path(os.environ.get("W1_RUN_OUTPUTS", OUT))
+    if SCOPE_GUARD and run_root.resolve() == OUT.resolve():
+        raise RuntimeError("guarded research requires a separate W1_RUN_OUTPUTS")
+    outdir = run_root / f"W1_DOWN10_{arm}"
     outdir.mkdir(parents=True, exist_ok=True)
 
     def ask(system, user, max_tokens=600):
