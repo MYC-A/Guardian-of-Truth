@@ -65,3 +65,26 @@ def test_missing_reviewed_scope_or_refusal_review_cannot_grant_no_error():
             reviewed_policy_scope_complete=policy_complete,
             candidate_claim_raw=raw, reviewed_non_refusal=non_refusal)
         assert result["status"] == "UNKNOWN"
+
+
+def test_two_independent_rules_for_one_action_match_the_combined_rule():
+    rows = json.loads((HERE / "frozen/trajectories_v1/dev_inputs.json").read_text(
+        encoding="utf-8"))
+    raws = {x["case_id"]: x["prediction"]["raw"] for x in json.loads(
+        (HERE / "outputs/step3_candidate_dev.json").read_text(encoding="utf-8"))
+        ["per_case"]}
+    original = next(p for p in load_reviewed_programs(
+        HERE / "reviewed_policy_programs_dev.json")
+        if p.governed_tool == "publish_notice")
+    separate = tuple(replace(original, gate=part) for part in original.gate["all"])
+    for row in rows:
+        if row["family"] != "records":
+            continue
+        inputs = dict(response=row["target_response"]["text"],
+                      response_index=row["target_response"]["index"],
+                      reviewed_policy_scope_complete=True,
+                      candidate_claim_raw=raws[row["case_id"]],
+                      reviewed_non_refusal=True)
+        combined = analyze_system_case(as_case(row), programs=(original,), **inputs)
+        split = analyze_system_case(as_case(row), programs=separate, **inputs)
+        assert split["status"] == combined["status"], row["case_id"]
