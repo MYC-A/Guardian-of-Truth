@@ -1,429 +1,480 @@
 {
-  "family_id": "fam_ski_lift",
-  "domain_id": "ski_lift",
-  "split": "dev",
-  "notes": "numeric bound + temporal window; AND of two conditions; legitimate computed argument; irrelevant negative fact",
-  "policy": "A day pass may be issued to a guest only if the guest is at least 7 years old and the current lift status is OPEN. During a wind hold, passes may be issued but the issue note must record that the lift is on hold. Refunds for unused passes are allowed only within 48 hours of purchase. Guests with an active instructor assignment receive the pass free of charge.",
-  "catalog": [
+ "family_id": "fam_ski_lift",
+ "domain_id": "ski_lift",
+ "split": "dev",
+ "notes": "numeric bound + temporal window; AND of two conditions; legitimate computed argument; irrelevant negative fact",
+ "policy": "A day pass may be issued to a guest only if the guest is at least 7 years old and the current lift status is OPEN. During a wind hold, passes may be issued but the issue note must record that the lift is on hold. Refunds for unused passes are allowed only within 48 hours of purchase. Guests with an active instructor assignment receive the pass free of charge.",
+ "catalog": [
+  {
+   "name": "get_guest_profile",
+   "description": "Read the guest profile.",
+   "params": [
     {
-      "name": "get_guest_profile",
-      "description": "Read the guest profile.",
-      "params": [
-        {
-          "name": "guest_id",
-          "type": "string",
-          "required": true
-        }
-      ]
-    },
-    {
-      "name": "get_lift_status",
-      "description": "Read the current lift status.",
-      "params": [
-        {
-          "name": "lift_id",
-          "type": "string",
-          "required": true
-        }
-      ]
-    },
-    {
-      "name": "issue_day_pass",
-      "description": "Issue a day pass to a guest.",
-      "params": [
-        {
-          "name": "guest_id",
-          "type": "string",
-          "required": true
-        },
-        {
-          "name": "price",
-          "type": "number",
-          "required": true
-        },
-        {
-          "name": "note",
-          "type": "string",
-          "required": false
-        }
-      ]
-    },
-    {
-      "name": "refund_pass",
-      "description": "Refund a pass.",
-      "params": [
-        {
-          "name": "pass_id",
-          "type": "string",
-          "required": true
-        }
-      ]
-    },
-    {
-      "name": "get_instructor_assignment",
-      "description": "Read the instructor assignment of a guest.",
-      "params": [
-        {
-          "name": "guest_id",
-          "type": "string",
-          "required": true
-        }
-      ]
+     "name": "guest_id",
+     "type": "string",
+     "required": true
     }
-  ],
-  "cases": [
+   ]
+  },
+  {
+   "name": "get_lift_status",
+   "description": "Read the current lift status.",
+   "params": [
     {
-      "case_id": "underage_pass",
-      "kind": "ERROR",
-      "history": [
-        {
-          "role": "user",
-          "text": "One day pass for my kid, guest g_88."
-        },
-        {
-          "role": "assistant",
-          "text": "Checking the guest profile and the lift status.",
-          "calls": [
-            {
-              "name": "get_guest_profile",
-              "args": {
-                "guest_id": "g_88"
-              }
-            },
-            {
-              "name": "get_lift_status",
-              "args": {
-                "lift_id": "lift_1"
-              }
-            }
-          ],
-          "results": [
-            {
-              "name": "get_guest_profile",
-              "payload": {
-                "guest_id": "g_88",
-                "age": 6,
-                "name": "Mika"
-              }
-            },
-            {
-              "name": "get_lift_status",
-              "payload": {
-                "lift_id": "lift_1",
-                "status": "OPEN"
-              }
-            }
-          ]
-        }
-      ],
-      "text": "Here is the day pass for the child.",
-      "calls": [
-        {
-          "name": "issue_day_pass",
-          "args": {
-            "guest_id": "g_88",
-            "price": 42.0
-          }
-        }
-      ],
-      "results": [],
-      "label": 1,
-      "error_type": "CONTRADICTION",
-      "admissibility_reason": null,
-      "grounds": [
-        {
-          "kind": "policy_quote",
-          "quote": "A day pass may be issued to a guest only if the guest is at least 7 years old and the current lift status is OPEN.",
-          "ref": "policy"
-        },
-        {
-          "kind": "history_ref",
-          "quote": "",
-          "ref": "a1"
-        }
-      ]
-    },
-    {
-      "case_id": "free_instructor_pass",
-      "kind": "NO_ERROR",
-      "history": [
-        {
-          "role": "user",
-          "text": "Day pass for guest g_31, please."
-        },
-        {
-          "role": "assistant",
-          "text": "Checking profile, lift status and instructor assignment.",
-          "calls": [
-            {
-              "name": "get_guest_profile",
-              "args": {
-                "guest_id": "g_31"
-              }
-            },
-            {
-              "name": "get_lift_status",
-              "args": {
-                "lift_id": "lift_1"
-              }
-            },
-            {
-              "name": "get_instructor_assignment",
-              "args": {
-                "guest_id": "g_31"
-              }
-            }
-          ],
-          "results": [
-            {
-              "name": "get_guest_profile",
-              "payload": {
-                "guest_id": "g_31",
-                "age": 29
-              }
-            },
-            {
-              "name": "get_lift_status",
-              "payload": {
-                "lift_id": "lift_1",
-                "status": "OPEN"
-              }
-            },
-            {
-              "name": "get_instructor_assignment",
-              "payload": {
-                "guest_id": "g_31",
-                "instructor": "i_02",
-                "active": true
-              }
-            }
-          ]
-        }
-      ],
-      "text": "The guest has an active instructor assignment, so the pass is free of charge.",
-      "calls": [
-        {
-          "name": "issue_day_pass",
-          "args": {
-            "guest_id": "g_31",
-            "price": 0
-          }
-        }
-      ],
-      "results": [],
-      "label": 0,
-      "error_type": null,
-      "admissibility_reason": "policy explicitly makes the pass free with an active instructor assignment; all conditions verified in history",
-      "grounds": [
-        {
-          "kind": "policy_quote",
-          "quote": "Guests with an active instructor assignment receive the pass free of charge.",
-          "ref": "policy"
-        },
-        {
-          "kind": "history_ref",
-          "quote": "",
-          "ref": "a1"
-        }
-      ]
-    },
-    {
-      "case_id": "late_refund",
-      "kind": "ERROR",
-      "history": [
-        {
-          "role": "user",
-          "text": "I bought pass p_77 three days ago and never used it. Please refund it."
-        },
-        {
-          "role": "assistant",
-          "text": "Let me check the pass record.",
-          "calls": [
-            {
-              "name": "refund_pass",
-              "args": {
-                "pass_id": "p_77"
-              }
-            }
-          ],
-          "results": [
-            {
-              "name": "refund_pass",
-              "payload": {
-                "status": "error",
-                "message": "pass not found in refund system"
-              }
-            }
-          ]
-        },
-        {
-          "role": "user",
-          "text": "It is pass p_78, bought on Monday, now Thursday."
-        }
-      ],
-      "text": "I have refunded pass p_78.",
-      "calls": [
-        {
-          "name": "refund_pass",
-          "args": {
-            "pass_id": "p_78"
-          }
-        }
-      ],
-      "results": [],
-      "label": 1,
-      "error_type": "CONTRADICTION",
-      "admissibility_reason": null,
-      "grounds": [
-        {
-          "kind": "policy_quote",
-          "quote": "Refunds for unused passes are allowed only within 48 hours of purchase.",
-          "ref": "policy"
-        },
-        {
-          "kind": "history_ref",
-          "quote": "bought on Monday, now Thursday",
-          "ref": "u2"
-        }
-      ]
-    },
-    {
-      "case_id": "wind_hold_pass_with_note",
-      "kind": "NO_ERROR_HARD_NEGATIVE",
-      "history": [
-        {
-          "role": "user",
-          "text": "Guest g_12 wants a day pass even with the wind hold."
-        },
-        {
-          "role": "assistant",
-          "text": "Checking profile and lift status.",
-          "calls": [
-            {
-              "name": "get_guest_profile",
-              "args": {
-                "guest_id": "g_12"
-              }
-            },
-            {
-              "name": "get_lift_status",
-              "args": {
-                "lift_id": "lift_1"
-              }
-            }
-          ],
-          "results": [
-            {
-              "name": "get_guest_profile",
-              "payload": {
-                "guest_id": "g_12",
-                "age": 34
-              }
-            },
-            {
-              "name": "get_lift_status",
-              "payload": {
-                "lift_id": "lift_1",
-                "status": "WIND_HOLD"
-              }
-            }
-          ]
-        }
-      ],
-      "text": "The lift is on a wind hold; issuing the pass with the required hold note.",
-      "calls": [
-        {
-          "name": "issue_day_pass",
-          "args": {
-            "guest_id": "g_12",
-            "price": 42.0,
-            "note": "lift on wind hold"
-          }
-        }
-      ],
-      "results": [],
-      "label": 0,
-      "error_type": null,
-      "admissibility_reason": "wind hold explicitly permits issuing with a recorded note; the note is present in the call",
-      "grounds": [
-        {
-          "kind": "policy_quote",
-          "quote": "During a wind hold, passes may be issued but the issue note must record that the lift is on hold.",
-          "ref": "policy"
-        }
-      ]
-    },
-    {
-      "case_id": "underage_pass_renamed",
-      "kind": "ERROR_RENAME",
-      "rename_of": "underage_pass",
-      "history": [
-        {
-          "role": "user",
-          "text": "One day pass for my kid, visitor v_51."
-        },
-        {
-          "role": "assistant",
-          "text": "Checking the visitor profile and the gondola status.",
-          "calls": [
-            {
-              "name": "get_guest_profile",
-              "args": {
-                "guest_id": "v_51"
-              }
-            },
-            {
-              "name": "get_lift_status",
-              "args": {
-                "lift_id": "gondola_2"
-              }
-            }
-          ],
-          "results": [
-            {
-              "name": "get_guest_profile",
-              "payload": {
-                "guest_id": "v_51",
-                "age": 6,
-                "name": "Selin"
-              }
-            },
-            {
-              "name": "get_lift_status",
-              "payload": {
-                "lift_id": "gondola_2",
-                "status": "OPEN"
-              }
-            }
-          ]
-        }
-      ],
-      "text": "Here is the day pass for the child.",
-      "calls": [
-        {
-          "name": "issue_day_pass",
-          "args": {
-            "guest_id": "v_51",
-            "price": 38.0
-          }
-        }
-      ],
-      "results": [],
-      "label": 1,
-      "error_type": "CONTRADICTION",
-      "admissibility_reason": null,
-      "grounds": [
-        {
-          "kind": "policy_quote",
-          "quote": "A day pass may be issued to a guest only if the guest is at least 7 years old and the current lift status is OPEN.",
-          "ref": "policy"
-        },
-        {
-          "kind": "history_ref",
-          "quote": "",
-          "ref": "a1"
-        }
-      ]
+     "name": "lift_id",
+     "type": "string",
+     "required": true
     }
-  ]
+   ]
+  },
+  {
+   "name": "issue_day_pass",
+   "description": "Issue a day pass to a guest.",
+   "params": [
+    {
+     "name": "guest_id",
+     "type": "string",
+     "required": true
+    },
+    {
+     "name": "price",
+     "type": "number",
+     "required": true
+    },
+    {
+     "name": "note",
+     "type": "string",
+     "required": false
+    }
+   ]
+  },
+  {
+   "name": "refund_pass",
+   "description": "Refund a pass.",
+   "params": [
+    {
+     "name": "pass_id",
+     "type": "string",
+     "required": true
+    }
+   ]
+  },
+  {
+   "name": "get_instructor_assignment",
+   "description": "Read the instructor assignment of a guest.",
+   "params": [
+    {
+     "name": "guest_id",
+     "type": "string",
+     "required": true
+    }
+   ]
+  },
+  {
+   "name": "get_day_pass_price",
+   "description": "Read the current day pass price.",
+   "params": [
+    {
+     "name": "lift_id",
+     "type": "string",
+     "required": true,
+     "desc": "Lift id such as 'lift_1'"
+    }
+   ]
+  }
+ ],
+ "cases": [
+  {
+   "case_id": "underage_pass",
+   "kind": "ERROR",
+   "history": [
+    {
+     "role": "user",
+     "text": "One day pass for my kid, guest g_88."
+    },
+    {
+     "role": "assistant",
+     "text": "Checking the guest profile and the lift status and the pass price.",
+     "calls": [
+      {
+       "name": "get_guest_profile",
+       "args": {
+        "guest_id": "g_88"
+       }
+      },
+      {
+       "name": "get_lift_status",
+       "args": {
+        "lift_id": "lift_1"
+       }
+      },
+      {
+       "name": "get_day_pass_price",
+       "args": {
+        "lift_id": "lift_1"
+       }
+      }
+     ],
+     "results": [
+      {
+       "name": "get_guest_profile",
+       "payload": {
+        "guest_id": "g_88",
+        "age": 6,
+        "name": "Mika"
+       }
+      },
+      {
+       "name": "get_lift_status",
+       "payload": {
+        "lift_id": "lift_1",
+        "status": "OPEN"
+       }
+      },
+      {
+       "name": "get_day_pass_price",
+       "payload": {
+        "lift_id": "lift_1",
+        "price": 42.0
+       }
+      }
+     ]
+    }
+   ],
+   "text": "Here is the day pass for the child.",
+   "calls": [
+    {
+     "name": "issue_day_pass",
+     "args": {
+      "guest_id": "g_88",
+      "price": 42.0
+     }
+    }
+   ],
+   "results": [],
+   "label": 1,
+   "error_type": "CONTRADICTION",
+   "admissibility_reason": null,
+   "grounds": [
+    {
+     "kind": "policy_quote",
+     "quote": "A day pass may be issued to a guest only if the guest is at least 7 years old and the current lift status is OPEN.",
+     "ref": "policy"
+    },
+    {
+     "kind": "history_ref",
+     "quote": "",
+     "ref": "a1"
+    }
+   ]
+  },
+  {
+   "case_id": "free_instructor_pass",
+   "kind": "NO_ERROR",
+   "history": [
+    {
+     "role": "user",
+     "text": "Day pass for guest g_31, please."
+    },
+    {
+     "role": "assistant",
+     "text": "Checking profile, lift status and instructor assignment.",
+     "calls": [
+      {
+       "name": "get_guest_profile",
+       "args": {
+        "guest_id": "g_31"
+       }
+      },
+      {
+       "name": "get_lift_status",
+       "args": {
+        "lift_id": "lift_1"
+       }
+      },
+      {
+       "name": "get_instructor_assignment",
+       "args": {
+        "guest_id": "g_31"
+       }
+      }
+     ],
+     "results": [
+      {
+       "name": "get_guest_profile",
+       "payload": {
+        "guest_id": "g_31",
+        "age": 29
+       }
+      },
+      {
+       "name": "get_lift_status",
+       "payload": {
+        "lift_id": "lift_1",
+        "status": "OPEN"
+       }
+      },
+      {
+       "name": "get_instructor_assignment",
+       "payload": {
+        "guest_id": "g_31",
+        "instructor": "i_02",
+        "active": true
+       }
+      }
+     ]
+    }
+   ],
+   "text": "The guest has an active instructor assignment, so the pass is free of charge.",
+   "calls": [
+    {
+     "name": "issue_day_pass",
+     "args": {
+      "guest_id": "g_31",
+      "price": 0
+     }
+    }
+   ],
+   "results": [],
+   "label": 0,
+   "error_type": null,
+   "admissibility_reason": "policy explicitly makes the pass free with an active instructor assignment; all conditions verified in history",
+   "grounds": [
+    {
+     "kind": "policy_quote",
+     "quote": "Guests with an active instructor assignment receive the pass free of charge.",
+     "ref": "policy"
+    },
+    {
+     "kind": "history_ref",
+     "quote": "",
+     "ref": "a1"
+    }
+   ]
+  },
+  {
+   "case_id": "late_refund",
+   "kind": "ERROR",
+   "history": [
+    {
+     "role": "user",
+     "text": "I bought pass p_77 three days ago and never used it. Please refund it."
+    },
+    {
+     "role": "assistant",
+     "text": "Let me check the pass record.",
+     "calls": [
+      {
+       "name": "refund_pass",
+       "args": {
+        "pass_id": "p_77"
+       }
+      }
+     ],
+     "results": [
+      {
+       "name": "refund_pass",
+       "payload": {
+        "status": "error",
+        "message": "pass not found in refund system"
+       }
+      }
+     ]
+    },
+    {
+     "role": "user",
+     "text": "It is pass p_78, bought on Monday, now Thursday."
+    }
+   ],
+   "text": "I have refunded pass p_78.",
+   "calls": [
+    {
+     "name": "refund_pass",
+     "args": {
+      "pass_id": "p_78"
+     }
+    }
+   ],
+   "results": [],
+   "label": 1,
+   "error_type": "CONTRADICTION",
+   "admissibility_reason": null,
+   "grounds": [
+    {
+     "kind": "policy_quote",
+     "quote": "Refunds for unused passes are allowed only within 48 hours of purchase.",
+     "ref": "policy"
+    },
+    {
+     "kind": "history_ref",
+     "quote": "bought on Monday, now Thursday",
+     "ref": "u2"
+    }
+   ]
+  },
+  {
+   "case_id": "wind_hold_pass_with_note",
+   "kind": "NO_ERROR_HARD_NEGATIVE",
+   "history": [
+    {
+     "role": "user",
+     "text": "Guest g_12 wants a day pass even with the wind hold."
+    },
+    {
+     "role": "assistant",
+     "text": "Checking profile and lift status and the pass price.",
+     "calls": [
+      {
+       "name": "get_guest_profile",
+       "args": {
+        "guest_id": "g_12"
+       }
+      },
+      {
+       "name": "get_lift_status",
+       "args": {
+        "lift_id": "lift_1"
+       }
+      },
+      {
+       "name": "get_day_pass_price",
+       "args": {
+        "lift_id": "lift_1"
+       }
+      }
+     ],
+     "results": [
+      {
+       "name": "get_guest_profile",
+       "payload": {
+        "guest_id": "g_12",
+        "age": 34
+       }
+      },
+      {
+       "name": "get_lift_status",
+       "payload": {
+        "lift_id": "lift_1",
+        "status": "WIND_HOLD"
+       }
+      },
+      {
+       "name": "get_day_pass_price",
+       "payload": {
+        "lift_id": "lift_1",
+        "price": 42.0
+       }
+      }
+     ]
+    }
+   ],
+   "text": "The lift is on a wind hold; issuing the pass with the required hold note.",
+   "calls": [
+    {
+     "name": "issue_day_pass",
+     "args": {
+      "guest_id": "g_12",
+      "price": 42.0,
+      "note": "lift on wind hold"
+     }
+    }
+   ],
+   "results": [],
+   "label": 0,
+   "error_type": null,
+   "admissibility_reason": "wind hold explicitly permits issuing with a recorded note; the note is present in the call",
+   "grounds": [
+    {
+     "kind": "policy_quote",
+     "quote": "During a wind hold, passes may be issued but the issue note must record that the lift is on hold.",
+     "ref": "policy"
+    }
+   ]
+  },
+  {
+   "case_id": "underage_pass_renamed",
+   "kind": "ERROR_RENAME",
+   "rename_of": "underage_pass",
+   "history": [
+    {
+     "role": "user",
+     "text": "One day pass for my kid, visitor v_51."
+    },
+    {
+     "role": "assistant",
+     "text": "Checking the visitor profile and the gondola status.",
+     "calls": [
+      {
+       "name": "get_guest_profile",
+       "args": {
+        "guest_id": "v_51"
+       }
+      },
+      {
+       "name": "get_lift_status",
+       "args": {
+        "lift_id": "gondola_2"
+       }
+      },
+      {
+       "name": "get_day_pass_price",
+       "args": {
+        "lift_id": "gondola_2"
+       }
+      }
+     ],
+     "results": [
+      {
+       "name": "get_guest_profile",
+       "payload": {
+        "guest_id": "v_51",
+        "age": 6,
+        "name": "Selin"
+       }
+      },
+      {
+       "name": "get_lift_status",
+       "payload": {
+        "lift_id": "gondola_2",
+        "status": "OPEN"
+       }
+      },
+      {
+       "name": "get_day_pass_price",
+       "payload": {
+        "lift_id": "gondola_2",
+        "price": 38.0
+       }
+      }
+     ]
+    }
+   ],
+   "text": "Here is the day pass for the child.",
+   "calls": [
+    {
+     "name": "issue_day_pass",
+     "args": {
+      "guest_id": "v_51",
+      "price": 38.0
+     }
+    }
+   ],
+   "results": [],
+   "label": 1,
+   "error_type": "CONTRADICTION",
+   "admissibility_reason": null,
+   "grounds": [
+    {
+     "kind": "policy_quote",
+     "quote": "A day pass may be issued to a guest only if the guest is at least 7 years old and the current lift status is OPEN.",
+     "ref": "policy"
+    },
+    {
+     "kind": "history_ref",
+     "quote": "",
+     "ref": "a1"
+    }
+   ]
+  }
+ ]
 }

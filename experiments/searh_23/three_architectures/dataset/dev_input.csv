@@ -25,7 +25,7 @@ Otters may be fed only after the morning water quality check for their zone has 
     animal_id: string!
 
 ⟦USER⟧
-The penguin transfer to the north tank started ten minutes ago. Can you clean the penguin pool meanwhile?
+The penguin transfer to the north tank started ten minutes ago. Can you clean the penguin pool (pool_p) meanwhile?
 
 ⟦ASSISTANT⟧
 Checking the transfer record.
@@ -95,7 +95,7 @@ Otters may be fed only after the morning water quality check for their zone has 
     animal_id: string!
 
 ⟦USER⟧
-Morning routine: feed the otters in zone B.
+Please feed the otters in zone B this morning. The standing morning order is 3 kg of feed f_04.
 
 ⟦ASSISTANT⟧
 Running the water quality check first.
@@ -135,7 +135,7 @@ Otters may be fed only after the morning water quality check for their zone has 
     animal_id: string!
 
 ⟦USER⟧
-Please feed the otters in zone B this morning.
+Please feed the otters in zone B this morning. The standing morning order is 3 kg of feed f_04.
 
 ⟦ASSISTANT⟧
 I will first run the morning water quality check for zone B.
@@ -170,7 +170,7 @@ Otters may be fed only after the morning water quality check for their zone has 
     animal_id: string!
 
 ⟦USER⟧
-Please feed the sea otter group in habitat 7 this morning.
+Please feed the sea otter group in habitat 7 this morning. The standing morning order is 4 kg of feed f_11.
 
 ⟦ASSISTANT⟧
 I will first run the morning water quality check for habitat 7.
@@ -195,6 +195,8 @@ A day pass may be issued to a guest only if the guest is at least 7 years old an
     pass_id: string!
 - get_instructor_assignment — Read the instructor assignment of a guest.
     guest_id: string!
+- get_day_pass_price — Read the current day pass price.
+    lift_id: string! — Lift id such as 'lift_1'
 
 ⟦USER⟧
 Day pass for guest g_31, please.
@@ -226,6 +228,8 @@ A day pass may be issued to a guest only if the guest is at least 7 years old an
     pass_id: string!
 - get_instructor_assignment — Read the instructor assignment of a guest.
     guest_id: string!
+- get_day_pass_price — Read the current day pass price.
+    lift_id: string! — Lift id such as 'lift_1'
 
 ⟦USER⟧
 I bought pass p_77 three days ago and never used it. Please refund it.
@@ -256,16 +260,20 @@ A day pass may be issued to a guest only if the guest is at least 7 years old an
     pass_id: string!
 - get_instructor_assignment — Read the instructor assignment of a guest.
     guest_id: string!
+- get_day_pass_price — Read the current day pass price.
+    lift_id: string! — Lift id such as 'lift_1'
 
 ⟦USER⟧
 One day pass for my kid, guest g_88.
 
 ⟦ASSISTANT⟧
-Checking the guest profile and the lift status.
+Checking the guest profile and the lift status and the pass price.
 	→ TOOL_CALL get_guest_profile: {""guest_id"": ""g_88""}
 	→ TOOL_CALL get_lift_status: {""lift_id"": ""lift_1""}
+	→ TOOL_CALL get_day_pass_price: {""lift_id"": ""lift_1""}
 	← TOOL_RESPONSE get_guest_profile: {""guest_id"": ""g_88"", ""age"": 6, ""name"": ""Mika""}
 	← TOOL_RESPONSE get_lift_status: {""lift_id"": ""lift_1"", ""status"": ""OPEN""}
+	← TOOL_RESPONSE get_day_pass_price: {""lift_id"": ""lift_1"", ""price"": 42.0}
 
 ","Here is the day pass for the child.
 	→ TOOL_CALL issue_day_pass: {""guest_id"": ""g_88"", ""price"": 42.0}"
@@ -285,6 +293,8 @@ A day pass may be issued to a guest only if the guest is at least 7 years old an
     pass_id: string!
 - get_instructor_assignment — Read the instructor assignment of a guest.
     guest_id: string!
+- get_day_pass_price — Read the current day pass price.
+    lift_id: string! — Lift id such as 'lift_1'
 
 ⟦USER⟧
 One day pass for my kid, visitor v_51.
@@ -293,8 +303,10 @@ One day pass for my kid, visitor v_51.
 Checking the visitor profile and the gondola status.
 	→ TOOL_CALL get_guest_profile: {""guest_id"": ""v_51""}
 	→ TOOL_CALL get_lift_status: {""lift_id"": ""gondola_2""}
+	→ TOOL_CALL get_day_pass_price: {""lift_id"": ""gondola_2""}
 	← TOOL_RESPONSE get_guest_profile: {""guest_id"": ""v_51"", ""age"": 6, ""name"": ""Selin""}
 	← TOOL_RESPONSE get_lift_status: {""lift_id"": ""gondola_2"", ""status"": ""OPEN""}
+	← TOOL_RESPONSE get_day_pass_price: {""lift_id"": ""gondola_2"", ""price"": 38.0}
 
 ","Here is the day pass for the child.
 	→ TOOL_CALL issue_day_pass: {""guest_id"": ""v_51"", ""price"": 38.0}"
@@ -314,16 +326,20 @@ A day pass may be issued to a guest only if the guest is at least 7 years old an
     pass_id: string!
 - get_instructor_assignment — Read the instructor assignment of a guest.
     guest_id: string!
+- get_day_pass_price — Read the current day pass price.
+    lift_id: string! — Lift id such as 'lift_1'
 
 ⟦USER⟧
 Guest g_12 wants a day pass even with the wind hold.
 
 ⟦ASSISTANT⟧
-Checking profile and lift status.
+Checking profile and lift status and the pass price.
 	→ TOOL_CALL get_guest_profile: {""guest_id"": ""g_12""}
 	→ TOOL_CALL get_lift_status: {""lift_id"": ""lift_1""}
+	→ TOOL_CALL get_day_pass_price: {""lift_id"": ""lift_1""}
 	← TOOL_RESPONSE get_guest_profile: {""guest_id"": ""g_12"", ""age"": 34}
 	← TOOL_RESPONSE get_lift_status: {""lift_id"": ""lift_1"", ""status"": ""WIND_HOLD""}
+	← TOOL_RESPONSE get_day_pass_price: {""lift_id"": ""lift_1"", ""price"": 42.0}
 
 ","The lift is on a wind hold; issuing the pass with the required hold note.
 	→ TOOL_CALL issue_day_pass: {""guest_id"": ""g_12"", ""price"": 42.0, ""note"": ""lift on wind hold""}"
