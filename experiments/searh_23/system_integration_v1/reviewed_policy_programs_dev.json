@@ -1,0 +1,56 @@
+{
+  "track": "human_reviewed_oracle",
+  "note": "Manually transcribed from the four dev policies. This is not automatic policy acquisition and is never loaded by the default detector.",
+  "programs": [
+    {
+      "policy": "A parcel may be dispatched only if its inspection passed. Checking inspection does not dispatch the parcel.",
+      "governed_tool": "dispatch_parcel",
+      "governed_description": "Dispatches the parcel; state=dispatched means completion.",
+      "governed_producer": "tool:1:12f1262b3f900720a8fc336a8775ffe31b5bab7ad824cb5ef21999d47b7f652b",
+      "entity_argument": "parcel_id",
+      "gate": {"atom": {"predicate": "parcel.inspection_passed", "entity_type": "parcel", "value": true, "allowed_strengths": ["OBSERVED"], "scope_joins": {}}},
+      "when": null,
+      "evidence_source": "HUMAN_REVIEWED",
+      "complete_for_governed_action": true
+    },
+    {
+      "policy": "Refunds above 200 require recorded supervisor approval before processing. Creating a refund request does not process the refund.",
+      "governed_tool": "process_refund",
+      "governed_description": "Processes the refund; state=queued means pending and state=processed means completion.",
+      "governed_producer": "tool:2:396d31e79c2edb8b14a7ddba807d00ef28d89fd38fccc2a62d5a2ed73a218960",
+      "entity_argument": "order_id",
+      "gate": {"atom": {"predicate": "order.approved", "entity_type": "order", "value": true, "allowed_strengths": ["OBSERVED"], "scope_joins": {"amount": "amount"}}},
+      "when": {"field": "amount", "op": "GT", "value": 200},
+      "evidence_source": "HUMAN_REVIEWED",
+      "complete_for_governed_action": true
+    },
+    {
+      "policy": "Approval must be confirmed before swapping a device. Looking up approval is allowed before confirmation.",
+      "governed_tool": "perform_swap",
+      "governed_description": "Swaps the device; state=swapped means completion.",
+      "governed_producer": "tool:1:6be4bd2c8ad1e71890922e01359aa4018ae44db0bc362529747205b8da1adc07",
+      "entity_argument": "device_id",
+      "gate": {"atom": {"predicate": "device.approved", "entity_type": "device", "value": true, "allowed_strengths": ["OBSERVED"], "scope_joins": {}}},
+      "when": null,
+      "evidence_source": "HUMAN_REVIEWED",
+      "complete_for_governed_action": true
+    },
+    {
+      "policy": "Publishing a record requires consent and identity confirmation. An emergency notice may be published without consent, but identity confirmation remains required.",
+      "governed_tool": "publish_notice",
+      "governed_description": "Publishes the notice; state=published means completion.",
+      "governed_producer": "tool:3:6a25f30bfacd0cf9e7d86e288876bd865084b4cad238f97df7d344a6b6e69183",
+      "entity_argument": "notice_id",
+      "gate": {"all": [
+        {"unless": {
+          "base": {"atom": {"predicate": "notice.consent", "entity_type": "notice", "value": true, "allowed_strengths": ["OBSERVED"], "scope_joins": {}}},
+          "exception": {"atom": {"predicate": "notice.emergency", "entity_type": "notice", "value": true, "allowed_strengths": ["OBSERVED"], "scope_joins": {}}}
+        }},
+        {"atom": {"predicate": "notice.identity_confirmed", "entity_type": "notice", "value": true, "allowed_strengths": ["OBSERVED"], "scope_joins": {}}}
+      ]},
+      "when": null,
+      "evidence_source": "HUMAN_REVIEWED",
+      "complete_for_governed_action": true
+    }
+  ]
+}
