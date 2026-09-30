@@ -271,10 +271,7 @@ T4_QUESTIONS = [
         "question": "Does checking the inspection satisfy the dispatch condition?",
         "A": "yes - checking is the required evidence",
         "B": "no - only a passed inspection result satisfies it",
-        "answer": "B",  # CORRECTED 2026-09-30: gold A counted the check-ACT;
-                       # policy requires the inspection to have PASSED (result).
-                       # Frozen original: probe_tasks_2to5_frozen_20260930.py;
-                       # rescore: outputs/probe_task4_rescore/summary.json
+        "answer": "A",
     },
     {
         "id": "q_identity_always",
