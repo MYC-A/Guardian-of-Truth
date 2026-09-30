@@ -133,10 +133,36 @@ entity scope, effect strength or authority. Three boundary tests pass. The
 next semantic acquisition stage must remain separately measured and must not
 promote a model guess into a reviewed contract.
 
+## Step 3: first frozen response-only claim-mode probe
+
+The prompt and validator were committed in `5cb2db41` before model calls.
+One `ministral-14b-latest` JSON request per distinct reply was made, without
+policy, tools, history or gold in the prompt. The model proposed exact reply
+substrings and one of six modes; code accepted only unambiguous literal
+substrings. This is an inventory probe, not claim-to-fact binding.
+
+| Split | Cases | Distinct replies / API calls | API tokens | Strict exact span+mode claims | Exact cases |
+| --- | ---: | ---: | ---: | ---: | ---: |
+| dev | 21 | 11 | 3,696 | 1/21 | 1/21 |
+| sealed | 20 | 10 | 3,350 | 2/22 | 0/20 |
+
+The strict metric is sensitive to whether the model includes a period or
+surrounding words. A **post-hoc diagnostic, not a replacement score**, greedily
+aligns a proposed span only if it covers at least half the gold span. Dev:
+20/21 aligned, 18/20 aligned modes correct. Sealed aggregate: 20/22 aligned,
+18/20 aligned modes correct. The dev mode failures include a future offer
+(`I can swap ...`) called `CLAIMED_COMPLETED`, and a present state
+(`is dispatched`) also called `CLAIMED_COMPLETED`; the conditional dispatch
+sentence was split into action and condition, so no single aligned claim.
+These are dangerous errors for a violation detector even though most
+surrounding spans overlap. No rule, threshold, prompt or model was changed
+after opening sealed gold. Raw replies and per-case errors are saved in
+`outputs/step3_modes_{dev,sealed}.json`.
+
 ## Остальные этапы
 
-Step 3: существующие claim extractors пока не подключены к этому runtime
-и не измерены на общей замороженной trajectory suite. Step 4: доказанная
+Step 3: первый mode extractor измерен, но не подключён к этому runtime и
+не связывает claims с проверенными фактами. Step 4: доказанная
 достижимость допустимого продолжения и отказ пока не подключены. Нет
 end-to-end TP/FP/FN/UNKNOWN, общей стоимости, multi-policy и ablation
 Step 3/4. Набор из 41 траектории уже заморожен; следующий шаг — связать
