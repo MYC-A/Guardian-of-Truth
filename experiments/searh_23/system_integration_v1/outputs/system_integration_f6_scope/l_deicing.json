@@ -1,0 +1,133 @@
+{
+ "case_id": "l_deicing",
+ "arm": "LLM_SG",
+ "ev_arm": "E3V3",
+ "nodes": [
+  {
+   "node_id": "N01",
+   "span": "De-ice both wings",
+   "type": "EVENT",
+   "start": 0,
+   "members": [
+    "c01",
+    "c04"
+   ],
+   "member_spans": [
+    "De-ice both wings",
+    "De-ice both wings before dawn",
+    "both wings are de-iced",
+    "are de-iced"
+   ]
+  },
+  {
+   "node_id": "N02",
+   "span": "Notify the tower",
+   "type": "EVENT",
+   "start": 83,
+   "members": [
+    "c06"
+   ],
+   "member_spans": [
+    "Notify the tower"
+   ]
+  },
+  {
+   "node_id": "N03",
+   "span": "either wing is skipped",
+   "type": "CHECK",
+   "start": 103,
+   "members": [
+    "c07"
+   ],
+   "member_spans": [
+    "either wing is skipped",
+    "is skipped"
+   ]
+  }
+ ],
+ "edges": [
+  {
+   "u": "N02",
+   "v": "N03",
+   "u_members": [
+    "c06"
+   ],
+   "v_members": [
+    "c07"
+   ],
+   "u_span": "Notify the tower",
+   "v_span": "either wing is skipped",
+   "relation": "EXCEPTION",
+   "direction": "B_TO_A",
+   "ce": 0.9981,
+   "detail": {
+    "certificate": {
+     "a_anchor": "Notify the tower",
+     "b_anchor": "either wing is skipped",
+     "a_in_relation": "Notify the tower",
+     "b_in_relation": "either wing is skipped",
+     "a_via_reference": null,
+     "b_via_reference": null,
+     "relation_text": "Notify the tower if either wing is skipped.",
+     "direction": "B_TO_A",
+     "relation_type": "RESPONSE"
+    },
+    "verify": {
+     "verdict": "SUPPORTED",
+     "reason": "both_forms_in_rel",
+     "a_anchor": "Notify the tower",
+     "b_anchor": "either wing is skipped",
+     "relation_text": "Notify the tower if either wing is skipped.",
+     "direction": "B_TO_A",
+     "relation_type": "RESPONSE"
+    }
+   }
+  }
+ ],
+ "pairs": [
+  {
+   "u": "N01",
+   "v": "N02",
+   "u_span": "De-ice both wings",
+   "v_span": "Notify the tower",
+   "ce": 0.0006,
+   "stage": "ce_band"
+  },
+  {
+   "u": "N01",
+   "v": "N03",
+   "u_span": "De-ice both wings",
+   "v_span": "either wing is skipped",
+   "ce": 0.3461,
+   "stage": "ce_band"
+  },
+  {
+   "u": "N02",
+   "v": "N03",
+   "u_span": "Notify the tower",
+   "v_span": "either wing is skipped",
+   "ce": 0.9981,
+   "channels": [
+    "same_sentence",
+    "entity_bridge"
+   ],
+   "stage": "licensed",
+   "verify": "SUPPORTED",
+   "verify_reason": "both_forms_in_rel",
+   "judge": {
+    "q1_where_is_a": "Notify the tower",
+    "q2_where_is_b": "either wing is skipped",
+    "q3_relation_between_these_two": "YES",
+    "q4_direction": "B_TO_A",
+    "q5_relation_type": "EXCEPTION"
+   },
+   "conn_side": {
+    "connective": "if",
+    "antecedent": "b"
+   },
+   "judge_direction": "B_TO_A",
+   "direction": "B_TO_A",
+   "relation": "EXCEPTION"
+  }
+ ]
+}
