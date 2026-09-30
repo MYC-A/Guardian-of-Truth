@@ -76,6 +76,8 @@ MODEL_REGISTRY = {
     "auto": "vireonix",
     # mistral family
     DEFAULT_MISTRAL_MODEL: "mistral",
+    # local GPU (RTX 3090 24GB, bf16) — third checker for V6
+    "granite-guardian-4.1-8b": "granite-local",
 }
 
 _clients: dict[str, OpenAI] = {}
@@ -168,6 +170,96 @@ def extract_json(content: str):
 
 RETRYABLE = (429, 500, 502, 503, 504)
 
+# ------------------------- granite-local backend (transformers) ---------
+# Local third-checker channel: granite-guardian-4.1-8b on the instance GPU,
+# greedy decoding, same prompt/validation/cache pipeline as API families.
+GRANITE_LOCAL_MODEL = "granite-guardian-4.1-8b"
+GRANITE_LOCAL_PATH = BASE / "models" / "granite-guardian-4.1-8b"
+
+_granite_state = {"tok": None, "model": None, "load_error": None}
+_granite_lock = threading.Lock()
+
+
+def _granite_loaded():
+    return _granite_state["model"] is not None
+
+
+def _granite_load():
+    """Lazy bf16 load onto CUDA. Fails loudly (never silently degrades)."""
+    with _granite_lock:
+        if _granite_state["model"] is not None:
+            return True
+        if _granite_state["load_error"] is not None:
+            return False
+        try:
+            import torch
+            from transformers import AutoModelForCausalLM, AutoTokenizer
+            tok = AutoTokenizer.from_pretrained(str(GRANITE_LOCAL_PATH))
+            model = AutoModelForCausalLM.from_pretrained(
+                str(GRANITE_LOCAL_PATH), torch_dtype=torch.bfloat16,
+                device_map="cuda")
+            model.eval()
+            _granite_state["tok"] = tok
+            _granite_state["model"] = model
+            return True
+        except Exception as e:  # load failure is fatal for the channel
+            _granite_state["load_error"] = str(e)[:300]
+            return False
+
+
+def _granite_chat(model: str, messages: list, *, max_tokens: int,
+                  temperature: float, caller: str = "") -> dict:
+    import torch
+    if not _granite_load():
+        return {"content": None, "usage": {}, "cached": False,
+                "model": model, "elapsed": 0.0,
+                "error": f"granite-local load failed: "
+                         f"{_granite_state['load_error']}"}
+    tok, net = _granite_state["tok"], _granite_state["model"]
+    t0 = time.time()
+    try:
+        with torch.inference_mode():
+            enc = tok.apply_chat_template(
+                messages, tokenize=True, add_generation_prompt=True,
+                return_tensors="pt")
+            # transformers 5.x returns BatchEncoding {input_ids, attention_mask}
+            if torch.is_tensor(enc):
+                ids, mask = enc, None
+            else:
+                ids = enc["input_ids"]
+                mask = enc.get("attention_mask")
+            ids = ids.to(net.device)
+            if mask is not None:
+                mask = mask.to(net.device)
+            n_in = ids.shape[-1]
+            gen_kw = dict(max_new_tokens=max_tokens, do_sample=False)
+            if temperature and temperature > 0.0:
+                gen_kw = dict(max_new_tokens=max_tokens, do_sample=True,
+                              temperature=temperature, top_p=0.95)
+            out = net.generate(
+                ids,
+                attention_mask=mask if mask is not None else None,
+                **gen_kw)
+            text = tok.decode(out[0][n_in:], skip_special_tokens=True)
+        u = {"prompt_tokens": int(n_in),
+             "completion_tokens": int(out.shape[-1] - n_in)}
+        elapsed = round(time.time() - t0, 3)
+        payload = {"content": text, "usage": u, "cached": False,
+                   "model": model, "elapsed": elapsed}
+        _log_cost({"ts": time.time(), "caller": caller, "model": model,
+                   "provider": "granite-local",
+                   "prompt_tokens": u["prompt_tokens"],
+                   "completion_tokens": u["completion_tokens"],
+                   "elapsed": elapsed, "attempt": 0,
+                   "cached_write": False})
+        return payload
+    except Exception as e:
+        _log_cost({"ts": time.time(), "caller": caller, "model": model,
+                   "error": str(e)[:200], "transport_fail": True})
+        return {"content": None, "usage": {}, "cached": False,
+                "model": model, "elapsed": round(time.time() - t0, 3),
+                "error": str(e)[:200]}
+
 
 def chat(model: str, messages: list, *, max_tokens: int = 4000,
          temperature: float = 0.0, json_mode: bool = True,
@@ -194,6 +286,11 @@ def chat(model: str, messages: list, *, max_tokens: int = 4000,
         if hit is not None:
             hit["cached"] = True
             return hit
+
+    # local granite backend bypasses the OpenAI client path entirely
+    if model == GRANITE_LOCAL_MODEL or model.startswith("granite-local/"):
+        return _granite_chat(model, messages, max_tokens=max_tokens,
+                             temperature=temperature, caller=caller)
 
     model_r, client = _client(model)
     t0 = time.time()
@@ -254,6 +351,8 @@ def provider_family(model: str) -> str:
         return "gemma"
     if model.startswith("nemotron"):
         return "nemotron"
+    if model.startswith("granite"):
+        return "granite"
     if model.startswith(("mistral", "ministral", "codestral")):
         return "mistral"
     return model
@@ -268,4 +367,5 @@ def available() -> dict:
     out = {}
     for p, (_, key) in PROVIDERS.items():
         out[p] = bool(key) or p in ("ukisai", "vireonix")
+    out["granite-local"] = GRANITE_LOCAL_PATH.exists()
     return out

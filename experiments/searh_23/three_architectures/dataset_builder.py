@@ -34,11 +34,34 @@ DATASET = HERE / "dataset"
 FAMILIES = DATASET / "families"
 CASES = DATASET / "cases"
 
-# domains already used by previous suites (rename/disjointness rule)
+# domains already used by previous suites (rename/disjointness rule).
+# AUDITED 2026-10-01 against ALL in-repo suites, including domains the
+# original list missed:
+#   * system_research_v2 probe/calib families: calib.aquarium,
+#     calib.greenhouse (probe_task1.py) -> aquarium, greenhouse
+#   * event_frontend_level_e frozen suite domains (frozen_cases.json):
+#     ceramics studio, drone flight authorization, electric delivery
+#     fleet, manuscript archive, orchard maintenance (orchard already
+#     listed), public aquarium, seed conservation bank, telescope
+#     observatory, theater lighting, vaccine cold chain
+# CONSEQUENCE: fam_aquarium (seed batch) is NOT a fresh domain — it stays
+# in the dev split as regression material with an explicit domain_seen
+# flag and is EXCLUDED from fresh-family counts. Sealed families
+# (rare_books, campground) remain fresh under this complete list.
 USED_DOMAINS = {
     "airline", "banking", "retail", "telecom",
     "bakery", "ferry", "museum", "orchard", "cinema", "quarry", "apiary",
     "transit", "archive", "lab", "hotel", "service_desk", "depot",
+    # added 2026-10-01 (audit):
+    "aquarium", "greenhouse",
+    "ceramics_studio", "drone_flight_authorization",
+    "electric_delivery_fleet", "manuscript_archive",
+    "seed_conservation_bank", "telescope_observatory",
+    "theater_lighting", "vaccine_cold_chain",
+    # generalized matching tokens for the multi-word Level E domains:
+    "ceramics", "drone", "telescope", "observatory", "vaccine",
+    "cold_chain", "seed", "conservation", "theater", "lighting",
+    "delivery_fleet", "flight_authorization", "manuscript",
 }
 
 
@@ -120,9 +143,17 @@ def validate_family(spec: dict) -> list:
     missing = FAMILY_SPEC_KEYS - set(spec)
     if missing:
         errs.append(f"family missing keys: {sorted(missing)}")
-    if spec.get("domain_id", "") in USED_DOMAINS:
-        errs.append(f"domain '{spec['domain_id']}' already used by a "
-                    f"previous suite (freshness rule)")
+    dom = spec.get("domain_id", "")
+    dom_tokens = set(re.split(r"[\s_]+", dom.lower()))
+    if (dom in USED_DOMAINS or dom_tokens & USED_DOMAINS) \
+            and not spec.get("domain_seen"):
+        errs.append(f"domain '{dom}' already used by a previous suite "
+                    f"(freshness rule; set domain_seen=true only for "
+                    f"grandfathered dev-split regression families)")
+    # freshness must also hold against multi-word past domains
+    if spec.get("domain_seen") and spec.get("split") == "sealed":
+        errs.append("domain_seen families are not allowed in the sealed "
+                    "split (freshness rule)")
     if not spec.get("policy"):
         errs.append("empty policy")
     if not spec.get("catalog"):

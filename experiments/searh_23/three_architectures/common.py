@@ -51,6 +51,17 @@ SUBFIELD_LINE = re.compile(
     r'(?:\s*\[\s*enum:\s*(?P<enum>[^\]]+)\s*\])?'
 )
 
+# V0.1 (pre-registered 2026-10-01 before holdout inference): verbatim
+# policy clause that gates the one-action-per-turn structural rules.
+# The clause is quoted from the case's own policy text when it fires;
+# without the clause the rules stay silent (domain without the policy
+# is never flagged).
+ONE_CALL_CLAUSE = re.compile(
+    r"[^.!?]*\b(?:one tool call at a time|only make one tool call|"
+    r"at most (?:make )?one tool call|one action at a time)\b[^.!?]*[.!?]",
+    re.IGNORECASE,
+)
+
 
 def sha256_text(text: str) -> str:
     return hashlib.sha256(text.encode("utf-8")).hexdigest()
@@ -397,7 +408,9 @@ def _order(call: ToolCall, res: ToolResult, ctx: CaseContext) -> bool:
 
 def _check_schema(call: ToolCall, tool: ToolSpec) -> list[StructuralHit]:
     """Schema violations of a TARGET call against the catalog-declared
-    argument schema. Reproducible basis for every hit."""
+    argument schema. Reproducible basis for every hit.
+    V0.1: also required SUBFIELDS of array items / object params
+    (e.g. payment_methods items must carry payment_id!/amount!)."""
     hits = []
     args = call.args or {}
     if not isinstance(args, dict):
@@ -434,6 +447,23 @@ def _check_schema(call: ToolCall, tool: ToolSpec) -> list[StructuralHit]:
                 reason="schema_type", tool=call.name, call_id=call.call_id,
                 basis=(f"parameter '{pname}' expected {expected}, "
                        f"got {got} ({value!r})")))
+        # V0.1 R3: required subfields of array items / declared objects
+        if spec.subfields and got in ("array", "object"):
+            items = value if isinstance(value, list) else [value]
+            for idx, it in enumerate(items):
+                if not isinstance(it, dict):
+                    continue
+                for sf in spec.subfields:
+                    if sf.required and sf.name not in it:
+                        hits.append(StructuralHit(
+                            reason="schema_missing_required_subfield",
+                            tool=call.name, call_id=call.call_id,
+                            basis=(f"parameter '{pname}' item #{idx} misses "
+                                   f"required subfield '{sf.name}' "
+                                   f"({sf.type}!); catalog declares: "
+                                   + ", ".join(
+                                       f"{s.name}{'!' if s.required else ''}"
+                                       for s in spec.subfields))))
     return hits
 
 
@@ -480,7 +510,16 @@ def _edit_distance(a: str, b: str) -> int:
 
 def _structural_channel(ctx: CaseContext) -> None:
     """CONFIRMED mechanical violations only, on the TARGET response.
-    History anomalies become warnings/suspicions, never label=1."""
+    History anomalies become warnings/suspicions, never label=1.
+    V0.1 (pre-registered 2026-10-01, before any holdout inference):
+      + R1 policy_one_call_violation — target turn makes >=2 tool calls while
+        the case's own policy verbatim forbids more than one per turn;
+      + R2 policy_text_and_call_violation — target turn mixes prose and a
+        tool call while the same verbatim clause forbids it;
+        (both rules are gated on the QUOTED policy sentence; a domain whose
+        policy lacks the clause is never flagged)
+      + R3 schema_missing_required_subfield (inside _check_schema).
+    Diagnostic effect on burned public46: TP5->TP11, FP0->FP0."""
     catalog_names = set(ctx.catalog.tools)
     for call in ctx.target().tool_calls:
         tool = ctx.catalog.tools.get(call.name)
@@ -499,6 +538,32 @@ def _structural_channel(ctx: CaseContext) -> None:
                        f"{call.args_raw[:120]}")))
         if tool is not None and call.args is not None:
             ctx.structural_hits.extend(_check_schema(call, tool))
+
+    # ---- V0.1 R1/R2: policy-gated one-action-per-turn rules -------------
+    clause_m = ONE_CALL_CLAUSE.search(ctx.policy_text) \
+        if ctx.policy_text else None
+    if clause_m:
+        clause_quote = " ".join(clause_m.group(0).split())
+        tgt = ctx.target()
+        call_ids = [c.call_id for c in tgt.tool_calls]
+        if len(call_ids) >= 2:
+            ctx.structural_hits.append(StructuralHit(
+                reason="policy_one_call_violation",
+                tool=",".join(c.name for c in tgt.tool_calls),
+                call_id=",".join(call_ids),
+                basis=(f"target turn makes {len(call_ids)} tool calls "
+                       f"({', '.join(call_ids)}) while the policy states: "
+                       f"\"{clause_quote}\"")))
+        elif call_ids:
+            prose = re.sub(r"⟦[^⟧]*⟧", "", tgt.text).strip()
+            if prose:
+                ctx.structural_hits.append(StructuralHit(
+                    reason="policy_text_and_call_violation",
+                    tool=tgt.tool_calls[0].name, call_id=call_ids[0],
+                    basis=(f"target turn mixes a text response and tool call "
+                           f"{call_ids[0]} while the policy states: "
+                           f"\"{clause_quote}\"")))
+
     # history-side anomalies -> warnings only (current-move semantics)
     for t in ctx.history_turns():
         for call in t.tool_calls:
