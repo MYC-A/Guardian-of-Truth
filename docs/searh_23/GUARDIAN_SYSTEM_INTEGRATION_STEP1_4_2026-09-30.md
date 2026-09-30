@@ -159,6 +159,30 @@ surrounding spans overlap. No rule, threshold, prompt or model was changed
 after opening sealed gold. Raw replies and per-case errors are saved in
 `outputs/step3_modes_{dev,sealed}.json`.
 
+## Step 3: candidate-centred development after the sealed run
+
+In `7227f1a1`, before additional API calls, a second independent prompt was
+frozen. It asks about each *validated structured contract meaning* separately
+and requires one exact reply quote or `NONE` per candidate. It sees no tool
+history or policy. This is a **post-sealed development iteration** and has
+not been scored as transfer on the already opened sealed split.
+
+On 21 dev cases, 11 model calls used 5,267 tokens. For exact
+`(predicate, mode)` pairs it produced **11 correct, 13 extra, 10 missing**
+(P .458, R .524); only 8/21 cases were exact. It repaired the first probe's
+two dangerous mode errors on the offer `I can swap ...` and present state
+`is dispatched`. It also relabelled passive completed events such as
+`refund ... was processed` and `device ... has been swapped` as `STATE_CLAIM`,
+and inferred an extra `notice.emergency` state from the adjective in
+`I published emergency notice ...`. This shows both the benefit and the menu
+bias of supplying tool meanings. It is not safe as an automatic proof input.
+The raw proposals and all errors are in `outputs/step3_candidate_dev.json`.
+
+The original frozen dev split has **no refusal cases**; its refusal cases are
+only in sealed. Step 4 tuning therefore needs a new, separately frozen
+development set and another unseen split, rather than optimizing against the
+already opened sealed gold.
+
 ## Остальные этапы
 
 Step 3: первый mode extractor измерен, но не подключён к этому runtime и
