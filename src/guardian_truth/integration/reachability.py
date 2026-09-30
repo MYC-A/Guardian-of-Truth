@@ -31,7 +31,10 @@ class ReviewedGoal:
     evidence_source: str
 
     def __post_init__(self):
-        if self.evidence_source not in {"HUMAN_REVIEWED", "DOC_EXPLICIT", "ENV_TESTED"}:
+        # AUTO_VERIFIED: model-proposed goal+action inventory that survived
+        # programmatic validation + falsification (System Research V2).
+        if self.evidence_source not in {"HUMAN_REVIEWED", "DOC_EXPLICIT",
+                                        "ENV_TESTED", "AUTO_VERIFIED"}:
             raise ValueError("model-proposed goal mapping cannot grant reachability")
 
 
@@ -176,7 +179,7 @@ def assess_local_reachability(user_request: str, response: str,
 def decide_refusal(response: str, refusal: dict, reachability: dict) -> dict:
     if (not isinstance(refusal, dict)
             or refusal.get("evidence_source") not in
-            {"HUMAN_REVIEWED", "DOC_EXPLICIT", "ENV_TESTED"}
+            {"HUMAN_REVIEWED", "DOC_EXPLICIT", "ENV_TESTED", "AUTO_VERIFIED"}
             or refusal.get("quote") != response
             or refusal.get("absolute_inability") is not True):
         return _answer("UNKNOWN", "refusal_interpretation_unverified",

@@ -12,6 +12,7 @@ from __future__ import annotations
 
 import hashlib
 import json
+import re
 import time
 from pathlib import Path
 
@@ -87,6 +88,34 @@ def _log_cost(entry: dict) -> None:
             f.write(json.dumps(entry, ensure_ascii=False) + "\n")
 
 
+
+
+def _extract_json(content: str):
+    """Tolerant JSON extraction: fence-strip, substring, trailing commas."""
+    txt = (content or "").strip()
+    if txt.startswith("```"):
+        first_nl = txt.find("\n")
+        if first_nl != -1:
+            txt = txt[first_nl + 1:]
+        if txt.rstrip().endswith("```"):
+            txt = txt.rstrip()[:-3].rstrip()
+    try:
+        return json.loads(txt)
+    except Exception:
+        pass
+    if "{" in txt and "}" in txt:
+        sub = txt[txt.index("{"):txt.rindex("}") + 1]
+        try:
+            return json.loads(sub)
+        except Exception:
+            repaired = re.sub(r",[ \t]*\n?[ \t]*([}\]])", r"\n\1", sub)
+            try:
+                return json.loads(repaired)
+            except Exception:
+                return None
+    return None
+
+
 def chat(model: str, messages: list, *, max_tokens: int = 4000,
          temperature: float = 0.0, json_mode: bool = True,
          use_cache: bool = True, max_retries: int = 4) -> dict:
@@ -100,6 +129,8 @@ def chat(model: str, messages: list, *, max_tokens: int = 4000,
     if use_cache and cache_file.exists():
         cached = json.loads(cache_file.read_text(encoding="utf-8"))
         cached["cached"] = True
+        if json_mode:
+            cached["parsed"] = _extract_json(cached.get("content") or "")
         return cached
 
     last_err = None
@@ -112,17 +143,7 @@ def chat(model: str, messages: list, *, max_tokens: int = 4000,
                 kwargs["response_format"] = {"type": "json_object"}
             r = _client(provider).chat.completions.create(**kwargs)
             content = r.choices[0].message.content or ""
-            parsed = None
-            if json_mode:
-                txt = content.strip()
-                try:
-                    parsed = json.loads(txt)
-                except Exception:
-                    if "{" in txt and "}" in txt:
-                        try:
-                            parsed = json.loads(txt[txt.index("{"):txt.rindex("}") + 1])
-                        except Exception:
-                            parsed = None
+            parsed = _extract_json(content) if json_mode else None
             out = {
                 "content": content,
                 "parsed": parsed,

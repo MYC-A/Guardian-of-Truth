@@ -49,7 +49,8 @@ class ReviewedBinding:
     def __post_init__(self):
         if not isinstance(self.strength, EffectStrength) or not isinstance(self.authority, Authority):
             raise TypeError('typed contract strength/authority required')
-        if self.evidence_source not in {'HUMAN_REVIEWED', 'DOC_EXPLICIT', 'ENV_TESTED'}:
+        if self.evidence_source not in {'HUMAN_REVIEWED', 'DOC_EXPLICIT',
+                                        'ENV_TESTED', 'AUTO_VERIFIED'}:
             raise ValueError('model-proposed bindings cannot establish facts')
         if not all(isinstance(x,str) and x for x in
                    (self.producer, self.predicate, self.entity_type, self.entity_field,

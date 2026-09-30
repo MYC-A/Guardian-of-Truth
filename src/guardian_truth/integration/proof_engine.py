@@ -31,7 +31,12 @@ class ReviewedProgram:
     complete_for_governed_action: bool = False
 
     def __post_init__(self):
-        if self.evidence_source not in {"HUMAN_REVIEWED", "DOC_EXPLICIT", "ENV_TESTED"}:
+        # AUTO_VERIFIED: model-proposed program that survived programmatic
+        # validation + falsification (System Research V2). It is deliberately
+        # weaker than HUMAN_REVIEWED and is scored separately; it never
+        # overwrites a reviewed program.
+        if self.evidence_source not in {"HUMAN_REVIEWED", "DOC_EXPLICIT",
+                                        "ENV_TESTED", "AUTO_VERIFIED"}:
             raise ValueError("model-generated policy cannot mark itself reviewed")
         if (not self.policy or not self.governed_tool or not self.governed_producer
                 or not isinstance(self.gate, dict)):
@@ -181,7 +186,8 @@ def check_call(program: ReviewedProgram, case: TrajectoryCase, target: CallEvent
 
 def load_reviewed_programs(path) -> tuple[ReviewedProgram, ...]:
     value = json.loads(path.read_text(encoding="utf-8"))
-    if not isinstance(value, dict) or value.get("track") != "human_reviewed_oracle":
+    if not isinstance(value, dict) or value.get("track") not in {
+            "human_reviewed_oracle", "auto_verified_v2"}:
         raise ValueError("untrusted reviewed-program file")
     return tuple(ReviewedProgram(**entry) for entry in value["programs"])
 
