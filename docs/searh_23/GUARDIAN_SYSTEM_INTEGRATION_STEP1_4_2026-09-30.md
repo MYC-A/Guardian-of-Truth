@@ -443,9 +443,10 @@ ERROR с уверенным NO_ERROR не было. На dev `service.lookup_onl
 | Gold claim interpretation заменён model candidate + literal compiler | Reviewed-policy dev: 21/21 → 17/21; ERROR остаются 6/6, 4 корректных ответа становятся UNKNOWN | Разница из Step3 acquisition/binding, policy и Step2 неизменны. |
 | Reachability исключена | Paired replay на тех же 16 отказах: 5/5 ERROR → 0/5, все 16 становятся UNKNOWN; отдельная Step4 ветка с reachability дала 16/16 scoped verdict | Цель, полный action inventory и policy предоставлены вручную; `outputs/system_runtime_no_reachability.json`. |
 | Latest-prior state заменён первым увиденным значением | На тех же 37 траекториях `warehouse.revoked` даёт ложный ERROR, а `warehouse.restored` скрывает ERROR под UNKNOWN | Offline diagnostic `outputs/system_runtime_first_prior.json`; это удаление supersession, не всех временных проверок. |
+| Evidence check для compiled claims выключен | На тех же 37 траекториях exact verdict 27 → 23: `depot.timeout`, `payments.pending_effect`, `service.swap_timeout` ложно становятся NO_ERROR, а `depot.timeout_contradicted` меняется с ERROR на NO_ERROR | Проверяется только уже скомпилированный claim; ошибки извлечения остаются; `outputs/system_runtime_no_claim_evidence.json`. |
 | Documented semantic contract отсутствует | Step2 sealed: только 20/40 WorldFacts вместо 40/40 gold, 0 вымышленных | Это замер границы contract acquisition, не разрешение угадывать contract из prose. |
 
-Для semantic-binding guard, claim-evidence check и verdict-aware escalation
+Для semantic-binding guard и verdict-aware escalation
 пока есть адресные контрпримеры и тесты, но нет
 полноценного paired sealed выключения на всех 41 траекториях. Поэтому
 эффект каждого из них отдельно в общей метрике **не установлен**.
