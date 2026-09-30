@@ -14,6 +14,8 @@ ROOT = Path(__file__).resolve().parents[1]
 sys.path.insert(0, str(ROOT / "src"))
 
 from guardian_truth.integration.contracts import facts_from_documented
+from guardian_truth.integration.claim_binding import (
+    containing_sentence_span, literal_scope_arguments)
 from guardian_truth.integration.proof_engine import (
     ClaimQuery, check_call, check_claim, decide_reviewed, load_reviewed_programs)
 from guardian_truth.step2.verifier import CallEvent, ResultEvent, TrajectoryCase
@@ -103,11 +105,46 @@ def test_read_state_does_not_prove_assistant_caused_it():
                        0, len(response), "CLAIMED_COMPLETED",
                        "parcel.dispatch_state", "parcel", "P-41", "dispatched",
                        "HUMAN_REVIEWED", "ASSISTANT")
-    proof = check_claim(claim, facts)
+    proof = check_claim(claim, case, facts)
     assert proof["status"] == "UNKNOWN"
     assert proof["reason"] == "assistant_effect_unproven"
     state = replace(claim, actor="UNSPECIFIED")
-    assert check_claim(state, facts)["status"] == "SUPPORTED"
+    assert check_claim(state, case, facts)["status"] == "SUPPORTED"
+
+
+def test_claim_amount_is_joined_to_effect_call_not_just_order_id():
+    _, case, _ = _fixture("payments.approved")
+    facts = _facts(case)
+    response = "The 100 refund for O-72 was processed."
+    quote = "refund for O-72 was processed"
+    start = response.index(quote)
+    scope = containing_sentence_span(response, start, start + len(quote))
+    assert scope is not None
+    bound = literal_scope_arguments(case, "order.refund_state", "O-72",
+                                    response[scope[0]:scope[1]])
+    # No call carried the response's 100 amount, so binding abstains.
+    assert bound is None
+    forged = ClaimQuery(response, 20, quote, start, start + len(quote),
+                        "CLAIMED_COMPLETED", "order.refund_state", "order",
+                        "O-72", "processed", "HUMAN_REVIEWED", "UNSPECIFIED",
+                        (("amount", "100"),), scope)
+    assert check_claim(forged, case, facts)["status"] == "UNKNOWN"
+
+
+def test_claim_amount_must_be_source_grounded_in_same_sentence():
+    _, case, _ = _fixture("payments.approved")
+    facts = _facts(case)
+    response = "The refund for O-72 was processed. Later we discussed 250."
+    quote = "refund for O-72 was processed"
+    start = response.index(quote)
+    scope = containing_sentence_span(response, start, start + len(quote))
+    claim = ClaimQuery(response, 20, quote, start, start + len(quote),
+                       "CLAIMED_COMPLETED", "order.refund_state", "order",
+                       "O-72", "processed", "HUMAN_REVIEWED", "UNSPECIFIED",
+                       (("amount", "250"),), scope)
+    proof = check_claim(claim, case, facts)
+    assert proof["status"] == "UNKNOWN"
+    assert proof["reason"] == "claim_scope_not_source_grounded"
 
 
 def test_incomplete_inventory_cannot_yield_no_error():

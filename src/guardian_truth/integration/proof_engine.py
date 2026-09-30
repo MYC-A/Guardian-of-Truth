@@ -9,6 +9,8 @@ from __future__ import annotations
 from dataclasses import dataclass
 import json
 
+from guardian_truth.integration.contracts import acquire_documented
+from guardian_truth.integration.claim_binding import _literal_occurs
 from guardian_truth.step2.ledger import FactLedger
 from guardian_truth.step2.result_types import scalar_to_json
 from guardian_truth.step2.trusted import producer_scope
@@ -98,6 +100,15 @@ def _gate(node: dict, program: ReviewedProgram, target: CallEvent,
     if not isinstance(node, dict) or len(node) != 1:
         return _answer("UNKNOWN", "gate_invalid")
     operator, body = next(iter(node.items()))
+    if operator == "source" and isinstance(body, dict) and set(body) == {"start", "end", "gate"}:
+        start, end = body["start"], body["end"]
+        if (type(start) is not int or type(end) is not int or start < 0
+                or end <= start or end > len(program.policy)):
+            return _answer("UNKNOWN", "policy_span_invalid")
+        quote = program.policy[start:end]
+        child = _gate(body["gate"], program, target, case, facts)
+        return {**child, "source": {"start": start, "end": end,
+                                     "quote": quote, "review": program.evidence_source}}
     if operator == "atom" and isinstance(body, dict):
         return _atom(body, program, target, case, facts)
     if operator in {"all", "any"} and isinstance(body, list) and body:
@@ -182,9 +193,59 @@ class ClaimQuery:
     expected_value: object
     evidence_source: str
     actor: str = "UNKNOWN"
+    scope_arguments: tuple[tuple[str, str], ...] = ()
+    scope_span: tuple[int, int] | None = None
 
 
-def check_claim(query: ClaimQuery, facts: tuple[VerifiedFact, ...]) -> dict:
+def _claim_scoped_facts(query: ClaimQuery, case: TrajectoryCase,
+                        facts: tuple[VerifiedFact, ...]) -> tuple[VerifiedFact, ...]:
+    """Require every documented producer argument to be claim-bound.
+
+    A fact about an order at amount 100 must not license a claim about amount
+    250. Absent claim scope yields no supporting fact, never a negative fact.
+    """
+    claim_scope = dict(query.scope_arguments)
+    if len(claim_scope) != len(query.scope_arguments):
+        return ()
+    acquired = acquire_documented(case)
+    scoped = []
+    for verified in facts:
+        fact = verified.fact
+        if (fact.predicate != query.predicate or fact.entity_type != query.entity_type
+                or fact.entity_id != scalar_to_json(query.entity_value)
+                or fact.observed_at >= query.response_index):
+            continue
+        sources = [c for c in case.calls if c.call_id == fact.provenance.call_id]
+        if len(sources) != 1 or not isinstance(sources[0].payload, dict):
+            continue
+        call = sources[0]
+        producer = producer_scope(case, call.tool)
+        bindings = [b for b in acquired.bindings
+                    if b.producer == producer and b.predicate == fact.predicate
+                    and b.entity_type == fact.entity_type
+                    and b.result_path == fact.provenance.json_path
+                    and b.strength == fact.strength
+                    and (not b.allowed_values or fact.value in b.allowed_values)]
+        catalog = [t for t in case.tools if t.get("name") == call.tool]
+        if len(bindings) != 1 or len(catalog) != 1:
+            continue
+        entity_field = bindings[0].entity_field
+        params = catalog[0].get("parameters", {})
+        if not isinstance(params, dict):
+            continue
+        extra_fields = set(params) - {entity_field}
+        if set(claim_scope) != extra_fields:
+            continue
+        if any(field not in call.payload
+               or scalar_to_json(call.payload[field]) != claim_scope[field]
+               for field in extra_fields):
+            continue
+        scoped.append(verified)
+    return tuple(scoped)
+
+
+def check_claim(query: ClaimQuery, case: TrajectoryCase,
+                facts: tuple[VerifiedFact, ...]) -> dict:
     """Ask whether a source-exact response claim has a current proof path.
 
     A missing fact is UNKNOWN, never a contradiction. A latest authoritative
@@ -197,6 +258,19 @@ def check_claim(query: ClaimQuery, facts: tuple[VerifiedFact, ...]) -> dict:
             or query.start >= query.end
             or query.response[query.start:query.end] != query.quote):
         return _answer("UNKNOWN", "claim_source_mismatch", source=source)
+    scope_start, scope_end = query.scope_span or (query.start, query.end)
+    if (scope_start < 0 or scope_end > len(query.response)
+            or scope_start > query.start or scope_end < query.end):
+        return _answer("UNKNOWN", "claim_scope_source_mismatch", source=source)
+    scope_text = query.response[scope_start:scope_end]
+    for field, canonical in query.scope_arguments:
+        try:
+            raw = json.loads(canonical)
+        except (TypeError, ValueError):
+            return _answer("UNKNOWN", "claim_scope_value_invalid", source=source)
+        if not isinstance(field, str) or scalar_to_json(raw) != canonical or not _literal_occurs(
+                scope_text, str(raw).lower() if isinstance(raw, bool) else str(raw)):
+            return _answer("UNKNOWN", "claim_scope_not_source_grounded", source=source)
     if query.mode in {"PROPOSED", "CONDITIONAL", "REQUEST", "REFUSAL"}:
         return _answer("NOT_APPLICABLE", "not_a_factual_completion_or_state", source=source)
     if query.mode not in {"CLAIMED_COMPLETED", "STATE_CLAIM"}:
@@ -205,11 +279,12 @@ def check_claim(query: ClaimQuery, facts: tuple[VerifiedFact, ...]) -> dict:
     expected = scalar_to_json(query.expected_value)
     if entity is None or expected is None or not query.predicate or not query.entity_type:
         return _answer("UNKNOWN", "claim_semantics_unbound", source=source)
+    scoped_facts = _claim_scoped_facts(query, case, facts)
     if query.mode == "CLAIMED_COMPLETED" and query.actor == "ASSISTANT":
         # A later read can prove the state but not that this agent caused it.
         # The claim "I did X" needs a witnessed effect of an assistant call.
         causal = []
-        for verified in facts:
+        for verified in scoped_facts:
             fact = verified.fact
             if (fact.observed_at >= query.response_index
                     or fact.predicate != query.predicate
@@ -228,7 +303,7 @@ def check_claim(query: ClaimQuery, facts: tuple[VerifiedFact, ...]) -> dict:
     if query.mode == "CLAIMED_COMPLETED" and query.actor not in {"UNSPECIFIED", "OTHER"}:
         return _answer("UNKNOWN", "completed_actor_unresolved", source=source)
     ledger = FactLedger()
-    for verified in facts:
+    for verified in scoped_facts:
         fact = verified.fact
         if fact.observed_at >= query.response_index:
             continue
