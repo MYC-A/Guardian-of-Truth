@@ -313,8 +313,50 @@ Step 3/4 с текущим журналом фактов, отдельно из�
 
 Вывод узок: action-conditioned запрос с готовым меню фактов резко облегчает
 поиск условий, но пока не даёт проверенного автоматического `ReviewedProgram`.
+Тривиальная стратегия «все предикаты из меню обязательны» уже совпадает с
+required-set в **4/6 dev и 1/2 sealed**; информативны здесь лишь три случая
+с отвлекающим/исключительным предикатом. Поэтому 8/8 по required-set нельзя
+читать как высокую точность общего policy parser.
 Здесь всего восемь авторских коротких политик, два sealed примера и
 **oracle-подсказка о governed action**; задача самостоятельного обнаружения
 всех governed actions и доказательства полноты policy не проверялась.
 Результаты с сырой выдачей и стоимостью находятся в
 `outputs/action_conditioned_{dev,sealed}.json`. `scripts/predict.py` не менялся.
+
+### Единый proof runtime и условные системные метрики
+
+`integration/system_runtime.py` теперь делает один проход: documented
+contract → факты → проверка всех вызовов по reviewed policy → компиляция
+cached model claims → проверка claims → local reachability/refusal → общий
+трёхзначный вердикт. Состав каждой цепочки и причины UNKNOWN сохраняются.
+Для `NO_ERROR` требуются явно подтверждённая полнота policy, полнота
+инвентаря claims и проверенный охват отказа. Будущие вызовы после
+проверяемого ответа не учитываются. 19 целевых тестов, включая этот
+временной контрпример, проходят.
+
+Диагностический прогон `eval_system_runtime.py` на 37 ранее замороженных
+траекториях показал:
+
+| Scope | Cases | Exact verdict | ERROR caught | False ERROR | NO_ERROR hidden as UNKNOWN |
+| --- | ---: | ---: | ---: | ---: | ---: |
+| full dev, reviewed policy and reviewed non-refusal; model Step3 | 21 | 17 | 6/6 | 0 | 4 |
+| refusal dev, reviewed goal/policy/refusal; claim extraction absent | 8 | 5 | 2/2 | 0 | 3 |
+| refusal sealed, same oracle boundary | 8 | 5 | 3/3 | 0 | 3 |
+
+Суммарно условно 27/37, все 11 ERROR пойманы, 0 ложных ERROR, но 20/37
+итогов UNKNOWN. Шесть закрытых и оправданных отказов получают Step4
+`NO_ERROR`, однако общий runtime оставляет UNKNOWN, поскольку отдельный
+инвентарь прочих claims и всей policy не был подтверждён. Это намеренная
+граница доказательства, а не ошибка Step4. В full dev четыре корректных
+случая скрыты из-за неполного или неверного Step3 binding: `service.lookup_only`,
+`service.lookup_denied`, `records.emergency_exception`, `records.request_identity`.
+Персональные цепочки находятся в `outputs/system_runtime_diagnostic.json`.
+
+Это **не end-to-end автоматическая метрика**: full dev использует четыре
+вручную заданных policy program и ручную отметку отсутствия отказа, а
+refusal suites содержат reviewed goal, исчерпывающие candidate actions и
+reviewed refusal. Если убрать эту oracle-границу, Step1/4 пока не дают
+достаточного входа для сильного вердикта. Тем самым следующий bottleneck
+локализован: автоматическое, полное и проверяемое acquisition policy/action
+scope и goal inventory, а после него claim binding. Переход к default
+детектору пока не обоснован.
