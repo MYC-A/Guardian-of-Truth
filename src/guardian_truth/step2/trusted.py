@@ -134,9 +134,26 @@ def assess(case: TrajectoryCase, call: CallEvent, result: ResultEvent,
                 and b.entity_type == candidate.entity_type
                 and b.entity_field == candidate.entity_field
                 and b.result_path == candidate.json_path]
-    if len(matching) > 1:
+    # One documented result field can carry several *disjoint* values with
+    # different strengths, e.g. queued=REQUESTED and processed=EXECUTED.
+    # Resolve only an exact, unique value/strength contract. A candidate flag
+    # cannot promote itself; a lone mismatched contract still gives the old
+    # explicit strength/value rejection rather than silently disappearing.
+    by_strength = [b for b in matching if b.strength is candidate.strength]
+    by_value = [b for b in by_strength
+                if not b.allowed_values or rendered in b.allowed_values]
+    if len(by_value) > 1:
         return reject('AMBIGUOUS_CONTRACT_BINDING')
-    binding = matching[0] if matching else None
+    if by_value:
+        binding = by_value[0]
+    elif len(by_strength) == 1:
+        binding = by_strength[0]
+    elif not by_strength and len(matching) == 1:
+        binding = matching[0]
+    elif matching:
+        return reject('AMBIGUOUS_CONTRACT_BINDING')
+    else:
+        binding = None
     entity_path = binding.result_entity_path if binding else '$.' + candidate.entity_field
     echo, present = json_path_get(result.payload, entity_path)
     if not present:
@@ -152,9 +169,11 @@ def assess(case: TrajectoryCase, call: CallEvent, result: ResultEvent,
         return Assessment(observation, None, ('STRENGTH_NOT_GUARANTEED',))
     if binding.allowed_values and rendered not in binding.allowed_values:
         return Assessment(observation, None, ('VALUE_OUTSIDE_CONTRACT_GUARANTEE',))
-    if (classify_payload(result.payload) in {ResultType.FAILURE, ResultType.PARTIAL_SUCCESS}
-            and binding.strength is not EffectStrength.OBSERVED):
-        return Assessment(observation, None, ('EFFECT_FROM_FAILURE_UNPROVEN',))
+    if classify_payload(result.payload) in {ResultType.FAILURE, ResultType.PARTIAL_SUCCESS}:
+        # A failure-shaped payload can still be cited as raw source data, but
+        # cannot establish even a read-side business state without an explicit
+        # failure-field contract (which this narrow compiler does not support).
+        return Assessment(observation, None, ('FACT_FROM_FAILURE_UNPROVEN',))
     provenance = Provenance(call.call_id, result.index, candidate.json_path, binding.authority)
     # Canonical JSON entity keys distinguish integer 5 from string "5".
     fact = WorldFact(binding.predicate, binding.entity_type, arg_json,
