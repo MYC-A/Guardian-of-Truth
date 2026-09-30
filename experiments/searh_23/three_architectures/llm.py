@@ -44,7 +44,7 @@ def _load_env_file(p: Path) -> dict:
             line = line.strip()
             if line.startswith("export "):
                 k, v = line[len("export "):].split("=", 1)
-                env[k] = v.strip().strip('"')
+                env[k] = v.strip().strip('"').strip("'")
     return env
 
 
