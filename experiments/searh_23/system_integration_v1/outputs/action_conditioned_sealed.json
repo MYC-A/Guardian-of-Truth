@@ -1,0 +1,144 @@
+{
+  "split": "sealed",
+  "track": "model_proposed_action_conditioned_policy",
+  "model": "ministral-14b-latest",
+  "api_calls": 2,
+  "usage": {
+    "prompt_tokens": 979,
+    "completion_tokens": 250,
+    "total_tokens": 1229
+  },
+  "counts": {
+    "total": 2,
+    "valid_source_schema": 2,
+    "exact_program": 1,
+    "required_correct": 2,
+    "combine_correct": 1,
+    "exceptions_correct": 2,
+    "activation_correct": 2,
+    "temporal_correct": 2
+  },
+  "per_case": [
+    {
+      "id": "clinic",
+      "proposal": {
+        "valid": true,
+        "issues": [],
+        "canonical": {
+          "id": "clinic",
+          "required": [
+            "sample.permit_active"
+          ],
+          "combine": "ANY",
+          "exceptions": [
+            {
+              "when": "sample.emergency",
+              "waives": "sample.permit_active"
+            }
+          ],
+          "activation": null,
+          "temporal": "LATEST_PRIOR"
+        },
+        "source_quotes": {
+          "action": "A sample may be discarded only if its permit is active. Emergency samples may be discarded without a permit.",
+          "required": [
+            "A sample may be discarded only if its permit is active."
+          ],
+          "exceptions": [
+            "Emergency samples may be discarded without a permit."
+          ]
+        }
+      },
+      "raw": "{\n  \"action_quote\": \"A sample may be discarded only if its permit is active. Emergency samples may be discarded without a permit.\",\n  \"required\": [\n    {\n      \"predicate\": \"sample.permit_active\",\n      \"quote\": \"A sample may be discarded only if its permit is active.\"\n    }\n  ],\n  \"combine\": \"ANY\",\n  \"exceptions\": [\n    {\n      \"when\": \"sample.emergency\",\n      \"waives\": \"sample.permit_active\",\n      \"quote\": \"Emergency samples may be discarded without a permit.\"\n    }\n  ],\n  \"activation\": null,\n  \"temporal\": \"LATEST_PRIOR\"\n}",
+      "usage": {
+        "prompt_tokens": 485,
+        "total_tokens": 629,
+        "completion_tokens": 144,
+        "prompt_tokens_details": {
+          "cached_tokens": 0
+        },
+        "service_tier": "standard"
+      },
+      "finish_reason": "stop",
+      "gold": {
+        "id": "clinic",
+        "required": [
+          "sample.permit_active"
+        ],
+        "combine": "ALL",
+        "exceptions": [
+          {
+            "when": "sample.emergency",
+            "waives": "sample.permit_active"
+          }
+        ],
+        "activation": null,
+        "temporal": "LATEST_PRIOR"
+      },
+      "field_matches": {
+        "required": true,
+        "combine": false,
+        "exceptions": true,
+        "activation": true,
+        "temporal": true
+      },
+      "exact_program": false
+    },
+    {
+      "id": "grid",
+      "proposal": {
+        "valid": true,
+        "issues": [],
+        "canonical": {
+          "id": "grid",
+          "required": [
+            "feeder.lockout_clear",
+            "feeder.operator_authorized"
+          ],
+          "combine": "ALL",
+          "exceptions": [],
+          "activation": null,
+          "temporal": "LATEST_PRIOR"
+        },
+        "source_quotes": {
+          "action": "Energize a feeder only after both lockout clearance and operator authorization are recorded",
+          "required": [
+            "lockout clearance",
+            "operator authorization"
+          ],
+          "exceptions": []
+        }
+      },
+      "raw": "{\n  \"action_quote\": \"Energize a feeder only after both lockout clearance and operator authorization are recorded\",\n  \"required\": [\n    {\"predicate\": \"feeder.lockout_clear\", \"quote\": \"lockout clearance\"},\n    {\"predicate\": \"feeder.operator_authorized\", \"quote\": \"operator authorization\"}\n  ],\n  \"combine\": \"ALL\",\n  \"exceptions\": [],\n  \"activation\": null,\n  \"temporal\": \"LATEST_PRIOR\"\n}",
+      "usage": {
+        "prompt_tokens": 494,
+        "total_tokens": 600,
+        "completion_tokens": 106,
+        "prompt_tokens_details": {
+          "cached_tokens": 0
+        },
+        "service_tier": "standard"
+      },
+      "finish_reason": "stop",
+      "gold": {
+        "id": "grid",
+        "required": [
+          "feeder.lockout_clear",
+          "feeder.operator_authorized"
+        ],
+        "combine": "ALL",
+        "exceptions": [],
+        "activation": null,
+        "temporal": "LATEST_PRIOR"
+      },
+      "field_matches": {
+        "required": true,
+        "combine": true,
+        "exceptions": true,
+        "activation": true,
+        "temporal": true
+      },
+      "exact_program": true
+    }
+  ]
+}

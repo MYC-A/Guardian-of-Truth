@@ -1,0 +1,372 @@
+{
+  "split": "dev",
+  "track": "model_proposed_action_conditioned_policy",
+  "model": "ministral-14b-latest",
+  "api_calls": 6,
+  "usage": {
+    "prompt_tokens": 2801,
+    "completion_tokens": 672,
+    "total_tokens": 3473
+  },
+  "counts": {
+    "total": 6,
+    "valid_source_schema": 4,
+    "exact_program": 3,
+    "required_correct": 6,
+    "combine_correct": 6,
+    "exceptions_correct": 6,
+    "activation_correct": 5,
+    "temporal_correct": 6
+  },
+  "per_case": [
+    {
+      "id": "depot",
+      "proposal": {
+        "valid": true,
+        "issues": [],
+        "canonical": {
+          "id": "depot",
+          "required": [
+            "parcel.inspection_passed"
+          ],
+          "combine": "ALL",
+          "exceptions": [],
+          "activation": null,
+          "temporal": "LATEST_PRIOR"
+        },
+        "source_quotes": {
+          "action": "A parcel may be dispatched only if its inspection passed",
+          "required": [
+            "A parcel may be dispatched only if its inspection passed"
+          ],
+          "exceptions": []
+        }
+      },
+      "raw": "{\n  \"action_quote\": \"A parcel may be dispatched only if its inspection passed\",\n  \"required\": [\n    {\n      \"predicate\": \"parcel.inspection_passed\",\n      \"quote\": \"A parcel may be dispatched only if its inspection passed\"\n    }\n  ],\n  \"combine\": \"ALL\",\n  \"exceptions\": [],\n  \"activation\": null,\n  \"temporal\": \"LATEST_PRIOR\"\n}",
+      "usage": {
+        "prompt_tokens": 487,
+        "total_tokens": 581,
+        "completion_tokens": 94,
+        "prompt_tokens_details": {
+          "cached_tokens": 0
+        },
+        "service_tier": "standard"
+      },
+      "finish_reason": "stop",
+      "gold": {
+        "id": "depot",
+        "required": [
+          "parcel.inspection_passed"
+        ],
+        "combine": "ALL",
+        "exceptions": [],
+        "activation": null,
+        "temporal": "LATEST_PRIOR"
+      },
+      "field_matches": {
+        "required": true,
+        "combine": true,
+        "exceptions": true,
+        "activation": true,
+        "temporal": true
+      },
+      "exact_program": true
+    },
+    {
+      "id": "payments",
+      "proposal": {
+        "valid": false,
+        "issues": [
+          "action_quote_not_source"
+        ],
+        "canonical": {
+          "id": "payments",
+          "required": [
+            "order.approved"
+          ],
+          "combine": "ALL",
+          "exceptions": [],
+          "activation": {
+            "field": "amount",
+            "op": "GT",
+            "value": 200
+          },
+          "temporal": "LATEST_PRIOR"
+        },
+        "source_quotes": {
+          "action": "Processes the refund",
+          "required": [
+            "Refunds above 200 require recorded supervisor approval before processing"
+          ],
+          "exceptions": []
+        }
+      },
+      "raw": "{\n  \"action_quote\": \"Processes the refund\",\n  \"required\": [\n    {\n      \"predicate\": \"order.approved\",\n      \"quote\": \"Refunds above 200 require recorded supervisor approval before processing\"\n    }\n  ],\n  \"combine\": \"ALL\",\n  \"exceptions\": [],\n  \"activation\": {\n    \"field\": \"amount\",\n    \"op\": \"GT\",\n    \"value\": 200,\n    \"quote\": \"Refunds above 200 require recorded supervisor approval before processing\"\n  },\n  \"temporal\": \"LATEST_PRIOR\"\n}",
+      "usage": {
+        "prompt_tokens": 459,
+        "total_tokens": 592,
+        "completion_tokens": 133,
+        "prompt_tokens_details": {
+          "cached_tokens": 0
+        },
+        "service_tier": "standard"
+      },
+      "finish_reason": "stop",
+      "gold": {
+        "id": "payments",
+        "required": [
+          "order.approved"
+        ],
+        "combine": "ALL",
+        "exceptions": [],
+        "activation": {
+          "field": "amount",
+          "op": "GT",
+          "value": 200
+        },
+        "temporal": "LATEST_PRIOR"
+      },
+      "field_matches": {
+        "required": true,
+        "combine": true,
+        "exceptions": true,
+        "activation": true,
+        "temporal": true
+      },
+      "exact_program": false
+    },
+    {
+      "id": "service",
+      "proposal": {
+        "valid": true,
+        "issues": [],
+        "canonical": {
+          "id": "service",
+          "required": [
+            "device.approved"
+          ],
+          "combine": "ALL",
+          "exceptions": [],
+          "activation": null,
+          "temporal": "LATEST_PRIOR"
+        },
+        "source_quotes": {
+          "action": "Approval must be confirmed before swapping a device",
+          "required": [
+            "Approval must be confirmed before swapping a device"
+          ],
+          "exceptions": []
+        }
+      },
+      "raw": "{\n  \"action_quote\": \"Approval must be confirmed before swapping a device\",\n  \"required\": [\n    {\n      \"predicate\": \"device.approved\",\n      \"quote\": \"Approval must be confirmed before swapping a device\"\n    }\n  ],\n  \"combine\": \"ALL\",\n  \"exceptions\": [],\n  \"activation\": null,\n  \"temporal\": \"LATEST_PRIOR\"\n}",
+      "usage": {
+        "prompt_tokens": 437,
+        "total_tokens": 526,
+        "completion_tokens": 89,
+        "prompt_tokens_details": {
+          "cached_tokens": 0
+        },
+        "service_tier": "standard"
+      },
+      "finish_reason": "stop",
+      "gold": {
+        "id": "service",
+        "required": [
+          "device.approved"
+        ],
+        "combine": "ALL",
+        "exceptions": [],
+        "activation": null,
+        "temporal": "LATEST_PRIOR"
+      },
+      "field_matches": {
+        "required": true,
+        "combine": true,
+        "exceptions": true,
+        "activation": true,
+        "temporal": true
+      },
+      "exact_program": true
+    },
+    {
+      "id": "records",
+      "proposal": {
+        "valid": false,
+        "issues": [
+          "required:1:quote_not_source"
+        ],
+        "canonical": {
+          "id": "records",
+          "required": [
+            "notice.consent",
+            "notice.identity_confirmed"
+          ],
+          "combine": "ALL",
+          "exceptions": [
+            {
+              "when": "notice.emergency",
+              "waives": "notice.consent"
+            }
+          ],
+          "activation": null,
+          "temporal": "LATEST_PRIOR"
+        },
+        "source_quotes": {
+          "action": "Publishing a record requires consent and identity confirmation",
+          "required": [
+            "Publishing a record requires consent",
+            "Publishing a record requires ... identity confirmation"
+          ],
+          "exceptions": [
+            "An emergency notice may be published without consent"
+          ]
+        }
+      },
+      "raw": "{\n  \"action_quote\": \"Publishing a record requires consent and identity confirmation\",\n  \"required\": [\n    {\"predicate\": \"notice.consent\", \"quote\": \"Publishing a record requires consent\"},\n    {\"predicate\": \"notice.identity_confirmed\", \"quote\": \"Publishing a record requires ... identity confirmation\"}\n  ],\n  \"combine\": \"ALL\",\n  \"exceptions\": [\n    {\n      \"when\": \"notice.emergency\",\n      \"waives\": \"notice.consent\",\n      \"quote\": \"An emergency notice may be published without consent\"\n    }\n  ],\n  \"activation\": null,\n  \"temporal\": \"LATEST_PRIOR\"\n}",
+      "usage": {
+        "prompt_tokens": 521,
+        "total_tokens": 670,
+        "completion_tokens": 149,
+        "prompt_tokens_details": {
+          "cached_tokens": 0
+        },
+        "service_tier": "standard"
+      },
+      "finish_reason": "stop",
+      "gold": {
+        "id": "records",
+        "required": [
+          "notice.consent",
+          "notice.identity_confirmed"
+        ],
+        "combine": "ALL",
+        "exceptions": [
+          {
+            "when": "notice.emergency",
+            "waives": "notice.consent"
+          }
+        ],
+        "activation": null,
+        "temporal": "LATEST_PRIOR"
+      },
+      "field_matches": {
+        "required": true,
+        "combine": true,
+        "exceptions": true,
+        "activation": true,
+        "temporal": true
+      },
+      "exact_program": false
+    },
+    {
+      "id": "library",
+      "proposal": {
+        "valid": true,
+        "issues": [],
+        "canonical": {
+          "id": "library",
+          "required": [
+            "manuscript.clearance_active"
+          ],
+          "combine": "ALL",
+          "exceptions": [],
+          "activation": null,
+          "temporal": "LATEST_PRIOR"
+        },
+        "source_quotes": {
+          "action": "A manuscript may be archived",
+          "required": [
+            "its clearance is active"
+          ],
+          "exceptions": []
+        }
+      },
+      "raw": "{\n  \"action_quote\": \"A manuscript may be archived\",\n  \"required\": [\n    {\n      \"predicate\": \"manuscript.clearance_active\",\n      \"quote\": \"its clearance is active\"\n    }\n  ],\n  \"combine\": \"ALL\",\n  \"exceptions\": [],\n  \"activation\": null,\n  \"temporal\": \"LATEST_PRIOR\"\n}",
+      "usage": {
+        "prompt_tokens": 445,
+        "total_tokens": 528,
+        "completion_tokens": 83,
+        "prompt_tokens_details": {
+          "cached_tokens": 0
+        },
+        "service_tier": "standard"
+      },
+      "finish_reason": "stop",
+      "gold": {
+        "id": "library",
+        "required": [
+          "manuscript.clearance_active"
+        ],
+        "combine": "ALL",
+        "exceptions": [],
+        "activation": null,
+        "temporal": "LATEST_PRIOR"
+      },
+      "field_matches": {
+        "required": true,
+        "combine": true,
+        "exceptions": true,
+        "activation": true,
+        "temporal": true
+      },
+      "exact_program": true
+    },
+    {
+      "id": "warehouse",
+      "proposal": {
+        "valid": true,
+        "issues": [],
+        "canonical": {
+          "id": "warehouse",
+          "required": [
+            "pallet.seal_approved"
+          ],
+          "combine": "ALL",
+          "exceptions": [],
+          "activation": {
+            "field": "quantity",
+            "op": "GT",
+            "value": 0
+          },
+          "temporal": "LATEST_PRIOR"
+        },
+        "source_quotes": {
+          "action": "A pallet may be released only if approval covers the requested quantity",
+          "required": [
+            "approval covers the requested quantity"
+          ],
+          "exceptions": []
+        }
+      },
+      "raw": "{\n  \"action_quote\": \"A pallet may be released only if approval covers the requested quantity\",\n  \"required\": [\n    {\n      \"predicate\": \"pallet.seal_approved\",\n      \"quote\": \"approval covers the requested quantity\"\n    }\n  ],\n  \"combine\": \"ALL\",\n  \"exceptions\": [],\n  \"activation\": {\n    \"field\": \"quantity\",\n    \"op\": \"GT\",\n    \"value\": 0,\n    \"quote\": \"approval covers the requested quantity\"\n  },\n  \"temporal\": \"LATEST_PRIOR\"\n}",
+      "usage": {
+        "prompt_tokens": 452,
+        "total_tokens": 576,
+        "completion_tokens": 124,
+        "prompt_tokens_details": {
+          "cached_tokens": 228
+        },
+        "service_tier": "standard"
+      },
+      "finish_reason": "stop",
+      "gold": {
+        "id": "warehouse",
+        "required": [
+          "pallet.seal_approved"
+        ],
+        "combine": "ALL",
+        "exceptions": [],
+        "activation": null,
+        "temporal": "LATEST_PRIOR"
+      },
+      "field_matches": {
+        "required": true,
+        "combine": true,
+        "exceptions": true,
+        "activation": false,
+        "temporal": true
+      },
+      "exact_program": false
+    }
+  ]
+}
