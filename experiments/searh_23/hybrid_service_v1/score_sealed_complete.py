@@ -12,6 +12,11 @@ HERE = Path(__file__).resolve().parent
 def run(directories, output):
     protocol_file = HERE / "dataset/sealed_hybrid_v1/protocol.json"
     protocol = json.loads(protocol_file.read_text(encoding="utf-8"))
+    input_file = DATA / "sealed_input.jsonl"
+    if hashlib.sha256(input_file.read_bytes()).hexdigest() != protocol["input_sha256"]:
+        raise ValueError("sealed input hash mismatch")
+    expected_ids = [r["id"] for r in map(json.loads,
+        input_file.read_text(encoding="utf-8").splitlines())]
     configs, by_arm = [], {}
     # This pass never loads labels. Validate both full input sets and all arms.
     for directory in directories:
@@ -21,7 +26,8 @@ def run(directories, output):
             raise ValueError("all planned sealed runs must be complete before gold")
         config = json.loads((directory / "run_config.json").read_text(encoding="utf-8"))
         if (config["split"] != "sealed" or config["input_sha256"] != protocol["input_sha256"]
-                or len(config["case_ids"]) != protocol["n"]):
+                or config["case_ids"] != expected_ids
+                or len(set(config["case_ids"])) != protocol["n"]):
             raise ValueError("not the registered sealed input set")
         configs.append(config)
         for line in (directory / "results.jsonl").read_text(encoding="utf-8").splitlines():
