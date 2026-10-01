@@ -141,6 +141,9 @@ def collect_review(cfg, ctx, findings, *, caller="service/review"):
         valid, reason = validate_review(parsed, ctx, findings, strict_quotes=strict)
         attempts.append({"valid": valid, "reason": reason,
                          "cached": bool(answer.get("cached")),
+                         "transport_failed": bool(answer.get("error")),
+                         "error_type": answer.get("error_type"),
+                         "http_status": answer.get("http_status"),
                          "usage": answer.get("usage") or {},
                          "elapsed_s": answer.get("elapsed"),
                          "raw_content": (answer.get("content") or "")[:24000]})

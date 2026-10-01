@@ -395,28 +395,10 @@ class GuardianServiceRuntime:
 
         budget = int(self.limits.get("max_context_chars", 200000))
         if len(prompt) + len(response) > budget:
-            payload = {
-                "case_id": case_id,
-                "decision": "UNKNOWN",
-                "decision_basis": "schema",
-                "config_id": self.config_id,
-                "findings": [],
-                "assumptions": [],
-                "coverage": {"structural": "not_run",
-                             "reason": "context_budget_exceeded",
-                             "input_chars": len(prompt) + len(response),
-                             "budget": budget},
-                "degraded": True,
-                "trace_id": trace_id,
-                "usage": {"calls": 0, "tokens": 0},
-            }
-            if self.audit_path is not None:
-                from audit import append_jsonl, audit_record
-                append_jsonl(self.audit_path, audit_record(
-                    trace_id, self.config_id, case_id, "UNKNOWN", "schema",
-                    0, payload["usage"], True,
-                    ["context_budget_exceeded"], time.time() - t0))
-            return payload
+            return self._finish(case_id, "UNKNOWN", "schema", [], [],
+                {"structural": "not_run", "reason": "context_budget_exceeded",
+                 "input_chars": len(prompt) + len(response), "budget": budget},
+                True, trace_id, {"calls": 0, "tokens": 0}, t0)
 
         ctx = parse_case_v02(case_id, prompt, response)
         findings = structural_findings(ctx)
