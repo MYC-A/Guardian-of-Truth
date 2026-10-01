@@ -255,25 +255,21 @@ class GuardianServiceRuntime:
                 decision, jf, usage, degraded, reasons = _judge_stage(
                     judges, ctx)
                 findings.extend(jf)
-                if decision == "ERROR":
-                    basis = "model" if not findings else "hybrid"
-                    # structural was clean; ERROR came from the model layer
-                    basis = "model"
-                elif decision == "NO_ERROR":
-                    basis = "model"
+                # structural was clean; the model layer decides
+                basis = "model"
+                if decision == "NO_ERROR":
                     coverage = {"structural": "clean_scan",
                                 "model": "judge_consensus"}
-                else:
-                    basis = "model"
+                elif decision == "UNKNOWN":
                     coverage = {"structural": "clean_scan",
                                 "model": "unavailable_or_invalid",
                                 "reasons": reasons}
-                    return self._finish(case_id, decision, basis, findings,
-                                        suspicion_notes(ctx), coverage, True,
-                                        trace_id, usage, t0)
+                else:  # ERROR
+                    coverage = {"structural": "clean_scan",
+                                "model": "judge_verdict"}
                 return self._finish(case_id, decision, basis, findings,
-                                    suspicion_notes(ctx), coverage, False,
-                                    trace_id, usage, t0)
+                                    suspicion_notes(ctx), coverage,
+                                    bool(degraded), trace_id, usage, t0)
 
         return self._finish(case_id, decision, basis, findings,
                             suspicion_notes(ctx), coverage, False,
