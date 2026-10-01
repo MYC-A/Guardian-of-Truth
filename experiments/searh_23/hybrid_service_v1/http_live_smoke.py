@@ -49,7 +49,9 @@ def _post(client, case_id: str, response: str, config_id: str):
 def main():
     import judge
 
-    service_app._runtime = GuardianServiceRuntime("v6-judges", audit_path=None)
+    service_app.AUDIT_PATH = OUT / "audit.jsonl"
+    service_app._runtime = GuardianServiceRuntime(
+        "v6-judges", audit_path=service_app.AUDIT_PATH)
     with TestClient(service_app.app) as client:
         report = {"health": client.get("/health").json(),
                   "ready": client.get("/ready").json()}
