@@ -109,6 +109,7 @@ def _judge_stage(cfg_judges: dict, ctx) -> tuple:
     import errors or unavailable channels degrade to UNKNOWN."""
     reasons: list = []
     usage = {"calls": 0, "tokens": 0}
+    ctx.judge_trace = []
     try:
         import judge as judge_mod  # noqa: PLC0415  (lazy: needs API env)
         from llm import available, chat  # noqa: PLC0415
@@ -129,6 +130,10 @@ def _judge_stage(cfg_judges: dict, ctx) -> tuple:
             return ("UNKNOWN", [], usage, True,
                     [f"channel_error:{model}:{type(exc).__name__}"])
         usage["calls"] = len(rec.get("attempts", []))
+        ctx.judge_trace.append(rec)
+        usage["api_calls"] = sum(not a.get("cached") for a in rec.get("attempts", []))
+        usage["api_tokens"] = sum(int((a.get("usage") or {}).get("total_tokens") or 0)
+                                  for a in rec.get("attempts", []) if not a.get("cached"))
         usage.update({k: int((rec.get("usage") or {}).get(k) or 0)
                       for k in ("prompt_tokens", "completion_tokens")})
         usage["tokens"] = int((rec.get("usage") or {}).get("total_tokens") or 0)
@@ -163,6 +168,12 @@ def _judge_stage(cfg_judges: dict, ctx) -> tuple:
         usage.setdefault("completion_tokens", 0)
         usage["completion_tokens"] += int(u.get("completion_tokens") or 0)
         votes.append(rec)
+        ctx.judge_trace.append(rec)
+        usage["api_calls"] = usage.get("api_calls", 0) + sum(
+            not a.get("cached") for a in rec.get("attempts", []))
+        usage["api_tokens"] = usage.get("api_tokens", 0) + sum(
+            int((a.get("usage") or {}).get("total_tokens") or 0)
+            for a in rec.get("attempts", []) if not a.get("cached"))
 
     v1, v2 = votes[0], votes[1]
     if v1["valid"] and v2["valid"] and v1["vote"]["label"] == v2["vote"]["label"]:
@@ -184,6 +195,12 @@ def _judge_stage(cfg_judges: dict, ctx) -> tuple:
         return ("UNKNOWN", [], usage, True,
                 [f"channel_error:third:{type(e).__name__}"])
     usage["calls"] += len(rec3.get("attempts", []))
+    ctx.judge_trace.append(rec3)
+    usage["api_calls"] = usage.get("api_calls", 0) + sum(
+        not a.get("cached") for a in rec3.get("attempts", []))
+    usage["api_tokens"] = usage.get("api_tokens", 0) + sum(
+        int((a.get("usage") or {}).get("total_tokens") or 0)
+        for a in rec3.get("attempts", []) if not a.get("cached"))
     u3 = rec3.get("usage") or {}
     usage["tokens"] += int(u3.get("total_tokens") or 0)
     usage["prompt_tokens"] += int(u3.get("prompt_tokens") or 0)
@@ -256,6 +273,8 @@ class GuardianServiceRuntime:
         formal = self.config.get("stages", {}).get("formal_advisory")
         if formal:
             source = Path(formal["results_file"])
+            if not source.is_absolute():
+                source = REPO / source
             if hashlib.sha256(source.read_bytes()).hexdigest() != formal["sha256"]:
                 raise ValueError("frozen formal results hash mismatch")
             status = json.loads((source.parent / "status.json").read_text(
@@ -402,8 +421,14 @@ class GuardianServiceRuntime:
                         ctx, advisory_kind)
                     if self.config.get("stages", {}).get("formal_advisory"):
                         from modular_helpers import formal_advisory  # noqa: PLC0415
-                        formal_text, formal_coverage = formal_advisory(
-                            self._formal_records.get(case_id))
+                        record = self._formal_records.get(case_id)
+                        fingerprint = hashlib.sha256((prompt + "\x00" + response)
+                                                     .encode("utf-8")).hexdigest()
+                        if record is not None and record.get("source_sha256") != fingerprint:
+                            formal_text = ""
+                            formal_coverage = {"formal": "SOURCE_MISMATCH"}
+                        else:
+                            formal_text, formal_coverage = formal_advisory(record)
                         if formal_text:
                             ctx.advisory_context += "\n" + formal_text
                         advisory_coverage["formal"] = formal_coverage
@@ -418,6 +443,30 @@ class GuardianServiceRuntime:
                 decision, jf, usage, degraded, reasons = _judge_stage(
                     judges, ctx)
                 findings.extend(jf)
+                trace = [{"module": "judge", "records": getattr(ctx, "judge_trace", [])}]
+                review_cfg = self.config.get("stages", {}).get("counterevidence")
+                review_coverage = None
+                if review_cfg and (review_cfg["routing"] == "always" or
+                                   decision != "NO_ERROR"):
+                    try:
+                        from counterevidence import collect_review, aggregate_review
+                        review = collect_review(review_cfg, ctx, findings)
+                        original = decision
+                        decision, findings, review_reason = aggregate_review(
+                            review, original, findings, ctx)
+                        usage = {key: int(usage.get(key) or 0) + int(
+                            review["usage"].get(key) or 0)
+                            for key in set(usage) | set(review["usage"])}
+                        trace.append(review)
+                        review_coverage = {"status": review["status"],
+                                           "original_decision": original,
+                                           "reason": review_reason}
+                        degraded = degraded or not review["valid"]
+                    except Exception as exc:  # noqa: BLE001
+                        review_coverage = {"status": "UNAVAILABLE",
+                                           "reason": type(exc).__name__,
+                                           "fallback": "preserve_baseline"}
+                        degraded = True
                 # structural was clean; the model layer decides
                 basis = "model"
                 if decision == "NO_ERROR":
@@ -431,16 +480,19 @@ class GuardianServiceRuntime:
                     coverage = {"structural": "clean_scan",
                                 "model": "judge_verdict"}
                 coverage["advisory"] = advisory_coverage
+                if review_coverage is not None:
+                    coverage["counterevidence"] = review_coverage
                 return self._finish(case_id, decision, basis, findings,
                                     suspicion_notes(ctx), coverage,
-                                    bool(degraded), trace_id, usage, t0)
+                                    bool(degraded), trace_id, usage, t0,
+                                    module_trace=trace)
 
         return self._finish(case_id, decision, basis, findings,
                             suspicion_notes(ctx), coverage, False,
                             trace_id, usage, t0)
 
     def _finish(self, case_id, decision, basis, findings, assumptions,
-                coverage, degraded, trace_id, usage, t0) -> dict:
+                coverage, degraded, trace_id, usage, t0, module_trace=None) -> dict:
         from audit import append_jsonl, audit_record
         payload = {
             "case_id": case_id,
@@ -453,11 +505,16 @@ class GuardianServiceRuntime:
             "degraded": degraded,
             "trace_id": trace_id,
             "usage": usage,
+            "module_trace": module_trace or [],
         }
         if self.audit_path is not None:
-            append_jsonl(self.audit_path, audit_record(
+            audit = audit_record(
                 trace_id, self.config_id, case_id, decision, basis,
                 len(findings), usage, degraded,
                 [f.get("type", "") for f in findings],
-                time.time() - t0))
+                time.time() - t0)
+            audit.update({"finding_details": findings,
+                          "module_trace": module_trace or [],
+                          "coverage": coverage, "assumptions": assumptions})
+            append_jsonl(self.audit_path, audit)
         return payload

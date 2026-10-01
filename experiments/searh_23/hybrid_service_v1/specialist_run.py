@@ -21,6 +21,7 @@ from smoke_native_adapters import GUARDIAN_JUDGE_NOTHINK
 
 ROOT = Path(__file__).resolve().parents[3]
 RESULTS = Path("/workspace/guardian/results/hybrid_specialists")
+HUB_CACHE = "/workspace/guardian/hf_cache/hub"
 REVISIONS = {
     "factcg": "0430e3509dbd28d2dff7a117c0eae25359ff3e80",
     "minicheck": "96eafd01cee2d16cf81aaa2fb226b14f422a37b3",
@@ -56,13 +57,16 @@ def load_checker(name):
         revision = REVISIONS[name]
         config = AutoConfig.from_pretrained(repo, revision=revision,
                                            num_labels=2,
-                                           finetuning_task="text-classification")
+                                           finetuning_task="text-classification",
+                                           cache_dir=HUB_CACHE, local_files_only=True)
         config.problem_type = "single_label_classification"
         tok = AutoTokenizer.from_pretrained(repo, revision=revision,
-                                            use_fast=True)
+                                            use_fast=True, cache_dir=HUB_CACHE,
+                                            local_files_only=True)
         model = AutoModelForSequenceClassification.from_pretrained(
             repo, config=config, revision=revision,
-            ignore_mismatched_sizes=False).to(device).eval()
+            ignore_mismatched_sizes=False, cache_dir=HUB_CACHE,
+            local_files_only=True).to(device).eval()
 
         def score(doc, claim):
             return {"support_score": native_score(model, tok, doc, claim,
@@ -71,9 +75,11 @@ def load_checker(name):
     elif name == "minicheck":
         repo = "lytang/MiniCheck-Flan-T5-Large"
         revision = REVISIONS[name]
-        tok = AutoTokenizer.from_pretrained(repo, revision=revision)
+        tok = AutoTokenizer.from_pretrained(repo, revision=revision,
+                                            cache_dir=HUB_CACHE, local_files_only=True)
         model = AutoModelForSeq2SeqLM.from_pretrained(
-            repo, revision=revision).to(device).eval()
+            repo, revision=revision, cache_dir=HUB_CACHE,
+            local_files_only=True, use_safetensors=False).to(device).eval()
 
         def score(doc, claim):
             text = "predict: " + tok.eos_token.join([doc, claim])
@@ -151,6 +157,9 @@ def run(model_name, split, max_cases=None, max_minutes=90):
         raise ValueError("specialist run requires clean, pinned checkout")
     spec = {"schema": "specialist-run/1", "model": model_name,
             "revision": REVISIONS[model_name], "split": split,
+            "hub_cache": HUB_CACHE, "local_files_only": True,
+            "minicheck_weight_format": "pytorch_model.bin",
+            "granite_revision": "ab01ccca5dcfb80246369a086a4a87a29198f5af",
             "bank_sha256": manifest["splits"][split]["sha256"],
             "case_ids": [row["id"] for row in rows], "commit": commit,
             "threshold": 0.5}

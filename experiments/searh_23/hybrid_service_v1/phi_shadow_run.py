@@ -21,14 +21,30 @@ ROOT = HERE.parents[2]
 sys.path[:0] = [str(ROOT / "src"),
                 str(ROOT / "experiments/searh_23/three_architectures")]
 
-from guardian_truth.formal_reasoning import evaluate_formalization  # noqa: E402
+from guardian_truth.formal_reasoning import evaluate_formalization, FORMAL_SCHEMA  # noqa: E402
 from guardian_truth.formal_translation import (  # noqa: E402
     FORMAL_INSTRUCTION, build_formal_messages)
 from llm import DEFAULT_MISTRAL_MODEL, chat, extract_json  # noqa: E402
 from structural_v02 import parse_case_v02  # noqa: E402
+from candidate_bank import BANK  # noqa: E402
 
 DATA = HERE / "dataset/fresh_v1"
 RESULTS = Path("/workspace/guardian/results/hybrid_phi_shadow")
+QUERY_INSTRUCTION = (
+    "The target is an assertion to test, NOT a fact. For a tool action the "
+    "query must represent whether that action is permitted now with these "
+    "arguments, not whether its call text exists. For a factual answer the "
+    "query is the asserted world fact, not that the assistant uttered it. "
+    "Do not add the query as a fact from the target source. No absence-as-false. "
+    "If the source cannot be represented in this fragment, return UNSUPPORTED."
+)
+
+
+def formal_messages(target, evidence):
+    messages = build_formal_messages(target, evidence)
+    messages[0]["content"] += "\n" + QUERY_INSTRUCTION + "\nJSON SCHEMA:\n" + json.dumps(
+        FORMAL_SCHEMA, sort_keys=True)
+    return messages
 
 
 def _sha(blob: bytes) -> str:
@@ -63,15 +79,24 @@ def run(split: str, *, max_cases=None, max_calls=90,
     rows = [json.loads(line) for line in source.read_text(encoding="utf-8").splitlines()]
     if max_cases is not None:
         rows = rows[:max_cases]
+    bank_path = BANK / f"{split}.jsonl"
+    bank_manifest = json.loads((BANK / "manifest.json").read_text(encoding="utf-8"))
+    bank_sha = _sha(bank_path.read_bytes())
+    if bank_sha != bank_manifest["splits"][split]["sha256"]:
+        raise ValueError("candidate bank hash mismatch")
+    candidates = {r["id"]: r for r in map(json.loads,
+        bank_path.read_text(encoding="utf-8").splitlines())}
     commit = subprocess.check_output(
         ["git", "-C", str(ROOT), "rev-parse", "HEAD"], text=True).strip()
     if subprocess.check_output(
         ["git", "-C", str(ROOT), "status", "--porcelain"], text=True).strip():
         raise ValueError("formal run requires clean, pinned checkout")
-    identity = {"schema": "phi-shadow/1", "split": split,
+    identity = {"schema": "phi-shadow/2", "split": split,
                 "input_sha256": digest, "case_ids": [r["id"] for r in rows],
                 "commit": commit, "model": DEFAULT_MISTRAL_MODEL,
-                "prompt_sha256": _sha(FORMAL_INSTRUCTION.encode("utf-8")),
+                "candidate_bank_sha256": bank_sha,
+                "prompt_sha256": _sha((FORMAL_INSTRUCTION + QUERY_INSTRUCTION +
+                    json.dumps(FORMAL_SCHEMA, sort_keys=True)).encode("utf-8")),
                 "backend": "guardian_truth.formal_reasoning.signed_horn"}
     run_id = _sha(json.dumps(identity, sort_keys=True).encode("utf-8"))[:20]
     folder = RESULTS / run_id
@@ -115,10 +140,10 @@ def run(split: str, *, max_cases=None, max_calls=90,
                 return folder
             ctx = parse_case_v02(row["id"], row["prompt"], row["response"])
             evidence = _evidence(ctx)
-            messages = build_formal_messages(row["response"], evidence)
+            messages = formal_messages(candidates[row["id"]]["claim"], evidence)
             t0 = time.monotonic()
             answer = chat(DEFAULT_MISTRAL_MODEL, messages,
-                          max_tokens=1800, temperature=0,
+                          max_tokens=4000, temperature=0,
                           json_mode=True, caller="hybrid/phi-shadow")
             calls += 1
             usage = answer.get("usage") or {}
@@ -139,6 +164,8 @@ def run(split: str, *, max_cases=None, max_calls=90,
                 relation, reason, proof = "INSUFFICIENT", type(exc).__name__, []
                 outcome = "INVALID"
             record = {"run_id": run_id, "id": row["id"], "status": outcome,
+                      "source_sha256": _sha((row["prompt"] + "\x00" +
+                                             row["response"]).encode("utf-8")),
                       "relation": relation, "reason": reason,
                       "scope": "relative_to_supplied_formalization",
                       "proof": proof, "translation": parsed,
