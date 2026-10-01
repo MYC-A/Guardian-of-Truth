@@ -22,6 +22,27 @@ def _sha(value: bytes) -> str:
     return hashlib.sha256(value).hexdigest()
 
 
+def candidate_for(case):
+    ctx = parse_case_v02(case["id"], case["prompt"], case["response"])
+    calls = ctx.target().tool_calls
+    if len(calls) == 1 and not ctx.target().text.strip():
+        call = calls[0]
+        claim = (f"The assistant may now call {call.name} with "
+                 f"arguments {call.args_raw} for this request.")
+        kind = "policy_action_permission"
+    elif not calls and ctx.target().text.strip():
+        claim = ctx.target().text.strip()
+        kind = "reported_fact_or_uncertainty"
+    else:
+        claim = case["response"]
+        kind = "mixed_or_unparsed_target"
+    return {"id": case["id"], "document": case["prompt"],
+            "claim": claim, "claim_kind": kind,
+            "target_quote": case["response"],
+            "source_sha256": _sha((case["prompt"] + "\x00" +
+                                   case["response"]).encode("utf-8"))}
+
+
 def build():
     BANK.mkdir(parents=True, exist_ok=True)
     source_manifest = json.loads((DATA / "manifest.json").read_text(encoding="utf-8"))
@@ -33,24 +54,7 @@ def build():
         rows = []
         for line in source.read_text(encoding="utf-8").splitlines():
             case = json.loads(line)
-            ctx = parse_case_v02(case["id"], case["prompt"], case["response"])
-            calls = ctx.target().tool_calls
-            if len(calls) == 1 and not ctx.target().text.strip():
-                call = calls[0]
-                claim = (f"The assistant may now call {call.name} with "
-                         f"arguments {call.args_raw} for this request.")
-                kind = "policy_action_permission"
-            elif not calls and ctx.target().text.strip():
-                claim = ctx.target().text.strip()
-                kind = "reported_fact_or_uncertainty"
-            else:
-                claim = case["response"]
-                kind = "mixed_or_unparsed_target"
-            rows.append({"id": case["id"], "document": case["prompt"],
-                         "claim": claim, "claim_kind": kind,
-                         "target_quote": case["response"],
-                         "source_sha256": _sha((case["prompt"] + "\x00" +
-                                                case["response"]).encode("utf-8"))})
+            rows.append(candidate_for(case))
         encoded = ("".join(json.dumps(row, ensure_ascii=False,
                                       sort_keys=True) + "\n" for row in rows)
                    .encode("utf-8"))

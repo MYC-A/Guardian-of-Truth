@@ -481,6 +481,17 @@ class GuardianServiceRuntime:
                 if review_cfg and (review_cfg["routing"] == "always" or
                                    decision != "NO_ERROR"):
                     try:
+                        native = self.config.get("stages", {}).get("native_advisory")
+                        if native:
+                            from native_helper import native_advisory
+                            try:
+                                native_text, native_record = native_advisory(native, ctx)
+                                if native_text:
+                                    ctx.advisory_context += "\n" + native_text
+                                trace.append(native_record)
+                            except Exception as exc:
+                                trace.append({"module": "native-advisory/1", "status": "UNAVAILABLE",
+                                              "reason": type(exc).__name__})
                         from counterevidence import collect_review, aggregate_review
                         review = collect_review(review_cfg, ctx, findings)
                         original = decision

@@ -1,0 +1,46 @@
+{
+  "schema_version": "guardian-service-config/1.0",
+  "description": "Direct J, native advisory to independent B; no support-score-to-label override.",
+  "stages": {
+    "structural": "v0.2",
+    "advisory": "none",
+    "judges": {
+      "protocol": "single-judge-v1",
+      "j1_model": "gemma4:31b",
+      "temperature": 0,
+      "max_tokens": 1500,
+      "max_context_chars": 12000,
+      "one_technical_reask": true
+    },
+    "counterevidence": {
+      "model": "env_mistral",
+      "routing": "positive_or_unknown",
+      "max_tokens": 2000,
+      "one_technical_reask": true
+    },
+    "judge_replay": {
+      "results_file": "experiments/searh_23/hybrid_service_v1/frozen_judges/20912812e42d502de1f3/g0-direct.jsonl",
+      "sha256": "08e7073baa34e783bc33a4acb604d52018b3b537c65556d9f1dfafe4b9a2c010",
+      "source_config": "g0-direct",
+      "source_run_id": "20912812e42d502de1f3"
+    },
+    "native_advisory": {
+      "model": "granite",
+      "position": "independent_reviewer_only",
+      "max_source_words": 500,
+      "replay": {
+        "results_file": "experiments/searh_23/hybrid_service_v1/frozen_native/3606384a7a1d3e085c3b/scores.jsonl",
+        "sha256": "a641b7211f0883a859a45d9074ff0ff7506dcf7f5ee2f218c83ddd96aa01f5a9"
+      }
+    }
+  },
+  "limits": {
+    "request_timeout_s": 240,
+    "max_context_chars": 200000,
+    "max_queue": 4,
+    "retries": 1
+  },
+  "csv_unknown_label": 0,
+  "frozen_at": "2026-10-01",
+  "config_id": "h3-native-review"
+}
