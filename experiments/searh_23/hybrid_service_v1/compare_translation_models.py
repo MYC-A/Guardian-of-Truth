@@ -59,7 +59,7 @@ def compare(baseline: Path, candidates: list[Path], output: Path):
                 "cached": r.get("cached", False)})
         report["models"][config["model"]] = {"directory": str(directory),
             "n": len(rows), "schema_valid": sum(r["status"] == "VALID" for r in rows),
-            "unsupported": sum(r["reason"] == "unsupported" for r in rows),
+            "unsupported": sum(r["reason"] == "unsupported_translation" for r in rows),
             "transport_failed": sum(r["transport_failed"] for r in rows),
             "relations": {rel: sum(r["relation"] == rel for r in rows)
                 for rel in ("FOLLOWS", "CONTRADICTS", "INSUFFICIENT")},
