@@ -30,6 +30,7 @@ sys.path.insert(0, str(SERVICE_DIR))
 
 from runtime import (GuardianServiceRuntime,  # noqa: E402
                      list_configs)
+from dispatch import BoundedDispatcher, RequestTimedOut
 
 DEFAULT_CONFIG = os.environ.get("GUARDIAN_CONFIG", "structural-v02")
 AUDIT_PATH = Path(os.environ.get(
@@ -42,6 +43,9 @@ app = FastAPI(title="Guardian check service", version="0.1.0-stageA")
 _runtime = GuardianServiceRuntime(DEFAULT_CONFIG, audit_path=AUDIT_PATH)
 _started = time.time()
 _queue_full_events = 0
+_dispatcher = BoundedDispatcher(
+    workers=int(os.environ.get("GUARDIAN_WORKERS", "1")),
+    max_waiting=MAX_QUEUE, queue_timeout_s=QUEUE_TIMEOUT_S)
 
 
 class CheckRequest(BaseModel):
@@ -86,10 +90,25 @@ def configs() -> dict:
     return {"configs": list_configs(), "default": _runtime.config_id}
 
 
+async def _execute(rt, payload):
+    from audit import new_trace_id
+    trace_id = new_trace_id()
+    payload = dict(payload, _trace_id=trace_id)
+    started = time.time()
+    try:
+        return await _dispatcher.run(rt.check, payload,
+            timeout_s=float(rt.limits.get("request_timeout_s", 240)))
+    except RequestTimedOut:
+        return rt._finish(payload["case_id"], "UNKNOWN", "schema", [], [],
+            {"request": "deadline_exceeded", "worker": "still_running_slot_retained"},
+            True, trace_id, {"calls": 0, "tokens": 0,
+                             "usage_status": "pending_worker_completion"}, started)
+
+
 @app.post("/v1/check")
 async def check(req: CheckRequest) -> dict:
     rt = _runtime_for(req.config_id)
-    return await run_in_threadpool(rt.check, {
+    return await _execute(rt, {
         "case_id": req.case_id, "prompt": req.prompt,
         "response": req.response})
 
@@ -104,7 +123,7 @@ async def check_batch(req: BatchRequest) -> dict:
             429, f"batch too large: {len(req.cases)} > {MAX_QUEUE}")
     results = []
     for case in req.cases:
-        res = await run_in_threadpool(rt.check, {
+        res = await _execute(rt, {
             "case_id": case.case_id, "prompt": case.prompt,
             "response": case.response})
         results.append(res)

@@ -384,7 +384,7 @@ class GuardianServiceRuntime:
         from audit import audit_record, new_trace_id
 
         t0 = time.time()
-        trace_id = new_trace_id()
+        trace_id = case.get("_trace_id") or new_trace_id()
         case_id = str(case.get("case_id") or "unnamed")
         prompt = case.get("prompt") or ""
         response = case.get("response") or ""
