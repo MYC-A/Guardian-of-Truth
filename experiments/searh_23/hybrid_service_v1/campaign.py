@@ -78,9 +78,17 @@ def _completed(journal: Path, run_id: str):
 
 def run(split: str, arms: tuple[str, ...], *, max_calls: int,
         max_tokens: int, max_minutes: float, output_root: Path,
-        max_cases: int | None = None):
+        max_cases: int | None = None, case_ids: list[str] | None = None):
     cases, input_sha = _load_cases(split)
-    if max_cases is not None:
+    if case_ids is not None:
+        if max_cases is not None:
+            raise ValueError("case IDs and max_cases are mutually exclusive")
+        by_id = {case["id"]: case for case in cases}
+        if not case_ids or len(set(case_ids)) != len(case_ids) or any(
+                cid not in by_id for cid in case_ids):
+            raise ValueError("invalid frozen case selection")
+        cases = [by_id[cid] for cid in case_ids]
+    elif max_cases is not None:
         cases = cases[:max_cases]
     configs = {arm: load_config(arm) for arm in arms}
     config_shas = {arm: _sha(_json_bytes(configs[arm])) for arm in arms}
@@ -197,6 +205,8 @@ def main():
     p.add_argument("--max-tokens", type=int, default=2_000_000)
     p.add_argument("--max-minutes", type=float, default=180)
     p.add_argument("--max-cases", type=int)
+    p.add_argument("--case-ids-file", type=Path,
+                   help="Frozen JSON array of input IDs; never labels")
     p.add_argument("--output-root", type=Path, default=DEFAULT_ROOT)
     args = p.parse_args()
     if args.max_calls <= 0 or args.max_tokens <= 0 or args.max_minutes <= 0:
@@ -205,7 +215,9 @@ def main():
                     max_calls=args.max_calls, max_tokens=args.max_tokens,
                     max_minutes=args.max_minutes,
                     output_root=args.output_root,
-                    max_cases=args.max_cases)
+                    max_cases=args.max_cases,
+                    case_ids=None if args.case_ids_file is None else json.loads(
+                        args.case_ids_file.read_text(encoding="utf-8")))
     status = json.loads((directory / "status.json").read_text(encoding="utf-8"))
     print(json.dumps({"directory": str(directory), "status": status},
                      ensure_ascii=False), flush=True)
