@@ -18,7 +18,7 @@ from pathlib import Path
 HERE = Path(__file__).resolve().parent
 ROOT = HERE.parents[2]
 sys.path.insert(0, str(ROOT / "service"))
-from runtime import GuardianServiceRuntime, load_config  # noqa: E402
+from runtime import GuardianServiceRuntime, load_config, list_configs  # noqa: E402
 
 DATA = HERE / "dataset" / "fresh_v1"
 DEFAULT_ROOT = Path("/workspace/guardian/results/hybrid_campaigns")
@@ -192,7 +192,7 @@ def run(split: str, arms: tuple[str, ...], *, max_calls: int,
 def main():
     p = argparse.ArgumentParser()
     p.add_argument("--split", choices=("dev", "sealed"), required=True)
-    p.add_argument("--arms", nargs="+", choices=ARMS, required=True)
+    p.add_argument("--arms", nargs="+", choices=list_configs(), required=True)
     p.add_argument("--max-calls", type=int, default=1000)
     p.add_argument("--max-tokens", type=int, default=2_000_000)
     p.add_argument("--max-minutes", type=float, default=180)

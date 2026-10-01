@@ -29,6 +29,7 @@ produced them. Nothing in this runtime reads gold or tunes thresholds.
 from __future__ import annotations
 
 import json
+import hashlib
 import sys
 import time
 import urllib.error
@@ -251,6 +252,23 @@ class GuardianServiceRuntime:
         self.limits = self.config.get("limits", {})
         self._readiness_cache: dict[str, tuple[float, bool, str]] = {}
         self.channel_details: dict = {}
+        self._formal_records: dict[str, dict] = {}
+        formal = self.config.get("stages", {}).get("formal_advisory")
+        if formal:
+            source = Path(formal["results_file"])
+            if hashlib.sha256(source.read_bytes()).hexdigest() != formal["sha256"]:
+                raise ValueError("frozen formal results hash mismatch")
+            status = json.loads((source.parent / "status.json").read_text(
+                encoding="utf-8"))
+            if (status["state"] != "SUCCEEDED" or
+                    status["run_id"] != formal["run_id"]):
+                raise ValueError("frozen formal run is incomplete or mismatched")
+            for line in source.read_text(encoding="utf-8").splitlines():
+                record = json.loads(line)
+                case_id = record["id"]
+                if record["run_id"] != formal["run_id"] or case_id in self._formal_records:
+                    raise ValueError("invalid frozen formal journal")
+                self._formal_records[case_id] = record
 
     # -------------------------------------------------------------- helpers
 
@@ -382,6 +400,13 @@ class GuardianServiceRuntime:
                     from modular_helpers import advisory_for  # noqa: PLC0415
                     ctx.advisory_context, advisory_coverage = advisory_for(
                         ctx, advisory_kind)
+                    if self.config.get("stages", {}).get("formal_advisory"):
+                        from modular_helpers import formal_advisory  # noqa: PLC0415
+                        formal_text, formal_coverage = formal_advisory(
+                            self._formal_records.get(case_id))
+                        if formal_text:
+                            ctx.advisory_context += "\n" + formal_text
+                        advisory_coverage["formal"] = formal_coverage
                 except Exception as exc:  # noqa: BLE001
                     return self._finish(
                         case_id, "UNKNOWN", "schema", findings,

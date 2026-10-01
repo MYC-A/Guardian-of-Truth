@@ -139,3 +139,32 @@ def advisory_for(ctx, kind: str) -> tuple[str, dict]:
                   "ge": ge["coverage"] if ge else None,
                   "gp": gp["coverage"] if gp else None,
                   "advisory_chars": len(text)}
+
+
+def formal_advisory(record: dict | None) -> tuple[str, dict]:
+    """Render the same frozen model-proposed Φ for graph/no-graph judge arms.
+
+    A solver result is only relative to the translation; the judge receives
+    source text elsewhere and must independently check semantic faithfulness.
+    """
+    if record is None:
+        return "", {"formal": "NOT_AVAILABLE"}
+    translation = record.get("translation")
+    if record.get("status") != "VALID" or not isinstance(translation, dict):
+        return "", {"formal": "INVALID_TRANSLATION",
+                    "reason": record.get("reason")}
+    payload = {"module": "Phi/bounded-signed-Horn-shadow-v1",
+               "status": "MODEL_TRANSLATION_UNVERIFIED",
+               "relation_relative_to_translation": record["relation"],
+               "reason": record["reason"],
+               "program": translation,
+               "proof": record.get("proof", []),
+               "warning": ("Exact source quotes establish provenance only. "
+                           "The translation may omit rules, invert necessity, "
+                           "or misbind entities. Check against original text.")}
+    rendered = json.dumps(payload, ensure_ascii=False,
+                          separators=(",", ":"))
+    if len(rendered) > 9000:
+        return "", {"formal": "TOO_LARGE", "chars": len(rendered)}
+    return rendered, {"formal": "ADVISORY", "relation": record["relation"],
+                      "chars": len(rendered)}
