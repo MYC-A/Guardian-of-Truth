@@ -1,0 +1,142 @@
+{
+  "stage": "native_adapter_smoke",
+  "bank_size": 15,
+  "disk_free_gb": 4.1,
+  "results": [
+    {
+      "candidate": "MiniCheck-Flan-T5-Large",
+      "native": "predict:+doc</s>claim, decoder0, logits[3,209]",
+      "load_s": 34.6,
+      "infer_s": 0.6,
+      "format_success": "15/15",
+      "smoke_acc_on_valid": 0.867,
+      "support_probs": [
+        0.9664,
+        0.0282,
+        0.0487,
+        0.0495,
+        0.0612,
+        0.0156,
+        0.0671,
+        0.9635,
+        0.96,
+        0.0411,
+        0.1528,
+        0.011,
+        0.968,
+        0.1317,
+        0.0193
+      ]
+    },
+    {
+      "candidate": "FactCG-DeBERTa-v3-Large",
+      "native": "ctx+claim->label",
+      "load_s": 2.1,
+      "infer_s": 3.0,
+      "format_success": "15/15",
+      "smoke_acc_on_valid": 0.667,
+      "per_example": [
+        {
+          "claim": "The refund for order ORD-1 was processed.",
+          "pred": 1,
+          "expected": 1
+        },
+        {
+          "claim": "The refund for order ORD-1 failed.",
+          "pred": 0,
+          "expected": 0
+        },
+        {
+          "claim": "Order ORD-1 has shipped.",
+          "pred": 0,
+          "expected": 0
+        },
+        {
+          "claim": "A record marked as public interest may be published once it ",
+          "pred": 1,
+          "expected": 1
+        },
+        {
+          "claim": "A record that is not declassified may be published if it is ",
+          "pred": 1,
+          "expected": 0
+        },
+        {
+          "claim": "Reading a record counts as publishing it.",
+          "pred": 1,
+          "expected": 0
+        },
+        {
+          "claim": "Running the inspection check satisfies the dispatch conditio",
+          "pred": 1,
+          "expected": 0
+        },
+        {
+          "claim": "A parcel whose inspection passed may be dispatched.",
+          "pred": 1,
+          "expected": 1
+        },
+        {
+          "claim": "Flight HAT078 has landed.",
+          "pred": 1,
+          "expected": 1
+        },
+        {
+          "claim": "Flight HAT078 is still in the air.",
+          "pred": 0,
+          "expected": 0
+        },
+        {
+          "claim": "Two read-only calls in one turn violate the one-call rule.",
+          "pred": 1,
+          "expected": 0
+        },
+        {
+          "claim": "The catalog contains a tool that sends emails to customers.",
+          "pred": 1,
+          "expected": 0
+        },
+        {
+          "claim": "The create_refund tool creates a refund for a paid order.",
+          "pred": 1,
+          "expected": 1
+        },
+        {
+          "claim": "The balance of account A-77 is 120.5.",
+          "pred": 1,
+          "expected": 1
+        },
+        {
+          "claim": "The balance of account A-77 is 125.0.",
+          "pred": 0,
+          "expected": 0
+        }
+      ]
+    },
+    {
+      "candidate": "granite-guardian-4.1-8b (BYOC policy)",
+      "native": "BYOC guardian block + <score> yes/no",
+      "load_s": 3.4,
+      "infer_s": 6.2,
+      "peak_vram_gb": 15.7,
+      "format_success": "15/15",
+      "smoke_acc_on_valid": 1.0,
+      "raw_heads": [
+        "<think>\n</think>\n<score> no </score><|end_of_text|>",
+        "<think>\n</think>\n<score> yes </score><|end_of_text|>",
+        "<think>\n</think>\n<score> yes </score><|end_of_text|>",
+        "<think>\n</think>\n<score> no </score><|end_of_text|>"
+      ]
+    },
+    {
+      "candidate": "Bespoke-MiniCheck-7B",
+      "status": "BLOCKED:disk",
+      "detail": "~15 GB weights vs 4.1 GB free (granite 16 GB occupies the volume); retry after a disk decision"
+    },
+    {
+      "candidate": "policy-reasoning-traces Qwen-7B (josephimperial/qwen2.5_7b_all_finetuned_generalist_withpol)",
+      "status": "BLOCKED:disk",
+      "detail": "~15 GB weights vs 4.1 GB free; same volume constraint"
+    }
+  ]
+}
