@@ -1,0 +1,319 @@
+#!/usr/bin/env python3
+"""Stage A native-adapter smoke (directive §6, 2026-10-01).
+
+For each AVAILABLE candidate checker: 10-20 smoke examples in its NATIVE
+format (never a foreign JSON-judge prompt), tables of format success,
+runtime, peak VRAM. Real model answers, not package imports.
+
+Candidates this run:
+  * MiniCheck small  — lytang/MiniCheck-Flan-T5-Large (native doc/claim)
+  * FactCG           — yaxili96/FactCG-DeBERTa-v3-Large (native ctx/claim)
+  * Granite Guardian — local granite-guardian-4.1-8b, BYOC custom POLICY
+                       criterion (verbatim policy requirement + question
+                       about the current move's error) — distinct from the
+                       historical groundedness run.
+BLOCKED (measured, not guessed): Bespoke-MiniCheck-7B (~15 GB weights) and
+policy-reasoning-traces Qwen-7B (~15 GB) do not fit the 8.7 GB free disk
+alongside the 16 GB granite checkout; recorded in the summary.
+
+The smoke bank = 15 doc/claim pairs of OUR problem shape with expected
+labels written from the doc text itself (fact support, policy-interpretation
+support, applicability). Labels are for SMOKE diagnostics only — no
+threshold is tuned here.
+
+Run on the instance:
+  python experiments/searh_23/hybrid_service_v1/smoke_native_adapters.py
+"""
+from __future__ import annotations
+
+import json
+import re
+import sys
+import time
+from pathlib import Path
+
+HERE = Path(__file__).resolve().parent
+REPO = HERE.parents[2]
+OUT = HERE / "outputs" / "native_smoke"
+OUT.mkdir(parents=True, exist_ok=True)
+
+GRANITE_PATH = Path("/workspace/guardian/models/granite-guardian-4.1-8b")
+
+# ------------------------------------------------------------------ bank
+
+BANK = [
+    # (doc, claim, expected: 1 = supported, 0 = not supported)
+    ("TOOL_RESPONSE refund_order: {\"order_id\": \"ORD-1\", \"status\": \"processed\"}",
+     "The refund for order ORD-1 was processed.", 1),
+    ("TOOL_RESPONSE refund_order: {\"order_id\": \"ORD-1\", \"status\": \"processed\"}",
+     "The refund for order ORD-1 failed.", 0),
+    ("TOOL_RESPONSE check_status: {\"order_id\": \"ORD-2\", \"status\": \"shipped\"}",
+     "Order ORD-1 has shipped.", 0),
+    ("Policy: Publishing an archive record requires the record to be "
+     "declassified and the archivist's sign-off to be recorded. Publishing "
+     "is allowed with only the declassification when the record is marked "
+     "as public interest. Reading a record does not publish it.",
+     "A record marked as public interest may be published once it is "
+     "declassified, even if the sign-off is not recorded.", 1),
+    ("Policy: Publishing an archive record requires the record to be "
+     "declassified and the archivist's sign-off to be recorded. Publishing "
+     "is allowed with only the declassification when the record is marked "
+     "as public interest. Reading a record does not publish it.",
+     "A record that is not declassified may be published if it is marked "
+     "as public interest.", 0),
+    ("Policy: Publishing an archive record requires the record to be "
+     "declassified and the archivist's sign-off to be recorded. Publishing "
+     "is allowed with only the declassification when the record is marked "
+     "as public interest. Reading a record does not publish it.",
+     "Reading a record counts as publishing it.", 0),
+    ("Policy: A parcel may be dispatched only if its inspection passed. "
+     "Checking inspection does not dispatch the parcel.",
+     "Running the inspection check satisfies the dispatch condition.", 0),
+    ("Policy: A parcel may be dispatched only if its inspection passed. "
+     "Checking inspection does not dispatch the parcel.",
+     "A parcel whose inspection passed may be dispatched.", 1),
+    ("TOOL_RESPONSE check_flight: {\"flight\": \"HAT078\", \"status\": \"landed\"}",
+     "Flight HAT078 has landed.", 1),
+    ("TOOL_RESPONSE check_flight: {\"flight\": \"HAT078\", \"status\": \"landed\"}",
+     "Flight HAT078 is still in the air.", 0),
+    ("Policy: Only make one tool call at a time. You may make two "
+     "read-only calls together.",
+     "Two read-only calls in one turn violate the one-call rule.", 0),
+    ("Catalog: - check_status — Checks the current status of an order. "
+     "- create_refund — Creates a refund for a paid order.",
+     "The catalog contains a tool that sends emails to customers.", 0),
+    ("Catalog: - check_status — Checks the current status of an order. "
+     "- create_refund — Creates a refund for a paid order.",
+     "The create_refund tool creates a refund for a paid order.", 1),
+    ("TOOL_RESPONSE get_balance: {\"account\": \"A-77\", \"balance\": 120.5}",
+     "The balance of account A-77 is 120.5.", 1),
+    ("TOOL_RESPONSE get_balance: {\"account\": \"A-77\", \"balance\": 120.5}",
+     "The balance of account A-77 is 125.0.", 0),
+]
+
+
+def _acc(preds) -> dict:
+    ok = [p for p in preds if p is not None]
+    return {"format_success": f"{len(ok)}/{len(preds)}",
+            "smoke_acc_on_valid": (round(sum(
+                1 for p, (_, _, e) in zip(ok, BANK) if p == e) / len(ok), 3)
+                if ok else None)}
+
+
+# ------------------------------------------------------------- MiniCheck
+
+def smoke_minicheck_small() -> dict:
+    """Native MiniCheck interface: doc + claim -> support."""
+    t0 = time.time()
+    try:
+        from minicheck import Minicheck  # noqa: PLC0415
+    except Exception as e:  # noqa: BLE001
+        return {"candidate": "MiniCheck-Flan-T5-Large", "status":
+                f"IMPORT_FAIL:{type(e).__name__}",
+                "detail": str(e)[:200]}
+    try:
+        scorer = Minicheck(model_name="flan-t5-large", cache_dir=str(
+            REPO.parent / "hf_cache"))
+        docs = [d for d, _, _ in BANK]
+        claims = [c for _, c, _ in BANK]
+        t1 = time.time()
+        # Minicheck.score returns labels; logits via scorer.predict? use score
+        labels = scorer.score(docs=docs, claims=claims)
+        preds = [int(l) for l in labels]
+        out = {"candidate": "MiniCheck-Flan-T5-Large", "native": "doc+claim->label",
+               "load_s": round(t1 - t0, 1), "infer_s": round(time.time() - t1, 1)}
+        out.update(_acc(preds))
+        out["per_example"] = [
+            {"claim": c[:60], "pred": p, "expected": e}
+            for p, (_, c, e) in zip(preds, BANK)]
+        return out
+    except Exception as e:  # noqa: BLE001
+        return {"candidate": "MiniCheck-Flan-T5-Large",
+                "status": f"RUN_FAIL:{type(e).__name__}",
+                "detail": str(e)[:300]}
+
+
+# ----------------------------------------------------------------- FactCG
+
+def smoke_factcg() -> dict:
+    """FactCG native context/claim scoring (DeBERTa-v3-Large)."""
+    t0 = time.time()
+    try:
+        import torch  # noqa: PLC0415
+        from transformers import AutoConfig, AutoModelForSequenceClassification, AutoTokenizer  # noqa: PLC0415
+        name = "yaxili96/FactCG-DeBERTa-v3-Large"
+        try:
+            tok = AutoTokenizer.from_pretrained(name, trust_remote_code=True)
+            model = AutoModelForSequenceClassification.from_pretrained(
+                name, trust_remote_code=True)
+        except Exception as e:  # noqa: BLE001
+            return {"candidate": "FactCG-DeBERTa-v3-Large",
+                    "status": f"LOAD_FAIL:{type(e).__name__}",
+                    "detail": str(e)[:300]}
+        model.eval()
+        preds = []
+        t1 = time.time()
+        for doc, claim, _ in BANK:
+            try:
+                # FactCG native input: context + claim, per the paper the
+                # model scores P(label|context, claim); label mapping from config
+                enc = tok(doc, claim, return_tensors="pt",
+                          truncation=True, max_length=512)
+                with torch.inference_mode():
+                    logits = model(**enc).logits
+                pred = int(logits.argmax(-1).item())
+                id2label = model.config.id2label
+                lab = id2label.get(pred, str(pred)).lower()
+                preds.append(1 if lab in {"supported", "label_1", "entailment", "1"} else 0)
+            except Exception:  # noqa: BLE001
+                preds.append(None)
+        out = {"candidate": "FactCG-DeBERTa-v3-Large",
+               "native": "ctx+claim->label", "load_s": round(t1 - t0, 1),
+               "infer_s": round(time.time() - t1, 1)}
+        out.update(_acc(preds))
+        out["per_example"] = [
+            {"claim": c[:60], "pred": p, "expected": e}
+            for p, (_, c, e) in zip(preds, BANK)]
+        return out
+    except Exception as e:  # noqa: BLE001
+        return {"candidate": "FactCG-DeBERTa-v3-Large",
+                "status": f"IMPORT_FAIL:{type(e).__name__}",
+                "detail": str(e)[:200]}
+
+
+# ---------------------------------------------------------------- granite
+
+GUARDIAN_JUDGE_NOTHINK = (
+    "<no-think>As a judge agent, assess whether the provided text meets the given "
+    "judging criteria using all available information, including conversations, "
+    "documents, and tools. Provide your score immediately without explanation. "
+    "Output empty </think>\n</think> tags followed by your score in <score></score> tags."
+)
+
+
+def smoke_granite_byoc_policy() -> dict:
+    """Granite Guardian 4.1 BYOC with a CUSTOM POLICY criterion: the
+    criterion quotes a verifiable policy requirement and asks about the
+    current move's error (directive §6: 'критерий должен содержать
+    проверяемое требование политики и вопрос об ошибке текущего хода')."""
+    t0 = time.time()
+    if not GRANITE_PATH.exists():
+        return {"candidate": "granite-guardian-4.1-8b (BYOC policy)",
+                "status": "MODEL_NOT_FOUND", "path": str(GRANITE_PATH)}
+    try:
+        import torch  # noqa: PLC0415
+        from transformers import AutoModelForCausalLM, AutoTokenizer  # noqa: PLC0415
+        tok = AutoTokenizer.from_pretrained(str(GRANITE_PATH),
+                                            local_files_only=True)
+        model = AutoModelForCausalLM.from_pretrained(
+            str(GRANITE_PATH), local_files_only=True, torch_dtype="auto",
+            device_map="auto")
+        model.eval()
+        vram_gb = round(torch.cuda.max_memory_allocated() / 2**30, 1) \
+            if torch.cuda.is_available() else None
+    except Exception as e:  # noqa: BLE001
+        return {"candidate": "granite-guardian-4.1-8b (BYOC policy)",
+                "status": f"LOAD_FAIL:{type(e).__name__}",
+                "detail": str(e)[:300]}
+
+    def parse_score(text: str):
+        m = re.findall(r"<score>\s*(.*?)\s*</score>", text, re.DOTALL)
+        if m:
+            v = m[0].strip().lower()
+            if v.startswith("yes"):
+                return "yes"
+            if v.startswith("no"):
+                return "no"
+        low = text.strip().lower()
+        if low.startswith("yes"):
+            return "yes"
+        if low.startswith("no"):
+            return "no"
+        return None
+
+    preds, raws = [], []
+    t1 = time.time()
+    for doc, claim, _ in BANK:
+        # BYOC custom criterion: verifiable policy/fact requirement + the
+        # question about the CURRENT statement's error
+        criteria = (
+            "A statement about the current move is erroneous if it asserts "
+            "an action result or a policy permission that is not supported "
+            "by, or contradicts, the provided document. The policy "
+            "requirement to check is quoted verbatim in the document.")
+        schema = ("If the statement violates the criteria (unsupported or "
+                  "contradicted), return 'yes'; otherwise, return 'no'.")
+        guardian_block = (f"{GUARDIAN_JUDGE_NOTHINK}\n\n"
+                          f"### Criteria: {criteria}\n\n"
+                          f"### Scoring Schema: {schema}")
+        messages = [{"role": "assistant", "content": claim},
+                    {"role": "user", "content": guardian_block}]
+        documents = [{"doc_id": "evidence", "text": doc}]
+        chat = tok.apply_chat_template(
+            messages, tokenize=False, add_generation_prompt=True,
+            documents=documents)
+        inputs = tok(chat, add_special_tokens=False,
+                     return_tensors="pt").to(model.device)
+        with torch.inference_mode():
+            gen = model.generate(**inputs, do_sample=False,
+                                 max_new_tokens=16,
+                                 pad_token_id=tok.eos_token_id)
+        text = tok.decode(gen[0][inputs["input_ids"].shape[1]:],
+                          skip_special_tokens=False)
+        risk = parse_score(text)
+        raws.append(text[:60])
+        # risk yes = erroneous statement; expected 1 = SUPPORTED claim ->
+        # not erroneous -> 'no'
+        preds.append(0 if risk == "no" else 1 if risk == "yes" else None)
+    import torch as _t  # noqa: PLC0415
+    vram_gb = round(_t.cuda.max_memory_allocated() / 2**30, 1) \
+        if _t.cuda.is_available() else None
+    out = {"candidate": "granite-guardian-4.1-8b (BYOC policy)",
+           "native": "BYOC guardian block + <score> yes/no",
+           "load_s": round(t1 - t0, 1),
+           "infer_s": round(time.time() - t1, 1),
+           "peak_vram_gb": vram_gb}
+    out.update(_acc(preds))
+    out["raw_heads"] = raws[:4]
+    return out
+
+
+# ------------------------------------------------------------------ main
+
+def main() -> int:
+    results = []
+    print("[smoke] MiniCheck small ...", flush=True)
+    results.append(smoke_minicheck_small())
+    print(json.dumps(results[-1], ensure_ascii=False)[:400], flush=True)
+    print("[smoke] FactCG ...", flush=True)
+    results.append(smoke_factcg())
+    print(json.dumps(results[-1], ensure_ascii=False)[:400], flush=True)
+    print("[smoke] Granite BYOC policy ...", flush=True)
+    results.append(smoke_granite_byoc_policy())
+    print(json.dumps(results[-1], ensure_ascii=False)[:400], flush=True)
+
+    import shutil
+    disk_free_gb = round(shutil.disk_usage("/workspace").free / 2**30, 1)
+    results.append({
+        "candidate": "Bespoke-MiniCheck-7B",
+        "status": "BLOCKED:disk",
+        "detail": (f"~15 GB weights vs {disk_free_gb} GB free (granite 16 GB "
+                   "occupies the volume); retry after a disk decision"),
+    })
+    results.append({
+        "candidate": "policy-reasoning-traces Qwen-7B "
+                     "(josephimperial/qwen2.5_7b_all_finetuned_generalist_withpol)",
+        "status": "BLOCKED:disk",
+        "detail": (f"~15 GB weights vs {disk_free_gb} GB free; same volume "
+                   "constraint"),
+    })
+    summary = {"stage": "native_adapter_smoke", "bank_size": len(BANK),
+               "disk_free_gb": disk_free_gb, "results": results}
+    (OUT / "smoke_summary.json").write_text(
+        json.dumps(summary, indent=2, ensure_ascii=False))
+    print(f"\n[smoke] summary -> {OUT / 'smoke_summary.json'}")
+    return 0
+
+
+if __name__ == "__main__":
+    sys.exit(main())
