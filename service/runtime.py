@@ -53,6 +53,10 @@ def load_config(config_id: str) -> dict:
     cfg = json.loads(path.read_text(encoding="utf-8"))
     if cfg.get("config_id") != config_id:
         raise ValueError(f"config id mismatch in {path}")
+    reviewer = cfg.get("stages", {}).get("counterevidence")
+    if reviewer and reviewer.get("model") == "env_mistral":
+        from llm import DEFAULT_MISTRAL_MODEL
+        reviewer["resolved_model"] = DEFAULT_MISTRAL_MODEL
     return cfg
 
 
@@ -270,6 +274,21 @@ class GuardianServiceRuntime:
         self._readiness_cache: dict[str, tuple[float, bool, str]] = {}
         self.channel_details: dict = {}
         self._formal_records: dict[str, dict] = {}
+        self._judge_replays: dict[str, dict] = {}
+        replay_cfg = self.config.get("stages", {}).get("judge_replay")
+        if replay_cfg:
+            source = Path(replay_cfg["results_file"])
+            if not source.is_absolute():
+                source = REPO / source
+            if hashlib.sha256(source.read_bytes()).hexdigest() != replay_cfg["sha256"]:
+                raise ValueError("judge replay hash mismatch")
+            for line in source.read_text(encoding="utf-8").splitlines():
+                rec = json.loads(line)
+                if (rec["id"] in self._judge_replays or
+                        rec["source_config"] != replay_cfg["source_config"] or
+                        rec["source_run_id"] != replay_cfg["source_run_id"]):
+                    raise ValueError("judge replay identity mismatch")
+                self._judge_replays[rec["id"]] = rec
         formal = self.config.get("stages", {}).get("formal_advisory")
         if formal:
             source = Path(formal["results_file"])
@@ -440,8 +459,21 @@ class GuardianServiceRuntime:
                          "advisory": advisory_kind,
                          "reason": f"advisory_error:{type(exc).__name__}"},
                         True, trace_id, usage, t0)
-                decision, jf, usage, degraded, reasons = _judge_stage(
-                    judges, ctx)
+                replay = self._judge_replays.get(case_id)
+                fingerprint = hashlib.sha256((prompt + "\x00" + response).encode("utf-8")).hexdigest()
+                if replay is not None and replay["source_sha256"] == fingerprint:
+                    decision, jf = replay["decision"], replay["findings"]
+                    degraded, reasons = replay["degraded"], []
+                    usage = {"calls": 0, "tokens": 0, "api_calls": 0, "api_tokens": 0,
+                             "replayed_calls": int(replay["usage"].get("calls") or 0),
+                             "replayed_tokens": int(replay["usage"].get("tokens") or 0)}
+                    ctx.judge_trace = [{"status": "FROZEN_BASELINE_REPLAY",
+                                        "source_config": replay["source_config"],
+                                        "source_run_id": replay["source_run_id"],
+                                        "source_sha256": fingerprint,
+                                        "original_decision": decision}]
+                else:
+                    decision, jf, usage, degraded, reasons = _judge_stage(judges, ctx)
                 findings.extend(jf)
                 trace = [{"module": "judge", "records": getattr(ctx, "judge_trace", [])}]
                 review_cfg = self.config.get("stages", {}).get("counterevidence")

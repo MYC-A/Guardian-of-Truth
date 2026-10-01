@@ -105,6 +105,14 @@ def score(directory: Path):
                          for cid in expected_ids),
             "tokens": sum((items[cid]["usage"] or {}).get("tokens", 0)
                           for cid in expected_ids),
+            "api_calls": sum((items[cid]["usage"] or {}).get("api_calls", 0)
+                             for cid in expected_ids),
+            "api_tokens": sum((items[cid]["usage"] or {}).get("api_tokens", 0)
+                              for cid in expected_ids),
+            "replayed_calls": sum((items[cid]["usage"] or {}).get("replayed_calls", 0)
+                                  for cid in expected_ids),
+            "replayed_tokens": sum((items[cid]["usage"] or {}).get("replayed_tokens", 0)
+                                   for cid in expected_ids),
             "mean_elapsed_s": round(sum(items[cid]["elapsed_s"]
                                         for cid in expected_ids) / len(pairs), 3),
             "latency_p50_s": _quantile([items[cid]["elapsed_s"]
