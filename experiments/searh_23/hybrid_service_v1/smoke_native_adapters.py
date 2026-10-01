@@ -103,34 +103,79 @@ def _acc(preds) -> dict:
 # ------------------------------------------------------------- MiniCheck
 
 def smoke_minicheck_small() -> dict:
-    """Native MiniCheck interface: doc + claim -> support."""
+    """Native MiniCheck-Flan-T5-Large inference (format ported verbatim
+    from Liyan06/MiniCheck minicheck/inference.py): input =
+    'predict: ' + doc + eos_token + claim; decoder start token 0;
+    P(supported) = softmax(logits[:, [3, 209]])[1]; doc chunked to ~500
+    words by sentences; max over chunks; label 1 if prob > 0.5."""
     t0 = time.time()
     try:
-        from minicheck import Minicheck  # noqa: PLC0415
-    except Exception as e:  # noqa: BLE001
-        return {"candidate": "MiniCheck-Flan-T5-Large", "status":
-                f"IMPORT_FAIL:{type(e).__name__}",
-                "detail": str(e)[:200]}
-    try:
-        scorer = Minicheck(model_name="flan-t5-large", cache_dir=str(
-            REPO.parent / "hf_cache"))
-        docs = [d for d, _, _ in BANK]
-        claims = [c for _, c, _ in BANK]
-        t1 = time.time()
-        # Minicheck.score returns labels; logits via scorer.predict? use score
-        labels = scorer.score(docs=docs, claims=claims)
-        preds = [int(l) for l in labels]
-        out = {"candidate": "MiniCheck-Flan-T5-Large", "native": "doc+claim->label",
-               "load_s": round(t1 - t0, 1), "infer_s": round(time.time() - t1, 1)}
-        out.update(_acc(preds))
-        out["per_example"] = [
-            {"claim": c[:60], "pred": p, "expected": e}
-            for p, (_, c, e) in zip(preds, BANK)]
-        return out
+        import torch  # noqa: PLC0415
+        from transformers import (AutoModelForSeq2SeqLM,  # noqa: PLC0415
+                                  AutoTokenizer)
     except Exception as e:  # noqa: BLE001
         return {"candidate": "MiniCheck-Flan-T5-Large",
-                "status": f"RUN_FAIL:{type(e).__name__}",
+                "status": f"IMPORT_FAIL:{type(e).__name__}",
+                "detail": str(e)[:200]}
+    try:
+        ckpt = "lytang/MiniCheck-Flan-T5-Large"
+        tok = AutoTokenizer.from_pretrained(ckpt)
+        model = AutoModelForSeq2SeqLM.from_pretrained(
+            ckpt, device_map="auto")
+        model.eval()
+    except Exception as e:  # noqa: BLE001
+        return {"candidate": "MiniCheck-Flan-T5-Large",
+                "status": f"LOAD_FAIL:{type(e).__name__}",
                 "detail": str(e)[:300]}
+
+    def sent_split(text: str) -> list:
+        import re as _re
+        blocks = text.split("\n")
+        out = []
+        for b in blocks:
+            out.extend(x for x in _re.split(r"(?<=[.!?])\s+", b) if x)
+            out.append("\n")
+        return out[:-1]
+
+    def word_chunks(sents: list, n: int = 500) -> list:
+        cur, cnt = [], 0
+        for sent in sents:
+            w = len(sent.split())
+            if cnt + w > n and cur:
+                yield_cur = " ".join(cur)
+                cur, cnt = [sent], w
+                yield yield_cur
+                continue
+            cur.append(sent)
+            cnt += w
+        if cur:
+            yield " ".join(cur)
+
+    preds, probs = [], []
+    t1 = time.time()
+    with torch.inference_mode():
+        for doc, claim, _ in BANK:
+            chunks = list(word_chunks(sent_split(doc)))
+            texts = ["predict: " + tok.eos_token.join([c, claim])
+                     for c in chunks]
+            enc = tok(texts, max_length=2048, truncation=True,
+                      padding=True, return_tensors="pt").to(model.device)
+            dec = torch.zeros((enc["input_ids"].size(0), 1),
+                              dtype=torch.long).to(model.device)
+            logits = model(input_ids=enc["input_ids"],
+                           attention_mask=enc["attention_mask"],
+                           decoder_input_ids=dec).logits.squeeze(1)
+            label_logits = logits[:, torch.tensor([3, 209])].cpu()
+            label_probs = torch.softmax(label_logits, dim=-1)[:, 1]
+            best = float(label_probs.max().item())
+            probs.append(round(best, 4))
+            preds.append(1 if best > 0.5 else 0)
+    out = {"candidate": "MiniCheck-Flan-T5-Large",
+           "native": "predict:+doc</s>claim, decoder0, logits[3,209]",
+           "load_s": round(t1 - t0, 1), "infer_s": round(time.time() - t1, 1)}
+    out.update(_acc(preds))
+    out["support_probs"] = probs
+    return out
 
 
 # ----------------------------------------------------------------- FactCG
@@ -262,9 +307,9 @@ def smoke_granite_byoc_policy() -> dict:
                           skip_special_tokens=False)
         risk = parse_score(text)
         raws.append(text[:60])
-        # risk yes = erroneous statement; expected 1 = SUPPORTED claim ->
-        # not erroneous -> 'no'
-        preds.append(0 if risk == "no" else 1 if risk == "yes" else None)
+        # risk yes = erroneous (unsupported/contradicted) statement;
+        # expected 1 = SUPPORTED claim -> 'no'; expected 0 -> 'yes'
+        preds.append(1 if risk == "no" else 0 if risk == "yes" else None)
     import torch as _t  # noqa: PLC0415
     vram_gb = round(_t.cuda.max_memory_allocated() / 2**30, 1) \
         if _t.cuda.is_available() else None
