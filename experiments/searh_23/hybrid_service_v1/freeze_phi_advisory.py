@@ -15,7 +15,9 @@ ROOT = HERE.parents[2]
 DATA = HERE / "dataset/fresh_v1"
 
 
-def freeze(folder: Path):
+def freeze(folder: Path, *, config_suffix=""):
+    if config_suffix and not config_suffix.replace("-", "").isalnum():
+        raise ValueError("unsafe config suffix")
     config = json.loads((folder / "run_config.json").read_text(encoding="utf-8"))
     status = json.loads((folder / "status.json").read_text(encoding="utf-8"))
     if status["state"] != "SUCCEEDED":
@@ -29,6 +31,8 @@ def freeze(folder: Path):
         (folder / "results.jsonl").read_text(encoding="utf-8").splitlines()]
     if [row["id"] for row in records] != config["case_ids"]:
         raise ValueError("journal ID mismatch")
+    if set(config["case_ids"]) != set(cases):
+        raise ValueError("service advisory freeze requires a complete split")
     for row in records:
         if row["run_id"] != status["run_id"]:
             raise ValueError("journal run ID mismatch")
@@ -55,6 +59,7 @@ def freeze(folder: Path):
         "n": len(records)}, indent=2), encoding="utf-8")
     ids = []
     for name, base in (("m01-phi", "g0-direct"), ("m11-ge-gp-phi", "g3-ge-gp-surface")):
+        name += config_suffix
         conf = json.loads((ROOT / "service/configs" / f"{base}.json").read_text(encoding="utf-8"))
         conf["config_id"] = name
         conf["description"] = "Frozen bounded model-proposed Phi advisory; verify against original."
@@ -70,4 +75,6 @@ def freeze(folder: Path):
 if __name__ == "__main__":
     parser = argparse.ArgumentParser()
     parser.add_argument("directory", type=Path)
-    print(json.dumps(freeze(parser.parse_args().directory), ensure_ascii=False))
+    parser.add_argument("--config-suffix", default="")
+    args = parser.parse_args()
+    print(json.dumps(freeze(args.directory, config_suffix=args.config_suffix), ensure_ascii=False))

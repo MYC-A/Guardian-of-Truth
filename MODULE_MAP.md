@@ -1,5 +1,31 @@
 # Modular hybrid call paths (2026-10-01)
 
+## Current measured extension on `guardian-vast`
+
+Branch `codex/hybrid-vast-followup-20261001`. The original Stage-A table
+below is retained as history; these integrations now exist:
+
+- `native_helper.native_advisory` consumes a source-bound candidate bank
+  and Granite BYOC score in H3, **only at the independent reviewer**.
+  New sources use the GPU; dev sources reuse exact SHA256 matches.
+- `formal_reasoning` consumes model translations in the shadow runner;
+  M01/M11 pass frozen results to the judge as **unverified advisory**.
+  It has no override over the verdict and no full temporal/arithmetical solver.
+- `counterevidence.collect_review` checks each finding and the whole target
+  move. REFUTED can clear ERROR only when every finding is refuted, the full
+  move was reviewed, and no additional error was found. Invalid/UNSURE
+  preserves the original verdict. This remains a model decision, not a proof.
+- `dispatch.BoundedDispatcher` retains a worker's slot after the HTTP
+  deadline until that worker actually exits. Audit write failures are now
+  visible as degraded coverage; they do not erase the verdict.
+
+Completed dev results, per-case recovery, and limitations are in
+`docs/searh_23/HYBRID_DEV_RECOVERY_2026-10-01.md`. GP surface and Phi alone
+changed zero labels; independent review recovered 11–12 FP without TP loss;
+Granite added no further correction over that review on this synthetic dev.
+
+## Stage-A map (historical)
+
 This map distinguishes code that runs in the service from isolated helpers.
 `ORIGINAL` means pre-existing on the source branch, `ADAPTED` means connected
 or corrected here, and `NEW` means introduced here. A source quote validates

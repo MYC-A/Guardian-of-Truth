@@ -1,5 +1,39 @@
 # Hybrid service handoff and Stage-A corrections (2026-10-01)
 
+## Latest continuation
+
+Writable branch: `codex/hybrid-vast-followup-20261001`; isolated local
+worktree `.worktrees/hybrid-assistants-20261001`. Server SSH alias now
+`guardian-vast`. Remote jobs use separate pinned worktrees for graph/Phi
+matrix, independent review, and model translation comparisons. Do not
+change a checkout while its recorded PID/job is active.
+
+The original `Guardian-of-Truth` server checkout and the main Windows
+checkout are untouched. `/etc/vast-agents-guide.md` was read on the new
+server. No driver/CUDA install, tunnel or public service was created.
+
+Full completed dev evidence is summarized in
+`docs/searh_23/HYBRID_DEV_RECOVERY_2026-10-01.md`. Current corrected runs:
+
+- baseline graph arms `20912812e42d502de1f3`;
+- independent B `436ba4b3c7bb178336ca`;
+- M01/M11 and H3 `f949f802a239f2c3cdce`;
+- Phi translations `feb312d214f1d141f051`;
+- Codestral comparison `08502602a420a6a3f45a` (exact cache recovered
+  after fixing successful-completion loss for explicit provider/model IDs).
+
+Mistral credentials/model still come from server secret env files; keys
+are never included in prompts, reports or Git. Kimi Code returned HTTP
+402 and Mistral Small HTTP429; no quality conclusion is drawn from these
+missing answers. Automatic JSON validity must not be equated to faithful
+NL→predicates: both available translators can prove the wrong proposition.
+
+MiniCheck loads the original PyTorch bin, not the migration's misleading
+`model.safetensors` hardlink. Native cache location is explicitly pinned
+to `/workspace/guardian/hf_cache/hub` to avoid repeat downloads.
+
+## Original Stage-A handoff
+
 Worktree: `codex/hybrid-assistants-step1-4-20261001`, based on
 `research/hybrid-service-20261001@3b0186f8`. GPU host: `vast_me` via SSH.
 The remote experiment checkout is a separate detached worktree at

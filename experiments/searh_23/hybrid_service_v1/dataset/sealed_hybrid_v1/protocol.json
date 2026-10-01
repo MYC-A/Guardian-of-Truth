@@ -1,0 +1,52 @@
+{
+  "schema": "sealed-hybrid-shortlist/1",
+  "input_sha256": "22529186948308ae31e74229f4918e70b6a68be20f243c3016e4418a46e87012",
+  "n": 160,
+  "families": [
+    "antique_watch_repair",
+    "bicycle_share_fees",
+    "compost_delivery",
+    "conference_badges",
+    "film_reel_shipping",
+    "grain_silo_inspection",
+    "livestock_tagging",
+    "mineral_sample_tracking",
+    "mobile_stage_rental",
+    "radio_tower_access",
+    "road_salt_storage",
+    "roofing_materials",
+    "sailboat_mooring",
+    "water_meter_exchange",
+    "watercraft_license",
+    "wildlife_survey"
+  ],
+  "scope": "Twenty-four domain families but only four shared logical patterns. This tests lexical/domain transfer, not unseen logical form. Labels are constructed, not human gold.",
+  "arms": [
+    "g0-direct",
+    "g3-ge-gp-surface",
+    "r0-refute-positive",
+    "r2-ge-refute-positive",
+    "h3-ge-native-review",
+    "m11-ge-gp-phi-sealed"
+  ],
+  "selection_reason": "Baseline controls; two adaptive reviewers with zero TP harm and 11/12 FP recovery in dev; native control with no incremental dev gain; formal+graph negative control with no incremental dev gain. Expensive always-review variants omitted after identical dev labels. No trained aggregator: eight families insufficient to fit and certify one.",
+  "j": "gemma4:31b",
+  "b": "ministral-14b-latest from server env, unchanged from dev",
+  "phi": "same prompt/schema/signed-Horn solver and env model as corrected dev; first materialize all 160 translations gold-blind then freeze under separate sealed config",
+  "gpu": "one resident Granite BYOC native worker, model revision ab01ccca5dcfb80246369a086a4a87a29198f5af; warm/cold in traces",
+  "runs": "Five service arms and Phi frontend can run concurrently in separate pinned checkouts. M11 follows completed Phi freeze. No sealed scorer/gold inspection until BOTH service runs complete.",
+  "budgets": {
+    "main_max_calls": 1500,
+    "main_max_tokens": 2000000,
+    "main_max_minutes": 150,
+    "phi_max_calls": 160,
+    "phi_max_tokens": 500000,
+    "phi_max_minutes": 120,
+    "m11_max_calls": 200,
+    "m11_max_tokens": 450000,
+    "m11_max_minutes": 90
+  },
+  "unchanged_algorithm": true,
+  "no_after_gold_edits": true,
+  "future_default_rule": "Prefer an adaptive reviewer only if it improves paired FP without new FN on sealed; remove helpers with no incremental improvement. Treat constructed transfer separately from competition claims."
+}
