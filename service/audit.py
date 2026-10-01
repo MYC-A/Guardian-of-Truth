@@ -15,7 +15,7 @@ def new_trace_id() -> str:
     return uuid.uuid4().hex[:16]
 
 
-def append_jsonl(path: Path, record: dict) -> None:
+def append_jsonl(path: Path, record: dict) -> bool:
     """Append-only JSONL write, thread-safe, best-effort (audit failure
     must not lose the decision itself; it is surfaced by the caller)."""
     try:
@@ -24,8 +24,9 @@ def append_jsonl(path: Path, record: dict) -> None:
             path.parent.mkdir(parents=True, exist_ok=True)
             with open(path, "a", encoding="utf-8") as fh:
                 fh.write(line + "\n")
+        return True
     except OSError:
-        pass
+        return False
 
 
 def audit_record(trace_id: str, config_id: str, case_id: str,

@@ -559,5 +559,11 @@ class GuardianServiceRuntime:
             audit.update({"finding_details": findings,
                           "module_trace": module_trace or [],
                           "coverage": coverage, "assumptions": assumptions})
-            append_jsonl(self.audit_path, audit)
+            written = append_jsonl(self.audit_path, audit)
+            payload["audit_status"] = "WRITTEN" if written else "WRITE_FAILED"
+            if not written:
+                payload["degraded"] = True
+                payload["coverage"] = dict(coverage, audit="WRITE_FAILED")
+        else:
+            payload["audit_status"] = "DISABLED"
         return payload

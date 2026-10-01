@@ -43,6 +43,9 @@ class BoundedDispatcher:
         try:
             return await asyncio.wait_for(asyncio.shield(task), timeout_s)
         except TimeoutError:
+            if task.done():
+                # A backend's TimeoutError is not our request deadline.
+                return task.result()
             # Threads cannot be killed safely. Shield the worker, retain its
             # slot, and allow admission again only after it actually exits.
             raise RequestTimedOut("Guardian request deadline exceeded") from None

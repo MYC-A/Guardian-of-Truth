@@ -38,6 +38,20 @@ async def test_timed_out_worker_retains_capacity_until_real_completion():
 
 
 @pytest.mark.asyncio
+async def test_backend_timeout_is_not_misreported_as_running_worker():
+    queue = BoundedDispatcher(workers=1, max_waiting=0)
+
+    def failed(_):
+        raise TimeoutError("backend stopped")
+
+    with pytest.raises(TimeoutError) as err:
+        await queue.run(failed, {}, timeout_s=1)
+    assert not isinstance(err.value, RequestTimedOut)
+    assert queue.pending == 0
+    assert await queue.run(lambda _: "recovered", {}, timeout_s=.2) == "recovered"
+
+
+@pytest.mark.asyncio
 async def test_queue_deadline_has_no_worker_leak():
     queue = BoundedDispatcher(workers=1, max_waiting=1, queue_timeout_s=.03)
     release = threading.Event()

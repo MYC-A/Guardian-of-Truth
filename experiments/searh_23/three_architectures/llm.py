@@ -319,7 +319,7 @@ def chat(model: str, messages: list, *, max_tokens: int = 4000,
                        "model": model_r, "elapsed": elapsed}
             _cache_put(key, payload)
             _log_cost({"ts": time.time(), "caller": caller, "model": model_r,
-                       "provider": PROVIDERS[_provider_of(model_r)][0],
+                       "provider": PROVIDERS[_provider_of(m)][0],
                        "prompt_tokens": u.get("prompt_tokens"),
                        "completion_tokens": u.get("completion_tokens"),
                        "elapsed": elapsed, "attempt": attempt,
@@ -359,6 +359,10 @@ def provider_family(model: str) -> str:
 
 
 def _provider_of(model: str) -> str:
+    if "/" in model:
+        provider, _ = model.split("/", 1)
+        if provider in PROVIDERS:
+            return provider
     return MODEL_REGISTRY.get(model, "unknown")
 
 
