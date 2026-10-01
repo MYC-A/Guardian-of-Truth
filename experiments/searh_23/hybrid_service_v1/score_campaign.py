@@ -3,6 +3,7 @@ from __future__ import annotations
 
 import argparse
 import json
+import random
 from collections import defaultdict
 from pathlib import Path
 
@@ -20,6 +21,36 @@ def _metrics(pairs):
             "precision": round(precision, 4), "recall": round(recall, 4),
             "f1": round(2 * precision * recall / (precision + recall), 4)
             if precision + recall else 0.0}
+
+
+def _quantile(values, p):
+    if not values:
+        return None
+    values = sorted(values)
+    return round(values[min(len(values) - 1,
+                            max(0, int((len(values) - 1) * p)))], 4)
+
+
+def _family_bootstrap_delta(gold, baseline, candidate, case_ids,
+                            repeats=2000):
+    """Cluster resample policy families, keeping all within-family variants."""
+    families = defaultdict(list)
+    for cid in case_ids:
+        families[gold[cid]["policy_family_id"]].append(cid)
+    keys = sorted(families)
+    rng = random.Random(20261001)
+    deltas = []
+    for _ in range(repeats):
+        drawn = [cid for _ in keys
+                 for cid in families[rng.choice(keys)]]
+        before = _metrics([(gold[cid]["label"], int(
+            baseline[cid]["decision"] == "ERROR")) for cid in drawn])["f1"]
+        after = _metrics([(gold[cid]["label"], int(
+            candidate[cid]["decision"] == "ERROR")) for cid in drawn])["f1"]
+        deltas.append(after - before)
+    return {"delta_f1_ci95_family_cluster": [_quantile(deltas, 0.025),
+                                               _quantile(deltas, 0.975)],
+            "repeat_count": repeats, "family_count": len(keys)}
 
 
 def score(directory: Path):
@@ -76,6 +107,10 @@ def score(directory: Path):
                           for cid in expected_ids),
             "mean_elapsed_s": round(sum(items[cid]["elapsed_s"]
                                         for cid in expected_ids) / len(pairs), 3),
+            "latency_p50_s": _quantile([items[cid]["elapsed_s"]
+                                        for cid in expected_ids], 0.5),
+            "latency_p95_s": _quantile([items[cid]["elapsed_s"]
+                                        for cid in expected_ids], 0.95),
         }
     baseline = by_arm.get("g0-direct")
     if baseline:
@@ -95,7 +130,9 @@ def score(directory: Path):
                     same_wrong.append(cid)
             report["paired"][arm] = {
                 "recovered": recovered, "harmed": harmed,
-                "same_wrong": same_wrong}
+                "same_wrong": same_wrong,
+                **_family_bootstrap_delta(gold, baseline, items,
+                                          config["case_ids"])}
     out = directory / "score.json"
     out.write_text(json.dumps(report, ensure_ascii=False, indent=2),
                    encoding="utf-8")
