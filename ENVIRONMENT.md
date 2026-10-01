@@ -56,3 +56,57 @@ measured on the previous stand; sequential load/unload discipline).
   re-measured on THIS instance, not copied.
 - Free-API provider credentials originate from the user's previous-session
   handoff (chat history), stored in secrets/api_keys.env; never printed.
+
+## Re-provisioning addendum (2026-10-01, second stand migration)
+
+The instance hosting this branch's runs became unreachable; the stand was
+rebuilt on a new Vast machine (RTX 3090 24 GB, driver 595.84, CUDA 12.8
+toolkit, 64 cores, 251 GiB RAM, hostname e0d16af6cec4). Everything below was
+re-measured on THIS instance; the worktree lives at
+`/workspace/guardian/repos/hybrid-assistants-worktree` (the path the launch
+scripts expect) at branch HEAD 871293c9.
+
+Re-verified on the new stand:
+
+- venv: torch 2.10.0+cu128 (CUDA matmul+autograd OK), transformers 5.16.1,
+  huggingface-hub 1.33.0 (pinned <2.0 for transformers 5.16.1), nltk + punkt
+  (required by factcg_native.py), guardian-truth editable.
+- granite-guardian-4.1-8b re-downloaded at pinned revision
+  ab01ccca5dcfb80246369a086a4a87a29198f5af (16 G); bf16 local channel via
+  llm.py: cold load ~10 s, greedy generation ~2 s, VRAM freed on exit.
+- MiniCheck-Flan-T5-Large re-fetched from lytang/MiniCheck-Flan-T5-Large.
+  Disk-dedup note: the hub cache held BOTH the original pytorch_model.bin
+  and the HF auto-conversion model.safetensors (3.13 G each). The two were
+  proven functionally IDENTICAL on the branch's 15-case native bank
+  (same per-example probabilities to 3 decimals, acc .867, misses exactly
+  on the two policy-interpretation cases — bit-consistent with the smoke
+  recorded on the previous stand). To keep both load paths
+  (main-ref bin / device_map conversion ref) resolving to the same bytes
+  without re-downloading, the conversion blob was replaced by a hardlink to
+  the original (freed 3.13 G; disk now ~3.7 G free).
+- FactCG-DeBERTa-v3-Large re-fetched at pinned revision
+  0430e3509dbd28d2dff7a117c0eae25359ff3e80; the redundant
+  pytorch_lightning_ckpt (~1.7 G) is deliberately NOT downloaded
+  (model.safetensors is the only weights path factcg_native.py loads);
+  native-format load + score verified on GPU (435M params, 1.64 GiB VRAM).
+- Bespoke-MiniCheck-7B and PRT-Qwen-7B remain BLOCKED:disk (unchanged
+  protocol decision — ~15 GB weights each do not fit alongside granite).
+- All five API channels re-smoked through llm.py: mistral 0.7 s, ollama
+  gemma4:31b 0.7 s, ollama gpt-oss:20b 0.9 s, ukisai swift 1.0 s, vireonix
+  auto 2.6 s — all answered the standard prompt.
+- Branch test suite: 42 passed (hybrid_service_v1: archive_dsp,
+  formal_advisory, specialist_bank, structural_v02, v2_boundaries;
+  tests/: fresh_suite_v1, hybrid_campaign, hybrid_service_fixes).
+- service/test_service_smoke.py in its script mode (as on the previous
+  stand): 7/7 passed, including the batch CLI + JSONL audit path. In the
+  isolated smoke environment the v6-judges config reached the live judge
+  channels (provisioned here) and returned a valid verdict.
+- Native checker bank reproduction (the numbers the protocol's Stage A
+  recorded): MiniCheck-Flan-T5-Large 15/15 format, acc .867, misses
+  idx {3, 13} = the two policy-applicability cases — identical to the
+  previous stand's smoke. FactCG and Granite BYOC load and answer in their
+  native formats on this stand.
+
+No committed outputs were modified by the re-provisioning; the smoke
+reproductions above were run as ad-hoc probes (not written into
+outputs/native_smoke*), preserving the recorded results.
