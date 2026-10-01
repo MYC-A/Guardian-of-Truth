@@ -4,6 +4,17 @@ No case/domain branches. All positive hypotheses must be disposed before a
 positive case can be refuted. An independent full-move check can find errors
 missing from the first judge. Invalid/UNSURE preserves the first decision.
 """
+
+SOURCE_BOUND_V2 = """Source interface v2:
+The supplied source_reference_inventory lists the ONLY allowed source_refs IDs for additional_error.
+Names of source buckets (policy/history/catalog/response) are NOT event IDs.
+Use an empty source_refs array if no listed event ID is needed; exact quote fields still identify
+the source. Copy event IDs verbatim when used. additional_error MUST include all eight fields
+label, type, policy_quote, history_quote, response_quote, catalog_quote, source_refs, explanation.
+Empty quote fields are allowed. Every nonempty quote must be copied literally from its named
+source: no markdown emphasis, altered punctuation, paraphrase, or different source bucket.
+This is a technical interface clarification. Do not change the semantic decision to satisfy it.
+"""
 from __future__ import annotations
 import json
 
@@ -44,7 +55,7 @@ def sources_for(ctx):
             "catalog": ctx.system, "response": ctx.response_raw}
 
 
-def validate_review(value, ctx, findings):
+def validate_review(value, ctx, findings, *, strict_quotes=False):
     from judge import validate_vote
     if not isinstance(value, dict) or set(value) != {
             "dispositions", "additional_error", "whole_move_reviewed"}:
@@ -93,6 +104,12 @@ def validate_review(value, ctx, findings):
         valid, reason = validate_vote(vote, ctx)
         if not valid or vote["label"] != 1:
             return False, "invalid additional error: " + reason
+        if strict_quotes:
+            for field, source in (("policy_quote", "policy"), ("history_quote", "history"),
+                                  ("catalog_quote", "catalog"), ("response_quote", "response")):
+                quote = vote.get(field)
+                if not isinstance(quote, str) or (quote and quote not in sources[source]):
+                    return False, "invalid additional error quote: " + field
     return True, "ok"
 
 
@@ -103,7 +120,16 @@ def collect_review(cfg, ctx, findings, *, caller="service/review"):
                "prior_findings": [dict(f, finding_index=i)
                                   for i, f in enumerate(findings)],
                "advisory": getattr(ctx, "advisory_context", "")}
-    messages = [{"role": "system", "content": INSTRUCTION},
+    strict = cfg.get("protocol") == "source-bound-v2"
+    instruction = INSTRUCTION
+    if strict:
+        payload["source_reference_inventory"] = [
+            {"turn_id": turn.turn_id, "role": turn.role,
+             "call_ids": [call.call_id for call in turn.tool_calls],
+             "result_ids": [result.result_id for result in turn.tool_results]}
+            for turn in ctx.turns]
+        instruction += "\n" + SOURCE_BOUND_V2
+    messages = [{"role": "system", "content": instruction},
                 {"role": "user", "content": json.dumps(payload, ensure_ascii=False)}]
     attempts = []
     parsed = None
@@ -113,7 +139,7 @@ def collect_review(cfg, ctx, findings, *, caller="service/review"):
                       temperature=0, json_mode=True, transport_retries=1,
                       caller=f"{caller}/{ctx.case_id}/{attempt}")
         parsed = extract_json(answer.get("content"))
-        valid, reason = validate_review(parsed, ctx, findings)
+        valid, reason = validate_review(parsed, ctx, findings, strict_quotes=strict)
         attempts.append({"valid": valid, "reason": reason,
                          "cached": bool(answer.get("cached")),
                          "usage": answer.get("usage") or {},
@@ -129,7 +155,8 @@ def collect_review(cfg, ctx, findings, *, caller="service/review"):
              "api_calls": sum(not a["cached"] for a in attempts),
              "api_tokens": sum(int(a["usage"].get("total_tokens") or 0)
                                for a in attempts if not a["cached"])}
-    return {"module": "independent-counterevidence/1", "model": model,
+    return {"module": "independent-counterevidence/2" if strict else
+                       "independent-counterevidence/1", "model": model,
             "valid": valid, "reason": reason, "review": parsed if valid else None,
             "attempts": attempts, "usage": usage,
             "status": "JUDGED" if valid else "INVALID"}

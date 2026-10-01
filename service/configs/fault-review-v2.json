@@ -1,0 +1,38 @@
+{
+  "schema_version": "guardian-service-config/1.0",
+  "description": "Same fault controls; explicit event ID inventory and strict additional-error quote interface.",
+  "stages": {
+    "structural": "v0.2",
+    "advisory": "none",
+    "judges": {
+      "protocol": "single-judge-v1",
+      "j1_model": "gemma4:31b",
+      "temperature": 0,
+      "max_tokens": 1500,
+      "max_context_chars": 12000,
+      "one_technical_reask": true
+    },
+    "counterevidence": {
+      "model": "env_mistral",
+      "routing": "always",
+      "max_tokens": 2000,
+      "one_technical_reask": true,
+      "protocol": "source-bound-v2"
+    },
+    "judge_replay": {
+      "results_file": "experiments/searh_23/hybrid_service_v1/dataset/fault_injections_v1/upstream.jsonl",
+      "sha256": "d9fe3705c092c3db058f3cf26ca74d932951af0c0d2de02ca1685eca4dedb8bd",
+      "source_config": "controlled-faults",
+      "source_run_id": "fault-injections-v1"
+    }
+  },
+  "limits": {
+    "request_timeout_s": 240,
+    "max_context_chars": 200000,
+    "max_queue": 4,
+    "retries": 1
+  },
+  "csv_unknown_label": 0,
+  "frozen_at": "2026-10-01",
+  "config_id": "fault-review-v2"
+}
