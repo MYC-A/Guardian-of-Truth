@@ -159,3 +159,98 @@ The gold `"A"` counts the mere act of checking as satisfying the dispatch condit
 - Structural channel abstains out-of-domain (hotel 0/20) — structural "1" must require a reproducible basis, and abstention must be explicit.
 - Judge FP overlap is real (up to 14 shared FP) — cross-family independence must be measured, not assumed; vireonix `auto` family unverifiable → never count it as an independent family.
 - The Step-1 bottleneck dominates any architecture that needs full policy programs; F (per-turn requirement form) deliberately avoids it — that avoidance is itself the hypothesis.
+
+---
+
+# ЧАСТЬ 2 — Аудит для задания HYBRID SERVICE (2026-10-01)
+
+Контекст: ветка `research/hybrid-service-20261001` (от `research/three-architectures-24gb-20260930` @ 4df13b97).
+Метод: чтение кода + `git log --follow` + пересчёт закоммиченных outputs напрямую (не пересказ доков).
+Формат строк: компонент → файл/коммит → реальное подключение → данные → модель/промпт → измерения → ограничение → статус RUN/SMOKE/NOT_RUN/BLOCKED + ORIGINAL/ADAPTED/NEW.
+
+## 15. GE: механический граф свидетельств (плоские модули)
+
+| Компонент | Файл/коммит | Подключение | Данные | Модель | Измерения | Ограничения | Статус |
+|---|---|---|---|---|---|---|---|
+| `guardian_truth.parsing` | `src/guardian_truth/parsing.py` @ 421f9616 (2026-09-05, не менялся) | **ЖИВОЙ КОРЬ**: `scripts/predict.py` → `cli.main` → `pipeline.Detector.review()`; ~60 импортёров | public46/valid.parquet | нет (детерм.) | E1 offline TP12/FP0 F1 .6857; graph-mode live 8 строк F1 .750 (gpt-oss-20b) | только 2 диалекта маркеров; не-JSON результаты не индексируются | RUN, ORIGINAL, live |
+| `guardian_truth.provenance` | `src/guardian_truth/provenance.py` @ 421f9616 | **ЖИВОЙ**: `Detector.review()` строит граф при включённых семьях проверок; кормит `check_rules`/`analyze_plan`/`AnalysisContext` | те же | нет | через каналы-потребители; 23 юнит-теста | структурный only: нет семантических алиасов, статусов мира, авторизации (докстринг) | RUN, ORIGINAL, live |
+| digest `g_graph` | `experiments/superz_fullcycle/g_graph.py` @ d0d3935b (single) | standalone; `graph_digest` импортирован ≥12 поздними скриптами (S5/S6/S7/P/Q) | public46 + E3a suspicions 94 | blockrun/pollinations (L7-каналы) | a4g F1 .5778 < A4 .6222; gjudge F1 .4 (n=29/46, 17 FAILED); combo a4gp .6154; **flash-G1 (ветка flash-20260921, 7e8b6cde, НЕ в этой ветке): digest верификатору F1 .6667 vs Base .6207, UNCERTAIN 12→1** | outputs g_graph не закоммичены в ветке (сохранились chain4-логи); judge-side — честный негатив, verifier-side — единственный позитив | RUN (логи), ADAPTED |
+| S5 graph-as-context | `experiments/full21/s5_graph_granite.py` @ 2d6a35ba | standalone leaf | public46 46 | granite-3.3-8b groundedness, 12k бюджет | digest-only **F1 .6032 (21 FP!)**; graph_quotes .6977; plain_summary .5818; контроль .7805 | факт-ЛИСТ как контекст раздувает FP независимо от «графовости»; вывод: польза графа — на стороне верификатора | RUN, ADAPTED |
+
+## 16. Φ: формальная линия (RuleIR → солверы)
+
+| Компонент | Файл/коммит | Подключение | Данные | Модель | Измерения | Ограничения | Статус |
+|---|---|---|---|---|---|---|---|
+| `semantic_pipeline_v1` (rule_ir.py) | 20 модулей @ 243cc8a0→831f6680 (2026-09-17..20) | библиотека экспериментов; НЕ в cli.py | dev46+17 synth | Mistral API + NuExtract-1.5-tiny + GLiNER + NLI | fragment recall .648→1.000 (union); Φ-кандидатов NLI-veto 28%; binding 18/36 BOUND; финальные Guardian-arms A0/A8 F1 .160/.083, synth 0/17 | lowering не умеет NL-условия/сравнения/кардинальность → UNRESOLVED | RUN, ORIGINAL, standalone |
+| `p_precond_api` (P-line) | `experiments/big_researh/p_precond_api.py` @ d34d6dae→a74a37ef | standalone; pgjudge-выход → investigator-v2 | public46 | Mistral ministral-14b | extract 46/46→43 OK, 112 карт, 88 grounded; **pjudge F1 .7018; pgjudge R 1.0 F1 .7419** (fresh, 7c058526); pgljudge/pglcljudge .7458/.7188 — UNVERIFIED (журналы потеряны в ресете); +L/+C монотонно ухудшают | карты-как-контекст судьи теряют нюансы; пред-ресет числа UNVERIFIED | RUN (частично UNVERIFIED), ADAPTED |
+| `q_discriminator` (Q-line) | `experiments/big_researh/q_discriminator.py` @ d34d6dae; v2 `searh_23/q_discriminator_v2.py` @ 42543a90 | standalone | public46 + S6/S9 каналы | Mistral | v2: 3434 расхождения, 12 deep, **verified 5/12, downstream flips 0**; v1 (3332/12/5/1) — UNVERIFIED | Q не срабатывает, когда оба канала пусты; перекрытие coarse | RUN, ORIGINAL |
+| S8 Clingo verify | `experiments/big_researh/s8_clingo_verify.py` @ ea9e7069 | standalone; карты → RuleIR → B1-B4 → ASP | fresh карты P-line | нет (детерм.) | 112 карт, 88 grounded, 44 bound, **0 violated, 60 unknown** (49 applicability_unknown + 16 unobservable); контроль не изменён | премис-обсервабельность = блокер; B1-B4 покрывают 4 формы | RUN, ADAPTED |
+| `full_architecture_v1` | pipeline.py+facts_builder+certificate @ 0c2bda7e→655f495f (2026-09-18..19) | standalone; никогда не промоутен | real46 + синтетика | Mistral (замороженные Φ) | bakeoff 43/43 sound, brave/cautious EQUIV; сертификаты 43/43 tamper-detected; **N5 real46 sound-lowered TP3/FP0 F1 .2308** (после строгого lowering); N0 incumbent TP3/FP0 | per-case outputs НЕ закоммичены; замороженная Φ-зависимость | RUN (артефакты частично утеряны), ORIGINAL |
+| Формальные frontends A/B/C/D/E | `policy_architecture_abcd_v{1,2}.py` + 4 доки (REQ2LTL/NL2LOGIC, SOURCE_POLICY, STAGED_TREE, SOURCE_FIRST) @ 2026-09-26..27 | standalone | 10-12 политик (authored) | Mistral | **exact IR 0/12 и 0/10 ВСЕХ рук**; C OnionL/Req2LTL 0/19; D NL2Logic 1/19; E source-first 2/22, verifier принимает 17/18 собственных ошибок; staged B лучший (но не готов) | binding действие↔условие не решён ни одним frontend-классом | RUN, ORIGINAL/ADAPTED |
+
+## 17. Census формальных движков (запускались/нет)
+
+| Движок | Статус | Где/что измерено |
+|---|---|---|
+| **Clingo 5.8.2** (in-process) | **RUN, многократно** | bakeoff 43/43/58/0-unsound; scaling 0.01-0.9s; S8; Q minimal-check; H-solver CP-SAT-согласие 28/28, срезал 0/38 рёбер; Declare-BMC 13/13/13 + цикл UNSAT |
+| **s(CASP) 1.1.4** (SWI 9.2.9) | RUN | 43/43, 46/46, 58/58; ~2.2-35.8s/query; 6 engine findings F1-F6 |
+| **Drools 10.2.0** | RUN | 43/43, 46/46, 58/58 |
+| **Soufflé** | SMOKE (probe) | рекурсивный Datalog + provenance explain 0.02s |
+| **Z3 / CVC5 / PySMT** | **NOT_RUN** (ни одного `import z3` в репо; только будущее-обсуждение в handoff) | — |
+| **LPS** | **NOT_FOUND** (0 упоминаний) | — |
+| **Logical English / LE2** | **NOT_FOUND** (0 упоминаний) | — |
+| **LogicLLaMA** | **NOT_FOUND** (0 упоминаний) | — |
+| **Logic-LM** | NOT_RUN (1 строка будущего-обсуждения) | — |
+| **LINC** | RUN как внутренний «LINC-like» ограниченный переводчик (V7 arm D): 4/4 валидных, перевод нестабилен 0/2 → shadow_only | `src/guardian_truth/formal_reasoning.py` @ e7d8b4ed |
+| **NL2Logic / Req2LTL** | RUN (минимальные репродукции): 1/19 и 0/19 директив, 0/12 exact IR | policy_architecture_abcd |
+| **NuExtract** | RUN: NuExtract-1.5-tiny modality .412; NuExtract3-W4A16 S9 46/46 карт (judge-абляции с картами .2286-.375 — негатив) | — |
+
+## 18. Census внешних checkers (MiniCheck и пр.)
+
+| Checker | Статус | Факты |
+|---|---|---|
+| **MiniCheck** | **NOT_RUN, DEFER** (EXPERIMENT_MATRIX.md:20 «Pending… DEFER until Granite tool-call smoke»); адаптера и outputs НЕТ | единственные упоминания — 4 manual-хендофа + матрица |
+| **FactCG** | **NOT_FOUND** — 0 упоминаний в репо | — |
+| **RefChecker** | NOT_RUN, cited-only (implementation_strategy.md:27, цитата arXiv 2405.14486) | — |
+| **LettuceDetect** | **RUN, bounded-negative**: `ld_locator.py` @ 42763bab; public46 42 спана/12 кейсов, **найдено 0 пропущенных ошибок**, +1 FP на сьют; qwen-2b генеративная версия unusable (спаны битые) | не промоутен |
+| **Jev** | RUN в ФОРМЕ только (TypeSafe Jev API НЕ использовался): TQ-слой public46 in-sample F1 .920 0-TP-lost; hotel перенос 0 изменений | «формой» — ministral |
+| **ShieldAgent** | **NOT_FOUND** (0 упоминаний) | — |
+| **Amazon Automated Reasoning** | NOT_RUN, design-review-only (GOAL_PLAN_V3 доки; Goal v2 22/22 UNRESOLVED) | — |
+| **S4L→Prolog** | **NOT_FOUND** | — |
+| **Granite Guardian 4.1 BYOC** | SMOKE: F1 .8095 vs 3.3 .7805 на общем протоколе; **OR-добавка 0** (все 4.1-хиты покрыты structural); как JSON-3rd-checker отклонён (нативный `<score>` yes/no) | доступен локально на инстансе (16G, rev ab01ccca) |
+
+## 19. Integration/system-линии (2026-09-30)
+
+| Компонент | Файл/коммит | Подключение | Измерения | Ограничения | Статус |
+|---|---|---|---|---|---|
+| `integration/` proof runtime | 12 файлов @ 2ac1c0a0→6194168d | standalone + 47 тестов; **НЕ в live-detector** | 37 траекторий: **27/37 exact, 11/11 ERROR, 0 false ERROR, 54% UNKNOWN**; ablations: no_reachability теряет refusal, first_prior даёт false ERROR, no_claim_evidence 17→13 | oracle-границы (ручные программы); Step-3 binding прячет 4 кейса в UNKNOWN | RUN (SMOKE-масштаб), NEW |
+| `system_research_v2` | suite+arms @ 869feac1→ab6f0335 | standalone | sealed: universal Φ 10/20, err-exist 11/20; **gold_S1 17/20 (ERROR recall 1.0)** — Step-1 = доминирующий блокер; Step-3 sealed P 1.000 R .458; Step-4 4/4; 336 вызовов ~403K токенов | 6 открытых дефектов доверия (§21) | RUN, NEW |
+| `run_f6_graph` (scope-veto) | @ f664f3fb | paired replay | base .800/.558/.658 vs +veto .758/.581/.658 → default OFF | негатив-идентификация veto, без F1-выигрыша | RUN, ADAPTED |
+| `llm_first_f6` | 24 py @ 3345bb97→57b7dfc3 | standalone; rawsan → Step-1 кандидат | см. §10 выше; rename: codestral 6/6, mistral 1/6; CF 2/6 | Granite-экстрактор BLOCKED (gateway 503 ~4h) → F7 | RUN, NEW |
+
+## 20. Micrograph-сертификаты (bounded-грамматики, детерминистические)
+
+| Компонент | Механизм | Измерения | Ограничения | Статус |
+|---|---|---|---|---|
+| `micrograph_certificate_v1` + replay | 3 regex-anchored bullet-паттерна (PRECONDITION/LATEST/AFTER_SUCCESS), tool-роли из описаний, всякое покрытие OPEN→UNKNOWN; seal+replay | **48/48 на 4 сьютах (repair, repair_renamed, parcel_v1, parcel_v1_renamed), 0 FP**; baseline raw-mistral на том же parcel: TP6/FP2 → micrograph убрал 2 FP | authored; 3 false-SAFE контрпримера найдены независимым аудитом и закрыты (b4087062); перенос формулировок: coverage 0 (36 UNKNOWN) на 3 парафраз-сьютах | RUN, ORIGINAL |
+| Level-F endpoint certificate (E1/E3/E3W) | экстрактор обязан дать a_anchor/b_anchor как точные спаны + верификатор Q1-Q5 + детерминированный verify_certificate; E3W = AMR-witness veto | юниты 22: E1 1/22 (6 false-SUPPORTED) → **E3 11/22, 0 false-SUPPORTED, 9 UNKNOWN**; E3W ≡ E3 (AMR veto 0 срабатываний); Track B FULL_GOLD+E3 P .565/R .565; sealed F2: real frontend 0/8, 18 extra; rename 15/15 | real-frontend + E3 коллапсирует; «Step 1 не готов к интеграции» | RUN, ORIGINAL |
+
+## 21. Открытые дефекты доверия V2-линии + archive-баг (найдены этим аудитом, НЕ документированы ранее)
+
+1. **archive `(D∧S)∨P` vs `D∧(S∨P)` — ПОДТВЕРЖДЁН В КОДЕ, НЕ ДОКУМЕНТИРОВАН**: `v2_domains_sealed.py:594-609` `archive_programs()` кодирует gate как `{"unless": {base: D∧S, exception: P}}` = (D∧S)∨P, тогда как текст политики («Publishing is allowed with only the declassification when public interest» → public interest отменяет ТОЛЬКО sign-off) читается как **D∧(S∨P)**. Различающий угол **D=false, P=true** не покрыт ни одним из 4 archive-кейсов — потому self-verification 40/40 прошла. Протокол §5.2 задания: регрессия на всех 8 комбинациях D/S/P + чтение vs публикация, gold НЕ из archive_programs.
+2. conveyor 4 → C4 нормализации НЕТ (claims quarry → `literal_entity_value_or_scope_unbound` → UNKNOWN); `_transit_goal` вручную делает split("passenger ") — только для transit gold.
+3. Boolean-наблюдения → `_literal_value` пропускает bool («polarity requires licensed interpretation») → STATE_CLAIM о boolean-чтении непривязываем.
+4. Модельные контракты штампуются `DOC_EXPLICIT` (`steps_2to4.enriched_case` + `contracts.acquire_documented`), EXECUTED-прочтения check-инструментов не закрыты контрастивом.
+5. `quote_ok=false` — декоративный флаг (`apply_contrastive` применяет re-strength/rename независимо).
+6. `candidate_actions_exhaustive: True` захардкожен при пустых valid_calls → CLOSED «no capability» неотличим от провала извлечения.
+7. S1-E repair-loop (tool recall .60→.80, atom F1 .700→.750) НЕ подключён в `system_eval.auto_programs` — full-auto 10/20 не включает repair-выигрыши.
+8. Документировано и ИСПРАВЛЕНО только q_dispatch_vs_check (cb14bc88, frozen-копия сохранена, история не перезаписана).
+
+## 22. Гибриды УЖЕ БЫЛИ (§2 задания — «не объявляй граф+LLM новым изобретением»)
+
+- `p_precond_api`: pjudge (карты) → pgjudge (+graph digest) → pgljudge (+langextract) → pglcljudge (+clingo) — полный каскад «текст + карточки → граф → извлечение → Clingo» измерен на public46 (см. §16).
+- `g_graph`: a4g/gjudge — влияние механического графа на верификатор и на первого судью отдельно (§15).
+- full_architecture_v1 N1-N5: frontend-типизация × Clingo POLICY × Clingo EVIDENCE × сертификат+checker (§16).
+- system_research_v2: Φ1×Φ2 консенсус + оракул-декомпозиция по шагам (§19).
+- Вывод для нового эксперимента: «граф без Φ» (GE/GP→судья), «Φ без графа», «граф+Φ» — все три клетки центрального квадрата имеют исторические аналоги, но ни одна не была прогнана в едином harness на свежих данных с одинаковым судёйским промптом — это и есть новая ось.
+
