@@ -1,7 +1,9 @@
 #!/usr/bin/env bash
 set -euo pipefail
+export WORKSPACE=${WORKSPACE:-/workspace}
+export PROC_NAME=${PROC_NAME:-guardian_research}
 utils=/opt/supervisor-scripts/utils
-. "${utils}/logging.sh"
+. "${utils}/logging.sh" ""
 . "${utils}/environment.sh"
 repo=${GUARDIAN_REPO:-/workspace/guardian/repos/hybrid-service-worktree}
 export GUARDIAN_CONFIG=${GUARDIAN_CONFIG:-structural-v02}
