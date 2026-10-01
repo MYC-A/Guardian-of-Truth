@@ -335,6 +335,8 @@ def chat(model: str, messages: list, *, max_tokens: int = 4000,
                "error": str(last_err)[:200], "transport_fail": True})
     return {"content": None, "usage": {}, "cached": False, "model": model_r,
             "elapsed": round(time.time() - t0, 3),
+            "error_type": type(last_err).__name__,
+            "http_status": getattr(last_err, "status_code", None),
             "error": str(last_err)}
 
 

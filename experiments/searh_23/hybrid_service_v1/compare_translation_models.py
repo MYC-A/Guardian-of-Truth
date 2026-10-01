@@ -44,7 +44,7 @@ def compare(baseline: Path, candidates: list[Path], output: Path):
         errors = [e for e in source_score["covered_errors"] if e["id"] in ids]
         rows = []
         for r in selected:
-            tr = r.get("translation") or {}
+            tr = (r.get("translation") or {}) if r["status"] == "VALID" else {}
             query = tr.get("query")
             facts = tr.get("facts") or []
             suspicious = bool(query and any(f.get("literal") == query and
