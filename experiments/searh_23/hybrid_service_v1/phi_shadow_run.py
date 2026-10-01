@@ -70,14 +70,24 @@ def _evidence(ctx):
 
 
 def run(split: str, *, max_cases=None, max_calls=90,
-        max_tokens=400000, max_minutes=120):
+        max_tokens=400000, max_minutes=120, model=None, case_ids=None,
+        output_root=RESULTS):
+    model = model or DEFAULT_MISTRAL_MODEL
     manifest = json.loads((DATA / "manifest.json").read_text(encoding="utf-8"))
     source = DATA / f"{split}_input.jsonl"
     digest = _sha(source.read_bytes())
     if digest != manifest["splits"][split]["input_sha256"]:
         raise ValueError("frozen input hash mismatch")
     rows = [json.loads(line) for line in source.read_text(encoding="utf-8").splitlines()]
-    if max_cases is not None:
+    if case_ids is not None:
+        if max_cases is not None:
+            raise ValueError("case IDs and max_cases are mutually exclusive")
+        by_id = {r["id"]: r for r in rows}
+        if not case_ids or len(set(case_ids)) != len(case_ids) or any(
+                cid not in by_id for cid in case_ids):
+            raise ValueError("invalid frozen case selection")
+        rows = [by_id[cid] for cid in case_ids]
+    elif max_cases is not None:
         rows = rows[:max_cases]
     bank_path = BANK / f"{split}.jsonl"
     bank_manifest = json.loads((BANK / "manifest.json").read_text(encoding="utf-8"))
@@ -91,15 +101,15 @@ def run(split: str, *, max_cases=None, max_calls=90,
     if subprocess.check_output(
         ["git", "-C", str(ROOT), "status", "--porcelain"], text=True).strip():
         raise ValueError("formal run requires clean, pinned checkout")
-    identity = {"schema": "phi-shadow/2", "split": split,
+    identity = {"schema": "phi-shadow/3", "split": split,
                 "input_sha256": digest, "case_ids": [r["id"] for r in rows],
-                "commit": commit, "model": DEFAULT_MISTRAL_MODEL,
+                "commit": commit, "model": model,
                 "candidate_bank_sha256": bank_sha,
                 "prompt_sha256": _sha((FORMAL_INSTRUCTION + QUERY_INSTRUCTION +
                     json.dumps(FORMAL_SCHEMA, sort_keys=True)).encode("utf-8")),
                 "backend": "guardian_truth.formal_reasoning.signed_horn"}
     run_id = _sha(json.dumps(identity, sort_keys=True).encode("utf-8"))[:20]
-    folder = RESULTS / run_id
+    folder = output_root / run_id
     folder.mkdir(parents=True, exist_ok=True)
     config_file = folder / "run_config.json"
     if config_file.exists():
@@ -142,9 +152,10 @@ def run(split: str, *, max_cases=None, max_calls=90,
             evidence = _evidence(ctx)
             messages = formal_messages(candidates[row["id"]]["claim"], evidence)
             t0 = time.monotonic()
-            answer = chat(DEFAULT_MISTRAL_MODEL, messages,
+            answer = chat(model, messages,
                           max_tokens=4000, temperature=0,
-                          json_mode=True, caller="hybrid/phi-shadow")
+                          json_mode=True, transport_retries=1,
+                          caller="hybrid/phi-shadow")
             calls += 1
             usage = answer.get("usage") or {}
             tokens += int(usage.get("total_tokens") or 0)
@@ -161,7 +172,8 @@ def run(split: str, *, max_cases=None, max_calls=90,
                          for step in result.proof]
                 outcome = "VALID"
             except Exception as exc:  # noqa: BLE001
-                relation, reason, proof = "INSUFFICIENT", type(exc).__name__, []
+                relation, reason, proof = "INSUFFICIENT", getattr(
+                    exc, "category", type(exc).__name__), []
                 outcome = "INVALID"
             record = {"run_id": run_id, "id": row["id"], "status": outcome,
                       "source_sha256": _sha((row["prompt"] + "\x00" +
@@ -169,6 +181,9 @@ def run(split: str, *, max_cases=None, max_calls=90,
                       "relation": relation, "reason": reason,
                       "scope": "relative_to_supplied_formalization",
                       "proof": proof, "translation": parsed,
+                      "cached": bool(answer.get("cached")),
+                      "transport_failed": bool(answer.get("error")),
+                      "response_model": answer.get("model"),
                       "raw_content": (answer.get("content") or "")[:24000],
                       "usage": {"calls": 1,
                                 "tokens": int(usage.get("total_tokens") or 0),
@@ -197,12 +212,21 @@ if __name__ == "__main__":
     parser = argparse.ArgumentParser()
     parser.add_argument("--split", choices=("dev", "sealed"), required=True)
     parser.add_argument("--max-cases", type=int)
+    parser.add_argument("--model", help="Registry ID or explicit provider/model")
+    parser.add_argument("--case-ids-file", type=Path,
+                        help="Frozen JSON array of IDs; never contains labels")
+    parser.add_argument("--output-root", type=Path, default=RESULTS)
     parser.add_argument("--max-calls", type=int, default=90)
     parser.add_argument("--max-tokens", type=int, default=400000)
     parser.add_argument("--max-minutes", type=float, default=120)
     args = parser.parse_args()
+    if min(args.max_calls, args.max_tokens, args.max_minutes) <= 0:
+        parser.error("budgets must be positive")
+    ids = None if args.case_ids_file is None else json.loads(
+        args.case_ids_file.read_text(encoding="utf-8"))
     folder = run(args.split, max_cases=args.max_cases,
         max_calls=args.max_calls, max_tokens=args.max_tokens,
-        max_minutes=args.max_minutes)
+        max_minutes=args.max_minutes, model=args.model, case_ids=ids,
+        output_root=args.output_root)
     print(json.dumps({"directory": str(folder),
         "status": json.loads((folder / "status.json").read_text())}))
