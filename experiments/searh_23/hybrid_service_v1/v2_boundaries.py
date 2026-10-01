@@ -44,6 +44,7 @@ from guardian_truth.integration.claim_binding import (
 from guardian_truth.integration.contracts import (
     ContractAcquisition, acquire_documented)
 from guardian_truth.step2.verifier import TrajectoryCase
+from guardian_truth.step2.trusted import producer_scope
 
 
 # ------------------------------------------------------------------ 1. rules
@@ -124,20 +125,16 @@ def acquire_documented_v2(case: TrajectoryCase) -> ContractAcquisition:
     validation — never DOC_EXPLICIT (the label reserved for
     application-supplied structured contracts)."""
     acquired = acquire_documented(case)
-    auto_tools = {t.get("name") for t in case.tools
-                  if isinstance(t, dict) and t.get("auto_contracts")}
-    if not auto_tools:
+    auto_producers = {producer_scope(case, t["name"])
+                      for t in case.tools
+                      if isinstance(t, dict) and t.get("auto_contracts")
+                      and isinstance(t.get("name"), str)}
+    auto_producers.discard(None)
+    if not auto_producers:
         return acquired
     bindings = []
     for b in acquired.bindings:
-        producer_tool = None
-        for t in case.tools:
-            if isinstance(t, dict) and t.get("name") in auto_tools:
-                # a binding's producer fingerprint is name-independent;
-                # attribute by slot scan of the auto-marked tools
-                producer_tool = t.get("name")
-                break
-        if producer_tool is not None and b.evidence_source == "DOC_EXPLICIT":
+        if b.producer in auto_producers and b.evidence_source == "DOC_EXPLICIT":
             bindings.append(replace(b, evidence_source="AUTO_VERIFIED"))
         else:
             bindings.append(b)

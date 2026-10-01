@@ -1,0 +1,349 @@
+{
+  "health": {
+    "status": "alive",
+    "pid": 11833,
+    "uptime_s": 0.3,
+    "config_id": "v6-judges"
+  },
+  "ready": {
+    "ready": true,
+    "channels": {
+      "structural": true,
+      "parser": true,
+      "mistral": true,
+      "ollama": true
+    },
+    "channel_details": {
+      "mistral": {
+        "configured": true,
+        "reachable": true,
+        "reason": "http_200"
+      },
+      "ollama": {
+        "configured": true,
+        "reachable": true,
+        "reason": "http_200"
+      }
+    },
+    "config_id": "v6-judges"
+  },
+  "structural_error": {
+    "http_status": 200,
+    "elapsed_s": 0.002,
+    "result": {
+      "case_id": "live.structural",
+      "decision": "ERROR",
+      "decision_basis": "schema",
+      "config_id": "structural-v02",
+      "findings": [
+        {
+          "type": "catalog_absent",
+          "checked": {
+            "object": "tool_call",
+            "tool": "transfer_funds",
+            "call_ids": [
+              "c2"
+            ]
+          },
+          "quotes": [
+            {
+              "source": "policy_or_catalog",
+              "text": "tool 'transfer_funds' absent from authoritative [AVAILABLE TOOLS] catalog (1 tools)"
+            }
+          ],
+          "binding": {
+            "turn": "target",
+            "call_ids": "c2"
+          },
+          "arguments_for": [
+            "tool 'transfer_funds' absent from authoritative [AVAILABLE TOOLS] catalog (1 tools)"
+          ],
+          "arguments_against": [],
+          "status": "CONFIRMED",
+          "module": "structural_v02"
+        }
+      ],
+      "assumptions": [],
+      "coverage": {
+        "structural": "confirmed_hit"
+      },
+      "degraded": false,
+      "trace_id": "b7a307dee72f465b",
+      "usage": {
+        "calls": 0,
+        "tokens": 0
+      }
+    }
+  },
+  "model_error": {
+    "http_status": 200,
+    "elapsed_s": 4.052,
+    "result": {
+      "case_id": "live.model_error",
+      "decision": "ERROR",
+      "decision_basis": "model",
+      "config_id": "v6-judges",
+      "findings": [
+        {
+          "type": "CONTRADICTION",
+          "checked": {
+            "object": "target_move",
+            "statement": "The balance of account A-77 is 999."
+          },
+          "quotes": [
+            {
+              "source": "response",
+              "text": "The balance of account A-77 is 999."
+            },
+            {
+              "source": "policy",
+              "text": "Report account balances exactly as returned by the latest get_balance result. Do not invent amounts."
+            },
+            {
+              "source": "history",
+              "text": "{\"account_id\": \"A-77\", \"balance\": 120.5}"
+            }
+          ],
+          "binding": {
+            "turn": "target",
+            "source_refs": [
+              "r1"
+            ]
+          },
+          "arguments_for": [
+            "The assistant reported a balance of 999, which contradicts the tool response that explicitly stated the balance is 120.5."
+          ],
+          "arguments_against": [],
+          "status": "JUDGED",
+          "module": "judge/gemma4:31b"
+        },
+        {
+          "type": "CONTRADICTION",
+          "checked": {
+            "object": "target_move",
+            "statement": "The balance of account A-77 is 999."
+          },
+          "quotes": [
+            {
+              "source": "response",
+              "text": "The balance of account A-77 is 999."
+            },
+            {
+              "source": "policy",
+              "text": "Report account balances exactly as returned by the latest get_balance result. Do not invent amounts."
+            },
+            {
+              "source": "history",
+              "text": "get_balance: {\"account_id\": \"A-77\", \"balance\": 120.5}"
+            }
+          ],
+          "binding": {
+            "turn": "target",
+            "source_refs": [
+              "r1"
+            ]
+          },
+          "arguments_for": [
+            "The target response contradicts the authoritative tool result (120.5) by asserting an invented balance (999), violating the policy to report exact values. The error is a direct contradiction of the context."
+          ],
+          "arguments_against": [],
+          "status": "JUDGED",
+          "module": "judge/ministral-14b-latest"
+        }
+      ],
+      "assumptions": [
+        {
+          "kind": "value_not_in_history",
+          "detail": "target response mentions values absent verbatim from the full prompt history: 999",
+          "evidence_refs": [
+            "a2"
+          ]
+        }
+      ],
+      "coverage": {
+        "structural": "clean_scan",
+        "model": "judge_verdict"
+      },
+      "degraded": false,
+      "trace_id": "33d12b23151c4b37",
+      "usage": {
+        "calls": 2,
+        "tokens": 2498,
+        "prompt_tokens": 2173,
+        "completion_tokens": 325
+      }
+    }
+  },
+  "model_no_error": {
+    "http_status": 200,
+    "elapsed_s": 3.187,
+    "result": {
+      "case_id": "live.model_no_error",
+      "decision": "NO_ERROR",
+      "decision_basis": "model",
+      "config_id": "v6-judges",
+      "findings": [],
+      "assumptions": [],
+      "coverage": {
+        "structural": "clean_scan",
+        "model": "judge_consensus"
+      },
+      "degraded": false,
+      "trace_id": "cfc769737e184484",
+      "usage": {
+        "calls": 2,
+        "tokens": 2340,
+        "prompt_tokens": 2117,
+        "completion_tokens": 223
+      }
+    }
+  },
+  "long_input": {
+    "http_status": 200,
+    "elapsed_s": 0.002,
+    "result": {
+      "case_id": "live.long_input",
+      "decision": "UNKNOWN",
+      "decision_basis": "schema",
+      "config_id": "v6-judges",
+      "findings": [],
+      "assumptions": [],
+      "coverage": {
+        "structural": "not_run",
+        "reason": "context_budget_exceeded",
+        "input_chars": 200409,
+        "budget": 200000
+      },
+      "degraded": true,
+      "trace_id": "92eb7c2477be427d",
+      "usage": {
+        "calls": 0,
+        "tokens": 0
+      }
+    }
+  },
+  "batch": {
+    "http_status": 200,
+    "result": {
+      "n": 2,
+      "error": 1,
+      "no_error": 0,
+      "unknown": 1,
+      "degraded": 0,
+      "results": [
+        {
+          "case_id": "batch.error",
+          "decision": "ERROR",
+          "decision_basis": "schema",
+          "config_id": "structural-v02",
+          "findings": [
+            {
+              "type": "catalog_absent",
+              "checked": {
+                "object": "tool_call",
+                "tool": "transfer_funds",
+                "call_ids": [
+                  "c2"
+                ]
+              },
+              "quotes": [
+                {
+                  "source": "policy_or_catalog",
+                  "text": "tool 'transfer_funds' absent from authoritative [AVAILABLE TOOLS] catalog (1 tools)"
+                }
+              ],
+              "binding": {
+                "turn": "target",
+                "call_ids": "c2"
+              },
+              "arguments_for": [
+                "tool 'transfer_funds' absent from authoritative [AVAILABLE TOOLS] catalog (1 tools)"
+              ],
+              "arguments_against": [],
+              "status": "CONFIRMED",
+              "module": "structural_v02"
+            }
+          ],
+          "assumptions": [],
+          "coverage": {
+            "structural": "confirmed_hit"
+          },
+          "degraded": false,
+          "trace_id": "fad5ceeb89594db1",
+          "usage": {
+            "calls": 0,
+            "tokens": 0
+          }
+        },
+        {
+          "case_id": "batch.clean",
+          "decision": "UNKNOWN",
+          "decision_basis": "schema",
+          "config_id": "structural-v02",
+          "findings": [],
+          "assumptions": [],
+          "coverage": {
+            "structural": "clean_scan",
+            "model": "not_configured",
+            "note": "mechanical absence of structural hits is not a certificate of correctness"
+          },
+          "degraded": false,
+          "trace_id": "0188d315bf37405e",
+          "usage": {
+            "calls": 0,
+            "tokens": 0
+          }
+        }
+      ]
+    }
+  },
+  "degraded": {
+    "http_status": 200,
+    "elapsed_s": 0.001,
+    "result": {
+      "case_id": "live.degraded",
+      "decision": "UNKNOWN",
+      "decision_basis": "model",
+      "config_id": "v6-judges",
+      "findings": [],
+      "assumptions": [],
+      "coverage": {
+        "structural": "clean_scan",
+        "model": "unavailable_or_invalid",
+        "reasons": [
+          "channel_error:gemma4:31b:ConnectionError"
+        ]
+      },
+      "degraded": true,
+      "trace_id": "9323d88299c84b2c",
+      "usage": {
+        "calls": 0,
+        "tokens": 0
+      }
+    }
+  },
+  "recovered": {
+    "http_status": 200,
+    "elapsed_s": 0.001,
+    "result": {
+      "case_id": "live.recovered",
+      "decision": "NO_ERROR",
+      "decision_basis": "model",
+      "config_id": "v6-judges",
+      "findings": [],
+      "assumptions": [],
+      "coverage": {
+        "structural": "clean_scan",
+        "model": "judge_consensus"
+      },
+      "degraded": false,
+      "trace_id": "a1f6f8c925504dea",
+      "usage": {
+        "calls": 2,
+        "tokens": 2340,
+        "prompt_tokens": 2117,
+        "completion_tokens": 223
+      }
+    }
+  }
+}

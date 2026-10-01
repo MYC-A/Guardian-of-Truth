@@ -244,6 +244,18 @@ def test_b3_model_contract_never_doc_explicit() -> None:
           "application-supplied stay DOC_EXPLICIT")
 
 
+def test_b3_mixed_sources_keep_explicit_tool_authority() -> None:
+    """An auto proposal for one tool must not relabel another tool's contract."""
+    case, _ = conveyor_case()
+    mixed = [dict(tool) for tool in CONVEYOR_TOOLS]
+    mixed[0]["auto_contracts"] = True
+    acquired = acquire_documented_v2(replace(case, tools=tuple(mixed)))
+    by_predicate = {binding.predicate: binding.evidence_source
+                    for binding in acquired.bindings}
+    assert by_predicate == {"conveyor.running": "AUTO_VERIFIED",
+                            "conveyor.state": "DOC_EXPLICIT"}
+
+
 def test_b4_quote_ok_closes_semantic_repair() -> None:
     """B4: quote_ok=false CLOSES the re-strength/rename; quote_ok=true
     applies it. The flag is enforced, not decorative."""

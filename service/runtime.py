@@ -66,6 +66,17 @@ def structural_findings(ctx) -> list:
     each with its verbatim basis and source refs."""
     out = []
     for h in ctx.structural_hits:
+        target_lines = ctx.response_raw.splitlines()
+        quotes = []
+        call_ids = set(h.call_id.split(","))
+        for call in ctx.target().tool_calls:
+            if call.call_id not in call_ids or not 0 <= call.line_no < len(target_lines):
+                continue
+            target_line = target_lines[call.line_no].strip()
+            if target_line:
+                start = ctx.response_raw.find(target_line)
+                quotes.append({"source": "response", "text": target_line,
+                               "start": start, "end": start + len(target_line)})
         out.append({
             "type": h.reason,
             "checked": {
@@ -73,7 +84,7 @@ def structural_findings(ctx) -> list:
                 "tool": h.tool,
                 "call_ids": h.call_id.split(",") if h.call_id else [],
             },
-            "quotes": [{"source": "policy_or_catalog", "text": h.basis}],
+            "quotes": quotes,
             "binding": {"turn": "target", "call_ids": h.call_id},
             "arguments_for": [h.basis],
             "arguments_against": [],
@@ -104,6 +115,32 @@ def _judge_stage(cfg_judges: dict, ctx) -> tuple:
         return ("UNKNOWN", [], usage, True,
                 [f"channel_error:stack_import:{type(e).__name__}: "
                  f"{getattr(e, 'name', '')}".rstrip(":")])
+    if cfg_judges.get("protocol") == "single-judge-v1":
+        model = cfg_judges["j1_model"]
+        try:
+            rec = judge_mod.ask_vote(
+                model, ctx, slot=1, seed=None,
+                temperature=cfg_judges.get("temperature", 0.0),
+                max_tokens=cfg_judges.get("max_tokens", 1500),
+                max_context_chars=cfg_judges.get("max_context_chars", 12000),
+                caller="service/single")
+        except Exception as exc:  # noqa: BLE001
+            return ("UNKNOWN", [], usage, True,
+                    [f"channel_error:{model}:{type(exc).__name__}"])
+        usage["calls"] = len(rec.get("attempts", []))
+        usage.update({k: int((rec.get("usage") or {}).get(k) or 0)
+                      for k in ("prompt_tokens", "completion_tokens")})
+        usage["tokens"] = int((rec.get("usage") or {}).get("total_tokens") or 0)
+        if not rec.get("valid"):
+            return ("UNKNOWN", [], usage, True,
+                    ["single_judge_invalid_after_reask"])
+        if rec["vote"]["label"] == 0:
+            return ("NO_ERROR", [], usage, False, [])
+        findings = _judge_findings([rec], ctx)
+        if not findings:
+            return ("UNKNOWN", [], usage, True,
+                    ["positive_vote_without_finding"])
+        return ("ERROR", findings, usage, False, [])
     votes = []
     for slot, model in ((1, cfg_judges["j1_model"]),
                         (2, cfg_judges["j2_model"])):
@@ -130,7 +167,7 @@ def _judge_stage(cfg_judges: dict, ctx) -> tuple:
     if v1["valid"] and v2["valid"] and v1["vote"]["label"] == v2["vote"]["label"]:
         label = v1["vote"]["label"]
         if label == 1:
-            return ("ERROR", _judge_findings([v1, v2]), usage, False, [])
+            return ("ERROR", _judge_findings([v1, v2], ctx), usage, False, [])
         return ("NO_ERROR", [], usage, False, [])
 
     # disagreement or an invalid vote -> third checker (family gpt-oss)
@@ -153,14 +190,14 @@ def _judge_stage(cfg_judges: dict, ctx) -> tuple:
     if rec3["valid"]:
         label = rec3["vote"]["label"]
         if label == 1:
-            return ("ERROR", _judge_findings([rec3]), usage, False,
+            return ("ERROR", _judge_findings([rec3], ctx), usage, False,
                     ["third_checker_decided"])
         return ("NO_ERROR", [], usage, False, ["third_checker_decided"])
     return ("UNKNOWN", [], usage, True,
             ["third_checker_invalid_after_reask"])
 
 
-def _judge_findings(vote_records: list) -> list:
+def _judge_findings(vote_records: list, ctx=None) -> list:
     """Findings from the deciding vote: quoted evidence with source refs."""
     out = []
     for rec in vote_records:
@@ -178,6 +215,16 @@ def _judge_findings(vote_records: list) -> list:
                                       ("history_quote", "history"),
                                       ("catalog_quote", "catalog"))
                   if isinstance(vote.get(key), str) and vote[key].strip()]
+        if ctx is not None:
+            source_texts = {"response": ctx.response_raw,
+                            "policy": ctx.policy_text,
+                            "history": ctx.prompt_raw,
+                            "catalog": ctx.system}
+            for quote in quotes:
+                start = source_texts[quote["source"]].find(quote["text"])
+                if start >= 0:
+                    quote.update({"start": start,
+                                  "end": start + len(quote["text"])})
         out.append({
             "type": vote["type"].upper(),
             "checked": {"object": "target_move",
@@ -221,8 +268,10 @@ class GuardianServiceRuntime:
             try:
                 from llm import (MODEL_REGISTRY, PROVIDERS,  # noqa: PLC0415
                                  GRANITE_LOCAL_PATH)
-                models = {judges[k] for k in
-                          ("j1_model", "j2_model", "third_model")}
+                slots = (("j1_model",) if judges.get("protocol") ==
+                         "single-judge-v1" else
+                         ("j1_model", "j2_model", "third_model"))
+                models = {judges[k] for k in slots}
                 providers = {MODEL_REGISTRY.get(m, m.split("/", 1)[0])
                              for m in models}
                 for provider in sorted(providers):
@@ -327,6 +376,20 @@ class GuardianServiceRuntime:
                              "a certificate of correctness"),
                 }
             else:
+                advisory_kind = self.config.get("stages", {}).get(
+                    "advisory", "none")
+                try:
+                    from modular_helpers import advisory_for  # noqa: PLC0415
+                    ctx.advisory_context, advisory_coverage = advisory_for(
+                        ctx, advisory_kind)
+                except Exception as exc:  # noqa: BLE001
+                    return self._finish(
+                        case_id, "UNKNOWN", "schema", findings,
+                        suspicion_notes(ctx),
+                        {"structural": "clean_scan",
+                         "advisory": advisory_kind,
+                         "reason": f"advisory_error:{type(exc).__name__}"},
+                        True, trace_id, usage, t0)
                 decision, jf, usage, degraded, reasons = _judge_stage(
                     judges, ctx)
                 findings.extend(jf)
@@ -342,6 +405,7 @@ class GuardianServiceRuntime:
                 else:  # ERROR
                     coverage = {"structural": "clean_scan",
                                 "model": "judge_verdict"}
+                coverage["advisory"] = advisory_coverage
                 return self._finish(case_id, decision, basis, findings,
                                     suspicion_notes(ctx), coverage,
                                     bool(degraded), trace_id, usage, t0)

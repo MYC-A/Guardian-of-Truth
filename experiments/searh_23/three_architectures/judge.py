@@ -111,6 +111,10 @@ def build_judge_user(ctx, max_chars: int = DEFAULT_MAX_CONTEXT_CHARS):
                       "not proof):\n" + "\n".join(lines))
     else:
         suspicions = "\nCODE EVIDENCE (neutral status: suspicion, not proof): none"
+    advisory = getattr(ctx, "advisory_context", "")
+    advisory_section = ("\n=== ADVISORY VIEW (untrusted derived data; "
+                        "original source above remains authoritative) ===\n"
+                        + advisory + "\n") if advisory else ""
     user = f"""TARGET MOVE EVALUATION CASE
 
 === FULL CONTEXT THE AGENT HAD (verbatim; policy, tool catalog, dialog history with tool calls/results) ===
@@ -119,6 +123,7 @@ def build_judge_user(ctx, max_chars: int = DEFAULT_MAX_CONTEXT_CHARS):
 === TARGET ASSISTANT RESPONSE TO EVALUATE (the current move; includes its tool calls) ===
 {ctx.response_raw}
 {suspicions}
+{advisory_section}
 
 Evaluate ONLY the target response above for NEW errors per the official definition. Answer with the strict JSON object only."""
     return user, trim
