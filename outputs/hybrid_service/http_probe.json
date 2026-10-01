@@ -1,0 +1,494 @@
+{
+  "purpose": "operational smoke, no quality selection",
+  "health": {
+    "http": 200,
+    "body": {
+      "status": "alive",
+      "pid": 9686,
+      "uptime_s": 17.5,
+      "config_id": "structural-v02"
+    }
+  },
+  "ready": {
+    "http": 200,
+    "body": {
+      "ready": true,
+      "channels": {
+        "structural": true,
+        "parser": true
+      },
+      "channel_details": {},
+      "config_id": "structural-v02"
+    }
+  },
+  "checks": {
+    "structural_error": {
+      "http": 200,
+      "body": {
+        "case_id": "ops-structural",
+        "decision": "ERROR",
+        "decision_basis": "schema",
+        "config_id": "structural-v02",
+        "findings": [
+          {
+            "type": "catalog_absent",
+            "checked": {
+              "object": "tool_call",
+              "tool": "absent_in_catalog",
+              "call_ids": [
+                "c2"
+              ]
+            },
+            "quotes": [
+              {
+                "source": "response",
+                "text": "→ TOOL_CALL absent_in_catalog: {}",
+                "start": 0,
+                "end": 33
+              }
+            ],
+            "binding": {
+              "turn": "target",
+              "call_ids": "c2"
+            },
+            "arguments_for": [
+              "tool 'absent_in_catalog' absent from authoritative [AVAILABLE TOOLS] catalog (1 tools)"
+            ],
+            "arguments_against": [],
+            "status": "CONFIRMED",
+            "module": "structural_v02"
+          }
+        ],
+        "assumptions": [],
+        "coverage": {
+          "structural": "confirmed_hit"
+        },
+        "degraded": false,
+        "trace_id": "e1c3bc969e554730",
+        "usage": {
+          "calls": 0,
+          "tokens": 0
+        },
+        "module_trace": [],
+        "audit_status": "WRITTEN"
+      }
+    },
+    "offline_clean_unknown": {
+      "http": 200,
+      "body": {
+        "case_id": "ops-offline",
+        "decision": "UNKNOWN",
+        "decision_basis": "schema",
+        "config_id": "structural-v02",
+        "findings": [],
+        "assumptions": [],
+        "coverage": {
+          "structural": "clean_scan",
+          "model": "not_configured",
+          "note": "mechanical absence of structural hits is not a certificate of correctness"
+        },
+        "degraded": false,
+        "trace_id": "9f7a42f811974fce",
+        "usage": {
+          "calls": 0,
+          "tokens": 0
+        },
+        "module_trace": [],
+        "audit_status": "WRITTEN"
+      }
+    },
+    "model_error": {
+      "http": 200,
+      "body": {
+        "case_id": "ops-model-error",
+        "decision": "ERROR",
+        "decision_basis": "model",
+        "config_id": "r2-ge-refute-positive",
+        "findings": [
+          {
+            "type": "CONTRADICTION",
+            "checked": {
+              "object": "target_move",
+              "statement": "The measured value for OP-731 is 99."
+            },
+            "quotes": [
+              {
+                "source": "response",
+                "text": "The measured value for OP-731 is 99.",
+                "start": 0,
+                "end": 36
+              },
+              {
+                "source": "policy",
+                "text": "When reporting a measurement, use the observed result for the same item. Do not invent a measured value.",
+                "start": 0,
+                "end": 104
+              },
+              {
+                "source": "history",
+                "text": "{\"item_id\":\"OP-731\",\"value\":14}",
+                "start": 342,
+                "end": 373
+              }
+            ],
+            "binding": {
+              "turn": "target",
+              "source_refs": [
+                "r1"
+              ]
+            },
+            "arguments_for": [
+              "The assistant reports a measurement value of 99, which contradicts the tool response value of 14 for item OP-731."
+            ],
+            "arguments_against": [],
+            "status": "JUDGED",
+            "module": "judge/gemma4:31b"
+          }
+        ],
+        "assumptions": [],
+        "coverage": {
+          "structural": "clean_scan",
+          "model": "judge_verdict",
+          "advisory": {
+            "advisory": "ge_gp",
+            "ge": {
+              "history_events": 4,
+              "target_events": 1,
+              "facts_shown": 2,
+              "facts_total": 2,
+              "arguments_shown": 0,
+              "arguments_total": 0,
+              "truncated": false
+            },
+            "gp": {
+              "source_chars": 104,
+              "quoted_chars": 103,
+              "clauses": 2,
+              "semantic_complete": false
+            },
+            "advisory_chars": 1785
+          },
+          "counterevidence": {
+            "status": "JUDGED",
+            "original_decision": "ERROR",
+            "reason": "review_confirmed"
+          }
+        },
+        "degraded": false,
+        "trace_id": "0ab64ef5bcec45da",
+        "usage": {
+          "completion_tokens": 157,
+          "prompt_tokens": 1579,
+          "api_tokens": 3656,
+          "api_calls": 2,
+          "calls": 2,
+          "tokens": 3656
+        },
+        "module_trace": [
+          {
+            "module": "judge",
+            "records": [
+              {
+                "model": "gemma4:31b",
+                "family": "gemma",
+                "slot": 1,
+                "seed": null,
+                "temperature": 0,
+                "vote": {
+                  "label": 1,
+                  "type": "CONTRADICTION",
+                  "policy_quote": "When reporting a measurement, use the observed result for the same item. Do not invent a measured value.",
+                  "history_quote": "{\"item_id\":\"OP-731\",\"value\":14}",
+                  "response_quote": "The measured value for OP-731 is 99.",
+                  "catalog_quote": "",
+                  "source_refs": [
+                    "r1"
+                  ],
+                  "explanation": "The assistant reports a measurement value of 99, which contradicts the tool response value of 14 for item OP-731."
+                },
+                "valid": true,
+                "invalid_reason": null,
+                "attempts": [
+                  {
+                    "attempt": 1,
+                    "valid": true,
+                    "reason": "ok",
+                    "raw_content_head": "```json\n{\n  \"label\": 1,\n  \"type\": \"CONTRADICTION\",\n  \"policy_quote\": \"When reporting a measurement, use the observed result for the same item. Do not invent a measured value.\",\n  \"history_quote\": \"{\\\"item_id\\\":\\\"OP-731\\\",\\\"value\\\":14}\",\n  \"response_quote\": \"The measured value for OP-731 is 99.\",\n  \"",
+                    "elapsed": 1.339,
+                    "cached": false,
+                    "usage": {
+                      "prompt_tokens": 1579,
+                      "completion_tokens": 157,
+                      "total_tokens": 1736
+                    }
+                  }
+                ],
+                "usage": {
+                  "prompt_tokens": 1579,
+                  "completion_tokens": 157,
+                  "total_tokens": 1736
+                },
+                "context_trim": null,
+                "transport_error": null
+              }
+            ]
+          },
+          {
+            "module": "independent-counterevidence/1",
+            "model": "ministral-14b-latest",
+            "valid": true,
+            "reason": "ok",
+            "review": {
+              "dispositions": [
+                {
+                  "finding_index": 0,
+                  "status": "CONFIRMED",
+                  "target_quote": "The measured value for OP-731 is 99.",
+                  "source_quotes": [
+                    {
+                      "source": "policy",
+                      "text": "When reporting a measurement, use the observed result for the same item. Do not invent a measured value."
+                    },
+                    {
+                      "source": "history",
+                      "text": "{\"item_id\":\"OP-731\",\"value\":14}"
+                    },
+                    {
+                      "source": "response",
+                      "text": "The measured value for OP-731 is 99."
+                    }
+                  ],
+                  "explanation": "The target statement ('The measured value for OP-731 is 99.') directly contradicts the observed tool response value of 14 for OP-731. The policy explicitly prohibits inventing a measured value and requires using the observed result. The tool response is the authoritative observed result, making the target statement an error."
+                }
+              ],
+              "additional_error": null,
+              "whole_move_reviewed": true
+            },
+            "attempts": [
+              {
+                "valid": true,
+                "reason": "ok",
+                "cached": false,
+                "usage": {
+                  "prompt_tokens": 1663,
+                  "completion_tokens": 257,
+                  "total_tokens": 1920
+                },
+                "elapsed_s": 4.922,
+                "raw_content": "{\n  \"dispositions\": [\n    {\n      \"finding_index\": 0,\n      \"status\": \"CONFIRMED\",\n      \"target_quote\": \"The measured value for OP-731 is 99.\",\n      \"source_quotes\": [\n        {\n          \"source\": \"policy\",\n          \"text\": \"When reporting a measurement, use the observed result for the same item. Do not invent a measured value.\"\n        },\n        {\n          \"source\": \"history\",\n          \"text\": \"{\\\"item_id\\\":\\\"OP-731\\\",\\\"value\\\":14}\"\n        },\n        {\n          \"source\": \"response\",\n          \"text\": \"The measured value for OP-731 is 99.\"\n        }\n      ],\n      \"explanation\": \"The target statement ('The measured value for OP-731 is 99.') directly contradicts the observed tool response value of 14 for OP-731. The policy explicitly prohibits inventing a measured value and requires using the observed result. The tool response is the authoritative observed result, making the target statement an error.\"\n    }\n  ],\n  \"additional_error\": null,\n  \"whole_move_reviewed\": true\n}"
+              }
+            ],
+            "usage": {
+              "calls": 1,
+              "tokens": 1920,
+              "api_calls": 1,
+              "api_tokens": 1920
+            },
+            "status": "JUDGED"
+          }
+        ],
+        "audit_status": "WRITTEN"
+      }
+    },
+    "model_supported": {
+      "http": 200,
+      "body": {
+        "case_id": "ops-model-supported",
+        "decision": "NO_ERROR",
+        "decision_basis": "model",
+        "config_id": "r2-ge-refute-positive",
+        "findings": [],
+        "assumptions": [],
+        "coverage": {
+          "structural": "clean_scan",
+          "model": "judge_consensus",
+          "advisory": {
+            "advisory": "ge_gp",
+            "ge": {
+              "history_events": 4,
+              "target_events": 1,
+              "facts_shown": 2,
+              "facts_total": 2,
+              "arguments_shown": 0,
+              "arguments_total": 0,
+              "truncated": false
+            },
+            "gp": {
+              "source_chars": 104,
+              "quoted_chars": 103,
+              "clauses": 2,
+              "semantic_complete": false
+            },
+            "advisory_chars": 1785
+          }
+        },
+        "degraded": false,
+        "trace_id": "fbc5ae4eb7e34221",
+        "usage": {
+          "calls": 1,
+          "tokens": 1681,
+          "api_calls": 1,
+          "api_tokens": 1681,
+          "prompt_tokens": 1579,
+          "completion_tokens": 102
+        },
+        "module_trace": [
+          {
+            "module": "judge",
+            "records": [
+              {
+                "model": "gemma4:31b",
+                "family": "gemma",
+                "slot": 1,
+                "seed": null,
+                "temperature": 0,
+                "vote": {
+                  "label": 0,
+                  "type": "NONE",
+                  "policy_quote": "",
+                  "history_quote": "",
+                  "response_quote": "",
+                  "catalog_quote": "",
+                  "source_refs": [
+                    "r1"
+                  ],
+                  "explanation": "The assistant correctly reports the measured value (14) for the item (OP-731) as provided in the tool response."
+                },
+                "valid": true,
+                "invalid_reason": null,
+                "attempts": [
+                  {
+                    "attempt": 1,
+                    "valid": true,
+                    "reason": "ok",
+                    "raw_content_head": "```json\n{\n  \"label\": 0,\n  \"type\": \"NONE\",\n  \"policy_quote\": \"\",\n  \"history_quote\": \"\",\n  \"response_quote\": \"\",\n  \"catalog_quote\": \"\",\n  \"source_refs\": [\"r1\"],\n  \"explanation\": \"The assistant correctly reports the measured value (14) for the item (OP-731) as provided in the tool response.\"\n}\n```",
+                    "elapsed": 0.718,
+                    "cached": false,
+                    "usage": {
+                      "prompt_tokens": 1579,
+                      "completion_tokens": 102,
+                      "total_tokens": 1681
+                    }
+                  }
+                ],
+                "usage": {
+                  "prompt_tokens": 1579,
+                  "completion_tokens": 102,
+                  "total_tokens": 1681
+                },
+                "context_trim": null,
+                "transport_error": null
+              }
+            ]
+          }
+        ],
+        "audit_status": "WRITTEN"
+      }
+    },
+    "long_input": {
+      "http": 200,
+      "body": {
+        "case_id": "ops-long",
+        "decision": "UNKNOWN",
+        "decision_basis": "schema",
+        "config_id": "r2-ge-refute-positive",
+        "findings": [],
+        "assumptions": [],
+        "coverage": {
+          "structural": "not_run",
+          "reason": "context_budget_exceeded",
+          "input_chars": 200003,
+          "budget": 200000
+        },
+        "degraded": true,
+        "trace_id": "f9d2f86f9955446c",
+        "usage": {
+          "calls": 0,
+          "tokens": 0
+        }
+      }
+    }
+  },
+  "batch": {
+    "http": 200,
+    "body": {
+      "n": 2,
+      "error": 1,
+      "no_error": 0,
+      "unknown": 1,
+      "degraded": 0,
+      "results": [
+        {
+          "case_id": "ops-structural",
+          "decision": "ERROR",
+          "decision_basis": "schema",
+          "config_id": "structural-v02",
+          "findings": [
+            {
+              "type": "catalog_absent",
+              "checked": {
+                "object": "tool_call",
+                "tool": "absent_in_catalog",
+                "call_ids": [
+                  "c2"
+                ]
+              },
+              "quotes": [
+                {
+                  "source": "response",
+                  "text": "→ TOOL_CALL absent_in_catalog: {}",
+                  "start": 0,
+                  "end": 33
+                }
+              ],
+              "binding": {
+                "turn": "target",
+                "call_ids": "c2"
+              },
+              "arguments_for": [
+                "tool 'absent_in_catalog' absent from authoritative [AVAILABLE TOOLS] catalog (1 tools)"
+              ],
+              "arguments_against": [],
+              "status": "CONFIRMED",
+              "module": "structural_v02"
+            }
+          ],
+          "assumptions": [],
+          "coverage": {
+            "structural": "confirmed_hit"
+          },
+          "degraded": false,
+          "trace_id": "1ef65abec5e64032",
+          "usage": {
+            "calls": 0,
+            "tokens": 0
+          },
+          "module_trace": [],
+          "audit_status": "WRITTEN"
+        },
+        {
+          "case_id": "ops-offline",
+          "decision": "UNKNOWN",
+          "decision_basis": "schema",
+          "config_id": "structural-v02",
+          "findings": [],
+          "assumptions": [],
+          "coverage": {
+            "structural": "clean_scan",
+            "model": "not_configured",
+            "note": "mechanical absence of structural hits is not a certificate of correctness"
+          },
+          "degraded": false,
+          "trace_id": "5a9f802eba69488f",
+          "usage": {
+            "calls": 0,
+            "tokens": 0
+          },
+          "module_trace": [],
+          "audit_status": "WRITTEN"
+        }
+      ]
+    }
+  },
+  "passed": true
+}
