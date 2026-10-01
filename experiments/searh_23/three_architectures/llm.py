@@ -94,7 +94,10 @@ def _client(model: str) -> tuple[str, OpenAI]:
                              f"use 'provider/model'")
     if provider not in _clients:
         base, key = PROVIDERS[provider]
-        _clients[provider] = OpenAI(base_url=base, api_key=key, timeout=240.0)
+        # The wrapper owns bounded retries. SDK retries would hide attempts
+        # and multiply the configured transport budget.
+        _clients[provider] = OpenAI(base_url=base, api_key=key, timeout=240.0,
+                                  max_retries=0)
     return model, _clients[provider]
 
 
@@ -285,6 +288,7 @@ def chat(model: str, messages: list, *, max_tokens: int = 4000,
         hit, _ = _cache_get(key)
         if hit is not None:
             hit["cached"] = True
+            hit["transport_attempts"] = 0
             return hit
 
     # local granite backend bypasses the OpenAI client path entirely
@@ -316,7 +320,8 @@ def chat(model: str, messages: list, *, max_tokens: int = 4000,
                     u[k] = getattr(usage, k, None)
             elapsed = round(time.time() - t0, 3)
             payload = {"content": content, "usage": u, "cached": False,
-                       "model": model_r, "elapsed": elapsed}
+                       "model": model_r, "elapsed": elapsed,
+                       "transport_attempts": attempt + 1}
             _cache_put(key, payload)
             _log_cost({"ts": time.time(), "caller": caller, "model": model_r,
                        "provider": PROVIDERS[_provider_of(m)][0],
@@ -328,13 +333,18 @@ def chat(model: str, messages: list, *, max_tokens: int = 4000,
         except Exception as e:  # transport-level
             last_err = e
             status = getattr(e, "status_code", None)
+            _log_cost({"ts": time.time(), "caller": caller, "model": model_r,
+                       "transport_attempt": attempt + 1, "transport_fail": True,
+                       "error_type": type(e).__name__, "http_status": status})
             if status not in RETRYABLE and "timeout" not in str(e).lower():
                 break
-            time.sleep(min(2 ** attempt * 2, 30))
+            if attempt < transport_retries:
+                time.sleep(min(2 ** attempt * 2, 30))
     _log_cost({"ts": time.time(), "caller": caller, "model": model_r,
                "error": str(last_err)[:200], "transport_fail": True})
     return {"content": None, "usage": {}, "cached": False, "model": model_r,
             "elapsed": round(time.time() - t0, 3),
+            "transport_attempts": attempt + 1,
             "error_type": type(last_err).__name__,
             "http_status": getattr(last_err, "status_code", None),
             "error": str(last_err)}

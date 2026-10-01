@@ -205,6 +205,9 @@ def ask_vote(model: str, ctx, *, slot: int, seed: int | None,
     attempts = [{"attempt": 1, "valid": ok, "reason": reason,
                  "raw_content_head": (r1.get("content") or "")[:300],
                  "elapsed": r1.get("elapsed"), "cached": r1.get("cached"),
+                 "transport_attempts": r1.get("transport_attempts"),
+                 "error_type": r1.get("error_type"),
+                 "http_status": r1.get("http_status"),
                  "usage": r1.get("usage") or {}}]
     if not ok and r1.get("content") is not None:
         # exactly one technical re-ask with the precise reason
@@ -223,6 +226,9 @@ def ask_vote(model: str, ctx, *, slot: int, seed: int | None,
                          "raw_content_head": (r2.get("content") or "")[:300],
                          "elapsed": r2.get("elapsed"),
                          "cached": r2.get("cached"),
+                         "transport_attempts": r2.get("transport_attempts"),
+                         "error_type": r2.get("error_type"),
+                         "http_status": r2.get("http_status"),
                          "usage": r2.get("usage") or {}})
     return {
         "model": model,
