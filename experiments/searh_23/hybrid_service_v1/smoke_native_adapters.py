@@ -93,11 +93,18 @@ BANK = [
 
 
 def _acc(preds) -> dict:
-    ok = [p for p in preds if p is not None]
-    return {"format_success": f"{len(ok)}/{len(preds)}",
-            "smoke_acc_on_valid": (round(sum(
-                1 for p, (_, _, e) in zip(ok, BANK) if p == e) / len(ok), 3)
-                if ok else None)}
+    if len(preds) != len(BANK):
+        raise ValueError("one prediction is required for each smoke case")
+    valid_pairs = [(p, expected) for p, (_, _, expected) in zip(preds, BANK)
+                   if p is not None]
+    valid = len(valid_pairs)
+    return {"format_success": f"{valid}/{len(BANK)}",
+            "valid_coverage": round(valid / len(BANK), 3),
+            "smoke_acc_on_valid": (round(sum(p == expected for p, expected
+                                              in valid_pairs) / valid, 3)
+                                   if valid else None),
+            "smoke_acc_invalid_as_wrong": round(
+                sum(p == expected for p, expected in valid_pairs) / len(BANK), 3)}
 
 
 # ------------------------------------------------------------- MiniCheck
@@ -181,44 +188,67 @@ def smoke_minicheck_small() -> dict:
 # ----------------------------------------------------------------- FactCG
 
 def smoke_factcg() -> dict:
-    """FactCG native context/claim scoring (DeBERTa-v3-Large)."""
+    """Compare the author's FactCG input with the old pair-tokenization.
+
+    Both arms use the same pinned checkpoint and the same 15 cases; the old
+    prediction is retained as a control rather than silently overwritten.
+    """
     t0 = time.time()
     try:
         import torch  # noqa: PLC0415
         from transformers import AutoConfig, AutoModelForSequenceClassification, AutoTokenizer  # noqa: PLC0415
+        from factcg_native import native_score  # noqa: PLC0415
         name = "yaxili96/FactCG-DeBERTa-v3-Large"
+        revision = "0430e3509dbd28d2dff7a117c0eae25359ff3e80"
         try:
-            tok = AutoTokenizer.from_pretrained(name, trust_remote_code=True)
+            config = AutoConfig.from_pretrained(name, revision=revision,
+                                               num_labels=2,
+                                               finetuning_task="text-classification")
+            config.problem_type = "single_label_classification"
+            tok = AutoTokenizer.from_pretrained(name, revision=revision,
+                                                use_fast=True)
             model = AutoModelForSequenceClassification.from_pretrained(
-                name, trust_remote_code=True)
+                name, config=config, revision=revision,
+                ignore_mismatched_sizes=False)
         except Exception as e:  # noqa: BLE001
             return {"candidate": "FactCG-DeBERTa-v3-Large",
                     "status": f"LOAD_FAIL:{type(e).__name__}",
                     "detail": str(e)[:300]}
-        model.eval()
-        preds = []
+        device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
+        model.to(device).eval()
+        preds, legacy_preds, scores = [], [], []
         t1 = time.time()
         for doc, claim, _ in BANK:
             try:
-                # FactCG native input: context + claim, per the paper the
-                # model scores P(label|context, claim); label mapping from config
+                score = native_score(model, tok, doc, claim, device)
+                scores.append(round(score, 5))
+                preds.append(int(score > 0.5))
+            except Exception:  # noqa: BLE001
+                scores.append(None)
+                preds.append(None)
+            try:
+                # Stage A's former adapter, retained for a paired comparison.
                 enc = tok(doc, claim, return_tensors="pt",
                           truncation=True, max_length=512)
                 with torch.inference_mode():
-                    logits = model(**enc).logits
+                    logits = model(**{k: v.to(device) for k, v in enc.items()}).logits
                 pred = int(logits.argmax(-1).item())
                 id2label = model.config.id2label
                 lab = id2label.get(pred, str(pred)).lower()
-                preds.append(1 if lab in {"supported", "label_1", "entailment", "1"} else 0)
+                legacy_preds.append(1 if lab in {"supported", "label_1", "entailment", "1"} else 0)
             except Exception:  # noqa: BLE001
-                preds.append(None)
+                legacy_preds.append(None)
         out = {"candidate": "FactCG-DeBERTa-v3-Large",
-               "native": "ctx+claim->label", "load_s": round(t1 - t0, 1),
+               "revision": revision,
+               "native": "author template + NLTK 550-word chunks + P(class1) max",
+               "load_s": round(t1 - t0, 1),
                "infer_s": round(time.time() - t1, 1)}
         out.update(_acc(preds))
+        out["legacy_pair_adapter"] = _acc(legacy_preds)
+        out["support_scores"] = scores
         out["per_example"] = [
-            {"claim": c[:60], "pred": p, "expected": e}
-            for p, (_, c, e) in zip(preds, BANK)]
+            {"claim": c[:60], "pred": p, "legacy_pred": lp, "expected": e}
+            for p, lp, (_, c, e) in zip(preds, legacy_preds, BANK)]
         return out
     except Exception as e:  # noqa: BLE001
         return {"candidate": "FactCG-DeBERTa-v3-Large",

@@ -31,6 +31,8 @@ from __future__ import annotations
 import json
 import sys
 import time
+import urllib.error
+import urllib.request
 from pathlib import Path
 
 SERVICE_DIR = Path(__file__).resolve().parent
@@ -162,26 +164,32 @@ def _judge_findings(vote_records: list) -> list:
     """Findings from the deciding vote: quoted evidence with source refs."""
     out = []
     for rec in vote_records:
+        if not rec.get("valid"):
+            continue
         vote = rec.get("vote") or {}
         if vote.get("label") != 1:
             continue
-        for ev in (vote.get("evidence") or [])[:8]:
-            out.append({
-                "type": vote.get("error_type", "NEW_ERROR"),
-                "checked": {"object": "target_move",
-                            "statement": ev.get("statement", "")},
-                "quotes": [
-                    {"source": ev.get("source_ref", "response"),
-                     "text": ev.get("response_quote", "")},
-                    {"source": ev.get("contradicting_source_ref", ""),
-                     "text": ev.get("contradicting_quote", "")},
-                ],
-                "binding": {"turn": "target"},
-                "arguments_for": [ev.get("reason", "")],
-                "arguments_against": [],
-                "status": "JUDGED",
-                "module": f"judge/{rec.get('model')}",
-            })
+        # judge.validate_vote has already checked the target quote and, for
+        # CONTRADICTION, a verbatim quote in the relevant source. The vote
+        # schema is flat; it has no `evidence` or `error_type` field.
+        quotes = [{"source": source, "text": vote[key]}
+                  for key, source in (("response_quote", "response"),
+                                      ("policy_quote", "policy"),
+                                      ("history_quote", "history"),
+                                      ("catalog_quote", "catalog"))
+                  if isinstance(vote.get(key), str) and vote[key].strip()]
+        out.append({
+            "type": vote["type"].upper(),
+            "checked": {"object": "target_move",
+                        "statement": vote["response_quote"]},
+            "quotes": quotes,
+            "binding": {"turn": "target",
+                        "source_refs": list(vote.get("source_refs") or [])},
+            "arguments_for": [vote["explanation"]],
+            "arguments_against": [],
+            "status": "JUDGED",
+            "module": f"judge/{rec.get('model')}",
+        })
     return out
 
 
@@ -194,23 +202,75 @@ class GuardianServiceRuntime:
         self.config_id = self.config["config_id"]
         self.audit_path = audit_path
         self.limits = self.config.get("limits", {})
+        self._readiness_cache: dict[str, tuple[float, bool, str]] = {}
+        self.channel_details: dict = {}
 
     # -------------------------------------------------------------- helpers
 
     def channel_status(self) -> dict:
-        """Booleans for /ready: which stages can run right now."""
+        """Cached, non-inference backend probe for /ready.
+
+        Credential presence is reported separately from reachability; GET
+        /models never generates a model answer. Probes occur only when /ready
+        is requested and are cached for 60 seconds.
+        """
         status = {"structural": True, "parser": True}
+        self.channel_details = {}
         judges = self.config.get("stages", {}).get("judges")
         if judges:
             try:
-                from llm import available  # noqa: PLC0415
-                av = available()
-                status["mistral"] = bool(av.get("mistral"))
-                status["ollama"] = bool(av.get("ollama"))
-            except Exception:  # noqa: BLE001
-                status["mistral"] = False
-                status["ollama"] = False
+                from llm import (MODEL_REGISTRY, PROVIDERS,  # noqa: PLC0415
+                                 GRANITE_LOCAL_PATH)
+                models = {judges[k] for k in
+                          ("j1_model", "j2_model", "third_model")}
+                providers = {MODEL_REGISTRY.get(m, m.split("/", 1)[0])
+                             for m in models}
+                for provider in sorted(providers):
+                    if provider == "granite-local":
+                        ok = GRANITE_LOCAL_PATH.exists()
+                        detail = {"configured": ok, "reachable": ok,
+                                  "reason": "local_path_present" if ok else
+                                            "local_path_absent"}
+                    elif provider in PROVIDERS:
+                        base, key = PROVIDERS[provider]
+                        configured = bool(key)
+                        if configured:
+                            ok, reason = self._probe_backend(provider,
+                                                             base, key)
+                        else:
+                            ok, reason = False, "credential_absent"
+                        detail = {"configured": configured,
+                                  "reachable": ok, "reason": reason}
+                    else:
+                        ok = False
+                        detail = {"configured": False, "reachable": False,
+                                  "reason": "unknown_provider"}
+                    status[provider] = ok
+                    self.channel_details[provider] = detail
+            except Exception as exc:  # noqa: BLE001
+                status["judge_stack"] = False
+                self.channel_details["judge_stack"] = {
+                    "configured": False, "reachable": False,
+                    "reason": f"probe_setup:{type(exc).__name__}"}
         return status
+
+    def _probe_backend(self, provider: str, base: str, key: str) -> tuple[bool, str]:
+        now = time.monotonic()
+        cached = self._readiness_cache.get(provider)
+        if cached and now - cached[0] < 60:
+            return cached[1], cached[2]
+        request = urllib.request.Request(
+            base.rstrip("/") + "/models",
+            headers={"Authorization": f"Bearer {key}"}, method="GET")
+        try:
+            with urllib.request.urlopen(request, timeout=4) as response:
+                ok, reason = 200 <= response.status < 300, f"http_{response.status}"
+        except urllib.error.HTTPError as exc:
+            ok, reason = False, f"http_{exc.code}"
+        except Exception as exc:  # noqa: BLE001
+            ok, reason = False, f"transport:{type(exc).__name__}"
+        self._readiness_cache[provider] = (now, ok, reason)
+        return ok, reason
 
     # ----------------------------------------------------------- main entry
 

@@ -77,6 +77,7 @@ def ready() -> dict:
     status = _runtime.channel_status()
     ready = all(bool(v) for v in status.values())
     return {"ready": ready, "channels": status,
+            "channel_details": _runtime.channel_details,
             "config_id": _runtime.config_id}
 
 
