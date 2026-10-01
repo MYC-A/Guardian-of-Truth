@@ -1,6 +1,8 @@
 """Gate against removing one suspicion while another survives."""
 import sys
 import unittest
+import json
+from unittest.mock import patch
 from pathlib import Path
 
 HERE = Path(__file__).resolve().parent
@@ -9,6 +11,7 @@ sys.path[:0] = [str(HERE), str(HERE.parents[2] / "service"),
 from counterevidence import aggregate_review, validate_review
 from structural_v02 import parse_case_v02
 from phi_shadow_run import formal_messages
+from counterevidence import collect_review
 
 
 class ReviewTest(unittest.TestCase):
@@ -69,6 +72,34 @@ class ReviewTest(unittest.TestCase):
         self.assertIn('"atom_id"', messages[0]["content"])
         self.assertIn('"required"', messages[0]["content"])
         self.assertIn("Do not add the query as a fact", messages[0]["content"])
+
+    def test_v2_rejects_false_secondary_quote_even_with_one_valid_source(self):
+        vote = {"label": 1, "type": "CONTRADICTION",
+                "response_quote": "The state is ready.",
+                "policy_quote": "Checks are permitted.",
+                "history_quote": "A nonexistent observation", "catalog_quote": "",
+                "source_refs": [], "explanation": "A proposed contradiction."}
+        value = {"dispositions": [], "additional_error": vote, "whole_move_reviewed": True}
+        self.assertTrue(validate_review(value, self.ctx, [])[0])
+        self.assertFalse(validate_review(value, self.ctx, [], strict_quotes=True)[0])
+
+    def test_v2_exposes_the_actual_reference_namespace(self):
+        sent = []
+
+        def fake_chat(model, messages, **kwargs):
+            sent.append(messages)
+            return {"content": json.dumps({"dispositions": [], "additional_error": None,
+                                            "whole_move_reviewed": True}), "usage": {}}
+
+        with patch("llm.chat", fake_chat):
+            record = collect_review({"model": "env_mistral", "protocol": "source-bound-v2"},
+                                    self.ctx, [])
+        payload = json.loads(sent[0][1]["content"])
+        self.assertEqual([r["turn_id"] for r in payload["source_reference_inventory"]],
+                         [t.turn_id for t in self.ctx.turns])
+        self.assertIn("NOT event IDs", sent[0][0]["content"])
+        self.assertEqual(record["module"], "independent-counterevidence/2")
+        self.assertTrue(record["valid"])
 
 
 if __name__ == "__main__":
