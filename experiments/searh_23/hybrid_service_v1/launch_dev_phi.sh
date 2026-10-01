@@ -5,6 +5,7 @@ repo=/workspace/guardian/repos/hybrid-assistants-worktree
 python=/workspace/guardian/venv/bin/python
 root=/workspace/guardian/results/hybrid_phi_shadow
 mkdir -p "$root"
+trap 'code=$?; printf "%s\n" "$code" > "$root/dev_exit.txt"' EXIT
 if [[ -n "$(git -C "$repo" status --porcelain)" ]]; then
   echo "refusing dirty checkout" >&2
   exit 2
