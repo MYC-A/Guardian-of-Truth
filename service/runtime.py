@@ -328,6 +328,9 @@ class GuardianServiceRuntime:
                          "single-judge-v1" else
                          ("j1_model", "j2_model", "third_model"))
                 models = {judges[k] for k in slots}
+                reviewer = self.config.get("stages", {}).get("counterevidence")
+                if reviewer:
+                    models.add(reviewer.get("resolved_model", reviewer["model"]))
                 providers = {MODEL_REGISTRY.get(m, m.split("/", 1)[0])
                              for m in models}
                 for provider in sorted(providers):
@@ -345,7 +348,8 @@ class GuardianServiceRuntime:
                         else:
                             ok, reason = False, "credential_absent"
                         detail = {"configured": configured,
-                                  "reachable": ok, "reason": reason}
+                                  "reachable": ok, "reason": reason,
+                                  "probe_scope": "GET_models_not_generation"}
                     else:
                         ok = False
                         detail = {"configured": False, "reachable": False,
