@@ -1,10 +1,32 @@
 # Recovery matrix — modular hybrid followup, 2026-10-01
 
-All counts here refer to **completed dev jobs**. Controlled upstream faults
-are separated from natural model errors. Sealed scores are pending the full
-completion gate. Exact IDs, votes and costs are retained in the linked journals.
+Dev and sealed counts are separated below. Controlled upstream faults are
+separate from natural model errors. All six preregistered sealed arms are now
+complete and jointly scored after the completion gate. Exact IDs, votes and
+costs are retained in the linked journals.
 
-## Natural first-judge errors
+## Completed sealed160
+
+| Helper after Gemma | Recovered labels | Harmed labels | Still wrong |
+|---|---:|---:|---:|
+| GE+GP surface | 0 | 0 | 28 |
+| GE+GP+Phi | 0 | 0 | 28 |
+| Independent B, adaptive, raw sources (R0) | 24 | 0 | 4 |
+| Independent B, adaptive, GE+GP (R2) | 24 | 0 | 4 |
+| Granite advisory to B, GE+GP (H3) | 24 | 0 | 4 |
+
+R2 vs R0 changes 2 labels correctly and 2 incorrectly; H3 vs R2 also 2/2.
+The three reviewers have different residual errors. The R0 method is the
+private-service default (`r0-service-v1`, with a context cap), because
+additional helpers did not improve net recovery and cost more.
+No natural first-judge FN exist in this bank. Corrected labels do not certify
+every explanation: B mentions a nonexistent failed release while correctly
+clearing `sailboat_mooring::gate::04` using explicit permission to check.
+
+Full results/costs/limits: `docs/searh_23/HYBRID_SEALED_RESULTS_2026-10-01.md`;
+all-arm source error atlas: `outputs/hybrid_sealed_comparison/error_atlas.json`.
+
+## Natural first-judge errors — dev80
 
 | Helper after Gemma | Recovered | Harmed | Still wrong | Scope |
 |---|---:|---:|---:|---|

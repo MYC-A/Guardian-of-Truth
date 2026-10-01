@@ -1,4 +1,15 @@
-# Guardian Check Service — Stage A (2026-10-01)
+# Guardian Check Service
+
+**Текущий сервис (B–E, 2026-10-01): [OPERATIONS.md](OPERATIONS.md).**
+Default — `r0-service-v1`: основной API-судья и независимая перепроверка
+подозрений, вход не более12000 символов. Реальные HTTP/CLI/outage/recovery
+проверены; выбор и метрики — [DECISION.md](../DECISION.md).
+
+Ниже сохранено **историческое описание Stage A**. Его V6 default, два
+консенсусных голоса, публичный bind и batch64 не описывают текущий private
+deployment. Текущие лимиты/команды/решения находятся в OPERATIONS.md.
+
+# Stage A (история)
 
 Минимальный работающий сервис проверки хода AI-агента по политике,
 каталогу инструментов и истории. Реализован на существующем baseline

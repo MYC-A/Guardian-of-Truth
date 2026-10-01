@@ -95,6 +95,19 @@ Backend TimeoutError is not misreported as a still-running request.
 The private supervised listener passed real HTTP ERROR/NO_ERROR and
 UNKNOWN smoke checks. Cache-hit latency is not full end-to-end latency.
 
+## 12. Correct recovered label can still have a false explanation
+
+In completed sealed `sailboat_mooring::gate::04`, B clears the accusation
+with the actual rule permitting checks at any time. It also says this is
+not a retry of a failed release, although no release appears in the history.
+The label is correct, this explanatory detail is false. Quote checks do not
+validate the whole explanation. R0 also retains three FP asserting a ban on
+failed inspection retries that the source policy does not contain; one more
+FP is preserved on an empty/invalid B response. Frozen scores include them.
+
+See `outputs/hybrid_sealed_comparison/error_atlas.json` and the full sealed
+report; no semantic repair after opening gold entered the six arms.
+
 ## Limits of these examples
 
 Most are known dev cases or controlled upstream faults. The constructed

@@ -8,6 +8,16 @@ worktree `.worktrees/hybrid-assistants-20261001`. Server SSH alias now
 matrix, independent review, and model translation comparisons. Do not
 change a checkout while its recorded PID/job is active.
 
+All six frozen sealed arms are complete (800+160 predictions) and the Phi
+frontend is complete (160 translations). Joint completion-gated scoring
+selected R0: sealed TP68/FP4/FN0 vs baseline TP68/FP28/FN0. Private supervised
+service now uses `r0-service-v1`, the R0 method with a12000-character
+deployment cap and no archived dev replay; actual HTTP/CLI/outage/recovery passed.
+See `DECISION.md` and `docs/searh_23/HYBRID_SEALED_RESULTS_2026-10-01.md`.
+No quality algorithm, prompt or vote combination was changed after gold.
+Subsequent operational changes disable hidden SDK retries, retain safe
+transport metadata and make the operations probe wait for listener startup.
+
 The original `Guardian-of-Truth` server checkout and the main Windows
 checkout are untouched. `/etc/vast-agents-guide.md` was read on the new
 server. No driver/CUDA install, tunnel or public service was created.

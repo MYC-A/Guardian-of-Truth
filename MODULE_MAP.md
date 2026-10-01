@@ -24,6 +24,13 @@ Completed dev results, per-case recovery, and limitations are in
 changed zero labels; independent review recovered 11–12 FP without TP loss;
 Granite added no further correction over that review on this synthetic dev.
 
+The completed sealed160 comparison also shows no net added gain from GE/GP,
+Granite or Phi. R0, R2 and H3 each recover24/28 FP, preserving68TP, but differ
+per case. R0 (raw sources, adaptive B) is the current service default.
+Phi frontend execution and native Granite advisory were actually connected;
+the historical table below describes Stage A, not their current availability.
+See `DECISION.md` and the sealed report for costs, covered errors and limits.
+
 ## Stage-A map (historical)
 
 This map distinguishes code that runs in the service from isolated helpers.
