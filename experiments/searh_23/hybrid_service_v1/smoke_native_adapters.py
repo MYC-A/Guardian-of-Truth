@@ -34,7 +34,7 @@ from pathlib import Path
 
 HERE = Path(__file__).resolve().parent
 REPO = HERE.parents[2]
-OUT = HERE / "outputs" / "native_smoke"
+OUT = HERE / "outputs" / "native_smoke_corrected"
 OUT.mkdir(parents=True, exist_ok=True)
 
 GRANITE_PATH = Path("/workspace/guardian/models/granite-guardian-4.1-8b")
