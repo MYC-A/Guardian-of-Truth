@@ -199,7 +199,8 @@ def ask_vote(model: str, ctx, *, slot: int, seed: int | None,
     ok, reason = validate_vote(vote, ctx)
     attempts = [{"attempt": 1, "valid": ok, "reason": reason,
                  "raw_content_head": (r1.get("content") or "")[:300],
-                 "elapsed": r1.get("elapsed"), "cached": r1.get("cached")}]
+                 "elapsed": r1.get("elapsed"), "cached": r1.get("cached"),
+                 "usage": r1.get("usage") or {}}]
     if not ok and r1.get("content") is not None:
         # exactly one technical re-ask with the precise reason
         reask = messages + [
@@ -216,7 +217,8 @@ def ask_vote(model: str, ctx, *, slot: int, seed: int | None,
         attempts.append({"attempt": 2, "valid": ok, "reason": reason,
                          "raw_content_head": (r2.get("content") or "")[:300],
                          "elapsed": r2.get("elapsed"),
-                         "cached": r2.get("cached")})
+                         "cached": r2.get("cached"),
+                         "usage": r2.get("usage") or {}})
     return {
         "model": model,
         "family": provider_family(model),
@@ -227,8 +229,11 @@ def ask_vote(model: str, ctx, *, slot: int, seed: int | None,
         "valid": ok,
         "invalid_reason": None if ok else reason,
         "attempts": attempts,
-        "usage": (attempts[-1] or {}).get("usage")
-            if attempts and "usage" in (attempts[-1] or {}) else {},
+        "usage": {
+            "prompt_tokens": sum(int((a.get("usage") or {}).get("prompt_tokens") or 0) for a in attempts),
+            "completion_tokens": sum(int((a.get("usage") or {}).get("completion_tokens") or 0) for a in attempts),
+            "total_tokens": sum(int((a.get("usage") or {}).get("total_tokens") or 0) for a in attempts),
+        },
         "context_trim": trim,
         "transport_error": r1.get("error") if not r1.get("content") else None,
     }

@@ -118,6 +118,10 @@ def _judge_stage(cfg_judges: dict, ctx) -> tuple:
         usage["calls"] += len(rec.get("attempts", []))
         u = rec.get("usage") or {}
         usage["tokens"] += int(u.get("total_tokens") or 0)
+        usage.setdefault("prompt_tokens", 0)
+        usage["prompt_tokens"] += int(u.get("prompt_tokens") or 0)
+        usage.setdefault("completion_tokens", 0)
+        usage["completion_tokens"] += int(u.get("completion_tokens") or 0)
         votes.append(rec)
 
     v1, v2 = votes[0], votes[1]
@@ -142,6 +146,8 @@ def _judge_stage(cfg_judges: dict, ctx) -> tuple:
     usage["calls"] += len(rec3.get("attempts", []))
     u3 = rec3.get("usage") or {}
     usage["tokens"] += int(u3.get("total_tokens") or 0)
+    usage["prompt_tokens"] += int(u3.get("prompt_tokens") or 0)
+    usage["completion_tokens"] += int(u3.get("completion_tokens") or 0)
     if rec3["valid"]:
         label = rec3["vote"]["label"]
         if label == 1:
