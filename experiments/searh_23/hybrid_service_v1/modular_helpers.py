@@ -162,6 +162,11 @@ def formal_advisory(record: dict | None) -> tuple[str, dict]:
                "warning": ("Exact source quotes establish provenance only. "
                            "The translation may omit rules, invert necessity, "
                            "or misbind entities. Check against original text.")}
+    query = translation.get("query")
+    if query is not None and any(fact.get("literal") == query and
+            any(source.get("source_id") == "target" for source in fact.get("sources", []))
+            for fact in translation.get("facts", [])):
+        payload["warning_flags"] = ["QUERY_SOURCED_FROM_TARGET_NOT_INDEPENDENT_EVIDENCE"]
     rendered = json.dumps(payload, ensure_ascii=False,
                           separators=(",", ":"))
     if len(rendered) > 9000:
