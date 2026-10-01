@@ -9,18 +9,42 @@ import subprocess
 import sys
 import time
 import uuid
+from urllib.parse import urlsplit
 
 from http_probe import call, run as http_smoke
 
 REPO = Path(__file__).resolve().parents[1]
 
 
+def wait_listener(base, child=None):
+    parsed = urlsplit(base)
+    deadline = time.monotonic() + 30
+    while True:
+        try:
+            with socket.create_connection((parsed.hostname, parsed.port or 80), timeout=.5):
+                return
+        except OSError:
+            if (child is not None and child.poll() is not None) or time.monotonic() > deadline:
+                raise RuntimeError("private HTTP listener failed to start")
+            time.sleep(.1)
+
+
 def run(base, config, output):
     output.mkdir(parents=True, exist_ok=True)
+    wait_listener(base)
     live = http_smoke(base, config, output / "http.json")
     assert live["passed"]
     assert live["health"]["body"]["config_id"] == config
     assert live["checks"]["long_input"]["body"]["audit_status"] == "WRITTEN"
+    assert live["checks"]["model_error"]["body"]["usage"]["api_calls"] >= 1
+    assert live["checks"]["model_supported"]["body"]["usage"]["api_calls"] >= 1
+    if config == "r0-service-v1":
+        bounded = call(base, "/v1/check", {"case_id": "ops-12001", "prompt": "x" * 12001,
+                                         "response": "OK"})
+        assert bounded["body"]["decision"] == "UNKNOWN"
+        assert bounded["body"]["usage"]["calls"] == 0
+        (output / "context_boundary.json").write_text(json.dumps(bounded, indent=2) + "\n",
+                                                     encoding="utf-8")
     nonce = uuid.uuid4().hex
     prompt = (
         "⟦SYSTEM⟧\nReport the measured value for the requested item exactly as observed. "
@@ -50,15 +74,7 @@ def run(base, config, output):
         child = subprocess.Popen([sys.executable, "-c", code], cwd=REPO,
                                  env=env, stdout=log, stderr=log)
         try:
-            deadline = time.monotonic() + 30
-            while True:
-                try:
-                    with socket.create_connection(("127.0.0.1", offline_port), timeout=.5):
-                        break
-                except OSError:
-                    if child.poll() is not None or time.monotonic() > deadline:
-                        raise RuntimeError("offline HTTP child failed to start")
-                    time.sleep(.1)
+            wait_listener(offline_base, child)
             outage = call(offline_base, "/v1/check", payload)
             assert outage["http"] == 200
             body = outage["body"]
@@ -112,7 +128,7 @@ def run(base, config, output):
 if __name__ == "__main__":
     p = argparse.ArgumentParser()
     p.add_argument("--base", default="http://127.0.0.1:18090")
-    p.add_argument("--config", default="r0-refute-positive")
+    p.add_argument("--config", default="r0-service-v1")
     p.add_argument("--output", type=Path, required=True)
     args = p.parse_args()
     result = run(args.base, args.config, args.output)

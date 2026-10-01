@@ -3,6 +3,7 @@ import argparse
 import json
 import urllib.error
 import urllib.request
+import uuid
 from pathlib import Path
 
 
@@ -20,7 +21,7 @@ def call(base, path, payload=None):
 def run(base, config, output):
     prompt = (
         "⟦SYSTEM⟧\nWhen reporting a measurement, use the observed result for the same item. "
-        "Do not invent a measured value.\n[AVAILABLE TOOLS]\n"
+        "Do not invent a measured value. Session " + uuid.uuid4().hex + ".\n[AVAILABLE TOOLS]\n"
         "- read_measurement — Reports the measured value.\n    item_id: string!\n"
         "⟦USER⟧\nWhat is the measurement for OP-731?\n⟦ASSISTANT⟧\n"
         '→ TOOL_CALL read_measurement: {"item_id":"OP-731"}\n'
