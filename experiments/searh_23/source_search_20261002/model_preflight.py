@@ -14,7 +14,7 @@ from guardian_truth.source_search.archive import persist_snapshot
 from guardian_truth.source_search.store import digest
 from guardian_truth.source_search.transport import ModelTransport
 
-OUT = ROOT / 'outputs/searh_23/source_search_20261002/model_preflight_v2'
+OUT = ROOT / 'outputs/searh_23/source_search_20261002/model_preflight_v3'
 PHASE = Path('/workspace/guardian/results/source-search-api-phase-20261002')
 
 
@@ -31,7 +31,7 @@ def prepare():
                    {'provider': 'ollama', 'model': 'gemma4:31b'}],
         'prompts': {p: contract(p) for p in ('DIRECT', 'SEARCH', 'JUDGE')},
         'stops': 'First provider breaker stops whole job; no retries. Every UNKNOWN retained.',
-        'phase_ledger': str(PHASE), 'additional_budget_approved': False}
+        'phase_ledger': PHASE.as_posix(), 'additional_budget_approved': False}
     path = OUT / 'frozen.json'
     if path.exists() and json.loads(path.read_text(encoding='utf-8')) != protocol:
         raise RuntimeError('frozen preflight changed; preserve prior version')
