@@ -7,7 +7,7 @@ separate diagnostics. Full original policy/history is always provided.
 import dataclasses
 import json
 import time
-from common import Budget, BudgetStop, HERE, RESULTS, append, exact_quotes, load_input, sha, source_sha, write
+from modular_common import Budget, BudgetStop, HERE, RESULTS, append, exact_quotes, load_input, sha, source_sha, write
 
 IDS = [f'{group}::{variant:02d}' for group in
        ('dev_nested_gate', 'dev_negative_scope', 'dev_implication', 'dev_entity_binding')

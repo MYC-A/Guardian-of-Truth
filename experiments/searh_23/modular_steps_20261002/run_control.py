@@ -3,7 +3,7 @@ import argparse
 import json
 from pathlib import Path
 import time
-from common import Budget, BudgetStop, HERE, RESULTS, append, load_input, source_sha, write
+from modular_common import Budget, BudgetStop, HERE, RESULTS, append, load_input, source_sha, write
 
 
 def run(split='dev', all_cases=False):

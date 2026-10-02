@@ -27,7 +27,7 @@ if __name__ == '__main__':
     sys.path.insert(0, str(CHECKOUT / 'experiments/searh_23/modular_steps_20261002'))
     # Import/model prompt smoke only; no inference.
     r = subprocess.run([str(PYTHON), '-c',
-        'import sys; sys.path.insert(0,"experiments/searh_23/modular_steps_20261002"); from translator_pilot import messages,IDS; from common import load_input; assert len(messages(load_input(ids=IDS)[0])[0])==2; print("translator interfaces valid")'], cwd=CHECKOUT)
+        'import sys; sys.path.insert(0,"experiments/searh_23/modular_steps_20261002"); from translator_pilot import messages,IDS; from modular_common import load_input; assert len(messages(load_input(ids=IDS)[0])[0])==2; print("translator interfaces valid")'], cwd=CHECKOUT)
     if r.returncode != 0:
         raise SystemExit(r.returncode)
     launch('run_control.py', 'control_dev')

@@ -1,4 +1,7 @@
-"""Content identities, exact provenance, and shared actual-attempt budgets."""
+"""Content identities, exact provenance, and shared actual-attempt budgets.
+
+Distinct module name avoids shadowing the original parser's ``common``.
+"""
 from __future__ import annotations
 import hashlib
 import json
