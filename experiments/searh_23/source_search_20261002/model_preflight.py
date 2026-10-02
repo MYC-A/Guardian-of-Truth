@@ -14,7 +14,7 @@ from guardian_truth.source_search.archive import persist_snapshot
 from guardian_truth.source_search.store import digest
 from guardian_truth.source_search.transport import ModelTransport
 
-OUT = ROOT / 'outputs/searh_23/source_search_20261002/model_preflight_v1'
+OUT = ROOT / 'outputs/searh_23/source_search_20261002/model_preflight_v2'
 PHASE = Path('/workspace/guardian/results/source-search-api-phase-20261002')
 
 
