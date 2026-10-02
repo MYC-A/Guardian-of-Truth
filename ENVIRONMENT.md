@@ -110,3 +110,27 @@ Re-verified on the new stand:
 No committed outputs were modified by the re-provisioning; the smoke
 reproductions above were run as ad-hoc probes (not written into
 outputs/native_smoke*), preserving the recorded results.
+
+## New free channels addendum (2026-10-02, third-stand session)
+
+User-supplied additional free API models were probed (one short real chat
+probe per channel; probes are counted attempts):
+
+- ollama.com/v1 now also answers: glm-5.3-flash -> HTTP 402 "not included
+  in your free usage" (channel OFF, quota-blocked; do not re-probe until
+  quota/config changes), gpt-oss:120b (reasoning model — empty content at
+  tiny max_tokens; needs larger output budgets), nemotron-3-nano:30b,
+  nemotron-3-super, nemotron-3-ultra (all OK, 0.6-1.5 s).
+  gpt-oss:20b/gemma4:31b and ukisai/swift + vireonix/auto re-confirmed.
+- NEW provider aihorde (oai.aihorde.net/v1, anonymous public key
+  "0000000000", crowdsourced: latency/availability vary): google/
+  gemma-4-31b OK (7.1 s via llm.py), koboldcpp/Llama-3.2-3B-Instruct OK
+  (2.9 s). koboldcpp/Qwen/Qwen3.5-0.8B timed out at 150 s (worker offline;
+  not retried — low value). response_format/json_object is NOT sent to
+  aihorde (compat not guaranteed), same guard as ukisai/swift.
+- Family accounting: google/gemma-4-31b is the SAME gemma family as
+  gemma4:31b (transport redundancy only, never an independent family
+  vote); koboldcpp/Llama-3.2-3B-Instruct is the small llama family;
+  nemotron-3-* sizes are one nemotron family; gpt-oss:20b/120b one family.
+- llm.py registry extended accordingly (aihorde provider + two models);
+  verified through the real llm.py transport path with cache disabled.

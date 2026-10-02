@@ -9,6 +9,12 @@ Providers (all smoke-tested 2026-09-30, statuses in ENVIRONMENT.md):
   vireonix  vireonix.ai/v1           (free; model "auto" — family
                                        UNVERIFIABLE: never counted as an
                                        independent family)
+  aihorde   oai.aihorde.net/v1       (free, anonymous key; crowdsourced —
+                                       latency/availability vary; google/
+                                       gemma-4-31b + koboldcpp/Llama-3.2-3B-
+                                       Instruct smoke-OK 2026-10-02)
+  glm-5.3-flash on ollama.com is QUOTA-BLOCKED (HTTP 402, 2026-10-02):
+  do not retry; channel disabled until quota/config changes.
 
 Discipline (directive §2/§9):
   * keys read from secret files; NEVER printed, never written into the repo
@@ -59,6 +65,9 @@ PROVIDERS = {
                _ENV.get("UKISAI_API_KEY", "none")),
     "vireonix": ("https://vireonix.ai/v1",
                  _ENV.get("VIREONIX_API_KEY", "unused")),
+    # AI Horde: public anonymous shared key (documented by the endpoint);
+    # not a secret. Crowdsourced workers -> keep transport_retries bounded.
+    "aihorde": ("https://oai.aihorde.net/v1", "0000000000"),
 }
 # default mistral model from env file if present
 DEFAULT_MISTRAL_MODEL = _ENV.get("MISTRAL_MODEL", "ministral-14b-latest")
@@ -74,6 +83,10 @@ MODEL_REGISTRY = {
     # other families
     "swift": "ukisai",
     "auto": "vireonix",
+    # AI Horde (same gemma family as gemma4:31b — NOT an independent family;
+    # transport redundancy only). Llama-3.2-3B is a small distinct family.
+    "google/gemma-4-31b": "aihorde",
+    "koboldcpp/Llama-3.2-3B-Instruct": "aihorde",
     # mistral family
     DEFAULT_MISTRAL_MODEL: "mistral",
     # local GPU (RTX 3090 24GB, bf16) — third checker for V6
@@ -307,8 +320,10 @@ def chat(model: str, messages: list, *, max_tokens: int = 4000,
                 kwargs["seed"] = seed
             if top_p is not None:
                 kwargs["top_p"] = top_p
-            if json_mode and provider_family(model_r) != "ukisai":
-                # swift (ukisai) rejected response_format in smoke tests
+            if json_mode and provider_family(model_r) != "ukisai" \
+                    and _provider_of(model_r) != "aihorde":
+                # swift (ukisai) rejected response_format in smoke tests;
+                # aihorde compat layer does not guarantee response_format
                 kwargs["response_format"] = {"type": "json_object"}
             resp = client.chat.completions.create(**kwargs)
             content = resp.choices[0].message.content
@@ -367,6 +382,13 @@ def provider_family(model: str) -> str:
         return "granite"
     if model.startswith(("mistral", "ministral", "codestral")):
         return "mistral"
+    # AI Horde transports: google/gemma-4-31b is the SAME gemma family as
+    # gemma4:31b (transport redundancy, never an independent family vote);
+    # koboldcpp/Llama-3.2-3B-Instruct is the small llama family.
+    if model.startswith("google/gemma"):
+        return "gemma"
+    if model.startswith("koboldcpp/Llama"):
+        return "llama"
     return model
 
 
