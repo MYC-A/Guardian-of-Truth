@@ -1,6 +1,6 @@
 {
-  "schema": "modular-budget-phases/1",
-  "note": "Continuation phases authorized by the 2026-10-02 assignment. Added separately from the frozen protocol.json budgets: history is inherited, the shared legacy counter (699667/700000) is NOT reset, and the frozen pilot/heldout ceilings stay untouched. Cache namespace is unchanged (protocol.json untouched).",
+  "schema": "modular-budget-phases/2",
+  "note": "Continuation phases authorized by the 2026-10-02 assignments. Added separately from the frozen protocol.json budgets: history is inherited, the shared legacy counter (699667/700000) is NOT reset, and the frozen pilot/heldout ceilings stay untouched. Cache namespace is unchanged (protocol.json untouched). dev2 and reviewer_repair are CLOSED phases: their ledgers and ceilings are never edited or renamed.",
   "phases": {
     "dev2": {
       "max_actual_api_attempts": 300,
@@ -28,6 +28,25 @@
         "max_logical_tokens": "all rows incl. cache/native (global sanity ceiling)",
         "local_no_api": "local (api=0) verification rows are reported separately in snapshots and never consume the API-attempt ceiling",
         "reservations": "in-flight RESERVED rows count toward caps until exactly-once finalization",
+        "phase_integrity": "phase is never renamed to bypass a ceiling and the guard is never disabled"
+      }
+    },
+    "modular_all_noft_20261002": {
+      "max_actual_api_attempts": 1600,
+      "max_logical_tokens": 6000000,
+      "max_known_provider_tokens": 4000000,
+      "max_unknown_transport_upper_bound_tokens": 200000,
+      "max_model_seconds": 76800,
+      "semantics": {
+        "authorization": "authorized by the 2026-10-02 all-methods-no-finetuning assignment section 15: ceilings for the WHOLE cycle, not a spending goal; unknown usage is accounted conservatively (never as zero); any earlier stricter monetary/provider limit keeps priority",
+        "closed_phases": "dev2 and reviewer_repair are closed: their ledgers are never edited; this phase has its own fresh ledger",
+        "reserve_plan": "connectivity <=20 attempts; GEPA <=220; remainder split across model/role pilots, module pilots, dev shortlist and sealed; sealed reserve is never spent on retries of old pilots",
+        "controls": "spend checkpoints at 25/50/80%; transport-layer guard stays active; 402/401/403 permanent parking is inherited from the breaker state store outside jobs/phases",
+        "max_known_provider_tokens": "sum(tokens) over status=COMPLETE rows (provider-reported usage)",
+        "max_unknown_transport_upper_bound_tokens": "sum(tokens) over TRANSPORT_* and COMPLETE_USAGE_UNKNOWN_UPPER_BOUND rows; reservations count here until finalized; conservative upper bound for no-usage providers (aihorde)",
+        "max_logical_tokens": "all rows incl. cache/native (global sanity ceiling)",
+        "local_no_api": "local (api=0) inference rows are reported separately by calls/tokens/GPU-time and never consume the API-attempt ceiling",
+        "reservations": "in-flight RESERVED rows count toward caps until exactly-once finalization; the unknown ceiling counts in-flight reservations",
         "phase_integrity": "phase is never renamed to bypass a ceiling and the guard is never disabled"
       }
     }
