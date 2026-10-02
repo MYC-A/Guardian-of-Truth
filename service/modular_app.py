@@ -3,6 +3,7 @@ import os
 from pathlib import Path
 import sys
 from functools import partial
+import uuid
 sys.path.insert(0, str(Path(__file__).resolve().parents[1] / 'experiments/searh_23/modular_steps_20261002'))
 from fastapi import FastAPI, HTTPException
 from pydantic import BaseModel, Field
@@ -51,7 +52,10 @@ async def execute(case, config=None):
     try:
         return await dispatcher.run(partial(check, config=selected), case.model_dump(), timeout_s=240)
     except RequestTimedOut:
-        return {'case_id': case.case_id, 'config_id': selected, 'decision': 'UNKNOWN',
+        from modular_common import source_sha
+        return {'case_id': case.case_id, 'config_id': selected, 'trace_id': str(uuid.uuid4()),
+                'source_sha256': source_sha(case.model_dump()), 'decision': 'UNKNOWN',
+                'coverage': {'source_complete': True, 'semantic_check_complete': False},
                 'degraded': True, 'unknown_reasons': ['deadline_worker_slot_retained'], 'cost': {'status': 'PENDING_WORKER'}}
 
 

@@ -14,10 +14,13 @@ CONFIGS = {
     'modular-structural-v1': 'Structural v0.2 + source graph, no semantic NO_ERROR certificate.',
     'modular-replay-v1': 'Exact archived C0 input+output for HTTP transport verification, no new inference.',
     'modular-r0-v1': 'Original R0 with shared pilot resource guard.',
+    'modular-source-bound-r0-v1': 'Original R0 routing, strict independent B source interface.',
+    'modular-source-bound-always-v1': 'Independent strict B also reviews primary NO_ERROR; not yet measured.',
     'modular-g2-v1': 'Selected source graph -> original J -> original independent B.',
     'modular-g2-linear-v1': 'Same selected source facts, linear view -> original J -> B.',
+    'modular-g2-calculations-v1': 'Linked source graph + exact ISO ordering hints -> J -> strict B. Unmeasured candidate.',
     'modular-atoms-v1': 'Original R0 -> automatic target/explanation atoms -> B advisory audit.',
-    'modular-system-v2-v1': 'Original automatic SystemV2 Steps2-4 advisory -> original R0.',
+    'modular-system-v2-v1': 'Automatic SystemV2 Steps2-4 + linked graph advisory -> original J -> independent B.',
 }
 _budget = None
 _llm = None
@@ -87,6 +90,7 @@ def check(payload, config, *, inject_auxiliary_failure=False):
         return finish()
     llm = guarded_llm()
     before = _budget.snapshot()
+    _budget.begin_request(max_api_attempts=20)
     try:
         advisory = None
         if inject_auxiliary_failure:
@@ -94,24 +98,32 @@ def check(payload, config, *, inject_auxiliary_failure=False):
         if config == 'modular-system-v2-v1':
             from v2_pipeline import run
             advisory = run(llm, llm.DEFAULT_MISTRAL_MODEL, row)
-        if config in {'modular-g2-v1', 'modular-g2-linear-v1'}:
+        if config == 'modular-g2-calculations-v1':
+            from typed_calculations import timestamps
+            advisory = timestamps(row)
+        if config in {'modular-g2-v1', 'modular-g2-linear-v1', 'modular-system-v2-v1', 'modular-g2-calculations-v1'}:
             from mechanism_pilots import graph_pass
-            measured = graph_pass(llm, row, 'G2' if config == 'modular-g2-v1' else 'G2-linear')
+            measured = graph_pass(llm, row, 'G2-linear' if config == 'modular-g2-linear-v1' else 'G2', additional_advisory=advisory,
+                                  strict_review=config in {'modular-g2-calculations-v1', 'modular-system-v2-v1'})
         else:
-            measured = base('r0-service-v1').check(payload)
+            measured = base(config if config.startswith('modular-source-bound-') else 'r0-service-v1').check(payload)
             if config == 'modular-atoms-v1':
                 from mechanism_pilots import atomic_pass
                 advisory = atomic_pass(llm, row, measured)
         out.update(decision=measured['decision'], basis='JUDGED', findings=measured.get('findings', []), original_runtime=measured)
+        if measured.get('degraded'):
+            out.update(degraded=True, unknown_reasons=measured.get('degradation_reasons', ['original_runtime_degraded']))
         if advisory is not None:
             out['modules'].append(ModuleResult(config, 'ADVISORY', row['response'], identity,
                 'MODEL_PROPOSED_PLUS_RELATIVE_NATIVE_COMPUTATION',
                 assumptions=['Native inference is relative to automatically proposed contracts/claims.'],
                 limitations=['Full policy, fact semantics and action inventory remain unproven.'], payload=advisory).json())
-    except BudgetStop:
-        out.update(degraded=True, unknown_reasons=['pilot_resource_limit'], basis='coverage_gap')
+    except BudgetStop as exc:
+        out.update(degraded=True, unknown_reasons=['resource_guard/' + str(exc)], basis='coverage_gap')
     except Exception as exc:
         out.update(degraded=True, unknown_reasons=['auxiliary_or_model_failure/' + type(exc).__name__], basis='coverage_gap')
+    finally:
+        _budget.end_request()
     after = _budget.snapshot()
     out['cost'] = {key: after[key] - before[key] for key in ('actual_api_attempts', 'logical_tokens', 'model_seconds')}
     return finish()

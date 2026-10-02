@@ -33,7 +33,7 @@ def explanations(out):
     return '\n'.join(result)
 
 
-def graph_pass(llm, row, arm):
+def graph_pass(llm, row, arm, *, additional_advisory=None, strict_review=False):
     from evidence_views import graph_for, render, GraphAPI, information_hash
     from structural_v02 import parse_case_v02
     from runtime import load_config, _judge_stage
@@ -61,7 +61,11 @@ def graph_pass(llm, row, arm):
     else:
         raise ValueError('unknown_graph_arm')
     ctx.advisory_context = 'ADVISORY ONLY, verify against full original source.\n' + advisory
+    if additional_advisory is not None:
+        ctx.advisory_context += '\nRELATIVE AUTOMATIC MODULE PROPOSALS, not certified source semantics:\n' + json.dumps(additional_advisory, ensure_ascii=False)
     cfg = load_config('r0-service-v1')
+    if strict_review:
+        cfg['stages']['counterevidence']['protocol'] = 'source-bound-v2'
     decision, findings, usage, degraded, reasons = _judge_stage(cfg['stages']['judges'], ctx)
     judge_decision = decision
     judge_trace = getattr(ctx, 'judge_trace', [])
@@ -69,8 +73,12 @@ def graph_pass(llm, row, arm):
     if decision != 'NO_ERROR':
         review = collect_review(cfg['stages']['counterevidence'], ctx, findings, caller='modular/' + arm)
         decision, findings, reason = aggregate_review(review, decision, findings, ctx)
+        if not review['valid']:
+            degraded = True
+            reasons.append('invalid_B_preserved_J_not_confirmed')
     return {'decision': decision, 'judge_decision': judge_decision,
-            'findings': findings, 'graph_trace': graph_trace, 'judge_trace': judge_trace, 'review': review}
+            'findings': findings, 'graph_trace': graph_trace, 'judge_trace': judge_trace, 'review': review,
+            'degraded': degraded, 'degradation_reasons': reasons, 'strict_review': strict_review}
 
 
 def atomic_pass(llm, row, out):

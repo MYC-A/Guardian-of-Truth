@@ -88,6 +88,8 @@ class BudgetStop(BaseException):
 class Budget:
     def __init__(self, phase='pilot'):
         self.phase = phase
+        self.request_limit = None
+        self.request_attempts = 0
         RESULTS.mkdir(parents=True, exist_ok=True)
         self.path = RESULTS / f'{phase}_budget.sqlite'
         self.limits = json.loads((HERE / 'protocol.json').read_text(encoding='utf-8'))['budgets'][phase]
@@ -98,6 +100,8 @@ class Budget:
         return sqlite3.connect(str(self.path), timeout=30)
 
     def reserve(self, module, model, key, tokens, *, api=True):
+        if api and self.request_limit is not None and self.request_attempts >= self.request_limit:
+            raise BudgetStop('per_request_actual_api_limit')
         with self.connect() as db:
             db.execute('BEGIN IMMEDIATE')
             n, used_tokens, seconds = db.execute('SELECT COALESCE(SUM(api),0),COALESCE(SUM(tokens),0),COALESCE(SUM(seconds),0) FROM attempts').fetchone()
@@ -107,7 +111,17 @@ class Budget:
                 raise BudgetStop('shared_phase_budget_exhausted')
             cursor = db.execute('INSERT INTO attempts(module,model,key,status,tokens,seconds,started,api) VALUES(?,?,?,?,?,?,?,?)',
                 (module, model, key, 'RESERVED', tokens, 0, time.time(), int(api)))
+            if api:
+                self.request_attempts += 1
             return cursor.lastrowid
+
+    def begin_request(self, max_api_attempts=20):
+        if self.request_limit is not None:
+            raise RuntimeError('request_budget_already_active')
+        self.request_limit, self.request_attempts = max_api_attempts, 0
+
+    def end_request(self):
+        self.request_limit = None
 
     def finish(self, rowid, tokens, seconds, status):
         with self.connect() as db:

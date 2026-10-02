@@ -1,0 +1,84 @@
+{
+  "access_failures_are_not_quality_scores": true,
+  "models": {
+    "env_mistral": {
+      "INSUFFICIENT": 8,
+      "attempted_cases": 8,
+      "explicit_UNSUPPORTED": 6,
+      "model_answers": 8,
+      "schema_invalid": 1,
+      "schema_valid": 7
+    },
+    "mistral/codestral-2508": {
+      "FOLLOWS": 2,
+      "INSUFFICIENT": 6,
+      "attempted_cases": 8,
+      "explicit_UNSUPPORTED": 1,
+      "model_answers": 8,
+      "schema_invalid": 3,
+      "schema_valid": 5
+    },
+    "mistral/magistral-small-latest": {
+      "attempted_cases": 8,
+      "http_429": 8
+    },
+    "ollama/kimi-k2.7-code": {
+      "attempted_cases": 8,
+      "http_402": 8
+    }
+  },
+  "scope": "8 paired DEV cases, original narrow signed-Horn IR; not a full-policy parser comparison",
+  "selection": "No challenger selected as trusted compiler; Codestral may provide independently checked advisory only.",
+  "semantic_findings": [
+    {
+      "classification": "SEMANTIC_WRONG_DIRECTION_WITH_VALID_SCHEMA",
+      "id": "dev_implication::01",
+      "model": "env_mistral",
+      "source": "If a is true, verified is true.",
+      "translation": "ONLY_IF(conditions=[a], conclusion=verified)",
+      "why": "Original implies a -> verified. ONLY_IF representation means verified -> a; supported query is lost."
+    },
+    {
+      "classification": "INVALID_QUOTE",
+      "id": "dev_entity_binding::01",
+      "model": "env_mistral",
+      "why": "Invents right arrow TOOL_RESPONSE instead of the actual left arrow. Verbatim validator correctly rejects."
+    },
+    {
+      "classification": "SEMANTIC_NON_EQUIVALENT_TWO_IFF_ALTERNATIVES",
+      "ids": [
+        "dev_nested_gate::00",
+        "dev_nested_gate::01"
+      ],
+      "independent_counterexample": {
+        "Horn_forward_closure": "Can still derive permission; forward solver does not detect this semantic defect.",
+        "a": true,
+        "author_permission": true,
+        "b": true,
+        "c": false,
+        "classical_two_IFF_formulas": "UNSAT with these observed literals"
+      },
+      "model": "mistral/codestral-2508",
+      "scope": "Counterexample to parsed rule semantics, not a new measured binary row.",
+      "why": "Writes permitted <-> (a AND b), permitted <-> (a AND c). Together these are not permitted <-> (a AND (b OR c))."
+    },
+    {
+      "classification": "POLICY_OR_GOAL_AS_WORLD_FACT_PLUS_INVALID_RULE_QUOTE",
+      "ids": [
+        "dev_negative_scope::00",
+        "dev_negative_scope::01"
+      ],
+      "model": "mistral/codestral-2508",
+      "why": "Asserts a=false and b=true using the requirement/Process item goal instead of observed b=false. Separate rule quote drops an intervening sentence. Source quote validity alone would not fix fabricated facts."
+    },
+    {
+      "classification": "SUPPORTED_QUERY_CORRECTLY_DERIVED",
+      "ids": [
+        "dev_implication::01",
+        "dev_entity_binding::01"
+      ],
+      "model": "mistral/codestral-2508",
+      "why": "Exact observed same-ID literal; IF direction correct in implication case. These two determined relations agree with independent author gold."
+    }
+  ]
+}

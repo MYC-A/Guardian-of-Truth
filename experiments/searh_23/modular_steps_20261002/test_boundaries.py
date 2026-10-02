@@ -6,6 +6,17 @@ from v2_pipeline import as_row, native_case
 
 
 class BoundaryTests(unittest.TestCase):
+    def test_timezone_arithmetic_retains_exact_sources(self):
+        from typed_calculations import timestamps
+        row = load_input(ids=['dev_inclusive_timezone::02'])[0]
+        result = timestamps(row)
+        self.assertTrue(result['relations'])
+        self.assertTrue(any(abs(r['delta_seconds']) == 1 for r in result['relations']))
+        for relation in result['relations']:
+            for field in ('left_source', 'right_source'):
+                self.assertTrue(exact_quotes([relation[field]], {'prompt': row['prompt']}))
+        self.assertEqual(result['decision'], 'ADVISORY_ONLY_NOT_AUTOMATIC_ERROR')
+
     def test_sampler_rejects_tuple_content_before_transport(self):
         from selfcheck_adapter import sample_bank
         class NoTransport:
