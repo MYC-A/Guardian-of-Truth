@@ -324,7 +324,7 @@ class GuardianServiceRuntime:
             from guardian_truth.source_search.transport import ModelTransport
             if not hasattr(self, "_source_transport"):
                 self._source_transport = ModelTransport(
-                    Path("/workspace/guardian/results/source_search_20261002/service"),
+                    Path("/workspace/guardian/results/source-search-api-phase-20261002"),
                     **self.config.get("model_budget", {}))
             configured = bool(self._source_transport.key and self._source_transport.model)
             status["source_model"] = configured
@@ -436,7 +436,7 @@ class GuardianServiceRuntime:
                 return payload
             if not hasattr(self, "_source_transport"):
                 self._source_transport = ModelTransport(
-                    Path("/workspace/guardian/results/source_search_20261002/service"),
+                    Path("/workspace/guardian/results/source-search-api-phase-20261002"),
                     **self.config.get("model_budget", {}))
             before = self._source_transport.snapshot()
             result = run({"id": case_id, "prompt": prompt, "response": response},

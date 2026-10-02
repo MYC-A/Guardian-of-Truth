@@ -11,7 +11,7 @@ ROOT = Path(__file__).resolve().parents[3]
 sys.path.insert(0, str(ROOT / 'src'))
 from guardian_truth.source_search import SourceStore, calculate
 from guardian_truth.source_search.calculations import literals
-from guardian_truth.source_search.pipeline import run, validate_assessment
+from guardian_truth.source_search.pipeline import run, validate_assessment, contract
 from guardian_truth.source_search.transport import ModelTransport
 
 
@@ -36,6 +36,10 @@ def complete_vote(row, decision='NO_ERROR'):
 
 
 class Tests(unittest.TestCase):
+    def test_search_contract_states_phase_and_does_not_offer_final_schema(self):
+        self.assertIn('CURRENT ROLE: SEARCH CONTROLLER', contract('SEARCH'))
+        self.assertNotIn('Assessment schema:', contract('SEARCH'))
+        self.assertIn('CURRENT ROLE: JUDGE', contract('JUDGE'))
     def test_full_index_reaches_second_order_and_keeps_owners_distinct(self):
         store = SourceStore(case())
         result = store.traverse({'field': 'product_id', 'value': 'P-1'}, strategy='BFS', max_depth=1)

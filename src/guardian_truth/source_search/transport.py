@@ -81,7 +81,7 @@ class ModelTransport:
         request = urllib.request.Request(self.base + '/chat/completions', data=raw,
             headers={'Content-Type': 'application/json', 'Authorization': 'Bearer ' + self.key}, method='POST')
         started = time.monotonic()
-        usage = None
+        usage, data = None, None
         try:
             with urllib.request.urlopen(request, timeout=self.timeout) as reply:
                 data = json.loads(reply.read())
@@ -92,6 +92,7 @@ class ModelTransport:
             if not isinstance(content, str) or not content.strip():
                 raise ValueError('provider_content_invalid')
             record = {'status': 'OK', 'content': content, 'usage': usage, 'model': self.model,
+                'served_model': data.get('model'), 'finish_reason': data['choices'][0].get('finish_reason'),
                 'request_sha256': sha, 'cached': False, 'seconds': time.monotonic() - started}
         except urllib.error.HTTPError as exc:
             record = {'status': 'UNAVAILABLE', 'reason': f'http_{exc.code}', 'http_status': exc.code,
@@ -105,6 +106,10 @@ class ModelTransport:
             record = {'status': 'UNAVAILABLE', 'reason': 'transport_or_contract/' + type(exc).__name__,
                 'model': self.model, 'request_sha256': sha, 'cached': False,
                 'seconds': time.monotonic() - started}
+            if isinstance(data, dict):
+                record['provider_choices'] = data.get('choices')
+                record['usage'] = usage
+                record['served_model'] = data.get('model')
         tokens = (usage or {}).get('total_tokens')
         ledger_row = {k: v for k, v in record.items() if k != 'content'}
         ledger_row.update({'known_tokens': tokens if type(tokens) is int else 0,

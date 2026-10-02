@@ -14,7 +14,7 @@ from guardian_truth.source_search.archive import persist_snapshot
 from guardian_truth.source_search.store import SourceStore
 from runtime import GuardianServiceRuntime
 
-OUT = ROOT / 'outputs/searh_23/source_search_20261002/comparison_v3'
+OUT = ROOT / 'outputs/searh_23/source_search_20261002/comparison_v4'
 
 
 def write(path, value):
@@ -34,8 +34,11 @@ def identity():
 
 
 def prepare():
+    prior_inputs = ROOT / 'outputs/searh_23/source_search_20261002/comparison_v3/inputs.jsonl'
     if (OUT / 'inputs.jsonl').exists():
         source_rows = [json.loads(line) for line in (OUT / 'inputs.jsonl').read_text(encoding='utf-8').splitlines()]
+    elif prior_inputs.exists():
+        source_rows = [json.loads(line) for line in prior_inputs.read_text(encoding='utf-8').splitlines()]
     else:
         source_rows = rows()
     # All source inputs are frozen; no labels/explanations enter this process.
@@ -68,7 +71,7 @@ def main():
     if not args.run:
         print(json.dumps({'state': 'FROZEN', 'cases': len(source_rows), 'code_sha256': protocol['code_sha256']}))
         return
-    transport = ModelTransport(OUT / 'transport', **protocol['model_budget'])
+    transport = ModelTransport('/workspace/guardian/results/source-search-api-phase-20261002', **protocol['model_budget'])
     done = set()
     journal = OUT / 'predictions.jsonl'
     if journal.exists():
