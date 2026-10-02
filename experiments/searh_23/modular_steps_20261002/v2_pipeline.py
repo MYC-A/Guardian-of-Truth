@@ -9,7 +9,7 @@ import json
 import sys
 import types
 from modular_common import ROOT, exact_quotes
-from guardian_truth.parsing import parse_events
+from guardian_truth.parsing import parse_events, parse_catalog
 from guardian_truth.step2.verifier import TrajectoryCase, CallEvent, ResultEvent, CandidateFact
 from guardian_truth.step2.result_types import json_path_get, scalar_to_json
 from guardian_truth.step2.trusted import assess
@@ -62,7 +62,7 @@ def as_row(row):
     return {'case_id': row['id'], 'system_policy': ctx.policy_text, 'available_tools': tools,
             'user_request': request, 'history': history,
             'target_response': {'text': row['response'], 'index': len(events) + 1},
-            'catalog_complete': False, 'family': 'input_content_not_gold_group'}
+            'catalog_complete': parse_catalog(events, row['prompt']).complete, 'family': 'input_content_not_gold_group'}
 
 
 def native_case(row):
@@ -103,6 +103,16 @@ def automatic_facts(case):
 
 def run(llm, model, row, *, contracts=None):
     steps, step1, probe = original_modules(llm)
+    # Original imported helpers must see the corrected trust labels too.
+    # Patch this experimental process only; the existing service is isolated.
+    from v2_boundaries import acquire_documented_v2
+    from guardian_truth.integration import contracts as contract_module
+    contract_module.acquire_documented = acquire_documented_v2
+    for name in ('guardian_truth.integration.candidate_claims', 'guardian_truth.integration.claim_binding',
+                 'guardian_truth.integration.automatic_claims', 'guardian_truth.integration.reachability'):
+        module = sys.modules.get(name)
+        if module is not None and hasattr(module, 'acquire_documented'):
+            module.acquire_documented = acquire_documented_v2
     converted = as_row(row)
     if contracts is None:
         contracts = steps.acquire_auto_contracts(converted['available_tools'], model)
