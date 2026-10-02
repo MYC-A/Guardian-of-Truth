@@ -219,3 +219,8 @@ template audit и сохранность нового long-context layout уже
 layout/budget probe выполнен, старый R0 процесс сохранён. Результаты
 `ed641291` выше остаются историческими, а не приписываются новой ревизии.
 [Текущие operations и receipts](../../service/MODULAR_OPERATIONS.md).
+
+Далее подготовлен одинаковый shared-B routing-пилот48, adaptive и random
+отбирают6 из19 primary NO_ERROR; оба выбрали известный FN. B ещё не
+запускалась, исправление не доказано.
+[Negative routing](MODULAR_NEGATIVE_ROUTING_2026-10-02.md).

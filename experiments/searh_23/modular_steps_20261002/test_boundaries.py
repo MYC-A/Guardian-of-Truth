@@ -135,6 +135,47 @@ class BoundaryTests(unittest.TestCase):
         with self.assertRaisesRegex(ValueError, 'duplicate_case_within_one_arm'):
             score_arm([record, record], {r['id']: r}, gold, Path('synthetic/predictions.jsonl'), [r['id']])
 
+    def test_missing_uncertainty_is_not_high_confidence(self):
+        from negative_routing import uncertainty_signals
+        r = load_input()[0]
+        self.assertEqual(uncertainty_signals(r)['status'], 'UNAVAILABLE')
+        signal = {'source_sha256': source_sha(r), 'valid_sample_count': 3,
+                  'agreement': 1, 'judge_nli_contradiction': .6}
+        self.assertTrue(uncertainty_signals(r, signal)['native_judge_nli'])
+        changed = dict(r, response=r['response'] + ' changed')
+        self.assertEqual(uncertainty_signals(changed, signal)['status'], 'UNAVAILABLE')
+        signal['valid_sample_count'] = 2
+        self.assertEqual(uncertainty_signals(r, signal)['status'], 'UNAVAILABLE')
+
+    def test_random_review_matches_count_and_content_not_ids_or_order(self):
+        from negative_routing import matched_random
+        rows = load_input()[:10]
+        chosen = matched_random(rows, 3)
+        self.assertEqual(len(chosen), 3)
+        renamed = [dict(row, id='new' + str(i)) for i, row in enumerate(reversed(rows))]
+        self.assertEqual(chosen, matched_random(renamed, 3))
+
+    def test_adaptive_invalid_reviewer_preserves_unknown(self):
+        from negative_routing import followup
+        from unittest.mock import patch
+        row = load_input(ids=['dev_inclusive_timezone::02'])[0]
+        baseline = {'decision': 'NO_ERROR', 'degraded': False, 'findings': [], 'usage': {},
+            'module_trace': [{'module': 'judge', 'records': [{'valid': True, 'vote': {'label': 0}}]}]}
+        invalid = {'valid': False, 'usage': {}, 'module': 'independent-counterevidence/1'}
+        with patch('counterevidence.collect_review', return_value=invalid), patch('counterevidence.aggregate_review', return_value=('NO_ERROR', [], 'bad_legacy_fallback')):
+            result = followup(row, baseline)
+        self.assertEqual(result['decision'], 'UNKNOWN')
+        self.assertTrue(result['degraded'])
+        self.assertEqual(baseline['decision'], 'NO_ERROR')
+
+    def test_scope_changes_route_review_without_asserting_a_violation(self):
+        from negative_routing import route
+        row = load_input(ids=['dev_latest::00'])[0]
+        result = route(row, 'NO_ERROR')
+        self.assertTrue(result['negative_review'])
+        self.assertIn('changing_scoped_observations', result['triggers'])
+        self.assertNotIn('decision', result)
+
 
 if __name__ == '__main__':
     unittest.main()

@@ -16,6 +16,7 @@ CONFIGS = {
     'modular-r0-v1': 'Original R0 with shared pilot resource guard.',
     'modular-source-bound-r0-v1': 'Original R0 routing, strict independent B source interface.',
     'modular-source-bound-always-v1': 'Independent strict B also reviews primary NO_ERROR; not yet measured.',
+    'modular-negative-adaptive-v1': 'Strict B additionally reviews primary NO_ERROR on fixed source/time hazards; downstream quality unmeasured.',
     'modular-g2-v1': 'Selected source graph -> original J -> original independent B.',
     'modular-g2-linear-v1': 'Same selected source facts, linear view -> original J -> B.',
     'modular-g2-calculations-v1': 'Linked source graph + exact ISO ordering hints -> J -> strict B. Unmeasured candidate.',
@@ -106,7 +107,11 @@ def check(payload, config, *, inject_auxiliary_failure=False):
             measured = graph_pass(llm, row, 'G2-linear' if config == 'modular-g2-linear-v1' else 'G2', additional_advisory=advisory,
                                   strict_review=config in {'modular-g2-calculations-v1', 'modular-system-v2-v1'})
         else:
-            measured = base(config if config.startswith('modular-source-bound-') else 'r0-service-v1').check(payload)
+            measured = base('modular-source-bound-r0-v1' if config == 'modular-negative-adaptive-v1' else
+                            config if config.startswith('modular-source-bound-') else 'r0-service-v1').check(payload)
+            if config == 'modular-negative-adaptive-v1':
+                from negative_routing import followup
+                measured = followup(row, measured)
             if config == 'modular-atoms-v1':
                 from mechanism_pilots import atomic_pass
                 advisory = atomic_pass(llm, row, measured)
