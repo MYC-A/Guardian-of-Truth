@@ -28,7 +28,7 @@ def main():
         for arm in frozen['arms']:
             cfg=copy.deepcopy(frozen['config']);cfg['stages']['source_search']['mode']=arm
             with patch.object(runtime,'load_config',return_value=cfg):
-                service=GuardianServiceRuntime('source-search-ids-v2',audit_path=OUT/'mechanical_service_audit.jsonl')
+                service=GuardianServiceRuntime(frozen['config']['config_id'],audit_path=OUT/'mechanical_service_audit.jsonl')
             disabled=DisabledModel();service._source_transport=disabled
             result=service.check({'case_id':row['id'],'prompt':row['prompt'],'response':row['response']})
             assert result['source_store']['raw']=={k:row[k] for k in ('prompt','response')}
