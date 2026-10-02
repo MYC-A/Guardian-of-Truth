@@ -6,6 +6,21 @@ from v2_pipeline import as_row, native_case
 
 
 class BoundaryTests(unittest.TestCase):
+    def test_sampler_rejects_tuple_content_before_transport(self):
+        from selfcheck_adapter import sample_bank
+        class NoTransport:
+            def chat(self, *args, **kwargs):
+                self.fail('must not call provider')
+        with self.assertRaises(ValueError):
+            sample_bank(NoTransport(), 'unused', [{'role': 'user', 'content': ('text', None)}], caller='test')
+
+    def test_rule_and_goal_are_not_observed_facts(self):
+        from translator_pilot import trust_issues
+        row = load_input()[0]
+        quote = row['prompt'].split('⟦SYSTEM⟧\n')[1].split('\n')[0]
+        proposed = {'facts': [{'sources': [{'source_id': 'prompt', 'quote': quote}]}]}
+        self.assertTrue(any('not_preceding_observation' in issue for issue in trust_issues(proposed, row)))
+
     def test_every_quote_not_just_first(self):
         self.assertFalse(exact_quotes([{'source_id': 'prompt', 'quote': 'valid'},
                                       {'source_id': 'prompt', 'quote': 'invented'}], {'prompt': 'valid'}))
