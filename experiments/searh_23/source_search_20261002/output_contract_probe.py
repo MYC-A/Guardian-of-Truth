@@ -4,6 +4,7 @@ import hashlib
 import importlib.util
 from pathlib import Path
 import sys
+import argparse
 
 from acceptance import ROOT
 from test_source_search import case
@@ -14,24 +15,31 @@ from run_compare import identity
 
 
 def main():
-    directory = Path(sys.argv[1])
+    parser = argparse.ArgumentParser()
+    parser.add_argument('directory', type=Path)
+    parser.add_argument('--provider', choices=('ollama', 'mistral'), default='ollama')
+    parser.add_argument('--mode', choices=('search', 'direct'), default='search')
+    args = parser.parse_args()
+    directory = args.directory
     if (directory/'frozen.json').exists():
         raise RuntimeError('probe directory already frozen; preserve previous results')
     directory.mkdir(parents=True,exist_ok=True)
     row = case()
     recovery = ROOT / 'src/guardian_truth/source_search/transport.py'
     transport_class = ModelTransport
+    transport=transport_class('/workspace/guardian/results/source-search-api-phase-20261002',
+        provider=args.provider, model='gpt-oss:20b' if args.provider=='ollama' else None,
+        reasoning_effort='none' if args.provider=='ollama' else None)
     protocol = {'scope':'AUTHOR_MECHANISM_OUTPUT_CONTRACT_PROBE_NOT_TRANSFER_QUALITY',
-        'model':'gpt-oss:20b','provider':'ollama','reasoning_effort':'none',
+        'model':transport.model,'provider':args.provider,'reasoning_effort':transport.reasoning_effort,
+        'mode':args.mode,
         'max_steps':6,'budget_phase':'source-search-api-phase-20261002',
         'source_input':row,'quality_labels_supplied':False,
         'code_sha256':identity(),
         'transport_recovery_sha256':hashlib.sha256(recovery.read_bytes()).hexdigest() if recovery.exists() else None}
     (directory/'frozen.json').write_text(json.dumps(protocol,indent=2),encoding='utf-8')
-    transport=transport_class('/workspace/guardian/results/source-search-api-phase-20261002',
-        provider='ollama',model='gpt-oss:20b',reasoning_effort='none')
     before=transport.snapshot()
-    result=run(row,transport,max_steps=6)
+    result=run(row,transport,max_steps=6,mode=args.mode)
     result['source_archive']=persist_snapshot(result.pop('sources'),directory/'source_stores')
     result['budget_before'],result['budget_after']=before,transport.snapshot()
     (directory/'result.json').write_text(json.dumps(result,ensure_ascii=False,indent=2),encoding='utf-8')
