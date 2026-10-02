@@ -253,8 +253,13 @@ def run(row, ask, *, mode='search', max_steps=12, max_payload_bytes=95000):
             if invalid_reasks > 1:
                 stop = 'invalid_after_one_technical_reask'
                 break
-            messages += [{'role': 'assistant', 'content': content},
-                         {'role': 'user', 'content': 'Invalid response: ' + str(exc)}]
+            if record.get('native_tool_calls'):
+                messages += [record['native_assistant_message'],
+                    {'role': 'tool', 'tool_call_id': record['native_tool_calls'][0]['id'],
+                     'content': json.dumps({'operation_error': str(exc)})}]
+            else:
+                messages += [{'role': 'assistant', 'content': content},
+                             {'role': 'user', 'content': 'Invalid response: ' + str(exc)}]
     decision = assessment['decision'] if assessment else 'UNKNOWN'
     return {'schema': 'guardian-source-investigation/1', 'case_id': row.get('id', row.get('case_id')),
         'source_sha256': store.source_sha256, 'mode': mode, 'decision': decision,

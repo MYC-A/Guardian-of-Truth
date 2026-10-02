@@ -105,8 +105,12 @@ class SourceStore:
         length = s['end'] - s['start']
         end = length if end is None else end
         if any(type(v) is not int for v in (start, end, expand, limit)) or not (
-                0 <= start < end <= length and 0 <= expand <= 4000 and 1 <= limit <= 8000):
+                0 <= start < length and start < end and 0 <= expand <= 4000 and 1 <= limit <= 8000):
             raise ValueError('invalid read range')
+        # Reading past EOF is a normal bounded window request. Preserve the
+        # requested endpoint and report clipping; never invent trailing text.
+        requested_end = end
+        end = min(end, length)
         left = max(s['start'], s['start'] + start - expand)
         requested_right = min(s['end'], s['start'] + end + expand)
         right = min(requested_right, left + limit)
@@ -114,7 +118,9 @@ class SourceStore:
         return {'source_id': source_id, 'source_ref': qid, **self.quotes[qid],
             'text': self.text(qid), 'was_truncated': right < requested_right,
             'next_cursor': right - s['start'] if right < requested_right else None,
-            'source_length': length, 'coverage': 'EXACT_SOURCE_WINDOW'}
+            'source_length': length, 'requested_end': requested_end,
+            'end_clipped_to_source': requested_end > length,
+            'coverage': 'EXACT_SOURCE_WINDOW'}
 
     @staticmethod
     def _page(items, cursor=0, limit=12):

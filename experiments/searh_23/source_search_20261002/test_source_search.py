@@ -37,6 +37,35 @@ def complete_vote(row, decision='NO_ERROR'):
 
 
 class Tests(unittest.TestCase):
+    def test_read_window_past_eof_is_clipped_without_inventing_text(self):
+        store = SourceStore(case())
+        result = store.read_source('h0', start=0, end=200)
+        self.assertEqual(result['text'], store.text('h0'))
+        self.assertTrue(result['end_clipped_to_source'])
+        self.assertFalse(result['was_truncated'])
+        self.assertEqual(result['requested_end'], 200)
+        with self.assertRaises(ValueError):
+            store.read_source('h0', start=result['source_length'], end=200)
+
+    def test_native_operation_error_preserves_tool_call_protocol(self):
+        calls = []
+        native = {'id': 'failed-read', 'type': 'function', 'function': {'name': 'read_source',
+            'arguments': '{"source_id":"missing"}'}}
+        def ask(messages):
+            calls.append(messages[-1])
+            if len(calls) == 1:
+                return {'status': 'OK', 'content': json.dumps({'action': {
+                    'op': 'read_source', 'args': {'source_id': 'missing'}}}),
+                    'native_tool_calls': [native], 'native_assistant_message': {
+                        'role': 'assistant', 'content': None, 'tool_calls': [native]}}
+            self.assertEqual(messages[-1]['role'], 'tool')
+            self.assertEqual(messages[-1]['tool_call_id'], 'failed-read')
+            self.assertIn('unknown source_id', messages[-1]['content'])
+            return {'status': 'UNAVAILABLE', 'reason': 'test_stop'}
+        result = run(case(), ask)
+        self.assertEqual(result['decision'], 'UNKNOWN')
+        self.assertEqual(len(calls), 2)
+
     def test_search_contract_states_phase_and_does_not_offer_final_schema(self):
         self.assertIn('CURRENT ROLE: SEARCH CONTROLLER', contract('SEARCH'))
         self.assertNotIn('Assessment schema:', contract('SEARCH'))
