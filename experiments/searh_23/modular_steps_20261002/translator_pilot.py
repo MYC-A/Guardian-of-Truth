@@ -21,7 +21,7 @@ def messages(row):
     ctx = parse_case_v02(row['id'], row['prompt'], row['response'])
     calls = ctx.target().tool_calls
     target = (json.dumps({'assertion_to_test': 'This proposed tool action is permitted NOW; not a historical occurrence.',
-                         'tool': calls[0].tool, 'arguments': calls[0].arguments}, ensure_ascii=False)
+                         'tool': calls[0].name, 'arguments': calls[0].args}, ensure_ascii=False)
               if len(calls) == 1 else row['response'])
     evidence = [{'id': 'prompt', 'text': row['prompt']}, {'id': 'target', 'text': row['response']}]
     return formal_messages(target, evidence), evidence
