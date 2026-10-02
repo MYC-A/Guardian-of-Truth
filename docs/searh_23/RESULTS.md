@@ -652,8 +652,36 @@ after the budget reserve stop. These are authored diagnostics, not held-out proo
 An opt-in Pydantic move/intent parser, code-owned native call inventory,
 act/tool/performer scope gate, full initial system sources and per-finding
 counterevidence review are implemented. Mismatches remain UNKNOWN; matching
-labels do not certify entailment. 31 mechanical regressions pass. A 32-case
-EN/RU move/intent bank and an 18-record direct/typed-BFS/typed-DFS ablation are
-frozen before inference. Navigation roots are chosen by code, not the model.
-Full competition predictor is unchanged. Details:
+labels do not certify entailment. 37 mechanical regressions pass locally and
+on the server. The completed 18-record direct/typed-BFS/typed-DFS ablation
+established no gain: each arm had one TN and five UNKNOWN. Four of six typed
+cases never reached the judge; surviving cases had no graph roots, so that
+ablation did not demonstrate actual graph benefits.
+
+A separate 32-case EN/RU component probe completed eight Mistral HTTP calls
+(11,098 tokens). All frames were structurally valid; act kinds and intent
+status each matched 30/32 authored expectations, all fields jointly 18/32.
+No USER evidence leaked into assistant acts. Several actor gold expectations
+are questionable; future/conditional are incorrectly exclusive in the schema.
+This bank has 16 bilingual families, pending human review, and is not an
+independent detector-quality measurement. Canonical parser replay matches
+all 32 saved frames with zero API calls.
+
+Per-finding review on four viewed authored situations (eight source views)
+failed. The first quote-copying interface passed provenance in 1/8 and returned
+eight UNKNOWN (12,462 tokens). Frozen source-ID selection passed provenance
+8/8 but confirmed every accusation, including four negative controls
+(18,631 tokens). Four real nonempty BFS/DFS views changed no decisions.
+Source preservation fixed quotation fidelity, not semantic entailment or bias
+toward a supplied accusation. A restricted executable-formula compiler pilot
+then completed 16/16 records on the same eight sources for both models:
+four viewed controls plus four new authored contrasts. Ministral and GPT-OSS
+each retained eight UNKNOWN; cost 52,932 tokens. Gap declarations conflated
+agent omissions with researcher uncertainty; multiple formulas also had invalid
+quantifier bindings or boolean types. A zero-API replay that
+only bypassed declared gaps evaluated one Ministral and two GPT-OSS positive
+conditions, with all other replies still unresolved/invalid. This counterfactual
+is not an improved official score or evidence of full-policy completeness.
+Navigation roots are chosen by code, not the model. Competition predictor
+is unchanged. Details:
 `docs/searh_23/TYPED_MOVE_AND_COUNTEREVIDENCE_2026-10-03.md`.
