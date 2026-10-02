@@ -237,6 +237,8 @@ def run():
                 ids = enc
             else:
                 ids = torch.as_tensor(enc['input_ids'])
+            if ids.dim() == 1:
+                ids = ids.unsqueeze(0)
             ids = ids.to(model.device)
             n_in = ids.shape[-1]
 

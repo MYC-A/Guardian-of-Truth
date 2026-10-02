@@ -167,6 +167,26 @@ docs/searh_23/RUN_PLAN_ALL_METHODS_2026-10-02.md (29 methods).
   failures). Raw journals published in raw_journals/ with sha256.
 - Data: sealed bank BUILT+SEALED by protocol_auditor PA-1 (56 cases / 14
   groups / 28+28; vault chmod 700/600, access log; repo metadata only).
-  prompt_train ≥40 and paired_dev ≥48 (24 pairs, ≥12 groups) pending.
-- Spend: 28/1600 attempts, 41,327 known / 41,327 logical tokens, 98.3
-  model-seconds. Old phases' ledgers untouched.
+  prompt_train (40 cases / 10 groups / 21 NO_ERROR + 19 ERROR) and
+  paired_dev (48 cases / 12 groups / 24 minimal pairs: 12 gold-changing +
+  12 label-preserving) BUILT and frozen before inference (bank-builder
+  subagent TA-N2a; ALL_CHECKS_PASS build+standalone verify; commit 2227be43).
+- RUN_PLAN #14 Granite Guardian native COMPLETE (commit 73d07d9a freeze,
+  then run): exact README BYOC guardian contract (judge instruction
+  extracted byte-faithfully from the model card, sha256 in selection),
+  true-case conversation layout, native <score> restricted-softmax score
+  distribution. 2 sanity (error p_yes .971 / clean .085, contract OK) +
+  24-case stratified dev bank (12 groups x first-error+first-clean):
+  pre-registered 0.5 → TP12/FP5/FN0/TN7 P .7059 R 1.0 F1 .8276;
+  dev-selected frozen threshold .9385 → TP10/FP0/FN2/TN12 P 1.0 R .8333
+  F1 .9091 (in-sample selection, disclosed); logit-vs-generated agreement
+  24/24, 0 contract failures. Independent IBM family: recall-complete at
+  0.5 / precision-complete at frozen threshold → bundle candidate, not a
+  new single-system leader (gpt-oss:20b stays anchor). Local GPU only:
+  26 calls / 17,497 tokens / 20.0 GPU-seconds, ledger rows api=0
+  (NATIVE_COMPLETE) — API ceiling untouched. Weights (16G) deleted after
+  receipts per ENVIRONMENT disk strategy; HF revision + index sha in
+  selection.json for re-download.
+- Spend: 28/1600 API attempts (unchanged by the local pilot); 41,327 known
+  API tokens; 58,824 logical tokens (incl. 17,497 local granite tokens,
+  api=0); 118.3 model-seconds total. Old phases' ledgers untouched.
