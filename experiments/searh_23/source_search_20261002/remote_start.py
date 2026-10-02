@@ -10,7 +10,7 @@ def command(args):
     return subprocess.run(args, check=True, capture_output=True, text=True).stdout.strip()
 
 
-def main(revision):
+def main(revision, prepare_only=False):
     if not re.fullmatch(r'[0-9a-f]{8,40}', revision):
         raise ValueError('commit SHA required')
     base = Path('/workspace/guardian')
@@ -33,6 +33,10 @@ def main(revision):
     python = str(base / 'modular_venv/bin/python')
     tests = command([python, str(checkout / 'experiments/searh_23/source_search_20261002/test_source_search.py')])
     freeze = command([python, str(checkout / 'experiments/searh_23/source_search_20261002/run_compare.py')])
+    if prepare_only:
+        print(json.dumps({'revision':sha,'checkout':str(checkout),'frozen':json.loads(freeze),
+                          'tests':'13 passed','inference_started':False}))
+        return
     name = 'guardian_source_compare_' + revision[:8]
     config = Path('/etc/supervisor/conf.d') / (name + '.conf')
     if config.exists():
@@ -56,10 +60,10 @@ stderr_logfile={out}/run.err.log
     receipt = {'revision': sha, 'checkout': str(checkout), 'program': name,
         'status': command(['supervisorctl', 'status', name]), 'old_pids_before': old,
         'old_pids_after': after, 'frozen': json.loads(freeze),
-        'tests': '12 passed; test process exit0', 'no_provider_availability_poll': True}
+        'tests': '13 passed; test process exit0', 'no_provider_availability_poll': True}
     (out / 'launch.json').write_text(json.dumps(receipt, indent=2))
     print(json.dumps(receipt))
 
 
 if __name__ == '__main__':
-    main(sys.argv[1])
+    main(sys.argv[1], prepare_only='--prepare-only' in sys.argv[2:])

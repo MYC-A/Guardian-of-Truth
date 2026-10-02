@@ -12,7 +12,8 @@ import urllib.request
 
 class ModelTransport:
     def __init__(self, directory, *, max_calls=150, max_tokens=500000,
-                 max_output_tokens=2400, timeout=120, provider='mistral', model=None):
+                 max_output_tokens=2400, timeout=120, provider='mistral', model=None,
+                 reasoning_effort=None):
         self.directory = Path(directory)
         self.directory.mkdir(parents=True, exist_ok=True)
         self.cache = self.directory / 'cache'
@@ -33,6 +34,7 @@ class ModelTransport:
                         if name.strip() in ('MISTRAL_API_KEY', 'MISTRAL_MODEL', 'OLLAMA_API_KEY', 'UKISAI_API_KEY'):
                             env[name.strip()] = value.strip().strip('"').strip("'")
         self.provider = provider
+        self.reasoning_effort = reasoning_effort
         endpoints = {'mistral': ('https://api.mistral.ai/v1', 'MISTRAL_API_KEY', None),
             'ollama': ('https://ollama.com/v1', 'OLLAMA_API_KEY', None),
             'ukisai': ('https://ukisai.com/api/swift/v1', 'UKISAI_API_KEY', 'none'),
@@ -60,6 +62,14 @@ class ModelTransport:
     def __call__(self, messages):
         body = {'model': self.model, 'messages': messages, 'temperature': 0,
                 'max_tokens': self.max_output_tokens, 'response_format': {'type': 'json_object'}}
+        if self.reasoning_effort is not None:
+            body['reasoning_effort'] = self.reasoning_effort
+        system = messages[0].get('content', '') if messages else ''
+        if 'CURRENT ROLE: SEARCH CONTROLLER' in system or 'CURRENT ROLE: JUDGE' in system:
+            from .pipeline import TOOLS
+            body['tools'] = [{'type':'function', 'function':{'name':name,
+                'description':description, 'parameters':{'type':'object','additionalProperties':True}}}
+                for name, description in TOOLS.items()]
         raw = json.dumps(body, ensure_ascii=False).encode()
         sha = hashlib.sha256(self.provider.encode() + b'\x00' + raw).hexdigest()
         cached = self.cache / (sha + '.json')
@@ -86,7 +96,21 @@ class ModelTransport:
             with urllib.request.urlopen(request, timeout=self.timeout) as reply:
                 data = json.loads(reply.read())
             usage = data.get('usage')
-            content = data['choices'][0]['message'].get('content')
+            message = data['choices'][0]['message']
+            content = message.get('content')
+            native = message.get('tool_calls')
+            if native:
+                from .pipeline import TOOLS
+                if not isinstance(native,list) or len(native) != 1:
+                    raise ValueError('exactly_one_sequential_native_call_required')
+                function = native[0].get('function',{})
+                if function.get('name') not in TOOLS:
+                    raise ValueError('native_call_outside_read_only_allowlist')
+                arguments = json.loads(function['arguments'])
+                if not isinstance(arguments,dict):
+                    raise ValueError('native_call_arguments_not_object')
+                content = json.dumps({'action':{'op':function['name'],'args':arguments},
+                    'reason':'native_read_only_tool_call'},ensure_ascii=False)
             if isinstance(content, list):
                 content = ''.join(item.get('text', '') for item in content if isinstance(item, dict))
             if not isinstance(content, str) or not content.strip():
@@ -94,6 +118,10 @@ class ModelTransport:
             record = {'status': 'OK', 'content': content, 'usage': usage, 'model': self.model,
                 'served_model': data.get('model'), 'finish_reason': data['choices'][0].get('finish_reason'),
                 'request_sha256': sha, 'cached': False, 'seconds': time.monotonic() - started}
+            if native:
+                record['native_tool_calls'] = native
+                record['native_assistant_message'] = {'role':'assistant','content':message.get('content'),
+                                                     'tool_calls':native}
         except urllib.error.HTTPError as exc:
             record = {'status': 'UNAVAILABLE', 'reason': f'http_{exc.code}', 'http_status': exc.code,
                 'model': self.model, 'request_sha256': sha, 'cached': False,

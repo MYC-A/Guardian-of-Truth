@@ -227,8 +227,13 @@ def run(row, ask, *, mode='search', max_steps=12, max_payload_bytes=95000):
                     elif op in ('search_sources', 'lookup_entity', 'get_observations', 'neighbors', 'extract_literals') and position > 0 and previous is None:
                         gaps[key] = {'operation': op, 'args': args, 'skipped_remainder': True,
                                      'reason': 'initial_query_skipped_prefix'}
-                messages += [{'role': 'assistant', 'content': content},
-                    {'role': 'user', 'content': json.dumps({'operation_result': result}, ensure_ascii=False)}]
+                reply = json.dumps({'operation_result':result},ensure_ascii=False)
+                if record.get('native_tool_calls'):
+                    messages += [record['native_assistant_message'],
+                        {'role':'tool','tool_call_id':record['native_tool_calls'][0]['id'],'content':reply}]
+                else:
+                    messages += [{'role': 'assistant', 'content': content},
+                                 {'role': 'user', 'content': reply}]
                 continue
             if 'assessment' not in choice or (phase == 'SEARCH' and mode != 'direct'):
                 raise ValueError('SEARCH cannot produce final assessment before JUDGE')

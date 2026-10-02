@@ -6,6 +6,7 @@ import unittest
 from unittest.mock import patch
 import tempfile
 import urllib.error
+import io
 
 ROOT = Path(__file__).resolve().parents[3]
 sys.path.insert(0, str(ROOT / 'src'))
@@ -144,6 +145,31 @@ class Tests(unittest.TestCase):
                 self.assertEqual(resumed.snapshot()['actual_api_attempts'], 1)
                 self.assertEqual(resumed.snapshot()['known_provider_tokens'], 0)
                 self.assertGreater(resumed.snapshot()['unknown_usage_upper_bounds'], 0)
+
+    def test_native_tool_call_is_decoded_and_reply_uses_same_call_id(self):
+        with tempfile.TemporaryDirectory() as directory:
+            with patch.dict('os.environ',{'MISTRAL_API_KEY':'test-placeholder','MISTRAL_MODEL':'test-model'}):
+                transport=ModelTransport(directory)
+                native={'id':'test-call-1','type':'function','function':{'name':'read_source',
+                    'arguments':json.dumps({'source_id':'h0'})}}
+                data={'choices':[{'finish_reason':'tool_calls','message':{'role':'assistant','content':'','tool_calls':[native]}}],
+                      'usage':{'total_tokens':12}}
+                with patch('urllib.request.urlopen',return_value=io.BytesIO(json.dumps(data).encode())):
+                    rec=transport([{'role':'system','content':contract('SEARCH')},{'role':'user','content':'source index'}])
+                self.assertEqual(rec['status'],'OK')
+                self.assertEqual(json.loads(rec['content'])['action']['op'],'read_source')
+                self.assertEqual(rec['native_tool_calls'][0]['id'],'test-call-1')
+                calls=[]
+                def ask(messages):
+                    calls.append(messages[-1])
+                    if len(calls)==1:
+                        return rec
+                    self.assertEqual(messages[-1]['role'],'tool')
+                    self.assertEqual(messages[-1]['tool_call_id'],'test-call-1')
+                    return {'status':'UNAVAILABLE','reason':'stop_after_verified_native_roundtrip'}
+                result=run(case(),ask)
+                self.assertEqual(result['trace'][0]['result']['source_id'],'h0')
+                self.assertEqual(len(calls),2)
 
 
 if __name__ == '__main__':

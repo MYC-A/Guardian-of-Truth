@@ -3,6 +3,7 @@ import argparse
 import csv
 import json
 from collections import Counter
+from pathlib import Path
 
 from acceptance import ROOT
 from run_compare import OUT
@@ -11,9 +12,11 @@ from run_compare import OUT
 def main():
     parser = argparse.ArgumentParser()
     parser.add_argument('--allow-partial', action='store_true')
+    parser.add_argument('--directory', type=Path, default=OUT)
     args = parser.parse_args()
-    frozen = json.loads((OUT / 'frozen.json').read_text(encoding='utf-8'))
-    records = [json.loads(line) for line in (OUT / 'predictions.jsonl').read_text(encoding='utf-8').splitlines()]
+    output_dir = args.directory
+    frozen = json.loads((output_dir / 'frozen.json').read_text(encoding='utf-8'))
+    records = [json.loads(line) for line in (output_dir / 'predictions.jsonl').read_text(encoding='utf-8').splitlines()]
     expected = {(i, a) for i in frozen['case_ids'] for a in frozen['arms']}
     by_key = {(r['case_id'], r['mode']): r for r in records}
     if len(by_key) != len(records) or not set(by_key) <= expected:
@@ -64,7 +67,7 @@ def main():
         'complete': set(by_key) == expected, 'records': len(records), 'expected': len(expected),
         'arms': summary, 'per_case_changes': changed,
         'UNKNOWN_csv_fallback_is_not_a_NO_ERROR_prediction': True}
-    (OUT / 'score.json').write_text(json.dumps(output, ensure_ascii=False, indent=2), encoding='utf-8')
+    (output_dir / 'score.json').write_text(json.dumps(output, ensure_ascii=False, indent=2), encoding='utf-8')
     print(json.dumps({k: {kk: vv for kk, vv in v.items() if kk != 'cases'} for k, v in summary.items()}))
 
 
