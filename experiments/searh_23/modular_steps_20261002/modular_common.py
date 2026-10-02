@@ -203,7 +203,11 @@ class Budget:
                     # attempt (no per-row useless requests). Probe-marked calls
                     # pass an OPEN_PERMANENT channel so recovery is testable.
                     call_model = kwargs.get('model') or model
-                    provider = llm._provider_of(call_model)
+                    # Resolve the provider from the ORIGINAL (unsplilt) model
+                    # name: the resolved kwargs['model'] loses the provider
+                    # prefix for 'provider/model' syntax and would map every
+                    # such channel onto the 'unknown' endpoint.
+                    provider = llm._provider_of(model)
                     endpoint = llm.PROVIDERS.get(provider, ('unknown',))[0]
                     slot = hashlib.sha256(str(getattr(client, 'api_key', '') or '').encode()).hexdigest()[:12]
                     bkey = ChannelBreaker.key_for(endpoint, slot, call_model)
