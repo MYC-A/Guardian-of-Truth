@@ -36,6 +36,22 @@ def _phase_limits(phase):
     raise ValueError(f'unknown_budget_phase:{phase}')
 
 
+def budget_phase(split='dev'):
+    """Explicit phase wiring for every runner (user fix 2026-10-02 #1).
+
+    Continuation runners charge the authorized dev2 phase from
+    budget_phases.json; sealed runs stay on the frozen heldout phase. The
+    legacy pilot ledger (699667/700000) is history-only and is never reset.
+    GUARDIAN_MODULAR_BUDGET_PHASE overrides the resolution for explicitly
+    pinned launches and ad-hoc probes; runners that know their split pass it
+    here instead of hardcoding 'pilot'.
+    """
+    override = os.environ.get('GUARDIAN_MODULAR_BUDGET_PHASE')
+    if override:
+        return override
+    return 'heldout' if split == 'sealed' else 'dev2'
+
+
 def sha(value):
     if not isinstance(value, bytes):
         value = json.dumps(value, sort_keys=True, ensure_ascii=False, separators=(',', ':')).encode()
@@ -105,13 +121,15 @@ class ChannelOpenError(Exception):
 
 
 class Budget:
-    def __init__(self, phase='pilot'):
-        self.phase = phase
+    def __init__(self, phase=None):
+        # phase=None resolves explicitly through budget_phase(): the exhausted
+        # legacy 'pilot' phase is never an implicit default again (user fix #1).
+        self.phase = phase or budget_phase()
         self.request_limit = None
         self.request_attempts = 0
         RESULTS.mkdir(parents=True, exist_ok=True)
-        self.path = RESULTS / f'{phase}_budget.sqlite'
-        self.limits = _phase_limits(phase)
+        self.path = RESULTS / f'{self.phase}_budget.sqlite'
+        self.limits = _phase_limits(self.phase)
         from channel_breaker import ChannelBreaker
         self.breaker = ChannelBreaker(self.path)
         with self.connect() as db:
@@ -131,7 +149,16 @@ class Budget:
                 seconds >= self.limits['max_model_seconds']):
                 raise BudgetStop('shared_phase_budget_exhausted')
             if api:
-                unknown = db.execute("SELECT COALESCE(SUM(tokens),0) FROM attempts WHERE status LIKE 'TRANSPORT%' OR status='COMPLETE_USAGE_UNKNOWN_UPPER_BOUND'").fetchone()[0]
+                # In-flight RESERVED api rows count toward the unknown ceiling
+                # until exactly-once finalization (user fix 2026-10-02 #3): a
+                # reservation whose eventual usage is not yet known IS unknown
+                # spend. Without it two concurrent 150k reservations pass a
+                # 200k cap and land 300k of retained upper bounds after both
+                # fail (the reported repro).
+                unknown = db.execute(
+                    "SELECT COALESCE(SUM(tokens),0) FROM attempts WHERE status LIKE 'TRANSPORT%' "
+                    "OR status='COMPLETE_USAGE_UNKNOWN_UPPER_BOUND' OR (status='RESERVED' AND api=1)"
+                ).fetchone()[0]
                 cap_unknown = self.limits.get('max_unknown_transport_upper_bound_tokens')
                 if cap_unknown is not None and unknown + tokens > cap_unknown:
                     raise BudgetStop('unknown_usage_upper_bound_ceiling')
@@ -164,7 +191,12 @@ class Budget:
         with self.connect() as db:
             n, tokens, seconds, pending = db.execute("SELECT COALESCE(SUM(api),0),COALESCE(SUM(tokens),0),COALESCE(SUM(seconds),0),COALESCE(SUM(status='RESERVED'),0) FROM attempts").fetchone()
             known = db.execute("SELECT COALESCE(SUM(tokens),0) FROM attempts WHERE status='COMPLETE'").fetchone()[0]
-            unknown = db.execute("SELECT COALESCE(SUM(tokens),0) FROM attempts WHERE status LIKE 'TRANSPORT%' OR status='COMPLETE_USAGE_UNKNOWN_UPPER_BOUND'").fetchone()[0]
+            # Same predicate as the admission check in reserve(): in-flight
+            # api reservations are visible as unknown spend until finalized.
+            unknown = db.execute(
+                "SELECT COALESCE(SUM(tokens),0) FROM attempts WHERE status LIKE 'TRANSPORT%' "
+                "OR status='COMPLETE_USAGE_UNKNOWN_UPPER_BOUND' OR (status='RESERVED' AND api=1)"
+            ).fetchone()[0]
             by_module = db.execute('SELECT module,SUM(api),SUM(tokens),SUM(seconds) FROM attempts GROUP BY module').fetchall()
             skipped = db.execute("SELECT COUNT(*) FROM attempts WHERE status='BREAKER_OPEN_SKIPPED'").fetchone()[0]
         return {'actual_api_attempts': n, 'logical_tokens': tokens, 'model_seconds': seconds,

@@ -62,7 +62,7 @@ llm.chat = _fake_chat
 llm._provider_of = lambda model: 'ollama' if model in ('gemma4:31b', 'glm-5.3-flash') else 'unknown'
 sys.modules['llm'] = llm
 
-from modular_common import Budget, BudgetStop, ChannelOpenError
+from modular_common import Budget, BudgetStop, ChannelOpenError, budget_phase
 from channel_breaker import ChannelBreaker, classify_transport, safe_retry_after
 
 MODEL = 'glm-5.3-flash'
@@ -120,6 +120,24 @@ def test_phase_limits_and_separation():
     # frozen phases unchanged
     p = Budget('pilot')
     assert p.limits['max_actual_api_attempts'] == 300  # from protocol.json
+
+
+def test_budget_phase_wiring():
+    # user fix #1: runners resolve the phase explicitly — dev continuation
+    # charges dev2, sealed stays on the frozen heldout phase, and the env
+    # override pins a launch. Budget() without an explicit phase can never
+    # silently charge the exhausted legacy 'pilot' ledger again.
+    assert budget_phase('dev') == 'dev2'
+    assert budget_phase('sealed') == 'heldout'
+    os.environ['GUARDIAN_MODULAR_BUDGET_PHASE'] = 'dev2'
+    try:
+        b = Budget()  # runner-style construction (negative_review_pilot etc.)
+        assert b.phase == 'dev2'
+        assert b.path.name == 'dev2_budget.sqlite'
+        assert b.limits['max_actual_api_attempts'] == 300
+    finally:
+        del os.environ['GUARDIAN_MODULAR_BUDGET_PHASE']
+    assert Budget().phase == 'dev2'  # default resolution, no env var needed
 
 
 def test_exactly_once_finalize():
@@ -212,6 +230,79 @@ def test_snapshot_known_unknown_split():
     assert snap['known_provider_tokens'] == 90, snap
     assert snap['unknown_upper_bound_tokens'] == 1200, snap   # transport + completion-unknown
     assert snap['logical_tokens'] == 1340, snap               # everything incl. cache
+
+
+def test_unknown_cap_counts_inflight_reservations():
+    # user fix #3 repro: under a 200k ceiling two 150k reservations must not
+    # both be admitted; after both fail and retain their upper bounds the
+    # committed total would be 300k without in-flight accounting.
+    b = _fresh_budget()
+    assert b.limits['max_unknown_transport_upper_bound_tokens'] == 200000
+    r1 = b.reserve('m', MODEL, 'k1', 150000)          # RESERVED, in flight
+    try:
+        b.reserve('m', MODEL, 'k2', 150000)
+        raise AssertionError('expected BudgetStop: second in-flight reservation')
+    except BudgetStop as exc:
+        assert 'unknown_usage_upper_bound' in str(exc)
+    b.finish(r1, 150000, 1.0, 'TRANSPORT_ERROR_429_RATE_LIMIT_USAGE_UNKNOWN_UPPER_BOUND')
+    try:
+        b.reserve('m', MODEL, 'k3', 60000)             # 150k committed + 60k > 200k
+        raise AssertionError('expected BudgetStop over committed bound')
+    except BudgetStop:
+        pass
+    r4 = b.reserve('m', MODEL, 'k4', 50000)           # 150k + 50k == cap, admitted
+    b.finish(r4, 50000, 1.0, 'COMPLETE')              # becomes known provider spend
+    snap = b.snapshot()
+    assert snap['unknown_upper_bound_tokens'] == 150000, snap
+    assert snap['known_provider_tokens'] == 50000, snap
+
+
+def test_atomic_single_admission_after_cooldown():
+    # user fix #2 repro: after the cooldown expires, exactly ONE caller is
+    # admitted; the concurrent caller is vetoed before the first finishes.
+    b = _fresh_budget()
+    k = KEY
+    b.breaker.record_failure(k, '429_RATE_LIMIT', retry_after=0.2)
+    time.sleep(0.35)                      # cooldown expires
+    second = ChannelBreaker(b.path)       # separate object == separate process
+    first = b.breaker.guard(k)
+    other = second.guard(k)
+    admitted = [g for g in (first, other) if g is None]
+    assert len(admitted) == 1, (first, other)
+    veto = other if first is None else first
+    assert veto[0] == 'PROBING' and veto[1] == 'PROBE_IN_FLIGHT', veto
+    b.breaker.record_success(k)           # the admitted request succeeded
+    assert second.guard(k) is None        # channel clear for everyone
+
+
+def test_probe_claim_inherits_429_cycles():
+    # The claimant's next 429 is consecutive cycle 2 (not a reset); a third
+    # cycle opens the channel permanently.
+    b = _fresh_budget()
+    k = KEY
+    b.breaker.record_failure(k, '429_RATE_LIMIT', retry_after=0.2)   # cycle 1
+    time.sleep(0.35)
+    assert b.breaker.guard(k) is None                               # claim admitted
+    b.breaker.record_failure(k, '429_RATE_LIMIT', retry_after=0.2)  # cycle 2
+    row = b.breaker._row(k)
+    assert row[0] == 'OPEN_COOLDOWN' and row[3] == 2, row
+    time.sleep(0.35)
+    assert b.breaker.guard(k) is None                               # second claim
+    b.breaker.record_failure(k, '429_RATE_LIMIT', retry_after=0.2)  # cycle 3
+    row = b.breaker._row(k)
+    assert row[0] == 'OPEN_PERMANENT' and row[1] == '429_REPEATED', row
+
+
+def test_transient_failure_releases_probe_claim():
+    # 5xx during an admitted probe releases the claim instead of pinning the
+    # channel in PROBING for the whole claim window.
+    b = _fresh_budget()
+    k = KEY
+    b.breaker.record_failure(k, '429_RATE_LIMIT', retry_after=0.2)
+    time.sleep(0.35)
+    assert b.breaker.guard(k) is None          # claim admitted (PROBING)
+    b.breaker.record_failure(k, '5XX')
+    assert b.breaker.guard(k) is None          # claim released, channel closed
 
 
 if __name__ == '__main__':

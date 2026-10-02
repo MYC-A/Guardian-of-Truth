@@ -3,13 +3,15 @@ import argparse
 import json
 from pathlib import Path
 import time
-from modular_common import Budget, BudgetStop, HERE, RESULTS, append, load_input, source_sha, write
+from modular_common import Budget, BudgetStop, HERE, RESULTS, append, budget_phase, load_input, source_sha, write
 
 
 def run(split='dev', all_cases=False):
     ids = None if all_cases else json.loads((HERE / 'dataset/pilot_ids.json').read_text())
     rows = load_input(split, ids)
-    budget = Budget('pilot' if split == 'dev' else 'heldout')
+    # Explicit phase wiring (user fix 2026-10-02 #1): dev continuation runs
+    # charge the authorized dev2 phase, sealed stays on the frozen heldout.
+    budget = Budget(budget_phase(split))
     budget.install()
     from runtime import GuardianServiceRuntime
     runtime = GuardianServiceRuntime('r0-service-v1')
