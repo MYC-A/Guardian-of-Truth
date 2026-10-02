@@ -64,7 +64,7 @@ def execute(store, action, open_questions):
         raise ValueError('args must be object')
     op = action['op']
     if op == 'get_open_questions':
-        return {'questions': open_questions}
+        return {'questions': dict(open_questions)}
     if op == 'extract_literals':
         cursor, limit = args.pop('cursor', 0), args.pop('limit', 24)
         return {**store._page(literals(store, **args), cursor, limit), 'status': 'SOURCE_LITERALS_ONLY'}
@@ -185,7 +185,7 @@ def contract(phase):
 
 def run(row, ask, *, mode='search', max_steps=12, max_payload_bytes=95000,
         initial_context=None, policy_first=False, system_extension='', assessment_gate=None,
-        source_store=None):
+        source_store=None, contract_builder=None, assessment_decoder=None):
     store = source_store if source_store is not None else SourceStore(row)
     if store.raw != {k:row[k] for k in ('prompt','response')}:
         raise ValueError('supplied source store belongs to another input')
@@ -201,7 +201,7 @@ def run(row, ask, *, mode='search', max_steps=12, max_payload_bytes=95000,
     if initial_context is not None:
         initial['source_linked_context'] = initial_context
     def prompt(current_phase):
-        text=contract(current_phase)
+        text=(contract_builder or contract)(current_phase)
         if policy_first:
             text=text.replace('and the policy text has not been supplied.',
                               'and the complete recognized system sources are supplied in full_system_sources.')
@@ -259,7 +259,8 @@ def run(row, ask, *, mode='search', max_steps=12, max_payload_bytes=95000,
                 # evidence query is material by default. Unseen results cannot
                 # silently disappear when a later answer says it is confident.
                 if op not in ('list_sources', 'get_open_questions', 'calculate'):
-                    identity_args = {k: v for k, v in args.items() if k not in ('cursor', 'start', 'max_nodes')}
+                    window_args = ('cursor', 'limit', 'start', 'end', 'expand', 'max_nodes')
+                    identity_args = {k: v for k, v in args.items() if k not in window_args}
                     key = json.dumps([op, identity_args], sort_keys=True)
                     previous = gaps.get(key)
                     position = args.get('start', 0) if op == 'read_source' else args.get('cursor', 0)
@@ -285,9 +286,18 @@ def run(row, ask, *, mode='search', max_steps=12, max_payload_bytes=95000,
                 continue
             if 'assessment' not in choice or (phase == 'SEARCH' and mode != 'direct'):
                 raise ValueError('SEARCH cannot produce final assessment before JUDGE')
-            assessment = validate_assessment(store, choice['assessment'])
+            vote = assessment_decoder(store, choice['assessment']) if assessment_decoder else choice['assessment']
+            assessment = validate_assessment(store, vote)
             if assessment_gate is not None:
-                assessment = assessment_gate(store, choice['assessment'], assessment)
+                assessment = assessment_gate(store, vote, assessment)
+            # These are model-checked questions with validated provenance, not
+            # formally proven propositions. Keep the real unresolved work visible
+            # when the judge requests another source after a partial assessment.
+            for check in vote.get('checks', []):
+                if check.get('status') != 'OPEN' and check.get('evidence'):
+                    questions.pop(check['question_id'], None)
+                else:
+                    questions[check['question_id']] = QUESTIONS[check['question_id']]
             if gaps and assessment['decision'] != 'UNKNOWN':
                 assessment['proposed_decision'] = assessment['decision']
                 assessment['decision'] = 'UNKNOWN'

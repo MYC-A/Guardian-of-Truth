@@ -420,6 +420,7 @@ class GuardianServiceRuntime:
         source_search = self.config.get("stages", {}).get("source_search")
         if source_search:
             from guardian_truth.source_search.pipeline import run
+            from guardian_truth.source_search.id_contract import run_ids
             from guardian_truth.source_search.transport import ModelTransport
             from guardian_truth.source_search.archive import persist_snapshot
             if findings:
@@ -439,8 +440,13 @@ class GuardianServiceRuntime:
                     Path("/workspace/guardian/results/source-search-api-phase-20261002"),
                     **self.config.get("model_budget", {}))
             before = self._source_transport.snapshot()
-            result = run({"id": case_id, "prompt": prompt, "response": response},
-                         self._source_transport, **source_search)
+            interface = source_search.get("interface", "quotes")
+            if interface not in ("quotes", "source_ids"):
+                raise ValueError("unsupported source investigation interface")
+            runner = run_ids if interface == "source_ids" else run
+            options = {k:v for k,v in source_search.items() if k != "interface"}
+            result = runner({"id": case_id, "prompt": prompt, "response": response},
+                            self._source_transport, **options)
             archive = persist_snapshot(result["sources"],
                 (self.audit_path.parent if self.audit_path else
                  Path("/workspace/guardian/results/source_search_20261002/service")) / "source_stores")
