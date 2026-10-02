@@ -178,3 +178,112 @@ valid review, not CONFIRMED-by-routing) at the cost of 5 new FPs each.
 Honest negative: at equal query fraction the adaptive source triggers show
 no dev advantage over matched random; B's additional-error precision on
 clean NO_ERROR primaries is the governing factor (1/6 per selection).
+
+# ENVIRONMENT.md addendum — §7 B–F continuation (2026-10-02, pin 8b2bdf11)
+
+Inference pin: every §7.B–F API run below executed at git HEAD 8b2bdf11
+with GUARDIAN_MODULAR_BUDGET_PHASE=dev2; no commit happened mid-run. All
+selection files were frozen before their first paid call; gold was opened
+only by post-run scorers after the journals were complete.
+
+§7.B closed (graph arms resume + atomic completion, dev2):
+- pilot_graph 24/24 rows (6 legacy pilot-phase rows preserved + 18 new
+  dev2 rows): G1/G2/G2-linear/G3 all TP2/FP0/FN0/TN4 on the paired
+  6-case bank, pairwise decision agreement 6/6; two legacy rows keep
+  INVALID B (dev_latest::00 G2-linear/G3) preserved as-is; G3 bounded to
+  <=4 read-only queries (one legacy row requested 0). Provenance note:
+  dev_latest::01 G2-vs-G2-linear information_sha256 differs ONLY because
+  the G2 row is legacy code and G2-linear is dev2 (typed-binding graph
+  fields; 96/96 selection-identical regression) — within one provenance
+  every pair shares the hash. All arms forward the full prompt plus an
+  advisory: added organization/prompting is measured, not context economy.
+- pilot_atomic 6/6 rows: honest negative — atomizer INVALID 4/6
+  (invalid_atom_inventory / per-atom shape on tool-call targets), verifier
+  MODEL_JUDGED 1/6; gold atomic_claims remain a diagnostic layer only.
+  Analysis: results/modular_steps_20261002/mechanism_paired_analysis.json.
+
+§7.C tail closed (temporal-calculation assistant module):
+- New author bank dataset/temporal_boundary (10 cases: +05:45/-12:00/-06:00
+  minute offsets, +14:00 extreme, fractional seconds, cross-day equality,
+  unzoned literal determinable only by reasoning, latest-of-two clocks).
+- Offline ground-truth gate (module_verification.json): PASS 18/18 — ISO
+  arithmetic exact, spans verbatim, ADVISORY_ONLY decision, unzoned literal
+  declined (no default timezone guessed).
+- Paired run (temporal_assistant_pilot): identical sources, strict
+  source-bound-v2 B without vs with the module advisory; primary J reused
+  from the frozen control archive (4 cases) or run once per new case and
+  shared by both arms. Result: 18/18 decisions UNCHANGED (both arms
+  TP6/FP12/FN0 — B flags additional errors everywhere; precision on clean
+  governs), known FN dev_inclusive_timezone::02 repaired by a valid B
+  verdict in both arms. Honest negative: the code-computed arithmetic
+  advisory changes no B verdict on this bank. Cost: B_with adds ~1.1k
+  logical tokens per case for the advisory payload (measured, journaled).
+- Attempt-1 ran fresh primaries for all 18 cases (contradicting the frozen
+  reuse plan); archived in full as temporal_assistant_pilot_attempt1 with
+  RECOVERY_NOTE.json; versioned recovery re-ran with archive reuse at
+  ~1 fresh API call (cache-identical messages re-served); attempt-1 costs
+  remain counted in the dev2 ledger.
+
+§7.D closed:
+- M1 automatic SystemV2 Steps2-4 E2E (system_v2_pilot.py, 4 cases,
+  ordinary upstream — no gold substitutions; §7.A replay had already
+  proved the archived proposals bit-identical): equals archived C0 exactly
+  (TP3/FP0/FN0/TN1; all four C0->v2 transitions unchanged; not degraded).
+- M2 bounded CCG (ccg_bounds.py, offline, zero API): bounded repair
+  cascade recovered 11/11 previously failed sentences (7 pure LEXICAL:
+  sentence re-split / semicolon split / composed boundary split /
+  equals-normalize / drop-back; 4 LEXICALIZED_SEMANTIC rewrites
+  'regardless of' -> 'without regard to'); every attempt journaled
+  before/after. Minimal meaning-flipping counterexamples (only-if,
+  unless, negation, modality, connective scope, inclusive/exclusive
+  boundary, implication direction): 19/20 DISTINGUISHED (HOL root formula
+  changed), 1 COVERAGE_GAP (transformed refusal sentence unparseable),
+  0 INSENSITIVE. coqtop is not installed and was not installed (no
+  gigabyte Coq on this disk); no lossy HOL->proposition bridge attempted;
+  predicates remain uninterpreted — no normative-semantics claim.
+
+§7.E closed:
+- SelfCheck bank (selfcheck_bank.py, 3 preselected uncertainty cases,
+  k=3 seeds 19/37/53, temperature .7, max_tokens 800): judge mode
+  (gemma4:31b on JUDGE_SYSTEM) and reconstructed-target mode (mistral,
+  explicit reconstruction prompt) measured separately, never mixed.
+  agreement 1.0 / frequency entropy 0 on all three; native SelfCheck-NLI
+  (author SelfCheckNLI class, DeBERTa checkpoint) judge-mode contradiction
+  0.005/0.003/0.164; reconstructed-target-mode 0.845/0.605/0.584 — the
+  target-mode number measures divergence from the surrogate generator,
+  not truth. SEP not claimed (no hidden states/probe on API models).
+  Environment: transformers 5.16.1 (main venv) cannot load the DeBERTa
+  spm tokenizer even with tiktoken 0.14.0 installed (attempted); the NLI
+  execution runs under modular_venv (transformers 4.57.6), matching the
+  earlier selfcheck_recovery provenance.
+- RAG-Triad bank (triad_bank.py completes pilot_triad to a 3-case bank;
+  raw / G2 / G2-linear paired inputs x target/explanation): TruLens author
+  templates through the pinned transparent adapter with the budgeted
+  Mistral backend — an adapted feedback executor, NOT a native TruLens
+  provider run. Target moves grounded 2-3/3 across modes; Guardian
+  explanations score 0-2/3 (diagnostic only, no correctness proof).
+
+§7.F closed (long-bank LLM quality, pre-registered subset):
+- 12 cases chosen before viewing results (5 family/size/position combos
+  with clean+error twins + one 12k probe pair; begin/middle/end;
+  exception/version families; 1k/4k/8k/12k) through the unchanged C0
+  service (r0-service-v1): TP5/FP0/FN1/TN6, F1 .909, no UNKNOWN/degraded.
+  Exception family 4/4 errors caught at every position; the single FN is
+  the version-update family at begin. 12000-exact is in-limit by
+  construction; 12001+ remains the operational UNKNOWN smoke (existing
+  service_long_v2 receipts, not re-run). The bank's artificial
+  two-SYSTEM-message stress layout is flagged in every prediction row.
+
+New artifacts (all under experiments/searh_23/modular_steps_20261002/ and
+results/modular_steps_20261002/ unless noted): build_temporal_bank.py,
+temporal_assistant_pilot.py, score_temporal_arms.py,
+score_mechanism_arms.py, system_v2_pilot.py, score_system_v2.py,
+ccg_bounds.py, selfcheck_bank.py, triad_bank.py, long_bank_pilot.py,
+score_long_bank.py; dataset/temporal_boundary/{input,author_gold,manifest};
+results temporal_assistant_pilot(_attempt1), system_v2_pilot, ccg_bounds,
+selfcheck_bank, pilot_triad_v2, long_bank_pilot,
+mechanism_paired_analysis.json.
+
+dev2 ledger after §7.A–F: 263/300 attempts, 805401/1.2M logical,
+659829/1M known tokens, 807/14400 model-seconds, 0 pending reservations.
+Sealed untouched; default service config R0 unchanged.
