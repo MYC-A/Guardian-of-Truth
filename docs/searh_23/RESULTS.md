@@ -685,3 +685,29 @@ is not an improved official score or evidence of full-policy completeness.
 Navigation roots are chosen by code, not the model. Competition predictor
 is unchanged. Details:
 `docs/searh_23/TYPED_MOVE_AND_COUNTEREVIDENCE_2026-10-03.md`.
+
+## 30. Full real46 source-ID investigation (2026-10-03)
+
+Frozen GPT-OSS:120b direct/search comparison completed 92/92. Both arms retain
+11 TP from the shared structural layer; neither adds an accepted LLM TP.
+Direct: 1 TN / 34 UNKNOWN; search: 1 FP / 1 TN / 33 UNKNOWN. All 12 remaining
+positive cases are UNKNOWN in both. Search is about 3.2 times more expensive:
+1,920,662 new tokens versus 594,783 direct (183 versus 34 new HTTP attempts).
+One direct and five search responses reuse exact cached technical-pilot calls.
+
+The model performed 99 source reads and 16 text searches, but no BFS/DFS,
+entity traversal or source-bound calculator calls. Missing check citations
+cause many UNKNOWNs; raw proposals still have semantic failures. Source IDs
+do not prevent confusing verifier actions with the examined assistant or
+declaring unseen evidence absent. Search's single accepted semantic ERROR
+is an FP. Removing checks is not a remedy: among nonstructural last raw votes,
+search proposes 8 positive hits together with 11 false positives (not official
+accepted predictions).
+
+A separately frozen six-positive target-frame diagnostic closes direct's
+citation format but gives 1 TP / 5 FN. Search's one positive hit has the wrong
+reason (numbers alleged absent actually exist in other sources). No negative
+controls or transfer proof; no promotion. Its SEARCH reminder format bug is
+being checked separately with phase-aware instructions and exact cache reuse.
+Details and full verifiable archives:
+`docs/searh_23/SOURCE_IDS_REAL46_V3_2026-10-03.md`.
