@@ -100,8 +100,9 @@ def main():
                             'model_seconds': seconds - phantom_seconds},
         'uncertainty': 'reconciled numbers are a lower bound on real spend: any hypothetical '
                        'phantom pair reserved >50ms apart would not match the signature (none '
-                       'observed); guard-veto phantoms (api=1 row without a native call) would '
-                       'appear as TRANSPORT_ERROR rows outside pairs — none exist in this ledger',
+                       'observed). The 4 TRANSPORT_ERROR_402 rows outside pairs are genuine '
+                       'live 402 validation probes (module channel-probe), not double-layer '
+                       'phantoms; no unexplained api=1 row remains outside the paired window.',
         'phases': {'dev2_remaining_after_reconciliation': {
             'actual_api_attempts': 300 - (n - phantom_api),
             'logical_tokens': 1200000 - (logical - phantom_logical),

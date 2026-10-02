@@ -296,9 +296,11 @@ def test_cooldown_one_probe_no_phantom_api_row():
     assert gate['entered'].wait(timeout=10), 'admitted caller never reached native transport'
     t2 = threading.Thread(target=concurrent)
     t2.start()
+    # deterministic: the concurrent caller must hit the PROBING claim while
+    # the admitted call is still inside the transport (gate NOT released yet).
+    t2.join(timeout=30)
     gate['release'].set()
     t1.join(timeout=30)
-    t2.join(timeout=30)
     # exactly ONE native transport call happened
     assert comp.calls == 2, f'expected 2 native calls total (1 failing + 1 probe), got {comp.calls}'
     vetoes = [e for e in errors if isinstance(e, ChannelOpenError)]

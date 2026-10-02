@@ -415,12 +415,14 @@ def main():
     }
     atlas['attribution'] = {
         'routing_fp_total': 21,
-        'B_invented_additional_error_on_primary_no_error': 19,
-        'B_confirmed_wrong_J_finding': 2,
+        'B_invented_additional_error_on_primary_no_error': 18,
+        'B_confirmed_or_extended_wrong_J_finding': 3,
         'primary_J_error_on_clean': 3,
         'note': 'C0 baseline FP3 on dev48 are exactly the 3 primary-J errors; the other '
                 '18 routing FP exist only because strict_always routes clean primaries '
-                'to B, and B manufactures accusations (assignment hypothesis 1 confirmed).',
+                'to B, and B manufactures accusations (assignment hypothesis 1 confirmed; '
+                'dev_request_effect::01 is counted as common-mode primary ERROR, not a '
+                'B-invented-on-clean case).',
     }
     path = OUT / 'fp_cause_atlas.json'
     path.write_text(json.dumps(atlas, ensure_ascii=False, sort_keys=True, indent=2) + '\n', encoding='utf-8')
