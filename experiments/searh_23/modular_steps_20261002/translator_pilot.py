@@ -45,7 +45,7 @@ def trust_issues(parsed, row):
 def run():
     budget = Budget()
     llm = budget.install()
-    from guardian_truth.formal_reasoning import evaluate_formalization
+    from guardian_truth.formal_reasoning import evaluate_formalization, FormalValidationError
     rows = load_input(ids=IDS)
     folder = RESULTS / 'translator_pilot'
     write(folder / 'selection.json', {'ids': IDS, 'models': MODELS,
@@ -65,12 +65,17 @@ def run():
                 answer = llm.chat(model, msgs, max_tokens=3000, temperature=0, json_mode=True,
                                   transport_retries=0, caller='modular/translator/' + requested)
                 parsed = llm.extract_json(answer.get('content'))
-                result = evaluate_formalization(json.dumps(parsed) if parsed is not None else '', evidence)
+                try:
+                    result = dataclasses.asdict(evaluate_formalization(json.dumps(parsed) if parsed is not None else '', evidence))
+                    format_status = 'VALID'
+                except FormalValidationError as exc:
+                    result = {'relation': 'INSUFFICIENT', 'reason': exc.category, 'scope': 'invalid_translation'}
+                    format_status = 'INVALID'
                 issues = trust_issues(parsed, row)
                 rec = {'id': row['id'], 'model': requested, 'resolved_model': model,
                        'source_sha256': source_sha(row), 'raw': answer, 'translation': parsed,
-                       'formal_result': dataclasses.asdict(result), 'trust_issues': issues,
-                       'guarded_relation': 'INSUFFICIENT' if issues else result.relation,
+                       'formal_result': result, 'format_status': format_status, 'trust_issues': issues,
+                       'guarded_relation': 'INSUFFICIENT' if issues else result['relation'],
                        'translation_semantically_verified': False, 'wall_seconds': time.monotonic() - began}
                 append(journal, rec)
                 prior[requested, row['id']] = rec

@@ -21,7 +21,7 @@ def deduplicate_own_factcg():
     candidates = []
     for root in (Path('/workspace/.hf_home'), Path('/workspace/guardian/hf_cache')):
         for file in root.rglob('*'):
-            if file.is_file() and not file.is_symlink() and file.stat().st_size > 500_000_000 and 'FactCG' in str(file):
+            if file.is_file() and not file.is_symlink() and file.stat().st_size > 500_000_000 and '/blobs/' in str(file):
                 h = hashlib.sha256()
                 with file.open('rb') as f:
                     for block in iter(lambda: f.read(8 << 20), b''):
@@ -60,7 +60,7 @@ def ccg():
             gdown.download(id=selected.id, output=str(path), quiet=True)
             record.update(status='DOWNLOADED', archive=str(path), sha256=hashlib.sha256(path.read_bytes()).hexdigest())
     except Exception as exc:
-        record.update(status='BLOCKED', reason=type(exc).__name__)
+        record.update(status='BLOCKED', reason=type(exc).__name__, public_download_error=str(exc)[:1200])
     save('ccg_model_attempt', record)
     if shutil.which('java') is None:
         with (OUT / 'java_install.log').open('w') as log:
