@@ -38,6 +38,7 @@ from pathlib import Path
 
 SERVICE_DIR = Path(__file__).resolve().parent
 REPO = SERVICE_DIR.parent
+sys.path.insert(0, str(REPO / "src"))
 sys.path.insert(0, str(REPO / "experiments/searh_23/hybrid_service_v1"))
 sys.path.insert(0, str(REPO / "experiments/searh_23/three_architectures"))
 
@@ -319,6 +320,17 @@ class GuardianServiceRuntime:
         """
         status = {"structural": True, "parser": True}
         self.channel_details = {}
+        if self.config.get("stages", {}).get("source_search"):
+            from guardian_truth.source_search.transport import ModelTransport
+            if not hasattr(self, "_source_transport"):
+                self._source_transport = ModelTransport(
+                    Path("/workspace/guardian/results/source_search_20261002/service"),
+                    **self.config.get("model_budget", {}))
+            configured = bool(self._source_transport.key and self._source_transport.model)
+            status["source_model"] = configured
+            self.channel_details["source_model"] = {"configured": configured,
+                "reachable": None, "provider_availability": "UNPROBED",
+                "probe_scope": "CREDENTIAL_PRESENCE_NOT_INFERENCE"}
         judges = self.config.get("stages", {}).get("judges")
         if judges:
             try:
@@ -393,16 +405,62 @@ class GuardianServiceRuntime:
         prompt = case.get("prompt") or ""
         response = case.get("response") or ""
 
-        budget = int(self.limits.get("max_context_chars", 200000))
+        budget = int(self.limits.get("max_input_chars", 2000000))
         if len(prompt) + len(response) > budget:
             return self._finish(case_id, "UNKNOWN", "schema", [], [],
                 {"structural": "not_run", "reason": "context_budget_exceeded",
-                 "input_chars": len(prompt) + len(response), "budget": budget},
+                 "input_chars": len(prompt) + len(response), "budget": budget,
+                 "limit_scope": "INPUT_ADMISSION_NOT_MODEL_WINDOW"},
                 True, trace_id, {"calls": 0, "tokens": 0}, t0)
 
         ctx = parse_case_v02(case_id, prompt, response)
         findings = structural_findings(ctx)
         usage = {"calls": 0, "tokens": 0}
+
+        source_search = self.config.get("stages", {}).get("source_search")
+        if source_search:
+            from guardian_truth.source_search.pipeline import run
+            from guardian_truth.source_search.transport import ModelTransport
+            from guardian_truth.source_search.archive import persist_snapshot
+            if findings:
+                from guardian_truth.source_search import SourceStore
+                store = SourceStore({"prompt": prompt, "response": response})
+                archive = persist_snapshot(store.snapshot(),
+                    (self.audit_path.parent if self.audit_path else
+                     Path("/workspace/guardian/results/source_search_20261002/service")) / "source_stores")
+                payload = self._finish(case_id, "ERROR", "schema", findings, suspicion_notes(ctx),
+                    {"structural": "confirmed_hit", "source_index_complete": True,
+                     "source_archive": archive, "semantic_completeness_proven": False},
+                    False, trace_id, usage, t0)
+                payload["source_store"] = store.snapshot()
+                return payload
+            if not hasattr(self, "_source_transport"):
+                self._source_transport = ModelTransport(
+                    Path("/workspace/guardian/results/source_search_20261002/service"),
+                    **self.config.get("model_budget", {}))
+            before = self._source_transport.snapshot()
+            result = run({"id": case_id, "prompt": prompt, "response": response},
+                         self._source_transport, **source_search)
+            archive = persist_snapshot(result["sources"],
+                (self.audit_path.parent if self.audit_path else
+                 Path("/workspace/guardian/results/source_search_20261002/service")) / "source_stores")
+            after = self._source_transport.snapshot()
+            usage = {"calls": after["actual_api_attempts"] - before["actual_api_attempts"],
+                "tokens": after["known_provider_tokens"] - before["known_provider_tokens"],
+                "unknown_usage_upper_bounds": after["unknown_usage_upper_bounds"] - before["unknown_usage_upper_bounds"]}
+            assessment = result.get("assessment") or {}
+            payload = self._finish(case_id, result["decision"], result["decision_basis"],
+                assessment.get("findings", []), [],
+                {**result["coverage"], "structural": "clean_scan",
+                 "stop_reason": result["stop_reason"],
+                 "source_archive": archive,
+                 "open_questions": assessment.get("open_questions", list(result["material_query_gaps"]))},
+                result["degraded"], trace_id, usage, t0,
+                module_trace=result["trace"])
+            # Returned archive is the same source store used for decisions, not
+            # a second independently filtered representation.
+            payload["source_store"] = result["sources"]
+            return payload
 
         if findings:
             decision, basis = "ERROR", "schema"
@@ -418,6 +476,12 @@ class GuardianServiceRuntime:
                              "a certificate of correctness"),
                 }
             else:
+                model_budget = int(self.limits.get("max_context_chars", 200000))
+                if len(prompt) + len(response) > model_budget:
+                    return self._finish(case_id, "UNKNOWN", "model", [], suspicion_notes(ctx),
+                        {"structural": "clean_scan", "reason": "model_context_budget_exceeded",
+                         "input_chars": len(prompt) + len(response), "model_budget": model_budget},
+                        True, trace_id, usage, t0)
                 advisory_kind = self.config.get("stages", {}).get(
                     "advisory", "none")
                 try:
