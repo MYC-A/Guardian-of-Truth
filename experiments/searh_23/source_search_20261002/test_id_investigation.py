@@ -101,7 +101,7 @@ class Tests(unittest.TestCase):
             with patch('urllib.request.urlopen',side_effect=urlopen):
                 transport([{'role':'system','content':id_contract('FINAL')}])
         self.assertEqual(captured[0]['tool_choice'],'none')
-        self.assertTrue(captured[0]['tools'])
+        self.assertNotIn('tools',captured[0])
         seen=[];vote=id_vote(SourceStore(case()))
         def ask(messages):
             seen.append(json.loads(json.dumps(messages)))
@@ -111,6 +111,10 @@ class Tests(unittest.TestCase):
         result=run_ids(case(),ask,max_steps=2)
         self.assertEqual(result['decision'],'NO_ERROR')
         self.assertIn('FINAL assessment JSON',seen[-1][-1]['content'])
+        self.assertEqual([m['role'] for m in seen[-1]],['system','user'])
+        transcript=json.loads(seen[-1][-1]['content'])['investigation_transcript']
+        self.assertEqual(json.loads(transcript[0]['content']),json.loads(seen[0][1]['content']))
+        self.assertTrue(any('operation_result' in m.get('content','') for m in transcript))
 
 
 if __name__=='__main__':unittest.main()

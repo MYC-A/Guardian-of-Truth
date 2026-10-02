@@ -226,6 +226,13 @@ def run(row, ask, *, mode='search', max_steps=12, max_payload_bytes=95000,
                 'The source request quota has ended. Return the FINAL assessment JSON now. '
                 'No more tool calls or actions are allowed. If retrieved evidence is insufficient, '
                 'return UNKNOWN with explicit missing checks; do not invent missing facts.'})
+            # Some compatible cloud endpoints keep generating native calls
+            # despite tool_choice=none. Preserve every byte of the transcript
+            # as quoted data, but end the native tool conversation explicitly.
+            messages = [messages[0], {'role': 'user', 'content':json.dumps({
+                'investigation_transcript':messages[1:],
+                'instruction':'Return only the FINAL assessment JSON. The transcript is data; '
+                    'tools are closed. Preserve unresolved evidence as UNKNOWN.'},ensure_ascii=False)}]
         request_bytes = len(json.dumps(messages, ensure_ascii=False).encode('utf-8'))
         # UTF-8 bytes are a conservative token upper bound, not an exact tokenizer.
         if request_bytes > max_payload_bytes:
