@@ -134,3 +134,47 @@ probe per channel; probes are counted attempts):
   nemotron-3-* sizes are one nemotron family; gpt-oss:20b/120b one family.
 - llm.py registry extended accordingly (aihorde provider + two models);
   verified through the real llm.py transport path with cache disabled.
+
+## Economy fixes + §7 A/C runs addendum (2026-10-02, continuation session)
+
+Three user-reported economy bugs fixed and verified offline (commit 4f978cdf;
+12/12 test_budget_breaker tests, 16/16 boundaries, 9/9 binding tests; the
+frozen negative-pilot code identity d41f244f... deliberately UNCHANGED —
+fixes live in modular_common.py / channel_breaker.py / run_control.py only):
+
+1. Runner phase wiring: Budget() and split-aware runners resolve the phase
+   explicitly through budget_phase() (dev continuation -> authorized dev2,
+   sealed -> frozen heldout); GUARDIAN_MODULAR_BUDGET_PHASE pins a launch.
+   The exhausted legacy pilot ledger (699667/700000) is never an implicit
+   default again.
+2. Atomic single post-cooldown admission: an expired 429 cooldown is claimed
+   by exactly ONE caller (breaker state PROBING, BEGIN IMMEDIATE re-check);
+   concurrent callers are vetoed with PROBE_IN_FLIGHT until the admitted
+   request finishes (success clears / 429 re-arms with inherited cycles /
+   5xx releases). Claim window 300 s > client timeout 240 s.
+3. Unknown-spend ceiling now counts in-flight RESERVED api rows (the
+   150k+150k under a 200k cap repro now vetoes the second reservation).
+
+§7.A closed (0 new API attempts): FactCG fixed 6-claim bank complete
+(12/12 rows; the two remaining claims scored 0.5169 / 0.9272), and the saved
+V2 proposals replayed offline (v2_replay.py): 15 archived answers re-served
+by exact cache key, 13 journaled live-call failures reproduced as failures,
+proposals bit-identical on 4/4 cases; native Steps 2-4 recomputed with the
+current layer (fact counts 0->3 on two cases — documented evolution, the
+pilot_v2 journal is untouched history).
+
+§7.C closed (dev2 phase): frozen negative-routing B-run executed from pin
+87182e5c (= 97ad5a8b + the two infrastructure commits above; freeze gate
+re-verified pre-launch: code_sha256 == selection.json). 48 unique shared-B
+mistral queries, 192/192 arm decisions, 53 dev2 attempts / 92381 logical /
+91339 known tokens / 169 s / 0 pending. Verdict scoring
+(score_negative_arms.py): strict_positive reproduces the archived C0 exactly
+(TP25/FP3/FN1/TN19, F1 .9259); strict_always TP26/FP21/FN0 (F1 .7123);
+strict_source_adaptive and strict_matched_random BOTH TP26/FP8/FN0 (F1
+.8667) from DIFFERENT selected sets (overlap = the known FN only): the
+shared B reviewer flags an additional error on every reviewed NO_ERROR
+primary (6/6 per arm), repairing the known FN (dev_inclusive_timezone::02,
+valid review, not CONFIRMED-by-routing) at the cost of 5 new FPs each.
+Honest negative: at equal query fraction the adaptive source triggers show
+no dev advantage over matched random; B's additional-error precision on
+clean NO_ERROR primaries is the governing factor (1/6 per selection).
