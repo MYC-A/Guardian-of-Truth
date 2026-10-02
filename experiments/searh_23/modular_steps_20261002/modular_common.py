@@ -22,6 +22,20 @@ RESULTS = Path(os.environ.get('GUARDIAN_MODULAR_RESULTS', '/workspace/guardian/r
 NORMALIZATION_VERSION = 'verbatim-source/1-no-alias-rewrite'
 
 
+def _phase_limits(phase):
+    """Phase ceilings: frozen protocol.json for pilot/heldout; separately
+    authorized continuation phases live in budget_phases.json (history
+    inherited, legacy shared counter never reset)."""
+    for source in ('budget_phases.json', 'protocol.json'):
+        path = HERE / source
+        if path.exists():
+            data = json.loads(path.read_text(encoding='utf-8'))
+            phases = data.get('phases') or data.get('budgets') or {}
+            if phase in phases:
+                return phases[phase]
+    raise ValueError(f'unknown_budget_phase:{phase}')
+
+
 def sha(value):
     if not isinstance(value, bytes):
         value = json.dumps(value, sort_keys=True, ensure_ascii=False, separators=(',', ':')).encode()
@@ -85,6 +99,11 @@ class BudgetStop(BaseException):
     """Escapes model/service broad Exception fallbacks; an incomplete run stops."""
 
 
+class ChannelOpenError(Exception):
+    """Raised when the breaker vetoes a call on an OPEN channel (no transport
+    attempt was made). Carries no status code so bounded retry loops stop."""
+
+
 class Budget:
     def __init__(self, phase='pilot'):
         self.phase = phase
@@ -92,7 +111,9 @@ class Budget:
         self.request_attempts = 0
         RESULTS.mkdir(parents=True, exist_ok=True)
         self.path = RESULTS / f'{phase}_budget.sqlite'
-        self.limits = json.loads((HERE / 'protocol.json').read_text(encoding='utf-8'))['budgets'][phase]
+        self.limits = _phase_limits(phase)
+        from channel_breaker import ChannelBreaker
+        self.breaker = ChannelBreaker(self.path)
         with self.connect() as db:
             db.execute('CREATE TABLE IF NOT EXISTS attempts (id INTEGER PRIMARY KEY, module TEXT, model TEXT, key TEXT, status TEXT, tokens INTEGER, seconds REAL, started REAL, api INTEGER)')
 
@@ -109,6 +130,15 @@ class Budget:
                 used_tokens + tokens > self.limits['max_logical_tokens'] or
                 seconds >= self.limits['max_model_seconds']):
                 raise BudgetStop('shared_phase_budget_exhausted')
+            if api:
+                unknown = db.execute("SELECT COALESCE(SUM(tokens),0) FROM attempts WHERE status LIKE 'TRANSPORT%' OR status='COMPLETE_USAGE_UNKNOWN_UPPER_BOUND'").fetchone()[0]
+                cap_unknown = self.limits.get('max_unknown_transport_upper_bound_tokens')
+                if cap_unknown is not None and unknown + tokens > cap_unknown:
+                    raise BudgetStop('unknown_usage_upper_bound_ceiling')
+                known = db.execute("SELECT COALESCE(SUM(tokens),0) FROM attempts WHERE status='COMPLETE'").fetchone()[0]
+                cap_known = self.limits.get('max_known_provider_tokens')
+                if cap_known is not None and known + tokens > cap_known:
+                    raise BudgetStop('known_provider_tokens_ceiling')
             cursor = db.execute('INSERT INTO attempts(module,model,key,status,tokens,seconds,started,api) VALUES(?,?,?,?,?,?,?,?)',
                 (module, model, key, 'RESERVED', tokens, 0, time.time(), int(api)))
             if api:
@@ -124,15 +154,23 @@ class Budget:
         self.request_limit = None
 
     def finish(self, rowid, tokens, seconds, status):
+        """Exactly-once finalization: only a RESERVED row updates; a second
+        finalize is a counted no-op (returns False)."""
         with self.connect() as db:
-            db.execute('UPDATE attempts SET tokens=?,seconds=?,status=? WHERE id=?', (tokens, seconds, status, rowid))
+            cursor = db.execute("UPDATE attempts SET tokens=?,seconds=?,status=? WHERE id=? AND status='RESERVED'", (tokens, seconds, status, rowid))
+            return cursor.rowcount == 1
 
     def snapshot(self):
         with self.connect() as db:
             n, tokens, seconds, pending = db.execute("SELECT COALESCE(SUM(api),0),COALESCE(SUM(tokens),0),COALESCE(SUM(seconds),0),COALESCE(SUM(status='RESERVED'),0) FROM attempts").fetchone()
+            known = db.execute("SELECT COALESCE(SUM(tokens),0) FROM attempts WHERE status='COMPLETE'").fetchone()[0]
+            unknown = db.execute("SELECT COALESCE(SUM(tokens),0) FROM attempts WHERE status LIKE 'TRANSPORT%' OR status='COMPLETE_USAGE_UNKNOWN_UPPER_BOUND'").fetchone()[0]
             by_module = db.execute('SELECT module,SUM(api),SUM(tokens),SUM(seconds) FROM attempts GROUP BY module').fetchall()
+            skipped = db.execute("SELECT COUNT(*) FROM attempts WHERE status='BREAKER_OPEN_SKIPPED'").fetchone()[0]
         return {'actual_api_attempts': n, 'logical_tokens': tokens, 'model_seconds': seconds,
-                'pending_reservations': pending, 'modules': by_module}
+                'pending_reservations': pending, 'modules': by_module,
+                'known_provider_tokens': known, 'unknown_upper_bound_tokens': unknown,
+                'breaker_skipped_calls': skipped}
 
     def install(self):
         """Intercept actual SDK transport. Original callers/prompts/retries preserved.
@@ -141,6 +179,7 @@ class Budget:
         normalization versions namespace the cache; IDs alone are never keys.
         """
         import llm
+        from channel_breaker import ChannelBreaker, classify_transport, safe_retry_after
         original_client, original_chat = llm._client, llm.chat
         revision = subprocess.check_output(['git', '-C', str(ROOT), 'rev-parse', 'HEAD'], text=True).strip()
         namespace = sha({'revision': revision, 'normalization': NORMALIZATION_VERSION,
@@ -160,20 +199,41 @@ class Budget:
                     # endpoint uses random_seed; preserve sampling semantics.
                     if llm._provider_of(model) == 'mistral' and 'seed' in kwargs:
                         kwargs['extra_body'] = dict(kwargs.get('extra_body') or {}, random_seed=kwargs.pop('seed'))
+                    # Circuit breaker: veto on OPEN channels BEFORE any transport
+                    # attempt (no per-row useless requests). Probe-marked calls
+                    # pass an OPEN_PERMANENT channel so recovery is testable.
+                    call_model = kwargs.get('model') or model
+                    provider = llm._provider_of(call_model)
+                    endpoint = llm.PROVIDERS.get(provider, ('unknown',))[0]
+                    slot = hashlib.sha256(str(getattr(client, 'api_key', '') or '').encode()).hexdigest()[:12]
+                    bkey = ChannelBreaker.key_for(endpoint, slot, call_model)
+                    is_probe = active['module'] == 'channel-probe'
+                    blocked = self.breaker.guard(bkey, is_probe=is_probe)
+                    if blocked:
+                        rowid = self.reserve(active['module'], call_model, sha(kwargs), 0, api=False)
+                        self.finish(rowid, 0, 0.0, 'BREAKER_OPEN_SKIPPED')
+                        raise ChannelOpenError(f'channel_open:{blocked[1]}')
                     # UTF-8 bytes is a conservative upper bound on input tokens.
                     bound = len(json.dumps(kwargs['messages'], ensure_ascii=False).encode()) + kwargs.get('max_tokens', 0)
                     key = sha(kwargs)
-                    rowid = self.reserve(active['module'], kwargs['model'], key, bound)
+                    rowid = self.reserve(active['module'], call_model, key, bound)
                     began = time.monotonic()
                     try:
                         answer = native_create(**kwargs)
                     except Exception as exc:
-                        self.finish(rowid, bound, time.monotonic() - began, 'TRANSPORT_ERROR_USAGE_UNKNOWN_UPPER_BOUND')
+                        status_code = getattr(exc, 'status_code', None)
+                        classification = classify_transport(status_code, str(exc))
+                        retry_after = safe_retry_after(exc)
+                        self.breaker.record_failure(bkey, classification, retry_after)
+                        self.finish(rowid, bound, time.monotonic() - began,
+                                    f'TRANSPORT_ERROR_{classification}_USAGE_UNKNOWN_UPPER_BOUND')
                         append(RESULTS / 'transport_failures.jsonl', {
-                            'attempt_id': rowid, 'caller': active['module'], 'model': kwargs['model'],
+                            'attempt_id': rowid, 'caller': active['module'], 'model': call_model,
                             'request_sha256': key, 'error_type': type(exc).__name__,
-                            'http_status': getattr(exc, 'status_code', None)})
+                            'http_status': status_code, 'classification': classification,
+                            'retry_after_seconds': retry_after})
                         raise
+                    self.breaker.record_success(bkey)
                     usage = getattr(answer, 'usage', None)
                     actual = getattr(usage, 'total_tokens', None) if usage else None
                     self.finish(rowid, actual if actual is not None else bound,

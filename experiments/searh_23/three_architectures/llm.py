@@ -184,7 +184,10 @@ def extract_json(content: str):
 
 # ------------------------------------------------------------------- chat
 
-RETRYABLE = (429, 500, 502, 503, 504)
+# 429 is NOT retried in-request: the channel closes for a cooldown and one
+# minimal probe after the cooldown is allowed (assignment 5.6); the budget
+# layer's circuit breaker owns that state. 5xx/timeout: one technical retry.
+RETRYABLE = (500, 502, 503, 504)
 
 # ------------------------- granite-local backend (transformers) ---------
 # Local third-checker channel: granite-guardian-4.1-8b on the instance GPU,
@@ -280,11 +283,13 @@ def _granite_chat(model: str, messages: list, *, max_tokens: int,
 def chat(model: str, messages: list, *, max_tokens: int = 4000,
          temperature: float = 0.0, json_mode: bool = True,
          seed: int | None = None, top_p: float | None = None,
-         use_cache: bool = True, transport_retries: int = 3,
+         use_cache: bool = True, transport_retries: int = 1,
          caller: str = "") -> dict:
     """One chat call. Returns {content, usage, cached, model, elapsed}.
 
-    Transport retries (429/5xx/timeout) are bounded and counted in cost.
+    Transport retries are bounded and counted in cost: at most ONE
+    technical retry on 5xx/timeout (directive/assignment 5.8); 429 is not
+    retried in-request (channel cooldown + one probe, assignment 5.6).
     Invalid-JSON re-asks are NOT done here (caller-level, directive §9).
     Sampling params only apply on live calls; cache hits replay exactly
     (cache key includes them).

@@ -1,0 +1,19 @@
+{
+  "schema": "modular-budget-phases/1",
+  "note": "Continuation phases authorized by the 2026-10-02 assignment. Added separately from the frozen protocol.json budgets: history is inherited, the shared legacy counter (699667/700000) is NOT reset, and the frozen pilot/heldout ceilings stay untouched. Cache namespace is unchanged (protocol.json untouched).",
+  "phases": {
+    "dev2": {
+      "max_actual_api_attempts": 300,
+      "max_logical_tokens": 1200000,
+      "max_known_provider_tokens": 1000000,
+      "max_unknown_transport_upper_bound_tokens": 200000,
+      "max_model_seconds": 14400,
+      "semantics": {
+        "max_known_provider_tokens": "sum(tokens) over status=COMPLETE rows (provider-reported usage)",
+        "max_unknown_transport_upper_bound_tokens": "sum(tokens) over TRANSPORT_* and COMPLETE_USAGE_UNKNOWN_UPPER_BOUND rows; reservations count here until finalized",
+        "max_logical_tokens": "all rows incl. cache/native (global sanity ceiling)",
+        "reservations": "in-flight RESERVED rows count toward caps until exactly-once finalization"
+      }
+    }
+  }
+}
