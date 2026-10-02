@@ -17,13 +17,13 @@ from guardian_truth.source_search.transport import ModelTransport
 from runtime import GuardianServiceRuntime
 import runtime
 
-OUT=ROOT/'outputs/searh_23/source_search_20261002/comparison_ids_v3'
+OUT=ROOT/'outputs/searh_23/source_search_20261002/comparison_ids_v4'
 
 
 def prepare():
     inputs=ROOT/'outputs/searh_23/source_search_20261002/comparison_v12/inputs.jsonl'
     rows=[json.loads(line) for line in inputs.read_text(encoding='utf-8').splitlines()]
-    cfg=json.loads((ROOT/'service/configs/source-search-ids-v3.json').read_text(encoding='utf-8'))
+    cfg=json.loads((ROOT/'service/configs/source-search-ids-v4.json').read_text(encoding='utf-8'))
     # Scheduling is disclosed historical regression selection, not a detector rule.
     prefixes=('airline__7::','retail__36::','retail__29::','banking_knowledge__task_051::',
               'banking_knowledge__task_003::','retail__48::')
@@ -42,7 +42,7 @@ def prepare():
         'contracts':{p:id_contract(p) for p in ('DIRECT','SEARCH','JUDGE','FINAL')},
         'comparison':'Same structural layer, source universe, model and assessment interface; direct full-context vs sequential search.',
         'authorization':'User authorized necessary token spending on 2026-10-03; finite run uses 4000000/650 total cap in the original ledger, with matching approval receipt.',
-        'pilot_correction':'v2 real paired pilot stopped with direct finish_reason=length at 1800 output tokens and search budget stop. Only output allowance increases to 8192; reasoning_effort, prompts, algorithm and cases remain unchanged.',
+        'pilot_correction':'v2 truncated at 1800 output tokens; v3 uses 8192 but native tool history elicited another call in FINAL. v4 keeps the same judge/algorithm and adds FINAL tool_choice=none plus explicit last-user quota instruction. No gold opened or detector-specific logic added.',
         'stops':'First persistent provider error including 402/429 stops entire run; no retries or availability polling.',
         'max_full_run_http_attempts':46*7,
         'limits':'At most 1 direct and 6 search calls per nonstructural row; structural rows need 0 model calls.',

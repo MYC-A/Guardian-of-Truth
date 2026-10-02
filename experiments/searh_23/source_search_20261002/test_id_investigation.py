@@ -1,6 +1,9 @@
 """Contract/real loop regressions, not semantic model accuracy tests."""
 import json
 import unittest
+from pathlib import Path
+from tempfile import TemporaryDirectory
+from unittest.mock import patch
 from acceptance import ROOT
 from guardian_truth.source_search.store import SourceStore
 from guardian_truth.source_search.pipeline import run
@@ -80,6 +83,34 @@ class Tests(unittest.TestCase):
         result=native_target_inventory(SourceStore(row))
         self.assertEqual([(r['source_id'],r['tool']) for r in result],[('t0','commit')])
         self.assertEqual(result[0]['status'],'ATTEMPT_NOT_COMPLETED_EFFECT')
+
+    def test_final_native_transport_disables_tools_and_loop_reminds_quota(self):
+        from guardian_truth.source_search.transport import ModelTransport
+        from guardian_truth.source_search.id_contract import id_contract
+        captured=[]
+        class Response:
+            def __enter__(self):return self
+            def __exit__(self,*args):pass
+            def read(self):return json.dumps({'choices':[{'message':{'content':'{}'},
+                'finish_reason':'stop'}],'usage':{'total_tokens':1}}).encode()
+        with TemporaryDirectory() as directory:
+            transport=ModelTransport(directory,provider='ollama',model='mock',max_tokens=100000)
+            transport.key='mock-not-a-secret'
+            def urlopen(request,**kwargs):
+                captured.append(json.loads(request.data));return Response()
+            with patch('urllib.request.urlopen',side_effect=urlopen):
+                transport([{'role':'system','content':id_contract('FINAL')}])
+        self.assertEqual(captured[0]['tool_choice'],'none')
+        self.assertTrue(captured[0]['tools'])
+        seen=[];vote=id_vote(SourceStore(case()))
+        def ask(messages):
+            seen.append(json.loads(json.dumps(messages)))
+            content=({'action':{'op':'read_source','args':{'source_id':'h0'}}}
+                     if len(seen)==1 else {'assessment':vote})
+            return {'status':'OK','content':json.dumps(content)}
+        result=run_ids(case(),ask,max_steps=2)
+        self.assertEqual(result['decision'],'NO_ERROR')
+        self.assertIn('FINAL assessment JSON',seen[-1][-1]['content'])
 
 
 if __name__=='__main__':unittest.main()

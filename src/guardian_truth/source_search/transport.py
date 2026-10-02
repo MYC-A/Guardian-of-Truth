@@ -71,11 +71,16 @@ class ModelTransport:
         if self.reasoning_effort is not None:
             body['reasoning_effort'] = self.reasoning_effort
         system = messages[0].get('content', '') if messages else ''
-        if 'CURRENT ROLE: SEARCH CONTROLLER' in system or 'CURRENT ROLE: JUDGE' in system:
+        final_assessment = 'CURRENT ROLE: FINAL ASSESSMENT' in system
+        if 'CURRENT ROLE: SEARCH CONTROLLER' in system or 'CURRENT ROLE: JUDGE' in system or final_assessment:
             from .pipeline import TOOLS
             body['tools'] = [{'type':'function', 'function':{'name':name,
                 'description':description, 'parameters':{'type':'object','additionalProperties':True}}}
                 for name, description in TOOLS.items()]
+            if final_assessment:
+                # Native tool history can otherwise keep eliciting calls even
+                # after the system prompt switches from JUDGE to FINAL.
+                body['tool_choice'] = 'none'
         raw = json.dumps(body, ensure_ascii=False).encode()
         sha = hashlib.sha256(self.provider.encode() + b'\x00' + raw).hexdigest()
         cached = self.cache / (sha + '.json')

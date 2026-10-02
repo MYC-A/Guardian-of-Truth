@@ -222,6 +222,10 @@ def run(row, ask, *, mode='search', max_steps=12, max_payload_bytes=95000,
         if mode != 'direct' and step == max_steps - 1:
             phase = 'FINAL'
             messages[0] = {'role': 'system', 'content': prompt(phase)}
+            messages.append({'role': 'user', 'content':
+                'The source request quota has ended. Return the FINAL assessment JSON now. '
+                'No more tool calls or actions are allowed. If retrieved evidence is insufficient, '
+                'return UNKNOWN with explicit missing checks; do not invent missing facts.'})
         request_bytes = len(json.dumps(messages, ensure_ascii=False).encode('utf-8'))
         # UTF-8 bytes are a conservative token upper bound, not an exact tokenizer.
         if request_bytes > max_payload_bytes:
