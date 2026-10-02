@@ -47,6 +47,7 @@ class BoundaryTests(unittest.TestCase):
         self.assertTrue(all('OBSERVED_PAYLOAD_ONLY' in f['epistemic_status'] for f in graph['facts']))
 
     def test_graph_and_linear_same_facts_quotes(self):
+        import json
         r = load_input()[0]
         g = graph_for(r)
         for mode in ('G2', 'G2-linear'):
@@ -54,9 +55,15 @@ class BoundaryTests(unittest.TestCase):
             for f in g['facts']:
                 self.assertIn(f['id'], text)
                 for quote in f['quotes']:
-                    import json
                     self.assertIn(json.dumps(quote['quote'], ensure_ascii=False), text)
-        self.assertEqual(information_hash(g), information_hash(g))
+        restored = {'facts': [], 'edges': []}
+        for line in render(g, 'G2-linear').splitlines()[1:]:
+            key, _, raw = line.partition(': ')
+            if key in ('facts', 'edges'):
+                restored[key].append(json.loads(raw))
+            else:
+                restored[key] = json.loads(raw)
+        self.assertEqual(json.loads(render(g, 'G2')), restored)
 
     def test_query_limit_no_tool_execution(self):
         api = GraphAPI(graph_for(load_input()[0]))
@@ -70,10 +77,63 @@ class BoundaryTests(unittest.TestCase):
         converted = as_row(r)
         c = native_case(converted)
         self.assertEqual(len(c.calls), len(c.results))
+        self.assertEqual(len({call.call_id for call in c.calls}), len(c.calls))
+        self.assertEqual(len({result.call_id for result in c.results}), len(c.results))
         self.assertTrue(all(result.call_id in {call.call_id for call in c.calls} for result in c.results))
         self.assertTrue(all(call.index < converted['target_response']['index'] for call in c.calls))
         self.assertTrue(converted['catalog_complete'])
         self.assertFalse(any(call.tool == 'apply_change' for call in c.calls))
+
+    def test_native_sequential_results_are_usable_after_pairing(self):
+        from oracle_probe import oracle_case
+        from guardian_truth.integration.contracts import facts_from_documented
+        r = load_input(ids=['dev_latest::00'])[0]
+        facts, assessments, issues = facts_from_documented(oracle_case(as_row(r)))
+        self.assertGreater(len(facts), 1)
+        self.assertEqual(len({f.fact.provenance.call_id for f in facts}), len({x.call_id for x in native_case(as_row(r)).results}))
+        self.assertFalse(any('CALL_NOT_UNIQUELY_PRESENT' in str(x) for x in assessments))
+
+    def test_sealed_gate_precedes_any_gold_read(self):
+        import tempfile
+        from pathlib import Path
+        from unittest.mock import patch
+        from score_dev import scoring_sources
+        read = Path.read_bytes
+        opened_gold = []
+        def guarded_read(path):
+            if path.name == 'sealed_gold.jsonl':
+                opened_gold.append(str(path))
+                raise AssertionError('gold must not be read before completion gates')
+            return read(path)
+        with tempfile.TemporaryDirectory() as directory, patch.object(Path, 'read_bytes', guarded_read):
+            with self.assertRaisesRegex(ValueError, 'sealed_scoring_requires_frozen_shortlist'):
+                scoring_sources(Path(directory), 'sealed')
+        self.assertFalse(opened_gold)
+
+    def test_ambiguous_transport_does_not_become_a_verified_fact(self):
+        from oracle_probe import oracle_case
+        from guardian_truth.integration.contracts import facts_from_documented
+        row = load_input(ids=['dev_latest::00'])[0]
+        prefix = row['prompt'].split('→ TOOL_CALL')[0]
+        row = dict(row, prompt=prefix + '→ TOOL_CALL read_state: {"item_id":"E-70"}\n'
+            '→ TOOL_CALL read_state: {"item_id":"E-70"}\n'
+            '← TOOL_RESPONSE read_state: {"item_id":"E-70","active":true}\n'
+            '← TOOL_RESPONSE read_state: {"item_id":"E-70","active":false}\n')
+        converted = as_row(row)
+        self.assertEqual(len(converted['source_pairing_issues']), 2)
+        case = native_case(converted)
+        self.assertFalse({r.call_id for r in case.results} & {c.call_id for c in case.calls})
+        facts, _, _ = facts_from_documented(oracle_case(converted))
+        self.assertFalse(facts)
+
+    def test_scorer_rejects_duplicate_prediction_within_arm(self):
+        from pathlib import Path
+        from score_dev import score_arm
+        r = load_input()[0]
+        record = {'id': r['id'], 'source_sha256': source_sha(r), 'decision': 'UNKNOWN'}
+        gold = {r['id']: {'label': 0, 'logical_group': 'synthetic_test'}}
+        with self.assertRaisesRegex(ValueError, 'duplicate_case_within_one_arm'):
+            score_arm([record, record], {r['id']: r}, gold, Path('synthetic/predictions.jsonl'), [r['id']])
 
 
 if __name__ == '__main__':

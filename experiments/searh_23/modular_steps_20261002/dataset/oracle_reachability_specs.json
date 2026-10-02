@@ -1,0 +1,36 @@
+{
+  "scope": "AUTHOR_ORACLE_DIAGNOSTIC_ONLY_NOT_AUTOMATIC_POLICY_PARSE",
+  "human_reviewed": false,
+  "capability": {
+    "tool": "apply_change",
+    "entity_argument": "item_id",
+    "entity_type": "item",
+    "entity_id": "E-70",
+    "predicate": "item.completed",
+    "result_entity_path": "$.item_id",
+    "result_value_path": "$.status",
+    "success_value": "success",
+    "strength": "EXECUTED",
+    "source_catalog_quote": "Changes an item; status=success is completion, status=pending is a request only."
+  },
+  "base_gate": {"op": "ATOM", "field": "ready"},
+  "locked_gate": {"op": "AND", "args": [
+    {"op": "ATOM", "field": "ready"},
+    {"op": "NOT", "args": [{"op": "ATOM", "field": "locked"}]}
+  ]},
+  "cases": [
+    {"id": "dev_refusal_inventory::00", "gate": "locked_gate", "expected_reachability": "CLOSED"},
+    {"id": "dev_refusal_inventory::01", "gate": "base_gate", "expected_reachability": "REACHABLE"},
+    {"id": "dev_refusal_inventory::02", "gate": "locked_gate", "expected_reachability": "CLOSED"},
+    {"id": "dev_refusal_inventory::03", "gate": "base_gate", "expected_reachability": "REACHABLE"},
+    {"id": "dev_refusal_inventory::04", "gate": "locked_gate", "expected_reachability": "CLOSED"},
+    {"id": "dev_refusal_inventory::05", "gate": "base_gate", "expected_reachability": "REACHABLE"},
+    {"id": "dev_refusal_inventory::06", "gate": "locked_gate", "expected_reachability": "CLOSED"},
+    {"id": "dev_refusal_inventory::07", "gate": "base_gate", "expected_reachability": "REACHABLE"}
+  ],
+  "limits": [
+    "Only the explicitly declared change capability is evaluated. Inspection need not complete the change.",
+    "Completeness of goal/action inventory is oracle input, not inferred from absence of candidates.",
+    "Native CLOSED is local to this complete reviewed capability set and current evidence, not arbitrary future outcomes."
+  ]
+}

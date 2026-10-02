@@ -43,27 +43,33 @@ def as_row(row):
         tools.append({'name': name, 'description': spec.description,
                       'parameters': {key: {'type': p.type, 'required': p.required} for key, p in spec.params.items()},
                       'result_schema': schemas, 'schema_source': 'observed_payloads_plus_argument_fields_not_documented_guarantee'})
-    history, calls = [], []
+    history, calls, pairing_issues = [], [], []
     for index, event in enumerate(events):
         if event.kind == 'call':
-            cid = f'h{len(calls)}'
+            # Outstanding calls shrink after pairing. Their list length is
+            # NOT a unique ID: consecutive call/result pairs would all be h0.
+            cid = f'h{index}'
             calls.append((event.name, cid))
             history.append({'index': index, 'call_id': cid, 'role': 'assistant', 'tool': event.name, 'arguments': event.value})
         elif event.kind == 'result':
             candidates = [p for p in calls if p[0] == event.name]
             if len(candidates) != 1:
-                # Match the nearest preceding unmatched same-name call; reuse
-                # is disallowed. Transport ambiguity remains visible.
-                cid = candidates[-1][1] if candidates else f'unpaired{index}'
+                # Source format has no transport ID. Multiple outstanding
+                # same-name calls cannot be paired by recency as a fact.
+                # Leave unresolved calls outstanding and the result unbound.
+                cid = f'unpaired{index}'
+                pairing_issues.append({'result_index': index, 'tool': event.name,
+                    'reason': 'AMBIGUOUS_CALL_RESULT' if candidates else 'NO_PRIOR_UNMATCHED_CALL',
+                    'candidate_call_ids': [p[1] for p in candidates]})
             else:
                 cid = candidates[0][1]
-            if candidates:
                 calls.remove((event.name, cid))
             history.append({'index': index, 'call_id': cid, 'role': 'tool', 'tool': event.name, 'payload': event.value})
     request = '\n'.join(e.text for e in events if e.role == 'user')
     return {'case_id': row['id'], 'system_policy': ctx.policy_text, 'available_tools': tools,
             'user_request': request, 'history': history,
             'target_response': {'text': row['response'], 'index': len(events) + 1},
+            'source_pairing_issues': pairing_issues,
             'catalog_complete': parse_catalog(events, row['prompt']).complete, 'family': 'input_content_not_gold_group'}
 
 
@@ -172,5 +178,6 @@ def run(llm, model, row, *, contracts=None):
             s4['issues'].append('native_goal_rejected')
     return {'module': 'automatic-SystemV2-native-Steps2-4/1', 'step1': s1, 'step2': s2, 'step3': s3, 'step4': s4,
             'native_fact_count': len(facts), 'contract_proposals': contracts,
+            'source_pairing_issues': converted['source_pairing_issues'],
             'trust': 'AUTO_VERIFIED_WITH_LIMITS_NOT_DOC_EXPLICIT',
             'promotion': 'ADVISORY_ONLY_FULL_SOURCE_CHECK_REQUIRED'}

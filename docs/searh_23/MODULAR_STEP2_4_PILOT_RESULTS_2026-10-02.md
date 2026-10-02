@@ -4,7 +4,9 @@
 `bdc07e2c3dd9a84039cf94ea19909e1eaac1f2d0`. Этот документ продолжает
 [аудит старта](MODULAR_STEP2_4_START_2026-10-02.md).
 **Работа не завершена:** shortlist, взаимодействующие гибриды, adaptive vs
-always-review, oracle Steps2–4 и новый sealed ещё не оценены. Ни один
+always-review и новый sealed ещё не оценены. Oracle Steps2–4 выполнены
+в [следующем аудите](MODULAR_ORACLE_AND_SCOPE_AUDIT_2026-10-02.md); найден
+и исправлен баг call ID, мешавший native-фактам. Ни один
 помощник не объявлен победителем; конкурсный `scripts/predict.py` сохранён.
 
 ## 1. Что проверено на новых входах
@@ -206,3 +208,9 @@ API-blocked стадий отделены в `mechanism_audit.json` и `translat
 strict/always/adaptive B на новых dev-входах и естественном FN, оценить
 взаимодействующий hybrid и oracle-подстановки, затем заморозить4–6
 конфигураций и прогноз бюджета. **Sealed пока не запускать, default не менять.**
+
+Уточнение после offline-аудита: oracle-подстановки, normalized historical
+template audit и сохранность нового long-context layout уже проверены.
+Старый V2 API-пилот дополнительно повреждён повторяющимися call ID, поэтому
+его 0 фактов не являются чистой оценкой архитектуры. Исправление и численные
+результаты: [oracle и scope](MODULAR_ORACLE_AND_SCOPE_AUDIT_2026-10-02.md).
