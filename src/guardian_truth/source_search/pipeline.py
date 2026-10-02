@@ -158,7 +158,10 @@ def contract(phase):
         '"explanation":"...","evidence":[{"source_id":"h0 or q0 or prompt","quote":"exact source text"}]}],'
         '"checks":[{"question_id":"scope|grounds|exceptions|alternatives|arithmetic","status":"CHECKED|NOT_APPLICABLE|OPEN",'
         '"reason":"specific reason","evidence":[{"source_id":"...","quote":"..."}]}],"open_questions":[]}}. '
-        'Return JSON only. Every closed check needs source evidence, including a NOT_APPLICABLE reason. '
+        'Return JSON only. Include exactly one check entry for EACH of the five question IDs. '
+        'Every closed check needs source evidence, including NOT_APPLICABLE. '
+        'For NOT_APPLICABLE, cite exact target text or policy text that grounds its specific scope reason; '
+        'do not omit evidence or use an empty evidence list. If no evidence resolves the check, mark it OPEN. '
         'Use UNKNOWN for substantial unresolved scope, missing evidence, unseen material remainder or budget exhaustion. '
         'Do not claim semantic completeness just because you are confident. An ERROR requires a specific new target error; no finding is required for NO_ERROR.')
     return shared
