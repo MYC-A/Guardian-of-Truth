@@ -21,6 +21,22 @@ def parse(store, act='ASK_CONFIRM', modality='REQUEST', performer='USER'):
                       'evidence':{'source_id':'h1','quote':'Please help with item X91.'}}}
 
 class Tests(unittest.TestCase):
+    def test_speaker_is_observed_role_not_model_guess(self):
+        store=SourceStore(row()); value=parse(store)
+        value['acts'][0]['speaker']='UNKNOWN'
+        frame=validate_parse(store,value)
+        self.assertEqual(frame['acts'][0]['speaker'],'ASSISTANT')
+        self.assertEqual(frame['acts'][0]['model_speaker'],'UNKNOWN')
+
+    def test_raw_quote_still_requires_containment_in_correct_text_role(self):
+        store=SourceStore(row()); value=parse(store)
+        value['acts'][0]['evidence']['source_id']='response'
+        value['intent']['evidence']['source_id']='prompt'
+        self.assertFalse(validate_parse(store,value)['issues'])
+        value['intent']['evidence']['quote']='Only tool_b requires approval.'
+        with self.assertRaisesRegex(ValueError,'latest user'):
+            validate_parse(store,value)
+
     def test_native_inventory_owned_by_code_and_never_proves_success(self):
         store=SourceStore(row('→ TOOL_CALL tool_a: {"item_id":"X91"}'))
         frame=validate_parse(store,parse(store))

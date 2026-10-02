@@ -1,0 +1,420 @@
+{
+  "act_instruction": "Classify only supplied assistant text_segments into speech\nacts. Conversation speaker is supplied metadata. performer is the person who\nperforms the requested or described action: Please confirm -> USER; I will\nreplace after confirmation -> ASSISTANT. Cover material text with exact source\nquotes. ASK_CONFIRM/ASK_CLARIFY/ASK_USER_ACTION -> REQUEST; OFFER_FUTURE and\nOFFER_ESCALATION -> FUTURE or CONDITIONAL; ASSERT_DONE -> CLAIMED_COMPLETED;\nREFUSE/ASSERT_FACT -> PRESENT. A future transfer is OFFER_ESCALATION, not an\nexecuted transfer. A claim of completion is not observed completion. Empty\ntext_segments -> empty acts. Native calls are owned by code and not supplied.\nCopy entity_literals only from the act's own quote. No policy, user request,\nbusiness verdict or imagined tool call. Return every case ID under the schema.",
+  "act_schema": {
+    "$defs": {
+      "ActCase": {
+        "additionalProperties": false,
+        "properties": {
+          "acts": {
+            "items": {
+              "$ref": "#/$defs/TextAct"
+            },
+            "title": "Acts",
+            "type": "array"
+          },
+          "id": {
+            "title": "Id",
+            "type": "string"
+          }
+        },
+        "required": [
+          "id",
+          "acts"
+        ],
+        "title": "ActCase",
+        "type": "object"
+      },
+      "Quote": {
+        "additionalProperties": false,
+        "properties": {
+          "quote": {
+            "minLength": 1,
+            "title": "Quote",
+            "type": "string"
+          },
+          "source_id": {
+            "title": "Source Id",
+            "type": "string"
+          }
+        },
+        "required": [
+          "source_id",
+          "quote"
+        ],
+        "title": "Quote",
+        "type": "object"
+      },
+      "TextAct": {
+        "additionalProperties": false,
+        "properties": {
+          "act": {
+            "enum": [
+              "ASK_CONFIRM",
+              "ASK_CLARIFY",
+              "ASK_USER_ACTION",
+              "OFFER_FUTURE",
+              "OFFER_ESCALATION",
+              "REFUSE",
+              "ASSERT_FACT",
+              "ASSERT_DONE",
+              "UNKNOWN"
+            ],
+            "title": "Act",
+            "type": "string"
+          },
+          "action": {
+            "minLength": 1,
+            "title": "Action",
+            "type": "string"
+          },
+          "entity_literals": {
+            "items": {
+              "type": "string"
+            },
+            "title": "Entity Literals",
+            "type": "array"
+          },
+          "evidence": {
+            "$ref": "#/$defs/Quote"
+          },
+          "id": {
+            "minLength": 1,
+            "title": "Id",
+            "type": "string"
+          },
+          "modality": {
+            "enum": [
+              "PRESENT",
+              "REQUEST",
+              "FUTURE",
+              "CONDITIONAL",
+              "CLAIMED_COMPLETED",
+              "UNKNOWN"
+            ],
+            "title": "Modality",
+            "type": "string"
+          },
+          "performer": {
+            "description": "Who performs the requested or described action. For Please confirm: USER, not the speaker.",
+            "enum": [
+              "ASSISTANT",
+              "USER",
+              "OTHER",
+              "UNKNOWN"
+            ],
+            "title": "Performer",
+            "type": "string"
+          },
+          "speaker": {
+            "enum": [
+              "ASSISTANT",
+              "USER",
+              "UNKNOWN"
+            ],
+            "title": "Speaker",
+            "type": "string"
+          }
+        },
+        "required": [
+          "id",
+          "speaker",
+          "performer",
+          "act",
+          "modality",
+          "action",
+          "entity_literals",
+          "evidence"
+        ],
+        "title": "TextAct",
+        "type": "object"
+      }
+    },
+    "additionalProperties": false,
+    "properties": {
+      "cases": {
+        "items": {
+          "$ref": "#/$defs/ActCase"
+        },
+        "title": "Cases",
+        "type": "array"
+      }
+    },
+    "required": [
+      "cases"
+    ],
+    "title": "ActCases",
+    "type": "object"
+  },
+  "batch_size": 8,
+  "code_sha256": "9bce2fbfdf6e2c6ebaeb1ad942f13c602bf99bef27d9614275a6a99f76ede246",
+  "human_review_status": "PENDING",
+  "intent_instruction": "Classify only the supplied latest_user request. EXPLICIT\nmeans an identified requested operation; AMBIGUOUS means an operation is not\nspecified, requested_action null. Please help with item X is AMBIGUOUS, neither\ninspection-only nor commit authorization. Please replace item X is EXPLICIT.\nMissing request is UNKNOWN. Cite exactly the supplied USER source. Do not\ngenerate assistant acts or a policy verdict. Return every case ID under schema.",
+  "intent_schema": {
+    "$defs": {
+      "Intent": {
+        "additionalProperties": false,
+        "properties": {
+          "evidence": {
+            "anyOf": [
+              {
+                "$ref": "#/$defs/Quote"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "requested_action": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Requested Action"
+          },
+          "status": {
+            "enum": [
+              "EXPLICIT",
+              "AMBIGUOUS",
+              "UNKNOWN"
+            ],
+            "title": "Status",
+            "type": "string"
+          }
+        },
+        "required": [
+          "status",
+          "requested_action",
+          "evidence"
+        ],
+        "title": "Intent",
+        "type": "object"
+      },
+      "IntentCase": {
+        "additionalProperties": false,
+        "properties": {
+          "id": {
+            "title": "Id",
+            "type": "string"
+          },
+          "intent": {
+            "$ref": "#/$defs/Intent"
+          }
+        },
+        "required": [
+          "id",
+          "intent"
+        ],
+        "title": "IntentCase",
+        "type": "object"
+      },
+      "Quote": {
+        "additionalProperties": false,
+        "properties": {
+          "quote": {
+            "minLength": 1,
+            "title": "Quote",
+            "type": "string"
+          },
+          "source_id": {
+            "title": "Source Id",
+            "type": "string"
+          }
+        },
+        "required": [
+          "source_id",
+          "quote"
+        ],
+        "title": "Quote",
+        "type": "object"
+      }
+    },
+    "additionalProperties": false,
+    "properties": {
+      "cases": {
+        "items": {
+          "$ref": "#/$defs/IntentCase"
+        },
+        "title": "Cases",
+        "type": "array"
+      }
+    },
+    "required": [
+      "cases"
+    ],
+    "title": "IntentCases",
+    "type": "object"
+  },
+  "max_http_attempts": 8,
+  "max_output_tokens": 4000,
+  "model": "SERVER_MISTRAL_MODEL",
+  "prompt_revisions_after_output": false,
+  "provider": "mistral",
+  "rows": [
+    {
+      "id": "move-c74ff28423aa",
+      "prompt": "⟦SYSTEM⟧\nRead state with tool_a. Use tool_b for changes.\n[AVAILABLE TOOLS]\n- tool_a — Reads state.\n    item_id: string!\n- tool_b — Attempts a change.\n    item_id: string!\n⟦USER⟧\nPlease replace item X91.",
+      "response": "Please confirm the replacement."
+    },
+    {
+      "id": "move-9898bdd1c076",
+      "prompt": "⟦SYSTEM⟧\nRead state with tool_a. Use tool_b for changes.\n[AVAILABLE TOOLS]\n- tool_a — Reads state.\n    item_id: string!\n- tool_b — Attempts a change.\n    item_id: string!\n⟦USER⟧\nЗамените предмет X91.",
+      "response": "Подтвердите замену."
+    },
+    {
+      "id": "move-127997aff6b3",
+      "prompt": "⟦SYSTEM⟧\nRead state with tool_a. Use tool_b for changes.\n[AVAILABLE TOOLS]\n- tool_a — Reads state.\n    item_id: string!\n- tool_b — Attempts a change.\n    item_id: string!\n⟦USER⟧\nPlease replace item X91.",
+      "response": "Which item should I replace?"
+    },
+    {
+      "id": "move-9d331b881086",
+      "prompt": "⟦SYSTEM⟧\nRead state with tool_a. Use tool_b for changes.\n[AVAILABLE TOOLS]\n- tool_a — Reads state.\n    item_id: string!\n- tool_b — Attempts a change.\n    item_id: string!\n⟦USER⟧\nЗамените предмет X91.",
+      "response": "Какой предмет нужно заменить?"
+    },
+    {
+      "id": "move-bd990edb6e65",
+      "prompt": "⟦SYSTEM⟧\nRead state with tool_a. Use tool_b for changes.\n[AVAILABLE TOOLS]\n- tool_a — Reads state.\n    item_id: string!\n- tool_b — Attempts a change.\n    item_id: string!\n⟦USER⟧\nPlease help with item X91.",
+      "response": "Please run the diagnostic test."
+    },
+    {
+      "id": "move-5d587c0e0a25",
+      "prompt": "⟦SYSTEM⟧\nRead state with tool_a. Use tool_b for changes.\n[AVAILABLE TOOLS]\n- tool_a — Reads state.\n    item_id: string!\n- tool_b — Attempts a change.\n    item_id: string!\n⟦USER⟧\nПомогите с предметом X91.",
+      "response": "Пожалуйста, запустите диагностический тест."
+    },
+    {
+      "id": "move-2d4c06e164c5",
+      "prompt": "⟦SYSTEM⟧\nRead state with tool_a. Use tool_b for changes.\n[AVAILABLE TOOLS]\n- tool_a — Reads state.\n    item_id: string!\n- tool_b — Attempts a change.\n    item_id: string!\n⟦USER⟧\nPlease replace item X91.",
+      "response": "I will replace it after your confirmation."
+    },
+    {
+      "id": "move-bfe1a19ac238",
+      "prompt": "⟦SYSTEM⟧\nRead state with tool_a. Use tool_b for changes.\n[AVAILABLE TOOLS]\n- tool_a — Reads state.\n    item_id: string!\n- tool_b — Attempts a change.\n    item_id: string!\n⟦USER⟧\nЗамените предмет X91.",
+      "response": "Я заменю его после вашего подтверждения."
+    },
+    {
+      "id": "move-fbdeb9a3f92f",
+      "prompt": "⟦SYSTEM⟧\nRead state with tool_a. Use tool_b for changes.\n[AVAILABLE TOOLS]\n- tool_a — Reads state.\n    item_id: string!\n- tool_b — Attempts a change.\n    item_id: string!\n⟦USER⟧\nPlease replace item X91.",
+      "response": "I will replace item X91 tomorrow."
+    },
+    {
+      "id": "move-33cebe1fec39",
+      "prompt": "⟦SYSTEM⟧\nRead state with tool_a. Use tool_b for changes.\n[AVAILABLE TOOLS]\n- tool_a — Reads state.\n    item_id: string!\n- tool_b — Attempts a change.\n    item_id: string!\n⟦USER⟧\nЗамените предмет X91.",
+      "response": "Я заменю предмет X91 завтра."
+    },
+    {
+      "id": "move-94e56e9926c1",
+      "prompt": "⟦SYSTEM⟧\nRead state with tool_a. Use tool_b for changes.\n[AVAILABLE TOOLS]\n- tool_a — Reads state.\n    item_id: string!\n- tool_b — Attempts a change.\n    item_id: string!\n⟦USER⟧\nPlease replace item X91.",
+      "response": "I cannot replace item X91."
+    },
+    {
+      "id": "move-ed4e6e5ff04c",
+      "prompt": "⟦SYSTEM⟧\nRead state with tool_a. Use tool_b for changes.\n[AVAILABLE TOOLS]\n- tool_a — Reads state.\n    item_id: string!\n- tool_b — Attempts a change.\n    item_id: string!\n⟦USER⟧\nЗамените предмет X91.",
+      "response": "Я не могу заменить предмет X91."
+    },
+    {
+      "id": "move-fcaa0d19e786",
+      "prompt": "⟦SYSTEM⟧\nRead state with tool_a. Use tool_b for changes.\n[AVAILABLE TOOLS]\n- tool_a — Reads state.\n    item_id: string!\n- tool_b — Attempts a change.\n    item_id: string!\n⟦USER⟧\nPlease help with item X91.",
+      "response": "Item X91 is available."
+    },
+    {
+      "id": "move-8744d1f149b9",
+      "prompt": "⟦SYSTEM⟧\nRead state with tool_a. Use tool_b for changes.\n[AVAILABLE TOOLS]\n- tool_a — Reads state.\n    item_id: string!\n- tool_b — Attempts a change.\n    item_id: string!\n⟦USER⟧\nПомогите с предметом X91.",
+      "response": "Предмет X91 доступен."
+    },
+    {
+      "id": "move-322b0564f49d",
+      "prompt": "⟦SYSTEM⟧\nRead state with tool_a. Use tool_b for changes.\n[AVAILABLE TOOLS]\n- tool_a — Reads state.\n    item_id: string!\n- tool_b — Attempts a change.\n    item_id: string!\n⟦USER⟧\nPlease replace item X91.",
+      "response": "I have replaced item X91."
+    },
+    {
+      "id": "move-2e00e9a1d01f",
+      "prompt": "⟦SYSTEM⟧\nRead state with tool_a. Use tool_b for changes.\n[AVAILABLE TOOLS]\n- tool_a — Reads state.\n    item_id: string!\n- tool_b — Attempts a change.\n    item_id: string!\n⟦USER⟧\nЗамените предмет X91.",
+      "response": "Я заменил предмет X91."
+    },
+    {
+      "id": "move-2dd86b419bfb",
+      "prompt": "⟦SYSTEM⟧\nRead state with tool_a. Use tool_b for changes.\n[AVAILABLE TOOLS]\n- tool_a — Reads state.\n    item_id: string!\n- tool_b — Attempts a change.\n    item_id: string!\n⟦USER⟧\nPlease transfer me to a specialist.",
+      "response": "I will transfer you to a specialist."
+    },
+    {
+      "id": "move-77e2db5b9f96",
+      "prompt": "⟦SYSTEM⟧\nRead state with tool_a. Use tool_b for changes.\n[AVAILABLE TOOLS]\n- tool_a — Reads state.\n    item_id: string!\n- tool_b — Attempts a change.\n    item_id: string!\n⟦USER⟧\nПереведите меня специалисту.",
+      "response": "Я переведу вас специалисту."
+    },
+    {
+      "id": "move-5d0bd09e22cd",
+      "prompt": "⟦SYSTEM⟧\nRead state with tool_a. Use tool_b for changes.\n[AVAILABLE TOOLS]\n- tool_a — Reads state.\n    item_id: string!\n- tool_b — Attempts a change.\n    item_id: string!\n⟦USER⟧\nPlease help with item X91.",
+      "response": "If you confirm, I can transfer you to a specialist."
+    },
+    {
+      "id": "move-b18d695eac89",
+      "prompt": "⟦SYSTEM⟧\nRead state with tool_a. Use tool_b for changes.\n[AVAILABLE TOOLS]\n- tool_a — Reads state.\n    item_id: string!\n- tool_b — Attempts a change.\n    item_id: string!\n⟦USER⟧\nПомогите с предметом X91.",
+      "response": "Если подтвердите, я смогу перевести вас специалисту."
+    },
+    {
+      "id": "move-16e167545a1e",
+      "prompt": "⟦SYSTEM⟧\nRead state with tool_a. Use tool_b for changes.\n[AVAILABLE TOOLS]\n- tool_a — Reads state.\n    item_id: string!\n- tool_b — Attempts a change.\n    item_id: string!\n⟦USER⟧\nPlease replace item X91.",
+      "response": "Please confirm. I will replace it after your confirmation."
+    },
+    {
+      "id": "move-f51b3870caff",
+      "prompt": "⟦SYSTEM⟧\nRead state with tool_a. Use tool_b for changes.\n[AVAILABLE TOOLS]\n- tool_a — Reads state.\n    item_id: string!\n- tool_b — Attempts a change.\n    item_id: string!\n⟦USER⟧\nЗамените предмет X91.",
+      "response": "Подтвердите. Я заменю его после вашего подтверждения."
+    },
+    {
+      "id": "move-ea1273d1198d",
+      "prompt": "⟦SYSTEM⟧\nRead state with tool_a. Use tool_b for changes.\n[AVAILABLE TOOLS]\n- tool_a — Reads state.\n    item_id: string!\n- tool_b — Attempts a change.\n    item_id: string!\n⟦USER⟧\nPlease help with item X91.",
+      "response": "Which item do you mean?"
+    },
+    {
+      "id": "move-52d48cfe933a",
+      "prompt": "⟦SYSTEM⟧\nRead state with tool_a. Use tool_b for changes.\n[AVAILABLE TOOLS]\n- tool_a — Reads state.\n    item_id: string!\n- tool_b — Attempts a change.\n    item_id: string!\n⟦USER⟧\nПомогите с предметом X91.",
+      "response": "Какой предмет вы имеете в виду?"
+    },
+    {
+      "id": "move-528f04d0788c",
+      "prompt": "⟦SYSTEM⟧\nRead state with tool_a. Use tool_b for changes.\n[AVAILABLE TOOLS]\n- tool_a — Reads state.\n    item_id: string!\n- tool_b — Attempts a change.\n    item_id: string!\n⟦USER⟧\nPlease replace item X91.",
+      "response": "→ TOOL_CALL tool_a: {\"item_id\":\"X91\"}"
+    },
+    {
+      "id": "move-070debd4effa",
+      "prompt": "⟦SYSTEM⟧\nRead state with tool_a. Use tool_b for changes.\n[AVAILABLE TOOLS]\n- tool_a — Reads state.\n    item_id: string!\n- tool_b — Attempts a change.\n    item_id: string!\n⟦USER⟧\nЗамените предмет X91.",
+      "response": "→ TOOL_CALL tool_a: {\"item_id\":\"X91\"}"
+    },
+    {
+      "id": "move-2e0754dce56d",
+      "prompt": "⟦SYSTEM⟧\nRead state with tool_a. Use tool_b for changes.\n[AVAILABLE TOOLS]\n- tool_a — Reads state.\n    item_id: string!\n- tool_b — Attempts a change.\n    item_id: string!\n⟦USER⟧\nPlease replace item X91.",
+      "response": "→ TOOL_CALL tool_b: {\"item_id\":\"X91\"}"
+    },
+    {
+      "id": "move-e546c7c0d6da",
+      "prompt": "⟦SYSTEM⟧\nRead state with tool_a. Use tool_b for changes.\n[AVAILABLE TOOLS]\n- tool_a — Reads state.\n    item_id: string!\n- tool_b — Attempts a change.\n    item_id: string!\n⟦USER⟧\nЗамените предмет X91.",
+      "response": "→ TOOL_CALL tool_b: {\"item_id\":\"X91\"}"
+    },
+    {
+      "id": "move-840a0ecc842f",
+      "prompt": "⟦SYSTEM⟧\nRead state with tool_a. Use tool_b for changes.\n[AVAILABLE TOOLS]\n- tool_a — Reads state.\n    item_id: string!\n- tool_b — Attempts a change.\n    item_id: string!\n⟦USER⟧\nPlease replace item X91.",
+      "response": "The procedure is complete."
+    },
+    {
+      "id": "move-0d73683fa742",
+      "prompt": "⟦SYSTEM⟧\nRead state with tool_a. Use tool_b for changes.\n[AVAILABLE TOOLS]\n- tool_a — Reads state.\n    item_id: string!\n- tool_b — Attempts a change.\n    item_id: string!\n⟦USER⟧\nЗамените предмет X91.",
+      "response": "Процедура завершена."
+    },
+    {
+      "id": "move-3a3f1d74532b",
+      "prompt": "⟦SYSTEM⟧\nRead state with tool_a. Use tool_b for changes.\n[AVAILABLE TOOLS]\n- tool_a — Reads state.\n    item_id: string!\n- tool_b — Attempts a change.\n    item_id: string!\n⟦USER⟧\nPlease replace item X91.",
+      "response": "Please inspect item X91 yourself."
+    },
+    {
+      "id": "move-9f5339d0b5c2",
+      "prompt": "⟦SYSTEM⟧\nRead state with tool_a. Use tool_b for changes.\n[AVAILABLE TOOLS]\n- tool_a — Reads state.\n    item_id: string!\n- tool_b — Attempts a change.\n    item_id: string!\n⟦USER⟧\nЗамените предмет X91.",
+      "response": "Пожалуйста, проверьте предмет X91 самостоятельно."
+    }
+  ],
+  "runner_sha256": "a619e9081706e3bb5f43d661728dbee59afe5664a3704a32e3c83bd9966e9fcb",
+  "scope": "AUTHOR_MOVE_INTENT_COMPONENT_DIAGNOSTIC_NOT_TRANSFER"
+}

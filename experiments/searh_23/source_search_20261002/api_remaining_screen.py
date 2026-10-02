@@ -8,7 +8,7 @@ from run_compare import identity, write
 from guardian_truth.source_search.store import digest
 from guardian_truth.source_search.transport import ModelTransport
 
-OUT=ROOT/'outputs/searh_23/source_search_20261002/api_remaining_screen_v1'
+OUT=ROOT/'outputs/searh_23/source_search_20261002/api_remaining_screen_v2'
 
 def prepare():
     rows=[json.loads(line) for line in (ROOT/'outputs/searh_23/source_search_20261002/counterevidence_bank_v2/short_inputs.jsonl').read_text(encoding='utf-8').splitlines()]

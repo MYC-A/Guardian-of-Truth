@@ -18,7 +18,7 @@ from guardian_truth.source_search.finding_review import review_findings, INSTRUC
 from guardian_truth.source_search.archive import persist_snapshot
 from guardian_truth.source_search.transport import ModelTransport
 
-OUT=ROOT/'outputs/searh_23/source_search_20261002/typed_scope_probe_v2'
+OUT=ROOT/'outputs/searh_23/source_search_20261002/typed_scope_probe_v3'
 
 def prepare():
     rows=[json.loads(line) for line in (ROOT/'outputs/searh_23/source_search_20261002/counterevidence_bank_v2/short_inputs.jsonl').read_text(encoding='utf-8').splitlines()]

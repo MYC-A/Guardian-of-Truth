@@ -23,7 +23,8 @@ class Quote(StrictModel):
 class TextAct(StrictModel):
     id: str = Field(min_length=1)
     speaker: Literal['ASSISTANT', 'USER', 'UNKNOWN']
-    performer: Literal['ASSISTANT', 'USER', 'OTHER', 'UNKNOWN']
+    performer: Literal['ASSISTANT', 'USER', 'OTHER', 'UNKNOWN'] = Field(
+        description='Who performs the requested or described action. For Please confirm: USER, not the speaker.')
     act: ActKind
     modality: Modality
     action: str = Field(min_length=1)
@@ -49,7 +50,10 @@ Cover every material text clause with a sourced act. Return no verdict or rule.
 Distinguish speaker from performer: "Please run the test" is spoken by the
 assistant, asks the USER to act, modality REQUEST, not assistant execution.
 "Confirm and I will replace it" is ASK_CONFIRM / REQUEST plus OFFER_FUTURE /
-CONDITIONAL, not ASSERT_DONE. "I replaced it" is ASSERT_DONE / CLAIMED_COMPLETED;
+CONDITIONAL, not ASSERT_DONE. The confirmation performer is USER; the future
+replacement performer is ASSISTANT. Speaker is the role already present in the
+source packet, never inferred from whether an action was requested.
+"I replaced it" is ASSERT_DONE / CLAIMED_COMPLETED;
 it is a claim, not proof of successful execution. "I will transfer you" is
 OFFER_ESCALATION / FUTURE, not a completed transfer. "I cannot help" is REFUSE /
 PRESENT. "The capacity is 65%" is ASSERT_FACT / PRESENT, to be checked later.
@@ -76,7 +80,7 @@ def input_packet(store):
                 'evidence':store.resolve_quote({'source_id':sid,'quote':store.text(sid)}),
                 'status':'CODE_PARSED_ATTEMPT_NOT_SUCCESS_OR_EFFECT'})
         elif source['kind'] == 'text' and event.role == 'assistant':
-            texts.append({'source_id':sid,'text':store.text(sid)})
+            texts.append({'source_id':sid,'speaker':event.role.upper(),'text':store.text(sid)})
     users = [s for s in store.sources.values()
              if s['document']=='prompt' and s['role']=='user' and s['kind']=='text']
     latest = max(users,key=lambda s:s['start']) if users else None
@@ -93,10 +97,16 @@ def validate_parse(store, value):
             raise ValueError('duplicate or reserved text-act ID')
         ids.add(act['id'])
         ref = store.resolve_quote(act['evidence'])
-        source = store.sources.get(act['evidence']['source_id'])
-        if (source is None or source['document']!='response' or source['kind']!='text'
-                or source['role']!='assistant' or act['speaker']!='ASSISTANT'):
+        # The conversation role is observable syntax, not a semantic question
+        # for the model. Bind by exact span containment even for raw/q refs.
+        sources=[s for s in store.sources.values() if s['document']=='response'
+                 and s['kind']=='text' and s['role']=='assistant'
+                 and s['start']<=ref['start'] and ref['end']<=s['end']]
+        if ref['document']!='response' or len(sources)!=1:
             raise ValueError('text act must reference assistant text, never a tool call')
+        act['model_speaker']=act['speaker']
+        act['speaker']=sources[0]['role'].upper()
+        act['speaker_basis']='CODE_SOURCE_ROLE'
         if act['act']=='ASSERT_DONE' and act['modality']!='CLAIMED_COMPLETED':
             raise ValueError('completion claim requires CLAIMED_COMPLETED modality')
         if act['act'] in ('OFFER_FUTURE','OFFER_ESCALATION') and act['modality'] not in ('FUTURE','CONDITIONAL'):
@@ -117,7 +127,9 @@ def validate_parse(store, value):
     if intent['evidence'] is not None:
         ref = store.resolve_quote(intent['evidence'])
         latest = packet['latest_user']
-        if latest is None or intent['evidence']['source_id']!=latest['source_id']:
+        latest_source=store.sources[latest['source_id']] if latest else None
+        if (latest_source is None or ref['document']!='prompt'
+                or not latest_source['start']<=ref['start']<ref['end']<=latest_source['end']):
             raise ValueError('intent must cite the latest user request')
         intent['verified_evidence']=ref
     elif intent['status']!='UNKNOWN':
@@ -130,6 +142,7 @@ def validate_parse(store, value):
     issues = (['uncovered_target_text'] if missing else [])
     issues += ['invalid_native_call_arguments'] if any(not c['json_valid'] for c in packet['native_calls']) else []
     issues += ['unknown_target_act'] if any(a['act']=='UNKNOWN' for a in acts) else []
+    issues += ['unknown_action_performer'] if any(a['performer']=='UNKNOWN' and a['act'] not in ('ASSERT_FACT','UNKNOWN') for a in acts) else []
     return {'acts':acts,'intent':intent,'issues':issues,'uncovered_material_chars':len(missing),
             'source_sha256':store.source_sha256,'semantic_classification_proven':False,
             'status':'COMPLETE_SOURCE_COVERAGE' if not issues else 'INCOMPLETE_SCOPE'}
