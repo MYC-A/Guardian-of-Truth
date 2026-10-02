@@ -7,10 +7,12 @@ import urllib.request
 from acceptance import rows
 from structural_v02 import parse_case_v02
 
+BASE = 'http://127.0.0.1:' + (sys.argv[2] if len(sys.argv) > 2 else '18094')
+
 
 def request(path, value=None):
     body = None if value is None else json.dumps(value).encode()
-    req = urllib.request.Request('http://127.0.0.1:18094'+path,data=body,
+    req = urllib.request.Request(BASE+path,data=body,
         headers={'Content-Type':'application/json'})
     with urllib.request.urlopen(req,timeout=30) as reply:
         return json.loads(reply.read())

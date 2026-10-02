@@ -14,7 +14,7 @@ from guardian_truth.source_search.archive import persist_snapshot
 from guardian_truth.source_search.store import SourceStore
 from runtime import GuardianServiceRuntime
 
-OUT = ROOT / 'outputs/searh_23/source_search_20261002/comparison_v6'
+OUT = ROOT / 'outputs/searh_23/source_search_20261002/comparison_v7'
 
 
 def write(path, value):

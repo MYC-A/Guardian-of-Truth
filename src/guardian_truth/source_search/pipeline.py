@@ -175,6 +175,7 @@ def run(row, ask, *, mode='search', max_steps=12, max_payload_bytes=95000):
     messages = [{'role': 'system', 'content': contract(phase)},
                 {'role': 'user', 'content': json.dumps(initial, ensure_ascii=False)}]
     stop, assessment, invalid_reasks = 'step_budget_exhausted', None, 0
+    completion_reasks = 0
     for step in range(1 if mode == 'direct' else max_steps):
         request_bytes = len(json.dumps(messages, ensure_ascii=False).encode('utf-8'))
         # UTF-8 bytes are a conservative token upper bound, not an exact tokenizer.
@@ -244,6 +245,21 @@ def run(row, ask, *, mode='search', max_steps=12, max_payload_bytes=95000):
                 assessment['reason'] = 'unread_material_query_remainder'
                 assessment['open_questions'] += [json.dumps(g, ensure_ascii=False) for g in gaps.values()]
             stop = assessment['reason']
+            trace[-1]['assessment_validation'] = assessment
+            if (mode != 'direct' and stop == 'material_checks_incomplete'
+                    and completion_reasks == 0 and step + 1 < max_steps):
+                # The controller knows which required checks were omitted. Give
+                # the judge one bounded opportunity to investigate them, rather
+                # than silently converting its proposal to a clean verdict.
+                completion_reasks += 1
+                messages += [{'role': 'assistant', 'content': content},
+                    {'role': 'user', 'content': json.dumps({
+                        'assessment_not_accepted': 'material_checks_incomplete',
+                        'unresolved_checks': assessment['open_questions'],
+                        'instruction': 'Read further evidence if needed, then submit all required checks. '
+                        'Do not change your verdict merely to pass validation. '
+                        'If the evidence cannot resolve a material check, return UNKNOWN.'}, ensure_ascii=False)}]
+                continue
             break
         except (ValueError, TypeError, KeyError) as exc:
             # A failed query/quote check remains visible and can be corrected on

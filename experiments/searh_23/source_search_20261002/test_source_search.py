@@ -37,6 +37,23 @@ def complete_vote(row, decision='NO_ERROR'):
 
 
 class Tests(unittest.TestCase):
+    def test_incomplete_judge_can_read_more_after_code_identifies_missing_checks(self):
+        row = case()
+        partial = complete_vote(row)
+        partial['checks'] = partial['checks'][:1]
+        replies = iter([{'ready_for_judge': True}, {'assessment': partial},
+            {'action': {'op': 'read_source', 'args': {'source_id': 'h0'}}},
+            {'assessment': complete_vote(row)}])
+        seen = []
+        def ask(messages):
+            seen.append(messages[-1]['content'])
+            return {'status': 'OK', 'content': json.dumps(next(replies))}
+        result = run(row, ask, max_steps=4)
+        self.assertEqual(result['decision'], 'NO_ERROR')
+        self.assertIn('unresolved_checks', seen[2])
+        self.assertEqual(result['trace'][1]['assessment_validation']['decision'], 'UNKNOWN')
+        self.assertEqual(result['trace'][2]['action']['action']['op'], 'read_source')
+
     def test_read_window_past_eof_is_clipped_without_inventing_text(self):
         store = SourceStore(case())
         result = store.read_source('h0', start=0, end=200)

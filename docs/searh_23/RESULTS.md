@@ -607,3 +607,28 @@ the original research systems. The dataset is small, partly previously viewed,
 and exact span scoring is intentionally strict. Raw calls, per-case errors,
 metric definitions, method-to-paper mapping and limitations are in
 `docs/searh_23/REQ2LTL_NL2LOGIC_ARCHITECTURE_COMPARE_2026-09-27.md`.
+
+## 28. Source preservation and sequential search integration (2026-10-02)
+
+Isolated branch `research/source-search-20261002` integrates an immutable
+complete source index, plain KB retrieval, typed entity navigation, actual
+BFS/DFS, shared quote references, source-bound arithmetic, and a judge that
+may request further evidence. Mechanical admission/source round trips pass
+46/46; 11 cases have structural hits. Retail29's second order is reachable;
+banking plain-text results are indexed; original amounts yield 75.00%;
+19 airline dates reach the literal extractor. These are component checks,
+not model quality or proof that an automatically chosen date pair is relevant.
+
+A stopped historical V4 comparison produced 69/92 records. Each arm's six
+TP were structural; direct had one TN, all other records UNKNOWN. The search
+arm had 27 transport/format failures, so this run does not establish whether
+the architecture helps. Real small probes found native function-call replies
+being rejected as empty text and ordinary reads past EOF being rejected.
+Both issues were fixed. A subsequent real probe completed two source reads
+and reached the judge, but still returned UNKNOWN because required checks
+were omitted. V7 offers one bounded follow-up to investigate missing checks;
+16 local regressions pass. Live HTTP checks pass 11 structural cases without
+model calls. Thirty-two new authored contrasts are frozen; independent label
+review and transfer inference remain outstanding. No predictor promotion.
+Full traces, partial metrics, resource accounting, and limitations:
+`docs/searh_23/SOURCE_SEARCH_SYSTEM_2026-10-02.md`.

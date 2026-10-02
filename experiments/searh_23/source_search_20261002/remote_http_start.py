@@ -14,7 +14,10 @@ checkout = base / ('repos/source-search-' + revision)
 sha = subprocess.check_output(['git','-C',str(checkout),'rev-parse','HEAD'],text=True).strip()
 if not sha.startswith(revision):
     raise ValueError('pinned checkout mismatch')
-port, name = 18094, 'guardian_source_search_' + revision[:8]
+port = int(sys.argv[2]) if len(sys.argv) > 2 else 18094
+if not 1024 <= port <= 65535:
+    raise ValueError('unprivileged TCP port required')
+name = 'guardian_source_search_' + revision[:8]
 path = Path('/etc/supervisor/conf.d') / (name + '.conf')
 if path.exists():
     raise RuntimeError('service already exists; inspect, do not overwrite')
