@@ -20,3 +20,7 @@ Receipts and summary tables do NOT replace these answers: audit of
 explanations requires the raw model outputs above. Historical answers are
 never regenerated; if a source file is lost it is marked irrecoverable, not
 rewritten.
+- `deferred_completion_predictions.jsonl` — the 6 completed goals (18 rows /
+  28 calls) on phase modular_all_noft_20261002, gold v2, same frozen rules.
+  Source of truth: /workspace/guardian/results/modular_steps_20261002/deferred_completion/predictions.jsonl
+  sha256 5b37f175b84c103e73982dbb4a16e33daa4df281fc7d50f1b7864fc4488383ba

@@ -144,3 +144,29 @@ structural-shortcut temporal-verdict arm vs pure-model on new banks;
 conditional third-role routing arm; X_gemmaE_gptossJ measurement; graph
 ID/time-hint arm on the selected chain (assignment §12 items); C1/M3/A4
 and sealed protocol work per the prior queue.
+
+
+---
+
+## Cycle modular_all_noft_20261002 (2026-10-02, all methods, no finetuning)
+
+Base fb94edf3 → 889abe9d (P0). Budget phase modular_all_noft_20261002
+(1600/4M/6M/200k/76800); dev2+reviewer_repair CLOSED. RUN_PLAN:
+docs/searh_23/RUN_PLAN_ALL_METHODS_2026-10-02.md (29 methods).
+
+- P0 §3.1/§3.2/§3.3 COMPLETE: JUDGMENT_CONTRACT_V2 (shared D/E→J core,
+  advisory-only difference, frequency prior removed, per-tool status
+  vocabulary, deadline lower bound); bind_proposal mechanical binding (joint
+  satisfaction); counterevidence enum+consistency+disjoint buckets.
+  test_judgment_contract 20/20; AUDIT-N1 PASS_WITH_LIMITS → N1-1..N1-6
+  fixed with regressions (noft_receipts/REVIEW_FINDINGS_NOFT_1.md).
+- P0 §3.4 COMPLETE: gold v2 (def_mixed::01 real catalog basis, v1 preserved);
+  six deferred goals run (28 attempts); 24/24 triples measured —
+  D_V1_gptoss F1 1.0 dual on the full bank, D_V1_gemma .9167 (2 archived
+  equal-instant FPs), C0 .6667/.4762 (12 UNKNOWN: source_ref contract
+  failures). Raw journals published in raw_journals/ with sha256.
+- Data: sealed bank BUILT+SEALED by protocol_auditor PA-1 (56 cases / 14
+  groups / 28+28; vault chmod 700/600, access log; repo metadata only).
+  prompt_train ≥40 and paired_dev ≥48 (24 pairs, ≥12 groups) pending.
+- Spend: 28/1600 attempts, 41,327 known / 41,327 logical tokens, 98.3
+  model-seconds. Old phases' ledgers untouched.

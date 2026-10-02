@@ -121,3 +121,36 @@
   shortcut-рукав с материализованным вердиктом сравнения (F1-структурный)
   не перемерен против pure-model на новых банках — измерение разделено
   по заданию §8 и остаётся в remaining-work.
+
+
+---
+
+## Addendum 2026-10-02 (all-methods-noft cycle): deferred comparison completed to 24/24
+
+The six previously unmeasured goals (def_effect_new::05, def_mixed::00,
+def_mixed::01, def_perm_new::06, def_perm_new::07, def_mixed::02) were run on
+phase modular_all_noft_20261002 with the SAME frozen rules and systems
+(selection deferred_completion/selection.json, FROZEN_BEFORE_RUN; gold v2 —
+def_mixed::01 provenance repaired, label unchanged). 28 attempts / 41,327
+known tokens / 98.3 model-seconds.
+
+Full 24-case dual-F1 (score_deferred_completion.py, gold v2):
+
+| system | TP | FP | FN | TN | UNKNOWN | F1 raw | F1 frozen |
+|---|---|---|---|---|---|---|---|
+| C0_J_control (mistral V0) | 5 | 5 | 0 | 2 | 12 | .6667 | .4762 |
+| D_V1_gptoss | 11 | 0 | 0 | 13 | 0 | 1.0 | 1.0 |
+| D_V1_gemma | 11 | 2 | 0 | 11 | 0 | .9167 | .9167 |
+
+New-case notes: the 18 archived triples are unchanged (journal untouched);
+the 6 new rows add 1 TP + 5 UNKNOWN to C0 (the source_ref JSON-contract
+failure family, 2 attempts each), 3 TP + 3 TN to gpt-oss (still perfect),
+3 TP + 3 TN to gemma (the 2 FPs remain the archived equal-instant
+constructions — no new FP). The historical "18/24" wording above is
+superseded by 24/24 measured; the archive journals were published verbatim
+in raw_journals/ (role 174 rows/201 calls incl. 34 reask calls; deferred 54
+rows/78 calls; deferred_completion 18 rows/28 calls) with sha256 in the
+README. Wording re-check (assignment §3.4): role bank = 12 cases over 10
+logical groups (confirmed against the journal); control model C0_J_control
+is mistral ministral-14b-latest (confirmed, line 17); UNKNOWN counts and
+retries are as journaled above.

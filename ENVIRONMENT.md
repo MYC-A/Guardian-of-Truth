@@ -318,3 +318,20 @@ MODEL_ROLE_PROTOCOL.md; dataset/deferred_bank/{input,author_gold,manifest};
 repair_receipts/ (reconciliation, atlas, raw corpora, payload audit, census,
 role/deferred selections and scores). Raw journals in results/modular_steps_
 20261002/{role_pilot,deferred_pilot,atomic_repair_pilot}/.
+
+
+### Addendum 2026-10-02 (all-methods-noft cycle)
+
+- New budget phase modular_all_noft_20261002 (1600 attempts / 4M known /
+  6M logical / 200k unknown-upper / 76,800 model-seconds); dev2 and
+  reviewer_repair CLOSED (ledgers never edited). Fresh ledger
+  modular_all_noft_20261002_budget.sqlite.
+- Disk quota 32G, ~650M free at cycle start: model strategy is
+  download→pilot→delete with pinned revisions; Granite Guardian BF16 (16G)
+  runs FIRST while its weights are still on disk, then weights are deleted
+  after receipts; larger candidates (safeguard MXFP4 12.1G, PRT/CANOE/Bespoke
+  ~15G BF16 or 4-bit) load sequentially in freed space. No FP32 copies; no
+  weights of active jobs deleted; ≥2G GPU / ≥3G RAM system reserve kept.
+- Sealed vault: /workspace/guardian/results/modular_steps_20261002/sealed_vault
+  (chmod 700/600, keeper protocol_auditor, access log; builder inside the
+  vault only — repo carries metadata manifest only).
