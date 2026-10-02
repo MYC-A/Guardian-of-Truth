@@ -12,7 +12,8 @@ ROOT = Path(__file__).resolve().parents[3]
 sys.path.insert(0, str(ROOT / 'src'))
 from guardian_truth.source_search import SourceStore, calculate
 from guardian_truth.source_search.calculations import literals
-from guardian_truth.source_search.pipeline import run, validate_assessment, contract
+from guardian_truth.source_search.pipeline import run, validate_assessment, contract, decode_model_object
+from guardian_truth.source_search.store import entity_key
 from guardian_truth.source_search.transport import ModelTransport
 
 
@@ -37,6 +38,38 @@ def complete_vote(row, decision='NO_ERROR'):
 
 
 class Tests(unittest.TestCase):
+    def test_only_a_whole_json_fence_is_accepted_without_repairing_json(self):
+        self.assertEqual(decode_model_object('```json\n{"x":1}\n```'), {'x':1})
+        for text in ('Explanation\n```json\n{"x":1}\n```', '```json\n{"x":1,}\n```'):
+            with self.assertRaises(ValueError):
+                decode_model_object(text)
+
+    def test_final_step_is_reserved_for_judgment_and_not_more_search(self):
+        row=case(); phases=[]
+        def ask(messages):
+            system=messages[0]['content']; phases.append(system)
+            if 'CURRENT ROLE: FINAL ASSESSMENT' in system:
+                return {'status':'OK','content':json.dumps({'assessment':complete_vote(row)})}
+            return {'status':'OK','content':json.dumps({'action':{'op':'read_source','args':{'source_id':'h0'}}})}
+        result=run(row,ask,max_steps=4)
+        self.assertEqual(result['decision'],'NO_ERROR')
+        self.assertEqual([t['phase'] for t in result['trace']],['SEARCH','SEARCH','JUDGE','FINAL'])
+        self.assertNotIn('CURRENT ROLE: JUDGE',phases[-1])
+
+    def test_depth_limited_dfs_revisits_a_shorter_route_in_a_cycle(self):
+        store=SourceStore({'prompt':'control','response':'ok'})
+        nodes={v:entity_key({'field':'node_id','value':v}) for v in 'RABCD'}
+        for value,key in nodes.items(): store.entities[key]={'field':'node_id','value':value}
+        for a,b in [('R','A'),('R','B'),('B','C'),('C','A'),('A','D')]:
+            edge={'kind':'CO_RECORDED','fact_ids':[],'source_refs':[]}
+            store.adjacency[nodes[a]][nodes[b]]=edge
+            store.adjacency[nodes[b]][nodes[a]]=edge
+        for strategy in ('BFS','DFS'):
+            result=store.traverse({'field':'node_id','value':'R'},strategy=strategy,max_depth=3,max_nodes=5)
+            self.assertEqual({r['entity']['value'] for r in result['items']},set('RABCD'))
+            self.assertEqual(next(r['depth'] for r in result['items'] if r['entity']['value']=='A'),1)
+            self.assertFalse(result['was_truncated'])
+
     def test_incomplete_judge_can_read_more_after_code_identifies_missing_checks(self):
         row = case()
         partial = complete_vote(row)

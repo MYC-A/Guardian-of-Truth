@@ -5,12 +5,24 @@ It never infers business semantics from co-recorded graph edges.
 """
 import ast
 import json
+import re
 from pathlib import Path
 
 from .store import SourceStore
 from .calculations import calculate, literals
 
 ROOT = Path(__file__).resolve().parents[3]
+
+
+def decode_model_object(content):
+    """Accept JSON or a single enclosing JSON fence; never extract from prose."""
+    try:
+        return json.loads(content)
+    except json.JSONDecodeError:
+        fenced = re.fullmatch(r'\s*```(?:json)?[ \t]*\r?\n([\s\S]*?)\r?\n```\s*', content)
+        if fenced is None:
+            raise
+        return json.loads(fenced[1])
 
 
 def error_definition():
@@ -144,7 +156,11 @@ def contract(phase):
             'The next response will contain the operation result; only then choose the next operation. '
             'Use neighbors or BFS to enumerate alternatives; use DFS for chains of co-recorded grounds. '
             'The entire source index is available, not just the initial projection. Return JSON only.')
-    if phase != 'DIRECT':
+    if phase == 'FINAL':
+        shared += ('CURRENT ROLE: FINAL ASSESSMENT. No further source requests remain. '
+            'Use the evidence already retrieved, preserve known material gaps as UNKNOWN, '
+            'and return the assessment schema below. Do not return actions or ready_for_judge.\n')
+    elif phase != 'DIRECT':
         shared += 'CURRENT ROLE: JUDGE. You may request further read-only evidence before deciding.\n'
         shared += 'Available operations: ' + json.dumps(TOOLS) + '\n'
         shared += (
@@ -180,6 +196,15 @@ def run(row, ask, *, mode='search', max_steps=12, max_payload_bytes=95000):
     stop, assessment, invalid_reasks = 'step_budget_exhausted', None, 0
     completion_reasks = 0
     for step in range(1 if mode == 'direct' else max_steps):
+        if mode != 'direct' and phase == 'SEARCH' and step >= max(1, max_steps // 2):
+            phase = 'JUDGE'
+            messages[0] = {'role': 'system', 'content': contract(phase)}
+            messages.append({'role': 'user', 'content': 'The initial search quota has ended. '
+                'Assess the latest move, or request specific missing evidence using the remaining steps. '
+                'Unresolved material questions must remain UNKNOWN.'})
+        if mode != 'direct' and step == max_steps - 1:
+            phase = 'FINAL'
+            messages[0] = {'role': 'system', 'content': contract(phase)}
         request_bytes = len(json.dumps(messages, ensure_ascii=False).encode('utf-8'))
         # UTF-8 bytes are a conservative token upper bound, not an exact tokenizer.
         if request_bytes > max_payload_bytes:
@@ -196,9 +221,11 @@ def run(row, ask, *, mode='search', max_steps=12, max_payload_bytes=95000):
             break
         content = record['content']
         try:
-            choice = json.loads(content)
+            choice = decode_model_object(content)
             if not isinstance(choice, dict):
                 raise ValueError('expected object')
+            if phase == 'FINAL' and 'assessment' not in choice:
+                raise ValueError('final step requires assessment or explicit UNKNOWN assessment')
             if choice.get('ready_for_judge') is True and mode != 'direct':
                 invalid_reasks = 0
                 phase = 'JUDGE'

@@ -13,7 +13,7 @@ import urllib.request
 class ModelTransport:
     def __init__(self, directory, *, max_calls=150, max_tokens=500000,
                  max_output_tokens=2400, timeout=120, provider='mistral', model=None,
-                 reasoning_effort=None):
+                 reasoning_effort=None, response_schema=None, json_mode=True):
         self.directory = Path(directory)
         self.directory.mkdir(parents=True, exist_ok=True)
         self.cache = self.directory / 'cache'
@@ -35,6 +35,7 @@ class ModelTransport:
                             env[name.strip()] = value.strip().strip('"').strip("'")
         self.provider = provider
         self.reasoning_effort = reasoning_effort
+        self.response_schema, self.json_mode = response_schema, json_mode
         endpoints = {'mistral': ('https://api.mistral.ai/v1', 'MISTRAL_API_KEY', None),
             'ollama': ('https://ollama.com/v1', 'OLLAMA_API_KEY', None),
             'ukisai': ('https://ukisai.com/api/swift/v1', 'UKISAI_API_KEY', 'none'),
@@ -61,7 +62,12 @@ class ModelTransport:
 
     def __call__(self, messages):
         body = {'model': self.model, 'messages': messages, 'temperature': 0,
-                'max_tokens': self.max_output_tokens, 'response_format': {'type': 'json_object'}}
+                'max_tokens': self.max_output_tokens}
+        if self.response_schema is not None:
+            body['response_format'] = {'type':'json_schema', 'json_schema':{
+                'name':'guardian_typed_output', 'schema':self.response_schema, 'strict':True}}
+        elif self.json_mode:
+            body['response_format'] = {'type':'json_object'}
         if self.reasoning_effort is not None:
             body['reasoning_effort'] = self.reasoning_effort
         system = messages[0].get('content', '') if messages else ''

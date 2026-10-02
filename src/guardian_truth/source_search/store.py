@@ -181,21 +181,26 @@ class SourceStore:
         if relation_types and relation_types != ['CO_RECORDED']:
             raise ValueError('unsupported relation')
         root = entity_key(entity)
-        frontier = deque([(root, 0, [])]); visited = set(); rows = []
-        while frontier and len(visited) < max_nodes:
+        frontier = deque([(root, 0, [])]); visited = {}; rows = {}
+        while frontier:
             key, depth, path = frontier.popleft() if strategy == 'BFS' else frontier.pop()
-            if key in visited:
+            if key in visited and visited[key] <= depth:
                 continue
-            visited.add(key)
-            rows.append({'entity': self.entities.get(key, entity), 'depth': depth, 'path': path,
-                         'fact_ids': self.by_entity[key]})
+            if key not in visited and len(visited) >= max_nodes:
+                frontier.append((key, depth, path))
+                break
+            # A depth-limited DFS may first encounter a node by a longer route.
+            # Revisit it when a shorter route permits additional expansion.
+            visited[key] = depth
+            rows[key] = {'entity': self.entities.get(key, entity), 'depth': depth, 'path': path,
+                         'fact_ids': self.by_entity[key]}
             if depth < max_depth:
                 for neighbor, edge in sorted(self.adjacency[key].items(), key=lambda item: str(item[0])):
-                    if neighbor not in visited and (not fields or neighbor[0] in fields):
+                    if (neighbor not in visited or depth + 1 < visited[neighbor]) and (not fields or neighbor[0] in fields):
                         frontier.append((neighbor, depth + 1, path + [{'from': self.entities[key],
                             'to': self.entities[neighbor], **edge}]))
-        remaining = [self.entities[k] for k, _, _ in frontier if k not in visited]
-        return {'items': rows, 'visited': len(visited), 'strategy': strategy,
+        remaining = [self.entities[k] for k, depth, _ in frontier if k not in visited or depth < visited[k]]
+        return {'items': list(rows.values()), 'visited': len(visited), 'strategy': strategy,
             'was_truncated': bool(remaining),
             'frontier': remaining,
             'coverage': 'BOUNDED_EXPLICIT_GRAPH_NAVIGATION_NOT_AUTHORIZATION'}

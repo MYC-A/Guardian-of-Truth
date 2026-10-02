@@ -35,7 +35,7 @@ def main(revision, prepare_only=False):
     freeze = command([python, str(checkout / 'experiments/searh_23/source_search_20261002/run_compare.py')])
     if prepare_only:
         print(json.dumps({'revision':sha,'checkout':str(checkout),'frozen':json.loads(freeze),
-                          'tests':'16 passed','inference_started':False}))
+                          'tests':'19 passed','inference_started':False}))
         return
     name = 'guardian_source_compare_' + revision[:8]
     config = Path('/etc/supervisor/conf.d') / (name + '.conf')
@@ -60,7 +60,7 @@ stderr_logfile={out}/run.err.log
     receipt = {'revision': sha, 'checkout': str(checkout), 'program': name,
         'status': command(['supervisorctl', 'status', name]), 'old_pids_before': old,
         'old_pids_after': after, 'frozen': json.loads(freeze),
-        'tests': '16 passed; test process exit0', 'no_provider_availability_poll': True}
+        'tests': '19 passed; test process exit0', 'no_provider_availability_poll': True}
     (out / 'launch.json').write_text(json.dumps(receipt, indent=2))
     print(json.dumps(receipt))
 
