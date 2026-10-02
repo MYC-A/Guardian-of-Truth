@@ -90,9 +90,14 @@ dev-бюджета:
 Runner не расширяет cap и не переключается на heldout-фазу. Он проверяет
 hash primary archive/input/code/model, поддерживает resume shared-B и
 per-arm journal, сохраняет BUDGET_STOP. Актуальный frozen manifest —
-`negative_review_pilot_v3/selection.json`: source config входит в code hash;
+`negative_review_pilot_v4/selection.json`: source config входит в code hash;
 полный raw B сохраняется до ограничений старого adapter. Первые две
 подготовки не выполняли inference и были заменены до первого запроса.
+V3 достиг BUDGET_STOP до обращения к провайдеру (done0/192), сохранив ledger
+218 attempts/699667 tokens/pending0. Сравнение manifest между Windows и
+Linux дополнительно нашло CRLF/LF различие в code fingerprint. V4
+нормализует только Python newlines и JSON config; prompt/history/target
+остаются отдельными неизменными exact hashes. V3 receipts сохранены.
 Сырой результат и scorer остаются
 раздельными. Алгоритм frozen не меняется после нового gold scoring.
 

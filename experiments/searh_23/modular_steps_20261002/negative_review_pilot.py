@@ -17,7 +17,10 @@ def code_identity():
     paths = [HERE / name for name in ('negative_review_pilot.py', 'negative_routing.py', 'negative_routing_protocol.json')]
     paths += [ROOT / 'service/runtime.py', ROOT / 'service/configs/modular-source-bound-r0-v1.json',
               ROOT / 'experiments/searh_23/hybrid_service_v1/counterevidence.py']
-    return sha({p.relative_to(ROOT).as_posix(): sha(p.read_bytes()) for p in paths})
+    # Python normalizes source newlines on load; JSON whitespace is not a
+    # setting. Raw prompt/history bytes remain separately hashed unchanged.
+    return sha({p.relative_to(ROOT).as_posix(): sha(json.loads(p.read_text(encoding='utf-8')))
+                if p.suffix == '.json' else sha(p.read_text(encoding='utf-8').encode()) for p in paths})
 
 
 def prepare(root):
@@ -40,6 +43,7 @@ def prepare(root):
     random = matched_random(negatives, count)
     prepared = {'schema': 'paired-negative-review/1', 'status': 'FROZEN_BEFORE_B_CALLS',
         'ids': [r['id'] for r in controls], 'arms': list(ARMS), 'code_sha256': code_identity(),
+        'code_identity_normalization': 'UTF8 universal source newlines; semantic JSON config; exact input separately unchanged',
         'primary_archive_sha256': sha(path.read_bytes()),
         'source_sha256': {r['id']: source_sha(inputs[r['id']]) for r in controls},
         'routes': routes, 'matched_random_source_sha256': sorted(random),
@@ -47,7 +51,7 @@ def prepare(root):
         'max_B_queries_before_technical_reasks': len(controls), 'primary_reused_not_new_inference': True,
         'same_B_query_shared_across_arms_not_independent_votes': True,
         'human_gold_reviewed': False, 'new_sealed_access': False}
-    folder = root / 'negative_review_pilot_v3'
+    folder = root / 'negative_review_pilot_v4'
     selection = folder / 'selection.json'
     if selection.exists():
         if json.loads(selection.read_text(encoding='utf-8')) != prepared:
