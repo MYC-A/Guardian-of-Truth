@@ -142,6 +142,10 @@ class Budget:
                 native_create = client.chat.completions.create
 
                 def create(**kwargs):
+                    # Mistral rejects OpenAI's `seed` request field. Its native
+                    # endpoint uses random_seed; preserve sampling semantics.
+                    if llm._provider_of(model) == 'mistral' and 'seed' in kwargs:
+                        kwargs['extra_body'] = dict(kwargs.get('extra_body') or {}, random_seed=kwargs.pop('seed'))
                     # UTF-8 bytes is a conservative upper bound on input tokens.
                     bound = len(json.dumps(kwargs['messages'], ensure_ascii=False).encode()) + kwargs.get('max_tokens', 0)
                     key = sha(kwargs)
@@ -149,8 +153,12 @@ class Budget:
                     began = time.monotonic()
                     try:
                         answer = native_create(**kwargs)
-                    except Exception:
+                    except Exception as exc:
                         self.finish(rowid, bound, time.monotonic() - began, 'TRANSPORT_ERROR_USAGE_UNKNOWN_UPPER_BOUND')
+                        append(RESULTS / 'transport_failures.jsonl', {
+                            'attempt_id': rowid, 'caller': active['module'], 'model': kwargs['model'],
+                            'request_sha256': key, 'error_type': type(exc).__name__,
+                            'http_status': getattr(exc, 'status_code', None)})
                         raise
                     usage = getattr(answer, 'usage', None)
                     actual = getattr(usage, 'total_tokens', None) if usage else None

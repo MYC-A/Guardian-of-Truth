@@ -30,12 +30,21 @@ def messages(row):
 def trust_issues(parsed, row):
     """Conservative mechanical guard, not an entailment/faithfulness oracle."""
     issues = []
+    from guardian_truth.parsing import parse_events
+    history = [e for e in parse_events(row['prompt'], 'prompt') if e.kind in ('call', 'result')]
     for i, fact in enumerate(parsed.get('facts', []) if isinstance(parsed, dict) else []):
         sources = fact.get('sources', [])
         if any(s.get('source_id') == 'target' for s in sources):
             issues.append(f'fact:{i}:target_as_evidence')
         if not exact_quotes(sources, {'prompt': row['prompt'], 'target': row['response']}):
             issues.append(f'fact:{i}:invalid_source')
+        # Conservative factual fragment: normative clauses/user goals become
+        # rules/queries, never business-state facts. Unconditional textual
+        # policy facts are unsupported by this narrow guard, not false.
+        for citation in sources:
+            quote = citation.get('quote', '')
+            if citation.get('source_id') != 'prompt' or not quote or not any(quote in e.text for e in history):
+                issues.append(f'fact:{i}:not_preceding_observation_or_occurrence')
     for i, rule in enumerate(parsed.get('rules', []) if isinstance(parsed, dict) else []):
         if not exact_quotes(rule.get('sources', []), {'prompt': row['prompt'], 'target': row['response']}):
             issues.append(f'rule:{i}:invalid_source')

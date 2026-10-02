@@ -98,7 +98,10 @@ def selfcheck_pass(llm, row, out):
     from structural_v02 import parse_case_v02
     from judge import JUDGE_SYSTEM, build_judge_user
     ctx = parse_case_v02(row['id'], row['prompt'], row['response'])
-    msgs = [{'role': 'system', 'content': JUDGE_SYSTEM}, {'role': 'user', 'content': build_judge_user(ctx)}]
+    user_text, trim_meta = build_judge_user(ctx)
+    if trim_meta:
+        raise ValueError('selfcheck_full_source_required')
+    msgs = [{'role': 'system', 'content': JUDGE_SYSTEM}, {'role': 'user', 'content': user_text}]
     judge_samples = sample_bank(llm, 'gemma4:31b', msgs, caller='modular/selfcheck/judge')
     parsed = [llm.extract_json(r.get('content')) for r in judge_samples]
     labels = [p.get('label') if isinstance(p, dict) else None for p in parsed]
@@ -125,7 +128,7 @@ def selfcheck_pass(llm, row, out):
         record['target_contradiction'] = _SELF_CHECK.predict([row['response']], generated).tolist() if generated else None
         record['status'] = 'NATIVE_NLI_SIGNAL_NOT_TRUTH'
     else:
-        record['status'] = 'NLI_BLOCKED_SAMPLING_COMPLETED'
+        record['status'] = ('SAMPLING_FAILED_NLI_NOT_EXECUTED' if not passages else 'NATIVE_CHECKPOINT_UNAVAILABLE')
     return record
 
 

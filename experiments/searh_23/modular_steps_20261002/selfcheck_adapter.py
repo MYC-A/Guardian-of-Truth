@@ -30,8 +30,10 @@ def load_native(model_path):
     return instance
 
 
-def sample_bank(llm, model, messages, *, caller, json_mode=True):
-    return [llm.chat(model, messages, temperature=.7, seed=seed, max_tokens=1400,
+def sample_bank(llm, model, messages, *, caller, json_mode=True, max_tokens=1400):
+    if any(not isinstance(m.get('content'), str) for m in messages):
+        raise ValueError('sample_message_content_must_be_string')
+    return [llm.chat(model, messages, temperature=.7, seed=seed, max_tokens=max_tokens,
                      json_mode=json_mode, transport_retries=0, caller=caller + f'/seed{seed}')
             for seed in (19, 37, 53)]
 

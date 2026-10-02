@@ -8,7 +8,7 @@ from dataclasses import asdict
 import json
 import sys
 import types
-from modular_common import ROOT, exact_quotes
+from modular_common import ROOT, RESULTS, append, exact_quotes, sha
 from guardian_truth.parsing import parse_events, parse_catalog
 from guardian_truth.step2.verifier import TrajectoryCase, CallEvent, ResultEvent, CandidateFact
 from guardian_truth.step2.result_types import json_path_get, scalar_to_json
@@ -18,6 +18,8 @@ from guardian_truth.step2.trusted import assess
 def original_modules(llm):
     def chat(model, messages, **kwargs):
         out = llm.chat(model, messages, transport_retries=0, caller='modular/SystemV2', **kwargs)
+        append(RESULTS / 'v2_stage_calls.jsonl', {'model': model,
+            'request_sha256': sha({'messages': messages, 'parameters': kwargs}), 'raw': out})
         return dict(out, parsed=llm.extract_json(out.get('content')))
     # Replace only historical provider paths; retain original V2 algorithms.
     sys.modules['v2_llm'] = types.SimpleNamespace(chat=chat, MODELS=llm.MODEL_REGISTRY)
