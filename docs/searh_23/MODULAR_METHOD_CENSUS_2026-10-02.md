@@ -102,3 +102,45 @@ Sealed: NOT started; shortlist freeze + budget forecast required first
 versioning, UNKNOWN binary mapping, shortlist of ~4–6 systems, then a new
 protocol for any sealed run).
 Default service config R0 unchanged.
+
+## Repair/model-roles assignment (2026-10-02, reviewer_repair phase) — COMPLETE
+
+- §4 DONE (160a4e98): single transport instrumentation layer; idempotent
+  Budget.install() per ledger (llm._budget_layer_owner; different phase ->
+  BudgetPhaseConflict); guarded_llm drives the live owner; 7+12 offline
+  tests; read-only reconciliation: 39 phantom pairs (system_v2 E2E window
+  rows 219-296), dev2 reconciled real spend 239/300 attempts / 688205
+  logical / 551276 known; history NOT rewritten.
+- §5 DONE (2000afff): REPAIR_CAUSE_AUDIT — all 12 temporal FP + 21 routing
+  FP (3 overlap) from saved answers, 0 new API; 19-mechanism atlas T1-T19;
+  attribution 18/21 B-invented on clean primaries with EMPTY prior_findings;
+  mechanical quote verification 0 failures (semantic defect, not
+  provenance); payload audit refutes adapter loss; gold disputes preserved.
+- §6 DONE (191c70e7): atomic_check_v2 mechanical tool-call extraction +
+  unified proposal contract + honest coverage semantics; live regression
+  25 attempts: atomizer 4/4 historical INVALID restored (3 were 429s);
+  mechanical layer zero accusations on clean tool calls; advisory verifier
+  reproduces T4/T16 FP family on units::00 (model-semantic root cause
+  confirmed in a second role); verifier quote validation final form:
+  any nonempty source label, provenance by verbatim text.
+- §7 DONE (697e419e): census — 4 independent families (gemma, gpt-oss,
+  nemotron, mistral); aihorde no-usage; glm-5.3-flash 402-blocked.
+- §8 DONE (2efb7163+0a592cfb): role matrix on frozen 12-case bank; V1
+  calibration repairs 5/6 (mistral) and 6/6 (gemma, gpt-oss, nemotron
+  via 0 FP) of B-V0's FP; gpt-oss:20b perfect (dual F1 1.0); self- and
+  cross-pipelines 1.0/.9091; Gk3 correlated (labels stable); G3 5/5
+  NOT_REFUTED; anchoring null (B_without_A == B-with-A on error cases).
+- §9.6 DONE (da654292): deferred comparison 18/24 triples (BUDGET_STOP at
+  ceiling): C0_J_control .6154/.5 (5 FP + 7 UNKNOWN), D_V1_gemma .875,
+  D_V1_gptoss 1.0 — fix chain confirmed on NEW constructions (half-hour
+  zones, XOR, converse-block, mixed targets), rules frozen pre-results.
+- Auditor: AUDIT-R1 PASS_WITH_LIMITS (R-101..106 closed); AUDIT-R2
+  PASS_WITH_LIMITS (R-201 dual-F1 implemented, R-202..206 disclosed).
+- reviewer_repair ledger: 300/300 attempts, 465984 known, 597414 logical;
+  dev2/pilot/heldout ledgers untouched; sealed untouched; R0 unchanged.
+
+Next (remaining-work): human review of deferred-bank author gold;
+structural-shortcut temporal-verdict arm vs pure-model on new banks;
+conditional third-role routing arm; X_gemmaE_gptossJ measurement; graph
+ID/time-hint arm on the selected chain (assignment §12 items); C1/M3/A4
+and sealed protocol work per the prior queue.

@@ -44,8 +44,32 @@ def main():
         p = tp / (tp + fp) if tp + fp else 0.0
         rc = tp / (tp + fn) if tp + fn else 0.0
         f1 = 2 * p * rc / (p + rc) if p + rc else 0.0
+        # frozen binary mapping (auditor R-201 dual report): UNKNOWN counts
+        # correct-on-clean / miss-on-error — the rule frozen pre-comparison
+        mtp = mfp = mfn = mtn = 0
+        for cid, dec in d['dec'].items():
+            g = gold[cid]
+            if dec == 'ERROR' and g == 1:
+                mtp += 1
+            elif dec == 'ERROR' and g == 0:
+                mfp += 1
+            elif dec == 'NO_ERROR' and g == 1:
+                mfn += 1
+            elif dec == 'NO_ERROR' and g == 0:
+                mtn += 1
+            elif g == 1:
+                mfn += 1
+            else:
+                mtn += 1
+        mp = mtp / (mtp + mfp) if mtp + mfp else 0.0
+        mr = mtp / (mtp + mfn) if mtp + mfn else 0.0
+        mf1 = 2 * mp * mr / (mp + mr) if mp + mr else 0.0
         report['systems'][system] = {'TP': tp, 'FP': fp, 'FN': fn, 'TN': tn, 'UNKNOWN': unk,
                                      'P': round(p, 4), 'R': round(rc, 4), 'F1': round(f1, 4),
+                                     'frozen_mapping': {'TP': mtp, 'FP': mfp, 'FN': mfn, 'TN': mtn,
+                                                        'P': round(mp, 4), 'R': round(mr, 4),
+                                                        'F1': round(mf1, 4),
+                                                        'note': 'UNKNOWN->correct-on-clean/miss-on-error (pre-frozen rule)'},
                                      'n': len(d['dec']), 'api_calls': d['calls'],
                                      'tokens': d['tokens'],
                                      'median_latency_s': round(sorted(d['lat'])[len(d['lat']) // 2], 2) if d['lat'] else None}

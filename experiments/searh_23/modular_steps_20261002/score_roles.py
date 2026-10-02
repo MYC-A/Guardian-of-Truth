@@ -57,6 +57,29 @@ def prf(tp, fp, fn, tn):
             'R': round(r, 4), 'F1': round(f1, 4)}
 
 
+def frozen_mapping_counts(decisions, gold):
+    """Frozen binary mapping (auditor R-201 dual report): UNKNOWN counts
+    correct on clean (TN) and miss on error (FN) — the rule fixed BEFORE the
+    deferred comparison. Returns (tp, fp, fn, tn)."""
+    tp = fp = fn = tn = 0
+    for cid, dec in decisions.items():
+        g = gold[cid]
+        if dec == 'ERROR' and g == 1:
+            tp += 1
+        elif dec == 'ERROR' and g == 0:
+            fp += 1
+        elif dec == 'NO_ERROR' and g == 1:
+            fn += 1
+        elif dec == 'NO_ERROR' and g == 0:
+            tn += 1
+        elif dec == 'UNKNOWN':
+            if g == 1:
+                fn += 1
+            else:
+                tn += 1
+    return tp, fp, fn, tn
+
+
 def main():
     gold = _gold()
     c0, b_v0 = _archived_references()
@@ -98,6 +121,12 @@ def main():
             else:
                 tn += 1
         entry = prf(tp, fp, fn, tn)
+        mtp, mfp, mfn, mtn = frozen_mapping_counts(d['decisions'], gold)
+        mapped = prf(mtp, mfp, mfn, mtn)
+        entry['frozen_mapping'] = {'TP': mtp, 'FP': mfp, 'FN': mfn, 'TN': mtn,
+                                   'P': mapped['P'], 'R': mapped['R'],
+                                   'F1': mapped['F1'],
+                                   'note': 'UNKNOWN->correct-on-clean/miss-on-error (rule frozen pre-comparison; auditor R-201 dual report)'}
         entry.update({'UNKNOWN': unk, 'valid': sum(d['valid'].values()),
                       'n': len(d['decisions']),
                       'api_calls': d['calls'], 'cached': d['cached_calls'],

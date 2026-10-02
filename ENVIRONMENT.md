@@ -287,3 +287,34 @@ mechanism_paired_analysis.json.
 dev2 ledger after §7.A–F: 263/300 attempts, 805401/1.2M logical,
 659829/1M known tokens, 807/14400 model-seconds, 0 pending reservations.
 Sealed untouched; default service config R0 unchanged.
+
+## Addendum: repair/model-roles assignment (2026-10-02, reviewer_repair)
+
+Economy layer: Budget.install() is IDEMPOTENT per ledger — a second install
+with the same phase reuses the live owner published as llm._budget_layer_owner;
+a different phase raises BudgetPhaseConflict (never a silently double-wrapped
+transport). modular_runtime.guarded_llm() drives the live owner. The historical
+dev2 ledger was NOT rewritten: budget_reconciliation.py (read-only) isolated 39
+phantom double-count pairs to the system_v2 E2E window (rows 219-296);
+reconciled dev2 real spend 239/300 attempts / 688205 logical / 551276 known.
+
+New phase reviewer_repair (budget_phases.json): 300 attempts / 1M known /
+200k unknown upper bound / 1.2M logical; fully spent: 300/300, 465984 known,
+597414 logical, 0 pending; modules census(7)/atomic-v2(25)/role(189)/deferred(79).
+
+New channels measured (model_census.json): gemma4:31b, gpt-oss:20b/120b,
+nemotron-3-nano:30b/-super/-ultra on ollama.com (usage + latency receipts);
+google/gemma-4-31b via aihorde works WITHOUT usage reporting (upper-bound
+accounting only; transport redundancy of the gemma family, never an
+independent vote); glm-5.3-flash remains 402 OPEN_PERMANENT.
+
+New artifacts (experiments/searh_23/modular_steps_20261002/): test_single_layer_
+budget.py, budget_reconciliation.py, build_fp_corpus.py, fp_cause_atlas.py,
+b_payload_audit.py, REPAIR_CAUSE_AUDIT.md, atomic_check_v2.py,
+test_atomic_v2.py, atomic_repair_pilot.py, score_atomic_repair.py,
+probe_census.py, role_prompts.py, role_pilot.py, score_roles.py,
+build_deferred_bank.py, deferred_pilot.py, score_deferred.py,
+MODEL_ROLE_PROTOCOL.md; dataset/deferred_bank/{input,author_gold,manifest};
+repair_receipts/ (reconciliation, atlas, raw corpora, payload audit, census,
+role/deferred selections and scores). Raw journals in results/modular_steps_
+20261002/{role_pilot,deferred_pilot,atomic_repair_pilot}/.
