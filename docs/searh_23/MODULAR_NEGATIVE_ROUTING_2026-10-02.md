@@ -114,3 +114,18 @@ wrapper: strict R0 → source-only дополнительная B для пер�
 Он пока не выбран победителем; готовность кода не означает quality gain.
 API cap699667/700000 остаётся прежним, новый B-прогон не помещается.
 Дополнительный dev-бюджет500000 токенов/150 attempts запрошен, ответа нет.
+
+## Серверная проверка V4
+
+На сервере запущен собственный процесс из3a6ffcb1. Windows и Linux дали
+одинаковые разобранные `selection.json`; серверная копия сохранена как
+`negative_review_pilot_v4/selection_server.json`. Raw input hashes не менялись.
+Runner остановился до обращения к провайдеру: `BUDGET_STOP`, done0/192,
+ledger218 attempts/699667 tokens/pending0. Это не результат качества B.
+
+Отдельный live HTTP-запрос подтвердил регистрацию adaptive-профиля и
+консервативный отказ при исчерпанном бюджете: UNKNOWN/degraded, новых
+API-attempts0. Полный ответ и scope сохранены в `adaptive_http_probe.json`.
+Старый сервис18090 сохранил PID10702; receipt обновления собственного
+процесса — `modular_service_receipt_3a6ffcb1.json`. Качество adaptive-ветки
+и исправление известного FN всё ещё не измерены.

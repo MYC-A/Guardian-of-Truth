@@ -2,7 +2,7 @@
 
 Состояние проверено 2026-10-02. Исследовательская ветка
 `research/modular-step2-4-20261002`; рабочий процесс закреплён на
-`b0abb74c111214ea1364418fdee96efc5047f967`.
+`3a6ffcb197a59c45b4cfcc023c2ce859ef65781b`.
 
 ## Процессы и доступ
 
@@ -15,7 +15,7 @@
 `/etc/vast-agents-guide.md` до управления instance. Public proxy, туннель
 и default R0 не менялись. Старый процесс сохранил PID10702 при обновлении.
 
-Checkout: `/workspace/guardian/repos/modular-step2-4-b0abb74c`.
+Checkout: `/workspace/guardian/repos/modular-step2-4-3a6ffcb1`.
 Python: `/workspace/guardian/modular_venv/bin/python`.
 Supervisor config: `/etc/supervisor/conf.d/guardian_modular_20261002.conf`.
 Журналы: `/workspace/guardian/results/modular_steps_20261002/`.
@@ -55,17 +55,28 @@ JSONL сохраняет UNKNOWN. CLI binary CSV mapping0 указан явно,
 
 ## Что реально проверено
 
-- На этой ревизии12 regression-проверок прошли и Windows Python3.13,
-  и server Python3.12.
+- 16 regression-проверок прошли на Windows Python3.13 и server Python3.12
+  на предшествующей кодовой ревизии2467dcfa. Изменение3a6ffcb1 касается
+  переносимого fingerprint frozen-протокола; его совпадение отдельно
+  проверено на обеих платформах.
 - Новый live HTTP long-bank: 48 входов 1k/4k/8k/12k проходят механическую
   обработку целиком; 12 входов12001 возвращают UNKNOWN без обрезки.
 - R0 live HTTP с исчерпанным ledger возвращает UNKNOWN через resource guard,
   actual API attempts0. Это проверка лимита, не настоящий provider outage.
 - Прежние replay/batch/CLI-resume и симулированный auxiliary отказ проверены
   на `ed641291`; старые receipts сохранены отдельно.
+- На текущем процессе HTTP подтвердил регистрацию
+  `modular-negative-adaptive-v1`: запрос вернул UNKNOWN/degraded через
+  resource guard, новых API-attempts0. Primary/B inference не выполнялся.
+- Frozen selection V4 на Windows и сервере совпадает как разобранный JSON.
+  Сам shared-B прогон остановлен до провайдера: BUDGET_STOP, done0/192.
 
 Новые receipts находятся в `outputs/searh_23/modular_steps_20261002/`:
-`modular_service_receipt_b0abb74c.json` и `service_long_v2_probes/receipt.json`.
+`modular_service_receipt_3a6ffcb1.json`, `adaptive_http_probe.json`,
+`negative_review_pilot_v4/selection_server.json` и
+`negative_review_pilot_v4/status.json`. Предыдущие
+`modular_service_receipt_b0abb74c.json` и `service_long_v2_probes/receipt.json`
+сохранены как история проверок.
 Сравнение semantic labels на длинных входах ещё не выполнялось.
 
 ## Воспроизведение и обновление
