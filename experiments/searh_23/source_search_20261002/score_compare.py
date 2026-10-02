@@ -42,7 +42,8 @@ def main():
             key = ('UNKNOWN_POSITIVE' if label else 'UNKNOWN_NEGATIVE') if decision == 'UNKNOWN' else (
                 'TP' if label and decision == 'ERROR' else 'FP' if not label and decision == 'ERROR' else
                 'FN' if label else 'TN')
-            counts[key] += 1; stops[row['stop_reason']] += 1
+            stop_reason = row.get('stop_reason', row.get('coverage', {}).get('stop_reason', 'structural_confirmed_hit'))
+            counts[key] += 1; stops[stop_reason] += 1
             calls += row['cost_after']['actual_api_attempts'] - row['cost_before']['actual_api_attempts']
             tokens += row['cost_after']['known_provider_tokens'] - row['cost_before']['known_provider_tokens']
             bounds += row['cost_after']['unknown_usage_upper_bounds'] - row['cost_before']['unknown_usage_upper_bounds']
@@ -53,7 +54,7 @@ def main():
                     if action['op'] == 'traverse':
                         operations['traverse/' + action.get('args', {}).get('strategy', 'BFS')] += 1
             cases.append({'id': row['case_id'], 'gold': label, 'decision': decision,
-                'bucket': key, 'stop_reason': row['stop_reason'], 'basis': row['decision_basis']})
+                'bucket': key, 'stop_reason': stop_reason, 'basis': row['decision_basis']})
         summary[arm] = {'counts': dict(counts), 'stops': dict(stops), 'operations': dict(operations),
             'actual_api_attempts': calls, 'known_tokens': tokens, 'unknown_usage_bounds': bounds,
             'cases': cases}
@@ -62,7 +63,8 @@ def main():
         a, b = by_key.get((case_id, 'direct')), by_key.get((case_id, 'search'))
         if a and b and a['decision'] != b['decision']:
             changed.append({'id': case_id, 'gold': gold[case_id], 'direct': a['decision'], 'search': b['decision'],
-                'direct_stop': a['stop_reason'], 'search_stop': b['stop_reason']})
+                'direct_stop': a.get('stop_reason', a.get('coverage', {}).get('stop_reason', 'structural_confirmed_hit')),
+                'search_stop': b.get('stop_reason', b.get('coverage', {}).get('stop_reason', 'structural_confirmed_hit'))})
     output = {'scope': 'BURNED_PUBLIC46_DEVELOPMENT_NOT_INDEPENDENT_TRANSFER',
         'complete': set(by_key) == expected, 'records': len(records), 'expected': len(expected),
         'arms': summary, 'per_case_changes': changed,
