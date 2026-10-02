@@ -31,7 +31,7 @@ def run(split='dev', all_cases=False):
                 assert done[row['id']]['source_sha256'] == source_sha(row)
                 continue
             began = time.monotonic()
-            out = runtime.check(row['id'], row['prompt'], row['response'])
+            out = runtime.check({'case_id': row['id'], 'prompt': row['prompt'], 'response': row['response']})
             rec = {'id': row['id'], 'source_sha256': source_sha(row), 'arm': 'C0',
                    'output': out, 'wall_seconds': time.monotonic() - began}
             append(journal, rec)
