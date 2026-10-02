@@ -1,0 +1,20 @@
+{
+  "schema": "modular-steps-pilot/1",
+  "frozen_before_calls": true,
+  "base": "bdc07e2c3dd9a84039cf94ea19909e1eaac1f2d0",
+  "control": "unchanged service r0-service-v1; original prompts, structural logic and aggregation",
+  "pilot_selection": "dataset/pilot_ids.json: 48 cases, first four variants from each of twelve dev constructions",
+  "gold_separation": "runners import input only; scorer is separate; sealed gold not scored before shortlist and all prediction hashes",
+  "mechanism_selection": "balanced first two variants of all dev constructions, or preregistered construction-specific subsets; actual ID lists persisted before each call",
+  "models": {"judge": "gemma4:31b", "B": "env_mistral", "translator_control": "env_mistral", "translator_challengers": ["mistral/codestral-2508", "mistral/magistral-small-latest", "ollama/kimi-k2.7-code"]},
+  "budgets": {
+    "pilot": {"max_actual_api_attempts": 300, "max_logical_tokens": 700000, "max_model_seconds": 5400},
+    "heldout": {"max_actual_api_attempts": 1500, "max_logical_tokens": 4000000, "max_model_seconds": 18000}
+  },
+  "missing_support": "INSUFFICIENT, not CONTRADICTS; policy-required missing historical gate separately judged under explicit complete history",
+  "formal_promotion": "never promote schema validity/solver relation directly; source faithfulness remains independently checked",
+  "model_contract_trust": "MODEL_PROPOSED/AUTO_VERIFIED_WITH_LIMITS; never DOC_EXPLICIT",
+  "selection_rule": "shortlist 4-6 using dev paired TP/FP/FN, abstention and actual budgets; freeze before heldout scoring",
+  "deployment_rule": "keep R0 default unless frozen heldout evidence reduces errors without increasing FN and operational checks pass",
+  "human_gold_status": "author-generated specifications; review queue pending; no human review claim"
+}
