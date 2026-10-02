@@ -21,6 +21,46 @@ def parse(store, act='ASK_CONFIRM', modality='REQUEST', performer='USER'):
                       'evidence':{'source_id':'h1','quote':'Please help with item X91.'}}}
 
 class Tests(unittest.TestCase):
+    def test_source_id_review_never_accepts_invented_or_agent_only_proof(self):
+        from guardian_truth.source_search.finding_review import review_findings_by_id
+        store=SourceStore(row()); assessment={'decision':'ERROR','findings':[{'explanation':'control'}]}
+        def answer(ids):
+            return lambda _: {'status':'OK','content':json.dumps({'reviews':[{'finding_index':0,
+                'policy_applies_to_target':True,'candidate_error_is_supported':True,
+                'reason':'control','evidence_ids':ids}]})}
+        for ids in (['invented'],['t0']):
+            self.assertEqual(review_findings_by_id(store,assessment,answer(ids))['decision'],'UNKNOWN')
+        self.assertEqual(review_findings_by_id(store,assessment,answer(['h0','t0']))['decision'],'ERROR')
+
+    def test_source_id_review_keeps_refuted_finding_unknown(self):
+        from guardian_truth.source_search.finding_review import review_findings_by_id
+        store=SourceStore(row()); assessment={'decision':'ERROR','findings':[{}]}
+        rec={'status':'OK','content':json.dumps({'reviews':[{'finding_index':0,
+            'policy_applies_to_target':False,'candidate_error_is_supported':False,
+            'reason':'Request is not execution.','evidence_ids':['h0','t0']}]})}
+        result=review_findings_by_id(store,assessment,lambda _:rec)
+        self.assertEqual(result['decision'],'UNKNOWN')
+        self.assertEqual(result['reviews'][0]['verified_evidence'][1]['quote'],store.raw['response'])
+
+    def test_separated_requests_never_mix_user_and_target_text(self):
+        from guardian_truth.source_search.scope_stages import request,parse_stores
+        store=SourceStore(row()); stores={'x':store}
+        act_messages,_=request('act',stores); intent_messages,_=request('intent',stores)
+        act=json.loads(act_messages[1]['content']); intent=json.loads(intent_messages[1]['content'])
+        self.assertNotIn('latest_user',act['cases'][0])
+        self.assertNotIn('text_segments',intent['cases'][0])
+        value=parse(store)
+        result=parse_stores(stores,
+            lambda _: {'status':'OK','content':json.dumps({'cases':[{'id':'x','acts':value['acts']}]})},
+            lambda _: {'status':'OK','content':json.dumps({'cases':[{'id':'x','intent':value['intent']}]})})
+        self.assertEqual(result['cases']['x']['move_scope']['intent']['status'],'AMBIGUOUS')
+
+    def test_separated_stage_failure_stops_before_intent_or_judge(self):
+        from guardian_truth.source_search.scope_stages import parse_stores
+        def forbidden(_): raise AssertionError('must not call the next model')
+        result=parse_stores({'x':SourceStore(row())},lambda _: {'status':'UNAVAILABLE','reason':'http_429'},forbidden)
+        self.assertEqual(result['cases']['x']['stage'],'act')
+
     def test_speaker_is_observed_role_not_model_guess(self):
         store=SourceStore(row()); value=parse(store)
         value['acts'][0]['speaker']='UNKNOWN'

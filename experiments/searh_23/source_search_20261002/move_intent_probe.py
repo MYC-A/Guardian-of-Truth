@@ -41,7 +41,7 @@ specified, requested_action null. Please help with item X is AMBIGUOUS, neither
 inspection-only nor commit authorization. Please replace item X is EXPLICIT.
 Missing request is UNKNOWN. Cite exactly the supplied USER source. Do not
 generate assistant acts or a policy verdict. Return every case ID under schema.'''
-OUT=ROOT/'outputs/searh_23/source_search_20261002/move_intent_probe_v1'
+OUT=ROOT/'outputs/searh_23/source_search_20261002/move_intent_probe_v2'
 
 def prepare():
     rows=[json.loads(line) for line in (ROOT/'outputs/searh_23/source_search_20261002/move_intent_bank_v1/inputs.jsonl').read_text(encoding='utf-8').splitlines()]

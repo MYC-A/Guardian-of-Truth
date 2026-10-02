@@ -305,3 +305,36 @@ owned-order contrasts под plain/BFS/DFS source view. В graph arms код р�
 вызывает traversal на непустых roots; full short source остаётся доступен всем.
 Восемь отдельных Mistral reviews проверяют каждую находку. Это малый diagnostic
 после V2, не его переоценка, не независимый transfer и не full benchmark.
+
+## Первый live finding review: неудача воспроизведена
+
+`review_graph_probe_v1`, commit `e6a01c60`: восемь HTTP, **12 462 tokens**,
+все восемь итогов UNKNOWN. В четырёх graph arms реально найдены непустые roots
+`item_id=part-X37` и `order_id=A91`, выполнены BFS и DFS. Семь reviews не прошли
+проверку дословности цитат. Один прошёл, но семантически противоречив:
+на настоящем ошибочном отказе reason правильно говорит о доступном owned OPEN
+заказе, а `entailment=REFUTED` отвергает само обвинение в ошибке. Это путаница
+между ложностью **слова агента** и ложностью **кандидата detector finding**.
+Граф её не исправил. Live качество старого reviewer не считается доказанным.
+
+После этого заморожен отдельный `review_ids_probe_v2` на **тех же просмотренных
+авторских случаях**. Он выбирает существующие h/t/q-ID из явно переданного
+registry, не генерирует цитату. Код затем подставляет точный исходный span.
+Ответ отдельно сообщает, применима ли policy, и булево/null
+`candidate_error_is_supported`: TRUE означает ошибку **агента**, не истинность
+его оправдания. Это изменение общего интерфейса, без имён доменов/инструментов
+в runtime. Первоначальные результаты V1 не изменяются; повтор не считается
+независимым transfer.
+
+Каноническая раздельная схема теперь доступна в
+`src/guardian_truth/source_search/scope_stages.py` и
+`typed_pipeline.run_separated`. Её prompts, schemas и все 32 frame на сохранённых
+сырых ответах совпадают с live-tested протоколом (`canonical_replay.json`,
+0 HTTP). Native inventory остаётся кодовой; policy/conditions/entailment всё
+ещё оцениваются моделью. Independent ID review является optional шагом после
+ERROR. 37 локальных регрессий проходит (19 + 18).
+
+После двух завершённых восьми-call диагностик ledger: **226 HTTP, 968 440
+known + 103 770 unknown bounds = 1 072 210 / 1 200 000**, pending=0,
+breaker=false. Исключение Vireonix выполнено по явному разрешению пользователя;
+его прежний 403 breaker сохранён в audit, счета не сброшены.

@@ -13,7 +13,7 @@ from guardian_truth.source_search.store import SourceStore,digest
 from guardian_truth.source_search.finding_review import ReviewBatch, INSTRUCTION, review_findings
 from guardian_truth.source_search.transport import ModelTransport
 
-OUT=ROOT/'outputs/searh_23/source_search_20261002/review_graph_probe_v1'
+OUT=ROOT/'outputs/searh_23/source_search_20261002/review_graph_probe_v2'
 
 def prepare():
     prompt='''⟦SYSTEM⟧
