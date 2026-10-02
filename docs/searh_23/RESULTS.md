@@ -632,3 +632,28 @@ model calls. Thirty-two new authored contrasts are frozen; independent label
 review and transfer inference remain outstanding. No predictor promotion.
 Full traces, partial metrics, resource accounting, and limitations:
 `docs/searh_23/SOURCE_SEARCH_SYSTEM_2026-10-02.md`.
+
+## 29. Typed latest move and counterevidence (2026-10-03)
+
+Completed the 24-record source-search preflight. Under pending author labels,
+Ministral direct produced 2 TP / 1 FP / 3 UNKNOWN; the other three model/arm
+groups each produced six UNKNOWN. Search often exhausted steps before deciding.
+Controller now reserves judgment steps and a final assessment. Replaying saved
+Gemma direct replies with JSON-fence support alone recovered no assessments:
+checks had the wrong type or additional data followed JSON.
+
+A six-case short API screen with explicit user requests found GPT-OSS:120b
+correctly distinguish both omitted-search and both numerical contrasts with
+exact evidence. Its two order-case decisions matched authored expectations but
+had nonliteral shortened JSON quotations, so validation retained UNKNOWN.
+AI Horde Gemma and Llama replies were unsuitable; other APIs were not called
+after the budget reserve stop. These are authored diagnostics, not held-out proof.
+
+An opt-in Pydantic move/intent parser, code-owned native call inventory,
+act/tool/performer scope gate, full initial system sources and per-finding
+counterevidence review are implemented. Mismatches remain UNKNOWN; matching
+labels do not certify entailment. 31 mechanical regressions pass. A 32-case
+EN/RU move/intent bank and an 18-record direct/typed-BFS/typed-DFS ablation are
+frozen before inference. Navigation roots are chosen by code, not the model.
+Full competition predictor is unchanged. Details:
+`docs/searh_23/TYPED_MOVE_AND_COUNTEREVIDENCE_2026-10-03.md`.
