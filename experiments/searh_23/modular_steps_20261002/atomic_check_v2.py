@@ -269,15 +269,22 @@ def verify_atoms(llm, model, ctx, atoms, facts, *, caller):
     if not isinstance(value, dict) or not isinstance(value.get('checks'), list):
         return {'status': 'INVALID', 'raw': answer, 'checks': []}
     checks, issues = [], []
+    # The model labels the source bucket freely (prompt / observed_facts /
+    # OBSERVED_FACTS_MECHANICAL / tool_documentation ...): the label is model
+    # bookkeeping; provenance is proven by the QUOTE TEXT validated verbatim
+    # against the full original prompt.
     for item in value['checks']:
         if not isinstance(item, dict) or type(item.get('index')) is not int or not 0 <= item['index'] < len(atoms):
             issues.append('invalid_atom_index')
             continue
         relation = item.get('relation')
         quotes = item.get('quotes')
+        quotes_ok = (isinstance(quotes, list) and
+                     all(isinstance(q, dict) and isinstance(q.get('source_id'), str) and q['source_id'].strip()
+                         and isinstance(q.get('quote'), str) and q['quote'] and
+                         q['quote'] in ctx.prompt_raw for q in quotes))
         if (relation not in {'SUPPORTS', 'CONTRADICTS', 'INSUFFICIENT'} or
-                not exact_quotes(quotes, {'prompt': ctx.prompt_raw}) or
-                (relation != 'INSUFFICIENT' and not quotes)):
+                not quotes_ok or (relation != 'INSUFFICIENT' and not quotes)):
             issues.append('invalid_quote_or_relation')
             continue
         checks.append(item)

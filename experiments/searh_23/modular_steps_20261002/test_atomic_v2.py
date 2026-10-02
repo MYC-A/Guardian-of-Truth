@@ -252,6 +252,32 @@ def test_duplicate_identical_call_lines_get_distinct_spans():
     assert 'TOOL_CALL' not in residual, repr(residual)
 
 
+def test_verify_accepts_bucket_labels_with_verbatim_quotes():
+    # the model may label the source bucket (tool_documentation/observed_facts);
+    # provenance is proven by the QUOTE TEXT against the full original
+    ctx, row = _ctx('dev_unless::02')
+    global VERIFY
+    old = VERIFY
+    VERIFY = {'checks': [{'index': 0, 'relation': 'INSUFFICIENT', 'quotes': [
+        {'source_id': 'tool_documentation', 'quote': 'read_state — Reports current state of one item; it does not modify or commit it.'},
+        {'source_id': 'observed_facts', 'quote': '{"a": false, "b": true, "c": false, "item_id": "E-70"}'}],
+        'reason': 'advisory'}], 'all_checked': True}
+    try:
+        from atomic_check_v2 import verify_atoms
+        atoms = [{'kind': 'PROPOSED_ACTION', 'text': 'the call', 'entity_ids': ['E-70']}]
+        out = verify_atoms(fake, MODEL, ctx, atoms, [], caller='t/verify')
+        assert out['status'] == 'MODEL_JUDGED', out
+        assert out['checks'][0]['relation'] == 'INSUFFICIENT'
+        # a non-verbatim quote is still rejected regardless of the label
+        VERIFY = {'checks': [{'index': 0, 'relation': 'SUPPORTS', 'quotes': [
+            {'source_id': 'prompt', 'quote': 'not a substring of the original'}],
+            'reason': 'x'}], 'all_checked': True}
+        out = verify_atoms(fake, MODEL, ctx, atoms, [], caller='t/verify')
+        assert out['status'] == 'INVALID' and 'invalid_quote_or_relation' in out['issues'], out
+    finally:
+        VERIFY = old
+
+
 if __name__ == '__main__':
     failures = 0
     for name, fn in sorted(globals().items()):
