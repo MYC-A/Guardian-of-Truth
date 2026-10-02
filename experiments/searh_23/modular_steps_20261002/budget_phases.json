@@ -14,6 +14,22 @@
         "max_logical_tokens": "all rows incl. cache/native (global sanity ceiling)",
         "reservations": "in-flight RESERVED rows count toward caps until exactly-once finalization"
       }
+    },
+    "reviewer_repair": {
+      "max_actual_api_attempts": 300,
+      "max_logical_tokens": 1200000,
+      "max_known_provider_tokens": 1000000,
+      "max_unknown_transport_upper_bound_tokens": 200000,
+      "max_model_seconds": 14400,
+      "semantics": {
+        "authorization": "separately authorized by the 2026-10-02 repair/model-roles assignment §10: ceilings, not a spending goal; initial diagnostic block <=60 attempts with measurements+forecast saved before the next block",
+        "max_known_provider_tokens": "sum(tokens) over status=COMPLETE rows (provider-reported usage)",
+        "max_unknown_transport_upper_bound_tokens": "sum(tokens) over TRANSPORT_* and COMPLETE_USAGE_UNKNOWN_UPPER_BOUND rows; reservations count here until finalized",
+        "max_logical_tokens": "all rows incl. cache/native (global sanity ceiling)",
+        "local_no_api": "local (api=0) verification rows are reported separately in snapshots and never consume the API-attempt ceiling",
+        "reservations": "in-flight RESERVED rows count toward caps until exactly-once finalization",
+        "phase_integrity": "phase is never renamed to bypass a ceiling and the guard is never disabled"
+      }
     }
   }
 }

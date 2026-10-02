@@ -7,7 +7,7 @@ import copy
 import json
 import time
 import uuid
-from modular_common import Budget, BudgetStop, HERE, ROOT, RESULTS, append, source_sha, sha
+from modular_common import Budget, BudgetPhaseConflict, BudgetStop, HERE, ROOT, RESULTS, append, budget_phase, source_sha, sha
 from module_contract import ModuleResult
 
 CONFIGS = {
@@ -37,10 +37,20 @@ def config_identity(config):
 
 
 def guarded_llm():
+    """Single shared budget for runner and runtime (user bug 2026-10-02 §4).
+
+    install() is idempotent per ledger: when the runner already installed a
+    same-phase budget (system_v2_pilot → modular_runtime.check), this reuses
+    that exact instrumentation layer instead of wrapping the already-wrapped
+    transport. _budget is pinned to the LIVE OWNER published by install(),
+    so begin_request/end_request/snapshot act on the object that actually
+    meters the calls — never on a shadow copy whose per-request limits would
+    not bind. A phase mismatch surfaces as BudgetPhaseConflict.
+    """
     global _budget, _llm
     if _llm is None:
-        _budget = Budget()
-        _llm = _budget.install()
+        _llm = Budget(budget_phase()).install()
+        _budget = getattr(_llm, '_budget_layer_owner', _budget)
     return _llm
 
 

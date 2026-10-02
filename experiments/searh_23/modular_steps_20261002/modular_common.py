@@ -120,6 +120,13 @@ class ChannelOpenError(Exception):
     attempt was made). Carries no status code so bounded retry loops stop."""
 
 
+class BudgetPhaseConflict(RuntimeError):
+    """Raised when install() targets a DIFFERENT phase ledger while one
+    transport instrumentation layer is already live (user bug 2026-10-02
+    §4: conflicting budget phases must stay visible; the already-wrapped
+    transport is never silently wrapped a second time)."""
+
+
 class Budget:
     def __init__(self, phase=None):
         # phase=None resolves explicitly through budget_phase(): the exhausted
@@ -209,9 +216,27 @@ class Budget:
 
         SDK max_retries remains zero. Content/model/parameters plus checkout and
         normalization versions namespace the cache; IDs alone are never keys.
+
+        Single-layer ownership (user bug 2026-10-02 §4): install() is
+        IDEMPOTENT per ledger. A second install with the SAME phase reuses the
+        live instrumentation unchanged — one native transport call stays one
+        recorded API attempt and one usage — and the live owner is published
+        as ``llm._budget_layer_owner`` so per-request limits and snapshots act
+        on the object actually wired into the transport. A second install with
+        a DIFFERENT phase raises BudgetPhaseConflict instead of hiding the
+        conflict behind a double-wrapped transport.
         """
         import llm
         from channel_breaker import ChannelBreaker, classify_transport, safe_retry_after
+        owner = getattr(llm, '_budget_layer_owner', None)
+        if owner is not None:
+            if owner.path == self.path:
+                # Idempotent reuse: the already-installed layer owns metering;
+                # wrapping it again would double-count attempts and usage.
+                return llm
+            raise BudgetPhaseConflict(
+                f'budget_phase_conflict: active_phase={owner.phase} requested_phase={self.phase}; '
+                'one transport instrumentation layer is allowed — align phases or reuse the runner budget')
         original_client, original_chat = llm._client, llm.chat
         revision = subprocess.check_output(['git', '-C', str(ROOT), 'rev-parse', 'HEAD'], text=True).strip()
         namespace = sha({'revision': revision, 'normalization': NORMALIZATION_VERSION,
@@ -295,4 +320,5 @@ class Budget:
                 active['module'] = previous
         llm._client = client_proxy
         llm.chat = chat_proxy
+        llm._budget_layer_owner = self
         return llm
