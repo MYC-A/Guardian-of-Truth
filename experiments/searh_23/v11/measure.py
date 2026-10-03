@@ -15,7 +15,9 @@ import sys
 ROOT = Path(__file__).resolve().parents[3]
 sys.path.insert(0, str(ROOT / 'src'))
 from prepare import groups, write, OUTPUT
-from guardian_truth.parsing import MARKER, parse_events
+from guardian_truth.parsing import MARKER, parse_events, parse_catalog
+from guardian_truth.policy_table_v11.catalog import tool_role
+from guardian_truth.policy_table_v11.provenance import observations
 from guardian_truth.policy_table.segment import policy_hash
 from guardian_truth.policy_table_v11.compile import admit, canonical
 from guardian_truth.policy_table_v11.evaluate import evaluate_atom, evaluate_table, flatten
@@ -162,11 +164,17 @@ def candidates(store, target):
         if removed: out.append(('M1', {'edit': 'REMOVE_HISTORY_EVENTS', 'history_indices': removed}))
     for argument, value in sorted(ids(target['arguments']).items()):
         # M2: the ID's only source is one READ result; remove that call/result pair.
-        sources = [i for i, e in history if (e.kind == 'result' or e.role in ('user', 'system')) and contains(e.text, value)]
-        if len(sources) == 1 and history[sources[0]][1].kind == 'result' and sources[0] > 0:
-            call = sources[0] - 1
-            if history[call][1].kind == 'call' and history[call][1].name == history[sources[0]][1].name:
-                out.append(('M2', {'edit': 'REMOVE_HISTORY_EVENTS', 'history_indices': [call, sources[0]], 'argument': argument}))
+        catalog = parse_catalog(store.history_events, store.raw['prompt'])
+        for name, declaration in catalog.tools.items():
+            text = store.raw['prompt'][declaration.source.start:declaration.source.end]
+            if tool_role(name, text) != 'READ': continue
+            for receipt in observations(events, name):
+                if not receipt.valid or not receipt.result.json_valid or not receipt.call_sid.startswith('h') or not receipt.result_sid.startswith('h'):
+                    continue
+                if not contains(receipt.result.text, value): continue
+                removed = {receipt.call_sid, receipt.result_sid}
+                if any(contains(e.text, value) for sid, e in events if sid not in removed): continue
+                out.append(('M2', {'edit': 'REMOVE_HISTORY_EVENTS', 'history_indices': sorted(int(s[1:]) for s in removed), 'argument': argument}))
         # M3: another observed value of the same argument name and shape (another entity of that type).
         seen = set()
         for _, e in history:

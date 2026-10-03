@@ -99,3 +99,17 @@ def test_missing_tables_remain_in_mutant_denominator():
     result = measure.measure_mutations({})['summary']
     assert result['positive_mutants'] == expected == 4
     assert result['missing_tables'] == 4 and result['recall_decisive'] == 0
+
+
+@pytest.mark.parametrize('extra,allowed', [
+    ('', True), ('⟦ASSISTANT⟧\nI found record X.\n', False),
+    ('⟦ASSISTANT⟧\n→ TOOL_CALL inspect_b: {"record_id":"X"}\n', False),
+    ('⟦USER⟧\nUse X.\n', False),
+])
+def test_M2_has_no_other_ID_mention_in_any_prior_event(extra, allowed):
+    from test_policy_table_v11 import store, target
+    from guardian_truth.source_search.store import SourceStore
+    s = store('⟦ASSISTANT⟧\n→ TOOL_CALL inspect_b: {}\n← TOOL_RESPONSE inspect_b: {"record_id":"X"}\n' + extra)
+    s = SourceStore({**s.raw, 'prompt': s.raw['prompt'].replace('Please inspect X.', 'Please inspect a record.')})
+    s.case_id = 'generic'
+    assert any(kind == 'M2' for kind, _ in measure.candidates(s, target(s))) is allowed
