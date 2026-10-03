@@ -6,7 +6,9 @@ a step is ADMISSIBLE when no bounded invariant is violated (schema, provenance
 of identifiers, decisive policy atoms, dates). Unresolved atoms are reported as
 residual risk rather than blocking the verdict. UNKNOWN is reserved for steps
 the deterministic layer cannot inspect (unparseable call, missing catalog,
-unverified prose channel), and enforcement modes map it to ALLOW/REJECT/REVIEW.
+empty step, rejected policy table), and enforcement modes map it to ALLOW/REJECT/REVIEW.
+Prose steps pass through the bounded prose invariants (``prose.py``) instead of
+defaulting to UNKNOWN; what those checks cannot see is reported as residual risk.
 """
 from dataclasses import dataclass
 import hashlib
@@ -19,6 +21,9 @@ from .router import route_step, PROSE, EMPTY
 from .witness import contains_value
 from .invariants import call_invariants
 from .policy_clauses import turn_shape_violations
+from .temporal import temporal_violations
+from .verification import verification_violations
+from .prose import prose_violations, CHECKS as PROSE_CHECKS
 
 ADMISSIBLE, VIOLATION, UNKNOWN = 'ADMISSIBLE', 'VIOLATION', 'UNKNOWN'
 ALLOW, REJECT, REVIEW = 'ALLOW', 'REJECT', 'REVIEW'
@@ -148,9 +153,12 @@ def assess(store, *, table=None, enforcement=EnforcementPolicy(), audit_graph=Tr
             violations.append({**v, 'tool': event.name, 'source_id': sid})
         for v in call_invariants(store.history_events, event.name, event.value):
             violations.append({**v, 'tool': event.name, 'source_id': sid})
+        for v in temporal_violations(store, event.name, event.value) + verification_violations(store, event.name, event.value):
+            violations.append({**v, 'tool': event.name, 'source_id': sid})
         inspected.append(sid)
     for v in turn_shape_violations(store, route):
         violations.append(v)
+    violations.extend(prose_violations(store, route))
     policy = None
     if table is not None and route.call_source_ids:
         from .evaluate import evaluate_table
@@ -170,12 +178,14 @@ def assess(store, *, table=None, enforcement=EnforcementPolicy(), audit_graph=Tr
         except ValueError as exc:  # Wrong policy hash or tampered table: never silently trusted.
             unresolved.append({'code': 'POLICY_TABLE_REJECTED', 'reason': str(exc)})
     provenance_ok = not any(v['code'] == 'UNGROUNDED_IDENTIFIER' for v in violations)
+    blocked = any(u['code'] in ('CATALOG_UNAVAILABLE', 'POLICY_TABLE_REJECTED') for u in unresolved)
     if violations: verdict = VIOLATION
-    elif route.kind in (PROSE, EMPTY) or not inspected or any(u['code'] in ('CATALOG_UNAVAILABLE', 'POLICY_TABLE_REJECTED') for u in unresolved):
+    elif route.kind == EMPTY or blocked or (route.kind != PROSE and not inspected):
         verdict = UNKNOWN
     else: verdict = ADMISSIBLE  # bounded admissibility: residual unresolved atoms are reported, not blocking
     if route.prose_source_ids and verdict == ADMISSIBLE:
-        notes.append({'code': 'PROSE_CHANNEL_UNVERIFIED', 'source_ids': list(route.prose_source_ids)})
+        # Prose passed the bounded prose invariants; semantic claims beyond them remain residual risk.
+        notes.append({'code': 'PROSE_RESIDUAL_RISK', 'checked': list(PROSE_CHECKS), 'source_ids': list(route.prose_source_ids)})
     decision = enforcement.decide(verdict, tools, provenance_ok)
     elapsed_ms = (time.perf_counter() - started) * 1000
     trace = {'schema_version': VERSION, 'policy_sha256': policy_hash(store), 'source_sha256': store.source_sha256,

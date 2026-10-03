@@ -11,9 +11,14 @@ def test_router_separates_prose_from_calls():
 
 def test_prose_is_not_sent_to_prover_and_mode_decides():
     s = store(response='Готово, спасибо!')
-    assert assess(s)['verdict'] == 'UNKNOWN' and assess(s)['route'] == 'PROSE'
-    assert assess(s, enforcement=EnforcementPolicy(STRICT))['decision'] == 'REJECT'
-    assert assess(s, enforcement=EnforcementPolicy(PERMISSIVE))['decision'] == 'ALLOW'
+    t = assess(s)
+    assert t['route'] == 'PROSE' and t['channels'] == ['prose_verifier'] and not t['inspected_calls']
+    # Bounded prose invariants pass -> ADMISSIBLE with the unchecked semantics reported as residual risk.
+    assert t['verdict'] == 'ADMISSIBLE' and any(n['code'] == 'PROSE_RESIDUAL_RISK' for n in t['notes'])
+    e = store(response='   ')
+    assert assess(e)['verdict'] == 'UNKNOWN' and assess(e)['route'] == 'EMPTY'
+    assert assess(e, enforcement=EnforcementPolicy(STRICT))['decision'] == 'REJECT'
+    assert assess(e, enforcement=EnforcementPolicy(PERMISSIVE))['decision'] == 'ALLOW'
 
 
 def test_undeclared_argument_is_violation_with_audit_trace():
