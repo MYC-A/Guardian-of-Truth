@@ -25,15 +25,39 @@ def test_obligations_kept_before_DSL_and_source_spans_exact():
     assert p == before
 
 
-@pytest.mark.parametrize('edit', ['missing_clause', 'duplicate_clause', 'paraphrase', 'lost_obligation', 'duplicate_obligation'])
-def test_ledger_admission_rejects_incomplete_bookkeeping_and_bad_quotes(edit):
+@pytest.mark.parametrize('edit,reason', [('missing_clause', 'clause_disposition_missing'),
+    ('duplicate_clause', 'duplicate_clause_disposition'), ('paraphrase', 'quotation_absent_or_ambiguous'),
+    ('lost_obligation', 'invalid_applicability_inventory'), ('duplicate_obligation', 'duplicate_obligation_id')])
+def test_ledger_admission_quarantines_bad_items_without_dropping_the_group(edit, reason):
     p, raw = sample()
     if edit == 'missing_clause': raw['clauses'] = []
     elif edit == 'duplicate_clause': raw['clauses'] *= 2
     elif edit == 'paraphrase': raw['clauses'][0]['obligations'][0]['spans'][0]['quote'] = 'My own interpretation'
     elif edit == 'lost_obligation': raw['clauses'][0]['obligations'] = []
     else: raw['clauses'][0]['obligations'] *= 2
-    assert not admit_ledger(raw, p)['valid']
+    got = admit_ledger(raw, p)
+    assert got['valid'] and reason in {q['reason'] for q in got['quarantined']}
+    if edit in ('missing_clause', 'lost_obligation', 'paraphrase'): assert got['obligations'] == []
+    if edit in ('duplicate_clause', 'duplicate_obligation'): assert len(got['obligations']) == 1
+
+
+def test_one_bad_quote_does_not_drop_sibling_rules():
+    p, raw = sample()
+    p['clauses'].append({'id': 'clause_1', 'text': 'Never  apply_a when “blocked”.'})
+    good = {'id': 'o2', 'spans': [{'clause_id': 'clause_1', 'quote': 'Never apply_a when "blocked".'}],
+            'description': 'Blocked state forbids the action.', 'applies_when': 'UNCONDITIONAL', 'exceptions': 'NONE'}
+    bad = {**good, 'id': 'o3', 'spans': [{'clause_id': 'clause_1', 'quote': 'paraphrased rule'}]}
+    raw['clauses'].append({'clause_id': 'clause_1', 'status': 'APPLICABLE', 'reason': 'Governs it.', 'obligations': [good, bad]})
+    got = admit_ledger(raw, p)
+    assert {o['id'] for o in got['obligations']} == {'o1', 'o2'}
+    assert [q['obligation_id'] for q in got['quarantined']] == ['o3']
+    assert got['obligations'][1]['source_spans'][0]['conversion'] == 'WHITESPACE_AND_GLYPHS'
+
+
+def test_invalid_envelope_is_the_only_all_or_nothing_failure():
+    p, _ = sample()
+    assert not admit_ledger({'oops': []}, p)['valid']
+    assert not admit_ledger('not json', p)['valid']
 
 
 @pytest.mark.parametrize('status', ['UNSUPPORTED', 'AMBIGUOUS'])
@@ -50,7 +74,9 @@ def test_unified_requirement_compiles_and_empty_lowering_is_invalid():
     response = {'lowerings': [{'obligation_id': 'o1', 'status': 'COMPILED', 'reason': 'Direct numeric policy constant.',
         'atom': {'polarity': 'REQUIRED', 'requirement': comparison(value=2), 'guard': None, 'exceptions': [], 'clause_ids': ['clause_0']}}]}
     assert admit_lowerings(response, ledger, p, {'kind': 'TOOL_CALL', 'tool': 'apply_a'})['compiled'] == 1
-    assert not admit_lowerings({'lowerings': []}, ledger, p, {'kind': 'TOOL_CALL', 'tool': 'apply_a'})['valid']
+    empty = admit_lowerings({'lowerings': []}, ledger, p, {'kind': 'TOOL_CALL', 'tool': 'apply_a'})
+    assert empty['compiled'] == 0 and empty['missing'] == 1 and not empty['inventory_complete']
+    assert empty['dispositions'][0]['rejection'] == 'lowering_missing'
 
 
 @pytest.mark.parametrize('amount,expected', [(2, 'TRUE'), (9, 'FALSE')])
@@ -75,8 +101,8 @@ def test_chunk_output_inventory_retains_full_source_context():
     p, raw = sample()
     p['clauses'].append({'id': 'clause_1', 'text': 'Shared condition also applies.'})
     raw['clauses'][0]['obligations'][0]['spans'].append({'clause_id': 'clause_1', 'quote': 'Shared condition also applies.'})
-    assert admit_ledger(raw, p, ['clause_0'])['valid']
-    assert not admit_ledger(raw, p)['valid']  # Full inventory still demands the other disposition.
+    assert admit_ledger(raw, p, ['clause_0'])['inventory_complete']
+    assert not admit_ledger(raw, p)['inventory_complete']  # Full inventory still demands the other disposition.
     messages = extraction_request(p, {'kind': 'TOOL_CALL', 'tool': 'apply_a'}, ['clause_0'])
     assert 'Shared condition also applies.' in messages[1]['content']
 
@@ -96,4 +122,15 @@ def test_NA_missing_empty_list_losslessly_defaults_but_applicable_does_not():
     raw['clauses'][0].update(status='NOT_APPLICABLE'); raw['clauses'][0].pop('obligations')
     assert admit_ledger(raw,p)['valid']
     raw['clauses'][0]['status']='APPLICABLE'
-    assert not admit_ledger(raw,p)['valid']
+    got=admit_ledger(raw,p)
+    assert not got['inventory_complete'] and got['quarantined'][0]['level']=='clause'
+
+
+def test_argument_presence_cannot_stand_in_for_dialogue_obligation():
+    p, raw = sample()
+    raw['clauses'][0]['obligations'][0]['description'] = 'The user must explicitly confirm before this action.'
+    ledger = admit_ledger(raw, p)
+    response = {'lowerings': [{'obligation_id': 'o1', 'status': 'COMPILED', 'reason': 'proxy',
+        'atom': {'polarity': 'REQUIRED', 'requirement': comparison(value=2), 'guard': None, 'exceptions': [], 'clause_ids': ['clause_0']}}]}
+    got = admit_lowerings(response, ledger, p, {'kind': 'TOOL_CALL', 'tool': 'apply_a'})
+    assert got['compiled'] == 0 and 'DIALOGUE_STATE' in got['dispositions'][0]['rejection']
