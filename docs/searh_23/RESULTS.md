@@ -756,3 +756,11 @@ to exact baseline bytes. Fresh suite remains unopened before final freeze.
 User approved rule-local labels for repaired prerequisites: these do not
 assert NO_ERROR for the whole answer. Server access and inference remain
 deferred; new V10 API calls and model tokens: zero.
+
+Continuation: compared new values are separated from entity joins; container
+paths and JSON Pointer roots/escaped names are retained. 105 focused tests
+pass, plus the restored immutable incumbent's offline test. The four-type
+mutation generator and guarded compiler runner are prepared. There are 32
+formatting controls across four policies; the draft explicitly fails full
+benchmark readiness until actual tables/frames and remaining eligibility
+issues are resolved. No 120-case claim or detector-quality score is made.
