@@ -8,8 +8,8 @@ from .pipeline import QUESTIONS, contract, run
 from .store import SourceStore
 
 
-def id_contract(phase):
-    original=contract(phase)
+def id_contract(phase, *, checks_mode='legacy'):
+    original=contract(phase, checks_mode=checks_mode)
     if phase=='SEARCH':return original
     header=original.split('Assessment schema:',1)[0]
     example={'assessment':{'decision':'ERROR|NO_ERROR|UNKNOWN','explanation':'specific reason',
@@ -17,7 +17,7 @@ def id_contract(phase):
                      'explanation':'a specific error in THIS latest event','evidence_ids':['h0','q0']}],
         'checks':{question:{'status':'CHECKED|NOT_APPLICABLE|OPEN','reason':'specific reason',
                             'evidence_ids':['h0']} for question in QUESTIONS},'open_questions':[]}}
-    return header+'''Assessment schema: '''+json.dumps(example)+'''
+    text = header+'''Assessment schema: '''+json.dumps(example)+'''
 The source-ID registry gives stable events and source offsets. Select only IDs
 that exist in the registry or were returned by operations. Code supplies exact
 source text; never recopy quotations. t-prefixed events are the current response;
@@ -38,6 +38,11 @@ The five check labels are bookkeeping, not a proof of complete NL understanding.
 ERROR requires a specific finding; NO_ERROR has no findings. Known material
 uncertainty remains UNKNOWN. Do not introduce errors simply to fill a finding.
 Return one schema JSON object and no surrounding prose.'''
+    if checks_mode == 'diagnostic':
+        text = text.replace('A CHECKED or\nNOT_APPLICABLE check needs a concrete reason and source IDs;',
+            'A CHECKED check needs a concrete reason and source IDs; NOT_APPLICABLE may omit IDs;')
+        text += '\nChecks are diagnostic. Missing check evidence does not change an independently supported decision.'
+    return text
 
 
 def registry(store):
@@ -90,10 +95,11 @@ def decode_assessment(store,vote):
         'open_questions':vote.get('open_questions',[]),'original_source_id_vote':vote}
 
 
-def run_ids(row,ask,*,mode='search',max_steps=6,max_payload_bytes=800000):
+def run_ids(row,ask,*,mode='search',max_steps=6,max_payload_bytes=800000,checks_mode='legacy'):
     store=SourceStore(row)
     return run(row,ask,mode=mode,max_steps=max_steps,max_payload_bytes=max_payload_bytes,
-        policy_first=True,source_store=store,contract_builder=id_contract,
+        policy_first=True,source_store=store,contract_builder=lambda phase:id_contract(phase,checks_mode=checks_mode),
+        checks_mode=checks_mode,
         assessment_decoder=decode_assessment,
         initial_context={'source_registry':registry(store),
                          'native_target_calls':native_target_inventory(store)})

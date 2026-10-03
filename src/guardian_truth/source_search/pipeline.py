@@ -89,7 +89,9 @@ def execute(store, action, open_questions):
     return getattr(store, op)(**args)
 
 
-def validate_assessment(store, vote):
+def validate_assessment(store, vote, *, checks_mode='legacy'):
+    if checks_mode not in ('legacy', 'diagnostic'):
+        raise ValueError('unknown checks mode')
     if not isinstance(vote, dict) or vote.get('decision') not in ('ERROR', 'NO_ERROR', 'UNKNOWN'):
         raise ValueError('invalid decision')
     if not isinstance(vote.get('explanation'), str) or not vote['explanation'].strip():
@@ -116,18 +118,32 @@ def validate_assessment(store, vote):
     checks = vote.get('checks', [])
     if not isinstance(checks, list):
         raise ValueError('checks must be list')
-    closed = set()
+    closed, diagnostic_checks = set(), []
     for check in checks:
         if not isinstance(check, dict) or check.get('question_id') not in QUESTIONS:
             raise ValueError('unknown check question')
         if check.get('status') not in ('CHECKED', 'NOT_APPLICABLE', 'OPEN') or not check.get('reason'):
             raise ValueError('check requires explicit status and reason')
         refs = [store.resolve_quote(r) for r in check.get('evidence', [])]
-        if check['status'] != 'OPEN' and refs:
+        status = check['status']
+        if checks_mode == 'diagnostic' and status == 'CHECKED' and not refs:
+            # CHECKED requires provenance. The missing citation invalidates the
+            # bookkeeping claim, not an independently valid target finding.
+            status = 'OPEN'
+        diagnostic_checks.append({**check, 'status': status,
+            'diagnostic_issue': 'checked_without_evidence' if status != check['status'] else None})
+        if status != 'OPEN' and (refs or (checks_mode == 'diagnostic' and status == 'NOT_APPLICABLE')):
             closed.add(check['question_id'])
     unresolved = vote.get('open_questions', [])
     if not isinstance(unresolved, list) or not all(isinstance(q, str) for q in unresolved):
         raise ValueError('open_questions must list concrete strings')
+    if checks_mode == 'diagnostic':
+        return {'decision': vote['decision'], 'proposed_decision': vote['decision'],
+            'findings': validated, 'quote_repairs': repairs,
+            'open_questions': unresolved, 'unclosed_checks': [q for q in QUESTIONS if q not in closed],
+            'checks_incomplete': bool(unresolved or closed != set(QUESTIONS)),
+            'diagnostic_checks': diagnostic_checks, 'raw_vote': vote,
+            'reason': 'source_verified_model_assessment'}
     if vote['decision'] != 'UNKNOWN' and (unresolved or closed != set(QUESTIONS)):
         return {'decision': 'UNKNOWN', 'proposed_decision': vote['decision'], 'findings': validated,
             'quote_repairs': repairs, 'open_questions': unresolved + [QUESTIONS[q] for q in QUESTIONS if q not in closed],
@@ -136,7 +152,7 @@ def validate_assessment(store, vote):
             'open_questions': unresolved, 'raw_vote': vote, 'reason': 'source_verified_model_assessment'}
 
 
-def contract(phase):
+def contract(phase, *, checks_mode='legacy'):
     shared = error_definition() + '\n\n' + (
         'Do not equate a lookup/check with execution, a request with completion, or future/conditional text with a completed action. '
         'Co-recorded graph edges and citations prove provenance only. Never invent a restriction. '
@@ -180,12 +196,18 @@ def contract(phase):
         'do not omit evidence or use an empty evidence list. If no evidence resolves the check, mark it OPEN. '
         'Use UNKNOWN for substantial unresolved scope, missing evidence, unseen material remainder or budget exhaustion. '
         'Do not claim semantic completeness just because you are confident. An ERROR requires a specific new target error; no finding is required for NO_ERROR.')
+    if checks_mode == 'diagnostic':
+        shared = shared.replace('Every closed check needs source evidence, including NOT_APPLICABLE. ',
+            'Checks are diagnostics, not a condition of the decision. CHECKED requires source evidence. ')
+        shared = shared.replace('For NOT_APPLICABLE, cite exact target text or policy text that grounds its specific scope reason; '
+            'do not omit evidence or use an empty evidence list. ',
+            'NOT_APPLICABLE may have an empty evidence list with a concrete scope reason. ')
     return shared
 
 
 def run(row, ask, *, mode='search', max_steps=12, max_payload_bytes=95000,
         initial_context=None, policy_first=False, system_extension='', assessment_gate=None,
-        source_store=None, contract_builder=None, assessment_decoder=None):
+        source_store=None, contract_builder=None, assessment_decoder=None, checks_mode='legacy'):
     store = source_store if source_store is not None else SourceStore(row)
     if store.raw != {k:row[k] for k in ('prompt','response')}:
         raise ValueError('supplied source store belongs to another input')
@@ -201,7 +223,7 @@ def run(row, ask, *, mode='search', max_steps=12, max_payload_bytes=95000,
     if initial_context is not None:
         initial['source_linked_context'] = initial_context
     def prompt(current_phase):
-        text=(contract_builder or contract)(current_phase)
+        text=contract_builder(current_phase) if contract_builder else contract(current_phase, checks_mode=checks_mode)
         if policy_first:
             text=text.replace('and the policy text has not been supplied.',
                               'and the complete recognized system sources are supplied in full_system_sources.')
@@ -298,7 +320,7 @@ def run(row, ask, *, mode='search', max_steps=12, max_payload_bytes=95000,
             if 'assessment' not in choice or (phase == 'SEARCH' and mode != 'direct'):
                 raise ValueError('SEARCH cannot produce final assessment before JUDGE')
             vote = assessment_decoder(store, choice['assessment']) if assessment_decoder else choice['assessment']
-            assessment = validate_assessment(store, vote)
+            assessment = validate_assessment(store, vote, checks_mode=checks_mode)
             if assessment_gate is not None:
                 assessment = assessment_gate(store, vote, assessment)
             # These are model-checked questions with validated provenance, not
@@ -309,7 +331,7 @@ def run(row, ask, *, mode='search', max_steps=12, max_payload_bytes=95000,
                     questions.pop(check['question_id'], None)
                 else:
                     questions[check['question_id']] = QUESTIONS[check['question_id']]
-            if gaps and assessment['decision'] != 'UNKNOWN':
+            if mode != 'direct' and gaps and assessment['decision'] != 'UNKNOWN':
                 assessment['proposed_decision'] = assessment['decision']
                 assessment['decision'] = 'UNKNOWN'
                 assessment['reason'] = 'unread_material_query_remainder'
