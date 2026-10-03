@@ -700,9 +700,9 @@ entity traversal or source-bound calculator calls. Missing check citations
 cause many UNKNOWNs; raw proposals still have semantic failures. Source IDs
 do not prevent confusing verifier actions with the examined assistant or
 declaring unseen evidence absent. Search's single accepted semantic ERROR
-is an FP. Removing checks is not a remedy: among nonstructural last raw votes,
-search proposes 8 positive hits together with 11 false positives (not official
-accepted predictions).
+is an FP. The earlier blanket conclusion "removing checks is not a remedy"
+is withdrawn: it was based on search's 8 positive hits and 11 false positives
+and did not evaluate direct's better historical raw result. See section 31.
 
 A separately frozen six-positive target-frame diagnostic closes direct's
 citation format but gives 1 TP / 5 FN. Search's one positive hit has the wrong
@@ -711,3 +711,25 @@ controls or transfer proof; no promotion. Its SEARCH reminder format bug is
 being checked separately with phase-aware instructions and exact cache reuse.
 Details and full verifiable archives:
 `docs/searh_23/SOURCE_IDS_REAL46_V3_2026-10-03.md`.
+
+## 31. V10 starting-state audit and mandatory stop (2026-10-03)
+
+Zero-API audit reproduces V5 direct raw plus structural **TP15/FP0/FN8/TN23**
+(F1 .78947); the old checks gate suppresses four model TP and 22 TN.
+There are four normalized system hashes and all 46 raw inputs fit 400000
+UTF-8 bytes. Actual direct input usage ranges from 5149 to 79598 tokens.
+
+The supplied V10 instruction requires stopping at section 6.1 if its starting
+facts differ. Both latest transfer banks actually contain four author-positive
+and four author-negative inputs, all PENDING; the instruction asserted no
+negative controls. A2's literal test excluding every verifier TOOLS name from
+FINAL also conflicts with preserving original tools such as `calculate`.
+Implementation and inference stopped at the audit; no A1/A2 or table quality
+results are claimed. Details: `docs/searh_23/V10_FIX_AND_POLICY_TABLE.md`;
+machine evidence: `outputs/searh_23/v10/preflight/audit.json`.
+
+All `transfer_ids_explicit_intent*` experiments are **diagnostic only,
+не является свидетельством**. Six of eight inputs were rewritten; these
+results will not be used as system improvement or independent transfer proof.
+The old remote job's current state could not be observed because SSH returned
+Connection refused; it is not falsely reported stopped or completed.
