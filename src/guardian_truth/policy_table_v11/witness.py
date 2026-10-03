@@ -71,11 +71,22 @@ def current_datetime(store, target):
 
 
 AFFIRM = re.compile(r'^(?:да|подтверждаю|согласен|согласна|верно|yes|confirm|confirmed|i confirm|go ahead|please proceed|proceed|ok|okay)\b', re.I)
-REFUSE = re.compile(r'^(?:нет|не подтверждаю|не согласен|не согласна|отмените|no|do not|don.t|cancel|stop)\b', re.I)
+# A refusal is FALSE evidence, so it is deliberately narrower than AFFIRM.
+# Action verbs (cancel/отмените/stop) are requests, not refusals: «Cancel it» can
+# answer «Shall I cancel X?». «нет, всё верно» or «не против» are not refusals
+# either; only a refusal head plus an empty or closed polite tail is.
+REFUSE = re.compile(r'^(?:нет|не подтверждаю|не согласен|не согласна|не надо|не нужно|не делайте|no|nope|'
+                    r'i do not confirm|i don.t confirm|do not proceed|don.t proceed|please do not|please don.t|do not do|don.t do)'
+                    r'(?![\w\'’])', re.I)
+REFUSE_TAIL = re.compile(r'^(?:[\s.,;!—-]|thanks|thank you|спасибо|please|пожалуйста|not now|не сейчас|не нужно|не надо|'
+                         r'do not|don.t|do it|this|that|it|это|этого|i changed my mind|я передумала?)*$', re.I)
+# An explicit request for confirmation: a question asking to confirm/agree/proceed.
+REQUEST = re.compile(r'подтвер[дж]|соглас|(?<!\w)(?:confirm|proceed|go ahead)|«да»|"да"|«yes»|"yes"|\(yes', re.I)
+NOT_REQUEST = re.compile(r'спасибо за подтверждение|вы подтвердили|thank(?:s| you) for confirming|you(?: have)? confirmed', re.I)
 # "No problem"/"нет возражений" is not a refusal; it is stripped and the remainder decides.
 NOT_REFUSAL = re.compile(r'^(?:no\s+(?:problem|problems|worries|objections?)|нет\s+(?:проблем|возражений))\b[\s,.!:;-]*', re.I)
 HEDGE = re.compile(r'\b(?:но|but|если|if|нет|not|не|no|don.?t|do not|cancel|stop|wait|отмен\w*|подожд\w*|стоп)\b', re.I)
-ASK = re.compile(r'подтверд|соглас(?:ие|ны)|(?:can|shall|may) i\b|confirm|confirmation|go ahead|proceed|\?', re.I)
+ASK = re.compile(r'подтвер[дж]|соглас(?:ие|ны)|(?:can|shall|may) i\b|confirm|confirmation|go ahead|proceed|\?', re.I)
 DESCRIBE = re.compile(r'\b(?:will|shall|would|going to)\b|(?:сделаю|изменю|оформлю|выполню|добавлю|удалю|заменю|проведу|переведу)', re.I)
 
 
@@ -96,9 +107,15 @@ def reply_kind(text):
     if stripped != text:
         if not stripped: return 'UNCLEAR'
         text = stripped
-    elif REFUSE.search(text): return 'REFUSE'
+    else:
+        refusal = REFUSE.match(text)
+        if refusal and REFUSE_TAIL.match(text[refusal.end():]): return 'REFUSE'
     if AFFIRM.search(text) and not HEDGE.search(text): return 'AFFIRM'
     return 'UNCLEAR'
+
+
+def confirmation_request(text):
+    return '?' in text and bool(REQUEST.search(text)) and not NOT_REQUEST.search(text)
 
 
 def same_call(event, target):
@@ -106,6 +123,13 @@ def same_call(event, target):
 
 
 def explicit_confirmation(store, target):
+    """Three-valued confirmation witness. FALSE requires positive evidence:
+    (a) no user turn after any bound description; (b) an explicit bound
+    confirmation question after the last other native act left unanswered,
+    with no bound description ever affirmed; (c) a narrow explicit refusal as
+    the reply to the latest answered bound description. Otherwise TRUE only
+    for an unhedged affirmation, else UNKNOWN.
+    """
     events = timeline(store, target)
     values = key_values(target.get('arguments') or {})
     if not values: return Value('UNRESOLVED', reason='no_key_argument_for_action_binding')
@@ -121,6 +145,18 @@ def explicit_confirmation(store, target):
     answered = [i for i in bounds if user_after(i)]
     if not answered:
         return Value('RESOLVED', False, (events[bounds[-1]][0], target['source_id']), 'NO_USER_TURN_AFTER_BOUND_DESCRIPTION')
+    # FALSE (b): the latest bound description after the last other native act is an explicit
+    # confirmation question nobody answered, and no bound description was ever affirmed.
+    start = max([i + 1 for i, (_, e) in enumerate(events) if e.kind in ('call', 'result') and not same_call(e, target)], default=0)
+    if bounds[-1] >= start and not user_after(bounds[-1]) and confirmation_request(events[bounds[-1]][1].text):
+        def first_reply(i):
+            block = []
+            for j in user_after(i):
+                if block and j != block[-1] + 1: break
+                block.append(j)
+            return block
+        if not any({reply_kind(events[j][1].text) for j in first_reply(i)} == {'AFFIRM'} for i in answered):
+            return Value('RESOLVED', False, (events[bounds[-1]][0], target['source_id']), 'BOUND_CONFIRMATION_REQUEST_UNANSWERED')
     index = answered[-1]; sid = events[index][0]
     users = user_after(index)
     # The answer is the user block right after the description; anything later must stay silent.
@@ -135,7 +171,7 @@ def explicit_confirmation(store, target):
         return Value('UNRESOLVED', source_ids=(sid,), reason='intervening_call_requires_new_action_binding')
     # A later unanswered request for confirmation reopens the binding.
     later = [i for i in bounds if i > reply[-1]]
-    if any(re.search(r'\?|подтверд|confirm', events[i][1].text, re.I) for i in later):
+    if any(re.search(r'\?|подтвер[дж]|confirm', events[i][1].text, re.I) for i in later):
         return Value('UNRESOLVED', source_ids=(sid, events[later[-1]][0]), reason='unanswered_later_confirmation_request')
     kinds = {reply_kind(events[j][1].text) for j in reply}
     rsids = (sid,) + tuple(events[j][0] for j in reply)

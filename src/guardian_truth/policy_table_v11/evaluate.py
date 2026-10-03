@@ -65,6 +65,19 @@ def anchors(target, expression):
     return identifiers or eligible
 
 
+def observed_anchors(store, name, entity):
+    # A read tool records only the identifiers it was called with. Requiring every target
+    # identifier (e.g. payment_method_id for a get_order_details record) as a record key makes
+    # the state permanently UNRESOLVED. Keep the identifiers the read tool was called with;
+    # if none overlap, keep the original anchors (conservative: never weaker than before).
+    keys = set()
+    for event in store.history_events:
+        if event.name == name and event.kind == 'call' and event.json_valid and isinstance(event.value, dict):
+            keys |= set(event.value)
+    restricted = {k: v for k, v in entity.items() if k in keys}
+    return restricted or entity
+
+
 def flatten(expr):
     yield expr
     for child in expr.items or []: yield from flatten(child)
@@ -82,7 +95,7 @@ def resolved_values(store, path, target, expr):
     prior, source_map = prefix_store(store, target)
     entity = anchors(target, expr)
     if '*' not in parts and '{key}' not in parts:
-        value = state_value(prior, name, parts, target, entity)
+        value = state_value(prior, name, parts, target, observed_anchors(prior, name, entity))
         return [Value(value.status, value.value, tuple(source_map.get(s, s) for s in value.source_ids), value.reason)]
     pending, observations = [], []
     for i, event in enumerate(prior.history_events):

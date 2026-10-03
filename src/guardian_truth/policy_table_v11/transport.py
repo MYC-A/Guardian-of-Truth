@@ -12,14 +12,14 @@ from guardian_truth.source_search.transport import ModelTransport
 
 
 class Transport:
-    def __init__(self, directory, provider, model=None, *, reasoning_effort=None,
+    def __init__(self, directory, provider, model=None, *, reasoning_effort=None, temperature=0,
                  max_output_tokens=8192, timeout=180, max_calls=450, max_tokens=3000000):
         self.directory = Path(directory); self.directory.mkdir(parents=True, exist_ok=True)
         self.cache = self.directory / 'cache'; self.cache.mkdir(exist_ok=True)
         # Reuse the existing credential allowlist loader; no values are serialized.
         source = ModelTransport(self.directory / ('credentials_' + provider), provider=provider, model=model)
         self.base, self.key, self.model = source.base, source.key, source.model
-        self.provider, self.reasoning_effort = provider, reasoning_effort
+        self.provider, self.reasoning_effort, self.temperature = provider, reasoning_effort, temperature
         self.max_output_tokens, self.timeout = max_output_tokens, timeout
         self.max_calls, self.max_tokens = max_calls, max_tokens
         self.database = self.directory / 'budget.sqlite'
@@ -37,7 +37,7 @@ class Transport:
             'auth_stop': self.auth_breaker.exists(), 'provider_breakers': [p.stem for p in self.directory.glob('breaker_*.json')]}
 
     def __call__(self, messages, *, fresh_sample=None):
-        body = {'model': self.model, 'messages': messages, 'temperature': 0,
+        body = {'model': self.model, 'messages': messages, 'temperature': self.temperature,
                 'max_tokens': self.max_output_tokens}
         if self.reasoning_effort is not None: body['reasoning_effort'] = self.reasoning_effort
         return self._http('POST', '/chat/completions', body, fresh_sample=fresh_sample)
