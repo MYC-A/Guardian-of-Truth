@@ -195,3 +195,11 @@ def test_full_array_condition_keeps_entity_binding_and_typed_elements():
         'rhs': {'kind': 'PATH', 'path': 'state.tool_b./field_y'}}])
     assert evaluate_rule(store, r, {'arguments': {'field_x': 'X', 'field_y': ['A']}, 'source_id': 't0'})['status'] == 'ERROR'
     assert evaluate_rule(store, r, {'arguments': {'field_x': 'Y', 'field_y': ['A']}, 'source_id': 't0'})['status'] == 'NO_FINDING'
+
+
+def test_null_is_not_an_explicit_boolean_but_can_be_tested_for_presence():
+    store = records_store({'field_x': 'X', 'field_y': None})
+    target = {'arguments': {'field_x': 'X'}, 'source_id': 't0'}
+    assert evaluate_rule(store, rule(), target)['reason'] == 'unresolved_condition'
+    assert evaluate_rule(store, rule(conditions=[{'lhs': 'state.tool_b./field_y', 'op': 'exists'}]), target)['status'] == 'ERROR'
+    assert evaluate_rule(store, rule(conditions=[{'lhs': 'state.tool_b./field_y', 'op': '==', 'rhs': {'kind': 'LITERAL', 'value': None}}]), target)['status'] == 'NO_FINDING'

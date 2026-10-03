@@ -118,6 +118,8 @@ def condition_value(store, condition, target, semantic=None, binding_arguments=N
         if op == 'exists': truth = a is not None
         elif op == 'not_exists': truth = a is None
         elif op in ('==', '!='):
+            explicit_null_test = condition.rhs.kind == 'LITERAL' and condition.rhs.value is None
+            if (a is None or b is None) and not explicit_null_test: return 'UNRESOLVED', evidence
             if a is not None and b is not None and scalar_type(a) != scalar_type(b): return 'UNRESOLVED', evidence
             truth = same(a, b) if op == '==' else not same(a, b)
         elif op in ('in', 'not_in'):

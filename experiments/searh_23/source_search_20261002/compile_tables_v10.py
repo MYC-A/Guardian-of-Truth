@@ -63,7 +63,10 @@ def prepare():
         'budget_approval_sha256': sha(DIRECTORY / 'budget_approval.json'),
         'model': 'gpt-oss:120b', 'provider': 'ollama', 'reasoning_effort': 'medium',
         'max_output_tokens': 8192, 'independence': 'THREE_DISTINCT_REQUESTS_NOT_INDEPENDENT_ERROR_DISTRIBUTIONS',
-        'policy_hashes': sorted({key for key, _ in identities}), 'gold_opened': False}
+        'policy_hashes': sorted({key for key, _ in identities}), 'gold_opened_by_compiler': False,
+        'public46_status': 'BURNED_DEVELOPMENT_DATA',
+        'api_ledger_dir': '/workspace/guardian/results/v10_api_' + hashlib.sha256(
+            json.dumps({path.relative_to(ROOT).as_posix(): sha(path) for path in files}, sort_keys=True).encode()).hexdigest()[:16]}
     write_new(DIRECTORY / 'frozen.json', freeze)
     return freeze
 
@@ -88,7 +91,7 @@ def execute(server_receipt):
         if receipt.get(field) is not True: raise ValueError('new server prerequisite is missing: ' + field)
     from guardian_truth.source_search.transport import ModelTransport
     from guardian_truth.source_search.pipeline import decode_model_object
-    transport = ModelTransport(Path('/workspace/guardian/results/v10_api'), max_calls=200,
+    transport = ModelTransport(Path(freeze['api_ledger_dir']), max_calls=200,
         max_tokens=1500000, max_output_tokens=freeze['max_output_tokens'], timeout=300,
         provider=freeze['provider'], model=freeze['model'], reasoning_effort=freeze['reasoning_effort'], json_mode=False)
     before = transport.snapshot()

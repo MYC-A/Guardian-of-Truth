@@ -104,6 +104,7 @@ def request(stores, sample_index):
             for name, value in catalog['tools'].items()},
         'paths': {path: {'types': types, 'has_source_witness': bool(catalog['path_witnesses'].get(path))}
             for path, types in catalog['paths'].items()}}
+    wire_catalog['array_item_types'] = catalog['array_item_types']
     packet = {'policy_sha256': policy_hash(store),
         'clauses': [{'id': c['id'], 'text': c['text'], 'parent_source_id': c['parent_source_id']} for c in clauses(store)],
         'catalog': wire_catalog, 'schema': schema,
