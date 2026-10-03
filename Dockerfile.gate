@@ -1,0 +1,10 @@
+# LLM-free admissibility gate. Build the bundle offline (CI), mount or copy it in.
+FROM python:3.11-slim
+ENV PYTHONDONTWRITEBYTECODE=1 PYTHONUNBUFFERED=1
+WORKDIR /app
+COPY pyproject.toml README.md ./
+COPY src ./src
+RUN pip install --no-cache-dir ".[data]"
+COPY build/policy_bundle.json /app/policy_bundle.json
+USER 65534:65534
+ENTRYPOINT ["guardian-gate", "--bundle", "/app/policy_bundle.json"]
