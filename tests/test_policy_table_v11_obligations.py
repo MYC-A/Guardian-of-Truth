@@ -69,3 +69,13 @@ def test_different_applicability_never_agrees_even_for_same_necessary_state():
     a = atomic(modality='REQUIRES', confirmation=None, condition=comparison(value=7))
     b = a.model_copy(deep=True); b.guard = Expression.model_validate(comparison(value=2))
     assert canonical(p['policy_sha256'], trigger, a) != canonical(p['policy_sha256'], trigger, b)
+
+
+def test_chunk_output_inventory_retains_full_source_context():
+    p, raw = sample()
+    p['clauses'].append({'id': 'clause_1', 'text': 'Shared condition also applies.'})
+    raw['clauses'][0]['obligations'][0]['spans'].append({'clause_id': 'clause_1', 'quote': 'Shared condition also applies.'})
+    assert admit_ledger(raw, p, ['clause_0'])['valid']
+    assert not admit_ledger(raw, p)['valid']  # Full inventory still demands the other disposition.
+    messages = extraction_request(p, {'kind': 'TOOL_CALL', 'tool': 'apply_a'}, ['clause_0'])
+    assert 'Shared condition also applies.' in messages[1]['content']

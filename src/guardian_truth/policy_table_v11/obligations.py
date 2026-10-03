@@ -78,19 +78,24 @@ class Ledger(Strict):
     clauses: list[ClauseDisposition]
 
 
-def extraction_request(policy, trigger):
+def extraction_request(policy, trigger, clause_ids=None):
     packet = {'trigger': trigger, 'policy_sha256': policy['policy_sha256'], 'clauses': policy['clauses'],
               'tools': {name: spec['declaration'] for name, spec in policy['catalog']['tools'].items()}}
-    return [{'role': 'system', 'content': EXTRACTION},
+    instruction = EXTRACTION
+    if clause_ids is not None:
+        packet['output_clause_ids'] = clause_ids
+        instruction += '\nThis is a bounded inventory chunk. Read ALL policy context, but output entries ONLY for output_clause_ids. All quoted context clause IDs remain available. Do not output dispositions for other clauses.'
+    return [{'role': 'system', 'content': instruction},
             {'role': 'user', 'content': json.dumps(packet, ensure_ascii=False, separators=(',', ':'))}]
 
 
-def admit_ledger(response, policy):
+def admit_ledger(response, policy, clause_ids=None):
     try:
         ledger = Ledger.model_validate(response)
         clauses = {c['id']: c['text'] for c in policy['clauses']}
         received = [c.clause_id for c in ledger.clauses]
-        if len(received) != len(set(received)) or set(received) != set(clauses):
+        wanted = set(clauses) if clause_ids is None else set(clause_ids)
+        if len(received) != len(set(received)) or set(received) != wanted:
             raise ValueError('clause_dispositions_incomplete_or_duplicate')
         ids, resolved = set(), []
         for clause in ledger.clauses:
