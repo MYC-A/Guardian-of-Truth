@@ -42,6 +42,8 @@ Return one schema JSON object and no surrounding prose.'''
         text = text.replace('A CHECKED or\nNOT_APPLICABLE check needs a concrete reason and source IDs;',
             'A CHECKED check needs a concrete reason and source IDs; NOT_APPLICABLE may omit IDs;')
         text += '\nChecks are diagnostic. Missing check evidence does not change an independently supported decision.'
+        if phase in ('DIRECT', 'FINAL'):
+            text = text.replace('arithmetic via calculate when needed', 'arithmetic using source operands and verified calculations when needed')
     return text
 
 
@@ -95,11 +97,13 @@ def decode_assessment(store,vote):
         'open_questions':vote.get('open_questions',[]),'original_source_id_vote':vote}
 
 
-def run_ids(row,ask,*,mode='search',max_steps=6,max_payload_bytes=800000,checks_mode='legacy'):
+def run_ids(row,ask,*,mode='search',max_steps=6,max_payload_bytes=800000,checks_mode='legacy',
+        final_context='legacy',artifact_guard=False,direct_max_bytes=400000):
     store=SourceStore(row)
     return run(row,ask,mode=mode,max_steps=max_steps,max_payload_bytes=max_payload_bytes,
         policy_first=True,source_store=store,contract_builder=lambda phase:id_contract(phase,checks_mode=checks_mode),
         checks_mode=checks_mode,
+        final_context=final_context,artifact_guard=artifact_guard,direct_max_bytes=direct_max_bytes,
         assessment_decoder=decode_assessment,
         initial_context={'source_registry':registry(store),
                          'native_target_calls':native_target_inventory(store)})

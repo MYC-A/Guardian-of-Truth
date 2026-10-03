@@ -30,6 +30,25 @@ search с недочитанным material remainder остался UNKNOWN.
 29 механических/регрессионных тестов прошли. Это replay, не новая модельная
 проверка и не evidence of transfer.
 
+### A2 выполнен локально
+
+V10 использует `final_context=evidence`: только original target, исходный
+source-linked context и точные реально возвращённые тексты. Нет native
+верификаторского транскрипта, его commands, quota messages или tool_call_id.
+Search snippets сохраняют ровно возвращённые 300 символов; не расширяются
+молча до исходной непрочитанной страницы. Исходное слово `calculate` остаётся
+там, где оно принадлежит исходному агенту. Выбор auto использует raw UTF-8
+threshold, максимальный serialized payload проверяется отдельно.
+
+Replay A1+A2 evaluator_artifact-guard: direct без изменений; search
+TP15/FP5/FN4/TN10/UNKNOWN12. Относительно A1 сняты четыре FP и один
+ложно обоснованный TP, которые до этого проходили техническую валидацию.
+Часть других artifact proposals уже была отклонена по техническим причинам.
+Сохранены и отклонённые причины; в принятых findings этих имён больше нет.
+Фактическое влияние нового FINAL на модель будет измерено на сервере,
+этот replay его не доказывает. Артефакт:
+`outputs/searh_23/v10_artifact_replay/score.json`. 32 теста прошли.
+
 Машинный протокол: [audit.json](../../outputs/searh_23/v10/preflight/audit.json).
 Повторение: `python -X utf8 experiments/searh_23/source_search_20261002/audit_v10_start.py`.
 Скрипт читает архив V5 напрямую, проверяет хэши всех 92 исходных snapshot,

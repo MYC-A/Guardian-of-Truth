@@ -12,7 +12,7 @@ from guardian_truth.source_search.id_contract import decode_assessment
 from guardian_truth.source_search.pipeline import decode_model_object, validate_assessment
 
 
-def replay():
+def replay(*, artifact_guard=False):
     directory = ROOT / 'outputs/searh_23/source_search_20261002/comparison_ids_v5'
     records = [json.loads(s) for s in (directory / 'predictions.jsonl').read_text(encoding='utf-8').splitlines()]
     gold = {r['id']: r['gold'] for r in json.loads((directory / 'score.json').read_text(encoding='utf-8'))['arms']['direct']['cases']}
@@ -36,7 +36,7 @@ def replay():
             if not structural and votes:
                 try:
                     vote = decode_assessment(store, votes[-1])
-                    checked = validate_assessment(store, vote, checks_mode='diagnostic')
+                    checked = validate_assessment(store, vote, checks_mode='diagnostic', artifact_guard=artifact_guard)
                     decision = checked['decision']
                     if row['mode'] == 'search' and row.get('coverage', {}).get('stop_reason') == 'unread_material_query_remainder':
                         decision = 'UNKNOWN'
@@ -49,13 +49,16 @@ def replay():
                 'old_decision': row['decision'], 'replayed_decision': decision, 'bucket': bucket,
                 'checks_incomplete': checked.get('checks_incomplete') if checked else None,
                 'unclosed_checks': checked.get('unclosed_checks') if checked else None,
+                'rejected_findings': checked.get('rejected_findings') if checked else None,
                 'technical_error': technical_error})
     return {'scope': 'HISTORICAL_GATE_REPLAY_NOT_NEW_MODEL_QUALITY_OR_TRANSFER',
         'api_calls': 0, 'model_tokens': 0, 'arms': {a: dict(c) for a, c in arms.items()}, 'cases': results}
 
 
 if __name__ == '__main__':
-    result = replay(); output = ROOT / 'outputs/searh_23/v10_gate_replay'
+    artifact_guard = '--artifact-guard' in sys.argv
+    result = replay(artifact_guard=artifact_guard)
+    output = ROOT / ('outputs/searh_23/v10_artifact_replay' if artifact_guard else 'outputs/searh_23/v10_gate_replay')
     output.mkdir(parents=True, exist_ok=True)
     (output / 'score.json').write_text(json.dumps(result, ensure_ascii=False, indent=2) + '\n', encoding='utf-8')
     print(json.dumps(result['arms']))

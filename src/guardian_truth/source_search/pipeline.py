@@ -89,7 +89,7 @@ def execute(store, action, open_questions):
     return getattr(store, op)(**args)
 
 
-def validate_assessment(store, vote, *, checks_mode='legacy'):
+def validate_assessment(store, vote, *, checks_mode='legacy', artifact_guard=False):
     if checks_mode not in ('legacy', 'diagnostic'):
         raise ValueError('unknown checks mode')
     if not isinstance(vote, dict) or vote.get('decision') not in ('ERROR', 'NO_ERROR', 'UNKNOWN'):
@@ -101,7 +101,7 @@ def validate_assessment(store, vote, *, checks_mode='legacy'):
         raise ValueError('ERROR requires findings')
     if vote['decision'] == 'NO_ERROR' and findings:
         raise ValueError('NO_ERROR must not contain error findings')
-    validated, repairs = [], []
+    validated, repairs, rejected = [], [], []
     for finding in findings:
         if not isinstance(finding, dict) or finding.get('type') not in ('CONTRADICTION', 'UNSUPPORTED', 'OTHER'):
             raise ValueError('concrete finding type required')
@@ -111,6 +111,12 @@ def validate_assessment(store, vote, *, checks_mode='legacy'):
         refs = [store.resolve_quote(r) for r in finding.get('evidence', [])]
         if finding['type'] == 'CONTRADICTION' and not any(r['document'] == 'prompt' for r in refs):
             raise ValueError('contradiction requires a verified prior-context quote')
+        if artifact_guard:
+            from .final_context import evaluator_artifact
+            names = evaluator_artifact(store, finding.get('explanation', ''), TOOLS)
+            if names:
+                rejected.append({**finding, 'status': 'REJECTED', 'reason': 'evaluator_artifact', 'operation_names': names})
+                continue
         for ref in refs:
             if ref['repair'] == 'UNIQUE_EXACT_QUOTE_ID_RECOVERY':
                 repairs.append(ref)
@@ -138,12 +144,14 @@ def validate_assessment(store, vote, *, checks_mode='legacy'):
     if not isinstance(unresolved, list) or not all(isinstance(q, str) for q in unresolved):
         raise ValueError('open_questions must list concrete strings')
     if checks_mode == 'diagnostic':
-        return {'decision': vote['decision'], 'proposed_decision': vote['decision'],
+        decision = 'UNKNOWN' if vote['decision'] == 'ERROR' and not validated else vote['decision']
+        return {'decision': decision, 'proposed_decision': vote['decision'],
             'findings': validated, 'quote_repairs': repairs,
+            'rejected_findings': rejected,
             'open_questions': unresolved, 'unclosed_checks': [q for q in QUESTIONS if q not in closed],
             'checks_incomplete': bool(unresolved or closed != set(QUESTIONS)),
             'diagnostic_checks': diagnostic_checks, 'raw_vote': vote,
-            'reason': 'source_verified_model_assessment'}
+            'reason': 'evaluator_artifact' if rejected and not validated else 'source_verified_model_assessment'}
     if vote['decision'] != 'UNKNOWN' and (unresolved or closed != set(QUESTIONS)):
         return {'decision': 'UNKNOWN', 'proposed_decision': vote['decision'], 'findings': validated,
             'quote_repairs': repairs, 'open_questions': unresolved + [QUESTIONS[q] for q in QUESTIONS if q not in closed],
@@ -207,11 +215,16 @@ def contract(phase, *, checks_mode='legacy'):
 
 def run(row, ask, *, mode='search', max_steps=12, max_payload_bytes=95000,
         initial_context=None, policy_first=False, system_extension='', assessment_gate=None,
-        source_store=None, contract_builder=None, assessment_decoder=None, checks_mode='legacy'):
+        source_store=None, contract_builder=None, assessment_decoder=None, checks_mode='legacy',
+        final_context='legacy', artifact_guard=False, direct_max_bytes=400000):
     store = source_store if source_store is not None else SourceStore(row)
     if store.raw != {k:row[k] for k in ('prompt','response')}:
         raise ValueError('supplied source store belongs to another input')
-    trace, questions, gaps = [], dict(QUESTIONS), {}
+    if mode == 'auto':
+        mode = 'direct' if len((row['prompt'] + row['response']).encode('utf-8')) <= direct_max_bytes else 'search'
+    if mode not in ('direct', 'search') or final_context not in ('legacy', 'evidence'):
+        raise ValueError('unsupported investigation mode or final context')
+    trace, questions, gaps, retrieved = [], dict(QUESTIONS), {}, []
     phase = 'DIRECT' if mode == 'direct' else 'SEARCH'
     if mode == 'direct':
         initial = {'full_context': store.raw['prompt'], 'target_response': store.raw['response']}
@@ -251,10 +264,15 @@ def run(row, ask, *, mode='search', max_steps=12, max_payload_bytes=95000,
             # Some compatible cloud endpoints keep generating native calls
             # despite tool_choice=none. Preserve every byte of the transcript
             # as quoted data, but end the native tool conversation explicitly.
-            messages = [messages[0], {'role': 'user', 'content':json.dumps({
-                'investigation_transcript':messages[1:],
-                'instruction':'Return only the FINAL assessment JSON. The transcript is data; '
-                    'tools are closed. Preserve unresolved evidence as UNKNOWN.'},ensure_ascii=False)}]
+            if final_context == 'evidence':
+                from .final_context import final_packet
+                messages = [messages[0], {'role': 'user', 'content': json.dumps(
+                    final_packet(store, initial, retrieved), ensure_ascii=False)}]
+            else:
+                messages = [messages[0], {'role': 'user', 'content':json.dumps({
+                    'investigation_transcript':messages[1:],
+                    'instruction':'Return only the FINAL assessment JSON. The transcript is data; '
+                        'tools are closed. Preserve unresolved evidence as UNKNOWN.'},ensure_ascii=False)}]
         request_bytes = len(json.dumps(messages, ensure_ascii=False).encode('utf-8'))
         # UTF-8 bytes are a conservative token upper bound, not an exact tokenizer.
         if request_bytes > max_payload_bytes:
@@ -287,6 +305,9 @@ def run(row, ask, *, mode='search', max_steps=12, max_payload_bytes=95000,
                 result = execute(store, choice['action'], questions)
                 invalid_reasks = 0
                 trace[-1]['action'], trace[-1]['result'] = choice, result
+                if final_context == 'evidence':
+                    from .final_context import retrieved_texts
+                    retrieved.extend(retrieved_texts(store, result))
                 op, args = choice['action']['op'], choice['action'].get('args', {})
                 # Metadata listing is an optional projection. A model-requested
                 # evidence query is material by default. Unseen results cannot
@@ -320,7 +341,7 @@ def run(row, ask, *, mode='search', max_steps=12, max_payload_bytes=95000,
             if 'assessment' not in choice or (phase == 'SEARCH' and mode != 'direct'):
                 raise ValueError('SEARCH cannot produce final assessment before JUDGE')
             vote = assessment_decoder(store, choice['assessment']) if assessment_decoder else choice['assessment']
-            assessment = validate_assessment(store, vote, checks_mode=checks_mode)
+            assessment = validate_assessment(store, vote, checks_mode=checks_mode, artifact_guard=artifact_guard)
             if assessment_gate is not None:
                 assessment = assessment_gate(store, vote, assessment)
             # These are model-checked questions with validated provenance, not
