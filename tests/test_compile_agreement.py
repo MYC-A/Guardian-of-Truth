@@ -60,3 +60,27 @@ def test_numeric_literal_canonicalization_preserves_opaque_strings_and_booleans(
     assert canonical(item(1)) == canonical(item(1.0))
     assert canonical(item(1)) != canonical(item(True))
     assert canonical(item('01')) != canonical(item('1'))
+
+
+def test_confirmation_modality_cannot_bypass_implicit_path_witness_requirement():
+    store = source(False)
+    r = rule(modality='REQUIRES_USER_CONFIRMATION', conditions=[])
+    sample = {'rules': [r.model_dump()], 'uncovered_clause_ids': []}
+    table = assemble([store], [sample, sample, sample])
+    assert not table.rules
+    assert all('confirmation path' in row['reason'] for row in table.discarded)
+
+
+def test_container_paths_and_array_membership_have_actual_type_witnesses():
+    from test_policy_table_eval import records_store
+    from guardian_truth.policy_table.segment import enum_catalog
+    store = records_store({'field_x': 'X', 'field_y': ['A', 'B']})
+    catalog = enum_catalog([store])
+    assert catalog['paths']['state.tool_b./field_y'] == ['array']
+    assert catalog['paths']['state.tool_b.'] == ['object']
+    valid = rule(conditions=[{'lhs': 'args.field_x', 'op': 'in', 'rhs': {'kind': 'PATH', 'path': 'state.tool_b./field_y'}}])
+    sample = {'rules': [valid.model_dump()], 'uncovered_clause_ids': []}
+    assert assemble([store], [sample, sample, sample]).rules[0]['status'] == 'DECISIVE'
+    invalid = rule(conditions=[{'lhs': 'args.field_x', 'op': 'in', 'rhs': {'kind': 'LITERAL', 'value': 1}}])
+    sample = {'rules': [invalid.model_dump()], 'uncovered_clause_ids': []}
+    assert not assemble([store], [sample, sample, sample]).rules

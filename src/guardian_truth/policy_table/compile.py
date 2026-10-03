@@ -47,6 +47,8 @@ def validate_rule(rule, catalog, clause_ids):
     if not set(rule.clause_ids) <= set(clause_ids): raise ValueError('unknown clause ID')
     if rule.trigger.kind == 'TOOL_CALL' and rule.trigger.tool not in catalog['tools']: raise ValueError('unknown trigger tool')
     if rule.prior_call and rule.prior_call not in catalog['tools']: raise ValueError('unknown prior tool')
+    if rule.modality == 'REQUIRES_USER_CONFIRMATION' and not catalog.get('path_witnesses', {}).get('user.confirmation_of_trigger'):
+        raise ValueError('implicit confirmation path has no resolved source witness')
     def path_types(path):
         if path.startswith('args.') and rule.trigger.kind == 'TOOL_CALL':
             field = catalog['tools'][rule.trigger.tool]['arguments'].get(path[5:])
@@ -72,6 +74,13 @@ def validate_rule(rule, catalog, clause_ids):
                 raise ValueError('rhs argument has no trigger-specific witness')
         else:
             right = {scalar_type(v) for v in condition.rhs.value} if condition.op in ('in', 'not_in') and isinstance(condition.rhs.value, list) else {scalar_type(condition.rhs.value)}
+        if condition.op in ('in', 'not_in'):
+            if condition.rhs.kind == 'PATH':
+                if right != {'array'}: raise ValueError('membership rhs path must be an array')
+                right = set(catalog.get('array_item_types', {}).get(condition.rhs.path, []))
+            elif not isinstance(condition.rhs.value, list): raise ValueError('membership rhs literal must be an array')
+            if right and not left & right: raise ValueError('incompatible membership element type')
+            continue
         if condition.op in ('before', 'after') and not (left == right == {'string'}): raise ValueError('temporal paths require strings')
         if condition.op in ('<', '<=', '>', '>=') and not (left == right == {'number'}): raise ValueError('ordered numeric comparison requires numbers')
         if not left & right: raise ValueError('incompatible operand types')

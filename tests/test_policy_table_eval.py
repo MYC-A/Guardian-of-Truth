@@ -163,3 +163,35 @@ def test_user_tool_attempt_does_not_satisfy_required_assistant_call():
     store = SourceStore({**store.raw, 'prompt': user_history})
     r = rule(modality='REQUIRES_PRIOR_CALL', prior_call='tool_b', conditions=[])
     assert evaluate_rule(store, r, {'arguments': {'field_x': 'X'}, 'source_id': 't0'})['status'] == 'ERROR'
+
+
+def test_json_pointer_root_empty_key_and_escaped_key_are_distinct():
+    store = records_store({'field_x': 'X', '': False, 'a/b~c': True})
+    target = {'arguments': {'field_x': 'X'}, 'source_id': 't0'}
+    assert resolve(store, 'state.tool_b./', target).value is False
+    assert resolve(store, 'state.tool_b./a~1b~0c', target).value is True
+    assert isinstance(resolve(store, 'state.tool_b.', target).value, dict)
+
+
+def test_new_value_comparison_is_not_mistaken_for_entity_binding():
+    store = records_store({'field_x': 'X', 'field_y': 3})
+    r = rule(modality='FORBIDS', conditions=[{'lhs': 'args.field_y', 'op': '!=',
+        'rhs': {'kind': 'PATH', 'path': 'state.tool_b./field_y'}}])
+    assert evaluate_rule(store, r, {'arguments': {'field_x': 'X', 'field_y': 4}, 'source_id': 't0'})['status'] == 'ERROR'
+    assert evaluate_rule(store, r, {'arguments': {'field_x': 'X', 'field_y': 3}, 'source_id': 't0'})['status'] == 'NO_FINDING'
+    assert evaluate_rule(store, r, {'arguments': {'field_x': 'Y', 'field_y': 4}, 'source_id': 't0'})['status'] == 'NO_FINDING'
+    # Without a remaining join key a comparison cannot borrow another entity.
+    assert evaluate_rule(store, r, {'arguments': {'field_y': 4}, 'source_id': 't0'})['status'] == 'NO_FINDING'
+
+
+def test_numeric_entity_without_any_binding_is_not_a_matching_result():
+    store = records_store({'field_z': 999, 'field_y': False})
+    assert resolve(store, 'state.tool_b./field_y', {'arguments': {'field_x': 1}, 'source_id': 't0'}).status == 'UNRESOLVED'
+
+
+def test_full_array_condition_keeps_entity_binding_and_typed_elements():
+    store = records_store({'field_x': 'X', 'field_y': ['A', 'B']})
+    r = rule(modality='FORBIDS', conditions=[{'lhs': 'args.field_y', 'op': '!=',
+        'rhs': {'kind': 'PATH', 'path': 'state.tool_b./field_y'}}])
+    assert evaluate_rule(store, r, {'arguments': {'field_x': 'X', 'field_y': ['A']}, 'source_id': 't0'})['status'] == 'ERROR'
+    assert evaluate_rule(store, r, {'arguments': {'field_x': 'Y', 'field_y': ['A']}, 'source_id': 't0'})['status'] == 'NO_FINDING'

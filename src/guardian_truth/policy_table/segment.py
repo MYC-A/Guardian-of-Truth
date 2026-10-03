@@ -42,26 +42,30 @@ def scalar_type(value):
 
 
 def leaves(value, prefix=()):
+    # Containers are real paths too: comparing a list/object must not depend
+    # on the incidental presence of at least one scalar child.
+    yield prefix, value
     if isinstance(value, dict):
         for key, child in value.items(): yield from leaves(child, prefix + (key,))
     elif isinstance(value, list):
-        if not value: yield prefix, value
         for child in value: yield from leaves(child, prefix + ('*',))
-    else: yield prefix, value
 
 
 def pointer(parts):
-    return '/' + '/'.join(str(p).replace('~', '~0').replace('/', '~1') for p in parts)
+    return '/' + '/'.join(str(p).replace('~', '~0').replace('/', '~1') for p in parts) if parts else ''
 
 
 def enum_catalog(stores):
-    tools, paths, witnesses, arg_witnesses = {}, {}, {}, {}
+    tools, paths, witnesses, arg_witnesses, array_item_types = {}, {}, {}, {}, {}
     for store in stores:
         catalog = parse_catalog(store.history_events, store.raw['prompt'])
         for name, tool in catalog.tools.items():
             tools.setdefault(name, {'arguments': {}})
             for field in tool.fields:
-                tools[name]['arguments'][field.name] = {'type': field.kind, 'enum': field.enum, 'required': field.required}
+                declaration = store.raw['prompt'][field.source.start:field.source.end]
+                declared_format = re.search(r'\[format:\s*([^\]\s]+)\s*\]', declaration)
+                tools[name]['arguments'][field.name] = {'type': field.kind, 'enum': field.enum,
+                    'required': field.required, 'format': declared_format[1] if declared_format else None}
                 path = 'args.' + field.name
                 paths.setdefault(path, set()).add('number' if field.kind in ('integer', 'number') else field.kind)
         for sid, source in store.sources.items():
@@ -78,8 +82,11 @@ def enum_catalog(stores):
             for parts, value in leaves(event.value):
                 path = 'state.' + event.name + '.' + pointer(parts)
                 paths.setdefault(path, set()).add(scalar_type(value))
+                if isinstance(value, list):
+                    array_item_types.setdefault(path, set()).update(scalar_type(item) for item in value)
                 witnesses.setdefault(path, [{'source_sha256': store.source_sha256, 'source_id': 'h' + str(index)}])
     paths['user.confirmation_of_trigger'] = {'boolean'}
     paths['ctx.current_datetime'] = {'string'}
     return {'tools': tools, 'paths': {k: sorted(v) for k, v in sorted(paths.items())},
-        'path_witnesses': witnesses, 'arg_witnesses': arg_witnesses}
+        'path_witnesses': witnesses, 'arg_witnesses': arg_witnesses,
+        'array_item_types': {k: sorted(v) for k, v in sorted(array_item_types.items())}}

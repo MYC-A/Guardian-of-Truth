@@ -81,3 +81,4 @@ class Table(Strict):
     rules: list[dict]
     discarded: list[dict]
     coverage: dict
+    compilation_metadata: dict = Field(default_factory=dict)

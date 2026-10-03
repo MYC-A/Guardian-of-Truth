@@ -43,8 +43,10 @@ def select(value, parts, anchors, inherited=None):
     return []
 
 
-def state_value(store, name, parts, target):
-    anchors = target.get('arguments') or {}
+def state_value(store, name, parts, target, binding_arguments=None):
+    original = target.get('arguments') or {}
+    anchors = original if binding_arguments is None else binding_arguments
+    if original and not anchors: return UNKNOWN  # comparands alone do not prove entity identity
     results = []
     pending = []
     for index, event in enumerate(store.history_events):
@@ -72,31 +74,39 @@ def state_value(store, name, parts, target):
             results.append(UNKNOWN); continue
         value, record = selected[0]
         required_bindings = {k for k, v in anchors.items() if isinstance(v, (str, dict, list))}
-        if not required_bindings <= set(record):
+        if not required_bindings <= set(record) or (anchors and not (set(anchors) & set(record))):
             results.append(UNKNOWN); continue  # no invented entity binding
         results.append(Value('RESOLVED', value, ('h' + str(index),)))
     return results[-1] if results else UNKNOWN
 
 
-def resolve(store, path, target, semantic=None):
+def resolve(store, path, target, semantic=None, binding_arguments=None):
     if path.startswith('args.'):
         key = path[5:]; args = target.get('arguments') or {}
         return Value('RESOLVED', args[key], (target['source_id'],)) if key in args else UNKNOWN
     if path.startswith('state.'):
-        suffix = path[6:]
-        if './' not in suffix: return UNKNOWN
-        name, pointer = suffix.split('./', 1)
-        parts = [p.replace('~1', '/').replace('~0', '~') for p in pointer.split('/') if p]
-        return state_value(store, name, parts, target)
+        components = state_components(path)
+        if components is None: return UNKNOWN
+        name, parts = components
+        return state_value(store, name, parts, target, binding_arguments)
     semantic = semantic or {}
     value = semantic.get(path)
     if isinstance(value, Value): return value
     return UNKNOWN
 
 
-def condition_value(store, condition, target, semantic=None):
-    lhs = resolve(store, condition.lhs, target, semantic)
-    rhs = None if condition.rhs is None else (resolve(store, condition.rhs.path, target, semantic)
+def state_components(path):
+    suffix = path[6:] if path.startswith('state.') else ''
+    if './' in suffix:
+        name, pointer = suffix.split('./', 1)
+        return name, [p.replace('~1', '/').replace('~0', '~') for p in pointer.split('/')]
+    if suffix.endswith('.'): return suffix[:-1], []  # empty JSON Pointer is root
+    return None
+
+
+def condition_value(store, condition, target, semantic=None, binding_arguments=None):
+    lhs = resolve(store, condition.lhs, target, semantic, binding_arguments)
+    rhs = None if condition.rhs is None else (resolve(store, condition.rhs.path, target, semantic, binding_arguments)
         if condition.rhs.kind == 'PATH' else Value('RESOLVED', condition.rhs.value))
     evidence = {'path': condition.lhs, 'value': lhs.value, 'source_id': lhs.source_ids[0] if lhs.source_ids else None,
         'source_ids': list(lhs.source_ids), 'status': lhs.status}
@@ -127,6 +137,19 @@ def condition_value(store, condition, target, semantic=None):
     return 'TRUE' if truth else 'FALSE', evidence
 
 
+def state_binding_arguments(rule, target):
+    # A value explicitly compared against prior state is a comparand, not a
+    # join key. Keep other arguments to establish identity; never infer names.
+    comparands = set()
+    for c in rule.conditions + [c for group in rule.exceptions for c in group]:
+        if c.rhs is None or c.rhs.kind != 'PATH': continue
+        if c.lhs.startswith('args.') and c.rhs.path.startswith('state.'):
+            comparands.add(c.lhs[5:])
+        if c.lhs.startswith('state.') and c.rhs.path.startswith('args.'):
+            comparands.add(c.rhs.path[5:])
+    return {key: value for key, value in (target.get('arguments') or {}).items() if key not in comparands}
+
+
 def conjunction(values):
     if 'FALSE' in values: return 'FALSE'
     if 'UNRESOLVED' in values: return 'UNRESOLVED'
@@ -151,12 +174,13 @@ def prior_status(store, name, target):
 
 
 def evaluate_rule(store, rule, target, semantic=None):
-    pairs = [condition_value(store, c, target, semantic) for c in rule.conditions]
+    binding_arguments = state_binding_arguments(rule, target)
+    pairs = [condition_value(store, c, target, semantic, binding_arguments) for c in rule.conditions]
     values = [v for v, _ in pairs]
     evidence = [e for _, e in pairs]
     exception_values = []
     for group in rule.exceptions:
-        group_pairs = [condition_value(store, c, target, semantic) for c in group]
+        group_pairs = [condition_value(store, c, target, semantic, binding_arguments) for c in group]
         evidence.extend(e for _, e in group_pairs)
         exception_values.append(conjunction([v for v, _ in group_pairs]))
     if any(v in ('TRUE', 'UNRESOLVED') for v in exception_values): return {'status': 'NO_FINDING', 'reason': 'exception_true_or_unresolved', 'evaluated': evidence}
