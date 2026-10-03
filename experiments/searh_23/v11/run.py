@@ -26,9 +26,22 @@ CANDIDATES = [('gpt-oss:120b', 'ollama', 'gpt-oss', 'high'),
     ('gemma4:31b', 'ollama', 'gemma', None)]
 
 
+FALLBACK_SAMPLE_TEMPERATURE = 0.7  # sample 0 stays greedy; extra same-model samples must differ.
+
+
 def source_files():
-    files = list((ROOT / 'src/guardian_truth/policy_table_v11').glob('*.py')) + list((ROOT / 'experiments/searh_23/v11').glob('*.py'))
-    files += [ROOT / 'docs/v11/PLAN.md', ROOT / 'outputs/searh_23/source_search_20261002/comparison_ids_v5/inputs.jsonl']
+    # Freeze every imported project module, not only V11: V10 helpers decide values too.
+    import measure  # noqa: F401  (imports the scorer/mutation code into sys.modules)
+    files = {Path(m.__file__).resolve() for name, m in list(sys.modules.items())
+             if name.startswith('guardian_truth') and getattr(m, '__file__', None)}
+    files |= set((ROOT / 'experiments/searh_23/v11').glob('*.py'))
+    files |= {ROOT / 'docs/v11/PLAN.md', ROOT / 'outputs/searh_23/source_search_20261002/comparison_ids_v5/inputs.jsonl',
+              ROOT / 'outputs/searh_23/source_search_20261002/comparison_ids_v5/predictions.jsonl',
+              ROOT / 'outputs/searh_23/v10/mutations_preparation/inputs.jsonl',
+              ROOT / 'outputs/searh_23/v10/mutations_preparation/expectations.jsonl',
+              ROOT / 'outputs/searh_23/v11/annotations.json', ROOT / 'outputs/searh_23/v11/mutations/manifest.json',
+              ROOT / 'tests/test_policy_table_v11.py', ROOT / 'tests/test_policy_table_v11_transport.py', ROOT / 'tests/test_policy_table_v11_confirmation.py',
+              ROOT / 'tests/test_policy_table_v11_measure.py'}
     return sorted(p.relative_to(ROOT).as_posix() for p in files)
 
 
@@ -58,8 +71,9 @@ def verify(stage):
     return sealed
 
 
-def transport(model):
-    return Transport(LEDGER, model['provider'], model['model'], reasoning_effort=model.get('reasoning_effort'))
+def transport(model, sample_id=0):
+    return Transport(LEDGER, model['provider'], model['model'], reasoning_effort=model.get('reasoning_effort'),
+                     temperature=0 if sample_id == 0 else FALLBACK_SAMPLE_TEMPERATURE)
 
 
 def availability():
@@ -97,7 +111,7 @@ def proposal(policy, trigger, model, sample_id=0):
     if path.exists() and 'admission' in json.loads(path.read_text(encoding='utf-8')):
         return json.loads(path.read_text(encoding='utf-8'))
     messages = request(deepcopy(policy), trigger, sample_id)
-    t = transport(model)
+    t = transport(model, sample_id)
     existing = json.loads(path.read_text(encoding='utf-8')) if path.exists() else None
     reply = existing['reply'] if existing else t(messages, fresh_sample=uid)
     record = existing or {'policy': policy['policy_sha256'], 'trigger': trigger, 'config': model,
@@ -109,7 +123,8 @@ def proposal(policy, trigger, model, sample_id=0):
         try: record['response'] = decode_model_object(reply.get('content'))
         except (ValueError, TypeError):
             # Same exact prompt; only syntax failure warrants the single allowed technical retry.
-            retry = t(messages, fresh_sample=uid + '/json_retry'); record['retry'] = retry; write(path, record)
+            # Resume reuses a recorded retry: never a second technical retry.
+            retry = record.get('retry') or t(messages, fresh_sample=uid + '/json_retry'); record['retry'] = retry; write(path, record)
             if retry['status'] == 'OK':
                 try: record['response'] = decode_model_object(retry.get('content'))
                 except (ValueError, TypeError): pass
