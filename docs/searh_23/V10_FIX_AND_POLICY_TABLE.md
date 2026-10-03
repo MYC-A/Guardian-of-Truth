@@ -49,6 +49,35 @@ TP15/FP5/FN4/TN10/UNKNOWN12. Относительно A1 сняты четыре
 этот replay его не доказывает. Артефакт:
 `outputs/searh_23/v10_artifact_replay/score.json`. 32 теста прошли.
 
+### B2–B4 выполнены локально
+
+Добавлены pydantic schema, кодовая сегментация исходных parent-пунктов,
+динамические enum'ы по каталогам и реальным JSON results, сборка трёх
+независимых samples и чистый трёхзначный evaluator. Только 3/3 совпадения
+дают DECISIVE, 2/3 — SHADOW; повтор одного rule в одном sample не добавляет
+голос. Неподдержанные paths/types и неполные правила отбрасываются.
+Статус cache заново проверяется по сохранённым samples: файл не может
+самостоятельно повысить 2/3 до DECISIVE.
+
+Evaluator не выдаёт NO_ERROR; отсутствие/неоднозначность поля, несовпадение
+сущности, неоднозначное pairing и непрочитанный новый observation не
+превращаются в FALSE. Последний matching result без нужного поля не
+заменяется более старым значением. TRUE/UNRESOLVED exception suppresses
+finding. Код проверяет вызов до target, не приравнивает попытку к success.
+
+REQUIRES — конъюнкция необходимых условий; FORBIDS — конъюнкция запрещённых
+условий. Необходимое `A OR B` нельзя без изменения смысла превратить в два
+независимых REQUIRES: текущие fixed slots должны оставить такой пункт
+непокрытым. UNRESOLVED хотя бы одного необходимого условия подавляет finding.
+
+Подготовлено 12 compiler requests, 4 хэша × 3 samples, GPT-OSS:120b/medium,
+без API. Исходные inventories: 73/38/177/40 parent-пунктов,
+232/736/87/39 путей. Это не найденные директивы и не metric полноты.
+`user.confirmation_of_trigger` и `ctx.current_datetime` пока не имеют
+source-bound witness; conditions с ними не могут получить DECISIVE.
+Неявная timezone и свободное semantic scope не были заполнены догадками.
+19 новых тестов A1/A2/B прошли; измерение моделей и compiler coverage впереди.
+
 Машинный протокол: [audit.json](../../outputs/searh_23/v10/preflight/audit.json).
 Повторение: `python -X utf8 experiments/searh_23/source_search_20261002/audit_v10_start.py`.
 Скрипт читает архив V5 напрямую, проверяет хэши всех 92 исходных snapshot,
