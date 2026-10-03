@@ -2,6 +2,7 @@
 from collections import Counter
 import hashlib
 import json
+from decimal import Decimal
 from .schema import Compilation, Rule, Table
 from .segment import clauses, enum_catalog, policy_hash, scalar_type, system_text
 
@@ -28,7 +29,16 @@ def canonical(rule):
     value['clause_ids'] = sorted(set(value['clause_ids']))
     value['conditions'] = sorted(value['conditions'], key=lambda r: json.dumps(r, sort_keys=True))
     value['exceptions'] = sorted([sorted(g, key=lambda r: json.dumps(r, sort_keys=True)) for g in value['exceptions']], key=lambda r: json.dumps(r, sort_keys=True))
-    # Numbers already have JSON scalar types; never normalize opaque strings.
+    def literals(item):
+        if type(item) in (int, float):
+            number = Decimal(str(item))
+            return int(number) if number == number.to_integral_value() else float(number)
+        if isinstance(item, list): return [literals(v) for v in item]
+        if isinstance(item, dict): return {k: literals(v) for k, v in item.items()}
+        return item  # opaque strings and booleans retain their exact type/value
+    value = literals(value)
+    value['conditions'] = sorted(value['conditions'], key=lambda r: json.dumps(r, sort_keys=True))
+    value['exceptions'] = sorted([sorted(g, key=lambda r: json.dumps(r, sort_keys=True)) for g in value['exceptions']], key=lambda r: json.dumps(r, sort_keys=True))
     return json.dumps(value, ensure_ascii=False, sort_keys=True, separators=(',', ':'))
 
 

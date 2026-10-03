@@ -48,3 +48,15 @@ def test_original_call_with_shared_name_is_preserved_and_not_rejected():
     assert result['mode'] == 'direct'
     assert result['decision'] == 'ERROR'
     assert not result['assessment']['rejected_findings']
+
+
+def test_artifact_guard_cannot_return_error_after_rejecting_all_findings_in_legacy_mode():
+    from guardian_truth.source_search.pipeline import validate_assessment
+    store = SourceStore({'prompt': '⟦SYSTEM⟧\n[AVAILABLE TOOLS]\n- tool_a — inspect\n', 'response': 'Text.'})
+    evidence = [{'source_id': 'h0', 'quote': store.text('h0')}]
+    vote = {'decision': 'ERROR', 'explanation': 'Synthetic', 'open_questions': [],
+        'findings': [{'type': 'OTHER', 'response_quote': 'Text.', 'explanation': 'read_source was forbidden', 'evidence': evidence}],
+        'checks': [{'question_id': q, 'status': 'CHECKED', 'reason': 'Synthetic', 'evidence': evidence} for q in QUESTIONS]}
+    result = validate_assessment(store, vote, checks_mode='legacy', artifact_guard=True)
+    assert result['decision'] == 'UNKNOWN' and not result['findings']
+    assert result['rejected_findings'][0]['reason'] == 'evaluator_artifact'

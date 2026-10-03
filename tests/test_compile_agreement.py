@@ -51,3 +51,12 @@ def test_cache_cannot_upgrade_two_samples_to_decisive(tmp_path):
     corrupt = table.model_dump(); corrupt['rules'][0].update(status='DECISIVE', agreement=3)
     path.write_text(json.dumps(corrupt), encoding='utf-8')
     with pytest.raises(ValueError): load_table(store, tmp_path)
+
+
+def test_numeric_literal_canonicalization_preserves_opaque_strings_and_booleans():
+    from guardian_truth.policy_table.compile import canonical
+    def item(value):
+        return rule(conditions=[{'lhs': 'args.field_x', 'op': '==', 'rhs': {'kind': 'LITERAL', 'value': value}}])
+    assert canonical(item(1)) == canonical(item(1.0))
+    assert canonical(item(1)) != canonical(item(True))
+    assert canonical(item('01')) != canonical(item('1'))

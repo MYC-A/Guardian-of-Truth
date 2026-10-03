@@ -22,12 +22,16 @@ UNKNOWN = Value('UNRESOLVED', reason='missing_or_ambiguous_path')
 def same(a, b):
     if type(a) is bool or type(b) is bool: return type(a) is type(b) and a == b
     if type(a) in (int, float) and type(b) in (int, float): return Decimal(str(a)) == Decimal(str(b))
+    if isinstance(a, dict) and isinstance(b, dict):
+        return a.keys() == b.keys() and all(same(a[k], b[k]) for k in a)
+    if isinstance(a, list) and isinstance(b, list):
+        return len(a) == len(b) and all(same(x, y) for x, y in zip(a, b))
     return type(a) is type(b) and a == b
 
 
 def select(value, parts, anchors, inherited=None):
     inherited = dict(inherited or {})
-    if isinstance(value, dict): inherited.update({k: v for k, v in value.items() if not isinstance(v, (dict, list))})
+    if isinstance(value, dict): inherited.update(value)
     if not parts:
         overlap = set(anchors) & set(inherited)
         if overlap and not all(same(anchors[k], inherited[k]) for k in overlap): return []
@@ -55,9 +59,11 @@ def state_value(store, name, parts, target):
         if overlap and not all(same(anchors[k], call_args[k]) for k in overlap): continue
         if not event.json_valid or ambiguous:
             results.append(UNKNOWN); continue
-        unfiltered = select(event.value, parts, {}, call_args)
+        if not select(event.value, [], anchors, call_args): continue
+        containers = select(event.value, parts[:-1], {}, call_args)
+        matching_containers = select(event.value, parts[:-1], anchors, call_args)
+        if containers and not matching_containers: continue  # explicit other entity, even when the leaf is missing
         selected = select(event.value, parts, anchors, call_args)
-        if unfiltered and not selected: continue  # explicit other entity
         if not selected:
             results.append(UNKNOWN); continue  # latest matching observation lacks path
         # If a relevant entity key exists but does not match, select filtered it.
@@ -65,7 +71,8 @@ def state_value(store, name, parts, target):
         if len(selected) != 1:
             results.append(UNKNOWN); continue
         value, record = selected[0]
-        if anchors and any(isinstance(v, str) for v in anchors.values()) and not (set(anchors) & set(record)):
+        required_bindings = {k for k, v in anchors.items() if isinstance(v, (str, dict, list))}
+        if not required_bindings <= set(record):
             results.append(UNKNOWN); continue  # no invented entity binding
         results.append(Value('RESOLVED', value, ('h' + str(index),)))
     return results[-1] if results else UNKNOWN
@@ -105,6 +112,7 @@ def condition_value(store, condition, target, semantic=None):
             truth = same(a, b) if op == '==' else not same(a, b)
         elif op in ('in', 'not_in'):
             if not isinstance(b, list): return 'UNRESOLVED', evidence
+            if b and not any(scalar_type(a) == scalar_type(item) for item in b): return 'UNRESOLVED', evidence
             truth = any(same(a, item) for item in b); truth = truth if op == 'in' else not truth
         elif op in ('before', 'after'):
             if not isinstance(a, str) or not isinstance(b, str): return 'UNRESOLVED', evidence
@@ -127,15 +135,19 @@ def conjunction(values):
 
 def prior_status(store, name, target):
     anchors = target.get('arguments') or {}
-    candidates = [e for e in store.history_events if e.kind == 'call' and e.name == name]
+    observed = [e for e in store.history_events if e.kind == 'call' and e.name == name]
+    candidates = [e for e in observed if e.role == 'assistant']
+    uncertain_actor = any(e.role not in ('assistant', 'user') for e in observed)
     for event in reversed(candidates):
         if not event.json_valid or not isinstance(event.value, dict): continue
         overlap = set(anchors) & set(event.value)
         if anchors and not overlap: continue
+        required_bindings = {k for k, v in anchors.items() if isinstance(v, (str, dict, list))}
+        if not required_bindings <= set(event.value): continue
         if all(same(anchors[k], event.value[k]) for k in overlap): return 'TRUE'
     # History admission is complete; absence of the required native attempt
     # is established by code. An attempted call does not establish success.
-    return 'FALSE' if not candidates else 'UNRESOLVED'
+    return 'FALSE' if not candidates and not uncertain_actor else 'UNRESOLVED'
 
 
 def evaluate_rule(store, rule, target, semantic=None):

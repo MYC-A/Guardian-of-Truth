@@ -712,7 +712,7 @@ being checked separately with phase-aware instructions and exact cache reuse.
 Details and full verifiable archives:
 `docs/searh_23/SOURCE_IDS_REAL46_V3_2026-10-03.md`.
 
-## 31. V10 starting-state audit and mandatory stop (2026-10-03)
+## 31. V10 starting-state audit and initial stop (2026-10-03)
 
 Zero-API audit reproduces V5 direct raw plus structural **TP15/FP0/FN8/TN23**
 (F1 .78947); the old checks gate suppresses four model TP and 22 TN.
@@ -733,3 +733,26 @@ All `transfer_ids_explicit_intent*` experiments are **diagnostic only,
 results will not be used as system improvement or independent transfer proof.
 The old remote job's current state could not be observed because SSH returned
 Connection refused; it is not falsely reported stopped or completed.
+
+## 32. V10 local continuation: A1, A2 and table mechanics (2026-10-03)
+
+User subsequently authorized local continuation. A1 diagnostic checks replay
+retains historical direct TP15/FP0/FN8/TN23 with zero API calls. A2 removes the
+verifier transcript from FINAL and preserves original source tool names.
+Artifact replay leaves direct unchanged; search becomes TP15/FP5/FN4/TN10
+with 12 UNKNOWN. This does not measure the new FINAL prompt's model behavior.
+
+Offline table schema/compiler/evaluator implemented. Three canonically equal
+valid samples yield DECISIVE, two SHADOW. Entity binding, arrays, nested
+arguments, ambiguous pairing, latest missing results, typed identifiers,
+exceptions and timezone have counterexample tests. Sixty focused new and
+existing tests pass. Twelve compiler requests prepared for four exact hashes;
+no real policy has been compiled and no new quality improvement is claimed.
+
+Broad existing suite: 1925 passed / 11 failed before addressing baseline
+issues. Historical source seals disagree with baseline Git blobs for several
+old components; they were not rewritten. CRLF-only differences were restored
+to exact baseline bytes. Fresh suite remains unopened before final freeze.
+User approved rule-local labels for repaired prerequisites: these do not
+assert NO_ERROR for the whole answer. Server access and inference remain
+deferred; new V10 API calls and model tokens: zero.

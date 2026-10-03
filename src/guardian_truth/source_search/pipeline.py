@@ -156,6 +156,10 @@ def validate_assessment(store, vote, *, checks_mode='legacy', artifact_guard=Fal
         return {'decision': 'UNKNOWN', 'proposed_decision': vote['decision'], 'findings': validated,
             'quote_repairs': repairs, 'open_questions': unresolved + [QUESTIONS[q] for q in QUESTIONS if q not in closed],
             'reason': 'material_checks_incomplete', 'raw_vote': vote}
+    if artifact_guard and vote['decision'] == 'ERROR' and not validated:
+        return {'decision': 'UNKNOWN', 'proposed_decision': vote['decision'], 'findings': [],
+            'quote_repairs': repairs, 'rejected_findings': rejected, 'open_questions': unresolved,
+            'raw_vote': vote, 'reason': 'evaluator_artifact'}
     return {'decision': vote['decision'], 'findings': validated, 'quote_repairs': repairs,
             'open_questions': unresolved, 'raw_vote': vote, 'reason': 'source_verified_model_assessment'}
 
