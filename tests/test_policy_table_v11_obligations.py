@@ -79,3 +79,21 @@ def test_chunk_output_inventory_retains_full_source_context():
     assert not admit_ledger(raw, p)['valid']  # Full inventory still demands the other disposition.
     messages = extraction_request(p, {'kind': 'TOOL_CALL', 'tool': 'apply_a'}, ['clause_0'])
     assert 'Shared condition also applies.' in messages[1]['content']
+
+
+def test_scope_prevents_dialogue_obligation_from_argument_proxy_lowering():
+    p, raw = sample(); raw['clauses'][0]['obligations'][0]['required_scopes'] = ['DIALOGUE_STATE']
+    ledger = admit_ledger(raw, p)
+    response = {'lowerings': [{'obligation_id': 'o1', 'status': 'COMPILED', 'reason': 'Wrong proxy',
+        'atom': {'polarity': 'REQUIRED', 'requirement': comparison(value=2), 'guard': None, 'exceptions': [], 'clause_ids': ['clause_0']}}]}
+    got=admit_lowerings(response,ledger,p,{'kind':'TOOL_CALL','tool':'apply_a'})
+    assert got['compiled']==0 and got['rejected']==1
+    assert 'evidence_scope_missing' in got['dispositions'][0]['rejection']
+
+
+def test_NA_missing_empty_list_losslessly_defaults_but_applicable_does_not():
+    p,raw=sample()
+    raw['clauses'][0].update(status='NOT_APPLICABLE'); raw['clauses'][0].pop('obligations')
+    assert admit_ledger(raw,p)['valid']
+    raw['clauses'][0]['status']='APPLICABLE'
+    assert not admit_ledger(raw,p)['valid']
