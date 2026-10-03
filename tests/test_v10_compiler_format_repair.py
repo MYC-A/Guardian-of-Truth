@@ -36,3 +36,23 @@ def test_repair_does_not_admit_unknown_rhs_or_missing_schema_fields():
     with pytest.raises(ValueError): module.parse_wire(bad)
     del bad['rules'][0]['exceptions']
     with pytest.raises(ValueError): module.parse_wire(bad)
+
+
+def test_partial_admission_discards_invalid_rules_without_guessing_them():
+    sample = wire('args.field_x')
+    import copy
+    invalid = copy.deepcopy(sample['rules'][0])
+    invalid['trigger']['tool'] = None
+    sample['rules'].append(invalid)
+    admitted, receipts = module.parse_wire(sample, allow_partial=True)
+    assert admitted['rules'] == sample['rules'][:1]
+    assert receipts[0]['operation'] == 'REJECT_SCHEMA_INVALID_CANDIDATE'
+    assert sample['rules'][1]['trigger']['tool'] is None
+
+
+def test_partial_admission_does_not_repair_envelope_or_empty_requirements():
+    sample = wire('args.field_x'); sample['rules'][0]['conditions'] = []
+    admitted, receipts = module.parse_wire(sample, allow_partial=True)
+    assert admitted['rules'] == [] and len(receipts) == 1
+    sample['invented_field'] = True
+    with pytest.raises(ValueError): module.parse_wire(sample, allow_partial=True)
