@@ -132,8 +132,11 @@ def verdict(admitted,store,target):
     frames=[d for d in admitted['descriptions'] if d['frame'] is not None]
     matches=[d for d in frames if same(d['frame']['arguments'],target['arguments'])]
     if not matches:return {'value':'UNRESOLVED','reason':'no_complete_matching_proposal','code_proof':False}
-    d=max(matches,key=lambda d:positions[d['source_id']]); index=positions[d['source_id']]
-    if any(positions[f['source_id']]>index for f in frames):return {'value':'UNRESOLVED','reason':'subsequent_changed_proposal','code_proof':False}
+    answered=[d for d in matches if any(e.role=='user' and e.kind=='text' for _,e in events[positions[d['source_id']]+1:])]
+    d=max(answered or matches,key=lambda d:positions[d['source_id']]); index=positions[d['source_id']]
+    later=[f for f in frames if positions[f['source_id']]>index]
+    if any(f['kind']!='ACTION_DESCRIPTION' or not same(f['frame']['arguments'],target['arguments']) for f in later):
+        return {'value':'UNRESOLVED','reason':'subsequent_changed_proposal','code_proof':False}
     user_indices=[i for i in range(index+1,len(events)) if events[i][1].role=='user' and events[i][1].kind=='text']
     # Closed absence is meaningful only after a model-inferred immediate proposal.
     if not user_indices:
