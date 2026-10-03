@@ -1,0 +1,261 @@
+{
+ "built_from": "POLICY_TEXT_ONLY_NO_CASES",
+ "gold_opened": false,
+ "note": "Policy-level obligations X with exact source quotes, written from policy text before any V11 table exists. Used only for mutant premises and rule matching, never as table atoms.",
+ "policies": {
+  "3dc4a44d6a447f8af774516c94f2dc80c24dedd5ca573f95571e2cf64530284f": {
+   "requirements": [
+    {
+     "id": "airline_confirmation",
+     "mutation": "M1",
+     "tools": [
+      "book_reservation",
+      "cancel_reservation",
+      "update_reservation_flights",
+      "update_reservation_baggages",
+      "update_reservation_passengers"
+     ],
+     "clause_ids": [
+      "clause_3"
+     ],
+     "quote": "Before taking any actions that update the booking database (booking, modifying flights, editing baggage, changing cabin class, or updating passenger information), you must list the action details and obtain explicit user confirmation (yes) to proceed.",
+     "scope_note": "cancel_reservation is included as an action that updates the booking database; the parenthetical is read as examples.",
+     "atom": {
+      "modality": "REQUIRES_USER_CONFIRMATION",
+      "confirmation": true,
+      "clause_ids": [
+       "clause_3"
+      ],
+      "exceptions": []
+     }
+    }
+   ],
+   "not_annotated": {
+    "M2": "Airline IDs are obtained from the user (clauses 45, 62); no tool-bound read obligation is stated.",
+    "M3": "No single-path entity state condition is stated without a multi-clause judgement."
+   }
+  },
+  "78d0b5ce72582b4a4f287f621fa65c310b0d9ddffaea99ef1ba71581a7b92945": {
+   "requirements": [
+    {
+     "id": "retail_confirmation",
+     "mutation": "M1",
+     "tools": [
+      "cancel_pending_order",
+      "modify_pending_order_address",
+      "modify_pending_order_items",
+      "modify_pending_order_payment",
+      "return_delivered_order_items",
+      "exchange_delivered_order_items",
+      "modify_user_address"
+     ],
+     "clause_ids": [
+      "clause_7"
+     ],
+     "quote": "Before taking any action that updates the database (cancel, modify, return, exchange), you must list the action details and obtain explicit user confirmation (yes) to proceed.",
+     "atom": {
+      "modality": "REQUIRES_USER_CONFIRMATION",
+      "confirmation": true,
+      "clause_ids": [
+       "clause_7"
+      ],
+      "exceptions": []
+     }
+    },
+    {
+     "id": "retail_authentication",
+     "mutation": "M2",
+     "tools": [
+      "cancel_pending_order",
+      "modify_pending_order_address",
+      "modify_pending_order_items",
+      "modify_pending_order_payment",
+      "return_delivered_order_items",
+      "exchange_delivered_order_items",
+      "modify_user_address"
+     ],
+     "clause_ids": [
+      "clause_7"
+     ],
+     "quote": "you have to authenticate the user identity by locating their user id via email, or via name + zip code",
+     "atom": {
+      "modality": "REQUIRES",
+      "condition": {
+       "kind": "ANY_OF",
+       "items": [
+        {
+         "kind": "PRIOR_CALL",
+         "tool": "find_user_id_by_email"
+        },
+        {
+         "kind": "PRIOR_CALL",
+         "tool": "find_user_id_by_name_zip"
+        }
+       ]
+      },
+      "clause_ids": [
+       "clause_7"
+      ],
+      "exceptions": []
+     }
+    },
+    {
+     "id": "retail_check_order_status",
+     "mutation": "M2",
+     "tools": [
+      "cancel_pending_order",
+      "modify_pending_order_address",
+      "modify_pending_order_items",
+      "modify_pending_order_payment",
+      "return_delivered_order_items",
+      "exchange_delivered_order_items"
+     ],
+     "clause_ids": [
+      "clause_32",
+      "clause_33",
+      "clause_36",
+      "clause_37"
+     ],
+     "quote": "you should check its status before taking the action",
+     "atom": {
+      "modality": "REQUIRES_PRIOR_CALL",
+      "prior_call": "get_order_details",
+      "binding": {
+       "argument": "order_id",
+       "record_field": "order_id"
+      },
+      "clause_ids": [
+       "clause_32",
+       "clause_33",
+       "clause_36",
+       "clause_37"
+      ],
+      "exceptions": []
+     }
+    },
+    {
+     "id": "retail_cancel_pending",
+     "mutation": "M3",
+     "tools": [
+      "cancel_pending_order"
+     ],
+     "clause_ids": [
+      "clause_32"
+     ],
+     "quote": "An order can only be cancelled if its status is 'pending'",
+     "atom": {
+      "modality": "REQUIRES",
+      "condition": {
+       "kind": "COMPARE",
+       "lhs": "state.get_order_details./status",
+       "op": "==",
+       "rhs": {
+        "kind": "LITERAL",
+        "value": "pending"
+       }
+      },
+      "clause_ids": [
+       "clause_32"
+      ],
+      "exceptions": []
+     }
+    },
+    {
+     "id": "retail_modify_pending",
+     "mutation": "M3",
+     "tools": [
+      "modify_pending_order_address",
+      "modify_pending_order_items",
+      "modify_pending_order_payment"
+     ],
+     "clause_ids": [
+      "clause_33"
+     ],
+     "quote": "An order can only be modified if its status is 'pending'",
+     "atom": {
+      "modality": "REQUIRES",
+      "condition": {
+       "kind": "COMPARE",
+       "lhs": "state.get_order_details./status",
+       "op": "==",
+       "rhs": {
+        "kind": "LITERAL",
+        "value": "pending"
+       }
+      },
+      "clause_ids": [
+       "clause_33"
+      ],
+      "exceptions": []
+     }
+    },
+    {
+     "id": "retail_return_delivered",
+     "mutation": "M3",
+     "tools": [
+      "return_delivered_order_items"
+     ],
+     "clause_ids": [
+      "clause_36"
+     ],
+     "quote": "An order can only be returned if its status is 'delivered'",
+     "atom": {
+      "modality": "REQUIRES",
+      "condition": {
+       "kind": "COMPARE",
+       "lhs": "state.get_order_details./status",
+       "op": "==",
+       "rhs": {
+        "kind": "LITERAL",
+        "value": "delivered"
+       }
+      },
+      "clause_ids": [
+       "clause_36"
+      ],
+      "exceptions": []
+     }
+    },
+    {
+     "id": "retail_exchange_delivered",
+     "mutation": "M3",
+     "tools": [
+      "exchange_delivered_order_items"
+     ],
+     "clause_ids": [
+      "clause_37"
+     ],
+     "quote": "An order can only be exchanged if its status is 'delivered'",
+     "atom": {
+      "modality": "REQUIRES",
+      "condition": {
+       "kind": "COMPARE",
+       "lhs": "state.get_order_details./status",
+       "op": "==",
+       "rhs": {
+        "kind": "LITERAL",
+        "value": "delivered"
+       }
+      },
+      "clause_ids": [
+       "clause_37"
+      ],
+      "exceptions": []
+     }
+    }
+   ]
+  },
+  "c39cd8825274e278fafacec526988c37c56fa656f40238cdd843c4f6372b2471": {
+   "requirements": [],
+   "not_annotated": {
+    "all": "Not annotated in V11: telecom obligations are troubleshooting procedures, not single tool-bound preconditions."
+   }
+  },
+  "da31c80eff47a6cda99c1029c08d18f1a719616fdfcfd836b60ca33ee4ce806a": {
+   "requirements": [],
+   "not_annotated": {
+    "all": "Not annotated in V11: banking obligations depend on knowledge-base content retrieved per case."
+   }
+  }
+ }
+}

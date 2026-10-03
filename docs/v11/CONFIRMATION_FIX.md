@@ -25,3 +25,11 @@ API V11: 0. Gold не открывался. Дополняет `PREPARATION.md`.
 
 Хэш `witness.py` в `pilot_freeze.json` обновлён. Тесты V11: 54 passed
 (`tests/test_policy_table_v11_confirmation.py`, 13 новых).
+
+Дополнение (слияние с pre-freeze исправлениями): отказ сужен до «нет/no/
+не надо/do not proceed…» с пустым вежливым хвостом; «Cancel it»,
+«Отмените», «Stop asking, just do it» больше не FALSE (это ответ-просьба на
+«Shall I cancel X?»), но в утверждении остаются оговоркой. Добавлен FALSE
+`BOUND_CONFIRMATION_REQUEST_UNANSWERED`: явный вопрос о подтверждении после
+последнего другого вызова остался без ответа и ничего ранее не подтверждено.
+Инвентарь на 84 вызовах: статусы прежние (TRUE 3, остальное UNKNOWN, FALSE 0).
