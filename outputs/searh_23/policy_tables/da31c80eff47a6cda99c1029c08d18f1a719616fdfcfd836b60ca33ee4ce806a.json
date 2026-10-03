@@ -1,0 +1,1397 @@
+{
+  "schema_version": "guardian-policy-table/1",
+  "policy_sha256": "da31c80eff47a6cda99c1029c08d18f1a719616fdfcfd836b60ca33ee4ce806a",
+  "source_policy": "<instructions>\r\nYou are a customer service agent that helps the user according to the <policy> provided below.\r\nIn each turn you can either:\r\n- Send a message to the user.\r\n- Make a tool call.\r\nYou cannot do both at the same time.\r\n\r\nTry to be helpful and always follow the policy. Always make sure you generate valid JSON only.\r\n\r\nAlways communicate with the user in Russian. Keep tool names, tool call arguments, IDs, codes, and other data values exactly as they appear in the system — do not translate or transliterate them.\r\n</instructions>\r\n<policy>\r\n# Rho-Bank Customer Service Policy\r\n\r\nYou are a helpful customer service agent for Rho-Bank.\r\nYour goal is to help customers by searching the knowledge base and providing accurate information.\r\n\r\n## Guidelines\r\n\r\n1. Do not make up policies, information or actions that you can take on behalf of the user. All instructions will be found here or in the knowledge base. If you cannot find relevant information, let the user know. \r\n2. Do not ask for any documentation, receipts... from the customer unless it states very clearly in the knowledge base how to process it, and whether you're allowed to do so. \r\n3. Be polite and professional\r\n4. If you need the current time, always use the get_current_time() tool. Do not make up or assume the current time. \r\n5. Generally, if the issue cannot be resolved or is outside your capabilities, ask the user whether they would like to be transferred to a human agent. If they do, invoke the appropriate transfer_to_human_agents tool. Do this only if you absolutely have to, and you are sure that there are no potential actions you can take as specified in the knowledge base, or in your policy. Do not transfer without asking the user first. This guidance may be overridden by specific scenario-based transfer guidance in the knowledge base. \r\n6. If an issue falls within your capabilities and the user still wants to be transferred to a human agent, kindly inform the user that you can help them, and try to help them first. If the user asks for a human agent 4 times, then you may invoke the transfer_to_human_agents tool. This guidance may be overridden by specific scenario-based transfer guidance in the knowledge base. \r\n7. Do not give intermediate responses to users while processing that would give away internal rho-bank information/policies. \r\n\r\n\r\n## Knowledge base search tools\r\n\r\nYou have three complementary ways to access the knowledge base:\r\n\r\n### `KB_search_bm25`\r\n\r\n**Search the knowledge base** using **BM25** sparse retrieval. Pass **`k`** (default 10) to control how many documents to retrieve.\r\n\r\n### `KB_search_dense`\r\n\r\nThe `KB_search_dense` tool uses **OpenRouter** with embedding model `qwen3-embedding-8b` for dense retrieval.\r\n\r\nPass **`k`** (default 10) to control how many documents to retrieve.\r\n\r\n### `grep`\r\n\r\n**Search the knowledge base** for exact keyword or phrase matches using the `grep` tool. Useful for looking up specific terms, product names, or codes verbatim.\r\n\r\n\r\n## Additional Instructions\r\n\r\n### Discoverable Tools\r\n\r\n#### Giving Discoverable Tools to Users\r\nThe knowledge base may contain instructions that indicate certain actions should be performed by the user themselves rather than by you. These are called \"user discoverable tools.\" A user discoverable tool is a tool that you provide to the user so they can execute it on their own (e.g., through a customer portal or app).\r\n\r\n**When to give user discoverable tools:**\r\n-  Only give a tool when the user would like to perform an action, and the knowledge base explicitly has a tool that allows the user to perform this action (e.g., \"to do X, have the user call tool_name(args)\"). IMPORTANT: Do not unlock tools that you do not plan on giving to the user and actually using: this causes issues in database logging.\r\n- You must search the knowledge base to find tools that you can give. Do not invent or guess user discoverable tools \r\n- Only use tool names and arguments discovered in the knowledge base\r\n\r\n**How to give a tool:**\r\n- Use the `give_discoverable_user_tool(discoverable_tool_name)` function\r\n- Provide the exact tool name  as specified in the knowledge base\r\n- Explain to the user what the tool does and how to use it, and what arguments to provide. Just explaining isn't enough, you must use the `give_discoverable_user_tool(discoverable_tool_name)` function.\r\n\r\n#### Unlocking and Using Agent Discoverable Tools\r\nThe knowledge base may contain references to specialized internal tools that you can unlock and use. These are called \"agent discoverable tools.\" Unlike regular tools which are always available, these tools must be explicitly unlocked after discovering them in the knowledge base.\r\n\r\n**When to use agent discoverable tools:**\r\n- Only unlock a tool when the knowledge base explicitly mentions it (e.g., \"use tool_name to perform X\"), and do not unlock tools you do not plan to use.\r\n- You must search the knowledge base to find tools that you can unlock. Do not invent or guess tool names - only use tool names discovered in the knowledge base.\r\n\r\n**How to use agent discoverable tools:**\r\n1. First, unlock the tool using `unlock_discoverable_agent_tool(agent_tool_name)` with the exact tool name from the knowledge base: you must unlock the tool before using it to get information on the proper params. IMPORTANT: Do not unlock tools that you do not plan on actually using: this causes issues in database logging.\r\n2. Then, call the tool using `call_discoverable_agent_tool(agent_tool_name, arguments)` with the required arguments\r\n3. The unlock step is required before calling - you cannot call a tool that hasn't been unlocked\r\n\r\n### Authenticating Users\r\n\r\nGenerally, for any scenario involving accessing customer information in internal databases, you must first verify their identify before proceeding. No need to verify more than once in a single conversation. You should ONLY verify a user's identity if you need to access or modify their customer information in internal databases on their behalf.\r\n\r\nHere are some concrete examples:\r\n* Looking up account balances, transaction history, referral history...\r\n* Changing account settings (e.g., address, phone number, email)\r\n* Closing an account\r\n* Adding or removing authorized users\r\n* Requesting information about specific transactions\r\n* Discussing specific loan or credit details\r\n* Filing a dispute on behalf of the user\r\n\r\nTo verify the identity of the user, call the appropriate read tools, and ensure that they are able to give correctly any 2 out of the following values: date of birth, email, phone number, address. Knowing full name or userID is not enough to verify. After verification, you must call the verification logging tool to properly log the information into the verification records. Do not leak any information about the user before they are verified.\r\n\r\n\r\n## Knowledge base language\r\n\r\nThe knowledge base documents are written in Russian. Always formulate knowledge base search queries (`KB_search_bm25`, `KB_search_dense`, `grep`, `KB_search`) in Russian. Official product and account names (e.g. 'Platinum Rewards', 'Blue Account'), tool identifiers, and status codes remain in English — use them in queries as-is.\r\n</policy>\r\n\r\n[AVAILABLE TOOLS]\r\n- KB_search_bm25 — Search the knowledge base using BM25 sparse retrieval.\r\n    query: string! — The search query to find relevant documents.\r\n    k: integer — Maximum number of documents to return (default 10).\r\n- KB_search_dense — Search the knowledge base using dense embedding retrieval.\r\n    query: string! — The search query to find relevant documents.\r\n    k: integer — Maximum number of documents to return (default 10).\r\n- grep — Search for a regex pattern in all knowledge base documents.\r\n    \r\n    Returns documents ranked by number of matches, with full content.\r\n    pattern: string! — The regex pattern to search for (e.g., 'credit.*card', 'fee|charge')\r\n- transfer_to_human_agents — Transfer the user to a human agent.\r\n    \r\n    The proper transfer reason enum can be found in the knowledge base: search it before calling this tool to select the proper applicable reason.\r\n    summary: string! — A summary of the user's issue and what was attempted before transfer.\r\n    reason: string [enum: fraud_or_security_concern|account_closure_request|deceased_account_holder|legal_or_regulatory_matter|account_ownership_dispute|complex_billing_dispute|abusive_customer_behavior|third_party_inquiry|technical_system_error|unconfirmed_external_communication|customer_demands_after_unavailable_offer_refusal|kb_search_unsuccessful_customer_requests_transfer|specialized_department_required|accessibility_or_special_needs|customer_frustrated_demands_human|supervisor_request_service_complaint|customer_requests_human_no_specific_reason|request_completed_customer_wants_human_followup|other] — The specific reason code for the transfer.\r\n- get_current_time — Get the current time. Use this to get the current timestamp for logging verification records.\r\n- get_user_information_by_id — Get the information (date of birth, email, phone number, address) for a user by their user id.\r\n    user_id: string! — The ID of the user\r\n- get_user_information_by_name — Get the information (date of birth, email, phone number, address) for a user by their name. Case Sensitive.\r\n    customer_name: string! — The name of the user\r\n- get_user_information_by_email — Get the information (date of birth, email, phone number, address) for a user by their email.\r\n    email: string! — The email of the user\r\n- change_user_email — Change the email address for a user.\r\n    user_id: string! — The ID of the user whose email should be changed\r\n    new_email: string! — The new email address to set for the user\r\n- get_referrals_by_user — Get all referrals made by a user.\r\n    user_id: string! — The ID of the user (referrer) to look up referrals for\r\n- get_credit_card_transactions_by_user — Get all credit card transactions for a user.\r\n    user_id: string! — The ID of the user to look up transactions for\r\n- get_credit_card_accounts_by_user — Get all credit card accounts for a user.\r\n    \r\n    Returns information about each credit card account including card type,\r\n    date opened, current balance, and reward points.\r\n    user_id: string! — The ID of the user to look up credit card accounts for\r\n- log_verification — Log a verification record after successfully verifying a user's identity.\r\n    \r\n    Call this tool after you have verified a user by confirming 2 out of 4 identity fields\r\n    (date of birth, email, phone number, address). This creates an audit record of the verification.\r\n    name: string! — The verified user's full name\r\n    user_id: string! — The verified user's ID\r\n    address: string! — The verified user's address\r\n    email: string! — The verified user's email\r\n    phone_number: string! — The verified user's phone number\r\n    date_of_birth: string! — The verified user's date of birth (MM/DD/YYYY format)\r\n    time_verified: string! — The timestamp of the verification (e.g., \"2025-11-14 03:40:00 EST\")\r\n- give_discoverable_user_tool — Pass a tool to the user so they can execute it themselves.\r\n    \r\n    Use this when the knowledge base indicates that the user should perform\r\n    an action themselves (e.g., \"to do X, have the user call tool_name(args)\").\r\n    \r\n    The user will then be able to call `call_discoverable_tool` with the same\r\n    tool name and arguments to simulate executing the action.\r\n    discoverable_tool_name: string! — The name of the discoverable tool (e.g., \"open_webpage\", \"navigate_to_section\")\r\n    arguments: string — JSON string of arguments for the tool (e.g., '{\"url\": \"https://example.com\"}')\r\n- unlock_discoverable_agent_tool — Unlock an agent discoverable tool that was found in the knowledge base.\r\n    \r\n    Use this when the knowledge base indicates that you have access to a specialized\r\n    internal tool. The knowledge base will tell you the tool name to unlock.\r\n    \r\n    After unlocking, you can use the tool by calling `call_discoverable_agent_tool` with\r\n    the tool name and required arguments.\r\n    agent_tool_name: string! — The name of the agent discoverable tool to unlock (e.g., \"calculate_apr_adjustment_7842\")\r\n- call_discoverable_agent_tool — Call an agent discoverable tool that you have previously unlocked.\r\n    \r\n    Use this after unlocking a tool with `unlock_discoverable_agent_tool`. The knowledge base\r\n    will tell you which tool to use and what arguments to provide.\r\n    agent_tool_name: string! — The name of the agent discoverable tool to call\r\n    arguments: string — JSON string of arguments for the tool (e.g., '{\"user_id\": \"abc123\"}')\r\n- list_discoverable_agent_tools — List all agent discoverable tools that you have called.\r\n    \r\n    Use this to see what specialized tools you have used.",
+  "clauses": [
+    {
+      "id": "clause_0",
+      "source_id": "h0",
+      "document": "prompt",
+      "start": 10,
+      "end": 152,
+      "text": "<instructions>\r\nYou are a customer service agent that helps the user according to the <policy> provided below.\r\nIn each turn you can either:\r\n",
+      "parent_source_id": "h0"
+    },
+    {
+      "id": "clause_1",
+      "source_id": "h0",
+      "document": "prompt",
+      "start": 152,
+      "end": 183,
+      "text": "- Send a message to the user.\r\n",
+      "parent_source_id": "h0"
+    },
+    {
+      "id": "clause_2",
+      "source_id": "h0",
+      "document": "prompt",
+      "start": 183,
+      "end": 566,
+      "text": "- Make a tool call.\r\nYou cannot do both at the same time.\r\n\r\nTry to be helpful and always follow the policy. Always make sure you generate valid JSON only.\r\n\r\nAlways communicate with the user in Russian. Keep tool names, tool call arguments, IDs, codes, and other data values exactly as they appear in the system — do not translate or transliterate them.\r\n</instructions>\r\n<policy>\r\n",
+      "parent_source_id": "h0"
+    },
+    {
+      "id": "clause_3",
+      "source_id": "h0",
+      "document": "prompt",
+      "start": 566,
+      "end": 762,
+      "text": "# Rho-Bank Customer Service Policy\r\n\r\nYou are a helpful customer service agent for Rho-Bank.\r\nYour goal is to help customers by searching the knowledge base and providing accurate information.\r\n\r\n",
+      "parent_source_id": "h0"
+    },
+    {
+      "id": "clause_4",
+      "source_id": "h0",
+      "document": "prompt",
+      "start": 762,
+      "end": 779,
+      "text": "## Guidelines\r\n\r\n",
+      "parent_source_id": "h0"
+    },
+    {
+      "id": "clause_5",
+      "source_id": "h0",
+      "document": "prompt",
+      "start": 779,
+      "end": 995,
+      "text": "1. Do not make up policies, information or actions that you can take on behalf of the user. All instructions will be found here or in the knowledge base. If you cannot find relevant information, let the user know. \r\n",
+      "parent_source_id": "h0"
+    },
+    {
+      "id": "clause_6",
+      "source_id": "h0",
+      "document": "prompt",
+      "start": 995,
+      "end": 1172,
+      "text": "2. Do not ask for any documentation, receipts... from the customer unless it states very clearly in the knowledge base how to process it, and whether you're allowed to do so. \r\n",
+      "parent_source_id": "h0"
+    },
+    {
+      "id": "clause_7",
+      "source_id": "h0",
+      "document": "prompt",
+      "start": 1172,
+      "end": 1203,
+      "text": "3. Be polite and professional\r\n",
+      "parent_source_id": "h0"
+    },
+    {
+      "id": "clause_8",
+      "source_id": "h0",
+      "document": "prompt",
+      "start": 1203,
+      "end": 1321,
+      "text": "4. If you need the current time, always use the get_current_time() tool. Do not make up or assume the current time. \r\n",
+      "parent_source_id": "h0"
+    },
+    {
+      "id": "clause_9",
+      "source_id": "h0",
+      "document": "prompt",
+      "start": 1321,
+      "end": 1849,
+      "text": "5. Generally, if the issue cannot be resolved or is outside your capabilities, ask the user whether they would like to be transferred to a human agent. If they do, invoke the appropriate transfer_to_human_agents tool. Do this only if you absolutely have to, and you are sure that there are no potential actions you can take as specified in the knowledge base, or in your policy. Do not transfer without asking the user first. This guidance may be overridden by specific scenario-based transfer guidance in the knowledge base. \r\n",
+      "parent_source_id": "h0"
+    },
+    {
+      "id": "clause_10",
+      "source_id": "h0",
+      "document": "prompt",
+      "start": 1849,
+      "end": 2232,
+      "text": "6. If an issue falls within your capabilities and the user still wants to be transferred to a human agent, kindly inform the user that you can help them, and try to help them first. If the user asks for a human agent 4 times, then you may invoke the transfer_to_human_agents tool. This guidance may be overridden by specific scenario-based transfer guidance in the knowledge base. \r\n",
+      "parent_source_id": "h0"
+    },
+    {
+      "id": "clause_11",
+      "source_id": "h0",
+      "document": "prompt",
+      "start": 2232,
+      "end": 2363,
+      "text": "7. Do not give intermediate responses to users while processing that would give away internal rho-bank information/policies. \r\n\r\n\r\n",
+      "parent_source_id": "h0"
+    },
+    {
+      "id": "clause_12",
+      "source_id": "h0",
+      "document": "prompt",
+      "start": 2363,
+      "end": 2464,
+      "text": "## Knowledge base search tools\r\n\r\nYou have three complementary ways to access the knowledge base:\r\n\r\n",
+      "parent_source_id": "h0"
+    },
+    {
+      "id": "clause_13",
+      "source_id": "h0",
+      "document": "prompt",
+      "start": 2464,
+      "end": 2623,
+      "text": "### `KB_search_bm25`\r\n\r\n**Search the knowledge base** using **BM25** sparse retrieval. Pass **`k`** (default 10) to control how many documents to retrieve.\r\n\r\n",
+      "parent_source_id": "h0"
+    },
+    {
+      "id": "clause_14",
+      "source_id": "h0",
+      "document": "prompt",
+      "start": 2623,
+      "end": 2833,
+      "text": "### `KB_search_dense`\r\n\r\nThe `KB_search_dense` tool uses **OpenRouter** with embedding model `qwen3-embedding-8b` for dense retrieval.\r\n\r\nPass **`k`** (default 10) to control how many documents to retrieve.\r\n\r\n",
+      "parent_source_id": "h0"
+    },
+    {
+      "id": "clause_15",
+      "source_id": "h0",
+      "document": "prompt",
+      "start": 2833,
+      "end": 3013,
+      "text": "### `grep`\r\n\r\n**Search the knowledge base** for exact keyword or phrase matches using the `grep` tool. Useful for looking up specific terms, product names, or codes verbatim.\r\n\r\n\r\n",
+      "parent_source_id": "h0"
+    },
+    {
+      "id": "clause_16",
+      "source_id": "h0",
+      "document": "prompt",
+      "start": 3013,
+      "end": 3043,
+      "text": "## Additional Instructions\r\n\r\n",
+      "parent_source_id": "h0"
+    },
+    {
+      "id": "clause_17",
+      "source_id": "h0",
+      "document": "prompt",
+      "start": 3043,
+      "end": 3069,
+      "text": "### Discoverable Tools\r\n\r\n",
+      "parent_source_id": "h0"
+    },
+    {
+      "id": "clause_18",
+      "source_id": "h0",
+      "document": "prompt",
+      "start": 3069,
+      "end": 3479,
+      "text": "#### Giving Discoverable Tools to Users\r\nThe knowledge base may contain instructions that indicate certain actions should be performed by the user themselves rather than by you. These are called \"user discoverable tools.\" A user discoverable tool is a tool that you provide to the user so they can execute it on their own (e.g., through a customer portal or app).\r\n\r\n**When to give user discoverable tools:**\r\n",
+      "parent_source_id": "h0"
+    },
+    {
+      "id": "clause_19",
+      "source_id": "h0",
+      "document": "prompt",
+      "start": 3479,
+      "end": 3825,
+      "text": "-  Only give a tool when the user would like to perform an action, and the knowledge base explicitly has a tool that allows the user to perform this action (e.g., \"to do X, have the user call tool_name(args)\"). IMPORTANT: Do not unlock tools that you do not plan on giving to the user and actually using: this causes issues in database logging.\r\n",
+      "parent_source_id": "h0"
+    },
+    {
+      "id": "clause_20",
+      "source_id": "h0",
+      "document": "prompt",
+      "start": 3825,
+      "end": 3944,
+      "text": "- You must search the knowledge base to find tools that you can give. Do not invent or guess user discoverable tools \r\n",
+      "parent_source_id": "h0"
+    },
+    {
+      "id": "clause_21",
+      "source_id": "h0",
+      "document": "prompt",
+      "start": 3944,
+      "end": 4041,
+      "text": "- Only use tool names and arguments discovered in the knowledge base\r\n\r\n**How to give a tool:**\r\n",
+      "parent_source_id": "h0"
+    },
+    {
+      "id": "clause_22",
+      "source_id": "h0",
+      "document": "prompt",
+      "start": 4041,
+      "end": 4115,
+      "text": "- Use the `give_discoverable_user_tool(discoverable_tool_name)` function\r\n",
+      "parent_source_id": "h0"
+    },
+    {
+      "id": "clause_23",
+      "source_id": "h0",
+      "document": "prompt",
+      "start": 4115,
+      "end": 4182,
+      "text": "- Provide the exact tool name  as specified in the knowledge base\r\n",
+      "parent_source_id": "h0"
+    },
+    {
+      "id": "clause_24",
+      "source_id": "h0",
+      "document": "prompt",
+      "start": 4182,
+      "end": 4387,
+      "text": "- Explain to the user what the tool does and how to use it, and what arguments to provide. Just explaining isn't enough, you must use the `give_discoverable_user_tool(discoverable_tool_name)` function.\r\n\r\n",
+      "parent_source_id": "h0"
+    },
+    {
+      "id": "clause_25",
+      "source_id": "h0",
+      "document": "prompt",
+      "start": 4387,
+      "end": 4765,
+      "text": "#### Unlocking and Using Agent Discoverable Tools\r\nThe knowledge base may contain references to specialized internal tools that you can unlock and use. These are called \"agent discoverable tools.\" Unlike regular tools which are always available, these tools must be explicitly unlocked after discovering them in the knowledge base.\r\n\r\n**When to use agent discoverable tools:**\r\n",
+      "parent_source_id": "h0"
+    },
+    {
+      "id": "clause_26",
+      "source_id": "h0",
+      "document": "prompt",
+      "start": 4765,
+      "end": 4920,
+      "text": "- Only unlock a tool when the knowledge base explicitly mentions it (e.g., \"use tool_name to perform X\"), and do not unlock tools you do not plan to use.\r\n",
+      "parent_source_id": "h0"
+    },
+    {
+      "id": "clause_27",
+      "source_id": "h0",
+      "document": "prompt",
+      "start": 4920,
+      "end": 5127,
+      "text": "- You must search the knowledge base to find tools that you can unlock. Do not invent or guess tool names - only use tool names discovered in the knowledge base.\r\n\r\n**How to use agent discoverable tools:**\r\n",
+      "parent_source_id": "h0"
+    },
+    {
+      "id": "clause_28",
+      "source_id": "h0",
+      "document": "prompt",
+      "start": 5127,
+      "end": 5453,
+      "text": "1. First, unlock the tool using `unlock_discoverable_agent_tool(agent_tool_name)` with the exact tool name from the knowledge base: you must unlock the tool before using it to get information on the proper params. IMPORTANT: Do not unlock tools that you do not plan on actually using: this causes issues in database logging.\r\n",
+      "parent_source_id": "h0"
+    },
+    {
+      "id": "clause_29",
+      "source_id": "h0",
+      "document": "prompt",
+      "start": 5453,
+      "end": 5570,
+      "text": "2. Then, call the tool using `call_discoverable_agent_tool(agent_tool_name, arguments)` with the required arguments\r\n",
+      "parent_source_id": "h0"
+    },
+    {
+      "id": "clause_30",
+      "source_id": "h0",
+      "document": "prompt",
+      "start": 5570,
+      "end": 5670,
+      "text": "3. The unlock step is required before calling - you cannot call a tool that hasn't been unlocked\r\n\r\n",
+      "parent_source_id": "h0"
+    },
+    {
+      "id": "clause_31",
+      "source_id": "h0",
+      "document": "prompt",
+      "start": 5670,
+      "end": 6081,
+      "text": "### Authenticating Users\r\n\r\nGenerally, for any scenario involving accessing customer information in internal databases, you must first verify their identify before proceeding. No need to verify more than once in a single conversation. You should ONLY verify a user's identity if you need to access or modify their customer information in internal databases on their behalf.\r\n\r\nHere are some concrete examples:\r\n",
+      "parent_source_id": "h0"
+    },
+    {
+      "id": "clause_32",
+      "source_id": "h0",
+      "document": "prompt",
+      "start": 6081,
+      "end": 6154,
+      "text": "* Looking up account balances, transaction history, referral history...\r\n",
+      "parent_source_id": "h0"
+    },
+    {
+      "id": "clause_33",
+      "source_id": "h0",
+      "document": "prompt",
+      "start": 6154,
+      "end": 6220,
+      "text": "* Changing account settings (e.g., address, phone number, email)\r\n",
+      "parent_source_id": "h0"
+    },
+    {
+      "id": "clause_34",
+      "source_id": "h0",
+      "document": "prompt",
+      "start": 6220,
+      "end": 6242,
+      "text": "* Closing an account\r\n",
+      "parent_source_id": "h0"
+    },
+    {
+      "id": "clause_35",
+      "source_id": "h0",
+      "document": "prompt",
+      "start": 6242,
+      "end": 6281,
+      "text": "* Adding or removing authorized users\r\n",
+      "parent_source_id": "h0"
+    },
+    {
+      "id": "clause_36",
+      "source_id": "h0",
+      "document": "prompt",
+      "start": 6281,
+      "end": 6335,
+      "text": "* Requesting information about specific transactions\r\n",
+      "parent_source_id": "h0"
+    },
+    {
+      "id": "clause_37",
+      "source_id": "h0",
+      "document": "prompt",
+      "start": 6335,
+      "end": 6381,
+      "text": "* Discussing specific loan or credit details\r\n",
+      "parent_source_id": "h0"
+    },
+    {
+      "id": "clause_38",
+      "source_id": "h0",
+      "document": "prompt",
+      "start": 6381,
+      "end": 6876,
+      "text": "* Filing a dispute on behalf of the user\r\n\r\nTo verify the identity of the user, call the appropriate read tools, and ensure that they are able to give correctly any 2 out of the following values: date of birth, email, phone number, address. Knowing full name or userID is not enough to verify. After verification, you must call the verification logging tool to properly log the information into the verification records. Do not leak any information about the user before they are verified.\r\n\r\n\r\n",
+      "parent_source_id": "h0"
+    },
+    {
+      "id": "clause_39",
+      "source_id": "h0",
+      "document": "prompt",
+      "start": 6876,
+      "end": 7251,
+      "text": "## Knowledge base language\r\n\r\nThe knowledge base documents are written in Russian. Always formulate knowledge base search queries (`KB_search_bm25`, `KB_search_dense`, `grep`, `KB_search`) in Russian. Official product and account names (e.g. 'Platinum Rewards', 'Blue Account'), tool identifiers, and status codes remain in English — use them in queries as-is.\r\n</policy>\r\n\r\n",
+      "parent_source_id": "h0"
+    }
+  ],
+  "enum_catalog": {
+    "tools": {
+      "KB_search_bm25": {
+        "arguments": {
+          "query": {
+            "type": "string",
+            "enum": [],
+            "required": true,
+            "format": null
+          },
+          "k": {
+            "type": "integer",
+            "enum": [],
+            "required": false,
+            "format": null
+          }
+        }
+      },
+      "KB_search_dense": {
+        "arguments": {
+          "query": {
+            "type": "string",
+            "enum": [],
+            "required": true,
+            "format": null
+          },
+          "k": {
+            "type": "integer",
+            "enum": [],
+            "required": false,
+            "format": null
+          }
+        }
+      },
+      "grep": {
+        "arguments": {
+          "pattern": {
+            "type": "string",
+            "enum": [],
+            "required": true,
+            "format": null
+          }
+        }
+      },
+      "transfer_to_human_agents": {
+        "arguments": {
+          "summary": {
+            "type": "string",
+            "enum": [],
+            "required": true,
+            "format": null
+          },
+          "reason": {
+            "type": "string",
+            "enum": [
+              "fraud_or_security_concern",
+              "account_closure_request",
+              "deceased_account_holder",
+              "legal_or_regulatory_matter",
+              "account_ownership_dispute",
+              "complex_billing_dispute",
+              "abusive_customer_behavior",
+              "third_party_inquiry",
+              "technical_system_error",
+              "unconfirmed_external_communication",
+              "customer_demands_after_unavailable_offer_refusal",
+              "kb_search_unsuccessful_customer_requests_transfer",
+              "specialized_department_required",
+              "accessibility_or_special_needs",
+              "customer_frustrated_demands_human",
+              "supervisor_request_service_complaint",
+              "customer_requests_human_no_specific_reason",
+              "request_completed_customer_wants_human_followup",
+              "other"
+            ],
+            "required": false,
+            "format": null
+          }
+        }
+      },
+      "get_current_time": {
+        "arguments": {}
+      },
+      "get_user_information_by_id": {
+        "arguments": {
+          "user_id": {
+            "type": "string",
+            "enum": [],
+            "required": true,
+            "format": null
+          }
+        }
+      },
+      "get_user_information_by_name": {
+        "arguments": {
+          "customer_name": {
+            "type": "string",
+            "enum": [],
+            "required": true,
+            "format": null
+          }
+        }
+      },
+      "get_user_information_by_email": {
+        "arguments": {
+          "email": {
+            "type": "string",
+            "enum": [],
+            "required": true,
+            "format": null
+          }
+        }
+      },
+      "change_user_email": {
+        "arguments": {
+          "user_id": {
+            "type": "string",
+            "enum": [],
+            "required": true,
+            "format": null
+          },
+          "new_email": {
+            "type": "string",
+            "enum": [],
+            "required": true,
+            "format": null
+          }
+        }
+      },
+      "get_referrals_by_user": {
+        "arguments": {
+          "user_id": {
+            "type": "string",
+            "enum": [],
+            "required": true,
+            "format": null
+          }
+        }
+      },
+      "get_credit_card_transactions_by_user": {
+        "arguments": {
+          "user_id": {
+            "type": "string",
+            "enum": [],
+            "required": true,
+            "format": null
+          }
+        }
+      },
+      "get_credit_card_accounts_by_user": {
+        "arguments": {
+          "user_id": {
+            "type": "string",
+            "enum": [],
+            "required": true,
+            "format": null
+          }
+        }
+      },
+      "log_verification": {
+        "arguments": {
+          "name": {
+            "type": "string",
+            "enum": [],
+            "required": true,
+            "format": null
+          },
+          "user_id": {
+            "type": "string",
+            "enum": [],
+            "required": true,
+            "format": null
+          },
+          "address": {
+            "type": "string",
+            "enum": [],
+            "required": true,
+            "format": null
+          },
+          "email": {
+            "type": "string",
+            "enum": [],
+            "required": true,
+            "format": null
+          },
+          "phone_number": {
+            "type": "string",
+            "enum": [],
+            "required": true,
+            "format": null
+          },
+          "date_of_birth": {
+            "type": "string",
+            "enum": [],
+            "required": true,
+            "format": null
+          },
+          "time_verified": {
+            "type": "string",
+            "enum": [],
+            "required": true,
+            "format": null
+          }
+        }
+      },
+      "give_discoverable_user_tool": {
+        "arguments": {
+          "discoverable_tool_name": {
+            "type": "string",
+            "enum": [],
+            "required": true,
+            "format": null
+          },
+          "arguments": {
+            "type": "string",
+            "enum": [],
+            "required": false,
+            "format": null
+          }
+        }
+      },
+      "unlock_discoverable_agent_tool": {
+        "arguments": {
+          "agent_tool_name": {
+            "type": "string",
+            "enum": [],
+            "required": true,
+            "format": null
+          }
+        }
+      },
+      "call_discoverable_agent_tool": {
+        "arguments": {
+          "agent_tool_name": {
+            "type": "string",
+            "enum": [],
+            "required": true,
+            "format": null
+          },
+          "arguments": {
+            "type": "string",
+            "enum": [],
+            "required": false,
+            "format": null
+          }
+        }
+      },
+      "list_discoverable_agent_tools": {
+        "arguments": {}
+      }
+    },
+    "paths": {
+      "args.address": [
+        "string"
+      ],
+      "args.agent_tool_name": [
+        "string"
+      ],
+      "args.arguments": [
+        "string"
+      ],
+      "args.customer_name": [
+        "string"
+      ],
+      "args.date_of_birth": [
+        "string"
+      ],
+      "args.discoverable_tool_name": [
+        "string"
+      ],
+      "args.email": [
+        "string"
+      ],
+      "args.k": [
+        "number"
+      ],
+      "args.name": [
+        "string"
+      ],
+      "args.new_email": [
+        "string"
+      ],
+      "args.pattern": [
+        "string"
+      ],
+      "args.phone_number": [
+        "string"
+      ],
+      "args.query": [
+        "string"
+      ],
+      "args.reason": [
+        "string"
+      ],
+      "args.summary": [
+        "string"
+      ],
+      "args.time_verified": [
+        "string"
+      ],
+      "args.user_id": [
+        "string"
+      ],
+      "ctx.current_datetime": [
+        "string"
+      ],
+      "state.call_discoverable_agent_tool.": [
+        "array"
+      ],
+      "state.call_discoverable_agent_tool./*": [
+        "object"
+      ],
+      "state.call_discoverable_agent_tool./*/account_id": [
+        "string"
+      ],
+      "state.call_discoverable_agent_tool./*/card_id": [
+        "string"
+      ],
+      "state.call_discoverable_agent_tool./*/card_number_last_4": [
+        "string"
+      ],
+      "state.call_discoverable_agent_tool./*/cardholder_name": [
+        "string"
+      ],
+      "state.call_discoverable_agent_tool./*/cvv": [
+        "string"
+      ],
+      "state.call_discoverable_agent_tool./*/date_issued": [
+        "string"
+      ],
+      "state.call_discoverable_agent_tool./*/expiration_date": [
+        "string"
+      ],
+      "state.call_discoverable_agent_tool./*/issue_reason": [
+        "string"
+      ],
+      "state.call_discoverable_agent_tool./*/status": [
+        "string"
+      ],
+      "state.call_discoverable_agent_tool./*/user_id": [
+        "string"
+      ],
+      "state.get_debit_cards_by_account_id_7823.": [
+        "array"
+      ],
+      "state.get_debit_cards_by_account_id_7823./*": [
+        "object"
+      ],
+      "state.get_debit_cards_by_account_id_7823./*/account_id": [
+        "string"
+      ],
+      "state.get_debit_cards_by_account_id_7823./*/card_id": [
+        "string"
+      ],
+      "state.get_debit_cards_by_account_id_7823./*/card_number_last_4": [
+        "string"
+      ],
+      "state.get_debit_cards_by_account_id_7823./*/cardholder_name": [
+        "string"
+      ],
+      "state.get_debit_cards_by_account_id_7823./*/cvv": [
+        "string"
+      ],
+      "state.get_debit_cards_by_account_id_7823./*/date_issued": [
+        "string"
+      ],
+      "state.get_debit_cards_by_account_id_7823./*/expiration_date": [
+        "string"
+      ],
+      "state.get_debit_cards_by_account_id_7823./*/issue_reason": [
+        "string"
+      ],
+      "state.get_debit_cards_by_account_id_7823./*/status": [
+        "string"
+      ],
+      "state.get_debit_cards_by_account_id_7823./*/user_id": [
+        "string"
+      ],
+      "user.confirmation_of_trigger": [
+        "boolean"
+      ]
+    },
+    "path_witnesses": {
+      "args.query": [
+        {
+          "source_sha256": "fa82461d1dc733dc555db37fd330a231feb62affaceac7ca761c3960a85a0918",
+          "source_id": "h3"
+        }
+      ],
+      "args.customer_name": [
+        {
+          "source_sha256": "fa82461d1dc733dc555db37fd330a231feb62affaceac7ca761c3960a85a0918",
+          "source_id": "h7"
+        }
+      ],
+      "args.address": [
+        {
+          "source_sha256": "fa82461d1dc733dc555db37fd330a231feb62affaceac7ca761c3960a85a0918",
+          "source_id": "h11"
+        }
+      ],
+      "args.date_of_birth": [
+        {
+          "source_sha256": "fa82461d1dc733dc555db37fd330a231feb62affaceac7ca761c3960a85a0918",
+          "source_id": "h11"
+        }
+      ],
+      "args.email": [
+        {
+          "source_sha256": "fa82461d1dc733dc555db37fd330a231feb62affaceac7ca761c3960a85a0918",
+          "source_id": "h11"
+        }
+      ],
+      "args.name": [
+        {
+          "source_sha256": "fa82461d1dc733dc555db37fd330a231feb62affaceac7ca761c3960a85a0918",
+          "source_id": "h11"
+        }
+      ],
+      "args.phone_number": [
+        {
+          "source_sha256": "fa82461d1dc733dc555db37fd330a231feb62affaceac7ca761c3960a85a0918",
+          "source_id": "h11"
+        }
+      ],
+      "args.time_verified": [
+        {
+          "source_sha256": "fa82461d1dc733dc555db37fd330a231feb62affaceac7ca761c3960a85a0918",
+          "source_id": "h11"
+        }
+      ],
+      "args.user_id": [
+        {
+          "source_sha256": "fa82461d1dc733dc555db37fd330a231feb62affaceac7ca761c3960a85a0918",
+          "source_id": "h11"
+        }
+      ],
+      "args.agent_tool_name": [
+        {
+          "source_sha256": "fa82461d1dc733dc555db37fd330a231feb62affaceac7ca761c3960a85a0918",
+          "source_id": "h15"
+        }
+      ],
+      "args.arguments": [
+        {
+          "source_sha256": "fa82461d1dc733dc555db37fd330a231feb62affaceac7ca761c3960a85a0918",
+          "source_id": "h17"
+        }
+      ],
+      "args.pattern": [
+        {
+          "source_sha256": "6422acc1534cdedf000d27fc712a90cbc6fa582577253a74de803cbca69db375",
+          "source_id": "h12"
+        }
+      ],
+      "args.reason": [
+        {
+          "source_sha256": "6422acc1534cdedf000d27fc712a90cbc6fa582577253a74de803cbca69db375",
+          "source_id": "t0"
+        }
+      ],
+      "args.summary": [
+        {
+          "source_sha256": "6422acc1534cdedf000d27fc712a90cbc6fa582577253a74de803cbca69db375",
+          "source_id": "t0"
+        }
+      ],
+      "state.call_discoverable_agent_tool.": [
+        {
+          "source_sha256": "c4d0a37331e732489ceb0cec6088ebf6fb060a4c140fd19eb9460cbd08572633",
+          "source_id": "h58"
+        }
+      ],
+      "state.call_discoverable_agent_tool./*": [
+        {
+          "source_sha256": "c4d0a37331e732489ceb0cec6088ebf6fb060a4c140fd19eb9460cbd08572633",
+          "source_id": "h58"
+        }
+      ],
+      "state.call_discoverable_agent_tool./*/card_id": [
+        {
+          "source_sha256": "c4d0a37331e732489ceb0cec6088ebf6fb060a4c140fd19eb9460cbd08572633",
+          "source_id": "h58"
+        }
+      ],
+      "state.call_discoverable_agent_tool./*/account_id": [
+        {
+          "source_sha256": "c4d0a37331e732489ceb0cec6088ebf6fb060a4c140fd19eb9460cbd08572633",
+          "source_id": "h58"
+        }
+      ],
+      "state.call_discoverable_agent_tool./*/user_id": [
+        {
+          "source_sha256": "c4d0a37331e732489ceb0cec6088ebf6fb060a4c140fd19eb9460cbd08572633",
+          "source_id": "h58"
+        }
+      ],
+      "state.call_discoverable_agent_tool./*/cardholder_name": [
+        {
+          "source_sha256": "c4d0a37331e732489ceb0cec6088ebf6fb060a4c140fd19eb9460cbd08572633",
+          "source_id": "h58"
+        }
+      ],
+      "state.call_discoverable_agent_tool./*/cvv": [
+        {
+          "source_sha256": "c4d0a37331e732489ceb0cec6088ebf6fb060a4c140fd19eb9460cbd08572633",
+          "source_id": "h58"
+        }
+      ],
+      "state.call_discoverable_agent_tool./*/status": [
+        {
+          "source_sha256": "c4d0a37331e732489ceb0cec6088ebf6fb060a4c140fd19eb9460cbd08572633",
+          "source_id": "h58"
+        }
+      ],
+      "state.call_discoverable_agent_tool./*/expiration_date": [
+        {
+          "source_sha256": "c4d0a37331e732489ceb0cec6088ebf6fb060a4c140fd19eb9460cbd08572633",
+          "source_id": "h58"
+        }
+      ],
+      "state.call_discoverable_agent_tool./*/issue_reason": [
+        {
+          "source_sha256": "c4d0a37331e732489ceb0cec6088ebf6fb060a4c140fd19eb9460cbd08572633",
+          "source_id": "h58"
+        }
+      ],
+      "state.call_discoverable_agent_tool./*/card_number_last_4": [
+        {
+          "source_sha256": "c4d0a37331e732489ceb0cec6088ebf6fb060a4c140fd19eb9460cbd08572633",
+          "source_id": "h58"
+        }
+      ],
+      "state.call_discoverable_agent_tool./*/date_issued": [
+        {
+          "source_sha256": "c4d0a37331e732489ceb0cec6088ebf6fb060a4c140fd19eb9460cbd08572633",
+          "source_id": "h58"
+        }
+      ],
+      "state.get_debit_cards_by_account_id_7823.": [
+        {
+          "source_sha256": "de9a4a59113dfa40db7cb6aa910b817d03fe9f297ad4f3146f75706508581d06",
+          "source_id": "h32"
+        }
+      ],
+      "state.get_debit_cards_by_account_id_7823./*": [
+        {
+          "source_sha256": "de9a4a59113dfa40db7cb6aa910b817d03fe9f297ad4f3146f75706508581d06",
+          "source_id": "h32"
+        }
+      ],
+      "state.get_debit_cards_by_account_id_7823./*/card_id": [
+        {
+          "source_sha256": "de9a4a59113dfa40db7cb6aa910b817d03fe9f297ad4f3146f75706508581d06",
+          "source_id": "h32"
+        }
+      ],
+      "state.get_debit_cards_by_account_id_7823./*/account_id": [
+        {
+          "source_sha256": "de9a4a59113dfa40db7cb6aa910b817d03fe9f297ad4f3146f75706508581d06",
+          "source_id": "h32"
+        }
+      ],
+      "state.get_debit_cards_by_account_id_7823./*/user_id": [
+        {
+          "source_sha256": "de9a4a59113dfa40db7cb6aa910b817d03fe9f297ad4f3146f75706508581d06",
+          "source_id": "h32"
+        }
+      ],
+      "state.get_debit_cards_by_account_id_7823./*/cardholder_name": [
+        {
+          "source_sha256": "de9a4a59113dfa40db7cb6aa910b817d03fe9f297ad4f3146f75706508581d06",
+          "source_id": "h32"
+        }
+      ],
+      "state.get_debit_cards_by_account_id_7823./*/cvv": [
+        {
+          "source_sha256": "de9a4a59113dfa40db7cb6aa910b817d03fe9f297ad4f3146f75706508581d06",
+          "source_id": "h32"
+        }
+      ],
+      "state.get_debit_cards_by_account_id_7823./*/status": [
+        {
+          "source_sha256": "de9a4a59113dfa40db7cb6aa910b817d03fe9f297ad4f3146f75706508581d06",
+          "source_id": "h32"
+        }
+      ],
+      "state.get_debit_cards_by_account_id_7823./*/expiration_date": [
+        {
+          "source_sha256": "de9a4a59113dfa40db7cb6aa910b817d03fe9f297ad4f3146f75706508581d06",
+          "source_id": "h32"
+        }
+      ],
+      "state.get_debit_cards_by_account_id_7823./*/issue_reason": [
+        {
+          "source_sha256": "de9a4a59113dfa40db7cb6aa910b817d03fe9f297ad4f3146f75706508581d06",
+          "source_id": "h32"
+        }
+      ],
+      "state.get_debit_cards_by_account_id_7823./*/card_number_last_4": [
+        {
+          "source_sha256": "de9a4a59113dfa40db7cb6aa910b817d03fe9f297ad4f3146f75706508581d06",
+          "source_id": "h32"
+        }
+      ],
+      "state.get_debit_cards_by_account_id_7823./*/date_issued": [
+        {
+          "source_sha256": "de9a4a59113dfa40db7cb6aa910b817d03fe9f297ad4f3146f75706508581d06",
+          "source_id": "h32"
+        }
+      ]
+    },
+    "arg_witnesses": {
+      "KB_search_bm25": {
+        "query": [
+          {
+            "source_sha256": "fa82461d1dc733dc555db37fd330a231feb62affaceac7ca761c3960a85a0918",
+            "source_id": "h3"
+          }
+        ]
+      },
+      "get_user_information_by_name": {
+        "customer_name": [
+          {
+            "source_sha256": "fa82461d1dc733dc555db37fd330a231feb62affaceac7ca761c3960a85a0918",
+            "source_id": "h7"
+          }
+        ]
+      },
+      "log_verification": {
+        "address": [
+          {
+            "source_sha256": "fa82461d1dc733dc555db37fd330a231feb62affaceac7ca761c3960a85a0918",
+            "source_id": "h11"
+          }
+        ],
+        "date_of_birth": [
+          {
+            "source_sha256": "fa82461d1dc733dc555db37fd330a231feb62affaceac7ca761c3960a85a0918",
+            "source_id": "h11"
+          }
+        ],
+        "email": [
+          {
+            "source_sha256": "fa82461d1dc733dc555db37fd330a231feb62affaceac7ca761c3960a85a0918",
+            "source_id": "h11"
+          }
+        ],
+        "name": [
+          {
+            "source_sha256": "fa82461d1dc733dc555db37fd330a231feb62affaceac7ca761c3960a85a0918",
+            "source_id": "h11"
+          }
+        ],
+        "phone_number": [
+          {
+            "source_sha256": "fa82461d1dc733dc555db37fd330a231feb62affaceac7ca761c3960a85a0918",
+            "source_id": "h11"
+          }
+        ],
+        "time_verified": [
+          {
+            "source_sha256": "fa82461d1dc733dc555db37fd330a231feb62affaceac7ca761c3960a85a0918",
+            "source_id": "h11"
+          }
+        ],
+        "user_id": [
+          {
+            "source_sha256": "fa82461d1dc733dc555db37fd330a231feb62affaceac7ca761c3960a85a0918",
+            "source_id": "h11"
+          }
+        ]
+      },
+      "get_credit_card_accounts_by_user": {
+        "user_id": [
+          {
+            "source_sha256": "fa82461d1dc733dc555db37fd330a231feb62affaceac7ca761c3960a85a0918",
+            "source_id": "h13"
+          }
+        ]
+      },
+      "unlock_discoverable_agent_tool": {
+        "agent_tool_name": [
+          {
+            "source_sha256": "fa82461d1dc733dc555db37fd330a231feb62affaceac7ca761c3960a85a0918",
+            "source_id": "h15"
+          }
+        ]
+      },
+      "call_discoverable_agent_tool": {
+        "agent_tool_name": [
+          {
+            "source_sha256": "fa82461d1dc733dc555db37fd330a231feb62affaceac7ca761c3960a85a0918",
+            "source_id": "h17"
+          }
+        ],
+        "arguments": [
+          {
+            "source_sha256": "fa82461d1dc733dc555db37fd330a231feb62affaceac7ca761c3960a85a0918",
+            "source_id": "h17"
+          }
+        ]
+      },
+      "KB_search_dense": {
+        "query": [
+          {
+            "source_sha256": "6422acc1534cdedf000d27fc712a90cbc6fa582577253a74de803cbca69db375",
+            "source_id": "h3"
+          }
+        ]
+      },
+      "grep": {
+        "pattern": [
+          {
+            "source_sha256": "6422acc1534cdedf000d27fc712a90cbc6fa582577253a74de803cbca69db375",
+            "source_id": "h12"
+          }
+        ]
+      },
+      "transfer_to_human_agents": {
+        "reason": [
+          {
+            "source_sha256": "6422acc1534cdedf000d27fc712a90cbc6fa582577253a74de803cbca69db375",
+            "source_id": "t0"
+          }
+        ],
+        "summary": [
+          {
+            "source_sha256": "6422acc1534cdedf000d27fc712a90cbc6fa582577253a74de803cbca69db375",
+            "source_id": "t0"
+          }
+        ]
+      },
+      "get_user_information_by_email": {
+        "email": [
+          {
+            "source_sha256": "c563e1d1530af215d0d5f5db25954b07d4c5d4243bcb858890cba8ff9fb0979e",
+            "source_id": "h5"
+          }
+        ]
+      },
+      "apply_for_credit_card": {
+        "customer_name": [
+          {
+            "source_sha256": "35461949de941697b09a065b6712480c339c08c82dd3ce92ec7387edf61f6acf",
+            "source_id": "h21"
+          }
+        ]
+      },
+      "get_all_user_accounts_by_user_id_3847": {
+        "user_id": [
+          {
+            "source_sha256": "de9a4a59113dfa40db7cb6aa910b817d03fe9f297ad4f3146f75706508581d06",
+            "source_id": "h29"
+          }
+        ]
+      },
+      "close_debit_card_4721": {
+        "reason": [
+          {
+            "source_sha256": "de9a4a59113dfa40db7cb6aa910b817d03fe9f297ad4f3146f75706508581d06",
+            "source_id": "h37"
+          }
+        ]
+      },
+      "get_credit_card_transactions_by_user": {
+        "user_id": [
+          {
+            "source_sha256": "de9a4a59113dfa40db7cb6aa910b817d03fe9f297ad4f3146f75706508581d06",
+            "source_id": "h66"
+          }
+        ]
+      },
+      "get_bank_account_transactions_9173": {
+        "user_id": [
+          {
+            "source_sha256": "4d323829156eaaa716bca2f8195e13a4cec04239c81062cb1c89e3eb13bcbda9",
+            "source_id": "t0"
+          }
+        ]
+      }
+    },
+    "array_item_types": {
+      "state.call_discoverable_agent_tool.": [
+        "object"
+      ],
+      "state.get_debit_cards_by_account_id_7823.": [
+        "object"
+      ]
+    }
+  },
+  "samples": [
+    {
+      "rules": [],
+      "uncovered_clause_ids": [
+        "clause_0",
+        "clause_1",
+        "clause_2",
+        "clause_3",
+        "clause_4",
+        "clause_5",
+        "clause_6",
+        "clause_7",
+        "clause_8",
+        "clause_9",
+        "clause_10",
+        "clause_11",
+        "clause_12",
+        "clause_13",
+        "clause_14",
+        "clause_15",
+        "clause_16",
+        "clause_17",
+        "clause_18",
+        "clause_19",
+        "clause_20",
+        "clause_21",
+        "clause_22",
+        "clause_23",
+        "clause_24",
+        "clause_25",
+        "clause_26",
+        "clause_27",
+        "clause_28",
+        "clause_29",
+        "clause_30",
+        "clause_31",
+        "clause_32",
+        "clause_33",
+        "clause_34",
+        "clause_35",
+        "clause_36",
+        "clause_37",
+        "clause_38",
+        "clause_39"
+      ]
+    },
+    {
+      "rules": [],
+      "uncovered_clause_ids": [
+        "clause_0",
+        "clause_1",
+        "clause_2",
+        "clause_3",
+        "clause_4",
+        "clause_5",
+        "clause_6",
+        "clause_7",
+        "clause_8",
+        "clause_9",
+        "clause_10",
+        "clause_11",
+        "clause_12",
+        "clause_13",
+        "clause_14",
+        "clause_15",
+        "clause_16",
+        "clause_17",
+        "clause_18",
+        "clause_19",
+        "clause_20",
+        "clause_21",
+        "clause_22",
+        "clause_23",
+        "clause_24",
+        "clause_25",
+        "clause_26",
+        "clause_27",
+        "clause_28",
+        "clause_29",
+        "clause_30",
+        "clause_31",
+        "clause_32",
+        "clause_33",
+        "clause_34",
+        "clause_35",
+        "clause_36",
+        "clause_37",
+        "clause_38",
+        "clause_39"
+      ]
+    },
+    {
+      "rules": [
+        {
+          "rule_id": "rule_transfer_requirements",
+          "clause_ids": [
+            "clause_9",
+            "clause_10"
+          ],
+          "trigger": {
+            "kind": "TOOL_CALL",
+            "tool": "transfer_to_human_agents",
+            "act": null
+          },
+          "modality": "REQUIRES",
+          "conditions": [
+            {
+              "lhs": "args.summary",
+              "op": "exists",
+              "rhs": null
+            },
+            {
+              "lhs": "args.reason",
+              "op": "exists",
+              "rhs": null
+            }
+          ],
+          "exceptions": [],
+          "prior_call": null,
+          "compile_status": "COMPILED",
+          "not_compilable_reason": null
+        }
+      ],
+      "uncovered_clause_ids": [
+        "clause_0",
+        "clause_1",
+        "clause_2",
+        "clause_3",
+        "clause_4",
+        "clause_5",
+        "clause_6",
+        "clause_7",
+        "clause_8",
+        "clause_11",
+        "clause_12",
+        "clause_13",
+        "clause_14",
+        "clause_15",
+        "clause_16",
+        "clause_17",
+        "clause_18",
+        "clause_19",
+        "clause_20",
+        "clause_21",
+        "clause_22",
+        "clause_23",
+        "clause_24",
+        "clause_25",
+        "clause_26",
+        "clause_27",
+        "clause_28",
+        "clause_29",
+        "clause_30",
+        "clause_31",
+        "clause_32",
+        "clause_33",
+        "clause_34",
+        "clause_35",
+        "clause_36",
+        "clause_37",
+        "clause_38",
+        "clause_39"
+      ]
+    }
+  ],
+  "rules": [],
+  "discarded": [
+    {
+      "canonical_rule": "{\"clause_ids\":[\"clause_10\",\"clause_9\"],\"conditions\":[{\"lhs\":\"args.reason\",\"op\":\"exists\",\"rhs\":null},{\"lhs\":\"args.summary\",\"op\":\"exists\",\"rhs\":null}],\"exceptions\":[],\"modality\":\"REQUIRES\",\"prior_call\":null,\"trigger\":{\"act\":null,\"kind\":\"TOOL_CALL\",\"tool\":\"transfer_to_human_agents\"}}",
+      "reason": "no_sample_agreement"
+    }
+  ],
+  "coverage": {
+    "DECISIVE": [],
+    "SHADOW": [],
+    "uncovered": [
+      "clause_0",
+      "clause_1",
+      "clause_10",
+      "clause_11",
+      "clause_12",
+      "clause_13",
+      "clause_14",
+      "clause_15",
+      "clause_16",
+      "clause_17",
+      "clause_18",
+      "clause_19",
+      "clause_2",
+      "clause_20",
+      "clause_21",
+      "clause_22",
+      "clause_23",
+      "clause_24",
+      "clause_25",
+      "clause_26",
+      "clause_27",
+      "clause_28",
+      "clause_29",
+      "clause_3",
+      "clause_30",
+      "clause_31",
+      "clause_32",
+      "clause_33",
+      "clause_34",
+      "clause_35",
+      "clause_36",
+      "clause_37",
+      "clause_38",
+      "clause_39",
+      "clause_4",
+      "clause_5",
+      "clause_6",
+      "clause_7",
+      "clause_8",
+      "clause_9"
+    ],
+    "surface_clause_inventory_not_semantic_completeness": true
+  },
+  "compilation_metadata": {
+    "compiler_freeze_sha256": "4b7b249a032d726453e2695295b8fee74eb68dc90eeafb2a95383ea6a55904cc",
+    "parent_freeze_sha256": "4fe6fcb357a88e87c88e3cdc77b01fe2566ba9c8b978e523cfe76b6cb4e39d14",
+    "request_model": "gpt-oss:120b",
+    "provider": "ollama",
+    "reasoning_effort": "medium",
+    "max_output_tokens": 8192,
+    "original_requests_unmodified": true,
+    "served_models": [
+      "gpt-oss:120b",
+      "gpt-oss:120b",
+      "gpt-oss:120b"
+    ],
+    "wire_admission_receipts": [],
+    "sample_request_sha256": [
+      "04746ca61e960c89bc1433cd2ce9c85536025655c8cdbcf2a3c2f3f21996a2c2",
+      "9f6d2253f2b890f9faa3dd9f952f4c8c8dca11032558783a4bc376a0038ef755",
+      "f0597d1c07e334092f51c0aa048b30ad42b519c48d52332d5e1ba4b4e752b48f"
+    ]
+  }
+}
