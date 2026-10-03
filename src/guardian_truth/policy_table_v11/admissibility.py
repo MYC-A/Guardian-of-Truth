@@ -17,6 +17,7 @@ from guardian_truth.parsing import parse_catalog
 from guardian_truth.policy_table.segment import policy_hash
 from .router import route_step, PROSE, EMPTY
 from .witness import contains_value
+from .invariants import call_invariants
 
 ADMISSIBLE, VIOLATION, UNKNOWN = 'ADMISSIBLE', 'VIOLATION', 'UNKNOWN'
 ALLOW, REJECT, REVIEW = 'ALLOW', 'REJECT', 'REVIEW'
@@ -117,6 +118,8 @@ def assess(store, *, table=None, enforcement=EnforcementPolicy(), audit_graph=Tr
             violations.append({**v, 'tool': event.name, 'source_id': sid,
                                'schema_span': [spec.source.start, spec.source.end]})
         for v in provenance_violations(store, index, event.value):
+            violations.append({**v, 'tool': event.name, 'source_id': sid})
+        for v in call_invariants(store.history_events, event.name, event.value):
             violations.append({**v, 'tool': event.name, 'source_id': sid})
         inspected.append(sid)
     policy = None

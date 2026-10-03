@@ -1,0 +1,30 @@
+name: guardian-gate
+on:
+  push:
+    branches: ['prod/**']
+  pull_request:
+jobs:
+  test-build-measure:
+    runs-on: ubuntu-latest
+    env:
+      PYTHONPATH: src
+      GUARDIAN_BUNDLE_KEY: ${{ secrets.GUARDIAN_BUNDLE_KEY }}
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+      - run: pip install -e ".[data,dev]"
+      - name: Unit tests (V11 gate)
+        run: python -m pytest -q tests/test_policy_table_v11*.py
+      - name: Build signed policy bundle offline (no LLM)
+        run: python scripts/build_policy_bundle.py --output build/policy_bundle.json
+      - name: Measure on valid.parquet (LLM-free, regression floor)
+        run: >
+          python -m guardian_truth.policy_table_v11.service --input valid.parquet
+          --bundle build/policy_bundle.json --output build/predictions.csv
+          --audit build/audit.jsonl --metrics build/metrics.json --min-f1 0.60
+      - uses: actions/upload-artifact@v4
+        with:
+          name: guardian-gate
+          path: build/
