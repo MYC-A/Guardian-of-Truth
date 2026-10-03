@@ -34,12 +34,12 @@ def test_unregistered_model_provider_survives_completion_and_cost_log(monkeypatc
 def test_bounded_transport_attempts_are_recorded(monkeypatch):
     calls, costs, sleeps = [], [], []
 
-    class RateLimit(Exception):
-        status_code = 429
+    class TemporaryServerFailure(Exception):
+        status_code = 503
 
     def create(**kw):
         calls.append(kw)
-        raise RateLimit("controlled failure")
+        raise TemporaryServerFailure("controlled failure")
 
     client = SimpleNamespace(chat=SimpleNamespace(completions=SimpleNamespace(create=create)))
     monkeypatch.setitem(llm._clients, "ollama", client)
@@ -48,9 +48,25 @@ def test_bounded_transport_attempts_are_recorded(monkeypatch):
     monkeypatch.setattr(llm.time, "sleep", sleeps.append)
     result = llm.chat("ollama/controlled", [], transport_retries=1)
     assert len(calls) == result["transport_attempts"] == 2
-    assert result["content"] is None and result["http_status"] == 429
+    assert result["content"] is None and result["http_status"] == 503
     assert sleeps == [2]  # no sleep after exhausting the budget
     assert [c["transport_attempt"] for c in costs if "transport_attempt" in c] == [1, 2]
+
+
+def test_rate_limit_is_recorded_once_without_sleep_or_retry(monkeypatch):
+    calls, sleeps = [], []
+    class RateLimit(Exception):
+        status_code = 429
+    def create(**kw):
+        calls.append(kw)
+        raise RateLimit('controlled failure')
+    monkeypatch.setitem(llm._clients, 'ollama', SimpleNamespace(chat=SimpleNamespace(completions=SimpleNamespace(create=create))))
+    monkeypatch.setattr(llm, '_cache_get', lambda _: (None, False))
+    monkeypatch.setattr(llm, '_log_cost', lambda _: None)
+    monkeypatch.setattr(llm.time, 'sleep', sleeps.append)
+    result = llm.chat('ollama/controlled-quota', [], transport_retries=2)
+    assert len(calls) == result['transport_attempts'] == 1
+    assert result['http_status'] == 429 and not sleeps
 
 
 def test_sdk_retries_disabled(monkeypatch):

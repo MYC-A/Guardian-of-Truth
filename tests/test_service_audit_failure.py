@@ -23,9 +23,12 @@ def test_over_budget_request_keeps_full_coverage_in_audit(tmp_path):
     import json
     path = tmp_path / "audit.jsonl"
     rt = GuardianServiceRuntime("structural-v02", audit_path=path)
-    result = rt.check({"case_id": "large", "prompt": "x" * 200001, "response": "OK"})
+    rt.limits['max_input_chars'] = 64
+    result = rt.check({"case_id": "large", "prompt": "x" * 65, "response": "OK"})
     assert result["decision"] == "UNKNOWN"
     assert result["audit_status"] == "WRITTEN"
     record = json.loads(path.read_text(encoding="utf-8"))
     assert record["coverage"]["reason"] == "context_budget_exceeded"
+    assert record['coverage']['budget'] == 64
+    assert record['coverage']['structural'] == 'not_run'
     assert record["trace_id"] == result["trace_id"]
