@@ -272,6 +272,9 @@ class GuardianServiceRuntime:
         self.config_id = self.config["config_id"]
         self.audit_path = audit_path
         self.limits = self.config.get("limits", {})
+        if self.config.get("stages", {}).get("policy_table") or self.config.get("stages", {}).get("action_audit"):
+            from guardian_truth.action_audit.runtime import validate_modes
+            validate_modes(self.config, root=REPO)
         self._readiness_cache: dict[str, tuple[float, bool, str]] = {}
         self.channel_details: dict = {}
         self._formal_records: dict[str, dict] = {}
@@ -324,7 +327,7 @@ class GuardianServiceRuntime:
             from guardian_truth.source_search.transport import ModelTransport
             if not hasattr(self, "_source_transport"):
                 self._source_transport = ModelTransport(
-                    Path("/workspace/guardian/results/source-search-api-phase-20261002"),
+                    Path(self.config.get("api_ledger_dir", "/workspace/guardian/results/source-search-api-phase-20261002")),
                     **self.config.get("model_budget", {}))
             configured = bool(self._source_transport.key and self._source_transport.model)
             status["source_model"] = configured
@@ -415,6 +418,13 @@ class GuardianServiceRuntime:
 
         ctx = parse_case_v02(case_id, prompt, response)
         findings = structural_findings(ctx)
+        v10 = None
+        v10_cfg = self.config.get("stages", {})
+        if v10_cfg.get("policy_table") or v10_cfg.get("action_audit"):
+            from guardian_truth.action_audit.runtime import prepare as prepare_v10
+            from guardian_truth.source_search import SourceStore
+            v10_store = SourceStore({"prompt": prompt, "response": response})
+            v10 = prepare_v10(v10_store, v10_cfg["policy_table"], root=REPO)
         usage = {"calls": 0, "tokens": 0}
 
         source_search = self.config.get("stages", {}).get("source_search")
@@ -434,10 +444,15 @@ class GuardianServiceRuntime:
                      "source_archive": archive, "semantic_completeness_proven": False},
                     False, trace_id, usage, t0)
                 payload["source_store"] = store.snapshot()
+                if v10 is not None:
+                    payload["v10"] = {"policy_table": v10["policy_table"],
+                        "action_audit": {"status": "NOT_RUN_STRUCTURAL_HIT"},
+                        "variants": {name: "ERROR" for name in ("judge_shared_request", "judge_plus_table", "judge_plus_audit", "full")},
+                        "comparison_scope": "STRUCTURAL_SHORT_CIRCUIT; ALL_PROJECTIONS_ERROR"}
                 return payload
             if not hasattr(self, "_source_transport"):
                 self._source_transport = ModelTransport(
-                    Path("/workspace/guardian/results/source-search-api-phase-20261002"),
+                    Path(self.config.get("api_ledger_dir", "/workspace/guardian/results/source-search-api-phase-20261002")),
                     **self.config.get("model_budget", {}))
             before = self._source_transport.snapshot()
             interface = source_search.get("interface", "quotes")
@@ -445,8 +460,14 @@ class GuardianServiceRuntime:
                 raise ValueError("unsupported source investigation interface")
             runner = run_ids if interface == "source_ids" else run
             options = {k:v for k,v in source_search.items() if k != "interface"}
-            result = runner({"id": case_id, "prompt": prompt, "response": response},
-                            self._source_transport, **options)
+            if v10 is not None:
+                from guardian_truth.action_audit.runtime import run_joint
+                result = run_joint({"id": case_id, "prompt": prompt, "response": response},
+                    self._source_transport, store=v10_store, prepared=v10, root=REPO,
+                    table_config=v10_cfg["policy_table"], audit_config=v10_cfg["action_audit"], **options)
+            else:
+                result = runner({"id": case_id, "prompt": prompt, "response": response},
+                                self._source_transport, **options)
             archive = persist_snapshot(result["sources"],
                 (self.audit_path.parent if self.audit_path else
                  Path("/workspace/guardian/results/source_search_20261002/service")) / "source_stores")
@@ -466,6 +487,7 @@ class GuardianServiceRuntime:
             # Returned archive is the same source store used for decisions, not
             # a second independently filtered representation.
             payload["source_store"] = result["sources"]
+            if "v10" in result: payload["v10"] = result["v10"]
             return payload
 
         if findings:
