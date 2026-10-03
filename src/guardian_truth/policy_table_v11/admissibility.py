@@ -18,6 +18,7 @@ from guardian_truth.policy_table.segment import policy_hash
 from .router import route_step, PROSE, EMPTY
 from .witness import contains_value
 from .invariants import call_invariants
+from .policy_clauses import turn_shape_violations
 
 ADMISSIBLE, VIOLATION, UNKNOWN = 'ADMISSIBLE', 'VIOLATION', 'UNKNOWN'
 ALLOW, REJECT, REVIEW = 'ALLOW', 'REJECT', 'REVIEW'
@@ -89,14 +90,40 @@ def schema_violations(spec, arguments):
     return out
 
 
+_CONTACT = re.compile(r'(?:^|_)(?:zip|zipcode|zip_code|postal_code|postcode|email|e_mail|phone|phone_number)$', re.I)
+_INLINE_RESULT = re.compile(r'←\s*TOOL_RESPONSE')
+
+
+def _contact(key, value):
+    leaf = key.rsplit('.', 1)[-1].split('[')[0]
+    return isinstance(value, str) and len(value.strip()) >= 3 and bool(_CONTACT.search(leaf))
+
+
+def _contact_grounded(corpus, value):
+    value = value.strip()
+    if '@' in value: return contains_value(corpus.lower(), value.lower())
+    digits = re.sub(r'\D', '', value)
+    if len(digits) >= 7 and len(digits) >= len(value.replace(' ', '')) - 4:  # phone-like: formatting may differ
+        return any(re.sub(r'\D', '', m) .endswith(digits) or digits.endswith(re.sub(r'\D', '', m))
+                   for m in re.findall(r'\+?\d[\d\s().-]{5,}\d', corpus) if len(re.sub(r'\D', '', m)) >= 7)
+    return contains_value(corpus, value) or contains_value(corpus.lower(), value.lower())
+
+
 def provenance_violations(store, call_index, arguments):
     """Identifier provenance: every ID-like argument must occur in prior context
-    (user/system text or earlier tool results). Assistant prose alone is not a source."""
+    (user/system text or earlier tool results). Assistant prose alone is not a source.
+    Contact fields (zip, email, phone) must occur as a standalone token: a zip carved
+    out of an e-mail address or another identifier is a fabricated value."""
     prior = [e.text for e in store.history_events if e.role in ('user', 'system') or e.kind == 'result']
+    prior += [e.text[m.start():] for e in store.history_events if e.kind == 'call'
+              for m in [_INLINE_RESULT.search(e.text or '')] if m]
     prior += [e.text for e in store.target_events[:call_index] if e.kind == 'result']
     corpus = '\n'.join(prior)
-    return [{'code': 'UNGROUNDED_IDENTIFIER', 'argument': k, 'value': v}
-            for k, v in _leaves(arguments) if _identifier(k, v) and not contains_value(corpus, v)]
+    out = [{'code': 'UNGROUNDED_IDENTIFIER', 'argument': k, 'value': v}
+           for k, v in _leaves(arguments) if _identifier(k, v) and not contains_value(corpus, v)]
+    out += [{'code': 'UNGROUNDED_CONTACT_VALUE', 'argument': k, 'value': v}
+            for k, v in _leaves(arguments) if _contact(k, v) and not _contact_grounded(corpus, v)]
+    return out
 
 
 def assess(store, *, table=None, enforcement=EnforcementPolicy(), audit_graph=True):
@@ -122,6 +149,8 @@ def assess(store, *, table=None, enforcement=EnforcementPolicy(), audit_graph=Tr
         for v in call_invariants(store.history_events, event.name, event.value):
             violations.append({**v, 'tool': event.name, 'source_id': sid})
         inspected.append(sid)
+    for v in turn_shape_violations(store, route):
+        violations.append(v)
     policy = None
     if table is not None and route.call_source_ids:
         from .evaluate import evaluate_table
