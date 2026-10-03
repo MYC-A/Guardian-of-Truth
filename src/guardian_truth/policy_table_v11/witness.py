@@ -72,6 +72,9 @@ def current_datetime(store, target):
 
 AFFIRM = re.compile(r'^(?:да|подтверждаю|согласен|согласна|верно|yes|confirm|confirmed|i confirm|go ahead|please proceed|proceed|ok|okay)\b', re.I)
 REFUSE = re.compile(r'^(?:нет|не подтверждаю|не согласен|не согласна|отмените|no|do not|don.t|cancel|stop)\b', re.I)
+# "No problem"/"нет возражений" is not a refusal; it is stripped and the remainder decides.
+NOT_REFUSAL = re.compile(r'^(?:no\s+(?:problem|problems|worries|objections?)|нет\s+(?:проблем|возражений))\b[\s,.!:;-]*', re.I)
+HEDGE = re.compile(r'\b(?:но|but|если|if|нет|not|не|no|don.?t|do not|cancel|stop|wait|отмен\w*|подожд\w*|стоп)\b', re.I)
 ASK = re.compile(r'подтверд|соглас(?:ие|ны)|(?:can|shall|may) i\b|confirm|confirmation|go ahead|proceed|\?', re.I)
 DESCRIBE = re.compile(r'\b(?:will|shall|would|going to)\b|(?:сделаю|изменю|оформлю|выполню|добавлю|удалю|заменю|проведу|переведу)', re.I)
 
@@ -83,26 +86,59 @@ def key_values(arguments):
 
 
 def contains_value(text, value):
-    return bool(re.search(r'(?<!\w)' + re.escape(str(value)) + r'(?!\w)', text))
+    # "X" must not bind to "X-1", "X_2" or "X.3": joined identifier characters count as one token.
+    return bool(re.search(r'(?<![\w-])' + re.escape(str(value)) + r'(?![\w-]|[./]\w)', text))
+
+
+def reply_kind(text):
+    text = text.strip().strip('«»"\' ').lower()
+    stripped = NOT_REFUSAL.sub('', text, count=1)
+    if stripped != text:
+        if not stripped: return 'UNCLEAR'
+        text = stripped
+    elif REFUSE.search(text): return 'REFUSE'
+    if AFFIRM.search(text) and not HEDGE.search(text): return 'AFFIRM'
+    return 'UNCLEAR'
+
+
+def same_call(event, target):
+    return event.name == target.get('tool') and event.value == (target.get('arguments') or {})
 
 
 def explicit_confirmation(store, target):
     events = timeline(store, target)
     values = key_values(target.get('arguments') or {})
     if not values: return Value('UNRESOLVED', reason='no_key_argument_for_action_binding')
-    texts = [(i, sid, e) for i, (sid, e) in enumerate(events) if e.role == 'assistant' and e.kind == 'text']
+    texts = [i for i, (_, e) in enumerate(events) if e.role == 'assistant' and e.kind == 'text']
     if not texts: return Value('UNRESOLVED', reason='no_assistant_description')
-    index, sid, description = texts[-1]
-    if not any(contains_value(description.text, v) for v in values) or not (ASK.search(description.text) or DESCRIBE.search(description.text)):
-        return Value('UNRESOLVED', source_ids=(sid,), reason='latest_description_not_bound_to_action')
-    # A confirmation cannot be silently carried across an intervening native act.
-    if any(e.kind == 'call' for _, e in events[index + 1:]):
+    def bound(i):
+        text = events[i][1].text
+        return any(contains_value(text, v) for v in values) and bool(ASK.search(text) or DESCRIBE.search(text))
+    def user_after(i):
+        return [j for j in range(i + 1, len(events)) if events[j][1].role == 'user' and events[j][1].kind == 'text']
+    bounds = [i for i in texts if bound(i)]
+    if not bounds: return Value('UNRESOLVED', source_ids=(events[texts[-1]][0],), reason='latest_description_not_bound_to_action')
+    answered = [i for i in bounds if user_after(i)]
+    if not answered:
+        return Value('RESOLVED', False, (events[bounds[-1]][0], target['source_id']), 'NO_USER_TURN_AFTER_BOUND_DESCRIPTION')
+    index = answered[-1]; sid = events[index][0]
+    users = user_after(index)
+    # The answer is the user block right after the description; anything later must stay silent.
+    reply = []
+    for j in range(index + 1, len(events)):
+        if events[j][1].role == 'user' and events[j][1].kind == 'text': reply.append(j)
+        elif reply: break
+    if len(reply) != len(users):
+        return Value('UNRESOLVED', source_ids=(sid,), reason='conversation_continued_after_reply')
+    # Consent is consumed by a different native act; an identical retry of the target keeps it.
+    if any(e.kind == 'call' and not same_call(e, target) for _, e in events[index + 1:]):
         return Value('UNRESOLVED', source_ids=(sid,), reason='intervening_call_requires_new_action_binding')
-    users = [(s, e) for s, e in events[index + 1:] if e.role == 'user' and e.kind == 'text']
-    if not users: return Value('RESOLVED', False, (sid, target['source_id']), 'NO_USER_TURN_AFTER_BOUND_DESCRIPTION')
-    usid, user = users[-1]
-    text = user.text.strip().strip('«»"\' ').lower()
-    if REFUSE.search(text): return Value('RESOLVED', False, (sid, usid), 'EXPLICIT_REFUSAL_AFTER_BOUND_DESCRIPTION')
-    if AFFIRM.search(text) and not re.search(r'\b(?:но|but|если|if|нет|not|не)\b', text):
-        return Value('RESOLVED', True, (sid, usid), 'AFFIRMATION_AFTER_BOUND_DESCRIPTION')
-    return Value('UNRESOLVED', source_ids=(sid, usid), reason='user_reply_not_unambiguous_confirmation')
+    # A later unanswered request for confirmation reopens the binding.
+    later = [i for i in bounds if i > reply[-1]]
+    if any(re.search(r'\?|подтверд|confirm', events[i][1].text, re.I) for i in later):
+        return Value('UNRESOLVED', source_ids=(sid, events[later[-1]][0]), reason='unanswered_later_confirmation_request')
+    kinds = {reply_kind(events[j][1].text) for j in reply}
+    rsids = (sid,) + tuple(events[j][0] for j in reply)
+    if kinds == {'AFFIRM'}: return Value('RESOLVED', True, rsids, 'AFFIRMATION_AFTER_BOUND_DESCRIPTION')
+    if kinds == {'REFUSE'}: return Value('RESOLVED', False, rsids, 'EXPLICIT_REFUSAL_AFTER_BOUND_DESCRIPTION')
+    return Value('UNRESOLVED', source_ids=rsids, reason='user_reply_not_unambiguous_confirmation')
