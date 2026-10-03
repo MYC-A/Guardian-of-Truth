@@ -26,18 +26,18 @@ def comparison(path='args.amount', op='==', value=2, **kw):
 
 
 @pytest.mark.parametrize('description,user,status,value', [
-    ('Confirm action on X?', 'Yes', 'RESOLVED', True),
-    ('Подтвердите действие для X?', 'Да', 'RESOLVED', True),
-    ('Подтвердите действие для X?', 'Подтверждаю.', 'RESOLVED', True),
-    ('Confirm action on X?', 'Go ahead', 'RESOLVED', True),
-    ('Подтвердите действие для X?', 'Согласна', 'RESOLVED', True),
-    ('Confirm action on X?', 'Yes please', 'RESOLVED', True),
-    ('Подтвердите действие для X?', 'Нет', 'RESOLVED', False),
-    ('Confirm action on X?', 'Do not proceed', 'RESOLVED', False),
-    ('Confirm action on X?', None, 'RESOLVED', False),
-    ('Подтвердите действие для X?', None, 'RESOLVED', False),
-    ('Confirm action on Y?', 'Yes', 'UNRESOLVED', None),
-    ('Confirm action on X?', 'Yes, but only if allowed', 'UNRESOLVED', None),
+    ('Confirm apply_a: {"record_id":"X","amount":2}?', 'Yes', 'RESOLVED', True),
+    ('Подтвердите apply_a: {"record_id":"X","amount":2}?', 'Да', 'RESOLVED', True),
+    ('Подтвердите apply_a: {"record_id":"X","amount":2}?', 'Подтверждаю.', 'RESOLVED', True),
+    ('Confirm apply_a: {"record_id":"X","amount":2}?', 'Go ahead', 'RESOLVED', True),
+    ('Подтвердите apply_a: {"record_id":"X","amount":2}?', 'Согласна', 'RESOLVED', True),
+    ('Confirm apply_a: {"record_id":"X","amount":2}?', 'Yes please', 'RESOLVED', True),
+    ('Подтвердите apply_a: {"record_id":"X","amount":2}?', 'Нет', 'RESOLVED', False),
+    ('Confirm apply_a: {"record_id":"X","amount":2}?', 'Do not proceed', 'RESOLVED', False),
+    ('Confirm apply_a: {"record_id":"X","amount":2}?', None, 'RESOLVED', False),
+    ('Подтвердите apply_a: {"record_id":"X","amount":2}?', None, 'RESOLVED', False),
+    ('Confirm apply_a: {"record_id":"Y","amount":2}?', 'Yes', 'UNRESOLVED', None),
+    ('Confirm apply_a: {"record_id":"X","amount":2}?', 'Yes, but only if allowed', 'UNRESOLVED', None),
     ('Подтвердите действие для X?', 'Какова стоимость?', 'UNRESOLVED', None),
     ('The record X exists.', 'Yes', 'UNRESOLVED', None),
 ])
@@ -48,9 +48,9 @@ def test_confirmation_ru_en(description, user, status, value):
 
 
 def test_confirmation_does_not_cross_native_act_or_accept_stale_yes():
-    s = store('⟦ASSISTANT⟧\nConfirm action on X?\n⟦USER⟧\nYes\n⟦ASSISTANT⟧\n→ TOOL_CALL inspect_b: {"record_id":"X"}\n')
+    s = store('⟦ASSISTANT⟧\nConfirm apply_a: {"record_id":"X","amount":2}?\n⟦USER⟧\nYes\n⟦ASSISTANT⟧\n→ TOOL_CALL inspect_b: {"record_id":"X"}\n')
     assert explicit_confirmation(s, target(s)).status == 'UNRESOLVED'
-    s = store('⟦USER⟧\nYes\n⟦ASSISTANT⟧\nConfirm action on X?\n')
+    s = store('⟦USER⟧\nYes\n⟦ASSISTANT⟧\nConfirm apply_a: {"record_id":"X","amount":2}?\n')
     assert explicit_confirmation(s, target(s)).value is False
 
 
@@ -65,24 +65,24 @@ def test_action_verbs_and_negated_courtesy_are_not_refusals(user):
 @pytest.mark.parametrize('user', ['No', 'Нет', 'Нет, спасибо', 'No, thanks.', 'Не надо', 'Do not proceed', "Please don't",
     'Не подтверждаю', 'Нет, не надо', 'No. I changed my mind'])
 def test_narrow_explicit_refusals(user):
-    s = store('⟦ASSISTANT⟧\nConfirm action on X?\n⟦USER⟧\n' + user + '\n')
+    s = store('⟦ASSISTANT⟧\nConfirm apply_a: {"record_id":"X","amount":2}?\n⟦USER⟧\n' + user + '\n')
     got = explicit_confirmation(s, target(s))
     assert (got.status, got.value, got.reason) == ('RESOLVED', False, 'EXPLICIT_REFUSAL_AFTER_BOUND_DESCRIPTION')
 
 
-@pytest.mark.parametrize('narration', ['I will now apply the action to X.', 'Сейчас выполню действие для X.',
-    'Great, proceeding with X.'])
+@pytest.mark.parametrize('narration', ['I will call apply_a: {"record_id":"X","amount":2}', 'Вызову apply_a: {"record_id":"X","amount":2}',
+    'I will call apply_a: {"record_id":"X","amount":2}'])
 def test_bound_narration_after_confirmation_is_not_an_unanswered_request(narration):
-    s = store('⟦ASSISTANT⟧\nConfirm action on X?\n⟦USER⟧\nYes\n⟦ASSISTANT⟧\n' + narration + '\n')
+    s = store('⟦ASSISTANT⟧\nConfirm apply_a: {"record_id":"X","amount":2}?\n⟦USER⟧\nYes\n⟦ASSISTANT⟧\n' + narration + '\n')
     got = explicit_confirmation(s, target(s))
     assert (got.status, got.value) == ('RESOLVED', True)
     s = store(response='⟦ASSISTANT⟧\n' + narration + '\n→ TOOL_CALL apply_a: {"record_id":"X","amount":2}',
-              extra='⟦ASSISTANT⟧\nConfirm action on X?\n⟦USER⟧\nДа\n')
+              extra='⟦ASSISTANT⟧\nConfirm apply_a: {"record_id":"X","amount":2}?\n⟦USER⟧\nДа\n')
     assert explicit_confirmation(s, target(s)).value is True
 
 
 def test_narration_after_read_call_stays_unknown_and_never_false():
-    s = store('⟦ASSISTANT⟧\nConfirm action on X?\n⟦USER⟧\nYes\n⟦ASSISTANT⟧\n→ TOOL_CALL inspect_b: {"record_id":"X"}\n'
+    s = store('⟦ASSISTANT⟧\nConfirm apply_a: {"record_id":"X","amount":2}?\n⟦USER⟧\nYes\n⟦ASSISTANT⟧\n→ TOOL_CALL inspect_b: {"record_id":"X"}\n'
               '← TOOL_RESPONSE inspect_b: {"record_id":"X"}\n⟦ASSISTANT⟧\nI will apply the action to X now.\n')
     got = explicit_confirmation(s, target(s))
     assert got.status == 'UNRESOLVED' and got.value is None
@@ -90,10 +90,10 @@ def test_narration_after_read_call_stays_unknown_and_never_false():
 
 def test_refusal_then_new_bound_question_without_reply_is_false_only_when_never_answered():
     # Latest reply is a refusal to the latest answered bound question.
-    s = store('⟦ASSISTANT⟧\nConfirm action on X?\n⟦USER⟧\nNo\n⟦ASSISTANT⟧\nI will apply the action to X.\n')
+    s = store('⟦ASSISTANT⟧\nConfirm apply_a: {"record_id":"X","amount":2}?\n⟦USER⟧\nNo\n⟦ASSISTANT⟧\nI will call apply_a: {"record_id":"X","amount":2}\n')
     assert explicit_confirmation(s, target(s)).value is False
     # Description and call with no user turn at all after any bound description.
-    s = store('⟦ASSISTANT⟧\nI will apply the action to X.\n')
+    s = store('⟦ASSISTANT⟧\nI will call apply_a: {"record_id":"X","amount":2}\n')
     assert explicit_confirmation(s, target(s)).reason == 'NO_USER_TURN_AFTER_BOUND_DESCRIPTION'
 
 
@@ -107,7 +107,7 @@ def test_unanswered_bound_confirmation_question_is_false_when_never_affirmed(que
     s = store('⟦ASSISTANT⟧\nRecord X has amount 1. What would you like?\n⟦USER⟧\nChange it to 2.\n'
               '⟦ASSISTANT⟧\n' + question + '\n')
     got = explicit_confirmation(s, target(s))
-    assert (got.status, got.value, got.reason) == ('RESOLVED', False, 'BOUND_CONFIRMATION_REQUEST_UNANSWERED')
+    assert (got.status, got.value) == ('UNRESOLVED', None)  # No operation/parameter certificate in this prose.
 
 
 @pytest.mark.parametrize('text', ['Thanks for confirming, I will apply the action to X now?',
@@ -118,11 +118,11 @@ def test_unanswered_rule_needs_explicit_confirmation_question(text):
 
 
 def test_repeated_question_after_earlier_affirmation_is_unknown():
-    s = store('⟦ASSISTANT⟧\nConfirm action on X?\n⟦USER⟧\nYes\n⟦ASSISTANT⟧\nJust to be sure: confirm action on X?\n')
+    s = store('⟦ASSISTANT⟧\nConfirm apply_a: {"record_id":"X","amount":2}?\n⟦USER⟧\nYes\n⟦ASSISTANT⟧\nConfirm apply_a: {"record_id":"X","amount":2}?\n')
     got = explicit_confirmation(s, target(s))
-    assert got.status == 'UNRESOLVED' and got.reason == 'unanswered_later_confirmation_request'
+    assert got.status == 'UNRESOLVED' and got.reason == 'later_unanswered_proposal_after_earlier_reply'
     # A question before an intervening read call does not count for the current segment.
-    s = store('⟦ASSISTANT⟧\nRecord X: what next?\n⟦USER⟧\nHmm\n⟦ASSISTANT⟧\nConfirm action on X?\n'
+    s = store('⟦ASSISTANT⟧\nRecord X: what next?\n⟦USER⟧\nHmm\n⟦ASSISTANT⟧\nConfirm apply_a: {"record_id":"X","amount":2}?\n'
               '→ TOOL_CALL inspect_b: {"record_id":"X"}\n← TOOL_RESPONSE inspect_b: {"record_id":"X"}\n')
     assert explicit_confirmation(s, target(s)).value is not False
 
@@ -146,8 +146,8 @@ def test_latest_current_time_result_unknown_does_not_reuse_old_time():
 def test_current_time_plaintext_tool_and_long_explicit_affirmation():
     s = store('⟦ASSISTANT⟧\n→ TOOL_CALL get_current_time: {}\n← TOOL_RESPONSE get_current_time: The current time is 2025-11-14 03:40:00 EST.\n')
     assert current_datetime(s, target(s)).value == '2025-11-14T03:40:00-05:00'
-    s = store('⟦ASSISTANT⟧\nConfirm action on X?\n⟦USER⟧\nYes, I confirm the action. Thank you for explaining the details so clearly and checking everything in advance.\n')
-    assert explicit_confirmation(s, target(s)).value is True
+    s = store('⟦ASSISTANT⟧\nConfirm apply_a: {"record_id":"X","amount":2}?\n⟦USER⟧\nYes, I confirm the action. Thank you for explaining the details so clearly and checking everything in advance.\n')
+    assert explicit_confirmation(s, target(s)).status == 'UNRESOLVED'  # Uninspected free-text reply tail.
 
 
 def test_forbidden_empty_collection_does_not_emit_and_prior_binding_rejects_other_entity():
@@ -234,7 +234,7 @@ def test_decimal_membership_normalization(left, right):
 
 
 def test_union_exception_of_invalid_atom_suppresses_other_accepted_atom():
-    s = store('⟦ASSISTANT⟧\nConfirm action on X?\n'); p = policy(s); tr = {'kind': 'TOOL_CALL', 'tool': 'apply_a'}
+    s = store('⟦ASSISTANT⟧\nConfirm apply_a: {"record_id":"X","amount":2}?\n'); p = policy(s); tr = {'kind': 'TOOL_CALL', 'tool': 'apply_a'}
     a = atomic().model_dump()
     invalid = {**a, 'modality': 'REQUIRES', 'confirmation': None, 'condition': comparison('args.nonexistent'),
         'exceptions': [comparison(value=2)]}
@@ -248,7 +248,7 @@ def test_union_exception_of_invalid_atom_suppresses_other_accepted_atom():
 def test_unknown_exception_and_unknown_confirmation_cannot_emit_error():
     s = store(); a = atomic()
     assert not evaluate_atom(s, a, target(s))['finding']
-    s = store('⟦ASSISTANT⟧\nConfirm action on X?\n')
+    s = store('⟦ASSISTANT⟧\nConfirm apply_a: {"record_id":"X","amount":2}?\n')
     assert evaluate_atom(s, a, target(s))['finding']
     a.exceptions = [Expression.model_validate(comparison('args.unknown', value=2))]
     assert not evaluate_atom(s, a, target(s))['finding']
@@ -262,7 +262,7 @@ def test_multiple_TARGET_records_latest_missing_and_later_response_calls():
     assert evaluate_atom(s, a, target(s))['value'] == 'UNRESOLVED'
     s = store(base + '→ TOOL_CALL inspect_b: {"record_id":"X"}\n← TOOL_RESPONSE inspect_b: {"records":[]}\n')
     assert not evaluate_atom(s, a, target(s))['finding']
-    s = store(response='⟦ASSISTANT⟧\nConfirm action on X?\n→ TOOL_CALL apply_a: {"record_id":"X","amount":2}')
+    s = store(response='⟦ASSISTANT⟧\nConfirm apply_a: {"record_id":"X","amount":2}?\n→ TOOL_CALL apply_a: {"record_id":"X","amount":2}')
     assert evaluate_atom(s, atomic(), target(s))['finding']
 
 

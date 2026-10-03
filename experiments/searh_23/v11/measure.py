@@ -244,7 +244,7 @@ def mechanism(atom, requirement_spec, policy, tool):
         hit = {n.tool for n in nodes if n.kind == 'PRIOR_CALL'} & {n.tool for n in want if n.kind == 'PRIOR_CALL'}
     else:
         hit = {n.lhs for n in nodes if n.kind == 'COMPARE'} & {n.lhs for n in want if n.kind == 'COMPARE'}
-    return 'MECHANISM' if hit else None
+    return 'RELATED_ONLY' if hit else None
 
 
 def coverage(tables):
@@ -263,7 +263,12 @@ def measure_mutations(tables=None):
     notes = annotations(); manifest = json.loads(MUTATIONS.read_text(encoding='utf-8'))['mutants']
     originals = inputs(); stores = {s.case_id: s for v in groups().values() for s in v}; cases = []
     for spec in manifest:
-        if spec['status'] != 'POSITIVE' or spec['policy_sha256'] not in tables: continue
+        if spec['status'] != 'POSITIVE': continue
+        if spec['policy_sha256'] not in tables:
+            cases.append({'id': spec['id'], 'kind': spec['kind'], 'policy': spec['policy_sha256'],
+                'tool': spec['tool'], 'missing_table': True, 'found_decisive': False,
+                'found_with_shadow': False, 'control_rule_false_alarm_decisive': False, 'atoms': []})
+            continue
         table = tables[spec['policy_sha256']]; policy = table['policy']
         control = stores[spec['base_case_id']]; mstore = SourceStore(materialize(spec, originals))
         t_control = next(t for t in native_target_inventory(control) if t['source_id'] == spec['target_source_id'])
@@ -276,11 +281,12 @@ def measure_mutations(tables=None):
         for entry in table['atoms']:
             if entry['trigger'].get('tool') != spec['tool']: continue
             atom = Atom.model_validate(entry['atom'])
-            match = next((m for m in (mechanism(atom, r, policy, spec['tool']) for r in reqs) if m), None)
+            matches = {mechanism(atom, r, policy, spec['tool']) for r in reqs}
+            match = 'EXACT' if 'EXACT' in matches else 'RELATED_ONLY' if 'RELATED_ONLY' in matches else None
             rows_.append({'atom_id': entry['atom_id'], 'status': entry['status'], 'rule_match': match,
                           'control_finding': before[entry['atom_id']]['finding'], 'mutant_finding': after[entry['atom_id']]['finding']})
-        def found(status): return any(r['rule_match'] and r['status'] in status and r['mutant_finding'] and not r['control_finding'] for r in rows_)
-        def control_fp(status): return any(r['rule_match'] and r['status'] in status and r['control_finding'] for r in rows_)
+        def found(status): return any(r['rule_match'] == 'EXACT' and r['status'] in status and r['mutant_finding'] and not r['control_finding'] for r in rows_)
+        def control_fp(status): return any(r['rule_match'] == 'EXACT' and r['status'] in status and r['control_finding'] for r in rows_)
         cases.append({'id': spec['id'], 'kind': spec['kind'], 'policy': spec['policy_sha256'], 'tool': spec['tool'],
                       'found_decisive': found({'DECISIVE'}), 'found_with_shadow': found({'DECISIVE', 'SHADOW'}),
                       'control_rule_false_alarm_decisive': control_fp({'DECISIVE'}), 'atoms': rows_})
@@ -289,6 +295,9 @@ def measure_mutations(tables=None):
                'found_with_shadow': sum(c['found_with_shadow'] for c in cases),
                'control_rule_false_alarms_decisive': sum(c['control_rule_false_alarm_decisive'] for c in cases),
                'recall_decisive': sum(c['found_decisive'] for c in cases) / n if n else None, 'threshold': 0.7}
+    summary['missing_tables'] = sum(c.get('missing_table', False) for c in cases)
+    summary['by_policy'] = {key: {'positive_mutants': sum(c['policy'] == key for c in cases),
+        'found_decisive': sum(c['policy'] == key and c['found_decisive'] for c in cases)} for key in sorted({c['policy'] for c in cases})}
     return {'summary': summary, 'cases': cases}
 
 

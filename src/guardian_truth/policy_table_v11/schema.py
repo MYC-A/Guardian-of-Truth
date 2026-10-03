@@ -46,6 +46,7 @@ class Atom(Strict):
     binding: Binding | None = None
     clause_ids: list[str] = Field(min_length=1)
     exceptions: list[Expression]
+    guard: Expression | None = None  # Applicability is distinct from the necessary condition.
 
     @model_validator(mode='after')
     def one_requirement(self):
@@ -72,3 +73,13 @@ def requirement(atom):
     if atom.condition is not None: return atom.condition
     if atom.prior_call: return Expression(kind='PRIOR_CALL', tool=atom.prior_call, binding=atom.binding)
     return Expression(kind='CONFIRMATION')
+
+
+def wire_dump(model):
+    """Drop optional null fields while preserving opaque, required literal values."""
+    def clean(value):
+        if isinstance(value, list): return [clean(v) for v in value]
+        if not isinstance(value, dict): return value
+        if value.get('kind') == 'LITERAL': return value  # value:null and nulls inside JSON literals are data.
+        return {k: clean(v) for k, v in value.items() if v is not None}
+    return clean(model.model_dump())

@@ -31,14 +31,12 @@ def test_every_manifest_mutant_rematerializes_bit_exactly():
         assert spec['mutated_source_sha256'] != spec['base_source_sha256']
 
 
-def test_mutants_are_rebuilt_deterministically():
-    # Regenerating from the frozen inputs must reproduce the committed manifest exactly.
-    before = measure.MUTATIONS.read_bytes()
-    try:
-        measure.build_mutations()
-        assert measure.MUTATIONS.read_bytes() == before
-    finally:
-        measure.MUTATIONS.write_bytes(before)
+def test_mutants_are_rebuilt_deterministically(tmp_path, monkeypatch):
+    # The historical manifest remains immutable; stricter witnesses require a new version.
+    monkeypatch.setattr(measure, 'MUTATIONS', tmp_path / 'manifest.json')
+    measure.build_mutations(); before = measure.MUTATIONS.read_bytes()
+    measure.build_mutations()
+    assert measure.MUTATIONS.read_bytes() == before
 
 
 def test_removal_drops_only_the_requested_events():
@@ -94,3 +92,10 @@ def test_predict_requires_committed_final_freeze():
     before = measure.PREDICTIONS.exists()
     with pytest.raises(Exception): measure.predict()
     assert measure.PREDICTIONS.exists() == before
+
+
+def test_missing_tables_remain_in_mutant_denominator():
+    expected = sum(s['status'] == 'POSITIVE' for s in manifest()['mutants'])
+    result = measure.measure_mutations({})['summary']
+    assert result['positive_mutants'] == expected == 4
+    assert result['missing_tables'] == 4 and result['recall_decisive'] == 0

@@ -4,7 +4,7 @@ from decimal import Decimal
 import hashlib
 import json
 import re
-from .schema import Atom, Expression, requirement
+from .schema import Atom, Expression, requirement, wire_dump
 from .catalog import compact_catalog
 from guardian_truth.policy_table.segment import scalar_type
 
@@ -16,7 +16,9 @@ Inspection of an approval is not the action requiring that approval. Bind every
 condition to THIS action, actor, entity and time. No assistant rationale is evidence.
 Return {"atoms":[...],"empty_reason":"one sentence if there are no atoms"}.
 Each atom has modality, exactly one of condition/prior_call/confirmation,
-clause_ids and exceptions (a list of exception expressions, OR semantics).
+clause_ids, guard (null for unconditional; otherwise an applicability expression),
+and exceptions (a list of exception expressions, OR semantics).
+Never drop an unrepresentable applicability guard or exception; leave it uncompiled.
 Modality REQUIRES: condition must be true. FORBIDS: condition describes forbidden
 state. REQUIRES_PRIOR_CALL: prior_call is a declared tool name (attempt only),
 optional binding {argument: trigger-argument name, record_field: prior-argument name}.
@@ -37,9 +39,9 @@ are UNKNOWN. No concrete instance IDs. Literal string comparisons only to declar
 argument enum values or literal policy constants. Do not copy arbitrary IDs from data.
 ctx.current_datetime is the explicit timezone-aware current time from policy or latest
 current-time tool result; otherwise UNKNOWN. user.explicit_confirmation is code-bound:
-TRUE only for a clear ru/en affirmative reply after an action description mentioning
-a key argument; FALSE for no intervening user reply or explicit refusal; else UNKNOWN.
-Code may conservatively leave an unbound description UNKNOWN. Successful effects
+TRUE only for an entirely clear ru/en reply after an exact operation-and-all-arguments
+certificate; FALSE for no intervening user reply or explicit refusal; else UNKNOWN.
+Ordinary prose has no complete action certificate and stays UNKNOWN. Successful effects
 are not proven by tool attempts. Temporal before/after compare timezone-aware values.
 Use only supplied paths, source clause IDs and declared tool names. Read ALL clauses,
 including general prerequisites. Preserve exceptions. Never invent an unrepresented
@@ -51,6 +53,7 @@ def request(policy, trigger, sample_id=0):
     packet = {'policy_sha256': policy['policy_sha256'], 'trigger': trigger,
         'sample_id': sample_id, 'clauses': [{'id': c['id'], 'text': c['text']} for c in policy['clauses']],
         'trigger_declaration': catalog['tools'].get(trigger.get('tool'), {}).get('declaration'),
+        'tool_declarations': {name: spec['declaration'] for name, spec in catalog['tools'].items()},
         'declared_tools': {name: {k: {f: v for f, v in data.items() if f != 'witness'}
             for k, data in spec['arguments'].items()} for name, spec in catalog['tools'].items()},
         'paths': compact_catalog(catalog, trigger), 'collection_fields': catalog['collection_fields']}
@@ -60,19 +63,27 @@ def request(policy, trigger, sample_id=0):
 
 
 def normalized(value):
-    if type(value) in (int, float): return {'$decimal': str(Decimal(str(value)).normalize())}
+    if type(value) in (int, float):
+        # Decimal.normalize() rounds to the ambient context (usually 28 digits).
+        # Canonical identity must never round: it determines independent votes.
+        sign, digits, exponent = Decimal(str(value)).as_tuple()
+        digits = list(digits)
+        while len(digits) > 1 and digits[-1] == 0:
+            digits.pop(); exponent += 1
+        if not any(digits): sign, digits, exponent = 0, [0], 0
+        return {'$decimal': [sign, ''.join(map(str, digits)), exponent]}
     if isinstance(value, list): return [normalized(v) for v in value]
     if isinstance(value, dict): return {k: normalized(v) for k, v in value.items()}
     return value
 
 
 def normalized_expression(expr):
-    data = expr.model_dump(exclude_none=True)
+    data = wire_dump(expr)
     if expr.kind == 'COMPARE' and expr.rhs and expr.rhs.kind == 'LITERAL':
         v = expr.rhs.value
-        if expr.op == 'in' and isinstance(v, list) and len(v) == 1:
+        if expr.op == 'in' and isinstance(v, list) and len(v) == 1 and v[0] is not None:
             data['op'] = '=='; data['rhs']['value'] = v[0]
-        if expr.op == '!=':
+        if expr.op == '!=' and v is not None:
             data['op'] = 'not_in'; data['rhs']['value'] = [v]
     if expr.items: data['items'] = sorted([normalized_expression(e) for e in expr.items], key=lambda e: json.dumps(e, sort_keys=True))
     if data.get('op') in ('in', 'not_in') and data.get('rhs', {}).get('kind') == 'LITERAL':
@@ -81,8 +92,11 @@ def normalized_expression(expr):
 
 
 def canonical(policy_hash, trigger, atom):
-    return json.dumps({'policy': policy_hash, 'trigger': trigger, 'modality': atom.modality,
-        'requirement': normalized_expression(requirement(atom))}, ensure_ascii=False, sort_keys=True, separators=(',', ':'))
+    # These wire modalities express the same necessary condition; FORBIDS is distinct.
+    modality = 'FORBIDS' if atom.modality == 'FORBIDS' else 'REQUIRES'
+    return json.dumps({'policy': policy_hash, 'trigger': trigger, 'modality': modality,
+        'requirement': normalized_expression(requirement(atom)),
+        'guard': normalized_expression(atom.guard) if atom.guard else None}, ensure_ascii=False, sort_keys=True, separators=(',', ':'))
 
 
 def expressions(expr):
@@ -147,25 +161,43 @@ def validate_expression(expr, policy, trigger):
 def admit(response, policy, trigger):
     if not isinstance(response, dict) or not isinstance(response.get('atoms'), list):
         return {'valid_response': False, 'atoms': [], 'discarded': [{'reason': 'invalid_envelope'}], 'empty_unmotivated': False}
-    accepted, discarded, valid_exceptions = [], [], []
+    accepted, discarded, valid_exceptions, adaptations = [], [], [], []
     for i, candidate in enumerate(response['atoms']):
         if isinstance(candidate, dict) and isinstance(candidate.get('clause_ids'), list) and candidate['clause_ids'] and all(isinstance(c, str) for c in candidate['clause_ids']) and set(candidate['clause_ids']) <= {c['id'] for c in policy['clauses']}:
             for raw_exc in candidate.get('exceptions', []) if isinstance(candidate.get('exceptions'), list) else []:
                 try:
                     expr = Expression.model_validate(raw_exc); validate_expression(expr, policy, trigger)
-                    valid_exceptions.append({'expression': expr.model_dump(exclude_none=True), 'clause_ids': candidate['clause_ids']})
+                    valid_exceptions.append({'expression': wire_dump(expr), 'clause_ids': candidate['clause_ids']})
                 except ValueError: pass
         try:
+            candidate, adapted = adapt_wire(candidate)
+            if adapted: adaptations.append({'index': i, 'conversion': adapted})
             atom = Atom.model_validate(candidate)
             if not set(atom.clause_ids) <= {c['id'] for c in policy['clauses']}: raise ValueError('unknown_clause_ID')
             validate_expression(requirement(atom), policy, trigger)
+            if atom.guard: validate_expression(atom.guard, policy, trigger)
             for expr in atom.exceptions: validate_expression(expr, policy, trigger)
-            accepted.append(atom.model_dump(exclude_none=True))
+            accepted.append(wire_dump(atom))
         except ValueError as exc:
             discarded.append({'index': i, 'reason': str(exc).split('\n')[0], 'raw_atom': candidate})
     return {'valid_response': True, 'atoms': accepted, 'discarded': discarded, 'valid_exceptions': valid_exceptions,
+        'adaptations': adaptations,
         'empty_unmotivated': not response['atoms'] and not isinstance(response.get('empty_reason'), str) or
                               not response['atoms'] and not response.get('empty_reason', '').strip()}
+
+
+def adapt_wire(candidate):
+    """Versioned lossless wrapper conversion; never invent modality or binding."""
+    if not isinstance(candidate, dict): return candidate, None
+    prior = candidate.get('prior_call')
+    if candidate.get('modality') != 'REQUIRES_PRIOR_CALL' or not isinstance(prior, dict):
+        return candidate, None
+    if set(prior) - {'tool', 'binding'} or not isinstance(prior.get('tool'), str):
+        raise ValueError('invalid_prior_wrapper')
+    nested, outer = prior.get('binding'), candidate.get('binding')
+    if nested is not None and outer is not None and nested != outer:
+        raise ValueError('conflicting_prior_binding')
+    return {**candidate, 'prior_call': prior['tool'], 'binding': nested if nested is not None else outer}, 'prior_wrapper/v1'
 
 
 def assemble(policy, proposals, *, family_fallback=False):
@@ -181,21 +213,21 @@ def assemble(policy, proposals, *, family_fallback=False):
         for entry in parsed.get('valid_exceptions', []):
             exc = Expression.model_validate(entry['expression'])
             ekey = json.dumps(normalized_expression(exc), sort_keys=True)
-            exceptions[trigger_key][ekey] = exc.model_dump(exclude_none=True)
+            exceptions[trigger_key][ekey] = wire_dump(exc)
         for data in parsed['atoms']:
             atom = Atom.model_validate(data); key = canonical(policy['policy_sha256'], trigger, atom)
             support[key].add(proposal['proposer']); sources[key].update(atom.clause_ids)
             representatives[key] = (trigger, atom)
             for exc in atom.exceptions:
                 ekey = json.dumps(normalized_expression(exc), sort_keys=True)
-                exceptions[trigger_key][ekey] = exc.model_dump(exclude_none=True)
+                exceptions[trigger_key][ekey] = wire_dump(exc)
     accepted = []
     for key, votes in sorted(support.items()):
         if len(votes) < 2:
             discarded.append({'reason': 'no_atom_agreement', 'canonical_atom': key}); continue
         trigger, atom = representatives[key]
         status = 'DECISIVE' if len(votes) == 3 and (family_fallback or len({families[v] for v in votes}) >= 2) else 'SHADOW'
-        data = atom.model_dump(exclude_none=True); data['clause_ids'] = sorted(sources[key])
+        data = wire_dump(atom); data['clause_ids'] = sorted(sources[key])
         data['exceptions'] = list(exceptions[json.dumps(trigger, sort_keys=True)].values())
         accepted.append({'atom_id': 'atom_' + hashlib.sha256(key.encode()).hexdigest()[:16],
             'trigger': trigger, 'atom': data, 'status': status, 'support': sorted(votes)})

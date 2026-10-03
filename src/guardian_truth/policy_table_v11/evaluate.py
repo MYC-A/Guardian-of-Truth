@@ -2,12 +2,14 @@
 from guardian_truth.policy_table.evaluate import (Value, UNKNOWN, same, condition_value,
     conjunction, state_value, state_components)
 from guardian_truth.policy_table.schema import Condition, LiteralOperand
+from guardian_truth.parsing import parse_catalog
 from guardian_truth.policy_table.segment import policy_hash
 from guardian_truth.source_search.id_contract import native_target_inventory
 from guardian_truth.source_search.store import SourceStore
 from .schema import Atom, Expression, requirement
 from .witness import timeline, explicit_confirmation, current_datetime
 from .compile import verify_table, validate_expression
+from .provenance import observations, target_is_assistant, lineage_matches
 
 
 def disjunction(values):
@@ -60,7 +62,7 @@ def anchors(target, expression):
         if expr.kind == 'COMPARE' and expr.rhs and expr.rhs.kind == 'PATH':
             if expr.lhs.startswith('args.') and expr.rhs.path.startswith('state.'): comparands.add(expr.lhs[5:])
             if expr.lhs.startswith('state.') and expr.rhs.path.startswith('args.'): comparands.add(expr.rhs.path[5:])
-    eligible = {k: v for k, v in args.items() if k not in comparands}
+    eligible = {k: v for k, v in args.items() if k not in comparands or k == 'id' or k.endswith('_id')}
     identifiers = {k: v for k, v in eligible.items() if k == 'id' or k.endswith('_id')}
     return identifiers or eligible
 
@@ -92,32 +94,83 @@ def resolved_values(store, path, target, expr):
     components = state_components(path)
     if components is None: return [UNKNOWN]
     name, parts = components
-    prior, source_map = prefix_store(store, target)
     entity = anchors(target, expr)
-    if '*' not in parts and '{key}' not in parts:
-        value = state_value(prior, name, parts, target, observed_anchors(prior, name, entity))
-        return [Value(value.status, value.value, tuple(source_map.get(s, s) for s in value.source_ids), value.reason)]
-    pending, observations = [], []
-    for i, event in enumerate(prior.history_events):
-        if event.name != name: continue
-        if event.kind == 'call': pending.append(event)
-        if event.kind != 'result': continue
-        call = pending[0] if len(pending) == 1 else None
-        ambiguous = len(pending) > 1; pending = []
+    catalog = parse_catalog(store.history_events, store.raw['prompt'])
+    declared = catalog.tools.get(name)
+    read_keys = {f.name for f in declared.fields} if declared else set()
+    required = set(entity) & read_keys
+    if expr.quantifier == 'TARGET' and expr.binding:
+        required |= set(entity) | {expr.binding.argument}
+    values = []
+    for receipt in observations(timeline(store, target), name):
+        event, call = receipt.result, receipt.call
         call_args = call.value if call and call.json_valid and isinstance(call.value, dict) else {}
         overlap = set(entity) & set(call_args)
         if overlap and any(not same(entity[k], call_args[k]) for k in overlap): continue
-        if ambiguous or not event.json_valid:
-            observations.append([Value('UNRESOLVED', source_ids=(source_map['h' + str(i)],), reason='latest_result_invalid_or_unpaired')]); continue
-        selected = collection_select(event.value, parts, expr.quantifier, expr.binding, target.get('arguments') or {})
-        observations.append([Value(v.status, v.value, (source_map['h' + str(i)],), v.reason) for v in selected])
-    return observations[-1] if observations else [UNKNOWN]
+        sources = tuple(s for s in (receipt.call_sid, receipt.result_sid) if s)
+        if not receipt.valid or not event.json_valid:
+            values.append([Value('UNRESOLVED', source_ids=sources,
+                reason=receipt.reason or 'latest_result_invalid')]); continue
+        selected = bound_select(event.value, parts, expr, target.get('arguments') or {},
+                                entity, call_args, required, [])
+        values.append([Value(v.status, v.value, sources, v.reason) for v in selected])
+    return values[-1] if values else [UNKNOWN]
+
+
+def bound_select(value, parts, expr, arguments, entity, call_args, required, layers):
+    layers = [*layers, value] if isinstance(value, dict) else layers
+    if not parts:
+        proven = bool(set(entity) & set(call_args)) or any(set(entity) & set(d) for d in layers)
+        if entity and (not proven or not lineage_matches(call_args, entity, layers, required)):
+            return [Value('UNRESOLVED', reason='entity_lineage_missing_or_contradictory')]
+        return [Value('RESOLVED', value)]
+    head, *tail = parts
+    if head in ('*', '{key}'):
+        if expr.quantifier in ('ANY', 'ALL') and entity:
+            proven_parent = bool(set(entity) & set(call_args)) or any(set(entity) & set(d) for d in layers)
+            if not proven_parent or not lineage_matches(call_args, entity, layers, required):
+                return [Value('UNRESOLVED', reason='aggregate_collection_not_bound_to_parent')]
+        if head == '*' and isinstance(value, list): records = list(enumerate(value))
+        elif head == '{key}' and isinstance(value, dict): records = list(value.items())
+        else: return [UNKNOWN]
+        if not records: return [Value('UNRESOLVED', reason='empty_collection')]
+        if expr.quantifier == 'TARGET':
+            binding = expr.binding
+            if binding is None or binding.argument not in arguments: return [UNKNOWN]
+            wanted = arguments[binding.argument]
+            wanted = wanted if isinstance(wanted, list) else [wanted]
+            selected = []
+            for item in wanted:
+                def identity(key, record):
+                    if binding.record_field == '$key': return key
+                    if binding.record_field == '*': return record
+                    return record.get(binding.record_field) if isinstance(record, dict) else None
+                matches = [(k, v) for k, v in records if same(identity(k, v), item)]
+                if len(matches) != 1: return [Value('UNRESOLVED', reason='TARGET_missing_or_ambiguous_record')]
+                selected.extend(matches)
+            if not selected: return [UNKNOWN]
+            records = selected
+        results = []
+        for key, child in records:
+            inherited = layers
+            if expr.quantifier == 'TARGET':
+                # Structural $key proves the child's binding, never its parent's ID.
+                bound_value = key if expr.binding.record_field == '$key' else (
+                    child if expr.binding.record_field == '*' else child.get(expr.binding.record_field))
+                inherited = [*layers, {expr.binding.argument: bound_value}]
+            results.extend(bound_select(child, tail, expr, arguments, entity, call_args, required, inherited))
+        return results
+    if isinstance(value, dict) and head in value:
+        return bound_select(value[head], tail, expr, arguments, entity, call_args, required, layers)
+    return [UNKNOWN]
 
 
 def compare(a, b, expr):
     evidence = {'path': expr.lhs, 'value': a.value, 'source_ids': list(a.source_ids), 'status': a.status, 'reason': a.reason}
     if b is not None: evidence['rhs'] = {'value': b.value, 'source_ids': list(b.source_ids), 'status': b.status, 'reason': b.reason}
     if a.status != 'RESOLVED' or b is not None and b.status != 'RESOLVED': return 'UNRESOLVED', evidence
+    if expr.rhs and expr.rhs.kind == 'PATH' and expr.op in ('==', '!=') and (a.value is None or b.value is None):
+        return 'UNRESOLVED', evidence  # Path null is not an explicit literal-null predicate.
     # Reuse V10's typed Decimal, explicit-null, membership and timezone logic.
     try:
         condition = Condition(lhs='args._lhs', op=expr.op,
@@ -171,9 +224,11 @@ def evaluate_atom(store, atom, target):
     expr = requirement(atom)
     value, evidence = evaluate_expression(store, expr, target)
     exception_pairs = [evaluate_expression(store, exc, target) for exc in atom.exceptions]
-    suppressed = any(v in ('TRUE', 'UNRESOLVED') for v, _ in exception_pairs)
+    guard_value, guard_evidence = evaluate_expression(store, atom.guard, target) if atom.guard else ('TRUE', [])
+    suppressed = guard_value != 'TRUE' or any(v in ('TRUE', 'UNRESOLVED') for v, _ in exception_pairs)
     violation = value == ('TRUE' if atom.modality == 'FORBIDS' else 'FALSE') and not suppressed
     return {'finding': violation, 'value': value, 'evaluated': evidence,
+        'guard_value': guard_value, 'guard_evidence': guard_evidence,
         'exception_values': [v for v, _ in exception_pairs],
         'exception_evidence': [e for _, es in exception_pairs for e in es], 'suppressed': suppressed}
 
@@ -186,6 +241,7 @@ def evaluate_table(store, table, targets=None):
     for entry in table['atoms']:
         atom = Atom.model_validate(entry['atom']); trigger = entry['trigger']
         for target in targets:
+            if not target_is_assistant(store, target): continue
             if trigger.get('tool') != target.get('tool') or trigger.get('act') != target.get('act'): continue
             result = evaluate_atom(store, atom, target)
             record = {'atom_id': entry['atom_id'], 'status': entry['status'], 'trigger': trigger,
