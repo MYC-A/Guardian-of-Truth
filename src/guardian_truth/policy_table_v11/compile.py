@@ -6,6 +6,7 @@ import json
 import re
 from .schema import Atom, Expression, requirement, wire_dump
 from .catalog import compact_catalog
+from .evidence_scope import presence_only
 from guardian_truth.policy_table.segment import scalar_type
 
 INSTRUCTION = '''You compile necessary policy preconditions for ONE code-selected trigger.
@@ -175,6 +176,10 @@ def admit(response, policy, trigger):
             atom = Atom.model_validate(candidate)
             if not set(atom.clause_ids) <= {c['id'] for c in policy['clauses']}: raise ValueError('unknown_clause_ID')
             validate_expression(requirement(atom), policy, trigger)
+            if presence_only(requirement(atom)):
+                # Required arguments are enforced by the tool schema. An argument's
+                # presence never proves consent, provenance or any dialogue fact.
+                raise ValueError('argument_presence_is_schema_not_policy')
             if atom.guard: validate_expression(atom.guard, policy, trigger)
             for expr in atom.exceptions: validate_expression(expr, policy, trigger)
             accepted.append(wire_dump(atom))
