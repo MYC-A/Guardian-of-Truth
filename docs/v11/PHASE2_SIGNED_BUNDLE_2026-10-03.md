@@ -26,10 +26,26 @@ So the bundle currently carries 0 tables and the gate runs on Phase 1 invariants
 Filling coverage needs one more proposer sample for `da31c80e…` and three for the others;
 that is a one-off offline compile, after which the bundle is rebuilt and re-signed in CI.
 
+## Domain-agnostic call invariants (`invariants.py`)
+No policy table and no LLM; patterns are generic, no dataset IDs or tool names:
+* `PLACEHOLDER_ARGUMENT`: template/placeholder value (also inside JSON-string wrapped arguments).
+* `NOOP_REPLACEMENT`: `x` and `new_x` equal (same array position) - an item replaced by itself.
+* `REPEATED_FAILED_CALL`: identical tool + arguments already returned `[ERROR]` in visible history.
+
+Caveat: these three patterns were chosen after reading FN explanations of valid.parquet,
+so the gain below is a development-set result, not hidden-test evidence.
+
 ## valid.parquet (46 rows, LLM calls: 0)
-`TP 8 / FP 0 / FN 15 / TN 23` → precision 1.000, recall 0.348, **F1 0.516**.
-Verdicts: ADMISSIBLE 15, VIOLATION 8, UNKNOWN 23 (all prose). Latency median 0.26 ms, max 5 ms.
-CI fails if F1 drops below 0.50 (`--min-f1`).
+| Version | TP | FP | FN | TN | P | R | F1 |
+|---|---|---|---|---|---|---|---|
+| Phase 1 invariants | 8 | 0 | 15 | 23 | 1.000 | 0.348 | 0.516 |
+| + call invariants | 11 | 0 | 12 | 23 | 1.000 | 0.478 | **0.647** |
+
+Verdicts: ADMISSIBLE 12, VIOLATION 11, UNKNOWN 23 (all prose). Latency median 0.26 ms, max 5 ms.
+CI fails if F1 drops below 0.60 (`--min-f1`).
+
+Remaining FN (12): policy-semantic (dates vs current time, verification 2-of-N, premature
+escalation, one-shot return/exchange, expired contract) need compiled atoms; 2 prose errors need the prose channel (Phase 3).
 
 ## Run
 ```bash
@@ -38,4 +54,5 @@ PYTHONPATH=src python -m guardian_truth.policy_table_v11.service --input valid.p
   --bundle build/policy_bundle.json --output build/predictions.csv \
   --audit build/audit.jsonl --metrics build/metrics.json
 ```
+CI workflow: `.github/workflows/guardian-gate.yml` (if the push token lacks `workflow` scope, a copy lives in `ci/guardian-gate.yml`; move it in place).
 Docker: `docker build -f Dockerfile.gate -t guardian-gate .` (after building the bundle).
