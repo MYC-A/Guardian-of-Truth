@@ -1,0 +1,436 @@
+{
+  "schema": "retrieval-library-audit/v1",
+  "checked_date_utc": "2026-10-04",
+  "scope": "Read-only primary upstream implementation audit; not a benchmark or inference result.",
+  "method": "Verified GitHub HEAD commit and pinned code paths; source hashes are upstream response bytes. Prior EXTERNAL_RESEARCH used only as locator.",
+  "audit_actions": {
+    "inference_http": 0,
+    "package_installations": 0,
+    "model_weight_downloads": 0,
+    "lora_training": false,
+    "foreign_benchmark_replication": false,
+    "note": "Metadata/raw-code HTTP GETs are research reads, not inference calls. These counters describe this reviewer audit only."
+  },
+  "libraries": [
+    {
+      "project": "BM25S",
+      "repository": "xhluca/bm25s",
+      "revision": "57c367f4074df3cd9e70379aa3c08aa946c83b6f",
+      "commit_date_utc": "2026-10-02T20:06:28Z",
+      "api": [
+        "BM25.index",
+        "BM25.retrieve",
+        "BM25.save/load",
+        "tokenize"
+      ],
+      "dependencies": {
+        "required": [
+          "numpy"
+        ],
+        "optional": [
+          "scipy",
+          "numba",
+          "orjson",
+          "PyStemmer",
+          "tqdm"
+        ],
+        "python": ">=3.8"
+      },
+      "llm": "none",
+      "source_store_reuse": "Index original source windows; corpus entries or row map retain source_id/start/end.",
+      "risks": [
+        "English stopwords and default token regex omit one-character tokens.",
+        "Relevance does not establish policy applicability.",
+        "Tokenizer and BM25 variant must match existing baseline before attribution."
+      ],
+      "execution_status": "UPSTREAM_CODE_AUDITED_NOT_EXECUTED",
+      "inspected_sources": [
+        {
+          "path": "setup.py",
+          "url": "https://github.com/xhluca/bm25s/blob/57c367f4074df3cd9e70379aa3c08aa946c83b6f/setup.py",
+          "sha256": "a9a92f87da3e8d01d37b7b7afb5b78b335e4f9b85932a1a120079e6e9b2a47ca",
+          "bytes": 3941
+        },
+        {
+          "path": "bm25s/__init__.py",
+          "url": "https://github.com/xhluca/bm25s/blob/57c367f4074df3cd9e70379aa3c08aa946c83b6f/bm25s/__init__.py",
+          "sha256": "41f51e4b8d9cb72123b4d2e94d20db5a291ab2d82e5ade28cb3ee206c5f8a359",
+          "bytes": 55653
+        },
+        {
+          "path": "bm25s/tokenization.py",
+          "url": "https://github.com/xhluca/bm25s/blob/57c367f4074df3cd9e70379aa3c08aa946c83b6f/bm25s/tokenization.py",
+          "sha256": "647f463ad0b83e9f6dd19802e2c6e51996e64b5f6fa420e46f33097be1112871",
+          "bytes": 29323
+        }
+      ]
+    },
+    {
+      "project": "LlamaIndex",
+      "repository": "run-llama/llama_index",
+      "revision": "962940ddc079cc21701d28d1237c84c82a7c5164",
+      "commit_date_utc": "2026-10-01T18:39:46Z",
+      "api": [
+        "BM25Retriever.from_defaults",
+        "QueryFusionRetriever mode reciprocal_rerank",
+        "RecursiveRetriever",
+        "TextNode metadata/id_/relationships"
+      ],
+      "dependencies": {
+        "bm25_integration": [
+          "bm25s>=0.2.7.post1",
+          "pystemmer>=2.2.0.1,<3",
+          "llama-index-core>=0.13.1,<0.15"
+        ],
+        "python": ">=3.10,<4"
+      },
+      "llm": "BM25 does not require LLM; fusion query generation does; fusion constructor resolves Settings.llm unless explicit LLM object supplied. Recursive query engines may use LLM.",
+      "source_store_reuse": "Use immutable node provenance or implement smaller pure source-span RRF/neighbor expansion.",
+      "risks": [
+        "Default num_queries=4 and mode=SIMPLE, not RRF.",
+        "RRF zero-based rank k=60, deduplicates node.hash and mutates node score.",
+        "English stemming defaults and metadata injected into model content.",
+        "IndexNode traversal alone is not semantic gap detection."
+      ],
+      "execution_status": "UPSTREAM_CODE_AUDITED_NOT_EXECUTED",
+      "inspected_sources": [
+        {
+          "path": "llama-index-integrations/retrievers/llama-index-retrievers-bm25/pyproject.toml",
+          "url": "https://github.com/run-llama/llama_index/blob/962940ddc079cc21701d28d1237c84c82a7c5164/llama-index-integrations/retrievers/llama-index-retrievers-bm25/pyproject.toml",
+          "sha256": "45d45a59d82b0210ee848172972f028fa49d41503ce3a6e24777ab28695f6ff9",
+          "bytes": 1552
+        },
+        {
+          "path": "llama-index-integrations/retrievers/llama-index-retrievers-bm25/llama_index/retrievers/bm25/base.py",
+          "url": "https://github.com/run-llama/llama_index/blob/962940ddc079cc21701d28d1237c84c82a7c5164/llama-index-integrations/retrievers/llama-index-retrievers-bm25/llama_index/retrievers/bm25/base.py",
+          "sha256": "6fad266c532a92f32b31045e4241c5f6c93d09923ecb9358b4491525987f14b6",
+          "bytes": 9653
+        },
+        {
+          "path": "llama-index-core/llama_index/core/retrievers/fusion_retriever.py",
+          "url": "https://github.com/run-llama/llama_index/blob/962940ddc079cc21701d28d1237c84c82a7c5164/llama-index-core/llama_index/core/retrievers/fusion_retriever.py",
+          "sha256": "e125fb8666943f40c56cb9b4102fb3ca3a81db485304464b8cd196dc8cf516f9",
+          "bytes": 13011
+        },
+        {
+          "path": "llama-index-core/llama_index/core/retrievers/recursive_retriever.py",
+          "url": "https://github.com/run-llama/llama_index/blob/962940ddc079cc21701d28d1237c84c82a7c5164/llama-index-core/llama_index/core/retrievers/recursive_retriever.py",
+          "sha256": "bbd8e729e79f4f6d4661170810068f16242d4b51360594db2d46f9576fc20ccc",
+          "bytes": 8314
+        },
+        {
+          "path": "llama-index-core/llama_index/core/schema.py",
+          "url": "https://github.com/run-llama/llama_index/blob/962940ddc079cc21701d28d1237c84c82a7c5164/llama-index-core/llama_index/core/schema.py",
+          "sha256": "690c751ff2e8372150b4cb7dc921221ed0ce57bbf44a31a3053f3dc14c9c56a4",
+          "bytes": 49245
+        }
+      ]
+    },
+    {
+      "project": "PageIndex",
+      "repository": "VectifyAI/PageIndex",
+      "revision": "6d23caf416858f2ca136840305d1f479a86f6ef7",
+      "commit_date_utc": "2026-10-01T15:20:09Z",
+      "api": [
+        "md_to_tree",
+        "page_index_flash",
+        "PageIndexClient.submit_document/chat"
+      ],
+      "dependencies": {
+        "representative": [
+          "litellm==1.97.0",
+          "openai>=1.70.0",
+          "openai-agents>=0.18.1",
+          "mcp>=1.19.0,<3",
+          "PyPDF2==3.0.1",
+          "pypdfium2==5.13.0",
+          "requests>=2.28.0"
+        ]
+      },
+      "llm": "Markdown parsing without thinning/summaries/descriptions is LLM-free; Flash summary=False,optimize=False is LLM-free. Defaults and SDK chat/optimization use LLM.",
+      "source_store_reuse": "Optional hierarchical policy/declaration navigation; map header line/page coordinates to original source offsets.",
+      "risks": [
+        "Generated summaries are navigation only.",
+        "Default optimization/summarization concurrency and retries can violate call cap.",
+        "Full PDF/SDK workflow is unnecessary for native trace sources."
+      ],
+      "execution_status": "UPSTREAM_CODE_AUDITED_NOT_EXECUTED",
+      "inspected_sources": [
+        {
+          "path": "requirements.txt",
+          "url": "https://github.com/VectifyAI/PageIndex/blob/6d23caf416858f2ca136840305d1f479a86f6ef7/requirements.txt",
+          "sha256": "9dfe3810bf3216990e7a0ba3d2ee576a982a8ec17439edd5da6b90cd07c0b087",
+          "bytes": 309
+        },
+        {
+          "path": "pageindex/page_index_md.py",
+          "url": "https://github.com/VectifyAI/PageIndex/blob/6d23caf416858f2ca136840305d1f479a86f6ef7/pageindex/page_index_md.py",
+          "sha256": "62c8d3acfb51476e7dc1226f4346fec201a31cb64c47fe922593c06b4dc30b27",
+          "bytes": 12171
+        },
+        {
+          "path": "pageindex/flash/api.py",
+          "url": "https://github.com/VectifyAI/PageIndex/blob/6d23caf416858f2ca136840305d1f479a86f6ef7/pageindex/flash/api.py",
+          "sha256": "1731d3eeba0abf0a131938877868c5354b0b1e426e25eeb2d23a514f78ce056c",
+          "bytes": 14751
+        },
+        {
+          "path": "pageindex/client.py",
+          "url": "https://github.com/VectifyAI/PageIndex/blob/6d23caf416858f2ca136840305d1f479a86f6ef7/pageindex/client.py",
+          "sha256": "b3f25630cf268fab5af48134e3fb2b433dc948dcfe08021554b9eb624d9acd56",
+          "bytes": 135836
+        }
+      ]
+    },
+    {
+      "project": "Microsoft GraphRAG",
+      "repository": "microsoft/graphrag",
+      "revision": "769542fbf1d8e5b4c6a8677fefc34621c87894c5",
+      "commit_date_utc": "2026-09-23T22:13:34Z",
+      "api": [
+        "LocalSearchMixedContext.build_context",
+        "DRIFTSearch",
+        "QueryState.add_action/add_all_follow_ups/rank_incomplete_actions/serialize"
+      ],
+      "dependencies": {
+        "version": "3.2.0",
+        "python": ">=3.11,<3.14",
+        "representative": [
+          "graphrag internal packages",
+          "numpy",
+          "pandas",
+          "pyarrow",
+          "networkx",
+          "spacy",
+          "graspologic-native",
+          "Azure clients"
+        ]
+      },
+      "llm": "Prepared graph extraction/community reporting, query embeddings, local answers and DRIFT primer/followups use models.",
+      "source_store_reuse": "Borrow deterministic typed pending-gap state and recorded adjacency; full pipeline needs prepared entities/relations/text units/embeddings.",
+      "risks": [
+        "Model-generated graphs/community reports do not prove original policy.",
+        "Pending-action ranking shuffles when no scorer provided.",
+        "Indexing and iterative calls are outside a small lexical bakeoff."
+      ],
+      "execution_status": "UPSTREAM_CODE_AUDITED_NOT_EXECUTED",
+      "inspected_sources": [
+        {
+          "path": "packages/graphrag/pyproject.toml",
+          "url": "https://github.com/microsoft/graphrag/blob/769542fbf1d8e5b4c6a8677fefc34621c87894c5/packages/graphrag/pyproject.toml",
+          "sha256": "1294bca08babd5747866a100635b2bd2d1f2f935d2923c3d008f8a7da6d1ad8c",
+          "bytes": 2902
+        },
+        {
+          "path": "packages/graphrag/graphrag/query/structured_search/local_search/mixed_context.py",
+          "url": "https://github.com/microsoft/graphrag/blob/769542fbf1d8e5b4c6a8677fefc34621c87894c5/packages/graphrag/graphrag/query/structured_search/local_search/mixed_context.py",
+          "sha256": "93c019de4fbce62e7c4031eeb161d06f58818ed1660c6b4122770fba26c08287",
+          "bytes": 21320
+        },
+        {
+          "path": "packages/graphrag/graphrag/query/structured_search/drift_search/search.py",
+          "url": "https://github.com/microsoft/graphrag/blob/769542fbf1d8e5b4c6a8677fefc34621c87894c5/packages/graphrag/graphrag/query/structured_search/drift_search/search.py",
+          "sha256": "32870526eb655235a656b33bb954004c81c49b8146189d3d8bd627ec6a702416",
+          "bytes": 17111
+        },
+        {
+          "path": "packages/graphrag/graphrag/query/structured_search/drift_search/state.py",
+          "url": "https://github.com/microsoft/graphrag/blob/769542fbf1d8e5b4c6a8677fefc34621c87894c5/packages/graphrag/graphrag/query/structured_search/drift_search/state.py",
+          "sha256": "2af60554879cb4eb54df0e1683afc9171867783fc9b7a210ce4ebe819f159175",
+          "bytes": 5320
+        }
+      ]
+    },
+    {
+      "project": "HippoRAG",
+      "repository": "OSU-NLP-Group/HippoRAG",
+      "revision": "2bfd831417202b49cda9da7973e141a456e16872",
+      "commit_date_utc": "2026-10-01T21:23:08Z",
+      "api": [
+        "HippoRAG.index",
+        "HippoRAG.retrieve",
+        "HippoRAG.rag_qa",
+        "injected extraction_llm/qa_llm/embedding_model with index_identity"
+      ],
+      "dependencies": {
+        "version": "2.0.0a5",
+        "python": ">=3.10",
+        "representative": [
+          "torch==2.5.1",
+          "transformers==4.45.2",
+          "python_igraph==0.11.8",
+          "scipy",
+          "litellm==1.73.1",
+          "openai>=3.3.1,<4"
+        ],
+        "optional": [
+          "sentence-transformers",
+          "gritlm",
+          "vllm"
+        ]
+      },
+      "llm": "OpenIE extraction and recognition memory use LLM; embedding retrieval mandatory; remote/injected APIs supported.",
+      "source_store_reuse": "Consider passage-source graph reranking; keep original source-span provenance distinct from generated facts.",
+      "risks": [
+        "Content-hash duplicate chunks may replace distinct metadata.",
+        "PageRank uses undirected projection, not chronology proof.",
+        "Model triples and embedding relevance are hypotheses.",
+        "Full dependency stack is heavy for recorded-neighbor expansion."
+      ],
+      "execution_status": "UPSTREAM_CODE_AUDITED_NOT_EXECUTED",
+      "inspected_sources": [
+        {
+          "path": "pyproject.toml",
+          "url": "https://github.com/OSU-NLP-Group/HippoRAG/blob/2bfd831417202b49cda9da7973e141a456e16872/pyproject.toml",
+          "sha256": "4d3580f63930a31b6317fc6533dab874c5c8046ee487c3d3cba7bf288e4bc5aa",
+          "bytes": 1134
+        },
+        {
+          "path": "src/hipporag/HippoRAG.py",
+          "url": "https://github.com/OSU-NLP-Group/HippoRAG/blob/2bfd831417202b49cda9da7973e141a456e16872/src/hipporag/HippoRAG.py",
+          "sha256": "3935854368bb11e960323c31fb3cc67bee9e393079ce522711586d5e643bdb46",
+          "bytes": 116930
+        }
+      ]
+    },
+    {
+      "project": "S2G-RAG",
+      "repository": "nianaaa/S2G-RAG",
+      "revision": "5d842a67a0a99a7b545bbad0dc402ceaae0e5eff",
+      "commit_date_utc": "2026-07-25T16:36:21Z",
+      "api": [
+        "call_suff_gate_batch",
+        "build_query_from_missing",
+        "run_system",
+        "build_lora_config"
+      ],
+      "dependencies": {
+        "python": ">=3.10",
+        "required_mechanism": [
+          "local SUFF_BASE_PATH weights",
+          "trained SUFF_LORA_PATH adapter"
+        ],
+        "representative": [
+          "torch",
+          "transformers",
+          "accelerate",
+          "peft",
+          "trl",
+          "datasets",
+          "Java",
+          "pyserini"
+        ],
+        "optional": [
+          "intfloat/e5-base-v2 weights",
+          "FAISS"
+        ]
+      },
+      "llm": "Trained local base judge plus PEFT LoRA required even with --gpt API answer reasoner. Generic API prompt is not the official judge.",
+      "source_store_reuse": "Borrow explicit gaps, deterministic slot-query mapping and accumulated source state with strict SourceStore namespaces.",
+      "risks": [
+        "Judge tokenization enables truncation.",
+        "Selector limits 40 sentences/document and up to 6 selected.",
+        "Budget exhaustion invokes answer reasoner regardless of sufficiency.",
+        "CLI remove_repeat_docs defaults false.",
+        "Permissive JSON recovery/coercion cannot be inherited by strict Guardian contract."
+      ],
+      "execution_status": "OFFICIAL_S2G_NOT_EXECUTED",
+      "official_not_executed_reason": "Official trained judge was not provided to this bounded run; no judge/base weight download or LoRA training was attempted. An API answer reasoner does not remove the local judge requirement.",
+      "inspired_status_name": "S2G_INSPIRED_API_BASED",
+      "training": {
+        "base_example": "Llama-3.2-3B-Instruct",
+        "rank": 16,
+        "alpha": 32,
+        "dropout": 0.05,
+        "task_type": "CAUSAL_LM",
+        "target_modules": [
+          "q_proj",
+          "k_proj",
+          "v_proj",
+          "o_proj",
+          "gate_proj",
+          "up_proj",
+          "down_proj"
+        ],
+        "supervision": "Question/context execution snapshots, sufficient bool and gap_items; trained with TRL SFT."
+      },
+      "loop": {
+        "max_turns_default": 4,
+        "top_docs_default": 6,
+        "remove_repeat_docs_cli_default": false,
+        "query_builder": "Question plus gap target/slot or description; dataset-specific gap-count cap.",
+        "stop": "Sufficient verdict OR max turns; answer generator invoked in both cases.",
+        "guardian_difference": "Do not project exhausted/invalid technical states to NO_ERROR; model sufficiency is not code-proven coverage."
+      },
+      "inspected_sources": [
+        {
+          "path": "README.md",
+          "url": "https://github.com/nianaaa/S2G-RAG/blob/5d842a67a0a99a7b545bbad0dc402ceaae0e5eff/README.md",
+          "sha256": "16141d8dad5918320d7e15899aa495059128f5bd62ddb59880bab8a9a144979c",
+          "bytes": 9643
+        },
+        {
+          "path": "training/train_s2g_judge_lora.py",
+          "url": "https://github.com/nianaaa/S2G-RAG/blob/5d842a67a0a99a7b545bbad0dc402ceaae0e5eff/training/train_s2g_judge_lora.py",
+          "sha256": "9516dcc7a768cbf6afd0838113f829a249c8fd237b7ef32d72f9b3dd13524d10",
+          "bytes": 8845
+        },
+        {
+          "path": "inference/inference_bm25.py",
+          "url": "https://github.com/nianaaa/S2G-RAG/blob/5d842a67a0a99a7b545bbad0dc402ceaae0e5eff/inference/inference_bm25.py",
+          "sha256": "29da5a909f26e7bdc09e37b3760941a0e4cac27d56494c8c298537445fee104e",
+          "bytes": 33306
+        },
+        {
+          "path": "utils/text_processing.py",
+          "url": "https://github.com/nianaaa/S2G-RAG/blob/5d842a67a0a99a7b545bbad0dc402ceaae0e5eff/utils/text_processing.py",
+          "sha256": "721abfcdbd7bab252b22c02522b718dd8dec9c87e32fe00fbaf857a4f16bf967",
+          "bytes": 6673
+        }
+      ]
+    }
+  ],
+  "guardian_existing_sources": [
+    {
+      "path": "src/guardian_truth/source_search/store.py",
+      "sha256": "f09e2345f36efa30c58ec765d03ca88806eaaf13d46698a267a29bb450e7e602"
+    },
+    {
+      "path": "src/guardian_truth/evidence_graph/graph.py",
+      "sha256": "26587b81b8915a4b62489cded49603d2d8d318ccfd044483b9011880cedb61a8"
+    },
+    {
+      "path": "experiments/searh_23/evidence_graph_search_probe/ranked_search.py",
+      "sha256": "61fc82fe40de872ec7eff31219584561e17b4c213a5eaf728b8d8bb3e07fc671"
+    },
+    {
+      "path": "tests/test_evidence_graph_ranked_search.py",
+      "sha256": "2ea45c313879708090b02f44a8e9225f5b43a0451e895d95170c375a7c62b7ac"
+    },
+    {
+      "path": "experiments/hybrid_mechanisms/runner.py",
+      "sha256": "f4cfb4b746bdcc82cc18d8f5bca80c1f36d5cf2d588f443010b3ba51746e6588"
+    }
+  ],
+  "guardian_existing_bm25": {
+    "path": "experiments/searh_23/evidence_graph_search_probe/ranked_search.py",
+    "function": "bm25",
+    "k1": 1.5,
+    "b": 0.75,
+    "dependency": "Python standard library for scorer",
+    "tokenizer": "re.findall(r\"\\w+\", text.casefold())",
+    "stable_ties": true,
+    "navigation": "Window-level ranking and source diversity; retrieval only.",
+    "source_search_is_bm25": false
+  },
+  "recommended_contract": [
+    "Preserve exact original source_id/start/end/actor and source SHA.",
+    "Match corpus windows and visible-source/read budgets across adapters.",
+    "Keep existing BM25 as baseline; separately measure BM25S implementation.",
+    "Pure RRF must deduplicate original span identities and record rank origin/weights/ties.",
+    "Reference source sets and labels cannot inform query construction.",
+    "Hierarchy/graph summaries are navigation only; original spans supply evidence.",
+    "Official S2G not executed; API-inspired result must retain separate name.",
+    "UNKNOWN binary projection must be explicit; technical stops remain null."
+  ]
+}
