@@ -121,6 +121,14 @@ diagnostics, and parent statuses checked against original-event interval
 coverage. There are zero packet failures. These repeated checks are not 120
 independent evaluation cases.
 
+An independent checker review subsequently strengthened provenance validation
+for all three source arrays, original parent actor/kind/tool/event binding,
+mandatory inventories, reconstructed charged cost, and complete parent/receipt
+diagnostic inventories. The separate `metadata_probe_verified.json` rerun passes
+all nine checks on each of the same 120 packets. Its selections, source bytes and
+coverage summaries match the original `metadata_probe.json`, which remains
+unchanged. This follow-up uses no model calls and preserves the frozen selector.
+
 This supports the narrower hypothesis that duplicated record metadata causes
 avoidable source-budget pressure. Removing it recovers the observed
 completeness losses while preserving the tested structural invariants. The
@@ -157,6 +165,8 @@ explicit representation contract and separately frozen evaluation.
   experiment's model outcomes.
 
 Reproduce the probe locally with `PYTHONPATH=.:src` and
-`python scripts/coverage_metadata_probe.py`. It loads the frozen 15-row source
+`python scripts/coverage_metadata_probe.py --out outputs/retrieval_corrections_v2/metadata_probe_verified.json`.
+The default output is this follow-up artifact, preserving the first probe.
+It loads the frozen 15-row source
 bank, passes references only to post-selection scoring, and never uses the
 model transport or calls an API.

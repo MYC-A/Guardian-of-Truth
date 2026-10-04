@@ -74,6 +74,12 @@ latest USER и честной parent coverage. Это research-only runtime patc
 Подробности: [offline interpretation](OFFLINE_INTERPRETATION.md),
 [probe script](../../scripts/coverage_metadata_probe.py).
 
+Независимое ревью усилило checker: теперь проверяются все source arrays,
+привязка parent/actor/event и полный inventory диагностики. Отдельный
+[повторный offline результат](../../outputs/retrieval_corrections_v2/metadata_probe_verified.json)
+сохранил те же selected IDs, размеры и coverage: 120 пакетов × 9 проверок прошли.
+Первый probe artifact сохранён без изменений; новых API-запросов не было.
+
 ## Парный Mistral-прогон
 
 Одинаковые reviewer `ministral-14b-2512`, I4 prompt/schema/admission, temperature0;

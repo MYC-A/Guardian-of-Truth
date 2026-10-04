@@ -28,15 +28,57 @@ def source_bytes(packet):
 
 
 def invariants(corpus, packet, budget):
+    corpus.assert_integrity()
     reads = packet['read_sources']
+    units = selector.build_units(corpus)  # Called after the compact patch is restored.
+    expected_units = {u['source_id']: u for u in units}
+    all_sources = reads + packet['current_targets'] + packet['declarations']
+
+    def original_span(s):
+        native = (corpus.store.sources.get(s.get('source_id'))
+                  or corpus.store.quotes.get(s.get('source_id'))
+                  or corpus.graph.refs.get(s.get('source_id')))
+        document, start, end = (s.get(k) for k in ('document', 'start', 'end'))
+        return (native is not None and document in corpus.store.raw
+                and type(start) is int and type(end) is int
+                and 0 <= start < end <= len(corpus.store.raw[document])
+                and all(s.get(k) == native.get(k) for k in ('document', 'start', 'end'))
+                and corpus.store.raw[document][start:end] == s.get('text'))
+
+    exact = all(original_span(s) for s in all_sources)
+    # Quotes carry intervals, not actors. Bind their actor/event to the original
+    # event parent as well as to the unmodified catalog-derived unit.
+    metadata = True
+    for s in reads:
+        expected = expected_units.get(s.get('source_id'))
+        parent = corpus.store.sources.get(s.get('parent_source_id'))
+        metadata = metadata and (expected is not None and parent is not None
+            and all(s.get(k) == v for k, v in expected.items() if k not in FIELDS)
+            and s['document'] == parent['document']
+            and parent['start'] <= s['start'] < s['end'] <= parent['end']
+            and all(s.get(k) == parent.get(k) for k in ('role', 'kind', 'tool', 'event'))
+            and s['category'] == ('POLICY' if parent['role'] == 'system' else 'HISTORY'))
+    mandatory = (packet['current_targets'] == corpus.current_targets
+                 and packet['declarations'] == corpus.declarations)
+    read_ids = [s['source_id'] for s in reads]
+    identity = (metadata and mandatory and len(set(read_ids)) == len(read_ids)
+                and packet['selected_ids'] == read_ids)
+    charged = len(json.dumps(packet['current_targets'] + packet['declarations'],
+        ensure_ascii=False, separators=(',', ':')).encode('utf-8')) + sum(
+        len(json.dumps(s, ensure_ascii=False, separators=(',', ':')).encode('utf-8')) + 1
+        for s in reads)
+    cost_ok = (packet['cost']['source_utf8_bound'] == charged
+               and charged >= source_bytes(packet)
+               and packet['cost']['budget'] == budget
+               and packet['cost']['reads'] == len(reads))
     if packet['failure'] == 'MANDATORY_SOURCES_EXCEED_BUDGET':
         budget_ok = not reads and source_bytes(packet) > budget
     else:
         budget_ok = source_bytes(packet) <= budget
-    exact = all(corpus.store.raw[s['document']][s['start']:s['end']] == s['text'] for s in reads)
     parent_ids = {s['parent_source_id'] for s in reads}
     qualified = {s['parent_source_id'] for s in reads
-                 if s['kind'] == 'result' and s['parent_source_id'] in corpus.pairs}
+                 if s['parent_source_id'] in corpus.pairs
+                 and corpus.store.sources[s['parent_source_id']]['kind'] == 'result'}
     atomic = all(covered(corpus.store.sources[parent], reads)
                  and covered(corpus.store.sources[corpus.pairs[parent]], reads)
                  for parent in qualified)
@@ -45,17 +87,49 @@ def invariants(corpus, packet, budget):
     latest = max(latest_users, key=lambda s: s['event']) if latest_users else None
     anchor = latest is None or covered(latest, reads) or packet['failure'] in (
         'LATEST_USER_BUDGET_SKIPPED', 'MANDATORY_SOURCES_EXCEED_BUDGET')
-    diagnostics = ('parent_coverage' in packet and 'receipt_dependencies' in packet
-                   and all(r['status'] != 'PARTIAL_RECEIPT' for r in packet['receipt_dependencies']))
+    by_parent = defaultdict(list)
+    for unit in units:
+        by_parent[unit['parent_source_id']].append(unit)
+    parents = packet['parent_coverage']
+    receipts = packet['receipt_dependencies']
+    diagnostics = (len(parents) == len(by_parent)
+        and {p['parent_source_id'] for p in parents} == set(by_parent)
+        and len(receipts) == len(corpus.receipt_diagnostics)
+        and {r['result_source_id'] for r in receipts}
+            == {r['result_source_id'] for r in corpus.receipt_diagnostics}
+        and all(r['status'] != 'PARTIAL_RECEIPT' for r in receipts))
     # Verify each parent status from interval coverage of the original event,
     # independently of selector unit counts and the removed metadata fields.
-    truthful = all((p['status'] == 'COMPLETE_PARENT') == covered(
-                      corpus.store.sources[p['parent_source_id']], reads)
-                   and (p['status'] == 'NOT_READ') == (p['parent_source_id'] not in parent_ids)
-                   for p in packet['parent_coverage'])
-    result = dict(exact_serialized_budget=budget_ok, original_spans=exact,
+    truthful = True
+    for p in parents:
+        parent = p['parent_source_id']
+        group = by_parent.get(parent, [])
+        status = ('COMPLETE_PARENT' if parent in corpus.store.sources and covered(
+                      corpus.store.sources[parent], reads)
+                  else 'PARTIAL_PARENT' if parent in parent_ids else 'NOT_READ')
+        truthful = truthful and (bool(group) and p['status'] == status
+            and p['category'] == group[0]['category']
+            and p['read_spans'] == [[u['start'], u['end']] for u in group if u['source_id'] in read_ids]
+            and p['omitted_ids'] == [u['source_id'] for u in group if u['source_id'] not in read_ids])
+    receipt_truthful = True
+    for r, native in zip(receipts, corpus.receipt_diagnostics):
+        result_id = native['result_source_id']
+        call = corpus.pairs.get(result_id)
+        read = result_id in parent_ids
+        complete = bool(call) and read and covered(corpus.store.sources[result_id], reads) and covered(
+            corpus.store.sources[call], reads)
+        status = ('QUALIFIED_COMPLETE' if complete else 'UNQUALIFIED_RESULT' if read and not call
+                  else 'PARTIAL_RECEIPT' if read else 'NOT_READ')
+        required = by_parent.get(result_id, []) + (by_parent.get(call, []) if call else [])
+        receipt_truthful = receipt_truthful and (r['result_source_id'] == result_id
+            and r['call_source_id'] == call and r['qualified'] == bool(call)
+            and r['status'] == status and r['reason'] == native['reason']
+            and r['omitted_ids'] == [u['source_id'] for u in required if u['source_id'] not in read_ids])
+    result = dict(exact_serialized_budget=budget_ok, charged_bound_matches_records=cost_ok,
+                  original_spans=exact, source_parent_actor_identity=identity,
                   qualified_dependencies_atomic=atomic, latest_user_text_whole_or_failure=anchor,
-                  packet_diagnostics_retained=diagnostics, parent_diagnostics_truthful=truthful)
+                  packet_diagnostics_retained=diagnostics, parent_diagnostics_truthful=truthful,
+                  receipt_diagnostics_truthful=receipt_truthful)
     if not all(result.values()):
         raise AssertionError(result)
     return result
@@ -118,5 +192,5 @@ def run(out):
 
 if __name__ == '__main__':
     parser = ArgumentParser(description=__doc__)
-    parser.add_argument('--out', type=Path, default=ROOT / 'outputs/retrieval_corrections_v2/metadata_probe.json')
+    parser.add_argument('--out', type=Path, default=ROOT / 'outputs/retrieval_corrections_v2/metadata_probe_verified.json')
     run(parser.parse_args().out)
