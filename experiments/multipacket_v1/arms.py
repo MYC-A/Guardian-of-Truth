@@ -188,7 +188,7 @@ def result(final, steps, **info):
     return dict(decision=final, steps=steps, **info)
 
 
-def arm_A(row, run=1):
+def arm_A(row, run=None):
     A, r = first_pass(row, run)
     return result(r['decision'], [r], full=A['mode'] == 'FULL_INPUT')
 
