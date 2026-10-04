@@ -1,0 +1,3640 @@
+{
+  "case_id": "banking_knowledge__task_081::t35",
+  "split": "evaluation_known",
+  "index": 10,
+  "method": "bm25_exact",
+  "budget": "k12_t20000",
+  "packet": {
+    "version": "retrieval-bakeoff-v1",
+    "method": "bm25_exact",
+    "source_sha256": "262ad467cb461829e5b90c7d91e74f7a5184d830e79a1cedee7fb3f8296db4ff",
+    "read_sources": [
+      {
+        "source_id": "q8",
+        "document": "prompt",
+        "start": 744,
+        "end": 2334,
+        "text": "## Guidelines\n\n1. Do not make up policies, information or actions that you can take on behalf of the user. All instructions will be found here or in the knowledge base. If you cannot find relevant information, let the user know. \n2. Do not ask for any documentation, receipts... from the customer unless it states very clearly in the knowledge base how to process it, and whether you're allowed to do so. \n3. Be polite and professional\n4. If you need the current time, always use the get_current_time() tool. Do not make up or assume the current time. \n5. Generally, if the issue cannot be resolved or is outside your capabilities, ask the user whether they would like to be transferred to a human agent. If they do, invoke the appropriate transfer_to_human_agents tool. Do this only if you absolutely have to, and you are sure that there are no potential actions you can take as specified in the knowledge base, or in your policy. Do not transfer without asking the user first. This guidance may be overridden by specific scenario-based transfer guidance in the knowledge base. \n6. If an issue falls within your capabilities and the user still wants to be transferred to a human agent, kindly inform the user that you can help them, and try to help them first. If the user asks for a human agent 4 times, then you may invoke the transfer_to_human_agents tool. This guidance may be overridden by specific scenario-based transfer guidance in the knowledge base. \n7. Do not give intermediate responses to users while processing that would give away internal rho-bank information/policies. \n\n\n",
+        "parent_source_id": "h0",
+        "category": "POLICY",
+        "sha256": "1f718a8b08b6f12a1a257ef1fa0832e908ce76693e8ac07de649f01924291a03",
+        "evidence_status": "ORIGINAL_SOURCE_NOT_CURRENT_TRUTH_OR_PERMISSION",
+        "role": "system",
+        "kind": "text",
+        "tool": null,
+        "event": 0,
+        "parent_source_length": 12681,
+        "explicit_window": true,
+        "parent_coverage": "EXACT_WINDOW_NOT_COMPLETE_PARENT"
+      },
+      {
+        "source_id": "h86",
+        "document": "prompt",
+        "start": 222008,
+        "end": 222406,
+        "role": "assistant",
+        "kind": "text",
+        "tool": null,
+        "event": 86,
+        "text": "Конечно, я с удовольствием переведу вас на оператора, чтобы вы могли окончательно убедиться, что всё оформлено верно, и получить полное подтверждение.\n\nПоскольку мы уже проделали большую работу, я передам специалисту всю информацию о заблокированных картах, заказанных заменах и поданных спорах, чтобы вам не пришлось повторять всё заново.\n\nПожалуйста, подождите секунду, соединяю вас с оператором.",
+        "parent_source_id": "h86",
+        "category": "HISTORY",
+        "sha256": "8bf072248289975691af5e89114ce89850ecda8ea3027aa6c517cdf8c28dfb54",
+        "evidence_status": "ORIGINAL_SOURCE_NOT_CURRENT_TRUTH_OR_PERMISSION",
+        "parent_source_length": 398,
+        "explicit_window": false,
+        "parent_coverage": "COMPLETE_PARENT"
+      },
+      {
+        "source_id": "q18",
+        "document": "prompt",
+        "start": 6783,
+        "end": 10770,
+        "text": "## Knowledge base language\n\nThe knowledge base documents are written in Russian. Always formulate knowledge base search queries (`KB_search_bm25`, `KB_search_dense`, `grep`, `KB_search`) in Russian. Official product and account names (e.g. 'Platinum Rewards', 'Blue Account'), tool identifiers, and status codes remain in English — use them in queries as-is.\n</policy>\n\n[AVAILABLE TOOLS]\n- KB_search_bm25 — Search the knowledge base using BM25 sparse retrieval.\n    query: string! — The search query to find relevant documents.\n    k: integer — Maximum number of documents to return (default 10).\n- KB_search_dense — Search the knowledge base using dense embedding retrieval.\n    query: string! — The search query to find relevant documents.\n    k: integer — Maximum number of documents to return (default 10).\n- grep — Search for a regex pattern in all knowledge base documents.\n    \n    Returns documents ranked by number of matches, with full content.\n    pattern: string! — The regex pattern to search for (e.g., 'credit.*card', 'fee|charge')\n- transfer_to_human_agents — Transfer the user to a human agent.\n    \n    The proper transfer reason enum can be found in the knowledge base: search it before calling this tool to select the proper applicable reason.\n    summary: string! — A summary of the user's issue and what was attempted before transfer.\n    reason: string [enum: fraud_or_security_concern|account_closure_request|deceased_account_holder|legal_or_regulatory_matter|account_ownership_dispute|complex_billing_dispute|abusive_customer_behavior|third_party_inquiry|technical_system_error|unconfirmed_external_communication|customer_demands_after_unavailable_offer_refusal|kb_search_unsuccessful_customer_requests_transfer|specialized_department_required|accessibility_or_special_needs|customer_frustrated_demands_human|supervisor_request_service_complaint|customer_requests_human_no_specific_reason|request_completed_customer_wants_human_followup|other] — The specific reason code for the transfer.\n- get_current_time — Get the current time. Use this to get the current timestamp for logging verification records.\n- get_user_information_by_id — Get the information (date of birth, email, phone number, address) for a user by their user id.\n    user_id: string! — The ID of the user\n- get_user_information_by_name — Get the information (date of birth, email, phone number, address) for a user by their name. Case Sensitive.\n    customer_name: string! — The name of the user\n- get_user_information_by_email — Get the information (date of birth, email, phone number, address) for a user by their email.\n    email: string! — The email of the user\n- change_user_email — Change the email address for a user.\n    user_id: string! — The ID of the user whose email should be changed\n    new_email: string! — The new email address to set for the user\n- get_referrals_by_user — Get all referrals made by a user.\n    user_id: string! — The ID of the user (referrer) to look up referrals for\n- get_credit_card_transactions_by_user — Get all credit card transactions for a user.\n    user_id: string! — The ID of the user to look up transactions for\n- get_credit_card_accounts_by_user — Get all credit card accounts for a user.\n    \n    Returns information about each credit card account including card type,\n    date opened, current balance, and reward points.\n    user_id: string! — The ID of the user to look up credit card accounts for\n- log_verification — Log a verification record after successfully verifying a user's identity.\n    \n    Call this tool after you have verified a user by confirming 2 out of 4 identity fields\n    (date of birth, email, phone number, address). This creates an audit record of the verification.\n    name: string! — The verified user's full name\n    user_id: string! — The verified user's ID\n    address: string! — The verified user's address\n    email: string! — The verified user's email\n    phone_number: string! — The verified user's phone number\n",
+        "parent_source_id": "h0",
+        "category": "POLICY",
+        "sha256": "960edd6d4e07e4964d408c3922dc4e9bb83aa3445909c3ea869bd91a5e356424",
+        "evidence_status": "ORIGINAL_SOURCE_NOT_CURRENT_TRUTH_OR_PERMISSION",
+        "role": "system",
+        "kind": "text",
+        "tool": null,
+        "event": 0,
+        "parent_source_length": 12681,
+        "explicit_window": true,
+        "parent_coverage": "EXACT_WINDOW_NOT_COMPLETE_PARENT"
+      },
+      {
+        "source_id": "h11",
+        "document": "prompt",
+        "start": 34768,
+        "end": 35159,
+        "role": "assistant",
+        "kind": "call",
+        "tool": "transfer_to_human_agents",
+        "event": 11,
+        "text": "\t→ TOOL_CALL transfer_to_human_agents: {\"reason\": \"fraud_or_security_concern\", \"summary\": \"Клиент сообщает о краже кошелька с пятью картами банка (три дебетовые: Blue Account, Green Fee-Free Account, Green Account; две кредитные: Gold Rewards Card, EcoCard). Клиент находится в стрессовом состоянии и настоятельно требует перевода на живого оператора для немедленной блокировки всех карт.\"}\n",
+        "parent_source_id": "h11",
+        "category": "HISTORY",
+        "sha256": "9fb610bdda77e358a7019a48959a4164e10236c9851ddcb9b75c6111789e243a",
+        "evidence_status": "ORIGINAL_SOURCE_NOT_CURRENT_TRUTH_OR_PERMISSION",
+        "parent_source_length": 391,
+        "explicit_window": false,
+        "parent_coverage": "COMPLETE_PARENT"
+      },
+      {
+        "source_id": "h12",
+        "document": "prompt",
+        "start": 35159,
+        "end": 35299,
+        "role": "assistant",
+        "kind": "result",
+        "tool": "transfer_to_human_agents",
+        "event": 12,
+        "text": "\t← TOOL_RESPONSE transfer_to_human_agents: Transfer successful (reason: fraud_or_security_concern). A human agent will assist you shortly.\n\n",
+        "parent_source_id": "h12",
+        "category": "HISTORY",
+        "sha256": "7244626cb03b1feed0ee8ba470179b1cc21eca26f96b759e6c13c310ec2edb1c",
+        "evidence_status": "ORIGINAL_SOURCE_NOT_CURRENT_TRUTH_OR_PERMISSION",
+        "parent_source_length": 140,
+        "explicit_window": false,
+        "parent_coverage": "COMPLETE_PARENT"
+      },
+      {
+        "source_id": "h27",
+        "document": "prompt",
+        "start": 74322,
+        "end": 74411,
+        "role": "assistant",
+        "kind": "call",
+        "tool": "KB_search_dense",
+        "event": 27,
+        "text": "\t→ TOOL_CALL KB_search_dense: {\"query\": \"найти дебетовые карты пользователя по user_id\"}\n",
+        "parent_source_id": "h27",
+        "category": "HISTORY",
+        "sha256": "8088ffa9fd73da1642b0158758dff4582721a006d261d59ae94824d76c98dd42",
+        "evidence_status": "ORIGINAL_SOURCE_NOT_CURRENT_TRUTH_OR_PERMISSION",
+        "parent_source_length": 89,
+        "explicit_window": false,
+        "parent_coverage": "COMPLETE_PARENT"
+      },
+      {
+        "source_id": "q128",
+        "document": "prompt",
+        "start": 94044,
+        "end": 97997,
+        "text": "\t  ## Важные примечания\n\t  \n\t  - Карты, заявленные как утерянные или украденные, закрываются немедленно без периода ожидания\n\t  - При закрытии по причине fraud_suspected рекомендуется, чтобы клиент также сменил пароль в онлайн-банкинге\n\t  - Если закрывается связанный расчётный счёт, сначала должны быть закрыты все связанные с ним дебетовые карты\n\t  - Закрытые карты не могут быть открыты повторно — при необходимости клиент должен заказать новую карту\n\t  - Возвраты на закрытую карту будут зачислены на связанный расчётный счёт\n\t  \n\t  9. Внутренний документ: Варианты замены дебетовых карт в зависимости от уровня счёта\n\t     ID: doc_bank_accounts_bank_accounts_(general)_029\n\t     Score: 0.5023\n\t     Content: Когда клиент запрашивает замену дебетовой карты (в связи с утерей, кражей, повреждением или по другим причинам), правила замены различаются в зависимости от уровня расчётного счёта клиента.\n\t  \n\t  ВАЖНО — Взимание комиссий: Все применимые комиссии (доставка, дизайн, избыточная замена) AUTOMATICALLY CHARGED со связанного расчётного счёта при заказе карты. Всегда информируйте клиента о том, что комиссия будет списана с баланса его расчётного счёта перед оформлением заказа. При использовании order_debit_card_5739 вы должны указать точные суммы delivery_fee и design_fee в соответствии с правилами уровней, изложенными ниже.\n\t  \n\t  Лимиты на замену и стоимость доставки по уровням:\n\t  \n\t  ENTRY TIER:\n\t  - Максимум 2 замены карт за скользящий 12-месячный период\n\t  - Период ожидания 48 часов после закрытия карты, прежде чем можно будет заказать замену\n\t  - Только стандартная доставка (опция ускоренной доставки недоступна) — delivery_fee: $0\n\t  - Если клиент превысил лимит в 2 карты, он должен подождать, пока срок действия самой старой замены выйдет за пределы 12-месячного окна, ИЛИ оплатить комиссию за избыточную замену в размере $25\n\t  \n\t  MID TIER:\n\t  - Максимум 3 замены карт за скользящий 12-месячный период\n\t  - Без периода ожидания — можно заказать сразу после закрытия\n\t  - Доступна стандартная (delivery_fee: $0) или ускоренная доставка (delivery_fee: $15)\n\t  - Если клиент превысил лимит в 3 карты, он должен подождать, пока срок действия самой старой замены выйдет, ИЛИ оплатить комиссию за избыточную замену в размере $15\n\t  \n\t  PREMIUM TIER:\n\t  - Максимум 5 замен карт за скользящий 12-месячный период\n\t  - Без периода ожидания — можно заказать сразу после закрытия\n\t  - Бесплатная ускоренная доставка для всех замен (delivery_fee: $0 как для STANDARD, так и для EXPEDITED)\n\t  - Доступна экспресс-доставка (delivery_fee: $35)\n\t  - Если клиент превысил лимит в 5 карт, он должен подождать, пока срок действия самой старой замены выйдет (опция с оплатой отсутствует — необходимо ждать)\n\t  \n\t  ELITE TIER:\n\t  - Неограниченное количество замен карт\n\t  - Без периода ожидания — можно заказать сразу после закрытия\n\t  - Бесплатная доставка для всех замен (delivery_fee: $0 для STANDARD, EXPEDITED и RUSH)\n\t  - Приоритетная обработка — карты отправляются в тот же рабочий день, если заказ оформлен до 14:00 EST\n\t  \n\t  Комиссии за дизайн карты по уровням:\n\t  \n\t  ENTRY TIER:\n\t  - Дизайн CLASSIC: design_fee $0\n\t  - Дизайн PREMIUM (металлик серебро): design_fee $10\n\t  - Дизайн CUSTOM (загруженное изображение): design_fee $25\n\t  \n\t  MID TIER:\n\t  - Дизайн CLASSIC: design_fee $0\n\t  - Дизайн PREMIUM (металлик серебро): design_fee $10\n\t  - Дизайн CUSTOM (загруженное изображение): design_fee $25\n\t  \n\t  PREMIUM TIER:\n\t  - Дизайн CLASSIC: design_fee $0\n\t  - Дизайн PREMIUM (металлик серебро): design_fee $0 (бесплатно)\n\t  - Дизайн CUSTOM (загруженное изображение): design_fee $15 (скидка с $25)\n\t  \n\t  ELITE TIER:\n\t  - Дизайн CLASSIC: design_fee $0\n\t  - Дизайн PREMIUM (металлик серебро): design_fee $0 (бесплатно)\n\t  - Дизайн CUSTOM (загруженное изображение): design_fee $0 (бесплатно)\n\t  \n\t  Как проверить историю замен:\n\t  1) Получить все карты по счёту\n\t  2) Найти карты с issue_reason 'lost', 'stolen', 'fraud' или 'damaged'\n",
+        "parent_source_id": "h28",
+        "category": "HISTORY",
+        "sha256": "9b3b78b1af71f2ecb6dbe467688b31cb90002b27c4166259cbaf671d19b35d08",
+        "evidence_status": "ORIGINAL_SOURCE_NOT_CURRENT_TRUTH_OR_PERMISSION",
+        "role": "assistant",
+        "kind": "result",
+        "tool": "KB_search_dense",
+        "event": 28,
+        "parent_source_length": 26543,
+        "explicit_window": true,
+        "parent_coverage": "EXACT_WINDOW_NOT_COMPLETE_PARENT"
+      },
+      {
+        "source_id": "h3",
+        "document": "prompt",
+        "start": 12790,
+        "end": 12909,
+        "role": "user",
+        "kind": "result",
+        "tool": "request_human_agent_transfer",
+        "event": 3,
+        "text": "\t← TOOL_RESPONSE request_human_agent_transfer: Transfer request #1 submitted.\n\t  The agent will process your request.\n\n",
+        "parent_source_id": "h3",
+        "category": "HISTORY",
+        "sha256": "f4c7d8f884f030e6ff20630d27d770bfb3db6b7d7f98c521e4c48eab97aa8766",
+        "evidence_status": "ORIGINAL_SOURCE_NOT_CURRENT_TRUTH_OR_PERMISSION",
+        "parent_source_length": 119,
+        "explicit_window": false,
+        "parent_coverage": "COMPLETE_PARENT"
+      }
+    ],
+    "current_targets": [
+      {
+        "source_id": "t0",
+        "document": "response",
+        "start": 21,
+        "end": 470,
+        "role": "assistant",
+        "kind": "call",
+        "tool": "transfer_to_human_agents",
+        "event": 0,
+        "text": "\t→ TOOL_CALL transfer_to_human_agents: {\"reason\": \"customer_requests_human_no_specific_reason\", \"summary\": \"Клиент настаивает на переводе к оператору после того, как были выполнены все необходимые действия: заблокированы 3 дебетовые карты, заказаны их замены, оформлены замены 2 кредитных карт и поданы 3 спора по мошенническим транзакциям. Клиент хочет получить подтверждение от человека, что всё оформлено верно. Это повторный запрос на перевод.\"}",
+        "parent_source_id": "t0",
+        "category": "TARGET",
+        "sha256": "47f90007d1ee853e7320ed4956b1f845faef61aac009c7cd75c058f9c5f036ef",
+        "evidence_status": "ORIGINAL_SOURCE_NOT_CURRENT_TRUTH_OR_PERMISSION"
+      }
+    ],
+    "declarations": [
+      {
+        "source_id": "d15",
+        "document": "prompt",
+        "start": 7830,
+        "end": 8797,
+        "role": "system",
+        "kind": "DECLARATION",
+        "tool": "transfer_to_human_agents",
+        "text": "- transfer_to_human_agents — Transfer the user to a human agent.\n    \n    The proper transfer reason enum can be found in the knowledge base: search it before calling this tool to select the proper applicable reason.\n    summary: string! — A summary of the user's issue and what was attempted before transfer.\n    reason: string [enum: fraud_or_security_concern|account_closure_request|deceased_account_holder|legal_or_regulatory_matter|account_ownership_dispute|complex_billing_dispute|abusive_customer_behavior|third_party_inquiry|technical_system_error|unconfirmed_external_communication|customer_demands_after_unavailable_offer_refusal|kb_search_unsuccessful_customer_requests_transfer|specialized_department_required|accessibility_or_special_needs|customer_frustrated_demands_human|supervisor_request_service_complaint|customer_requests_human_no_specific_reason|request_completed_customer_wants_human_followup|other] — The specific reason code for the transfer.\n",
+        "parent_source_id": "d15",
+        "category": "DECLARATION",
+        "sha256": "a8ff7f3905683ec0c2bfa24f212ede463b2114e5612a3535c8158a9e63339b25",
+        "evidence_status": "ORIGINAL_SOURCE_NOT_CURRENT_TRUTH_OR_PERMISSION"
+      }
+    ],
+    "selected_ids": [
+      "q8",
+      "h86",
+      "q18",
+      "h11",
+      "h12",
+      "h27",
+      "q128",
+      "h3"
+    ],
+    "trace": {
+      "queries": [
+        "transfer to human agents",
+        "\"customer_requests_human_no_specific_reason\" \"Клиент настаивает на переводе к оператору после того, как были выполнены все необходимые действия: заблокированы 3 дебетовые карты, заказаны их замены, оформлены замены 2 кредитных карт и поданы 3 спора по мошенническим транзакциям. Клиент хочет получить подтверждение от человека, что всё оформлено верно. Это повторный запрос на перевод.\"",
+        "- transfer_to_human_agents — Transfer the user to a human agent.\n    \n    The proper transfer reason enum can be found in the knowledge base: search it before calling this tool to select the proper applicable reason.\n    summary: string! — A summary of the user's issue and what was attempted before transfer.\n    reason: string [enum: fraud_or_security_concern|account_closure_request|deceased_account_holder|legal_or_regulatory_matter|account_ownership_dispute|complex_billing_dispute|abusive_customer_behavior|third_party_inquiry|technical_system_error|unconfirmed_external_communication|customer_demands_after_unavailable_offer_refusal|kb_search_unsuccessful_customer_requests_transfer|specialized_department_required|accessibility_or_special_needs|customer_frustrated_demands_human|supervisor_request_service_complaint|customer_requests_human_no_specific_reason|request_completed_customer_wants_human_followup|other] — The specific reason code for the transfer.\n"
+      ],
+      "rankings": [
+        [
+          "q8",
+          "h12",
+          "q18",
+          "h3",
+          "h7",
+          "h84",
+          "h88",
+          "q15",
+          "q10",
+          "q19",
+          "q11",
+          "q16",
+          "q17",
+          "q6",
+          "q9",
+          "h40",
+          "h41",
+          "h42",
+          "q7",
+          "h56",
+          "h73"
+        ],
+        [
+          "h86",
+          "q128",
+          "h80",
+          "q193",
+          "h85",
+          "h5",
+          "q93",
+          "q167",
+          "q150",
+          "q178",
+          "q81",
+          "q192",
+          "q89",
+          "q205",
+          "q236",
+          "q141",
+          "q189",
+          "q22",
+          "q38",
+          "h45",
+          "h61",
+          "q154",
+          "q116",
+          "q223",
+          "q143",
+          "q90",
+          "h48",
+          "q40",
+          "q95",
+          "q23",
+          "q79",
+          "h63",
+          "q239",
+          "h4",
+          "q225",
+          "q80",
+          "h71",
+          "q198",
+          "q243",
+          "h52",
+          "q216",
+          "q39",
+          "q94",
+          "q197",
+          "q47",
+          "q68",
+          "q127",
+          "q140",
+          "q72",
+          "q238",
+          "q237",
+          "q244",
+          "q235",
+          "q161",
+          "h62",
+          "q48",
+          "q159",
+          "q41",
+          "q96",
+          "q151",
+          "q65",
+          "q222",
+          "q129",
+          "q35",
+          "q186",
+          "q61",
+          "q171",
+          "q34",
+          "q185",
+          "q228",
+          "h13",
+          "q124",
+          "q69",
+          "q91",
+          "q25",
+          "q115",
+          "q208",
+          "q32",
+          "q183",
+          "q64",
+          "q174",
+          "q46",
+          "q67",
+          "q126",
+          "q139",
+          "q77",
+          "q214",
+          "q182",
+          "q221",
+          "q85",
+          "q104",
+          "q231",
+          "h11",
+          "q122",
+          "q59",
+          "q49",
+          "q88",
+          "q42",
+          "q97",
+          "h51",
+          "q219",
+          "q181",
+          "h47",
+          "h70",
+          "q201",
+          "q119",
+          "q204",
+          "q202",
+          "h15",
+          "q155",
+          "q217",
+          "q74",
+          "q121",
+          "q196",
+          "q36",
+          "q187",
+          "q58",
+          "q135",
+          "q149",
+          "q175",
+          "q227",
+          "q70",
+          "q166",
+          "q224",
+          "q56",
+          "q133",
+          "q147",
+          "q78",
+          "q98",
+          "q152",
+          "q21",
+          "h65",
+          "q33",
+          "q184",
+          "q194",
+          "q240",
+          "q209",
+          "q136",
+          "q106",
+          "q75",
+          "q54",
+          "q131",
+          "q145",
+          "q168",
+          "q100",
+          "q53",
+          "q130",
+          "q144",
+          "q55",
+          "q132",
+          "q146",
+          "q31",
+          "h23",
+          "q206",
+          "q57",
+          "q134",
+          "q148",
+          "q153",
+          "q229",
+          "q157",
+          "q211",
+          "q86",
+          "q158",
+          "q242",
+          "h81",
+          "q118",
+          "q203",
+          "q44",
+          "q210",
+          "q169",
+          "q123",
+          "q52",
+          "q45",
+          "q66",
+          "q125",
+          "q138",
+          "q156",
+          "q62",
+          "q172",
+          "q232",
+          "h64",
+          "q110",
+          "q164",
+          "q27",
+          "q220",
+          "q120",
+          "q199",
+          "q84",
+          "q107",
+          "q195",
+          "q241",
+          "q212",
+          "q137",
+          "q30",
+          "q83",
+          "q109",
+          "q87",
+          "q218",
+          "q177",
+          "h82",
+          "q176",
+          "q142",
+          "h27",
+          "q190",
+          "q73",
+          "q230",
+          "q43",
+          "q76",
+          "q179",
+          "q200",
+          "q191",
+          "q233",
+          "h46",
+          "h9",
+          "q105",
+          "q114",
+          "q26",
+          "q113",
+          "h89",
+          "q112",
+          "q165",
+          "q51",
+          "q101",
+          "h14",
+          "q37",
+          "q188",
+          "q92",
+          "h30",
+          "h50",
+          "q108",
+          "q24",
+          "q245",
+          "q180",
+          "h68",
+          "h59",
+          "h60",
+          "h26",
+          "h53",
+          "h84",
+          "q71",
+          "h8",
+          "q20",
+          "q28",
+          "q160",
+          "h43",
+          "h56",
+          "q111",
+          "q163",
+          "q103",
+          "q16",
+          "h67",
+          "q18",
+          "h7",
+          "q8",
+          "q207",
+          "q234",
+          "q215",
+          "h77",
+          "h78",
+          "h79",
+          "q29",
+          "q82",
+          "q99",
+          "h16",
+          "q213",
+          "q117",
+          "q102",
+          "q17"
+        ],
+        [
+          "q18",
+          "q8",
+          "q19",
+          "h73",
+          "h56",
+          "q15",
+          "q16",
+          "q6",
+          "q17",
+          "h12",
+          "h40",
+          "h41",
+          "h42",
+          "q12",
+          "q7",
+          "h3",
+          "h7",
+          "h84",
+          "h88",
+          "h59",
+          "h60",
+          "q9",
+          "q10",
+          "q11",
+          "q21",
+          "h11",
+          "h20",
+          "h77",
+          "h78",
+          "h79",
+          "h30",
+          "h50",
+          "q23",
+          "q22",
+          "h37",
+          "h38",
+          "h39",
+          "q153",
+          "q152",
+          "h57",
+          "h58",
+          "q191",
+          "q64",
+          "q174",
+          "h18",
+          "q24",
+          "q142",
+          "q123",
+          "h26",
+          "q238",
+          "h22",
+          "q113",
+          "q141",
+          "q237",
+          "q222",
+          "q47",
+          "q68",
+          "q127",
+          "q140",
+          "q151",
+          "q223",
+          "h67",
+          "q236",
+          "q72",
+          "q20",
+          "q91",
+          "q74",
+          "q90",
+          "h70",
+          "q89",
+          "q79",
+          "q189",
+          "q235",
+          "q88",
+          "q216"
+        ],
+        [
+          "q18",
+          "q23"
+        ]
+      ],
+      "fused_ranking": [
+        "q8",
+        "h86",
+        "q18",
+        "h12",
+        "q128",
+        "q23",
+        "h80",
+        "q19",
+        "h3",
+        "q193",
+        "h73",
+        "h7",
+        "h85",
+        "h56",
+        "h84",
+        "h5",
+        "q15",
+        "h88",
+        "q93",
+        "q16",
+        "q167",
+        "q6",
+        "q10",
+        "q150",
+        "q17",
+        "q178",
+        "q11",
+        "q81",
+        "h40",
+        "q192",
+        "h41",
+        "q89",
+        "h42",
+        "q205",
+        "q12",
+        "q9",
+        "q236",
+        "q7",
+        "q141",
+        "q189",
+        "q22",
+        "q38",
+        "h45",
+        "h59",
+        "h61",
+        "h60",
+        "q154",
+        "q116",
+        "q223",
+        "q143",
+        "q21",
+        "q90",
+        "h11",
+        "h48",
+        "h20",
+        "q40",
+        "h77",
+        "q95",
+        "h78",
+        "h79",
+        "q79",
+        "h30",
+        "h63",
+        "h50",
+        "q239",
+        "h4",
+        "q225",
+        "h37",
+        "q80",
+        "h38",
+        "h71",
+        "h39",
+        "q198",
+        "q153",
+        "q243",
+        "q152",
+        "h52",
+        "h57",
+        "q216",
+        "h58",
+        "q39",
+        "q191",
+        "q94",
+        "q64",
+        "q197",
+        "q174",
+        "q47",
+        "h18",
+        "q68",
+        "q24",
+        "q127",
+        "q142",
+        "q140",
+        "q123",
+        "q72",
+        "h26",
+        "q238",
+        "q237",
+        "h22",
+        "q244",
+        "q113",
+        "q235",
+        "q161",
+        "h62",
+        "q222",
+        "q48",
+        "q159",
+        "q41",
+        "q96",
+        "q151",
+        "q65",
+        "h67",
+        "q129",
+        "q35",
+        "q186",
+        "q20",
+        "q61",
+        "q91",
+        "q171",
+        "q74",
+        "q34",
+        "q185",
+        "h70",
+        "q228",
+        "h13",
+        "q124",
+        "q69",
+        "q88",
+        "q25",
+        "q115",
+        "q208",
+        "q32",
+        "q183",
+        "q46",
+        "q67",
+        "q126",
+        "q139",
+        "q77",
+        "q214",
+        "q182",
+        "q221",
+        "q85",
+        "q104",
+        "q231",
+        "q122",
+        "q59",
+        "q49",
+        "q42",
+        "q97",
+        "h51",
+        "q219",
+        "q181",
+        "h47",
+        "q201",
+        "q119",
+        "q204",
+        "q202",
+        "h15",
+        "q155",
+        "q217",
+        "q121",
+        "q196",
+        "q36",
+        "q187",
+        "q58",
+        "q135",
+        "q149",
+        "q175",
+        "q227",
+        "q70",
+        "q166",
+        "q224",
+        "q56",
+        "q133",
+        "q147",
+        "q78",
+        "q98",
+        "h65",
+        "q33",
+        "q184",
+        "q194",
+        "q240",
+        "q209",
+        "q136",
+        "q106",
+        "q75",
+        "q54",
+        "q131",
+        "q145",
+        "q168",
+        "q100",
+        "q53",
+        "q130",
+        "q144",
+        "q55",
+        "q132",
+        "q146",
+        "q31",
+        "h23",
+        "q206",
+        "q57",
+        "q134",
+        "q148",
+        "q229",
+        "q157",
+        "q211",
+        "q86",
+        "q158",
+        "q242",
+        "h81",
+        "q118",
+        "q203",
+        "q44",
+        "q210",
+        "q169",
+        "q52",
+        "q45",
+        "q66",
+        "q125",
+        "q138",
+        "q156",
+        "q62",
+        "q172",
+        "q232",
+        "h64",
+        "q110",
+        "q164",
+        "q27",
+        "q220",
+        "q120",
+        "q199",
+        "q84",
+        "q107",
+        "q195",
+        "q241",
+        "q212",
+        "q137",
+        "q30",
+        "q83",
+        "q109",
+        "q87",
+        "q218",
+        "q177",
+        "h82",
+        "q176",
+        "h27",
+        "q190",
+        "q73",
+        "q230",
+        "q43",
+        "q76",
+        "q179",
+        "q200",
+        "q233",
+        "h46",
+        "h9",
+        "q105",
+        "q114",
+        "q26",
+        "h89",
+        "q112",
+        "q165",
+        "q51",
+        "q101",
+        "h14",
+        "q37",
+        "q188",
+        "q92",
+        "q108",
+        "q245",
+        "q180",
+        "h68",
+        "h53",
+        "q71",
+        "h8",
+        "q28",
+        "q160",
+        "h43",
+        "q111",
+        "q163",
+        "q103",
+        "q207",
+        "q234",
+        "q215",
+        "q29",
+        "q82",
+        "q99",
+        "h16",
+        "q213",
+        "q117",
+        "q102"
+      ],
+      "selection": [
+        {
+          "source_id": "q8",
+          "status": "SELECTED",
+          "dependency_group": [
+            "q8"
+          ],
+          "token_bound": 2018
+        },
+        {
+          "source_id": "h86",
+          "status": "SELECTED",
+          "dependency_group": [
+            "h86"
+          ],
+          "token_bound": 1144
+        },
+        {
+          "source_id": "q18",
+          "status": "SELECTED",
+          "dependency_group": [
+            "q18"
+          ],
+          "token_bound": 4524
+        },
+        {
+          "source_id": "h12",
+          "status": "SELECTED",
+          "dependency_group": [
+            "h11",
+            "h12"
+          ],
+          "token_bound": 1594
+        },
+        {
+          "source_id": "q128",
+          "status": "SELECTED",
+          "dependency_group": [
+            "h27",
+            "q128"
+          ],
+          "token_bound": 7489
+        },
+        {
+          "source_id": "q23",
+          "status": "TOKEN_BUDGET_SKIP",
+          "dependency_group": [
+            "h9",
+            "q23"
+          ],
+          "required_token_bound": 2419
+        },
+        {
+          "source_id": "h80",
+          "status": "TOKEN_BUDGET_SKIP",
+          "dependency_group": [
+            "h80"
+          ],
+          "required_token_bound": 1814
+        },
+        {
+          "source_id": "q19",
+          "status": "TOKEN_BUDGET_SKIP",
+          "dependency_group": [
+            "q19"
+          ],
+          "required_token_bound": 2408
+        },
+        {
+          "source_id": "h3",
+          "status": "SELECTED",
+          "dependency_group": [
+            "h3"
+          ],
+          "token_bound": 555
+        },
+        {
+          "source_id": "q193",
+          "status": "TOKEN_BUDGET_SKIP",
+          "dependency_group": [
+            "h53",
+            "q193"
+          ],
+          "required_token_bound": 7434
+        },
+        {
+          "source_id": "h73",
+          "status": "TOKEN_BUDGET_SKIP",
+          "dependency_group": [
+            "h72",
+            "h73"
+          ],
+          "required_token_bound": 3302
+        },
+        {
+          "source_id": "h7",
+          "status": "TOKEN_BUDGET_SKIP",
+          "dependency_group": [
+            "h7"
+          ],
+          "required_token_bound": 555
+        },
+        {
+          "source_id": "h85",
+          "status": "TOKEN_BUDGET_SKIP",
+          "dependency_group": [
+            "h85"
+          ],
+          "required_token_bound": 968
+        },
+        {
+          "source_id": "h56",
+          "status": "TOKEN_BUDGET_SKIP",
+          "dependency_group": [
+            "h55",
+            "h56"
+          ],
+          "required_token_bound": 2175
+        },
+        {
+          "source_id": "h84",
+          "status": "TOKEN_BUDGET_SKIP",
+          "dependency_group": [
+            "h84"
+          ],
+          "required_token_bound": 560
+        },
+        {
+          "source_id": "h5",
+          "status": "TOKEN_BUDGET_SKIP",
+          "dependency_group": [
+            "h5"
+          ],
+          "required_token_bound": 1543
+        },
+        {
+          "source_id": "q15",
+          "status": "TOKEN_BUDGET_SKIP",
+          "dependency_group": [
+            "q15"
+          ],
+          "required_token_bound": 1741
+        },
+        {
+          "source_id": "h88",
+          "status": "TOKEN_BUDGET_SKIP",
+          "dependency_group": [
+            "h88"
+          ],
+          "required_token_bound": 560
+        },
+        {
+          "source_id": "q93",
+          "status": "TOKEN_BUDGET_SKIP",
+          "dependency_group": [
+            "h23",
+            "q93"
+          ],
+          "required_token_bound": 2544
+        },
+        {
+          "source_id": "q16",
+          "status": "TOKEN_BUDGET_SKIP",
+          "dependency_group": [
+            "q16"
+          ],
+          "required_token_bound": 1706
+        },
+        {
+          "source_id": "q167",
+          "status": "TOKEN_BUDGET_SKIP",
+          "dependency_group": [
+            "h43",
+            "q167"
+          ],
+          "required_token_bound": 3408
+        },
+        {
+          "source_id": "q6",
+          "status": "TOKEN_BUDGET_SKIP",
+          "dependency_group": [
+            "q6"
+          ],
+          "required_token_bound": 972
+        },
+        {
+          "source_id": "q10",
+          "status": "TOKEN_BUDGET_SKIP",
+          "dependency_group": [
+            "q10"
+          ],
+          "required_token_bound": 578
+        },
+        {
+          "source_id": "q150",
+          "status": "TOKEN_BUDGET_SKIP",
+          "dependency_group": [
+            "h43",
+            "q150"
+          ],
+          "required_token_bound": 3607
+        },
+        {
+          "source_id": "q17",
+          "status": "TOKEN_BUDGET_SKIP",
+          "dependency_group": [
+            "q17"
+          ],
+          "required_token_bound": 1625
+        },
+        {
+          "source_id": "q178",
+          "status": "TOKEN_BUDGET_SKIP",
+          "dependency_group": [
+            "h43",
+            "q178"
+          ],
+          "required_token_bound": 6198
+        },
+        {
+          "source_id": "q11",
+          "status": "TOKEN_BUDGET_SKIP",
+          "dependency_group": [
+            "q11"
+          ],
+          "required_token_bound": 629
+        },
+        {
+          "source_id": "q81",
+          "status": "TOKEN_BUDGET_SKIP",
+          "dependency_group": [
+            "h23",
+            "q81"
+          ],
+          "required_token_bound": 7456
+        },
+        {
+          "source_id": "h40",
+          "status": "TOKEN_BUDGET_SKIP",
+          "dependency_group": [
+            "h40"
+          ],
+          "required_token_bound": 1029
+        },
+        {
+          "source_id": "q192",
+          "status": "TOKEN_BUDGET_SKIP",
+          "dependency_group": [
+            "h53",
+            "q192"
+          ],
+          "required_token_bound": 7627
+        },
+        {
+          "source_id": "h41",
+          "status": "TOKEN_BUDGET_SKIP",
+          "dependency_group": [
+            "h41"
+          ],
+          "required_token_bound": 1028
+        },
+        {
+          "source_id": "q89",
+          "status": "TOKEN_BUDGET_SKIP",
+          "dependency_group": [
+            "h23",
+            "q89"
+          ],
+          "required_token_bound": 2831
+        },
+        {
+          "source_id": "h42",
+          "status": "TOKEN_BUDGET_SKIP",
+          "dependency_group": [
+            "h42"
+          ],
+          "required_token_bound": 1032
+        },
+        {
+          "source_id": "q205",
+          "status": "TOKEN_BUDGET_SKIP",
+          "dependency_group": [
+            "h53",
+            "q205"
+          ],
+          "required_token_bound": 2181
+        },
+        {
+          "source_id": "q12",
+          "status": "TOKEN_BUDGET_SKIP",
+          "dependency_group": [
+            "q12"
+          ],
+          "required_token_bound": 599
+        },
+        {
+          "source_id": "q9",
+          "status": "TOKEN_BUDGET_SKIP",
+          "dependency_group": [
+            "q9"
+          ],
+          "required_token_bound": 519
+        },
+        {
+          "source_id": "q236",
+          "status": "TOKEN_BUDGET_SKIP",
+          "dependency_group": [
+            "h68",
+            "q236"
+          ],
+          "required_token_bound": 3072
+        },
+        {
+          "source_id": "q7",
+          "status": "TOKEN_BUDGET_SKIP",
+          "dependency_group": [
+            "q7"
+          ],
+          "required_token_bound": 612
+        },
+        {
+          "source_id": "q141",
+          "status": "TOKEN_BUDGET_SKIP",
+          "dependency_group": [
+            "h43",
+            "q141"
+          ],
+          "required_token_bound": 3179
+        },
+        {
+          "source_id": "q189",
+          "status": "TOKEN_BUDGET_SKIP",
+          "dependency_group": [
+            "h53",
+            "q189"
+          ],
+          "required_token_bound": 3289
+        },
+        {
+          "source_id": "q22",
+          "status": "TOKEN_BUDGET_SKIP",
+          "dependency_group": [
+            "h9",
+            "q22"
+          ],
+          "required_token_bound": 2669
+        },
+        {
+          "source_id": "q38",
+          "status": "TOKEN_BUDGET_SKIP",
+          "dependency_group": [
+            "h9",
+            "q38"
+          ],
+          "required_token_bound": 2499
+        },
+        {
+          "source_id": "h45",
+          "status": "TOKEN_BUDGET_SKIP",
+          "dependency_group": [
+            "h45"
+          ],
+          "required_token_bound": 3003
+        },
+        {
+          "source_id": "h59",
+          "status": "TOKEN_BUDGET_SKIP",
+          "dependency_group": [
+            "h59"
+          ],
+          "required_token_bound": 845
+        },
+        {
+          "source_id": "h61",
+          "status": "TOKEN_BUDGET_SKIP",
+          "dependency_group": [
+            "h61"
+          ],
+          "required_token_bound": 2739
+        },
+        {
+          "source_id": "h60",
+          "status": "TOKEN_BUDGET_SKIP",
+          "dependency_group": [
+            "h60"
+          ],
+          "required_token_bound": 846
+        },
+        {
+          "source_id": "q154",
+          "status": "TOKEN_BUDGET_SKIP",
+          "dependency_group": [
+            "h43",
+            "q154"
+          ],
+          "required_token_bound": 1818
+        },
+        {
+          "source_id": "q116",
+          "status": "TOKEN_BUDGET_SKIP",
+          "dependency_group": [
+            "q116"
+          ],
+          "required_token_bound": 7132
+        },
+        {
+          "source_id": "q223",
+          "status": "TOKEN_BUDGET_SKIP",
+          "dependency_group": [
+            "h68",
+            "q223"
+          ],
+          "required_token_bound": 7090
+        },
+        {
+          "source_id": "q143",
+          "status": "TOKEN_BUDGET_SKIP",
+          "dependency_group": [
+            "h43",
+            "q143"
+          ],
+          "required_token_bound": 2354
+        },
+        {
+          "source_id": "q21",
+          "status": "TOKEN_BUDGET_SKIP",
+          "dependency_group": [
+            "h9",
+            "q21"
+          ],
+          "required_token_bound": 3627
+        },
+        {
+          "source_id": "q90",
+          "status": "TOKEN_BUDGET_SKIP",
+          "dependency_group": [
+            "h23",
+            "q90"
+          ],
+          "required_token_bound": 2306
+        },
+        {
+          "source_id": "h11",
+          "status": "SELECTED",
+          "dependency_group": [],
+          "token_bound": 0
+        },
+        {
+          "source_id": "h48",
+          "status": "TOKEN_BUDGET_SKIP",
+          "dependency_group": [
+            "h48"
+          ],
+          "required_token_bound": 1139
+        },
+        {
+          "source_id": "h20",
+          "status": "TOKEN_BUDGET_SKIP",
+          "dependency_group": [
+            "h19",
+            "h20"
+          ],
+          "required_token_bound": 970
+        },
+        {
+          "source_id": "q40",
+          "status": "TOKEN_BUDGET_SKIP",
+          "dependency_group": [
+            "h9",
+            "q40"
+          ],
+          "required_token_bound": 1351
+        },
+        {
+          "source_id": "h77",
+          "status": "TOKEN_BUDGET_SKIP",
+          "dependency_group": [
+            "h77"
+          ],
+          "required_token_bound": 909
+        },
+        {
+          "source_id": "q95",
+          "status": "TOKEN_BUDGET_SKIP",
+          "dependency_group": [
+            "h23",
+            "q95"
+          ],
+          "required_token_bound": 1346
+        },
+        {
+          "source_id": "h78",
+          "status": "TOKEN_BUDGET_SKIP",
+          "dependency_group": [
+            "h78"
+          ],
+          "required_token_bound": 909
+        },
+        {
+          "source_id": "h79",
+          "status": "TOKEN_BUDGET_SKIP",
+          "dependency_group": [
+            "h79"
+          ],
+          "required_token_bound": 911
+        },
+        {
+          "source_id": "q79",
+          "status": "TOKEN_BUDGET_SKIP",
+          "dependency_group": [
+            "h23",
+            "q79"
+          ],
+          "required_token_bound": 2885
+        },
+        {
+          "source_id": "h30",
+          "status": "TOKEN_BUDGET_SKIP",
+          "dependency_group": [
+            "h29",
+            "h30"
+          ],
+          "required_token_bound": 2857
+        },
+        {
+          "source_id": "h63",
+          "status": "TOKEN_BUDGET_SKIP",
+          "dependency_group": [
+            "h63"
+          ],
+          "required_token_bound": 1593
+        },
+        {
+          "source_id": "h50",
+          "status": "TOKEN_BUDGET_SKIP",
+          "dependency_group": [
+            "h49",
+            "h50"
+          ],
+          "required_token_bound": 2857
+        },
+        {
+          "source_id": "q239",
+          "status": "TOKEN_BUDGET_SKIP",
+          "dependency_group": [
+            "h68",
+            "q239"
+          ],
+          "required_token_bound": 4729
+        },
+        {
+          "source_id": "h4",
+          "status": "TOKEN_BUDGET_SKIP",
+          "dependency_group": [
+            "h4"
+          ],
+          "required_token_bound": 1145
+        },
+        {
+          "source_id": "q225",
+          "status": "TOKEN_BUDGET_SKIP",
+          "dependency_group": [
+            "h68",
+            "q225"
+          ],
+          "required_token_bound": 1678
+        },
+        {
+          "source_id": "h37",
+          "status": "TOKEN_BUDGET_SKIP",
+          "dependency_group": [
+            "h37"
+          ],
+          "required_token_bound": 532
+        },
+        {
+          "source_id": "q80",
+          "status": "TOKEN_BUDGET_SKIP",
+          "dependency_group": [
+            "h23",
+            "q80"
+          ],
+          "required_token_bound": 2417
+        },
+        {
+          "source_id": "h38",
+          "status": "TOKEN_BUDGET_SKIP",
+          "dependency_group": [
+            "h38"
+          ],
+          "required_token_bound": 531
+        },
+        {
+          "source_id": "h71",
+          "status": "TOKEN_BUDGET_SKIP",
+          "dependency_group": [
+            "h71"
+          ],
+          "required_token_bound": 1118
+        },
+        {
+          "source_id": "h39",
+          "status": "TOKEN_BUDGET_SKIP",
+          "dependency_group": [
+            "h39"
+          ],
+          "required_token_bound": 533
+        },
+        {
+          "source_id": "q198",
+          "status": "TOKEN_BUDGET_SKIP",
+          "dependency_group": [
+            "h53",
+            "q198"
+          ],
+          "required_token_bound": 1936
+        },
+        {
+          "source_id": "q153",
+          "status": "TOKEN_BUDGET_SKIP",
+          "dependency_group": [
+            "h43",
+            "q153"
+          ],
+          "required_token_bound": 4067
+        },
+        {
+          "source_id": "q243",
+          "status": "TOKEN_BUDGET_SKIP",
+          "dependency_group": [
+            "h68",
+            "q243"
+          ],
+          "required_token_bound": 3107
+        },
+        {
+          "source_id": "q152",
+          "status": "TOKEN_BUDGET_SKIP",
+          "dependency_group": [
+            "h43",
+            "q152"
+          ],
+          "required_token_bound": 2092
+        },
+        {
+          "source_id": "h52",
+          "status": "TOKEN_BUDGET_SKIP",
+          "dependency_group": [
+            "h52"
+          ],
+          "required_token_bound": 1165
+        },
+        {
+          "source_id": "h57",
+          "status": "TOKEN_BUDGET_SKIP",
+          "dependency_group": [
+            "h57"
+          ],
+          "required_token_bound": 801
+        },
+        {
+          "source_id": "q216",
+          "status": "TOKEN_BUDGET_SKIP",
+          "dependency_group": [
+            "h68",
+            "q216"
+          ],
+          "required_token_bound": 7430
+        },
+        {
+          "source_id": "h58",
+          "status": "TOKEN_BUDGET_SKIP",
+          "dependency_group": [
+            "h58"
+          ],
+          "required_token_bound": 800
+        },
+        {
+          "source_id": "q39",
+          "status": "TOKEN_BUDGET_SKIP",
+          "dependency_group": [
+            "h9",
+            "q39"
+          ],
+          "required_token_bound": 1873
+        },
+        {
+          "source_id": "q191",
+          "status": "TOKEN_BUDGET_SKIP",
+          "dependency_group": [
+            "h53",
+            "q191"
+          ],
+          "required_token_bound": 2252
+        },
+        {
+          "source_id": "q94",
+          "status": "TOKEN_BUDGET_SKIP",
+          "dependency_group": [
+            "h23",
+            "q94"
+          ],
+          "required_token_bound": 1868
+        },
+        {
+          "source_id": "q64",
+          "status": "TOKEN_BUDGET_SKIP",
+          "dependency_group": [
+            "h23",
+            "q64"
+          ],
+          "required_token_bound": 3449
+        },
+        {
+          "source_id": "q197",
+          "status": "TOKEN_BUDGET_SKIP",
+          "dependency_group": [
+            "h53",
+            "q197"
+          ],
+          "required_token_bound": 3252
+        },
+        {
+          "source_id": "q174",
+          "status": "TOKEN_BUDGET_SKIP",
+          "dependency_group": [
+            "h43",
+            "q174"
+          ],
+          "required_token_bound": 3454
+        },
+        {
+          "source_id": "q47",
+          "status": "TOKEN_BUDGET_SKIP",
+          "dependency_group": [
+            "h9",
+            "q47"
+          ],
+          "required_token_bound": 3308
+        },
+        {
+          "source_id": "h18",
+          "status": "TOKEN_BUDGET_SKIP",
+          "dependency_group": [
+            "h17",
+            "h18"
+          ],
+          "required_token_bound": 1307
+        },
+        {
+          "source_id": "q68",
+          "status": "TOKEN_BUDGET_SKIP",
+          "dependency_group": [
+            "h23",
+            "q68"
+          ],
+          "required_token_bound": 3303
+        },
+        {
+          "source_id": "q24",
+          "status": "TOKEN_BUDGET_SKIP",
+          "dependency_group": [
+            "h9",
+            "q24"
+          ],
+          "required_token_bound": 2351
+        },
+        {
+          "source_id": "q127",
+          "status": "TOKEN_BUDGET_SKIP",
+          "dependency_group": [
+            "q127"
+          ],
+          "required_token_bound": 2746
+        },
+        {
+          "source_id": "q142",
+          "status": "TOKEN_BUDGET_SKIP",
+          "dependency_group": [
+            "h43",
+            "q142"
+          ],
+          "required_token_bound": 1594
+        },
+        {
+          "source_id": "q140",
+          "status": "TOKEN_BUDGET_SKIP",
+          "dependency_group": [
+            "h43",
+            "q140"
+          ],
+          "required_token_bound": 3308
+        },
+        {
+          "source_id": "q123",
+          "status": "TOKEN_BUDGET_SKIP",
+          "dependency_group": [
+            "q123"
+          ],
+          "required_token_bound": 1641
+        },
+        {
+          "source_id": "q72",
+          "status": "TOKEN_BUDGET_SKIP",
+          "dependency_group": [
+            "h23",
+            "q72"
+          ],
+          "required_token_bound": 2403
+        },
+        {
+          "source_id": "h26",
+          "status": "TOKEN_BUDGET_SKIP",
+          "dependency_group": [
+            "h25",
+            "h26"
+          ],
+          "required_token_bound": 1825
+        },
+        {
+          "source_id": "q238",
+          "status": "TOKEN_BUDGET_SKIP",
+          "dependency_group": [
+            "h68",
+            "q238"
+          ],
+          "required_token_bound": 7288
+        },
+        {
+          "source_id": "q237",
+          "status": "TOKEN_BUDGET_SKIP",
+          "dependency_group": [
+            "h68",
+            "q237"
+          ],
+          "required_token_bound": 3783
+        },
+        {
+          "source_id": "h22",
+          "status": "TOKEN_BUDGET_SKIP",
+          "dependency_group": [
+            "h21",
+            "h22"
+          ],
+          "required_token_bound": 1330
+        },
+        {
+          "source_id": "q244",
+          "status": "TOKEN_BUDGET_SKIP",
+          "dependency_group": [
+            "h68",
+            "q244"
+          ],
+          "required_token_bound": 1962
+        },
+        {
+          "source_id": "q113",
+          "status": "TOKEN_BUDGET_SKIP",
+          "dependency_group": [
+            "q113"
+          ],
+          "required_token_bound": 2025
+        },
+        {
+          "source_id": "q235",
+          "status": "TOKEN_BUDGET_SKIP",
+          "dependency_group": [
+            "h68",
+            "q235"
+          ],
+          "required_token_bound": 3233
+        },
+        {
+          "source_id": "q161",
+          "status": "TOKEN_BUDGET_SKIP",
+          "dependency_group": [
+            "h43",
+            "q161"
+          ],
+          "required_token_bound": 1604
+        },
+        {
+          "source_id": "h62",
+          "status": "TOKEN_BUDGET_SKIP",
+          "dependency_group": [
+            "h62"
+          ],
+          "required_token_bound": 1405
+        },
+        {
+          "source_id": "q222",
+          "status": "TOKEN_BUDGET_SKIP",
+          "dependency_group": [
+            "h68",
+            "q222"
+          ],
+          "required_token_bound": 7575
+        },
+        {
+          "source_id": "q48",
+          "status": "TOKEN_BUDGET_SKIP",
+          "dependency_group": [
+            "h9",
+            "q48"
+          ],
+          "required_token_bound": 2532
+        },
+        {
+          "source_id": "q159",
+          "status": "TOKEN_BUDGET_SKIP",
+          "dependency_group": [
+            "h43",
+            "q159"
+          ],
+          "required_token_bound": 2429
+        },
+        {
+          "source_id": "q41",
+          "status": "TOKEN_BUDGET_SKIP",
+          "dependency_group": [
+            "h9",
+            "q41"
+          ],
+          "required_token_bound": 1843
+        },
+        {
+          "source_id": "q96",
+          "status": "TOKEN_BUDGET_SKIP",
+          "dependency_group": [
+            "h23",
+            "q96"
+          ],
+          "required_token_bound": 1838
+        },
+        {
+          "source_id": "q151",
+          "status": "TOKEN_BUDGET_SKIP",
+          "dependency_group": [
+            "h43",
+            "q151"
+          ],
+          "required_token_bound": 2197
+        },
+        {
+          "source_id": "q65",
+          "status": "TOKEN_BUDGET_SKIP",
+          "dependency_group": [
+            "h23",
+            "q65"
+          ],
+          "required_token_bound": 3008
+        },
+        {
+          "source_id": "h67",
+          "status": "TOKEN_BUDGET_SKIP",
+          "dependency_group": [
+            "h66",
+            "h67"
+          ],
+          "required_token_bound": 3917
+        },
+        {
+          "source_id": "q129",
+          "status": "TOKEN_BUDGET_SKIP",
+          "dependency_group": [
+            "q129"
+          ],
+          "required_token_bound": 1203
+        },
+        {
+          "source_id": "q35",
+          "status": "TOKEN_BUDGET_SKIP",
+          "dependency_group": [
+            "h9",
+            "q35"
+          ],
+          "required_token_bound": 2598
+        },
+        {
+          "source_id": "q186",
+          "status": "TOKEN_BUDGET_SKIP",
+          "dependency_group": [
+            "h53",
+            "q186"
+          ],
+          "required_token_bound": 2619
+        },
+        {
+          "source_id": "q20",
+          "status": "TOKEN_BUDGET_SKIP",
+          "dependency_group": [
+            "h9",
+            "q20"
+          ],
+          "required_token_bound": 1701
+        },
+        {
+          "source_id": "q61",
+          "status": "TOKEN_BUDGET_SKIP",
+          "dependency_group": [
+            "h23",
+            "q61"
+          ],
+          "required_token_bound": 2230
+        },
+        {
+          "source_id": "q91",
+          "status": "TOKEN_BUDGET_SKIP",
+          "dependency_group": [
+            "h23",
+            "q91"
+          ],
+          "required_token_bound": 3731
+        },
+        {
+          "source_id": "q171",
+          "status": "TOKEN_BUDGET_SKIP",
+          "dependency_group": [
+            "h43",
+            "q171"
+          ],
+          "required_token_bound": 2235
+        },
+        {
+          "source_id": "q74",
+          "status": "TOKEN_BUDGET_SKIP",
+          "dependency_group": [
+            "h23",
+            "q74"
+          ],
+          "required_token_bound": 2762
+        },
+        {
+          "source_id": "q34",
+          "status": "TOKEN_BUDGET_SKIP",
+          "dependency_group": [
+            "h9",
+            "q34"
+          ],
+          "required_token_bound": 1352
+        },
+        {
+          "source_id": "q185",
+          "status": "TOKEN_BUDGET_SKIP",
+          "dependency_group": [
+            "h53",
+            "q185"
+          ],
+          "required_token_bound": 1373
+        },
+        {
+          "source_id": "h70",
+          "status": "TOKEN_BUDGET_SKIP",
+          "dependency_group": [
+            "h70"
+          ],
+          "required_token_bound": 1645
+        },
+        {
+          "source_id": "q228",
+          "status": "TOKEN_BUDGET_SKIP",
+          "dependency_group": [
+            "h68",
+            "q228"
+          ],
+          "required_token_bound": 1599
+        },
+        {
+          "source_id": "h13",
+          "status": "TOKEN_BUDGET_SKIP",
+          "dependency_group": [
+            "h13"
+          ],
+          "required_token_bound": 855
+        },
+        {
+          "source_id": "q124",
+          "status": "TOKEN_BUDGET_SKIP",
+          "dependency_group": [
+            "q124"
+          ],
+          "required_token_bound": 5275
+        },
+        {
+          "source_id": "q69",
+          "status": "TOKEN_BUDGET_SKIP",
+          "dependency_group": [
+            "h23",
+            "q69"
+          ],
+          "required_token_bound": 2903
+        },
+        {
+          "source_id": "q88",
+          "status": "TOKEN_BUDGET_SKIP",
+          "dependency_group": [
+            "h23",
+            "q88"
+          ],
+          "required_token_bound": 4995
+        },
+        {
+          "source_id": "q25",
+          "status": "TOKEN_BUDGET_SKIP",
+          "dependency_group": [
+            "h9",
+            "q25"
+          ],
+          "required_token_bound": 2841
+        },
+        {
+          "source_id": "q115",
+          "status": "TOKEN_BUDGET_SKIP",
+          "dependency_group": [
+            "q115"
+          ],
+          "required_token_bound": 1556
+        },
+        {
+          "source_id": "q208",
+          "status": "TOKEN_BUDGET_SKIP",
+          "dependency_group": [
+            "h68",
+            "q208"
+          ],
+          "required_token_bound": 1953
+        },
+        {
+          "source_id": "q32",
+          "status": "TOKEN_BUDGET_SKIP",
+          "dependency_group": [
+            "h9",
+            "q32"
+          ],
+          "required_token_bound": 2667
+        },
+        {
+          "source_id": "q183",
+          "status": "TOKEN_BUDGET_SKIP",
+          "dependency_group": [
+            "h53",
+            "q183"
+          ],
+          "required_token_bound": 2688
+        },
+        {
+          "source_id": "q46",
+          "status": "TOKEN_BUDGET_SKIP",
+          "dependency_group": [
+            "h9",
+            "q46"
+          ],
+          "required_token_bound": 2895
+        },
+        {
+          "source_id": "q67",
+          "status": "TOKEN_BUDGET_SKIP",
+          "dependency_group": [
+            "h23",
+            "q67"
+          ],
+          "required_token_bound": 2890
+        },
+        {
+          "source_id": "q126",
+          "status": "TOKEN_BUDGET_SKIP",
+          "dependency_group": [
+            "q126"
+          ],
+          "required_token_bound": 2333
+        },
+        {
+          "source_id": "q139",
+          "status": "TOKEN_BUDGET_SKIP",
+          "dependency_group": [
+            "h43",
+            "q139"
+          ],
+          "required_token_bound": 2895
+        },
+        {
+          "source_id": "q77",
+          "status": "TOKEN_BUDGET_SKIP",
+          "dependency_group": [
+            "h23",
+            "q77"
+          ],
+          "required_token_bound": 2621
+        },
+        {
+          "source_id": "q214",
+          "status": "TOKEN_BUDGET_SKIP",
+          "dependency_group": [
+            "h68",
+            "q214"
+          ],
+          "required_token_bound": 2196
+        },
+        {
+          "source_id": "q182",
+          "status": "TOKEN_BUDGET_SKIP",
+          "dependency_group": [
+            "h53",
+            "q182"
+          ],
+          "required_token_bound": 1941
+        },
+        {
+          "source_id": "q221",
+          "status": "TOKEN_BUDGET_SKIP",
+          "dependency_group": [
+            "h68",
+            "q221"
+          ],
+          "required_token_bound": 1671
+        },
+        {
+          "source_id": "q85",
+          "status": "TOKEN_BUDGET_SKIP",
+          "dependency_group": [
+            "h23",
+            "q85"
+          ],
+          "required_token_bound": 2915
+        },
+        {
+          "source_id": "q104",
+          "status": "TOKEN_BUDGET_SKIP",
+          "dependency_group": [
+            "q104"
+          ],
+          "required_token_bound": 716
+        },
+        {
+          "source_id": "q231",
+          "status": "TOKEN_BUDGET_SKIP",
+          "dependency_group": [
+            "h68",
+            "q231"
+          ],
+          "required_token_bound": 1505
+        },
+        {
+          "source_id": "q122",
+          "status": "TOKEN_BUDGET_SKIP",
+          "dependency_group": [
+            "q122"
+          ],
+          "required_token_bound": 1308
+        },
+        {
+          "source_id": "q59",
+          "status": "TOKEN_BUDGET_SKIP",
+          "dependency_group": [
+            "h23",
+            "q59"
+          ],
+          "required_token_bound": 2440
+        },
+        {
+          "source_id": "q49",
+          "status": "TOKEN_BUDGET_SKIP",
+          "dependency_group": [
+            "h9",
+            "q49"
+          ],
+          "required_token_bound": 1512
+        },
+        {
+          "source_id": "q42",
+          "status": "TOKEN_BUDGET_SKIP",
+          "dependency_group": [
+            "h9",
+            "q42"
+          ],
+          "required_token_bound": 1607
+        },
+        {
+          "source_id": "q97",
+          "status": "TOKEN_BUDGET_SKIP",
+          "dependency_group": [
+            "h23",
+            "q97"
+          ],
+          "required_token_bound": 1602
+        },
+        {
+          "source_id": "h51",
+          "status": "TOKEN_BUDGET_SKIP",
+          "dependency_group": [
+            "h51"
+          ],
+          "required_token_bound": 1801
+        },
+        {
+          "source_id": "q219",
+          "status": "TOKEN_BUDGET_SKIP",
+          "dependency_group": [
+            "h68",
+            "q219"
+          ],
+          "required_token_bound": 1741
+        },
+        {
+          "source_id": "q181",
+          "status": "TOKEN_BUDGET_SKIP",
+          "dependency_group": [
+            "h53",
+            "q181"
+          ],
+          "required_token_bound": 1606
+        },
+        {
+          "source_id": "h47",
+          "status": "TOKEN_BUDGET_SKIP",
+          "dependency_group": [
+            "h47"
+          ],
+          "required_token_bound": 1485
+        },
+        {
+          "source_id": "q201",
+          "status": "TOKEN_BUDGET_SKIP",
+          "dependency_group": [
+            "h53",
+            "q201"
+          ],
+          "required_token_bound": 2753
+        },
+        {
+          "source_id": "q119",
+          "status": "TOKEN_BUDGET_SKIP",
+          "dependency_group": [
+            "q119"
+          ],
+          "required_token_bound": 1037
+        },
+        {
+          "source_id": "q204",
+          "status": "TOKEN_BUDGET_SKIP",
+          "dependency_group": [
+            "h53",
+            "q204"
+          ],
+          "required_token_bound": 1620
+        },
+        {
+          "source_id": "q202",
+          "status": "TOKEN_BUDGET_SKIP",
+          "dependency_group": [
+            "h53",
+            "q202"
+          ],
+          "required_token_bound": 2997
+        },
+        {
+          "source_id": "h15",
+          "status": "TOKEN_BUDGET_SKIP",
+          "dependency_group": [
+            "h15"
+          ],
+          "required_token_bound": 1122
+        },
+        {
+          "source_id": "q155",
+          "status": "TOKEN_BUDGET_SKIP",
+          "dependency_group": [
+            "h43",
+            "q155"
+          ],
+          "required_token_bound": 1435
+        },
+        {
+          "source_id": "q217",
+          "status": "TOKEN_BUDGET_SKIP",
+          "dependency_group": [
+            "h68",
+            "q217"
+          ],
+          "required_token_bound": 1424
+        },
+        {
+          "source_id": "q121",
+          "status": "TOKEN_BUDGET_SKIP",
+          "dependency_group": [
+            "q121"
+          ],
+          "required_token_bound": 1021
+        },
+        {
+          "source_id": "q196",
+          "status": "TOKEN_BUDGET_SKIP",
+          "dependency_group": [
+            "h53",
+            "q196"
+          ],
+          "required_token_bound": 2626
+        },
+        {
+          "source_id": "q36",
+          "status": "TOKEN_BUDGET_SKIP",
+          "dependency_group": [
+            "h9",
+            "q36"
+          ],
+          "required_token_bound": 1617
+        },
+        {
+          "source_id": "q187",
+          "status": "TOKEN_BUDGET_SKIP",
+          "dependency_group": [
+            "h53",
+            "q187"
+          ],
+          "required_token_bound": 1638
+        },
+        {
+          "source_id": "q58",
+          "status": "TOKEN_BUDGET_SKIP",
+          "dependency_group": [
+            "h23",
+            "q58"
+          ],
+          "required_token_bound": 1353
+        },
+        {
+          "source_id": "q135",
+          "status": "TOKEN_BUDGET_SKIP",
+          "dependency_group": [
+            "q135"
+          ],
+          "required_token_bound": 798
+        },
+        {
+          "source_id": "q149",
+          "status": "TOKEN_BUDGET_SKIP",
+          "dependency_group": [
+            "h43",
+            "q149"
+          ],
+          "required_token_bound": 1358
+        },
+        {
+          "source_id": "q175",
+          "status": "TOKEN_BUDGET_SKIP",
+          "dependency_group": [
+            "h43",
+            "q175"
+          ],
+          "required_token_bound": 3418
+        },
+        {
+          "source_id": "q227",
+          "status": "TOKEN_BUDGET_SKIP",
+          "dependency_group": [
+            "h68",
+            "q227"
+          ],
+          "required_token_bound": 1793
+        },
+        {
+          "source_id": "q70",
+          "status": "TOKEN_BUDGET_SKIP",
+          "dependency_group": [
+            "h23",
+            "q70"
+          ],
+          "required_token_bound": 2577
+        },
+        {
+          "source_id": "q166",
+          "status": "TOKEN_BUDGET_SKIP",
+          "dependency_group": [
+            "h43",
+            "q166"
+          ],
+          "required_token_bound": 2077
+        },
+        {
+          "source_id": "q224",
+          "status": "TOKEN_BUDGET_SKIP",
+          "dependency_group": [
+            "h68",
+            "q224"
+          ],
+          "required_token_bound": 1951
+        },
+        {
+          "source_id": "q56",
+          "status": "TOKEN_BUDGET_SKIP",
+          "dependency_group": [
+            "h23",
+            "q56"
+          ],
+          "required_token_bound": 2032
+        },
+        {
+          "source_id": "q133",
+          "status": "TOKEN_BUDGET_SKIP",
+          "dependency_group": [
+            "q133"
+          ],
+          "required_token_bound": 1476
+        },
+        {
+          "source_id": "q147",
+          "status": "TOKEN_BUDGET_SKIP",
+          "dependency_group": [
+            "h43",
+            "q147"
+          ],
+          "required_token_bound": 2037
+        },
+        {
+          "source_id": "q78",
+          "status": "TOKEN_BUDGET_SKIP",
+          "dependency_group": [
+            "h23",
+            "q78"
+          ],
+          "required_token_bound": 1273
+        },
+        {
+          "source_id": "q98",
+          "status": "TOKEN_BUDGET_SKIP",
+          "dependency_group": [
+            "h23",
+            "q98"
+          ],
+          "required_token_bound": 2334
+        },
+        {
+          "source_id": "h65",
+          "status": "TOKEN_BUDGET_SKIP",
+          "dependency_group": [
+            "h65"
+          ],
+          "required_token_bound": 835
+        },
+        {
+          "source_id": "q33",
+          "status": "TOKEN_BUDGET_SKIP",
+          "dependency_group": [
+            "h9",
+            "q33"
+          ],
+          "required_token_bound": 1581
+        },
+        {
+          "source_id": "q184",
+          "status": "TOKEN_BUDGET_SKIP",
+          "dependency_group": [
+            "h53",
+            "q184"
+          ],
+          "required_token_bound": 1602
+        },
+        {
+          "source_id": "q194",
+          "status": "TOKEN_BUDGET_SKIP",
+          "dependency_group": [
+            "h53",
+            "q194"
+          ],
+          "required_token_bound": 3160
+        },
+        {
+          "source_id": "q240",
+          "status": "TOKEN_BUDGET_SKIP",
+          "dependency_group": [
+            "h68",
+            "q240"
+          ],
+          "required_token_bound": 3175
+        },
+        {
+          "source_id": "q209",
+          "status": "TOKEN_BUDGET_SKIP",
+          "dependency_group": [
+            "h68",
+            "q209"
+          ],
+          "required_token_bound": 2457
+        },
+        {
+          "source_id": "q136",
+          "status": "TOKEN_BUDGET_SKIP",
+          "dependency_group": [
+            "q136"
+          ],
+          "required_token_bound": 1210
+        },
+        {
+          "source_id": "q106",
+          "status": "TOKEN_BUDGET_SKIP",
+          "dependency_group": [
+            "q106"
+          ],
+          "required_token_bound": 1409
+        },
+        {
+          "source_id": "q75",
+          "status": "TOKEN_BUDGET_SKIP",
+          "dependency_group": [
+            "h23",
+            "q75"
+          ],
+          "required_token_bound": 2431
+        },
+        {
+          "source_id": "q54",
+          "status": "TOKEN_BUDGET_SKIP",
+          "dependency_group": [
+            "h23",
+            "q54"
+          ],
+          "required_token_bound": 1649
+        },
+        {
+          "source_id": "q131",
+          "status": "TOKEN_BUDGET_SKIP",
+          "dependency_group": [
+            "q131"
+          ],
+          "required_token_bound": 1092
+        },
+        {
+          "source_id": "q145",
+          "status": "TOKEN_BUDGET_SKIP",
+          "dependency_group": [
+            "h43",
+            "q145"
+          ],
+          "required_token_bound": 1654
+        },
+        {
+          "source_id": "q168",
+          "status": "TOKEN_BUDGET_SKIP",
+          "dependency_group": [
+            "h43",
+            "q168"
+          ],
+          "required_token_bound": 1949
+        },
+        {
+          "source_id": "q100",
+          "status": "TOKEN_BUDGET_SKIP",
+          "dependency_group": [
+            "h23",
+            "q100"
+          ],
+          "required_token_bound": 1534
+        },
+        {
+          "source_id": "q53",
+          "status": "TOKEN_BUDGET_SKIP",
+          "dependency_group": [
+            "h23",
+            "q53"
+          ],
+          "required_token_bound": 1599
+        },
+        {
+          "source_id": "q130",
+          "status": "TOKEN_BUDGET_SKIP",
+          "dependency_group": [
+            "q130"
+          ],
+          "required_token_bound": 1042
+        },
+        {
+          "source_id": "q144",
+          "status": "TOKEN_BUDGET_SKIP",
+          "dependency_group": [
+            "h43",
+            "q144"
+          ],
+          "required_token_bound": 1604
+        },
+        {
+          "source_id": "q55",
+          "status": "TOKEN_BUDGET_SKIP",
+          "dependency_group": [
+            "h23",
+            "q55"
+          ],
+          "required_token_bound": 1430
+        },
+        {
+          "source_id": "q132",
+          "status": "TOKEN_BUDGET_SKIP",
+          "dependency_group": [
+            "q132"
+          ],
+          "required_token_bound": 873
+        },
+        {
+          "source_id": "q146",
+          "status": "TOKEN_BUDGET_SKIP",
+          "dependency_group": [
+            "h43",
+            "q146"
+          ],
+          "required_token_bound": 1435
+        },
+        {
+          "source_id": "q31",
+          "status": "TOKEN_BUDGET_SKIP",
+          "dependency_group": [
+            "h9",
+            "q31"
+          ],
+          "required_token_bound": 1868
+        },
+        {
+          "source_id": "h23",
+          "status": "TOKEN_BUDGET_SKIP",
+          "dependency_group": [
+            "h23"
+          ],
+          "required_token_bound": 558
+        },
+        {
+          "source_id": "q206",
+          "status": "TOKEN_BUDGET_SKIP",
+          "dependency_group": [
+            "h53",
+            "q206"
+          ],
+          "required_token_bound": 1585
+        },
+        {
+          "source_id": "q57",
+          "status": "TOKEN_BUDGET_SKIP",
+          "dependency_group": [
+            "h23",
+            "q57"
+          ],
+          "required_token_bound": 1432
+        },
+        {
+          "source_id": "q134",
+          "status": "TOKEN_BUDGET_SKIP",
+          "dependency_group": [
+            "q134"
+          ],
+          "required_token_bound": 877
+        },
+        {
+          "source_id": "q148",
+          "status": "TOKEN_BUDGET_SKIP",
+          "dependency_group": [
+            "h43",
+            "q148"
+          ],
+          "required_token_bound": 1437
+        },
+        {
+          "source_id": "q229",
+          "status": "TOKEN_BUDGET_SKIP",
+          "dependency_group": [
+            "h68",
+            "q229"
+          ],
+          "required_token_bound": 1673
+        },
+        {
+          "source_id": "q157",
+          "status": "TOKEN_BUDGET_SKIP",
+          "dependency_group": [
+            "h43",
+            "q157"
+          ],
+          "required_token_bound": 1481
+        },
+        {
+          "source_id": "q211",
+          "status": "TOKEN_BUDGET_SKIP",
+          "dependency_group": [
+            "h68",
+            "q211"
+          ],
+          "required_token_bound": 3237
+        },
+        {
+          "source_id": "q86",
+          "status": "TOKEN_BUDGET_SKIP",
+          "dependency_group": [
+            "h23",
+            "q86"
+          ],
+          "required_token_bound": 1584
+        },
+        {
+          "source_id": "q158",
+          "status": "TOKEN_BUDGET_SKIP",
+          "dependency_group": [
+            "h43",
+            "q158"
+          ],
+          "required_token_bound": 1444
+        },
+        {
+          "source_id": "q242",
+          "status": "TOKEN_BUDGET_SKIP",
+          "dependency_group": [
+            "h68",
+            "q242"
+          ],
+          "required_token_bound": 2694
+        },
+        {
+          "source_id": "h81",
+          "status": "TOKEN_BUDGET_SKIP",
+          "dependency_group": [
+            "h81"
+          ],
+          "required_token_bound": 556
+        },
+        {
+          "source_id": "q118",
+          "status": "TOKEN_BUDGET_SKIP",
+          "dependency_group": [
+            "q118"
+          ],
+          "required_token_bound": 1366
+        },
+        {
+          "source_id": "q203",
+          "status": "TOKEN_BUDGET_SKIP",
+          "dependency_group": [
+            "h53",
+            "q203"
+          ],
+          "required_token_bound": 1949
+        },
+        {
+          "source_id": "q44",
+          "status": "TOKEN_BUDGET_SKIP",
+          "dependency_group": [
+            "h9",
+            "q44"
+          ],
+          "required_token_bound": 2104
+        },
+        {
+          "source_id": "q210",
+          "status": "TOKEN_BUDGET_SKIP",
+          "dependency_group": [
+            "h68",
+            "q210"
+          ],
+          "required_token_bound": 1848
+        },
+        {
+          "source_id": "q169",
+          "status": "TOKEN_BUDGET_SKIP",
+          "dependency_group": [
+            "h43",
+            "q169"
+          ],
+          "required_token_bound": 2359
+        },
+        {
+          "source_id": "q52",
+          "status": "TOKEN_BUDGET_SKIP",
+          "dependency_group": [
+            "h23",
+            "q52"
+          ],
+          "required_token_bound": 1450
+        },
+        {
+          "source_id": "q45",
+          "status": "TOKEN_BUDGET_SKIP",
+          "dependency_group": [
+            "h9",
+            "q45"
+          ],
+          "required_token_bound": 1482
+        },
+        {
+          "source_id": "q66",
+          "status": "TOKEN_BUDGET_SKIP",
+          "dependency_group": [
+            "h23",
+            "q66"
+          ],
+          "required_token_bound": 1477
+        },
+        {
+          "source_id": "q125",
+          "status": "TOKEN_BUDGET_SKIP",
+          "dependency_group": [
+            "q125"
+          ],
+          "required_token_bound": 920
+        },
+        {
+          "source_id": "q138",
+          "status": "TOKEN_BUDGET_SKIP",
+          "dependency_group": [
+            "h43",
+            "q138"
+          ],
+          "required_token_bound": 1482
+        },
+        {
+          "source_id": "q156",
+          "status": "TOKEN_BUDGET_SKIP",
+          "dependency_group": [
+            "h43",
+            "q156"
+          ],
+          "required_token_bound": 2369
+        },
+        {
+          "source_id": "q62",
+          "status": "TOKEN_BUDGET_SKIP",
+          "dependency_group": [
+            "h23",
+            "q62"
+          ],
+          "required_token_bound": 2209
+        },
+        {
+          "source_id": "q172",
+          "status": "TOKEN_BUDGET_SKIP",
+          "dependency_group": [
+            "h43",
+            "q172"
+          ],
+          "required_token_bound": 2214
+        },
+        {
+          "source_id": "q232",
+          "status": "TOKEN_BUDGET_SKIP",
+          "dependency_group": [
+            "h68",
+            "q232"
+          ],
+          "required_token_bound": 1675
+        },
+        {
+          "source_id": "h64",
+          "status": "TOKEN_BUDGET_SKIP",
+          "dependency_group": [
+            "h64"
+          ],
+          "required_token_bound": 896
+        },
+        {
+          "source_id": "q110",
+          "status": "TOKEN_BUDGET_SKIP",
+          "dependency_group": [
+            "q110"
+          ],
+          "required_token_bound": 938
+        },
+        {
+          "source_id": "q164",
+          "status": "TOKEN_BUDGET_SKIP",
+          "dependency_group": [
+            "h43",
+            "q164"
+          ],
+          "required_token_bound": 2420
+        },
+        {
+          "source_id": "q27",
+          "status": "TOKEN_BUDGET_SKIP",
+          "dependency_group": [
+            "h9",
+            "q27"
+          ],
+          "required_token_bound": 1893
+        },
+        {
+          "source_id": "q220",
+          "status": "TOKEN_BUDGET_SKIP",
+          "dependency_group": [
+            "h68",
+            "q220"
+          ],
+          "required_token_bound": 1868
+        },
+        {
+          "source_id": "q120",
+          "status": "TOKEN_BUDGET_SKIP",
+          "dependency_group": [
+            "q120"
+          ],
+          "required_token_bound": 1529
+        },
+        {
+          "source_id": "q199",
+          "status": "TOKEN_BUDGET_SKIP",
+          "dependency_group": [
+            "h53",
+            "q199"
+          ],
+          "required_token_bound": 2652
+        },
+        {
+          "source_id": "q84",
+          "status": "TOKEN_BUDGET_SKIP",
+          "dependency_group": [
+            "h23",
+            "q84"
+          ],
+          "required_token_bound": 1915
+        },
+        {
+          "source_id": "q107",
+          "status": "TOKEN_BUDGET_SKIP",
+          "dependency_group": [
+            "q107"
+          ],
+          "required_token_bound": 1717
+        },
+        {
+          "source_id": "q195",
+          "status": "TOKEN_BUDGET_SKIP",
+          "dependency_group": [
+            "h53",
+            "q195"
+          ],
+          "required_token_bound": 1959
+        },
+        {
+          "source_id": "q241",
+          "status": "TOKEN_BUDGET_SKIP",
+          "dependency_group": [
+            "h68",
+            "q241"
+          ],
+          "required_token_bound": 1974
+        },
+        {
+          "source_id": "q212",
+          "status": "TOKEN_BUDGET_SKIP",
+          "dependency_group": [
+            "h68",
+            "q212"
+          ],
+          "required_token_bound": 2249
+        },
+        {
+          "source_id": "q137",
+          "status": "TOKEN_BUDGET_SKIP",
+          "dependency_group": [
+            "h43",
+            "q137"
+          ],
+          "required_token_bound": 1465
+        },
+        {
+          "source_id": "q30",
+          "status": "TOKEN_BUDGET_SKIP",
+          "dependency_group": [
+            "h9",
+            "q30"
+          ],
+          "required_token_bound": 1395
+        },
+        {
+          "source_id": "q83",
+          "status": "TOKEN_BUDGET_SKIP",
+          "dependency_group": [
+            "h23",
+            "q83"
+          ],
+          "required_token_bound": 1390
+        },
+        {
+          "source_id": "q109",
+          "status": "TOKEN_BUDGET_SKIP",
+          "dependency_group": [
+            "q109"
+          ],
+          "required_token_bound": 1424
+        },
+        {
+          "source_id": "q87",
+          "status": "TOKEN_BUDGET_SKIP",
+          "dependency_group": [
+            "h23",
+            "q87"
+          ],
+          "required_token_bound": 1317
+        },
+        {
+          "source_id": "q218",
+          "status": "TOKEN_BUDGET_SKIP",
+          "dependency_group": [
+            "h68",
+            "q218"
+          ],
+          "required_token_bound": 1923
+        },
+        {
+          "source_id": "q177",
+          "status": "TOKEN_BUDGET_SKIP",
+          "dependency_group": [
+            "h43",
+            "q177"
+          ],
+          "required_token_bound": 1383
+        },
+        {
+          "source_id": "h82",
+          "status": "TOKEN_BUDGET_SKIP",
+          "dependency_group": [
+            "h82"
+          ],
+          "required_token_bound": 1132
+        },
+        {
+          "source_id": "q176",
+          "status": "TOKEN_BUDGET_SKIP",
+          "dependency_group": [
+            "h43",
+            "q176"
+          ],
+          "required_token_bound": 1386
+        },
+        {
+          "source_id": "h27",
+          "status": "SELECTED",
+          "dependency_group": [],
+          "token_bound": 0
+        },
+        {
+          "source_id": "q190",
+          "status": "TOKEN_BUDGET_SKIP",
+          "dependency_group": [
+            "h53",
+            "q190"
+          ],
+          "required_token_bound": 1999
+        },
+        {
+          "source_id": "q73",
+          "status": "TOKEN_BUDGET_SKIP",
+          "dependency_group": [
+            "h23",
+            "q73"
+          ],
+          "required_token_bound": 2197
+        },
+        {
+          "source_id": "q230",
+          "status": "TOKEN_BUDGET_SKIP",
+          "dependency_group": [
+            "h68",
+            "q230"
+          ],
+          "required_token_bound": 1561
+        },
+        {
+          "source_id": "q43",
+          "status": "TOKEN_BUDGET_SKIP",
+          "dependency_group": [
+            "h9",
+            "q43"
+          ],
+          "required_token_bound": 2873
+        },
+        {
+          "source_id": "q76",
+          "status": "TOKEN_BUDGET_SKIP",
+          "dependency_group": [
+            "h23",
+            "q76"
+          ],
+          "required_token_bound": 2062
+        },
+        {
+          "source_id": "q179",
+          "status": "TOKEN_BUDGET_SKIP",
+          "dependency_group": [
+            "h53",
+            "q179"
+          ],
+          "required_token_bound": 1586
+        },
+        {
+          "source_id": "q200",
+          "status": "TOKEN_BUDGET_SKIP",
+          "dependency_group": [
+            "h53",
+            "q200"
+          ],
+          "required_token_bound": 1447
+        },
+        {
+          "source_id": "q233",
+          "status": "TOKEN_BUDGET_SKIP",
+          "dependency_group": [
+            "h68",
+            "q233"
+          ],
+          "required_token_bound": 1753
+        },
+        {
+          "source_id": "h46",
+          "status": "TOKEN_BUDGET_SKIP",
+          "dependency_group": [
+            "h46"
+          ],
+          "required_token_bound": 814
+        },
+        {
+          "source_id": "h9",
+          "status": "TOKEN_BUDGET_SKIP",
+          "dependency_group": [
+            "h9"
+          ],
+          "required_token_bound": 564
+        },
+        {
+          "source_id": "q105",
+          "status": "TOKEN_BUDGET_SKIP",
+          "dependency_group": [
+            "q105"
+          ],
+          "required_token_bound": 1561
+        },
+        {
+          "source_id": "q114",
+          "status": "TOKEN_BUDGET_SKIP",
+          "dependency_group": [
+            "q114"
+          ],
+          "required_token_bound": 1037
+        },
+        {
+          "source_id": "q26",
+          "status": "TOKEN_BUDGET_SKIP",
+          "dependency_group": [
+            "h9",
+            "q26"
+          ],
+          "required_token_bound": 1927
+        },
+        {
+          "source_id": "h89",
+          "status": "TOKEN_BUDGET_SKIP",
+          "dependency_group": [
+            "h89"
+          ],
+          "required_token_bound": 633
+        },
+        {
+          "source_id": "q112",
+          "status": "TOKEN_BUDGET_SKIP",
+          "dependency_group": [
+            "q112"
+          ],
+          "required_token_bound": 1004
+        },
+        {
+          "source_id": "q165",
+          "status": "TOKEN_BUDGET_SKIP",
+          "dependency_group": [
+            "h43",
+            "q165"
+          ],
+          "required_token_bound": 1630
+        },
+        {
+          "source_id": "q51",
+          "status": "TOKEN_BUDGET_SKIP",
+          "dependency_group": [
+            "h9",
+            "q51"
+          ],
+          "required_token_bound": 1491
+        },
+        {
+          "source_id": "q101",
+          "status": "TOKEN_BUDGET_SKIP",
+          "dependency_group": [
+            "h23",
+            "q101"
+          ],
+          "required_token_bound": 1326
+        },
+        {
+          "source_id": "h14",
+          "status": "TOKEN_BUDGET_SKIP",
+          "dependency_group": [
+            "h14"
+          ],
+          "required_token_bound": 857
+        },
+        {
+          "source_id": "q37",
+          "status": "TOKEN_BUDGET_SKIP",
+          "dependency_group": [
+            "h9",
+            "q37"
+          ],
+          "required_token_bound": 1481
+        },
+        {
+          "source_id": "q188",
+          "status": "TOKEN_BUDGET_SKIP",
+          "dependency_group": [
+            "h53",
+            "q188"
+          ],
+          "required_token_bound": 1502
+        },
+        {
+          "source_id": "q92",
+          "status": "TOKEN_BUDGET_SKIP",
+          "dependency_group": [
+            "h23",
+            "q92"
+          ],
+          "required_token_bound": 1666
+        },
+        {
+          "source_id": "q108",
+          "status": "TOKEN_BUDGET_SKIP",
+          "dependency_group": [
+            "q108"
+          ],
+          "required_token_bound": 1079
+        },
+        {
+          "source_id": "q245",
+          "status": "TOKEN_BUDGET_SKIP",
+          "dependency_group": [
+            "h68",
+            "q245"
+          ],
+          "required_token_bound": 2276
+        },
+        {
+          "source_id": "q180",
+          "status": "TOKEN_BUDGET_SKIP",
+          "dependency_group": [
+            "h53",
+            "q180"
+          ],
+          "required_token_bound": 1344
+        },
+        {
+          "source_id": "h68",
+          "status": "TOKEN_BUDGET_SKIP",
+          "dependency_group": [
+            "h68"
+          ],
+          "required_token_bound": 596
+        },
+        {
+          "source_id": "h53",
+          "status": "TOKEN_BUDGET_SKIP",
+          "dependency_group": [
+            "h53"
+          ],
+          "required_token_bound": 581
+        },
+        {
+          "source_id": "q71",
+          "status": "TOKEN_BUDGET_SKIP",
+          "dependency_group": [
+            "h23",
+            "q71"
+          ],
+          "required_token_bound": 1340
+        },
+        {
+          "source_id": "h8",
+          "status": "TOKEN_BUDGET_SKIP",
+          "dependency_group": [
+            "h8"
+          ],
+          "required_token_bound": 680
+        },
+        {
+          "source_id": "q28",
+          "status": "TOKEN_BUDGET_SKIP",
+          "dependency_group": [
+            "h9",
+            "q28"
+          ],
+          "required_token_bound": 2358
+        },
+        {
+          "source_id": "q160",
+          "status": "TOKEN_BUDGET_SKIP",
+          "dependency_group": [
+            "h43",
+            "q160"
+          ],
+          "required_token_bound": 1445
+        },
+        {
+          "source_id": "h43",
+          "status": "TOKEN_BUDGET_SKIP",
+          "dependency_group": [
+            "h43"
+          ],
+          "required_token_bound": 560
+        },
+        {
+          "source_id": "q111",
+          "status": "TOKEN_BUDGET_SKIP",
+          "dependency_group": [
+            "q111"
+          ],
+          "required_token_bound": 804
+        },
+        {
+          "source_id": "q163",
+          "status": "TOKEN_BUDGET_SKIP",
+          "dependency_group": [
+            "h43",
+            "q163"
+          ],
+          "required_token_bound": 1530
+        },
+        {
+          "source_id": "q103",
+          "status": "TOKEN_BUDGET_SKIP",
+          "dependency_group": [
+            "q103"
+          ],
+          "required_token_bound": 1051
+        },
+        {
+          "source_id": "q207",
+          "status": "TOKEN_BUDGET_SKIP",
+          "dependency_group": [
+            "h53",
+            "q207"
+          ],
+          "required_token_bound": 1520
+        },
+        {
+          "source_id": "q234",
+          "status": "TOKEN_BUDGET_SKIP",
+          "dependency_group": [
+            "h68",
+            "q234"
+          ],
+          "required_token_bound": 1578
+        },
+        {
+          "source_id": "q215",
+          "status": "TOKEN_BUDGET_SKIP",
+          "dependency_group": [
+            "h68",
+            "q215"
+          ],
+          "required_token_bound": 1689
+        },
+        {
+          "source_id": "q29",
+          "status": "TOKEN_BUDGET_SKIP",
+          "dependency_group": [
+            "h9",
+            "q29"
+          ],
+          "required_token_bound": 1478
+        },
+        {
+          "source_id": "q82",
+          "status": "TOKEN_BUDGET_SKIP",
+          "dependency_group": [
+            "h23",
+            "q82"
+          ],
+          "required_token_bound": 1473
+        },
+        {
+          "source_id": "q99",
+          "status": "TOKEN_BUDGET_SKIP",
+          "dependency_group": [
+            "h23",
+            "q99"
+          ],
+          "required_token_bound": 1394
+        },
+        {
+          "source_id": "h16",
+          "status": "TOKEN_BUDGET_SKIP",
+          "dependency_group": [
+            "h16"
+          ],
+          "required_token_bound": 783
+        },
+        {
+          "source_id": "q213",
+          "status": "TOKEN_BUDGET_SKIP",
+          "dependency_group": [
+            "h68",
+            "q213"
+          ],
+          "required_token_bound": 2130
+        },
+        {
+          "source_id": "q117",
+          "status": "TOKEN_BUDGET_SKIP",
+          "dependency_group": [
+            "q117"
+          ],
+          "required_token_bound": 820
+        },
+        {
+          "source_id": "q102",
+          "status": "TOKEN_BUDGET_SKIP",
+          "dependency_group": [
+            "h23",
+            "q102"
+          ],
+          "required_token_bound": 1438
+        }
+      ],
+      "fusion": "ROUND_ROBIN",
+      "graph_assurance": "UNIQUE_ORIGINAL_RECEIPTS_AND_CO_RECORDED_CANDIDATES_NOT_SEMANTIC_IDENTITY",
+      "common_catalog_used": true
+    },
+    "seconds": 0.1076759999996284,
+    "failure": null,
+    "read_limit": 12,
+    "token_limit": 20000,
+    "cost": {
+      "retrieved_reads": 8,
+      "mandatory_targets": 1,
+      "mandatory_declarations": 1,
+      "source_chars": 12083,
+      "source_token_upper_bound": 19720,
+      "token_estimator": "FULL_UTF8_BYTES_CONSERVATIVE_BOUND_NOT_PROVIDER_USAGE",
+      "inference_http": 0
+    },
+    "uncovered": [
+      {
+        "category": "PARENT_SOURCE_COMPLETENESS",
+        "reason": "EXPLICIT_SOURCE_WINDOWS_ONLY; all original parents remain accessible"
+      },
+      {
+        "category": "QUALIFIED_RESULT_RECEIPT",
+        "source_id": "h3",
+        "reason": "NO_UNIQUE_ORIGINAL_ASSISTANT_RECEIPT; result remains recorded raw observation"
+      }
+    ],
+    "completeness_certified": false,
+    "absence_proves_semantic_absence": false,
+    "evidence_contract": "Original recorded sources and explicit windows only. Raw matching and graph links are candidate retrieval, not entity/ownership/permission/current-state proof. Absence from this subset never establishes missing process events in the full log."
+  },
+  "score": {
+    "categories": {
+      "policy": {
+        "found": 3,
+        "required": 3,
+        "recall": 1.0,
+        "missing": []
+      },
+      "history": {
+        "found": 2,
+        "required": 7,
+        "recall": 0.2857142857142857,
+        "missing": [
+          {
+            "document": "prompt",
+            "start": 12916,
+            "end": 13362,
+            "why": "First explicit textual request, not an assistant transfer.",
+            "text_sha256": "eb6804515d5fcbdeb730112f1ec836d385f72758e003c4fd83a67b3de51d9eaa",
+            "source_id": "h4",
+            "role": "user",
+            "kind": "text",
+            "tool": null,
+            "event": 4
+          },
+          {
+            "document": "prompt",
+            "start": 14186,
+            "end": 14339,
+            "why": "Second textual request.",
+            "text_sha256": "3aaceb238f1fd567bd36ee7ab8ef4c1d33a5513048ef897efa134ea02e7af143",
+            "source_id": "h8",
+            "role": "user",
+            "kind": "text",
+            "tool": null,
+            "event": 8
+          },
+          {
+            "document": "prompt",
+            "start": 221675,
+            "end": 221985,
+            "why": "Third renewed request after claimed completion.",
+            "text_sha256": "0a68802a72cc9abc272bd99a11cc69262c3b8d3b9b88a524d797c161a3d8352e",
+            "source_id": "h85",
+            "role": "user",
+            "kind": "text",
+            "tool": null,
+            "event": 85
+          },
+          {
+            "document": "prompt",
+            "start": 222587,
+            "end": 222712,
+            "why": "Fourth request and current explicit renewed consent.",
+            "text_sha256": "2a1458b95e6a5bbf4e1fefc04d932849b0868a107559f580bd14b23bf02f5bfb",
+            "source_id": "h89",
+            "role": "user",
+            "kind": "text",
+            "tool": null,
+            "event": 89
+          },
+          {
+            "document": "prompt",
+            "start": 35571,
+            "end": 35822,
+            "why": "Intervening withdrawal/pause prevents treating old consent as permanently current.",
+            "text_sha256": "035764d2e7ba553ab6e3b7d2cc639e02188bf254e87d010b88c20a17f086b21c",
+            "source_id": "h14",
+            "role": "user",
+            "kind": "text",
+            "tool": null,
+            "event": 14
+          }
+        ]
+      },
+      "target": {
+        "found": 1,
+        "required": 1,
+        "recall": 1.0,
+        "missing": []
+      },
+      "declaration": {
+        "found": 0,
+        "required": 0,
+        "recall": null,
+        "missing": []
+      },
+      "exception": {
+        "found": 1,
+        "required": 6,
+        "recall": 0.16666666666666666,
+        "missing": [
+          {
+            "document": "prompt",
+            "start": 12916,
+            "end": 13362,
+            "why": "First explicit textual request, not an assistant transfer.",
+            "text_sha256": "eb6804515d5fcbdeb730112f1ec836d385f72758e003c4fd83a67b3de51d9eaa",
+            "source_id": "h4",
+            "role": "user",
+            "kind": "text",
+            "tool": null,
+            "event": 4
+          },
+          {
+            "document": "prompt",
+            "start": 14186,
+            "end": 14339,
+            "why": "Second textual request.",
+            "text_sha256": "3aaceb238f1fd567bd36ee7ab8ef4c1d33a5513048ef897efa134ea02e7af143",
+            "source_id": "h8",
+            "role": "user",
+            "kind": "text",
+            "tool": null,
+            "event": 8
+          },
+          {
+            "document": "prompt",
+            "start": 221675,
+            "end": 221985,
+            "why": "Third renewed request after claimed completion.",
+            "text_sha256": "0a68802a72cc9abc272bd99a11cc69262c3b8d3b9b88a524d797c161a3d8352e",
+            "source_id": "h85",
+            "role": "user",
+            "kind": "text",
+            "tool": null,
+            "event": 85
+          },
+          {
+            "document": "prompt",
+            "start": 222587,
+            "end": 222712,
+            "why": "Fourth request and current explicit renewed consent.",
+            "text_sha256": "2a1458b95e6a5bbf4e1fefc04d932849b0868a107559f580bd14b23bf02f5bfb",
+            "source_id": "h89",
+            "role": "user",
+            "kind": "text",
+            "tool": null,
+            "event": 89
+          },
+          {
+            "document": "prompt",
+            "start": 35571,
+            "end": 35822,
+            "why": "Intervening withdrawal/pause prevents treating old consent as permanently current.",
+            "text_sha256": "035764d2e7ba553ab6e3b7d2cc639e02188bf254e87d010b88c20a17f086b21c",
+            "source_id": "h14",
+            "role": "user",
+            "kind": "text",
+            "tool": null,
+            "event": 14
+          }
+        ]
+      },
+      "entity_binding": {
+        "found": 0,
+        "required": 0,
+        "recall": null,
+        "missing": []
+      },
+      "long_distance": {
+        "found": 0,
+        "required": 2,
+        "recall": 0.0,
+        "missing": [
+          {
+            "document": "prompt",
+            "start": 12916,
+            "end": 13362,
+            "why": "First explicit textual request, not an assistant transfer.",
+            "text_sha256": "eb6804515d5fcbdeb730112f1ec836d385f72758e003c4fd83a67b3de51d9eaa",
+            "source_id": "h4",
+            "role": "user",
+            "kind": "text",
+            "tool": null,
+            "event": 4
+          },
+          {
+            "document": "prompt",
+            "start": 222587,
+            "end": 222712,
+            "why": "Fourth request and current explicit renewed consent.",
+            "text_sha256": "2a1458b95e6a5bbf4e1fefc04d932849b0868a107559f580bd14b23bf02f5bfb",
+            "source_id": "h89",
+            "role": "user",
+            "kind": "text",
+            "tool": null,
+            "event": 89
+          }
+        ]
+      }
+    },
+    "complete_evidence_set_success": false,
+    "reference_partial": true,
+    "alternatives": [
+      {
+        "found": 3,
+        "required": 8,
+        "complete": false
+      }
+    ],
+    "unnecessary_relative_to_reference": [
+      "h86",
+      "h27",
+      "q128",
+      "h3"
+    ],
+    "false_absence_risk": true,
+    "subset_absence_is_proof": false,
+    "completeness_certified": false
+  }
+}

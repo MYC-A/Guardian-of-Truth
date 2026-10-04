@@ -1,0 +1,426 @@
+{
+  "case_id": "banking_knowledge__task_081::t35",
+  "split": "evaluation_known",
+  "index": 10,
+  "method": "exact_graph",
+  "budget": "k8",
+  "packet": {
+    "version": "retrieval-bakeoff-v1",
+    "method": "exact_graph",
+    "source_sha256": "262ad467cb461829e5b90c7d91e74f7a5184d830e79a1cedee7fb3f8296db4ff",
+    "read_sources": [
+      {
+        "source_id": "q18",
+        "document": "prompt",
+        "start": 6783,
+        "end": 10770,
+        "text": "## Knowledge base language\n\nThe knowledge base documents are written in Russian. Always formulate knowledge base search queries (`KB_search_bm25`, `KB_search_dense`, `grep`, `KB_search`) in Russian. Official product and account names (e.g. 'Platinum Rewards', 'Blue Account'), tool identifiers, and status codes remain in English — use them in queries as-is.\n</policy>\n\n[AVAILABLE TOOLS]\n- KB_search_bm25 — Search the knowledge base using BM25 sparse retrieval.\n    query: string! — The search query to find relevant documents.\n    k: integer — Maximum number of documents to return (default 10).\n- KB_search_dense — Search the knowledge base using dense embedding retrieval.\n    query: string! — The search query to find relevant documents.\n    k: integer — Maximum number of documents to return (default 10).\n- grep — Search for a regex pattern in all knowledge base documents.\n    \n    Returns documents ranked by number of matches, with full content.\n    pattern: string! — The regex pattern to search for (e.g., 'credit.*card', 'fee|charge')\n- transfer_to_human_agents — Transfer the user to a human agent.\n    \n    The proper transfer reason enum can be found in the knowledge base: search it before calling this tool to select the proper applicable reason.\n    summary: string! — A summary of the user's issue and what was attempted before transfer.\n    reason: string [enum: fraud_or_security_concern|account_closure_request|deceased_account_holder|legal_or_regulatory_matter|account_ownership_dispute|complex_billing_dispute|abusive_customer_behavior|third_party_inquiry|technical_system_error|unconfirmed_external_communication|customer_demands_after_unavailable_offer_refusal|kb_search_unsuccessful_customer_requests_transfer|specialized_department_required|accessibility_or_special_needs|customer_frustrated_demands_human|supervisor_request_service_complaint|customer_requests_human_no_specific_reason|request_completed_customer_wants_human_followup|other] — The specific reason code for the transfer.\n- get_current_time — Get the current time. Use this to get the current timestamp for logging verification records.\n- get_user_information_by_id — Get the information (date of birth, email, phone number, address) for a user by their user id.\n    user_id: string! — The ID of the user\n- get_user_information_by_name — Get the information (date of birth, email, phone number, address) for a user by their name. Case Sensitive.\n    customer_name: string! — The name of the user\n- get_user_information_by_email — Get the information (date of birth, email, phone number, address) for a user by their email.\n    email: string! — The email of the user\n- change_user_email — Change the email address for a user.\n    user_id: string! — The ID of the user whose email should be changed\n    new_email: string! — The new email address to set for the user\n- get_referrals_by_user — Get all referrals made by a user.\n    user_id: string! — The ID of the user (referrer) to look up referrals for\n- get_credit_card_transactions_by_user — Get all credit card transactions for a user.\n    user_id: string! — The ID of the user to look up transactions for\n- get_credit_card_accounts_by_user — Get all credit card accounts for a user.\n    \n    Returns information about each credit card account including card type,\n    date opened, current balance, and reward points.\n    user_id: string! — The ID of the user to look up credit card accounts for\n- log_verification — Log a verification record after successfully verifying a user's identity.\n    \n    Call this tool after you have verified a user by confirming 2 out of 4 identity fields\n    (date of birth, email, phone number, address). This creates an audit record of the verification.\n    name: string! — The verified user's full name\n    user_id: string! — The verified user's ID\n    address: string! — The verified user's address\n    email: string! — The verified user's email\n    phone_number: string! — The verified user's phone number\n",
+        "parent_source_id": "h0",
+        "category": "POLICY",
+        "sha256": "960edd6d4e07e4964d408c3922dc4e9bb83aa3445909c3ea869bd91a5e356424",
+        "evidence_status": "ORIGINAL_SOURCE_NOT_CURRENT_TRUTH_OR_PERMISSION",
+        "role": "system",
+        "kind": "text",
+        "tool": null,
+        "event": 0,
+        "parent_source_length": 12681,
+        "explicit_window": true,
+        "parent_coverage": "EXACT_WINDOW_NOT_COMPLETE_PARENT"
+      },
+      {
+        "source_id": "h9",
+        "document": "prompt",
+        "start": 14361,
+        "end": 14455,
+        "role": "assistant",
+        "kind": "call",
+        "tool": "KB_search_bm25",
+        "event": 9,
+        "text": "\t→ TOOL_CALL KB_search_bm25: {\"query\": \"причины перевода на оператора блокировка карт кража\"}\n",
+        "parent_source_id": "h9",
+        "category": "HISTORY",
+        "sha256": "b1dd960032d0338534a28cc48ba814099ea0193fc698264612aa8d57b8a8a758",
+        "evidence_status": "ORIGINAL_SOURCE_NOT_CURRENT_TRUTH_OR_PERMISSION",
+        "parent_source_length": 94,
+        "explicit_window": false,
+        "parent_coverage": "COMPLETE_PARENT"
+      },
+      {
+        "source_id": "q23",
+        "document": "prompt",
+        "start": 17496,
+        "end": 18368,
+        "text": "\t  ## УРОВЕНЬ 3 (НИЗКИЙ ПРИОРИТЕТ) — Причины, связанные с настроем клиента\n\t  \n\t  Эти коды описывают состояние клиента, а не конкретные операционные сценарии.\n\t  \n\t  | Код причины | Когда использовать |\n\t  |-------------|-------------|\n\t  | customer_frustrated_demands_human | Клиент расстроен и требует оператора, недовольство носит общий характер |\n\t  | supervisor_request_service_complaint | Клиент хочет связаться с супервайзером из-за неудовлетворенности качеством обслуживания (агент был груб, медлителен или не помог) |\n\t  | customer_requests_human_no_specific_reason | Клиент запрашивает оператора без явной причины, клиент не расстроен, просто предпочитает взаимодействие с человеком |\n\t  | request_completed_customer_wants_human_followup | Агент успешно выполнил запрос, но клиент хочет связаться с оператором для дополнительных вопросов или подтверждения |\n\t  \n",
+        "parent_source_id": "h10",
+        "category": "HISTORY",
+        "sha256": "436077eb6a2adb399fd0a2d59d4ff5f602666e7e8c0e94337e1a58a17e1cd6c0",
+        "evidence_status": "ORIGINAL_SOURCE_NOT_CURRENT_TRUTH_OR_PERMISSION",
+        "role": "assistant",
+        "kind": "result",
+        "tool": "KB_search_bm25",
+        "event": 10,
+        "parent_source_length": 20293,
+        "explicit_window": true,
+        "parent_coverage": "EXACT_WINDOW_NOT_COMPLETE_PARENT"
+      }
+    ],
+    "current_targets": [
+      {
+        "source_id": "t0",
+        "document": "response",
+        "start": 21,
+        "end": 470,
+        "role": "assistant",
+        "kind": "call",
+        "tool": "transfer_to_human_agents",
+        "event": 0,
+        "text": "\t→ TOOL_CALL transfer_to_human_agents: {\"reason\": \"customer_requests_human_no_specific_reason\", \"summary\": \"Клиент настаивает на переводе к оператору после того, как были выполнены все необходимые действия: заблокированы 3 дебетовые карты, заказаны их замены, оформлены замены 2 кредитных карт и поданы 3 спора по мошенническим транзакциям. Клиент хочет получить подтверждение от человека, что всё оформлено верно. Это повторный запрос на перевод.\"}",
+        "parent_source_id": "t0",
+        "category": "TARGET",
+        "sha256": "47f90007d1ee853e7320ed4956b1f845faef61aac009c7cd75c058f9c5f036ef",
+        "evidence_status": "ORIGINAL_SOURCE_NOT_CURRENT_TRUTH_OR_PERMISSION"
+      }
+    ],
+    "declarations": [
+      {
+        "source_id": "d15",
+        "document": "prompt",
+        "start": 7830,
+        "end": 8797,
+        "role": "system",
+        "kind": "DECLARATION",
+        "tool": "transfer_to_human_agents",
+        "text": "- transfer_to_human_agents — Transfer the user to a human agent.\n    \n    The proper transfer reason enum can be found in the knowledge base: search it before calling this tool to select the proper applicable reason.\n    summary: string! — A summary of the user's issue and what was attempted before transfer.\n    reason: string [enum: fraud_or_security_concern|account_closure_request|deceased_account_holder|legal_or_regulatory_matter|account_ownership_dispute|complex_billing_dispute|abusive_customer_behavior|third_party_inquiry|technical_system_error|unconfirmed_external_communication|customer_demands_after_unavailable_offer_refusal|kb_search_unsuccessful_customer_requests_transfer|specialized_department_required|accessibility_or_special_needs|customer_frustrated_demands_human|supervisor_request_service_complaint|customer_requests_human_no_specific_reason|request_completed_customer_wants_human_followup|other] — The specific reason code for the transfer.\n",
+        "parent_source_id": "d15",
+        "category": "DECLARATION",
+        "sha256": "a8ff7f3905683ec0c2bfa24f212ede463b2114e5612a3535c8158a9e63339b25",
+        "evidence_status": "ORIGINAL_SOURCE_NOT_CURRENT_TRUTH_OR_PERMISSION"
+      }
+    ],
+    "selected_ids": [
+      "q18",
+      "h9",
+      "q23"
+    ],
+    "trace": {
+      "queries": [
+        "transfer to human agents",
+        "\"customer_requests_human_no_specific_reason\" \"Клиент настаивает на переводе к оператору после того, как были выполнены все необходимые действия: заблокированы 3 дебетовые карты, заказаны их замены, оформлены замены 2 кредитных карт и поданы 3 спора по мошенническим транзакциям. Клиент хочет получить подтверждение от человека, что всё оформлено верно. Это повторный запрос на перевод.\"",
+        "- transfer_to_human_agents — Transfer the user to a human agent.\n    \n    The proper transfer reason enum can be found in the knowledge base: search it before calling this tool to select the proper applicable reason.\n    summary: string! — A summary of the user's issue and what was attempted before transfer.\n    reason: string [enum: fraud_or_security_concern|account_closure_request|deceased_account_holder|legal_or_regulatory_matter|account_ownership_dispute|complex_billing_dispute|abusive_customer_behavior|third_party_inquiry|technical_system_error|unconfirmed_external_communication|customer_demands_after_unavailable_offer_refusal|kb_search_unsuccessful_customer_requests_transfer|specialized_department_required|accessibility_or_special_needs|customer_frustrated_demands_human|supervisor_request_service_complaint|customer_requests_human_no_specific_reason|request_completed_customer_wants_human_followup|other] — The specific reason code for the transfer.\n"
+      ],
+      "rankings": [
+        [
+          "q18",
+          "q23"
+        ],
+        [
+          "h9"
+        ]
+      ],
+      "fused_ranking": [
+        "q18",
+        "h9",
+        "q23"
+      ],
+      "selection": [
+        {
+          "source_id": "q18",
+          "status": "SELECTED",
+          "dependency_group": [
+            "q18"
+          ],
+          "token_bound": 4524
+        },
+        {
+          "source_id": "h9",
+          "status": "SELECTED",
+          "dependency_group": [
+            "h9"
+          ],
+          "token_bound": 564
+        },
+        {
+          "source_id": "q23",
+          "status": "SELECTED",
+          "dependency_group": [
+            "q23"
+          ],
+          "token_bound": 1855
+        }
+      ],
+      "fusion": "ROUND_ROBIN",
+      "graph_assurance": "UNIQUE_ORIGINAL_RECEIPTS_AND_CO_RECORDED_CANDIDATES_NOT_SEMANTIC_IDENTITY",
+      "common_catalog_used": true
+    },
+    "seconds": 0.03475079999770969,
+    "failure": null,
+    "read_limit": 8,
+    "token_limit": null,
+    "cost": {
+      "retrieved_reads": 3,
+      "mandatory_targets": 1,
+      "mandatory_declarations": 1,
+      "source_chars": 6369,
+      "source_token_upper_bound": 9339,
+      "token_estimator": "FULL_UTF8_BYTES_CONSERVATIVE_BOUND_NOT_PROVIDER_USAGE",
+      "inference_http": 0
+    },
+    "uncovered": [
+      {
+        "category": "PARENT_SOURCE_COMPLETENESS",
+        "reason": "EXPLICIT_SOURCE_WINDOWS_ONLY; all original parents remain accessible"
+      }
+    ],
+    "completeness_certified": false,
+    "absence_proves_semantic_absence": false,
+    "evidence_contract": "Original recorded sources and explicit windows only. Raw matching and graph links are candidate retrieval, not entity/ownership/permission/current-state proof. Absence from this subset never establishes missing process events in the full log."
+  },
+  "score": {
+    "categories": {
+      "policy": {
+        "found": 2,
+        "required": 3,
+        "recall": 0.6666666666666666,
+        "missing": [
+          {
+            "document": "prompt",
+            "start": 1297,
+            "end": 1823,
+            "why": "General transfer restriction with scenario overrides.",
+            "text_sha256": "066ddd1608ee3b161f7cd13937d16bc6d3edc21100dac437fc131f2aa60a7fed"
+          }
+        ]
+      },
+      "history": {
+        "found": 0,
+        "required": 7,
+        "recall": 0.0,
+        "missing": [
+          {
+            "document": "prompt",
+            "start": 12916,
+            "end": 13362,
+            "why": "First explicit textual request, not an assistant transfer.",
+            "text_sha256": "eb6804515d5fcbdeb730112f1ec836d385f72758e003c4fd83a67b3de51d9eaa",
+            "source_id": "h4",
+            "role": "user",
+            "kind": "text",
+            "tool": null,
+            "event": 4
+          },
+          {
+            "document": "prompt",
+            "start": 14186,
+            "end": 14339,
+            "why": "Second textual request.",
+            "text_sha256": "3aaceb238f1fd567bd36ee7ab8ef4c1d33a5513048ef897efa134ea02e7af143",
+            "source_id": "h8",
+            "role": "user",
+            "kind": "text",
+            "tool": null,
+            "event": 8
+          },
+          {
+            "document": "prompt",
+            "start": 221675,
+            "end": 221985,
+            "why": "Third renewed request after claimed completion.",
+            "text_sha256": "0a68802a72cc9abc272bd99a11cc69262c3b8d3b9b88a524d797c161a3d8352e",
+            "source_id": "h85",
+            "role": "user",
+            "kind": "text",
+            "tool": null,
+            "event": 85
+          },
+          {
+            "document": "prompt",
+            "start": 222587,
+            "end": 222712,
+            "why": "Fourth request and current explicit renewed consent.",
+            "text_sha256": "2a1458b95e6a5bbf4e1fefc04d932849b0868a107559f580bd14b23bf02f5bfb",
+            "source_id": "h89",
+            "role": "user",
+            "kind": "text",
+            "tool": null,
+            "event": 89
+          },
+          {
+            "document": "prompt",
+            "start": 35571,
+            "end": 35822,
+            "why": "Intervening withdrawal/pause prevents treating old consent as permanently current.",
+            "text_sha256": "035764d2e7ba553ab6e3b7d2cc639e02188bf254e87d010b88c20a17f086b21c",
+            "source_id": "h14",
+            "role": "user",
+            "kind": "text",
+            "tool": null,
+            "event": 14
+          },
+          {
+            "document": "prompt",
+            "start": 34768,
+            "end": 35159,
+            "why": "Prior actual assistant transfer call.",
+            "text_sha256": "0176ea96036637df77791acf067044979f0a3deb4d61a9a13cbf7bbc1905b8ba",
+            "source_id": "h11",
+            "role": "assistant",
+            "kind": "call",
+            "tool": "transfer_to_human_agents",
+            "event": 11
+          },
+          {
+            "document": "prompt",
+            "start": 35159,
+            "end": 35299,
+            "why": "Prior native successful transfer contradicts user claim it never happened.",
+            "text_sha256": "56efe2873a0830a5347f28cb012328ef3f508ab825c6bf93c786539e4fa007ea",
+            "source_id": "h12",
+            "role": "assistant",
+            "kind": "result",
+            "tool": "transfer_to_human_agents",
+            "event": 12
+          }
+        ]
+      },
+      "target": {
+        "found": 1,
+        "required": 1,
+        "recall": 1.0,
+        "missing": []
+      },
+      "declaration": {
+        "found": 0,
+        "required": 0,
+        "recall": null,
+        "missing": []
+      },
+      "exception": {
+        "found": 0,
+        "required": 6,
+        "recall": 0.0,
+        "missing": [
+          {
+            "document": "prompt",
+            "start": 1824,
+            "end": 2205,
+            "why": "Four user requests explicitly permit transfer even with in-scope capabilities.",
+            "text_sha256": "4869d1dab7ec001216d4951a2796275932192d98873651c5aad0230db94cd7ce"
+          },
+          {
+            "document": "prompt",
+            "start": 12916,
+            "end": 13362,
+            "why": "First explicit textual request, not an assistant transfer.",
+            "text_sha256": "eb6804515d5fcbdeb730112f1ec836d385f72758e003c4fd83a67b3de51d9eaa",
+            "source_id": "h4",
+            "role": "user",
+            "kind": "text",
+            "tool": null,
+            "event": 4
+          },
+          {
+            "document": "prompt",
+            "start": 14186,
+            "end": 14339,
+            "why": "Second textual request.",
+            "text_sha256": "3aaceb238f1fd567bd36ee7ab8ef4c1d33a5513048ef897efa134ea02e7af143",
+            "source_id": "h8",
+            "role": "user",
+            "kind": "text",
+            "tool": null,
+            "event": 8
+          },
+          {
+            "document": "prompt",
+            "start": 221675,
+            "end": 221985,
+            "why": "Third renewed request after claimed completion.",
+            "text_sha256": "0a68802a72cc9abc272bd99a11cc69262c3b8d3b9b88a524d797c161a3d8352e",
+            "source_id": "h85",
+            "role": "user",
+            "kind": "text",
+            "tool": null,
+            "event": 85
+          },
+          {
+            "document": "prompt",
+            "start": 222587,
+            "end": 222712,
+            "why": "Fourth request and current explicit renewed consent.",
+            "text_sha256": "2a1458b95e6a5bbf4e1fefc04d932849b0868a107559f580bd14b23bf02f5bfb",
+            "source_id": "h89",
+            "role": "user",
+            "kind": "text",
+            "tool": null,
+            "event": 89
+          },
+          {
+            "document": "prompt",
+            "start": 35571,
+            "end": 35822,
+            "why": "Intervening withdrawal/pause prevents treating old consent as permanently current.",
+            "text_sha256": "035764d2e7ba553ab6e3b7d2cc639e02188bf254e87d010b88c20a17f086b21c",
+            "source_id": "h14",
+            "role": "user",
+            "kind": "text",
+            "tool": null,
+            "event": 14
+          }
+        ]
+      },
+      "entity_binding": {
+        "found": 0,
+        "required": 0,
+        "recall": null,
+        "missing": []
+      },
+      "long_distance": {
+        "found": 0,
+        "required": 2,
+        "recall": 0.0,
+        "missing": [
+          {
+            "document": "prompt",
+            "start": 12916,
+            "end": 13362,
+            "why": "First explicit textual request, not an assistant transfer.",
+            "text_sha256": "eb6804515d5fcbdeb730112f1ec836d385f72758e003c4fd83a67b3de51d9eaa",
+            "source_id": "h4",
+            "role": "user",
+            "kind": "text",
+            "tool": null,
+            "event": 4
+          },
+          {
+            "document": "prompt",
+            "start": 222587,
+            "end": 222712,
+            "why": "Fourth request and current explicit renewed consent.",
+            "text_sha256": "2a1458b95e6a5bbf4e1fefc04d932849b0868a107559f580bd14b23bf02f5bfb",
+            "source_id": "h89",
+            "role": "user",
+            "kind": "text",
+            "tool": null,
+            "event": 89
+          }
+        ]
+      }
+    },
+    "complete_evidence_set_success": false,
+    "reference_partial": true,
+    "alternatives": [
+      {
+        "found": 1,
+        "required": 8,
+        "complete": false
+      }
+    ],
+    "unnecessary_relative_to_reference": [
+      "h9",
+      "q23"
+    ],
+    "false_absence_risk": true,
+    "subset_absence_is_proof": false,
+    "completeness_certified": false
+  }
+}

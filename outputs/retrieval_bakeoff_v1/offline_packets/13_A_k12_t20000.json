@@ -1,0 +1,272 @@
+{
+  "case_id": "airline__21::t7",
+  "split": "evaluation_known",
+  "index": 13,
+  "method": "A",
+  "budget": "k12_t20000",
+  "packet": {
+    "version": "retrieval-bakeoff-v1",
+    "method": "A",
+    "source_sha256": "c31c4a448ec41690c420d632b3f92fb81618c702eb4d868b40cf3386456ec002",
+    "read_sources": [],
+    "current_targets": [
+      {
+        "source_id": "t0",
+        "document": "response",
+        "start": 20,
+        "end": 574,
+        "role": "assistant",
+        "kind": "call",
+        "tool": "update_reservation_flights",
+        "event": 0,
+        "text": "\t→ TOOL_CALL update_reservation_flights: {\"cabin\": \"economy\", \"flights\": [{\"date\": \"2024-05-27\", \"destination\": \"ORD\", \"flight_number\": \"HAT078\", \"origin\": \"IAH\", \"price\": 146}, {\"date\": \"2024-05-27\", \"destination\": \"DEN\", \"flight_number\": \"HAT118\", \"origin\": \"ORD\", \"price\": 167}, {\"date\": \"2024-05-27\", \"destination\": \"LAS\", \"flight_number\": \"HAT084\", \"origin\": \"DEN\", \"price\": 112}, {\"date\": \"2024-05-27\", \"destination\": \"IAH\", \"flight_number\": \"HAT266\", \"origin\": \"LAS\", \"price\": 130}], \"payment_id\": \"gift_card_7480005\", \"reservation_id\": \"OBUT9V\"}\n",
+        "parent_source_id": "t0",
+        "category": "TARGET",
+        "sha256": "6436c77eae9b775a00019afcda3665692a074d78f6c5571f59cc8ca51c340741",
+        "evidence_status": "ORIGINAL_SOURCE_NOT_CURRENT_TRUTH_OR_PERMISSION"
+      },
+      {
+        "source_id": "t1",
+        "document": "response",
+        "start": 574,
+        "end": 723,
+        "role": "assistant",
+        "kind": "call",
+        "tool": "update_reservation_baggages",
+        "event": 1,
+        "text": "\t→ TOOL_CALL update_reservation_baggages: {\"nonfree_baggages\": 1, \"payment_id\": \"gift_card_7480005\", \"reservation_id\": \"OBUT9V\", \"total_baggages\": 2}",
+        "parent_source_id": "t1",
+        "category": "TARGET",
+        "sha256": "b8ad3e0f1dc5dcc81a5b986a3510454fe44d94bf41ca73f112dcc880a0c573e3",
+        "evidence_status": "ORIGINAL_SOURCE_NOT_CURRENT_TRUTH_OR_PERMISSION"
+      }
+    ],
+    "declarations": [
+      {
+        "source_id": "d11",
+        "document": "prompt",
+        "start": 11696,
+        "end": 12193,
+        "role": "system",
+        "kind": "DECLARATION",
+        "tool": "update_reservation_baggages",
+        "text": "- update_reservation_baggages — Update the baggage information of a reservation.\n    reservation_id: string! — The reservation ID, such as 'ZFA04Y'\n    total_baggages: integer! — The updated total number of baggage items included in the reservation.\n    nonfree_baggages: integer! — The updated number of non-free baggage items included in the reservation.\n    payment_id: string! — The payment id stored in user profile, such as 'credit_card_7815826', 'gift_card_7815826', 'certificate_7815826'.\n",
+        "parent_source_id": "d11",
+        "category": "DECLARATION",
+        "sha256": "1f26d8fceea7c19d8f9fdbf85b07af198638b472784fe532b4d7adc01e7639ec",
+        "evidence_status": "ORIGINAL_SOURCE_NOT_CURRENT_TRUTH_OR_PERMISSION"
+      },
+      {
+        "source_id": "d12",
+        "document": "prompt",
+        "start": 12193,
+        "end": 12949,
+        "role": "system",
+        "kind": "DECLARATION",
+        "tool": "update_reservation_flights",
+        "text": "- update_reservation_flights — Update the flight information of a reservation.\n    reservation_id: string! — The reservation ID, such as 'ZFA04Y'.\n    cabin: string! [enum: business|economy|basic_economy] — The cabin class of the reservation\n    flights: array! — An array of objects containing details about each piece of flight in the ENTIRE new reservation. Even if the a flight segment is not changed, it should still be included in the array.\n        · flight_number: string! — Flight number, such as 'HAT001'.\n        · date: string! — The date for the flight in the format 'YYYY-MM-DD', such as '2024-05-01'.\n    payment_id: string! — The payment id stored in user profile, such as 'credit_card_7815826', 'gift_card_7815826', 'certificate_7815826'.\n",
+        "parent_source_id": "d12",
+        "category": "DECLARATION",
+        "sha256": "73548e996dbff90eecdfe594f1253819e3bfbaf2b15befbb0ebd59f0022772e0",
+        "evidence_status": "ORIGINAL_SOURCE_NOT_CURRENT_TRUTH_OR_PERMISSION"
+      }
+    ],
+    "selected_ids": [],
+    "trace": {
+      "algorithm": "UNCHANGED_IMPORTED_COVERAGE_PLAN",
+      "error_type": "ValueError",
+      "error": "EXPECTED_ONE_CURRENT_NATIVE_TARGET"
+    },
+    "seconds": 0.0473997000080999,
+    "failure": "UNSUPPORTED_BASELINE_CASE",
+    "read_limit": 12,
+    "token_limit": 20000,
+    "cost": {
+      "retrieved_reads": 0,
+      "mandatory_targets": 2,
+      "mandatory_declarations": 2,
+      "source_chars": 1956,
+      "source_token_upper_bound": 3467,
+      "token_estimator": "FULL_UTF8_BYTES_CONSERVATIVE_BOUND_NOT_PROVIDER_USAGE",
+      "inference_http": 0
+    },
+    "uncovered": [
+      {
+        "category": "POLICY",
+        "reason": "NO_SELECTED_SOURCE_NOT_PROOF_OF_ABSENCE"
+      },
+      {
+        "category": "HISTORY",
+        "reason": "NO_SELECTED_SOURCE_NOT_PROOF_OF_ABSENCE"
+      }
+    ],
+    "completeness_certified": false,
+    "absence_proves_semantic_absence": false,
+    "evidence_contract": "Original recorded sources and explicit windows only. Raw matching and graph links are candidate retrieval, not entity/ownership/permission/current-state proof. Absence from this subset never establishes missing process events in the full log."
+  },
+  "score": {
+    "categories": {
+      "policy": {
+        "found": 0,
+        "required": 3,
+        "recall": 0.0,
+        "missing": [
+          {
+            "document": "prompt",
+            "start": 1179,
+            "end": 1382,
+            "why": "At most one tool call for the whole current move.",
+            "text_sha256": "5abaf0d77f89d6e49b822757c30de30af51f3efbdd34a75ef74e440863b6aa01"
+          },
+          {
+            "document": "prompt",
+            "start": 3980,
+            "end": 4413,
+            "why": "Silver economy allowance 2 free bags per passenger.",
+            "text_sha256": "aa89a55a09a90d9aab8daf5b5067dabad66192f723c9b25e395b773f7c06dff3"
+          },
+          {
+            "document": "prompt",
+            "start": 767,
+            "end": 1018,
+            "why": "New baggage requires detail list then YES.",
+            "text_sha256": "1c0436d01b4f0981b51b4d420154a612f6a3979019417a8d99f02b9e49f9fc6a"
+          }
+        ]
+      },
+      "history": {
+        "found": 0,
+        "required": 4,
+        "recall": 0.0,
+        "missing": [
+          {
+            "document": "prompt",
+            "start": 14081,
+            "end": 15202,
+            "why": "Matching user Silver and original payment balances.",
+            "text_sha256": "0f03a65a4ee3ba4567304a32eac965bc25a73b31a4aa28ea84a6c09c5421df7a",
+            "source_id": "h6",
+            "role": "assistant",
+            "kind": "result",
+            "tool": "get_user_details",
+            "event": 6
+          },
+          {
+            "document": "prompt",
+            "start": 19241,
+            "end": 20129,
+            "why": "Matching OBUT9V economy one passenger one prior bag.",
+            "text_sha256": "692bf0b9fdfd391103de5b8bbb5cb5acdd4937ec1b3967b81536baa237a569f3",
+            "source_id": "h18",
+            "role": "assistant",
+            "kind": "result",
+            "tool": "get_reservation_details",
+            "event": 18
+          },
+          {
+            "document": "prompt",
+            "start": 26262,
+            "end": 27907,
+            "why": "Prior details and confirmation question describe flight changes, not new baggage.",
+            "text_sha256": "e5c7d0d08b4ebe5e064e8186cf4b67496309173f70b7eac81f7ab8da54ef89fc",
+            "source_id": "h27",
+            "role": "assistant",
+            "kind": "text",
+            "tool": null,
+            "event": 27
+          },
+          {
+            "document": "prompt",
+            "start": 27916,
+            "end": 28037,
+            "why": "YES for prior flight proposal then new baggage request; not YES after baggage details.",
+            "text_sha256": "e179ee9a4dbc4c17f508661fb14dc256903e2b09f5af804539ccee9a6542c964",
+            "source_id": "h28",
+            "role": "user",
+            "kind": "text",
+            "tool": null,
+            "event": 28
+          }
+        ]
+      },
+      "target": {
+        "found": 2,
+        "required": 2,
+        "recall": 1.0,
+        "missing": []
+      },
+      "declaration": {
+        "found": 0,
+        "required": 0,
+        "recall": null,
+        "missing": []
+      },
+      "exception": {
+        "found": 0,
+        "required": 0,
+        "recall": null,
+        "missing": []
+      },
+      "entity_binding": {
+        "found": 0,
+        "required": 2,
+        "recall": 0.0,
+        "missing": [
+          {
+            "document": "prompt",
+            "start": 14081,
+            "end": 15202,
+            "why": "Matching user Silver and original payment balances.",
+            "text_sha256": "0f03a65a4ee3ba4567304a32eac965bc25a73b31a4aa28ea84a6c09c5421df7a",
+            "source_id": "h6",
+            "role": "assistant",
+            "kind": "result",
+            "tool": "get_user_details",
+            "event": 6
+          },
+          {
+            "document": "prompt",
+            "start": 19241,
+            "end": 20129,
+            "why": "Matching OBUT9V economy one passenger one prior bag.",
+            "text_sha256": "692bf0b9fdfd391103de5b8bbb5cb5acdd4937ec1b3967b81536baa237a569f3",
+            "source_id": "h18",
+            "role": "assistant",
+            "kind": "result",
+            "tool": "get_reservation_details",
+            "event": 18
+          }
+        ]
+      },
+      "long_distance": {
+        "found": 0,
+        "required": 0,
+        "recall": null,
+        "missing": []
+      }
+    },
+    "complete_evidence_set_success": false,
+    "reference_partial": false,
+    "alternatives": [
+      {
+        "found": 2,
+        "required": 3,
+        "complete": false
+      },
+      {
+        "found": 1,
+        "required": 4,
+        "complete": false
+      },
+      {
+        "found": 1,
+        "required": 4,
+        "complete": false
+      }
+    ],
+    "unnecessary_relative_to_reference": [],
+    "false_absence_risk": true,
+    "subset_absence_is_proof": false,
+    "completeness_certified": false
+  }
+}

@@ -1,0 +1,3492 @@
+{
+  "case_id": "banking_knowledge__task_080::t30",
+  "split": "evaluation_known",
+  "index": 9,
+  "method": "rrf",
+  "budget": "k12_t20000",
+  "packet": {
+    "version": "retrieval-bakeoff-v1",
+    "method": "rrf",
+    "source_sha256": "deb54d2ddbc14226a399b2edab6445b0a100b253390f934fc9a46147f078dcf0",
+    "read_sources": [
+      {
+        "source_id": "h71",
+        "document": "prompt",
+        "start": 224780,
+        "end": 226086,
+        "role": "assistant",
+        "kind": "text",
+        "tool": null,
+        "event": 71,
+        "text": "Все необходимые действия выполнены для защиты ваших средств:\n\n1. **Дебетовые карты:** Все три карты (для Blue Account, Green Fee-Free Account и Green Account) **успешно заморожены**. \n   * Теперь все новые покупки и рекуррентные платежи по этим картам будут отклонены. \n   * Если вы найдете кошелек, вы сможете разморозить их в мобильном приложении или обратившись к нам. Однако, если кража подтвердится, я рекомендую закрыть их окончательно и заказать замену.\n\n2. **Кредитные карты:** Ваши карты **Gold Rewards Card** и **EcoCard** были **немедленно аннулированы** в целях безопасности.\n   * Я оформил заказ на выпуск новых карт с новыми номерами и CVV.\n   * **Доставка:** Выбрана ускоренная доставка (Expedited) на ваш адрес: *7845 Maple Street, Denver, CO 80202*.\n   * **Срок доставки:** Ожидайте новые карты в течение **2-3 рабочих дней**.\n\n**Рекомендации по безопасности:**\n* Пожалуйста, проверьте историю последних транзакций по всем вашим счетам в приложении. Если вы заметите любые операции, которые не совершали вы, немедленно сообщите мне, и мы оформим спор по этим транзакциям.\n* В целях дополнительной защиты рекомендую сменить пароль от вашего личного кабинета онлайн-банкинга.\n\nЯ очень надеюсь, что ваш кошелек найдется, но сейчас ваши счета в безопасности. Могу ли я помочь вам с чем-то еще?",
+        "parent_source_id": "h71",
+        "category": "HISTORY",
+        "sha256": "cdc5a42fb3cdb098f1922a13efa7e7cf4f3af40ab3f85fe5c398b548444db961",
+        "evidence_status": "ORIGINAL_SOURCE_NOT_CURRENT_TRUTH_OR_PERMISSION",
+        "parent_source_length": 1306,
+        "explicit_window": false,
+        "parent_coverage": "COMPLETE_PARENT"
+      },
+      {
+        "source_id": "h33",
+        "document": "prompt",
+        "start": 153708,
+        "end": 153797,
+        "role": "assistant",
+        "kind": "call",
+        "tool": "KB_search_dense",
+        "event": 33,
+        "text": "\t→ TOOL_CALL KB_search_dense: {\"query\": \"найти дебетовые карты пользователя tm92c4d7e8\"}\n",
+        "parent_source_id": "h33",
+        "category": "HISTORY",
+        "sha256": "aa952c0866a5101adee61154c84ad490c384907ee61a807b24444b460ed7d975",
+        "evidence_status": "ORIGINAL_SOURCE_NOT_CURRENT_TRUTH_OR_PERMISSION",
+        "parent_source_length": 89,
+        "explicit_window": false,
+        "parent_coverage": "COMPLETE_PARENT"
+      },
+      {
+        "source_id": "q208",
+        "document": "prompt",
+        "start": 155790,
+        "end": 159752,
+        "text": "\t  ## Важные примечания\n\t  \n\t  - Этот инструмент возвращает дебетовые карты только для расчётных счетов (сберегательные счета не имеют дебетовых карт)\n\t  - Может быть возвращено несколько карт, если у счёта есть история карт (например, старые CLOSED карты плюс текущая ACTIVE карта)\n\t  - В целях конфиденциальности полные номера карт никогда не возвращаются — только последние 4 цифры\n\t  - Если для счёта карт не существует, возвращается пустой список\n\t  \n\t  2. Внутренний документ: Заказ дебетовой карты для банковского счёта\n\t     ID: doc_bank_accounts_bank_accounts_(general)_023\n\t     Score: 0.5806\n\t     Content: Процедура действий, если клиент обращается по вопросу заказа дебетовой карты, привязанной к конкретному расчётному счёту. Дебетовые карты могут быть заказаны только для расчётных счетов (личных или бизнес), сберегательные счета не поддерживают выпуск дебетовых карт.\n\t  \n\t  Требования к соответствию:\n\t  1) Клиент должен быть верифицирован\n\t  2) Счёт должен быть расчётным счётом (account_type должен быть 'checking')\n\t  3) Статус счёта должен быть OPEN\n\t  4) Счёт должен быть открыт не менее 3 рабочих дней (исключая выходные)\n\t  5) Клиент не может иметь более 1 активных дебетовых карт на один расчётный счёт\n\t  6) На счёте должен быть минимальный баланс 25 долларов (для покрытия возможных комиссий)\n\t  7) Клиент должен быть не моложе 18 лет (проверить с помощью date_of_birth)\n\t  8) У клиента не должно быть ожидающих заказов дебетовых карт для того же счёта (проверить статус PENDING в таблице debit_cards)\n\t  9) Адрес клиента в системе должен быть действительным внутренним адресом США (международная доставка недоступна)\n\t  \n\t  Варианты доставки:\n\t  - STANDARD: Бесплатная доставка, arrives в течение 7-10 рабочих дней\n\t  - EXPEDITED: Комиссия 15 долларов, arrives в течение 3-5 рабочих дней\n\t  - RUSH: Комиссия 35 долларов, arrives в течение 1-2 рабочих дней, комиссии могут варьироваться в зависимости от уровня счёта.\n\t  \n\t  Варианты дизайна карты:\n\t  - CLASSIC: Стандартный синий дизайн Rho-Bank (по умолчанию, без комиссии)\n\t  - PREMIUM: Металлическое серебряное покрытие (единоразовая комиссия 10 долларов)\n\t  - CUSTOM: Изображение, загруженное клиентом (единоразовая комиссия 25 долларов, подлежит утверждению), комиссии могут варьироваться в зависимости от уровня счёта.\n\t  \n\t  Шаги:\n\t  1) Верифицировать личность клиента\n\t  2) Подтвердить, к какому расчётному счёту должна быть привязана дебетовая карта.\n\t  3) Проверить требования к соответствию для указанного счёта\n\t  4) Уточнить у клиента предпочтительный вариант доставки (STANDARD, EXPEDITED или RUSH) и разъяснить размер комиссий.\n\t  5) Уточнить у клиента предпочтительный дизайн карты (CLASSIC, PREMIUM или CUSTOM) и разъяснить размер комиссий.\n\t  6) Подтвердить адрес, на который клиент хочет получить карту по почте.\n\t  7) Использовать order_debit_card_5739 для заказа карты.\n\t  8) Информировать клиента об ожидаемых сроках доставки и любых применимых комиссиях\n\t  \n\t  Важные примечания:\n\t  - Комиссии за ускоренную доставку (EXPEDITED и RUSH) автоматически списываются с привязанного расчётного счёта\n\t  - Если на счёте недостаточно средств для оплаты доставки или дизайна, заказ будет отклонен\n\t  - Клиенты могут отслеживать статус доставки карты с помощью мобильного приложения Rho-Bank\n\t  - Новые карты активируются автоматически при первом использовании с вводом PIN\n\t  - Существующая дебетовая карта клиента (если таковая имеется) останется активной до момента активации новой карты.\n\t  \n\t  3. Как найти номера вашей кредитной карты Rho-Bank онлайн\n\t     ID: doc_credit_cards_credit_cards_(general)_013\n\t     Score: 0.5502\n\t     Content: ## Получение последних 4 цифр с помощью обнаруженного инструмента\n\t  \n\t  Обнаруженный инструмент: get_card_last_4_digits(credit_card_account_id: str)\n\t  \n\t  - Используйте этот инструмент, чтобы получить последние четыре цифры вашей кредитной карты Rho‑Bank.\n\t  - Вызовите инструмент, указав ID вашего счёта кредитной карты:\n",
+        "parent_source_id": "h35",
+        "category": "HISTORY",
+        "sha256": "69677fd5bafbdf061235c8899125503908a0efed89ae6604c66869707c09029d",
+        "evidence_status": "ORIGINAL_SOURCE_NOT_CURRENT_TRUTH_OR_PERMISSION",
+        "role": "assistant",
+        "kind": "result",
+        "tool": "KB_search_dense",
+        "event": 35,
+        "parent_source_length": 38355,
+        "explicit_window": true,
+        "parent_coverage": "EXACT_WINDOW_NOT_COMPLETE_PARENT"
+      },
+      {
+        "source_id": "h10",
+        "document": "prompt",
+        "start": 14812,
+        "end": 14916,
+        "role": "assistant",
+        "kind": "call",
+        "tool": "KB_search_dense",
+        "event": 10,
+        "text": "\t→ TOOL_CALL KB_search_dense: {\"query\": \"как заморозить или заблокировать дебетовые и кредитные карты\"}\n",
+        "parent_source_id": "h10",
+        "category": "HISTORY",
+        "sha256": "15d72445c11bf920716d7a3febac687c7c8759982fcae08141b88861eeceaad6",
+        "evidence_status": "ORIGINAL_SOURCE_NOT_CURRENT_TRUTH_OR_PERMISSION",
+        "parent_source_length": 104,
+        "explicit_window": false,
+        "parent_coverage": "COMPLETE_PARENT"
+      },
+      {
+        "source_id": "q50",
+        "document": "prompt",
+        "start": 38906,
+        "end": 42706,
+        "text": "\t  ## Что делать дальше\n\t  - Если вы хотите убедиться, что запросы не поступают, подтвердите, что пользователь находится в вашем списке блокировки и что блокировка активна.\n\t  - Если запросы приходят с другого профиля, заблокируйте и этот профиль, а также сообщите о любой подозрительной активности.\n\t  \n\t  8. Внутренний документ: Заказ дебетовой карты для банковского счёта\n\t     ID: doc_bank_accounts_bank_accounts_(general)_023\n\t     Score: 0.5323\n\t     Content: Процедура действий, если клиент обращается по вопросу заказа дебетовой карты, привязанной к конкретному расчётному счёту. Дебетовые карты могут быть заказаны только для расчётных счетов (личных или бизнес), сберегательные счета не поддерживают выпуск дебетовых карт.\n\t  \n\t  Требования к соответствию:\n\t  1) Клиент должен быть верифицирован\n\t  2) Счёт должен быть расчётным счётом (account_type должен быть 'checking')\n\t  3) Статус счёта должен быть OPEN\n\t  4) Счёт должен быть открыт не менее 3 рабочих дней (исключая выходные)\n\t  5) Клиент не может иметь более 1 активных дебетовых карт на один расчётный счёт\n\t  6) На счёте должен быть минимальный баланс 25 долларов (для покрытия возможных комиссий)\n\t  7) Клиент должен быть не моложе 18 лет (проверить с помощью date_of_birth)\n\t  8) У клиента не должно быть ожидающих заказов дебетовых карт для того же счёта (проверить статус PENDING в таблице debit_cards)\n\t  9) Адрес клиента в системе должен быть действительным внутренним адресом США (международная доставка недоступна)\n\t  \n\t  Варианты доставки:\n\t  - STANDARD: Бесплатная доставка, arrives в течение 7-10 рабочих дней\n\t  - EXPEDITED: Комиссия 15 долларов, arrives в течение 3-5 рабочих дней\n\t  - RUSH: Комиссия 35 долларов, arrives в течение 1-2 рабочих дней, комиссии могут варьироваться в зависимости от уровня счёта.\n\t  \n\t  Варианты дизайна карты:\n\t  - CLASSIC: Стандартный синий дизайн Rho-Bank (по умолчанию, без комиссии)\n\t  - PREMIUM: Металлическое серебряное покрытие (единоразовая комиссия 10 долларов)\n\t  - CUSTOM: Изображение, загруженное клиентом (единоразовая комиссия 25 долларов, подлежит утверждению), комиссии могут варьироваться в зависимости от уровня счёта.\n\t  \n\t  Шаги:\n\t  1) Верифицировать личность клиента\n\t  2) Подтвердить, к какому расчётному счёту должна быть привязана дебетовая карта.\n\t  3) Проверить требования к соответствию для указанного счёта\n\t  4) Уточнить у клиента предпочтительный вариант доставки (STANDARD, EXPEDITED или RUSH) и разъяснить размер комиссий.\n\t  5) Уточнить у клиента предпочтительный дизайн карты (CLASSIC, PREMIUM или CUSTOM) и разъяснить размер комиссий.\n\t  6) Подтвердить адрес, на который клиент хочет получить карту по почте.\n\t  7) Использовать order_debit_card_5739 для заказа карты.\n\t  8) Информировать клиента об ожидаемых сроках доставки и любых применимых комиссиях\n\t  \n\t  Важные примечания:\n\t  - Комиссии за ускоренную доставку (EXPEDITED и RUSH) автоматически списываются с привязанного расчётного счёта\n\t  - Если на счёте недостаточно средств для оплаты доставки или дизайна, заказ будет отклонен\n\t  - Клиенты могут отслеживать статус доставки карты с помощью мобильного приложения Rho-Bank\n\t  - Новые карты активируются автоматически при первом использовании с вводом PIN\n\t  - Существующая дебетовая карта клиента (если таковая имеется) останется активной до момента активации новой карты.\n\t  \n\t  9. Кредитная карта 'Platinum Rewards': описание расширенных функций защиты от мошенничества\n\t     ID: doc_credit_cards_platinum_rewards_card_003\n\t     Score: 0.5316\n\t     Content: ## Что включено\n\t  - Статус расширенной защиты от мошенничества: Да.\n\t  - Мониторинг в реальном времени отмечает необычные транзакции и запрашивает подтверждение при необходимости.\n\t  - Быстрая обработка оповещений о мошенничестве с целевым временем ответа в течение 17 минут.\n\t  \n",
+        "parent_source_id": "h12",
+        "category": "HISTORY",
+        "sha256": "d0371f1debd5bf71f43470ec519c83d75b3cd3c0bb2c6a47b2ad9ccb923048c0",
+        "evidence_status": "ORIGINAL_SOURCE_NOT_CURRENT_TRUTH_OR_PERMISSION",
+        "role": "assistant",
+        "kind": "result",
+        "tool": "KB_search_dense",
+        "event": 12,
+        "parent_source_length": 35512,
+        "explicit_window": true,
+        "parent_coverage": "EXACT_WINDOW_NOT_COMPLETE_PARENT"
+      }
+    ],
+    "current_targets": [
+      {
+        "source_id": "t0",
+        "document": "response",
+        "start": 21,
+        "end": 1020,
+        "role": "assistant",
+        "kind": "text",
+        "tool": null,
+        "event": 0,
+        "text": "Ваша дебетовая карта для **Green Account** успешно разморожена и снова активна — вы можете пользоваться ею прямо сейчас.\n\nЧто касается двух других карт: дебетовые карты для **Blue Account** и **Green Fee-Free Account** теперь **окончательно закрыты** в связи с кражей. Они полностью деактивированы и больше не могут быть использованы.\n\nТеперь нам нужно заказать для вас новые карты. Чтобы я мог оформить заказ, пожалуйста, уточните следующие детали для каждой из карт:\n\n1. **Вариант доставки:**\n   * **STANDARD**: Бесплатно (7-10 рабочих дней)\n   * **EXPEDITED**: $15 (3-5 рабочих дней)\n   * **RUSH**: $35 (1-2 рабочих дня)\n2. **Дизайн карты:**\n   * **CLASSIC**: Стандартный синий дизайн (бесплатно)\n   * **PREMIUM**: Металлическое серебряное покрытие ($10)\n   * **CUSTOM**: С вашим изображением ($25)\n\nПожалуйста, напишите, какой вариант доставки и дизайна вы предпочитаете (например: «Для обеих карт — экспресс-доставка и классический дизайн»), и я немедленно оформлю заказ на ваш адрес в Денвере.",
+        "parent_source_id": "t0",
+        "category": "TARGET",
+        "sha256": "af9a5218c56d2c96d19b6cfa6d9a98203a6a99e954f95592601bb7bc05e93283",
+        "evidence_status": "ORIGINAL_SOURCE_NOT_CURRENT_TRUTH_OR_PERMISSION"
+      }
+    ],
+    "declarations": [],
+    "selected_ids": [
+      "h71",
+      "h33",
+      "q208",
+      "h10",
+      "q50"
+    ],
+    "trace": {
+      "queries": [
+        "Ваша дебетовая карта для **Green Account** успешно разморожена и снова активна — вы можете пользоваться ею прямо сейчас.\n\nЧто касается двух других карт: дебетовые карты для **Blue Account** и **Green Fee-Free Account** теперь **окончательно закрыты** в связи с кражей. Они полностью деактивированы и больше не могут быть использованы.\n\nТеперь нам нужно заказать для вас новые карты. Чтобы я мог оформить заказ, пожалуйста, уточните следующие детали для каждой из карт:\n\n1. **Вариант доставки:**\n   * **STANDARD**: Бесплатно (7-10 рабочих дней)\n   * **EXPEDITED**: $15 (3-5 рабочих дней)\n   * **RUSH**: $35 (1-2 рабочих дня)\n2. **Дизайн карты:**\n   * **CLASSIC**: Стандартный синий дизайн (бесплатно)\n   * **PREMIUM**: Металлическое серебряное покрытие ($10)\n   * **CUSTOM**: С вашим изображением ($25)\n\nПожалуйста, напишите, какой вариант доставки и дизайна вы предпочитаете (например: «Для обеих карт — экспресс-доставка и классический дизайн»), и я немедленно оформлю заказ на ваш адрес в Денвере."
+      ],
+      "rankings": [
+        [
+          "h71",
+          "q208",
+          "q50",
+          "q216",
+          "h31",
+          "h3",
+          "q196",
+          "h74",
+          "q198",
+          "h32",
+          "q150",
+          "q225",
+          "h73",
+          "q261",
+          "h72",
+          "q117",
+          "q33",
+          "q78",
+          "q179",
+          "q215",
+          "q133",
+          "q235",
+          "q129",
+          "q148",
+          "q61",
+          "q195",
+          "q100",
+          "q243",
+          "q247",
+          "q130",
+          "q122",
+          "q281",
+          "q146",
+          "q252",
+          "q160",
+          "q58",
+          "q232",
+          "q151",
+          "q86",
+          "q59",
+          "q233",
+          "q32",
+          "q77",
+          "q178",
+          "q214",
+          "q24",
+          "q69",
+          "q170",
+          "q186",
+          "h46",
+          "q60",
+          "q234",
+          "q47",
+          "q98",
+          "q237",
+          "q48",
+          "q99",
+          "q123",
+          "h2",
+          "q23",
+          "q68",
+          "q116",
+          "q159",
+          "q169",
+          "q207",
+          "q192",
+          "q228",
+          "q202",
+          "q34",
+          "q79",
+          "q236",
+          "q103",
+          "q222",
+          "q120",
+          "q180",
+          "q41",
+          "q92",
+          "q132",
+          "h79",
+          "q152",
+          "q38",
+          "q89",
+          "q161",
+          "q266",
+          "q138",
+          "q49",
+          "q241",
+          "q242",
+          "q218",
+          "h4",
+          "q52",
+          "q84",
+          "q190",
+          "q88",
+          "q280",
+          "q253",
+          "q21",
+          "q66",
+          "q114",
+          "q157",
+          "q167",
+          "q217",
+          "q238",
+          "q128",
+          "q220",
+          "q188",
+          "q29",
+          "q74",
+          "q175",
+          "q197",
+          "q278",
+          "q139",
+          "q136",
+          "q277",
+          "q143",
+          "q255",
+          "q101",
+          "q193",
+          "q51",
+          "q83",
+          "q189",
+          "q249",
+          "q57",
+          "q231",
+          "q26",
+          "q71",
+          "q172",
+          "q135",
+          "q265",
+          "q20",
+          "q65",
+          "q113",
+          "q156",
+          "q166",
+          "q250",
+          "q141",
+          "q22",
+          "q67",
+          "q115",
+          "q158",
+          "q168",
+          "q200",
+          "q102",
+          "q194",
+          "q227",
+          "q162",
+          "q204",
+          "q45",
+          "q96",
+          "q127",
+          "q39",
+          "q90",
+          "q147",
+          "q212",
+          "q106",
+          "q183",
+          "q219",
+          "q272",
+          "q30",
+          "q75",
+          "q176",
+          "q40",
+          "q91",
+          "q244",
+          "q149",
+          "q274",
+          "q206",
+          "q223",
+          "q269",
+          "q258",
+          "q221",
+          "q209",
+          "q251",
+          "q43",
+          "q94",
+          "q260",
+          "q82",
+          "q144",
+          "q256",
+          "h69",
+          "h70",
+          "q264",
+          "q37",
+          "q270",
+          "q55",
+          "q229",
+          "q239",
+          "q276",
+          "q268",
+          "q19",
+          "q64",
+          "q112",
+          "q155",
+          "q165",
+          "q104",
+          "q181",
+          "q134",
+          "q259",
+          "q107",
+          "q184",
+          "q263",
+          "q210",
+          "q245",
+          "q248",
+          "q205",
+          "q137",
+          "q42",
+          "q93",
+          "q125",
+          "q226",
+          "q140",
+          "q279",
+          "q153",
+          "q145",
+          "q257",
+          "q240",
+          "h36",
+          "q54",
+          "q87",
+          "q187",
+          "h10",
+          "q105",
+          "q182",
+          "q199",
+          "q267",
+          "q31",
+          "q76",
+          "q177",
+          "q213",
+          "h14",
+          "q109",
+          "q211",
+          "q246",
+          "q17",
+          "q62",
+          "q110",
+          "q163",
+          "h18",
+          "q271",
+          "q275",
+          "q108",
+          "q185",
+          "h54",
+          "q121",
+          "q131",
+          "q35",
+          "q80",
+          "q56",
+          "q230",
+          "q44",
+          "q95",
+          "q36",
+          "q81",
+          "q118",
+          "q27",
+          "q72",
+          "q173",
+          "q53",
+          "q85",
+          "q191",
+          "q203",
+          "q273",
+          "q14",
+          "q15",
+          "q201",
+          "q124",
+          "q126",
+          "h39",
+          "q142",
+          "q254",
+          "h33",
+          "q224",
+          "h6",
+          "q7",
+          "h27",
+          "q8",
+          "h59",
+          "q5",
+          "h60",
+          "h95",
+          "h96",
+          "q262",
+          "h9",
+          "q18",
+          "q63",
+          "q111",
+          "q154",
+          "q164",
+          "q46",
+          "q97",
+          "q13"
+        ],
+        [],
+        []
+      ],
+      "fused_ranking": [
+        "h71",
+        "q208",
+        "q50",
+        "q216",
+        "h31",
+        "h3",
+        "q196",
+        "h74",
+        "q198",
+        "h32",
+        "q150",
+        "q225",
+        "h73",
+        "q261",
+        "h72",
+        "q117",
+        "q33",
+        "q78",
+        "q179",
+        "q215",
+        "q133",
+        "q235",
+        "q129",
+        "q148",
+        "q61",
+        "q195",
+        "q100",
+        "q243",
+        "q247",
+        "q130",
+        "q122",
+        "q281",
+        "q146",
+        "q252",
+        "q160",
+        "q58",
+        "q232",
+        "q151",
+        "q86",
+        "q59",
+        "q233",
+        "q32",
+        "q77",
+        "q178",
+        "q214",
+        "q24",
+        "q69",
+        "q170",
+        "q186",
+        "h46",
+        "q60",
+        "q234",
+        "q47",
+        "q98",
+        "q237",
+        "q48",
+        "q99",
+        "q123",
+        "h2",
+        "q23",
+        "q68",
+        "q116",
+        "q159",
+        "q169",
+        "q207",
+        "q192",
+        "q228",
+        "q202",
+        "q34",
+        "q79",
+        "q236",
+        "q103",
+        "q222",
+        "q120",
+        "q180",
+        "q41",
+        "q92",
+        "q132",
+        "h79",
+        "q152",
+        "q38",
+        "q89",
+        "q161",
+        "q266",
+        "q138",
+        "q49",
+        "q241",
+        "q242",
+        "q218",
+        "h4",
+        "q52",
+        "q84",
+        "q190",
+        "q88",
+        "q280",
+        "q253",
+        "q21",
+        "q66",
+        "q114",
+        "q157",
+        "q167",
+        "q217",
+        "q238",
+        "q128",
+        "q220",
+        "q188",
+        "q29",
+        "q74",
+        "q175",
+        "q197",
+        "q278",
+        "q139",
+        "q136",
+        "q277",
+        "q143",
+        "q255",
+        "q101",
+        "q193",
+        "q51",
+        "q83",
+        "q189",
+        "q249",
+        "q57",
+        "q231",
+        "q26",
+        "q71",
+        "q172",
+        "q135",
+        "q265",
+        "q20",
+        "q65",
+        "q113",
+        "q156",
+        "q166",
+        "q250",
+        "q141",
+        "q22",
+        "q67",
+        "q115",
+        "q158",
+        "q168",
+        "q200",
+        "q102",
+        "q194",
+        "q227",
+        "q162",
+        "q204",
+        "q45",
+        "q96",
+        "q127",
+        "q39",
+        "q90",
+        "q147",
+        "q212",
+        "q106",
+        "q183",
+        "q219",
+        "q272",
+        "q30",
+        "q75",
+        "q176",
+        "q40",
+        "q91",
+        "q244",
+        "q149",
+        "q274",
+        "q206",
+        "q223",
+        "q269",
+        "q258",
+        "q221",
+        "q209",
+        "q251",
+        "q43",
+        "q94",
+        "q260",
+        "q82",
+        "q144",
+        "q256",
+        "h69",
+        "h70",
+        "q264",
+        "q37",
+        "q270",
+        "q55",
+        "q229",
+        "q239",
+        "q276",
+        "q268",
+        "q19",
+        "q64",
+        "q112",
+        "q155",
+        "q165",
+        "q104",
+        "q181",
+        "q134",
+        "q259",
+        "q107",
+        "q184",
+        "q263",
+        "q210",
+        "q245",
+        "q248",
+        "q205",
+        "q137",
+        "q42",
+        "q93",
+        "q125",
+        "q226",
+        "q140",
+        "q279",
+        "q153",
+        "q145",
+        "q257",
+        "q240",
+        "h36",
+        "q54",
+        "q87",
+        "q187",
+        "h10",
+        "q105",
+        "q182",
+        "q199",
+        "q267",
+        "q31",
+        "q76",
+        "q177",
+        "q213",
+        "h14",
+        "q109",
+        "q211",
+        "q246",
+        "q17",
+        "q62",
+        "q110",
+        "q163",
+        "h18",
+        "q271",
+        "q275",
+        "q108",
+        "q185",
+        "h54",
+        "q121",
+        "q131",
+        "q35",
+        "q80",
+        "q56",
+        "q230",
+        "q44",
+        "q95",
+        "q36",
+        "q81",
+        "q118",
+        "q27",
+        "q72",
+        "q173",
+        "q53",
+        "q85",
+        "q191",
+        "q203",
+        "q273",
+        "q14",
+        "q15",
+        "q201",
+        "q124",
+        "q126",
+        "h39",
+        "q142",
+        "q254",
+        "h33",
+        "q224",
+        "h6",
+        "q7",
+        "h27",
+        "q8",
+        "h59",
+        "q5",
+        "h60",
+        "h95",
+        "h96",
+        "q262",
+        "h9",
+        "q18",
+        "q63",
+        "q111",
+        "q154",
+        "q164",
+        "q46",
+        "q97",
+        "q13"
+      ],
+      "selection": [
+        {
+          "source_id": "h71",
+          "status": "SELECTED",
+          "dependency_group": [
+            "h71"
+          ],
+          "token_bound": 2631
+        },
+        {
+          "source_id": "q208",
+          "status": "SELECTED",
+          "dependency_group": [
+            "h33",
+            "q208"
+          ],
+          "token_bound": 7743
+        },
+        {
+          "source_id": "q50",
+          "status": "SELECTED",
+          "dependency_group": [
+            "h10",
+            "q50"
+          ],
+          "token_bound": 7537
+        },
+        {
+          "source_id": "q216",
+          "status": "TOKEN_BUDGET_SKIP",
+          "dependency_group": [
+            "q216"
+          ],
+          "required_token_bound": 6940
+        },
+        {
+          "source_id": "h31",
+          "status": "TOKEN_BUDGET_SKIP",
+          "dependency_group": [
+            "h31"
+          ],
+          "required_token_bound": 2957
+        },
+        {
+          "source_id": "h3",
+          "status": "TOKEN_BUDGET_SKIP",
+          "dependency_group": [
+            "h3"
+          ],
+          "required_token_bound": 1343
+        },
+        {
+          "source_id": "q196",
+          "status": "TOKEN_BUDGET_SKIP",
+          "dependency_group": [
+            "h27",
+            "q196"
+          ],
+          "required_token_bound": 2003
+        },
+        {
+          "source_id": "h74",
+          "status": "TOKEN_BUDGET_SKIP",
+          "dependency_group": [
+            "h74"
+          ],
+          "required_token_bound": 688
+        },
+        {
+          "source_id": "q198",
+          "status": "TOKEN_BUDGET_SKIP",
+          "dependency_group": [
+            "h27",
+            "q198"
+          ],
+          "required_token_bound": 5731
+        },
+        {
+          "source_id": "h32",
+          "status": "TOKEN_BUDGET_SKIP",
+          "dependency_group": [
+            "h32"
+          ],
+          "required_token_bound": 711
+        },
+        {
+          "source_id": "q150",
+          "status": "TOKEN_BUDGET_SKIP",
+          "dependency_group": [
+            "h18",
+            "q150"
+          ],
+          "required_token_bound": 2158
+        },
+        {
+          "source_id": "q225",
+          "status": "TOKEN_BUDGET_SKIP",
+          "dependency_group": [
+            "q225"
+          ],
+          "required_token_bound": 2038
+        },
+        {
+          "source_id": "h73",
+          "status": "TOKEN_BUDGET_SKIP",
+          "dependency_group": [
+            "h73"
+          ],
+          "required_token_bound": 915
+        },
+        {
+          "source_id": "q261",
+          "status": "TOKEN_BUDGET_SKIP",
+          "dependency_group": [
+            "h39",
+            "q261"
+          ],
+          "required_token_bound": 2328
+        },
+        {
+          "source_id": "h72",
+          "status": "TOKEN_BUDGET_SKIP",
+          "dependency_group": [
+            "h72"
+          ],
+          "required_token_bound": 846
+        },
+        {
+          "source_id": "q117",
+          "status": "TOKEN_BUDGET_SKIP",
+          "dependency_group": [
+            "h18",
+            "q117"
+          ],
+          "required_token_bound": 7655
+        },
+        {
+          "source_id": "q33",
+          "status": "TOKEN_BUDGET_SKIP",
+          "dependency_group": [
+            "q33"
+          ],
+          "required_token_bound": 2745
+        },
+        {
+          "source_id": "q78",
+          "status": "TOKEN_BUDGET_SKIP",
+          "dependency_group": [
+            "h15",
+            "q78"
+          ],
+          "required_token_bound": 3309
+        },
+        {
+          "source_id": "q179",
+          "status": "TOKEN_BUDGET_SKIP",
+          "dependency_group": [
+            "h27",
+            "q179"
+          ],
+          "required_token_bound": 3333
+        },
+        {
+          "source_id": "q215",
+          "status": "TOKEN_BUDGET_SKIP",
+          "dependency_group": [
+            "q215"
+          ],
+          "required_token_bound": 2748
+        },
+        {
+          "source_id": "q133",
+          "status": "TOKEN_BUDGET_SKIP",
+          "dependency_group": [
+            "h18",
+            "q133"
+          ],
+          "required_token_bound": 7513
+        },
+        {
+          "source_id": "q235",
+          "status": "TOKEN_BUDGET_SKIP",
+          "dependency_group": [
+            "q235"
+          ],
+          "required_token_bound": 6871
+        },
+        {
+          "source_id": "q129",
+          "status": "TOKEN_BUDGET_SKIP",
+          "dependency_group": [
+            "h18",
+            "q129"
+          ],
+          "required_token_bound": 3032
+        },
+        {
+          "source_id": "q148",
+          "status": "TOKEN_BUDGET_SKIP",
+          "dependency_group": [
+            "h18",
+            "q148"
+          ],
+          "required_token_bound": 2211
+        },
+        {
+          "source_id": "q61",
+          "status": "TOKEN_BUDGET_SKIP",
+          "dependency_group": [
+            "q61"
+          ],
+          "required_token_bound": 1882
+        },
+        {
+          "source_id": "q195",
+          "status": "TOKEN_BUDGET_SKIP",
+          "dependency_group": [
+            "h27",
+            "q195"
+          ],
+          "required_token_bound": 2965
+        },
+        {
+          "source_id": "q100",
+          "status": "TOKEN_BUDGET_SKIP",
+          "dependency_group": [
+            "h15",
+            "q100"
+          ],
+          "required_token_bound": 2870
+        },
+        {
+          "source_id": "q243",
+          "status": "TOKEN_BUDGET_SKIP",
+          "dependency_group": [
+            "q243"
+          ],
+          "required_token_bound": 1706
+        },
+        {
+          "source_id": "q247",
+          "status": "TOKEN_BUDGET_SKIP",
+          "dependency_group": [
+            "h39",
+            "q247"
+          ],
+          "required_token_bound": 2416
+        },
+        {
+          "source_id": "q130",
+          "status": "TOKEN_BUDGET_SKIP",
+          "dependency_group": [
+            "h18",
+            "q130"
+          ],
+          "required_token_bound": 3782
+        },
+        {
+          "source_id": "q122",
+          "status": "TOKEN_BUDGET_SKIP",
+          "dependency_group": [
+            "h18",
+            "q122"
+          ],
+          "required_token_bound": 1633
+        },
+        {
+          "source_id": "q281",
+          "status": "TOKEN_BUDGET_SKIP",
+          "dependency_group": [
+            "h39",
+            "q281"
+          ],
+          "required_token_bound": 6313
+        },
+        {
+          "source_id": "q146",
+          "status": "TOKEN_BUDGET_SKIP",
+          "dependency_group": [
+            "h18",
+            "q146"
+          ],
+          "required_token_bound": 2421
+        },
+        {
+          "source_id": "q252",
+          "status": "TOKEN_BUDGET_SKIP",
+          "dependency_group": [
+            "h39",
+            "q252"
+          ],
+          "required_token_bound": 2117
+        },
+        {
+          "source_id": "q160",
+          "status": "TOKEN_BUDGET_SKIP",
+          "dependency_group": [
+            "h23",
+            "q160"
+          ],
+          "required_token_bound": 7414
+        },
+        {
+          "source_id": "q58",
+          "status": "TOKEN_BUDGET_SKIP",
+          "dependency_group": [
+            "q58"
+          ],
+          "required_token_bound": 4437
+        },
+        {
+          "source_id": "q232",
+          "status": "TOKEN_BUDGET_SKIP",
+          "dependency_group": [
+            "q232"
+          ],
+          "required_token_bound": 4440
+        },
+        {
+          "source_id": "q151",
+          "status": "TOKEN_BUDGET_SKIP",
+          "dependency_group": [
+            "h18",
+            "q151"
+          ],
+          "required_token_bound": 1651
+        },
+        {
+          "source_id": "q86",
+          "status": "TOKEN_BUDGET_SKIP",
+          "dependency_group": [
+            "h15",
+            "q86"
+          ],
+          "required_token_bound": 2590
+        },
+        {
+          "source_id": "q59",
+          "status": "TOKEN_BUDGET_SKIP",
+          "dependency_group": [
+            "q59"
+          ],
+          "required_token_bound": 2273
+        },
+        {
+          "source_id": "q233",
+          "status": "TOKEN_BUDGET_SKIP",
+          "dependency_group": [
+            "q233"
+          ],
+          "required_token_bound": 2276
+        },
+        {
+          "source_id": "q32",
+          "status": "TOKEN_BUDGET_SKIP",
+          "dependency_group": [
+            "q32"
+          ],
+          "required_token_bound": 2332
+        },
+        {
+          "source_id": "q77",
+          "status": "TOKEN_BUDGET_SKIP",
+          "dependency_group": [
+            "h15",
+            "q77"
+          ],
+          "required_token_bound": 2896
+        },
+        {
+          "source_id": "q178",
+          "status": "TOKEN_BUDGET_SKIP",
+          "dependency_group": [
+            "h27",
+            "q178"
+          ],
+          "required_token_bound": 2920
+        },
+        {
+          "source_id": "q214",
+          "status": "TOKEN_BUDGET_SKIP",
+          "dependency_group": [
+            "q214"
+          ],
+          "required_token_bound": 2335
+        },
+        {
+          "source_id": "q24",
+          "status": "TOKEN_BUDGET_SKIP",
+          "dependency_group": [
+            "q24"
+          ],
+          "required_token_bound": 1882
+        },
+        {
+          "source_id": "q69",
+          "status": "TOKEN_BUDGET_SKIP",
+          "dependency_group": [
+            "h15",
+            "q69"
+          ],
+          "required_token_bound": 2446
+        },
+        {
+          "source_id": "q170",
+          "status": "TOKEN_BUDGET_SKIP",
+          "dependency_group": [
+            "h27",
+            "q170"
+          ],
+          "required_token_bound": 2470
+        },
+        {
+          "source_id": "q186",
+          "status": "TOKEN_BUDGET_SKIP",
+          "dependency_group": [
+            "h27",
+            "q186"
+          ],
+          "required_token_bound": 2966
+        },
+        {
+          "source_id": "h46",
+          "status": "TOKEN_BUDGET_SKIP",
+          "dependency_group": [
+            "h45",
+            "h46"
+          ],
+          "required_token_bound": 2915
+        },
+        {
+          "source_id": "q60",
+          "status": "TOKEN_BUDGET_SKIP",
+          "dependency_group": [
+            "q60"
+          ],
+          "required_token_bound": 1748
+        },
+        {
+          "source_id": "q234",
+          "status": "TOKEN_BUDGET_SKIP",
+          "dependency_group": [
+            "q234"
+          ],
+          "required_token_bound": 1751
+        },
+        {
+          "source_id": "q47",
+          "status": "TOKEN_BUDGET_SKIP",
+          "dependency_group": [
+            "q47"
+          ],
+          "required_token_bound": 2327
+        },
+        {
+          "source_id": "q98",
+          "status": "TOKEN_BUDGET_SKIP",
+          "dependency_group": [
+            "h15",
+            "q98"
+          ],
+          "required_token_bound": 2891
+        },
+        {
+          "source_id": "q237",
+          "status": "TOKEN_BUDGET_SKIP",
+          "dependency_group": [
+            "q237"
+          ],
+          "required_token_bound": 2230
+        },
+        {
+          "source_id": "q48",
+          "status": "TOKEN_BUDGET_SKIP",
+          "dependency_group": [
+            "q48"
+          ],
+          "required_token_bound": 1859
+        },
+        {
+          "source_id": "q99",
+          "status": "TOKEN_BUDGET_SKIP",
+          "dependency_group": [
+            "h15",
+            "q99"
+          ],
+          "required_token_bound": 2423
+        },
+        {
+          "source_id": "q123",
+          "status": "TOKEN_BUDGET_SKIP",
+          "dependency_group": [
+            "h18",
+            "q123"
+          ],
+          "required_token_bound": 1521
+        },
+        {
+          "source_id": "h2",
+          "status": "TOKEN_BUDGET_SKIP",
+          "dependency_group": [
+            "h2"
+          ],
+          "required_token_bound": 679
+        },
+        {
+          "source_id": "q23",
+          "status": "TOKEN_BUDGET_SKIP",
+          "dependency_group": [
+            "q23"
+          ],
+          "required_token_bound": 795
+        },
+        {
+          "source_id": "q68",
+          "status": "TOKEN_BUDGET_SKIP",
+          "dependency_group": [
+            "h15",
+            "q68"
+          ],
+          "required_token_bound": 1359
+        },
+        {
+          "source_id": "q116",
+          "status": "TOKEN_BUDGET_SKIP",
+          "dependency_group": [
+            "h18",
+            "q116"
+          ],
+          "required_token_bound": 1354
+        },
+        {
+          "source_id": "q159",
+          "status": "TOKEN_BUDGET_SKIP",
+          "dependency_group": [
+            "h23",
+            "q159"
+          ],
+          "required_token_bound": 1254
+        },
+        {
+          "source_id": "q169",
+          "status": "TOKEN_BUDGET_SKIP",
+          "dependency_group": [
+            "h27",
+            "q169"
+          ],
+          "required_token_bound": 1383
+        },
+        {
+          "source_id": "q207",
+          "status": "TOKEN_BUDGET_SKIP",
+          "dependency_group": [
+            "q207"
+          ],
+          "required_token_bound": 1411
+        },
+        {
+          "source_id": "q192",
+          "status": "TOKEN_BUDGET_SKIP",
+          "dependency_group": [
+            "h27",
+            "q192"
+          ],
+          "required_token_bound": 2042
+        },
+        {
+          "source_id": "q228",
+          "status": "TOKEN_BUDGET_SKIP",
+          "dependency_group": [
+            "q228"
+          ],
+          "required_token_bound": 1644
+        },
+        {
+          "source_id": "q202",
+          "status": "TOKEN_BUDGET_SKIP",
+          "dependency_group": [
+            "h27",
+            "q202"
+          ],
+          "required_token_bound": 1302
+        },
+        {
+          "source_id": "q34",
+          "status": "TOKEN_BUDGET_SKIP",
+          "dependency_group": [
+            "q34"
+          ],
+          "required_token_bound": 2206
+        },
+        {
+          "source_id": "q79",
+          "status": "TOKEN_BUDGET_SKIP",
+          "dependency_group": [
+            "h15",
+            "q79"
+          ],
+          "required_token_bound": 2770
+        },
+        {
+          "source_id": "q236",
+          "status": "TOKEN_BUDGET_SKIP",
+          "dependency_group": [
+            "q236"
+          ],
+          "required_token_bound": 6190
+        },
+        {
+          "source_id": "q103",
+          "status": "TOKEN_BUDGET_SKIP",
+          "dependency_group": [
+            "h15",
+            "q103"
+          ],
+          "required_token_bound": 7733
+        },
+        {
+          "source_id": "q222",
+          "status": "TOKEN_BUDGET_SKIP",
+          "dependency_group": [
+            "q222"
+          ],
+          "required_token_bound": 2107
+        },
+        {
+          "source_id": "q120",
+          "status": "TOKEN_BUDGET_SKIP",
+          "dependency_group": [
+            "h18",
+            "q120"
+          ],
+          "required_token_bound": 1753
+        },
+        {
+          "source_id": "q180",
+          "status": "TOKEN_BUDGET_SKIP",
+          "dependency_group": [
+            "h27",
+            "q180"
+          ],
+          "required_token_bound": 3892
+        },
+        {
+          "source_id": "q41",
+          "status": "TOKEN_BUDGET_SKIP",
+          "dependency_group": [
+            "q41"
+          ],
+          "required_token_bound": 1639
+        },
+        {
+          "source_id": "q92",
+          "status": "TOKEN_BUDGET_SKIP",
+          "dependency_group": [
+            "h15",
+            "q92"
+          ],
+          "required_token_bound": 2203
+        },
+        {
+          "source_id": "q132",
+          "status": "TOKEN_BUDGET_SKIP",
+          "dependency_group": [
+            "h18",
+            "q132"
+          ],
+          "required_token_bound": 2729
+        },
+        {
+          "source_id": "h79",
+          "status": "TOKEN_BUDGET_SKIP",
+          "dependency_group": [
+            "h79"
+          ],
+          "required_token_bound": 1582
+        },
+        {
+          "source_id": "q152",
+          "status": "TOKEN_BUDGET_SKIP",
+          "dependency_group": [
+            "h18",
+            "q152"
+          ],
+          "required_token_bound": 2276
+        },
+        {
+          "source_id": "q38",
+          "status": "TOKEN_BUDGET_SKIP",
+          "dependency_group": [
+            "q38"
+          ],
+          "required_token_bound": 2019
+        },
+        {
+          "source_id": "q89",
+          "status": "TOKEN_BUDGET_SKIP",
+          "dependency_group": [
+            "h15",
+            "q89"
+          ],
+          "required_token_bound": 2583
+        },
+        {
+          "source_id": "q161",
+          "status": "TOKEN_BUDGET_SKIP",
+          "dependency_group": [
+            "h23",
+            "q161"
+          ],
+          "required_token_bound": 5884
+        },
+        {
+          "source_id": "q266",
+          "status": "TOKEN_BUDGET_SKIP",
+          "dependency_group": [
+            "h39",
+            "q266"
+          ],
+          "required_token_bound": 1644
+        },
+        {
+          "source_id": "q138",
+          "status": "TOKEN_BUDGET_SKIP",
+          "dependency_group": [
+            "h18",
+            "q138"
+          ],
+          "required_token_bound": 1703
+        },
+        {
+          "source_id": "q49",
+          "status": "TOKEN_BUDGET_SKIP",
+          "dependency_group": [
+            "q49"
+          ],
+          "required_token_bound": 6540
+        },
+        {
+          "source_id": "q241",
+          "status": "TOKEN_BUDGET_SKIP",
+          "dependency_group": [
+            "q241"
+          ],
+          "required_token_bound": 779
+        },
+        {
+          "source_id": "q242",
+          "status": "TOKEN_BUDGET_SKIP",
+          "dependency_group": [
+            "q242"
+          ],
+          "required_token_bound": 2354
+        },
+        {
+          "source_id": "q218",
+          "status": "TOKEN_BUDGET_SKIP",
+          "dependency_group": [
+            "q218"
+          ],
+          "required_token_bound": 1023
+        },
+        {
+          "source_id": "h4",
+          "status": "TOKEN_BUDGET_SKIP",
+          "dependency_group": [
+            "h4"
+          ],
+          "required_token_bound": 918
+        },
+        {
+          "source_id": "q52",
+          "status": "TOKEN_BUDGET_SKIP",
+          "dependency_group": [
+            "q52"
+          ],
+          "required_token_bound": 975
+        },
+        {
+          "source_id": "q84",
+          "status": "TOKEN_BUDGET_SKIP",
+          "dependency_group": [
+            "h15",
+            "q84"
+          ],
+          "required_token_bound": 1539
+        },
+        {
+          "source_id": "q190",
+          "status": "TOKEN_BUDGET_SKIP",
+          "dependency_group": [
+            "h27",
+            "q190"
+          ],
+          "required_token_bound": 1563
+        },
+        {
+          "source_id": "q88",
+          "status": "TOKEN_BUDGET_SKIP",
+          "dependency_group": [
+            "h15",
+            "q88"
+          ],
+          "required_token_bound": 2881
+        },
+        {
+          "source_id": "q280",
+          "status": "TOKEN_BUDGET_SKIP",
+          "dependency_group": [
+            "h39",
+            "q280"
+          ],
+          "required_token_bound": 1939
+        },
+        {
+          "source_id": "q253",
+          "status": "TOKEN_BUDGET_SKIP",
+          "dependency_group": [
+            "h39",
+            "q253"
+          ],
+          "required_token_bound": 2571
+        },
+        {
+          "source_id": "q21",
+          "status": "TOKEN_BUDGET_SKIP",
+          "dependency_group": [
+            "q21"
+          ],
+          "required_token_bound": 1474
+        },
+        {
+          "source_id": "q66",
+          "status": "TOKEN_BUDGET_SKIP",
+          "dependency_group": [
+            "h15",
+            "q66"
+          ],
+          "required_token_bound": 2038
+        },
+        {
+          "source_id": "q114",
+          "status": "TOKEN_BUDGET_SKIP",
+          "dependency_group": [
+            "h18",
+            "q114"
+          ],
+          "required_token_bound": 2033
+        },
+        {
+          "source_id": "q157",
+          "status": "TOKEN_BUDGET_SKIP",
+          "dependency_group": [
+            "h23",
+            "q157"
+          ],
+          "required_token_bound": 1933
+        },
+        {
+          "source_id": "q167",
+          "status": "TOKEN_BUDGET_SKIP",
+          "dependency_group": [
+            "h27",
+            "q167"
+          ],
+          "required_token_bound": 2062
+        },
+        {
+          "source_id": "q217",
+          "status": "TOKEN_BUDGET_SKIP",
+          "dependency_group": [
+            "q217"
+          ],
+          "required_token_bound": 1339
+        },
+        {
+          "source_id": "q238",
+          "status": "TOKEN_BUDGET_SKIP",
+          "dependency_group": [
+            "q238"
+          ],
+          "required_token_bound": 957
+        },
+        {
+          "source_id": "q128",
+          "status": "TOKEN_BUDGET_SKIP",
+          "dependency_group": [
+            "h18",
+            "q128"
+          ],
+          "required_token_bound": 3193
+        },
+        {
+          "source_id": "q220",
+          "status": "TOKEN_BUDGET_SKIP",
+          "dependency_group": [
+            "q220"
+          ],
+          "required_token_bound": 1643
+        },
+        {
+          "source_id": "q188",
+          "status": "TOKEN_BUDGET_SKIP",
+          "dependency_group": [
+            "h27",
+            "q188"
+          ],
+          "required_token_bound": 2723
+        },
+        {
+          "source_id": "q29",
+          "status": "TOKEN_BUDGET_SKIP",
+          "dependency_group": [
+            "q29"
+          ],
+          "required_token_bound": 2891
+        },
+        {
+          "source_id": "q74",
+          "status": "TOKEN_BUDGET_SKIP",
+          "dependency_group": [
+            "h15",
+            "q74"
+          ],
+          "required_token_bound": 3455
+        },
+        {
+          "source_id": "q175",
+          "status": "TOKEN_BUDGET_SKIP",
+          "dependency_group": [
+            "h27",
+            "q175"
+          ],
+          "required_token_bound": 3479
+        },
+        {
+          "source_id": "q197",
+          "status": "TOKEN_BUDGET_SKIP",
+          "dependency_group": [
+            "h27",
+            "q197"
+          ],
+          "required_token_bound": 2256
+        },
+        {
+          "source_id": "q278",
+          "status": "TOKEN_BUDGET_SKIP",
+          "dependency_group": [
+            "h39",
+            "q278"
+          ],
+          "required_token_bound": 1790
+        },
+        {
+          "source_id": "q139",
+          "status": "TOKEN_BUDGET_SKIP",
+          "dependency_group": [
+            "h18",
+            "q139"
+          ],
+          "required_token_bound": 1830
+        },
+        {
+          "source_id": "q136",
+          "status": "TOKEN_BUDGET_SKIP",
+          "dependency_group": [
+            "h18",
+            "q136"
+          ],
+          "required_token_bound": 2137
+        },
+        {
+          "source_id": "q277",
+          "status": "TOKEN_BUDGET_SKIP",
+          "dependency_group": [
+            "h39",
+            "q277"
+          ],
+          "required_token_bound": 1758
+        },
+        {
+          "source_id": "q143",
+          "status": "TOKEN_BUDGET_SKIP",
+          "dependency_group": [
+            "h18",
+            "q143"
+          ],
+          "required_token_bound": 1687
+        },
+        {
+          "source_id": "q255",
+          "status": "TOKEN_BUDGET_SKIP",
+          "dependency_group": [
+            "h39",
+            "q255"
+          ],
+          "required_token_bound": 1720
+        },
+        {
+          "source_id": "q101",
+          "status": "TOKEN_BUDGET_SKIP",
+          "dependency_group": [
+            "h15",
+            "q101"
+          ],
+          "required_token_bound": 1483
+        },
+        {
+          "source_id": "q193",
+          "status": "TOKEN_BUDGET_SKIP",
+          "dependency_group": [
+            "h27",
+            "q193"
+          ],
+          "required_token_bound": 1506
+        },
+        {
+          "source_id": "q51",
+          "status": "TOKEN_BUDGET_SKIP",
+          "dependency_group": [
+            "q51"
+          ],
+          "required_token_bound": 836
+        },
+        {
+          "source_id": "q83",
+          "status": "TOKEN_BUDGET_SKIP",
+          "dependency_group": [
+            "h15",
+            "q83"
+          ],
+          "required_token_bound": 1400
+        },
+        {
+          "source_id": "q189",
+          "status": "TOKEN_BUDGET_SKIP",
+          "dependency_group": [
+            "h27",
+            "q189"
+          ],
+          "required_token_bound": 1424
+        },
+        {
+          "source_id": "q249",
+          "status": "TOKEN_BUDGET_SKIP",
+          "dependency_group": [
+            "h39",
+            "q249"
+          ],
+          "required_token_bound": 1756
+        },
+        {
+          "source_id": "q57",
+          "status": "TOKEN_BUDGET_SKIP",
+          "dependency_group": [
+            "q57"
+          ],
+          "required_token_bound": 759
+        },
+        {
+          "source_id": "q231",
+          "status": "TOKEN_BUDGET_SKIP",
+          "dependency_group": [
+            "q231"
+          ],
+          "required_token_bound": 762
+        },
+        {
+          "source_id": "q26",
+          "status": "TOKEN_BUDGET_SKIP",
+          "dependency_group": [
+            "q26"
+          ],
+          "required_token_bound": 1672
+        },
+        {
+          "source_id": "q71",
+          "status": "TOKEN_BUDGET_SKIP",
+          "dependency_group": [
+            "h15",
+            "q71"
+          ],
+          "required_token_bound": 2236
+        },
+        {
+          "source_id": "q172",
+          "status": "TOKEN_BUDGET_SKIP",
+          "dependency_group": [
+            "h27",
+            "q172"
+          ],
+          "required_token_bound": 2260
+        },
+        {
+          "source_id": "q135",
+          "status": "TOKEN_BUDGET_SKIP",
+          "dependency_group": [
+            "h18",
+            "q135"
+          ],
+          "required_token_bound": 1947
+        },
+        {
+          "source_id": "q265",
+          "status": "TOKEN_BUDGET_SKIP",
+          "dependency_group": [
+            "h39",
+            "q265"
+          ],
+          "required_token_bound": 1290
+        },
+        {
+          "source_id": "q20",
+          "status": "TOKEN_BUDGET_SKIP",
+          "dependency_group": [
+            "q20"
+          ],
+          "required_token_bound": 872
+        },
+        {
+          "source_id": "q65",
+          "status": "TOKEN_BUDGET_SKIP",
+          "dependency_group": [
+            "h15",
+            "q65"
+          ],
+          "required_token_bound": 1436
+        },
+        {
+          "source_id": "q113",
+          "status": "TOKEN_BUDGET_SKIP",
+          "dependency_group": [
+            "h18",
+            "q113"
+          ],
+          "required_token_bound": 1431
+        },
+        {
+          "source_id": "q156",
+          "status": "TOKEN_BUDGET_SKIP",
+          "dependency_group": [
+            "h23",
+            "q156"
+          ],
+          "required_token_bound": 1331
+        },
+        {
+          "source_id": "q166",
+          "status": "TOKEN_BUDGET_SKIP",
+          "dependency_group": [
+            "h27",
+            "q166"
+          ],
+          "required_token_bound": 1460
+        },
+        {
+          "source_id": "q250",
+          "status": "TOKEN_BUDGET_SKIP",
+          "dependency_group": [
+            "h39",
+            "q250"
+          ],
+          "required_token_bound": 2484
+        },
+        {
+          "source_id": "q141",
+          "status": "TOKEN_BUDGET_SKIP",
+          "dependency_group": [
+            "h18",
+            "q141"
+          ],
+          "required_token_bound": 1937
+        },
+        {
+          "source_id": "q22",
+          "status": "TOKEN_BUDGET_SKIP",
+          "dependency_group": [
+            "q22"
+          ],
+          "required_token_bound": 874
+        },
+        {
+          "source_id": "q67",
+          "status": "TOKEN_BUDGET_SKIP",
+          "dependency_group": [
+            "h15",
+            "q67"
+          ],
+          "required_token_bound": 1438
+        },
+        {
+          "source_id": "q115",
+          "status": "TOKEN_BUDGET_SKIP",
+          "dependency_group": [
+            "h18",
+            "q115"
+          ],
+          "required_token_bound": 1433
+        },
+        {
+          "source_id": "q158",
+          "status": "TOKEN_BUDGET_SKIP",
+          "dependency_group": [
+            "h23",
+            "q158"
+          ],
+          "required_token_bound": 1333
+        },
+        {
+          "source_id": "q168",
+          "status": "TOKEN_BUDGET_SKIP",
+          "dependency_group": [
+            "h27",
+            "q168"
+          ],
+          "required_token_bound": 1462
+        },
+        {
+          "source_id": "q200",
+          "status": "TOKEN_BUDGET_SKIP",
+          "dependency_group": [
+            "h27",
+            "q200"
+          ],
+          "required_token_bound": 1624
+        },
+        {
+          "source_id": "q102",
+          "status": "TOKEN_BUDGET_SKIP",
+          "dependency_group": [
+            "h15",
+            "q102"
+          ],
+          "required_token_bound": 1446
+        },
+        {
+          "source_id": "q194",
+          "status": "TOKEN_BUDGET_SKIP",
+          "dependency_group": [
+            "h27",
+            "q194"
+          ],
+          "required_token_bound": 1469
+        },
+        {
+          "source_id": "q227",
+          "status": "TOKEN_BUDGET_SKIP",
+          "dependency_group": [
+            "q227"
+          ],
+          "required_token_bound": 921
+        },
+        {
+          "source_id": "q162",
+          "status": "TOKEN_BUDGET_SKIP",
+          "dependency_group": [
+            "h23",
+            "q162"
+          ],
+          "required_token_bound": 2106
+        },
+        {
+          "source_id": "q204",
+          "status": "TOKEN_BUDGET_SKIP",
+          "dependency_group": [
+            "q204"
+          ],
+          "required_token_bound": 1053
+        },
+        {
+          "source_id": "q45",
+          "status": "TOKEN_BUDGET_SKIP",
+          "dependency_group": [
+            "q45"
+          ],
+          "required_token_bound": 2063
+        },
+        {
+          "source_id": "q96",
+          "status": "TOKEN_BUDGET_SKIP",
+          "dependency_group": [
+            "h15",
+            "q96"
+          ],
+          "required_token_bound": 2627
+        },
+        {
+          "source_id": "q127",
+          "status": "TOKEN_BUDGET_SKIP",
+          "dependency_group": [
+            "h18",
+            "q127"
+          ],
+          "required_token_bound": 1538
+        },
+        {
+          "source_id": "q39",
+          "status": "TOKEN_BUDGET_SKIP",
+          "dependency_group": [
+            "q39"
+          ],
+          "required_token_bound": 782
+        },
+        {
+          "source_id": "q90",
+          "status": "TOKEN_BUDGET_SKIP",
+          "dependency_group": [
+            "h15",
+            "q90"
+          ],
+          "required_token_bound": 1346
+        },
+        {
+          "source_id": "q147",
+          "status": "TOKEN_BUDGET_SKIP",
+          "dependency_group": [
+            "h18",
+            "q147"
+          ],
+          "required_token_bound": 2550
+        },
+        {
+          "source_id": "q212",
+          "status": "TOKEN_BUDGET_SKIP",
+          "dependency_group": [
+            "q212"
+          ],
+          "required_token_bound": 1406
+        },
+        {
+          "source_id": "q106",
+          "status": "TOKEN_BUDGET_SKIP",
+          "dependency_group": [
+            "h15",
+            "q106"
+          ],
+          "required_token_bound": 4069
+        },
+        {
+          "source_id": "q183",
+          "status": "TOKEN_BUDGET_SKIP",
+          "dependency_group": [
+            "h27",
+            "q183"
+          ],
+          "required_token_bound": 4092
+        },
+        {
+          "source_id": "q219",
+          "status": "TOKEN_BUDGET_SKIP",
+          "dependency_group": [
+            "q219"
+          ],
+          "required_token_bound": 1310
+        },
+        {
+          "source_id": "q272",
+          "status": "TOKEN_BUDGET_SKIP",
+          "dependency_group": [
+            "h39",
+            "q272"
+          ],
+          "required_token_bound": 1495
+        },
+        {
+          "source_id": "q30",
+          "status": "TOKEN_BUDGET_SKIP",
+          "dependency_group": [
+            "q30"
+          ],
+          "required_token_bound": 2450
+        },
+        {
+          "source_id": "q75",
+          "status": "TOKEN_BUDGET_SKIP",
+          "dependency_group": [
+            "h15",
+            "q75"
+          ],
+          "required_token_bound": 3014
+        },
+        {
+          "source_id": "q176",
+          "status": "TOKEN_BUDGET_SKIP",
+          "dependency_group": [
+            "h27",
+            "q176"
+          ],
+          "required_token_bound": 3038
+        },
+        {
+          "source_id": "q40",
+          "status": "TOKEN_BUDGET_SKIP",
+          "dependency_group": [
+            "q40"
+          ],
+          "required_token_bound": 1845
+        },
+        {
+          "source_id": "q91",
+          "status": "TOKEN_BUDGET_SKIP",
+          "dependency_group": [
+            "h15",
+            "q91"
+          ],
+          "required_token_bound": 2409
+        },
+        {
+          "source_id": "q244",
+          "status": "TOKEN_BUDGET_SKIP",
+          "dependency_group": [
+            "h39",
+            "q244"
+          ],
+          "required_token_bound": 2477
+        },
+        {
+          "source_id": "q149",
+          "status": "TOKEN_BUDGET_SKIP",
+          "dependency_group": [
+            "h18",
+            "q149"
+          ],
+          "required_token_bound": 2092
+        },
+        {
+          "source_id": "q274",
+          "status": "TOKEN_BUDGET_SKIP",
+          "dependency_group": [
+            "h39",
+            "q274"
+          ],
+          "required_token_bound": 1572
+        },
+        {
+          "source_id": "q206",
+          "status": "TOKEN_BUDGET_SKIP",
+          "dependency_group": [
+            "q206"
+          ],
+          "required_token_bound": 1563
+        },
+        {
+          "source_id": "q223",
+          "status": "TOKEN_BUDGET_SKIP",
+          "dependency_group": [
+            "q223"
+          ],
+          "required_token_bound": 1021
+        },
+        {
+          "source_id": "q269",
+          "status": "TOKEN_BUDGET_SKIP",
+          "dependency_group": [
+            "h39",
+            "q269"
+          ],
+          "required_token_bound": 1589
+        },
+        {
+          "source_id": "q258",
+          "status": "TOKEN_BUDGET_SKIP",
+          "dependency_group": [
+            "h39",
+            "q258"
+          ],
+          "required_token_bound": 2284
+        },
+        {
+          "source_id": "q221",
+          "status": "TOKEN_BUDGET_SKIP",
+          "dependency_group": [
+            "q221"
+          ],
+          "required_token_bound": 1468
+        },
+        {
+          "source_id": "q209",
+          "status": "TOKEN_BUDGET_SKIP",
+          "dependency_group": [
+            "q209"
+          ],
+          "required_token_bound": 1118
+        },
+        {
+          "source_id": "q251",
+          "status": "TOKEN_BUDGET_SKIP",
+          "dependency_group": [
+            "h39",
+            "q251"
+          ],
+          "required_token_bound": 1999
+        },
+        {
+          "source_id": "q43",
+          "status": "TOKEN_BUDGET_SKIP",
+          "dependency_group": [
+            "q43"
+          ],
+          "required_token_bound": 1873
+        },
+        {
+          "source_id": "q94",
+          "status": "TOKEN_BUDGET_SKIP",
+          "dependency_group": [
+            "h15",
+            "q94"
+          ],
+          "required_token_bound": 2437
+        },
+        {
+          "source_id": "q260",
+          "status": "TOKEN_BUDGET_SKIP",
+          "dependency_group": [
+            "h39",
+            "q260"
+          ],
+          "required_token_bound": 3960
+        },
+        {
+          "source_id": "q82",
+          "status": "TOKEN_BUDGET_SKIP",
+          "dependency_group": [
+            "h15",
+            "q82"
+          ],
+          "required_token_bound": 2203
+        },
+        {
+          "source_id": "q144",
+          "status": "TOKEN_BUDGET_SKIP",
+          "dependency_group": [
+            "h18",
+            "q144"
+          ],
+          "required_token_bound": 1651
+        },
+        {
+          "source_id": "q256",
+          "status": "TOKEN_BUDGET_SKIP",
+          "dependency_group": [
+            "h39",
+            "q256"
+          ],
+          "required_token_bound": 1684
+        },
+        {
+          "source_id": "h69",
+          "status": "TOKEN_BUDGET_SKIP",
+          "dependency_group": [
+            "h69"
+          ],
+          "required_token_bound": 845
+        },
+        {
+          "source_id": "h70",
+          "status": "TOKEN_BUDGET_SKIP",
+          "dependency_group": [
+            "h70"
+          ],
+          "required_token_bound": 846
+        },
+        {
+          "source_id": "q264",
+          "status": "TOKEN_BUDGET_SKIP",
+          "dependency_group": [
+            "h39",
+            "q264"
+          ],
+          "required_token_bound": 1606
+        },
+        {
+          "source_id": "q37",
+          "status": "TOKEN_BUDGET_SKIP",
+          "dependency_group": [
+            "q37"
+          ],
+          "required_token_bound": 1821
+        },
+        {
+          "source_id": "q270",
+          "status": "TOKEN_BUDGET_SKIP",
+          "dependency_group": [
+            "h39",
+            "q270"
+          ],
+          "required_token_bound": 1637
+        },
+        {
+          "source_id": "q55",
+          "status": "TOKEN_BUDGET_SKIP",
+          "dependency_group": [
+            "q55"
+          ],
+          "required_token_bound": 2357
+        },
+        {
+          "source_id": "q229",
+          "status": "TOKEN_BUDGET_SKIP",
+          "dependency_group": [
+            "q229"
+          ],
+          "required_token_bound": 2360
+        },
+        {
+          "source_id": "q239",
+          "status": "TOKEN_BUDGET_SKIP",
+          "dependency_group": [
+            "q239"
+          ],
+          "required_token_bound": 863
+        },
+        {
+          "source_id": "q276",
+          "status": "TOKEN_BUDGET_SKIP",
+          "dependency_group": [
+            "h39",
+            "q276"
+          ],
+          "required_token_bound": 1958
+        },
+        {
+          "source_id": "q268",
+          "status": "TOKEN_BUDGET_SKIP",
+          "dependency_group": [
+            "h39",
+            "q268"
+          ],
+          "required_token_bound": 1410
+        },
+        {
+          "source_id": "q19",
+          "status": "TOKEN_BUDGET_SKIP",
+          "dependency_group": [
+            "q19"
+          ],
+          "required_token_bound": 1091
+        },
+        {
+          "source_id": "q64",
+          "status": "TOKEN_BUDGET_SKIP",
+          "dependency_group": [
+            "h15",
+            "q64"
+          ],
+          "required_token_bound": 1655
+        },
+        {
+          "source_id": "q112",
+          "status": "TOKEN_BUDGET_SKIP",
+          "dependency_group": [
+            "h18",
+            "q112"
+          ],
+          "required_token_bound": 1650
+        },
+        {
+          "source_id": "q155",
+          "status": "TOKEN_BUDGET_SKIP",
+          "dependency_group": [
+            "h23",
+            "q155"
+          ],
+          "required_token_bound": 1550
+        },
+        {
+          "source_id": "q165",
+          "status": "TOKEN_BUDGET_SKIP",
+          "dependency_group": [
+            "h27",
+            "q165"
+          ],
+          "required_token_bound": 1679
+        },
+        {
+          "source_id": "q104",
+          "status": "TOKEN_BUDGET_SKIP",
+          "dependency_group": [
+            "h15",
+            "q104"
+          ],
+          "required_token_bound": 2199
+        },
+        {
+          "source_id": "q181",
+          "status": "TOKEN_BUDGET_SKIP",
+          "dependency_group": [
+            "h27",
+            "q181"
+          ],
+          "required_token_bound": 2222
+        },
+        {
+          "source_id": "q134",
+          "status": "TOKEN_BUDGET_SKIP",
+          "dependency_group": [
+            "h18",
+            "q134"
+          ],
+          "required_token_bound": 1345
+        },
+        {
+          "source_id": "q259",
+          "status": "TOKEN_BUDGET_SKIP",
+          "dependency_group": [
+            "h39",
+            "q259"
+          ],
+          "required_token_bound": 1672
+        },
+        {
+          "source_id": "q107",
+          "status": "TOKEN_BUDGET_SKIP",
+          "dependency_group": [
+            "h15",
+            "q107"
+          ],
+          "required_token_bound": 1820
+        },
+        {
+          "source_id": "q184",
+          "status": "TOKEN_BUDGET_SKIP",
+          "dependency_group": [
+            "h27",
+            "q184"
+          ],
+          "required_token_bound": 1843
+        },
+        {
+          "source_id": "q263",
+          "status": "TOKEN_BUDGET_SKIP",
+          "dependency_group": [
+            "h39",
+            "q263"
+          ],
+          "required_token_bound": 1537
+        },
+        {
+          "source_id": "q210",
+          "status": "TOKEN_BUDGET_SKIP",
+          "dependency_group": [
+            "q210"
+          ],
+          "required_token_bound": 1368
+        },
+        {
+          "source_id": "q245",
+          "status": "TOKEN_BUDGET_SKIP",
+          "dependency_group": [
+            "h39",
+            "q245"
+          ],
+          "required_token_bound": 1959
+        },
+        {
+          "source_id": "q248",
+          "status": "TOKEN_BUDGET_SKIP",
+          "dependency_group": [
+            "h39",
+            "q248"
+          ],
+          "required_token_bound": 1578
+        },
+        {
+          "source_id": "q205",
+          "status": "TOKEN_BUDGET_SKIP",
+          "dependency_group": [
+            "q205"
+          ],
+          "required_token_bound": 718
+        },
+        {
+          "source_id": "q137",
+          "status": "TOKEN_BUDGET_SKIP",
+          "dependency_group": [
+            "h18",
+            "q137"
+          ],
+          "required_token_bound": 1885
+        },
+        {
+          "source_id": "q42",
+          "status": "TOKEN_BUDGET_SKIP",
+          "dependency_group": [
+            "q42"
+          ],
+          "required_token_bound": 2204
+        },
+        {
+          "source_id": "q93",
+          "status": "TOKEN_BUDGET_SKIP",
+          "dependency_group": [
+            "h15",
+            "q93"
+          ],
+          "required_token_bound": 2768
+        },
+        {
+          "source_id": "q125",
+          "status": "TOKEN_BUDGET_SKIP",
+          "dependency_group": [
+            "h18",
+            "q125"
+          ],
+          "required_token_bound": 1635
+        },
+        {
+          "source_id": "q226",
+          "status": "TOKEN_BUDGET_SKIP",
+          "dependency_group": [
+            "q226"
+          ],
+          "required_token_bound": 1057
+        },
+        {
+          "source_id": "q140",
+          "status": "TOKEN_BUDGET_SKIP",
+          "dependency_group": [
+            "h18",
+            "q140"
+          ],
+          "required_token_bound": 1633
+        },
+        {
+          "source_id": "q279",
+          "status": "TOKEN_BUDGET_SKIP",
+          "dependency_group": [
+            "h39",
+            "q279"
+          ],
+          "required_token_bound": 1484
+        },
+        {
+          "source_id": "q153",
+          "status": "TOKEN_BUDGET_SKIP",
+          "dependency_group": [
+            "h23",
+            "q153"
+          ],
+          "required_token_bound": 1340
+        },
+        {
+          "source_id": "q145",
+          "status": "TOKEN_BUDGET_SKIP",
+          "dependency_group": [
+            "h18",
+            "q145"
+          ],
+          "required_token_bound": 1953
+        },
+        {
+          "source_id": "q257",
+          "status": "TOKEN_BUDGET_SKIP",
+          "dependency_group": [
+            "h39",
+            "q257"
+          ],
+          "required_token_bound": 1986
+        },
+        {
+          "source_id": "q240",
+          "status": "TOKEN_BUDGET_SKIP",
+          "dependency_group": [
+            "q240"
+          ],
+          "required_token_bound": 843
+        },
+        {
+          "source_id": "h36",
+          "status": "TOKEN_BUDGET_SKIP",
+          "dependency_group": [
+            "h34",
+            "h36"
+          ],
+          "required_token_bound": 2175
+        },
+        {
+          "source_id": "q54",
+          "status": "TOKEN_BUDGET_SKIP",
+          "dependency_group": [
+            "q54"
+          ],
+          "required_token_bound": 1292
+        },
+        {
+          "source_id": "q87",
+          "status": "TOKEN_BUDGET_SKIP",
+          "dependency_group": [
+            "h15",
+            "q87"
+          ],
+          "required_token_bound": 1595
+        },
+        {
+          "source_id": "q187",
+          "status": "TOKEN_BUDGET_SKIP",
+          "dependency_group": [
+            "h27",
+            "q187"
+          ],
+          "required_token_bound": 1619
+        },
+        {
+          "source_id": "h10",
+          "status": "SELECTED",
+          "dependency_group": [],
+          "token_bound": 0
+        },
+        {
+          "source_id": "q105",
+          "status": "TOKEN_BUDGET_SKIP",
+          "dependency_group": [
+            "h15",
+            "q105"
+          ],
+          "required_token_bound": 2094
+        },
+        {
+          "source_id": "q182",
+          "status": "TOKEN_BUDGET_SKIP",
+          "dependency_group": [
+            "h27",
+            "q182"
+          ],
+          "required_token_bound": 2117
+        },
+        {
+          "source_id": "q199",
+          "status": "TOKEN_BUDGET_SKIP",
+          "dependency_group": [
+            "h27",
+            "q199"
+          ],
+          "required_token_bound": 1607
+        },
+        {
+          "source_id": "q267",
+          "status": "TOKEN_BUDGET_SKIP",
+          "dependency_group": [
+            "h39",
+            "q267"
+          ],
+          "required_token_bound": 1494
+        },
+        {
+          "source_id": "q31",
+          "status": "TOKEN_BUDGET_SKIP",
+          "dependency_group": [
+            "q31"
+          ],
+          "required_token_bound": 919
+        },
+        {
+          "source_id": "q76",
+          "status": "TOKEN_BUDGET_SKIP",
+          "dependency_group": [
+            "h15",
+            "q76"
+          ],
+          "required_token_bound": 1483
+        },
+        {
+          "source_id": "q177",
+          "status": "TOKEN_BUDGET_SKIP",
+          "dependency_group": [
+            "h27",
+            "q177"
+          ],
+          "required_token_bound": 1507
+        },
+        {
+          "source_id": "q213",
+          "status": "TOKEN_BUDGET_SKIP",
+          "dependency_group": [
+            "q213"
+          ],
+          "required_token_bound": 922
+        },
+        {
+          "source_id": "h14",
+          "status": "TOKEN_BUDGET_SKIP",
+          "dependency_group": [
+            "h13",
+            "h14"
+          ],
+          "required_token_bound": 1825
+        },
+        {
+          "source_id": "q109",
+          "status": "TOKEN_BUDGET_SKIP",
+          "dependency_group": [
+            "h15",
+            "q109"
+          ],
+          "required_token_bound": 1794
+        },
+        {
+          "source_id": "q211",
+          "status": "TOKEN_BUDGET_SKIP",
+          "dependency_group": [
+            "q211"
+          ],
+          "required_token_bound": 1039
+        },
+        {
+          "source_id": "q246",
+          "status": "TOKEN_BUDGET_SKIP",
+          "dependency_group": [
+            "h39",
+            "q246"
+          ],
+          "required_token_bound": 1630
+        },
+        {
+          "source_id": "q17",
+          "status": "TOKEN_BUDGET_SKIP",
+          "dependency_group": [
+            "q17"
+          ],
+          "required_token_bound": 892
+        },
+        {
+          "source_id": "q62",
+          "status": "TOKEN_BUDGET_SKIP",
+          "dependency_group": [
+            "h15",
+            "q62"
+          ],
+          "required_token_bound": 1456
+        },
+        {
+          "source_id": "q110",
+          "status": "TOKEN_BUDGET_SKIP",
+          "dependency_group": [
+            "h18",
+            "q110"
+          ],
+          "required_token_bound": 1451
+        },
+        {
+          "source_id": "q163",
+          "status": "TOKEN_BUDGET_SKIP",
+          "dependency_group": [
+            "h27",
+            "q163"
+          ],
+          "required_token_bound": 1480
+        },
+        {
+          "source_id": "h18",
+          "status": "TOKEN_BUDGET_SKIP",
+          "dependency_group": [
+            "h18"
+          ],
+          "required_token_bound": 558
+        },
+        {
+          "source_id": "q271",
+          "status": "TOKEN_BUDGET_SKIP",
+          "dependency_group": [
+            "h39",
+            "q271"
+          ],
+          "required_token_bound": 1664
+        },
+        {
+          "source_id": "q275",
+          "status": "TOKEN_BUDGET_SKIP",
+          "dependency_group": [
+            "h39",
+            "q275"
+          ],
+          "required_token_bound": 1519
+        },
+        {
+          "source_id": "q108",
+          "status": "TOKEN_BUDGET_SKIP",
+          "dependency_group": [
+            "h15",
+            "q108"
+          ],
+          "required_token_bound": 1437
+        },
+        {
+          "source_id": "q185",
+          "status": "TOKEN_BUDGET_SKIP",
+          "dependency_group": [
+            "h27",
+            "q185"
+          ],
+          "required_token_bound": 1460
+        },
+        {
+          "source_id": "h54",
+          "status": "TOKEN_BUDGET_SKIP",
+          "dependency_group": [
+            "h53",
+            "h54"
+          ],
+          "required_token_bound": 1729
+        },
+        {
+          "source_id": "q121",
+          "status": "TOKEN_BUDGET_SKIP",
+          "dependency_group": [
+            "h18",
+            "q121"
+          ],
+          "required_token_bound": 1559
+        },
+        {
+          "source_id": "q131",
+          "status": "TOKEN_BUDGET_SKIP",
+          "dependency_group": [
+            "h18",
+            "q131"
+          ],
+          "required_token_bound": 1422
+        },
+        {
+          "source_id": "q35",
+          "status": "TOKEN_BUDGET_SKIP",
+          "dependency_group": [
+            "q35"
+          ],
+          "required_token_bound": 915
+        },
+        {
+          "source_id": "q80",
+          "status": "TOKEN_BUDGET_SKIP",
+          "dependency_group": [
+            "h15",
+            "q80"
+          ],
+          "required_token_bound": 1479
+        },
+        {
+          "source_id": "q56",
+          "status": "TOKEN_BUDGET_SKIP",
+          "dependency_group": [
+            "q56"
+          ],
+          "required_token_bound": 1026
+        },
+        {
+          "source_id": "q230",
+          "status": "TOKEN_BUDGET_SKIP",
+          "dependency_group": [
+            "q230"
+          ],
+          "required_token_bound": 1029
+        },
+        {
+          "source_id": "q44",
+          "status": "TOKEN_BUDGET_SKIP",
+          "dependency_group": [
+            "q44"
+          ],
+          "required_token_bound": 1504
+        },
+        {
+          "source_id": "q95",
+          "status": "TOKEN_BUDGET_SKIP",
+          "dependency_group": [
+            "h15",
+            "q95"
+          ],
+          "required_token_bound": 2068
+        },
+        {
+          "source_id": "q36",
+          "status": "TOKEN_BUDGET_SKIP",
+          "dependency_group": [
+            "q36"
+          ],
+          "required_token_bound": 832
+        },
+        {
+          "source_id": "q81",
+          "status": "TOKEN_BUDGET_SKIP",
+          "dependency_group": [
+            "h15",
+            "q81"
+          ],
+          "required_token_bound": 1396
+        },
+        {
+          "source_id": "q118",
+          "status": "TOKEN_BUDGET_SKIP",
+          "dependency_group": [
+            "h18",
+            "q118"
+          ],
+          "required_token_bound": 1638
+        },
+        {
+          "source_id": "q27",
+          "status": "TOKEN_BUDGET_SKIP",
+          "dependency_group": [
+            "q27"
+          ],
+          "required_token_bound": 1651
+        },
+        {
+          "source_id": "q72",
+          "status": "TOKEN_BUDGET_SKIP",
+          "dependency_group": [
+            "h15",
+            "q72"
+          ],
+          "required_token_bound": 2215
+        },
+        {
+          "source_id": "q173",
+          "status": "TOKEN_BUDGET_SKIP",
+          "dependency_group": [
+            "h27",
+            "q173"
+          ],
+          "required_token_bound": 2239
+        },
+        {
+          "source_id": "q53",
+          "status": "TOKEN_BUDGET_SKIP",
+          "dependency_group": [
+            "q53"
+          ],
+          "required_token_bound": 767
+        },
+        {
+          "source_id": "q85",
+          "status": "TOKEN_BUDGET_SKIP",
+          "dependency_group": [
+            "h15",
+            "q85"
+          ],
+          "required_token_bound": 1331
+        },
+        {
+          "source_id": "q191",
+          "status": "TOKEN_BUDGET_SKIP",
+          "dependency_group": [
+            "h27",
+            "q191"
+          ],
+          "required_token_bound": 1355
+        },
+        {
+          "source_id": "q203",
+          "status": "TOKEN_BUDGET_SKIP",
+          "dependency_group": [
+            "h27",
+            "q203"
+          ],
+          "required_token_bound": 1378
+        },
+        {
+          "source_id": "q273",
+          "status": "TOKEN_BUDGET_SKIP",
+          "dependency_group": [
+            "h39",
+            "q273"
+          ],
+          "required_token_bound": 1656
+        },
+        {
+          "source_id": "q14",
+          "status": "TOKEN_BUDGET_SKIP",
+          "dependency_group": [
+            "q14"
+          ],
+          "required_token_bound": 1625
+        },
+        {
+          "source_id": "q15",
+          "status": "TOKEN_BUDGET_SKIP",
+          "dependency_group": [
+            "q15"
+          ],
+          "required_token_bound": 4524
+        },
+        {
+          "source_id": "q201",
+          "status": "TOKEN_BUDGET_SKIP",
+          "dependency_group": [
+            "h27",
+            "q201"
+          ],
+          "required_token_bound": 1624
+        },
+        {
+          "source_id": "q124",
+          "status": "TOKEN_BUDGET_SKIP",
+          "dependency_group": [
+            "h18",
+            "q124"
+          ],
+          "required_token_bound": 1465
+        },
+        {
+          "source_id": "q126",
+          "status": "TOKEN_BUDGET_SKIP",
+          "dependency_group": [
+            "h18",
+            "q126"
+          ],
+          "required_token_bound": 1713
+        },
+        {
+          "source_id": "h39",
+          "status": "TOKEN_BUDGET_SKIP",
+          "dependency_group": [
+            "h39"
+          ],
+          "required_token_bound": 591
+        },
+        {
+          "source_id": "q142",
+          "status": "TOKEN_BUDGET_SKIP",
+          "dependency_group": [
+            "h18",
+            "q142"
+          ],
+          "required_token_bound": 1736
+        },
+        {
+          "source_id": "q254",
+          "status": "TOKEN_BUDGET_SKIP",
+          "dependency_group": [
+            "h39",
+            "q254"
+          ],
+          "required_token_bound": 1769
+        },
+        {
+          "source_id": "h33",
+          "status": "SELECTED",
+          "dependency_group": [],
+          "token_bound": 0
+        },
+        {
+          "source_id": "q224",
+          "status": "TOKEN_BUDGET_SKIP",
+          "dependency_group": [
+            "q224"
+          ],
+          "required_token_bound": 792
+        },
+        {
+          "source_id": "h6",
+          "status": "TOKEN_BUDGET_SKIP",
+          "dependency_group": [
+            "h5",
+            "h6"
+          ],
+          "required_token_bound": 1301
+        },
+        {
+          "source_id": "q7",
+          "status": "TOKEN_BUDGET_SKIP",
+          "dependency_group": [
+            "q7"
+          ],
+          "required_token_bound": 577
+        },
+        {
+          "source_id": "h27",
+          "status": "TOKEN_BUDGET_SKIP",
+          "dependency_group": [
+            "h27"
+          ],
+          "required_token_bound": 585
+        },
+        {
+          "source_id": "q8",
+          "status": "TOKEN_BUDGET_SKIP",
+          "dependency_group": [
+            "q8"
+          ],
+          "required_token_bound": 628
+        },
+        {
+          "source_id": "h59",
+          "status": "TOKEN_BUDGET_SKIP",
+          "dependency_group": [
+            "h59"
+          ],
+          "required_token_bound": 935
+        },
+        {
+          "source_id": "q5",
+          "status": "TOKEN_BUDGET_SKIP",
+          "dependency_group": [
+            "q5"
+          ],
+          "required_token_bound": 2018
+        },
+        {
+          "source_id": "h60",
+          "status": "TOKEN_BUDGET_SKIP",
+          "dependency_group": [
+            "h60"
+          ],
+          "required_token_bound": 941
+        },
+        {
+          "source_id": "h95",
+          "status": "TOKEN_BUDGET_SKIP",
+          "dependency_group": [
+            "h95"
+          ],
+          "required_token_bound": 1043
+        },
+        {
+          "source_id": "h96",
+          "status": "TOKEN_BUDGET_SKIP",
+          "dependency_group": [
+            "h96"
+          ],
+          "required_token_bound": 1040
+        },
+        {
+          "source_id": "q262",
+          "status": "TOKEN_BUDGET_SKIP",
+          "dependency_group": [
+            "h39",
+            "q262"
+          ],
+          "required_token_bound": 1352
+        },
+        {
+          "source_id": "h9",
+          "status": "TOKEN_BUDGET_SKIP",
+          "dependency_group": [
+            "h9"
+          ],
+          "required_token_bound": 733
+        },
+        {
+          "source_id": "q18",
+          "status": "TOKEN_BUDGET_SKIP",
+          "dependency_group": [
+            "q18"
+          ],
+          "required_token_bound": 1041
+        },
+        {
+          "source_id": "q63",
+          "status": "TOKEN_BUDGET_SKIP",
+          "dependency_group": [
+            "h15",
+            "q63"
+          ],
+          "required_token_bound": 1605
+        },
+        {
+          "source_id": "q111",
+          "status": "TOKEN_BUDGET_SKIP",
+          "dependency_group": [
+            "h18",
+            "q111"
+          ],
+          "required_token_bound": 1600
+        },
+        {
+          "source_id": "q154",
+          "status": "TOKEN_BUDGET_SKIP",
+          "dependency_group": [
+            "h23",
+            "q154"
+          ],
+          "required_token_bound": 1500
+        },
+        {
+          "source_id": "q164",
+          "status": "TOKEN_BUDGET_SKIP",
+          "dependency_group": [
+            "h27",
+            "q164"
+          ],
+          "required_token_bound": 1629
+        },
+        {
+          "source_id": "q46",
+          "status": "TOKEN_BUDGET_SKIP",
+          "dependency_group": [
+            "q46"
+          ],
+          "required_token_bound": 715
+        },
+        {
+          "source_id": "q97",
+          "status": "TOKEN_BUDGET_SKIP",
+          "dependency_group": [
+            "h15",
+            "q97"
+          ],
+          "required_token_bound": 1279
+        },
+        {
+          "source_id": "q13",
+          "status": "TOKEN_BUDGET_SKIP",
+          "dependency_group": [
+            "q13"
+          ],
+          "required_token_bound": 1706
+        }
+      ],
+      "fusion": "RRF_K60",
+      "graph_assurance": "UNIQUE_ORIGINAL_RECEIPTS_AND_CO_RECORDED_CANDIDATES_NOT_SEMANTIC_IDENTITY",
+      "common_catalog_used": true
+    },
+    "seconds": 0.07604659999196883,
+    "failure": null,
+    "read_limit": 12,
+    "token_limit": 20000,
+    "cost": {
+      "retrieved_reads": 5,
+      "mandatory_targets": 1,
+      "mandatory_declarations": 0,
+      "source_chars": 10260,
+      "source_token_upper_bound": 19883,
+      "token_estimator": "FULL_UTF8_BYTES_CONSERVATIVE_BOUND_NOT_PROVIDER_USAGE",
+      "inference_http": 0
+    },
+    "uncovered": [
+      {
+        "category": "POLICY",
+        "reason": "NO_SELECTED_SOURCE_NOT_PROOF_OF_ABSENCE"
+      },
+      {
+        "category": "PARENT_SOURCE_COMPLETENESS",
+        "reason": "EXPLICIT_SOURCE_WINDOWS_ONLY; all original parents remain accessible"
+      }
+    ],
+    "completeness_certified": false,
+    "absence_proves_semantic_absence": false,
+    "evidence_contract": "Original recorded sources and explicit windows only. Raw matching and graph links are candidate retrieval, not entity/ownership/permission/current-state proof. Absence from this subset never establishes missing process events in the full log."
+  },
+  "score": {
+    "categories": {
+      "policy": {
+        "found": 1,
+        "required": 2,
+        "recall": 0.5,
+        "missing": [
+          {
+            "document": "prompt",
+            "start": 759,
+            "end": 2331,
+            "why": "Factual claims need native receipts or original KB support.",
+            "text_sha256": "3ec1d0d55bd5904dbfa4bed115ebdeca34447b57c5a678037e7ca98e41089981"
+          }
+        ]
+      },
+      "history": {
+        "found": 0,
+        "required": 7,
+        "recall": 0.0,
+        "missing": [
+          {
+            "document": "prompt",
+            "start": 215835,
+            "end": 217574,
+            "why": "Names map to three actual bank-account IDs.",
+            "text_sha256": "f9e2ee0e6842ac82570b203cd66ec4d038a6b67f83cdc19f70755f38578c522b",
+            "source_id": "h46",
+            "role": "assistant",
+            "kind": "result",
+            "tool": "call_discoverable_agent_tool",
+            "event": 46
+          },
+          {
+            "document": "prompt",
+            "start": 220042,
+            "end": 220470,
+            "why": "Blue card/account binding.",
+            "text_sha256": "ba76e7494683fd273bc2f076f9a70e886002d80992a20f3c0f3c36edefe48ea6",
+            "source_id": "h58",
+            "role": "assistant",
+            "kind": "result",
+            "tool": "call_discoverable_agent_tool",
+            "event": 58
+          },
+          {
+            "document": "prompt",
+            "start": 220470,
+            "end": 220896,
+            "why": "Green Fee-Free card/account binding.",
+            "text_sha256": "9964fa854036d199939cc12b3410bd18ff3cf3675bc38bf3dd1bd582a42b4c39",
+            "source_id": "h59",
+            "role": "assistant",
+            "kind": "result",
+            "tool": "call_discoverable_agent_tool",
+            "event": 59
+          },
+          {
+            "document": "prompt",
+            "start": 220896,
+            "end": 221327,
+            "why": "Green card/account binding.",
+            "text_sha256": "18e32215ca5e6ddd387895cb627260ec5606367acaa61052d2cfd872a0383df3",
+            "source_id": "h60",
+            "role": "assistant",
+            "kind": "result",
+            "tool": "call_discoverable_agent_tool",
+            "event": 60
+          },
+          {
+            "document": "prompt",
+            "start": 230151,
+            "end": 230414,
+            "why": "Latest Green unfreeze receipt succeeds: ACTIVE.",
+            "text_sha256": "381d6756684abe52a815e1004cdf7fbdf5c07f61f2004f9577afd07323b8240f",
+            "source_id": "h86",
+            "role": "assistant",
+            "kind": "result",
+            "tool": "call_discoverable_agent_tool",
+            "event": 86
+          },
+          {
+            "document": "prompt",
+            "start": 231950,
+            "end": 232528,
+            "why": "Latest Blue close receipt succeeds: CLOSED.",
+            "text_sha256": "446e574ab010b4709227a79d74dc9587c1acba6f0c6dded2bae9ec5cf9a51892",
+            "source_id": "h95",
+            "role": "assistant",
+            "kind": "result",
+            "tool": "call_discoverable_agent_tool",
+            "event": 95
+          },
+          {
+            "document": "prompt",
+            "start": 232528,
+            "end": 233104,
+            "why": "Latest Green Fee-Free close receipt succeeds: CLOSED.",
+            "text_sha256": "9fef4beb1c50f9df3a3602ae70e24adfdf52ab222a154dcc99216d31e09cd2f3",
+            "source_id": "h96",
+            "role": "assistant",
+            "kind": "result",
+            "tool": "call_discoverable_agent_tool",
+            "event": 96
+          }
+        ]
+      },
+      "target": {
+        "found": 1,
+        "required": 1,
+        "recall": 1.0,
+        "missing": []
+      },
+      "declaration": {
+        "found": 0,
+        "required": 0,
+        "recall": null,
+        "missing": []
+      },
+      "exception": {
+        "found": 0,
+        "required": 0,
+        "recall": null,
+        "missing": []
+      },
+      "entity_binding": {
+        "found": 0,
+        "required": 4,
+        "recall": 0.0,
+        "missing": [
+          {
+            "document": "prompt",
+            "start": 215835,
+            "end": 217574,
+            "why": "Names map to three actual bank-account IDs.",
+            "text_sha256": "f9e2ee0e6842ac82570b203cd66ec4d038a6b67f83cdc19f70755f38578c522b",
+            "source_id": "h46",
+            "role": "assistant",
+            "kind": "result",
+            "tool": "call_discoverable_agent_tool",
+            "event": 46
+          },
+          {
+            "document": "prompt",
+            "start": 220042,
+            "end": 220470,
+            "why": "Blue card/account binding.",
+            "text_sha256": "ba76e7494683fd273bc2f076f9a70e886002d80992a20f3c0f3c36edefe48ea6",
+            "source_id": "h58",
+            "role": "assistant",
+            "kind": "result",
+            "tool": "call_discoverable_agent_tool",
+            "event": 58
+          },
+          {
+            "document": "prompt",
+            "start": 220470,
+            "end": 220896,
+            "why": "Green Fee-Free card/account binding.",
+            "text_sha256": "9964fa854036d199939cc12b3410bd18ff3cf3675bc38bf3dd1bd582a42b4c39",
+            "source_id": "h59",
+            "role": "assistant",
+            "kind": "result",
+            "tool": "call_discoverable_agent_tool",
+            "event": 59
+          },
+          {
+            "document": "prompt",
+            "start": 220896,
+            "end": 221327,
+            "why": "Green card/account binding.",
+            "text_sha256": "18e32215ca5e6ddd387895cb627260ec5606367acaa61052d2cfd872a0383df3",
+            "source_id": "h60",
+            "role": "assistant",
+            "kind": "result",
+            "tool": "call_discoverable_agent_tool",
+            "event": 60
+          }
+        ]
+      },
+      "long_distance": {
+        "found": 0,
+        "required": 2,
+        "recall": 0.0,
+        "missing": [
+          {
+            "document": "prompt",
+            "start": 215835,
+            "end": 217574,
+            "why": "Names map to three actual bank-account IDs.",
+            "text_sha256": "f9e2ee0e6842ac82570b203cd66ec4d038a6b67f83cdc19f70755f38578c522b",
+            "source_id": "h46",
+            "role": "assistant",
+            "kind": "result",
+            "tool": "call_discoverable_agent_tool",
+            "event": 46
+          },
+          {
+            "document": "prompt",
+            "start": 232528,
+            "end": 233104,
+            "why": "Latest Green Fee-Free close receipt succeeds: CLOSED.",
+            "text_sha256": "9fef4beb1c50f9df3a3602ae70e24adfdf52ab222a154dcc99216d31e09cd2f3",
+            "source_id": "h96",
+            "role": "assistant",
+            "kind": "result",
+            "tool": "call_discoverable_agent_tool",
+            "event": 96
+          }
+        ]
+      }
+    },
+    "complete_evidence_set_success": false,
+    "reference_partial": false,
+    "alternatives": [
+      {
+        "found": 2,
+        "required": 10,
+        "complete": false
+      }
+    ],
+    "unnecessary_relative_to_reference": [
+      "h71",
+      "h33",
+      "q208",
+      "h10"
+    ],
+    "false_absence_risk": true,
+    "subset_absence_is_proof": false,
+    "completeness_certified": false
+  }
+}

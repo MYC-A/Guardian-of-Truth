@@ -1,0 +1,231 @@
+{
+  "case_id": "retail__27::t10",
+  "split": "evaluation_known",
+  "index": 11,
+  "method": "A",
+  "budget": "k8_t20000",
+  "packet": {
+    "version": "retrieval-bakeoff-v1",
+    "method": "A",
+    "source_sha256": "42728199f98be14013afe8091d7521d56288c5a6c67b4d31c2890fbb976f59bf",
+    "read_sources": [],
+    "current_targets": [
+      {
+        "source_id": "t0",
+        "document": "response",
+        "start": 21,
+        "end": 171,
+        "role": "assistant",
+        "kind": "call",
+        "tool": "return_delivered_order_items",
+        "event": 0,
+        "text": "\t→ TOOL_CALL return_delivered_order_items: {\"item_ids\": [\"5753502325\", \"9851293632\"], \"order_id\": \"#W7181492\", \"payment_method_id\": \"paypal_3024827\"}\n",
+        "parent_source_id": "t0",
+        "category": "TARGET",
+        "sha256": "dc2c4b1ceb7984c7b2d16678f750e6b3310003182d6ed4a6821b5e7f6a40e843",
+        "evidence_status": "ORIGINAL_SOURCE_NOT_CURRENT_TRUTH_OR_PERMISSION"
+      },
+      {
+        "source_id": "t1",
+        "document": "response",
+        "start": 171,
+        "end": 340,
+        "role": "assistant",
+        "kind": "call",
+        "tool": "exchange_delivered_order_items",
+        "event": 1,
+        "text": "\t→ TOOL_CALL exchange_delivered_order_items: {\"item_ids\": [\"8118291112\"], \"new_item_ids\": [\"8277474082\"], \"order_id\": \"#W7181492\", \"payment_method_id\": \"paypal_3024827\"}",
+        "parent_source_id": "t1",
+        "category": "TARGET",
+        "sha256": "cea17ab1626fd0652c053acc45bce0708b5f355ba78c95bde86089d032a25d95",
+        "evidence_status": "ORIGINAL_SOURCE_NOT_CURRENT_TRUTH_OR_PERMISSION"
+      }
+    ],
+    "declarations": [
+      {
+        "source_id": "d2",
+        "document": "prompt",
+        "start": 8363,
+        "end": 9364,
+        "role": "system",
+        "kind": "DECLARATION",
+        "tool": "exchange_delivered_order_items",
+        "text": "- exchange_delivered_order_items — Exchange items in a delivered order to new items of the same product type.\n    \n    For a delivered order, return or exchange can be only done once by the agent.\n    The agent needs to explain the exchange detail and ask for explicit user confirmation (yes/no) to proceed.\n    order_id: string! — The order id, such as '#W0000000'. Be careful there is a '#' symbol at the beginning of the order id.\n    item_ids: array! — The item ids to be exchanged, each such as '1008292230'. There could be duplicate items in the list.\n    new_item_ids: array! — The item ids to be exchanged for, each such as '1008292230'. There could be duplicate items in the list. Each new item id should match the item id in the same position and be of the same product.\n    payment_method_id: string! — The payment method id to pay or receive refund for the item price difference, such as 'gift_card_0000000' or 'credit_card_0000000'. These can be looked up from the user or order details.\n",
+        "parent_source_id": "d2",
+        "category": "DECLARATION",
+        "sha256": "a754f86bf2b54419293d4e616eb76966c81991af9c19c1e4d16ec464915e3cd7",
+        "evidence_status": "ORIGINAL_SOURCE_NOT_CURRENT_TRUTH_OR_PERMISSION"
+      },
+      {
+        "source_id": "d14",
+        "document": "prompt",
+        "start": 13723,
+        "end": 14519,
+        "role": "system",
+        "kind": "DECLARATION",
+        "tool": "return_delivered_order_items",
+        "text": "- return_delivered_order_items — Return some items of a delivered order.\n    \n    The order status will be changed to 'return requested'.\n    The agent needs to explain the return detail and ask for explicit user confirmation (yes/no) to proceed.\n    The user will receive follow-up email for how and where to return the item.\n    order_id: string! — The order id, such as '#W0000000'. Be careful there is a '#' symbol at the beginning of the order id.\n    item_ids: array! — The item ids to be returned, each such as '1008292230'. There could be duplicate items in the list.\n    payment_method_id: string! — The payment method id to pay or receive refund for the item price difference, such as 'gift_card_0000000' or 'credit_card_0000000'. These can be looked up from the user or order details.\n",
+        "parent_source_id": "d14",
+        "category": "DECLARATION",
+        "sha256": "5ae63519597dde3bffc7a7e189f4ec596c579f1b36d7d0d3c1d4c4d149dcddc0",
+        "evidence_status": "ORIGINAL_SOURCE_NOT_CURRENT_TRUTH_OR_PERMISSION"
+      }
+    ],
+    "selected_ids": [],
+    "trace": {
+      "algorithm": "UNCHANGED_IMPORTED_COVERAGE_PLAN",
+      "error_type": "ValueError",
+      "error": "EXPECTED_ONE_CURRENT_NATIVE_TARGET"
+    },
+    "seconds": 0.022625400000833906,
+    "failure": "UNSUPPORTED_BASELINE_CASE",
+    "read_limit": 8,
+    "token_limit": 20000,
+    "cost": {
+      "retrieved_reads": 0,
+      "mandatory_targets": 2,
+      "mandatory_declarations": 2,
+      "source_chars": 2116,
+      "source_token_upper_bound": 3561,
+      "token_estimator": "FULL_UTF8_BYTES_CONSERVATIVE_BOUND_NOT_PROVIDER_USAGE",
+      "inference_http": 0
+    },
+    "uncovered": [
+      {
+        "category": "POLICY",
+        "reason": "NO_SELECTED_SOURCE_NOT_PROOF_OF_ABSENCE"
+      },
+      {
+        "category": "HISTORY",
+        "reason": "NO_SELECTED_SOURCE_NOT_PROOF_OF_ABSENCE"
+      }
+    ],
+    "completeness_certified": false,
+    "absence_proves_semantic_absence": false,
+    "evidence_contract": "Original recorded sources and explicit windows only. Raw matching and graph links are candidate retrieval, not entity/ownership/permission/current-state proof. Absence from this subset never establishes missing process events in the full log."
+  },
+  "score": {
+    "categories": {
+      "policy": {
+        "found": 0,
+        "required": 2,
+        "recall": 0.0,
+        "missing": [
+          {
+            "document": "prompt",
+            "start": 1689,
+            "end": 1897,
+            "why": "At most one tool call for the whole current move.",
+            "text_sha256": "282756cc14a8799b2d9c041d7fce685c5c96a49b98d1107663b899fb54c500b3"
+          },
+          {
+            "document": "prompt",
+            "start": 1358,
+            "end": 1533,
+            "why": "Details-before-YES consent, which actual history contains.",
+            "text_sha256": "8006d0c4fea14bf6cf28c2c7ff8a296df4b75a96d48e304241f149f489eb4779"
+          }
+        ]
+      },
+      "history": {
+        "found": 0,
+        "required": 3,
+        "recall": 0.0,
+        "missing": [
+          {
+            "document": "prompt",
+            "start": 19316,
+            "end": 20932,
+            "why": "Matching delivered order and exact item IDs.",
+            "text_sha256": "de6ba5b4f13211f8199baee6905f348756962674aa9176fb8372ed3d239b394a",
+            "source_id": "h14",
+            "role": "assistant",
+            "kind": "result",
+            "tool": "get_order_details",
+            "event": 14
+          },
+          {
+            "document": "prompt",
+            "start": 25007,
+            "end": 25991,
+            "why": "Actual return/exchange details.",
+            "text_sha256": "4d9f58779e72b446d9363eb6273208825fa65aaa91821aca46fff1d443f99eeb",
+            "source_id": "h19",
+            "role": "assistant",
+            "kind": "text",
+            "tool": null,
+            "event": 19
+          },
+          {
+            "document": "prompt",
+            "start": 26000,
+            "end": 26057,
+            "why": "User explicitly confirms both actions.",
+            "text_sha256": "d0d420629e1466a7b18c1bb5dc357a1969a6d7aef1a1c7a42a63f6c331f442c6",
+            "source_id": "h20",
+            "role": "user",
+            "kind": "text",
+            "tool": null,
+            "event": 20
+          }
+        ]
+      },
+      "target": {
+        "found": 2,
+        "required": 2,
+        "recall": 1.0,
+        "missing": []
+      },
+      "declaration": {
+        "found": 0,
+        "required": 0,
+        "recall": null,
+        "missing": []
+      },
+      "exception": {
+        "found": 0,
+        "required": 0,
+        "recall": null,
+        "missing": []
+      },
+      "entity_binding": {
+        "found": 0,
+        "required": 1,
+        "recall": 0.0,
+        "missing": [
+          {
+            "document": "prompt",
+            "start": 19316,
+            "end": 20932,
+            "why": "Matching delivered order and exact item IDs.",
+            "text_sha256": "de6ba5b4f13211f8199baee6905f348756962674aa9176fb8372ed3d239b394a",
+            "source_id": "h14",
+            "role": "assistant",
+            "kind": "result",
+            "tool": "get_order_details",
+            "event": 14
+          }
+        ]
+      },
+      "long_distance": {
+        "found": 0,
+        "required": 0,
+        "recall": null,
+        "missing": []
+      }
+    },
+    "complete_evidence_set_success": false,
+    "reference_partial": false,
+    "alternatives": [
+      {
+        "found": 2,
+        "required": 3,
+        "complete": false
+      }
+    ],
+    "unnecessary_relative_to_reference": [],
+    "false_absence_risk": true,
+    "subset_absence_is_proof": false,
+    "completeness_certified": false
+  }
+}

@@ -1,0 +1,584 @@
+{
+  "case_id": "banking_knowledge__task_083::t10",
+  "split": "evaluation_known",
+  "index": 14,
+  "method": "bm25_exact_graph",
+  "budget": "k8",
+  "packet": {
+    "version": "retrieval-bakeoff-v1",
+    "method": "bm25_exact_graph",
+    "source_sha256": "fd25ff4808832d9df19e326c18337414976829f7d84b7d233c6cbf37e573c538",
+    "read_sources": [
+      {
+        "source_id": "q12",
+        "document": "prompt",
+        "start": 6783,
+        "end": 10770,
+        "text": "## Knowledge base language\n\nThe knowledge base documents are written in Russian. Always formulate knowledge base search queries (`KB_search_bm25`, `KB_search_dense`, `grep`, `KB_search`) in Russian. Official product and account names (e.g. 'Platinum Rewards', 'Blue Account'), tool identifiers, and status codes remain in English — use them in queries as-is.\n</policy>\n\n[AVAILABLE TOOLS]\n- KB_search_bm25 — Search the knowledge base using BM25 sparse retrieval.\n    query: string! — The search query to find relevant documents.\n    k: integer — Maximum number of documents to return (default 10).\n- KB_search_dense — Search the knowledge base using dense embedding retrieval.\n    query: string! — The search query to find relevant documents.\n    k: integer — Maximum number of documents to return (default 10).\n- grep — Search for a regex pattern in all knowledge base documents.\n    \n    Returns documents ranked by number of matches, with full content.\n    pattern: string! — The regex pattern to search for (e.g., 'credit.*card', 'fee|charge')\n- transfer_to_human_agents — Transfer the user to a human agent.\n    \n    The proper transfer reason enum can be found in the knowledge base: search it before calling this tool to select the proper applicable reason.\n    summary: string! — A summary of the user's issue and what was attempted before transfer.\n    reason: string [enum: fraud_or_security_concern|account_closure_request|deceased_account_holder|legal_or_regulatory_matter|account_ownership_dispute|complex_billing_dispute|abusive_customer_behavior|third_party_inquiry|technical_system_error|unconfirmed_external_communication|customer_demands_after_unavailable_offer_refusal|kb_search_unsuccessful_customer_requests_transfer|specialized_department_required|accessibility_or_special_needs|customer_frustrated_demands_human|supervisor_request_service_complaint|customer_requests_human_no_specific_reason|request_completed_customer_wants_human_followup|other] — The specific reason code for the transfer.\n- get_current_time — Get the current time. Use this to get the current timestamp for logging verification records.\n- get_user_information_by_id — Get the information (date of birth, email, phone number, address) for a user by their user id.\n    user_id: string! — The ID of the user\n- get_user_information_by_name — Get the information (date of birth, email, phone number, address) for a user by their name. Case Sensitive.\n    customer_name: string! — The name of the user\n- get_user_information_by_email — Get the information (date of birth, email, phone number, address) for a user by their email.\n    email: string! — The email of the user\n- change_user_email — Change the email address for a user.\n    user_id: string! — The ID of the user whose email should be changed\n    new_email: string! — The new email address to set for the user\n- get_referrals_by_user — Get all referrals made by a user.\n    user_id: string! — The ID of the user (referrer) to look up referrals for\n- get_credit_card_transactions_by_user — Get all credit card transactions for a user.\n    user_id: string! — The ID of the user to look up transactions for\n- get_credit_card_accounts_by_user — Get all credit card accounts for a user.\n    \n    Returns information about each credit card account including card type,\n    date opened, current balance, and reward points.\n    user_id: string! — The ID of the user to look up credit card accounts for\n- log_verification — Log a verification record after successfully verifying a user's identity.\n    \n    Call this tool after you have verified a user by confirming 2 out of 4 identity fields\n    (date of birth, email, phone number, address). This creates an audit record of the verification.\n    name: string! — The verified user's full name\n    user_id: string! — The verified user's ID\n    address: string! — The verified user's address\n    email: string! — The verified user's email\n    phone_number: string! — The verified user's phone number\n",
+        "parent_source_id": "h0",
+        "category": "POLICY",
+        "sha256": "960edd6d4e07e4964d408c3922dc4e9bb83aa3445909c3ea869bd91a5e356424",
+        "evidence_status": "ORIGINAL_SOURCE_NOT_CURRENT_TRUTH_OR_PERMISSION",
+        "role": "system",
+        "kind": "text",
+        "tool": null,
+        "event": 0,
+        "parent_source_length": 12681,
+        "explicit_window": true,
+        "parent_coverage": "EXACT_WINDOW_NOT_COMPLETE_PARENT"
+      },
+      {
+        "source_id": "h9",
+        "document": "prompt",
+        "start": 14665,
+        "end": 14752,
+        "role": "assistant",
+        "kind": "call",
+        "tool": "get_user_information_by_email",
+        "event": 9,
+        "text": "\t→ TOOL_CALL get_user_information_by_email: {\"email\": \"diana.kowalski@photoworks.com\"}\n",
+        "parent_source_id": "h9",
+        "category": "HISTORY",
+        "sha256": "35445543b1e5a04a4d2b8e5deba78b4d89ad122e39678eeb61093750102aeb75",
+        "evidence_status": "ORIGINAL_SOURCE_NOT_CURRENT_TRUTH_OR_PERMISSION",
+        "parent_source_length": 87,
+        "explicit_window": false,
+        "parent_coverage": "COMPLETE_PARENT"
+      },
+      {
+        "source_id": "h10",
+        "document": "prompt",
+        "start": 14752,
+        "end": 15083,
+        "role": "assistant",
+        "kind": "result",
+        "tool": "get_user_information_by_email",
+        "event": 10,
+        "text": "\t← TOOL_RESPONSE get_user_information_by_email: Found 1 record(s) in 'users':\n\t  \n\t  1. Record ID: dk83f5c2a1\n\t     name: Diana Kowalski\n\t     user_id: dk83f5c2a1\n\t     address: 2901 South Lamar Blvd, Austin, TX 78704\n\t     email: diana.kowalski@photoworks.com\n\t     phone_number: 512-555-0734\n\t     date_of_birth: 06/14/1987\n\t  \n\n",
+        "parent_source_id": "h10",
+        "category": "HISTORY",
+        "sha256": "ccd00e0c9268fbb7974d83514c939a2c68ff9a40590c2e7831c93d522e3d7d91",
+        "evidence_status": "ORIGINAL_SOURCE_NOT_CURRENT_TRUTH_OR_PERMISSION",
+        "parent_source_length": 331,
+        "explicit_window": false,
+        "parent_coverage": "COMPLETE_PARENT"
+      },
+      {
+        "source_id": "h13",
+        "document": "prompt",
+        "start": 15238,
+        "end": 15524,
+        "role": "assistant",
+        "kind": "call",
+        "tool": "log_verification",
+        "event": 13,
+        "text": "\t→ TOOL_CALL log_verification: {\"address\": \"2901 South Lamar Blvd, Austin, TX 78704\", \"date_of_birth\": \"06/14/1987\", \"email\": \"diana.kowalski@photoworks.com\", \"name\": \"Diana Kowalski\", \"phone_number\": \"512-555-0734\", \"time_verified\": \"2025-11-14 03:40:00 EST\", \"user_id\": \"dk83f5c2a1\"}\n",
+        "parent_source_id": "h13",
+        "category": "HISTORY",
+        "sha256": "f0eb8b28be0d984f557deb387bdc252ce99196a2f2822771aa21db1ee27b7766",
+        "evidence_status": "ORIGINAL_SOURCE_NOT_CURRENT_TRUTH_OR_PERMISSION",
+        "parent_source_length": 286,
+        "explicit_window": false,
+        "parent_coverage": "COMPLETE_PARENT"
+      },
+      {
+        "source_id": "h14",
+        "document": "prompt",
+        "start": 15524,
+        "end": 15683,
+        "role": "assistant",
+        "kind": "result",
+        "tool": "log_verification",
+        "event": 14,
+        "text": "\t← TOOL_RESPONSE log_verification: Verification logged successfully.\n\t    - User: Diana Kowalski (ID: dk83f5c2a1)\n\t    - Verified at: 2025-11-14 03:40:00 EST\n\n",
+        "parent_source_id": "h14",
+        "category": "HISTORY",
+        "sha256": "853edb97e4a54693e3f4f9166412e64e003a7bb82343cfa0337db766f3038713",
+        "evidence_status": "ORIGINAL_SOURCE_NOT_CURRENT_TRUTH_OR_PERMISSION",
+        "parent_source_length": 159,
+        "explicit_window": false,
+        "parent_coverage": "COMPLETE_PARENT"
+      },
+      {
+        "source_id": "q11",
+        "document": "prompt",
+        "start": 5593,
+        "end": 6783,
+        "text": "### Authenticating Users\n\nGenerally, for any scenario involving accessing customer information in internal databases, you must first verify their identify before proceeding. No need to verify more than once in a single conversation. You should ONLY verify a user's identity if you need to access or modify their customer information in internal databases on their behalf.\n\nHere are some concrete examples:\n* Looking up account balances, transaction history, referral history...\n* Changing account settings (e.g., address, phone number, email)\n* Closing an account\n* Adding or removing authorized users\n* Requesting information about specific transactions\n* Discussing specific loan or credit details\n* Filing a dispute on behalf of the user\n\nTo verify the identity of the user, call the appropriate read tools, and ensure that they are able to give correctly any 2 out of the following values: date of birth, email, phone number, address. Knowing full name or userID is not enough to verify. After verification, you must call the verification logging tool to properly log the information into the verification records. Do not leak any information about the user before they are verified.\n\n\n",
+        "parent_source_id": "h0",
+        "category": "POLICY",
+        "sha256": "8d296699a691a7bb003729faf363b665765d1201f4c57ac874ce0dacc0fa6aeb",
+        "evidence_status": "ORIGINAL_SOURCE_NOT_CURRENT_TRUTH_OR_PERMISSION",
+        "role": "system",
+        "kind": "text",
+        "tool": null,
+        "event": 0,
+        "parent_source_length": 12681,
+        "explicit_window": true,
+        "parent_coverage": "EXACT_WINDOW_NOT_COMPLETE_PARENT"
+      },
+      {
+        "source_id": "q50",
+        "document": "prompt",
+        "start": 46745,
+        "end": 47445,
+        "text": "\t  ### CODE 52 - No Checking Account\n\t  \n\t  PIN был принят, но с основным расчётным счётом возникли проблемы.\n\t  \n\t  1. Найдите счета клиента, чтобы проверить статус счёта.\n\t  \n\t  2. Если статус счёта CLOSED: «Расчётный счёт, привязанный к этой дебетовой карте, был закрыт. Эта карта больше не может быть использована для транзакций».\n\t     - Если клиент хочет продолжить пользоваться услугами Rho-Bank, обсудите открытие нового расчётного счёта.\n\t  \n\t  3. Если счёт существует и имеет статус OPEN, но этот код всё равно появляется: Это может быть проблемой синхронизации системы. Посоветуйте подождать 10-15 минут и попробовать снова.\n\t  \n\t  \n\t  [Timing: retrieval=11ms, reranking=0ms, total=951ms]\n",
+        "parent_source_id": "h19",
+        "category": "HISTORY",
+        "sha256": "a7b7c6947676417d2b4c2b0ab492c4398fa8cf21919ac2b728f8e2ab7c5ee33e",
+        "evidence_status": "ORIGINAL_SOURCE_NOT_CURRENT_TRUTH_OR_PERMISSION",
+        "role": "assistant",
+        "kind": "result",
+        "tool": "KB_search_dense",
+        "event": 19,
+        "parent_source_length": 30140,
+        "explicit_window": true,
+        "parent_coverage": "EXACT_WINDOW_NOT_COMPLETE_PARENT"
+      },
+      {
+        "source_id": "q1",
+        "document": "prompt",
+        "start": 553,
+        "end": 744,
+        "text": "# Rho-Bank Customer Service Policy\n\nYou are a helpful customer service agent for Rho-Bank.\nYour goal is to help customers by searching the knowledge base and providing accurate information.\n\n",
+        "parent_source_id": "h0",
+        "category": "POLICY",
+        "sha256": "1c518d969a9dc7bb4dd1e6282a0f56a103fe5fd4039afea5f92e9d2796196e0b",
+        "evidence_status": "ORIGINAL_SOURCE_NOT_CURRENT_TRUTH_OR_PERMISSION",
+        "role": "system",
+        "kind": "text",
+        "tool": null,
+        "event": 0,
+        "parent_source_length": 12681,
+        "explicit_window": true,
+        "parent_coverage": "EXACT_WINDOW_NOT_COMPLETE_PARENT"
+      }
+    ],
+    "current_targets": [
+      {
+        "source_id": "t0",
+        "document": "response",
+        "start": 21,
+        "end": 95,
+        "role": "assistant",
+        "kind": "call",
+        "tool": "get_bank_account_transactions_9173",
+        "event": 0,
+        "text": "\t→ TOOL_CALL get_bank_account_transactions_9173: {\"user_id\": \"dk83f5c2a1\"}",
+        "parent_source_id": "t0",
+        "category": "TARGET",
+        "sha256": "b0a4ae3a7c2b36810b0fb0397543cf6cd2d92fc15000807bf23d906444a1370b",
+        "evidence_status": "ORIGINAL_SOURCE_NOT_CURRENT_TRUTH_OR_PERMISSION"
+      }
+    ],
+    "declarations": [],
+    "selected_ids": [
+      "q12",
+      "h9",
+      "h10",
+      "h13",
+      "h14",
+      "q11",
+      "q50",
+      "q1"
+    ],
+    "trace": {
+      "queries": [
+        "get bank account transactions 9173",
+        "\"dk83f5c2a1\""
+      ],
+      "rankings": [
+        [
+          "q12",
+          "q11",
+          "q50",
+          "q1",
+          "h16",
+          "q27",
+          "q71",
+          "h8",
+          "q20",
+          "q10",
+          "h21",
+          "q14",
+          "q25",
+          "q37",
+          "q60",
+          "q63",
+          "q17",
+          "q46",
+          "q15",
+          "q2",
+          "q56"
+        ],
+        [
+          "h10",
+          "h14",
+          "h13"
+        ],
+        [
+          "h13",
+          "h10",
+          "h14"
+        ],
+        [
+          "h14",
+          "h9",
+          "h13"
+        ]
+      ],
+      "fused_ranking": [
+        "q12",
+        "h10",
+        "h13",
+        "h14",
+        "q11",
+        "h9",
+        "q50",
+        "q1",
+        "h16",
+        "q27",
+        "q71",
+        "h8",
+        "q20",
+        "q10",
+        "h21",
+        "q14",
+        "q25",
+        "q37",
+        "q60",
+        "q63",
+        "q17",
+        "q46",
+        "q15",
+        "q2",
+        "q56"
+      ],
+      "selection": [
+        {
+          "source_id": "q12",
+          "status": "SELECTED",
+          "dependency_group": [
+            "q12"
+          ],
+          "token_bound": 4524
+        },
+        {
+          "source_id": "h10",
+          "status": "SELECTED",
+          "dependency_group": [
+            "h9",
+            "h10"
+          ],
+          "token_bound": 1319
+        },
+        {
+          "source_id": "h13",
+          "status": "SELECTED",
+          "dependency_group": [
+            "h13"
+          ],
+          "token_bound": 741
+        },
+        {
+          "source_id": "h14",
+          "status": "SELECTED",
+          "dependency_group": [
+            "h14"
+          ],
+          "token_bound": 593
+        },
+        {
+          "source_id": "q11",
+          "status": "SELECTED",
+          "dependency_group": [
+            "q11"
+          ],
+          "token_bound": 1625
+        },
+        {
+          "source_id": "h9",
+          "status": "SELECTED",
+          "dependency_group": [],
+          "token_bound": 0
+        },
+        {
+          "source_id": "q50",
+          "status": "SELECTED",
+          "dependency_group": [
+            "q50"
+          ],
+          "token_bound": 1604
+        },
+        {
+          "source_id": "q1",
+          "status": "SELECTED",
+          "dependency_group": [
+            "q1"
+          ],
+          "token_bound": 612
+        },
+        {
+          "source_id": "h16",
+          "status": "READ_BUDGET_SKIP",
+          "dependency_group": [
+            "h16"
+          ]
+        },
+        {
+          "source_id": "q27",
+          "status": "READ_BUDGET_SKIP",
+          "dependency_group": [
+            "q27"
+          ]
+        },
+        {
+          "source_id": "q71",
+          "status": "READ_BUDGET_SKIP",
+          "dependency_group": [
+            "q71"
+          ]
+        },
+        {
+          "source_id": "h8",
+          "status": "READ_BUDGET_SKIP",
+          "dependency_group": [
+            "h8"
+          ]
+        },
+        {
+          "source_id": "q20",
+          "status": "READ_BUDGET_SKIP",
+          "dependency_group": [
+            "q20"
+          ]
+        },
+        {
+          "source_id": "q10",
+          "status": "READ_BUDGET_SKIP",
+          "dependency_group": [
+            "q10"
+          ]
+        },
+        {
+          "source_id": "h21",
+          "status": "READ_BUDGET_SKIP",
+          "dependency_group": [
+            "h21"
+          ]
+        },
+        {
+          "source_id": "q14",
+          "status": "READ_BUDGET_SKIP",
+          "dependency_group": [
+            "q14"
+          ]
+        },
+        {
+          "source_id": "q25",
+          "status": "READ_BUDGET_SKIP",
+          "dependency_group": [
+            "q25"
+          ]
+        },
+        {
+          "source_id": "q37",
+          "status": "READ_BUDGET_SKIP",
+          "dependency_group": [
+            "q37"
+          ]
+        },
+        {
+          "source_id": "q60",
+          "status": "READ_BUDGET_SKIP",
+          "dependency_group": [
+            "q60"
+          ]
+        },
+        {
+          "source_id": "q63",
+          "status": "READ_BUDGET_SKIP",
+          "dependency_group": [
+            "q63"
+          ]
+        },
+        {
+          "source_id": "q17",
+          "status": "READ_BUDGET_SKIP",
+          "dependency_group": [
+            "q17"
+          ]
+        },
+        {
+          "source_id": "q46",
+          "status": "READ_BUDGET_SKIP",
+          "dependency_group": [
+            "q46"
+          ]
+        },
+        {
+          "source_id": "q15",
+          "status": "READ_BUDGET_SKIP",
+          "dependency_group": [
+            "q15"
+          ]
+        },
+        {
+          "source_id": "q2",
+          "status": "READ_BUDGET_SKIP",
+          "dependency_group": [
+            "q2"
+          ]
+        },
+        {
+          "source_id": "q56",
+          "status": "READ_BUDGET_SKIP",
+          "dependency_group": [
+            "q56"
+          ]
+        }
+      ],
+      "fusion": "ROUND_ROBIN",
+      "graph_assurance": "UNIQUE_ORIGINAL_RECEIPTS_AND_CO_RECORDED_CANDIDATES_NOT_SEMANTIC_IDENTITY",
+      "common_catalog_used": true
+    },
+    "seconds": 0.01680889999261126,
+    "failure": null,
+    "read_limit": 8,
+    "token_limit": null,
+    "cost": {
+      "retrieved_reads": 8,
+      "mandatory_targets": 1,
+      "mandatory_declarations": 0,
+      "source_chars": 7005,
+      "source_token_upper_bound": 11446,
+      "token_estimator": "FULL_UTF8_BYTES_CONSERVATIVE_BOUND_NOT_PROVIDER_USAGE",
+      "inference_http": 0
+    },
+    "uncovered": [
+      {
+        "category": "PARENT_SOURCE_COMPLETENESS",
+        "reason": "EXPLICIT_SOURCE_WINDOWS_ONLY; all original parents remain accessible"
+      },
+      {
+        "category": "QUALIFIED_RESULT_RECEIPT",
+        "source_id": "q50",
+        "reason": "NO_UNIQUE_ORIGINAL_ASSISTANT_RECEIPT; result remains recorded raw observation"
+      }
+    ],
+    "completeness_certified": false,
+    "absence_proves_semantic_absence": false,
+    "evidence_contract": "Original recorded sources and explicit windows only. Raw matching and graph links are candidate retrieval, not entity/ownership/permission/current-state proof. Absence from this subset never establishes missing process events in the full log."
+  },
+  "score": {
+    "categories": {
+      "policy": {
+        "found": 0,
+        "required": 1,
+        "recall": 0.0,
+        "missing": [
+          {
+            "document": "prompt",
+            "start": 4322,
+            "end": 5593,
+            "why": "First unlock, then call through wrapper with declared arguments; no direct invocation.",
+            "text_sha256": "43ec8718d5f8ff2c0001ab826d5bdeecee769a3525a9cede1c775468f7dcd150"
+          }
+        ]
+      },
+      "history": {
+        "found": 1,
+        "required": 2,
+        "recall": 0.5,
+        "missing": [
+          {
+            "document": "prompt",
+            "start": 17305,
+            "end": 22609,
+            "why": "Original KB reference identifies discoverable transaction tool, not an actual unlock.",
+            "text_sha256": "a2067d6f31b99e9bd64ead37c37bb8da4946a536f87bad763d39a78f88a1af2d",
+            "source_id": "h19",
+            "role": "assistant",
+            "kind": "result",
+            "tool": "KB_search_dense",
+            "event": 19
+          }
+        ]
+      },
+      "target": {
+        "found": 1,
+        "required": 1,
+        "recall": 1.0,
+        "missing": []
+      },
+      "declaration": {
+        "found": 0,
+        "required": 2,
+        "recall": 0.0,
+        "missing": [
+          {
+            "document": "prompt",
+            "start": 11568,
+            "end": 12099,
+            "why": "Original declared interface for unlock and wrapper-call procedure.",
+            "text_sha256": "f3fbde41693f310bf4e31a9fea0a2d2ff9e40949c5f09e26d1a6fb4a0ba93691",
+            "source_id": "d16",
+            "role": "system",
+            "kind": "DECLARATION",
+            "tool": "unlock_discoverable_agent_tool"
+          },
+          {
+            "document": "prompt",
+            "start": 12099,
+            "end": 12538,
+            "why": "Original declared interface for unlock and wrapper-call procedure.",
+            "text_sha256": "73dcacd8af6d610eebc701d0f072b55d555ee48c36a891b4967fe0901958d2be",
+            "source_id": "d2",
+            "role": "system",
+            "kind": "DECLARATION",
+            "tool": "call_discoverable_agent_tool"
+          }
+        ]
+      },
+      "exception": {
+        "found": 0,
+        "required": 0,
+        "recall": null,
+        "missing": []
+      },
+      "entity_binding": {
+        "found": 0,
+        "required": 0,
+        "recall": null,
+        "missing": []
+      },
+      "long_distance": {
+        "found": 0,
+        "required": 0,
+        "recall": null,
+        "missing": []
+      }
+    },
+    "complete_evidence_set_success": false,
+    "reference_partial": false,
+    "alternatives": [
+      {
+        "found": 2,
+        "required": 6,
+        "complete": false
+      }
+    ],
+    "unnecessary_relative_to_reference": [
+      "q12",
+      "h9",
+      "h10",
+      "h13",
+      "q11",
+      "q50",
+      "q1"
+    ],
+    "false_absence_risk": true,
+    "subset_absence_is_proof": false,
+    "completeness_certified": false
+  }
+}

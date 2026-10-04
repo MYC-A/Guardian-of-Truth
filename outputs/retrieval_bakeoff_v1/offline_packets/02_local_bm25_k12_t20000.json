@@ -1,0 +1,746 @@
+{
+  "case_id": "banking_knowledge__task_057::t2",
+  "split": "dev",
+  "index": 2,
+  "method": "local_bm25",
+  "budget": "k12_t20000",
+  "packet": {
+    "version": "retrieval-bakeoff-v1",
+    "method": "local_bm25",
+    "source_sha256": "b12b1b835f91b71538b5802bb779b7886f7b0028e06a74d3086fb5b1876950c1",
+    "read_sources": [
+      {
+        "source_id": "h3",
+        "document": "prompt",
+        "start": 12865,
+        "end": 12967,
+        "role": "assistant",
+        "kind": "call",
+        "tool": "KB_search_dense",
+        "event": 3,
+        "text": "\t→ TOOL_CALL KB_search_dense: {\"query\": \"как открыть новый расчетный счет при наличии существующего\"}\n",
+        "parent_source_id": "h3",
+        "category": "HISTORY",
+        "sha256": "5c749c2fc8f0cd6cfd5b814b94dd923ffba274e12264b8f59ac62d5957ec68d8",
+        "evidence_status": "ORIGINAL_SOURCE_NOT_CURRENT_TRUTH_OR_PERMISSION",
+        "parent_source_length": 102,
+        "explicit_window": false,
+        "parent_coverage": "COMPLETE_PARENT"
+      },
+      {
+        "source_id": "q40",
+        "document": "prompt",
+        "start": 31041,
+        "end": 31455,
+        "text": "\t  ### Сколько времени мне нужно ждать после отклонения, чтобы пригласить снова?\n\t  Если ваш реферал был отклонен из-за лимита скользящего окна, вы должны подождать, пока с момента вашего самого старого квалифицирующего приглашения пройдёт более 9 дней. Лимит основан на скользящем окне, поэтому вы снова становитесь подходящим кандидатом по мере того, как старые приглашения выходят за пределы этого периода.\n\t  \n",
+        "parent_source_id": "h4",
+        "category": "HISTORY",
+        "sha256": "ad7cb1462d0f37bcd6ce9d991bf501fa38e1fed6ef4e71f43d89ccb462218ba4",
+        "evidence_status": "ORIGINAL_SOURCE_NOT_CURRENT_TRUTH_OR_PERMISSION",
+        "role": "assistant",
+        "kind": "result",
+        "tool": "KB_search_dense",
+        "event": 4,
+        "parent_source_length": 24705,
+        "explicit_window": true,
+        "parent_coverage": "EXACT_WINDOW_NOT_COMPLETE_PARENT"
+      },
+      {
+        "source_id": "q15",
+        "document": "prompt",
+        "start": 13595,
+        "end": 15235,
+        "text": "\t  ## Процедура открытия\n\t  \n\t  1. Подтвердите личность клиента.\n\t  2. Проверьте требования к соответствию, перечисленные выше.\n\t  3. Подтвердите выбранный клиентом account_class.\n\t     - Варианты account_class для бизнес расчётного счёта включают Navy Blue, Cobalt Blue, True Blue и т. д.\n\t  4. Используйте open_bank_account_4821 для открытия счёта.\n\t  \n\t  2. Внутренний документ: Открытие личных сберегательных счетов\n\t     ID: doc_bank_accounts_bank_accounts_(general)_002\n\t     Score: 0.6705\n\t     Content: ## Сфера применения и основные задачи\n\t  \n\t  Процедура открытия личных сберегательных счетов. Требования к соответствию: 1) Личность клиента должна быть подтверждена, 2) Клиент должен иметь как минимум один активный расчётный счёт Rho-Bank, 3) Количество личных сберегательных счетов не должно превышать 5, 4) Отсутствие счетов, переданных на взыскание или имеющих отрицательный баланс, 5) Расчётный счёт должен быть открыт не менее 14 дней назад. Шаги: 1) Проверить личность клиента, 2) Проверить соответствие требованиям, 3) Подтвердить выбор счета с клиентом, 4) Использовать open_bank_account_4821 для открытия счета (примечание: account_class должен содержать полное официальное название, заканчивающееся на 'Account', например, 'Silver Plus Account', 'Gold Account'), 5) Спросить клиента, хочет ли он, чтобы вы перевели первоначальный взнос с его расчётного счёта сейчас. Если да, используйте transfer_funds_between_bank_accounts_7291 для перевода необходимой суммы. Если нет, сообщите ему, что у него есть 30 дней для пополнения счета (посредством внутреннего перевода или внешнего депозита), иначе счет будет закрыт.\n\t  \n",
+        "parent_source_id": "h4",
+        "category": "HISTORY",
+        "sha256": "1558ca414e1307192b8dcb4cf59acd76c2541eb687cd84dcb1a061ff0906e774",
+        "evidence_status": "ORIGINAL_SOURCE_NOT_CURRENT_TRUTH_OR_PERMISSION",
+        "role": "assistant",
+        "kind": "result",
+        "tool": "KB_search_dense",
+        "event": 4,
+        "parent_source_length": 24705,
+        "explicit_window": true,
+        "parent_coverage": "EXACT_WINDOW_NOT_COMPLETE_PARENT"
+      },
+      {
+        "source_id": "q18",
+        "document": "prompt",
+        "start": 17375,
+        "end": 18915,
+        "text": "\t  ## Использование инструментов агентом (только для внутреннего пользования)\n\t  \n\t  AGENT вызывает эти инструменты напрямую для выполнения действий от имени клиента. Не просите клиента вызывать инструменты или предоставлять параметры инструментов.\n\t  \n\t  - Инструмент: open_bank_account_4821(user_id, account_type, account_class)\n\t    - Когда вызывать: После шагов 1–3, как только соответствие требованиям подтверждено и клиент выбрал account_class.\n\t    - Как устанавливать параметры:\n\t      - user_id: идентификатор пользователя аутентифицированного клиента.\n\t      - account_type: 'savings' для личных сберегательных счетов.\n\t      - account_class: полное официальное название счета, заканчивающееся на 'Account', точно так, как было подтверждено с клиентом.\n\t    - Ожидаемый результат: Создание нового личного сберегательного счета для клиента.\n\t  \n\t  - Инструмент: transfer_funds_between_bank_accounts_7291(source_account_id, destination_account_id, amount)\n\t    - Когда вызывать: На шаге 5, только если клиент разрешает немедленный перевод для первоначального взноса.\n\t    - Как устанавливать параметры:\n\t      - source_account_id: расчётный счёт Rho-Bank клиента, с которого будут списаны средства.\n\t      - destination_account_id: только что открытый личный сберегательный счёт, на который будут зачислены средства.\n\t      - amount: сумма необходимого первоначального взноса, подтвержденная с клиентом.\n\t    - Ожидаемый результат: Перемещение средств с расчётного счёта на сберегательный для завершения первоначального взноса.\n\t  \n",
+        "parent_source_id": "h4",
+        "category": "HISTORY",
+        "sha256": "cce5d5daa30be576da79b091c6cd051580c8320d598628ab7a658eab692fab5f",
+        "evidence_status": "ORIGINAL_SOURCE_NOT_CURRENT_TRUTH_OR_PERMISSION",
+        "role": "assistant",
+        "kind": "result",
+        "tool": "KB_search_dense",
+        "event": 4,
+        "parent_source_length": 24705,
+        "explicit_window": true,
+        "parent_coverage": "EXACT_WINDOW_NOT_COMPLETE_PARENT"
+      },
+      {
+        "source_id": "q28",
+        "document": "prompt",
+        "start": 26208,
+        "end": 26833,
+        "text": "\t  ## Как добавить нового владельца\n\t  - Соберите необходимые данные будущего владельца, включая законное имя, контактную информацию, налоговый ID и роль в бизнесе.\n\t  - В панели управления вашим счётом откройте раздел владения или доступа к счёту и выберите Добавить владельца.\n\t  - Введите данные владельца точно так, как они указаны в официальных документах, затем отправьте запрос на рассмотрение.\n\t  - Пройдите верификацию личности и любые этапы авторизации бизнеса, запрошенные при подаче заявки.\n\t  - Ознакомьтесь с соглашением о владении и любыми обновлениями обязанностей по счёту, затем подтвердите добавление.\n\t  \n",
+        "parent_source_id": "h4",
+        "category": "HISTORY",
+        "sha256": "61db2fcd6962cdbcd254c59633bdd841d432f183936ee9c839b78872f3410d4a",
+        "evidence_status": "ORIGINAL_SOURCE_NOT_CURRENT_TRUTH_OR_PERMISSION",
+        "role": "assistant",
+        "kind": "result",
+        "tool": "KB_search_dense",
+        "event": 4,
+        "parent_source_length": 24705,
+        "explicit_window": true,
+        "parent_coverage": "EXACT_WINDOW_NOT_COMPLETE_PARENT"
+      },
+      {
+        "source_id": "q17",
+        "document": "prompt",
+        "start": 15774,
+        "end": 17375,
+        "text": "\t  ## Пошаговая процедура\n\t  \n\t  1) Проверка личности\n\t  - Проведите аутентификацию клиента и подтвердите статус проверки личности в деле.\n\t  \n\t  2) Проверка соответствия\n\t  - Подтвердите наличие активного расчётного счёта и соблюдение требования о 14-дневном сроке владения.\n\t  - Подсчитайте количество существующих личных сберегательных счетов; убедитесь, что клиент не превысил лимит в 5 счетов.\n\t  - Проверьте статус счетов; не должно быть активности по взысканию и отрицательных балансов.\n\t  \n\t  3) Подтверждение выбора счета\n\t  - Обсудите с клиентом доступные варианты личных сберегательных счетов.\n\t  - Зафиксируйте точную строку account_class. Это должно быть полное официальное название, заканчивающееся на “Account” (например, “Silver Plus Account”, “Gold Account”).\n\t  \n\t  4) Открытие сберегательного счета (действие агента)\n\t  - Используйте инструмент open_bank_account_4821 с параметром account_type, установленным на 'savings', и подтвержденным account_class.\n\t  \n\t  5) Организация первоначального взноса\n\t  - Спросите клиента, хочет ли он, чтобы вы перевели первоначальный взнос с его расчётного счёта сейчас.\n\t    - Если да: используйте transfer_funds_between_bank_accounts_7291 для перевода необходимой суммы с расчётного счёта клиента на только что открытый сберегательный счёт.\n\t    - Если нет: сообщите клиенту, что у него есть 30 дней для пополнения счета (посредством внутреннего перевода или внешнего депозита), иначе счет будет закрыт.\n\t  \n\t  6) Подтверждение завершения\n\t  - Предоставьте реквизиты нового счета и подтвердите статус пополнения или крайний срок пополнения.\n\t  \n",
+        "parent_source_id": "h4",
+        "category": "HISTORY",
+        "sha256": "37343d99989d634096093f1b050df930da48af41ab19f31c6d40bc119b9bb053",
+        "evidence_status": "ORIGINAL_SOURCE_NOT_CURRENT_TRUTH_OR_PERMISSION",
+        "role": "assistant",
+        "kind": "result",
+        "tool": "KB_search_dense",
+        "event": 4,
+        "parent_source_length": 24705,
+        "explicit_window": true,
+        "parent_coverage": "EXACT_WINDOW_NOT_COMPLETE_PARENT"
+      },
+      {
+        "source_id": "q45",
+        "document": "prompt",
+        "start": 33183,
+        "end": 33797,
+        "text": "\t  ### Перед переключением\n\t  - Сравните функции и комиссии Blue и Green Account (checking), чтобы выбрать наиболее подходящий вариант.\n\t  - Подтвердите, что все запланированные платежи или депозиты продолжат поступать без перерывов после перехода.\n\t  \n\t  8. Platinum Reserve Account: Требования к соответствию для предприятий\n\t     ID: doc_business_savings_accounts_platinum_reserve_account_004\n\t     Score: 0.5275\n\t     Content: ## Пороги баланса\n\t  - Минимальный баланс для открытия и обслуживания счёта: $100,000\n\t  - Минимальный ежедневный баланс для отмены ежемесячной комиссии за обслуживание: $250,000\n\t  \n",
+        "parent_source_id": "h4",
+        "category": "HISTORY",
+        "sha256": "5e4edfa4bb43395ffd568d703816ef851e7fc4b7b82c7d1cb7ea4dda13ca8cbc",
+        "evidence_status": "ORIGINAL_SOURCE_NOT_CURRENT_TRUTH_OR_PERMISSION",
+        "role": "assistant",
+        "kind": "result",
+        "tool": "KB_search_dense",
+        "event": 4,
+        "parent_source_length": 24705,
+        "explicit_window": true,
+        "parent_coverage": "EXACT_WINDOW_NOT_COMPLETE_PARENT"
+      },
+      {
+        "source_id": "q22",
+        "document": "prompt",
+        "start": 22580,
+        "end": 23574,
+        "text": "\t  ## Пошаговая процедура\n\t  \n\t  1) Подтвердить личность клиента.\n\t  2) Проверить требования к соответствию (см. список выше).\n\t  3) Подтвердить выбор счёта с клиентом:\n\t     - Уточнить желаемый business savings account_class (например, 'Bronze Saver Account', 'Silver Saver Account' и т. д.).\n\t     - Убедитесь, что вы зафиксировали точное официальное название account_class, заканчивающееся словом «Account».\n\t  4) Открыть новый бизнес сберегательный счёт с помощью инструмента агента (см. Инструкции по инструментам ниже).\n\t  5) Пополнение первоначального депозита:\n\t     - Спросить клиента, хочет ли он, чтобы вы перевели первоначальный депозит сейчас с его подходящего бизнес расчётного счёта.\n\t     - Если да: инициируйте внутренний перевод с помощью инструмента агента (см. Инструкции по инструментам ниже).\n\t     - Если нет: сообщите клиенту, что у него есть 30 дней для пополнения счёта посредством внутреннего перевода или внешнего депозита; в противном случае счёт будет закрыт.\n\t  \n",
+        "parent_source_id": "h4",
+        "category": "HISTORY",
+        "sha256": "2b08c6abaaa46c925d98ca55bc9158dfcbcdfca59e76d106c1504658bd3ff0eb",
+        "evidence_status": "ORIGINAL_SOURCE_NOT_CURRENT_TRUTH_OR_PERMISSION",
+        "role": "assistant",
+        "kind": "result",
+        "tool": "KB_search_dense",
+        "event": 4,
+        "parent_source_length": 24705,
+        "explicit_window": true,
+        "parent_coverage": "EXACT_WINDOW_NOT_COMPLETE_PARENT"
+      },
+      {
+        "source_id": "q31",
+        "document": "prompt",
+        "start": 27588,
+        "end": 28237,
+        "text": "\t  ## Советы для беспрепятственной обработки\n\t  - Убедитесь, что название бизнеса и регистрационные данные точно совпадают во всех документах.\n\t  - Используйте единый домен бизнес-почты для приглашений владельцев, чтобы облегчить распознавание и доставку.\n\t  - Подтвердите, что каждый владелец понимает свои обязанности и любые правила двойного одобрения, которые могут применяться к действиям с высокой степенью влияния.\n\t  \n\t  6. FAQ: Реферальные программы для расчётных счетов\n\t     ID: doc_bank_accounts_bank_accounts_(general)_048\n\t     Score: 0.5441\n\t     Content: ## Часто задаваемые вопросы о реферальных программах для расчётных счетов\n\t  \n",
+        "parent_source_id": "h4",
+        "category": "HISTORY",
+        "sha256": "aebd2a709d79aff422e854b7d353fc43a8e88c4d08bdaec00c24b664d14b6944",
+        "evidence_status": "ORIGINAL_SOURCE_NOT_CURRENT_TRUTH_OR_PERMISSION",
+        "role": "assistant",
+        "kind": "result",
+        "tool": "KB_search_dense",
+        "event": 4,
+        "parent_source_length": 24705,
+        "explicit_window": true,
+        "parent_coverage": "EXACT_WINDOW_NOT_COMPLETE_PARENT"
+      },
+      {
+        "source_id": "q44",
+        "document": "prompt",
+        "start": 32970,
+        "end": 33183,
+        "text": "\t  ## Если изменение не является автоматическим\n\t  - Если Yes имеет значение False, инициируйте переход на Blue или Green Account (checking), отправив запрос на обновление и выбрав предпочтительный тип счёта.\n\t  \n",
+        "parent_source_id": "h4",
+        "category": "HISTORY",
+        "sha256": "58bca166d7a2f18304c7ab744ac5f22a84a4095e86ad319a00f10288dc6fa6cd",
+        "evidence_status": "ORIGINAL_SOURCE_NOT_CURRENT_TRUTH_OR_PERMISSION",
+        "role": "assistant",
+        "kind": "result",
+        "tool": "KB_search_dense",
+        "event": 4,
+        "parent_source_length": 24705,
+        "explicit_window": true,
+        "parent_coverage": "EXACT_WINDOW_NOT_COMPLETE_PARENT"
+      }
+    ],
+    "current_targets": [
+      {
+        "source_id": "t0",
+        "document": "response",
+        "start": 20,
+        "end": 570,
+        "role": "assistant",
+        "kind": "text",
+        "tool": null,
+        "event": 0,
+        "text": "Я с радостью помогу вам открыть новый расчетный счет!\n\nДля того чтобы я мог приступить к процессу, мне необходимо сначала подтвердить вашу личность. Пожалуйста, предоставьте ваши данные (например, полное имя, ID пользователя или адрес электронной почты), чтобы я мог найти ваш профиль.\n\nПосле этого мне потребуется подтвердить два любых из следующих пунктов:\n* Дата рождения\n* Электронная почта\n* Номер телефона\n* Адрес проживания\n\nКак только мы завершим верификацию, я проверю соответствие всем требованиям и помогу вам выбрать подходящий тип счета.",
+        "parent_source_id": "t0",
+        "category": "TARGET",
+        "sha256": "1134afdf0b55220415ae173dbea2d0be9c099a89f869fc982750b4b88a2bf0f7",
+        "evidence_status": "ORIGINAL_SOURCE_NOT_CURRENT_TRUTH_OR_PERMISSION"
+      }
+    ],
+    "declarations": [],
+    "selected_ids": [
+      "h3",
+      "q40",
+      "q15",
+      "q18",
+      "q28",
+      "q17",
+      "q45",
+      "q22",
+      "q31",
+      "q44"
+    ],
+    "trace": {
+      "queries": [
+        " \nЯ с радостью помогу вам открыть новый расчетный счет!\n\nДля того чтобы я мог приступить к процессу, мне необходимо сначала подтвердить вашу личность. Пожалуйста, предоставьте ваши данные (например, полное имя, ID пользователя или адрес электронной почты), чтобы я мог найти ваш профиль.\n\nПосле этого мне потребуется подтвердить два любых из следующих пунктов:\n* Дата рождения\n* Электронная почта\n* Номер телефона\n* Адрес проживания\n\nКак только мы завершим верификацию, я проверю соответствие всем требованиям и помогу вам выбрать подходящий тип счета.\n"
+      ],
+      "rankings": [
+        [
+          "q40",
+          "q15",
+          "q18",
+          "h3",
+          "q28",
+          "q17",
+          "q45",
+          "q22",
+          "q48",
+          "q31",
+          "q20",
+          "q19",
+          "q25",
+          "q24",
+          "q43",
+          "q16",
+          "q42",
+          "q37",
+          "q14",
+          "q21",
+          "q27",
+          "q38",
+          "q30",
+          "q26",
+          "q44",
+          "q36",
+          "q39",
+          "q33",
+          "q29",
+          "q47",
+          "q34",
+          "q41",
+          "q50",
+          "q32",
+          "q35",
+          "q46",
+          "q12",
+          "q23",
+          "q49"
+        ]
+      ],
+      "fused_ranking": [
+        "q40",
+        "q15",
+        "q18",
+        "h3",
+        "q28",
+        "q17",
+        "q45",
+        "q22",
+        "q48",
+        "q31",
+        "q20",
+        "q19",
+        "q25",
+        "q24",
+        "q43",
+        "q16",
+        "q42",
+        "q37",
+        "q14",
+        "q21",
+        "q27",
+        "q38",
+        "q30",
+        "q26",
+        "q44",
+        "q36",
+        "q39",
+        "q33",
+        "q29",
+        "q47",
+        "q34",
+        "q41",
+        "q50",
+        "q32",
+        "q35",
+        "q46",
+        "q12",
+        "q23",
+        "q49"
+      ],
+      "selection": [
+        {
+          "source_id": "q40",
+          "status": "SELECTED",
+          "dependency_group": [
+            "h3",
+            "q40"
+          ],
+          "token_bound": 1774
+        },
+        {
+          "source_id": "q15",
+          "status": "SELECTED",
+          "dependency_group": [
+            "q15"
+          ],
+          "token_bound": 3142
+        },
+        {
+          "source_id": "q18",
+          "status": "SELECTED",
+          "dependency_group": [
+            "q18"
+          ],
+          "token_bound": 2975
+        },
+        {
+          "source_id": "h3",
+          "status": "SELECTED",
+          "dependency_group": [],
+          "token_bound": 0
+        },
+        {
+          "source_id": "q28",
+          "status": "SELECTED",
+          "dependency_group": [
+            "q28"
+          ],
+          "token_bound": 1577
+        },
+        {
+          "source_id": "q17",
+          "status": "SELECTED",
+          "dependency_group": [
+            "q17"
+          ],
+          "token_bound": 3211
+        },
+        {
+          "source_id": "q45",
+          "status": "SELECTED",
+          "dependency_group": [
+            "q45"
+          ],
+          "token_bound": 1414
+        },
+        {
+          "source_id": "q22",
+          "status": "SELECTED",
+          "dependency_group": [
+            "q22"
+          ],
+          "token_bound": 2131
+        },
+        {
+          "source_id": "q48",
+          "status": "TOKEN_BUDGET_SKIP",
+          "dependency_group": [
+            "q48"
+          ],
+          "required_token_bound": 4295
+        },
+        {
+          "source_id": "q31",
+          "status": "SELECTED",
+          "dependency_group": [
+            "q31"
+          ],
+          "token_bound": 1553
+        },
+        {
+          "source_id": "q20",
+          "status": "TOKEN_BUDGET_SKIP",
+          "dependency_group": [
+            "q20"
+          ],
+          "required_token_bound": 3304
+        },
+        {
+          "source_id": "q19",
+          "status": "TOKEN_BUDGET_SKIP",
+          "dependency_group": [
+            "q19"
+          ],
+          "required_token_bound": 2586
+        },
+        {
+          "source_id": "q25",
+          "status": "TOKEN_BUDGET_SKIP",
+          "dependency_group": [
+            "q25"
+          ],
+          "required_token_bound": 1790
+        },
+        {
+          "source_id": "q24",
+          "status": "TOKEN_BUDGET_SKIP",
+          "dependency_group": [
+            "q24"
+          ],
+          "required_token_bound": 1344
+        },
+        {
+          "source_id": "q43",
+          "status": "TOKEN_BUDGET_SKIP",
+          "dependency_group": [
+            "q43"
+          ],
+          "required_token_bound": 1673
+        },
+        {
+          "source_id": "q16",
+          "status": "TOKEN_BUDGET_SKIP",
+          "dependency_group": [
+            "q16"
+          ],
+          "required_token_bound": 1403
+        },
+        {
+          "source_id": "q42",
+          "status": "TOKEN_BUDGET_SKIP",
+          "dependency_group": [
+            "q42"
+          ],
+          "required_token_bound": 1343
+        },
+        {
+          "source_id": "q37",
+          "status": "TOKEN_BUDGET_SKIP",
+          "dependency_group": [
+            "q37"
+          ],
+          "required_token_bound": 923
+        },
+        {
+          "source_id": "q14",
+          "status": "TOKEN_BUDGET_SKIP",
+          "dependency_group": [
+            "q14"
+          ],
+          "required_token_bound": 1465
+        },
+        {
+          "source_id": "q21",
+          "status": "TOKEN_BUDGET_SKIP",
+          "dependency_group": [
+            "q21"
+          ],
+          "required_token_bound": 1671
+        },
+        {
+          "source_id": "q27",
+          "status": "TOKEN_BUDGET_SKIP",
+          "dependency_group": [
+            "q27"
+          ],
+          "required_token_bound": 1515
+        },
+        {
+          "source_id": "q38",
+          "status": "TOKEN_BUDGET_SKIP",
+          "dependency_group": [
+            "q38"
+          ],
+          "required_token_bound": 1362
+        },
+        {
+          "source_id": "q30",
+          "status": "TOKEN_BUDGET_SKIP",
+          "dependency_group": [
+            "q30"
+          ],
+          "required_token_bound": 1244
+        },
+        {
+          "source_id": "q26",
+          "status": "TOKEN_BUDGET_SKIP",
+          "dependency_group": [
+            "q26"
+          ],
+          "required_token_bound": 1078
+        },
+        {
+          "source_id": "q44",
+          "status": "SELECTED",
+          "dependency_group": [
+            "q44"
+          ],
+          "token_bound": 793
+        },
+        {
+          "source_id": "q36",
+          "status": "TOKEN_BUDGET_SKIP",
+          "dependency_group": [
+            "q36"
+          ],
+          "required_token_bound": 976
+        },
+        {
+          "source_id": "q39",
+          "status": "TOKEN_BUDGET_SKIP",
+          "dependency_group": [
+            "q39"
+          ],
+          "required_token_bound": 1162
+        },
+        {
+          "source_id": "q33",
+          "status": "TOKEN_BUDGET_SKIP",
+          "dependency_group": [
+            "q33"
+          ],
+          "required_token_bound": 1068
+        },
+        {
+          "source_id": "q29",
+          "status": "TOKEN_BUDGET_SKIP",
+          "dependency_group": [
+            "q29"
+          ],
+          "required_token_bound": 990
+        },
+        {
+          "source_id": "q47",
+          "status": "TOKEN_BUDGET_SKIP",
+          "dependency_group": [
+            "q47"
+          ],
+          "required_token_bound": 912
+        },
+        {
+          "source_id": "q34",
+          "status": "TOKEN_BUDGET_SKIP",
+          "dependency_group": [
+            "q34"
+          ],
+          "required_token_bound": 899
+        },
+        {
+          "source_id": "q41",
+          "status": "TOKEN_BUDGET_SKIP",
+          "dependency_group": [
+            "q41"
+          ],
+          "required_token_bound": 888
+        },
+        {
+          "source_id": "q50",
+          "status": "TOKEN_BUDGET_SKIP",
+          "dependency_group": [
+            "q50"
+          ],
+          "required_token_bound": 1063
+        },
+        {
+          "source_id": "q32",
+          "status": "TOKEN_BUDGET_SKIP",
+          "dependency_group": [
+            "q32"
+          ],
+          "required_token_bound": 1041
+        },
+        {
+          "source_id": "q35",
+          "status": "TOKEN_BUDGET_SKIP",
+          "dependency_group": [
+            "q35"
+          ],
+          "required_token_bound": 1060
+        },
+        {
+          "source_id": "q46",
+          "status": "TOKEN_BUDGET_SKIP",
+          "dependency_group": [
+            "q46"
+          ],
+          "required_token_bound": 885
+        },
+        {
+          "source_id": "q12",
+          "status": "TOKEN_BUDGET_SKIP",
+          "dependency_group": [
+            "q12"
+          ],
+          "required_token_bound": 4524
+        },
+        {
+          "source_id": "q23",
+          "status": "TOKEN_BUDGET_SKIP",
+          "dependency_group": [
+            "q23"
+          ],
+          "required_token_bound": 763
+        },
+        {
+          "source_id": "q49",
+          "status": "TOKEN_BUDGET_SKIP",
+          "dependency_group": [
+            "q49"
+          ],
+          "required_token_bound": 1604
+        }
+      ],
+      "fusion": "RRF_K60",
+      "graph_assurance": "UNIQUE_ORIGINAL_RECEIPTS_AND_CO_RECORDED_CANDIDATES_NOT_SEMANTIC_IDENTITY",
+      "common_catalog_used": true
+    },
+    "seconds": 0.011399000009987503,
+    "failure": null,
+    "read_limit": 12,
+    "token_limit": 20000,
+    "cost": {
+      "retrieved_reads": 10,
+      "mandatory_targets": 1,
+      "mandatory_declarations": 0,
+      "source_chars": 8942,
+      "source_token_upper_bound": 19894,
+      "token_estimator": "FULL_UTF8_BYTES_CONSERVATIVE_BOUND_NOT_PROVIDER_USAGE",
+      "inference_http": 0
+    },
+    "uncovered": [
+      {
+        "category": "POLICY",
+        "reason": "NO_SELECTED_SOURCE_NOT_PROOF_OF_ABSENCE"
+      },
+      {
+        "category": "PARENT_SOURCE_COMPLETENESS",
+        "reason": "EXPLICIT_SOURCE_WINDOWS_ONLY; all original parents remain accessible"
+      }
+    ],
+    "completeness_certified": false,
+    "absence_proves_semantic_absence": false,
+    "evidence_contract": "Original recorded sources and explicit windows only. Raw matching and graph links are candidate retrieval, not entity/ownership/permission/current-state proof. Absence from this subset never establishes missing process events in the full log."
+  },
+  "score": {
+    "categories": {
+      "policy": {
+        "found": 0,
+        "required": 1,
+        "recall": 0.0,
+        "missing": [
+          {
+            "document": "prompt",
+            "start": 5593,
+            "end": 7142,
+            "why": "Auth required only before actual customer database access/modification, with two matching fields.",
+            "text_sha256": "a9f6cf2338c65245b7fdbcd3e6ba6cc9319aa0a79e4f494492bb9b3bffcde55d"
+          }
+        ]
+      },
+      "history": {
+        "found": 0,
+        "required": 1,
+        "recall": 0.0,
+        "missing": [
+          {
+            "document": "prompt",
+            "start": 12744,
+            "end": 12843,
+            "why": "User asks help opening another account, not an already executed opening.",
+            "text_sha256": "12aa45538229a53b89cd9a3fa04f1e74ee6a19c55cfe43b00c3ab9a166be48df",
+            "source_id": "h2",
+            "role": "user",
+            "kind": "text",
+            "tool": null,
+            "event": 2
+          }
+        ]
+      },
+      "target": {
+        "found": 1,
+        "required": 1,
+        "recall": 1.0,
+        "missing": []
+      },
+      "declaration": {
+        "found": 0,
+        "required": 0,
+        "recall": null,
+        "missing": []
+      },
+      "exception": {
+        "found": 0,
+        "required": 0,
+        "recall": null,
+        "missing": []
+      },
+      "entity_binding": {
+        "found": 0,
+        "required": 0,
+        "recall": null,
+        "missing": []
+      },
+      "long_distance": {
+        "found": 0,
+        "required": 0,
+        "recall": null,
+        "missing": []
+      }
+    },
+    "complete_evidence_set_success": false,
+    "reference_partial": false,
+    "alternatives": [
+      {
+        "found": 1,
+        "required": 3,
+        "complete": false
+      }
+    ],
+    "unnecessary_relative_to_reference": [
+      "h3",
+      "q40",
+      "q15",
+      "q18",
+      "q28",
+      "q17",
+      "q45",
+      "q22",
+      "q31",
+      "q44"
+    ],
+    "false_absence_risk": true,
+    "subset_absence_is_proof": false,
+    "completeness_certified": false
+  }
+}

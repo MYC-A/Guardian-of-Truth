@@ -1,0 +1,475 @@
+{
+  "case_id": "airline__3::t4",
+  "split": "dev",
+  "index": 0,
+  "method": "local_bm25",
+  "budget": "k8",
+  "packet": {
+    "version": "retrieval-bakeoff-v1",
+    "method": "local_bm25",
+    "source_sha256": "8aaf7503d3f5e8896b440ae6ee9db2a29c3bc8f7a993a5fe85aed56049cd0a2a",
+    "read_sources": [
+      {
+        "source_id": "h9",
+        "document": "prompt",
+        "start": 15723,
+        "end": 16172,
+        "role": "assistant",
+        "kind": "text",
+        "tool": null,
+        "event": 9,
+        "text": "Согласно вашему бронированию JMO1MG, вы летите классом «эконом» (economy). \n\nТак как вы имеете статус участника **Silver**, вам положено **2 бесплатных зарегистрированных чемодана на каждого пассажира**. \n\nПоскольку в вашем бронировании указано два пассажира (Anya Garcia и Raj Jackson), суммарно на вас обоих полагается 4 бесплатных места для багажа.\n\nЕсли вам потребуется взять больше вещей, каждый дополнительный чемодан будет стоить 50 долларов.",
+        "parent_source_id": "h9",
+        "category": "HISTORY",
+        "sha256": "538074c9c405a12fc8594e39f5bf431b9bef252de608d8d1d76d50caf1af43e2",
+        "evidence_status": "ORIGINAL_SOURCE_NOT_CURRENT_TRUTH_OR_PERMISSION",
+        "parent_source_length": 449,
+        "explicit_window": false,
+        "parent_coverage": "COMPLETE_PARENT"
+      },
+      {
+        "source_id": "h10",
+        "document": "prompt",
+        "start": 16181,
+        "end": 16474,
+        "role": "user",
+        "kind": "text",
+        "tool": null,
+        "event": 10,
+        "text": "Извините, но мне кажется, что здесь какая-то ошибка. Я уверена, что у меня статус Gold, а не Silver. Можете, пожалуйста, ещё раз проверить?\n\nИ ещё — мне очень нужно, чтобы вы назвали мне итоговое количество чемоданов именно цифрой, а не прописью. Мне так гораздо проще воспринимать информацию.",
+        "parent_source_id": "h10",
+        "category": "HISTORY",
+        "sha256": "c7cd0151d16babc385e9f5c15ac69e1b2ca6f590ca2ecc8553dfb1a2db21ac9d",
+        "evidence_status": "ORIGINAL_SOURCE_NOT_CURRENT_TRUTH_OR_PERMISSION",
+        "parent_source_length": 293,
+        "explicit_window": false,
+        "parent_coverage": "COMPLETE_PARENT"
+      },
+      {
+        "source_id": "h2",
+        "document": "prompt",
+        "start": 13551,
+        "end": 13830,
+        "role": "user",
+        "kind": "text",
+        "tool": null,
+        "event": 2,
+        "text": "Здравствуйте! Мне нужно уточнить информацию по моему бронированию. У меня скоро рейс, и мне очень важно точно знать, сколько чемоданов я могу взять с собой. Я везу много вещей и очень переживаю, что не пойму правильно, сколько мне положено. Не могли бы вы помочь мне разобраться?",
+        "parent_source_id": "h2",
+        "category": "HISTORY",
+        "sha256": "56c89c7d4a8649c4e852597720c294d8fd771629852c89fbe1764f4a231d133c",
+        "evidence_status": "ORIGINAL_SOURCE_NOT_CURRENT_TRUTH_OR_PERMISSION",
+        "parent_source_length": 279,
+        "explicit_window": false,
+        "parent_coverage": "COMPLETE_PARENT"
+      },
+      {
+        "source_id": "h3",
+        "document": "prompt",
+        "start": 13852,
+        "end": 14033,
+        "role": "assistant",
+        "kind": "text",
+        "tool": null,
+        "event": 3,
+        "text": "Конечно, я с радостью помогу вам разобраться с нормой провоза багажа. \n\nДля этого мне понадобятся ваши данные: пожалуйста, сообщите ваш **ID пользователя** и **номер бронирования**.",
+        "parent_source_id": "h3",
+        "category": "HISTORY",
+        "sha256": "73e71e9cea808854ef136ecdb5fec18144183fa2e267a52a2276e6c3c1521fe3",
+        "evidence_status": "ORIGINAL_SOURCE_NOT_CURRENT_TRUTH_OR_PERMISSION",
+        "parent_source_length": 181,
+        "explicit_window": false,
+        "parent_coverage": "COMPLETE_PARENT"
+      },
+      {
+        "source_id": "q10",
+        "document": "prompt",
+        "start": 3042,
+        "end": 4706,
+        "text": "## Book flight\n\nThe agent must first obtain the user id from the user. \n\nThe agent should then ask for the trip type, origin, destination.\n\nCabin:\n- Cabin class must be the same across all the flights in a reservation. \n\nPassengers: \n- Each reservation can have at most five passengers. \n- The agent needs to collect the first name, last name, and date of birth for each passenger. \n- All passengers must fly the same flights in the same cabin.\n\nPayment: \n- Each reservation can use at most one travel certificate, at most one credit card, and at most three gift cards. \n- The remaining amount of a travel certificate is not refundable. \n- All payment methods must already be in user profile for safety reasons.\n\nChecked bag allowance: \n- If the booking user is a regular member:\n  - 0 free checked bag for each basic economy passenger\n  - 1 free checked bag for each economy passenger\n  - 2 free checked bags for each business passenger\n- If the booking user is a silver member:\n  - 1 free checked bag for each basic economy passenger\n  - 2 free checked bag for each economy passenger\n  - 3 free checked bags for each business passenger\n- If the booking user is a gold member:\n  - 2 free checked bag for each basic economy passenger\n  - 3 free checked bag for each economy passenger\n  - 4 free checked bags for each business passenger\n- Each extra baggage is 50 dollars.\n\nDo not add checked bags that the user does not need.\n\nTravel insurance: \n- The agent should ask if the user wants to buy the travel insurance.\n- The travel insurance is 30 dollars per passenger and enables full refund if the user needs to cancel the flight given health or weather reasons.\n\n",
+        "parent_source_id": "h0",
+        "category": "POLICY",
+        "sha256": "5b6b90a67858f8a60adb5325b911b26dee1c4e6c612ad902a215ee32bf31b2b1",
+        "evidence_status": "ORIGINAL_SOURCE_NOT_CURRENT_TRUTH_OR_PERMISSION",
+        "role": "system",
+        "kind": "text",
+        "tool": null,
+        "event": 0,
+        "parent_source_length": 13488,
+        "explicit_window": true,
+        "parent_coverage": "EXACT_WINDOW_NOT_COMPLETE_PARENT"
+      },
+      {
+        "source_id": "h1",
+        "document": "prompt",
+        "start": 13512,
+        "end": 13542,
+        "role": "assistant",
+        "kind": "text",
+        "tool": null,
+        "event": 1,
+        "text": "Здравствуйте! Чем могу помочь?",
+        "parent_source_id": "h1",
+        "category": "HISTORY",
+        "sha256": "0a4a61183d77eba5118d378b86006cd5ac6a3798f56f8c896767b3898349cbe9",
+        "evidence_status": "ORIGINAL_SOURCE_NOT_CURRENT_TRUTH_OR_PERMISSION",
+        "parent_source_length": 30,
+        "explicit_window": false,
+        "parent_coverage": "COMPLETE_PARENT"
+      },
+      {
+        "source_id": "q13",
+        "document": "prompt",
+        "start": 7300,
+        "end": 11226,
+        "text": "## Refunds and Compensation\nDo not proactively offer a compensation unless the user explicitly asks for one.\n\nDo not compensate if the user is regular member and has no travel insurance and flies (basic) economy.\n\nAlways confirms the facts before offering compensation.\n\nOnly compensate if the user is a silver/gold member or has travel insurance or flies business.\n\n- If the user complains about cancelled flights in a reservation, the agent can offer a certificate as a gesture after confirming the facts, with the amount being $100 times the number of passengers.\n\n- If the user complains about delayed flights in a reservation and wants to change or cancel the reservation, the agent can offer a certificate as a gesture after confirming the facts and changing or cancelling the reservation, with the amount being $50 times the number of passengers.\n\nDo not offer compensation for any other reason than the ones listed above.\n</policy>\n\n[AVAILABLE TOOLS]\n- book_reservation — Book a reservation.\n    user_id: string! — The ID of the user to book the reservation such as 'sara_doe_496'`.\n    origin: string! — The IATA code for the origin city such as 'SFO'.\n    destination: string! — The IATA code for the destination city such as 'JFK'.\n    flight_type: string! [enum: round_trip|one_way] — The type of flight such as 'one_way' or 'round_trip'.\n    cabin: string! [enum: business|economy|basic_economy] — The cabin class such as 'basic_economy', 'economy', or 'business'.\n    flights: array! — An array of objects containing details about each piece of flight.\n        · flight_number: string! — Flight number, such as 'HAT001'.\n        · date: string! — The date for the flight in the format 'YYYY-MM-DD', such as '2024-05-01'.\n    passengers: array! — An array of objects containing details about each passenger.\n        · first_name: string! — Passenger's first name\n        · last_name: string! — Passenger's last name\n        · dob: string! — Date of birth in YYYY-MM-DD format\n    payment_methods: array! — An array of objects containing details about each payment method.\n        · payment_id: string! — Unique identifier for the payment\n        · amount: integer! — Payment amount in dollars\n    total_baggages: integer! — The total number of baggage items to book the reservation.\n    nonfree_baggages: integer! — The number of non-free baggage items to book the reservation.\n    insurance: string! [enum: yes|no] — Whether the reservation has insurance.\n- calculate — Calculate the result of a mathematical expression.\n    expression: string! — The mathematical expression to calculate, such as '2 + 2'. The expression can contain numbers, operators (+, -, *, /), parentheses, and spaces.\n- cancel_reservation — Cancel the whole reservation.\n    reservation_id: string! — The reservation ID, such as 'ZFA04Y'.\n- get_reservation_details — Get the details of a reservation.\n    reservation_id: string! — The reservation ID, such as '8JX2WO'.\n- get_user_details — Get the details of a user, including their reservations.\n    user_id: string! — The user ID, such as 'sara_doe_496'.\n- list_all_airports — Returns a list of all available airports.\n- search_direct_flight — Search for direct flights between two cities on a specific date.\n    origin: string! — The origin city airport in three letters, such as 'JFK'.\n    destination: string! — The destination city airport in three letters, such as 'LAX'.\n    date: string! — The date of the flight in the format 'YYYY-MM-DD', such as '2024-01-01'.\n- search_onestop_flight — Search for one-stop flights between two cities on a specific date.\n    origin: string! — The origin city airport in three letters, such as 'JFK'.\n    destination: string! — The destination city airport in three letters, such as 'LAX'.\n    date: string! — The date of the flight in the format 'YYYY-MM-DD', such as '2024-05-01'.\n- send_certificate — Send a certificate to a user. Be careful!\n",
+        "parent_source_id": "h0",
+        "category": "POLICY",
+        "sha256": "6f14cbc68a4207ad2e2bf3f72300f17105e67eef8dd7f3931d6471c069c569eb",
+        "evidence_status": "ORIGINAL_SOURCE_NOT_CURRENT_TRUTH_OR_PERMISSION",
+        "role": "system",
+        "kind": "text",
+        "tool": null,
+        "event": 0,
+        "parent_source_length": 13488,
+        "explicit_window": true,
+        "parent_coverage": "EXACT_WINDOW_NOT_COMPLETE_PARENT"
+      },
+      {
+        "source_id": "q8",
+        "document": "prompt",
+        "start": 2075,
+        "end": 2784,
+        "text": "### Flight\nEach flight has the following attributes:\n- flight number\n- origin\n- destination\n- scheduled departure and arrival time (local time)\n\nA flight can be available at multiple dates. For each date:\n- If the status is **available**, the flight has not taken off, available seats and prices are listed.\n- If the status is **delayed** or **on time**, the flight has not taken off, cannot be booked.\n- If the status is **flying**, the flight has taken off but not landed, cannot be booked.\n\nThere are three cabin classes: **basic economy**, **economy**, **business**. **basic economy** is its own class, completely distinct from **economy**.\n\nSeat availability and prices are listed for each cabin class.\n\n",
+        "parent_source_id": "h0",
+        "category": "POLICY",
+        "sha256": "26d947ab8c9c779716234b961ad07d680c61bbde8c9fbe709ea26c57c1569f71",
+        "evidence_status": "ORIGINAL_SOURCE_NOT_CURRENT_TRUTH_OR_PERMISSION",
+        "role": "system",
+        "kind": "text",
+        "tool": null,
+        "event": 0,
+        "parent_source_length": 13488,
+        "explicit_window": true,
+        "parent_coverage": "EXACT_WINDOW_NOT_COMPLETE_PARENT"
+      }
+    ],
+    "current_targets": [
+      {
+        "source_id": "t0",
+        "document": "response",
+        "start": 20,
+        "end": 462,
+        "role": "assistant",
+        "kind": "text",
+        "tool": null,
+        "event": 0,
+        "text": "Я еще раз проверил данные вашего профиля, и в системе указано, что ваш уровень участия — **Silver**. К сожалению, я не могу изменить эту информацию самостоятельно, так как опираюсь только на данные из вашего профиля.\n\nЧто касается вашего багажа: при статусе Silver и классе economy вам положено **2** бесплатных чемодана на каждого пассажира. Поскольку в бронировании **2** пассажира, итоговое количество бесплатных чемоданов на всех — **4**.",
+        "parent_source_id": "t0",
+        "category": "TARGET",
+        "sha256": "06f41667fa9dc3d07bb6127b88380a0707e3f4a6ef45dad90d938a249af20a55",
+        "evidence_status": "ORIGINAL_SOURCE_NOT_CURRENT_TRUTH_OR_PERMISSION"
+      }
+    ],
+    "declarations": [],
+    "selected_ids": [
+      "h9",
+      "h10",
+      "h2",
+      "h3",
+      "q10",
+      "h1",
+      "q13",
+      "q8"
+    ],
+    "trace": {
+      "queries": [
+        " \nЯ еще раз проверил данные вашего профиля, и в системе указано, что ваш уровень участия — **Silver**. К сожалению, я не могу изменить эту информацию самостоятельно, так как опираюсь только на данные из вашего профиля.\n\nЧто касается вашего багажа: при статусе Silver и классе economy вам положено **2** бесплатных чемодана на каждого пассажира. Поскольку в бронировании **2** пассажира, итоговое количество бесплатных чемоданов на всех — **4**.\n"
+      ],
+      "rankings": [
+        [
+          "h9",
+          "h10",
+          "h2",
+          "h3",
+          "q10",
+          "h1",
+          "q13",
+          "q8",
+          "q7",
+          "h8",
+          "h7",
+          "q11",
+          "q14"
+        ]
+      ],
+      "fused_ranking": [
+        "h9",
+        "h10",
+        "h2",
+        "h3",
+        "q10",
+        "h1",
+        "q13",
+        "q8",
+        "q7",
+        "h8",
+        "h7",
+        "q11",
+        "q14"
+      ],
+      "selection": [
+        {
+          "source_id": "h9",
+          "status": "SELECTED",
+          "dependency_group": [
+            "h9"
+          ],
+          "token_bound": 1183
+        },
+        {
+          "source_id": "h10",
+          "status": "SELECTED",
+          "dependency_group": [
+            "h10"
+          ],
+          "token_bound": 922
+        },
+        {
+          "source_id": "h2",
+          "status": "SELECTED",
+          "dependency_group": [
+            "h2"
+          ],
+          "token_bound": 905
+        },
+        {
+          "source_id": "h3",
+          "status": "SELECTED",
+          "dependency_group": [
+            "h3"
+          ],
+          "token_bound": 729
+        },
+        {
+          "source_id": "q10",
+          "status": "SELECTED",
+          "dependency_group": [
+            "q10"
+          ],
+          "token_bound": 2123
+        },
+        {
+          "source_id": "h1",
+          "status": "SELECTED",
+          "dependency_group": [
+            "h1"
+          ],
+          "token_bound": 460
+        },
+        {
+          "source_id": "q13",
+          "status": "SELECTED",
+          "dependency_group": [
+            "q13"
+          ],
+          "token_bound": 4481
+        },
+        {
+          "source_id": "q8",
+          "status": "SELECTED",
+          "dependency_group": [
+            "q8"
+          ],
+          "token_bound": 1143
+        },
+        {
+          "source_id": "q7",
+          "status": "READ_BUDGET_SKIP",
+          "dependency_group": [
+            "q7"
+          ]
+        },
+        {
+          "source_id": "h8",
+          "status": "READ_BUDGET_SKIP",
+          "dependency_group": [
+            "h6",
+            "h8"
+          ]
+        },
+        {
+          "source_id": "h7",
+          "status": "READ_BUDGET_SKIP",
+          "dependency_group": [
+            "h5",
+            "h7"
+          ]
+        },
+        {
+          "source_id": "q11",
+          "status": "READ_BUDGET_SKIP",
+          "dependency_group": [
+            "q11"
+          ]
+        },
+        {
+          "source_id": "q14",
+          "status": "READ_BUDGET_SKIP",
+          "dependency_group": [
+            "q14"
+          ]
+        }
+      ],
+      "fusion": "RRF_K60",
+      "graph_assurance": "UNIQUE_ORIGINAL_RECEIPTS_AND_CO_RECORDED_CANDIDATES_NOT_SEMANTIC_IDENTITY",
+      "common_catalog_used": true
+    },
+    "seconds": 0.005177900005946867,
+    "failure": null,
+    "read_limit": 8,
+    "token_limit": null,
+    "cost": {
+      "retrieved_reads": 8,
+      "mandatory_targets": 1,
+      "mandatory_declarations": 0,
+      "source_chars": 7973,
+      "source_token_upper_bound": 13036,
+      "token_estimator": "FULL_UTF8_BYTES_CONSERVATIVE_BOUND_NOT_PROVIDER_USAGE",
+      "inference_http": 0
+    },
+    "uncovered": [
+      {
+        "category": "PARENT_SOURCE_COMPLETENESS",
+        "reason": "EXPLICIT_SOURCE_WINDOWS_ONLY; all original parents remain accessible"
+      }
+    ],
+    "completeness_certified": false,
+    "absence_proves_semantic_absence": false,
+    "evidence_contract": "Original recorded sources and explicit windows only. Raw matching and graph links are candidate retrieval, not entity/ownership/permission/current-state proof. Absence from this subset never establishes missing process events in the full log."
+  },
+  "score": {
+    "categories": {
+      "policy": {
+        "found": 1,
+        "required": 2,
+        "recall": 0.5,
+        "missing": [
+          {
+            "document": "prompt",
+            "start": 767,
+            "end": 1018,
+            "why": "Consent obligation is for database updates, not informational calculation.",
+            "text_sha256": "1c0436d01b4f0981b51b4d420154a612f6a3979019417a8d99f02b9e49f9fc6a"
+          }
+        ]
+      },
+      "history": {
+        "found": 1,
+        "required": 3,
+        "recall": 0.3333333333333333,
+        "missing": [
+          {
+            "document": "prompt",
+            "start": 14304,
+            "end": 14950,
+            "why": "Actual matching economy reservation has two passengers.",
+            "text_sha256": "c741c6bed63861cb80a90ebba05074090cdc0a394fccece30a210b064f66b838",
+            "source_id": "h7",
+            "role": "assistant",
+            "kind": "result",
+            "tool": "get_reservation_details",
+            "event": 7
+          },
+          {
+            "document": "prompt",
+            "start": 14950,
+            "end": 15703,
+            "why": "Actual matching user receipt says Silver, not Gold.",
+            "text_sha256": "83ac173bd8c8e8b3dfa77278cb84c8689b4fb6f1812ac784efe5fc25bc2e0d24",
+            "source_id": "h8",
+            "role": "assistant",
+            "kind": "result",
+            "tool": "get_user_details",
+            "event": 8
+          }
+        ]
+      },
+      "target": {
+        "found": 1,
+        "required": 1,
+        "recall": 1.0,
+        "missing": []
+      },
+      "declaration": {
+        "found": 0,
+        "required": 0,
+        "recall": null,
+        "missing": []
+      },
+      "exception": {
+        "found": 0,
+        "required": 0,
+        "recall": null,
+        "missing": []
+      },
+      "entity_binding": {
+        "found": 0,
+        "required": 2,
+        "recall": 0.0,
+        "missing": [
+          {
+            "document": "prompt",
+            "start": 14304,
+            "end": 14950,
+            "why": "Actual matching economy reservation has two passengers.",
+            "text_sha256": "c741c6bed63861cb80a90ebba05074090cdc0a394fccece30a210b064f66b838",
+            "source_id": "h7",
+            "role": "assistant",
+            "kind": "result",
+            "tool": "get_reservation_details",
+            "event": 7
+          },
+          {
+            "document": "prompt",
+            "start": 14950,
+            "end": 15703,
+            "why": "Actual matching user receipt says Silver, not Gold.",
+            "text_sha256": "83ac173bd8c8e8b3dfa77278cb84c8689b4fb6f1812ac784efe5fc25bc2e0d24",
+            "source_id": "h8",
+            "role": "assistant",
+            "kind": "result",
+            "tool": "get_user_details",
+            "event": 8
+          }
+        ]
+      },
+      "long_distance": {
+        "found": 0,
+        "required": 0,
+        "recall": null,
+        "missing": []
+      }
+    },
+    "complete_evidence_set_success": false,
+    "reference_partial": false,
+    "alternatives": [
+      {
+        "found": 3,
+        "required": 6,
+        "complete": false
+      }
+    ],
+    "unnecessary_relative_to_reference": [
+      "h9",
+      "h2",
+      "h3",
+      "h1",
+      "q13",
+      "q8"
+    ],
+    "false_absence_risk": true,
+    "subset_absence_is_proof": false,
+    "completeness_certified": false
+  }
+}

@@ -1,0 +1,490 @@
+{
+  "case_id": "retail__106::t3",
+  "split": "dev",
+  "index": 4,
+  "method": "rrf",
+  "budget": "k8",
+  "packet": {
+    "version": "retrieval-bakeoff-v1",
+    "method": "rrf",
+    "source_sha256": "2d7e55a82a6e827c5617b8815e22de347dd3d867a3facf365de3436f206cc25b",
+    "read_sources": [
+      {
+        "source_id": "h4",
+        "document": "prompt",
+        "start": 15194,
+        "end": 15260,
+        "role": "user",
+        "kind": "text",
+        "tool": null,
+        "event": 4,
+        "text": "Меня зовут Sofia Thomas. Мой email — sofia.thomas3019@example.com.",
+        "parent_source_id": "h4",
+        "category": "HISTORY",
+        "sha256": "585ea27989967b48242b58432b89b476dd136d3c6236ff1f5979cf70b2c9ab30",
+        "evidence_status": "ORIGINAL_SOURCE_NOT_CURRENT_TRUTH_OR_PERMISSION",
+        "parent_source_length": 66,
+        "explicit_window": false,
+        "parent_coverage": "COMPLETE_PARENT"
+      },
+      {
+        "source_id": "h5",
+        "document": "prompt",
+        "start": 15282,
+        "end": 15429,
+        "role": "assistant",
+        "kind": "call",
+        "tool": "find_user_id_by_email",
+        "event": 5,
+        "text": "\t→ TOOL_CALL find_user_id_by_email: {\"email\": \"sofia.thomas3019@example.com\"}\n\t← TOOL_RESPONSE find_user_id_by_email [ERROR]: Error: User not found",
+        "parent_source_id": "h5",
+        "category": "HISTORY",
+        "sha256": "7b14b54300f8b2380168e602c647cdfbe37b04186feeae18d8e444842790fb60",
+        "evidence_status": "ORIGINAL_SOURCE_NOT_CURRENT_TRUTH_OR_PERMISSION",
+        "parent_source_length": 147,
+        "explicit_window": false,
+        "parent_coverage": "COMPLETE_PARENT"
+      },
+      {
+        "source_id": "q12",
+        "document": "prompt",
+        "start": 6427,
+        "end": 10309,
+        "text": "## Exchange delivered order\n\nAn order can only be exchanged if its status is 'delivered', and you should check its status before taking the action. In particular, remember to remind the customer to confirm they have provided all items to be exchanged.\n\nFor a delivered order, each item can be exchanged to an available new item of the same product but of different product option. There cannot be any change of product types, e.g. modify shirt to shoe.\n\nThe user must provide a payment method to pay or receive refund of the price difference. If the user provides a gift card, it must have enough balance to cover the price difference.\n\nAfter user confirmation, the order status will be changed to 'exchange requested', and the user will receive an email regarding how to return items. There is no need to place a new order.\n\n</policy>\n\n[AVAILABLE TOOLS]\n- calculate — Calculate the result of a mathematical expression.\n    expression: string! — The mathematical expression to calculate, such as '2 + 2'. The expression can contain numbers, operators (+, -, *, /), parentheses, and spaces.\n- cancel_pending_order — Cancel a pending order. If the order is already processed or delivered,\n    \n    it cannot be cancelled. The agent needs to explain the cancellation detail\n    and ask for explicit user confirmation (yes/no) to proceed. If the user confirms,\n    the order status will be changed to 'cancelled' and the payment will be refunded.\n    The refund will be added to the user's gift card balance immediately if the payment\n    was made using a gift card, otherwise the refund would take 5-7 business days to process.\n    The function returns the order details after the cancellation.\n    order_id: string! — The order id, such as '#W0000000'. Be careful there is a '#' symbol at the beginning of the order id.\n    reason: string! — The reason for cancellation, which should be either 'no longer needed' or 'ordered by mistake'.\n- exchange_delivered_order_items — Exchange items in a delivered order to new items of the same product type.\n    \n    For a delivered order, return or exchange can be only done once by the agent.\n    The agent needs to explain the exchange detail and ask for explicit user confirmation (yes/no) to proceed.\n    order_id: string! — The order id, such as '#W0000000'. Be careful there is a '#' symbol at the beginning of the order id.\n    item_ids: array! — The item ids to be exchanged, each such as '1008292230'. There could be duplicate items in the list.\n    new_item_ids: array! — The item ids to be exchanged for, each such as '1008292230'. There could be duplicate items in the list. Each new item id should match the item id in the same position and be of the same product.\n    payment_method_id: string! — The payment method id to pay or receive refund for the item price difference, such as 'gift_card_0000000' or 'credit_card_0000000'. These can be looked up from the user or order details.\n- find_user_id_by_name_zip — Find user id by first name, last name, and zip code. If the user is not found, the function\n    \n    will return an error message. By default, find user id by email, and only call this function\n    if the user is not found by email or cannot remember email.\n    first_name: string! — The first name of the customer, such as 'John'.\n    last_name: string! — The last name of the customer, such as 'Doe'.\n    zip: string! — The zip code of the customer, such as '12345'.\n- find_user_id_by_email — Find user id by email. If the user is not found, the function will return an error message.\n    email: string! — The email of the user, such as 'something@example.com'.\n- get_order_details — Get the status and details of an order.\n    order_id: string! — The order id, such as '#W0000000'. Be careful there is a '#' symbol at the beginning of the order id.\n- get_product_details — Get the inventory details of a product.\n",
+        "parent_source_id": "h0",
+        "category": "POLICY",
+        "sha256": "71a30fb268e8cc63fbd1a23b5b7f245edebb04c2a93d02970793fbed67502f3a",
+        "evidence_status": "ORIGINAL_SOURCE_NOT_CURRENT_TRUTH_OR_PERMISSION",
+        "role": "system",
+        "kind": "text",
+        "tool": null,
+        "event": 0,
+        "parent_source_length": 14826,
+        "explicit_window": true,
+        "parent_coverage": "EXACT_WINDOW_NOT_COMPLETE_PARENT"
+      },
+      {
+        "source_id": "q1",
+        "document": "prompt",
+        "start": 553,
+        "end": 2252,
+        "text": "# Retail agent policy\n\nAs a retail agent, you can help users:\n\n- **cancel or modify pending orders**\n- **return or exchange delivered orders**\n- **modify their default user address**\n- **provide information about their own profile, orders, and related products**\n\nAt the beginning of the conversation, you have to authenticate the user identity by locating their user id via email, or via name + zip code. This has to be done even when the user already provides the user id.\n\nOnce the user has been authenticated, you can provide the user with information about order, product, profile information, e.g. help the user look up order id.\n\nYou can only help one user per conversation (but you can handle multiple requests from the same user), and must deny any requests for tasks related to any other user.\n\nBefore taking any action that updates the database (cancel, modify, return, exchange), you must list the action details and obtain explicit user confirmation (yes) to proceed.\n\nYou should not make up any information or knowledge or procedures not provided by the user or the tools, or give subjective recommendations or comments.\n\nYou should at most make one tool call at a time, and if you take a tool call, you should not respond to the user at the same time. If you respond to the user, you should not make a tool call at the same time.\n\nYou should deny user requests that are against this policy.\n\nYou should transfer the user to a human agent if and only if the request cannot be handled within the scope of your actions. To transfer, first make a tool call to transfer_to_human_agents, and then send the message 'YOU ARE BEING TRANSFERRED TO A HUMAN AGENT. PLEASE HOLD ON.' to the user.\n\n",
+        "parent_source_id": "h0",
+        "category": "POLICY",
+        "sha256": "32b37e49c947aac54f94a95fb9f1043cafdf70814def77d04033e7fef41d2e5b",
+        "evidence_status": "ORIGINAL_SOURCE_NOT_CURRENT_TRUTH_OR_PERMISSION",
+        "role": "system",
+        "kind": "text",
+        "tool": null,
+        "event": 0,
+        "parent_source_length": 14826,
+        "explicit_window": true,
+        "parent_coverage": "EXACT_WINDOW_NOT_COMPLETE_PARENT"
+      },
+      {
+        "source_id": "q13",
+        "document": "prompt",
+        "start": 10309,
+        "end": 14299,
+        "text": "    product_id: string! — The product id, such as '6086499569'. Be careful the product id is different from the item id.\n- get_item_details — Get the inventory details of an item.\n    item_id: string! — The item id, such as '6086499569'. Be careful the item id is different from the product id.\n- get_user_details — Get the details of a user, including their orders.\n    user_id: string! — The user id, such as 'sara_doe_496'.\n- list_all_product_types — List the name and product id of all product types.\n    \n    Each product type has a variety of different items with unique item ids and options.\n    There are only 50 product types in the store.\n- modify_pending_order_address — Modify the shipping address of a pending order. The agent needs to explain the modification detail and ask for explicit user confirmation (yes/no) to proceed.\n    order_id: string! — The order id, such as '#W0000000'. Be careful there is a '#' symbol at the beginning of the order id.\n    address1: string! — The first line of the address, such as '123 Main St'.\n    address2: string! — The second line of the address, such as 'Apt 1' or ''.\n    city: string! — The city, such as 'San Francisco'.\n    state: string! — The state, such as 'CA'.\n    country: string! — The country, such as 'USA'.\n    zip: string! — The zip code, such as '12345'.\n- modify_pending_order_items — Modify items in a pending order to new items of the same product type. For a pending order, this function can only be called once. The agent needs to explain the exchange detail and ask for explicit user confirmation (yes/no) to proceed.\n    order_id: string! — The order id, such as '#W0000000'. Be careful there is a '#' symbol at the beginning of the order id.\n    item_ids: array! — The item ids to be modified, each such as '1008292230'. There could be duplicate items in the list.\n    new_item_ids: array! — The item ids to be modified for, each such as '1008292230'. There could be duplicate items in the list. Each new item id should match the item id in the same position and be of the same product.\n    payment_method_id: string! — The payment method id to pay or receive refund for the item price difference, such as 'gift_card_0000000' or 'credit_card_0000000'. These can be looked up from the user or order details.\n- modify_pending_order_payment — Modify the payment method of a pending order. The agent needs to explain the modification detail and ask for explicit user confirmation (yes/no) to proceed.\n    order_id: string! — The order id, such as '#W0000000'. Be careful there is a '#' symbol at the beginning of the order id.\n    payment_method_id: string! — The payment method id to pay or receive refund for the item price difference, such as 'gift_card_0000000' or 'credit_card_0000000'. These can be looked up from the user or order details.\n- modify_user_address — Modify the default address of a user. The agent needs to explain the modification detail and ask for explicit user confirmation (yes/no) to proceed.\n    user_id: string! — The user id, such as 'sara_doe_496'.\n    address1: string! — The first line of the address, such as '123 Main St'.\n    address2: string! — The second line of the address, such as 'Apt 1' or ''.\n    city: string! — The city, such as 'San Francisco'.\n    state: string! — The state, such as 'CA'.\n    country: string! — The country, such as 'USA'.\n    zip: string! — The zip code, such as '12345'.\n- return_delivered_order_items — Return some items of a delivered order.\n    \n    The order status will be changed to 'return requested'.\n    The agent needs to explain the return detail and ask for explicit user confirmation (yes/no) to proceed.\n    The user will receive follow-up email for how and where to return the item.\n    order_id: string! — The order id, such as '#W0000000'. Be careful there is a '#' symbol at the beginning of the order id.\n    item_ids: array! — The item ids to be returned, each such as '1008292230'. There could be duplicate items in the list.\n",
+        "parent_source_id": "h0",
+        "category": "POLICY",
+        "sha256": "d7f73b7bc1d3fedce5e6c4e2f6dd2c4216241ad3a8972fda0b4ca1ab5a473828",
+        "evidence_status": "ORIGINAL_SOURCE_NOT_CURRENT_TRUTH_OR_PERMISSION",
+        "role": "system",
+        "kind": "text",
+        "tool": null,
+        "event": 0,
+        "parent_source_length": 14826,
+        "explicit_window": true,
+        "parent_coverage": "EXACT_WINDOW_NOT_COMPLETE_PARENT"
+      },
+      {
+        "source_id": "q7",
+        "document": "prompt",
+        "start": 3911,
+        "end": 4418,
+        "text": "## Cancel pending order\n\nAn order can only be cancelled if its status is 'pending', and you should check its status before taking the action.\n\nThe user needs to confirm the order id and the reason (either 'no longer needed' or 'ordered by mistake') for cancellation. Other reasons are not acceptable.\n\nAfter user confirmation, the order status will be changed to 'cancelled', and the total will be refunded via the original payment method immediately if it is gift card, otherwise in 5 to 7 business days.\n\n",
+        "parent_source_id": "h0",
+        "category": "POLICY",
+        "sha256": "f8535357d1049eec05a7cd43a4f81a65dabfc45f52219ad0ec1f2a697a8862e0",
+        "evidence_status": "ORIGINAL_SOURCE_NOT_CURRENT_TRUTH_OR_PERMISSION",
+        "role": "system",
+        "kind": "text",
+        "tool": null,
+        "event": 0,
+        "parent_source_length": 14826,
+        "explicit_window": true,
+        "parent_coverage": "EXACT_WINDOW_NOT_COMPLETE_PARENT"
+      },
+      {
+        "source_id": "q14",
+        "document": "prompt",
+        "start": 14299,
+        "end": 14835,
+        "text": "    payment_method_id: string! — The payment method id to pay or receive refund for the item price difference, such as 'gift_card_0000000' or 'credit_card_0000000'. These can be looked up from the user or order details.\n- transfer_to_human_agents — Transfer the user to a human agent, with a summary of the user's issue.\n    \n    Only transfer if\n     -  the user explicitly asks for a human agent\n     -  given the policy and the available tools, you cannot solve the user's issue.\n    summary: string! — A summary of the user's issue.",
+        "parent_source_id": "h0",
+        "category": "POLICY",
+        "sha256": "89ec9255663746ab95d85c27a2d5e5a736624832de8ad334dae3cce266f8802c",
+        "evidence_status": "ORIGINAL_SOURCE_NOT_CURRENT_TRUTH_OR_PERMISSION",
+        "role": "system",
+        "kind": "text",
+        "tool": null,
+        "event": 0,
+        "parent_source_length": 14826,
+        "explicit_window": true,
+        "parent_coverage": "EXACT_WINDOW_NOT_COMPLETE_PARENT"
+      },
+      {
+        "source_id": "q4",
+        "document": "prompt",
+        "start": 2572,
+        "end": 3198,
+        "text": "### Product\n\nOur retail store has 50 types of products.\n\nFor each **type of product**, there are **variant items** of different **options**.\n\nFor example, for a 't-shirt' product, there could be a variant item with option 'color blue size M', and another variant item with option 'color red size L'.\n\nEach product has the following attributes:\n\n- unique product id\n- name\n- list of variants\n\nEach variant item has the following attributes:\n\n- unique item id\n- information about the value of the product options for this item.\n- availability\n- price\n\nNote: Product ID and Item ID have no relations and should not be confused!\n\n",
+        "parent_source_id": "h0",
+        "category": "POLICY",
+        "sha256": "b2cb17d73d8948d1ac48623538672db5c79baac6689077860728f20a47dca9d8",
+        "evidence_status": "ORIGINAL_SOURCE_NOT_CURRENT_TRUTH_OR_PERMISSION",
+        "role": "system",
+        "kind": "text",
+        "tool": null,
+        "event": 0,
+        "parent_source_length": 14826,
+        "explicit_window": true,
+        "parent_coverage": "EXACT_WINDOW_NOT_COMPLETE_PARENT"
+      }
+    ],
+    "current_targets": [
+      {
+        "source_id": "t0",
+        "document": "response",
+        "start": 20,
+        "end": 120,
+        "role": "assistant",
+        "kind": "call",
+        "tool": "find_user_id_by_name_zip",
+        "event": 0,
+        "text": "\t→ TOOL_CALL find_user_id_by_name_zip: {\"first_name\": \"Sofia\", \"last_name\": \"Thomas\", \"zip\": \"3019\"}",
+        "parent_source_id": "t0",
+        "category": "TARGET",
+        "sha256": "d80bc3c940e62dcdeff8fbb8ac53cf2dc4ad46e6cb3fad3f88911d96fe9b95db",
+        "evidence_status": "ORIGINAL_SOURCE_NOT_CURRENT_TRUTH_OR_PERMISSION"
+      }
+    ],
+    "declarations": [
+      {
+        "source_id": "d4",
+        "document": "prompt",
+        "start": 9364,
+        "end": 9862,
+        "role": "system",
+        "kind": "DECLARATION",
+        "tool": "find_user_id_by_name_zip",
+        "text": "- find_user_id_by_name_zip — Find user id by first name, last name, and zip code. If the user is not found, the function\n    \n    will return an error message. By default, find user id by email, and only call this function\n    if the user is not found by email or cannot remember email.\n    first_name: string! — The first name of the customer, such as 'John'.\n    last_name: string! — The last name of the customer, such as 'Doe'.\n    zip: string! — The zip code of the customer, such as '12345'.\n",
+        "parent_source_id": "d4",
+        "category": "DECLARATION",
+        "sha256": "228d009002ad9bd848e892ee41831188c21df1fe542424ca2d4bc2e93289631d",
+        "evidence_status": "ORIGINAL_SOURCE_NOT_CURRENT_TRUTH_OR_PERMISSION"
+      }
+    ],
+    "selected_ids": [
+      "h4",
+      "h5",
+      "q12",
+      "q1",
+      "q13",
+      "q7",
+      "q14",
+      "q4"
+    ],
+    "trace": {
+      "queries": [
+        "find user id by name zip",
+        "\"Sofia\" \"Thomas\" \"3019\"",
+        "- find_user_id_by_name_zip — Find user id by first name, last name, and zip code. If the user is not found, the function\n    \n    will return an error message. By default, find user id by email, and only call this function\n    if the user is not found by email or cannot remember email.\n    first_name: string! — The first name of the customer, such as 'John'.\n    last_name: string! — The last name of the customer, such as 'Doe'.\n    zip: string! — The zip code of the customer, such as '12345'.\n"
+      ],
+      "rankings": [
+        [
+          "q12",
+          "q1",
+          "q13",
+          "q7",
+          "q4",
+          "q3",
+          "q5",
+          "q14",
+          "q11",
+          "q9",
+          "q0",
+          "h5",
+          "q10"
+        ],
+        [
+          "h4",
+          "h5"
+        ],
+        [
+          "q12",
+          "q13",
+          "q1",
+          "q14",
+          "q7",
+          "q11",
+          "q10",
+          "q0",
+          "q4",
+          "q9",
+          "h5",
+          "q5",
+          "q3",
+          "q8",
+          "q6",
+          "q2",
+          "h4"
+        ],
+        [
+          "h4"
+        ],
+        []
+      ],
+      "fused_ranking": [
+        "h4",
+        "h5",
+        "q12",
+        "q1",
+        "q13",
+        "q7",
+        "q14",
+        "q4",
+        "q11",
+        "q3",
+        "q5",
+        "q0",
+        "q10",
+        "q9",
+        "q8",
+        "q6",
+        "q2"
+      ],
+      "selection": [
+        {
+          "source_id": "h4",
+          "status": "SELECTED",
+          "dependency_group": [
+            "h4"
+          ],
+          "token_bound": 480
+        },
+        {
+          "source_id": "h5",
+          "status": "SELECTED",
+          "dependency_group": [
+            "h5"
+          ],
+          "token_bound": 583
+        },
+        {
+          "source_id": "q12",
+          "status": "SELECTED",
+          "dependency_group": [
+            "q12"
+          ],
+          "token_bound": 4385
+        },
+        {
+          "source_id": "q1",
+          "status": "SELECTED",
+          "dependency_group": [
+            "q1"
+          ],
+          "token_bound": 2141
+        },
+        {
+          "source_id": "q13",
+          "status": "SELECTED",
+          "dependency_group": [
+            "q13"
+          ],
+          "token_bound": 4517
+        },
+        {
+          "source_id": "q7",
+          "status": "SELECTED",
+          "dependency_group": [
+            "q7"
+          ],
+          "token_bound": 933
+        },
+        {
+          "source_id": "q14",
+          "status": "SELECTED",
+          "dependency_group": [
+            "q14"
+          ],
+          "token_bound": 969
+        },
+        {
+          "source_id": "q4",
+          "status": "SELECTED",
+          "dependency_group": [
+            "q4"
+          ],
+          "token_bound": 1067
+        },
+        {
+          "source_id": "q11",
+          "status": "READ_BUDGET_SKIP",
+          "dependency_group": [
+            "q11"
+          ]
+        },
+        {
+          "source_id": "q3",
+          "status": "READ_BUDGET_SKIP",
+          "dependency_group": [
+            "q3"
+          ]
+        },
+        {
+          "source_id": "q5",
+          "status": "READ_BUDGET_SKIP",
+          "dependency_group": [
+            "q5"
+          ]
+        },
+        {
+          "source_id": "q0",
+          "status": "READ_BUDGET_SKIP",
+          "dependency_group": [
+            "q0"
+          ]
+        },
+        {
+          "source_id": "q10",
+          "status": "READ_BUDGET_SKIP",
+          "dependency_group": [
+            "q10"
+          ]
+        },
+        {
+          "source_id": "q9",
+          "status": "READ_BUDGET_SKIP",
+          "dependency_group": [
+            "q9"
+          ]
+        },
+        {
+          "source_id": "q8",
+          "status": "READ_BUDGET_SKIP",
+          "dependency_group": [
+            "q8"
+          ]
+        },
+        {
+          "source_id": "q6",
+          "status": "READ_BUDGET_SKIP",
+          "dependency_group": [
+            "q6"
+          ]
+        },
+        {
+          "source_id": "q2",
+          "status": "READ_BUDGET_SKIP",
+          "dependency_group": [
+            "q2"
+          ]
+        }
+      ],
+      "fusion": "RRF_K60",
+      "graph_assurance": "UNIQUE_ORIGINAL_RECEIPTS_AND_CO_RECORDED_CANDIDATES_NOT_SEMANTIC_IDENTITY",
+      "common_catalog_used": true
+    },
+    "seconds": 0.006330300006084144,
+    "failure": null,
+    "read_limit": 8,
+    "token_limit": null,
+    "cost": {
+      "retrieved_reads": 8,
+      "mandatory_targets": 1,
+      "mandatory_declarations": 1,
+      "source_chars": 12051,
+      "source_token_upper_bound": 16378,
+      "token_estimator": "FULL_UTF8_BYTES_CONSERVATIVE_BOUND_NOT_PROVIDER_USAGE",
+      "inference_http": 0
+    },
+    "uncovered": [
+      {
+        "category": "PARENT_SOURCE_COMPLETENESS",
+        "reason": "EXPLICIT_SOURCE_WINDOWS_ONLY; all original parents remain accessible"
+      }
+    ],
+    "completeness_certified": false,
+    "absence_proves_semantic_absence": false,
+    "evidence_contract": "Original recorded sources and explicit windows only. Raw matching and graph links are candidate retrieval, not entity/ownership/permission/current-state proof. Absence from this subset never establishes missing process events in the full log."
+  },
+  "score": {
+    "categories": {
+      "policy": {
+        "found": 2,
+        "required": 2,
+        "recall": 1.0,
+        "missing": []
+      },
+      "history": {
+        "found": 1,
+        "required": 1,
+        "recall": 1.0,
+        "missing": []
+      },
+      "target": {
+        "found": 1,
+        "required": 1,
+        "recall": 1.0,
+        "missing": []
+      },
+      "declaration": {
+        "found": 1,
+        "required": 1,
+        "recall": 1.0,
+        "missing": []
+      },
+      "exception": {
+        "found": 0,
+        "required": 0,
+        "recall": null,
+        "missing": []
+      },
+      "entity_binding": {
+        "found": 0,
+        "required": 0,
+        "recall": null,
+        "missing": []
+      },
+      "long_distance": {
+        "found": 0,
+        "required": 0,
+        "recall": null,
+        "missing": []
+      }
+    },
+    "complete_evidence_set_success": true,
+    "reference_partial": false,
+    "alternatives": [
+      {
+        "found": 5,
+        "required": 5,
+        "complete": true
+      }
+    ],
+    "unnecessary_relative_to_reference": [
+      "h5",
+      "q13",
+      "q7",
+      "q14",
+      "q4"
+    ],
+    "false_absence_risk": false,
+    "subset_absence_is_proof": false,
+    "completeness_certified": false
+  }
+}

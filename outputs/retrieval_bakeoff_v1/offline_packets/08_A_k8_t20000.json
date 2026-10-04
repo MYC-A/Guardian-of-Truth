@@ -1,0 +1,225 @@
+{
+  "case_id": "airline__9::t6",
+  "split": "evaluation_known",
+  "index": 8,
+  "method": "A",
+  "budget": "k8_t20000",
+  "packet": {
+    "version": "retrieval-bakeoff-v1",
+    "method": "A",
+    "source_sha256": "11acce03fa0d596dda903408f9792df38c1efb7c0f390181d1ba6a771d90225f",
+    "read_sources": [],
+    "current_targets": [
+      {
+        "source_id": "t0",
+        "document": "response",
+        "start": 20,
+        "end": 82,
+        "role": "assistant",
+        "kind": "call",
+        "tool": "cancel_reservation",
+        "event": 0,
+        "text": "\t→ TOOL_CALL cancel_reservation: {\"reservation_id\": \"IFOYYZ\"}\n",
+        "parent_source_id": "t0",
+        "category": "TARGET",
+        "sha256": "59dad9d925a56b20a2f79a48638333e5185e0614f260147849f43cd8e5794f73",
+        "evidence_status": "ORIGINAL_SOURCE_NOT_CURRENT_TRUTH_OR_PERMISSION"
+      },
+      {
+        "source_id": "t1",
+        "document": "response",
+        "start": 82,
+        "end": 390,
+        "role": "assistant",
+        "kind": "call",
+        "tool": "transfer_to_human_agents",
+        "event": 1,
+        "text": "\t→ TOOL_CALL transfer_to_human_agents: {\"summary\": \"The user wants to cancel reservation NQNU5R. Since the flights were scheduled for May 13th and 14th (current date is May 15th), the agent needs to check if any portion of the flight has been flown, which requires a human agent's assistance as per policy.\"}",
+        "parent_source_id": "t1",
+        "category": "TARGET",
+        "sha256": "b5a835bf63fc04a144952c35284d4c391ade27cdc6dbde768bc7191ace5a81b1",
+        "evidence_status": "ORIGINAL_SOURCE_NOT_CURRENT_TRUTH_OR_PERMISSION"
+      }
+    ],
+    "declarations": [
+      {
+        "source_id": "d2",
+        "document": "prompt",
+        "start": 10005,
+        "end": 10126,
+        "role": "system",
+        "kind": "DECLARATION",
+        "tool": "cancel_reservation",
+        "text": "- cancel_reservation — Cancel the whole reservation.\n    reservation_id: string! — The reservation ID, such as 'ZFA04Y'.\n",
+        "parent_source_id": "d2",
+        "category": "DECLARATION",
+        "sha256": "776f9bfa017fab23a2ce43f8884fe23481906bc6d634b0338da94f6b9f0df2b4",
+        "evidence_status": "ORIGINAL_SOURCE_NOT_CURRENT_TRUTH_OR_PERMISSION"
+      },
+      {
+        "source_id": "d10",
+        "document": "prompt",
+        "start": 11379,
+        "end": 11696,
+        "role": "system",
+        "kind": "DECLARATION",
+        "tool": "transfer_to_human_agents",
+        "text": "- transfer_to_human_agents — Transfer the user to a human agent, with a summary of the user's issue.\n    \n    Only transfer if\n     -  the user explicitly asks for a human agent\n     -  given the policy and the available tools, you cannot solve the user's issue.\n    summary: string! — A summary of the user's issue.\n",
+        "parent_source_id": "d10",
+        "category": "DECLARATION",
+        "sha256": "bebdfa9839e12dd0f05f6af37b91c04e7d42ccdc2c351df72f409d3f08280e04",
+        "evidence_status": "ORIGINAL_SOURCE_NOT_CURRENT_TRUTH_OR_PERMISSION"
+      }
+    ],
+    "selected_ids": [],
+    "trace": {
+      "algorithm": "UNCHANGED_IMPORTED_COVERAGE_PLAN",
+      "error_type": "ValueError",
+      "error": "EXPECTED_ONE_CURRENT_NATIVE_TARGET"
+    },
+    "seconds": 0.00659319999977015,
+    "failure": "UNSUPPORTED_BASELINE_CASE",
+    "read_limit": 8,
+    "token_limit": 20000,
+    "cost": {
+      "retrieved_reads": 0,
+      "mandatory_targets": 2,
+      "mandatory_declarations": 2,
+      "source_chars": 808,
+      "source_token_upper_bound": 2181,
+      "token_estimator": "FULL_UTF8_BYTES_CONSERVATIVE_BOUND_NOT_PROVIDER_USAGE",
+      "inference_http": 0
+    },
+    "uncovered": [
+      {
+        "category": "POLICY",
+        "reason": "NO_SELECTED_SOURCE_NOT_PROOF_OF_ABSENCE"
+      },
+      {
+        "category": "HISTORY",
+        "reason": "NO_SELECTED_SOURCE_NOT_PROOF_OF_ABSENCE"
+      }
+    ],
+    "completeness_certified": false,
+    "absence_proves_semantic_absence": false,
+    "evidence_contract": "Original recorded sources and explicit windows only. Raw matching and graph links are candidate retrieval, not entity/ownership/permission/current-state proof. Absence from this subset never establishes missing process events in the full log."
+  },
+  "score": {
+    "categories": {
+      "policy": {
+        "found": 0,
+        "required": 3,
+        "recall": 0.0,
+        "missing": [
+          {
+            "document": "prompt",
+            "start": 1179,
+            "end": 1382,
+            "why": "At most one tool call for the whole current move.",
+            "text_sha256": "5abaf0d77f89d6e49b822757c30de30af51f3efbdd34a75ef74e440863b6aa01"
+          },
+          {
+            "document": "prompt",
+            "start": 577,
+            "end": 621,
+            "why": "Policy clock for reservation age.",
+            "text_sha256": "9ecb3d19c804cb3bfd02ab076b0a7baca3c1222028d0e028b44e6a17a5b34a31"
+          },
+          {
+            "document": "prompt",
+            "start": 6379,
+            "end": 7300,
+            "why": "Cancellation alternatives and API responsibility; future departure alone insufficient.",
+            "text_sha256": "abbad44e2de52ba07fe92433f7b9c06d0a7165ffacaaa0d6778fe84f78ead320"
+          }
+        ]
+      },
+      "history": {
+        "found": 0,
+        "required": 3,
+        "recall": 0.0,
+        "missing": [
+          {
+            "document": "prompt",
+            "start": 14342,
+            "end": 15032,
+            "why": "IFOYYZ age/basic economy/no insurance, but flight cancellation status unresolved.",
+            "text_sha256": "39c8e156b9c8e2c746f603250d84278d6660484a11a853ecdeff82ff8c165524",
+            "source_id": "h8",
+            "role": "assistant",
+            "kind": "result",
+            "tool": "get_reservation_details",
+            "event": 8
+          },
+          {
+            "document": "prompt",
+            "start": 17441,
+            "end": 17808,
+            "why": "User says cancellation is change of plans.",
+            "text_sha256": "dc2522b4d019e62589986d0db1a3ca65ef0f7376a6c8ec8c049dcc1740c52ec0",
+            "source_id": "h12",
+            "role": "user",
+            "kind": "text",
+            "tool": null,
+            "event": 12
+          },
+          {
+            "document": "prompt",
+            "start": 19724,
+            "end": 20159,
+            "why": "User confirms the actual requested IFOYYZ cancellation and NQNU5R transfer.",
+            "text_sha256": "b7bea97cbf1134c20f6eebad2d9bb52042897e59ab2dd95ec8d90277c1764192",
+            "source_id": "h18",
+            "role": "user",
+            "kind": "text",
+            "tool": null,
+            "event": 18
+          }
+        ]
+      },
+      "target": {
+        "found": 2,
+        "required": 2,
+        "recall": 1.0,
+        "missing": []
+      },
+      "declaration": {
+        "found": 0,
+        "required": 0,
+        "recall": null,
+        "missing": []
+      },
+      "exception": {
+        "found": 0,
+        "required": 0,
+        "recall": null,
+        "missing": []
+      },
+      "entity_binding": {
+        "found": 0,
+        "required": 0,
+        "recall": null,
+        "missing": []
+      },
+      "long_distance": {
+        "found": 0,
+        "required": 0,
+        "recall": null,
+        "missing": []
+      }
+    },
+    "complete_evidence_set_success": false,
+    "reference_partial": true,
+    "alternatives": [
+      {
+        "found": 2,
+        "required": 3,
+        "complete": false
+      }
+    ],
+    "unnecessary_relative_to_reference": [],
+    "false_absence_risk": true,
+    "subset_absence_is_proof": false,
+    "completeness_certified": false
+  }
+}

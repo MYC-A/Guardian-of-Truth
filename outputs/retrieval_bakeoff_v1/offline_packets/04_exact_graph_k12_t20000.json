@@ -1,0 +1,193 @@
+{
+  "case_id": "retail__106::t3",
+  "split": "dev",
+  "index": 4,
+  "method": "exact_graph",
+  "budget": "k12_t20000",
+  "packet": {
+    "version": "retrieval-bakeoff-v1",
+    "method": "exact_graph",
+    "source_sha256": "2d7e55a82a6e827c5617b8815e22de347dd3d867a3facf365de3436f206cc25b",
+    "read_sources": [
+      {
+        "source_id": "h4",
+        "document": "prompt",
+        "start": 15194,
+        "end": 15260,
+        "role": "user",
+        "kind": "text",
+        "tool": null,
+        "event": 4,
+        "text": "Меня зовут Sofia Thomas. Мой email — sofia.thomas3019@example.com.",
+        "parent_source_id": "h4",
+        "category": "HISTORY",
+        "sha256": "585ea27989967b48242b58432b89b476dd136d3c6236ff1f5979cf70b2c9ab30",
+        "evidence_status": "ORIGINAL_SOURCE_NOT_CURRENT_TRUTH_OR_PERMISSION",
+        "parent_source_length": 66,
+        "explicit_window": false,
+        "parent_coverage": "COMPLETE_PARENT"
+      }
+    ],
+    "current_targets": [
+      {
+        "source_id": "t0",
+        "document": "response",
+        "start": 20,
+        "end": 120,
+        "role": "assistant",
+        "kind": "call",
+        "tool": "find_user_id_by_name_zip",
+        "event": 0,
+        "text": "\t→ TOOL_CALL find_user_id_by_name_zip: {\"first_name\": \"Sofia\", \"last_name\": \"Thomas\", \"zip\": \"3019\"}",
+        "parent_source_id": "t0",
+        "category": "TARGET",
+        "sha256": "d80bc3c940e62dcdeff8fbb8ac53cf2dc4ad46e6cb3fad3f88911d96fe9b95db",
+        "evidence_status": "ORIGINAL_SOURCE_NOT_CURRENT_TRUTH_OR_PERMISSION"
+      }
+    ],
+    "declarations": [
+      {
+        "source_id": "d4",
+        "document": "prompt",
+        "start": 9364,
+        "end": 9862,
+        "role": "system",
+        "kind": "DECLARATION",
+        "tool": "find_user_id_by_name_zip",
+        "text": "- find_user_id_by_name_zip — Find user id by first name, last name, and zip code. If the user is not found, the function\n    \n    will return an error message. By default, find user id by email, and only call this function\n    if the user is not found by email or cannot remember email.\n    first_name: string! — The first name of the customer, such as 'John'.\n    last_name: string! — The last name of the customer, such as 'Doe'.\n    zip: string! — The zip code of the customer, such as '12345'.\n",
+        "parent_source_id": "d4",
+        "category": "DECLARATION",
+        "sha256": "228d009002ad9bd848e892ee41831188c21df1fe542424ca2d4bc2e93289631d",
+        "evidence_status": "ORIGINAL_SOURCE_NOT_CURRENT_TRUTH_OR_PERMISSION"
+      }
+    ],
+    "selected_ids": [
+      "h4"
+    ],
+    "trace": {
+      "queries": [
+        "find user id by name zip",
+        "\"Sofia\" \"Thomas\" \"3019\"",
+        "- find_user_id_by_name_zip — Find user id by first name, last name, and zip code. If the user is not found, the function\n    \n    will return an error message. By default, find user id by email, and only call this function\n    if the user is not found by email or cannot remember email.\n    first_name: string! — The first name of the customer, such as 'John'.\n    last_name: string! — The last name of the customer, such as 'Doe'.\n    zip: string! — The zip code of the customer, such as '12345'.\n"
+      ],
+      "rankings": [
+        [
+          "h4"
+        ],
+        []
+      ],
+      "fused_ranking": [
+        "h4"
+      ],
+      "selection": [
+        {
+          "source_id": "h4",
+          "status": "SELECTED",
+          "dependency_group": [
+            "h4"
+          ],
+          "token_bound": 480
+        }
+      ],
+      "fusion": "ROUND_ROBIN",
+      "graph_assurance": "UNIQUE_ORIGINAL_RECEIPTS_AND_CO_RECORDED_CANDIDATES_NOT_SEMANTIC_IDENTITY",
+      "common_catalog_used": true
+    },
+    "seconds": 0.0017499999958090484,
+    "failure": null,
+    "read_limit": 12,
+    "token_limit": 20000,
+    "cost": {
+      "retrieved_reads": 1,
+      "mandatory_targets": 1,
+      "mandatory_declarations": 1,
+      "source_chars": 664,
+      "source_token_upper_bound": 1783,
+      "token_estimator": "FULL_UTF8_BYTES_CONSERVATIVE_BOUND_NOT_PROVIDER_USAGE",
+      "inference_http": 0
+    },
+    "uncovered": [
+      {
+        "category": "POLICY",
+        "reason": "NO_SELECTED_SOURCE_NOT_PROOF_OF_ABSENCE"
+      }
+    ],
+    "completeness_certified": false,
+    "absence_proves_semantic_absence": false,
+    "evidence_contract": "Original recorded sources and explicit windows only. Raw matching and graph links are candidate retrieval, not entity/ownership/permission/current-state proof. Absence from this subset never establishes missing process events in the full log."
+  },
+  "score": {
+    "categories": {
+      "policy": {
+        "found": 0,
+        "required": 2,
+        "recall": 0.0,
+        "missing": [
+          {
+            "document": "prompt",
+            "start": 1535,
+            "end": 1687,
+            "why": "Do not invent ZIP from email digits.",
+            "text_sha256": "b79facae907c653d79fd9d6597fc9271e8971d4819261d0a5ce98f8cce267c3e"
+          },
+          {
+            "document": "prompt",
+            "start": 817,
+            "end": 1027,
+            "why": "Valid lookup is email or actual name plus actual ZIP.",
+            "text_sha256": "07b97e5b3205eb45429a4e537cc352ce82ee6a359f6a7095f47f16cd5f04f5a9"
+          }
+        ]
+      },
+      "history": {
+        "found": 1,
+        "required": 1,
+        "recall": 1.0,
+        "missing": []
+      },
+      "target": {
+        "found": 1,
+        "required": 1,
+        "recall": 1.0,
+        "missing": []
+      },
+      "declaration": {
+        "found": 1,
+        "required": 1,
+        "recall": 1.0,
+        "missing": []
+      },
+      "exception": {
+        "found": 0,
+        "required": 0,
+        "recall": null,
+        "missing": []
+      },
+      "entity_binding": {
+        "found": 0,
+        "required": 0,
+        "recall": null,
+        "missing": []
+      },
+      "long_distance": {
+        "found": 0,
+        "required": 0,
+        "recall": null,
+        "missing": []
+      }
+    },
+    "complete_evidence_set_success": false,
+    "reference_partial": false,
+    "alternatives": [
+      {
+        "found": 3,
+        "required": 5,
+        "complete": false
+      }
+    ],
+    "unnecessary_relative_to_reference": [],
+    "false_absence_risk": false,
+    "subset_absence_is_proof": false,
+    "completeness_certified": false
+  }
+}

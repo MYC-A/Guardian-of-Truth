@@ -1,0 +1,646 @@
+{
+  "case_id": "retail__27::t10",
+  "split": "evaluation_known",
+  "index": 11,
+  "method": "bm25_exact",
+  "budget": "k8",
+  "packet": {
+    "version": "retrieval-bakeoff-v1",
+    "method": "bm25_exact",
+    "source_sha256": "42728199f98be14013afe8091d7521d56288c5a6c67b4d31c2890fbb976f59bf",
+    "read_sources": [
+      {
+        "source_id": "q21",
+        "document": "prompt",
+        "start": 5903,
+        "end": 6427,
+        "text": "## Return delivered order\n\nAn order can only be returned if its status is 'delivered', and you should check its status before taking the action.\n\nThe user needs to confirm the order id and the list of items to be returned.\n\nThe user needs to provide a payment method to receive the refund.\n\nThe refund must either go to the original payment method, or an existing gift card.\n\nAfter user confirmation, the order status will be changed to 'return requested', and the user will receive an email regarding how to return items.\n\n",
+        "parent_source_id": "h0",
+        "category": "POLICY",
+        "sha256": "68f365e35af7854578637b921e90414dcc017d95255398f33c6746daa8f2554e",
+        "evidence_status": "ORIGINAL_SOURCE_NOT_CURRENT_TRUTH_OR_PERMISSION",
+        "role": "system",
+        "kind": "text",
+        "tool": null,
+        "event": 0,
+        "parent_source_length": 14826,
+        "explicit_window": true,
+        "parent_coverage": "EXACT_WINDOW_NOT_COMPLETE_PARENT"
+      },
+      {
+        "source_id": "h19",
+        "document": "prompt",
+        "start": 25007,
+        "end": 25991,
+        "role": "assistant",
+        "kind": "text",
+        "tool": null,
+        "event": 19,
+        "text": "Для того чтобы завершить процесс, мне нужно ваше окончательное подтверждение по двум отдельным операциям:\n\n**1. Возврат товаров:**\n*   **Заказ:** #W7181492\n*   **Товары к возврату:** Garden Hose (item_id: 5753502325) и Backpack (item_id: 9851293632).\n*   **Способ возврата средств:** PayPal (paypal_3024827).\n*   **Результат:** Статус заказа изменится на «return requested», и вы получите инструкции по возврату на электронную почту.\n\n**2. Обмен товара:**\n*   **Заказ:** #W7181492\n*   **Товар на обмен:** Hiking Boots (item_id: 8118291112) $\\rightarrow$ Hiking Boots (водонепроницаемые, item_id: 8277474082).\n*   **Разница в цене:** Стоимость новых ботинок (236.57) ниже стоимости старых (260.56), поэтому разница в размере 23.99 будет возвращена на ваш PayPal (paypal_3024827).\n*   **Результат:** Статус заказа изменится на «exchange requested», и вы получите инструкции по возврату старой пары на почту.\n\nВы подтверждаете обе эти операции? Пожалуйста, ответьте «да», если всё верно.",
+        "parent_source_id": "h19",
+        "category": "HISTORY",
+        "sha256": "6cf6968bd2d36954722091e7a539f5817338702f92dac765f87b5c299afcf146",
+        "evidence_status": "ORIGINAL_SOURCE_NOT_CURRENT_TRUTH_OR_PERMISSION",
+        "parent_source_length": 984,
+        "explicit_window": false,
+        "parent_coverage": "COMPLETE_PARENT"
+      },
+      {
+        "source_id": "q23",
+        "document": "prompt",
+        "start": 10309,
+        "end": 14299,
+        "text": "    product_id: string! — The product id, such as '6086499569'. Be careful the product id is different from the item id.\n- get_item_details — Get the inventory details of an item.\n    item_id: string! — The item id, such as '6086499569'. Be careful the item id is different from the product id.\n- get_user_details — Get the details of a user, including their orders.\n    user_id: string! — The user id, such as 'sara_doe_496'.\n- list_all_product_types — List the name and product id of all product types.\n    \n    Each product type has a variety of different items with unique item ids and options.\n    There are only 50 product types in the store.\n- modify_pending_order_address — Modify the shipping address of a pending order. The agent needs to explain the modification detail and ask for explicit user confirmation (yes/no) to proceed.\n    order_id: string! — The order id, such as '#W0000000'. Be careful there is a '#' symbol at the beginning of the order id.\n    address1: string! — The first line of the address, such as '123 Main St'.\n    address2: string! — The second line of the address, such as 'Apt 1' or ''.\n    city: string! — The city, such as 'San Francisco'.\n    state: string! — The state, such as 'CA'.\n    country: string! — The country, such as 'USA'.\n    zip: string! — The zip code, such as '12345'.\n- modify_pending_order_items — Modify items in a pending order to new items of the same product type. For a pending order, this function can only be called once. The agent needs to explain the exchange detail and ask for explicit user confirmation (yes/no) to proceed.\n    order_id: string! — The order id, such as '#W0000000'. Be careful there is a '#' symbol at the beginning of the order id.\n    item_ids: array! — The item ids to be modified, each such as '1008292230'. There could be duplicate items in the list.\n    new_item_ids: array! — The item ids to be modified for, each such as '1008292230'. There could be duplicate items in the list. Each new item id should match the item id in the same position and be of the same product.\n    payment_method_id: string! — The payment method id to pay or receive refund for the item price difference, such as 'gift_card_0000000' or 'credit_card_0000000'. These can be looked up from the user or order details.\n- modify_pending_order_payment — Modify the payment method of a pending order. The agent needs to explain the modification detail and ask for explicit user confirmation (yes/no) to proceed.\n    order_id: string! — The order id, such as '#W0000000'. Be careful there is a '#' symbol at the beginning of the order id.\n    payment_method_id: string! — The payment method id to pay or receive refund for the item price difference, such as 'gift_card_0000000' or 'credit_card_0000000'. These can be looked up from the user or order details.\n- modify_user_address — Modify the default address of a user. The agent needs to explain the modification detail and ask for explicit user confirmation (yes/no) to proceed.\n    user_id: string! — The user id, such as 'sara_doe_496'.\n    address1: string! — The first line of the address, such as '123 Main St'.\n    address2: string! — The second line of the address, such as 'Apt 1' or ''.\n    city: string! — The city, such as 'San Francisco'.\n    state: string! — The state, such as 'CA'.\n    country: string! — The country, such as 'USA'.\n    zip: string! — The zip code, such as '12345'.\n- return_delivered_order_items — Return some items of a delivered order.\n    \n    The order status will be changed to 'return requested'.\n    The agent needs to explain the return detail and ask for explicit user confirmation (yes/no) to proceed.\n    The user will receive follow-up email for how and where to return the item.\n    order_id: string! — The order id, such as '#W0000000'. Be careful there is a '#' symbol at the beginning of the order id.\n    item_ids: array! — The item ids to be returned, each such as '1008292230'. There could be duplicate items in the list.\n",
+        "parent_source_id": "h0",
+        "category": "POLICY",
+        "sha256": "d7f73b7bc1d3fedce5e6c4e2f6dd2c4216241ad3a8972fda0b4ca1ab5a473828",
+        "evidence_status": "ORIGINAL_SOURCE_NOT_CURRENT_TRUTH_OR_PERMISSION",
+        "role": "system",
+        "kind": "text",
+        "tool": null,
+        "event": 0,
+        "parent_source_length": 14826,
+        "explicit_window": true,
+        "parent_coverage": "EXACT_WINDOW_NOT_COMPLETE_PARENT"
+      },
+      {
+        "source_id": "h13",
+        "document": "prompt",
+        "start": 19258,
+        "end": 19316,
+        "role": "assistant",
+        "kind": "call",
+        "tool": "get_order_details",
+        "event": 13,
+        "text": "\t→ TOOL_CALL get_order_details: {\"order_id\": \"#W7181492\"}\n",
+        "parent_source_id": "h13",
+        "category": "HISTORY",
+        "sha256": "c66a3bf1db31ab257fe3c7ee29db2aaf4b068d873b3abb161cc1e94f54f8b9e4",
+        "evidence_status": "ORIGINAL_SOURCE_NOT_CURRENT_TRUTH_OR_PERMISSION",
+        "parent_source_length": 58,
+        "explicit_window": false,
+        "parent_coverage": "COMPLETE_PARENT"
+      },
+      {
+        "source_id": "h14",
+        "document": "prompt",
+        "start": 19316,
+        "end": 20932,
+        "role": "assistant",
+        "kind": "result",
+        "tool": "get_order_details",
+        "event": 14,
+        "text": "\t← TOOL_RESPONSE get_order_details: {\"order_id\": \"#W7181492\", \"user_id\": \"isabella_johansson_2152\", \"address\": {\"address1\": \"313 Chestnut Street\", \"address2\": \"Suite 537\", \"city\": \"Jacksonville\", \"country\": \"USA\", \"state\": \"FL\", \"zip\": \"32286\"}, \"items\": [{\"name\": \"Garden Hose\", \"product_id\": \"6679515468\", \"item_id\": \"5753502325\", \"price\": 96.35, \"options\": {\"length\": \"25ft\", \"material\": \"rubber\", \"color\": \"green\"}}, {\"name\": \"Backpack\", \"product_id\": \"2524789262\", \"item_id\": \"9851293632\", \"price\": 193.38, \"options\": {\"color\": \"green\", \"size\": \"small\", \"material\": \"polyester\", \"compartment\": \"camera\"}}, {\"name\": \"Bookshelf\", \"product_id\": \"8600330539\", \"item_id\": \"3778705663\", \"price\": 473.48, \"options\": {\"material\": \"metal\", \"color\": \"black\", \"height\": \"6 ft\"}}, {\"name\": \"Hiking Boots\", \"product_id\": \"7363354090\", \"item_id\": \"8118291112\", \"price\": 260.56, \"options\": {\"size\": \"12\", \"material\": \"leather\", \"waterproof\": \"no\"}}, {\"name\": \"Coffee Maker\", \"product_id\": \"7996920482\", \"item_id\": \"3020722515\", \"price\": 238.64, \"options\": {\"color\": \"black\", \"capacity\": \"1 cup\", \"type\": \"french press\", \"features\": \"auto shutoff\"}}], \"status\": \"delivered\", \"fulfillments\": [{\"tracking_id\": [\"418708581751\"], \"item_ids\": [\"5753502325\", \"9851293632\", \"3778705663\", \"8118291112\", \"3020722515\"]}], \"payment_history\": [{\"transaction_type\": \"payment\", \"amount\": 1262.41, \"payment_method_id\": \"paypal_3024827\"}], \"cancel_reason\": null, \"exchange_items\": null, \"exchange_new_items\": null, \"exchange_payment_method_id\": null, \"exchange_price_difference\": null, \"return_items\": null, \"return_payment_method_id\": null}\n\n",
+        "parent_source_id": "h14",
+        "category": "HISTORY",
+        "sha256": "2e7b0cd7c8df6fc787b6e90c4c09ac17aedf57a71f4ec06e1eac4fe1bef50535",
+        "evidence_status": "ORIGINAL_SOURCE_NOT_CURRENT_TRUTH_OR_PERMISSION",
+        "parent_source_length": 1616,
+        "explicit_window": false,
+        "parent_coverage": "COMPLETE_PARENT"
+      },
+      {
+        "source_id": "q22",
+        "document": "prompt",
+        "start": 6427,
+        "end": 10309,
+        "text": "## Exchange delivered order\n\nAn order can only be exchanged if its status is 'delivered', and you should check its status before taking the action. In particular, remember to remind the customer to confirm they have provided all items to be exchanged.\n\nFor a delivered order, each item can be exchanged to an available new item of the same product but of different product option. There cannot be any change of product types, e.g. modify shirt to shoe.\n\nThe user must provide a payment method to pay or receive refund of the price difference. If the user provides a gift card, it must have enough balance to cover the price difference.\n\nAfter user confirmation, the order status will be changed to 'exchange requested', and the user will receive an email regarding how to return items. There is no need to place a new order.\n\n</policy>\n\n[AVAILABLE TOOLS]\n- calculate — Calculate the result of a mathematical expression.\n    expression: string! — The mathematical expression to calculate, such as '2 + 2'. The expression can contain numbers, operators (+, -, *, /), parentheses, and spaces.\n- cancel_pending_order — Cancel a pending order. If the order is already processed or delivered,\n    \n    it cannot be cancelled. The agent needs to explain the cancellation detail\n    and ask for explicit user confirmation (yes/no) to proceed. If the user confirms,\n    the order status will be changed to 'cancelled' and the payment will be refunded.\n    The refund will be added to the user's gift card balance immediately if the payment\n    was made using a gift card, otherwise the refund would take 5-7 business days to process.\n    The function returns the order details after the cancellation.\n    order_id: string! — The order id, such as '#W0000000'. Be careful there is a '#' symbol at the beginning of the order id.\n    reason: string! — The reason for cancellation, which should be either 'no longer needed' or 'ordered by mistake'.\n- exchange_delivered_order_items — Exchange items in a delivered order to new items of the same product type.\n    \n    For a delivered order, return or exchange can be only done once by the agent.\n    The agent needs to explain the exchange detail and ask for explicit user confirmation (yes/no) to proceed.\n    order_id: string! — The order id, such as '#W0000000'. Be careful there is a '#' symbol at the beginning of the order id.\n    item_ids: array! — The item ids to be exchanged, each such as '1008292230'. There could be duplicate items in the list.\n    new_item_ids: array! — The item ids to be exchanged for, each such as '1008292230'. There could be duplicate items in the list. Each new item id should match the item id in the same position and be of the same product.\n    payment_method_id: string! — The payment method id to pay or receive refund for the item price difference, such as 'gift_card_0000000' or 'credit_card_0000000'. These can be looked up from the user or order details.\n- find_user_id_by_name_zip — Find user id by first name, last name, and zip code. If the user is not found, the function\n    \n    will return an error message. By default, find user id by email, and only call this function\n    if the user is not found by email or cannot remember email.\n    first_name: string! — The first name of the customer, such as 'John'.\n    last_name: string! — The last name of the customer, such as 'Doe'.\n    zip: string! — The zip code of the customer, such as '12345'.\n- find_user_id_by_email — Find user id by email. If the user is not found, the function will return an error message.\n    email: string! — The email of the user, such as 'something@example.com'.\n- get_order_details — Get the status and details of an order.\n    order_id: string! — The order id, such as '#W0000000'. Be careful there is a '#' symbol at the beginning of the order id.\n- get_product_details — Get the inventory details of a product.\n",
+        "parent_source_id": "h0",
+        "category": "POLICY",
+        "sha256": "71a30fb268e8cc63fbd1a23b5b7f245edebb04c2a93d02970793fbed67502f3a",
+        "evidence_status": "ORIGINAL_SOURCE_NOT_CURRENT_TRUTH_OR_PERMISSION",
+        "role": "system",
+        "kind": "text",
+        "tool": null,
+        "event": 0,
+        "parent_source_length": 14826,
+        "explicit_window": true,
+        "parent_coverage": "EXACT_WINDOW_NOT_COMPLETE_PARENT"
+      },
+      {
+        "source_id": "h9",
+        "document": "prompt",
+        "start": 16370,
+        "end": 16428,
+        "role": "assistant",
+        "kind": "call",
+        "tool": "get_order_details",
+        "event": 9,
+        "text": "\t→ TOOL_CALL get_order_details: {\"order_id\": \"#W2575533\"}\n",
+        "parent_source_id": "h9",
+        "category": "HISTORY",
+        "sha256": "3fdc3fdaa72b4f96cb344d332a4c9d04a8fa6393f85de86a619289d54b812143",
+        "evidence_status": "ORIGINAL_SOURCE_NOT_CURRENT_TRUTH_OR_PERMISSION",
+        "parent_source_length": 58,
+        "explicit_window": false,
+        "parent_coverage": "COMPLETE_PARENT"
+      },
+      {
+        "source_id": "h10",
+        "document": "prompt",
+        "start": 16428,
+        "end": 17942,
+        "role": "assistant",
+        "kind": "result",
+        "tool": "get_order_details",
+        "event": 10,
+        "text": "\t← TOOL_RESPONSE get_order_details: {\"order_id\": \"#W2575533\", \"user_id\": \"isabella_johansson_2152\", \"address\": {\"address1\": \"313 Chestnut Street\", \"address2\": \"Suite 537\", \"city\": \"Jacksonville\", \"country\": \"USA\", \"state\": \"FL\", \"zip\": \"32286\"}, \"items\": [{\"name\": \"Vacuum Cleaner\", \"product_id\": \"1762337868\", \"item_id\": \"4806644905\", \"price\": 658.89, \"options\": {\"type\": \"robotic\", \"bagged/bagless\": \"bagless\", \"features\": \"cordless\"}}, {\"name\": \"Portable Charger\", \"product_id\": \"6942297802\", \"item_id\": \"8349903180\", \"price\": 102.07, \"options\": {\"capacity\": \"20000mAh\", \"output\": \"Wireless\", \"color\": \"black\"}}, {\"name\": \"E-Reader\", \"product_id\": \"3801771308\", \"item_id\": \"9494281769\", \"price\": 252.06, \"options\": {\"screen size\": \"8-inch\", \"connectivity\": \"Wi-Fi\", \"storage\": \"8GB\"}}, {\"name\": \"Garden Hose\", \"product_id\": \"6679515468\", \"item_id\": \"5206946487\", \"price\": 95.08, \"options\": {\"length\": \"50ft\", \"material\": \"vinyl\", \"color\": \"black\"}}, {\"name\": \"Office Chair\", \"product_id\": \"4794339885\", \"item_id\": \"8323284863\", \"price\": 511.24, \"options\": {\"material\": \"fabric\", \"color\": \"blue\", \"armrest\": \"adjustable\", \"backrest height\": \"standard\"}}], \"status\": \"pending\", \"fulfillments\": [], \"payment_history\": [{\"transaction_type\": \"payment\", \"amount\": 1619.34, \"payment_method_id\": \"paypal_3024827\"}], \"cancel_reason\": null, \"exchange_items\": null, \"exchange_new_items\": null, \"exchange_payment_method_id\": null, \"exchange_price_difference\": null, \"return_items\": null, \"return_payment_method_id\": null}\n\n",
+        "parent_source_id": "h10",
+        "category": "HISTORY",
+        "sha256": "0f16332fb0ef859e73d303ee0af1430bbc462133a5aef272c9752dcf8cdae3a1",
+        "evidence_status": "ORIGINAL_SOURCE_NOT_CURRENT_TRUTH_OR_PERMISSION",
+        "parent_source_length": 1514,
+        "explicit_window": false,
+        "parent_coverage": "COMPLETE_PARENT"
+      }
+    ],
+    "current_targets": [
+      {
+        "source_id": "t0",
+        "document": "response",
+        "start": 21,
+        "end": 171,
+        "role": "assistant",
+        "kind": "call",
+        "tool": "return_delivered_order_items",
+        "event": 0,
+        "text": "\t→ TOOL_CALL return_delivered_order_items: {\"item_ids\": [\"5753502325\", \"9851293632\"], \"order_id\": \"#W7181492\", \"payment_method_id\": \"paypal_3024827\"}\n",
+        "parent_source_id": "t0",
+        "category": "TARGET",
+        "sha256": "dc2c4b1ceb7984c7b2d16678f750e6b3310003182d6ed4a6821b5e7f6a40e843",
+        "evidence_status": "ORIGINAL_SOURCE_NOT_CURRENT_TRUTH_OR_PERMISSION"
+      },
+      {
+        "source_id": "t1",
+        "document": "response",
+        "start": 171,
+        "end": 340,
+        "role": "assistant",
+        "kind": "call",
+        "tool": "exchange_delivered_order_items",
+        "event": 1,
+        "text": "\t→ TOOL_CALL exchange_delivered_order_items: {\"item_ids\": [\"8118291112\"], \"new_item_ids\": [\"8277474082\"], \"order_id\": \"#W7181492\", \"payment_method_id\": \"paypal_3024827\"}",
+        "parent_source_id": "t1",
+        "category": "TARGET",
+        "sha256": "cea17ab1626fd0652c053acc45bce0708b5f355ba78c95bde86089d032a25d95",
+        "evidence_status": "ORIGINAL_SOURCE_NOT_CURRENT_TRUTH_OR_PERMISSION"
+      }
+    ],
+    "declarations": [
+      {
+        "source_id": "d2",
+        "document": "prompt",
+        "start": 8363,
+        "end": 9364,
+        "role": "system",
+        "kind": "DECLARATION",
+        "tool": "exchange_delivered_order_items",
+        "text": "- exchange_delivered_order_items — Exchange items in a delivered order to new items of the same product type.\n    \n    For a delivered order, return or exchange can be only done once by the agent.\n    The agent needs to explain the exchange detail and ask for explicit user confirmation (yes/no) to proceed.\n    order_id: string! — The order id, such as '#W0000000'. Be careful there is a '#' symbol at the beginning of the order id.\n    item_ids: array! — The item ids to be exchanged, each such as '1008292230'. There could be duplicate items in the list.\n    new_item_ids: array! — The item ids to be exchanged for, each such as '1008292230'. There could be duplicate items in the list. Each new item id should match the item id in the same position and be of the same product.\n    payment_method_id: string! — The payment method id to pay or receive refund for the item price difference, such as 'gift_card_0000000' or 'credit_card_0000000'. These can be looked up from the user or order details.\n",
+        "parent_source_id": "d2",
+        "category": "DECLARATION",
+        "sha256": "a754f86bf2b54419293d4e616eb76966c81991af9c19c1e4d16ec464915e3cd7",
+        "evidence_status": "ORIGINAL_SOURCE_NOT_CURRENT_TRUTH_OR_PERMISSION"
+      },
+      {
+        "source_id": "d14",
+        "document": "prompt",
+        "start": 13723,
+        "end": 14519,
+        "role": "system",
+        "kind": "DECLARATION",
+        "tool": "return_delivered_order_items",
+        "text": "- return_delivered_order_items — Return some items of a delivered order.\n    \n    The order status will be changed to 'return requested'.\n    The agent needs to explain the return detail and ask for explicit user confirmation (yes/no) to proceed.\n    The user will receive follow-up email for how and where to return the item.\n    order_id: string! — The order id, such as '#W0000000'. Be careful there is a '#' symbol at the beginning of the order id.\n    item_ids: array! — The item ids to be returned, each such as '1008292230'. There could be duplicate items in the list.\n    payment_method_id: string! — The payment method id to pay or receive refund for the item price difference, such as 'gift_card_0000000' or 'credit_card_0000000'. These can be looked up from the user or order details.\n",
+        "parent_source_id": "d14",
+        "category": "DECLARATION",
+        "sha256": "5ae63519597dde3bffc7a7e189f4ec596c579f1b36d7d0d3c1d4c4d149dcddc0",
+        "evidence_status": "ORIGINAL_SOURCE_NOT_CURRENT_TRUTH_OR_PERMISSION"
+      }
+    ],
+    "selected_ids": [
+      "q21",
+      "h19",
+      "q23",
+      "h13",
+      "h14",
+      "q22",
+      "h9",
+      "h10"
+    ],
+    "trace": {
+      "queries": [
+        "return delivered order items exchange delivered order items",
+        "\"5753502325\" \"9851293632\" \"#W7181492\" \"paypal_3024827\" \"8118291112\" \"8277474082\" \"#W7181492\" \"paypal_3024827\"",
+        "- exchange_delivered_order_items — Exchange items in a delivered order to new items of the same product type.\n    \n    For a delivered order, return or exchange can be only done once by the agent.\n    The agent needs to explain the exchange detail and ask for explicit user confirmation (yes/no) to proceed.\n    order_id: string! — The order id, such as '#W0000000'. Be careful there is a '#' symbol at the beginning of the order id.\n    item_ids: array! — The item ids to be exchanged, each such as '1008292230'. There could be duplicate items in the list.\n    new_item_ids: array! — The item ids to be exchanged for, each such as '1008292230'. There could be duplicate items in the list. Each new item id should match the item id in the same position and be of the same product.\n    payment_method_id: string! — The payment method id to pay or receive refund for the item price difference, such as 'gift_card_0000000' or 'credit_card_0000000'. These can be looked up from the user or order details.\n - return_delivered_order_items — Return some items of a delivered order.\n    \n    The order status will be changed to 'return requested'.\n    The agent needs to explain the return detail and ask for explicit user confirmation (yes/no) to proceed.\n    The user will receive follow-up email for how and where to return the item.\n    order_id: string! — The order id, such as '#W0000000'. Be careful there is a '#' symbol at the beginning of the order id.\n    item_ids: array! — The item ids to be returned, each such as '1008292230'. There could be duplicate items in the list.\n    payment_method_id: string! — The payment method id to pay or receive refund for the item price difference, such as 'gift_card_0000000' or 'credit_card_0000000'. These can be looked up from the user or order details.\n"
+      ],
+      "rankings": [
+        [
+          "q21",
+          "q22",
+          "q16",
+          "q15",
+          "q23",
+          "q20",
+          "q11",
+          "h12",
+          "q18",
+          "q17",
+          "h14",
+          "h3",
+          "h19",
+          "q19",
+          "q24",
+          "q14",
+          "h10"
+        ],
+        [
+          "h19",
+          "h14",
+          "h17",
+          "h8",
+          "h13",
+          "h16",
+          "h12",
+          "h10"
+        ],
+        [
+          "q23",
+          "q22",
+          "q24",
+          "q20",
+          "q21",
+          "q11",
+          "q17",
+          "q14",
+          "q15",
+          "q10",
+          "q19",
+          "q18",
+          "q16",
+          "q12",
+          "q13",
+          "h12",
+          "h14",
+          "h17",
+          "h10",
+          "h16",
+          "h19",
+          "h8",
+          "h3",
+          "h9",
+          "h11",
+          "h13"
+        ],
+        [
+          "h14",
+          "h10",
+          "h12",
+          "h13",
+          "h8",
+          "h19",
+          "h16",
+          "h17"
+        ]
+      ],
+      "fused_ranking": [
+        "q21",
+        "h19",
+        "q23",
+        "h14",
+        "q22",
+        "h10",
+        "q16",
+        "h17",
+        "q24",
+        "h12",
+        "q15",
+        "h8",
+        "q20",
+        "h13",
+        "h16",
+        "q11",
+        "q17",
+        "q14",
+        "q18",
+        "q10",
+        "q19",
+        "h3",
+        "q12",
+        "q13",
+        "h9",
+        "h11"
+      ],
+      "selection": [
+        {
+          "source_id": "q21",
+          "status": "SELECTED",
+          "dependency_group": [
+            "q21"
+          ],
+          "token_bound": 955
+        },
+        {
+          "source_id": "h19",
+          "status": "SELECTED",
+          "dependency_group": [
+            "h19"
+          ],
+          "token_bound": 1921
+        },
+        {
+          "source_id": "q23",
+          "status": "SELECTED",
+          "dependency_group": [
+            "q23"
+          ],
+          "token_bound": 4517
+        },
+        {
+          "source_id": "h14",
+          "status": "SELECTED",
+          "dependency_group": [
+            "h13",
+            "h14"
+          ],
+          "token_bound": 2769
+        },
+        {
+          "source_id": "q22",
+          "status": "SELECTED",
+          "dependency_group": [
+            "q22"
+          ],
+          "token_bound": 4385
+        },
+        {
+          "source_id": "h10",
+          "status": "SELECTED",
+          "dependency_group": [
+            "h9",
+            "h10"
+          ],
+          "token_bound": 2644
+        },
+        {
+          "source_id": "q16",
+          "status": "READ_BUDGET_SKIP",
+          "dependency_group": [
+            "q16"
+          ]
+        },
+        {
+          "source_id": "h17",
+          "status": "READ_BUDGET_SKIP",
+          "dependency_group": [
+            "h17"
+          ]
+        },
+        {
+          "source_id": "q24",
+          "status": "READ_BUDGET_SKIP",
+          "dependency_group": [
+            "q24"
+          ]
+        },
+        {
+          "source_id": "h12",
+          "status": "READ_BUDGET_SKIP",
+          "dependency_group": [
+            "h11",
+            "h12"
+          ]
+        },
+        {
+          "source_id": "q15",
+          "status": "READ_BUDGET_SKIP",
+          "dependency_group": [
+            "q15"
+          ]
+        },
+        {
+          "source_id": "h8",
+          "status": "READ_BUDGET_SKIP",
+          "dependency_group": [
+            "h7",
+            "h8"
+          ]
+        },
+        {
+          "source_id": "q20",
+          "status": "READ_BUDGET_SKIP",
+          "dependency_group": [
+            "q20"
+          ]
+        },
+        {
+          "source_id": "h13",
+          "status": "SELECTED",
+          "dependency_group": [],
+          "token_bound": 0
+        },
+        {
+          "source_id": "h16",
+          "status": "READ_BUDGET_SKIP",
+          "dependency_group": [
+            "h15",
+            "h16"
+          ]
+        },
+        {
+          "source_id": "q11",
+          "status": "READ_BUDGET_SKIP",
+          "dependency_group": [
+            "q11"
+          ]
+        },
+        {
+          "source_id": "q17",
+          "status": "READ_BUDGET_SKIP",
+          "dependency_group": [
+            "q17"
+          ]
+        },
+        {
+          "source_id": "q14",
+          "status": "READ_BUDGET_SKIP",
+          "dependency_group": [
+            "q14"
+          ]
+        },
+        {
+          "source_id": "q18",
+          "status": "READ_BUDGET_SKIP",
+          "dependency_group": [
+            "q18"
+          ]
+        },
+        {
+          "source_id": "q10",
+          "status": "READ_BUDGET_SKIP",
+          "dependency_group": [
+            "q10"
+          ]
+        },
+        {
+          "source_id": "q19",
+          "status": "READ_BUDGET_SKIP",
+          "dependency_group": [
+            "q19"
+          ]
+        },
+        {
+          "source_id": "h3",
+          "status": "READ_BUDGET_SKIP",
+          "dependency_group": [
+            "h3"
+          ]
+        },
+        {
+          "source_id": "q12",
+          "status": "READ_BUDGET_SKIP",
+          "dependency_group": [
+            "q12"
+          ]
+        },
+        {
+          "source_id": "q13",
+          "status": "READ_BUDGET_SKIP",
+          "dependency_group": [
+            "q13"
+          ]
+        },
+        {
+          "source_id": "h9",
+          "status": "SELECTED",
+          "dependency_group": [],
+          "token_bound": 0
+        },
+        {
+          "source_id": "h11",
+          "status": "READ_BUDGET_SKIP",
+          "dependency_group": [
+            "h11"
+          ]
+        }
+      ],
+      "fusion": "ROUND_ROBIN",
+      "graph_assurance": "UNIQUE_ORIGINAL_RECEIPTS_AND_CO_RECORDED_CANDIDATES_NOT_SEMANTIC_IDENTITY",
+      "common_catalog_used": true
+    },
+    "seconds": 0.03177750000031665,
+    "failure": null,
+    "read_limit": 8,
+    "token_limit": null,
+    "cost": {
+      "retrieved_reads": 8,
+      "mandatory_targets": 2,
+      "mandatory_declarations": 2,
+      "source_chars": 14742,
+      "source_token_upper_bound": 20752,
+      "token_estimator": "FULL_UTF8_BYTES_CONSERVATIVE_BOUND_NOT_PROVIDER_USAGE",
+      "inference_http": 0
+    },
+    "uncovered": [
+      {
+        "category": "PARENT_SOURCE_COMPLETENESS",
+        "reason": "EXPLICIT_SOURCE_WINDOWS_ONLY; all original parents remain accessible"
+      }
+    ],
+    "completeness_certified": false,
+    "absence_proves_semantic_absence": false,
+    "evidence_contract": "Original recorded sources and explicit windows only. Raw matching and graph links are candidate retrieval, not entity/ownership/permission/current-state proof. Absence from this subset never establishes missing process events in the full log."
+  },
+  "score": {
+    "categories": {
+      "policy": {
+        "found": 0,
+        "required": 2,
+        "recall": 0.0,
+        "missing": [
+          {
+            "document": "prompt",
+            "start": 1689,
+            "end": 1897,
+            "why": "At most one tool call for the whole current move.",
+            "text_sha256": "282756cc14a8799b2d9c041d7fce685c5c96a49b98d1107663b899fb54c500b3"
+          },
+          {
+            "document": "prompt",
+            "start": 1358,
+            "end": 1533,
+            "why": "Details-before-YES consent, which actual history contains.",
+            "text_sha256": "8006d0c4fea14bf6cf28c2c7ff8a296df4b75a96d48e304241f149f489eb4779"
+          }
+        ]
+      },
+      "history": {
+        "found": 2,
+        "required": 3,
+        "recall": 0.6666666666666666,
+        "missing": [
+          {
+            "document": "prompt",
+            "start": 26000,
+            "end": 26057,
+            "why": "User explicitly confirms both actions.",
+            "text_sha256": "d0d420629e1466a7b18c1bb5dc357a1969a6d7aef1a1c7a42a63f6c331f442c6",
+            "source_id": "h20",
+            "role": "user",
+            "kind": "text",
+            "tool": null,
+            "event": 20
+          }
+        ]
+      },
+      "target": {
+        "found": 2,
+        "required": 2,
+        "recall": 1.0,
+        "missing": []
+      },
+      "declaration": {
+        "found": 0,
+        "required": 0,
+        "recall": null,
+        "missing": []
+      },
+      "exception": {
+        "found": 0,
+        "required": 0,
+        "recall": null,
+        "missing": []
+      },
+      "entity_binding": {
+        "found": 1,
+        "required": 1,
+        "recall": 1.0,
+        "missing": []
+      },
+      "long_distance": {
+        "found": 0,
+        "required": 0,
+        "recall": null,
+        "missing": []
+      }
+    },
+    "complete_evidence_set_success": false,
+    "reference_partial": false,
+    "alternatives": [
+      {
+        "found": 2,
+        "required": 3,
+        "complete": false
+      }
+    ],
+    "unnecessary_relative_to_reference": [
+      "q21",
+      "q23",
+      "h13",
+      "q22",
+      "h9",
+      "h10"
+    ],
+    "false_absence_risk": true,
+    "subset_absence_is_proof": false,
+    "completeness_certified": false
+  }
+}
