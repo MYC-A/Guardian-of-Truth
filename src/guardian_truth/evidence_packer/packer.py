@@ -64,6 +64,10 @@ class PackerConfig:
                       'current_segment', 'user_turns', 'policy_root')
     required_anchors: tuple = ('last_user',)
     whole_policy_if_fits: bool = True
+    # Research hooks (defaults keep U2 behaviour byte-identical):
+    extra_queries: tuple = ()          # gap-directed text added to the lexical/dense query
+    exclude_uids: frozenset = frozenset()  # units already read elsewhere; never chosen as primary units
+    shared_anchors: tuple = ('last_user', 'last_assistant')  # anchors exempt from exclusion
 
 
 # ---------------------------------------------------------------- units
@@ -375,7 +379,7 @@ def pack(row, cfg=PackerConfig(), embedder=None):
     last_user = next((i for i in reversed(prior) if history[i].role == 'user' and history[i].kind == 'text'), None)
     last_asst = next((i for i in reversed(prior) if history[i].role == 'assistant' and history[i].kind == 'text'), None)
     first_user = next((i for i in prior if history[i].role == 'user' and history[i].kind == 'text'), None)
-    context = [history[i].text for i in (last_user, last_asst) if i is not None]
+    context = [history[i].text for i in (last_user, last_asst) if i is not None] + list(cfg.extra_queries)
     entities = identifiers(targets)
     pool = [u for u in units if u['category'] in ('POLICY', 'HISTORY') and u['kind'] not in ('heading', 'tag')]
     heading_text = {u['uid']: u['text'].strip() for u in units if u['kind'] == 'heading'}
@@ -414,6 +418,8 @@ def pack(row, cfg=PackerConfig(), embedder=None):
     def try_add(uid, reason, cap=None):
         """Add the full dependency group; if it does not fit, add the unit alone and mark the group partial."""
         cap = budget if cap is None else cap
+        if uid in cfg.exclude_uids and reason not in {'ANCHOR_' + a.upper() for a in cfg.shared_anchors}:
+            return 'EXCLUDED'
         missing, full = closure(uid)
         if not missing:
             return 'ALREADY'
@@ -430,7 +436,7 @@ def pack(row, cfg=PackerConfig(), embedder=None):
         if not uids:
             anchors[name] = dict(status='ABSENT'); return
         results = [try_add(u, 'ANCHOR_' + name.upper(), cap) for u in uids]
-        ok = all(r in ('SELECTED', 'ALREADY', 'SELECTED_GROUP_PARTIAL') for r in results)
+        ok = all(r in ('SELECTED', 'ALREADY', 'SELECTED_GROUP_PARTIAL', 'EXCLUDED') for r in results)
         anchors[name] = dict(status='SELECTED' if ok else ('PARTIAL' if any(r != 'BUDGET_SKIPPED' for r in results) else 'BUDGET_SKIPPED'),
                              units=list(uids))
 
@@ -439,7 +445,7 @@ def pack(row, cfg=PackerConfig(), embedder=None):
         return None if budget is None else here + int(fraction * (budget - here))
 
     all_units = [u['uid'] for u in units if u['category'] in ('POLICY', 'HISTORY')]
-    full_input = failure is None and (budget is None or cost(all_units) <= budget)
+    full_input = failure is None and not cfg.exclude_uids and (budget is None or cost(all_units) <= budget)
     if full_input:
         # Nothing to retrieve: the whole recorded input fits. Read everything.
         for uid in all_units:
