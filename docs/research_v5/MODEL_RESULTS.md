@@ -70,6 +70,13 @@ Raw replies and exact request bodies are retained beside
 [predictions](../../outputs/research_v5/paired_role_diagnostic/predictions.json).
 No cached prediction, relation or gold was altered to improve scores.
 
+The combined P3 prompt also has a possible scope ambiguity: its role instructions
+allow a native date rule, while the appended process instructions ask for only
+mandatory prior-process relations. This is a prompt/interface limitation worth
+isolating in a future separately frozen experiment. It is not a demonstrated
+cause of the failures, and these results do not establish that automatic grounding
+is generally impossible. No revised-prompt experiment was run in this phase.
+
 ## Costs and reproduction
 
 | Arm | HTTP | Known/charged tokens | Summed HTTP seconds |
