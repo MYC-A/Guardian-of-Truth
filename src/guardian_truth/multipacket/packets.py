@@ -10,7 +10,7 @@ import hashlib
 from dataclasses import replace
 
 from guardian_truth.evidence_packer import PackerConfig, pack
-from guardian_truth.evidence_packer.packer import _native_ref, build_units, merge_records, reference_store
+from guardian_truth.evidence_packer.packer import _native_ref, build_units, merge_records, reference_store, resolve
 from guardian_truth.source_search.store import SourceStore
 
 NORM_CFG = dict(policy_max_share=0.95, provenance_share=0.05, segment_share=0.15, user_share=0.1,
@@ -19,12 +19,21 @@ EVIDENCE_CFG = dict(policy_max_share=0.12, whole_policy_if_fits=False, provenanc
                     user_share=0.4)
 
 
-def complementary(row, first, budget=20000, extra_queries=(), base=None):
+def complementary(row, first, budget=20000, extra_queries=(), base=None, *, shared_normative=False):
     """Second packet: U2 ranking with every unit of `first` excluded as primary unit.
-    Call/result partners and shared anchors may repeat (controlled overlap)."""
+    Call/result partners and shared anchors may repeat (controlled overlap).
+    Independent reviewers can retain normative context: policy units are then
+    eligible for the ordinary U2 policy allocation, within the same budget.
+    This does not select policy from another review's interpretation or gold."""
+    excluded = set(first['selected_units'])
+    if shared_normative:
+        units, _, _, _ = build_units(row, base or PackerConfig())
+        excluded -= {u['uid'] for u in units if u['category'] == 'POLICY'}
     cfg = replace(base or PackerConfig(), budget_bytes=budget, extra_queries=tuple(extra_queries),
-                  exclude_uids=frozenset(first['selected_units']))
-    return pack(row, cfg)
+                  exclude_uids=frozenset(excluded))
+    packet = pack(row, cfg)
+    packet['shared_normative'] = shared_normative
+    return packet
 
 
 def gap_packet(row, read_units, queries, budget=20000):
@@ -90,15 +99,23 @@ def resolve_global(packets, row):
     spans = {(r['document'], r['start'], r['end']) for p in packets for r in _records(p)}
     store = _store(row, spans)
     for p in packets:
+        # Quote indices differ between a union registry and a packet-local one.
+        # Re-id a copy for the structural resolver; keep every metadata field
+        # unchanged so tampering with categories, parents, tools, hashes or
+        # actors still fails. Then verify the original union IDs separately.
+        local = _store(row, {(r['document'], r['start'], r['end']) for r in _records(p)})
+        canonical = dict(p)
+        for key in ('read_sources', 'current_targets', 'declarations'):
+            canonical[key] = [dict(r, source_id=_native_ref(local, r)[0]) for r in p[key]]
+        resolve(canonical, row)
         for r in _records(p):
             if store.raw[r['document']][r['start']:r['end']] != r['text']:
                 raise ValueError('SOURCE_SPAN_CHANGED')
-            if _native_ref(store, r)[0] != r['source_id']:
+            sid, parent = _native_ref(store, r)
+            if sid != r['source_id']:
                 raise ValueError('SOURCE_ID_NOT_GLOBAL')
-            if r['category'] == 'HISTORY':
-                ev = store.sources[_native_ref(store, r)[1]]
-                if (r['role'], r['event'], r['kind']) != (ev['role'], ev['event'], ev['kind']):
-                    raise ValueError('ACTOR_OR_EVENT_PROVENANCE_MISMATCH')
+            if parent != r.get('parent_source_id'):
+                raise ValueError('SOURCE_PARENT_NOT_GLOBAL')
     return True
 
 
@@ -130,14 +147,32 @@ def overlap_stats(row, packets):
 
 
 def reference_spans_covered(reference, view):
-    """Overlap recall of gold normative/history spans by packet read sources (eval only)."""
+    """Full reference-span coverage by the union of reads (corrected eval only).
+
+    Partial overlap remains a separate diagnostic and never sets complete.
+    Adjacent original excerpts can jointly cover one required reference span.
+    """
     rs = view['read_sources'] + view['current_targets'] + view['declarations']
-    def hit(s):
+    def overlaps(s):
         return any(r['document'] == s['document'] and r['start'] < s['end'] and s['start'] < r['end'] for r in rs)
+    def hit(s):
+        cursor = s['start']
+        if cursor >= s['end']:
+            return False
+        for r in sorted((r for r in rs if r['document'] == s['document']
+                         and r['start'] < s['end'] and s['start'] < r['end']), key=lambda r: r['start']):
+            if r['start'] > cursor:
+                return False
+            cursor = max(cursor, r['end'])
+            if cursor >= s['end']:
+                return True
+        return False
     nor = [hit(s) for s in reference['required_normative_sources']]
     his = [hit(s) for s in reference['required_history_sources']]
     return dict(norm_found=sum(nor), norm_required=len(nor), hist_found=sum(his), hist_required=len(his),
-                complete=all(nor) and all(his))
+                complete=all(nor) and all(his), coverage_contract='FULL_REFERENCE_SPAN_UNION_V2',
+                norm_overlap_found=sum(overlaps(s) for s in reference['required_normative_sources']),
+                hist_overlap_found=sum(overlaps(s) for s in reference['required_history_sources']))
 
 
 def sha(obj):

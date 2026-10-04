@@ -10,11 +10,13 @@ from experiments.multipacket_v1.common import OUT, valid_rows
 def suite_rows(name):
     if name == 'valid46':
         return list(valid_rows())
-    return [json.loads(l) for l in open(OUT / 'suite_syn_m1/inputs.jsonl')]
+    return [json.loads(l) for l in open(OUT / 'suite_syn_m1/inputs.jsonl', encoding='utf-8')]
 
 
 def slim_step(s):
-    out = {k: s.get(k) for k in ('key', 'admission', 'decision', 'usage', 'request_bytes', 'cached', 'seconds')}
+    out = {k: s.get(k) for k in ('key', 'kind', 'purpose', 'attempted', 'admission', 'raw_decision', 'decision',
+                               'usage', 'request_bytes', 'cached', 'seconds', 'transport', 'raw_content', 'parsed',
+                               'raw_available') if k in s}
     if s.get('admitted') is not None:
         out['admitted'] = s['admitted']
     if s.get('answers') is not None:
@@ -36,29 +38,36 @@ def main():
     done = {}
     for n in names:
         f = out_dir / f'{n}.jsonl'
-        done[n] = {json.loads(l)['id'] for l in open(f)} if f.exists() else set()
+        latest = {r['id']: r for r in map(json.loads, open(f, encoding='utf-8'))} if f.exists() else {}
+        done[n] = {i for i, r in latest.items() if not r.get('retryable')}
 
     def job(item):
         n, row = item
         AR.RUN.set(a.run)
+        audit = []
+        audit_token = AR.ATTEMPTS.set(audit)
         t = time.time()
         try:
             r = AR.ARMS[n](row)
             if r is None:
                 return
-            if any(s.get('admission') == 'TRANSPORT_FAILURE' for s in r['steps']):
+            retryable = any(s.get('admission') == 'TRANSPORT_FAILURE' for s in r['steps'])
+            if retryable:
                 print('transport failure, will retry on next invocation:', n, row['id'][:40], flush=True)
-                return
             rec = dict(id=row['id'], arm=n, run=a.run, decision=r['decision'],
                        steps=[slim_step(s) for s in r['steps']],
-                       **{k: v for k, v in r.items() if k not in ('decision', 'steps')}, seconds=round(time.time() - t, 1))
+                       **{k: v for k, v in r.items() if k not in ('decision', 'steps')},
+                       retryable=retryable, seconds=round(time.time() - t, 1))
         except Exception as e:
-            rec = dict(id=row['id'], arm=n, run=a.run, decision=None, error=f'{type(e).__name__}:{e}'[:300],
+            r = AR.result(None, audit)
+            rec = dict(id=row['id'], arm=n, run=a.run,
+                       **{k: v for k, v in r.items() if k != 'steps'}, steps=[slim_step(s) for s in audit],
+                       retryable='TRANSPORT' in str(e), error=f'{type(e).__name__}:{e}'[:300],
                        tb=traceback.format_exc(limit=4)[-800:])
-            if 'TRANSPORT' in str(e):
-                return
+        finally:
+            AR.ATTEMPTS.reset(audit_token)
         with lock:
-            with open(out_dir / f'{n}.jsonl', 'a') as f:
+            with open(out_dir / f'{n}.jsonl', 'a', encoding='utf-8') as f:
                 f.write(json.dumps(rec, ensure_ascii=False, default=str) + '\n')
             print(n, row['id'][:40], rec['decision'], rec.get('error', '')[:80], flush=True)
 

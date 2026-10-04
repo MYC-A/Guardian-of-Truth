@@ -75,7 +75,8 @@ class PackerInvariants(unittest.TestCase):
 
     def test_declaration_and_receipt_for_called_tool(self):
         p = pack(row(CALL), PackerConfig(budget_bytes=None))
-        self.assertEqual([d['tool'] for d in p['declarations']], ['return_order'])
+        self.assertEqual([d['kind'] for d in p['declarations']], ['catalog'])
+        self.assertIn('- return_order', p['declarations'][0]['text'])
         texts = ' '.join(s['text'] for s in p['read_sources'])
         self.assertIn('"status": "delivered"', texts)  # entity provenance receipt
         self.assertIn('yes please', texts)              # latest user anchor
@@ -108,11 +109,7 @@ class PackerInvariants(unittest.TestCase):
     def test_text_move_without_calls(self):
         p = pack(row('⟦ASSISTANT · ход 2⟧\nВаш заказ **W1234567** будет возвращён.'), PackerConfig(budget_bytes=None))
         self.assertIn('W1234567', p['query']['entities'])
-        self.assertEqual(p['declarations'], [])
-
-
-if __name__ == '__main__':
-    unittest.main()
+        self.assertEqual([d['kind'] for d in p['declarations']], ['catalog'])
 
 
 class ProvenanceU2(unittest.TestCase):
@@ -199,3 +196,179 @@ class HashSeedDeterminism(unittest.TestCase):
         outs = {subprocess.run([sys.executable, '-c', code], capture_output=True, text=True, check=True,
                                env={**os.environ, 'PYTHONHASHSEED': s}).stdout for s in ('0', '1', '42')}
         self.assertEqual(len(outs), 1)
+
+
+class StructuralCorrections(unittest.TestCase):
+    """Parser-format counterexamples and admission checks from the U2 review."""
+
+    def test_immediate_heading_and_tag_bodies_are_retrievable(self):
+        for marker in ('# Transfers', '## Transfers', '<policy>'):
+            with self.subTest(marker=marker):
+                r = {'prompt': '⟦SYSTEM⟧\n' + marker + '\nNever transfer funds without user consent.\n\n'
+                               + 'Unrelated ' + 'filler ' * 600 + '\n⟦USER⟧\ntransfer funds\n',
+                     'response': '⟦ASSISTANT⟧\nI will transfer funds.'}
+                units, _, _, _ = build_units(r)
+                body = next(u for u in units if 'Never transfer' in u['text'])
+                self.assertEqual(body['kind'], 'block')
+                p = pack(r, PackerConfig(budget_bytes=1800))
+                self.assertIsNone(p['failure'])
+                self.assertTrue(any('Never transfer' in s['text'] for s in p['read_sources']))
+                if marker.startswith('#'):
+                    self.assertTrue(any(marker in s['text'] for s in p['read_sources']))
+                self.assertLessEqual(p['cost']['source_token_upper_bound'], 1800)
+
+    def test_catalog_is_bounded_to_its_system_event(self):
+        from guardian_truth.evidence_packer import resolve
+        r = {'prompt': '⟦SYSTEM⟧\nRules.\n[AVAILABLE TOOLS]\n- x — Do x.\n'
+                       '⟦USER⟧\nhello\n⟦SYSTEM⟧\nNever do x without confirmation.\n⟦USER⟧\ndo x\n',
+             'response': '⟦ASSISTANT⟧\n\t→ TOOL_CALL x: {}\n'}
+        units, _, _, _ = build_units(r)
+        rule = next(u for u in units if 'Never do x' in u['text'])
+        self.assertEqual(rule['category'], 'POLICY')
+        p = pack(r, PackerConfig(budget_bytes=None))
+        self.assertEqual(p['mode'], 'FULL_INPUT')
+        self.assertTrue(any('Never do x' in s['text'] for s in p['read_sources']))
+        self.assertTrue(resolve(p, r))
+
+    def test_nested_rule_keeps_parent_governing_body_in_closure(self):
+        from guardian_truth.evidence_packer import resolve
+        r = {'prompt': '⟦SYSTEM⟧\n# Transfers\nAll transfers require recorded confirmation.\n\n'
+                       '## Expedited\nExpedited transfers proceed in one stage.\n\n'
+                       '## Archive\n' + 'Unrelated filler ' * 400 + '\n⟦USER⟧\nexpedited transfer\n',
+             'response': '⟦ASSISTANT⟧\nI will perform the expedited transfer.'}
+        units, _, _, _ = build_units(r)
+        parent_body = next(u for u in units if 'recorded confirmation' in u['text'])
+        child = next(u for u in units if 'one stage' in u['text'])
+        self.assertIn(parent_body['uid'], child['parents'])
+        self.assertNotIn(parent_body['uid'], parent_body['parents'])
+        p = pack(r, PackerConfig(budget_bytes=1800, anchors=('last_user',)))
+        self.assertIn(child['uid'], p['selected_units'])
+        self.assertIn(parent_body['uid'], p['selected_units'])
+        evidence = '\n'.join(s['text'] for s in p['read_sources'])
+        self.assertIn('recorded confirmation', evidence)
+        self.assertIn('one stage', evidence)
+        self.assertLessEqual(p['cost']['source_token_upper_bound'], 1800)
+        self.assertTrue(resolve(p, r))
+
+    def test_partial_governing_body_is_reported_under_tight_budget(self):
+        from guardian_truth.evidence_packer import resolve
+        r = {'prompt': '⟦SYSTEM⟧\n# Transfers\n' + 'Transfer consent requirements ' * 200
+                       + '\n\n## Expedited\nExpedited transfer in one stage.\n⟦USER⟧\ntransfer\n',
+             'response': '⟦ASSISTANT⟧\nTransfer.'}
+        p = pack(r, PackerConfig(budget_bytes=1300, max_block_chars=80, anchors=('last_user',)))
+        self.assertIsNone(p['failure'])
+        self.assertTrue(any(g['completeness'] == 'PARTIAL' for g in p['policy_scope_groups']))
+        self.assertTrue(any(u.get('reason') == 'GOVERNING_BODY_NOT_ALL_READ' for u in p['uncovered']))
+        self.assertLessEqual(p['cost']['source_token_upper_bound'], 1300)
+        self.assertTrue(resolve(p, r))
+
+    def test_tags_do_not_break_pending_heading_scope(self):
+        from guardian_truth.evidence_packer import resolve
+        for tags in ('<policy>\n', '<policy>\n<rules>\n'):
+            with self.subTest(tags=tags):
+                r = {'prompt': '⟦SYSTEM⟧\n# Transfers\n' + tags
+                               + 'All transfers require recorded confirmation.\n\n'
+                               '## Expedited\nExpedited transfer proceeds in one stage.\n\n'
+                               '## Archive\n' + 'Unrelated filler ' * 400 + '\n⟦USER⟧\nexpedited transfer\n',
+                     'response': '⟦ASSISTANT⟧\nI will perform the expedited transfer.'}
+                units, _, _, _ = build_units(r)
+                parent_body = next(u for u in units if 'recorded confirmation' in u['text'])
+                child = next(u for u in units if 'one stage' in u['text'])
+                self.assertIsNotNone(parent_body['scope_of'])
+                self.assertIn(parent_body['uid'], child['parents'])
+                p = pack(r, PackerConfig(budget_bytes=1800, anchors=('last_user',)))
+                self.assertIn(child['uid'], p['selected_units'])
+                self.assertIn(parent_body['uid'], p['selected_units'])
+                self.assertLessEqual(p['cost']['source_token_upper_bound'], 1800)
+                self.assertTrue(resolve(p, r))
+
+    def test_required_user_anchor_overrides_novelty_exclusion(self):
+        r = row(CALL)
+        units, _, _, _ = build_units(r)
+        user = next(u for u in units if 'yes please' in u['text'])
+        cfg = dict(budget_bytes=3000, anchors=('last_user',), shared_anchors=(),
+                   exclude_uids=frozenset({user['uid']}))
+        p = pack(r, PackerConfig(**cfg))
+        self.assertIsNone(p['failure'])
+        self.assertEqual(p['anchors']['last_user']['status'], 'SELECTED')
+        self.assertIn(user['uid'], p['selected_units'])
+        optional = pack(r, PackerConfig(**cfg, required_anchors=()))
+        self.assertEqual(optional['anchors']['last_user']['status'], 'EXCLUDED')
+        self.assertNotIn(user['uid'], optional['selected_units'])
+
+    def test_catalog_in_later_system_event_keeps_native_owner(self):
+        from guardian_truth.evidence_packer import resolve
+        r = {'prompt': '⟦SYSTEM⟧\nRules.\n⟦USER⟧\nhello\n'
+                       '⟦SYSTEM⟧\n[AVAILABLE TOOLS]\n- x — Do x.\n⟦USER⟧\ndo x\n',
+             'response': '⟦ASSISTANT⟧\n\t→ TOOL_CALL x: {}\n'}
+        p = pack(r, PackerConfig(budget_bytes=None))
+        self.assertEqual(p['declarations'][0]['event'], 2)
+        self.assertEqual(p['declarations'][0]['parent_source_id'], 'h2')
+        self.assertTrue(resolve(p, r))
+
+    def test_full_input_includes_unused_catalog_at_exact_budget(self):
+        from guardian_truth.evidence_packer import resolve
+        r = row(CALL)
+        whole = pack(r, PackerConfig(budget_bytes=None))
+        _, _, _, catalog = build_units(r)
+        original_catalog = r['prompt'][catalog.source.start:catalog.source.end]
+        self.assertEqual([s['text'] for s in whole['declarations']], [original_catalog])
+        full_cost = whole['cost']['source_token_upper_bound']
+        exact = pack(r, PackerConfig(budget_bytes=full_cost))
+        self.assertEqual(exact['mode'], 'FULL_INPUT')
+        self.assertEqual(exact['cost']['source_token_upper_bound'], full_cost)
+        self.assertTrue(resolve(exact, r))
+        short = pack(r, PackerConfig(budget_bytes=full_cost - 1))
+        self.assertEqual(short['mode'], 'SELECTED')
+        self.assertLessEqual(short['cost']['source_token_upper_bound'], full_cost - 1)
+
+    def test_large_unused_catalog_does_not_claim_full_input(self):
+        r = {'prompt': '⟦SYSTEM⟧\nRules.\n[AVAILABLE TOOLS]\n- x — Do x.\n'
+                       + '- unused — ' + 'Description ' * 500 + '\n⟦USER⟧\ndo x\n',
+             'response': '⟦ASSISTANT⟧\n\t→ TOOL_CALL x: {}\n'}
+        p = pack(r, PackerConfig(budget_bytes=2000))
+        self.assertEqual(p['mode'], 'SELECTED')
+        self.assertEqual([d['tool'] for d in p['declarations']], ['x'])
+        self.assertLessEqual(p['cost']['source_token_upper_bound'], 2000)
+
+    def test_resolve_rejects_metadata_tampering_in_every_category(self):
+        from guardian_truth.evidence_packer import resolve
+        r = row(CALL)
+        p = pack(r, PackerConfig(budget_bytes=None))
+        examples = [('read_sources', next(i for i, s in enumerate(p['read_sources']) if s['category'] == c))
+                    for c in ('POLICY', 'HISTORY')]
+        examples += [('current_targets', 0), ('declarations', 0)]
+        for container, index in examples:
+            for field, value in (('role', 'unknown'), ('event', 999), ('kind', 'forged'),
+                                 ('tool', 'fake_tool'), ('parent_source_id', 'bogus'),
+                                 ('category', 'TARGET'), ('sha256', '0' * 64)):
+                if p[container][index][field] == value:
+                    continue
+                with self.subTest(category=p[container][index]['category'], field=field):
+                    q = json.loads(json.dumps(p)); q[container][index][field] = value
+                    with self.assertRaises(ValueError):
+                        resolve(q, r)
+        user_index = next(i for i, s in enumerate(p['read_sources']) if s['role'] == 'user')
+        q = json.loads(json.dumps(p)); q['read_sources'][user_index].update(category='POLICY', role='system')
+        with self.assertRaises(ValueError):
+            resolve(q, r)
+
+    def test_resolve_rejects_full_input_with_removed_catalog(self):
+        from guardian_truth.evidence_packer import resolve
+        r = row(CALL)
+        p = pack(r, PackerConfig(budget_bytes=None))
+        p['declarations'] = []
+        with self.assertRaisesRegex(ValueError, 'FULL_INPUT_COVERAGE_INCOMPLETE'):
+            resolve(p, r)
+
+    def test_resolve_accepts_custom_chunks_and_transport_delimiters(self):
+        from guardian_truth.evidence_packer import resolve
+        r = row(CALL)
+        r = {k: '<' + k + '>\n' + v + '\n</' + k + '>' for k, v in r.items()}
+        p = pack(r, PackerConfig(budget_bytes=None, max_block_chars=25, max_event_chars=20))
+        self.assertEqual(p['mode'], 'FULL_INPUT')
+        self.assertTrue(resolve(p, r))
+
+
+if __name__ == '__main__':
+    unittest.main()

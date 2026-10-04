@@ -96,13 +96,13 @@ def _split_long(start, end, raw, limit):
     return final
 
 
-def _system_units(raw, start, end, cfg, event_index, catalog_start):
-    cuts, previous_blank, in_tool = [], True, False
+def _system_units(raw, start, end, cfg, event_index, catalog_source):
+    cuts, previous_blank, in_tool, after_marker = [], True, False, False
     for line_start, line in _lines(raw[start:end], start):
         if not line.strip():
             previous_blank = True; continue
         heading, tool = HEADING.match(line), TOOL_LINE.match(line)
-        in_catalog = catalog_start is not None and line_start >= catalog_start
+        in_catalog = catalog_source is not None and catalog_source.start <= line_start < catalog_source.end
         if heading:
             cuts.append((line_start, 'heading', len(heading.group(1)), None)); in_tool = False
         elif TAG_LINE.match(line):
@@ -111,27 +111,41 @@ def _system_units(raw, start, end, cfg, event_index, catalog_start):
             cuts.append((line_start, 'tool', None, tool.group('name'))); in_tool = True
         elif in_tool and line[:1] in ' \t':
             pass  # continuation of a tool declaration
-        elif previous_blank or in_tool:
+        elif previous_blank or in_tool or after_marker:
             cuts.append((line_start, 'block', None, None)); in_tool = False
+        # Marker lines are context, while their following body is independently
+        # rankable even when the author did not insert a blank line.
+        after_marker = bool(heading or TAG_LINE.match(line))
         previous_blank = False
     if not cuts or cuts[0][0] != start:
         cuts.insert(0, (start, 'block', None, None))
-    units, stack = [], []
+    units, stack, scope_bodies = [], [], {}
+    pending_scope = None
     bounds = [c[0] for c in cuts[1:]] + [end]
     for (left, kind, level, tool), right in zip(cuts, bounds):
         if kind == 'heading':
             while stack and stack[-1][0] >= level:
                 stack.pop()
-        in_catalog = catalog_start is not None and left >= catalog_start
+        in_catalog = catalog_source is not None and catalog_source.start <= left < catalog_source.end
         category = 'CATALOG' if in_catalog else 'POLICY'
-        parents = [] if in_catalog else [uid for _, uid in stack]
+        parents = [] if in_catalog else [p for _, uid in stack for p in [uid] + scope_bodies.get(uid, [])]
         pieces = [(left, right)] if kind in ('heading', 'tag', 'tool') else _split_long(left, right, raw, cfg.max_block_chars)
+        scope_of = pending_scope if category == 'POLICY' and kind == 'block' else None
         for a, b in pieces:
             units.append(dict(uid=f'p{a}', document='prompt', start=a, end=b, category=category,
                               role='system', kind=kind, tool=tool, event=event_index, parents=list(parents),
+                              scope_of=scope_of,
                               root_scope=(category == 'POLICY' and kind == 'block' and len(stack) <= 1)))
+        if scope_of:
+            # The first paragraph can state governing conditions for the rest
+            # of the section. Descendants require every chunk of that body.
+            scope_bodies[scope_of] = [f'p{a}' for a, _ in pieces]
+            pending_scope = None
         if kind == 'heading' and not in_catalog:
             stack.append((level, f'p{left}'))
+            pending_scope = f'p{left}'
+        elif in_catalog:
+            pending_scope = None
     return units
 
 
@@ -163,12 +177,11 @@ def build_units(row, cfg=PackerConfig(), store=None):
     raw = store.raw
     history, targets = store.history_events, store.target_events
     catalog = parse_catalog(history, raw['prompt'])
-    catalog_start = catalog.source.start if catalog.source else None
     units = []
     for index, event in enumerate(history):
         s, e = event.source.start, event.source.end
         if event.role == 'system':
-            units.extend(_system_units(raw['prompt'], s, e, cfg, index, catalog_start))
+            units.extend(_system_units(raw['prompt'], s, e, cfg, index, catalog.source))
             continue
         pieces = _split_long(s, e, raw['prompt'], cfg.max_event_chars)
         for a, b in pieces:
@@ -330,9 +343,12 @@ def pack(row, cfg=PackerConfig(), embedder=None):
     history, targets = store.history_events, store.target_events
     by_uid = {u['uid']: u for u in units}
     windows = defaultdict(list)
+    scope_bodies = defaultdict(list)
     for u in units:
         if u.get('window_of'):
             windows[u['window_of']].append(u['uid'])
+        if u.get('scope_of'):
+            scope_bodies[u['scope_of']].append(u['uid'])
     event_uids = defaultdict(list)
     for u in units:
         if u['category'] == 'HISTORY':
@@ -346,6 +362,14 @@ def pack(row, cfg=PackerConfig(), embedder=None):
         partner[result_sid] = (call_sid, status); partner[call_sid] = (result_sid, status)
 
     # ---- declarations and catalog status
+    def declaration(source, kind, tool=None):
+        owner = next(i for i, event in enumerate(history)
+                     if event.role == 'system' and event.source.start <= source.start
+                     and source.end <= event.source.end)
+        return dict(uid='catalog' if kind == 'catalog' else f'decl:{tool}', document='prompt',
+                    start=source.start, end=source.end, category='DECLARATION',
+                    role='system', kind=kind, tool=tool, event=owner)
+
     called = sorted({t.name for t in targets if t.kind == 'call' and t.name})
     structural_tools = {u['tool'] for u in units if u['category'] == 'CATALOG' and u['kind'] == 'tool'}
     catalog_consistent = bool(catalog.source) and catalog.complete and structural_tools == set(catalog.tools)
@@ -353,8 +377,7 @@ def pack(row, cfg=PackerConfig(), embedder=None):
     for name in called:
         if name in catalog.tools:
             spec = catalog.tools[name]
-            declarations.append(dict(uid=f'decl:{name}', document='prompt', start=spec.source.start, end=spec.source.end,
-                                     category='DECLARATION', role='system', kind='tool', tool=name, event=0))
+            declarations.append(declaration(spec.source, 'tool', name))
             declaration_status[name] = 'DECLARED'
         else:
             declaration_status[name] = ('UNDECLARED_IN_COMPLETE_PARSED_CATALOG' if catalog_consistent
@@ -362,8 +385,7 @@ def pack(row, cfg=PackerConfig(), embedder=None):
     undeclared = [n for n, s in declaration_status.items() if s != 'DECLARED']
     if undeclared and catalog.source:
         # An absence claim needs the complete enumeration, attached as one original span.
-        declarations = [dict(uid='catalog', document='prompt', start=catalog.source.start, end=catalog.source.end,
-                             category='DECLARATION', role='system', kind='catalog', tool=None, event=0)]
+        declarations = [declaration(catalog.source, 'catalog')]
     if undeclared:
         uncovered.append(dict(category='DECLARATION', calls={n: declaration_status[n] for n in undeclared},
                               catalog_complete=catalog.complete, catalog_issues=list(catalog.issues),
@@ -408,17 +430,21 @@ def pack(row, cfg=PackerConfig(), embedder=None):
             # receipt group = every unit of the call event and of the result event
             group += event_uids.get(other, [])
         group += windows.get(unit.get('window_of'), []) if unit.get('window_of') else []
+        group += scope_bodies.get(unit.get('scope_of'), []) if unit.get('scope_of') else []
         group.append(uid)
         ordered = list(dict.fromkeys(group))
         return [g for g in ordered if g not in selected], ordered
 
     def cost(extra=()):
-        return _cost(mandatory + merge_records(store, [by_uid[u] for u in selected + list(extra)]))
+        return _cost(mandatory + merge_records(store, [by_uid[u] for u in dict.fromkeys(selected + list(extra))]))
 
     def try_add(uid, reason, cap=None):
         """Add the full dependency group; if it does not fit, add the unit alone and mark the group partial."""
         cap = budget if cap is None else cap
-        if uid in cfg.exclude_uids and reason not in {'ANCHOR_' + a.upper() for a in cfg.shared_anchors}:
+        # Required intent anchors override novelty exclusions: re-reading them
+        # is mandatory, just as it is for explicitly shared anchors.
+        exempt = {'ANCHOR_' + a.upper() for a in cfg.shared_anchors + cfg.required_anchors}
+        if uid in cfg.exclude_uids and reason not in exempt:
             return 'EXCLUDED'
         missing, full = closure(uid)
         if not missing:
@@ -436,8 +462,11 @@ def pack(row, cfg=PackerConfig(), embedder=None):
         if not uids:
             anchors[name] = dict(status='ABSENT'); return
         results = [try_add(u, 'ANCHOR_' + name.upper(), cap) for u in uids]
-        ok = all(r in ('SELECTED', 'ALREADY', 'SELECTED_GROUP_PARTIAL', 'EXCLUDED') for r in results)
-        anchors[name] = dict(status='SELECTED' if ok else ('PARTIAL' if any(r != 'BUDGET_SKIPPED' for r in results) else 'BUDGET_SKIPPED'),
+        present = {'SELECTED', 'ALREADY', 'SELECTED_GROUP_PARTIAL'}
+        ok = all(r in present for r in results)
+        status = ('SELECTED' if ok else 'PARTIAL' if any(r in present for r in results)
+                  else 'EXCLUDED' if all(r == 'EXCLUDED' for r in results) else 'BUDGET_SKIPPED')
+        anchors[name] = dict(status=status,
                              units=list(uids))
 
     def share(fraction):
@@ -445,11 +474,20 @@ def pack(row, cfg=PackerConfig(), embedder=None):
         return None if budget is None else here + int(fraction * (budget - here))
 
     all_units = [u['uid'] for u in units if u['category'] in ('POLICY', 'HISTORY')]
-    full_input = failure is None and not cfg.exclude_uids and (budget is None or cost(all_units) <= budget)
+    # FULL_INPUT covers every parsed event span, including unused catalog entries.
+    # Parser role markers, outer transport tags and trimmed whitespace are delimiters.
+    full_declarations = [declaration(catalog.source, 'catalog')] if catalog.source else declarations
+    full_store = reference_store(row, [by_uid[u] for u in all_units], full_declarations + target_units)
+    full_mandatory = ([_record(full_store, [u]) for u in target_units]
+                      + [_record(full_store, [d], 'DECLARATION') for d in full_declarations])
+    full_cost = _cost(full_mandatory + merge_records(full_store, [by_uid[u] for u in all_units]))
+    full_input = failure is None and not cfg.exclude_uids and (budget is None or full_cost <= budget)
     if full_input:
-        # Nothing to retrieve: the whole recorded input fits. Read everything.
-        for uid in all_units:
-            try_add(uid, 'FULL_INPUT_FITS')
+        # Select atomically: provisional quote IDs and closure order cannot drop
+        # a source after the exact final representation has passed the budget.
+        store, declarations, mandatory = full_store, full_declarations, full_mandatory
+        selected.extend(all_units)
+        trace.extend(dict(uid=uid, status='SELECTED', reason='FULL_INPUT_FITS', group=[uid]) for uid in all_units)
     if failure is None:
         events_of = lambda i: event_uids.get(f'h{i}', []) if i is not None else []
         for name, idx in (('last_user', last_user), ('last_assistant', last_asst), ('first_user', first_user)):
@@ -517,6 +555,16 @@ def pack(row, cfg=PackerConfig(), embedder=None):
             groups.append(dict(call=call_sid, result=result_sid, pairing=status,
                                completeness='COMPLETE' if len(present) == len(members) else 'PARTIAL',
                                missing_units=[m for m in members if m not in chosen]))
+    policy_scopes = []
+    for heading, members in scope_bodies.items():
+        if any(m in chosen for m in members):
+            missing = [m for m in members if m not in chosen]
+            policy_scopes.append(dict(heading=heading, completeness='PARTIAL' if missing else 'COMPLETE',
+                                      missing_units=missing))
+    if any(g['completeness'] == 'PARTIAL' for g in policy_scopes):
+        uncovered.append(dict(category='POLICY', partial_scope_bodies=[g['heading'] for g in policy_scopes
+                                                                      if g['completeness'] == 'PARTIAL'],
+                              reason='GOVERNING_BODY_NOT_ALL_READ'))
     unread_policy = sum(1 for u in units if u['category'] == 'POLICY' and u['uid'] not in chosen)
     unread_history = sum(1 for u in units if u['category'] == 'HISTORY' and u['uid'] not in chosen)
     if unread_policy:
@@ -536,7 +584,10 @@ def pack(row, cfg=PackerConfig(), embedder=None):
                             parsers_agree=structural_tools == set(catalog.tools)),
             'span_members': span_members(store, [by_uid[u] for u in selected]) if failure is None else {},
             'anchors': anchors, 'receipt_groups': groups, 'pair_diagnostics': pair_diagnostics,
-            'policy_mode': policy_mode, 'mode': 'FULL_INPUT' if full_input else 'SELECTED', 'selected_units': selected, 'trace': trace, 'failure': failure,
+            'policy_scope_groups': policy_scopes,
+            'policy_mode': policy_mode, 'mode': 'FULL_INPUT' if full_input and failure is None else 'SELECTED',
+            'full_input_scope': 'ALL_PARSED_EVENT_SPANS_INCLUDING_ORIGINAL_CATALOG',
+            'selected_units': selected, 'trace': trace, 'failure': failure,
             'budget_bytes': budget,
             'cost': {'source_token_upper_bound': _cost(read_sources + mandatory), 'retrieved_records': len(read_sources),
                      'retrieved_units': len(selected), 'inference_http': 0, 'embedder': embedder.name},
@@ -556,22 +607,79 @@ def reference_store(row, selected_units, mandatory_units):
 
 
 def resolve(packet, row):
-    """Admission helper: every record must be an exact original span with a native reference."""
+    """Check original spans and structural provenance, never semantic truth.
+
+    FULL_INPUT means coverage of every parsed event span, including the original
+    catalog. Transport delimiters and whitespace trimmed by parse_events are not
+    evidence events and are outside that claim.
+    """
     records = packet['read_sources'] + packet['current_targets'] + packet['declarations']
     store = SourceStore({'prompt': row['prompt'], 'response': row['response']})
+    # Structural boundaries do not depend on a caller's chunk-size setting.
+    structural, _, _, catalog = build_units(row, PackerConfig(max_block_chars=max(1, len(row['prompt']))), store)
     native = {(v['document'], v['start'], v['end']) for v in store.sources.values() if v['kind'] != 'raw'}
     for span in sorted({(r['document'], r['start'], r['end']) for r in records} - native):
         store.quote_id(*span)
     if packet['source_sha256'] != store.source_sha256:
         raise ValueError('SOURCE_HASH_CHANGED')
+    for container, allowed in (('read_sources', {'POLICY', 'HISTORY'}),
+                               ('current_targets', {'TARGET'}), ('declarations', {'DECLARATION'})):
+        if any(r['category'] not in allowed for r in packet[container]):
+            raise ValueError('SOURCE_CATEGORY_INVALID')
     for record in records:
         if store.raw[record['document']][record['start']:record['end']] != record['text']:
             raise ValueError('SOURCE_SPAN_CHANGED')
         native, parent = _native_ref(store, record)
         if native != record['source_id']:
             raise ValueError('SOURCE_ID_NOT_NATIVE')
-        if record['category'] == 'HISTORY':
-            event = store.sources[parent]
-            if record['role'] != event['role'] or record['event'] != event['event'] or record['kind'] != event['kind']:
-                raise ValueError('ACTOR_OR_EVENT_PROVENANCE_MISMATCH')
+        if parent is None or record.get('parent_source_id') != parent:
+            raise ValueError('SOURCE_PARENT_INVALID')
+        event = store.sources[parent]
+        if record['role'] != event['role'] or record['event'] != event['event']:
+            raise ValueError('ACTOR_OR_EVENT_PROVENANCE_MISMATCH')
+        category = record['category']
+        if category == 'TARGET':
+            valid = record['document'] == 'response' and native == parent
+            kind, tool = event['kind'], event['tool']
+        elif category == 'HISTORY':
+            valid = record['document'] == 'prompt' and event['role'] != 'system'
+            kind, tool = event['kind'], event['tool']
+        elif category == 'POLICY':
+            touched = [u for u in structural if u['start'] < record['end'] and record['start'] < u['end']]
+            valid = (record['document'] == 'prompt' and event['role'] == 'system' and bool(touched)
+                     and all(u['category'] == 'POLICY' and u['event'] == event['event'] for u in touched))
+            kinds = {u['kind'] for u in touched}
+            kind, tool = (next(iter(kinds)) if len(kinds) == 1 else 'policy_span'), None
+        else:  # DECLARATION: only exact authoritative parser ranges.
+            span = (record['start'], record['end'])
+            is_catalog = catalog.source is not None and span == (catalog.source.start, catalog.source.end)
+            spec = catalog.tools.get(record.get('tool'))
+            is_tool = spec is not None and span == (spec.source.start, spec.source.end)
+            kind, tool = ('catalog', None) if record['kind'] == 'catalog' else ('tool', record.get('tool'))
+            valid = (record['document'] == 'prompt' and event['role'] == 'system'
+                     and (is_catalog if record['kind'] == 'catalog' else is_tool))
+        if not valid:
+            raise ValueError('SOURCE_CATEGORY_PROVENANCE_MISMATCH')
+        if record['kind'] != kind or record.get('tool') != tool:
+            raise ValueError('SOURCE_KIND_OR_TOOL_MISMATCH')
+        if record.get('sha256') != hashlib.sha256(record['text'].encode()).hexdigest():
+            raise ValueError('SOURCE_RECORD_HASH_CHANGED')
+    targets = {sid for sid, s in store.sources.items() if s['kind'] != 'raw' and s['document'] == 'response'}
+    if {r['source_id'] for r in packet['current_targets']} != targets:
+        raise ValueError('CURRENT_TARGET_INVENTORY_CHANGED')
+    if packet.get('mode') == 'FULL_INPUT':
+        if packet.get('failure'):
+            raise ValueError('FULL_INPUT_WITH_FAILURE')
+        for source in store.sources.values():
+            if source['kind'] == 'raw':
+                continue
+            cursor = source['start']
+            for record in sorted((r for r in records if r['document'] == source['document']
+                                  and source['start'] <= r['start'] < r['end'] <= source['end']),
+                                 key=lambda r: r['start']):
+                if record['start'] > cursor:
+                    break
+                cursor = max(cursor, record['end'])
+            if cursor != source['end']:
+                raise ValueError('FULL_INPUT_COVERAGE_INCOMPLETE')
     return True

@@ -113,9 +113,11 @@ class Controller:
 
     def explore(self, questions):
         """Answer-free evidence gathering for a set of questions; returns per-question reads."""
-        frontier = [q for q in questions if q.key and q.key not in self.seen_q]
-        for q in frontier:
-            self.seen_q.add(q.key)
+        frontier = []
+        for q in questions:
+            if q.key and q.key not in self.seen_q:
+                self.seen_q.add(q.key)
+                frontier.append(q)
         if self.order == 'BFS':
             dq = deque(frontier); pop = dq.popleft; push = dq.append; has = lambda: bool(dq)
         elif self.order == 'DFS':

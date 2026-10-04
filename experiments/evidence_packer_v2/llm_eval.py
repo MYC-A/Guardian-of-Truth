@@ -87,8 +87,8 @@ def prepare(out):
     print('prepared', len(manifest), 'manifest', sha(manifest))
 
 
-def post(url, key, payload, attempts=6, timeout=240):
-    """Transport retries only for 429/5xx/timeouts (never for content); attempts are logged."""
+def post(url, key, payload, attempts=1, timeout=120):
+    """Single attempt by default; explicitly requested legacy retries are logged."""
     log = []
     for i in range(attempts):
         req = urllib.request.Request(url, data=json.dumps(payload).encode(), method='POST',
@@ -105,7 +105,8 @@ def post(url, key, payload, attempts=6, timeout=240):
                 return None, log
         except Exception as e:  # timeout / connection
             log.append(dict(status='EXC', error=type(e).__name__))
-        time.sleep(min(90, 5 * 2 ** i))
+        if i + 1 < attempts:
+            time.sleep(min(90, 5 * 2 ** i))
     return None, log
 
 
@@ -197,22 +198,25 @@ def report(out):
             j = json.loads(f.read_text()); judged[j['id']] = (j.get('verdict') or {}).get('match')
         for subset, ids in (('all46', list(gold)), ('ref15', [i for i in gold if i in refs]),
                             ('unseen31', [i for i in gold if i not in refs])):
-            tp = fp = fn = tn = unk = tech = 0; tokens = 0; reason = {'SAME': 0, 'PARTIAL': 0, 'DIFFERENT': 0, None: 0}
+            tp = fp = fn = tn = unk = tech = 0; tokens = completion_tokens = 0; reason = {'SAME': 0, 'PARTIAL': 0, 'DIFFERENT': 0, None: 0}
             for i in ids:
                 r = recs.get(i); y = gold[i]
+                # Provider usage is paid even when JSON/reference admission fails.
+                tokens += ((r or {}).get('usage') or {}).get('prompt_tokens', 0)
+                completion_tokens += ((r or {}).get('usage') or {}).get('completion_tokens', 0)
                 entry = man['entries'].get(f'{arm}/{i}', {})
                 if r is None or r.get('admitted') is None:
                     tech += 1; pred = 0  # technical null projected to 0, reported separately
                 else:
                     d = r['admitted']['decision']; unk += d == 'UNKNOWN'; pred = int(d == 'ERROR')
-                    tokens += (r.get('usage') or {}).get('prompt_tokens', 0)
                 tp += pred and y; fp += pred and not y; fn += (not pred) and y; tn += (not pred) and not y
                 if pred and y:
                     reason[judged.get(i)] += 1
             prec = tp / (tp + fp) if tp + fp else 0; rec_ = tp / (tp + fn) if tp + fn else 0
             f1 = 2 * prec * rec_ / (prec + rec_) if prec + rec_ else 0
             summary[(arm, subset)] = dict(tp=tp, fp=fp, fn=fn, tn=tn, f1=round(f1, 4), unknown=unk, technical=tech,
-                                          reason=reason, prompt_tokens=tokens)
+                                          reason=reason, prompt_tokens=tokens, completion_tokens=completion_tokens,
+                                          reason_contract='GOLD_EXPLANATION_ONLY_SAME_PARTIAL_NOT_SOURCE_PROOF')
             lines.append(f"{arm:8s} {subset:9s} F1 {f1:.3f}  TP{tp} FP{fp} FN{fn} TN{tn}  UNKNOWN {unk}  tech-null {tech}  "
                          f"reason(TP) SAME {reason['SAME']} PARTIAL {reason['PARTIAL']} DIFF {reason['DIFFERENT']} unjudged {reason[None]}  prompt_tokens {tokens}")
     text = '\n'.join(lines); print(text)

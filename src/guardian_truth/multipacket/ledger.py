@@ -44,7 +44,7 @@ class Ledger:
 
     def edge(self, src, dst, type, status, origin):
         e = Edge(src, dst, type, status, origin)
-        if not any((x.src, x.dst, x.type, x.origin) == (src, dst, type, origin) for x in self.edges):
+        if not any((x.src, x.dst, x.type, x.status, x.origin) == (src, dst, type, status, origin) for x in self.edges):
             self.edges.append(e)
         return e
 

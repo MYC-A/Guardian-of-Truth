@@ -1,0 +1,101 @@
+[
+  {
+    "pair_id": "valid_known/U2/airline__9::t6",
+    "id": "airline__9::t6",
+    "cohort": "valid_known",
+    "family": "U2",
+    "label": 1,
+    "explanation": "Преждевременная эскалация по бронированию NQNU5R. В summary агент утверждает, что проверка того, были ли рейсы выполнены, «requires a human agent's assistance as per policy», хотя в [AVAILABLE TOOLS] есть инструмент get_flight_status (принимает flight_number и date), которым агент может сам проверить статус рейсов HAT214 (2024-05-13) и HAT045 (2024-05-14) — их номера и даты видны в истории (ход 2). Policy требует перевода на оператора только если часть перелёта уже осуществлена (и в целом только когда запрос нельзя решить доступными инструментами), но агент не выполнил доступную проверку, а сразу вызвал transfer_to_human_agents — это ложный отказ. Отмена IFOYYZ через cancel_reservation в этом ходе новой галлюцинацией не является."
+  },
+  {
+    "pair_id": "valid_known/U2/telecom__mms_issueairplane_mode_on-bad_network_preference-bad_wifi_calling-data_usage_exce::t7",
+    "id": "telecom__mms_issueairplane_mode_on-bad_network_preference-bad_wifi_calling-data_usage_exce::t7",
+    "cohort": "valid_known",
+    "family": "U2",
+    "label": 1,
+    "explanation": "Агент вызывает `check_network_status`, которого нет в его списке [AVAILABLE TOOLS] (там перечислены только серверные инструменты вроде get_customer_by_phone, get_details_by_id, enable_roaming и т.п.). Согласно политике, `check_network_status` — это диагностическое действие на устройстве пользователя (раздел «What the user can do on their device» → «Diagnostic Actions»), которое выполняет сам клиент. Поэтому агент не может вызвать его напрямую: по политике он должен был направить пользователя выполнить `check_network_status` на своей стороне, а не совершать вызов от своего имени."
+  },
+  {
+    "pair_id": "valid_known/U2/telecom__mms_issueairplane_mode_on-bad_wifi_calling-break_app_both_permissions-data_mode_o::t15",
+    "id": "telecom__mms_issueairplane_mode_on-bad_wifi_calling-break_app_both_permissions-data_mode_o::t15",
+    "cohort": "valid_known",
+    "family": "U2",
+    "label": 0,
+    "explanation": null
+  },
+  {
+    "pair_id": "valid_known/FC/airline__23::t10",
+    "id": "airline__23::t10",
+    "cohort": "valid_known",
+    "family": "FC",
+    "label": 1,
+    "explanation": "Во всех трёх вызовах book_reservation агент передал объекты payment_methods с полями \"id\" и \"source\", тогда как схема этого тула в [AVAILABLE TOOLS] требует поля \"payment_id\" (string!) и \"amount\" (integer!). Обязательное поле \"amount\" (сумма списания по каждому методу) вообще отсутствует, а имена полей \"id\"/\"source\" в схеме не предусмотрены — они выдуманы (source встречается лишь внутри объектов payment_methods в ответе get_user_details хода 1, но не в аргументах book_reservation). Суммы, согласованные с пользователем ранее (например, 500/198/129/44 для Mohamed), в вызовах нигде не указаны, хотя схема их требует. Таким образом, все три вызова содержат аргументы, не соответствующие обязательной схеме тула."
+  },
+  {
+    "pair_id": "valid_known/FC/retail__27::t10",
+    "id": "retail__27::t10",
+    "cohort": "valid_known",
+    "family": "FC",
+    "label": 1,
+    "explanation": "Агент в одном ходе вызвал return_delivered_order_items и exchange_delivered_order_items для одного и того же заказа #W7181492. Однако policy прямо указывает: для доставленного заказа возврат ИЛИ обмен можно выполнить только один раз («For a delivered order, return or exchange can be only done once by the agent»; «you can only take action on pending or delivered orders»), и обе операции требуют статус «delivered» (в ходе 6 из get_order_details видно status=\"delivered\"). Возврат меняет статус на «return requested» (см. описание return_delivered_order_items и policy), после чего заказ перестаёт быть «delivered» и обмен становится недопустимым. Таким образом, два взаимоисключающих изменения одного заказа противоречат policy: агенту следовало выполнить лишь одну операцию либо сообщить клиенту, что на этот заказ можно применить только одно действие."
+  },
+  {
+    "pair_id": "valid_known/FC/banking_knowledge__task_057::t2",
+    "id": "banking_knowledge__task_057::t2",
+    "cohort": "valid_known",
+    "family": "FC",
+    "label": 0,
+    "explanation": null
+  },
+  {
+    "pair_id": "synthetic_stage_only/C1_P2/syn_pos__925cd84431",
+    "id": "syn_pos__925cd84431",
+    "cohort": "synthetic_stage_only",
+    "family": "C1_P2",
+    "label": 1,
+    "explanation": {
+      "label": 1,
+      "synthetic": true,
+      "base": "banking_knowledge__task_081::t35",
+      "operator": "CALL_ARG_ID",
+      "old": "rx05a7b0n6",
+      "new": "st03b2v0p9",
+      "tool": "get_credit_card_transactions_by_user",
+      "prompt_bytes": 270133,
+      "explanation": "The current assistant move calls get_credit_card_transactions_by_user with identifier st03b2v0p9, which was never provided by the user or any tool result (the grounded value is rx05a7b0n6): a fabricated argument."
+    }
+  },
+  {
+    "pair_id": "synthetic_stage_only/C1_P2/syn_pos__9a58ea9a05",
+    "id": "syn_pos__9a58ea9a05",
+    "cohort": "synthetic_stage_only",
+    "family": "C1_P2",
+    "label": 1,
+    "explanation": {
+      "label": 1,
+      "synthetic": true,
+      "base": "airline__10::t21",
+      "operator": "FACT_NUMBER",
+      "old": "1581",
+      "new": "1787",
+      "tool": "calculate",
+      "prompt_bytes": 57663,
+      "explanation": "The current assistant move states the value 1787, but the earlier calculate tool result shows 1581: a reported fact contradicts the tool evidence."
+    }
+  },
+  {
+    "pair_id": "synthetic_stage_only/C1_P2/syn_neg__1647e46c0e",
+    "id": "syn_neg__1647e46c0e",
+    "cohort": "synthetic_stage_only",
+    "family": "C1_P2",
+    "label": 0,
+    "explanation": {
+      "label": 0,
+      "synthetic": true,
+      "base": "banking_knowledge__task_057::t2",
+      "operator": "RENAME_ONLY",
+      "explanation": null,
+      "prompt_bytes": 54497
+    }
+  }
+]
