@@ -1,0 +1,71 @@
+{
+ "git_head": "6a3930d89e0672f04dd9e1db39cffb5ae271b356",
+ "reviewer": {
+  "provider": "mistral",
+  "model": "ministral-14b-2512",
+  "temperature": 0,
+  "max_tokens": 1700,
+  "contract": "I4 strict json_schema + admit"
+ },
+ "prompts": {
+  "I4": "93bd208d2e8b569a3248ac47e4aafa27955138c23a2502096d10b49b953c5892",
+  "ledger": "1e7ee2a1d061e3f03a966ad26936355a781266a8ce0e840c32c3c34a5955d4f6",
+  "adjudicate": "a1bf031791509d391b91385ed58624156070ec7962c7cf752970e420910527c9",
+  "obligation": "363faabafce1b761a63c22f42d16711b8894bfbe4ac24c1a58ef6aea6b200df4",
+  "qa": "f128b9f31873d2db8d007ebcb9c659cf1d3700a056e97b2703432c8f901fc1b4"
+ },
+ "arms": [
+  "A",
+  "B",
+  "C1",
+  "C2",
+  "CTRL",
+  "D1",
+  "D2",
+  "D3",
+  "FULL",
+  "G2_L",
+  "G2_S",
+  "G3B",
+  "G3V",
+  "G4_L",
+  "G4_S",
+  "ORACLE_E",
+  "ORACLE_R"
+ ],
+ "oracle_arms": [
+  "ORACLE_E",
+  "ORACLE_R"
+ ],
+ "files": {
+  "src/guardian_truth/evidence_packer/packer.py": "a53dadce1fdbf35e1a818403d63821396110d815345e32dbe1edeac1e1595c09",
+  "src/guardian_truth/multipacket/packets.py": "67cd882561342bfd1c858b7cd83b72c87cd0c6e1626a85b306f8ec53940cae08",
+  "src/guardian_truth/multipacket/ledger.py": "969da8eb10fd10f7a948c0a0a716315cd16c78e0ab7a174709b860a024edbcb2",
+  "src/guardian_truth/multipacket/controller.py": "8bd86296c1fc7cb9adc9645cd72c135f8b455072e76c1e577aaf2347a623f3f5",
+  "experiments/multipacket_v1/arms.py": "31fb7d28fd4c18e4089d73194c32b10517c3fc31a7d4e778610847d6ee052f1a",
+  "experiments/multipacket_v1/gaps.py": "bc92687d3867ccd797ca91b2d533f3a97c0da26d0ba07a8f9183e65eeeaa6dcb",
+  "experiments/multipacket_v1/llm.py": "b4952f9c20b68f5d97a6b9276edbf299e4dde7e6657767e667c6e697062d7fe5",
+  "experiments/multipacket_v1/run.py": "cfd413f739733ffc28d208859f1b33c606b3f6a8ad9332006de50551d45d7d3d",
+  "experiments/evidence_packer_v2/llm_eval.py": "811ec213bb4de7112cd5cc9d847f24e743eb805957736938b160bc3eef2e3767",
+  "experiments/hybrid_mechanisms/interfaces.py": "deefc85bd382abde830d602e9862ec63397e0fa72c9763600ca0d9682f0a1ee0",
+  "outputs/multipacket_v1/baseline_cache/u2_replies.json": "9878d79ad266b77a686e05753c477dd7ecb59f70bfeb3f2df56d688c9a20d063",
+  "outputs/multipacket_v1/suite_syn_m1/inputs.jsonl": "1b6632007efe0f9496a96eb155457e47bd104260147a665d2841fa915e1bbdb4",
+  "outputs/multipacket_v1/suite_syn_m1/GOLD_eval_only.json": "09bf2c4d6486642275d366ecb98f410ef3ea9b579dc8af28085b5a2a36f5e67f"
+ },
+ "rules": {
+  "unknown_to_binary": "ERROR->1; NO_ERROR, UNKNOWN, technical null->0 (reported separately)",
+  "degenerate": "retrieval arms (C1,C2,D*,G2,G4) return A unchanged when the U2 20k packet is FULL_INPUT or when no new evidence is found",
+  "D_final": "primary = step-2 decision (model integrates ledger); secondary sticky = ERROR if any step ERROR",
+  "C_aggregator": "agree->agreed; ERROR vs other -> adjudication call on union of cited sources with both ledgers; NO_ERROR vs UNKNOWN -> NO_ERROR",
+  "D3_trigger": "third packet iff D2-final is UNKNOWN or differs from step 1",
+  "G3_trigger": "recheck iff first decision != ERROR and scan has applicability YES & violated TRUE",
+  "G4": "questions = A open questions + UNKNOWN scan assessments; PRIORITY search; <=2 QA rounds (depth<=1 follow-ups); S=4 hops/8000 chars, L=8/16000",
+  "pilot": "valid46 (contaminated, diagnostic), run 1, all non-oracle arms; oracle arms on ref15 only",
+  "selection_for_SYN": "per family (Parallel C1,C2 | Sequential D1,D2,D3 | Adaptive G2_S,G2_L,G3B,G3V,G4_S,G4_L) pick max(reason-correct TP - FP) on the valid46 pilot; tie -> fewer mean model calls; non-recursive gap arm = best of G2_*/G3*",
+  "final_SYN": "SYN-M1 (synthetic, 46 cases): A, B, FULL + selected arms; 3 runs (attempt index) for every selected arm if budget allows",
+  "success": "arm beats A only if mean F1 over runs higher AND reason-correct TP not lower AND paired sign test p<0.1; otherwise \"not established\"",
+  "reason_judge": "gpt-oss:120b via Ollama, same JUDGE_PROMPT as evidence_packer_v2, TP only, SAME/PARTIAL count as reason-correct",
+  "budget": "pilot <= ~900 reviewer calls (~8M tokens); SYN final <= ~1500 calls; stop and report if exceeded"
+ },
+ "manifest_sha256": "cd6c020f00d2a86487a1b9a08566765d5593b1440961c876892d80d14e266fac"
+}
