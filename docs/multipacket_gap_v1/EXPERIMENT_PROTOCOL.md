@@ -42,3 +42,10 @@ A = U2 20k; B = U2 48k; FULL. On valid46 all three reuse the frozen 3-run eviden
 - **Selection for SYN-M1:** within each family (Parallel C1, C2 | Sequential D1, D2, D3 | Adaptive G2_S, G2_L, G3B, G3V, G4_S, G4_L), choose the arm with the highest (reason-correct TP − FP) on the valid46 pilot. Ties go to the arm with fewer mean calls. The "gap without recursion" slot is the best of G2/G3.
 - **Success:** an arm beats A only if (1) its mean F1 is higher, (2) its reason-correct TP is not lower, and (3) a paired sign test gives p < 0.1. Otherwise the result is "not established".
 - **Budget:** pilot ≤ ~900 reviewer calls; SYN-M1 final ≤ ~1500 calls.
+
+## Post-freeze log (after inference started)
+- **Extras carried to SYN-M1 in addition to the rule-selected arms:** G4_S (best recursive), CTRL (matched-call control), B and FULL. These were declared in `SELECTION_v1.json` before any SYN call.
+- **Harness bugfix `402396c9`:** `arm_A(row, run=1)` ignored the repetition index on new suites, so SYN A runs 2–3 reused attempt 0. A was fixed to use `RUN` like every other arm. The A requests for attempts 1–2 were already cached by the other arms' first pass, so 0 new calls were made. A run 1 and the definitions of all other arms are unchanged. SYN metrics are reported after the fix (with the bug, A had F1 0.800 in all 3 runs; after the fix, 0.789 mean).
+- **Post-hoc, zero-inference analyses (not pre-registered):** `diag_20k_48k.py`, `r1_offline.py`, `syn_strata.py`, `aggregate.py` (pooled (row, run) and per-row sign tests), `stats.py`. The success rule was evaluated with the per-row sign test over 3 runs.
+- **Not run (budget / no-op):** Oracle Questions / Oracle Relations, LLM-level BFS vs DFS, D3/G3 on SYN, second reviewer model.
+- **Calls used (from the call cache):** 1,539 new reviewer calls in total (pilot + SYN-M1 × 3) and 441 gpt-oss judge calls. Both are within the combined pilot+final budget (~2,400).
