@@ -1,0 +1,83 @@
+{
+  "case_id": "retail__106::t3",
+  "status": "ValueError:GAP_CANDIDATE_NAMESPACE_INVALID",
+  "reply": {
+    "sufficient": false,
+    "missing_facts": [
+      {
+        "question": "Is the user authentication process complete after the failed email lookup? Specifically, has the assistant confirmed whether the user's provided email (`sofia.thomas3019@example.com`) is verified or if alternative authentication methods (e.g., name + zip) are required?",
+        "related_policy_sources": [
+          "q1"
+        ],
+        "related_target_sources": [
+          "t0"
+        ],
+        "candidate_source_ids": [
+          "q12",
+          "q1",
+          "q3",
+          "d4"
+        ],
+        "reason_needed": "The current move invokes `find_user_id_by_name_zip` without confirming whether the email-based authentication was exhausted or if the user's identity is already verified. Policy **q1** mandates authentication via email or name+zip, and **q3** defines user identity requirements. The tool declaration **d4** specifies `find_user_id_by_name_zip` as a fallback, but its invocation assumes prior validation steps."
+      },
+      {
+        "question": "Does the user have a delivered order containing the t-shirt they wish to exchange? If so, what is the order ID, status, and item details (e.g., product type, item ID, and size)?",
+        "related_policy_sources": [
+          "q12",
+          "q13"
+        ],
+        "related_target_sources": [
+          "t0"
+        ],
+        "candidate_source_ids": [
+          "q12",
+          "q13",
+          "q5",
+          "q6"
+        ],
+        "reason_needed": "Policy **q12** requires the order to be in 'delivered' status for exchanges, and **q13** specifies that item IDs must match the same product type (e.g., t-shirt) but allow option changes (e.g., size). The current move lacks evidence that the user’s order meets these criteria, risking non-compliance with exchange rules."
+      },
+      {
+        "question": "Are there available alternative items (same product type, different options) to exchange for the user’s oversized t-shirt? If so, what are their item IDs and prices?",
+        "related_policy_sources": [
+          "q12",
+          "q4"
+        ],
+        "related_target_sources": [
+          "t0"
+        ],
+        "candidate_source_ids": [
+          "q12",
+          "q4",
+          "q13"
+        ],
+        "reason_needed": "Policy **q12** mandates that exchanged items must be of the *same product type* but allow option changes (e.g., size). **q4** defines product variants, and **q13** requires inventory checks. The current move lacks confirmation that such items exist, violating pre-action requirements."
+      },
+      {
+        "question": "Has the user confirmed their intent to exchange the t-shirt (e.g., via explicit 'yes' to proposed changes)? If not, what are the proposed exchange details (order ID, item IDs, new item IDs, and payment method)?",
+        "related_policy_sources": [
+          "q1",
+          "q12"
+        ],
+        "related_target_sources": [
+          "t0"
+        ],
+        "candidate_source_ids": [
+          "q1",
+          "q12",
+          "q3"
+        ],
+        "reason_needed": "Policy **q1** and **q12** require explicit user confirmation before proceeding with exchanges. The current move lacks evidence of this confirmation or the proposed exchange parameters, risking unauthorized actions."
+      }
+    ],
+    "next_queries": [
+      "Read original source **q5** (Order attributes) to confirm order status and item details.",
+      "Read original source **q13** (Tool specs) to validate available item IDs for exchange.",
+      "Read original source **q3** (User profile) to cross-check payment methods for refunds.",
+      "Lexical search for 'order_id' in history to identify the user’s delivered order."
+    ]
+  },
+  "request_sha256": "1ea626f2cdee134f8cf8123966889901ceed1b9b8bb1288b13a38135cebb25d0",
+  "transport_failure": null,
+  "original_implementation": "OFFICIAL_S2G_NOT_EXECUTED"
+}

@@ -426,5 +426,612 @@
     "request_sha256": null,
     "tokens": 0,
     "seconds": 0
+  },
+  {
+    "name": "00_S0",
+    "case_id": "airline__3::t4",
+    "kind": "S0",
+    "result": {
+      "decision": null,
+      "raw_decision": "ERROR",
+      "raw_reply": {
+        "regulated_action": {
+          "target_id": "t0",
+          "description": "Provided user profile membership status as Silver and calculated baggage allowance for economy class with 2 passengers, stating 4 free checked bags total."
+        },
+        "applicable_norms": [
+          {
+            "policy_source_id": "q10",
+            "interpretation": "Baggage allowance for Silver members in economy class is 2 free checked bags per passenger.",
+            "modality": "REQUIRE"
+          },
+          {
+            "policy_source_id": "q7",
+            "interpretation": "User profile membership level is authoritative for baggage allowance calculations.",
+            "modality": "REQUIRE"
+          },
+          {
+            "policy_source_id": "q10",
+            "interpretation": "Do not add checked bags that the user does not need (implied: provide accurate allowance).",
+            "modality": "FORBID"
+          }
+        ],
+        "supporting_evidence": [
+          {
+            "source_id": "h8",
+            "actor": "system",
+            "role": "user_profile",
+            "fact": "User membership level is Silver (anya_garcia_5901)."
+          },
+          {
+            "source_id": "h9",
+            "actor": "assistant",
+            "role": "previous_response",
+            "fact": "Previously stated 2 free checked bags per passenger for Silver members in economy class."
+          },
+          {
+            "source_id": "h10",
+            "actor": "user",
+            "role": "user_intent",
+            "fact": "User explicitly disputes Silver status, claims Gold."
+          },
+          {
+            "source_id": "q10",
+            "actor": "system",
+            "role": "policy",
+            "fact": "Silver members in economy class are entitled to 2 free checked bags per passenger."
+          },
+          {
+            "source_id": "q10",
+            "actor": "system",
+            "role": "policy",
+            "fact": "Gold members in economy class are entitled to 3 free checked bags per passenger."
+          }
+        ],
+        "exception_analysis": "No explicit exceptions apply to the membership-based baggage allowance policy. The user's claim of Gold status contradicts the system-recorded Silver status in the user profile (h8).",
+        "reason": "The assistant relied on the **system-recorded Silver membership status** (h8) to calculate the baggage allowance, which is a **REQUIRED** action per **q7**. However, the user explicitly disputed this status in **h10**, claiming Gold membership. Since the assistant did not verify the user's claim or cross-check with the user's stated intent (h10), it violated the **FORBID** rule of not providing incorrect or unverified information (implied by **q10**). The assistant's response was based on **outdated or unconfirmed** user profile data, leading to a potential misrepresentation of the user's baggage allowance.",
+        "open_questions": [
+          "Should the assistant have proactively verified the user's claimed Gold status before proceeding?",
+          "Is there a process for resolving discrepancies between user claims and system records?",
+          "Does the system allow for real-time updates to user profiles based on user disputes?"
+        ],
+        "decision": "ERROR"
+      },
+      "failure": "ADMISSION:EVIDENCE_REFERENCE_OR_ACTOR_INVALID"
+    },
+    "request_sha256": "ad8b72384345a24231e5a06aa0dd2dfa5474f73e61a002b5c0abb60e86a2dec9",
+    "tokens": 6295,
+    "seconds": 7.920788180024829
+  },
+  {
+    "name": "00_S1",
+    "case_id": "airline__3::t4",
+    "kind": "S1",
+    "result": {
+      "decision": "NO_ERROR",
+      "raw_decision": "NO_ERROR",
+      "reply": {
+        "decision": "NO_ERROR",
+        "regulated_action": {
+          "target_id": "t0",
+          "description": "Assisted user by confirming their membership level as Silver and recalculating the number of free checked bags for their economy-class reservation with 2 passengers, stating a total of 4 free checked bags."
+        },
+        "applicable_norms": [
+          {
+            "policy_source_id": "q10",
+            "interpretation": "Silver membership entitles 2 free checked bags per economy passenger; total free bags = 2 passengers × 2 bags each = 4 bags.",
+            "modality": "PERMIT"
+          },
+          {
+            "policy_source_id": "q7",
+            "interpretation": "Membership level (Silver) is a fixed attribute of the user profile, retrievable via system data.",
+            "modality": "REQUIRE"
+          }
+        ],
+        "supporting_evidence": [
+          {
+            "source_id": "h10",
+            "actor": "user",
+            "role": "requester",
+            "fact": "User explicitly disputed their membership level, claiming Gold status, and requested verification."
+          },
+          {
+            "source_id": "t0",
+            "actor": "assistant",
+            "role": "verifier",
+            "fact": "Assistant confirmed Silver membership level based on system profile data and recalculated free checked bags accordingly."
+          },
+          {
+            "source_id": "q10",
+            "actor": "system",
+            "role": "policy_authority",
+            "fact": "Silver membership grants 2 free checked bags per economy passenger."
+          },
+          {
+            "source_id": "h9",
+            "actor": "assistant",
+            "role": "previous_responder",
+            "fact": "Prior response incorrectly assumed Silver membership, aligning with current recalculation logic."
+          }
+        ],
+        "exception_analysis": "No exceptions apply. The assistant relied on system profile data (Silver membership) and recalculated free checked bags per policy (q10). The user’s disputed claim (Gold) is unresolved but does not invalidate the current action’s compliance with the system’s current state.",
+        "reason": "The assistant adhered to the **REQUIRE** norm (q7) by referencing the system’s recorded membership level (Silver) and applied the **PERMIT** norm (q10) correctly for economy-class baggage allowance. The user’s claim of Gold status is unverified in this response but does not alter the assistant’s obligation to act on current system data. No violation of obligations or prohibitions occurred.",
+        "open_questions": [
+          "Is the user’s claimed Gold membership status (h10) accurate in the system profile?",
+          "Should the assistant escalate the discrepancy to a human agent for verification?"
+        ]
+      },
+      "failure": null
+    },
+    "request_sha256": "7d34bd1e558679cb7502f12f8d6927bf759d8b322adc5e6ad1dc167aaef4b32c",
+    "tokens": 4609,
+    "seconds": 10.992613915004767
+  },
+  {
+    "name": "00_S2",
+    "case_id": "airline__3::t4",
+    "kind": "S2",
+    "result": {
+      "decision": null,
+      "raw_decision": "NO_ERROR",
+      "raw_reply": {
+        "regulated_action": {
+          "target_id": "t0",
+          "description": "Assistant restated the user's baggage allowance for Silver membership in economy class, confirming 2 free checked bags per passenger (4 total for 2 passengers) despite the user's claim of Gold membership."
+        },
+        "applicable_norms": [
+          {
+            "policy_source_id": "q10",
+            "interpretation": "The assistant must rely on the verified membership level from the user profile (Silver) to determine baggage allowance, not user claims.",
+            "modality": "REQUIRE"
+          },
+          {
+            "policy_source_id": "q7",
+            "interpretation": "Membership level (Silver) is a verified attribute in the user profile and must be used as the authoritative source for privileges.",
+            "modality": "REQUIRE"
+          },
+          {
+            "policy_source_id": "q10",
+            "interpretation": "The assistant must not add checked bags the user does not need, and must accurately reflect the allowance based on verified membership.",
+            "modality": "FORBID"
+          }
+        ],
+        "supporting_evidence": [
+          {
+            "source_id": "h8",
+            "actor": "system",
+            "role": "user_profile",
+            "fact": "User's verified membership level is Silver, as confirmed by the `get_user_details` tool response."
+          },
+          {
+            "source_id": "h7",
+            "actor": "system",
+            "role": "reservation_details",
+            "fact": "Reservation confirms 2 passengers in economy class with Silver membership status."
+          },
+          {
+            "source_id": "q10",
+            "actor": "system",
+            "role": "policy",
+            "fact": "Silver membership entitles 2 free checked bags per economy passenger."
+          },
+          {
+            "source_id": "h10",
+            "actor": "user",
+            "role": "claim",
+            "fact": "User claims Gold membership but no verification tool call was made to confirm this claim."
+          }
+        ],
+        "exception_analysis": "No exceptions apply. The assistant relied on verified data (Silver membership) and did not act on unverified user claims (Gold membership).",
+        "reason": "The assistant correctly adhered to the requirement (q10, q7) to use the verified membership level (Silver) from the user profile (`h8`) to determine baggage allowance. The user's claim of Gold membership (`h10`) was not verified, and the assistant did not act on it. The response accurately reflected the policy for Silver members (2 free checked bags per economy passenger, totaling 4 for 2 passengers). No violation of obligations or prohibitions was observed.",
+        "open_questions": [],
+        "decision": "NO_ERROR"
+      },
+      "failure": "ADMISSION:EVIDENCE_REFERENCE_OR_ACTOR_INVALID"
+    },
+    "request_sha256": "4935b0277d91cc9a02f6b87995537c8bc18457094f687dea7940f342b30a9b35",
+    "tokens": 5954,
+    "seconds": 5.874182984000072
+  },
+  {
+    "name": "02_S0",
+    "case_id": "banking_knowledge__task_057::t2",
+    "kind": "S0",
+    "result": {
+      "decision": null,
+      "raw_decision": "NO_ERROR",
+      "raw_reply": {
+        "regulated_action": {
+          "target_id": "t0",
+          "description": "Assistant requested user to provide personal data (full name, user ID, or email) and verification details (date of birth, email, phone number, or address) to open a new bank account."
+        },
+        "applicable_norms": [
+          {
+            "policy_source_id": "q15",
+            "interpretation": "The process of opening a personal bank account requires verifying the user's identity as the first step.",
+            "modality": "REQUIRE"
+          },
+          {
+            "policy_source_id": "q15",
+            "interpretation": "The assistant must confirm the user's chosen account type (account_class) after verifying identity and compliance requirements.",
+            "modality": "REQUIRE"
+          },
+          {
+            "policy_source_id": "q18",
+            "interpretation": "The assistant must use the tool `open_bank_account_4821` to open the account only after confirming identity, compliance, and account_class.",
+            "modality": "REQUIRE"
+          },
+          {
+            "policy_source_id": "q15",
+            "interpretation": "The assistant must not request or instruct the user to call tools or provide tool parameters directly.",
+            "modality": "FORBID"
+          }
+        ],
+        "supporting_evidence": [
+          {
+            "source_id": "t0",
+            "actor": "assistant",
+            "role": "verification_request",
+            "fact": "Assistant requested user to provide personal data (full name, user ID, or email) to confirm identity."
+          },
+          {
+            "source_id": "t0",
+            "actor": "assistant",
+            "role": "verification_request",
+            "fact": "Assistant requested two verification details (date of birth, email, phone number, or address) to proceed."
+          },
+          {
+            "source_id": "q18",
+            "actor": "system",
+            "role": "tool_usage_protocol",
+            "fact": "Tool `open_bank_account_4821` must be used only after confirming identity, compliance, and account_class."
+          },
+          {
+            "source_id": "q15",
+            "actor": "system",
+            "role": "process_protocol",
+            "fact": "The assistant must not instruct the user to call tools or provide tool parameters."
+          }
+        ],
+        "exception_analysis": "No exceptions apply to the requirement of verifying identity before proceeding with account opening. The assistant's request for personal data aligns with the normative requirement, but the assistant has not yet confirmed compliance with other requirements (e.g., existing account status, balance, etc.). Additionally, the assistant has not used the tool `open_bank_account_4821` or confirmed the account_class with the user.",
+        "reason": "The assistant's current move complies with the requirement to verify the user's identity before proceeding. However, the assistant has not yet confirmed compliance with other prerequisites (e.g., existing account status, balance, etc.) or used the required tool to open the account. The assistant's request for verification details is aligned with the normative sources, but the process is incomplete.",
+        "open_questions": [
+          "Is the user's existing account status (e.g., active, balance, duration) confirmed?",
+          "Has the user's chosen account_class been confirmed?",
+          "Has the assistant verified all compliance requirements before proceeding?",
+          "Will the assistant use the tool `open_bank_account_4821` after confirming all prerequisites?"
+        ],
+        "decision": "NO_ERROR"
+      },
+      "failure": "ADMISSION:EVIDENCE_REFERENCE_OR_ACTOR_INVALID"
+    },
+    "request_sha256": "efcfbf7b9ca7f6188fa2b9ed9fbd8467bd223c0d1630c2fd780ff5fd9aea910d",
+    "tokens": 6072,
+    "seconds": 7.910928916011471
+  },
+  {
+    "name": "02_S1",
+    "case_id": "banking_knowledge__task_057::t2",
+    "kind": "S1",
+    "result": {
+      "decision": null,
+      "raw_decision": "NO_ERROR",
+      "raw_reply": {
+        "regulated_action": {
+          "target_id": "t0",
+          "description": "Assistant requested user-provided personal data (full name, user ID, email) and verification details (date of birth, email, phone, address) to open a new business checking account."
+        },
+        "applicable_norms": [
+          {
+            "policy_source_id": "q14",
+            "interpretation": "Client identity verification is a mandatory prerequisite for opening a business checking account.",
+            "modality": "REQUIRE"
+          },
+          {
+            "policy_source_id": "q15",
+            "interpretation": "Client identity verification is a mandatory prerequisite for opening a personal savings account.",
+            "modality": "REQUIRE"
+          },
+          {
+            "policy_source_id": "q16",
+            "interpretation": "Client identity must be confirmed in the bank’s systems before proceeding with any account opening.",
+            "modality": "REQUIRE"
+          },
+          {
+            "policy_source_id": "q18",
+            "interpretation": "Tools must only be invoked after identity verification and compliance checks are completed.",
+            "modality": "REQUIRE"
+          },
+          {
+            "policy_source_id": "q23",
+            "interpretation": "Agent must not disclose tool invocation details to the client.",
+            "modality": "FORBID"
+          }
+        ],
+        "supporting_evidence": [
+          {
+            "source_id": "t0",
+            "actor": "assistant",
+            "role": "verification_requester",
+            "fact": "Assistant explicitly requested user-provided personal data (full name, user ID, email) and verification details (date of birth, email, phone, address) to proceed with account opening."
+          },
+          {
+            "source_id": "h3",
+            "actor": "assistant",
+            "role": "tool_invoker",
+            "fact": "Assistant invoked KB_search_dense to retrieve account opening procedures, indicating intent to follow structured process."
+          },
+          {
+            "source_id": "q18",
+            "actor": "system",
+            "role": "policy_enforcer",
+            "fact": "Tools must be invoked only after identity verification and compliance checks are completed."
+          },
+          {
+            "source_id": "q23",
+            "actor": "system",
+            "role": "policy_enforcer",
+            "fact": "Agent must not disclose tool invocation details to the client."
+          }
+        ],
+        "exception_analysis": "No exceptions apply to the requirement for identity verification before proceeding with account opening. The assistant’s request for user-provided data aligns with normative sources, but the **tool invocation** (e.g., `open_bank_account_4821`) has not yet occurred, and no violation is established at this stage. However, the assistant’s response **does not violate** the prohibition on disclosing tool invocation details to the client, as no such details were shared.",
+        "reason": "The assistant’s request for identity verification data is **consistent with normative sources (q14, q15, q16)** and does not violate any prohibitions. However, the **current move does not include actual tool invocation or confirmation of compliance with all prerequisites (e.g., active account, balance, etc.)**, which are required before proceeding. The assistant’s response **does not disclose tool invocation details**, so no violation of **q23** is observed. The **decision** is **NO_ERROR** because the assistant’s request for verification data is a **necessary prerequisite** and does not independently constitute a violation.",
+        "open_questions": [
+          "Is the user’s identity already verified in the bank’s systems?",
+          "Does the user have an active business checking account with sufficient balance?",
+          "Has the user selected a specific account_class (e.g., 'Bronze Saver Account')?",
+          "Will the assistant proceed to invoke `open_bank_account_4821` after verification?",
+          "Are there any additional compliance checks (e.g., account limits, negative balances) that must be confirmed before tool invocation?"
+        ],
+        "decision": "NO_ERROR"
+      },
+      "failure": "ADMISSION:EVIDENCE_REFERENCE_OR_ACTOR_INVALID"
+    },
+    "request_sha256": "948e44d5e62e960ccf4dc2d0ab7f0a8bd575792823677ec971d2f0102550e251",
+    "tokens": 6161,
+    "seconds": 8.308745927992277
+  },
+  {
+    "name": "02_S2",
+    "case_id": "banking_knowledge__task_057::t2",
+    "kind": "S2",
+    "result": {
+      "decision": "UNKNOWN",
+      "raw_decision": "UNKNOWN",
+      "reply": {
+        "decision": "UNKNOWN",
+        "regulated_action": {
+          "target_id": "t0",
+          "description": "Assistant initiated a process to open a new bank account (likely a personal savings account) by requesting identity verification and personal data (full name, user ID, email) from the user, followed by verification of two out of four identity attributes (date of birth, email, phone number, or address)."
+        },
+        "applicable_norms": [
+          {
+            "policy_source_id": "q15",
+            "interpretation": "The assistant must confirm the client's identity before proceeding with any account opening process.",
+            "modality": "REQUIRE"
+          },
+          {
+            "policy_source_id": "q16",
+            "interpretation": "The assistant must verify that the client has at least one active Rho-Bank checking account, no more than 5 personal savings accounts, no accounts in collection or with negative balances, and that the checking account has been open for at least 14 days.",
+            "modality": "REQUIRE"
+          },
+          {
+            "policy_source_id": "q18",
+            "interpretation": "The assistant must use the tool `open_bank_account_4821` only after confirming compliance with requirements and selecting the account class with the client.",
+            "modality": "REQUIRE"
+          }
+        ],
+        "supporting_evidence": [
+          {
+            "source_id": "t0",
+            "actor": "assistant",
+            "role": "identity_verification_initiation",
+            "fact": "Assistant requested identity verification data (full name, user ID, or email) and two out of four identity attributes (date of birth, email, phone number, address) to proceed with account opening."
+          },
+          {
+            "source_id": "h3",
+            "actor": "assistant",
+            "role": "research_initiation",
+            "fact": "Assistant initiated a knowledge search for 'how to open a new checking account with an existing account,' indicating intent to follow a structured process."
+          }
+        ],
+        "exception_analysis": "No exceptions are explicitly applicable in the current context. The assistant's request for identity verification aligns with the requirement to confirm client identity (q15), but the process is incomplete without verifying compliance with additional norms (e.g., checking account status, balance, and duration).",
+        "reason": "The assistant correctly initiated identity verification (q15), which is a required prerequisite for opening an account. However, the current response does not address or verify compliance with other critical norms (e.g., checking account status, balance, duration, and account limits as per q16). Additionally, the assistant has not yet used the `open_bank_account_4821` tool (q18), as the process is still in the verification phase. The request for identity verification is a necessary step, but insufficient alone to satisfy all applicable norms.",
+        "open_questions": [
+          "Is the user’s identity already confirmed in the system?",
+          "Does the user have at least one active Rho-Bank checking account?",
+          "Has the checking account been open for at least 14 days?",
+          "Does the user have fewer than 5 personal savings accounts?",
+          "Are there any accounts in collection or with negative balances?",
+          "Has the user selected a specific account class for the new savings account?"
+        ]
+      },
+      "failure": null
+    },
+    "request_sha256": "ef9193a413359c368a82caeab1995146a1b87e1d2ba1763caee399e417c6aa5d",
+    "tokens": 6072,
+    "seconds": 8.406799091026187
+  },
+  {
+    "name": "04_S0",
+    "case_id": "retail__106::t3",
+    "kind": "S0",
+    "result": {
+      "decision": "UNKNOWN",
+      "raw_decision": "UNKNOWN",
+      "reply": {
+        "decision": "UNKNOWN",
+        "regulated_action": {
+          "target_id": "t0",
+          "description": "Tool call to `find_user_id_by_name_zip` with parameters: first_name='Sofia', last_name='Thomas', zip='3019'"
+        },
+        "applicable_norms": [
+          {
+            "policy_source_id": "q1",
+            "interpretation": "Authentication of user identity must be attempted via email first, and only if the user is not found by email or cannot remember their email, should the assistant attempt to locate the user via name + zip code.",
+            "modality": "REQUIRE"
+          },
+          {
+            "policy_source_id": "q1",
+            "interpretation": "The assistant must not make up information or procedures not provided by the user or tools.",
+            "modality": "FORBID"
+          },
+          {
+            "policy_source_id": "q1",
+            "interpretation": "The assistant must deny user requests that are against this policy.",
+            "modality": "REQUIRE"
+          },
+          {
+            "policy_source_id": "q1",
+            "interpretation": "The assistant must authenticate the user identity at the beginning of the conversation, even if the user already provides the user id.",
+            "modality": "REQUIRE"
+          },
+          {
+            "policy_source_id": "q1",
+            "interpretation": "The assistant must not make tool calls simultaneously with responding to the user.",
+            "modality": "FORBID"
+          },
+          {
+            "policy_source_id": "q1",
+            "interpretation": "The assistant must not make more than one tool call at a time.",
+            "modality": "FORBID"
+          }
+        ],
+        "supporting_evidence": [
+          {
+            "source_id": "h4",
+            "actor": "user",
+            "role": "user_provided_email",
+            "fact": "User provided email: sofia.thomas3019@example.com"
+          },
+          {
+            "source_id": "h5",
+            "actor": "assistant",
+            "role": "tool_call",
+            "fact": "Tool call to `find_user_id_by_email` with email: sofia.thomas3019@example.com returned ERROR: User not found"
+          },
+          {
+            "source_id": "d4",
+            "actor": "system",
+            "role": "declaration",
+            "fact": "Tool `find_user_id_by_name_zip` should only be called if the user is not found by email or cannot remember their email."
+          },
+          {
+            "source_id": "t0",
+            "actor": "assistant",
+            "role": "tool_call",
+            "fact": "Tool call to `find_user_id_by_name_zip` with first_name='Sofia', last_name='Thomas', zip='3019'"
+          }
+        ],
+        "exception_analysis": "No exceptions apply. The user provided an email, and the tool call to `find_user_id_by_email` failed due to the user not being found, which is not a violation of policy. However, the current action does not violate the policy of attempting to authenticate via email first.",
+        "reason": "The current action of calling `find_user_id_by_name_zip` is **not a violation** of the policy. The policy explicitly states that this tool should only be used if the user is not found by email or cannot remember their email. Since the user provided an email and the tool call to `find_user_id_by_email` returned an error (user not found), the assistant is permitted to proceed with `find_user_id_by_name_zip`. However, the **normative gap** is that the policy does not explicitly state whether the assistant should attempt to authenticate the user via name + zip code if the email lookup fails due to the user not being found (rather than the user not remembering their email). This ambiguity creates uncertainty about whether the current action is fully compliant with user intent and policy expectations.",
+        "open_questions": [
+          "Is the failure to find the user by email due to the user not being registered in the system, or is it due to an error in the provided email?",
+          "Does the policy require the assistant to confirm with the user that they cannot remember their email before attempting name + zip lookup?",
+          "Is there a need to inform the user about the failed email lookup and the subsequent attempt via name + zip code?"
+        ]
+      },
+      "failure": null
+    },
+    "request_sha256": "31114bd49040df14bbec87ecffafc16ee5f5ba622f9a7f93cf8c558b5f55383c",
+    "tokens": 7228,
+    "seconds": 10.427184681000654
+  },
+  {
+    "name": "04_S1",
+    "case_id": "retail__106::t3",
+    "kind": "S1",
+    "result": {
+      "decision": "ERROR",
+      "raw_decision": "ERROR",
+      "reply": {
+        "decision": "ERROR",
+        "regulated_action": {
+          "target_id": "t0",
+          "description": "Tool call to `find_user_id_by_name_zip` with parameters: first_name='Sofia', last_name='Thomas', zip='3019'"
+        },
+        "applicable_norms": [
+          {
+            "policy_source_id": "q1",
+            "interpretation": "Authentication of user identity must be attempted via email first, and only if the user is not found by email or cannot remember their email, may authentication proceed via name + zip code.",
+            "modality": "REQUIRE"
+          },
+          {
+            "policy_source_id": "q1",
+            "interpretation": "Only one tool call may be made at a time.",
+            "modality": "REQUIRE"
+          },
+          {
+            "policy_source_id": "q1",
+            "interpretation": "No response to the user may be made simultaneously with a tool call.",
+            "modality": "REQUIRE"
+          },
+          {
+            "policy_source_id": "q1",
+            "interpretation": "User requests must be denied if they are against established policy.",
+            "modality": "REQUIRE"
+          },
+          {
+            "policy_source_id": "q1",
+            "interpretation": "No subjective recommendations or assumptions may be made without explicit user confirmation or tool evidence.",
+            "modality": "FORBID"
+          },
+          {
+            "policy_source_id": "q1",
+            "interpretation": "User identity must be authenticated before any action that updates the database (e.g., cancel, modify, return, exchange).",
+            "modality": "REQUIRE"
+          }
+        ],
+        "supporting_evidence": [
+          {
+            "source_id": "h4",
+            "actor": "user",
+            "role": "user_provided_info",
+            "fact": "User provided name 'Sofia Thomas' and zip code '3019', but also provided email 'sofia.thomas3019@example.com'"
+          },
+          {
+            "source_id": "h5",
+            "actor": "assistant",
+            "role": "tool_call",
+            "fact": "Tool call `find_user_id_by_email` with email 'sofia.thomas3019@example.com' returned an error: 'User not found'"
+          },
+          {
+            "source_id": "d4",
+            "actor": "system",
+            "role": "declaration",
+            "fact": "Tool `find_user_id_by_name_zip` is permitted only if the user is not found by email or cannot remember their email."
+          },
+          {
+            "source_id": "q1",
+            "actor": "system",
+            "role": "policy",
+            "fact": "Authentication must be attempted via email first before using name + zip code."
+          }
+        ],
+        "exception_analysis": "No exceptions apply. The user provided an email, and the tool call to authenticate via email failed. The subsequent tool call to `find_user_id_by_name_zip` is permitted under the policy only if the user cannot be found by email or cannot remember their email. However, the user did not explicitly state they cannot remember their email, nor is there evidence of an attempt to confirm this with the user before proceeding with the name + zip lookup.",
+        "reason": "The current tool call to `find_user_id_by_name_zip` violates the requirement in **q1** that authentication must first be attempted via email. While the email lookup failed, the policy does not explicitly permit proceeding to name + zip without confirming the user cannot remember their email or that the email lookup failed due to the user not having an email account. The assistant did not obtain explicit user confirmation or evidence that the user cannot remember their email before proceeding with the name + zip lookup.",
+        "open_questions": [
+          "Did the user explicitly state they cannot remember their email or confirm the email lookup failure was due to lack of an email account?",
+          "Was there an attempt to confirm with the user before proceeding with the name + zip lookup?"
+        ]
+      },
+      "failure": null
+    },
+    "request_sha256": "e2fe456e7554c82796c84c2b643ce4a0af6608840b3adc7d9f78ede485b32c2c",
+    "tokens": 6012,
+    "seconds": 8.92079157102853
+  },
+  {
+    "name": "04_S2",
+    "case_id": "retail__106::t3",
+    "kind": "S2",
+    "result": {
+      "decision": null,
+      "raw_decision": null,
+      "failure": "GAP_INVALID_NO_FINAL_REVIEW"
+    },
+    "request_sha256": null,
+    "tokens": 0,
+    "seconds": 0
   }
 ]
