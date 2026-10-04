@@ -94,3 +94,71 @@ scoring and final phase replay are evidenced by the corresponding retained run
 artifacts and reports, not by the focused transport tests alone.
 
 No review establishes bug-free software or generalized Guardian reliability.
+
+## Initial post-run audit: 32-request checkpoint
+
+The code-control reviewer independently replayed a temporary copy of the final
+retained artifacts with HTTP and credential-access tripwires. Replay passed for
+**32 charged requests** and **31 semantic prediction rows**; the remaining
+request is the failed R1 planning call. Actual usage is 197,252 tokens, including
+147,947 Mistral tokens and 49,305 Ollama tokens. The original raw files, requests,
+predictions, ledger and format diagnostic retained identical SHA256 hashes.
+No inference or credential access occurred during this audit.
+
+The reviewer ran all four focused new test files together:
+
+```powershell
+python -m pytest tests/test_hybrid_transport.py tests/test_hybrid_logic.py tests/test_hybrid_packets.py tests/test_hybrid_fenced.py -q
+```
+
+All **80 tests passed**. Frozen source-code hashes match the protocol.
+The complete machine-readable receipt is
+[final_code_review.json](../../outputs/hybrid_mechanisms_v1/final_code_review.json).
+
+The retained failed R1 plan was additionally reconstructed directly from its
+hashed raw provider response. The controller raises exactly
+`ValueError:GAP_SOURCE_NAMESPACE_INVALID` before any source read or round trace,
+matching both `R1_plan_failure.json` and the saved empty `R1.json` controller.
+Its gap `policy_sources` includes declaration ID `d9`, which is outside the
+read catalog; its `target_sources` contains historical IDs rather than current
+`t0`. In isolated post-hoc diagnostic copies, removing the declaration reference
+still exposes the historical-target namespace error, and clearing those invalid
+target references exposes the separate `READ_ARGUMENT_INVALID` for the planned
+`d9` read. The original plan and runtime were not repaired. The declaration was
+already provided in the initial context but was not selectable through this
+read catalog. This is a disclosed planning-interface failure, with zero reads;
+it does not demonstrate exhausted retrieval or inability to interpret policy.
+
+The separate full-string JSON-fence diagnostic's code hash, protocol hash and
+all 16 factorial raw-file hashes also match. Its eight additional admitted Gemma
+objects use the existing strict inner parser and source/actor admission. These
+remain post-hoc results under an alternate format contract; the frozen strict
+predictions remain unchanged. Neither this diagnostic nor a model-generated
+norm or consistency flag becomes a code certificate of semantic truth.
+
+## Final audit: 34 requests and separate orchestration guard
+
+After the two additional pre-registered case requests were retained, the reviewer
+independently repeated full offline replay on a temporary copy. The final ledger
+contains **34 requests**, **33 semantic prediction rows**, and **217,722 actual
+tokens**: 168,417 Mistral tokens and 49,305 Ollama tokens. Unknown usage is zero.
+All raw/request/prediction/ledger/format-diagnostic hashes remained unchanged;
+HTTP and credential tripwires recorded zero accesses. The failed R1 plan still
+reproduces its original namespace error before any read, matching its retained
+failure and empty controller state. Frozen runtime code hashes still match.
+
+The reviewer separately inspected
+[guarded_plan.py](../../experiments/hybrid_diagnostics/guarded_plan.py), which
+lives outside the frozen runtime. The future adapter blocks semantic review
+after a rejected plan or navigation-only exploration with no complete source.
+These paths retain a null decision and technical status; they do not manufacture
+semantic UNKNOWN or binary zero. A valid full source only permits review and
+does not prove a verdict, applicability, exception closure or sufficient scope.
+The guard has not been applied retrospectively to the retained experiment.
+
+Its three regressions passed independently. All five focused test files then
+passed together: **83 tests**, including the 80 tests at the earlier checkpoint.
+The updated [review receipt](../../outputs/hybrid_mechanisms_v1/final_code_review.json)
+preserves the earlier checkpoint and records the final replay, guard code hash,
+null-decision behavior and unchanged frozen artifacts. This corrective diagnostic
+uses zero new model calls and is not a new measurement of semantic accuracy.
