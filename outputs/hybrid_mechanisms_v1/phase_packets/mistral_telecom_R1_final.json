@@ -1,0 +1,243 @@
+{
+  "version": "hybrid-mechanisms-v1",
+  "retrieval": "AUTOMATIC_READ_ONLY_FULL_SOURCE_CONTROL",
+  "source_sha256": "6050a0d6ba08d6fc74890c6b528d11503f81939e1f0b0c9d7056b02059845339",
+  "current_response": "⟦ASSISTANT · ход 13⟧\n\t→ TOOL_CALL resume_line: {\"customer_id\": \"C1001\", \"line_id\": \"L1002\"}",
+  "current_targets": [
+    {
+      "source_id": "t0",
+      "document": "response",
+      "start": 21,
+      "end": 91,
+      "role": "assistant",
+      "kind": "call",
+      "tool": "resume_line",
+      "text": "\t→ TOOL_CALL resume_line: {\"customer_id\": \"C1001\", \"line_id\": \"L1002\"}"
+    }
+  ],
+  "native_target_inventory": [
+    {
+      "source_id": "t0",
+      "tool": "resume_line",
+      "arguments": {
+        "customer_id": "C1001",
+        "line_id": "L1002"
+      },
+      "status": "ATTEMPT_NOT_COMPLETED_EFFECT"
+    }
+  ],
+  "normative_sources": [],
+  "declarations": [
+    {
+      "source_id": "d0",
+      "document": "prompt",
+      "start": 26526,
+      "end": 26715,
+      "role": "system",
+      "kind": "DECLARATION",
+      "tool": "disable_roaming",
+      "text": "- disable_roaming — Disables international roaming on a line.\n    customer_id: string! — ID of the customer who owns the line.\n    line_id: string! — ID of the line to disable roaming for.\n"
+    },
+    {
+      "source_id": "d1",
+      "document": "prompt",
+      "start": 26340,
+      "end": 26526,
+      "role": "system",
+      "kind": "DECLARATION",
+      "tool": "enable_roaming",
+      "text": "- enable_roaming — Enables international roaming on a line.\n    customer_id: string! — ID of the customer who owns the line.\n    line_id: string! — ID of the line to enable roaming for.\n"
+    },
+    {
+      "source_id": "d2",
+      "document": "prompt",
+      "start": 25294,
+      "end": 25485,
+      "role": "system",
+      "kind": "DECLARATION",
+      "tool": "get_bills_for_customer",
+      "text": "- get_bills_for_customer — Retrieves a list of the customer's bills, most recent first.\n    customer_id: string! — ID of the customer.\n    limit: integer — Maximum number of bills to return.\n"
+    },
+    {
+      "source_id": "d3",
+      "document": "prompt",
+      "start": 24051,
+      "end": 24190,
+      "role": "system",
+      "kind": "DECLARATION",
+      "tool": "get_customer_by_id",
+      "text": "- get_customer_by_id — Retrieves a customer directly by their unique ID.\n    customer_id: string! — The unique identifier of the customer.\n"
+    },
+    {
+      "source_id": "d4",
+      "document": "prompt",
+      "start": 24190,
+      "end": 24471,
+      "role": "system",
+      "kind": "DECLARATION",
+      "tool": "get_customer_by_name",
+      "text": "- get_customer_by_name — Searches for customers by name and DOB. May return multiple matches if names are similar,\n    \n    DOB helps disambiguate.\n    full_name: string! — The full name of the customer.\n    dob: string! — Date of birth for verification, in the format YYYY-MM-DD.\n"
+    },
+    {
+      "source_id": "d5",
+      "document": "prompt",
+      "start": 23901,
+      "end": 24051,
+      "role": "system",
+      "kind": "DECLARATION",
+      "tool": "get_customer_by_phone",
+      "text": "- get_customer_by_phone — Finds a customer by their primary contact or line phone number.\n    phone_number: string! — The phone number to search for.\n"
+    },
+    {
+      "source_id": "d6",
+      "document": "prompt",
+      "start": 26069,
+      "end": 26340,
+      "role": "system",
+      "kind": "DECLARATION",
+      "tool": "get_data_usage",
+      "text": "- get_data_usage — Retrieves current billing cycle data usage for a line, including data\n    \n    refueling amount, data limit, and cycle end date.\n    customer_id: string! — ID of the customer who owns the line.\n    line_id: string! — ID of the line to check usage for.\n"
+    },
+    {
+      "source_id": "d7",
+      "document": "prompt",
+      "start": 24471,
+      "end": 24663,
+      "role": "system",
+      "kind": "DECLARATION",
+      "tool": "get_details_by_id",
+      "text": "- get_details_by_id — Retrieves the details for a given ID.\n    \n    The ID must be a valid ID for a Customer, Line, Device, Bill, or Plan.\n    id: string! — The ID of the object to retrieve.\n"
+    },
+    {
+      "source_id": "d8",
+      "document": "prompt",
+      "start": 27032,
+      "end": 27455,
+      "role": "system",
+      "kind": "DECLARATION",
+      "tool": "refuel_data",
+      "text": "- refuel_data — Refuels data for a specific line, adding to the customer's bill.\n    \n    Checks: Line status must be Active, Customer owns the line.\n    Logic: Adds data to the line and charges customer based on the plan's refueling rate.\n    customer_id: string! — ID of the customer who owns the line.\n    line_id: string! — ID of the line to refuel data for.\n    gb_amount: number! — Amount of data to add in gigabytes."
+    },
+    {
+      "source_id": "d9",
+      "document": "prompt",
+      "start": 24999,
+      "end": 25294,
+      "role": "system",
+      "kind": "DECLARATION",
+      "tool": "resume_line",
+      "text": "- resume_line — Resumes a suspended line.\n    \n    Checks: Line status must be Suspended or Pending Activation.\n    Logic: Sets line status to Active, clears suspension_start_date.\n    customer_id: string! — ID of the customer who owns the line.\n    line_id: string! — ID of the line to resume.\n"
+    },
+    {
+      "source_id": "d10",
+      "document": "prompt",
+      "start": 25485,
+      "end": 26069,
+      "role": "system",
+      "kind": "DECLARATION",
+      "tool": "send_payment_request",
+      "text": "- send_payment_request — Sends a payment request to the customer for a specific bill.\n    \n    Checks:\n        - Customer exists\n        - Bill exists and belongs to the customer\n        - No other bills are already awaiting payment for this customer\n    Logic: Sets bill status to AWAITING_PAYMENT and notifies customer.\n    Warning: This method does not check if the bill is already PAID.\n    Always check the bill status before calling this method.\n    customer_id: string! — ID of the customer who owns the bill.\n    bill_id: string! — ID of the bill to send payment request for.\n"
+    },
+    {
+      "source_id": "d11",
+      "document": "prompt",
+      "start": 24663,
+      "end": 24999,
+      "role": "system",
+      "kind": "DECLARATION",
+      "tool": "suspend_line",
+      "text": "- suspend_line — Suspends a specific line (max 6 months).\n    \n    Checks: Line status must be Active.\n    Logic: Sets line status to Suspended, records suspension_start_date.\n    customer_id: string! — ID of the customer who owns the line.\n    line_id: string! — ID of the line to suspend.\n    reason: string! — Reason for suspension.\n"
+    },
+    {
+      "source_id": "d12",
+      "document": "prompt",
+      "start": 26715,
+      "end": 27032,
+      "role": "system",
+      "kind": "DECLARATION",
+      "tool": "transfer_to_human_agents",
+      "text": "- transfer_to_human_agents — Transfer the user to a human agent, with a summary of the user's issue.\n    \n    Only transfer if\n     -  the user explicitly asks for a human agent\n     -  given the policy and the available tools, you cannot solve the user's issue.\n    summary: string! — A summary of the user's issue.\n"
+    }
+  ],
+  "history": [],
+  "omitted_normative_source_ids": [
+    "q7",
+    "q8",
+    "q9",
+    "q10",
+    "q11",
+    "q12",
+    "q13",
+    "q14",
+    "q15",
+    "q16",
+    "q17",
+    "q18",
+    "q19",
+    "q20",
+    "q21",
+    "q22",
+    "q23",
+    "q24",
+    "q25",
+    "q26",
+    "q27",
+    "q28",
+    "q29",
+    "q30",
+    "q31",
+    "q32",
+    "q33",
+    "q34",
+    "q35",
+    "q36",
+    "q37",
+    "q38",
+    "q39"
+  ],
+  "omitted_history_source_ids": [
+    "h0",
+    "h1",
+    "h2",
+    "h3",
+    "h4",
+    "h5",
+    "h6",
+    "h7",
+    "h8",
+    "h9",
+    "h10",
+    "h11",
+    "h12",
+    "h13",
+    "h14",
+    "h15",
+    "h16",
+    "h17",
+    "h18",
+    "h19",
+    "h20",
+    "h21",
+    "h22",
+    "h23",
+    "h24",
+    "h25",
+    "h26",
+    "h27",
+    "h28",
+    "h29",
+    "h30",
+    "h31",
+    "h32",
+    "h33",
+    "h34"
+  ],
+  "omitted_source_spans": [],
+  "evidence_contract": "Original source text is immutable. A receipt is an observation, not automatically current truth. Code proves only raw actor/kind/order/typed equality/date/pairing. Semantic applicability, aliases and exception closure remain MODEL_HYPOTHESIS unless independently qualified. Assessment covers the WHOLE current assistant move, including prose and every call. Research retrieval is disclosed; no full-input coverage claim.",
+  "read_trace": {
+    "read_source_ids": [],
+    "gap_ledger": [],
+    "reads_remaining": 8,
+    "coverage": "COMPLETE_SELECTED_SOURCES_ONLY"
+  }
+}

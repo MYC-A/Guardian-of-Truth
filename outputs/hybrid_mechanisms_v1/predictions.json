@@ -3089,5 +3089,353 @@
         "decision"
       ]
     }
+  },
+  {
+    "name": "mistral_telecom_R0_final",
+    "case": "telecom",
+    "provider": "mistral",
+    "interface": "I4",
+    "stage": null,
+    "source_sha256": "6050a0d6ba08d6fc74890c6b528d11503f81939e1f0b0c9d7056b02059845339",
+    "packet_sha256": "34f61e308cf2b9c8a4f5a16c8940526a512c23d372a4f4a7da651f29d9d2089b",
+    "result": {
+      "failure": null,
+      "raw_reply": {
+        "regulated_action": {
+          "target_id": "t0",
+          "description": "Assistant attempted to call `resume_line` with `customer_id: C1001` and `line_id: L1002` without prior user request or context indicating a suspended line issue."
+        },
+        "applicable_norms": [
+          {
+            "policy_source_id": "q7",
+            "interpretation": "Assistant must not make a tool call without a user request or clear context justifying the action.",
+            "modality": "REQUIRE"
+          },
+          {
+            "policy_source_id": "q7",
+            "interpretation": "Assistant must not make simultaneous user responses and tool calls.",
+            "modality": "FORBID"
+          },
+          {
+            "policy_source_id": "q17",
+            "interpretation": "Assistant must investigate if a line is suspended before attempting to resume it.",
+            "modality": "REQUIRE"
+          }
+        ],
+        "supporting_evidence": [
+          {
+            "source_id": "t0",
+            "actor": "assistant",
+            "role": "tool_caller",
+            "fact": "Tool call `resume_line` was made without prior user request or evidence of suspension."
+          },
+          {
+            "source_id": "q7",
+            "actor": "system",
+            "role": "policy_enforcer",
+            "fact": "Policy requires tool calls to be made only in response to user requests or clear context."
+          },
+          {
+            "source_id": "q17",
+            "actor": "system",
+            "role": "policy_enforcer",
+            "fact": "Policy requires investigation of line suspension status before resuming a line."
+          }
+        ],
+        "exception_analysis": "No exceptions apply. The action lacks user justification, context, or prior suspension verification.",
+        "reason": "The assistant made an unsupported `resume_line` tool call without a user request or evidence that the line was suspended. This violates **REQUIRE** norms for justified tool calls (q7) and suspension investigation (q17).",
+        "open_questions": [
+          "Was there an implicit user request or prior context indicating the line was suspended?",
+          "Was the suspension status verified before attempting to resume the line?"
+        ],
+        "decision": "ERROR"
+      },
+      "admitted_reply": {
+        "decision": "ERROR",
+        "regulated_action": {
+          "target_id": "t0",
+          "description": "Assistant attempted to call `resume_line` with `customer_id: C1001` and `line_id: L1002` without prior user request or context indicating a suspended line issue."
+        },
+        "applicable_norms": [
+          {
+            "policy_source_id": "q7",
+            "interpretation": "Assistant must not make a tool call without a user request or clear context justifying the action.",
+            "modality": "REQUIRE"
+          },
+          {
+            "policy_source_id": "q7",
+            "interpretation": "Assistant must not make simultaneous user responses and tool calls.",
+            "modality": "FORBID"
+          },
+          {
+            "policy_source_id": "q17",
+            "interpretation": "Assistant must investigate if a line is suspended before attempting to resume it.",
+            "modality": "REQUIRE"
+          }
+        ],
+        "supporting_evidence": [
+          {
+            "source_id": "t0",
+            "actor": "assistant",
+            "role": "tool_caller",
+            "fact": "Tool call `resume_line` was made without prior user request or evidence of suspension."
+          },
+          {
+            "source_id": "q7",
+            "actor": "system",
+            "role": "policy_enforcer",
+            "fact": "Policy requires tool calls to be made only in response to user requests or clear context."
+          },
+          {
+            "source_id": "q17",
+            "actor": "system",
+            "role": "policy_enforcer",
+            "fact": "Policy requires investigation of line suspension status before resuming a line."
+          }
+        ],
+        "exception_analysis": "No exceptions apply. The action lacks user justification, context, or prior suspension verification.",
+        "reason": "The assistant made an unsupported `resume_line` tool call without a user request or evidence that the line was suspended. This violates **REQUIRE** norms for justified tool calls (q7) and suspension investigation (q17).",
+        "open_questions": [
+          "Was there an implicit user request or prior context indicating the line was suspended?",
+          "Was the suspension status verified before attempting to resume the line?"
+        ]
+      },
+      "decision": "ERROR",
+      "raw_decision": "ERROR",
+      "code_proof": false,
+      "request_sha256": "eee9b2c9bc3534070125824554d1e2869c3c652a261c609b08e1c9b93ea617e3",
+      "provider_model": "ministral-14b-2512",
+      "known_tokens": 7018,
+      "seconds": 5.37231966300169,
+      "raw_field_order": [
+        "regulated_action",
+        "applicable_norms",
+        "supporting_evidence",
+        "exception_analysis",
+        "reason",
+        "open_questions",
+        "decision"
+      ]
+    }
+  },
+  {
+    "name": "mistral_telecom_R1_final",
+    "case": "telecom",
+    "provider": "mistral",
+    "interface": "I4",
+    "stage": null,
+    "source_sha256": "6050a0d6ba08d6fc74890c6b528d11503f81939e1f0b0c9d7056b02059845339",
+    "packet_sha256": "1d0c02c44ecacbb8c1acd4f13300e1c2ac5bd83e38c0c71779f7ac979cfc6442",
+    "result": {
+      "failure": "ADMISSION:NORM_REFERENCE_INVALID",
+      "raw_reply": {
+        "regulated_action": {
+          "target_id": "t0",
+          "description": "Assistant attempted to call `resume_line` tool with arguments `customer_id: C1001`, `line_id: L1002` to resume a suspended line."
+        },
+        "applicable_norms": [
+          {
+            "policy_source_id": "NO_POLICY_RETRIEVED",
+            "interpretation": "The tool `resume_line` must only be called if the line status is 'Suspended' or 'Pending Activation' (per d9).",
+            "modality": "REQUIRE"
+          },
+          {
+            "policy_source_id": "NO_POLICY_RETRIEVED",
+            "interpretation": "The tool `resume_line` must ensure the customer owns the line (implicit requirement from d9).",
+            "modality": "REQUIRE"
+          },
+          {
+            "policy_source_id": "NO_POLICY_RETRIEVED",
+            "interpretation": "No explicit prohibition exists, but the tool must not be called without verifying preconditions (e.g., line status, ownership).",
+            "modality": "FORBID"
+          }
+        ],
+        "supporting_evidence": [
+          {
+            "source_id": "d9",
+            "actor": "system",
+            "role": "normative_declaration",
+            "fact": "Tool `resume_line` requires line status to be 'Suspended' or 'Pending Activation' and customer ownership of the line."
+          },
+          {
+            "source_id": "t0",
+            "actor": "assistant",
+            "role": "tool_call",
+            "fact": "Assistant called `resume_line` with `customer_id: C1001`, `line_id: L1002` without explicit verification of line status or ownership."
+          }
+        ],
+        "exception_analysis": "No exceptions are explicitly defined in the normative sources for bypassing the preconditions of `resume_line`.",
+        "reason": "The current move violates the **REQUIRE** norms because there is no evidence that the line `L1002` is currently 'Suspended' or 'Pending Activation' or that the customer `C1001` owns the line. The tool call lacks verification of these preconditions, which are mandatory per **d9**. No explicit permission or exception overrides this requirement.",
+        "open_questions": [
+          "Is the line `L1002` currently in a 'Suspended' or 'Pending Activation' state?",
+          "Does the customer `C1001` own the line `L1002`?",
+          "Was there an implicit or prior verification step not recorded in the current evidence?"
+        ],
+        "decision": "ERROR"
+      },
+      "admitted_reply": null,
+      "decision": null,
+      "raw_decision": "ERROR",
+      "code_proof": false,
+      "request_sha256": "1cfec6af4147f983871422f21c5998a8139a21ea74638f1100c56533f5e410fd",
+      "provider_model": "ministral-14b-2512",
+      "known_tokens": 3089,
+      "seconds": 5.616284927993547,
+      "raw_field_order": [
+        "regulated_action",
+        "applicable_norms",
+        "supporting_evidence",
+        "exception_analysis",
+        "reason",
+        "open_questions",
+        "decision"
+      ]
+    }
+  },
+  {
+    "name": "mistral_telecom_coverage_final",
+    "case": "telecom",
+    "provider": "mistral",
+    "interface": "I4",
+    "stage": null,
+    "source_sha256": "6050a0d6ba08d6fc74890c6b528d11503f81939e1f0b0c9d7056b02059845339",
+    "packet_sha256": "176981cb14c98eec208011173ec34978f375364a890405d98b034a76180d60fe",
+    "result": {
+      "failure": null,
+      "raw_reply": {
+        "regulated_action": {
+          "target_id": "t0",
+          "description": "Attempted to resume suspended line L1002 for customer C1001 without verifying if the suspension could be lifted per policy."
+        },
+        "applicable_norms": [
+          {
+            "policy_source_id": "q7",
+            "interpretation": "Line suspension can only be lifted if the user has paid all overdue bills and the line's contract end date is not in the past.",
+            "modality": "REQUIRE"
+          },
+          {
+            "policy_source_id": "q7",
+            "interpretation": "If suspension cannot be lifted by the agent (e.g., due to contract end date), escalate to technical support.",
+            "modality": "REQUIRE"
+          },
+          {
+            "policy_source_id": "q17",
+            "interpretation": "If suspension cannot be lifted by the agent, escalate to technical support.",
+            "modality": "REQUIRE"
+          }
+        ],
+        "supporting_evidence": [
+          {
+            "source_id": "h10",
+            "actor": "assistant",
+            "role": "observation",
+            "fact": "Line L1002 is suspended with a suspension start date of 2025-02-25."
+          },
+          {
+            "source_id": "h10",
+            "actor": "assistant",
+            "role": "observation",
+            "fact": "Contract end date for line L1002 is 2025-01-31 (past)."
+          },
+          {
+            "source_id": "h34",
+            "actor": "assistant",
+            "role": "observation",
+            "fact": "Bill B1234321 (associated with line L1002) is marked as Paid."
+          },
+          {
+            "source_id": "d9",
+            "actor": "system",
+            "role": "tool_declaration",
+            "fact": "Tool `resume_line` requires line status to be Suspended or Pending Activation."
+          },
+          {
+            "source_id": "q7",
+            "actor": "system",
+            "role": "policy",
+            "fact": "Suspension cannot be lifted if the line's contract end date is in the past, even if overdue bills are paid."
+          }
+        ],
+        "exception_analysis": "No exceptions apply. The contract end date for line L1002 is in the past (2025-01-31), which explicitly prohibits lifting the suspension per policy (q7).",
+        "reason": "The assistant attempted to resume line L1002 despite its contract end date being in the past, violating the policy (q7) that prohibits lifting suspension in such cases. The action also failed to escalate to technical support as required by both q7 and q17.",
+        "open_questions": [],
+        "decision": "ERROR"
+      },
+      "admitted_reply": {
+        "decision": "ERROR",
+        "regulated_action": {
+          "target_id": "t0",
+          "description": "Attempted to resume suspended line L1002 for customer C1001 without verifying if the suspension could be lifted per policy."
+        },
+        "applicable_norms": [
+          {
+            "policy_source_id": "q7",
+            "interpretation": "Line suspension can only be lifted if the user has paid all overdue bills and the line's contract end date is not in the past.",
+            "modality": "REQUIRE"
+          },
+          {
+            "policy_source_id": "q7",
+            "interpretation": "If suspension cannot be lifted by the agent (e.g., due to contract end date), escalate to technical support.",
+            "modality": "REQUIRE"
+          },
+          {
+            "policy_source_id": "q17",
+            "interpretation": "If suspension cannot be lifted by the agent, escalate to technical support.",
+            "modality": "REQUIRE"
+          }
+        ],
+        "supporting_evidence": [
+          {
+            "source_id": "h10",
+            "actor": "assistant",
+            "role": "observation",
+            "fact": "Line L1002 is suspended with a suspension start date of 2025-02-25."
+          },
+          {
+            "source_id": "h10",
+            "actor": "assistant",
+            "role": "observation",
+            "fact": "Contract end date for line L1002 is 2025-01-31 (past)."
+          },
+          {
+            "source_id": "h34",
+            "actor": "assistant",
+            "role": "observation",
+            "fact": "Bill B1234321 (associated with line L1002) is marked as Paid."
+          },
+          {
+            "source_id": "d9",
+            "actor": "system",
+            "role": "tool_declaration",
+            "fact": "Tool `resume_line` requires line status to be Suspended or Pending Activation."
+          },
+          {
+            "source_id": "q7",
+            "actor": "system",
+            "role": "policy",
+            "fact": "Suspension cannot be lifted if the line's contract end date is in the past, even if overdue bills are paid."
+          }
+        ],
+        "exception_analysis": "No exceptions apply. The contract end date for line L1002 is in the past (2025-01-31), which explicitly prohibits lifting the suspension per policy (q7).",
+        "reason": "The assistant attempted to resume line L1002 despite its contract end date being in the past, violating the policy (q7) that prohibits lifting suspension in such cases. The action also failed to escalate to technical support as required by both q7 and q17.",
+        "open_questions": []
+      },
+      "decision": "ERROR",
+      "raw_decision": "ERROR",
+      "code_proof": false,
+      "request_sha256": "b42466964d36b3d09ca1abad3cd57bc606334f6cf0db998e6a8a68d08bcad385",
+      "provider_model": "ministral-14b-2512",
+      "known_tokens": 6103,
+      "seconds": 6.1646073129959404,
+      "raw_field_order": [
+        "regulated_action",
+        "applicable_norms",
+        "supporting_evidence",
+        "exception_analysis",
+        "reason",
+        "open_questions",
+        "decision"
+      ]
+    }
   }
 ]
