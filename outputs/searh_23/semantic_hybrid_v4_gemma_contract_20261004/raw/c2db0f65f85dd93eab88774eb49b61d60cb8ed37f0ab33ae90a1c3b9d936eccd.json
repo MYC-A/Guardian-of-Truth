@@ -1,0 +1,35 @@
+{
+  "protocol_sha256": "1e5af103497bfea7db6186ec744379f3c1c5e7886ff2da35276f77c9e45b806e",
+  "request_sha256": "c2db0f65f85dd93eab88774eb49b61d60cb8ed37f0ab33ae90a1c3b9d936eccd",
+  "task": "LOWER",
+  "status": "OK",
+  "provider_response": {
+    "id": "chatcmpl-475",
+    "object": "chat.completion",
+    "created": 1791103694,
+    "model": "gemma4:31b",
+    "system_fingerprint": "fp_ollama",
+    "choices": [
+      {
+        "index": 0,
+        "message": {
+          "role": "assistant",
+          "content": "{\n  \"effect\": \"MODIFY\",\n  \"requirements\": [\n    {\n      \"local_id\": \"req0\",\n      \"action\": \"reassign_asset\",\n      \"policy_ids\": [\n        \"p0\",\n        \"p1\"\n      ],\n      \"declaration_ids\": [\n        \"d0\",\n        \"d1\"\n      ],\n      \"modality\": \"REQUIRE\",\n      \"applies\": \"YES\",\n      \"condition\": {\n        \"op\": \"BEFORE\",\n        \"label\": \"Permission inspection before transfer\",\n        \"source_ids\": [\n          \"h3\",\n          \"t0\"\n        ],\n        \"children\": [\n          {\n            \"op\": \"AND\",\n            \"label\": \"Successful authorized inspection for same asset and owner\",\n            \"source_ids\": [\n              \"h3\"\n            ],\n            \"children\": [\n              {\n                \"op\": \"ATOM\",\n                \"label\": \"Inspection success is true\",\n                \"source_ids\": [\n                  \"h3\"\n                ],\n                \"children\": []\n              },\n              {\n                \"op\": \"ATOM\",\n                \"label\": \"Inspection authorized is true\",\n                \"source_ids\": [\n                  \"h3\"\n                ],\n                \"children\": []\n              },\n              {\n                \"op\": \"ATOM\",\n                \"label\": \"Inspection asset matches target asset\",\n                \"source_ids\": [\n                  \"h3\",\n                  \"t0\"\n                ],\n                \"children\": []\n              },\n              {\n                \"op\": \"ATOM\",\n                \"label\": \"Inspection owner matches target owner\",\n                \"source_ids\": [\n                  \"h3\",\n                  \"t0\"\n                ],\n                \"children\": []\n              }\n            ]\n          },\n          {\n            \"op\": \"ATOM\",\n            \"label\": \"Ownership transfer\",\n            \"source_ids\": [\n              \"t0\"\n            ],\n            \"children\": []\n          }\n        ]\n      },\n      \"guard\": null,\n      \"exceptions\": [\n        {\n          \"op\": \"AND\",\n          \"label\": \"Emergency transfer by supervisor\",\n          \"source_ids\": [\n            \"t0\"\n          ],\n          \"children\": [\n            {\n              \"op\": \"ATOM\",\n              \"label\": \"Is emergency transfer\",\n              \"source_ids\": [\n                \"t0\"\n              ],\n              \"children\": []\n            },\n            {\n              \"op\": \"ATOM\",\n              \"label\": \"Initiated by supervisor\",\n              \"source_ids\": [\n                \"t0\"\n              ],\n              \"children\": []\n            }\n          ]\n        }\n      ],\n      \"open_questions\": [],\n      \"witnesses\": [\n        {\n          \"path\": \"condition.0.0\",\n          \"value\": \"TRUE\",\n          \"evidence_ids\": [\n            \"h3\"\n          ],\n          \"check\": {\n            \"lhs_source\": \"h3\",\n            \"lhs_pointer\": \"success\",\n            \"operator\": \"==\",\n            \"rhs_source\": null,\n            \"rhs_pointer\": null,\n            \"literal_id\": \"k0\",\n            \"bindings\": []\n          },\n          \"position_source_id\": null,\n          \"reason\": \"The tool response indicates success: true.\"\n        },\n        {\n          \"path\": \"condition.0.1\",\n          \"value\": \"FALSE\",\n          \"evidence_ids\": [\n            \"h3\"\n          ],\n          \"check\": {\n            \"lhs_source\": \"h3\",\n            \"lhs_pointer\": \"authorized\",\n            \"operator\": \"==\",\n            \"rhs_source\": null,\n            \"rhs_pointer\": null,\n            \"literal_id\": \"k0\",\n            \"bindings\": []\n          },\n          \"position_source_id\": null,\n          \"reason\": \"The tool response indicates authorized: false.\"\n        },\n        {\n          \"path\": \"condition.0.2\",\n          \"value\": \"TRUE\",\n          \"evidence_ids\": [\n            \"h3\",\n            \"t0\"\n          ],\n          \"check\": {\n            \"lhs_source\": \"h3\",\n            \"lhs_pointer\": \"asset_id\",\n            \"operator\": \"==\",\n            \"rhs_source\": \"t0\",\n            \"rhs_pointer\": \"asset_id\",\n            \"literal_id\": null,\n            \"bindings\": [\n              {\n                \"target_pointer\": \"asset_id\",\n                \"source_pointer\": \"asset_id\"\n              }\n            ]\n          },\n          \"position_source_id\": null,\n          \"reason\": \"Both asset_ids are 'R-19'.\"\n        },\n        {\n          \"path\": \"condition.0.3\",\n          \"value\": \"TRUE\",\n          \"evidence_ids\": [\n            \"h3\",\n            \"t0\"\n          ],\n          \"check\": {\n            \"lhs_source\": \"h3\",\n            \"lhs_pointer\": \"new_owner_id\",\n            \"operator\": \"==\",\n            \"rhs_source\": \"t0\",\n            \"rhs_pointer\": \"new_owner_id\",\n            \"literal_id\": null,\n            \"bindings\": [\n              {\n                \"target_pointer\": \"new_owner_id\",\n                \"source_pointer\": \"new_owner_id\"\n              }\n            ]\n          },\n          \"position_source_id\": null,\n          \"reason\": \"Both new_owner_ids are 'U-7'.\"\n        }\n      ]\n    }\n  ],\n  \"missing\": [],\n  \"reason\": \"The ownership transfer requires a successful permission inspection where authorized=true for the same asset and owner. While the inspection was performed for the correct asset and owner and was successful, the 'authorized' field was false.\"\n}"
+        },
+        "finish_reason": "stop"
+      }
+    ],
+    "usage": {
+      "prompt_tokens": 2744,
+      "completion_tokens": 1377,
+      "total_tokens": 4121,
+      "prompt_tokens_details": {
+        "cached_tokens": 1152
+      }
+    }
+  },
+  "seconds": 5.560949048027396,
+  "known_tokens": 4121,
+  "charged_tokens": 4121,
+  "unknown_usage": false
+}

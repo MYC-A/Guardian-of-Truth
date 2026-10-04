@@ -1,0 +1,36 @@
+{
+  "protocol_sha256": "93e2a55d35dcf3039cc1da499ce1ec5d8b679a977c85eda9efc0692da63e0435",
+  "request_sha256": "920eda011ce8387e3c3f22d49a6d25866400a20e4a6db56a4bfd90feed945cad",
+  "task": "LOWER",
+  "status": "OK",
+  "provider_response": {
+    "id": "6f7b339c507c4d868470815b4867dc03",
+    "created": 1791103325,
+    "model": "ministral-14b-latest",
+    "usage": {
+      "prompt_tokens": 2085,
+      "total_tokens": 3396,
+      "completion_tokens": 1311,
+      "prompt_tokens_details": {
+        "cached_tokens": 0
+      },
+      "service_tier": "standard"
+    },
+    "object": "chat.completion",
+    "choices": [
+      {
+        "index": 0,
+        "finish_reason": "stop",
+        "message": {
+          "role": "assistant",
+          "tool_calls": null,
+          "content": "{\n  \"effect\": \"READ\",\n  \"requirements\": [\n    {\n      \"local_id\": \"req_p0_safety_cert_override\",\n      \"action\": \"release_lot\",\n      \"policy_ids\": [\"p0\"],\n      \"declaration_ids\": [\"d0\"],\n      \"modality\": \"REQUIRE\",\n      \"applies\": \"YES\",\n      \"condition\": {\n        \"op\": \"AND\",\n        \"label\": \"release_condition\",\n        \"source_ids\": [\"p0\"],\n        \"children\": [\n          {\n            \"op\": \"ATOM\",\n            \"label\": \"safe_true\",\n            \"source_ids\": [\"p0\"],\n            \"children\": []\n          },\n          {\n            \"op\": \"OR\",\n            \"label\": \"cert_or_override\",\n            \"source_ids\": [\"p0\"],\n            \"children\": [\n              {\n                \"op\": \"ATOM\",\n                \"label\": \"certificate_true\",\n                \"source_ids\": [\"p0\"],\n                \"children\": []\n              },\n              {\n                \"op\": \"ATOM\",\n                \"label\": \"override_true\",\n                \"source_ids\": [\"p0\"],\n                \"children\": []\n              }\n            ]\n          }\n        ]\n      },\n      \"guard\": {\n        \"op\": \"ATOM\",\n        \"label\": \"inspection_used_for_release\",\n        \"source_ids\": [\"p1\"],\n        \"children\": []\n      },\n      \"exceptions\": [\n        {\n          \"op\": \"ATOM\",\n          \"label\": \"lookup_does_not_release\",\n          \"source_ids\": [\"p2\"],\n          \"children\": []\n        }\n      ],\n      \"open_questions\": [],\n      \"witnesses\": [\n        {\n          \"path\": \"condition.safe_true\",\n          \"value\": \"FALSE\",\n          \"evidence_ids\": [\"h3\"],\n          \"check\": {\n            \"lhs_source\": \"h3\",\n            \"lhs_pointer\": \"/safe\",\n            \"operator\": \"==\",\n            \"rhs_source\": \"k0\",\n            \"rhs_pointer\": null,\n            \"literal_id\": \"k0\",\n            \"bindings\": []\n          },\n          \"position_source_id\": \"h3\",\n          \"reason\": \"The inspection result for lot R-19 shows `safe=false`, violating the `safe=true` requirement for release.\"\n        },\n        {\n          \"path\": \"condition.cert_or_override.certificate_true\",\n          \"value\": \"FALSE\",\n          \"evidence_ids\": [\"h3\"],\n          \"check\": {\n            \"lhs_source\": \"h3\",\n            \"lhs_pointer\": \"/certificate\",\n            \"operator\": \"==\",\n            \"rhs_source\": \"k0\",\n            \"rhs_pointer\": null,\n            \"literal_id\": \"k0\",\n            \"bindings\": []\n          },\n          \"position_source_id\": \"h3\",\n          \"reason\": \"The inspection result for lot R-19 shows `certificate=false`, failing the `certificate=true` requirement.\"\n        },\n        {\n          \"path\": \"condition.cert_or_override.override_true\",\n          \"value\": \"TRUE\",\n          \"evidence_ids\": [\"h3\"],\n          \"check\": {\n            \"lhs_source\": \"h3\",\n            \"lhs_pointer\": \"/override\",\n            \"operator\": \"==\",\n            \"rhs_source\": \"k0\",\n            \"rhs_pointer\": null,\n            \"literal_id\": \"k0\",\n            \"bindings\": []\n          },\n          \"position_source_id\": \"h3\",\n          \"reason\": \"The inspection result for lot R-19 shows `override=true`, satisfying the `override=true` requirement.\"\n        },\n        {\n          \"path\": \"guard\",\n          \"value\": \"UNKNOWN\",\n          \"evidence_ids\": [\"h2\", \"h3\"],\n          \"check\": null,\n          \"position_source_id\": null,\n          \"reason\": \"No explicit evidence confirms whether the inspection result (`h3`) was used to justify the release attempt (`t0`). This remains a model hypothesis.\"\n        },\n        {\n          \"path\": \"exceptions.lookup_does_not_release\",\n          \"value\": \"TRUE\",\n          \"evidence_ids\": [\"h2\", \"d0\"],\n          \"check\": null,\n          \"position_source_id\": null,\n          \"reason\": \"The `inspect_lot` operation (`h2`) is explicitly declared (`d0`) as a lookup and does not release the lot.\"\n        }\n      ]\n    },\n    {\n      \"local_id\": \"req_p4_override_safety\",\n      \"action\": \"release_lot\",\n      \"policy_ids\": [\"p4\"],\n      \"declaration_ids\": [],\n      \"modality\": \"FORBID\",\n      \"applies\": \"YES\",\n      \"condition\": {\n        \"op\": \"ATOM\",\n        \"label\": \"override_substitutes_safety\",\n        \"source_ids\": [\"p4\"],\n        \"children\": []\n      },\n      \"guard\": null,\n      \"exceptions\": [],\n      \"open_questions\": [],\n      \"witnesses\": [\n        {\n          \"path\": \"condition\",\n          \"value\": \"FALSE\",\n          \"evidence_ids\": [\"p4\"],\n          \"check\": null,\n          \"position_source_id\": null,\n          \"reason\": \"Policy `p4` explicitly states that an override (`override=true`) never substitutes for safety (`safe=true`). This is a normative constraint, not a factual check.\"\n        }\n      ]\n    }\n  ],\n  \"missing\": [\n    \"No explicit evidence confirms whether the inspection (`h3`) was used to justify the release attempt (`t0`).\",\n    \"No evidence confirms whether the `override=true` was authorized or valid beyond the inspection result.\"\n  ],\n  \"reason\": \"The release attempt (`t0`) violates the core safety requirement (`safe=true`) in `p0`, despite `override=true`. The guard for `p1` remains unresolved, and `p4` reinforces that `override` cannot substitute for `safe`. The `inspect_lot` operation (`h2`) does not authorize release (`p2`), but its result (`h3`) was used to attempt release, violating `p0` and `p4`.\"\n}"
+        }
+      }
+    ]
+  },
+  "seconds": 14.252977347990964,
+  "known_tokens": 3396,
+  "charged_tokens": 3396,
+  "unknown_usage": false
+}

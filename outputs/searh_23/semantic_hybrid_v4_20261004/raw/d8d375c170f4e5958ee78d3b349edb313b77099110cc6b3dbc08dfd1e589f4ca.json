@@ -1,0 +1,36 @@
+{
+  "protocol_sha256": "93e2a55d35dcf3039cc1da499ce1ec5d8b679a977c85eda9efc0692da63e0435",
+  "request_sha256": "d8d375c170f4e5958ee78d3b349edb313b77099110cc6b3dbc08dfd1e589f4ca",
+  "task": "LOWER",
+  "status": "OK",
+  "provider_response": {
+    "id": "cbcf22f7bf754535b66551e952b1c228",
+    "created": 1791103276,
+    "model": "ministral-14b-latest",
+    "usage": {
+      "prompt_tokens": 1754,
+      "total_tokens": 2901,
+      "completion_tokens": 1147,
+      "prompt_tokens_details": {
+        "cached_tokens": 440
+      },
+      "service_tier": "standard"
+    },
+    "object": "chat.completion",
+    "choices": [
+      {
+        "index": 0,
+        "finish_reason": "stop",
+        "message": {
+          "role": "assistant",
+          "tool_calls": null,
+          "content": "{\n  \"effect\": \"READ\",\n  \"requirements\": [\n    {\n      \"local_id\": \"req_inspection_safety_cert_or_override\",\n      \"action\": \"release_lot\",\n      \"policy_ids\": [\"p0\"],\n      \"declaration_ids\": [\"d0\"],\n      \"modality\": \"REQUIRE\",\n      \"applies\": \"YES\",\n      \"condition\": {\n        \"op\": \"AND\",\n        \"label\": \"inspection_safety_cert_or_override\",\n        \"source_ids\": [\"p0\"],\n        \"children\": [\n          {\n            \"op\": \"ATOM\",\n            \"label\": \"safe\",\n            \"source_ids\": [\"p0\"],\n            \"children\": []\n          },\n          {\n            \"op\": \"OR\",\n            \"label\": \"cert_or_override\",\n            \"source_ids\": [\"p0\"],\n            \"children\": [\n              {\n                \"op\": \"ATOM\",\n                \"label\": \"certificate\",\n                \"source_ids\": [\"p0\"],\n                \"children\": []\n              },\n              {\n                \"op\": \"ATOM\",\n                \"label\": \"override\",\n                \"source_ids\": [\"p0\"],\n                \"children\": []\n              }\n            ]\n          }\n        ]\n      },\n      \"guard\": {\n        \"op\": \"ATOM\",\n        \"label\": \"inspection_used_for_release\",\n        \"source_ids\": [\"p1\"],\n        \"children\": []\n      },\n      \"exceptions\": [\n        {\n          \"op\": \"ATOM\",\n          \"label\": \"lookup_does_not_release\",\n          \"source_ids\": [\"p2\"],\n          \"children\": []\n        }\n      ],\n      \"open_questions\": [],\n      \"witnesses\": [\n        {\n          \"path\": \"condition\",\n          \"value\": \"TRUE\",\n          \"evidence_ids\": [\"h3\"],\n          \"check\": {\n            \"lhs_source\": \"h3\",\n            \"lhs_pointer\": \"/safe\",\n            \"operator\": \"==\",\n            \"rhs_source\": \"k0\",\n            \"rhs_pointer\": null,\n            \"literal_id\": \"k0\",\n            \"bindings\": [\n              {\n                \"target_pointer\": \"/lot_id\",\n                \"source_pointer\": \"/lot_id\"\n              }\n            ]\n          },\n          \"position_source_id\": \"h3\",\n          \"reason\": \"The inspection result confirms safe=true for lot R-19.\"\n        },\n        {\n          \"path\": \"condition.1\",\n          \"value\": \"TRUE\",\n          \"evidence_ids\": [\"h3\"],\n          \"check\": {\n            \"lhs_source\": \"h3\",\n            \"lhs_pointer\": \"/override\",\n            \"operator\": \"==\",\n            \"rhs_source\": \"k0\",\n            \"rhs_pointer\": null,\n            \"literal_id\": \"k0\",\n            \"bindings\": [\n              {\n                \"target_pointer\": \"/lot_id\",\n                \"source_pointer\": \"/lot_id\"\n              }\n            ]\n          },\n          \"position_source_id\": \"h3\",\n          \"reason\": \"The inspection result confirms override=true for lot R-19.\"\n        },\n        {\n          \"path\": \"guard\",\n          \"value\": \"TRUE\",\n          \"evidence_ids\": [\"h2\", \"h3\"],\n          \"check\": null,\n          \"position_source_id\": \"h2\",\n          \"reason\": \"The inspection (h2) was performed on the same lot (R-19) and used to justify the release attempt (h3).\"\n        },\n        {\n          \"path\": \"exception.0\",\n          \"value\": \"FALSE\",\n          \"evidence_ids\": [\"h2\", \"t0\"],\n          \"check\": null,\n          \"position_source_id\": \"h2\",\n          \"reason\": \"The operation in h2 was an inspection (inspect_lot), not a release, and does not trigger release by itself (p2).\"\n        }\n      ]\n    },\n    {\n      \"local_id\": \"req_override_substitutes_cert_only\",\n      \"action\": \"release_lot\",\n      \"policy_ids\": [\"p4\"],\n      \"declaration_ids\": [\"d0\"],\n      \"modality\": \"REQUIRE\",\n      \"applies\": \"YES\",\n      \"condition\": {\n        \"op\": \"NOT\",\n        \"label\": \"override_substitutes_safety\",\n        \"source_ids\": [\"p4\"],\n        \"children\": [\n          {\n            \"op\": \"ATOM\",\n            \"label\": \"override_substitutes_safety\",\n            \"source_ids\": [\"p4\"],\n            \"children\": []\n          }\n        ]\n      },\n      \"guard\": null,\n      \"exceptions\": [],\n      \"open_questions\": [],\n      \"witnesses\": [\n        {\n          \"path\": \"condition.0\",\n          \"value\": \"FALSE\",\n          \"evidence_ids\": [\"h3\", \"p4\"],\n          \"check\": null,\n          \"position_source_id\": \"h3\",\n          \"reason\": \"The override (override=true) does not substitute for safety (safe=true), as per p4. The inspection confirms safe=true independently.\"\n        }\n      ]\n    }\n  ],\n  \"missing\": [],\n  \"reason\": \"All requirements for releasing lot R-19 are satisfied: inspection confirms safe=true and override=true, and the override does not substitute for safety. The guard condition (inspection pertains to the same lot) is also satisfied, and no exceptions apply.\"\n}"
+        }
+      }
+    ]
+  },
+  "seconds": 10.99441194703104,
+  "known_tokens": 2901,
+  "charged_tokens": 2901,
+  "unknown_usage": false
+}
