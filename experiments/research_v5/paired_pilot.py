@@ -128,16 +128,16 @@ def infer(out,live):
             if path.exists():
                 record=v4.read(path)
                 if record['request_sha256']!=key or record['protocol_sha256']!=p['protocol_sha256']:raise ValueError('CACHE_IDENTITY_MISMATCH')
-            elif not live:failure='CACHE_MISS_OFFLINE'
-            elif breaker:failure='PROVIDER_BREAKER_NO_RETRY'
             elif key in ledger:failure='PRIOR_RESERVED_NO_RETRY';breaker=True
+            elif breaker:failure='PROVIDER_BREAKER_NO_RETRY'
             elif len(ledger)>=p['limits']['http'] or sum(v['charged_tokens'] for v in ledger.values())+bound>p['limits']['tokens']:
                 failure='BUDGET_STOP'
+            elif not live:failure='CACHE_MISS_OFFLINE'
             else:
                 credential=v4.credentials('mistral')
                 if not credential:failure='CREDENTIAL_UNAVAILABLE';breaker=True
                 else:
-                    ledger[key]=dict(status='RESERVED',charged_tokens=bound,known_tokens=0,arm=arm,id=row['id'])
+                    ledger[key]=dict(status='RESERVED',charged_tokens=bound,known_tokens=0,unknown_usage=True,arm=arm,id=row['id'])
                     write(out,'ledger.json',ledger)
                     write(out,'requests/'+key+'.json',dict(request_sha256=key,body=body,endpoint='https://api.mistral.ai/v1/chat/completions'))
                     start=time.monotonic()
@@ -154,7 +154,7 @@ def infer(out,live):
                     known=type(usage) is int and usage>=0
                     record.update(seconds=time.monotonic()-start,known_tokens=usage if known else 0,charged_tokens=usage if known else bound,unknown_usage=not known)
                     write(out,'raw/'+key+'.json',record)
-                    ledger[key]={k:record[k] for k in ('status','charged_tokens','known_tokens','seconds','arm','id')}
+                    ledger[key]={k:record[k] for k in ('status','charged_tokens','known_tokens','unknown_usage','seconds','arm','id')}
                     write(out,'ledger.json',ledger)
                     if sum(v['charged_tokens'] for v in ledger.values())>p['limits']['tokens']:breaker=True
                     print(json.dumps(dict(arm=arm,status=record['status'],attempts=len(ledger),charged_tokens=sum(v['charged_tokens'] for v in ledger.values()))),flush=True)
@@ -179,7 +179,7 @@ def infer(out,live):
             write(out,'predictions.json',predictions)
     write(out,'completion.json',dict(mode='LIVE' if live else 'OFFLINE_REPLAY',attempts=len(ledger),
         known_tokens=sum(v['known_tokens'] for v in ledger.values()),charged_tokens=sum(v['charged_tokens'] for v in ledger.values()),
-        unknown_usages=sum(v['known_tokens']==0 for v in ledger.values()),statuses=Counter(v['status'] for v in ledger.values()),
+        unknown_usages=sum(v.get('unknown_usage',v['status']=='RESERVED') for v in ledger.values()),statuses=Counter(v['status'] for v in ledger.values()),
         result_rows=len(predictions),failures=sum(bool(r['failure']) for r in predictions),new_http=0 if not live else None))
 
 
