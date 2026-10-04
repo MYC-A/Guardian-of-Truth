@@ -187,3 +187,15 @@ class ProvenanceU2(unittest.TestCase):
         q = pack(r, PackerConfig(budget_bytes=3000, required_anchors=()))
         self.assertIsNone(q['failure'])
         self.assertEqual(q['anchors']['last_user']['status'], 'BUDGET_SKIPPED')
+
+
+class HashSeedDeterminism(unittest.TestCase):
+    def test_pack_identical_across_pythonhashseed(self):
+        import os, subprocess, sys
+        code = ("import json,sys;sys.path[:0]=%r;from tests.test_evidence_packer import row, CALL;"
+                "from guardian_truth.evidence_packer import pack,PackerConfig;"
+                "r=row(CALL);"
+                "print(json.dumps([pack(r,PackerConfig(budget_bytes=b)) for b in (300,700,None)],sort_keys=True,default=str))") % (sys.path,)
+        outs = {subprocess.run([sys.executable, '-c', code], capture_output=True, text=True, check=True,
+                               env={**os.environ, 'PYTHONHASHSEED': s}).stdout for s in ('0', '1', '42')}
+        self.assertEqual(len(outs), 1)

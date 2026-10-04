@@ -196,7 +196,7 @@ def bm25(query_terms, docs, k1=1.2, b=0.75):
     n = len(docs) or 1
     avg = sum(sum(t.values()) for t in tokenised) / n or 1.0
     df = Counter(term for t in tokenised for term in t)
-    q = set(query_terms)
+    q = sorted(set(query_terms))  # fixed order: float sums must not depend on PYTHONHASHSEED
     scores = []
     for t in tokenised:
         length, score = sum(t.values()), 0.0
