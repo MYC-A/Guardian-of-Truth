@@ -1,0 +1,432 @@
+{
+  "scope": "Original declared-action citation inspection; not gold verdict scoring",
+  "rows": [
+    {
+      "arm": "offset",
+      "tool": "book_reservation",
+      "effect": "CREATE",
+      "action": "Book a flight reservation for a user with specified travel, passenger, and payment details",
+      "spans": [
+        "- book_reservation — Book a reservation.\r\n    user_id: string! — The ID of the user to book the reservation such as 'sara_doe_496'`.\r\n    origin: string! — The IATA code for the origin city such as 'SFO'.\r\n    destination: string! — The IATA code for the destination city such as 'JFK'.\r\n    flight_type: string! [enum: round_trip|one_way] — The type of flight such as 'one_way' or 'round_trip'.\r\n    cabin: string! [enum: business|economy|basic_economy] — The cabin class such as 'basic_economy', 'economy', or 'business'.\r\n    flights: array! — An array of objects containing details about each piece of flight.\r\n        · flight_number: string! — Flight number, such as 'HAT001'.\r\n        · date: string! — The date for the flight in the format 'YYYY-MM-DD', such as '2024-05-01'.\r\n    passengers: array! — An array of objects containing details about each passenger.\r\n        · first_name: string! — Passenger's first name\r\n        · last_name: string! — Passenger's last name\r\n        · dob: string! — Date of birth in YYYY-MM-DD format\r\n    payment_methods: array! — An array of objects containing details about each payment method.\r\n        · payment_id: string! — Unique identifier for the payment\r\n        · amount: integer! — Payment amount in dollars\r\n    total_baggages: integer! — The total number of baggage items to book the reservation.\r\n    nonfree_baggages: integer! — The number of non-free baggage items to book the reservation.\r\n    insurance: string! [enum: yes|no] — Whether the reservation has insurance.\r\n"
+      ],
+      "object_spans": [
+        "- book_reservation — Book a reservation.\r\n    user_id: string! — The ID of the user to book the reservation such as 'sara_doe_496'`.\r\n    origin: string! — The IATA code for the origin city such as 'SFO'.\r\n    destination: string! — The IATA code for the destination city such as 'JFK'.\r\n    flight_type: string! [enum: round_trip|one_way] — The type of flight such as 'one_way' or 'round_trip'.\r\n    cabin: string! [enum: business|economy|basic_economy] — The cabin class such as 'basic_economy', 'economy', or 'business'.\r\n    flights: array! — An array of objects containing details about each piece of flight.\r\n        · flight_number: string! — Flight number, such as 'HAT001'.\r\n        · date: string! — The date for the flight in the format 'YYYY-MM-DD', such as '2024-05-01'.\r\n    passengers: array! — An array of objects containing details about each passenger.\r\n        · first_name: string! — Passenger's first name\r\n        · last_name: string! — Passenger's last name\r\n        · dob: string! — Date of birth in YYYY-MM-DD format\r\n    payment_methods: array! — An array of objects containing details about each payment method.\r\n        · payment_id: string! — Unique identifier for the payment\r\n        · amount: integer! — Payment amount in dollars\r\n    total_baggages: integer! — The total number of baggage items to book the reservation.\r\n    nonfree_baggages: integer! — The number of non-free baggage items to book the reservation.\r\n    insurance: string! [enum: yes|no] — Whether the reservation has insurance.\r\n"
+      ]
+    },
+    {
+      "arm": "quote",
+      "tool": "modify_pending_order_items",
+      "effect": "MODIFY",
+      "action": "Modify items in a pending order to new items of the same product type, requiring explicit user confirmation (yes/no) to proceed.",
+      "spans": [
+        "modify_pending_order_items — Modify items in a pending order to new items of the same product type."
+      ],
+      "object_spans": [
+        "Modify items in a pending order to new items of the same product type. For a pending order, this function can only be called once. The agent needs to explain the exchange detail and ask for explicit user confirmation (yes/no) to proceed."
+      ]
+    },
+    {
+      "arm": "offset",
+      "tool": "log_verification",
+      "effect": "CREATE",
+      "action": "Records a verification confirmation in an audit log",
+      "spans": [
+        "- log_verification —"
+      ],
+      "object_spans": [
+        " Log a verification record after successfully verifying a user's identity.\r\n    \r\n    Call this tool after you have verified a user by confirming 2 out of 4 identity fields\r\n    (date of birth, email, phone number, address). This creates an audit record of the verification.\r\n    name: string! — The verified user's full name\r\n    user_id: string! — The verified user's ID\r\n    address: string! — The verified user's address\r\n    email: string! — The verified user's email\r\n    phone_number: string! — The verified user's phone number\r\n    date_of_birth: string! — The verified user's date of birth (MM/DD/YYYY format)\r\n    time_verified: string! — The timestamp of the verification (e.g., \"2025-11-14 03:40:00 EST\")\r\n"
+      ]
+    },
+    {
+      "arm": "quote",
+      "tool": "book_reservation",
+      "effect": "CREATE",
+      "action": "Book a flight reservation for a user, including flight details, passenger information, payment methods, and baggage specifications.",
+      "spans": [
+        "Book a reservation."
+      ],
+      "object_spans": [
+        "book_reservation — Book a reservation.",
+        "user_id: string! — The ID of the user to book the reservation such as 'sara_doe_496'",
+        "flights: array! — An array of objects containing details about each piece of flight.",
+        "passengers: array! — An array of objects containing details about each passenger.",
+        "payment_methods: array! — An array of objects containing details about each payment method.",
+        "total_baggages: integer! — The total number of baggage items to book the reservation.",
+        "insurance: string! [enum: yes|no] — Whether the reservation has insurance."
+      ]
+    },
+    {
+      "arm": "quote",
+      "tool": "exchange_delivered_order_items",
+      "effect": "MODIFY",
+      "action": "Exchange items in a delivered order with new items of the same product type, requiring explicit user confirmation and handling payment adjustments for price differences.",
+      "spans": [
+        "Exchange items in a delivered order to new items of the same product type."
+      ],
+      "object_spans": [
+        "exchange items in a delivered order to new items of the same product type",
+        "The agent needs to explain the exchange detail and ask for explicit user confirmation (yes/no) to proceed.",
+        "payment method id to pay or receive refund for the item price difference"
+      ]
+    },
+    {
+      "arm": "quote",
+      "tool": "transfer_to_human_agents",
+      "effect": "MODIFY",
+      "action": "Transfer the user to a human agent for handling",
+      "spans": [
+        "Transfer the user to a human agent."
+      ],
+      "object_spans": [
+        "Transfer the user to a human agent."
+      ]
+    },
+    {
+      "arm": "quote",
+      "tool": "cancel_reservation",
+      "effect": "DELETE",
+      "action": "Cancel a reservation",
+      "spans": [
+        "cancel_reservation — Cancel the whole reservation."
+      ],
+      "object_spans": [
+        "reservation_id: string! — The reservation ID, such as 'ZFA04Y'."
+      ]
+    },
+    {
+      "arm": "quote",
+      "tool": "unlock_discoverable_agent_tool",
+      "effect": "CREATE",
+      "action": "Enables access to a previously restricted specialized internal tool by unlocking it for use in subsequent operations.",
+      "spans": [
+        "Unlock an agent discoverable tool that was found in the knowledge base."
+      ],
+      "object_spans": [
+        "specialized internal tool"
+      ]
+    },
+    {
+      "arm": "offset",
+      "tool": "update_reservation_baggages",
+      "effect": "MODIFY",
+      "action": "Update baggage allocation details for a reservation",
+      "spans": [
+        "- update_reser"
+      ],
+      "object_spans": [
+        "- update_reservation_baggages — Update the baggage information of a reservation.\r\n    reservation_id: string! — The reservation ID, such as 'ZFA04Y'\r\n    total_baggages: integer! — The updated total number of baggage items included in the reservation.\r\n    nonfree_baggages: integer! — The updated number of non-free baggage items included in the reservation.\r\n    payment_id: string! — The payment id stored in user profile, such as 'credit_card_7815826', 'gift_card_7815826', 'certificate_7815826'.\r\n"
+      ]
+    },
+    {
+      "arm": "offset",
+      "tool": "resume_line",
+      "effect": "MODIFY",
+      "action": "Resumes a suspended line by updating its status to Active and clearing the suspension timestamp",
+      "spans": [
+        "- resume_line — Resumes a suspended line.\r\n    \r\n    Checks: Line status must be Suspended or Pending Activation.\r\n    Logic: Sets line status to Active, clears suspension_start_date.\r\n    customer_id: string! — ID of the customer who owns the line.\r\n    line_id: string! — ID of the line to resume.\r\n"
+      ],
+      "object_spans": [
+        "ine — Resume"
+      ]
+    },
+    {
+      "arm": "offset",
+      "tool": "call_discoverable_agent_tool",
+      "effect": "MODIFY",
+      "action": "Invoke an unlocked agent tool with provided arguments",
+      "spans": [
+        "- call_discoverable_agent_tool — Call an agent discoverable tool that you have previously unlocked.\r\n    \r\n    Use this after unlocking a tool with `unlock_discoverable_agent_tool`. The knowledge base\r\n    will tell you which tool to use and what arguments to provide.\r\n    agent_tool_name: string! — The name of the agent discoverable tool to call\r\n    arguments: string — JSON string of arguments for the tool (e.g., '{\"user_id\": \"abc123\"}')\r\n"
+      ],
+      "object_spans": [
+        "able tool that you have previously unlocked.\r",
+        "    \r\n    Use this after unlo",
+        "king a tool with `unlock_discoverable_a"
+      ]
+    },
+    {
+      "arm": "quote",
+      "tool": "call_discoverable_agent_tool",
+      "effect": "MODIFY",
+      "action": "Invoke an unlocked agent tool with specified arguments",
+      "spans": [
+        "Call an agent discoverable tool that you have previously unlocked."
+      ],
+      "object_spans": [
+        "agent_tool_name: string! — The name of the agent discoverable tool to call",
+        "arguments: string — JSON string of arguments for the tool (e.g., '{\"user_id\": \"abc123\"}')"
+      ]
+    },
+    {
+      "arm": "offset",
+      "tool": "exchange_delivered_order_items",
+      "effect": "MODIFY",
+      "action": "Exchange items in a delivered order with new items of the same product type, adjusting payment for price differences",
+      "spans": [
+        "- exchange_delivered_order_items — Exchange items in a delivered order to new items of the same product type.\r\n    \r\n    For a delivered order, return or exchange can be only done once by the agent.\r\n    The agent needs to explain the exchange detail and ask for explicit user confirmation (yes/no) to proceed.\r\n    order_id: string! — The order id, such as '#W0000000'. Be careful there is a '#' symbol at the beginning of the order id.\r\n    item_ids: array! — The item ids to be exchanged, each such as '1008292230'. There could be duplicate items in the list.\r\n    new_item_ids: array! — The item ids to be exchanged for, each such as '1008292230'. There could be duplicate items in the list. Each new item id should match the item id in the same position and be of the same product.\r\n    payment_method_id: string! — The payment method id to pay or receive refund for the item price difference, such as 'gift_card_0000000' or 'credit_card_0000000'. These can be looked up from the user or order details.\r\n"
+      ],
+      "object_spans": [
+        "- exchange_delivered_order_items — Exchange items in a delivered order to new items of the same product type.\r\n    \r\n    For a delivered order, return or exchange can be only done once by the agent.\r\n    The agent needs to explain the exchange detail and ask for explicit user confirmation (yes/no) to proceed.\r\n    order_id: string! — The order id, such as '#W0000000'. Be careful there is a '#' symbol at the beginning of the order id.\r\n    item_ids: array! — The item ids to be exchanged, each such as '1008292230'. There could be duplicate items in the list.\r\n    new_item_ids: array! — The item ids to be exchanged for, each such as '1008292230'. There could be duplicate items in the list. Each new item id should match the item id in the same position and be of the same product.\r\n    payment_method_id: string! — The payment method id to pay or receive refund for the item price difference, such as 'gift_card_0000000' or 'credit_card_0000000'. These can be looked up from the user or order details.\r\n"
+      ]
+    },
+    {
+      "arm": "quote",
+      "tool": "calculate",
+      "effect": "MODIFY",
+      "action": "evaluates and produces a result for a mathematical expression",
+      "spans": [
+        "Calculate the result of a mathematical expression."
+      ],
+      "object_spans": [
+        "The mathematical expression to calculate, such as '2 + 2'. The expression can contain numbers, operators (+, -, *, /), parentheses, and spaces."
+      ]
+    },
+    {
+      "arm": "offset",
+      "tool": "modify_pending_order_items",
+      "effect": "MODIFY",
+      "action": "Modify items in a pending order by replacing existing items with new items of the same product type, adjusting quantities or specific item identifiers while handling price differences via a specified payment method.",
+      "spans": [
+        "- modify_p",
+        "ending_order_items — Modify items in a pending order to new items of the same product type. For a pending order, this function can only be called once. The agent needs to explain the exchange detail and ask for explicit user confirmation (yes/no) to proceed.\r\n    order_id: string! — The order id, such as '#W0000000'. Be careful there is a '#' symbol at the beginning of the order id.\r\n    item_ids: array! — The item ids to be modified, each such as '1008292230'. There could be duplicate items in the list.\r\n    new_item_ids: array! — The item ids to be modified for, each such as '1008292230'. There could be duplicate items in the list. Each new item id should match the item id in the same position and be of the same product.\r\n    payment_method_id: string! — The payment method id to pay or receive refund for the item price difference, such as 'gift_card_0000000' or 'credit_card_0000000'. These can be looked up from the user or order details.\r\n"
+      ],
+      "object_spans": [
+        "ending_order_items — Modify items in a pending order to new items of the same product type",
+        ". For a pending order, this function can only be c",
+        "alled once. The agent needs to explain the exchang",
+        "e detail and ask for explicit user confirmation (y",
+        "es/no) to proceed.\r\n    order_id: string! — The or",
+        "der id, such as '#W0000000'. Be careful there is a",
+        " '#' symbol at the beginning of the order id.\r\n   ",
+        " item_ids: array! — The item ids to be modified, e",
+        "ach such as '1008292230'. There could be duplicate",
+        " items in the list.\r\n    new_item_ids: array! — Th",
+        "e item ids to be modified for, each such as '10082",
+        "92230'. There could be duplicate items in the list",
+        ". Each new item id should match the item id in the",
+        " same position and be of the same product.\r\n    pa",
+        "yment_method_id: string! — The payment method id t",
+        "o pay or receive refund for the item price differe",
+        "nce, such as 'gift_card_0000000' or 'credit_card_0",
+        "000000'. These can be looked up from the user or order details.\r\n"
+      ]
+    },
+    {
+      "arm": "offset",
+      "tool": "cancel_reservation",
+      "effect": "DELETE",
+      "action": "Cancel a reservation",
+      "spans": [
+        "- cancel_reservat"
+      ],
+      "object_spans": [
+        "— Cancel the"
+      ]
+    },
+    {
+      "arm": "quote",
+      "tool": "update_reservation_baggages",
+      "effect": "MODIFY",
+      "action": "Update baggage information for a reservation (adjusting total and non-free baggage counts, associating with a payment method)",
+      "spans": [
+        "update_reservation_baggages — Update the baggage information of a reservation."
+      ],
+      "object_spans": [
+        "reservation_id: string! — The reservation ID, such as 'ZFA04Y'",
+        "total_baggages: integer! — The updated total number of baggage items included in the reservation.",
+        "nonfree_baggages: integer! — The updated number of non-free baggage items included in the reservation.",
+        "payment_id: string! — The payment id stored in user profile, such as 'credit_card_7815826', 'gift_card_7815826', 'certificate_7815826'."
+      ]
+    },
+    {
+      "arm": "offset",
+      "tool": "find_user_id_by_name_zip",
+      "effect": "READ",
+      "action": "Retrieve user identifier",
+      "spans": [
+        "- find_user_id_by_n"
+      ],
+      "object_spans": [
+        "ind user id by first name, last name, and zip code. If the user is not found, the function\r\n    \r\n    will return an error message. By default, find user id by email, and only call this function\r\n    if the user is not found by email or cannot remember email.\r\n    first_name: string! — The first name of the customer, such as 'John'.\r\n    last_name: string! — The last name of the customer, such as 'Doe'.\r\n    zip: string! — The zip code of the customer, such as '12345'.\r\n"
+      ]
+    },
+    {
+      "arm": "offset",
+      "tool": "transfer_to_human_agents",
+      "effect": "COMMUNICATE",
+      "action": "escalate user request to human support",
+      "spans": [
+        "- transfer_to_human_agents — Transfer the user to a human agent, with a summary of the user's issue.\r\n    \r\n    Only transfer if\r\n     -  the user explicitly asks for a human agent\r\n     -  given the policy and the available tools, you cannot solve the user's issue.\r\n    summary: string! — A summary of the user's issue.\r\n"
+      ],
+      "object_spans": [
+        "- transfer_to_human_agents — Transfer the user to a human agent, with a summary of the user's issue.\r\n    \r\n    Only transfer if\r\n     -  the user explicitly asks for a human agent\r\n     -  given the policy and the available tools, you cannot solve the user's issue.\r\n    summary: string! — A summary of the user's issue.\r\n"
+      ]
+    },
+    {
+      "arm": "quote",
+      "tool": "resume_line",
+      "effect": "MODIFY",
+      "action": "Resumes a suspended line by transitioning its status from Suspended or Pending Activation to Active and clearing the suspension date.",
+      "spans": [
+        "Resumes a suspended line."
+      ],
+      "object_spans": [
+        "line status must be Suspended or Pending Activation.",
+        "Sets line status to Active, clears suspension_start_date."
+      ]
+    },
+    {
+      "arm": "offset",
+      "tool": "update_reservation_flights",
+      "effect": "MODIFY",
+      "action": "Update flight details in a reservation (including flight segments, cabin class, and payment method)",
+      "spans": [
+        "- update_reservation_flights — Update the flight information of a reservation.\r\n    reservation_id: string! — The reservation ID, such as 'ZFA04Y'.\r\n    cabin: string! [enum: business|economy|basic_economy] — The cabin class of the reservation\r\n    flights: array! — An array of objects containing details about each piece of flight in the ENTIRE new reservation. Even if the a flight segment is not changed, it should still be included in the array.\r\n        · flight_number: string! — Flight number, such as 'HAT001'.\r\n        · date: string! — The date for the flight in the format 'YYYY-MM-DD', such as '2024-05-01'.\r\n    payment_id: string! — The payment id stored in user profile, such as 'credit_card_7815826', 'gift_card_7815826', 'certificate_7815826'.\r\n"
+      ],
+      "object_spans": [
+        "- update_reservation_flights — Update the flight information of a reservation.\r\n    reservation_id: string! — The reservation ID, such as 'ZFA04Y'.\r\n    cabin: string! [enum: business|economy|basic_economy] — The cabin class of the reservation\r\n    flights: array! — An array of objects containing details about each piece of flight in the ENTIRE new reservation. Even if the a flight segment is not changed, it should still be included in the array.\r\n        · flight_number: string! — Flight number, such as 'HAT001'.\r\n        · date: string! — The date for the flight in the format 'YYYY-MM-DD', such as '2024-05-01'.\r\n    payment_id: string! — The payment id stored in user profile, such as 'credit_card_7815826', 'gift_card_7815826', 'certificate_7815826'.\r\n"
+      ]
+    },
+    {
+      "arm": "quote",
+      "tool": "find_user_id_by_name_zip",
+      "effect": "READ",
+      "action": "Locates a user identifier using personal identifiers (first name, last name, and zip code) for verification or retrieval purposes.",
+      "spans": [
+        "Find user id by first name, last name, and zip code."
+      ],
+      "object_spans": [
+        "Find user id by first name, last name, and zip code."
+      ]
+    },
+    {
+      "arm": "quote",
+      "tool": "return_delivered_order_items",
+      "effect": "MODIFY",
+      "action": "Initiates a return process for specified items of a delivered order, triggering a status update to 'return requested' and requiring explicit user confirmation before proceeding.",
+      "spans": [
+        "return_delivered_order_items — Return some items of a delivered order."
+      ],
+      "object_spans": [
+        "The order status will be changed to 'return requested'. The agent needs to explain the return detail and ask for explicit user confirmation (yes/no) to proceed.",
+        "order_id: string! — The order id, such as '#W0000000'. Be careful there is a '#' symbol at the beginning of the order id.",
+        "item_ids: array! — The item ids to be returned, each such as '1008292230'. There could be duplicate items in the list.",
+        "payment_method_id: string! — The payment method id to pay or receive refund for the item price difference, such as 'gift_card_0000000' or 'credit_card_0000000'."
+      ]
+    },
+    {
+      "arm": "quote",
+      "tool": "transfer_to_human_agents",
+      "effect": "COMMUNICATE",
+      "action": "Escalate the user's unresolved issue to a human agent for direct intervention, accompanied by a provided summary of their problem.",
+      "spans": [
+        "Transfer the user to a human agent, with a summary of the user's issue."
+      ],
+      "object_spans": [
+        "the user's issue"
+      ]
+    },
+    {
+      "arm": "offset",
+      "tool": "unlock_discoverable_agent_tool",
+      "effect": "MODIFY",
+      "action": "Unlocks a previously restricted agent tool to make it usable for subsequent calls",
+      "spans": [
+        "- unlock_discoverable_agent_tool — Unlock an agent discoverable tool that was found in the knowledge base.\r\n    \r\n    Use this when the knowledge base indicates that you have access to a specialized\r\n    internal tool. The knowledge base will tell you the tool name to unlock.\r\n    \r\n    After unlocking, you can use the tool by calling `call_discoverable_agent_tool` with\r\n    the tool name and required arguments.\r\n    agent_tool_name: string! — The name of the agent discoverable tool to unlock (e.g., \"calculate_apr_adjustment_7842\")\r\n"
+      ],
+      "object_spans": [
+        "ol — Unlock an agent di",
+        " base.\r\n    \r\n    Use this whe",
+        " indicates that you have acces"
+      ]
+    },
+    {
+      "arm": "offset",
+      "tool": "calculate",
+      "effect": "CREATE",
+      "action": "evaluates and produces a result for a mathematical expression",
+      "spans": [
+        " — Calculate"
+      ],
+      "object_spans": [
+        "pression.\r\n    expression: string! — The mathemati"
+      ]
+    },
+    {
+      "arm": "quote",
+      "tool": "log_verification",
+      "effect": "CREATE",
+      "action": "Records a verification confirmation for a user's identity after successful validation",
+      "spans": [
+        "Log a verification record after successfully verifying a user's identity."
+      ],
+      "object_spans": [
+        "This creates an audit record of the verification."
+      ]
+    },
+    {
+      "arm": "offset",
+      "tool": "transfer_to_human_agents",
+      "effect": "MODIFY",
+      "action": "Transfer user interaction to a human agent",
+      "spans": [
+        "- transfer_to_human_agents — T"
+      ],
+      "object_spans": [
+        "- transfer_to_human_agents — T"
+      ]
+    },
+    {
+      "arm": "quote",
+      "tool": "update_reservation_flights",
+      "effect": "MODIFY",
+      "action": "Update the flight information of a reservation, including cabin class and flight segments, while requiring full reservation details and a payment identifier.",
+      "spans": [
+        "Update the flight information of a reservation."
+      ],
+      "object_spans": [
+        "Update the flight information of a reservation.",
+        "reservation_id: string! — The reservation ID, such as 'ZFA04Y'.",
+        "cabin: string! [enum: business|economy|basic_economy] — The cabin class of the reservation",
+        "flights: array! — An array of objects containing details about each piece of flight in the ENTIRE new reservation.",
+        "payment_id: string! — The payment id stored in user profile, such as 'credit_card_7815826', 'gift_card_7815826', 'certificate_7815826'."
+      ]
+    },
+    {
+      "arm": "offset",
+      "tool": "return_delivered_order_items",
+      "effect": "MODIFY",
+      "action": "Initiate a return process for specified items in a delivered order, updating the order status to 'return requested' and triggering follow-up communication (e.g., email instructions) for the user.",
+      "spans": [
+        "- return_delivered_order_items — Return some items of a delivered order.\r\n    \r\n    The order status will be changed to 'return requested'.\r\n    The agent needs to explain the return detail and ask for explicit user confirmation (yes/no) to proceed.\r\n    The user will receive follow-up email for how and where to return the item.\r\n    order_id: string! — The order id, such as '#W0000000'. Be careful there is a '#' symbol at the beginning of the order id.\r\n    item_ids: array! — The item ids to be returned, each such as '1008292230'. There could be duplicate items in the list.\r\n    payment_method_id: string! — The payment method id to pay or receive refund for the item price difference, such as 'gift_card_0000000' or 'credit_card_0000000'. These can be looked up from the user or order details.\r\n"
+      ],
+      "object_spans": [
+        "- return_delivered_order_items — Return some items of a delivered order.\r\n    \r\n    The order status will be changed to 'return requested'.\r\n    The agent needs to explain the return detail and ask for explicit user confirmation (yes/no) to proceed.\r\n    The user will receive follow-up email for how and where to return the item.\r\n    order_id: string! — The order id, such as '#W0000000'. Be careful there is a '#' symbol at the beginning of the order id.\r\n    item_ids: array! — The item ids to be returned, each such as '1008292230'. There could be duplicate items in the list.\r\n    payment_method_id: string! — The payment method id to pay or receive refund for the item price difference, such as 'gift_card_0000000' or 'credit_card_0000000'. These can be looked up from the user or order details.\r\n"
+      ]
+    },
+    {
+      "arm": "offset",
+      "tool": "transfer_to_human_agents",
+      "effect": "COMMUNICATE",
+      "action": "escalate user request to human support",
+      "spans": [
+        "- transfer_to_human_agents — Transfer the user to a human agent, with a summary of the user's issue.\r\n    \r\n    Only transfer if\r\n     -  the user explicitly asks for a human agent\r\n     -  given the policy and the available tools, you cannot solve the user's issue.\r\n    summary: string! — A summary of the user's issue.\r\n"
+      ],
+      "object_spans": [
+        "- transfer_to_human_agents — Transfer the user to a human agent, with a summary of the user's issue.\r\n    \r\n    Only transfer if\r\n     -  the user explicitly asks for a human agent\r\n     -  given the policy and the available tools, you cannot solve the user's issue.\r\n    summary: string! — A summary of the user's issue.\r\n"
+      ]
+    },
+    {
+      "arm": "quote",
+      "tool": "transfer_to_human_agents",
+      "effect": "COMMUNICATE",
+      "action": "Escalate the user's unresolved issue to a human agent for further handling, accompanied by a provided summary of their concern.",
+      "spans": [
+        "Transfer the user to a human agent, with a summary of the user's issue."
+      ],
+      "object_spans": [
+        "Transfer the user to a human agent",
+        "summary: string! — A summary of the user's issue."
+      ]
+    }
+  ]
+}
