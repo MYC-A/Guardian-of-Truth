@@ -7,13 +7,18 @@ and must be replayed in a separate environment.
 
 ```powershell
 python -m venv .venv-v4
-.venv-v4/Scripts/python -m pip install pydantic==2.13.5 pytest pytest-asyncio
+.venv-v4/Scripts/python -m pip install pydantic==2.13.5 pytest==9.1.1 pytest-asyncio
 $env:PYTHONPATH = (Join-Path (Get-Location) 'src')
-.venv-v4/Scripts/python -m pytest -q tests/test_semantic_hybrid_v4.py tests/test_evidence_graph.py tests/test_evidence_graph_quote_adapter.py tests/test_evidence_graph_ranked_search.py tests/test_evidence_graph_api_worker_v2.py tests/test_system_proof_engine.py
-.venv-v4/Scripts/python experiments/research_v3/pilot.py replay
-.venv-v4/Scripts/python experiments/research_v3/score.py
-.venv-v4/Scripts/python experiments/research_v3/diagnostics/audit_results.py --out outputs/searh_23/semantic_hybrid_v4_20261004
+.venv-v4/Scripts/python -m pytest -q tests/test_semantic_hybrid_v4.py tests/test_semantic_hybrid_v4_source_guard.py tests/test_evidence_graph.py tests/test_evidence_graph_quote_adapter.py tests/test_evidence_graph_ranked_search.py tests/test_evidence_graph_api_worker_v2.py tests/test_system_proof_engine.py
+.venv-v4/Scripts/python experiments/research_v3/diagnostics/replay_all.py
 ```
+
+The seven-phase wrapper runs each replay in a separate process, checks saved
+prediction bytes and HTTP ledger identity, and restores the original completion
+receipt's `run` mode. It then regenerates metrics, failures, source audits, the
+prospective falsification, the finite logic audit, and comparison CSVs. Verification
+and total cost appear in `outputs/searh_23/semantic_hybrid_v4_diagnostics_20261004/aggregate_and_replay.json`.
+The verified targeted test set contains 85 tests. This is not a full repository test run.
 
 `replay` has no HTTP path. It validates protocol/model request identity, parses raw
 receipts and re-evaluates original programs. Missing receipts stay UNKNOWN; use
@@ -34,6 +39,13 @@ original strict-wire Gemma phase records a provider contract failure, not a mode
 semantic score. The new adapter makes the reply schema model-visible and permits
 only one outer JSON fence to be removed. No aliases, altered values, trailing
 comma fixes or formula repairs are allowed.
+
+The prospective scorer independently verifies its input/gold/protocol seals and
+the pre-frozen guard hash before opening gold. The frozen prospective preparation
+script was deployed with a copy of `diagnostics/source_guard.py` beside `run.py`
+on the server; local offline replay needs no such copy. Do not regenerate the
+tracked protocols. Gold is unavailable to the inference runner, including the
+prospective run. The new scorer was added only after that run completed.
 
 Live `run` is a distinct explicit mode. On the current server, credentials are
 loaded only in memory from existing secret files. Finite workers are managed by

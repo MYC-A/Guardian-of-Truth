@@ -27,7 +27,8 @@ The main branch is not the chosen research base. No experimental branch merging
 is necessary: the graph probe base already contains the required runtime and
 historical protocols.
 
-System V2 `outputs/system_sealed.json` confirms full-auto exact 3-way 10/20,
+System V2 `experiments/searh_23/system_research_v2/outputs/system_sealed.json`
+confirms full-auto exact 3-way 10/20,
 5/20 decided, and 75% UNKNOWN. This historical sealed is disclosed material.
 Gold Step 1 improvements localize a semantic bottleneck for that model/protocol;
 they do not prove an architecture-independent limitation of all early compilers.
