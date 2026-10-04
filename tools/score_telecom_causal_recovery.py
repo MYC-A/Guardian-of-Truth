@@ -49,8 +49,11 @@ def main(out):
         entry['assessments']=a['assessments']
         entry['audit_note']=a['note']
         entry['decision_reason_consistent']=a['decision_reason_consistent']
+        assert entry['decision_reason_consistent'] is None or type(entry['decision_reason_consistent']) is bool
+        if row['reply'] is None:assert entry['decision_reason_consistent'] is None
         entry['complete_original_cause_recovery']=bool(variant=='original' and row['name']!='AUTO_plan' and row['fully_admitted']
-            and entry['binary_correct'] and all(entry[c] is True for c in CRITERIA))
+            and entry['binary_correct'] and entry['decision_reason_consistent'] is True
+            and all(entry[c] is True for c in CRITERIA))
         item=ledger.get(row['request_sha256'])
         entry['cost']=dict(http=int(item is not None),known_tokens=item['known_tokens'] if item else 0,
                            charged_tokens=item['charged_tokens'] if item else 0)
@@ -62,6 +65,10 @@ def main(out):
         automatic_source_and_semantic_success=any(r['name']=='AUTO_final' and r['complete_original_cause_recovery'] for r in reports),
         gold_sha256=hashlib.sha256((ROOT/'valid.parquet').read_bytes()).hexdigest(),
         valid46_F1_measured=False,independent_holdout=False,new_http=0)
+    final=next((r for r in rows if r['name']=='AUTO_final'),None)
+    if final is None or final['reply'] is None:
+        report['automatic_source_and_semantic_success']=None
+        report['automatic_final_semantic_status']='NOT_MEASURED_'+(final['failure'] if final else 'NOT_RUN')
     save(out/'causal_score.json',report)
     print(str(out/'causal_score.json'))
 
