@@ -126,9 +126,8 @@ def build(row):
         sources={sid:{k:s[k] for k in ('document','start','end','role','kind','tool','event') if k in s}
                  for sid,s in graph.refs.items() if s['kind']!='raw'},
         target_ids=list(graph.targets),policy_ids=list(graph.units),
-        declaration_ids={sid:dict(tool=name,text=graph.resolve(dict(source_id=sid,start=0,end=graph.refs[sid]['end']-graph.refs[sid]['start']))['text'])
-                         for name,sid in graph.declarations.items()},
-        field_candidates={i:{k:v for k,v in f.items() if k!='pointer'} for i,f in fields.items()},
+        declaration_ids={sid:dict(tool=name) for name,sid in graph.declarations.items()},
+        field_candidates={i:{k:f[k] for k in ('source_id','record_keys','kind','is_target')} for i,f in fields.items()},
         argument_candidates={i:{k:v for k,v in a.items() if k!='pointer'} for i,a in args.items()})
     return graph,fields,args,packet
 
