@@ -47,12 +47,20 @@ def totals(cfg, embedder=None):
 def main():
     ap = argparse.ArgumentParser()
     ap.add_argument('--dense', action='store_true'); ap.add_argument('--ablate', action='store_true')
+    ap.add_argument('--cases', type=int, default=0, help='per-case details at this budget')
     ap.add_argument('--budgets', default='12000,20000,32000,48000,64000')
     a = ap.parse_args()
     embedder = None
     if a.dense:
         from guardian_truth.evidence_packer import FastEmbedEmbedder
         embedder = FastEmbedEmbedder()
+    if a.cases:
+        for r in CS:
+            p = pack(r, PackerConfig(budget_bytes=a.cases)); s = score_reference(refs[r['id']], p)
+            miss = [(c, m['start'], m['end'], m['why'][:50]) for c, v in s['categories'].items() for m in v['missing']]
+            print(r['split'][:4], r['id'][:44], 'OK ' if s['complete_evidence_set_success'] else 'MISS', p['failure'],
+                  p['cost']['source_token_upper_bound'], p['policy_mode'], {k: v['status'] for k, v in p['anchors'].items()}, miss[:4])
+        return
     for B in map(int, a.budgets.split(',')):
         print(f'--- budget {B} bytes (frozen bakeoff used 20000)')
         for m in ['local_bm25', 'B1', 'bm25_exact_graph']:
