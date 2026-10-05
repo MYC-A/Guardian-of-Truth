@@ -41,6 +41,9 @@ PROFILES = {
     # SHADOW / post-hoc, development-only. Amendment 2 (post-hoc, designed after valid46 results): relation facts are sent only when at
     # least one decisive fact exists; otherwise the request is byte-identical to the baseline request.
     'integrated_gated': dict(guard=True, relations=True, controller=True, relation_gate=True),
+    # verification v2: 'guard' + admission v2 (tool-result evidence actor in {assistant, system, unknown} accepted and
+    # normalised; same request, so replayable from cache). See docs/verification_v2/FINAL_DECISION.md.
+    'guard_adm2': dict(guard=True, relations=False, controller=False, admission='v2'),
 }
 
 
@@ -53,6 +56,7 @@ class ReviewConfig:
     relations: bool = False        # 'relations'/'integrated' are FAILED experimental profiles (valid46 F1 ~0.49)
     controller: bool = False
     relation_gate: bool = False    # True: send relation facts only if a decisive fact exists (amendment 2)
+    admission: str = 'v1'          # 'v2' = verification-v2 receipt-actor normalisation (profile 'guard_adm2')
     attempt: int = 0               # repetition index (part of the cache key); fixed in the protocol
     max_tokens: int = 1700
 
@@ -120,7 +124,13 @@ def _step(client, request, packet, cfg, tag):
                 usage=rec.get('usage'), transport=rec.get('transport'), finish_reason=rec.get('finish_reason'),
                 response_model=rec.get('response_model'), seconds=rec.get('seconds', round(time.time() - t, 3)),
                 request_bytes=len(json.dumps(request, ensure_ascii=False).encode()), raw_content=rec.get('content'))
-    step.update(reviewer.interpret(rec.get('content'), packet))
+    if cfg.admission == 'v2':
+        from ..verification.admission import interpret_v2      # lazy: verification imports integrated
+        step.update(interpret_v2(rec.get('content'), packet))
+    elif cfg.admission == 'v1':
+        step.update(reviewer.interpret(rec.get('content'), packet))
+    else:
+        raise ValueError(f'unknown admission {cfg.admission!r}')
     return step
 
 

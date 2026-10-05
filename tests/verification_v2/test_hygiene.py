@@ -23,3 +23,10 @@ def test_default_review_request_identical_to_guard(tmp_path):
 def test_cli_default_profile_is_guard():
     src = open(cli.__file__).read()
     assert "default='guard'" in src and "default='integrated'" not in src
+
+
+def test_guard_adm2_profile_only_changes_admission():
+    from guardian_truth.integrated.pipeline import PROFILES, ReviewConfig
+    a, b = ReviewConfig.profile('guard'), ReviewConfig.profile('guard_adm2')
+    assert a.admission == 'v1' and b.admission == 'v2'
+    assert {k: v for k, v in vars(a).items() if k != 'admission'} == {k: v for k, v in vars(b).items() if k != 'admission'}

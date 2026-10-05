@@ -13,7 +13,7 @@ from guardian_truth.verification import run_row
 ROOT = Path(__file__).resolve().parents[2]
 OUT = ROOT / 'outputs/verification_v2'
 MODEL = 'ministral-14b-2512'
-MAX_CALLS = 900
+MAX_CALLS = 1400   # amendment 2 (was 900)
 _lock, _last = threading.Lock(), [0.0]
 MIN_INTERVAL = 1.2
 
@@ -31,13 +31,13 @@ def inputs(name):
     if name == 'valid46':
         import pandas as pd
         return [dict(id=r.id, prompt=r.prompt, response=r.response) for r in pd.read_parquet(ROOT / 'valid.parquet').itertuples()]
-    sub = {'lb_long': 'long', 'lb_short': 'short'}[name]
-    return [json.loads(x) for x in (OUT / 'lockbox' / sub / 'inputs.jsonl').read_text().splitlines()]
+    box, sub = {'lb_long': ('lockbox', 'long'), 'lb_short': ('lockbox', 'short'), 'lb2_long': ('lockbox2', 'long')}[name]
+    return [json.loads(x) for x in (OUT / box / sub / 'inputs.jsonl').read_text().splitlines()]
 
 
 def failed(rec):
     steps = list(rec.get('A', {}).get('steps', []))
-    for k in ('B', 'C', 'Av'):
+    for k in ('B', 'C', 'E', 'Av'):
         x = rec.get(k)
         if x:
             steps.append(x)
@@ -62,9 +62,11 @@ def main():
     ap.add_argument('--workers', type=int, default=3)
     ap.add_argument('--rep', type=int, default=1)
     ap.add_argument('--offline', action='store_true')
+    ap.add_argument('--mechanisms', default='B,C')
+    ap.add_argument('--tag', default='')
     a = ap.parse_args()
     client = Transport('mistral', MODEL, OUT / 'cache' / 'mistral', max_calls=MAX_CALLS, retry_failed=3, sender=paced, offline=a.offline)
-    path = OUT / 'runs' / a.set / f'rep{a.rep}.jsonl'
+    path = OUT / 'runs' / a.set / f'rep{a.rep}{a.tag}.jsonl'
     path.parent.mkdir(parents=True, exist_ok=True)
     have = load(path)
     rows = [r for r in inputs(a.set) if (not a.ids or r['id'] in a.ids.split(',')) and (r['id'] not in have or failed(have[r['id']]))]
@@ -72,7 +74,7 @@ def main():
 
     def one(r):
         try:
-            rec = run_row(r, client, model=MODEL, attempt=a.rep - 1)
+            rec = run_row(r, client, model=MODEL, attempt=a.rep - 1, mechanisms=tuple(a.mechanisms.split(',')))
         except Exception as e:
             rec = dict(error=f'{type(e).__name__}: {e}'[:300])
         rec = dict(id=r['id'], rep=a.rep, **rec)
@@ -80,9 +82,9 @@ def main():
             with open(path, 'a') as f:
                 f.write(json.dumps(rec, ensure_ascii=False) + '\n')
                 f.flush(); os.fsync(f.fileno())
-            c, b = rec.get('C') or {}, rec.get('B') or {}
+            c, b, e = rec.get('C') or {}, rec.get('B') or {}, rec.get('E') or {}
             print(a.set, r['id'][:40], 'A', (rec.get('A') or {}).get('final'), 'B', b.get('decision'), (b.get('verify') or {}).get('verdict'),
-                  'C', c.get('original_status'), (c.get('verify') or {}).get('verdict'), 'Av', (rec.get('Av') or {}).get('verdict'),
+                  'C', c.get('original_status'), (c.get('verify') or {}).get('verdict'), 'E', e.get('admission'), bool(e.get('candidate')), (e.get('verify') or {}).get('verdict'), 'Av', (rec.get('Av') or {}).get('verdict'),
                   'FAIL' if failed(rec) else '', rec.get('error', ''), flush=True)
     with ThreadPoolExecutor(a.workers) as ex:
         list(ex.map(one, rows))

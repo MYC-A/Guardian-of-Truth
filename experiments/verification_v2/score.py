@@ -16,7 +16,8 @@ from experiments.verification_v2.run import paced
 
 ROOT = Path(__file__).resolve().parents[2]
 OUT = ROOT / 'outputs/verification_v2'
-ARMS = ('A', 'A_adm2', 'B', 'Bv', 'C', 'D', 'Av', 'Av_strict')
+ARMS = ('A', 'A_adm2', 'B', 'Bv', 'C', 'D', 'E', 'Ev', "B'", "Bv'", "C'", "D'", "E'", "Ev'", 'Av', 'Av_strict')
+CAND = {'B': 'B', 'Bv': 'B', 'C': 'C', 'D': 'C', 'E': 'E', 'Ev': 'E', "B'": 'B', "Bv'": 'B', "C'": 'C', "D'": 'C', "E'": 'E', "Ev'": 'E'}
 
 
 def gold(name):
@@ -25,13 +26,13 @@ def gold(name):
         d = pd.read_parquet(ROOT / 'valid.parquet')
         return {r.id: dict(label=int(r.label), cause=r.explanation if isinstance(r.explanation, str) else None, family=r.id.split('__')[0],
                            target=None, pair=None) for r in d.itertuples()}
-    sub = {'lb_long': 'long', 'lb_short': 'short'}[name]
-    return json.loads((OUT / 'lockbox' / sub / 'GOLD_eval_only.json').read_text())
+    box, sub = {'lb_long': ('lockbox', 'long'), 'lb_short': ('lockbox', 'short'), 'lb2_long': ('lockbox2', 'long')}[name]
+    return json.loads((OUT / box / sub / 'GOLD_eval_only.json').read_text())
 
 
-def load(name, rep):
+def load(name, rep, tag=''):
     recs = {}
-    for line in (OUT / 'runs' / name / f'rep{rep}.jsonl').read_text().splitlines():
+    for line in (OUT / 'runs' / name / f'rep{rep}{tag}.jsonl').read_text().splitlines():
         r = json.loads(line)
         recs[r['id']] = r
     return recs
@@ -43,27 +44,26 @@ def accusation(rec, arm):
     if not d[arm]:
         return None
     a = rec['A']
-    if a['final'] == 'ERROR' and arm not in ('B', 'Bv', 'C', 'D') or a['final'] == 'ERROR':
+    if a['final'] == 'ERROR':
         if a['proof'] == 'MECHANICAL_PROOF':
             g = [r for r in a['reasons'] if r['origin'] == 'GUARD']
             return dict(origin='GUARD', target_id=g[0]['target_id'] if g else None, text='; '.join(r['text'] for r in g)[:1500])
         m = [r for r in a['reasons'] if r['origin'] != 'GUARD']
-        if arm == 'A_adm2' and not m:
-            m = []
         return dict(origin='A', target_id=m[0]['target_id'] if m else None, text=m[0]['text'] if m else '')
-    if arm == 'A_adm2':
-        return dict(origin='A_adm2', target_id=None, text='(admission-v2 replay of A; reason not stored)')
-    k = 'B' if arm in ('B', 'Bv') else 'C'
-    c = rec[k]['candidate']
-    return dict(origin=k, target_id=c['target_id'], text=(c.get('requirement') or '') + ' — ' + c['reason'])
+    base2 = arm == 'A_adm2' or arm.endswith("'")
+    if base2 and (rec.get('A_adm2') or {}).get('decision') == 'ERROR':
+        x = rec['A_adm2']
+        return dict(origin='A_adm2', target_id=x.get('target_id'), text=x.get('reason') or '')
+    c = rec[CAND[arm]]['candidate']
+    return dict(origin=CAND[arm], target_id=c['target_id'], text=(c.get('requirement') or '') + ' — ' + c['reason'])
 
 
 def jkey(text, cause):
     return sha(dict(t=text, g=cause))
 
 
-def judge(name, rep, max_calls=400):
-    g, recs = gold(name), load(name, rep)
+def judge(name, rep, max_calls=600, tag=''):
+    g, recs = gold(name), load(name, rep, tag)
     t = Transport('mistral', JUDGE_MODEL, OUT / 'cache' / 'judge', max_calls=max_calls, retry_failed=3, sender=paced)
     store = OUT / 'judge' / 'verdicts.jsonl'
     store.parent.mkdir(parents=True, exist_ok=True)
@@ -74,11 +74,11 @@ def judge(name, rep, max_calls=400):
             continue
         for arm in ARMS:
             acc = accusation(rec, arm)
-            if acc and acc['origin'] not in ('GUARD', 'A_adm2') and acc['text']:
+            if acc and acc['origin'] != 'GUARD' and acc['text']:
                 k = jkey(acc['text'], g[i]['cause'])
                 if k not in done:
                     jobs[k] = (acc, g[i]['cause'])
-        for k2 in ('B', 'C'):                          # every true-row candidate (for verifier usefulness)
+        for k2 in ('B', 'C', 'E'):                     # every true-row candidate (for verifier usefulness)
             c = (rec.get(k2) or {}).get('candidate')
             if c:
                 text = (c.get('requirement') or '') + ' — ' + c['reason']
@@ -123,8 +123,8 @@ def sign_p(b, w):
     return round(sum(comb(n, k) for k in range(max(b, w), n + 1)) / 2 ** n * 2, 3) if n else 1.0
 
 
-def report(name, rep):
-    g, recs, V = gold(name), load(name, rep), verdicts()
+def report(name, rep, tag=''):
+    g, recs, V = gold(name), load(name, rep, tag), verdicts()
     ids = [i for i in recs if i in g]
     out = dict(set=name, rep=rep, rows=len(ids), positives=sum(g[i]['label'] for i in ids), arms={})
     preds = {arm: {i: decide(recs[i])[arm] for i in ids} for arm in ARMS}
@@ -136,7 +136,7 @@ def report(name, rep):
                 acc = accusation(recs[i], arm)
                 if acc['origin'] == 'GUARD':
                     cause['GUARD_MECHANICAL'] += 1
-                elif acc['origin'] == 'A_adm2' or not g[i].get('cause'):
+                elif not g[i].get('cause') or not acc['text']:
                     cause['UNJUDGED'] += 1
                 else:
                     cause[V.get(jkey(acc['text'], g[i]['cause']), 'UNJUDGED')] += 1
@@ -157,13 +157,13 @@ def report(name, rep):
     for i in ids:
         if g[i]['label'] == 1:
             fam[g[i]['family']]['n'] += 1
-            for arm in ('A', 'B', 'Bv', 'C', 'D'):
+            for arm in ('A', 'A_adm2', 'Bv', 'D', 'Ev', "Bv'", "D'", "Ev'"):
                 fam[g[i]['family']][arm] += preds[arm][i]
     out['family_recall'] = {k: dict(v) for k, v in sorted(fam.items())}
     cand = defaultdict(Counter)
     for i in ids:
         r = recs[i]
-        for k in ('B', 'C'):
+        for k in ('B', 'C', 'E'):
             c = (r.get(k) or {}).get('candidate')
             if not c:
                 continue
@@ -179,7 +179,7 @@ def report(name, rep):
                     cand[k]['true_same_kept'] += int(ver == 'SUPPORTED')
                 else:
                     cand[k]['true_notsame_kept'] += int(ver == 'SUPPORTED')
-        for k in ('B', 'C'):
+        for k in ('B', 'C', 'E'):
             v = (r.get(k) or {}).get('verify') or {}
             if v.get('downgraded'):
                 cand[k]['downgraded_quote'] += 1
@@ -190,11 +190,12 @@ def report(name, rep):
         r = recs[i]
         cost['A_calls'] += r['A']['cost']['calls']
         cost['A_tokens'] += r['A']['cost']['prompt_tokens'] + r['A']['cost']['completion_tokens']
-        for k, tag in (('B', 'B'), ('C', 'C')):
+        for k, tag in (('B', 'B'), ('C', 'C'), ('E', 'E')):
             x = r.get(k)
             if x:
-                cost[tag + '_calls'] += 1
-                cost[tag + '_tokens'] += (x.get('usage') or {}).get('total_tokens') or 0
+                subs = [x[s] for s in ('extract', 'check') if x.get(s)] if k == 'E' else [x]
+                cost[tag + '_calls'] += len(subs)
+                cost[tag + '_tokens'] += sum((y.get('usage') or {}).get('total_tokens') or 0 for y in subs)
                 if x.get('verify'):
                     cost[tag + 'v_calls'] += 1
                     cost[tag + 'v_tokens'] += (x['verify'].get('usage') or {}).get('total_tokens') or 0
@@ -202,9 +203,9 @@ def report(name, rep):
             cost['Av_calls'] += 1
     out['escalated'] = len(esc)
     out['cost'] = dict(cost)
-    out['admissions'] = {k: dict(Counter(str((recs[i].get(k) or {}).get('admission'))[:40] for i in esc)) for k in ('B', 'C')}
+    out['admissions'] = {k: dict(Counter(str((recs[i].get(k) or {}).get('admission'))[:40] for i in esc)) for k in ('B', 'C', 'E')}
     out['A_adm2_changed'] = sum(1 for i in ids if recs[i].get('A_adm2') and (recs[i]['A_adm2']['decision'] or 'NONE') != (next((s.get('decision') for s in recs[i]['A']['steps'] if s.get('tag') == 'review'), None) or 'NONE'))
-    path = OUT / 'reports' / f'{name}_rep{rep}.json'
+    path = OUT / 'reports' / f'{name}_rep{rep}{tag}.json'
     path.parent.mkdir(parents=True, exist_ok=True)
     path.write_text(json.dumps(out, ensure_ascii=False, indent=1))
     print(json.dumps(out, ensure_ascii=False, indent=1))
@@ -215,5 +216,6 @@ if __name__ == '__main__':
     ap.add_argument('stage', choices=['judge', 'report'])
     ap.add_argument('--set', required=True)
     ap.add_argument('--rep', type=int, default=1)
+    ap.add_argument('--tag', default='')
     a = ap.parse_args()
-    judge(a.set, a.rep) if a.stage == 'judge' else report(a.set, a.rep)
+    judge(a.set, a.rep, tag=a.tag) if a.stage == 'judge' else report(a.set, a.rep, a.tag)

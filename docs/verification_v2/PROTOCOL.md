@@ -89,3 +89,31 @@ except the transport's frozen retry policy. One repetition per arm (rep 2 of A a
   hashes in `outputs/verification_v2/lockbox2/long/MANIFEST.json`.
 - LB2 was authored by rotating through the summary §18 strata list (not chosen per mechanism).
 - On LB2 every arm is reported against both A (frozen A2) and A_adm2 (admission v2).
+
+## Amendment 2 (2026-10-06, before any LB2 inference; LB2 frozen in commit 9d170784)
+New post-LB1 mechanisms, designed on LB1 failure analysis (development only on LB1):
+- **E — requirement checklist with deterministic date table.** E1 (verdict-free): extract the
+  applicable requirements from the policy with verbatim quotes (code-verified substrings) given the
+  move. E2: check each requirement against the packet plus a code-computed CALCULATIONS table
+  (calendar days / hours from the policy's "current time", weekday, age in years). A requirement is
+  VIOLATED only with a verified evidence quote; a stated computation that contradicts the table
+  becomes UNRESOLVED. 2 calls per row. **Ev** = E candidate kept only if the narrow verifier
+  returns SUPPORTED (+1 call per candidate).
+- **Primed arms** B', Bv', C', D', E', Ev' = the same candidates added on top of the A_adm2 base
+  (admission v2 replay of A, no extra calls) instead of frozen A.
+- Budget raised to ≤1400 model calls (runner hard cap).
+- **Pre-registered LB2 rules** (LB2-long primary, 1 rep):
+  1. Admission v2 is adopted as default iff on LB2 A_adm2 vs A adds ≤1 FP and loses no TP.
+  2. E' is **supported** iff vs A_adm2 it gains ≥3 cause-correct TP with ≤1 new FP AND its net
+     (cause-correct TP gain − new FP) is ≥2 above the better of B' and Bv'. Same rule for Ev'.
+  3. The counterfactual D' and C' are re-reported on LB2 with the frozen §6 rule (on A_adm2 base).
+  4. Verifier usefulness re-tested with the §6 criterion on LB2 candidates of B, C and E.
+- LB1 results for E are development results and are not evidence for rule 2.
+- Development log for E on LB1-long (before LB2, recorded here): smoke run (3 rows) → iteration 1 (57 rows:
+  E' vs A_adm2 +1 cause-correct TP, +2 FP) → fixes of generic defects only: policy-quote check tolerant to
+  list markers / trailing punctuation / stitched list items / near-verbatim (ratio ≥0.9) wording, since
+  E1 quotes only ground requirements; numeric comparisons ("30 < 48") recorded as a diagnostic only
+  (models flip their order) → iteration 2 = final frozen E (E' +1 cause-correct TP, +3 FP vs A_adm2;
+  Ev' +1, +1 FP). No further LB1 iteration. E code is frozen in the commit that adds this line.
+- Opt-in profile `guard_adm2` (= guard + admission v2) added to the integrated pipeline; the v2 runner
+  pins frozen A to admission v1. Whether it becomes the default is decided by rule 1 on LB2.

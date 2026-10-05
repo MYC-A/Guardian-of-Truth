@@ -114,4 +114,64 @@ def test_run_row_and_arm_projection_offline():
     rec = pipeline.run_row(ROW, StaticClient(fn), model='m')
     assert rec['escalated'] and rec['B']['candidate'] and rec['B']['verify']['verdict'] == 'SUPPORTED' and rec['C']['candidate'] is None
     d = arms.decide(rec)
-    assert d == dict(A=0, B=1, Bv=1, C=0, D=0, Av=0, Av_strict=0, A_adm2=0)
+    assert {k: d[k] for k in ('A', 'B', 'Bv', 'C', 'D', 'E', 'Ev', 'Av', 'A_adm2', "B'", "D'")} == dict(A=0, B=1, Bv=1, C=0, D=0, E=0, Ev=0, Av=0, A_adm2=0, **{"B'": 1, "D'": 0})
+
+
+def test_calc_table_and_computation_check():
+    from guardian_truth.verification import calc
+    pk = dict(normative_sources=[dict(source_id='q1', text='The current time is 2025-03-20 16:00:00 EST.')],
+              current_targets=[dict(source_id='t0', text='{"incident_date": "2025-01-05"}', event=0)],
+              history=[dict(source_id='h3', text='{"dob": "2001-03-15", "pickup": "2025-03-21T12:00:00"}', event=3)])
+    t = calc.table(pk)
+    rows = {r['value']: r for r in t['rows']}
+    assert rows['2025-01-05']['calendar_days_from_today'] == -74 and 'hours_from_now' not in rows['2025-01-05']
+    assert rows['2001-03-15']['age_years_now'] == 24 and rows['2025-03-21T12:00:00']['hours_from_now'] == 20.0
+    assert t['reference_weekday'] == 'Thursday'
+    assert calc.check_computation('(67 - 42) × 4 = 100') is True
+    assert calc.check_computation('412.50 / 5 = 85.50') is False
+    assert calc.check_computation('fee = 50') is None
+
+
+def test_checklist_drops_unverified_and_downgrades():
+    from guardian_truth.verification import checklist
+    rp = _packet()
+    pol = rp['normative_sources'][0]['source_id']
+    def fn(req):
+        name = req['response_format']['json_schema']['name']
+        if name == 'obligation_checklist':
+            return json.dumps(dict(requirements=[dict(target_id='t0', policy_source_id=pol, policy_quote='Refunds go to the payment method of the booking', requirement='refund to booking method'),
+                                                 dict(target_id='t0', policy_source_id=pol, policy_quote='invented rule text here', requirement='x')]))
+        return json.dumps(dict(checks=[dict(req_id='R1', evidence_source_ids=['t0'], evidence_quote='"payment_method_id": "pm_gc_2"', computation='', reason='wrong method', status='VIOLATED')]))
+    st = checklist.run(StaticClient(fn), rp, 'm')
+    assert st['n_requirements'] == 1 and st['dropped_unverified'] == 1 and st['candidate']['target_id'] == 't0'
+    def fn2(req):
+        if req['response_format']['json_schema']['name'] == 'obligation_checklist':
+            return fn(req)
+        return json.dumps(dict(checks=[dict(req_id='R1', evidence_source_ids=['t0'], evidence_quote='not in any source text', computation='', reason='r', status='VIOLATED')]))
+    st2 = checklist.run(StaticClient(fn2), rp, 'm')
+    assert st2['candidate'] is None and st2['checks'][0]['note'] == 'EVIDENCE_QUOTE_NOT_VERIFIED'
+
+
+def test_comparisons_checked():
+    from guardian_truth.verification.calc import check_computation
+    assert check_computation('30 < 48') is True
+    assert check_computation('30 >= 48') is False
+    assert check_computation('2025-07-02 > 2025-06-01') is None   # dates are not numbers
+    assert check_computation('hours = 30; 30 < 48 → fee 50') is True
+    assert check_computation('1,800 < 10,000') is True
+
+
+def test_stitched_policy_quote():
+    from guardian_truth.verification.common import quote_fragments_ok
+    text = '- A claim can be filed only if:\n  1. the policy is active;\n  2. the claim is filed no later than 60 days after the incident date.'
+    assert quote_fragments_ok('A claim can be filed only if: the claim is filed no later than 60 days after the incident date', text)
+    assert not quote_fragments_ok('A claim can be filed only if: the claim is filed no later than 90 days', text)
+    assert not quote_fragments_ok('only if: active', text)   # longest piece too short
+
+
+def test_policy_quote_normalisation_and_near_verbatim():
+    from guardian_truth.verification.common import quote_fragments_ok
+    text = 'Rules. You may only act on bookings listed in that profile.\n2. the claim is filed no later than 60 days (day 60 is allowed);'
+    assert quote_fragments_ok('- You may only act on bookings listed in that profile.', text)
+    assert quote_fragments_ok('the claim is filed no later than 60 days (day 60 is allowed).', text)
+    assert not quote_fragments_ok('You may act on any booking at all in any profile ever', text)

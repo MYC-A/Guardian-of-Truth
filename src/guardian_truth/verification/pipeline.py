@@ -8,7 +8,7 @@ from ..evidence_packer import PackerConfig, pack, resolve
 from ..integrated import ReviewConfig, review, reviewer
 from ..integrated.transport import sha
 from ..source_search.store import SourceStore
-from . import probe, second, variants, verifier
+from . import checklist, probe, second, variants, verifier
 from .admission import interpret_v2
 
 VERSION = 'guardian-verification-v2'
@@ -31,7 +31,7 @@ def _a_candidate(a_res):
 
 
 def run_row(row, client, *, provider='mistral', model='ministral-14b-2512', budget=20000, attempt=0, mechanisms=('B', 'C')):
-    cfg = ReviewConfig.profile('guard', provider=provider, model=model, budget_bytes=budget, attempt=attempt)
+    cfg = ReviewConfig.profile('guard', provider=provider, model=model, budget_bytes=budget, attempt=attempt, admission='v1')   # frozen A
     a = review(row['prompt'], row['response'], cfg, client=client)
     out = dict(version=VERSION, A=dict(final=a['final_decision'], binary=a['binary'], proof=a['proof_status'], owner=a['decision_owner'],
                                      guard_error=a['guard']['established_error'], reasons=a['reasons'], steps=a['steps'], cost=a['cost']))
@@ -45,6 +45,8 @@ def run_row(row, client, *, provider='mistral', model='ministral-14b-2512', budg
     if s0 is not None and s0.get('raw_content') is not None:
         v2 = interpret_v2(s0['raw_content'], rp)
         out['A_adm2'] = dict(admission=v2['admission'], decision=v2['decision'], actor_normalised=v2['actor_normalised'])
+        if v2['admitted']:
+            out['A_adm2'].update(target_id=v2['admitted']['regulated_action']['target_id'], reason=v2['admitted']['reason'])
     out['escalated'] = a['final_decision'] != 'ERROR'
     if out['escalated']:
         if 'B' in mechanisms:
@@ -60,6 +62,11 @@ def run_row(row, client, *, provider='mistral', model='ministral-14b-2512', budg
             out['C'] = c
             if c['candidate']:
                 out['C']['verify'] = verifier.run(client, rp, c['candidate'], model, attempt, tag='verify_C')
+        if 'E' in mechanisms:
+            e = checklist.run(client, rp, model, attempt)
+            out['E'] = e
+            if e['candidate']:
+                out['E']['verify'] = verifier.run(client, rp, e['candidate'], model, attempt, tag='verify_E')
     else:
         cand = _a_candidate(a)
         if cand:
