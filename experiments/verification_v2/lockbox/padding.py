@@ -143,6 +143,54 @@ APPX.update({
 ## Appendix E — Fragile items
 - Fragile items should be declared in `contents`; packaging advice is on the website.
 ''',
+'telecom': '''
+## Appendix A — Business accounts
+- Business lines (IDs starting with `BL-`) are managed by the account administrator; plan changes for them require a ticket. Not applicable to consumer lines.
+## Appendix B — eSIM
+- eSIM profiles are reissued in the app; agents cannot reissue them.
+## Appendix C — Prepaid top-ups
+- Top-ups are made by the customer in the app or at kiosks. Agents cannot add balance.
+## Appendix D — Number porting in
+- Porting a number in from another operator takes 1 business day and is requested in a shop.
+## Appendix E — Data rollover
+- Unused data on Max plans rolls over for one month; Basic plans have no rollover.
+''',
+'bank': '''
+## Appendix A — Business customers
+- Business customers (numbers starting with `B-`) have separate limits set in their contract; the consumer daily payee limit does not apply to them.
+## Appendix B — Foreign transfers
+- SWIFT transfers to non-EU banks are made only in the branch.
+## Appendix C — Cash withdrawals
+- ATM withdrawal limits are changed in the app by the customer.
+## Appendix D — Statements
+- Statements older than 24 months are ordered by email from the archive team.
+## Appendix E — Disputes
+- Card transaction disputes are filed by the customer in the app within 120 days.
+''',
+'clinic': '''
+## Appendix A — Laboratory tests
+- Blood tests do not need appointments; patients come to the lab 07:30–10:00 on business days.
+## Appendix B — Children
+- Children under 16 are seen only by paediatricians; book them through the paediatric desk.
+## Appendix C — Home visits
+- Home visits are arranged by the GP's nurse; agents cannot book them.
+## Appendix D — Vaccinations
+- Vaccination slots are released every Monday; vaccination bookings follow the general rules above.
+## Appendix E — Certificates
+- Medical certificates are issued only by the treating doctor.
+''',
+'autoservice': '''
+## Appendix A — Fleet customers
+- Fleet vehicles (IDs starting with `FL-`) are booked by the fleet manager through the fleet portal.
+## Appendix B — Tyre hotel
+- Tyre storage is arranged at reception; seasonal tyre changes follow the general booking rules.
+## Appendix C — Electric vehicles
+- High-voltage battery work is done only at the Tallinn EV centre.
+## Appendix D — Inspections
+- Annual technical inspection is not performed by MotorCare; refer customers to the inspection centre.
+## Appendix E — Loyalty
+- Every 5th paid service gives a 10% discount on labour, applied automatically at invoicing.
+''',
 })
 
 
@@ -212,6 +260,19 @@ def history(domain):
                                                                     'recipient_address': MOTHER if i % 2 else 'Narva mnt 7, 10117 Tallinn, EE', 'delivered_at': f'2025-01-{i + 5:02d}T14:00'}) for i in range(1, 11)]
         return [U('Для начала: проверьте, что все мои январские отправления SPX54001–SPX54010 доставлены.'), C(*past),
                 A('Все 10 январских отправлений (SPX54001–SPX54010) доставлены.'), U('Отлично. Теперь новая отправка.')]
+    if domain == 'telecom':
+        bills = [('get_line', {'line_id': 'LN-48210'}, {'line_id': 'LN-48210', 'invoice_month': f'2024-{m:02d}', 'amount_eur': 10.0 + (m % 3), 'paid': True, 'roaming_eur': (m % 4) * 1.5}) for m in range(1, 13)]
+        return [U('Сначала: покажите мои счета за 2024 год, хочу сверить расходы.'), C(*bills),
+                A(f"За 2024 год 12 счетов оплачены, всего {sum(b[2]['amount_eur'] for b in bills):.2f} EUR."), U('Спасибо. Теперь главное.')]
+    if domain == 'bank':
+        tx = [('get_customer', {'customer_no': 'C-736104'}, {'statement_month': f'2025-0{m}', 'transactions': [{'tx_id': f'TX-8{m}{i:03d}', 'amount_eur': round(12.4 * i + m, 2), 'merchant': ['Rimi', 'Bolt', 'Selver'][i % 3]} for i in range(1, 9)]}) for m in range(1, 5)]
+        return [U('Сначала пришлите сводку трат по выпискам за январь–апрель.'), C(*tx), A('Я подготовил сводку по 32 операциям за январь–апрель, основные траты — Rimi, Bolt и Selver.'), U('Спасибо. Теперь другой вопрос.')]
+    if domain == 'clinic':
+        past = [('get_patient', {'patient_id': 'P-60419'}, {'visit_id': f'VS-4{i:03d}', 'doctor_id': ['D-210', 'D-344'][i % 2], 'date': f'2024-{(i % 12) + 1:02d}-1{i % 9}', 'status': 'completed', 'summary': 'Routine visit, no changes.'}) for i in range(1, 11)]
+        return [U('Сначала: какие визиты у меня были в прошлом году?'), C(*past), A('В 2024 году у вас было 10 завершённых визитов к Dr. Kask и Dr. Mets.'), U('Спасибо. Теперь запись.')]
+    if domain == 'autoservice':
+        hist = [('get_customer', {'phone': '+37255522070'}, {'invoice_id': f'IN-7{i:03d}', 'vehicle_id': 'VH-3307', 'date': f'2024-{(i % 12) + 1:02d}-0{(i % 8) + 1}', 'job': ['service_annual', 'tyres_seasonal', 'wipers'][i % 3], 'total_eur': 40 + 17 * i, 'paid': True}) for i in range(1, 11)]
+        return [U('Сначала — покажите историю обслуживания машины за прошлый год.'), C(*hist), A('За прошлый год было 10 визитов: ТО, сезонная смена шин и дворники, все оплачены.'), U('Хорошо. Теперь запись.')]
     raise KeyError(domain)
 
 

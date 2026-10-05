@@ -139,3 +139,41 @@ adoption of anything here needs a fresh lockbox (LB3).
 - Re-computed: all arms on LB1-long, LB1-short, LB2-long, valid46; §6 verifier criterion; plus a per-FN
   capability matrix for LB2 (evidence present / candidate generated / verifier raw→final / gate / variant touched
   the gold target value / missing capability).
+
+## Amendment 4 (2026-10-06) — architecture V3 and fresh lockbox LB3 (frozen before any V3 code)
+**LB3** (`outputs/verification_v2/lockbox3/long/`, hashes in MANIFEST): 4 new domains (telecom, bank, clinic,
+auto service), 56 cases = 28 minimal pairs (28 ERROR). 20 pairs = one per general §18 stratum; 8 pairs are
+**pre-declared targeted strata** (2 each): prose_date (business days, weekday), prose_arithmetic (rate × quantity,
+hours × rate + parts), chronology_confirmation, later_call_violation. Results are reported for all, general, targeted.
+Caveat: authored by the same process that designs V3, after the residual-failure analysis; date formats are
+natural-language Russian (not chosen to fit a parser — the parser is written afterwards).
+
+**V3 = guard_adm2 + code-gated triggers + one repaired verifier.** Design fixed here:
+1. A = `guard_adm2` (1 call). ERROR from A is final.
+2. `G_closed` (code, mechanical): if the policy itself declares the tool list complete (regex over the policy text:
+   "list is complete" / "no other tools" / "never call a tool that is not (on|in)" near "tool"), a call to a tool absent
+   from [AVAILABLE TOOLS] is a mechanical ERROR (the existing declarations guard with `tool_universe_closed=True`).
+3. Only when A ≠ ERROR, code triggers decide which focused checkers run (no always-on facts in A's prompt):
+   - `T_multi`: ≥2 current targets → mechanism E unchanged (+ G_E gate).
+   - `T_calc`: the current move states a date (ISO or day + month name, ru/en), a weekday, a business-day/duration
+     phrase, or a money total → **derived-facts checker DF**: the model only lists each quantitative/date claim of
+     the move (verbatim quote), the claimed value, the operation from a fixed menu (arithmetic expression over named
+     operands; nights/days between dates; weekday of a date; add N days; add N business days; next business day)
+     and the operands with verbatim source quotes. **Code** verifies the quotes (Q2), parses operands (incl. Russian
+     month names, year inferred from the policy's current time), computes the value and compares. Mismatch → candidate.
+   - `T_confirm`: the move contains a call of a tool that the policy names in a sentence requiring confirmation
+     (backticked tool name + "confirm"/"подтвержд" in the same sentence) → **confirmation binding CB**: code finds the
+     last user affirmation (да/yes/подтверждаю…) before the move and the last assistant proposal before it, and flags
+     user turns after the affirmation; the model only maps, for each executed argument, the value stated in the proposal
+     (verbatim quote) or NOT_STATED. **Code** compares (normalised dates/numbers/strings). Candidate if no user
+     affirmation follows the last proposal, or a stated proposal value ≠ executed value.
+4. Every candidate → narrow verifier with **Q2** quote admission; ERROR iff SUPPORTED (arm `V3`).
+   Secondary arm `V3m`: code-proven DF/CB mismatches (verified quotes, computed difference) are ERROR without the verifier.
+**Development:** LB1-long, LB2-long, valid46 (all already seen). **Held-out:** LB3-long, run once with frozen code,
+2 repetitions (attempt 0, 1). Budget: cumulative cap raised to 2200 reviewer calls.
+**Pre-registered LB3 rules** (vs A_adm2 on the same rows and rep):
+- R1 V3 is **supported** iff in each rep: cause-correct TP gain ≥3 and new FP ≤1, and on the general strata new FP ≤1.
+- R2 per component (G_closed, T_multi/E, DF, CB) report gain/FP; a component is **useful** iff over both reps
+  its cause-correct gain ≥ 2 × its new FP and ≥1 gain per rep.
+- R3 verifier (§6 criterion) re-tested on LB3 candidates.
+- R4 V3m is preferred over V3 only if it adds ≥2 cause-correct TP with no new FP in both reps.
