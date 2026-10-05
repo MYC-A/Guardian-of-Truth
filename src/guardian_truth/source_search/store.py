@@ -4,6 +4,7 @@ Edges mean co-recorded identities, never ownership, permission or current truth.
 Working views do not restrict the index. Examined tools are never executed.
 """
 from collections import defaultdict, deque
+from copy import deepcopy
 from dataclasses import asdict
 import hashlib
 import json
@@ -18,6 +19,24 @@ def digest(value):
                                     separators=(',', ':')).encode()).hexdigest()
 
 
+class ReadOnlyText(dict):
+    """Read-only mapping of original documents. A dict subclass so that existing
+    JSON/serialization consumers keep working; copies are plain dicts."""
+    def _blocked(self, *args, **kwargs):
+        raise TypeError('SourceStore raw text is read-only')
+    __setitem__ = __delitem__ = clear = pop = popitem = setdefault = update = _blocked
+    __ior__ = _blocked
+
+    def __copy__(self):
+        return dict(self)
+
+    def __deepcopy__(self, memo):
+        return dict(self)
+
+    def __reduce__(self):
+        return (dict, (dict(self),))
+
+
 def entity_key(entity):
     if not isinstance(entity, dict) or not isinstance(entity.get('field'), str):
         raise ValueError('entity requires a field and typed value')
@@ -26,10 +45,13 @@ def entity_key(entity):
 
 class SourceStore:
     def __init__(self, row, *, chunk_chars=1600):
-        self.raw = {k: row[k] for k in ('prompt', 'response')}
-        if not all(isinstance(v, str) for v in self.raw.values()):
+        raw = {k: row[k] for k in ('prompt', 'response')}
+        if not all(isinstance(v, str) for v in raw.values()):
             raise ValueError('source must be text')
-        self.source_sha256 = digest(self.raw)
+        # Read-only backing: callers cannot replace the original text behind a
+        # stored hash. Strings are immutable; the mapping is a read-only proxy.
+        self.raw = ReadOnlyText(raw)
+        self.source_sha256 = digest(raw)
         self.sources, self.quotes, self.facts = {}, {}, {}
         self._span_ids, self.by_entity = {}, defaultdict(list)
         self.entities, self.adjacency = {}, defaultdict(dict)
@@ -253,8 +275,16 @@ class SourceStore:
         return {'source_ref': qid, **self.quotes[qid], 'quote': quote,
             'repair': 'UNIQUE_EXACT_QUOTE_ID_RECOVERY' if s is None else 'VERIFIED_IN_NAMED_SOURCE'}
 
+    def verify_integrity(self):
+        """Recompute the source hash from the backing text (raises on drift)."""
+        if digest(dict(self.raw)) != self.source_sha256:
+            raise ValueError('SOURCE_STORE_INTEGRITY_VIOLATION')
+        return True
+
     def snapshot(self):
-        # Store raw strings exactly once. The remaining tables contain refs.
-        return {'schema': 'guardian-source-store/1', 'raw': self.raw,
+        # Defensive copy: a snapshot is an export, never a handle to internal
+        # tables. Mutating it cannot change store.text() or the stored hashes.
+        self.verify_integrity()
+        return deepcopy({'schema': 'guardian-source-store/1', 'raw': dict(self.raw),
             'source_sha256': self.source_sha256, 'sources': self.sources,
-            'quotes': self.quotes, 'facts': self.facts, 'chunks': self.chunks, 'issues': self.issues}
+            'quotes': self.quotes, 'facts': self.facts, 'chunks': self.chunks, 'issues': self.issues})

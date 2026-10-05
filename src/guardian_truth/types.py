@@ -20,6 +20,10 @@ class Event:
     name: str | None = None
     value: Any = None
     json_valid: bool = False
+    # Receipt status from the transport (e.g. "ERROR"); None = not stated.
+    status: str | None = None
+    # Framing diagnostics (ambiguity is reported, never silently resolved).
+    diagnostics: list[str] = field(default_factory=list)
 
 
 @dataclass

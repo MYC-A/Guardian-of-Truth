@@ -27,15 +27,28 @@ class Question:
     text: str
     origin: str
     depth: int = 0
-    parent: str | None = None
+    parent: object = None
     kind: str = 'MISSING_FACT'
     linked_norms: list = field(default_factory=list)
     status: str = 'UNKNOWN'
     reads: list = field(default_factory=list)
+    # Scope: the same wording about two different objects is two questions.
+    target_id: str | None = None
+    norm_id: str | None = None
+    entity: str | None = None
+    source_version: str | None = None
+    # Decisive = the verdict depends on it; speculative questions never block.
+    decisive: bool = False
+    # Gathering evidence is not resolving a dependency: only a separate
+    # validator may set RESOLVED/REFUTED. Exhaustion keeps UNRESOLVED.
+    resolution: str = 'UNRESOLVED'
 
     @property
     def key(self):
-        return norm_q(self.text)
+        text = norm_q(self.text)
+        if not text:
+            return None
+        return (text, self.target_id, self.norm_id, self.entity, self.source_version)
 
 
 def classify(text):
@@ -144,12 +157,20 @@ class Controller:
             if self.order == 'DFS' and got and q.depth < self.max_depth:
                 # bounded deepening: entities in the newest read become child questions
                 for ident in sorted(set(_ID.findall(' '.join(self.by[u]['text'] for u in got[:1]))))[:1]:
-                    child = Question(f'binding of {ident}', q.origin, q.depth + 1, q.key, 'MISSING_ENTITY_BINDING')
+                    child = Question(f'binding of {ident}', q.origin, q.depth + 1, q.key, 'MISSING_ENTITY_BINDING',
+                                     target_id=q.target_id, norm_id=q.norm_id, entity=ident,
+                                     source_version=q.source_version, decisive=False)
                     if child.key not in self.seen_q:
                         self.seen_q.add(child.key); push(child)
         if not self.stop:
+            # Queue exhausted: every question was searched, none is thereby resolved.
             self.stop = 'NO_OPEN_QUESTIONS'
         return questions
+
+    def unresolved(self, questions):
+        """Decisive questions still unresolved (block a clean outcome) vs speculative ones (do not)."""
+        open_ = [q for q in questions if q.resolution not in ('RESOLVED', 'REFUTED')]
+        return dict(decisive=[q for q in open_ if q.decisive], speculative=[q for q in open_ if not q.decisive])
 
     def _invoke_cat(self, q, cat):
         key = ('retrieve_relevant', (q.text, cat))

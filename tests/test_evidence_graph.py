@@ -316,7 +316,9 @@ def test_returned_jobs_are_detached_and_source_mutation_is_detected():
     before = deepcopy(g.jobs[j['id']])
     j['packet']['fragments'][0]['text'] = 'invented'
     assert g.jobs[j['id']] == before
-    g.store.raw['prompt'] += 'changed input'
+    with pytest.raises(TypeError):  # integrated_v1: backing is read-only
+        g.store.raw['prompt'] += 'changed input'
+    dict.__setitem__(g.store.raw, 'prompt', g.store.raw['prompt'] + 'changed input')  # forced bypass
     with pytest.raises(ValueError, match='SOURCE_OR_NATIVE_PARSE_CHANGED'):
         g.report()
 

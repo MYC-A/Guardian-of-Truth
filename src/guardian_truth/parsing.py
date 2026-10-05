@@ -9,7 +9,8 @@ from .types import Catalog, Event, FieldSpec, Source, ToolSpec
 
 MARKER = re.compile(
     r'^[ \t]*(?:⟦(?P<header>[^⟧\r\n]+)⟧[ \t]*|'
-    r'(?P<arrow>→ TOOL_CALL|← TOOL_RESPONSE)[ \t]+(?P<tool>[\w.-]+)[ \t]*:[ \t]*)',
+    r'(?P<arrow>→ TOOL_CALL|← TOOL_RESPONSE)[ \t]+(?P<tool>[\w.-]+)'
+    r'(?:[ \t]*\[(?P<status>[A-Z][A-Z_]*)\])?[ \t]*:[ \t]*)',
     re.MULTILINE,
 )
 TOOL = re.compile(r'^- (?P<name>[\w.-]+)\s+[—–]\s*', re.MULTILINE)
@@ -38,6 +39,25 @@ def finite_float(value):
     if not math.isfinite(number):
         raise ValueError('JSON number outside supported finite range')
     return number
+
+
+STATUS_PREFIX = re.compile(r'^\[(?P<status>[A-Z][A-Z_]*)\][ \t]*')
+ROLE_TAGS = ("SYSTEM", "USER", "ASSISTANT")
+
+
+def decode_prefix(text: str):
+    """Leading JSON value + remaining text, with the same strict decoding rules."""
+    stripped = text.lstrip()
+    lead = len(text) - len(stripped)
+    if not stripped or stripped[0] not in '{[':
+        return None, False, 0
+    decoder = json.JSONDecoder(object_pairs_hook=unique_object, parse_constant=reject_constant,
+                               parse_float=finite_float)
+    try:
+        value, end = decoder.raw_decode(stripped)
+    except (ValueError, TypeError, RecursionError):
+        return None, False, 0
+    return value, True, lead + end
 
 
 def decode_json(text: str):
@@ -69,15 +89,26 @@ def parse_events(text: str, document: str) -> list[Event]:
         events.append(Event(event_role, kind, body, Source(document, start, end), name, value, valid))
 
     emit(left, markers[0].start() if markers else right, role, "text")
+    seen_conversation = False
     for i, marker in enumerate(markers):
         end = markers[i + 1].start() if i + 1 < len(markers) else right
         header = marker["header"]
         name = marker["tool"]
+        status = marker["status"]
+        diagnostics = []
         if header:
             tag = header.split()[0]
-            if tag in ("SYSTEM", "USER", "ASSISTANT"):
+            if tag in ROLE_TAGS:
                 role = tag.lower()
                 kind = "text"
+                # Supported transport contract: one SYSTEM block before the
+                # conversation in the prompt; only ASSISTANT headers in the
+                # response. A header elsewhere is either a real later message or
+                # unescaped body text; plain-text framing cannot tell. The role is
+                # kept (no ban on real headers, no word guessing) and the event is
+                # marked so consumers report a framing gap instead of trusting it.
+                if (document == "response" and role != "assistant") or (role == "system" and seen_conversation):
+                    diagnostics.append("AMBIGUOUS_ROLE_HEADER_IN_BODY")
             else:
                 attr = dict(re.findall(r'(\w+)="([^"]*)"', header))
                 name = attr.get("name")
@@ -89,16 +120,51 @@ def parse_events(text: str, document: str) -> list[Event]:
                     kind = "result"
                 else:
                     role, kind = "unknown", "text"
+                    diagnostics.append("UNRECOGNIZED_HEADER")
         else:
             kind = "call" if marker["arrow"] == "→ TOOL_CALL" else "result"
+        if role in ("user", "assistant"):
+            seen_conversation = True
         # For calls/results include the marker in source so tool names are cited.
         start = marker.start() if kind != "text" else marker.end()
-        if kind != "text":
-            body = text[marker.end():end].strip()
-            value, valid = decode_json(body)
-            events.append(Event(role, kind, body, Source(document, start, end), name, value, valid))
-        else:
+        if kind == "text":
+            before = len(events)
             emit(start, end, role, kind)
+            for event in events[before:]:
+                event.diagnostics.extend(diagnostics)
+            continue
+        raw_body = text[marker.end():end]
+        body = raw_body.strip()
+        offset = marker.end() + (len(raw_body) - len(raw_body.lstrip()))
+        if kind == "result" and status is None:
+            prefix = STATUS_PREFIX.match(body)
+            if prefix:
+                # `← TOOL_RESPONSE x: [ERROR] {...}`: status is transport, payload follows.
+                status = prefix["status"]
+                diagnostics.append("STATUS_PREFIX_IN_BODY")
+                payload = body[prefix.end():]
+                value, valid = decode_json(payload)
+                events.append(Event(role, kind, body, Source(document, start, end), name, value, valid,
+                                    status, diagnostics))
+                continue
+        value, valid = decode_json(body)
+        if kind == "call" and not valid:
+            # `→ TOOL_CALL x: {json}\nprose`: keep the call and the trailing
+            # text as separate events with exact spans; report the mixing.
+            pvalue, pvalid, pend = decode_prefix(body)
+            tail = body[pend:]
+            if pvalid and tail.strip():
+                call_end = offset + pend
+                events.append(Event(role, kind, body[:pend], Source(document, start, call_end), name,
+                                    pvalue, True, status, diagnostics + ["TRAILING_TEXT_SPLIT"]))
+                before = len(events)
+                emit(call_end, end, role, "text")
+                for event in events[before:]:
+                    event.diagnostics.append("TEXT_AFTER_CALL_IN_SAME_BLOCK")
+                continue
+            diagnostics.append("CALL_BODY_NOT_JSON")
+        events.append(Event(role, kind, body, Source(document, start, end), name, value, valid,
+                            status, diagnostics))
     return events
 
 

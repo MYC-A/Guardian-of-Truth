@@ -664,9 +664,18 @@ def resolve(packet, row):
             raise ValueError('SOURCE_KIND_OR_TOOL_MISMATCH')
         if record.get('sha256') != hashlib.sha256(record['text'].encode()).hexdigest():
             raise ValueError('SOURCE_RECORD_HASH_CHANGED')
-    targets = {sid for sid, s in store.sources.items() if s['kind'] != 'raw' and s['document'] == 'response'}
-    if {r['source_id'] for r in packet['current_targets']} != targets:
+    # Exact native inventory: unique, complete, same count, same order-independent
+    # membership and same span metadata (set equality would admit duplicates).
+    native_targets = sorted((sid, s['start'], s['end']) for sid, s in store.sources.items()
+                            if s['kind'] != 'raw' and s['document'] == 'response')
+    packed_targets = sorted((r['source_id'], r['start'], r['end']) for r in packet['current_targets'])
+    if len({r['source_id'] for r in packet['current_targets']}) != len(packet['current_targets']):
+        raise ValueError('CURRENT_TARGET_DUPLICATED')
+    if packed_targets != native_targets:
         raise ValueError('CURRENT_TARGET_INVENTORY_CHANGED')
+    ids = [r['source_id'] for r in records]
+    if len(set(ids)) != len(ids):
+        raise ValueError('SOURCE_RECORD_DUPLICATED')
     if packet.get('mode') == 'FULL_INPUT':
         if packet.get('failure'):
             raise ValueError('FULL_INPUT_WITH_FAILURE')

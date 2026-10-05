@@ -653,6 +653,8 @@ def run_experiment(*, input_dir=None, input_file=None, output_dir,
                 adapter_mode=AdapterMode.COMPETITION, semantics=SEMANTICS_ARMS["B3"])
             core_result = {**_core_summary(analysis),
                            "bridge_unresolved": list(bridge_unresolved)}
+            from .integration import bounded_core_decision
+            core_result["bounded"] = bounded_core_decision(core_result["prediction"], bridge_unresolved)
             state.component_status["core_semantic_backend"] = _status(
                 "EXECUTED", model=config.mistral_model)
         _duration(state, "core", started)

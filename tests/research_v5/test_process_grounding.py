@@ -110,7 +110,8 @@ def test_source_roles_and_integrity_are_not_disabled():
     row,reply,c=fixture();g,f,a,_=build(row)
     reply['rules'][0]['policy_ids']=[g.declarations['inspect']]
     with pytest.raises(ValueError,match='POLICY_ROLE_INVALID'):execute(row,reply,complete=True)
-    g.store.raw['prompt']+='tamper'
+    with pytest.raises(TypeError):g.store.raw['prompt']+='tamper'  # integrated_v1: backing is read-only
+    dict.__setitem__(g.store.raw,'prompt',g.store.raw['prompt']+'tamper')  # forced bypass: downstream check must still fire
     with pytest.raises(ValueError,match='SOURCE_OR_NATIVE_PARSE_CHANGED'):
         check_prior(g,f,a,next(iter(g.targets)),c,complete=True)
 

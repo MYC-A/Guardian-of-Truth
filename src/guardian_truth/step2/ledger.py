@@ -10,7 +10,8 @@ Queries:
 
 * LATEST(entity, predicate, as_of)  — value of the latest observation
 * PRIOR_TRUE(predicate, entity, as_of) — was the fact ever established before
-* AT_TIME(entity, predicate, index) — observation valid at that index
+* AT_TIME(entity, predicate, index, known_at) — observation valid at that index and
+  observed no later than known_at (default index)
 
 Frame assumption policy: observations are returned with their observed_at
 index and a staleness flag. Persistence of an observation is EXPOSED, never
@@ -101,12 +102,24 @@ class FactLedger:
         )
 
     def at_time(self, entity_type: str, entity_id: str, predicate: str,
-                index: int) -> FactView:
-        """Observation valid at trajectory index: latest observation with
-        valid_from <= index and (invalidated_at is None or invalidated_at > index)."""
+                index: int, *, known_at: int | None = None,
+                allow_late_observation: bool = False) -> FactView:
+        """Observation valid (world time) at `index` AND observed (evidence time)
+        no later than `known_at` (default: `index`).
+
+        Two clocks are kept apart: valid_from/invalidated_at describe world time;
+        observed_at/event.index describe when the evidence became available.
+        Admissibility of an action needs evidence available before it, so a fact
+        observed after `known_at` is ignored even if its valid_from is retroactive.
+        `allow_late_observation=True` is an explicit retrospective-factual contract
+        (e.g. an immutable attribute later read back); it must never be used to let
+        a later approval satisfy an earlier mandatory process.
+        """
+        horizon = index if known_at is None else known_at
         candidates = [e for e in self._ordered(entity_type, entity_id, predicate)
                       if e.fact.valid_from <= index
-                      and (e.fact.invalidated_at is None or e.fact.invalidated_at > index)]
+                      and (e.fact.invalidated_at is None or e.fact.invalidated_at > index)
+                      and (allow_late_observation or e.index <= horizon)]
         if not candidates:
             return FactView(entity_type, entity_id, predicate, Truth.UNKNOWN)
         fact = candidates[-1].fact
