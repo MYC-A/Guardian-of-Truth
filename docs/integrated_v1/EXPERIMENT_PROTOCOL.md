@@ -91,3 +91,11 @@ Counters are rebuilt from the attempts ledger after a restart. When a budget is 
 - A3g/A4g were designed after seeing valid46 results, so valid46 numbers for them are **development/post-hoc** and cannot satisfy the pre-registered decision rule.
 - SYN-M1 is the only check, and it is authored and seen, with operators that overlap the decisive relations.
 - The variant can therefore be recommended at most as a **shadow candidate** pending a new independent lockbox.
+
+## Amendment 3 (cause judge, before any judge verdict was obtained)
+- `mistral-medium-2604` returned `429 Rate limit exceeded` (code 1300) on every call, including after a cooldown. The same happened for `mistral-small-latest` and `magistral-*`, while `ministral-14b-2512` stayed available.
+- The judge is therefore `ministral-14b-2512`: the same model as the Mistral reviewer, with the unchanged JUDGE_PROMPT.
+  - **Self-judging bias:** cause counts may be inflated for Mistral reasons. They are comparable across arms of the same reviewer, but not with historical gpt-oss counts.
+  - Gemma reasons are judged by a different model.
+- Mitigation: CAUSE_AUDIT.md adds a manual source-level audit of every row that changes between arms.
+- The 135 rate-limited judge attempts are kept in the judge ledger. The cap is raised to 900 attempts, failed ones included.
