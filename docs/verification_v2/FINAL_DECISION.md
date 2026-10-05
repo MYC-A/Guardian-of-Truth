@@ -20,3 +20,16 @@ semantic/computational — chronology of confirmations, prose arithmetic, non-IS
 exceptions, later calls in a multi-call move. Next candidates: deterministic parsing of non-ISO dates/amounts in prose
 into the CALCULATIONS table, a confirmation-chronology fact (what was confirmed vs executed), and a fresh, externally
 authored lockbox with ≥3 repetitions and a second model family before any further claim.
+
+## Amendment 4 — V3 (guard_adm2 + G_closed + code-triggered E/DF/CB + Q2 verifier)
+**Default stays `guard_adm2`.** V3 did not meet its pre-registered held-out rule R1 on LB3 (+2 cause-correct TP per rep,
+threshold 3), although it added **no false positive in any run** (5 runs, 262 rows). V3 is available opt-in as
+`guardian_truth.verification.v3.run_v3(row, client)` (arms via `decide_v3`).
+- **DF (derived-facts checker) — useful by R2**, the only component with held-out support: the model only lists
+  claims/operands with quotes; code parses ru/en dates and amounts, computes and compares. It is the recommended
+  next default candidate once validated on an externally authored set.
+- CB (confirmation binding): +2 on LB1-dev, +1 on LB2-dev, +1/+0 on LB3 — precise but too rare to pass R2.
+- E (multi-call checklist) and G_closed: no held-out gain.
+- Verifier: on LB3 it saw no false candidate; it adds little once candidates are code-checked (V3 = V3_raw on LB3).
+**Main residual risks:** extraction-schema adherence of a 14B model (prose dates), semantic later-call violations,
+and the base reviewer's run-to-run variance (5/56 rows flip).

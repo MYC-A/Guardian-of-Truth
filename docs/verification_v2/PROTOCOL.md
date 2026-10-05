@@ -206,3 +206,8 @@ dev (E on UN1n), rejected by the verifier. Caveat: the verifier flips on single 
 v3/v4, rejected in v5) — single-call verification is not stable at n=1.
 **Freeze:** the LB3 run uses the commit that adds this paragraph; rep1 = attempt 0, rep2 = attempt 1; rules R1–R4 as
 pre-registered; no code change between rep1 and rep2.
+
+### Amendment 4 — held-out outcome (LB3-long, commit a2afcc1f, reps 1–2)
+R1 not met (V3 cause-correct gain 2 and 2, new FP 0 and 0; general strata new FP 0). R2: DF useful (1+2, 0 FP);
+CB 1+0, E 0, G_closed 0 → not useful. R3: no false candidates on LB3 (true kept 4/4) — rejection criterion untestable.
+R4: V3m = V3 → not preferred. Decision: default unchanged (`guard_adm2`); V3 opt-in; DF recorded as the supported component.

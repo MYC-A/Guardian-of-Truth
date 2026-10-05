@@ -4,6 +4,32 @@ Model `ministral-14b-2512` (Mistral) for every arm and the cause judge; 1 repeti
 Calls: 793 reviewer attempts (761 × 200, 32 × 429 retried) + 136 judge calls (cap 1400).
 "same" = cause-correct TP (judge SAME vs gold cause, plus mechanical guard proofs). Reports: `outputs/verification_v2/reports/*.json`.
 
+## 0. Amendment 4 — architecture V3 on the fresh LB3-long (56 cases, 28 ERROR; frozen 2be50fd4, code frozen a2afcc1f)
+Held-out, run once with frozen code, 2 repetitions (attempt 0/1). Gains / new FP are vs `A_adm2` on the same rows and rep;
+cause-correct = judge SAME (or mechanical guard). Reports: `outputs/verification_v2/reports/lb3_long_rep{1,2}_v3.json`.
+
+| arm | rep1 TP/FP, F1 | rep1 gain (cause-correct) / new FP | rep2 TP/FP, F1 | rep2 gain / new FP |
+|---|---|---|---|---|
+| A_adm2 (default) | 23/7, .793 | — | 23/4, .836 | — |
+| + G_closed | 23/7 | 0 / 0 | 23/4 | 0 / 0 |
+| + E (T_multi) | 23/7 | 0 / 0 | 23/4 | 0 / 0 |
+| + DF (T_calc) | 24/7, .814 | 1 (BK6e) / 0 | 25/4, .877 | 2 (AS3e, BK6e) / 0 |
+| + CB (T_confirm) | 24/7, .814 | 1 (CL1e) / 0 | 23/4 | 0 / 0 |
+| **V3** | **25/7, .833** | **2 / 0** | **25/4, .877** | **2 / 0** |
+| V3m (bypass verifier) | = V3 | 2 / 0 | = V3 | 2 / 0 |
+
+Strata: general — V3 +1/0 (rep1), +0/0 (rep2); targeted (8 ERROR) — A_adm2 4 and 3 TP → V3 5 and 5.
+**Pre-registered rules:** R1 (≥3 cause-correct gain per rep, ≤1 new FP) — **not met** (2 and 2; FP 0 and 0).
+R2 — DF **useful** (3 gains over both reps, ≥1 per rep, 0 FP); CB not (1+0); E, G_closed not (0). R3 — no false
+candidate reached the verifier on LB3 (4/4 true cause-correct kept), so the rejection half of §6 is untestable here.
+R4 — V3m = V3, not preferred.
+Still missed in both reps: TL3e, CL3e (prose_date: DF extraction did not follow the operand schema — weekday put in the
+wrong field, "start counting next day" pre-applied by the model; code then refused = UNVERIFIED, no verdict) and BK3e
+(later call in a multi-call move; E listed no violated requirement). Post-hoc observation only, not fixed on LB3.
+Stability of the base: A_adm2 flips 5/56 rows between reps (FP 7 vs 4); V3 adds no FP in any of 5 runs
+(dev: LB1-long +2/0, LB2-long +3/0, valid46 0/0; LB3 +2/0, +2/0). Cost: +0.6–0.7 calls/row on LB3 (DF 7–8, CB 19–22,
+E 8 calls, verifier 2 per 56 rows).
+
 ## 1. Held-out LB2-long (47 cases, 23 ERROR; frozen in 9d170784, before E code) — primary for amendment 2
 
 | arm | TP | FP | F1 | same | vs A: +TP / −TP / +FP | pairs |

@@ -18,3 +18,22 @@ the `guard` profile).
 
 Mechanisms propose **candidates**, they do not vote on verdicts (summary §8.1). The guard remains the
 only code-proven ERROR. No mechanism certifies NO_ERROR.
+
+## V3 (amendment 4) — `src/guardian_truth/verification/v3.py`
+```
+row → A = guard_adm2 (1 call; ERROR is final, incl. mechanical guard)
+    → G_closed: policy declares tool list complete (regex) → unavailable tool = mechanical ERROR
+    → if A ≠ ERROR, code triggers:
+        T_multi (≥2 targets)            → E checklist (Q2 quotes + G_E comparison gate)
+        T_calc (prose: date/weekday/
+                business days/money)    → DF (derived.py parsing + code arithmetic/calendar)
+        T_confirm (tool named in a
+                confirmation sentence)  → CB (code finds proposal/affirmation in full history; model maps
+                                          proposal values without seeing executed ones; code compares)
+    → each candidate → narrow verifier (Q2, whitespace-normalised, 1 retry on invalid JSON)
+    → ERROR iff any SUPPORTED (arm V3); V3m also accepts code-proven DF/CB mismatches
+```
+Design principle that held up: the model only *extracts* (claims, operands, proposal values, each with a verbatim
+quote); **code** decides (quote verification, parsing, arithmetic, calendar, comparison); anything that does not parse
+or verify is dropped, never turned into a verdict. That is why V3 added 0 FP in 5 runs — and also why it misses
+cases where the 14B model does not follow the extraction schema.
