@@ -32,3 +32,20 @@ explicit result. Lossless binding и bounded additional search добавляю�
 Промпт прошёл независимый code/source и semantic/logic review. Сам handoff
 подготовлен в отдельной ветке `research/integration-handoff-20261005` на базе
 `8a9aa56d`; исходный runtime не менялся. Новых model runs не было.
+
+Дополнение по запросу пользователя: обязательный saved-cache replay всех valid46
+и отдельный **Gemma baseline46 / integrated46**; SSH-конфигурация, server layout,
+provider profiles и получение дополнительных моделей — в разделах 7.2.1–7.2.2
+и 11 основного промпта.
+
+Приватная полная копия с пользовательскими credentials хранится вне Git:
+`C:\Users\Igor\Documents\PROMPT_GUARDIAN_FULL_INTEGRATION_PRIVATE_2026-10-05.md`.
+Публичная версия содержит env references и пути. SSH alias разрешён локальным
+`ssh -G`, доступность сервера и моделей в этом дополнении не проверялась live.
+
+Быстрый полный cache replay:
+[script](../../scripts/integration_handoff_cache46.py),
+[результат](cache46_verified_replay.json). Он не выполняет модельных запросов
+и не перезаписывает original outputs. Локальный derived cache содержит 552
+predictions; 184 original request files из manifest отсутствуют — raw/wire
+readmission потребует их восстановления, saved metrics replay уже доступен.

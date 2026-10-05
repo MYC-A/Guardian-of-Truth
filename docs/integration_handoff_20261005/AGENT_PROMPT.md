@@ -232,7 +232,7 @@ Sound mechanical violation может независимо дать ERROR. Accep
 
 ### J. Transport, cache и воспроизводимость
 
-Reuse проверенный durable single-attempt transport/runners. Key только из доступного secret/env/server context; не записывай его в docs, prompt, requests, git или stdout. SSH alias `new` может быть недоступен: один bounded preflight, затем другое полезное действие; не бесконечные попытки.
+Reuse проверенный durable single-attempt transport/runners. Key только из доступного secret/env/server context или предоставленной пользователем PRIVATE-копии задания; не записывай его в публикуемые docs/prompt, requests, git или stdout. SSH alias `new` может быть недоступен: один bounded preflight, затем другое полезное действие; не бесконечные попытки.
 
 До inference: provider endpoint, actual/pinned model/revision, schema mode, tokenizer/context/output limits, temperature, code/input/prompt/wire hashes, budget. Нет скрытой замены модели/provider после 402/429/timeout. Не трать время на повторные polling/rate-limit attempts; переходи к другому заранее обозначенному arm или offline работе. Числа доступных моделей из старого диалога не гарантируют текущую доступность.
 
@@ -312,6 +312,59 @@ Freeze sources, labels, completeness assumptions и scorer ДО выбора fin
 
 Для model-facing новых запросов historical response cache действителен только при exact wire/config equivalence. Изменённый U2 pack требует нового baseline run. Несколько повторов полезны для нестабильной генерации, но число и seeds заранее фиксировать в budget. Один run маленькой выборки — pilot, не statistically established gain.
 
+### 7.2.1 ОБЯЗАТЕЛЬНО: все valid46, сначала на сохранённых кэшах
+
+Полные архивы действительно есть. Повторная проверка handoff обнаружила:
+
+| Архив | Полнота | Для чего пригоден |
+|---|---:|---|
+| `outputs/searh_23/baseline_frozen/control_repro_percase.csv` | 46 уникальных ID | Исторические Guardian, Granite и OR с original gold alignment |
+| `outputs/evidence_packer_v2/llm/decisions.jsonl` | 552 записи: 4 arms × 3 runs × 46 уникальных ID | FULL, U2_20k, U2_48k, FC2_48k; полный zero-HTTP пересчёт по каждому run |
+| `outputs/evidence_packer_v2/llm/manifest.json`, `run{1,2,3}_report*.json`, `report_repeats.json` | Протокол и summaries | Проверка provenance и сверка с сохранёнными метриками, не замена per-case данных |
+| `outputs/multipacket_v1/baseline_cache/u2_replies.json` | Проверить inventory при загрузке | Reuse первичных ответов при совпадающих wire hashes |
+| `outputs/multipacket_v1/runs/valid46/run1/*.jsonl` | Проверить каждый arm отдельно | Сохранённые C/D/G/CTRL stages, nulls и финальные решения |
+
+Сначала создай новый read-only cache inventory и scorer/replay с network tripwire. Для каждого (model,arm,run) предъяви **ровно 46 original IDs**, отсутствие duplicates, missing IDs и changed gold; различай сохранённую parsed prediction и проверенный raw/wire cache. По файлу decisions.jsonl можно быстро воспроизвести classification metrics, но он сам не является достаточным raw cache для нового admission.
+
+В локальном снимке при этом **отсутствовали все 184 request files**, на которые ссылается manifest evidence_packer_v2. Поэтому готовый локальный быстрый путь — saved-prediction metrics/guard overlay, не raw model replay. Для readmission необходимо восстановить реальные requests/replies с сервера или иного сохранённого cache. Не создавать «исходные raw» из reason/decision колонок.
+
+Original `experiments/evidence_packer_v2/llm_eval.py` пишет requests/results и содержит live run/judge: не запускай `prepare/run/judge` на архиве ради replay. Некоторые reporters также пишут поверх исходных reports. Используй новый output directory и изолированный исторический profile/checkout, где требуется прежнее admission. Если raw/provider cache остался только на сервере, ищи его по manifest/sha и описанным ниже каталогам; при отсутствии raw честно называй результат saved-prediction replay.
+
+Затем на всех 46 наложи новый code-only guard и допустимые deterministic fixes **на те же сохранённые model predictions**, сохрани исходное решение и явную delta. Это нулевой модельный бюджет, а не доказательство нового semantic reviewer. Пересчитай каждый из 12 архивных наборов отдельно; не выбирай лучший run после просмотра результатов.
+
+Готовый безопасный быстрый reader: `scripts/integration_handoff_cache46.py`. Он читает original46, проверяет все 12×46 IDs против original inventory и gold alignment отдельного baseline CSV, записывает source/cache hashes, пересчитывает archived OR и накладывает исходный generic declaration guard. Cache rows не содержат gold. По умолчанию результат в stdout; `--output <НОВЫЙ-файл>` откажет при существующем файле. При handoff он выполнен с 0 HTTP, результат — `docs/integration_handoff_20261005/cache46_verified_replay.json`.
+
+```powershell
+$env:PYTHONPATH = "$PWD;$PWD\src"
+$guardian_py = 'C:\Users\Igor\AppData\Local\Temp\guardian-retrieval-bakeoff-v1\Scripts\python.exe'
+& $guardian_py scripts/integration_handoff_cache46.py
+```
+
+Этот существующий venv — удобный адрес текущей Windows-машины, не переносимая обязательная зависимость; на сервере использовать проверенный совместимый Python environment. Новый guard/code profile после repairs должен получить своё происхождение и отдельный report.
+
+**Нельзя завершить итоговую оценку шестью выбранными строками или synthetic12.** Минимальный full comparison для реально нового model-facing решения — baseline46 и integrated46. Изменённые packets/prompts/model/schema требуют новых отсутствующих ответов; reuse только verified exact-compatible entries. При недоступном provider сохраняй 46-slot inventory с failures/NOT_EXECUTED, а не объявляй частичный pilot полным результатом. Не придумывай отсутствующие предсказания из aggregate one-shot.
+
+### 7.2.2 ОБЯЗАТЕЛЬНО: отдельный полный Gemma-контроль
+
+Gemma должна быть **reviewer**, а не только reason-judge или extractor. Основной кандидат — `gemma4:31b` через Ollama Cloud, endpoint `https://ollama.com/v1`. У пользователя есть доступ; текущую доступность, actual model и limits всё равно проверь bounded preflight. Альтернатива `google/gemma-4-31b` через AI Horde — та же model family с другим transport, не независимый второй голос. Gated/uncensored/heretic версии не считать эквивалентными официальной без явного отдельного профиля.
+
+После smoke и freezing выполни на **всех valid46** минимум:
+
+| Model family | Baseline | Новый выбранный integrated path |
+|---|---|---|
+| Mistral, pinned доступный reviewer | 46 inputs | Те же 46 inputs |
+| Gemma, pinned доступный reviewer | 46 inputs | Те же 46 inputs |
+
+Это до 92 отсутствующих ответов для каждой family; exact cache может уменьшить реальные HTTP. Guard-only overlay не требует повторного вызова. При изменении только code aggregation replay сырых ответов — отдельный post-hoc/new-version результат; не переименовывай его в прежние frozen metrics.
+
+Внутри каждой family сохраняй одинаковые source selection, label contract и сопоставимый budget. Если Gemma не поддерживает Mistral strict JSON schema, зафиксируй native Gemma interface отдельно: одинаковые смыслы/enum/source contracts и code admission, но не заявление о byte-identical cross-provider requests. Actual response model, reasoning/output channels, finish_reason и hidden usage фиксируй. Не засчитывай валидный JSON как правильную семантику.
+
+Выведи Mistral и Gemma results раздельно, paired transitions и cause audit. Не меняй thresholds/prompts по увиденным Gemma labels. Авторские V4 Gemma caches — другие inputs; они не заменяют новый valid46 Gemma run. Если именно Gemma блокируется 402/429/timeout, отключи этот transport после одного bounded attempt, попробуй разрешённый другой заранее записанный Gemma transport либо продолжи offline работу. Результат family остаётся UNAVAILABLE/NOT_EXECUTED, не превращается в Mistral и не теряется из отчёта.
+
+Пилотный cap 24 calls из предыдущего раздела относится только к дешёвой диагностике: он **не отменяет** full46. Перед полной фазой посчитай собственный размер requests/output allowance и заморозь достаточный отдельный ceiling; long-input preflight без silent truncation обязателен.
+
+Не reuse фиксированный cap старого whole_move Client (36 HTTP/280k tokens) или compact18/140k: это лимиты прошлых коротких фаз. У нового full46 runner должен быть свой достаточный счётчик и resumable phase ledger. Исторический один Mistral run суммарно использовал 617347 prompt tokens для FULL46 и 173111 для U2_20k46; это ориентир прошлого serving profile, не Gemma tokenizer bound. Byte-based conservative reservations могут быть гораздо выше реального usage. Не снижать лимит произвольно и не обрезать входы, чтобы вложиться в cap.
+
 ### 7.3 Метрики
 
 Всегда TP/FP/FN/TN, precision/recall/F1, явная UNKNOWN→binary projection. Кроме них:
@@ -382,3 +435,99 @@ Commit + push после аудита/протокола, каждого раб�
 Работа завершена, когда новый путь реально запускается через один entry point, defects закрыты или честно квалифицированы, контракты не теряют scope/authority/time, tests/replay/evaluation воспроизводимы, результаты опубликованы, а выбранная конфигурация подтверждена сопоставимыми измерениями. Нельзя объявить полную победу из правильного JSON, одного oracle TP или возврата UNKNOWN вместо FP. Если end-to-end качество не стало лучше, сохрани исправления отдельно и оставь лучший проверенный baseline рекомендуемым.
 
 Продолжай самостоятельно. Остановись для обязательной внешней информации только там, где без неё нельзя сделать следующий зависимый шаг; в остальных случаях делай доступные repairs, offline проверки и подготовку конкретного результата.
+
+## 11. Доступ к тестовому серверу и моделям
+
+### 11.1 SSH: конкретное соединение
+
+Проверено локальным `ssh -G new` при подготовке этого дополнения (не live login):
+
+```sshconfig
+Host new
+    HostName 178.223.71.173
+    Port 16389
+    User root
+    IdentityFile ~/.ssh/vast_me
+    IdentitiesOnly yes
+```
+
+IdentityFile уже существует на машине пользователя. Используй существующий alias/key, не перезаписывай рабочий SSH config. Само открытое соединение IDE не гарантирует доступность будущего CLI-сеанса.
+
+```powershell
+ssh -G new | Select-String '^(hostname|user|port|identityfile) '
+ssh -o BatchMode=yes -o ConnectTimeout=10 new 'pwd; python3 --version; nvidia-smi'
+```
+
+Если alias отсутствует, эквивалентный вход: `ssh -p 16389 -i <private-key-file> -o IdentitiesOnly=yes root@178.223.71.173`. Если требуется material ключа, он содержится в предоставленной пользователем PRIVATE-копии промпта и исходном приватном attachment. Там два альтернативных OpenSSH key blocks; не считай, что оба нужны одновременно. В attachment строки склеены: восстанови BEGIN/END и base64 line breaks в отдельном private key file, проверь `ssh-keygen -y -f <file>` с подавлением вывода и корректные права/ACL. Не сохраняй ключ в repo/worktree/logs.
+
+Не выключай StrictHostKeyChecking ради обхода ошибки и не переписывай known_hosts без проверки fingerprint. Один bounded preflight; connection refused/timeout — зафиксировать и перейти к доступным локальным/cache/API задачам. Не ждать сервер постоянными проверками.
+
+### 11.2 Где искать окружение и полные кэши
+
+Исторический layout из `ENVIRONMENT.md` и multi-provider adapter:
+
+```text
+/workspace/guardian/
+  venv/                         # прежний основной Python environment
+  repos/                        # отдельные research worktrees
+  models/                       # уже скачанные model revisions
+  secrets/mistral.env
+  secrets/api_keys.env
+  results/ta_llm_cache/          # provider response cache
+  results/ta_cost_log.jsonl
+  results/modular_steps_20261002/
+```
+
+Это адреса для проверки, не гарантия текущего layout. Сначала `pwd`, список worktrees, env/version и доступная память; не запускай вслепую старый scripts из другого branch. Содержимое secrets не печатай. Исторические `export ...` env файлы можно source в Bash с `set +x`; убедись, что trace/debug не раскрывает values. Для python env loader поддержи фактический формат, а не выполняй произвольный конфигурационный текст как код.
+
+Наличие ta_llm_cache не доказывает compatible raw для нового wire. Найди entries через model/provider/request hashes и manifest, запиши происхождение, missing usage и совпадение original sources. Модели на сервере искать сначала в имеющемся `/workspace/guardian/models` и tokenizer/HF cache; не повторно скачивать веса ради проверки.
+
+### 11.3 Provider profiles, без скрытой подмены
+
+Ниже переданные пользователем/описанные в репозитории candidates. Текущую доступность не предполагаем без smoke:
+
+| Provider | OpenAI-compatible base URL | Credentials | Candidates |
+|---|---|---|---|
+| Mistral | `https://api.mistral.ai/v1` | `MISTRAL_API_KEY` | historical pinned `ministral-14b-2512`; user example `ministral-14b-latest`, alias resolution freeze |
+| Ollama Cloud | `https://ollama.com/v1` | `OLLAMA_API_KEY` | **gemma4:31b**, gpt-oss:20b, gpt-oss:120b, nemotron-3-nano:30b, nemotron-3-super, nemotron-3-ultra |
+| AI Horde | `https://oai.aihorde.net/v1` | public anonymous `0000000000` | **google/gemma-4-31b**; koboldcpp/Llama-3.2-1B-Instruct, koboldcpp/Llama-3.2-3B-Instruct |
+| Ukisai | `https://ukisai.com/api/swift/v1` | public placeholder `none` | swift; actual family/model verify |
+| Vireonix | `https://vireonix.ai/v1` | public placeholder `unused` | auto; actual model identity may be unverifiable, no independent-family claim |
+
+`glm-5.3-flash` раньше был 402 на Ollama; не трать время на циклическую проверку quota. Открытые endpoints могут менять модели/limits; максимум один `/models` discovery или bounded smoke на конкретный candidate, no auto retries/backoff loops. Дополнительные non-Gemma models — optional controls, не причина отложить cache46 и основной Gemma46 comparison.
+
+Опорный multi-provider code: `experiments/searh_23/three_architectures/llm.py`; он использует `/workspace/guardian/secrets/mistral.env`, `api_keys.env` и `results/ta_llm_cache`. Это исторический adapter с retries/path assumptions, его не подключать как есть к новому durable one-attempt protocol. Проверить keys loader, model registry, cache key/provider identity и runtime limits.
+
+Для первоначального bounded smoke, если OpenAI-compatible SDK уже установлен:
+
+```python
+import os
+from openai import OpenAI
+
+client = OpenAI(
+    base_url="https://ollama.com/v1",
+    api_key=os.environ["OLLAMA_API_KEY"],
+    timeout=120,
+    max_retries=0,
+)
+reply = client.chat.completions.create(
+    model="gemma4:31b",
+    messages=[{"role": "user", "content": "Return JSON: {\"ok\": true}"}],
+    temperature=0,
+    max_tokens=128,
+)
+# Сохранить non-secret receipt: actual model, status, usage, finish_reason.
+# Полный valid46 запуск идёт через frozen unified runner, не через этот smoke.
+```
+
+Для AI Horde сменить base_url/model на указанные выше и использовать публичный placeholder; отсутствие usage учитывать явно. Mistral SDK user example доступен, но для inference предпочти общий tested durable transport. Доступность `/models`, strict schema и token cap проверяется per provider; smoke не обещает, что длинные Guardian inputs поместятся.
+
+### 11.4 Как получить дополнительную модель
+
+Приоритет: уже имеющиеся веса/серверные endpoints → разрешённые cloud candidates → минимальная необходимая новая модель. Для downloads сначала проверить license/access, pinned revision, tokenizer/chat template, disk/VRAM/context и существующий cache. Используй официальный model repository/tool loader, зафиксируй revision/hash/quantization; не устанавливай тяжёлый стек в действующий environment с несовместимыми Transformers profiles.
+
+Неподтверждённый model ID нельзя превращать в предположенную модель. Gated/auth unavailable или недостаток памяти — явный NOT_EXECUTED; не выбирать heretic/RP fine-tune как незаметную замену Gemma. Установка новой локальной модели — отдельный experimental profile; сравнение с cloud family не считать идентичным serving stack.
+
+Private credentials пользователя должны быть доступны агенту из приватного handoff/attachment или server secrets. Публичная Git-версия задания хранит только эти адреса и env names. Не переносить literal credentials в origin даже если это тестовый сервер; полный локальный PRIVATE-промпт предназначен для передачи агенту вне публичной истории.
+
+Полная локальная копия с переданными ключами: `C:\Users\Igor\Documents\PROMPT_GUARDIAN_FULL_INTEGRATION_PRIVATE_2026-10-05.md`. Исходный private attachment: `C:\Users\Igor\.codex\attachments\56820276-4b72-49f0-b903-648130893b43\Pasted text.txt`. В новой сессии эти пути доступны только на машине пользователя; не обещай, что файл присутствует на удалённом сервере.
