@@ -21,7 +21,9 @@ import urllib.request
 from pathlib import Path
 
 PROVIDERS = {'mistral': ('https://api.mistral.ai/v1/chat/completions', 'MISTRAL_API_KEY'),
-             'ollama': ('https://ollama.com/v1/chat/completions', 'OLLAMA_API_KEY')}
+             'ollama': ('https://ollama.com/v1/chat/completions', 'OLLAMA_API_KEY'),
+             # public anonymous AI Horde key '0000000000' (not a secret); same Gemma family, different transport
+             'aihorde': ('https://oai.aihorde.net/v1/chat/completions', 'AIHORDE_API_KEY')}
 
 
 class NetworkTripwire(RuntimeError):

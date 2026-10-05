@@ -106,7 +106,7 @@ def body(packet, provider, model, addendum='', extra=None, max_tokens=1700):
     s = schema(packet)
     messages = [dict(role='system', content=PROMPT + LABELS + addendum),
                 dict(role='user', content=json.dumps(data, ensure_ascii=False, separators=(',', ':')))]
-    if provider == 'ollama':
+    if provider in ('ollama', 'aihorde'):
         messages[0]['content'] += '\nJSON schema (property order requests generation order):\n' + json.dumps(s, ensure_ascii=False, separators=(',', ':'))
         fmt = dict(type='json_object')
     else:

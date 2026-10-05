@@ -58,3 +58,21 @@ Counters are rebuilt from the attempts ledger after a restart. When a budget is 
 ## Historical comparability
 - Frozen historical U2 replies match the corrected request hash for only 4/46 rows (5/46 even at the base checkout, because they were produced by an earlier packer). Fresh baselines are therefore mandatory, and no historical reply is reused.
 - Historical numbers (U2_20k F1 0.684/0.727/0.700; Guardian OR Granite 0.889) are cited only as context.
+
+## Amendment 1 (recorded during the run, before any scoring or judge call)
+1. **Gemma/Ollama blocked.** During Gemma valid46 rep 1, Ollama Cloud returned `429 "you have reached your monthly usage limit"`. Completed at that point:
+   - Gemma valid46 **baseline rep1**: 46/46 sent (43 admitted, 3 technical nulls).
+   - Gemma valid46 **integrated rep1**: 16/46 executed, 30 rows HTTP 429.
+   - Gemma rep 2 and Gemma SYN-M1: all 429, or stopped.
+
+   The runner was stopped; there were no retry loops.
+2. **Fallback Gemma transport, one bounded smoke.** AI Horde `google/gemma-4-31b` was the pre-listed alternative. It was tested with one `/models` discovery and one review request (200 in 7.6 s), but the reply was **truncated at 931 characters** with `finish_reason=stop` (worker output cap), so it is invalid JSON under the frozen 1700-token contract. This transport is therefore not usable without changing the contract and was not used.
+3. **Gemma family status:**
+   - valid46 baseline (rep1): COMPLETE.
+   - valid46 integrated (rep1): **PARTIAL 16/46, 30 PROVIDER_LIMIT slots**, kept in the 46-slot inventory.
+   - Paired Gemma results are reported only on the 16 rows completed under both profiles, labelled as a pilot. They are never substituted with Mistral.
+   - Resume command: RUNBOOK (`retry_failed=1` re-sends each limited slot once).
+4. **Cause judge.** `gpt-oss:120b` is on the same exhausted Ollama account. It is replaced by the pinned `mistral-medium-2604` (Mistral API) with the unchanged JUDGE_PROMPT and a 600-call cap. Caveats:
+   - It is a different model from the reviewer (`ministral-14b-2512`) but the same vendor family.
+   - Cause counts are not directly comparable to historical gpt-oss judgements.
+5. The Mistral matrix and every other frozen element are unchanged.
