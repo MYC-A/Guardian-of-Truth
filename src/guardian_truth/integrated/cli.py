@@ -1,6 +1,6 @@
 """guardian-review: run the integrated reviewer on unseen inputs (no labels, no row-ID mapping).
 
-  guardian-review INPUT.json|INPUT.jsonl [--profile integrated] [--provider mistral|ollama] [--model M]
+  guardian-review INPUT.json|INPUT.jsonl [--profile guard] [--provider mistral|ollama] [--model M]
                   [--cache-dir DIR] [--offline] [--no-model] [--max-calls N] [--attempt K] [--output OUT.jsonl]
 
 INPUT holds objects with 'prompt' and 'response' (other keys are ignored and never read by review()).
@@ -32,7 +32,7 @@ def _inputs(path):
 def main(argv=None):
     ap = argparse.ArgumentParser(prog='guardian-review', description=__doc__.split('\n')[0])
     ap.add_argument('input')
-    ap.add_argument('--profile', choices=sorted(PROFILES), default='integrated')
+    ap.add_argument('--profile', choices=sorted(PROFILES), default='guard')
     ap.add_argument('--provider', choices=sorted(DEFAULT_MODELS), default='mistral')
     ap.add_argument('--model')
     ap.add_argument('--budget-bytes', type=int, default=20000)

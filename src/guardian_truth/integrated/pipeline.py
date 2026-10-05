@@ -36,8 +36,9 @@ PROFILES = {
     'baseline': dict(guard=False, relations=False, controller=False),
     'guard': dict(guard=True, relations=False, controller=False),
     'relations': dict(guard=True, relations=True, controller=False),
+    # FAILED experimental profiles (kept for reproducibility only; never the default):
     'integrated': dict(guard=True, relations=True, controller=True),
-    # Amendment 2 (post-hoc, designed after valid46 results): relation facts are sent only when at
+    # SHADOW / post-hoc, development-only. Amendment 2 (post-hoc, designed after valid46 results): relation facts are sent only when at
     # least one decisive fact exists; otherwise the request is byte-identical to the baseline request.
     'integrated_gated': dict(guard=True, relations=True, controller=True, relation_gate=True),
 }
@@ -48,9 +49,9 @@ class ReviewConfig:
     provider: str = 'mistral'
     model: str = 'ministral-14b-2512'
     budget_bytes: int | None = 20000
-    guard: bool = True
-    relations: bool = True
-    controller: bool = True
+    guard: bool = True             # defaults == PROFILES['guard'] (the recommended frozen A2 profile)
+    relations: bool = False        # 'relations'/'integrated' are FAILED experimental profiles (valid46 F1 ~0.49)
+    controller: bool = False
     relation_gate: bool = False    # True: send relation facts only if a decisive fact exists (amendment 2)
     attempt: int = 0               # repetition index (part of the cache key); fixed in the protocol
     max_tokens: int = 1700

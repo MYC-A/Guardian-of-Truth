@@ -1,7 +1,7 @@
 """Guardian integrated v1: one public API.
 
     from guardian_truth.integrated import review, ReviewConfig, Transport
-    result = review(prompt, response, ReviewConfig.profile('integrated'), client=Transport('mistral', model, cache_dir))
+    result = review(prompt, response, ReviewConfig.profile('guard'), client=Transport('mistral', model, cache_dir))
 """
 from .pipeline import PROFILES, VERSION, ReviewConfig, review
 from .transport import BudgetExhausted, NetworkTripwire, StaticClient, Transport

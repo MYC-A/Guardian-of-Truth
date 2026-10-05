@@ -35,7 +35,7 @@ python -m experiments.integrated_v1.score report --tag <new-tag>
 
 ## Tests
 ```bash
-python -m pytest -q tests/integrated_v1            # 42 tests: repairs + public API contracts
+python -m pytest -q tests/integrated_v1            # 44 tests: repairs + public API contracts
 python -m pytest -q tests                          # full suite (see breakdown below)
 ```
 
@@ -57,7 +57,7 @@ The table compares the base checkout `5c31da6e` with this branch.
   - `test_real_bound_contract_audit` (41→40 action results)
 
   Historical replays must use their original commits.
-- **New tests:** 42 in `tests/integrated_v1`, all passing.
+- **New tests:** 44 in `tests/integrated_v1`, all passing.
 
 ## Cost profile (this phase)
 Per-call latency, tokens and controller share are in RESULTS.md. Memory is that of the CPU-only Python process, with no local model. Model calls are remote.
