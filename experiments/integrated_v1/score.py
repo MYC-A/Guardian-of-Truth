@@ -165,6 +165,8 @@ def report(tag):
                     cost['invalid_json'] += sum(s.get('admission') == 'INVALID_JSON' for s in steps)
                     cost['transport_failure'] += sum(s.get('admission') == 'TRANSPORT_FAILURE' for s in steps)
                     cost['fence_stripped'] += sum(s.get('normalization') == 'FENCE_STRIPPED' for s in steps)
+                    cost['provider_limited_rows'] += any(isinstance(s.get('transport'), dict) and s['transport'].get('status') == 429
+                                                         for s in r.get('steps', []))
                 cost['model_seconds'] = round(cost['model_seconds'], 1)
                 m.update(projection=dict(proj), cause_tp=dict(cause), cause_correct_tp=cause['SAME'] + cause['PARTIAL'] + cause['GUARD_MECHANICAL'],
                          cost=dict(cost))
@@ -201,6 +203,22 @@ def report(tag):
                 per_rep = [sum(other[k][i] != base[k][i] for i in g) for k in common]
                 transitions[f'{phase}|{prov}|A1->{arm}'] = dict(reps=common, majority_better=better, majority_worse=worse,
                                                                 sign_p=round(sign_p(better, worse), 4), changed_rows=rows, flips_per_rep=per_rep)
+    # pilot: rows that are not provider-limited in BOTH profiles of the same family/rep
+    for phase in ('valid46',):
+        g = gold(phase); runs = load(phase)
+        limited = lambda r: any(isinstance(s.get('transport'), dict) and s['transport'].get('status') == 429 for s in r.get('steps', []))
+        for (prov, prof, rep_), recs in runs.items():
+            if prof != 'baseline' or (prov, 'integrated', rep_) not in runs:
+                continue
+            other = runs[(prov, 'integrated', rep_)]
+            ids = [i for i in g if i in recs and i in other and not limited(recs[i]) and not limited(other[i])]
+            if len(ids) == len(g):
+                continue
+            sub = {i: g[i] for i in ids}
+            out = {}
+            for arm, src in (('A1', recs), ('A2', recs), ('A3', other), ('A4', other)):
+                out[arm] = metrics({i: int(arm_view(src[i], arm)[0] == 'ERROR') for i in ids}, sub)
+            summary[f'{phase}|{prov}|PAIRED_PILOT_rep{rep_}'] = dict(rows=len(ids), positives=sum(sub[i]['label'] for i in ids), arms=out)
     rep = OUT / 'reports'
     rep.mkdir(parents=True, exist_ok=True)
     path = rep / f'report_{tag}.json'
