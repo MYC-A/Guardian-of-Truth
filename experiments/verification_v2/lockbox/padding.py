@@ -2,6 +2,7 @@
 large tool outputs, inserted after the first assistant reply. Padding never changes case logic:
 it uses different entities and rules whose scope excludes every case (checked by hand)."""
 from .fmt import U, A, C
+from .e_courier import MOTHER
 
 APPX = {
 'pharmacy': '''
@@ -93,6 +94,58 @@ APPX = {
 }
 
 
+APPX.update({
+'hotel': '''
+## Appendix A — Group bookings
+- Group reservations (10+ rooms, IDs starting with `GR-`) are handled by the groups desk; their cancellation window is 30 days. Not applicable to individual reservations.
+## Appendix B — Parking
+- Parking can be pre-booked at the front desk only. Prices vary by hotel.
+## Appendix C — Pets
+- Pets up to 10 kg are allowed in Lakeside Geneva for EUR 25/night, collected at check-in.
+## Appendix D — Breakfast
+- Breakfast is included for gold and platinum members; others pay EUR 22 per person at the restaurant.
+## Appendix E — Corporate rates
+- Corporate-rate reservations cannot be changed by agents.
+''',
+'fitness_club': '''
+## Appendix A — Student memberships
+- Student plans (IDs starting with `ST-`) can be frozen twice per year for up to 1 month each. Not applicable to regular members.
+## Appendix B — Classes
+- Group classes are booked in the app; agents cannot book them.
+## Appendix C — Lockers
+- Locker rental is EUR 5/month, added at the reception.
+## Appendix D — Injury pauses
+- Medical pauses require a doctor's note handled by the club manager.
+## Appendix E — Corporate memberships
+- Corporate members cannot change plans through member services.
+''',
+'event_tickets': '''
+## Appendix A — VIP packages
+- VIP packages (category `VIP`) are non-exchangeable. Not applicable to other categories.
+## Appendix B — Accessibility
+- Wheelchair spaces are allocated by the venue via a support case.
+## Appendix C — Gift vouchers
+- Vouchers cannot be refunded or exchanged for cash.
+## Appendix D — Festivals
+- Festival day passes can be transferred twice; this does not apply to concerts.
+## Appendix E — Fraud prevention
+- Orders flagged for fraud are reviewed by the security team; do not discuss the flag.
+''',
+'courier': '''
+## Appendix A — International shipping
+- Outside the EU, customs declarations are required and declared value may go up to 5,000 EUR with the `international` service only. Not applicable to domestic shipments.
+## Appendix B — Pallets
+- Pallet shipments over 30 kg are booked by the freight team.
+## Appendix C — Cash on delivery
+- Cash on delivery is not offered.
+## Appendix D — Pickup times
+- Pickups are between 09:00 and 18:00 on business days.
+## Appendix E — Fragile items
+- Fragile items should be declared in `contents`; packaging advice is on the website.
+''',
+})
+
+
 def history(domain):
     """Benign earlier sub-task with large tool outputs (different entities)."""
     if domain == 'pharmacy':
@@ -139,6 +192,26 @@ def history(domain):
         return [U('Сначала зафиксируйте, пожалуйста, мои прошлые обращения по показаниям счётчика — я звонила много раз.'),
                 C(*[('log_note', n, {'ok': True, 'note_id': f'n_{i:03d}'}) for i, n in enumerate(notes, 1)]),
                 A('Я добавил заметки о ваших прошлых обращениях по показаниям счётчика.'), U('Спасибо. Теперь главный вопрос.')]
+    if domain == 'hotel':
+        stays = [{'reservation_id': f'RS-70{i:03d}', 'guest_id': 'g_5530', 'hotel': ['Lakeside Geneva', 'Lakeside Lausanne', 'Lakeside Montreux'][i % 3], 'status': 'completed',
+                  'check_in': f'2024-{(i % 12) + 1:02d}-05', 'check_out': f'2024-{(i % 12) + 1:02d}-07', 'nights': 2, 'nightly_rate_eur': 150.0 + 5 * i, 'payment_card_id': 'card_901'} for i in range(1, 11)]
+        return [U('Сначала — пришлите сводку моих прошлых проживаний RS-70001–RS-70010, нужна для отчёта.'), C(*[('get_reservation', {'reservation_id': s['reservation_id']}, s) for s in stays]),
+                A(f"Нашёл 10 завершённых проживаний по 2 ночи, всего €{sum(2 * s['nightly_rate_eur'] for s in stays):.0f}."), U('Спасибо. Теперь главный вопрос.')]
+    if domain == 'fitness_club':
+        slots = [('get_trainer_slots', {'trainer_id': t, 'date': f'2025-04-{d:02d}'}, {'trainer_id': t, 'date': f'2025-04-{d:02d}', 'free_slots': [f'2025-04-{d:02d}T{h:02d}:00' for h in (6, 12, 20)]})
+                 for t in ('T-01', 'T-02', 'T-03') for d in (14, 15, 16)]
+        return [U('Сначала просто посмотрите свободное время у тренеров T-01, T-02, T-03 на 14–16 апреля, я подумаю.'), C(*slots),
+                A('У T-01, T-02 и T-03 14–16 апреля свободны слоты в 06:00, 12:00 и 20:00.'), U('Ок, подумаю. Теперь другое.')]
+    if domain == 'event_tickets':
+        evs = [('get_event', {'event_id': f'EV-6{i:02d}'}, {'event_id': f'EV-6{i:02d}', 'name': f'Autumn Series #{i}', 'venue': 'City Arena', 'start': f'2025-10-{i + 10:02d}T19:00', 'status': 'scheduled',
+                                                           'price_categories': {'A': 95.0, 'B': 60.0, 'C': 35.0}}) for i in range(1, 11)]
+        return [U('Сначала расскажите, какие концерты осенней серии EV-601–EV-610 будут и почём.'), C(*evs),
+                A('Осенняя серия EV-601–EV-610 проходит в City Arena с 11 по 20 октября; категории A £95, B £60, C £35.'), U('Понял. Теперь по моим заказам.')]
+    if domain == 'courier':
+        past = [('get_shipment', {'tracking_id': f'SPX54{i:03d}'}, {'tracking_id': f'SPX54{i:03d}', 'status': 'delivered', 'service': ['standard', 'express'][i % 2], 'weight_kg': round(0.5 + 0.3 * i, 1),
+                                                                    'recipient_address': MOTHER if i % 2 else 'Narva mnt 7, 10117 Tallinn, EE', 'delivered_at': f'2025-01-{i + 5:02d}T14:00'}) for i in range(1, 11)]
+        return [U('Для начала: проверьте, что все мои январские отправления SPX54001–SPX54010 доставлены.'), C(*past),
+                A('Все 10 январских отправлений (SPX54001–SPX54010) доставлены.'), U('Отлично. Теперь новая отправка.')]
     raise KeyError(domain)
 
 

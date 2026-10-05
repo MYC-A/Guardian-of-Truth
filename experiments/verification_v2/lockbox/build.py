@@ -5,6 +5,8 @@ import hashlib, json, random
 from pathlib import Path
 
 from . import d_pharmacy, d_rental, d_university, d_itdesk, d_insurance, d_utility
+from . import e_hotel, e_gym, e_tickets, e_courier
+SETS = {'lb1': (d_pharmacy, d_rental, d_university, d_itdesk, d_insurance, d_utility), 'lb2': (e_hotel, e_gym, e_tickets, e_courier)}
 from .fmt import render
 from .padding import pad
 
@@ -12,28 +14,28 @@ ROOT = Path(__file__).resolve().parents[3]
 OUT = ROOT / 'outputs/verification_v2/lockbox'
 
 
-def build(long=False):
+def build(long=False, name='lb1'):
     rows, gold = [], {}
-    for mod in (d_pharmacy, d_rental, d_university, d_itdesk, d_insurance, d_utility):
+    for mod in SETS[name]:
         policy, tools, cases = mod.cases()
         for c in cases:
             pol, hist = pad(mod.DOMAIN, policy, c['history']) if long else (policy, c['history'])
             prompt, resp = render(pol, tools, hist, c['response'])
             rows.append(dict(case=c['id'], prompt=prompt, response=resp))
             gold[c['id']] = {k: c[k] for k in ('domain', 'family', 'label', 'target', 'cause', 'pair', 'keys')}
-    rng = random.Random(20261006)
+    rng = random.Random(20261006 if name == 'lb1' else 20261007)
     rng.shuffle(rows)
     out, g2 = [], {}
     for i, r in enumerate(rows):
-        oid = f'lb1{"L" if long else ""}_{i:03d}'
+        oid = f'{name}{"L" if long else ""}_{i:03d}'
         out.append(dict(id=oid, prompt=r['prompt'], response=r['response']))
         g2[oid] = dict(case=r['case'], **gold[r['case']])
     return out, g2
 
 
-def write(long):
-    rows, gold = build(long)
-    out = OUT / ('long' if long else 'short')
+def write(long, name='lb1'):
+    rows, gold = build(long, name)
+    out = (OUT if name == 'lb1' else OUT.parent / 'lockbox2') / ('long' if long else 'short')
     out.mkdir(parents=True, exist_ok=True)
     (out / 'inputs.jsonl').write_text(''.join(json.dumps(r, ensure_ascii=False) + '\n' for r in rows))
     (out / 'GOLD_eval_only.json').write_text(json.dumps(gold, ensure_ascii=False, indent=1))
@@ -45,3 +47,4 @@ def write(long):
 if __name__ == '__main__':
     write(False)
     write(True)
+    write(True, 'lb2')

@@ -80,3 +80,12 @@ sets only (A2 already tuned there).
 Mistral only (Ollama quota exhausted). ≤900 model calls total, ≤1 req/s pacing for the judge,
 ≤4 workers for reviewers. Exact-equivalence cache; every attempt in the ledger; no hidden retries
 except the transport's frozen retry policy. One repetition per arm (rep 2 of A and D if budget allows).
+
+## Amendment 1 (2026-10-06, after LB1-long phase-1 results, before any new mechanism code)
+- Phase-1 LB1 results were inspected (see RESULTS.md). Any mechanism designed after this point is
+  development work on LB1 and is evaluated on **LB2**, a second fresh lockbox frozen here:
+  4 further new domains (hotel, fitness club, event tickets with explicit closed tool universe,
+  courier), 47 cases (23 ERROR / 24 NO_ERROR), one minimal pair per §18 stratum, long variant only,
+  hashes in `outputs/verification_v2/lockbox2/long/MANIFEST.json`.
+- LB2 was authored by rotating through the summary §18 strata list (not chosen per mechanism).
+- On LB2 every arm is reported against both A (frozen A2) and A_adm2 (admission v2).
