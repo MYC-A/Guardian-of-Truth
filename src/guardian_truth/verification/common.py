@@ -77,3 +77,18 @@ def step_record(rec, tag, req):
     return dict(tag=tag, key=rec.get('key'), cached=rec.get('cached'), usage=rec.get('usage'), transport=rec.get('transport'),
                 finish_reason=rec.get('finish_reason'), seconds=rec.get('seconds'), request_sha256=sha(req),
                 request_bytes=len(json.dumps(req, ensure_ascii=False).encode()), raw_content=rec.get('content'))
+
+
+MD = re.compile(r'\*\*|__|(?<!\w)\*(?!\s)|(?<!\s)\*(?!\w)')
+
+
+def quote_q2(quote, texts):
+    """Q2 admission (amendment 3) as used by V3: quote_fragments_ok against any one of the texts, after removing
+    markdown emphasis markers the model adds (** __ *), case-insensitively; a short quote is admitted only if it is a WHOLE source
+    text (e.g. a one-word user reply)."""
+    q = MD.sub('', quote or '').lower()                    # case-insensitive: stitched pieces get re-capitalised
+    ts = [MD.sub('', t).lower() for t in texts if t]
+    if any(quote_fragments_ok(q, t) for t in ts):
+        return True
+    c = _clean_quote(q)
+    return len(c) >= 2 and any(c == _clean_quote(t) for t in ts)

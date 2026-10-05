@@ -26,7 +26,7 @@ def gold(name):
         d = pd.read_parquet(ROOT / 'valid.parquet')
         return {r.id: dict(label=int(r.label), cause=r.explanation if isinstance(r.explanation, str) else None, family=r.id.split('__')[0],
                            target=None, pair=None) for r in d.itertuples()}
-    box, sub = {'lb_long': ('lockbox', 'long'), 'lb_short': ('lockbox', 'short'), 'lb2_long': ('lockbox2', 'long')}[name]
+    box, sub = {'lb_long': ('lockbox', 'long'), 'lb_short': ('lockbox', 'short'), 'lb2_long': ('lockbox2', 'long'), 'lb3_long': ('lockbox3', 'long')}[name]
     return json.loads((OUT / box / sub / 'GOLD_eval_only.json').read_text())
 
 
