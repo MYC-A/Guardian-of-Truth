@@ -117,3 +117,25 @@ New post-LB1 mechanisms, designed on LB1 failure analysis (development only on L
   Ev' +1, +1 FP). No further LB1 iteration. E code is frozen in the commit that adds this line.
 - Opt-in profile `guard_adm2` (= guard + admission v2) added to the integrated pipeline; the v2 runner
   pins frozen A to admission v1. Whether it becomes the default is decided by rule 1 on LB2.
+
+## Amendment 3 (2026-10-06, after LB2 results; offline audit, no new model calls)
+Code audit of the LB2 results found post-processing gates of the same class as admission v1. Rules below are fixed
+before the replay is run; they reuse existing generic code and are written without consulting gold. Because LB2
+was already inspected, every result of this amendment is **post-hoc development evidence**, not a lockbox claim;
+adoption of anything here needs a fresh lockbox (LB3).
+- **Q2 — verifier quote admission v2.** `policy_quote_ok` = `quote_fragments_ok` (the E1 rule: list markers,
+  trailing punctuation, stitched pieces of one source, near-verbatim ratio ≥0.9) against any provided policy text;
+  `evidence_quote_ok` = `quote_fragments_ok` against any provided evidence / current-move / declaration text.
+  Minimum quote length unchanged (8). Sensitivity variant Q2s (reported, not primary): an evidence quote shorter
+  than 8 chars is admitted if it equals a complete JSON string value of a provided source.
+  The verifier input is rebuilt with `narrow()` and must hash to the stored `request_sha256` (else the row is
+  reported as NOT_REPLAYABLE). Raw verdicts are unchanged; only the downgrade decision is recomputed.
+- **Q2 also applies to the E2 evidence-quote gate** (VIOLATED needs a verified evidence quote).
+- **G_E — E consistency gate.** A VIOLATED item whose `computation` contains a numeric comparison that evaluates
+  false becomes UNRESOLVED (`COMPARISON_FALSE`). If this changes E's first VIOLATED item, the new candidate has no
+  verifier call: E uses it, Ev counts it as not SUPPORTED and the count is reported (`needs_verifier_call`).
+- **C_dir — directional counterfactual (diagnostic arm).** C candidate kept only if the original is VIOLATING and
+  at least one variant is COMPLIANT. On the A_adm2 base: C_dir′; with verifier: D_dir′.
+- Re-computed: all arms on LB1-long, LB1-short, LB2-long, valid46; §6 verifier criterion; plus a per-FN
+  capability matrix for LB2 (evidence present / candidate generated / verifier raw→final / gate / variant touched
+  the gold target value / missing capability).
