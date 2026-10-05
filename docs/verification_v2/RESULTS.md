@@ -57,3 +57,5 @@ A 1 call (~4.8k tokens). B +1, C +1, E +2 (~10k tokens), verifier +1 per candida
 - Cause-correctness uses an LLM judge from the same model family.
 - E was iterated twice on LB1 (logged in amendment 2); LB2 was run once with the frozen code.
 - Self-review instead of independent reviewers: no subagent tool was available in this environment; two separate review passes (code + protocol compliance) were done and found/fixed: scorer variable shadowing (`tag`) that wrote reports to wrong files, sign-test p-value not capped at 1, missing A_adm2 reasons in phase-1 records (now backfilled offline from the cached raw reply, asserted identical decision), quote-check false negatives (list markers, trailing punctuation).
+
+See `AUDIT.md` (amendment 3) for the offline re-admission audit that revises the verifier and C/E conclusions.

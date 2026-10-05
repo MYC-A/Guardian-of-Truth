@@ -16,8 +16,8 @@ from experiments.verification_v2.run import paced
 
 ROOT = Path(__file__).resolve().parents[2]
 OUT = ROOT / 'outputs/verification_v2'
-ARMS = ('A', 'A_adm2', 'B', 'Bv', 'C', 'D', 'E', 'Ev', "B'", "Bv'", "C'", "D'", "E'", "Ev'", 'Av', 'Av_strict')
-CAND = {'B': 'B', 'Bv': 'B', 'C': 'C', 'D': 'C', 'E': 'E', 'Ev': 'E', "B'": 'B', "Bv'": 'B', "C'": 'C', "D'": 'C', "E'": 'E', "Ev'": 'E'}
+ARMS = ('A', 'A_adm2', 'B', 'Bv', 'C', 'D', 'E', 'Ev', "B'", "Bv'", "C'", "D'", "E'", "Ev'", 'Av', 'Av_strict', 'C_dir', 'D_dir', "C_dir'", "D_dir'")
+CAND = {'C_dir': 'C', 'D_dir': 'C', "C_dir'": 'C', "D_dir'": 'C', 'B': 'B', 'Bv': 'B', 'C': 'C', 'D': 'C', 'E': 'E', 'Ev': 'E', "B'": 'B', "Bv'": 'B', "C'": 'C', "D'": 'C', "E'": 'E', "Ev'": 'E'}
 
 
 def gold(name):

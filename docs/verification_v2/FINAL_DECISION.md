@@ -5,6 +5,8 @@ equal `guard_adm2`; `guard` stays available and byte-identical to integrated-v1 
 Basis: pre-registered LB2 rule 1 passed (+2 TP, 0 FP, 0 lost), consistent with LB1-long (+7 TP/+1 FP),
 LB1-short (+13/0) and the valid46 cache replay of 3 reps (+0/+2/+0 TP, 0 FP). Zero extra calls, same request bytes.
 
+> **Amendment 3 audit (post-hoc, offline):** two of the rows below were partly artefacts of our own post-processing; see `AUDIT.md` for the corrected, narrower conclusions (verifier passes §6 after the generic quote fix; the counterfactual idea is untested on 3/4 residual misses because the needed variants were never generated).
+
 **Not adopted (kept as research code, never default):**
 | mechanism | status | evidence |
 |---|---|---|
