@@ -65,3 +65,5 @@ No subagent tool was available in this environment. A separate self-review pass 
 1. A new independent lockbox: new τ²-style traces annotated per turn and checked for overlap with valid46. Use it to test `integrated_gated` against `guard`.
 2. Fix the receipt-actor contract (a `tool` actor) as a separately measured change.
 3. Complete Gemma integrated46 when the quota renews (RUNBOOK).
+
+> **Superseded default (2026-10-06):** verification v2 changed the recommended default to `guard_adm2` (guard + admission v2); see `docs/verification_v2/FINAL_DECISION.md`.

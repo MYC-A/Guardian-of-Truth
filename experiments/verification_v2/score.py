@@ -35,7 +35,25 @@ def load(name, rep, tag=''):
     for line in (OUT / 'runs' / name / f'rep{rep}{tag}.jsonl').read_text().splitlines():
         r = json.loads(line)
         recs[r['id']] = r
+    _backfill_adm2(name, recs)
     return recs
+
+
+def _backfill_adm2(name, recs):
+    """Phase-1 records stored only A_adm2 admission/decision; recompute target/reason offline from A's own raw reply
+    (deterministic, no model call; same function as the pipeline) so A_adm2 accusations can be cause-judged."""
+    need = [i for i, r in recs.items() if (r.get('A_adm2') or {}).get('decision') == 'ERROR' and 'reason' not in r['A_adm2']]
+    if not need:
+        return
+    from experiments.verification_v2.run import inputs
+    from guardian_truth.verification.admission import interpret_v2
+    from guardian_truth.verification.pipeline import packet_for
+    rows = {x['id']: x for x in inputs(name)}
+    for i in need:
+        s0 = next(s for s in recs[i]['A']['steps'] if s.get('tag') == 'review')
+        v2 = interpret_v2(s0['raw_content'], packet_for(rows[i], 20000))
+        assert v2['decision'] == recs[i]['A_adm2']['decision']
+        recs[i]['A_adm2'].update(target_id=v2['admitted']['regulated_action']['target_id'], reason=v2['admitted']['reason'], backfilled=True)
 
 
 def accusation(rec, arm):
@@ -120,7 +138,7 @@ def prf(pred, g):
 
 def sign_p(b, w):
     n = b + w
-    return round(sum(comb(n, k) for k in range(max(b, w), n + 1)) / 2 ** n * 2, 3) if n else 1.0
+    return round(min(1.0, sum(comb(n, k) for k in range(max(b, w), n + 1)) / 2 ** n * 2), 3) if n else 1.0
 
 
 def report(name, rep, tag=''):
@@ -190,15 +208,15 @@ def report(name, rep, tag=''):
         r = recs[i]
         cost['A_calls'] += r['A']['cost']['calls']
         cost['A_tokens'] += r['A']['cost']['prompt_tokens'] + r['A']['cost']['completion_tokens']
-        for k, tag in (('B', 'B'), ('C', 'C'), ('E', 'E')):
+        for k, ctag in (('B', 'B'), ('C', 'C'), ('E', 'E')):
             x = r.get(k)
             if x:
                 subs = [x[s] for s in ('extract', 'check') if x.get(s)] if k == 'E' else [x]
-                cost[tag + '_calls'] += len(subs)
-                cost[tag + '_tokens'] += sum((y.get('usage') or {}).get('total_tokens') or 0 for y in subs)
+                cost[ctag + '_calls'] += len(subs)
+                cost[ctag + '_tokens'] += sum((y.get('usage') or {}).get('total_tokens') or 0 for y in subs)
                 if x.get('verify'):
-                    cost[tag + 'v_calls'] += 1
-                    cost[tag + 'v_tokens'] += (x['verify'].get('usage') or {}).get('total_tokens') or 0
+                    cost[ctag + 'v_calls'] += 1
+                    cost[ctag + 'v_tokens'] += (x['verify'].get('usage') or {}).get('total_tokens') or 0
         if r.get('Av'):
             cost['Av_calls'] += 1
     out['escalated'] = len(esc)

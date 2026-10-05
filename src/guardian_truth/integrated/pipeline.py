@@ -33,16 +33,17 @@ VERSION = 'guardian-integrated-v1'
 EXTRA_SOURCE_BYTES = 8000
 EXCERPT_RADIUS = 400
 PROFILES = {
-    'baseline': dict(guard=False, relations=False, controller=False),
-    'guard': dict(guard=True, relations=False, controller=False),
-    'relations': dict(guard=True, relations=True, controller=False),
+    'baseline': dict(guard=False, relations=False, controller=False, admission='v1'),
+    'guard': dict(guard=True, relations=False, controller=False, admission='v1'),        # frozen A2 (integrated v1)
+    'relations': dict(guard=True, relations=True, controller=False, admission='v1'),
     # FAILED experimental profiles (kept for reproducibility only; never the default):
-    'integrated': dict(guard=True, relations=True, controller=True),
+    'integrated': dict(guard=True, relations=True, controller=True, admission='v1'),
     # SHADOW / post-hoc, development-only. Amendment 2 (post-hoc, designed after valid46 results): relation facts are sent only when at
     # least one decisive fact exists; otherwise the request is byte-identical to the baseline request.
-    'integrated_gated': dict(guard=True, relations=True, controller=True, relation_gate=True),
-    # verification v2: 'guard' + admission v2 (tool-result evidence actor in {assistant, system, unknown} accepted and
-    # normalised; same request, so replayable from cache). See docs/verification_v2/FINAL_DECISION.md.
+    'integrated_gated': dict(guard=True, relations=True, controller=True, relation_gate=True, admission='v1'),
+    # RECOMMENDED DEFAULT (verification v2, pre-registered rule 1 passed on lockbox LB2): 'guard' + admission v2
+    # (tool-result evidence actor in {assistant, system, unknown} accepted and normalised; same request bytes, so
+    # replayable from cache). See docs/verification_v2/FINAL_DECISION.md.
     'guard_adm2': dict(guard=True, relations=False, controller=False, admission='v2'),
 }
 
@@ -52,11 +53,11 @@ class ReviewConfig:
     provider: str = 'mistral'
     model: str = 'ministral-14b-2512'
     budget_bytes: int | None = 20000
-    guard: bool = True             # defaults == PROFILES['guard'] (the recommended frozen A2 profile)
+    guard: bool = True             # defaults == PROFILES['guard_adm2'] (recommended); 'guard' = frozen A2 with admission v1
     relations: bool = False        # 'relations'/'integrated' are FAILED experimental profiles (valid46 F1 ~0.49)
     controller: bool = False
     relation_gate: bool = False    # True: send relation facts only if a decisive fact exists (amendment 2)
-    admission: str = 'v1'          # 'v2' = verification-v2 receipt-actor normalisation (profile 'guard_adm2')
+    admission: str = 'v2'          # 'v2' = verification-v2 receipt-actor normalisation; 'v1' = integrated-v1 contract
     attempt: int = 0               # repetition index (part of the cache key); fixed in the protocol
     max_tokens: int = 1700
 
