@@ -1,0 +1,128 @@
+{
+ "version": "integrated-v1-freeze-1",
+ "budget_bytes": 20000,
+ "temperature": 0,
+ "max_tokens": 1700,
+ "retry_failed": 1,
+ "families": {
+  "mistral": {
+   "model": "ministral-14b-2512",
+   "endpoint": "https://api.mistral.ai/v1/chat/completions",
+   "schema_mode": "json_schema strict + source-ID enums",
+   "max_calls": 900,
+   "max_tokens_total": 6000000
+  },
+  "ollama": {
+   "model": "gemma4:31b",
+   "endpoint": "https://ollama.com/v1/chat/completions",
+   "schema_mode": "native json_object + same schema text in system prompt (json_schema not honoured: preflight)",
+   "max_calls": 600,
+   "max_tokens_total": 4000000
+  }
+ },
+ "judge": {
+  "model": "gpt-oss:120b",
+  "endpoint": "https://ollama.com/v1/chat/completions",
+  "max_calls": 600,
+  "prompt": "experiments.evidence_packer_v2.llm_eval.JUDGE_PROMPT (unchanged)"
+ },
+ "matrix": [
+  {
+   "phase": "valid46",
+   "provider": "mistral",
+   "profiles": [
+    "baseline",
+    "integrated"
+   ],
+   "reps": [
+    1,
+    2,
+    3
+   ]
+  },
+  {
+   "phase": "valid46",
+   "provider": "ollama",
+   "profiles": [
+    "baseline",
+    "integrated"
+   ],
+   "reps": [
+    1,
+    2
+   ]
+  },
+  {
+   "phase": "syn_m1",
+   "provider": "mistral",
+   "profiles": [
+    "baseline",
+    "integrated"
+   ],
+   "reps": [
+    1,
+    2,
+    3
+   ]
+  },
+  {
+   "phase": "syn_m1",
+   "provider": "ollama",
+   "profiles": [
+    "baseline",
+    "integrated"
+   ],
+   "reps": [
+    1
+   ]
+  }
+ ],
+ "arms": {
+  "A1_baseline": "baseline run: corrected U2 20k + I4 direct review",
+  "A2_guard": "baseline run model decision + declaration guard overlay (0 calls)",
+  "A3_relations": "integrated run first review (relation facts + cited spans) + guard",
+  "A4_controller": "integrated run final (A3 + at most one conditional verification pass)"
+ },
+ "controller_trigger": "first review ADMITTED and (UNKNOWN, or NO_ERROR with >=1 decisive relation fact); never on technical failure",
+ "binary_projection": "ERROR->1; NO_ERROR, UNKNOWN, rejected, transport/budget failure, skipped -> 0 (each counted separately)",
+ "primary": "valid46 F1 per family (mean over reps), with TP/FP/FN/TN, cause-correct TPs (judge SAME+PARTIAL), paired row transitions",
+ "decision_rule": "Integrated (A4 or A3) replaces A1 as default only if, on Mistral valid46 AND Gemma valid46, mean F1 is higher, cause-correct TPs are not lower, and the pooled paired row sign test (majority-over-reps correctness) has p<0.1; SYN-M1 must not be worse. A2 is adopted independently if it adds no FP on any run. Otherwise A1 stays default.",
+ "lockbox": {
+  "suite": "SYN-M1",
+  "inputs_sha256": "1b6632007efe0f9496a96eb155457e47bd104260147a665d2841fa915e1bbdb4",
+  "gold_sha256": "09bf2c4d6486642275d366ecb98f410ef3ea9b579dc8af28085b5a2a36f5e67f",
+  "honesty": "authored synthetic suite, previously evaluated in the multipacket phase (seen); derived from valid46 rows; CALL_ARG_ID/FACT_NUMBER operators overlap the ARG_VALUE_PROVENANCE / PROSE_VALUE relations by construction"
+ },
+ "inputs": {
+  "valid_parquet_sha256": "8e730cc999a6cf07c3f17f273300a17ce16539c5b6166885e74b41e93cfc47ba"
+ },
+ "prompts": {
+  "PROMPT": "efc80a0a3e5192c5d6b46a6b341941d1ae9676c8fb6336ba3f055286f0a1c4b4",
+  "LABELS": "19cba37cdf71cabcd62101ccb9f96e9b247abc94bbfbfd26274256ebb4352b2c",
+  "CONTRACT": "7083dd45a415b363fc2a908015e866894bb45b3fb9873dae7abcbc2eab9b6056",
+  "RELATIONS_ADDENDUM": "30fdedd878ac324eb9954509cb91efb1833bbabf89dbd453e9b9bb18df9512e7",
+  "CONTROLLER_ADDENDUM": "a386e5b026f4b8880784067b65cc5028127607fb2ab531d6d976cf18e3cd2da3"
+ },
+ "relations": {
+  "version": "integrated-relations-v1",
+  "recent_window": 4,
+  "max_facts": 24,
+  "extra_source_bytes": 8000
+ },
+ "code_sha256": {
+  "src/guardian_truth/integrated/__init__.py": "2d02ebb953e14efc6d9e6a6630831f4b484b58e2171f66289caafce5b21e08a8",
+  "src/guardian_truth/integrated/pipeline.py": "6b9c6cf55454a14192420bf79dc50689f3d83b2297605ab55bd9ee1f2aba50dd",
+  "src/guardian_truth/integrated/reviewer.py": "89790d0bedde668104c4834dd45f9bc9029be9b4acf4b8f967e670b828ba40b1",
+  "src/guardian_truth/integrated/relations.py": "9cdc7ac6f368e3e80832b94b571ba7edd9aca1c75d7da597e0711acaacba3598",
+  "src/guardian_truth/integrated/declarations.py": "8b45c2c5360fbc3ce959fbdc553b11a03013654b8fee5ecc5dd9a091175a0b2e",
+  "src/guardian_truth/integrated/transport.py": "63afa83402d89d0eca4e675140208d39dd29f05aa58193a89900e17a538d84f2",
+  "src/guardian_truth/integrated/cli.py": "9b6d581656548433622fc3b767941bad169fc7580570d51d9cdcb77dc575e930",
+  "src/guardian_truth/evidence_packer/packer.py": "a9236b1fac7fd94357f47bbb95c02d004f98dc94541c82c4454ca8868f97c50d",
+  "src/guardian_truth/parsing.py": "20ff639ecf9328b1ca3f6230c6566da63acd28c0f41d0b1594a074c343bd62cf",
+  "src/guardian_truth/source_search/store.py": "b769f974822e9eacb4127facaf5d68bc06c4c7e7e03fbbcd43a84d622a1c2d40",
+  "src/guardian_truth/types.py": "6008e600244457567f0edc4eac748ac39beea8fdb6690cac40b42aee5d3f52e2",
+  "experiments/integrated_v1/run.py": "1cada34a535cbb596064e7cdbb860a7f831aa09e58f202f9c6d4bb3b0cf3477c",
+  "experiments/integrated_v1/score.py": "9feed65b161a4c7d914ba9d39850e2e82c496b8f1a5cf19fc52254e59e79fb03",
+  "docs/integrated_v1/EXPERIMENT_PROTOCOL.md": "5abadbd320328dcbe357e2ce13828bbdfe93bf4d1ade4697d6e0cdb52ba45e50"
+ }
+}
