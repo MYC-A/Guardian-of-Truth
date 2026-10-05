@@ -1,0 +1,1282 @@
+[
+  {
+    "id": "airline__9::t6",
+    "cohort": "valid_known",
+    "version": "whole-move-mechanical-v1",
+    "source_sha256": "11acce03fa0d596dda903408f9792df38c1efb7c0f390181d1ba6a771d90225f",
+    "targets": [
+      {
+        "target_id": "t0",
+        "tool": "cancel_reservation",
+        "source": {
+          "source_id": "t0",
+          "document": "response",
+          "start": 20,
+          "end": 82,
+          "text": "\t→ TOOL_CALL cancel_reservation: {\"reservation_id\": \"IFOYYZ\"}\n"
+        },
+        "schema_status": "DECLARED_FIELDS_CHECKED"
+      },
+      {
+        "target_id": "t1",
+        "tool": "transfer_to_human_agents",
+        "source": {
+          "source_id": "t1",
+          "document": "response",
+          "start": 82,
+          "end": 390,
+          "text": "\t→ TOOL_CALL transfer_to_human_agents: {\"summary\": \"The user wants to cancel reservation NQNU5R. Since the flights were scheduled for May 13th and 14th (current date is May 15th), the agent needs to check if any portion of the flight has been flown, which requires a human agent's assistance as per policy.\"}"
+        },
+        "schema_status": "UNKNOWN"
+      }
+    ],
+    "findings": [],
+    "gaps": [
+      {
+        "code": "tool_schema_not_fully_understood",
+        "target_id": "t1",
+        "path": null,
+        "source_refs": [
+          {
+            "source_id": "t1",
+            "document": "response",
+            "start": 82,
+            "end": 390,
+            "text": "\t→ TOOL_CALL transfer_to_human_agents: {\"summary\": \"The user wants to cancel reservation NQNU5R. Since the flights were scheduled for May 13th and 14th (current date is May 15th), the agent needs to check if any portion of the flight has been flown, which requires a human agent's assistance as per policy.\"}"
+          },
+          {
+            "source_id": "q5",
+            "document": "prompt",
+            "start": 11379,
+            "end": 11696,
+            "text": "- transfer_to_human_agents — Transfer the user to a human agent, with a summary of the user's issue.\n    \n    Only transfer if\n     -  the user explicitly asks for a human agent\n     -  given the policy and the available tools, you cannot solve the user's issue.\n    summary: string! — A summary of the user's issue.\n"
+          }
+        ],
+        "claim": "Declaration grammar is partial or ambiguous: unsupported_declaration_line"
+      }
+    ],
+    "mechanically_established_error": false,
+    "catalog": {
+      "authoritative": true,
+      "executable_inventory_complete": false,
+      "tool_universe_closed": false,
+      "absence_check_enabled": false,
+      "gaps": [
+        "unsupported_declaration_line"
+      ]
+    },
+    "coverage": {
+      "status": "PARTIAL",
+      "total_current_assistant_calls": 2,
+      "schema_checked_calls": 1,
+      "whole_move_certified": false
+    },
+    "inference_http": 0
+  },
+  {
+    "id": "telecom__mms_issueairplane_mode_on-bad_network_preference-bad_wifi_calling-data_usage_exce::t7",
+    "cohort": "valid_known",
+    "version": "whole-move-mechanical-v1",
+    "source_sha256": "ca97c5aebe7fbc48e655c699ed6fd5e768f5f6ea58ecd74ea814b4268e6be88e",
+    "targets": [
+      {
+        "target_id": "t0",
+        "tool": "check_network_status",
+        "source": {
+          "source_id": "t0",
+          "document": "response",
+          "start": 20,
+          "end": 57,
+          "text": "\t→ TOOL_CALL check_network_status: {}"
+        },
+        "schema_status": "UNKNOWN"
+      }
+    ],
+    "findings": [],
+    "gaps": [
+      {
+        "code": "tool_availability_unknown",
+        "target_id": "t0",
+        "path": null,
+        "source_refs": [
+          {
+            "source_id": "t0",
+            "document": "response",
+            "start": 20,
+            "end": 57,
+            "text": "\t→ TOOL_CALL check_network_status: {}"
+          },
+          {
+            "source_id": "q4",
+            "document": "prompt",
+            "start": 23883,
+            "end": 27455,
+            "text": "[AVAILABLE TOOLS]\n- get_customer_by_phone — Finds a customer by their primary contact or line phone number.\n    phone_number: string! — The phone number to search for.\n- get_customer_by_id — Retrieves a customer directly by their unique ID.\n    customer_id: string! — The unique identifier of the customer.\n- get_customer_by_name — Searches for customers by name and DOB. May return multiple matches if names are similar,\n    \n    DOB helps disambiguate.\n    full_name: string! — The full name of the customer.\n    dob: string! — Date of birth for verification, in the format YYYY-MM-DD.\n- get_details_by_id — Retrieves the details for a given ID.\n    \n    The ID must be a valid ID for a Customer, Line, Device, Bill, or Plan.\n    id: string! — The ID of the object to retrieve.\n- suspend_line — Suspends a specific line (max 6 months).\n    \n    Checks: Line status must be Active.\n    Logic: Sets line status to Suspended, records suspension_start_date.\n    customer_id: string! — ID of the customer who owns the line.\n    line_id: string! — ID of the line to suspend.\n    reason: string! — Reason for suspension.\n- resume_line — Resumes a suspended line.\n    \n    Checks: Line status must be Suspended or Pending Activation.\n    Logic: Sets line status to Active, clears suspension_start_date.\n    customer_id: string! — ID of the customer who owns the line.\n    line_id: string! — ID of the line to resume.\n- get_bills_for_customer — Retrieves a list of the customer's bills, most recent first.\n    customer_id: string! — ID of the customer.\n    limit: integer — Maximum number of bills to return.\n- send_payment_request — Sends a payment request to the customer for a specific bill.\n    \n    Checks:\n        - Customer exists\n        - Bill exists and belongs to the customer\n        - No other bills are already awaiting payment for this customer\n    Logic: Sets bill status to AWAITING_PAYMENT and notifies customer.\n    Warning: This method does not check if the bill is already PAID.\n    Always check the bill status before calling this method.\n    customer_id: string! — ID of the customer who owns the bill.\n    bill_id: string! — ID of the bill to send payment request for.\n- get_data_usage — Retrieves current billing cycle data usage for a line, including data\n    \n    refueling amount, data limit, and cycle end date.\n    customer_id: string! — ID of the customer who owns the line.\n    line_id: string! — ID of the line to check usage for.\n- enable_roaming — Enables international roaming on a line.\n    customer_id: string! — ID of the customer who owns the line.\n    line_id: string! — ID of the line to enable roaming for.\n- disable_roaming — Disables international roaming on a line.\n    customer_id: string! — ID of the customer who owns the line.\n    line_id: string! — ID of the line to disable roaming for.\n- transfer_to_human_agents — Transfer the user to a human agent, with a summary of the user's issue.\n    \n    Only transfer if\n     -  the user explicitly asks for a human agent\n     -  given the policy and the available tools, you cannot solve the user's issue.\n    summary: string! — A summary of the user's issue.\n- refuel_data — Refuels data for a specific line, adding to the customer's bill.\n    \n    Checks: Line status must be Active, Customer owns the line.\n    Logic: Adds data to the line and charges customer based on the plan's refueling rate.\n    customer_id: string! — ID of the customer who owns the line.\n    line_id: string! — ID of the line to refuel data for.\n    gb_amount: number! — Amount of data to add in gigabytes."
+          }
+        ],
+        "claim": "Original tool inventory is missing, partial or ambiguous; absence is not established."
+      }
+    ],
+    "mechanically_established_error": false,
+    "catalog": {
+      "authoritative": true,
+      "executable_inventory_complete": false,
+      "tool_universe_closed": false,
+      "absence_check_enabled": false,
+      "gaps": [
+        "unsupported_declaration_line"
+      ]
+    },
+    "coverage": {
+      "status": "PARTIAL",
+      "total_current_assistant_calls": 1,
+      "schema_checked_calls": 0,
+      "whole_move_certified": false
+    },
+    "inference_http": 0
+  },
+  {
+    "id": "telecom__mms_issueairplane_mode_on-bad_wifi_calling-break_app_both_permissions-data_mode_o::t15",
+    "cohort": "valid_known",
+    "version": "whole-move-mechanical-v1",
+    "source_sha256": "bb174fecaded64ca72d3c28f4b8b8b920a5ab576180c834b4d9d4000d573bd31",
+    "targets": [],
+    "findings": [],
+    "gaps": [],
+    "mechanically_established_error": false,
+    "catalog": {
+      "authoritative": true,
+      "executable_inventory_complete": false,
+      "tool_universe_closed": false,
+      "absence_check_enabled": false,
+      "gaps": [
+        "unsupported_declaration_line"
+      ]
+    },
+    "coverage": {
+      "status": "NO_CURRENT_ASSISTANT_CALLS",
+      "total_current_assistant_calls": 0,
+      "schema_checked_calls": 0,
+      "whole_move_certified": false
+    },
+    "inference_http": 0
+  },
+  {
+    "id": "airline__23::t10",
+    "cohort": "valid_known",
+    "version": "whole-move-mechanical-v1",
+    "source_sha256": "f91f0c591be68f5a709182ef433f610ea86de2c6f748710b2b9842c7b0b9c543",
+    "targets": [
+      {
+        "target_id": "t0",
+        "tool": "cancel_reservation",
+        "source": {
+          "source_id": "t0",
+          "document": "response",
+          "start": 21,
+          "end": 83,
+          "text": "\t→ TOOL_CALL cancel_reservation: {\"reservation_id\": \"K1NW8N\"}\n"
+        },
+        "schema_status": "DECLARED_FIELDS_CHECKED"
+      },
+      {
+        "target_id": "t1",
+        "tool": "book_reservation",
+        "source": {
+          "source_id": "t1",
+          "document": "response",
+          "start": 83,
+          "end": 906,
+          "text": "\t→ TOOL_CALL book_reservation: {\"cabin\": \"business\", \"destination\": \"SFO\", \"flight_type\": \"round_trip\", \"flights\": [{\"date\": \"2024-05-26\", \"destination\": \"SFO\", \"flight_number\": \"HAT023\", \"origin\": \"JFK\"}, {\"date\": \"2024-05-28\", \"destination\": \"SEA\", \"flight_number\": \"HAT204\", \"origin\": \"SFO\"}, {\"date\": \"2024-05-28\", \"destination\": \"JFK\", \"flight_number\": \"HAT100\", \"origin\": \"SEA\"}], \"insurance\": \"no\", \"nonfree_baggages\": 0, \"origin\": \"JFK\", \"passengers\": [{\"dob\": \"1960-11-26\", \"first_name\": \"Mohamed\", \"last_name\": \"Silva\"}], \"payment_methods\": [{\"id\": \"certificate_3765853\", \"source\": \"certificate\"}, {\"id\": \"gift_card_8020792\", \"source\": \"gift_card\"}, {\"id\": \"gift_card_6136092\", \"source\": \"gift_card\"}, {\"id\": \"credit_card_2198526\", \"source\": \"credit_card\"}], \"total_baggages\": 0, \"user_id\": \"mohamed_silva_9265\"}\n"
+        },
+        "schema_status": "MECHANICAL_FINDING"
+      },
+      {
+        "target_id": "t2",
+        "tool": "book_reservation",
+        "source": {
+          "source_id": "t2",
+          "document": "response",
+          "start": 906,
+          "end": 1623,
+          "text": "\t→ TOOL_CALL book_reservation: {\"cabin\": \"business\", \"destination\": \"SFO\", \"flight_type\": \"round_trip\", \"flights\": [{\"date\": \"2024-05-26\", \"destination\": \"SFO\", \"flight_number\": \"HAT023\", \"origin\": \"JFK\"}, {\"date\": \"2024-05-28\", \"destination\": \"SEA\", \"flight_number\": \"HAT204\", \"origin\": \"SFO\"}, {\"date\": \"2024-05-28\", \"destination\": \"JFK\", \"flight_number\": \"HAT100\", \"origin\": \"SEA\"}], \"insurance\": \"no\", \"nonfree_baggages\": 0, \"origin\": \"JFK\", \"passengers\": [{\"dob\": \"1986-09-12\", \"first_name\": \"Raj\", \"last_name\": \"Sanchez\"}], \"payment_methods\": [{\"id\": \"certificate_9984806\", \"source\": \"certificate\"}, {\"id\": \"credit_card_2198526\", \"source\": \"credit_card\"}], \"total_baggages\": 0, \"user_id\": \"mohamed_silva_9265\"}\n"
+        },
+        "schema_status": "MECHANICAL_FINDING"
+      },
+      {
+        "target_id": "t3",
+        "tool": "book_reservation",
+        "source": {
+          "source_id": "t3",
+          "document": "response",
+          "start": 1623,
+          "end": 2339,
+          "text": "\t→ TOOL_CALL book_reservation: {\"cabin\": \"business\", \"destination\": \"SFO\", \"flight_type\": \"round_trip\", \"flights\": [{\"date\": \"2024-05-26\", \"destination\": \"SFO\", \"flight_number\": \"HAT023\", \"origin\": \"JFK\"}, {\"date\": \"2024-05-28\", \"destination\": \"SEA\", \"flight_number\": \"HAT204\", \"origin\": \"SFO\"}, {\"date\": \"2024-05-28\", \"destination\": \"JFK\", \"flight_number\": \"HAT100\", \"origin\": \"SEA\"}], \"insurance\": \"no\", \"nonfree_baggages\": 0, \"origin\": \"JFK\", \"passengers\": [{\"dob\": \"1980-03-27\", \"first_name\": \"Liam\", \"last_name\": \"Wilson\"}], \"payment_methods\": [{\"id\": \"certificate_2765295\", \"source\": \"certificate\"}, {\"id\": \"credit_card_2198526\", \"source\": \"credit_card\"}], \"total_baggages\": 0, \"user_id\": \"mohamed_silva_9265\"}"
+        },
+        "schema_status": "MECHANICAL_FINDING"
+      }
+    ],
+    "findings": [
+      {
+        "code": "missing_argument",
+        "target_id": "t1",
+        "path": "$.payment_methods[0].payment_id",
+        "source_refs": [
+          {
+            "source_id": "t1",
+            "document": "response",
+            "start": 83,
+            "end": 906,
+            "text": "\t→ TOOL_CALL book_reservation: {\"cabin\": \"business\", \"destination\": \"SFO\", \"flight_type\": \"round_trip\", \"flights\": [{\"date\": \"2024-05-26\", \"destination\": \"SFO\", \"flight_number\": \"HAT023\", \"origin\": \"JFK\"}, {\"date\": \"2024-05-28\", \"destination\": \"SEA\", \"flight_number\": \"HAT204\", \"origin\": \"SFO\"}, {\"date\": \"2024-05-28\", \"destination\": \"JFK\", \"flight_number\": \"HAT100\", \"origin\": \"SEA\"}], \"insurance\": \"no\", \"nonfree_baggages\": 0, \"origin\": \"JFK\", \"passengers\": [{\"dob\": \"1960-11-26\", \"first_name\": \"Mohamed\", \"last_name\": \"Silva\"}], \"payment_methods\": [{\"id\": \"certificate_3765853\", \"source\": \"certificate\"}, {\"id\": \"gift_card_8020792\", \"source\": \"gift_card\"}, {\"id\": \"gift_card_6136092\", \"source\": \"gift_card\"}, {\"id\": \"credit_card_2198526\", \"source\": \"credit_card\"}], \"total_baggages\": 0, \"user_id\": \"mohamed_silva_9265\"}\n"
+          },
+          {
+            "source_id": "q9",
+            "document": "prompt",
+            "start": 9289,
+            "end": 9385,
+            "text": "    payment_methods: array! — An array of objects containing details about each payment method.\n"
+          },
+          {
+            "source_id": "q10",
+            "document": "prompt",
+            "start": 9385,
+            "end": 9451,
+            "text": "        · payment_id: string! — Unique identifier for the payment\n"
+          }
+        ],
+        "claim": "Explicit required field $.payment_methods[0].payment_id is absent from this current call."
+      },
+      {
+        "code": "missing_argument",
+        "target_id": "t1",
+        "path": "$.payment_methods[0].amount",
+        "source_refs": [
+          {
+            "source_id": "t1",
+            "document": "response",
+            "start": 83,
+            "end": 906,
+            "text": "\t→ TOOL_CALL book_reservation: {\"cabin\": \"business\", \"destination\": \"SFO\", \"flight_type\": \"round_trip\", \"flights\": [{\"date\": \"2024-05-26\", \"destination\": \"SFO\", \"flight_number\": \"HAT023\", \"origin\": \"JFK\"}, {\"date\": \"2024-05-28\", \"destination\": \"SEA\", \"flight_number\": \"HAT204\", \"origin\": \"SFO\"}, {\"date\": \"2024-05-28\", \"destination\": \"JFK\", \"flight_number\": \"HAT100\", \"origin\": \"SEA\"}], \"insurance\": \"no\", \"nonfree_baggages\": 0, \"origin\": \"JFK\", \"passengers\": [{\"dob\": \"1960-11-26\", \"first_name\": \"Mohamed\", \"last_name\": \"Silva\"}], \"payment_methods\": [{\"id\": \"certificate_3765853\", \"source\": \"certificate\"}, {\"id\": \"gift_card_8020792\", \"source\": \"gift_card\"}, {\"id\": \"gift_card_6136092\", \"source\": \"gift_card\"}, {\"id\": \"credit_card_2198526\", \"source\": \"credit_card\"}], \"total_baggages\": 0, \"user_id\": \"mohamed_silva_9265\"}\n"
+          },
+          {
+            "source_id": "q9",
+            "document": "prompt",
+            "start": 9289,
+            "end": 9385,
+            "text": "    payment_methods: array! — An array of objects containing details about each payment method.\n"
+          },
+          {
+            "source_id": "q11",
+            "document": "prompt",
+            "start": 9451,
+            "end": 9506,
+            "text": "        · amount: integer! — Payment amount in dollars\n"
+          }
+        ],
+        "claim": "Explicit required field $.payment_methods[0].amount is absent from this current call."
+      },
+      {
+        "code": "missing_argument",
+        "target_id": "t1",
+        "path": "$.payment_methods[1].payment_id",
+        "source_refs": [
+          {
+            "source_id": "t1",
+            "document": "response",
+            "start": 83,
+            "end": 906,
+            "text": "\t→ TOOL_CALL book_reservation: {\"cabin\": \"business\", \"destination\": \"SFO\", \"flight_type\": \"round_trip\", \"flights\": [{\"date\": \"2024-05-26\", \"destination\": \"SFO\", \"flight_number\": \"HAT023\", \"origin\": \"JFK\"}, {\"date\": \"2024-05-28\", \"destination\": \"SEA\", \"flight_number\": \"HAT204\", \"origin\": \"SFO\"}, {\"date\": \"2024-05-28\", \"destination\": \"JFK\", \"flight_number\": \"HAT100\", \"origin\": \"SEA\"}], \"insurance\": \"no\", \"nonfree_baggages\": 0, \"origin\": \"JFK\", \"passengers\": [{\"dob\": \"1960-11-26\", \"first_name\": \"Mohamed\", \"last_name\": \"Silva\"}], \"payment_methods\": [{\"id\": \"certificate_3765853\", \"source\": \"certificate\"}, {\"id\": \"gift_card_8020792\", \"source\": \"gift_card\"}, {\"id\": \"gift_card_6136092\", \"source\": \"gift_card\"}, {\"id\": \"credit_card_2198526\", \"source\": \"credit_card\"}], \"total_baggages\": 0, \"user_id\": \"mohamed_silva_9265\"}\n"
+          },
+          {
+            "source_id": "q9",
+            "document": "prompt",
+            "start": 9289,
+            "end": 9385,
+            "text": "    payment_methods: array! — An array of objects containing details about each payment method.\n"
+          },
+          {
+            "source_id": "q10",
+            "document": "prompt",
+            "start": 9385,
+            "end": 9451,
+            "text": "        · payment_id: string! — Unique identifier for the payment\n"
+          }
+        ],
+        "claim": "Explicit required field $.payment_methods[1].payment_id is absent from this current call."
+      },
+      {
+        "code": "missing_argument",
+        "target_id": "t1",
+        "path": "$.payment_methods[1].amount",
+        "source_refs": [
+          {
+            "source_id": "t1",
+            "document": "response",
+            "start": 83,
+            "end": 906,
+            "text": "\t→ TOOL_CALL book_reservation: {\"cabin\": \"business\", \"destination\": \"SFO\", \"flight_type\": \"round_trip\", \"flights\": [{\"date\": \"2024-05-26\", \"destination\": \"SFO\", \"flight_number\": \"HAT023\", \"origin\": \"JFK\"}, {\"date\": \"2024-05-28\", \"destination\": \"SEA\", \"flight_number\": \"HAT204\", \"origin\": \"SFO\"}, {\"date\": \"2024-05-28\", \"destination\": \"JFK\", \"flight_number\": \"HAT100\", \"origin\": \"SEA\"}], \"insurance\": \"no\", \"nonfree_baggages\": 0, \"origin\": \"JFK\", \"passengers\": [{\"dob\": \"1960-11-26\", \"first_name\": \"Mohamed\", \"last_name\": \"Silva\"}], \"payment_methods\": [{\"id\": \"certificate_3765853\", \"source\": \"certificate\"}, {\"id\": \"gift_card_8020792\", \"source\": \"gift_card\"}, {\"id\": \"gift_card_6136092\", \"source\": \"gift_card\"}, {\"id\": \"credit_card_2198526\", \"source\": \"credit_card\"}], \"total_baggages\": 0, \"user_id\": \"mohamed_silva_9265\"}\n"
+          },
+          {
+            "source_id": "q9",
+            "document": "prompt",
+            "start": 9289,
+            "end": 9385,
+            "text": "    payment_methods: array! — An array of objects containing details about each payment method.\n"
+          },
+          {
+            "source_id": "q11",
+            "document": "prompt",
+            "start": 9451,
+            "end": 9506,
+            "text": "        · amount: integer! — Payment amount in dollars\n"
+          }
+        ],
+        "claim": "Explicit required field $.payment_methods[1].amount is absent from this current call."
+      },
+      {
+        "code": "missing_argument",
+        "target_id": "t1",
+        "path": "$.payment_methods[2].payment_id",
+        "source_refs": [
+          {
+            "source_id": "t1",
+            "document": "response",
+            "start": 83,
+            "end": 906,
+            "text": "\t→ TOOL_CALL book_reservation: {\"cabin\": \"business\", \"destination\": \"SFO\", \"flight_type\": \"round_trip\", \"flights\": [{\"date\": \"2024-05-26\", \"destination\": \"SFO\", \"flight_number\": \"HAT023\", \"origin\": \"JFK\"}, {\"date\": \"2024-05-28\", \"destination\": \"SEA\", \"flight_number\": \"HAT204\", \"origin\": \"SFO\"}, {\"date\": \"2024-05-28\", \"destination\": \"JFK\", \"flight_number\": \"HAT100\", \"origin\": \"SEA\"}], \"insurance\": \"no\", \"nonfree_baggages\": 0, \"origin\": \"JFK\", \"passengers\": [{\"dob\": \"1960-11-26\", \"first_name\": \"Mohamed\", \"last_name\": \"Silva\"}], \"payment_methods\": [{\"id\": \"certificate_3765853\", \"source\": \"certificate\"}, {\"id\": \"gift_card_8020792\", \"source\": \"gift_card\"}, {\"id\": \"gift_card_6136092\", \"source\": \"gift_card\"}, {\"id\": \"credit_card_2198526\", \"source\": \"credit_card\"}], \"total_baggages\": 0, \"user_id\": \"mohamed_silva_9265\"}\n"
+          },
+          {
+            "source_id": "q9",
+            "document": "prompt",
+            "start": 9289,
+            "end": 9385,
+            "text": "    payment_methods: array! — An array of objects containing details about each payment method.\n"
+          },
+          {
+            "source_id": "q10",
+            "document": "prompt",
+            "start": 9385,
+            "end": 9451,
+            "text": "        · payment_id: string! — Unique identifier for the payment\n"
+          }
+        ],
+        "claim": "Explicit required field $.payment_methods[2].payment_id is absent from this current call."
+      },
+      {
+        "code": "missing_argument",
+        "target_id": "t1",
+        "path": "$.payment_methods[2].amount",
+        "source_refs": [
+          {
+            "source_id": "t1",
+            "document": "response",
+            "start": 83,
+            "end": 906,
+            "text": "\t→ TOOL_CALL book_reservation: {\"cabin\": \"business\", \"destination\": \"SFO\", \"flight_type\": \"round_trip\", \"flights\": [{\"date\": \"2024-05-26\", \"destination\": \"SFO\", \"flight_number\": \"HAT023\", \"origin\": \"JFK\"}, {\"date\": \"2024-05-28\", \"destination\": \"SEA\", \"flight_number\": \"HAT204\", \"origin\": \"SFO\"}, {\"date\": \"2024-05-28\", \"destination\": \"JFK\", \"flight_number\": \"HAT100\", \"origin\": \"SEA\"}], \"insurance\": \"no\", \"nonfree_baggages\": 0, \"origin\": \"JFK\", \"passengers\": [{\"dob\": \"1960-11-26\", \"first_name\": \"Mohamed\", \"last_name\": \"Silva\"}], \"payment_methods\": [{\"id\": \"certificate_3765853\", \"source\": \"certificate\"}, {\"id\": \"gift_card_8020792\", \"source\": \"gift_card\"}, {\"id\": \"gift_card_6136092\", \"source\": \"gift_card\"}, {\"id\": \"credit_card_2198526\", \"source\": \"credit_card\"}], \"total_baggages\": 0, \"user_id\": \"mohamed_silva_9265\"}\n"
+          },
+          {
+            "source_id": "q9",
+            "document": "prompt",
+            "start": 9289,
+            "end": 9385,
+            "text": "    payment_methods: array! — An array of objects containing details about each payment method.\n"
+          },
+          {
+            "source_id": "q11",
+            "document": "prompt",
+            "start": 9451,
+            "end": 9506,
+            "text": "        · amount: integer! — Payment amount in dollars\n"
+          }
+        ],
+        "claim": "Explicit required field $.payment_methods[2].amount is absent from this current call."
+      },
+      {
+        "code": "missing_argument",
+        "target_id": "t1",
+        "path": "$.payment_methods[3].payment_id",
+        "source_refs": [
+          {
+            "source_id": "t1",
+            "document": "response",
+            "start": 83,
+            "end": 906,
+            "text": "\t→ TOOL_CALL book_reservation: {\"cabin\": \"business\", \"destination\": \"SFO\", \"flight_type\": \"round_trip\", \"flights\": [{\"date\": \"2024-05-26\", \"destination\": \"SFO\", \"flight_number\": \"HAT023\", \"origin\": \"JFK\"}, {\"date\": \"2024-05-28\", \"destination\": \"SEA\", \"flight_number\": \"HAT204\", \"origin\": \"SFO\"}, {\"date\": \"2024-05-28\", \"destination\": \"JFK\", \"flight_number\": \"HAT100\", \"origin\": \"SEA\"}], \"insurance\": \"no\", \"nonfree_baggages\": 0, \"origin\": \"JFK\", \"passengers\": [{\"dob\": \"1960-11-26\", \"first_name\": \"Mohamed\", \"last_name\": \"Silva\"}], \"payment_methods\": [{\"id\": \"certificate_3765853\", \"source\": \"certificate\"}, {\"id\": \"gift_card_8020792\", \"source\": \"gift_card\"}, {\"id\": \"gift_card_6136092\", \"source\": \"gift_card\"}, {\"id\": \"credit_card_2198526\", \"source\": \"credit_card\"}], \"total_baggages\": 0, \"user_id\": \"mohamed_silva_9265\"}\n"
+          },
+          {
+            "source_id": "q9",
+            "document": "prompt",
+            "start": 9289,
+            "end": 9385,
+            "text": "    payment_methods: array! — An array of objects containing details about each payment method.\n"
+          },
+          {
+            "source_id": "q10",
+            "document": "prompt",
+            "start": 9385,
+            "end": 9451,
+            "text": "        · payment_id: string! — Unique identifier for the payment\n"
+          }
+        ],
+        "claim": "Explicit required field $.payment_methods[3].payment_id is absent from this current call."
+      },
+      {
+        "code": "missing_argument",
+        "target_id": "t1",
+        "path": "$.payment_methods[3].amount",
+        "source_refs": [
+          {
+            "source_id": "t1",
+            "document": "response",
+            "start": 83,
+            "end": 906,
+            "text": "\t→ TOOL_CALL book_reservation: {\"cabin\": \"business\", \"destination\": \"SFO\", \"flight_type\": \"round_trip\", \"flights\": [{\"date\": \"2024-05-26\", \"destination\": \"SFO\", \"flight_number\": \"HAT023\", \"origin\": \"JFK\"}, {\"date\": \"2024-05-28\", \"destination\": \"SEA\", \"flight_number\": \"HAT204\", \"origin\": \"SFO\"}, {\"date\": \"2024-05-28\", \"destination\": \"JFK\", \"flight_number\": \"HAT100\", \"origin\": \"SEA\"}], \"insurance\": \"no\", \"nonfree_baggages\": 0, \"origin\": \"JFK\", \"passengers\": [{\"dob\": \"1960-11-26\", \"first_name\": \"Mohamed\", \"last_name\": \"Silva\"}], \"payment_methods\": [{\"id\": \"certificate_3765853\", \"source\": \"certificate\"}, {\"id\": \"gift_card_8020792\", \"source\": \"gift_card\"}, {\"id\": \"gift_card_6136092\", \"source\": \"gift_card\"}, {\"id\": \"credit_card_2198526\", \"source\": \"credit_card\"}], \"total_baggages\": 0, \"user_id\": \"mohamed_silva_9265\"}\n"
+          },
+          {
+            "source_id": "q9",
+            "document": "prompt",
+            "start": 9289,
+            "end": 9385,
+            "text": "    payment_methods: array! — An array of objects containing details about each payment method.\n"
+          },
+          {
+            "source_id": "q11",
+            "document": "prompt",
+            "start": 9451,
+            "end": 9506,
+            "text": "        · amount: integer! — Payment amount in dollars\n"
+          }
+        ],
+        "claim": "Explicit required field $.payment_methods[3].amount is absent from this current call."
+      },
+      {
+        "code": "missing_argument",
+        "target_id": "t2",
+        "path": "$.payment_methods[0].payment_id",
+        "source_refs": [
+          {
+            "source_id": "t2",
+            "document": "response",
+            "start": 906,
+            "end": 1623,
+            "text": "\t→ TOOL_CALL book_reservation: {\"cabin\": \"business\", \"destination\": \"SFO\", \"flight_type\": \"round_trip\", \"flights\": [{\"date\": \"2024-05-26\", \"destination\": \"SFO\", \"flight_number\": \"HAT023\", \"origin\": \"JFK\"}, {\"date\": \"2024-05-28\", \"destination\": \"SEA\", \"flight_number\": \"HAT204\", \"origin\": \"SFO\"}, {\"date\": \"2024-05-28\", \"destination\": \"JFK\", \"flight_number\": \"HAT100\", \"origin\": \"SEA\"}], \"insurance\": \"no\", \"nonfree_baggages\": 0, \"origin\": \"JFK\", \"passengers\": [{\"dob\": \"1986-09-12\", \"first_name\": \"Raj\", \"last_name\": \"Sanchez\"}], \"payment_methods\": [{\"id\": \"certificate_9984806\", \"source\": \"certificate\"}, {\"id\": \"credit_card_2198526\", \"source\": \"credit_card\"}], \"total_baggages\": 0, \"user_id\": \"mohamed_silva_9265\"}\n"
+          },
+          {
+            "source_id": "q9",
+            "document": "prompt",
+            "start": 9289,
+            "end": 9385,
+            "text": "    payment_methods: array! — An array of objects containing details about each payment method.\n"
+          },
+          {
+            "source_id": "q10",
+            "document": "prompt",
+            "start": 9385,
+            "end": 9451,
+            "text": "        · payment_id: string! — Unique identifier for the payment\n"
+          }
+        ],
+        "claim": "Explicit required field $.payment_methods[0].payment_id is absent from this current call."
+      },
+      {
+        "code": "missing_argument",
+        "target_id": "t2",
+        "path": "$.payment_methods[0].amount",
+        "source_refs": [
+          {
+            "source_id": "t2",
+            "document": "response",
+            "start": 906,
+            "end": 1623,
+            "text": "\t→ TOOL_CALL book_reservation: {\"cabin\": \"business\", \"destination\": \"SFO\", \"flight_type\": \"round_trip\", \"flights\": [{\"date\": \"2024-05-26\", \"destination\": \"SFO\", \"flight_number\": \"HAT023\", \"origin\": \"JFK\"}, {\"date\": \"2024-05-28\", \"destination\": \"SEA\", \"flight_number\": \"HAT204\", \"origin\": \"SFO\"}, {\"date\": \"2024-05-28\", \"destination\": \"JFK\", \"flight_number\": \"HAT100\", \"origin\": \"SEA\"}], \"insurance\": \"no\", \"nonfree_baggages\": 0, \"origin\": \"JFK\", \"passengers\": [{\"dob\": \"1986-09-12\", \"first_name\": \"Raj\", \"last_name\": \"Sanchez\"}], \"payment_methods\": [{\"id\": \"certificate_9984806\", \"source\": \"certificate\"}, {\"id\": \"credit_card_2198526\", \"source\": \"credit_card\"}], \"total_baggages\": 0, \"user_id\": \"mohamed_silva_9265\"}\n"
+          },
+          {
+            "source_id": "q9",
+            "document": "prompt",
+            "start": 9289,
+            "end": 9385,
+            "text": "    payment_methods: array! — An array of objects containing details about each payment method.\n"
+          },
+          {
+            "source_id": "q11",
+            "document": "prompt",
+            "start": 9451,
+            "end": 9506,
+            "text": "        · amount: integer! — Payment amount in dollars\n"
+          }
+        ],
+        "claim": "Explicit required field $.payment_methods[0].amount is absent from this current call."
+      },
+      {
+        "code": "missing_argument",
+        "target_id": "t2",
+        "path": "$.payment_methods[1].payment_id",
+        "source_refs": [
+          {
+            "source_id": "t2",
+            "document": "response",
+            "start": 906,
+            "end": 1623,
+            "text": "\t→ TOOL_CALL book_reservation: {\"cabin\": \"business\", \"destination\": \"SFO\", \"flight_type\": \"round_trip\", \"flights\": [{\"date\": \"2024-05-26\", \"destination\": \"SFO\", \"flight_number\": \"HAT023\", \"origin\": \"JFK\"}, {\"date\": \"2024-05-28\", \"destination\": \"SEA\", \"flight_number\": \"HAT204\", \"origin\": \"SFO\"}, {\"date\": \"2024-05-28\", \"destination\": \"JFK\", \"flight_number\": \"HAT100\", \"origin\": \"SEA\"}], \"insurance\": \"no\", \"nonfree_baggages\": 0, \"origin\": \"JFK\", \"passengers\": [{\"dob\": \"1986-09-12\", \"first_name\": \"Raj\", \"last_name\": \"Sanchez\"}], \"payment_methods\": [{\"id\": \"certificate_9984806\", \"source\": \"certificate\"}, {\"id\": \"credit_card_2198526\", \"source\": \"credit_card\"}], \"total_baggages\": 0, \"user_id\": \"mohamed_silva_9265\"}\n"
+          },
+          {
+            "source_id": "q9",
+            "document": "prompt",
+            "start": 9289,
+            "end": 9385,
+            "text": "    payment_methods: array! — An array of objects containing details about each payment method.\n"
+          },
+          {
+            "source_id": "q10",
+            "document": "prompt",
+            "start": 9385,
+            "end": 9451,
+            "text": "        · payment_id: string! — Unique identifier for the payment\n"
+          }
+        ],
+        "claim": "Explicit required field $.payment_methods[1].payment_id is absent from this current call."
+      },
+      {
+        "code": "missing_argument",
+        "target_id": "t2",
+        "path": "$.payment_methods[1].amount",
+        "source_refs": [
+          {
+            "source_id": "t2",
+            "document": "response",
+            "start": 906,
+            "end": 1623,
+            "text": "\t→ TOOL_CALL book_reservation: {\"cabin\": \"business\", \"destination\": \"SFO\", \"flight_type\": \"round_trip\", \"flights\": [{\"date\": \"2024-05-26\", \"destination\": \"SFO\", \"flight_number\": \"HAT023\", \"origin\": \"JFK\"}, {\"date\": \"2024-05-28\", \"destination\": \"SEA\", \"flight_number\": \"HAT204\", \"origin\": \"SFO\"}, {\"date\": \"2024-05-28\", \"destination\": \"JFK\", \"flight_number\": \"HAT100\", \"origin\": \"SEA\"}], \"insurance\": \"no\", \"nonfree_baggages\": 0, \"origin\": \"JFK\", \"passengers\": [{\"dob\": \"1986-09-12\", \"first_name\": \"Raj\", \"last_name\": \"Sanchez\"}], \"payment_methods\": [{\"id\": \"certificate_9984806\", \"source\": \"certificate\"}, {\"id\": \"credit_card_2198526\", \"source\": \"credit_card\"}], \"total_baggages\": 0, \"user_id\": \"mohamed_silva_9265\"}\n"
+          },
+          {
+            "source_id": "q9",
+            "document": "prompt",
+            "start": 9289,
+            "end": 9385,
+            "text": "    payment_methods: array! — An array of objects containing details about each payment method.\n"
+          },
+          {
+            "source_id": "q11",
+            "document": "prompt",
+            "start": 9451,
+            "end": 9506,
+            "text": "        · amount: integer! — Payment amount in dollars\n"
+          }
+        ],
+        "claim": "Explicit required field $.payment_methods[1].amount is absent from this current call."
+      },
+      {
+        "code": "missing_argument",
+        "target_id": "t3",
+        "path": "$.payment_methods[0].payment_id",
+        "source_refs": [
+          {
+            "source_id": "t3",
+            "document": "response",
+            "start": 1623,
+            "end": 2339,
+            "text": "\t→ TOOL_CALL book_reservation: {\"cabin\": \"business\", \"destination\": \"SFO\", \"flight_type\": \"round_trip\", \"flights\": [{\"date\": \"2024-05-26\", \"destination\": \"SFO\", \"flight_number\": \"HAT023\", \"origin\": \"JFK\"}, {\"date\": \"2024-05-28\", \"destination\": \"SEA\", \"flight_number\": \"HAT204\", \"origin\": \"SFO\"}, {\"date\": \"2024-05-28\", \"destination\": \"JFK\", \"flight_number\": \"HAT100\", \"origin\": \"SEA\"}], \"insurance\": \"no\", \"nonfree_baggages\": 0, \"origin\": \"JFK\", \"passengers\": [{\"dob\": \"1980-03-27\", \"first_name\": \"Liam\", \"last_name\": \"Wilson\"}], \"payment_methods\": [{\"id\": \"certificate_2765295\", \"source\": \"certificate\"}, {\"id\": \"credit_card_2198526\", \"source\": \"credit_card\"}], \"total_baggages\": 0, \"user_id\": \"mohamed_silva_9265\"}"
+          },
+          {
+            "source_id": "q9",
+            "document": "prompt",
+            "start": 9289,
+            "end": 9385,
+            "text": "    payment_methods: array! — An array of objects containing details about each payment method.\n"
+          },
+          {
+            "source_id": "q10",
+            "document": "prompt",
+            "start": 9385,
+            "end": 9451,
+            "text": "        · payment_id: string! — Unique identifier for the payment\n"
+          }
+        ],
+        "claim": "Explicit required field $.payment_methods[0].payment_id is absent from this current call."
+      },
+      {
+        "code": "missing_argument",
+        "target_id": "t3",
+        "path": "$.payment_methods[0].amount",
+        "source_refs": [
+          {
+            "source_id": "t3",
+            "document": "response",
+            "start": 1623,
+            "end": 2339,
+            "text": "\t→ TOOL_CALL book_reservation: {\"cabin\": \"business\", \"destination\": \"SFO\", \"flight_type\": \"round_trip\", \"flights\": [{\"date\": \"2024-05-26\", \"destination\": \"SFO\", \"flight_number\": \"HAT023\", \"origin\": \"JFK\"}, {\"date\": \"2024-05-28\", \"destination\": \"SEA\", \"flight_number\": \"HAT204\", \"origin\": \"SFO\"}, {\"date\": \"2024-05-28\", \"destination\": \"JFK\", \"flight_number\": \"HAT100\", \"origin\": \"SEA\"}], \"insurance\": \"no\", \"nonfree_baggages\": 0, \"origin\": \"JFK\", \"passengers\": [{\"dob\": \"1980-03-27\", \"first_name\": \"Liam\", \"last_name\": \"Wilson\"}], \"payment_methods\": [{\"id\": \"certificate_2765295\", \"source\": \"certificate\"}, {\"id\": \"credit_card_2198526\", \"source\": \"credit_card\"}], \"total_baggages\": 0, \"user_id\": \"mohamed_silva_9265\"}"
+          },
+          {
+            "source_id": "q9",
+            "document": "prompt",
+            "start": 9289,
+            "end": 9385,
+            "text": "    payment_methods: array! — An array of objects containing details about each payment method.\n"
+          },
+          {
+            "source_id": "q11",
+            "document": "prompt",
+            "start": 9451,
+            "end": 9506,
+            "text": "        · amount: integer! — Payment amount in dollars\n"
+          }
+        ],
+        "claim": "Explicit required field $.payment_methods[0].amount is absent from this current call."
+      },
+      {
+        "code": "missing_argument",
+        "target_id": "t3",
+        "path": "$.payment_methods[1].payment_id",
+        "source_refs": [
+          {
+            "source_id": "t3",
+            "document": "response",
+            "start": 1623,
+            "end": 2339,
+            "text": "\t→ TOOL_CALL book_reservation: {\"cabin\": \"business\", \"destination\": \"SFO\", \"flight_type\": \"round_trip\", \"flights\": [{\"date\": \"2024-05-26\", \"destination\": \"SFO\", \"flight_number\": \"HAT023\", \"origin\": \"JFK\"}, {\"date\": \"2024-05-28\", \"destination\": \"SEA\", \"flight_number\": \"HAT204\", \"origin\": \"SFO\"}, {\"date\": \"2024-05-28\", \"destination\": \"JFK\", \"flight_number\": \"HAT100\", \"origin\": \"SEA\"}], \"insurance\": \"no\", \"nonfree_baggages\": 0, \"origin\": \"JFK\", \"passengers\": [{\"dob\": \"1980-03-27\", \"first_name\": \"Liam\", \"last_name\": \"Wilson\"}], \"payment_methods\": [{\"id\": \"certificate_2765295\", \"source\": \"certificate\"}, {\"id\": \"credit_card_2198526\", \"source\": \"credit_card\"}], \"total_baggages\": 0, \"user_id\": \"mohamed_silva_9265\"}"
+          },
+          {
+            "source_id": "q9",
+            "document": "prompt",
+            "start": 9289,
+            "end": 9385,
+            "text": "    payment_methods: array! — An array of objects containing details about each payment method.\n"
+          },
+          {
+            "source_id": "q10",
+            "document": "prompt",
+            "start": 9385,
+            "end": 9451,
+            "text": "        · payment_id: string! — Unique identifier for the payment\n"
+          }
+        ],
+        "claim": "Explicit required field $.payment_methods[1].payment_id is absent from this current call."
+      },
+      {
+        "code": "missing_argument",
+        "target_id": "t3",
+        "path": "$.payment_methods[1].amount",
+        "source_refs": [
+          {
+            "source_id": "t3",
+            "document": "response",
+            "start": 1623,
+            "end": 2339,
+            "text": "\t→ TOOL_CALL book_reservation: {\"cabin\": \"business\", \"destination\": \"SFO\", \"flight_type\": \"round_trip\", \"flights\": [{\"date\": \"2024-05-26\", \"destination\": \"SFO\", \"flight_number\": \"HAT023\", \"origin\": \"JFK\"}, {\"date\": \"2024-05-28\", \"destination\": \"SEA\", \"flight_number\": \"HAT204\", \"origin\": \"SFO\"}, {\"date\": \"2024-05-28\", \"destination\": \"JFK\", \"flight_number\": \"HAT100\", \"origin\": \"SEA\"}], \"insurance\": \"no\", \"nonfree_baggages\": 0, \"origin\": \"JFK\", \"passengers\": [{\"dob\": \"1980-03-27\", \"first_name\": \"Liam\", \"last_name\": \"Wilson\"}], \"payment_methods\": [{\"id\": \"certificate_2765295\", \"source\": \"certificate\"}, {\"id\": \"credit_card_2198526\", \"source\": \"credit_card\"}], \"total_baggages\": 0, \"user_id\": \"mohamed_silva_9265\"}"
+          },
+          {
+            "source_id": "q9",
+            "document": "prompt",
+            "start": 9289,
+            "end": 9385,
+            "text": "    payment_methods: array! — An array of objects containing details about each payment method.\n"
+          },
+          {
+            "source_id": "q11",
+            "document": "prompt",
+            "start": 9451,
+            "end": 9506,
+            "text": "        · amount: integer! — Payment amount in dollars\n"
+          }
+        ],
+        "claim": "Explicit required field $.payment_methods[1].amount is absent from this current call."
+      }
+    ],
+    "gaps": [],
+    "mechanically_established_error": true,
+    "catalog": {
+      "authoritative": true,
+      "executable_inventory_complete": false,
+      "tool_universe_closed": false,
+      "absence_check_enabled": false,
+      "gaps": [
+        "unsupported_declaration_line"
+      ]
+    },
+    "coverage": {
+      "status": "CALL_SCHEMA_SCOPE_ONLY",
+      "total_current_assistant_calls": 4,
+      "schema_checked_calls": 4,
+      "whole_move_certified": false
+    },
+    "inference_http": 0
+  },
+  {
+    "id": "retail__27::t10",
+    "cohort": "valid_known",
+    "version": "whole-move-mechanical-v1",
+    "source_sha256": "42728199f98be14013afe8091d7521d56288c5a6c67b4d31c2890fbb976f59bf",
+    "targets": [
+      {
+        "target_id": "t0",
+        "tool": "return_delivered_order_items",
+        "source": {
+          "source_id": "t0",
+          "document": "response",
+          "start": 21,
+          "end": 171,
+          "text": "\t→ TOOL_CALL return_delivered_order_items: {\"item_ids\": [\"5753502325\", \"9851293632\"], \"order_id\": \"#W7181492\", \"payment_method_id\": \"paypal_3024827\"}\n"
+        },
+        "schema_status": "UNKNOWN"
+      },
+      {
+        "target_id": "t1",
+        "tool": "exchange_delivered_order_items",
+        "source": {
+          "source_id": "t1",
+          "document": "response",
+          "start": 171,
+          "end": 340,
+          "text": "\t→ TOOL_CALL exchange_delivered_order_items: {\"item_ids\": [\"8118291112\"], \"new_item_ids\": [\"8277474082\"], \"order_id\": \"#W7181492\", \"payment_method_id\": \"paypal_3024827\"}"
+        },
+        "schema_status": "UNKNOWN"
+      }
+    ],
+    "findings": [],
+    "gaps": [
+      {
+        "code": "tool_schema_not_fully_understood",
+        "target_id": "t0",
+        "path": null,
+        "source_refs": [
+          {
+            "source_id": "t0",
+            "document": "response",
+            "start": 21,
+            "end": 171,
+            "text": "\t→ TOOL_CALL return_delivered_order_items: {\"item_ids\": [\"5753502325\", \"9851293632\"], \"order_id\": \"#W7181492\", \"payment_method_id\": \"paypal_3024827\"}\n"
+          },
+          {
+            "source_id": "q10",
+            "document": "prompt",
+            "start": 13723,
+            "end": 14519,
+            "text": "- return_delivered_order_items — Return some items of a delivered order.\n    \n    The order status will be changed to 'return requested'.\n    The agent needs to explain the return detail and ask for explicit user confirmation (yes/no) to proceed.\n    The user will receive follow-up email for how and where to return the item.\n    order_id: string! — The order id, such as '#W0000000'. Be careful there is a '#' symbol at the beginning of the order id.\n    item_ids: array! — The item ids to be returned, each such as '1008292230'. There could be duplicate items in the list.\n    payment_method_id: string! — The payment method id to pay or receive refund for the item price difference, such as 'gift_card_0000000' or 'credit_card_0000000'. These can be looked up from the user or order details.\n"
+          }
+        ],
+        "claim": "Declaration grammar is partial or ambiguous: unsupported_declaration_line"
+      },
+      {
+        "code": "tool_schema_not_fully_understood",
+        "target_id": "t1",
+        "path": null,
+        "source_refs": [
+          {
+            "source_id": "t1",
+            "document": "response",
+            "start": 171,
+            "end": 340,
+            "text": "\t→ TOOL_CALL exchange_delivered_order_items: {\"item_ids\": [\"8118291112\"], \"new_item_ids\": [\"8277474082\"], \"order_id\": \"#W7181492\", \"payment_method_id\": \"paypal_3024827\"}"
+          },
+          {
+            "source_id": "q11",
+            "document": "prompt",
+            "start": 8363,
+            "end": 9364,
+            "text": "- exchange_delivered_order_items — Exchange items in a delivered order to new items of the same product type.\n    \n    For a delivered order, return or exchange can be only done once by the agent.\n    The agent needs to explain the exchange detail and ask for explicit user confirmation (yes/no) to proceed.\n    order_id: string! — The order id, such as '#W0000000'. Be careful there is a '#' symbol at the beginning of the order id.\n    item_ids: array! — The item ids to be exchanged, each such as '1008292230'. There could be duplicate items in the list.\n    new_item_ids: array! — The item ids to be exchanged for, each such as '1008292230'. There could be duplicate items in the list. Each new item id should match the item id in the same position and be of the same product.\n    payment_method_id: string! — The payment method id to pay or receive refund for the item price difference, such as 'gift_card_0000000' or 'credit_card_0000000'. These can be looked up from the user or order details.\n"
+          }
+        ],
+        "claim": "Declaration grammar is partial or ambiguous: unsupported_declaration_line"
+      }
+    ],
+    "mechanically_established_error": false,
+    "catalog": {
+      "authoritative": true,
+      "executable_inventory_complete": false,
+      "tool_universe_closed": false,
+      "absence_check_enabled": false,
+      "gaps": [
+        "unsupported_declaration_line"
+      ]
+    },
+    "coverage": {
+      "status": "PARTIAL",
+      "total_current_assistant_calls": 2,
+      "schema_checked_calls": 0,
+      "whole_move_certified": false
+    },
+    "inference_http": 0
+  },
+  {
+    "id": "banking_knowledge__task_057::t2",
+    "cohort": "valid_known",
+    "version": "whole-move-mechanical-v1",
+    "source_sha256": "b12b1b835f91b71538b5802bb779b7886f7b0028e06a74d3086fb5b1876950c1",
+    "targets": [],
+    "findings": [],
+    "gaps": [],
+    "mechanically_established_error": false,
+    "catalog": {
+      "authoritative": true,
+      "executable_inventory_complete": false,
+      "tool_universe_closed": false,
+      "absence_check_enabled": false,
+      "gaps": [
+        "unsupported_declaration_line"
+      ]
+    },
+    "coverage": {
+      "status": "NO_CURRENT_ASSISTANT_CALLS",
+      "total_current_assistant_calls": 0,
+      "schema_checked_calls": 0,
+      "whole_move_certified": false
+    },
+    "inference_http": 0
+  },
+  {
+    "id": "wm_01_7c",
+    "cohort": "fresh_authored",
+    "version": "whole-move-mechanical-v1",
+    "source_sha256": "c7401683f07b70cd24b8e084f9e31b9b03b0e1c0b4c3abbd2a4ce04ad780eafc",
+    "targets": [
+      {
+        "target_id": "t0",
+        "tool": "kavor_17",
+        "source": {
+          "source_id": "t0",
+          "document": "response",
+          "start": 20,
+          "end": 57,
+          "text": "\t→ TOOL_CALL kavor_17: {\"zone\":\"Z2\"}\n"
+        },
+        "schema_status": "DECLARED_FIELDS_CHECKED"
+      }
+    ],
+    "findings": [],
+    "gaps": [],
+    "mechanically_established_error": false,
+    "catalog": {
+      "authoritative": true,
+      "executable_inventory_complete": true,
+      "tool_universe_closed": false,
+      "absence_check_enabled": false,
+      "gaps": []
+    },
+    "coverage": {
+      "status": "CALL_SCHEMA_SCOPE_ONLY",
+      "total_current_assistant_calls": 1,
+      "schema_checked_calls": 1,
+      "whole_move_certified": false
+    },
+    "inference_http": 0
+  },
+  {
+    "id": "wm_01_d2",
+    "cohort": "fresh_authored",
+    "version": "whole-move-mechanical-v1",
+    "source_sha256": "6cbe692f07ca26248753f03b1ea920ba51cefce4c90ae3fe2429bce9f0691212",
+    "targets": [
+      {
+        "target_id": "t0",
+        "tool": "kavor_17",
+        "source": {
+          "source_id": "t0",
+          "document": "response",
+          "start": 20,
+          "end": 57,
+          "text": "\t→ TOOL_CALL kavor_17: {\"zone\":\"Z2\"}\n"
+        },
+        "schema_status": "DECLARED_FIELDS_CHECKED"
+      },
+      {
+        "target_id": "t1",
+        "tool": "kavor_17",
+        "source": {
+          "source_id": "t1",
+          "document": "response",
+          "start": 57,
+          "end": 94,
+          "text": "\t→ TOOL_CALL kavor_17: {\"zone\":\"Z3\"}\n"
+        },
+        "schema_status": "DECLARED_FIELDS_CHECKED"
+      }
+    ],
+    "findings": [],
+    "gaps": [],
+    "mechanically_established_error": false,
+    "catalog": {
+      "authoritative": true,
+      "executable_inventory_complete": true,
+      "tool_universe_closed": false,
+      "absence_check_enabled": false,
+      "gaps": []
+    },
+    "coverage": {
+      "status": "CALL_SCHEMA_SCOPE_ONLY",
+      "total_current_assistant_calls": 2,
+      "schema_checked_calls": 2,
+      "whole_move_certified": false
+    },
+    "inference_http": 0
+  },
+  {
+    "id": "wm_02_91",
+    "cohort": "fresh_authored",
+    "version": "whole-move-mechanical-v1",
+    "source_sha256": "e1b5fc93499aa79a8fef22956b72c1fd1901a0819fac86b7d338b1d9c8e3c4c0",
+    "targets": [
+      {
+        "target_id": "t0",
+        "tool": "mavren_61",
+        "source": {
+          "source_id": "t0",
+          "document": "response",
+          "start": 20,
+          "end": 61,
+          "text": "\t→ TOOL_CALL mavren_61: {\"subject\":\"P5\"}\n"
+        },
+        "schema_status": "DECLARED_FIELDS_CHECKED"
+      }
+    ],
+    "findings": [],
+    "gaps": [],
+    "mechanically_established_error": false,
+    "catalog": {
+      "authoritative": true,
+      "executable_inventory_complete": true,
+      "tool_universe_closed": false,
+      "absence_check_enabled": false,
+      "gaps": []
+    },
+    "coverage": {
+      "status": "CALL_SCHEMA_SCOPE_ONLY",
+      "total_current_assistant_calls": 1,
+      "schema_checked_calls": 1,
+      "whole_move_certified": false
+    },
+    "inference_http": 0
+  },
+  {
+    "id": "wm_02_b8",
+    "cohort": "fresh_authored",
+    "version": "whole-move-mechanical-v1",
+    "source_sha256": "2a709ce5a75719ee501edb27cb8f2b282a182321b18af1532a84e4370847fdd6",
+    "targets": [
+      {
+        "target_id": "t0",
+        "tool": "mavren_61",
+        "source": {
+          "source_id": "t0",
+          "document": "response",
+          "start": 20,
+          "end": 61,
+          "text": "\t→ TOOL_CALL mavren_61: {\"subject\":\"P4\"}\n"
+        },
+        "schema_status": "DECLARED_FIELDS_CHECKED"
+      }
+    ],
+    "findings": [],
+    "gaps": [],
+    "mechanically_established_error": false,
+    "catalog": {
+      "authoritative": true,
+      "executable_inventory_complete": true,
+      "tool_universe_closed": false,
+      "absence_check_enabled": false,
+      "gaps": []
+    },
+    "coverage": {
+      "status": "CALL_SCHEMA_SCOPE_ONLY",
+      "total_current_assistant_calls": 1,
+      "schema_checked_calls": 1,
+      "whole_move_certified": false
+    },
+    "inference_http": 0
+  },
+  {
+    "id": "wm_03_4f",
+    "cohort": "fresh_authored",
+    "version": "whole-move-mechanical-v1",
+    "source_sha256": "df20d4a402967ed2a1e9970aa0f6ea62c2abd17a9e1b9cb99dd18d220f95a16c",
+    "targets": [
+      {
+        "target_id": "t0",
+        "tool": "zefrin_88",
+        "source": {
+          "source_id": "t0",
+          "document": "response",
+          "start": 20,
+          "end": 61,
+          "text": "\t→ TOOL_CALL zefrin_88: {\"capsule\":\"C8\"}\n"
+        },
+        "schema_status": "DECLARED_FIELDS_CHECKED"
+      }
+    ],
+    "findings": [],
+    "gaps": [],
+    "mechanically_established_error": false,
+    "catalog": {
+      "authoritative": true,
+      "executable_inventory_complete": true,
+      "tool_universe_closed": false,
+      "absence_check_enabled": false,
+      "gaps": []
+    },
+    "coverage": {
+      "status": "CALL_SCHEMA_SCOPE_ONLY",
+      "total_current_assistant_calls": 1,
+      "schema_checked_calls": 1,
+      "whole_move_certified": false
+    },
+    "inference_http": 0
+  },
+  {
+    "id": "wm_03_ae",
+    "cohort": "fresh_authored",
+    "version": "whole-move-mechanical-v1",
+    "source_sha256": "63cd45a2a1fd2735ce520b9b0b27bcd1947487aa7296b55792257a4c985f4374",
+    "targets": [
+      {
+        "target_id": "t0",
+        "tool": "zefrin_88",
+        "source": {
+          "source_id": "t0",
+          "document": "response",
+          "start": 20,
+          "end": 61,
+          "text": "\t→ TOOL_CALL zefrin_88: {\"capsule\":\"C8\"}\n"
+        },
+        "schema_status": "DECLARED_FIELDS_CHECKED"
+      }
+    ],
+    "findings": [],
+    "gaps": [],
+    "mechanically_established_error": false,
+    "catalog": {
+      "authoritative": true,
+      "executable_inventory_complete": true,
+      "tool_universe_closed": false,
+      "absence_check_enabled": false,
+      "gaps": []
+    },
+    "coverage": {
+      "status": "CALL_SCHEMA_SCOPE_ONLY",
+      "total_current_assistant_calls": 1,
+      "schema_checked_calls": 1,
+      "whole_move_certified": false
+    },
+    "inference_http": 0
+  },
+  {
+    "id": "wm_04_30",
+    "cohort": "fresh_authored",
+    "version": "whole-move-mechanical-v1",
+    "source_sha256": "e75268086a2c08a0ce24e7de089194e3cdd591d8084bb423b36770b3451a03b9",
+    "targets": [
+      {
+        "target_id": "t0",
+        "tool": "ruvek_59",
+        "source": {
+          "source_id": "t0",
+          "document": "response",
+          "start": 20,
+          "end": 56,
+          "text": "\t→ TOOL_CALL ruvek_59: {\"lot\":\"L4\"}\n"
+        },
+        "schema_status": "DECLARED_FIELDS_CHECKED"
+      }
+    ],
+    "findings": [],
+    "gaps": [],
+    "mechanically_established_error": false,
+    "catalog": {
+      "authoritative": true,
+      "executable_inventory_complete": true,
+      "tool_universe_closed": false,
+      "absence_check_enabled": false,
+      "gaps": []
+    },
+    "coverage": {
+      "status": "CALL_SCHEMA_SCOPE_ONLY",
+      "total_current_assistant_calls": 1,
+      "schema_checked_calls": 1,
+      "whole_move_certified": false
+    },
+    "inference_http": 0
+  },
+  {
+    "id": "wm_04_c6",
+    "cohort": "fresh_authored",
+    "version": "whole-move-mechanical-v1",
+    "source_sha256": "51bb0beea025c4e83adaf7f7420a28913803afe6ea5ba0a0293e6a178ff898dd",
+    "targets": [
+      {
+        "target_id": "t0",
+        "tool": "ruvek_59",
+        "source": {
+          "source_id": "t0",
+          "document": "response",
+          "start": 20,
+          "end": 56,
+          "text": "\t→ TOOL_CALL ruvek_59: {\"lot\":\"L4\"}\n"
+        },
+        "schema_status": "DECLARED_FIELDS_CHECKED"
+      }
+    ],
+    "findings": [],
+    "gaps": [],
+    "mechanically_established_error": false,
+    "catalog": {
+      "authoritative": true,
+      "executable_inventory_complete": true,
+      "tool_universe_closed": false,
+      "absence_check_enabled": false,
+      "gaps": []
+    },
+    "coverage": {
+      "status": "CALL_SCHEMA_SCOPE_ONLY",
+      "total_current_assistant_calls": 1,
+      "schema_checked_calls": 1,
+      "whole_move_certified": false
+    },
+    "inference_http": 0
+  },
+  {
+    "id": "wm_05_e7",
+    "cohort": "fresh_authored",
+    "version": "whole-move-mechanical-v1",
+    "source_sha256": "e938de61f13db9619cb5d9ccef4f1ba47293a036c8dac880397b8899b8d25b58",
+    "targets": [
+      {
+        "target_id": "t0",
+        "tool": "jorvak_73",
+        "source": {
+          "source_id": "t0",
+          "document": "response",
+          "start": 20,
+          "end": 76,
+          "text": "\t→ TOOL_CALL jorvak_73: {\"node\":\"N4\",\"credential\":\"K7\"}\n"
+        },
+        "schema_status": "DECLARED_FIELDS_CHECKED"
+      }
+    ],
+    "findings": [],
+    "gaps": [],
+    "mechanically_established_error": false,
+    "catalog": {
+      "authoritative": true,
+      "executable_inventory_complete": true,
+      "tool_universe_closed": false,
+      "absence_check_enabled": false,
+      "gaps": []
+    },
+    "coverage": {
+      "status": "CALL_SCHEMA_SCOPE_ONLY",
+      "total_current_assistant_calls": 1,
+      "schema_checked_calls": 1,
+      "whole_move_certified": false
+    },
+    "inference_http": 0
+  },
+  {
+    "id": "wm_05_2a",
+    "cohort": "fresh_authored",
+    "version": "whole-move-mechanical-v1",
+    "source_sha256": "afecf154f55d20728f295eaf64e91ea6e80cf5d6d34779ec3e3445b0eb9beb09",
+    "targets": [
+      {
+        "target_id": "t0",
+        "tool": "jorvak_73",
+        "source": {
+          "source_id": "t0",
+          "document": "response",
+          "start": 20,
+          "end": 76,
+          "text": "\t→ TOOL_CALL jorvak_73: {\"node\":\"N4\",\"credential\":\"K7\"}\n"
+        },
+        "schema_status": "DECLARED_FIELDS_CHECKED"
+      }
+    ],
+    "findings": [],
+    "gaps": [],
+    "mechanically_established_error": false,
+    "catalog": {
+      "authoritative": true,
+      "executable_inventory_complete": true,
+      "tool_universe_closed": false,
+      "absence_check_enabled": false,
+      "gaps": []
+    },
+    "coverage": {
+      "status": "CALL_SCHEMA_SCOPE_ONLY",
+      "total_current_assistant_calls": 1,
+      "schema_checked_calls": 1,
+      "whole_move_certified": false
+    },
+    "inference_http": 0
+  },
+  {
+    "id": "wm_06_5d",
+    "cohort": "fresh_authored",
+    "version": "whole-move-mechanical-v1",
+    "source_sha256": "fcff26518ceda1558cbf63542eddd39f2f3a2925bb6361beb0e78dc29d5d2704",
+    "targets": [
+      {
+        "target_id": "t0",
+        "tool": "nuvrek_84",
+        "source": {
+          "source_id": "t0",
+          "document": "response",
+          "start": 20,
+          "end": 80,
+          "text": "\t→ TOOL_CALL nuvrek_84: {\"beacon\":\"B7\",\"effective_tick\":19}\n"
+        },
+        "schema_status": "DECLARED_FIELDS_CHECKED"
+      }
+    ],
+    "findings": [],
+    "gaps": [],
+    "mechanically_established_error": false,
+    "catalog": {
+      "authoritative": true,
+      "executable_inventory_complete": true,
+      "tool_universe_closed": false,
+      "absence_check_enabled": false,
+      "gaps": []
+    },
+    "coverage": {
+      "status": "CALL_SCHEMA_SCOPE_ONLY",
+      "total_current_assistant_calls": 1,
+      "schema_checked_calls": 1,
+      "whole_move_certified": false
+    },
+    "inference_http": 0
+  },
+  {
+    "id": "wm_06_82",
+    "cohort": "fresh_authored",
+    "version": "whole-move-mechanical-v1",
+    "source_sha256": "e59b9368450a64c4e43acf21afcfdd913a1e6dc8d8d22ff207203bf4ee58e2dd",
+    "targets": [
+      {
+        "target_id": "t0",
+        "tool": "nuvrek_84",
+        "source": {
+          "source_id": "t0",
+          "document": "response",
+          "start": 20,
+          "end": 80,
+          "text": "\t→ TOOL_CALL nuvrek_84: {\"beacon\":\"B7\",\"effective_tick\":21}\n"
+        },
+        "schema_status": "DECLARED_FIELDS_CHECKED"
+      }
+    ],
+    "findings": [],
+    "gaps": [],
+    "mechanically_established_error": false,
+    "catalog": {
+      "authoritative": true,
+      "executable_inventory_complete": true,
+      "tool_universe_closed": false,
+      "absence_check_enabled": false,
+      "gaps": []
+    },
+    "coverage": {
+      "status": "CALL_SCHEMA_SCOPE_ONLY",
+      "total_current_assistant_calls": 1,
+      "schema_checked_calls": 1,
+      "whole_move_certified": false
+    },
+    "inference_http": 0
+  }
+]
