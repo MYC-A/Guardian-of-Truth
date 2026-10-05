@@ -37,6 +37,9 @@ PROFILES = {
     'guard': dict(guard=True, relations=False, controller=False),
     'relations': dict(guard=True, relations=True, controller=False),
     'integrated': dict(guard=True, relations=True, controller=True),
+    # Amendment 2 (post-hoc, designed after valid46 results): relation facts are sent only when at
+    # least one decisive fact exists; otherwise the request is byte-identical to the baseline request.
+    'integrated_gated': dict(guard=True, relations=True, controller=True, relation_gate=True),
 }
 
 
@@ -48,6 +51,7 @@ class ReviewConfig:
     guard: bool = True
     relations: bool = True
     controller: bool = True
+    relation_gate: bool = False    # True: send relation facts only if a decisive fact exists (amendment 2)
     attempt: int = 0               # repetition index (part of the cache key); fixed in the protocol
     max_tokens: int = 1700
 
@@ -140,14 +144,20 @@ def review(prompt, response, config=ReviewConfig(), client=None):
     addendum, extra = '', None
     if rp is not None and config.relations:
         rel = relations.compute(store)
+    if rel is not None and not (config.relation_gate and not rel['decisive']):
+        sent = rel
+        if config.relation_gate:                          # decisive facts only (no reassuring confirmations)
+            facts = [f for f in rel['facts'] if f['decisive']]
+            sent = dict(rel, facts=facts, source_refs=[f[k] for f in facts for k in
+                        ('first', 'last', 'receipt', 'earlier_call', 'earlier_receipt') if f.get(k)])
         present = set(reviewer.sources(rp))
-        add = _extra_records(store, rel, present)
+        add = _extra_records(store, sent, present)
         if add:
             rp = dict(rp, history=sorted(rp['history'] + reviewer.slim(add), key=lambda r: (r['event'] if r['event'] is not None else -1)))
         id_map = {}
         for r in add:
             id_map.setdefault(f"h{r['event']}", r['source_id'])
-        extra = dict(relation_facts=_fact_view(rel, id_map))
+        extra = dict(relation_facts=_fact_view(sent, id_map))
         addendum = reviewer.RELATIONS_ADDENDUM
         if rel['truncated']:
             gaps.append(dict(code='RELATION_FACTS_TRUNCATED', origin='RELATIONS'))

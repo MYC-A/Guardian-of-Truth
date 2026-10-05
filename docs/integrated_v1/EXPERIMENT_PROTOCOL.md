@@ -76,3 +76,18 @@ Counters are rebuilt from the attempts ledger after a restart. When a budget is 
    - It is a different model from the reviewer (`ministral-14b-2512`) but the same vendor family.
    - Cause counts are not directly comparable to historical gpt-oss judgements.
 5. The Mistral matrix and every other frozen element are unchanged.
+
+## Amendment 2 (post-hoc, recorded after the valid46 Mistral scores, before any judge call or SYN-M1 scoring)
+**Observation.** Relation facts (A3) lowered Mistral valid46 F1 compared with A1. Most changed rows had **no decisive fact**: they received only reassuring `OBSERVED_BEFORE_MOVE` confirmations. This is diagnosed as a reassurance/dilution effect.
+
+**Post-hoc variant `integrated_gated` (arms A3g/A4g):**
+- Relation facts are sent **only when ≥1 decisive fact exists**, and then only the decisive facts and their cited spans.
+- Otherwise the request is byte-identical to A1. On valid46 the exact cache therefore reuses the A1 replies for those rows: same request, same attempt index.
+- Everything else is unchanged: the controller trigger, the guard and admission.
+
+**Matrix.** Mistral valid46 reps 1–3, then Mistral SYN-M1 reps 1–3. It runs after the frozen SYN-M1 runs, under the same budget caps. Gemma is not run (provider limit).
+
+**Status.**
+- A3g/A4g were designed after seeing valid46 results, so valid46 numbers for them are **development/post-hoc** and cannot satisfy the pre-registered decision rule.
+- SYN-M1 is the only check, and it is authored and seen, with operators that overlap the decisive relations.
+- The variant can therefore be recommended at most as a **shadow candidate** pending a new independent lockbox.

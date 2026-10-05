@@ -263,3 +263,19 @@ def test_cli_no_model_runs_on_unseen_input(tmp_path):
                          capture_output=True, text=True, check=True).stdout
     res = json.loads(out)
     assert res['projection'] == 'NOT_EXECUTED_PROJECTED_0' and res['cost']['http_calls'] == 0
+
+
+def test_gated_profile_is_byte_identical_to_baseline_without_decisive_facts():
+    r = row(GOOD)
+    a, b = StaticClient(reply('NO_ERROR')), StaticClient(reply('NO_ERROR'))
+    review(r['prompt'], r['response'], ReviewConfig.profile('baseline'), client=a)
+    review(r['prompt'], r['response'], ReviewConfig.profile('integrated_gated'), client=b)
+    assert a.calls[0]['request'] == b.calls[0]['request'] and len(b.calls) == 1
+
+
+def test_gated_profile_sends_only_decisive_facts():
+    r = row(call('cancel_order', {'order_id': 'W7654321', 'reason': 'no_longer_needed'}))
+    cl = StaticClient(reply('ERROR'))
+    review(r['prompt'], r['response'], ReviewConfig.profile('integrated_gated'), client=cl)
+    facts = json.loads(cl.calls[0]['request']['messages'][1]['content'])['relation_facts']
+    assert facts and all(f['decisive'] for f in facts)

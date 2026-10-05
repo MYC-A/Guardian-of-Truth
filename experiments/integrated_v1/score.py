@@ -52,7 +52,7 @@ def arm_view(r, arm):
     guard = r.get('guard_error')
     if arm in ('A1', 'A2'):
         s = step(r, 'review')
-    elif arm == 'A3':
+    elif arm in ('A3', 'A3g'):
         s = step(r, 'review')
     else:
         c = step(r, 'controller')
@@ -64,7 +64,7 @@ def arm_view(r, arm):
     return d, (s or {}).get('tag'), payload
 
 
-ARMS = {'baseline': ('A1', 'A2'), 'integrated': ('A3', 'A4')}
+ARMS = {'baseline': ('A1', 'A2'), 'integrated': ('A3', 'A4'), 'integrated_gated': ('A3g', 'A4g')}  # *g: amendment 2, post-hoc
 
 
 def metrics(pred, g):
@@ -154,13 +154,13 @@ def report(tag):
                 cost = Counter()
                 for r in recs.values():
                     steps = [s for s in r.get('steps', []) if s.get('key')]
-                    if arm in ('A1', 'A2', 'A3'):
+                    if arm in ('A1', 'A2', 'A3', 'A3g'):
                         steps = [s for s in steps if s.get('tag') == 'review']
                     cost['calls'] += len(steps)
                     cost['prompt_tokens'] += sum((s.get('usage') or {}).get('prompt_tokens') or 0 for s in steps)
                     cost['completion_tokens'] += sum((s.get('usage') or {}).get('completion_tokens') or 0 for s in steps)
                     cost['model_seconds'] += sum(s.get('seconds') or 0 for s in steps)
-                    cost['controller_triggered'] += arm == 'A4' and any(s.get('tag') == 'controller' for s in steps)
+                    cost['controller_triggered'] += arm in ('A4', 'A4g') and any(s.get('tag') == 'controller' for s in steps)
                     cost['rejected'] += sum(str(s.get('admission', '')).startswith('REJECTED') for s in steps)
                     cost['invalid_json'] += sum(s.get('admission') == 'INVALID_JSON' for s in steps)
                     cost['transport_failure'] += sum(s.get('admission') == 'TRANSPORT_FAILURE' for s in steps)
@@ -179,7 +179,7 @@ def report(tag):
                 summary[f'{phase}|{prov}|{arm}|rep{rep}'] = m
                 per[(prov, arm)][rep] = pred
         for prov in sorted({k[0] for k in per}):
-            for arm in ('A1', 'A2', 'A3', 'A4'):
+            for arm in ('A1', 'A2', 'A3', 'A4', 'A3g', 'A4g'):
                 reps = per.get((prov, arm), {})
                 if not reps:
                     continue
@@ -187,7 +187,7 @@ def report(tag):
                 summary[f'{phase}|{prov}|{arm}|mean'] = dict(reps=len(fs), f1_mean=round(sum(fs) / len(fs), 4), f1_min=min(fs), f1_max=max(fs),
                     **{k: round(sum(summary[f'{phase}|{prov}|{arm}|rep{r}'][k] for r in reps) / len(reps), 2) for k in ('tp', 'fp', 'fn', 'tn', 'cause_correct_tp')})
             base = per.get((prov, 'A1'), {})
-            for arm in ('A2', 'A3', 'A4'):
+            for arm in ('A2', 'A3', 'A4', 'A3g', 'A4g'):
                 other = per.get((prov, arm), {})
                 common = sorted(set(base) & set(other))
                 if not common:
