@@ -21,8 +21,9 @@ def policy_key(normative_sources):
 
 
 class Layers:
-    def __init__(self, client, model, budget=400000, layers=('F', 'S', 'P')):
+    def __init__(self, client, model, budget=400000, layers=('F', 'S', 'P'), attempts=(0, 1)):
         self.client, self.model, self.budget, self.layers, self.cache = client, model, budget, tuple(layers), {}
+        self.attempts = tuple(attempts)
 
     def packet(self, row):
         from ..verification.pipeline import packet_for
@@ -36,7 +37,7 @@ class Layers:
         if 'F' in self.layers:
             k = policy_key(p['normative_sources'])
             if k not in self.cache:
-                self.cache[k] = F.extract(self.client, self.model, p['normative_sources'])
+                self.cache[k] = F.extract(self.client, self.model, p['normative_sources'], self.attempts)
             ext = self.cache[k]
             rules = F.bind(ext, p['normative_sources'])
         out = F.check(rules, p['current_targets']) if 'F' in self.layers else []

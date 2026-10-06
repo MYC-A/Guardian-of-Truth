@@ -113,14 +113,15 @@ def _extract(client, model, texts, attempt):
     return (v or {}).get('rules') or [], step_record(rec, 'turn_rules_v2', req), rec.get('content')
 
 
-def extract(client, model, normative_sources):
-    """Input-independent extraction (policy line texts only). -> dict(runs=[rules0, rules1], raw=[...], steps=[...])."""
+def extract(client, model, normative_sources, attempts=(0, 1)):
+    """Input-independent extraction (policy line texts only), two independent runs (cache attempts).
+    -> dict(runs=[rules0, rules1], raw=[...], steps=[...])."""
     lines = candidate_lines(normative_sources)
     texts = sorted({l['text'] for l in lines})
     if not texts:
         return dict(runs=[[], []], raw=[None, None], steps=[], n_lines=0)
-    a, s0, r0 = _extract(client, model, texts, 0)
-    b, s1, r1 = _extract(client, model, texts, 1)
+    a, s0, r0 = _extract(client, model, texts, attempts[0])
+    b, s1, r1 = _extract(client, model, texts, attempts[1])
     return dict(runs=[a, b], raw=[r0, r1], steps=[s0, s1], n_lines=len(texts))
 
 

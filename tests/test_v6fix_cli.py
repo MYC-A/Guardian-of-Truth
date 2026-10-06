@@ -20,7 +20,7 @@ def stub(monkeypatch):
     monkeypatch.setattr(vp, 'packet_for', lambda row, budget: dict(box['p'], _budget=budget))
     monkeypatch.setattr(v5, 'run_v5', lambda row, client, **k: {'A': {'final': 'NO_ERROR', 'guard_error': None}, 'pool': [], 'components': {}})
     monkeypatch.setattr(v5, 'decide', lambda rec: (0, None))
-    monkeypatch.setattr(F, 'extract', lambda client, model, srcs: dict(runs=[[], []], raw=['[]', '[]'], steps=[], n_lines=1))
+    monkeypatch.setattr(F, 'extract', lambda *a: dict(runs=[[], []], raw=['[]', '[]'], steps=[], n_lines=1))
     monkeypatch.setattr(cli, 'Transport', lambda *a, **k: None)
     import guardian_truth.repair.clients as cl
     monkeypatch.setattr(cl, 'ReadThrough', lambda *a, **k: None)
