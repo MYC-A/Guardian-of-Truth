@@ -170,3 +170,25 @@ different admission, different serialization. No majority vote. Cumulative Mistr
 3 `v4: freeze candidate implementation before external evaluation` · 4 `v4: freeze external converted evaluation set` ·
 5 `v4: record external evaluation results`. After commit 3 V4 code is not changed; a bug found later becomes an amendment
 evaluated as post-hoc.
+
+## Amendment 1 (2026-10-06, before commit 3; dev-only evidence, no external data seen)
+
+1. **Arm `V4_mech_strict`** added: only candidates whose relation is fixed entirely by code (`relation_by_code`, i.e.
+   DF4 self-checks WEEKDAY_ADJACENT / INLINE_ARITHMETIC / RANGE_NIGHTS) bypass the verifier. Reason: on dev,
+   `V4_mechanical` admitted model-bound code-proven FPs (Ems polarity/string-EQ junk, DF binder). The §5 criterion is
+   evaluated for both `V4_mechanical` and `V4_mech_strict`; the primary arm remains `V4_verified`.
+2. **Gates** (generic, from dev iterations 1–2, logged in RESULTS.md): Ems code-VIOLATED + model-SATISFIED → UNRESOLVED;
+   Ems comparison polarity contradicting the rule wording → UNRESOLVED; DF4 claim value literally present in a tool
+   result → SKIP (copied); claim that is an operand inside an inline expression → SKIP; numbers in any leaf quote must
+   exist in the source; empty JSON list sum term = 0; binder operand roles mapped by quoted type when names differ.
+3. **Verifier (V4 arms only)**: multi-piece evidence (each piece verified against some source, number-strict); for DF4
+   candidates (no policy source) the policy quote may equal DF4's own factual requirement.
+4. **External oracle details (fixed before selection):** ERROR = first assistant call to a WRITE tool (tau2
+   `get_tool_types`) in a reward-0 simulation that (a) has a gold action name with differing compared arguments
+   (tau2 `compare_with_tool_call` semantics: `compare_args` or all args) or (b) has no gold action of that name/args and
+   is not followed by an identical gold-matching call; plus optional confirmation stratum (WRITE call where the last user
+   message after the last assistant prose is not an affirmation — manual review only). NO_ERROR = gold-matching WRITE
+   calls of reward-1 simulations and multi-read moves of reward-1 simulations. Exclusions as §9 (valid46 task ids:
+   airline 3,5,7,8,9,10,21,23,24,44,47; retail 12,14,27,29,36,47,48,78,87,106,108; telecom ids sharing valid46 prefixes).
+   Sampling: deterministic sha256 order of `(file, sim id, turn)`, ≤ 2 per (domain, task), target ~35/~35; manual review
+   may only DROP. DF4 triggers only on prose; if the external moves contain little prose this is reported, not fixed.

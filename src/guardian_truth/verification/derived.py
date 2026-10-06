@@ -85,22 +85,22 @@ def _ru_month(w):
     return None
 
 
-def dates(text, now=None):
-    """[(date, span_text)] for every date in text, in order of appearance. `now` is a date (for year-less dates)."""
+def dates_pos(text, now=None):
+    """[(start, end, date, span_text)] for every date in text, in order of appearance (V4: positions for adjacency)."""
     text = text or ''
     found = []
     for m in ISO_RE.finditer(text):
-        found.append((m.start(), _mk(m[1], int(m[2]), int(m[3]), now), m[0]))
+        found.append((m.start(), m.end(), _mk(m[1], int(m[2]), int(m[3]), now), m[0]))
     for m in RU_RE.finditer(text):
-        found.append((m.start(), _mk(m[3], _ru_month(m[2]), int(m[1]), now), m[0]))
+        found.append((m.start(), m.end(), _mk(m[3], _ru_month(m[2]), int(m[1]), now), m[0]))
     for m in EN_DM_RE.finditer(text):
-        found.append((m.start(), _mk(m[3], EN_MONTHS[m[2][:3].lower()], int(m[1]), now), m[0]))
+        found.append((m.start(), m.end(), _mk(m[3], EN_MONTHS[m[2][:3].lower()], int(m[1]), now), m[0]))
     for m in EN_MD_RE.finditer(text):
-        found.append((m.start(), _mk(m[3], EN_MONTHS[m[1][:3].lower()], int(m[2]), now), m[0]))
+        found.append((m.start(), m.end(), _mk(m[3], EN_MONTHS[m[1][:3].lower()], int(m[2]), now), m[0]))
     for m in RANGE_RE.finditer(text):           # '10-15 октября': the first day shares the month
         w = m[3].lower()
         mth = _ru_month(w) if re.match('[а-я]', w) else EN_MONTHS.get(w[:3])
-        found.append((m.start(), _mk(m[4], mth, int(m[1]), now), m[1]))
+        found.append((m.start(), m.start() + len(m[1]), _mk(m[4], mth, int(m[1]), now), m[1]))
     iso_spans = [(m.start(), m.end()) for m in ISO_RE.finditer(text)]
     for m in DMY_RE.finditer(text):
         if any(a <= m.start() < b for a, b in iso_spans):
@@ -108,15 +108,20 @@ def dates(text, now=None):
         dd, mm = int(m[1]), int(m[2])
         if not (1 <= mm <= 12 and 1 <= dd <= 31) or (m[3] is None and now is None):
             continue
-        found.append((m.start(), _mk(m[3], mm, dd, now), m[0]))
+        found.append((m.start(), m.end(), _mk(m[3], mm, dd, now), m[0]))
     found.sort(key=lambda x: x[0])
     out, seen = [], set()
-    for pos, d, s in found:
+    for pos, end, d, s in found:
         if d is None or pos in seen:
             continue
         seen.add(pos)
-        out.append((d, s))
+        out.append((pos, end, d, s))
     return out
+
+
+def dates(text, now=None):
+    """[(date, span_text)] for every date in text, in order of appearance. `now` is a date (for year-less dates)."""
+    return [(d, s) for _, _, d, s in dates_pos(text, now)]
 
 
 def parse_date(s, now=None):
