@@ -135,3 +135,7 @@ External набор не запускает DF и не содержит подх
 7. **Принятие:** по заранее заданным бинарным и cause/target критериям, FP risk и cost. Сначала opt-in кандидат; default менять только по сопоставимому доказательству. Регулярные commit+push в research ветку, production merge отдельным reviewable шагом.
 
 **На сегодня:** сохранять integration/admission основу, развивать source-bound DF и полный target inventory, сузить смысл proof labels, исправить downstream потери и оценку причин. Отрицательные verdicts не дают оснований выбрасывать DF/counterfactual/verification идеи; положительные binary scores не дают оснований считать готовым универсальный Guardian.
+
+## 9. Уточнение correct-cause выводов по полным трассам
+
+В [дополнительной проверке](CAUSE_RECONCILIATION.md) сопоставлены прежние технические исправления и все 21 winning внешние причины. Правильные DF/Ems findings сохраняются; обнаружены также новая admission регрессия G3e, правильный Ems candidate с INVALID_JSON verifier (`ext_ret_022` r3), более релевантный admitted t3, скрытый выбором первого кандидата (`ext_ret_025` r3), и потеря явных подтверждений при narrow verification (`ext_air_043` r1). Поэтому wrong-cause оценка winning outputs не означает, что внутри архитектуры не было правильной работы модели. Дополнительно gold S для `ext_ret_041` противоречит видимым source данным; binary F2 основание остаётся. Исходные labels и исторические verdicts не изменены.
