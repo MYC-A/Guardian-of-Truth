@@ -192,3 +192,26 @@ evaluated as post-hoc.
    airline 3,5,7,8,9,10,21,23,24,44,47; retail 12,14,27,29,36,47,48,78,87,106,108; telecom ids sharing valid46 prefixes).
    Sampling: deterministic sha256 order of `(file, sim id, turn)`, ≤ 2 per (domain, task), target ~35/~35; manual review
    may only DROP. DF4 triggers only on prose; if the external moves contain little prose this is reported, not fixed.
+
+## Amendment 2 (2026-10-06, after the external run; post-hoc, unblinded)
+
+Trigger: external review of commit 5 showed that `ext_tau2` gold v1 equates tau2 task success with Guardian compliance.
+All 15 `multi_read` NO_ERROR rows make 2–5 tool calls in one move although every embedded policy says "only/at most one tool call
+at a time"; 4 `gold_write` NO_ERROR rows mix prose with a tool call ("should not respond to the user at the same time"); one
+(ext_ret_022) also writes without a fresh explicit "yes". v1 causes were generated from the tau2 action diff, not from the policy.
+The commit-5 verdicts (FINAL_DECISION v1) are therefore **withdrawn**.
+
+1. **Gold v2** (`experiments/verification_v4/external/gold_v2.py`, same 70 frozen inputs): every row relabelled against its own
+   embedded policy — mechanical causes F1 (≥2 calls) and F2 (prose + call); manual substantive causes S written as Guardian causes
+   (target + policy span + evidence), each marked `checked` (facts verified in the prompt) or `oracle` (supported only by the tau2
+   action diff); several acceptable causes per row; NO_ERROR rows checked manually; 2 UNCERTAIN rows excluded.
+   Result: 68 rows = 52 ERROR (19 format-only) / 16 NO_ERROR; strict variant without oracle-only rows: 65 rows (49/16).
+2. **No new Guardian/V4 calls.** The three stored external reps (commit 5) are rescored on gold v2. Only the unchanged cause judge is
+   re-run, once per (accusation, acceptable cause); cause-correct = SAME with any cause.
+3. Reported per rep: binary TP/FP/F1 per arm, paired new TP / new FP vs A, new cause-correct TP, later-call recall, strata
+   `format_only` vs `substantive` (has an S cause), sensitivity on `tau2v2_strict`. §7 rules are applied unchanged.
+4. **Status of any result: exploratory.** The gold audit was done after V4 outputs were seen, by the same agent, so v2 cannot
+   ADOPT anything; at most it can mark a component "candidate for a new blinded external test". Negatives are only 16 → FP
+   estimates are weak. The default stays `guard_adm2` regardless.
+5. Review reproducibility: `build.py review-selected` now prints the review view for every selected ERROR candidate (v1 review
+   showed the first 60 candidates; 3 selected candidates with ordinal > 60 were reviewed by an ad-hoc view in the session).

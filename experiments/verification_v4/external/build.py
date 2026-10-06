@@ -248,10 +248,13 @@ def finalize():
 
 if __name__ == '__main__':
     ap = argparse.ArgumentParser()
-    ap.add_argument('stage', choices=['pool', 'review', 'finalize'])
+    ap.add_argument('stage', choices=['pool', 'review', 'review-selected', 'finalize'])
     a = ap.parse_args()
     if a.stage == 'pool':
         pool()
+    elif a.stage == 'review-selected':   # Amendment 2 §5: reproducible view of every selected ERROR candidate
+        pl = [json.loads(l) for l in (OUTD / 'pool.jsonl').read_text().splitlines()]
+        review_view(select(pl), n_err=10 ** 6)
     elif a.stage == 'review':
         review_view([json.loads(l) for l in (OUTD / 'pool.jsonl').read_text().splitlines()])
     else:

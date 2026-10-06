@@ -51,3 +51,23 @@ def test_frozen_artifacts_integrity_and_no_leak():
         assert hashlib.sha256(r['prompt'].encode()).hexdigest() == c['sha256_prompt']
         assert (g['target'] is not None) == (g['label'] == 1)
     assert not set(m['drops']) & {g['case'] for g in gold.values()}
+
+
+V2 = D.parent / 'tau2v2'
+
+
+@pytest.mark.skipif(not (V2 / 'GOLD_eval_only.json').exists(), reason='gold v2 not built')
+def test_gold_v2_policy_rules():
+    g = json.loads((V2 / 'GOLD_eval_only.json').read_text())
+    rows = {json.loads(l)['id']: json.loads(l) for l in (V2 / 'inputs.jsonl').read_text().splitlines()}
+    assert set(g) == set(rows)
+    for i, x in g.items():
+        resp = rows[i]['response']
+        n = resp.count('\t→ TOOL_CALL ')
+        prose = any(l.strip() and not l.startswith('\t') for l in resp.split('\n')[1:])
+        if n >= 2 or (n and prose):
+            assert x['label'] == 1 and {'F1', 'F2'} & set(x['kinds'])
+        if x['v1_family'] == 'multi_read':
+            assert x['label'] == 1          # every multi_read move has >= 2 calls
+        assert (x['label'] == 1) == bool(x['causes'])
+        assert x['format_only'] == (x['label'] == 1 and 'S' not in x['kinds'])
