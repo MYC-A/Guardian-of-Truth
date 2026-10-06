@@ -24,8 +24,8 @@ def rows(name):
     return [json.loads(x) for x in (OUT / 'data' / f'{name}_inputs.jsonl').read_text(encoding='utf-8').splitlines() if x.strip()]
 
 
-def client_for(model, live):
-    t = Transport('mistral', model, OUT / 'cache' / model, max_calls=250, retry_failed=0, sender=budget.sender) if live else None
+def client_for(model, live, retry_failed=0):
+    t = Transport('mistral', model, OUT / 'cache' / model, max_calls=250, retry_failed=retry_failed, sender=budget.sender) if live else None
     return ReadThrough('mistral', model, REUSE.get(model, []) + [OUT / 'cache' / model], live=t)
 
 
@@ -47,9 +47,10 @@ def main():
     ap.add_argument('--set', required=True); ap.add_argument('--variant', required=True, choices=sorted(VARIANTS))
     ap.add_argument('--rep', type=int, default=1); ap.add_argument('--ids'); ap.add_argument('--live', action='store_true')
     ap.add_argument('--workers', type=int, default=2)
+    ap.add_argument('--retry-failed', type=int, default=0, help='explicit, logged re-send of a key whose earlier try failed (e.g. 429 give-up)')
     a = ap.parse_args()
     v = VARIANTS[a.variant]
-    client = client_for(v['model'], a.live)
+    client = client_for(v['model'], a.live, a.retry_failed)
     layers = Layers(ReadThrough('mistral', SMALL, [LAYER_CACHE], live=None), SMALL, budget=20000, attempts=(0, 1))
     path = OUT / 'runs' / a.set / f'{a.variant}_rep{a.rep}.jsonl'
     path.parent.mkdir(parents=True, exist_ok=True)

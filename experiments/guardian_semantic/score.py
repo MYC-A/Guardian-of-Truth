@@ -61,8 +61,8 @@ def score(s):
             if r is None:
                 c['missing'] += 1; continue
             from .run import failed_rec
-            if failed_rec(r):
-                c['tech'] += 1
+            if failed_rec(r) or any(x.get('parsed_ok') is False or ('parsed' in x and x['parsed'] is None) for x in r.get('pre_steps') or []):
+                c['tech'] += 1          # transport failure, or a pre-pass reply that could not be parsed (e.g. finish_reason=length)
             d = int(r.get('binary') or 0)
             o = ('tp' if d else 'fn') if g['label'] == 1 else ('fp' if d else 'tn')
             c[o] += 1; fam[g['family']][o] += 1
