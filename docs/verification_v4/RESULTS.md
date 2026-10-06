@@ -61,5 +61,39 @@ closed-tool and failed-receipt cases; stale state/wrong entity are reported as n
 Post-processing losses found and fixed on dev: BK3e (AT ERROR killed by single-quote verifier), H5e/K3e (DF correct,
 policy-quote downgrade), TL3e (binder operand naming).
 
-## 4. External evaluation
-(filled after commit 4/5)
+## 4. External evaluation (`ext_tau2`, 70 rows: 35 ERROR / 35 NO_ERROR; frozen in commit 4, see EXTERNAL_DATA.md)
+
+3 primary reps, identical settings, paired; code frozen at commit 3 (no change after). Raw reports:
+`outputs/verification_v4/external/tau2/reports/`. cc = new cause-correct TP vs A; binary = new TP (any cause) / new FP.
+
+| rep | A tp/fp F1 (cc) | A_DF | A_Ems | A_AT | A_CTRL | V4 (= V4_mech = V4_mech_strict) | calls/row |
+|---|---|---|---|---|---|---|---|
+| 1 | 18/12 .554 (2) | 0 | 0 cc, +0/+1FP | 0 cc, +2/+5FP | 0 cc, +0/+3FP | 0 cc, +2/+5FP, F1 .556 | 1.76 |
+| 2 | 19/13 .567 (3) | 0 | 0 cc, +1/0FP | 0 cc, +2/+4FP | 0 cc, +1/+1FP | 0 cc, +2/+4FP, F1 .575 | 1.81 |
+| 3 | 18/13 .545 (3) | 0 | 0 cc, 0/+1FP | 0 cc, +4/+4FP | 0 cc, 0/+5FP | 0 cc, +4/+4FP, F1 .595 | 1.93 |
+
+* Triggers: T_multi fired on 10/10/11 non-base-ERROR rows (2–4 positives), T_quant on 1–3 negatives, **T_calc and DF never
+  fired** (tau2 moves are single tool calls or pure prose, no stated quantities to recompute).
+* All-target: complete coverage 10–11 rows; binary later-call recall 9/9 vs A 6–7/9, but every AT gain is judged
+  cause≠ and costs 4–5 new FP per rep (FP mostly policy-boilerplate accusations on correct gold writes: ext_ret_029, ext_tel_047,
+  ext_ret_022 recurring).
+* Verifier: rejected 0–1 true (cause≠) and 0–2 false candidates per rep; it never changed a code-proven candidate, so V4,
+  V4_mechanical and V4_mech_strict are identical on every row.
+* Baseline instability: 17/70 rows flip A's decision across reps (16 "different evidence, different decision", 1 "different
+  target selection"); several AT/CTRL FPs/gains are rep-specific.
+* Cause-correct metric caveat: A itself is cause-correct on only 2–3 of 18–19 TP; gold causes are generated from the oracle
+  diff ("not part of the correct resolution"), so the judge is conservative here. The verdicts below do not depend on it:
+  even counted binarily, V4/AT net gain is +2−5, +2−4, +4−4.
+* Cost: ≈385 Guardian calls over 3 reps (≈9–10k tokens/row) + ≈70 judge calls.
+
+### Pre-registered verdicts (§5, §7)
+| rule | evidence | verdict |
+|---|---|---|
+| Combined V4 | 0 cc in every rep (need ≥3), new FP 5/4/4 (need ≤1) | **REJECT** |
+| DF-only | DF never triggered on the external set (no eligible case) | **INSUFFICIENT EVIDENCE** (stays shadow; 0 FP) |
+| All-target | T_multi net cc gain AT −5/−4/−4 vs CTRL −3/−1/−5 → AT > CTRL in 1/3 reps; later-call recall binary only | **schema gives no mechanism** (not useful) |
+| Multi-source proof | no compositional/calc positive triggered; Ems: 0 cc, 1 cause≠ gain, FP in reps 1 and 3 | **INSUFFICIENT EVIDENCE** (no eligible case); no positive signal |
+| §5 verifier criterion | verifier never rejected a code-proven candidate | not met → `V4_verified` stays primary (moot) |
+| ≥25 positives | 35 | satisfied |
+
+Default stays **guard_adm2** (A). See FINAL_DECISION.md.
