@@ -42,7 +42,7 @@ these were V4 accusations whose cause the sources contradict, e.g. ext_ret_019).
 NO_TRIGGER 83 (base reviewer said OK and no focused checker fired), NO_CANDIDATE 27 (trigger fired, no admitted candidate),
 VERIFIER_REFUTED 6, UNRESOLVED 4, NOT_EXECUTED 0. On tau2 (ext + holdout) all missed **semantic** errors (61) are NO_TRIGGER; the
 NO_CANDIDATE misses are format-only gold causes (one-tool-call / message+call rules: 15). The repaired proof/evidence/verifier layers
-can only act on the ~10 % of misses that reach them; the ceiling is upstream recall (reviewer + triggers).
+can only act on the ~10 % of misses that reach them; the ceiling is upstream recall (reviewer + triggers). [v2 correction: not an oracle ceiling; see docs/universal_repair_v2/FUNNEL_V2.md]
 
 ## Cost
 New detector calls 437 (2.01 M tokens) + judge calls 437 (377 judgements + 60 variance re-judgements, 1.82 M tokens); 0 transport failures. Budget cap 2500

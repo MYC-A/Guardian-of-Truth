@@ -19,7 +19,7 @@ recommended default on the research branch. R_comb is not adopted**; `pool` and 
 * A1 and A2 were found on LB3 (development) — LB3 is no longer clean for R_fix. Only the holdout is clean (A1 holdout observed before A2).
 * No end-to-end improvement is claimed: rep-to-rep variance (valid46 F1 0.649–0.791, holdout 0.750–0.811) is far larger than any
   arm effect.
-* The dominant miss is upstream: 83/120 R_fix misses never reach a checker (NO_TRIGGER); on tau2 every missed semantic error is
+* [v2 correction: this is a loss-location count, NOT an oracle ceiling — CB never ran in R_fix, A UNKNOWN was merged into NO_TRIGGER, INVALID_JSON_PLAN was hidden in NO_CANDIDATE; see docs/universal_repair_v2/FUNNEL_V2.md] The dominant miss is upstream: 83/120 R_fix misses never reach a checker (NO_TRIGGER); on tau2 every missed semantic error is
   NO_TRIGGER and the NO_CANDIDATE misses are format-only rules. Cause quality on tau2 is low for every arm (28–38 % correct causes).
 * `pool` adds candidates and +3 TP on dev but also +1 FP via a verifier error; `witness` removes some wrong-cause TPs (good for
   causes) but lowers the label metric. Both need a stronger verifier before adoption; they remain behind flags.

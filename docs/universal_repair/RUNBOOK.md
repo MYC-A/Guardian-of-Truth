@@ -1,5 +1,8 @@
 # RUNBOOK — universal repair (branch research/guardian-universal-repair-20261006)
 
+> v2 corrections (branch research/guardian-universal-repair-v2-20261006): production arm is R_fix, not R_comb; offline replay of live
+> runs needs `--with-live-cache`. See docs/universal_repair_v2/.
+
 ## Fresh install
 ```bash
 git clone https://github.com/MYC-A/Guardian-of-Truth.git && cd Guardian-of-Truth
@@ -14,11 +17,13 @@ Line endings: `.gitattributes` pins LF for frozen trees; a CRLF checkout of othe
 ## Offline replay (no network, no key)
 All model replies used by the reported runs are committed under `outputs/verification_v2/cache/mistral` (incl. 822 entries
 exported from the former sibling worktree) and `outputs/universal_repair/cache/{mistral,judge}`. Requests whose exact key is
-absent return `NOT_EXECUTED_OFFLINE` (never a verdict).
+absent return `NOT_EXECUTED_OFFLINE` (never a verdict). Correction (v2): offline `run.py` reads only `FROZEN`
+(verification_v2 cache); to replay the committed live runs offline add `--with-live-cache` (reads
+`outputs/universal_repair/cache/mistral` exact-key; v2 replay: 0 misses on all 13 R_fix set-reps).
 ```bash
-python -X utf8 -m experiments.universal_repair.run --set lb3_long --rep 1 --arm R_comb      # sets: valid46 lb_long lb2_long lb3_long ext_tau2 hold_tau2h
+python -X utf8 -m experiments.universal_repair.run --set lb3_long --rep 1 --arm R_fix       # sets: valid46 lb_long lb2_long lb3_long ext_tau2 hold_tau2h
 python -X utf8 -m experiments.universal_repair.report --mode offline --out /tmp/report.json
-python -X utf8 -m experiments.universal_repair.funnel --arm R_comb --mode offline
+python -X utf8 -m experiments.universal_repair.funnel --arm R_fix --mode offline
 ```
 To replay the live runs exactly, point `run.py` at the live cache (it is read through first) and use `--live` with
 `MISTRAL_API_KEY` unset: any missing key then fails as a technical failure instead of a silent verdict.
@@ -26,14 +31,15 @@ To replay the live runs exactly, point `run.py` at the live cache (it is read th
 ## Live
 ```bash
 export MISTRAL_API_KEY=...        # never commit; model ministral-14b-2512, 30 req/min → MIN_INTERVAL=2.1 s, one process at a time
-python -X utf8 -m experiments.universal_repair.run --set valid46 --rep 2 --arm R_comb --live
-python -X utf8 -m experiments.universal_repair.judge_causes --sets lb3_long:1 --arms V4r,R_comb
+python -X utf8 -m experiments.universal_repair.run --set valid46 --rep 2 --arm R_fix --live
+python -X utf8 -m experiments.universal_repair.judge_causes --sets lb3_long:1 --arms V4r,R_fix
 ```
 Budget: `MAX_CALLS=2500` new detector calls (per-process cap + ledger `outputs/universal_repair/cache/http_tries.jsonl`);
 judge `--max-calls 600`. Holdout gold is frozen (`outputs/universal_repair/holdout/tau2h/`, `holdout.py freeze` refuses overwrite).
 
 ## Production use
-Enable via `run_v5(row, client, flags=ARMS['R_comb'])` (`src/guardian_truth/repair/v5.py`); decision `decide(rec)`.
+Adopted arm is **R_fix** (R_comb was rejected, see FINAL_DECISION.md). Enable via `run_v5(row, client, flags=ARMS['R_fix'])`
+(`src/guardian_truth/repair/v5.py`); decision `decide(rec)`. Since v2: `guardian-review INPUT --repair r_fix` (opt-in; default unchanged).
 Default pipeline is unchanged — see FINAL_DECISION.md for which arm is recommended. Production merge is a separate review step.
 
 ## Full test suite

@@ -62,6 +62,9 @@ def run(a):
         seen.add(k); todo.append((s, rep, arm, i, acc, gi, k[2]))
     if a.ids:
         todo = [t for t in todo if t[3] in a.ids.split(',')]
+    if a.sample:
+        import random
+        todo = random.Random(20261006).sample(todo, min(a.sample, len(todo)))
     if a.limit:
         todo = todo[:a.limit]
     print('todo', len(todo), Counter(t[0] for t in todo))
@@ -140,6 +143,7 @@ def main():
     ap.add_argument('--arms', default='V4r,R_fix'); ap.add_argument('--attempt', type=int, default=0)
     ap.add_argument('--limit', type=int, default=0); ap.add_argument('--max-calls', type=int, default=700)
     ap.add_argument('--ids'); ap.add_argument('--dry', action='store_true')
+    ap.add_argument('--sample', type=int, default=0, help='seeded random subset (variance re-judgement)')
     a = ap.parse_args()
     dict(run=run, recheck_v1=recheck_v1, report=report)[a.cmd](a)
 

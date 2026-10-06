@@ -37,16 +37,30 @@ CASES = {
      expressible='NO: procedural precondition (order of events)'),
 }
 
+# negative controls: plausible but FALSE accusations on rows adjudicated NOT_SUPPORTED (a rubber-stamping verifier would SUPPORT)
+NEG = {
+ 'hold_ret_002': dict(rule='The refund must either go to the original payment method, or an existing gift card', facts=['"order_id": "#W6289770", "user_id"'],
+     reason='The refund is sent to credit_card_4466831, which is not the original payment method of order #W6289770.', expressible='n/a'),
+ 'hold_air_057': dict(rule='Otherwise, flight can be cancelled if any of the following is true', facts=['"reservation_id": "GV1N64"'],
+     reason='GV1N64 was booked more than 24 hrs ago and has no travel insurance, so none of the cancellation conditions holds, yet it is cancelled.', expressible='n/a'),
+ 'hold_ret_033': dict(rule='each item can be exchanged to an available new item of the same product', facts=['"product_id": "9924732112", "variants"'],
+     reason='The user asked for the cheapest IPX4 earbud, but 8555936349 is not the cheapest available IPX4 variant; 1646531091 is cheaper.', expressible='n/a'),
+ 'hold_air_020': dict(rule='baggage', facts=['"reservation_id": "UM3OG5", "user_id"'],
+     reason='Adding 3 checked bags to UM3OG5 requires 3 non-free bags to be charged, but the call sets nonfree_baggages 0.', expressible='n/a'),
+}
+
 
 def main():
-    ap = argparse.ArgumentParser(); ap.add_argument('--dry', action='store_true'); a = ap.parse_args()
+    ap = argparse.ArgumentParser(); ap.add_argument('--dry', action='store_true'); ap.add_argument('--neg', action='store_true')
+    a = ap.parse_args()
+    cases = NEG if a.neg else CASES
     rows = {r['id']: r for r in inputs('hold_tau2h')}
     client = None
     if not a.dry:
         live = Transport('mistral', MODEL, V2 / 'cache' / 'oracle', max_calls=20, retry_failed=2, sender=paced)
         client = ReadThrough('mistral', MODEL, [], live=live)
     out = {}
-    for i, c in CASES.items():
+    for i, c in cases.items():
         row = rows[i]; rp = packet_for(row, 20000); full = packet_for(row, 120000)
         rule = [s for s in full['normative_sources'] if c['rule'].lower() in s['text'].lower()]
         in_pkt = any(c['rule'].lower() in s['text'].lower() for s in rp['normative_sources'])
@@ -68,7 +82,7 @@ def main():
         print(i, {k: rec.get(k) for k in ('rule_in_detector_packet', 'facts_in_detector_packet', 'verification_status', 'raw_verdict', 'downgraded')})
     if not a.dry:
         (V2 / 'funnel').mkdir(parents=True, exist_ok=True)
-        (V2 / 'funnel' / 'oracle_probe.json').write_text(json.dumps(out, ensure_ascii=False, indent=1), encoding='utf-8')
+        (V2 / 'funnel' / f'oracle_probe{"_neg" if a.neg else ""}.json').write_text(json.dumps(out, ensure_ascii=False, indent=1), encoding='utf-8')
 
 
 if __name__ == '__main__':
