@@ -100,6 +100,18 @@ def scoped_copied(claim, results, bound_sources, nd):
     return False
 
 
+def call_result_pairs(history):
+    """{call source_id: result source_id}: each tool call is paired with the next result of the same tool (amendment A1,
+    found on LB3 r2 lb3L_012: the binder cited the call whose result carries the copied value)."""
+    pairs, open_ = {}, {}
+    for h in history:
+        if h.get('kind') == 'call':
+            open_.setdefault(h.get('tool'), []).append(h['source_id'])
+        elif h.get('kind') == 'result' and open_.get(h.get('tool')):
+            pairs[open_[h.get('tool')].pop(0)] = h['source_id']
+    return pairs
+
+
 OPS = {ast.Add: operator.add, ast.Sub: operator.sub, ast.Mult: operator.mul, ast.Div: operator.truediv}
 
 
@@ -167,7 +179,7 @@ def self_checks(tid, text, nd, claims, flags):
     return out
 
 
-def evaluate(b, claim, texts, nd, tgt_ids, nonmove, results, flags):
+def evaluate(b, claim, texts, nd, tgt_ids, nonmove, results, flags, pairs=None):
     """V4 evaluate_binding with the flag-gated repairs (copy scope, entity binding, Decimal equality)."""
     op = b.get('operation')
     if op == 'NOT_DERIVED':
@@ -177,6 +189,7 @@ def evaluate(b, claim, texts, nd, tgt_ids, nonmove, results, flags):
         if why:
             return dict(status='NOT_ASSERTED', note=why)
     bound = {o.get('source_id') for o in b.get('operands') or []}
+    bound |= {(pairs or {}).get(x) for x in bound} - {None}     # a cited tool CALL binds its own RESULT
     if op != 'WEEKDAY_OF':
         if 'df_copy' in flags:
             if scoped_copied(claim, results, bound, nd):
@@ -266,6 +279,7 @@ def run(client, packet, model, attempt=0, row=None, flags=frozenset()):
     nonmove = {s['source_id']: s['text'] for k in ('normative_sources', 'history', 'declarations') for s in pk[k]}
     texts = dict(nonmove, **{t['source_id']: t['text'] for t in packet['current_targets']})
     results = {h['source_id']: h['text'] for h in packet['history'] if h.get('kind') == 'result'}
+    pairs = call_result_pairs(packet['history'])
     out, steps, adm = [], [], []
     for bi, batch in enumerate(batches):
         # batch 0 keeps V4's claim ids c1..c10 and request; overflow batches renumber inside their own request
@@ -286,7 +300,7 @@ def run(client, packet, model, attempt=0, row=None, flags=frozenset()):
             c = byc.get(b.get('claim_id'))
             if c is None:
                 continue
-            r = evaluate(b, c, texts, nd, tgt_ids, nonmove, results, flags)
+            r = evaluate(b, c, texts, nd, tgt_ids, nonmove, results, flags, pairs)
             out.append(dict(b, batch=bi, check=r))
             if r['status'] == 'MISMATCH':
                 ev = [o['source_id'] for o in b.get('operands') or [] if o.get('source_id') not in tgt_ids]

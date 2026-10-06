@@ -177,6 +177,20 @@ def test_copy_suppression_is_scoped():
     assert df5.evaluate(b, claim2, texts, None, {'t0'}, texts, results, v5.FIXES)['status'] == 'SKIP'
 
 
+def test_cited_call_binds_its_own_result_for_copy():
+    hist = [dict(source_id='h1', kind='call', tool='get_slots', text='TOOL_CALL get_slots: {"date": "2025-04-14"}'),
+            dict(source_id='h2', kind='result', tool='get_slots', text='TOOL_RESPONSE get_slots: {"date": "2025-04-14", "free": []}'),
+            dict(source_id='h3', kind='result', tool='other', text='x')]
+    pairs = df5.call_result_pairs(hist)
+    assert pairs == {'h1': 'h2'}
+    import datetime as dt
+    claim = dict(kind='date', value=dt.date(2025, 4, 14), span='14 April', context='next slot on 14 April')
+    b = dict(operation='NEXT_BUSINESS_DAY', expression='date', operands=[dict(name='date', source_id='h1', quote='"date": "2025-04-14"', value='2025-04-14')])
+    texts = {h['source_id']: h['text'] for h in hist}
+    results = {h['source_id']: h['text'] for h in hist if h['kind'] == 'result'}
+    assert df5.evaluate(b, claim, texts, None, {'t0'}, texts, results, v5.FIXES, pairs)['status'] == 'SKIP'          # copied
+
+
 # ---- 5.5 confirmation ------------------------------------------------------------------------------------------
 TOOLS = [tool('update_record', 'Update.', ('record_id', 'string', True, 'Record.'))]
 

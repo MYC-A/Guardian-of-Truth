@@ -48,3 +48,14 @@ at most one bounded rep (cap 400 calls) if json_schema replies validate, else NO
 New blind holdout: drawn by seed from the unused tau2 pool (excludes the 70 frozen external rows and their tasks),
 gold = tau2 reward/action labels plus a policy-compliance annotation frozen and committed BEFORE any arm runs on it;
 target ≥25 positives. Thresholds for holdout success: candidate F1 ≥ V4 F1 and FP ≤ V4 FP + 1.
+
+## Amendment A1 (committed before any holdout run of a repaired arm)
+Found on development data (LB3 r2 `lb3L_012`, new FP of R_fix/R_df): the scoped-copy repair (`df_copy`) did not recognise a
+claimed value copied from the RESULT of the tool call the binder cited (binding cites the call `get_slots(date=…)`, its result carries
+the same date). General fix: a cited tool call binds its own result (`df5.call_result_pairs`, next result of the same tool); test
+`test_cited_call_binds_its_own_result_for_copy`. Pre-A1 runs are kept under `outputs/universal_repair/runs_v50/` and reported as
+`*_v50`; R_fix/R_df/R_comb on dev sets are re-run with A1 (exact-key cache, new calls only where requests change). The holdout
+V4r runs are unaffected (flags ∅); holdout R_comb runs use A1 from their first call. Because A1 was found on LB3, LB3 is no longer
+clean for R_fix/R_df/R_comb; only the frozen holdout is.
+Not amended (measured limitation): `lb3L_034` (pool exposes a second AT candidate; the verifier wrongly SUPPORTED a missing-confirmation
+accusation although the user confirmed both enumerated bookings). No code veto is added post hoc.

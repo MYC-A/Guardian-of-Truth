@@ -31,6 +31,7 @@ def receipts(recs):
 def build(mode, arms=ARMS, sets=SETS):
     out = dict(mode=mode, sets={})
     golds = {s: gold_for(s) for s in sets}
+    golds.setdefault('ext_tau2', gold_for('ext_tau2'))
     golds['ext_tau2v2_strict'] = gold_for('ext_tau2v2_strict')
     for s, reps in sets.items():
         g = golds[s]
@@ -38,7 +39,12 @@ def build(mode, arms=ARMS, sets=SETS):
             base = None
             for arm in arms:
                 try:
-                    recs, rv = arm_records(s, rep, arm, 'offline' if arm == 'V4r' else mode)
+                    try:
+                        recs, rv = arm_records(s, rep, arm, 'offline' if arm == 'V4r' else mode)
+                    except FileNotFoundError:
+                        if arm != 'V4r' or mode != 'live':
+                            raise
+                        recs, rv = arm_records(s, rep, arm, 'live')   # new reps/holdout: V4r itself needed live calls
                 except (FileNotFoundError, AssertionError) as e:
                     out['sets'].setdefault(f'{s}#{rep}', {})[arm] = dict(missing=str(e)[:200])
                     continue
@@ -80,8 +86,12 @@ if __name__ == '__main__':
     ap = argparse.ArgumentParser()
     ap.add_argument('--mode', default='offline')
     ap.add_argument('--out', type=Path, required=True)
+    ap.add_argument('--extra', action='store_true', help='add valid46 reps 2-3 and the frozen holdout reps 1-3')
     a = ap.parse_args()
-    r = build(a.mode)
+    sets = dict(SETS)
+    if a.extra:
+        sets['valid46'] = (1, 2, 3); sets['hold_tau2h'] = (1, 2, 3)
+    r = build(a.mode, sets=sets)
     a.out.parent.mkdir(parents=True, exist_ok=True)
     a.out.write_text(json.dumps(r, ensure_ascii=False, indent=1), encoding='utf-8')
     a.out.with_suffix('.md').write_text(table(r) + '\n', encoding='utf-8')
