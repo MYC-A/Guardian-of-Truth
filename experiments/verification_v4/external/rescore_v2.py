@@ -101,7 +101,7 @@ def report(name, reps):
                 print(f"  {sn:11s} {arm:14s} tp={m['tp']:2d} fp={m['fp']:2d} F1={m['F1']:.3f} newTP={len(gain)} newFP={len(nfp)}"
                       + (f" cc={row['cc']} newcc={row['new_cc']} later={row['later']} multi(newTP/cc/FP)={row['multi_new_tp']}/{row['multi_new_cc']}/{row['multi_new_fp']} {row['gain_ids']} FP{row['fp_ids']}" if sn == 'all' else ''))
         summary[rep] = rs
-    p = S.OUT.parent / 'verification_v4' / 'external' / name / 'RESCORE_v2.json'
+    p = S.OUT.parent / 'verification_v4' / 'external' / name[4:] / 'RESCORE_v2.json'
     p.write_text(json.dumps(summary, ensure_ascii=False, indent=1))
 
 

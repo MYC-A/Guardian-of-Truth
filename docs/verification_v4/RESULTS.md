@@ -108,7 +108,7 @@ action diffs. Several "V4 FP" above were correct detections.
 
 Gold v2 (`ext_tau2v2`): 68 rows = 52 ERROR (19 format-only F1/F2, 33 with a substantive cause) / 16 NO_ERROR; 2 UNCERTAIN excluded.
 Cause judge re-run once per (accusation, acceptable cause): 184 jobs (+ retries; 3 unjudged → counted not SAME).
-Raw: `outputs/verification_v4/external/ext_tau2v2/RESCORE_v2.json`, logs in `.../tau2v2/reports/`.
+Raw: `outputs/verification_v4/external/tau2v2/RESCORE_v2.json`, logs in `.../tau2v2/reports/`.
 
 | rep | A tp/fp F1 (cc) | V4 = A_AT tp/fp F1 | V4 new TP / new FP | V4 new cc-TP | A_CTRL new TP / cc / FP | A_Ems new TP / cc | later-call A→V4 |
 |---|---|---|---|---|---|---|---|
