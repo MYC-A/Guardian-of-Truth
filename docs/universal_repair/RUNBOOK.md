@@ -35,3 +35,8 @@ judge `--max-calls 600`. Holdout gold is frozen (`outputs/universal_repair/holdo
 ## Production use
 Enable via `run_v5(row, client, flags=ARMS['R_comb'])` (`src/guardian_truth/repair/v5.py`); decision `decide(rec)`.
 Default pipeline is unchanged — see FINAL_DECISION.md for which arm is recommended. Production merge is a separate review step.
+
+## Full test suite
+`python -m pytest -q tests/` → 2855 passed, 20 failed. The 20 failures are pre-existing legacy tests (vnext artifacts, telecom
+recovery, service dispatch, runtime, hybrid packets, policy-table v11): the same tests fail identically on the V4 branch
+(`research/guardian-proof-executor-v4-20261006` @32ede180, checked on 6 of the files: 11/11 same failures). Universal-repair tests: 21 pass.
