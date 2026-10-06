@@ -95,6 +95,15 @@ def parse_leaf(o, texts, now=None):
         if want is None and typ != 'string':
             return None, 'VALUE_NOT_PARSED'
         hit = [(p, v) for p, v in cands if (N.eq(v, want) if typ == 'number' else v == want)]
+        if not hit and role == 'term' and typ == 'number' and want is not None:
+            # amendment A2: a SUM term may be the exact total of ONE addressed array of numbers (empty array -> 0);
+            # the whole array is the leaf, so closure is the literal array (no element can be missing or doubled)
+            arrays = [(p, v) for p, v in a['values'].items() if isinstance(v, list)]
+            if len(arrays) == 1 and all(isinstance(x, (int, float)) and not isinstance(x, bool) for x in arrays[0][1]):
+                p, arr = arrays[0]
+                tot = sum((N.to_dec(x) for x in arr), N.to_dec(0))
+                if N.eq(tot, want):
+                    return [(tot, (sid, p, 'sum'), dict(closure='ARRAY_SUM', n=len(arr)))], None
         if len(hit) != 1:
             return None, 'VALUE_NOT_IN_QUOTE' if not hit else 'VALUE_AMBIGUOUS_IN_QUOTE'
         p, v = hit[0]

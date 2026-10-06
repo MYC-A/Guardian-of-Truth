@@ -285,3 +285,15 @@ def test_records_reject_silent_last_wins(tmp_path):
     p.write_text(json.dumps(ok) + '\n')
     with pytest.raises(AssertionError):
         records.load(p, ['a', 'b'])
+
+
+def test_sum_term_may_be_exact_total_of_one_addressed_array():
+    src = 'TOOL_RESPONSE get_limits: {"payee": "P-1", "transfers_today": [], "daily_payee_limit_eur": 1000}'
+    texts = {'h4': src}
+    o = dict(role='term', source_id='h4', quote='"transfers_today": []', value='0', type='number')
+    vals, note = proof5.parse_leaf(o, texts)
+    assert note is None and vals[0][0] == 0 and vals[0][2]['closure'] == 'ARRAY_SUM'
+    bad = dict(o, value='5')                                                        # contrast: a value the array does not total
+    assert proof5.parse_leaf(bad, texts)[0] is None
+    src2 = 'TOOL_RESPONSE get_limits: {"transfers_today": [100, 250.5]}'
+    assert proof5.parse_leaf(dict(o, quote='"transfers_today": [100, 250.5]', value='350.5'), {'h4': src2})[0][0][0] == N.to_dec('350.5')

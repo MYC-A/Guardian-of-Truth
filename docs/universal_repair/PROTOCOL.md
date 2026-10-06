@@ -59,3 +59,11 @@ V4r runs are unaffected (flags ∅); holdout R_comb runs use A1 from their first
 clean for R_fix/R_df/R_comb; only the frozen holdout is.
 Not amended (measured limitation): `lb3L_034` (pool exposes a second AT candidate; the verifier wrongly SUPPORTED a missing-confirmation
 accusation although the user confirmed both enumerated bookings). No code veto is added post hoc.
+
+## Amendment A2 (committed before the A2 re-runs)
+Found by the pre-registered preserved-regression check on LB3 r2 `lb3L_055` (BK3e): strict addressed-leaf evidence rejected the
+V4-correct SUM term `"transfers_today": []` = 0, so the Ems aggregation finding (sum 0+400+900 > 1000) became UNRESOLVED and the row was
+only caught by AT. General fix: a SUM term may be the exact total of ONE addressed array of numbers (empty → 0; closure = the literal
+array), test `test_sum_term_may_be_exact_total_of_one_addressed_array`. A1 runs of R_fix/R_comb are archived in
+`outputs/universal_repair/runs_a1/`; R_fix and R_comb are re-run on every set incl. the holdout (exact-key cache). Disclosure: the A1
+holdout results of R_fix/R_comb were already observed (identical to V4r on all 3 reps) before A2; A2 was derived from LB3 only.
