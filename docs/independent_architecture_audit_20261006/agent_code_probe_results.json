@@ -1,0 +1,459 @@
+{
+  "scope": "Deterministic fake model plans on production parser packets; not live-model quality or frequency.",
+  "model_http_calls": 0,
+  "network_blocked": true,
+  "cases": {
+    "wrong_entity_latest": {
+      "input": {
+        "prompt": "⟦SYSTEM⟧\nUse the latest observed address of the same order.\n⟦ASSISTANT · ход 1⟧\n← TOOL_RESPONSE get_order: {\"order_id\":\"A\", \"address\":\"Alpha\"}\n← TOOL_RESPONSE get_order: {\"order_id\":\"B\", \"address\":\"Beta\"}",
+        "response": "⟦ASSISTANT · ход 2⟧\n→ TOOL_CALL ship: {\"order_id\":\"A\", \"address\":\"Alpha\"}"
+      },
+      "plan": {
+        "operation": "LATEST_VALUE_EQ",
+        "target_ids": [
+          "t0"
+        ],
+        "operands": [
+          {
+            "role": "value",
+            "source_id": "t0",
+            "quote": "\"address\":\"Alpha\"",
+            "value": "Alpha",
+            "type": "string"
+          },
+          {
+            "role": "observed",
+            "source_id": "h1",
+            "quote": "\"address\":\"Alpha\"",
+            "value": "Alpha",
+            "type": "string"
+          },
+          {
+            "role": "observed",
+            "source_id": "h2",
+            "quote": "\"address\":\"Beta\"",
+            "value": "Beta",
+            "type": "string"
+          }
+        ]
+      },
+      "execution": {
+        "status": "VIOLATED",
+        "detail": "latest observed value (h2) = beta; used alpha",
+        "leaves": [
+          {
+            "role": "value",
+            "source_id": "t0",
+            "value": "alpha",
+            "type": "string"
+          },
+          {
+            "role": "observed",
+            "source_id": "h1",
+            "value": "alpha",
+            "type": "string"
+          },
+          {
+            "role": "observed",
+            "source_id": "h2",
+            "value": "beta",
+            "type": "string"
+          }
+        ],
+        "operation": "LATEST_VALUE_EQ"
+      },
+      "candidate": {
+        "origin": "Ems",
+        "kind": "STRUCTURED_PROOF",
+        "code_proven": true,
+        "target_id": "t0",
+        "requirement": "Use the latest observed address of the same order.",
+        "policy_source_ids": [
+          "h0"
+        ],
+        "evidence_source_ids": [
+          "h1",
+          "h2",
+          "t0"
+        ],
+        "reason": "Offline admission hypothesis. Code-executed proof (LATEST_VALUE_EQ): latest observed value (h2) = beta; used alpha — the condition required by the policy does not hold.",
+        "proof": {
+          "operation": "LATEST_VALUE_EQ",
+          "leaves": [
+            {
+              "role": "value",
+              "source_id": "t0",
+              "value": "alpha",
+              "type": "string"
+            },
+            {
+              "role": "observed",
+              "source_id": "h1",
+              "value": "alpha",
+              "type": "string"
+            },
+            {
+              "role": "observed",
+              "source_id": "h2",
+              "value": "beta",
+              "type": "string"
+            }
+          ],
+          "detail": "latest observed value (h2) = beta; used alpha"
+        }
+      },
+      "verifier": "REFUTED",
+      "arm_binary": {
+        "A": 0,
+        "A_DF": 0,
+        "A_DF_raw": 0,
+        "A_Ems": 0,
+        "A_Ems_raw": 1,
+        "A_AT": 0,
+        "A_AT_raw": 0,
+        "A_CTRL": 0,
+        "A_CTRL_raw": 0,
+        "A_CB_shadow": 0,
+        "A_CB_shadow_raw": 0,
+        "A_DF_mech": 0,
+        "A_Ems_mech": 1,
+        "V4": 0,
+        "V4_mechanical": 1,
+        "V4_mech_strict": 0,
+        "V4_raw": 1
+      },
+      "expected_relation": "Same order A address is Alpha; unrelated B must be excluded."
+    },
+    "exception_not_bound": {
+      "input": {
+        "prompt": "⟦SYSTEM⟧\nExcept when supervisor_override is true, the amount must not exceed 1000.\n⟦ASSISTANT · ход 1⟧\n",
+        "response": "⟦ASSISTANT · ход 2⟧\n→ TOOL_CALL transfer: {\"amount\":1300,\"supervisor_override\":true}"
+      },
+      "plan": {
+        "operation": "LE",
+        "target_ids": [
+          "t0"
+        ],
+        "operands": [
+          {
+            "role": "left",
+            "source_id": "t0",
+            "quote": "\"amount\":1300",
+            "value": "1300",
+            "type": "number"
+          },
+          {
+            "role": "right",
+            "source_id": "h0",
+            "quote": "Except when supervisor_override is true, the amount must not exceed 1000.",
+            "value": "1000",
+            "type": "number"
+          }
+        ]
+      },
+      "execution": {
+        "status": "VIOLATED",
+        "detail": "1300 LE 1000",
+        "leaves": [
+          {
+            "role": "left",
+            "source_id": "t0",
+            "value": 1300.0,
+            "type": "number"
+          },
+          {
+            "role": "right",
+            "source_id": "h0",
+            "value": 1000.0,
+            "type": "number"
+          }
+        ],
+        "operation": "LE"
+      },
+      "candidate": {
+        "origin": "Ems",
+        "kind": "STRUCTURED_PROOF",
+        "code_proven": true,
+        "target_id": "t0",
+        "requirement": "Except when supervisor_override is true, the amount must not exceed 1000.",
+        "policy_source_ids": [
+          "h0"
+        ],
+        "evidence_source_ids": [
+          "t0"
+        ],
+        "reason": "Offline admission hypothesis. Code-executed proof (LE): 1300 LE 1000 — the condition required by the policy does not hold.",
+        "proof": {
+          "operation": "LE",
+          "leaves": [
+            {
+              "role": "left",
+              "source_id": "t0",
+              "value": 1300.0,
+              "type": "number"
+            },
+            {
+              "role": "right",
+              "source_id": "h0",
+              "value": 1000.0,
+              "type": "number"
+            }
+          ],
+          "detail": "1300 LE 1000"
+        }
+      },
+      "expected_relation": "The exact policy exception applies."
+    },
+    "same_fact_counted_twice": {
+      "input": {
+        "prompt": "⟦SYSTEM⟧\nThe total amount must not exceed 1000.\n⟦ASSISTANT · ход 1⟧\n",
+        "response": "⟦ASSISTANT · ход 2⟧\n→ TOOL_CALL transfer: {\"amount\":600}"
+      },
+      "plan": {
+        "operation": "SUM_COMPARE_LE",
+        "target_ids": [
+          "t0"
+        ],
+        "operands": [
+          {
+            "role": "term",
+            "source_id": "t0",
+            "quote": "\"amount\":600",
+            "value": "600",
+            "type": "number"
+          },
+          {
+            "role": "term",
+            "source_id": "t0",
+            "quote": "→ TOOL_CALL transfer: {\"amount\":600}",
+            "value": "600",
+            "type": "number"
+          },
+          {
+            "role": "bound",
+            "source_id": "h0",
+            "quote": "The total amount must not exceed 1000.",
+            "value": "1000",
+            "type": "number"
+          }
+        ]
+      },
+      "execution": {
+        "status": "VIOLATED",
+        "detail": "600 + 600 = 1200; 1200 LE 1000 required",
+        "leaves": [
+          {
+            "role": "term",
+            "source_id": "t0",
+            "value": 600.0,
+            "type": "number"
+          },
+          {
+            "role": "term",
+            "source_id": "t0",
+            "value": 600.0,
+            "type": "number"
+          },
+          {
+            "role": "bound",
+            "source_id": "h0",
+            "value": 1000.0,
+            "type": "number"
+          }
+        ],
+        "operation": "SUM_COMPARE_LE"
+      },
+      "expected_relation": "One amount600 total is600."
+    },
+    "unrelated_value_suppresses_derivation": {
+      "input": {
+        "prompt": "⟦SYSTEM⟧\nReport subtotal plus tax.\n⟦ASSISTANT · ход 1⟧\n← TOOL_RESPONSE invoice: {\"invoice_id\":\"A\",\"subtotal\":10,\"tax\":10}\n← TOOL_RESPONSE profile: {\"customer_id\":\"B\",\"age\":30}",
+        "response": "⟦ASSISTANT · ход 2⟧\nTotal is 30 EUR."
+      },
+      "binding": {
+        "operation": "ARITHMETIC",
+        "expression": "a+b",
+        "operands": [
+          {
+            "name": "a",
+            "source_id": "h1",
+            "quote": "\"subtotal\":10",
+            "value": "10"
+          },
+          {
+            "name": "b",
+            "source_id": "h1",
+            "quote": "\"tax\":10",
+            "value": "10"
+          }
+        ]
+      },
+      "claim": {
+        "kind": "number",
+        "value": 30.0,
+        "span": "30 EUR"
+      },
+      "without_copy_filter": {
+        "status": "MISMATCH",
+        "claimed": 30.0,
+        "computed": 20.0,
+        "literals": [],
+        "detail": "a+b with a=10, b=10 = 20"
+      },
+      "with_original_result_filter": {
+        "status": "SKIP",
+        "note": "CLAIM_VALUE_IN_TOOL_RESULT"
+      },
+      "expected_relation": "10+10=20; unrelated age30 does not justify total30."
+    },
+    "negated_expression_ownership": {
+      "input": {
+        "prompt": "⟦SYSTEM⟧\nBe accurate.\n⟦ASSISTANT · ход 1⟧\n",
+        "response": "⟦ASSISTANT · ход 2⟧\nI reject the incorrect claim 2 + 2 = 5 EUR."
+      },
+      "candidate": {
+        "origin": "DF4",
+        "target_id": "t0",
+        "requirement": "Numbers, dates and weekdays stated to the user must be correct and consistent with the sources.",
+        "kind": "INLINE_ARITHMETIC",
+        "code_proven": true,
+        "relation_by_code": true,
+        "policy_source_ids": [],
+        "evidence_source_ids": [
+          "t0"
+        ],
+        "reason": "The move states \"2 + 2 = 5 EUR\" (5.0), but code computes 4.0: 2.0+2.0 = 4."
+      },
+      "self_checks": [
+        {
+          "target_id": "t0",
+          "check": "INLINE_ARITHMETIC",
+          "claim_quote": "2 + 2 = 5 EUR",
+          "status": "MISMATCH",
+          "claimed": 5.0,
+          "computed": 4.0,
+          "detail": "2.0+2.0 = 4",
+          "span": [
+            29,
+            42
+          ]
+        }
+      ],
+      "expected_relation": "Assistant rejects, rather than asserts, the false equality."
+    },
+    "datetime_precision_loss": {
+      "input": {
+        "prompt": "⟦SYSTEM⟧\nExecute before the deadline 2025-01-01T10:00:30.\n⟦ASSISTANT · ход 1⟧\n",
+        "response": "⟦ASSISTANT · ход 2⟧\n→ TOOL_CALL execute: {\"when\":\"2025-01-01T10:00:10\"}"
+      },
+      "plan": {
+        "operation": "BEFORE",
+        "target_ids": [
+          "t0"
+        ],
+        "operands": [
+          {
+            "role": "left",
+            "source_id": "t0",
+            "quote": "→ TOOL_CALL execute: {\"when\":\"2025-01-01T10:00:10\"}",
+            "value": "2025-01-01T10:00:10",
+            "type": "datetime"
+          },
+          {
+            "role": "right",
+            "source_id": "h0",
+            "quote": "Execute before the deadline 2025-01-01T10:00:30.",
+            "value": "2025-01-01T10:00:30",
+            "type": "datetime"
+          }
+        ]
+      },
+      "execution": {
+        "status": "VIOLATED",
+        "detail": "2025-01-01T10:00:00 BEFORE 2025-01-01T10:00:00",
+        "leaves": [
+          {
+            "role": "left",
+            "source_id": "t0",
+            "value": "2025-01-01T10:00:00",
+            "type": "datetime"
+          },
+          {
+            "role": "right",
+            "source_id": "h0",
+            "value": "2025-01-01T10:00:00",
+            "type": "datetime"
+          }
+        ],
+        "operation": "BEFORE"
+      },
+      "expected_relation": "10:00:10 is before10:00:30 on the same day and time basis."
+    },
+    "add_zero_eager_division": {
+      "input": {
+        "prompt": "⟦SYSTEM⟧\nUse numbers 7 and 0.\n⟦ASSISTANT · ход 1⟧\n",
+        "response": "⟦ASSISTANT · ход 2⟧\n7 + 0 = 7 EUR."
+      },
+      "plan": {
+        "operation": "ADD",
+        "target_ids": [
+          "t0"
+        ],
+        "operands": [
+          {
+            "role": "left",
+            "source_id": "h0",
+            "quote": "Use numbers 7 and 0.",
+            "value": "7",
+            "type": "number"
+          },
+          {
+            "role": "right",
+            "source_id": "h0",
+            "quote": "Use numbers 7 and 0.",
+            "value": "0",
+            "type": "number"
+          },
+          {
+            "role": "result",
+            "source_id": "t0",
+            "quote": "7 + 0 = 7 EUR.",
+            "value": "7",
+            "type": "number"
+          }
+        ]
+      },
+      "execution": {
+        "status": "UNRESOLVED",
+        "note": "EXEC_ERROR:ZeroDivisionError",
+        "leaves": [
+          {
+            "role": "left",
+            "source_id": "h0",
+            "value": 7.0,
+            "type": "number"
+          },
+          {
+            "role": "right",
+            "source_id": "h0",
+            "value": 0.0,
+            "type": "number"
+          },
+          {
+            "role": "result",
+            "source_id": "t0",
+            "value": 7.0,
+            "type": "number"
+          }
+        ]
+      },
+      "expected_relation": "7+0=7; division is not requested."
+    }
+  },
+  "runtime_source_sha256": {
+    "proof.py": "782a32b088703f62071a01acab49bb010d4bcbe6c323cf117fd9ad4205862aad",
+    "df4.py": "ce2c78d4176a753d91b949833c7f3491331b52cf54d19a3f7fd35bc2458705b9",
+    "ems.py": "8d7bf38cf9e1f3c68d686f31be983ad062a72e143cbb77b354b9f354cb733377",
+    "v4.py": "d00f1cbd4f257e53af9c4c9cc16e74ef9f51e10627fa992e9ff2adb81a7fc755"
+  }
+}

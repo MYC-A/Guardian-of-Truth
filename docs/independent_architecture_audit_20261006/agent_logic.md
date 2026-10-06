@@ -1,0 +1,65 @@
+# Independent V1 -> V2 -> V3 logic audit (2026-10-06)
+
+Checkout: `32ede180831948272a8f4a57fe80b55d17e5e6dd`. Scope: integrated-v1 and verification-v2/v3 idea, admission, checker gates, and frozen intermediate reports. This audit does not adjudicate V4 proof execution or the external tau2 gold; those are separate reviews. No model requests, no runtime changes, no frozen-output edits. All counterexamples below are generic mechanism-boundary tests, not evidence that those mistakes occurred in an archived model response.
+
+## What is actually demonstrated
+
+- **Admission v2 is a sensible source-authoritative transport repair.** `admission.py:16` validates the exact reply model and only normalizes the model's actor label for a source the packet itself identifies as a tool-result record. It then invokes the original admission checks. This removes an avoidable representational disagreement; it does not prove semantic correctness. The historical adopted improvement +2 TP/0 FP on LB2 concerns this gate and unchanged request bytes, not superior reasoning.
+- **The DF division of labor has measured potential:** models nominate quoted claims/operands, code computes arithmetic/calendar facts, unresolved extraction abstains. I independently replayed all 56 original LB3 rows in both frozen V3 repetitions, against separately loaded original labels: A_adm2 TP/FP=23/7 and 23/4, DF=24/7 and 25/4, V3=25/7 and 25/4. These exactly match the frozen reports. DF has a small replicated synthetic gain, not a universal proof or independent external validation.
+- **Candidate verification can be useful after quote admission is repaired.** Independently rebuilt 90 B/C/Av verifier request hashes across LB1-long, LB1-short, LB2-long; all were replayable and their Q2 verdicts exactly matched stored audit outputs. Original claims that the verifier is not useful are qualified by the later post-hoc audit: LB2 true candidates kept rises from 1/4 to 3/4. This is a real processing effect, not a new LLM result.
+- **Preserving the original A ERROR reduces recall regressions by construction.** V3 stops on A ERROR and ORs admitted added candidates. Consequently 'no TP lost' is largely a design invariant, not proof that all components reason reliably; it also freezes A false positives and wrong causes. A good architecture needs independent FP assessment as well as FN recovery.
+
+Evidence: `docs/verification_v2/{AUDIT,RESULTS,FINAL_DECISION}.md`, original `outputs/verification_v2/runs/lb3_long/rep{1,2}_v3.jsonl`. Reproduction: `agent_logic_probes.py` and `agent_logic_probe_results.json` beside this report. Selected existing tests: **68 passed, 2 skipped** (`tests/verification_v2`, `tests/test_verification_v3.py`, `tests/integrated_v1`). Passing tests did not cover the boundaries below.
+
+## A material mistaken explanation of a real missed case
+
+`docs/verification_v2/RESULTS.md:28` says the residual BK3e later-call case had no violated requirement listed by E. **Both original V3 repetitions contradict this.** `lb3L_055` has raw E checks R1 and R3=`VIOLATED`, explicitly computing `400 + 900 = 1300; 1300 > 1000`, with the correct applicable daily aggregate limit. Both become `UNRESOLVED/EVIDENCE_QUOTE_NOT_VERIFIED` before candidate construction.
+
+The model emitted a reconstructed JSON subset (`customer_no`, `daily_payee_limit_eur`, `transfers_today`), whereas the actual record contains additional fields. The string is not a literal source substring, so rejecting it as a verbatim quote is defensible. But describing the loss as no violated requirement or no reasoning capability is wrong. A precise source-path/value or set-of-addressed-leaves representation could preserve that correct finding while retaining exact source support. Loosening fuzzy whole-quote matching is not necessary.
+
+The output also attributes the aggregate violation to both t0 and t1. Correct binary accusation requires at least one violation; correct explanation should localize the decisive threshold crossing to t1 and clarify whether the policy regulates the whole planned batch. The arithmetic alone does not settle that localization.
+
+## Two other real residuals retain useful oracle potential
+
+On original LB3 CL3e, DF already selected WEEKDAY_OF and the correct quoted 2025-04-14 operand, but put the date in `claimed_value`; the claimed weekday appeared separately as NOT_DERIVED. Setting the claimed value to the actual Wednesday from the current quote lets **unchanged code** return MISMATCH, computed Monday. This is an extraction contract failure, not a failed weekday calculator.
+
+On TL3e, the model pre-applied the next-day step to the date, cited a quote containing the previous day's date, and omitted the required `n` operand. Giving unchanged DF the source current date March 13 and quoted n=3 lets it compute March 18 and detect the March 17 claim. The oracle must preserve policy counting semantics: 'three business days counted from next business day' is encoded here as exclusive ADD_BUSINESS_DAYS from the request date; this is not permission to subtract one indiscriminately for other policies.
+
+These are **capability-only oracle probes**, not revised F1, autonomous extraction gains, or retroactive changes to the frozen experiment. They support improving typed extraction and semantic bindings before discarding the methods.
+
+## Why the counterfactual conclusion is too broad
+
+The implemented intervention generator is history retrieval under narrow lexical/type constraints (`variants.py:15`, `:23`, `:156`, `:250`), not a general causal intervention compiler. It caps at 10 alternatives, prioritizes up to five omissions, supports ISO prose dates and numeric/ID substitutions, and cannot produce a novel computed value such as a new nights total, business-day date, or differently named person known only through prose.
+
+The earlier AUDIT correctly says the decisive intervention was never built in **3/4 LB2 residual misses**. Thus 'this generator + original-status decision did not improve recall' is supported; 'counterfactuals do not work' is not. My replay also found that on LB2 its only VIOLATING-original response with a COMPLIANT variant relied **exclusively on an omission**; on LB1 long and short, 1 of 2 such responses was omission-only. Omitting a risky action trivially makes many versions compliant and is weak evidence for the cause of the original failure.
+
+Next meaningful probe: record per violated target whether a policy-valid, minimal value/action correction was generated, then separate generator failure, original/variant classification failure, and verifier loss. Evaluate contrasts where two variants differ only in the regulated field and source applicability/exception changes. Do not call arbitrary history substitutions or OMIT_CALL a decisive causal test.
+
+## Generic boundaries reproduced offline
+
+| Layer | Executed result | Meaning and repair |
+|---|---|---|
+| Q2 quote gate (`common.py:40`, `:72`; `verifier.py:96`) | Delete NOT from 'You may not issue refunds before you have verified the identity of the customer'; quote passes. A static SUPPORTED reply also stays SUPPORTED. | Near-verbatim 0.9 matching permits semantic inversion. Use exact source addresses, safe presentation-only normalization, or validate preservation of polarity, quantifiers, limits, IDs, conditions and exceptions. This is a forged-verifier boundary probe, not proof a live model emitted this quote. |
+| Closure (`v3.py:17`, `:29`) | 'List ... complete only for read operations; other write tools allowed' activates closure. Through the native full parser, an allowed absent write tool becomes a mechanical ERROR. | Cooccurrence regex does not prove unconditional scope/closure. Use explicit format contract or source-bound parsed closure premise with negation/scope; unsupported language abstains. |
+| Confirmation trigger (`confirm.py:33`) | `update_record does not require confirmation` is recognized as a confirmation requirement. | Same-word sentence match ignores negation and conditions. Trigger may be permissive for candidate discovery, but cannot supply a proven applicable norm. |
+| Confirmation binding (`confirm.py:80`) | Actual proposal -> user Yes -> assistant Thank you -> executed confirmed call gives NO_AFFIRMATION through full native parser. | Latest assistant text is not necessarily the active proposal. Maintain active proposal/confirmation events and explicit revisions; acknowledgement must not reset consent. |
+| Affirmation (`confirm.py:17`, `:62`) | 'Yes, but what exactly will you change?' passes. | Prefix yes and a short retraction list do not establish confirmation of the exact operation. Questions, conditions, partial consent and revisions need a semantic confirmation contract or abstention. |
+| Identity (`confirm.py:147`, `:153`) | `BK-10` versus `BK-1` => MATCH. | Unrestricted substring matching merges distinct IDs. Exact canonical identity for declared identifiers, separate name/alias matching, no substring consent. |
+| DF operands (`df.py:96`, `:109`, `:228`) | Correct total for entity B=$100 checked with quoted entity A rate=$200 produces MISMATCH and code_proven=True. | Quote membership + valid arithmetic does not prove operand relevance, latest state, entity binding, units, applicable operator, or norm. Require typed source identity/path, role, time, unit and authoritative applicability links before enforcement. |
+| V3m (`v3.py:139`) | That wrong-entity candidate produces ERROR **even when the verifier verdict is REFUTED**. | `code_proven` is overstated and bypass is unsafe. Exclude semantic/model binding claims from proof or require a complete certificate. Never override known semantic refutation with arithmetic-only provenance. V3m is opt-in, not default. |
+| Monetary equality (`derived.py:184`) | 10000 and 10001 treated equal. | Relative tolerance 1e-4 is not cent precision. Typed Decimal and policy-defined rounding/tolerance; separate measured quantities from money/counts/IDs. |
+| Date arithmetic (`calc.py:27`, `:53`) | 16:00 EST and 21:00Z on same winter day become 5 hours apart. | Timezones/seconds discarded while table claims exact arithmetic. Preserve timezone/date resolution and abstain on ambiguity. Business-day calendars and yearless-date inference also need explicit declared assumptions. |
+
+The DF/CB code-proven issue is semantic, not solved by JSON validity. DF's arithmetic literals exclusion blocks one obvious hallucination route but named operands can still be the wrong entity or stale observation. CB's model returns canonical argument values with only proposal text quotes; code does not independently verify the name-to-ID mapping, and per-argument any-value membership loses multi-item tuples. Preserve action/entity/value tuples, not independent bags of permitted scalars.
+
+## Architecture priorities supported by this audit
+
+1. Preserve raw reply, parsed claims, each rejection reason, candidate list, verification and final mapping separately. Report per-stage positive losses so reasoning success is not attributed to a failed idea after code discards it.
+2. Use exact source-addressed facts and typed semantic bindings as distinct stages. Source support, correct calculation and an applicable policy violation are three different propositions. A complete proof must include all three, including exceptions and event identity/time.
+3. Retain the DF idea; improve operation-specific extraction contracts, include explicit operation semantics/counting modes, and fall back to UNVERIFIED rather than guessing. Compare oracle attainable FN recovery and automatic extraction yield on the same rows.
+4. Rebuild consent as an active proposal/confirmation graph with exact object/operation/argument tuples and revisions. Do not treat the nearest assistant message or 'yes' prefix as a complete universal consent mechanism.
+5. Preserve multiple candidates. E, DF and CB currently select the **first** admitted violation; if verifier refutes it, a later correct violation is never tried. V3 only processes the first two confirmation triggers (`v3.py:95`). Track dropped/unchecked targets and enforce a documented bounded queue rather than implicit truncation.
+6. Validate candidate filtering with true **and false** hypotheses; LB3 had no false candidate reaching the verifier, so its precision contribution is unmeasured. V3's final R1 rule was not met; 'DF useful by local R2' is weaker than whole-system adoption or universality.
+7. Frozen synthetic lockboxes are honest internal tests but share their authors with mechanisms. New domains reduce literal overlap, not author/style/schema coupling. Use independent external contracts, separate gold audit and new holdout/model family before making universal claims. Scores, wrong-cause rate and runtime/gate failures all matter.
+
+No architecture-level failure above justifies discarding source-bound arithmetic, focused verification or causal contrasts. They justify narrowing current claims and repairing the interface between semantic grounding, exact evidence and final enforcement.
