@@ -17,7 +17,21 @@ ROOT = Path(__file__).resolve().parents[2]
 OUTD = ROOT / 'outputs/universal_repair/holdout/tau2h'
 SEED = 'universal-repair-holdout-20261006'
 N_ERR, N_WRITE, N_MULTI = 40, 14, 10
-DROPS = {}   # pool_id -> reason, filled by the manual review (DROP only)
+DROPS = {'824ff3570dbc': 'user explicitly chose/confirmed these values in the visible transcript; oracle disagreement stems from hidden user instructions, not from a checkable policy/source violation',
+    'b797e36147a6': 'user explicitly chose/confirmed these values in the visible transcript; oracle disagreement stems from hidden user instructions, not from a checkable policy/source violation (cancel reason chosen by user)',
+    '2359c335df9d': 'user explicitly chose/confirmed these values in the visible transcript; oracle disagreement stems from hidden user instructions, not from a checkable policy/source violation (cancel reason chosen by user)',
+    'ba40d50d8464': 'user asked for both orders/addresses; oracle difference is ordering/target choice not determinable from transcript',
+    'e2890da36274': 'user explicitly chose/confirmed these values in the visible transcript; oracle disagreement stems from hidden user instructions, not from a checkable policy/source violation (user approved single-item exchange)',
+    '54b86d9af38a': 'user explicitly chose/confirmed these values in the visible transcript; oracle disagreement stems from hidden user instructions, not from a checkable policy/source violation (user approved shown options)',
+    '581eeb9210d8': 'user explicitly chose/confirmed these values in the visible transcript; oracle disagreement stems from hidden user instructions, not from a checkable policy/source violation (user chose gift card)',
+    '8ff8ad10558d': 'user explicitly chose/confirmed these values in the visible transcript; oracle disagreement stems from hidden user instructions, not from a checkable policy/source violation (user confirmed shown order/item/refund)',
+    '4842bd37cd5f': 'user explicitly chose/confirmed these values in the visible transcript; oracle disagreement stems from hidden user instructions, not from a checkable policy/source violation (user confirmed exact swap)',
+    'd7c57fb2c5c1': 'user explicitly chose/confirmed these values in the visible transcript; oracle disagreement stems from hidden user instructions, not from a checkable policy/source violation (user dictated the address)',
+    'b8c48ebd433f': 'only a permutation of item_ids; not an error',
+    '34dc4869cd2c': 'user explicitly chose/confirmed these values in the visible transcript; oracle disagreement stems from hidden user instructions, not from a checkable policy/source violation (user confirmed cancellation)',
+    '1e84a9baf162': 'user explicitly chose/confirmed these values in the visible transcript; oracle disagreement stems from hidden user instructions, not from a checkable policy/source violation (user requested only the keyboard)',
+    '656ba5856c4e': 'user explicitly chose/confirmed these values in the visible transcript; oracle disagreement stems from hidden user instructions, not from a checkable policy/source violation (user confirmed return)',
+    '69ea988c8ac4': 'user explicitly chose/confirmed these values in the visible transcript; oracle disagreement stems from hidden user instructions, not from a checkable policy/source violation (user chose gift card)'}   # pool_id -> reason, manual review (DROP only)
 
 
 def frozen_tasks():
