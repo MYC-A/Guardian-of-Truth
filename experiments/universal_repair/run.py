@@ -18,7 +18,7 @@ MODEL = 'ministral-14b-2512'
 FROZEN = [ROOT / 'outputs/verification_v2/cache/mistral', Path('/data/gi/outputs/verification_v2/cache/mistral')]
 MAX_CALLS = 2500
 _lock, _last = threading.Lock(), [0.0]
-MIN_INTERVAL = 1.2
+MIN_INTERVAL = 2.1      # ministral-14b tier: 30 requests/minute (x-ratelimit-limit-req-minute)
 
 
 def paced(url, key, payload, timeout=180):
