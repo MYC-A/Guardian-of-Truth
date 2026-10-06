@@ -1,0 +1,587 @@
+........................................................................ [  2%]
+........................................................................ [  4%]
+........................................................................ [  7%]
+.....................F.FF...............F............................ [  9%]
+....................................... [ 11%]
+...................................................................... [ 13%]
+............................................................................... [ 16%]
+........................................................................ [ 18%]
+........................................ [ 19%]
+................................... [ 21%]
+......................................................................F. [ 23%]
+....................................................................................... [ 26%]
+........................................ [ 27%]
+........................................................................ [ 30%]
+........................................................................ [ 32%]
+........................................................................ [ 35%]
+........................................................................ [ 37%]
+...................................................F.................... [ 40%]
+........................................................................ [ 42%]
+.................F...................................................... [ 44%]
+........................................................................ [ 47%]
+...........................F........................s............. [ 49%]
+...............................................F........................ [ 52%]
+...................................FFF................... [ 54%]
+............................................................... [ 56%]
+............................................................... [ 58%]
+........................................................................ [ 60%]
+...................................................................F..F. [ 63%]
+.....................................................................F.. [ 65%]
+..................................................................F..... [ 68%]
+......................................................................F. [ 70%]
+........................................................................ [ 72%]
+........................................................................ [ 75%]
+........................................................................ [ 77%]
+........................................................................ [ 80%]
+........................................................................ [ 82%]
+..........F............................................................. [ 85%]
+...........F............................................................ [ 87%]
+..................................................................F..... [ 90%]
+........................................................................ [ 92%]
+........................................................................ [ 94%]
+........................................................................ [ 97%]
+........................................................................ [ 99%]
+....                                                                     [100%]
+=================================== FAILURES ===================================
+________________ test_original_and_counterfactuals_are_separate ________________
+
+row = {'id': 'telecom__service_issuebreak_apn_settings-contract_end_suspension-lock_sim_card_pin-unseat_::t13', 'prompt': '⟦... "Paid"}', 'response': '⟦ASSISTANT · ход 13⟧\n\t→ TOOL_CALL resume_line: {"customer_id": "C1001", "line_id": "L1002"}'}
+
+    def test_original_and_counterfactuals_are_separate(row):
+>       before=dict(row);v=packets.variants(row)
+                           ^^^^^^^^^^^^^^^^^^^^^
+
+tests/telecom_causal_recovery/test_recovery.py:19: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+
+row = {'id': 'telecom__service_issuebreak_apn_settings-contract_end_suspension-lock_sim_card_pin-unseat_::t13', 'prompt': '⟦... "Paid"}', 'response': '⟦ASSISTANT · ход 13⟧\n\t→ TOOL_CALL resume_line: {"customer_id": "C1001", "line_id": "L1002"}'}
+
+    def variants(row):
+        """Explicit author-controlled copies; original bytes are never rewritten."""
+        original = {k: row[k] for k in ('id', 'prompt', 'response')}
+        out = {'original': {'row': original, 'changes': [], 'kind': 'ORIGINAL_KNOWN_DEVELOPMENT'}}
+        read = deepcopy(original)
+        read['response'] = original['response'].replace(
+            'resume_line: {"customer_id": "C1001", "line_id": "L1002"}',
+            'get_details_by_id: {"id": "L1002"}')
+        assert read['response'] != original['response']
+        out['read_only'] = dict(row=read, changes=[dict(document='response', before=original['response'], after=read['response'])],
+                                kind='SYNTHETIC_COUNTERFACTUAL')
+        for name, sid, field, value in [('future_contract', 'h10', 'contract_end_date', '2026-12-31'),
+                                        ('bill_overdue', 'h34', 'status', 'Overdue')]:
+            copy = deepcopy(original)
+            g, *_ = build(copy)
+            s = g.store.sources[sid]
+            event = g.store.history_events[s['event']]
+>           before = event.value[field]
+                     ^^^^^^^^^^^^^^^^^^
+E           KeyError: 'status'
+
+experiments/telecom_causal_recovery/packets.py:36: KeyError
+________________________ test_source_spans_and_receipts ________________________
+
+row = {'id': 'telecom__service_issuebreak_apn_settings-contract_end_suspension-lock_sim_card_pin-unseat_::t13', 'prompt': '⟦... "Paid"}', 'response': '⟦ASSISTANT · ход 13⟧\n\t→ TOOL_CALL resume_line: {"customer_id": "C1001", "line_id": "L1002"}'}
+
+    def test_source_spans_and_receipts(row):
+        g,target,norms=packets.extract(row);p=packets.packet(row,'B')
+        for s in norms+p['history']+p['declarations']:
+            assert row[s['document']][s['start']:s['end']]==s['text']
+        receipts=next(f['receipts'] for f in p['mechanical_facts'] if f['relation']=='ORIGINAL_RECEIPT_PAIRING')
+        r=next(r for r in receipts if r['result_source']=='h10')
+        assert r['valid'] and r['call_source']=='h9'
+>       user=next(r for r in receipts if r['result_source']=='h31')
+             ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+E       StopIteration
+
+tests/telecom_causal_recovery/test_recovery.py:45: StopIteration
+__________ test_date_variants_recalculate_and_do_not_use_machine_time __________
+
+row = {'id': 'telecom__service_issuebreak_apn_settings-contract_end_suspension-lock_sim_card_pin-unseat_::t13', 'prompt': '⟦... "Paid"}', 'response': '⟦ASSISTANT · ход 13⟧\n\t→ TOOL_CALL resume_line: {"customer_id": "C1001", "line_id": "L1002"}'}
+
+    def test_date_variants_recalculate_and_do_not_use_machine_time(row):
+>       v=packets.variants(row)
+          ^^^^^^^^^^^^^^^^^^^^^
+
+tests/telecom_causal_recovery/test_recovery.py:53: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+
+row = {'id': 'telecom__service_issuebreak_apn_settings-contract_end_suspension-lock_sim_card_pin-unseat_::t13', 'prompt': '⟦... "Paid"}', 'response': '⟦ASSISTANT · ход 13⟧\n\t→ TOOL_CALL resume_line: {"customer_id": "C1001", "line_id": "L1002"}'}
+
+    def variants(row):
+        """Explicit author-controlled copies; original bytes are never rewritten."""
+        original = {k: row[k] for k in ('id', 'prompt', 'response')}
+        out = {'original': {'row': original, 'changes': [], 'kind': 'ORIGINAL_KNOWN_DEVELOPMENT'}}
+        read = deepcopy(original)
+        read['response'] = original['response'].replace(
+            'resume_line: {"customer_id": "C1001", "line_id": "L1002"}',
+            'get_details_by_id: {"id": "L1002"}')
+        assert read['response'] != original['response']
+        out['read_only'] = dict(row=read, changes=[dict(document='response', before=original['response'], after=read['response'])],
+                                kind='SYNTHETIC_COUNTERFACTUAL')
+        for name, sid, field, value in [('future_contract', 'h10', 'contract_end_date', '2026-12-31'),
+                                        ('bill_overdue', 'h34', 'status', 'Overdue')]:
+            copy = deepcopy(original)
+            g, *_ = build(copy)
+            s = g.store.sources[sid]
+            event = g.store.history_events[s['event']]
+>           before = event.value[field]
+                     ^^^^^^^^^^^^^^^^^^
+E           KeyError: 'status'
+
+experiments/telecom_causal_recovery/packets.py:36: KeyError
+_________________________ test_wrong_actor_is_rejected _________________________
+
+row = {'id': 'telecom__service_issuebreak_apn_settings-contract_end_suspension-lock_sim_card_pin-unseat_::t13', 'prompt': '⟦... "Paid"}', 'response': '⟦ASSISTANT · ход 13⟧\n\t→ TOOL_CALL resume_line: {"customer_id": "C1001", "line_id": "L1002"}'}
+
+    def test_wrong_actor_is_rejected(row):
+        p=packets.packet(row,'A');r=reply(p)
+        r['supporting_evidence']=[dict(source_id='h30',actor='assistant',role='action',fact='Historical call')]
+>       with pytest.raises(ValueError,match='SOURCE_ACTOR_INVALID'):review.admit(r,p)
+             ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+E       AssertionError: Regex pattern did not match.
+E         Expected regex: 'SOURCE_ACTOR_INVALID'
+E         Actual message: 'EVIDENCE_NAMESPACE_INVALID'
+
+tests/telecom_causal_recovery/test_recovery.py:161: AssertionError
+__________ test_conflicts_use_prediction_refs_not_fixed_business_ids ___________
+
+    def test_conflicts_use_prediction_refs_not_fixed_business_ids():
+        row=runner.rows()['telecom']
+        empty=packets.conflicts(row,dict(evidence_ids=[]))
+        assert empty['diagnostics']==[]
+        c=packets.conflicts(row,dict(evidence_ids=['h30','t0']))
+>       assert c['diagnostics'][0]['actor']=='user'
+E       AssertionError: assert 'assistant' == 'user'
+E         
+E         - user
+E         + assistant
+
+tests/test_hybrid_packets.py:49: AssertionError
+________ test_cohort_exact_preparation_order_sample_and_malformed_calls ________
+
+    def test_cohort_exact_preparation_order_sample_and_malformed_calls():
+>       value = probe.inventory_data()
+                ^^^^^^^^^^^^^^^^^^^^^^
+
+tests/test_policy_table_v11_consent_pair_probe.py:99: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+
+    def inventory_data():
+        rows = [json.loads(line) for line in INPUTS.read_text(encoding='utf-8').splitlines() if line.strip()]
+        cases, exclusions = select_real_cases(rows)
+        if len(cases) != REAL_COUNT:
+            raise ValueError('real_cohort_count_changed:' + str(len(cases)))
+        keys = [witness_key(case) for case in cases]
+        prepared = read(PREPARATION / 'witness_inventory.json')
+        previous = [{key: row[key] for key in ('case_id', 'policy', 'target')} for row in prepared['calls']]
+        if keys != previous:
+>           raise ValueError('preparation_witness_order_changed')
+E           ValueError: preparation_witness_order_changed
+
+experiments/searh_23/v11/consent_pair_probe.py:151: ValueError
+____________ test_every_manifest_mutant_rematerializes_bit_exactly _____________
+
+    def test_every_manifest_mutant_rematerializes_bit_exactly():
+        originals = measure.inputs(); data = manifest()
+        assert data['mutants']
+        for spec in data['mutants']:
+>           mutated = measure.materialize(spec, originals)
+                      ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+tests/test_policy_table_v11_measure.py:29: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+
+spec = {'kind': 'M1', 'base_case_id': 'retail__36::t10', 'policy_sha256': '78d0b5ce72582b4a4f287f621fa65c310b0d9ddffaea99ef1ba71581a7b92945', 'base_source_sha256': 'a31448020710b4954e5bc6524d8cefc7c97ef4e210489c04db23e66d770e8741', ...}
+originals = {'airline__7::t6': {'id': 'airline__7::t6', 'prompt': '⟦SYSTEM⟧\r\n<instructions>\r\nYou are a customer service agent ... 15⟧\r\n\t→ TOOL_CALL unlock_discoverable_agent_tool: {"agent_tool_name": "approve_credit_limit_increase_5847"}'}, ...}
+
+    def materialize(spec, originals=None):
+        row = (originals or inputs())[spec['base_case_id']]
+        if digest({k: row[k] for k in ('prompt', 'response')}) != spec['base_source_sha256']: raise ValueError('base_changed')
+        mutated = apply(row, spec)
+>       if digest({k: mutated[k] for k in ('prompt', 'response')}) != spec['mutated_source_sha256']: raise ValueError('mutant_changed')
+                                                                                                     ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+E       ValueError: mutant_changed
+
+experiments/searh_23/v11/measure.py:115: ValueError
+_ test_real_source_coverage_is_three_precise_action_results_not_binary_accuracy _
+
+    def test_real_source_coverage_is_three_precise_action_results_not_binary_accuracy():
+        report = audit(DATASET, REGISTRY)
+        assert report["total_confirmed_action_results"] == 3
+>       assert report["total_echo_rebound"] == 41
+E       assert 40 == 41
+
+tests/test_real_bound_contract_audit.py:43: AssertionError
+_ RuntimeTests.test_mistral_and_cerebras_lowercase_keys_bind_to_their_own_hosts _
+
+self = <test_runtime.RuntimeTests testMethod=test_mistral_and_cerebras_lowercase_keys_bind_to_their_own_hosts>
+
+    def test_mistral_and_cerebras_lowercase_keys_bind_to_their_own_hosts(self):
+        aliases={'mistral_api_key':'mistral-test','cerebras_api_key':'cerebras-test'}
+        with patch.dict(os.environ,aliases,clear=True):
+            mistral=make_detector(backend='mistral')
+            cerebras=make_detector(backend='cerebras')
+        self.assertEqual(mistral.semantic.client.config.base_url,'https://api.mistral.ai/v1')
+        self.assertEqual(mistral.semantic.client.config.api_key_env,'mistral_api_key')
+        self.assertEqual(mistral.semantic.client.config.model,'mistral-small-latest')
+        self.assertEqual(cerebras.semantic.client.config.base_url,'https://api.cerebras.ai/v1')
+>       self.assertEqual(cerebras.semantic.client.config.api_key_env,'CEREBRAS_API_KEY')
+E       AssertionError: 'cerebras_api_key' != 'CEREBRAS_API_KEY'
+E       - cerebras_api_key
+E       + CEREBRAS_API_KEY
+
+tests/test_runtime.py:143: AssertionError
+_________ test_timed_out_worker_retains_capacity_until_real_completion _________
+async def functions are not natively supported.
+You need to install a suitable plugin for your async framework, for example:
+  - anyio
+  - pytest-asyncio
+  - pytest-tornasync
+  - pytest-trio
+  - pytest-twisted
+__________ test_backend_timeout_is_not_misreported_as_running_worker ___________
+async def functions are not natively supported.
+You need to install a suitable plugin for your async framework, for example:
+  - anyio
+  - pytest-asyncio
+  - pytest-tornasync
+  - pytest-trio
+  - pytest-twisted
+____________________ test_queue_deadline_has_no_worker_leak ____________________
+async def functions are not natively supported.
+You need to install a suitable plugin for your async framework, for example:
+  - anyio
+  - pytest-asyncio
+  - pytest-tornasync
+  - pytest-trio
+  - pytest-twisted
+______ test_all_nine_scaling_predictions_are_sealed_and_sources_unchanged ______
+
+    def test_all_nine_scaling_predictions_are_sealed_and_sources_unchanged():
+        frozen = read("binding_scaling_v1_freeze.json")
+        rows = read("binding_scaling_v1_predictions.json")
+        report = read("binding_scaling_v1_results.json")
+>       assert verify_files(ROOT, frozen["source_sha256"]) == []
+E       AssertionError: assert ['src/guardia...ISMATCH', ...] == []
+E         
+E         Left contains 74 more items, first extra item: 'src/guardian_truth/__init__.py:HASH_MISMATCH'
+E         Use -v to get more diff
+
+tests/test_vnext_binding_scaling_v1_artifacts.py:20: AssertionError
+____ test_completed_34_case_predictions_are_sealed_with_exact_source_inputs ____
+
+    def test_completed_34_case_predictions_are_sealed_with_exact_source_inputs():
+        frozen = read("binding_temporal_v2_freeze.json")
+        rows = read("binding_temporal_v2_predictions.json")
+        report = read("binding_temporal_v2_results.json")
+        seal = prediction_seal(rows, frozen["case_ids"], architecture_commit=frozen["architecture_commit"],
+            configuration_sha256=frozen["configuration_sha256"])
+        assert seal == read("binding_temporal_v2_prediction_seal.json") == report["seal"]
+>       assert verify_files(ROOT, frozen["source_sha256"]) == []
+E       AssertionError: assert ['src/guardia...ISMATCH', ...] == []
+E         
+E         Left contains 74 more items, first extra item: 'src/guardian_truth/__init__.py:HASH_MISMATCH'
+E         Use -v to get more diff
+
+tests/test_vnext_binding_temporal_v2_artifacts.py:24: AssertionError
+_________ test_completed_stages_preserve_full_seals_sources_and_audits _________
+
+    def test_completed_stages_preserve_full_seals_sources_and_audits():
+        for prefix, count in (("goal_plan_v2", 22), ("tool_t2_v1", 18)):
+            freeze, rows = read(prefix + "_freeze.json"), read(prefix + "_predictions.json")
+            assert len(rows) == len(freeze["case_ids"]) == count
+            assert read(prefix + "_prediction_seal.json") == prediction_seal(rows, freeze["case_ids"],
+                architecture_commit=freeze["architecture_commit"], configuration_sha256=digest(freeze))
+>           assert not verify_files(ROOT, freeze["source_sha256"])
+E           AssertionError: assert not ['src/guardian_truth/__init__.py:HASH_MISMATCH', 'src/guardian_truth/benchmarking.py:HASH_MISMATCH', 'src/guardian_tru...:HASH_MISMATCH', 'src/guardian_truth/cli.py:HASH_MISMATCH', 'src/guardian_truth/cycle2/__init__.py:HASH_MISMATCH', ...]
+E            +  where ['src/guardian_truth/__init__.py:HASH_MISMATCH', 'src/guardian_truth/benchmarking.py:HASH_MISMATCH', 'src/guardian_tru...:HASH_MISMATCH', 'src/guardian_truth/cli.py:HASH_MISMATCH', 'src/guardian_truth/cycle2/__init__.py:HASH_MISMATCH', ...] = verify_files(PosixPath('/data/ur3'), {'src/guardian_truth/__init__.py': '4672ada52b9d2bfe3b051c88d9f758ae90019c7cec8717a3285f48b7cebe1fd8', 'src/guardian_t...1d70', 'src/guardian_truth/claim_verifier.py': 'ba1c88dd5146f9be4aef4d90b988ed7526dfeb7ec9220e8dac3888f1fd0fe2c1', ...})
+
+tests/test_vnext_completed_goal_t2_artifacts.py:24: AssertionError
+________ test_stage_x0_uses_actual_protected_incumbent_without_network _________
+
+    def test_stage_x0_uses_actual_protected_incumbent_without_network():
+        from scripts.evaluate_vnext_goal import baseline_x0
+        value = {"declared_goal": "Read report.", "declared_plan": ["read report"], "history": [],
+            "allowed_scope": {"paths": ["/report"]}, "target_action": {"name": "read", "args": {"path": "/report"}}}
+>       result = baseline_x0(value)
+                 ^^^^^^^^^^^^^^^^^^
+
+tests/test_vnext_experiment.py:127: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+scripts/evaluate_vnext_goal.py:43: in baseline_x0
+    result = subprocess.run([sys.executable, "-B", "-c", program], cwd=INCUMBENT, env=environment,
+/usr/lib64/python3.13/subprocess.py:554: in run
+    with Popen(*popenargs, **kwargs) as process:
+         ^^^^^^^^^^^^^^^^^^^^^^^^^^^
+/usr/lib64/python3.13/subprocess.py:1039: in __init__
+    self._execute_child(args, executable, preexec_fn, close_fds,
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+
+self = <Popen: returncode: 255 args: ['/usr/local/bin/python3', '-B', '-c', "import...>
+args = ['/usr/local/bin/python3', '-B', '-c', "import json,sys; from guardian_truth.pipeline import Detector; p=json.load(sys...dings],'unresolved':r.unresolved,'mapping':'fixed violation=1; otherwise0 is incumbent fallback, not safety proof'}))"]
+executable = b'/usr/local/bin/python3', preexec_fn = None, close_fds = True
+pass_fds = (), cwd = PosixPath('/data/Guardian of Truth')
+env = {'PATH': '/vercel/runtimes/node24/bin:/home/vercel-sandbox/.global/pnpm/bin:/home/vercel-sandbox/.global/npm/bin:/verc...:/sbin:/bin', 'PYTHONPATH': '/data/Guardian of Truth/src', 'PYTHONIOENCODING': 'utf-8', 'PYTHONDONTWRITEBYTECODE': '1'}
+startupinfo = None, creationflags = 0, shell = False, p2cread = 11
+p2cwrite = 12, c2pread = 13, c2pwrite = 14, errread = 15, errwrite = 16
+restore_signals = True, gid = None, gids = None, uid = None, umask = -1
+start_new_session = False, process_group = -1
+
+    def _execute_child(self, args, executable, preexec_fn, close_fds,
+                       pass_fds, cwd, env,
+                       startupinfo, creationflags, shell,
+                       p2cread, p2cwrite,
+                       c2pread, c2pwrite,
+                       errread, errwrite,
+                       restore_signals,
+                       gid, gids, uid, umask,
+                       start_new_session, process_group):
+        """Execute program (POSIX version)"""
+    
+        if isinstance(args, (str, bytes)):
+            args = [args]
+        elif isinstance(args, os.PathLike):
+            if shell:
+                raise TypeError('path-like args is not allowed when '
+                                'shell is true')
+            args = [args]
+        else:
+            args = list(args)
+    
+        if shell:
+            # On Android the default shell is at '/system/bin/sh'.
+            unix_shell = ('/system/bin/sh' if
+                      hasattr(sys, 'getandroidapilevel') else '/bin/sh')
+            args = [unix_shell, "-c"] + args
+            if executable:
+                args[0] = executable
+    
+        if executable is None:
+            executable = args[0]
+    
+        sys.audit("subprocess.Popen", executable, args, cwd, env)
+    
+        if (_USE_POSIX_SPAWN
+                and os.path.dirname(executable)
+                and preexec_fn is None
+                and (not close_fds or _HAVE_POSIX_SPAWN_CLOSEFROM)
+                and not pass_fds
+                and cwd is None
+                and (p2cread == -1 or p2cread > 2)
+                and (c2pwrite == -1 or c2pwrite > 2)
+                and (errwrite == -1 or errwrite > 2)
+                and not start_new_session
+                and process_group == -1
+                and gid is None
+                and gids is None
+                and uid is None
+                and umask < 0):
+            self._posix_spawn(args, executable, env, restore_signals, close_fds,
+                              p2cread, p2cwrite,
+                              c2pread, c2pwrite,
+                              errread, errwrite)
+            return
+    
+        orig_executable = executable
+    
+        # For transferring possible exec failure from child to parent.
+        # Data format: "exception name:hex errno:description"
+        # Pickle is not used; it is complex and involves memory allocation.
+        errpipe_read, errpipe_write = os.pipe()
+        # errpipe_write must not be in the standard io 0, 1, or 2 fd range.
+        low_fds_to_close = []
+        while errpipe_write < 3:
+            low_fds_to_close.append(errpipe_write)
+            errpipe_write = os.dup(errpipe_write)
+        for low_fd in low_fds_to_close:
+            os.close(low_fd)
+        try:
+            try:
+                # We must avoid complex work that could involve
+                # malloc or free in the child process to avoid
+                # potential deadlocks, thus we do all this here.
+                # and pass it to fork_exec()
+    
+                if env is not None:
+                    env_list = []
+                    for k, v in env.items():
+                        k = os.fsencode(k)
+                        if b'=' in k:
+                            raise ValueError("illegal environment variable name")
+                        env_list.append(k + b'=' + os.fsencode(v))
+                else:
+                    env_list = None  # Use execv instead of execve.
+                executable = os.fsencode(executable)
+                if os.path.dirname(executable):
+                    executable_list = (executable,)
+                else:
+                    # This matches the behavior of os._execvpe().
+                    executable_list = tuple(
+                        os.path.join(os.fsencode(dir), executable)
+                        for dir in os.get_exec_path(env))
+                fds_to_keep = set(pass_fds)
+                fds_to_keep.add(errpipe_write)
+                self.pid = _fork_exec(
+                        args, executable_list,
+                        close_fds, tuple(sorted(map(int, fds_to_keep))),
+                        cwd, env_list,
+                        p2cread, p2cwrite, c2pread, c2pwrite,
+                        errread, errwrite,
+                        errpipe_read, errpipe_write,
+                        restore_signals, start_new_session,
+                        process_group, gid, gids, uid, umask,
+                        preexec_fn, _USE_VFORK)
+                self._child_created = True
+            finally:
+                # be sure the FD is closed no matter what
+                os.close(errpipe_write)
+    
+            self._close_pipe_fds(p2cread, p2cwrite,
+                                 c2pread, c2pwrite,
+                                 errread, errwrite)
+    
+            # Wait for exec to fail or succeed; possibly raising an
+            # exception (limited in size)
+            errpipe_data = bytearray()
+            while True:
+                part = os.read(errpipe_read, 50000)
+                errpipe_data += part
+                if not part or len(errpipe_data) > 50000:
+                    break
+        finally:
+            # be sure the FD is closed no matter what
+            os.close(errpipe_read)
+    
+        if errpipe_data:
+            try:
+                pid, sts = os.waitpid(self.pid, 0)
+                if pid == self.pid:
+                    self._handle_exitstatus(sts)
+                else:
+                    self.returncode = sys.maxsize
+            except ChildProcessError:
+                pass
+    
+            try:
+                exception_name, hex_errno, err_msg = (
+                        errpipe_data.split(b':', 2))
+                # The encoding here should match the encoding
+                # written in by the subprocess implementations
+                # like _posixsubprocess
+                err_msg = err_msg.decode()
+            except ValueError:
+                exception_name = b'SubprocessError'
+                hex_errno = b'0'
+                err_msg = 'Bad exception data from child: {!r}'.format(
+                              bytes(errpipe_data))
+            child_exception_type = getattr(
+                    builtins, exception_name.decode('ascii'),
+                    SubprocessError)
+            if issubclass(child_exception_type, OSError) and hex_errno:
+                errno_num = int(hex_errno, 16)
+                if err_msg == "noexec:chdir":
+                    err_msg = ""
+                    # The error must be from chdir(cwd).
+                    err_filename = cwd
+                elif err_msg == "noexec":
+                    err_msg = ""
+                    err_filename = None
+                else:
+                    err_filename = orig_executable
+                if errno_num != 0:
+                    err_msg = os.strerror(errno_num)
+                if err_filename is not None:
+>                   raise child_exception_type(errno_num, err_msg, err_filename)
+E                   FileNotFoundError: [Errno 2] No such file or directory: PosixPath('/data/Guardian of Truth')
+
+/usr/lib64/python3.13/subprocess.py:1991: FileNotFoundError
+_____ test_source_counterexample_is_recorded_as_unfixed_not_a_safety_pass ______
+
+    def test_source_counterexample_is_recorded_as_unfixed_not_a_safety_pass():
+        path = ROOT / "outputs/vnext/source_delimiter_v3_counterexample_v1.json"
+        report = json.loads(path.read_text(encoding="utf-8"))
+>       assert not verify_files(ROOT, report["source_sha256"])
+E       AssertionError: assert not ['src/guardian_truth/parsing.py:HASH_MISMATCH']
+E        +  where ['src/guardian_truth/parsing.py:HASH_MISMATCH'] = verify_files(PosixPath('/data/ur3'), {'src/guardian_truth/vnext/normalize_source_v3.py': '4c4e8a9bd48782d95408b8f616e592e0a14673c13d67600243758c34157f15e9'...0dbb5381c1a35f22', 'src/guardian_truth/parsing.py': '51ca48247a1ba85906398891f732045c9cf6a48c040c6b0735affad7a5d4fd72'})
+
+tests/test_vnext_goal_alignment_reference_v1.py:82: AssertionError
+__________________ test_frozen_benchmark_hashes_and_tool_gold __________________
+
+    def test_frozen_benchmark_hashes_and_tool_gold():
+        manifest_path = ROOT / "outputs/vnext/freeze_manifest.json"
+        if not manifest_path.exists():
+            pytest.skip("protocol bootstrap has not been run yet")
+        manifest = json.loads(manifest_path.read_text(encoding="utf-8"))
+        assert verify_files(ROOT, manifest["frozen_input_sha256"]) == []
+>       assert verify_files(ROOT, manifest["regression_input_sha256"]) == []
+E       AssertionError: assert ['outputs/cyc...ASH_MISMATCH'] == []
+E         
+E         Left contains 4 more items, first extra item: 'outputs/cycle2/claim_cases.json:HASH_MISMATCH'
+E         Use -v to get more diff
+
+tests/test_vnext_integrity.py:68: AssertionError
+____ test_current_frozen_policy_is_not_claimed_complete_before_full_report _____
+
+    def test_current_frozen_policy_is_not_claimed_complete_before_full_report():
+        # This test remains valid after the run: then the auditor must have an
+        # integrity verdict, but never a synthetic semantic-correctness verdict.
+        result = AUDITOR.audit(ROOT)
+>       assert result["status"] in {"NOT_RUN_OR_INCOMPLETE", "INTEGRITY_VALID"}
+E       AssertionError: assert 'INTEGRITY_FAILED' in {'INTEGRITY_VALID', 'NOT_RUN_OR_INCOMPLETE'}
+
+tests/test_vnext_policy_artifact_audit_v1.py:42: AssertionError
+______________ test_frozen_t1_evaluation_artifacts_are_consistent ______________
+
+    def test_frozen_t1_evaluation_artifacts_are_consistent():
+        output = ROOT / "outputs/vnext"
+        freeze = json.loads((output / "tool_t1_freeze_v1.json").read_text(encoding="utf-8"))
+        report = json.loads((output / "tool_t1_results_v1.json").read_text(encoding="utf-8"))
+        predictions = json.loads((output / "tool_t1_predictions_v1.json").read_text(encoding="utf-8"))
+>       assert verify_files(ROOT, freeze["source_sha256"]) == []
+E       AssertionError: assert ['src/guardia...ASH_MISMATCH'] == []
+E         
+E         Left contains one more item: 'src/guardian_truth/parsing.py:HASH_MISMATCH'
+E         Use -v to get more diff
+
+tests/test_vnext_t1_artifacts.py:15: AssertionError
+=============================== warnings summary ===============================
+../../home/vercel-sandbox/.local/lib/python3.13/site-packages/_pytest/config/__init__.py:1464
+  /home/vercel-sandbox/.local/lib/python3.13/site-packages/_pytest/config/__init__.py:1464: PytestConfigWarning: Unknown config option: asyncio_default_fixture_loop_scope
+  
+    self._warn_or_fail_if_strict(f"Unknown config option: {key}\n")
+
+tests/test_service_dispatch.py:12
+  /data/ur3/tests/test_service_dispatch.py:12: PytestUnknownMarkWarning: Unknown pytest.mark.asyncio - is this a typo?  You can register custom marks to avoid this warning - for details, see https://docs.pytest.org/en/stable/how-to/mark.html
+    @pytest.mark.asyncio
+
+tests/test_service_dispatch.py:40
+  /data/ur3/tests/test_service_dispatch.py:40: PytestUnknownMarkWarning: Unknown pytest.mark.asyncio - is this a typo?  You can register custom marks to avoid this warning - for details, see https://docs.pytest.org/en/stable/how-to/mark.html
+    @pytest.mark.asyncio
+
+tests/test_service_dispatch.py:54
+  /data/ur3/tests/test_service_dispatch.py:54: PytestUnknownMarkWarning: Unknown pytest.mark.asyncio - is this a typo?  You can register custom marks to avoid this warning - for details, see https://docs.pytest.org/en/stable/how-to/mark.html
+    @pytest.mark.asyncio
+
+-- Docs: https://docs.pytest.org/en/stable/how-to/capture-warnings.html
+=========================== short test summary info ============================
+FAILED tests/telecom_causal_recovery/test_recovery.py::test_original_and_counterfactuals_are_separate
+FAILED tests/telecom_causal_recovery/test_recovery.py::test_source_spans_and_receipts
+FAILED tests/telecom_causal_recovery/test_recovery.py::test_date_variants_recalculate_and_do_not_use_machine_time
+FAILED tests/telecom_causal_recovery/test_recovery.py::test_wrong_actor_is_rejected
+FAILED tests/test_hybrid_packets.py::test_conflicts_use_prediction_refs_not_fixed_business_ids
+FAILED tests/test_policy_table_v11_consent_pair_probe.py::test_cohort_exact_preparation_order_sample_and_malformed_calls
+FAILED tests/test_policy_table_v11_measure.py::test_every_manifest_mutant_rematerializes_bit_exactly
+FAILED tests/test_real_bound_contract_audit.py::test_real_source_coverage_is_three_precise_action_results_not_binary_accuracy
+FAILED tests/test_runtime.py::RuntimeTests::test_mistral_and_cerebras_lowercase_keys_bind_to_their_own_hosts
+FAILED tests/test_service_dispatch.py::test_timed_out_worker_retains_capacity_until_real_completion
+FAILED tests/test_service_dispatch.py::test_backend_timeout_is_not_misreported_as_running_worker
+FAILED tests/test_service_dispatch.py::test_queue_deadline_has_no_worker_leak
+FAILED tests/test_vnext_binding_scaling_v1_artifacts.py::test_all_nine_scaling_predictions_are_sealed_and_sources_unchanged
+FAILED tests/test_vnext_binding_temporal_v2_artifacts.py::test_completed_34_case_predictions_are_sealed_with_exact_source_inputs
+FAILED tests/test_vnext_completed_goal_t2_artifacts.py::test_completed_stages_preserve_full_seals_sources_and_audits
+FAILED tests/test_vnext_experiment.py::test_stage_x0_uses_actual_protected_incumbent_without_network
+FAILED tests/test_vnext_goal_alignment_reference_v1.py::test_source_counterexample_is_recorded_as_unfixed_not_a_safety_pass
+FAILED tests/test_vnext_integrity.py::test_frozen_benchmark_hashes_and_tool_gold
+FAILED tests/test_vnext_policy_artifact_audit_v1.py::test_current_frozen_policy_is_not_claimed_complete_before_full_report
+FAILED tests/test_vnext_t1_artifacts.py::test_frozen_t1_evaluation_artifacts_are_consistent
+20 failed, 2923 passed, 1 skipped, 4 warnings, 516 subtests passed in 41.56s

@@ -186,3 +186,12 @@ def test_F_message_with_tool_call_rule_and_its_own_trigger():
     r = [rule('NO_TEXT_WITH_TOOL_CALL', pol)]
     assert [x[0] for x in _f(pol, [r, r], targets=t) if x[1]] == ['NO_TEXT_WITH_TOOL_CALL']
     assert [x for x in _f(pol, [r, r], targets=t[1:]) if x[1]] == []
+
+
+@new_only
+def test_F_agreement_treats_agent_subject_spellings_as_one_but_not_other_subjects():
+    # post-hoc (dev, before frozen120 evaluation): two runs differing only in subject 'agent' vs 'you' agree
+    a, b = [rule('MAX_TOOL_CALLS_PER_TURN', ONE, 1, subject='agent')], [rule('MAX_TOOL_CALLS_PER_TURN', ONE, 1, subject='you')]
+    assert [x[0] for x in _f(ONE, [a, b]) if x[1]] == ['MAX_TOOL_CALLS_PER_TURN']
+    c = [rule('MAX_TOOL_CALLS_PER_TURN', ONE, 1, subject='user')]
+    assert [x for x in _f(ONE, [a, c]) if x[1]] == []

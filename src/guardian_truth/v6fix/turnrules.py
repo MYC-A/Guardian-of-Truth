@@ -101,10 +101,18 @@ def conditional(rule, line, prev):
     return why
 
 
+AGENT_SUBJECTS = ('agent', 'the agent', 'assistant', 'the assistant', 'you', '')
+EMPTY = ('', 'none', 'n/a', '-')
+
+
 def _key(r):
+    """Agreement key of two extraction runs. Equivalent spellings of 'no condition' and of the agent as subject
+    ('agent' / 'you' / 'assistant') are one value (the same equivalence conditional() applies); everything else is exact."""
     norm = lambda s: re.sub(r'\s+', ' ', (s or '').strip().lower())
-    return (r['type'], r.get('n'), norm(r['quote']), norm(r.get('condition')), norm(r.get('exception')), norm(r.get('scope')),
-            norm(r.get('subject')) or 'agent')
+    opt = lambda s: '' if norm(s) in EMPTY else norm(s)
+    subj = norm(r.get('subject'))
+    return (r['type'], r.get('n'), norm(r['quote']), opt(r.get('condition')), opt(r.get('exception')), opt(r.get('scope')),
+            'agent' if subj in AGENT_SUBJECTS else subj)
 
 
 def _extract(client, model, texts, attempt):
