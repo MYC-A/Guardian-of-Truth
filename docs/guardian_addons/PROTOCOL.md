@@ -51,3 +51,9 @@ smoke 1 → CB dev+frozen (~58) → A, CB, CBT/CBTE contrast (~75) → CBT/CBTE 
 Итог = неизменный v6fix decide() поверх неизменного R_fix. TP/FP/FN/TN, F1; изменённые ID против контроля (исправленные FN,
 новые/снятые FP, потерянные TP); по семействам; причины — ручная самопроверка (какой объект, почему недопустимо, какие
 источники), авто-маркеры только подсказка; тех. сбои/обрезания/UNKNOWN; вызовы/токены/время/стоимость из журнала.
+
+## Amendment (after rep1, before any rep2/rep3 call)
+Rep1 differences between CB and CBT are single rows. Stability check (declared before running): rep2 and rep3 of CB and CBT
+only on the discordant rows {frozen: sem_Q7_exc_ok_bank, sem_Q12_amb_wrong_ret; contrast: con_K7_permit_wrong_tel, con_K6_amb_wrong_bank}.
+Headline metrics stay rep1 on full sets; reps 2–3 are reported only as per-row stability (k/3). Budget left before this: 87 requests.
+valid46 run: NOT_EXECUTED (needs ≥110 requests). H2 (third pass): not triggered (only 1 CONTRADICTION in 38 rows, review was already correct there).
