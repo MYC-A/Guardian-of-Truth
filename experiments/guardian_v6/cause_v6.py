@@ -33,7 +33,8 @@ def main():
     J6 = {}
     if outp.exists():
         for r in map(json.loads, outp.read_text(encoding='utf-8').splitlines()):
-            J6[(r['set'], r['id'], r['acc_text'])] = r
+            if r['judgement'].get('category') != 'technical_unjudged' or a.stage == 'report':
+                J6[(r['set'], r['id'], r['acc_text'])] = r
     golds = {s: (json.load(open(a.gold)) if a.gold else gold_for(s)) for s in sets}
     if a.stage == 'run':
         todo, seen = [], set()
@@ -48,8 +49,8 @@ def main():
                 k = (s, r['id'], (acc or {}).get('text') or '')
                 if acc and k not in J2 and k not in J6 and k not in seen:
                     seen.add(k); todo.append((s, r, acc)); missing_model += 1
-        print('todo', len(todo), Counter(t[0] for t in todo), 'of which MODEL', len(missing_model), flush=True)
-        live = Transport('mistral', MODEL, V2 / 'cache' / 'judge', max_calls=600, retry_failed=2, sender=paced)
+        print('todo', len(todo), Counter(t[0] for t in todo), 'of which MODEL', missing_model, flush=True)
+        live = Transport('mistral', MODEL, V2 / 'cache' / 'judge', max_calls=3000, retry_failed=2, sender=paced)
         client = ReadThrough('mistral', MODEL, [], live=live)
         rows = {s: {x['id']: x for x in inputs(s)} for s in sets}
         lock = threading.Lock()
