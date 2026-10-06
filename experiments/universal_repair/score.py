@@ -14,7 +14,8 @@ V4TAG = {'ext_tau2': '_v4'}
 def gold_for(name):
     if name == 'valid46':
         import pandas as pd
-        return {r.id: dict(label=int(r.label)) for r in pd.read_parquet(ROOT / 'valid.parquet').itertuples()}
+        return {r.id: dict(label=int(r.label), **({'cause': r.explanation} if isinstance(r.explanation, str) and r.explanation.strip() else {}))
+                for r in pd.read_parquet(ROOT / 'valid.parquet').itertuples()}
     if name in ('ext_tau2', 'ext_tau2v2', 'ext_tau2v2_strict'):
         d = {'ext_tau2': 'tau2v2', 'ext_tau2v2': 'tau2v2', 'ext_tau2v2_strict': 'tau2v2_strict'}[name]
         return json.loads((ROOT / 'outputs/verification_v4/external' / d / 'GOLD_eval_only.json').read_text(encoding='utf-8'))

@@ -62,14 +62,18 @@ def main():
     ap.add_argument('--cb', action='store_true', help='also run CB (shadow)')
     ap.add_argument('--workers', type=int, default=3)
     ap.add_argument('--ids')
+    ap.add_argument('--runs-dir', default='runs', help='output subdir of outputs/universal_repair (v2: ../universal_repair_v2/runs)')
+    ap.add_argument('--with-live-cache', action='store_true',
+                    help='offline: also read the committed live cache (outputs/universal_repair/cache/mistral) exact-key')
     a = ap.parse_args()
     live = None
     if a.live:
         (OUT / 'cache').mkdir(parents=True, exist_ok=True)
         live = Transport('mistral', MODEL, OUT / 'cache' / 'mistral', max_calls=MAX_CALLS, retry_failed=3, sender=paced)
-    client = ReadThrough('mistral', MODEL, FROZEN, live=live)
+    frozen = FROZEN + ([OUT / 'cache' / 'mistral'] if a.with_live_cache and not a.live else [])
+    client = ReadThrough('mistral', MODEL, frozen, live=live)
     mode = 'live' if a.live else 'offline'
-    path = OUT / 'runs' / a.set / f'rep{a.rep}_{a.arm}{"_cb" if a.cb else ""}_{mode}.jsonl'
+    path = OUT / a.runs_dir / a.set / f'rep{a.rep}_{a.arm}{"_cb" if a.cb else ""}_{mode}.jsonl'
     path.parent.mkdir(parents=True, exist_ok=True)
     have = {}
     if path.exists():

@@ -74,7 +74,7 @@ def near_verbatim(quote, text, threshold=0.9, min_words=6):
             ctx = polarity(' '.join(tw[max(0, i - 3):i + n + 3]))     # a NOT just outside the window counts too
             if polarity(' '.join(win)) == pq and not any(pq[k] == 0 for k in ctx) and \
                     Counter(m.lower() for m in CMPW.findall(' '.join(win))) == Counter(m.lower() for m in CMPW.findall(' '.join(qw))) and \
-                    _content_kept(qw, win):
+                    _content_kept(qw, tw[max(0, i - 3):i + n + 3]):     # same ±3 context as the polarity check
                 return True
     return False
 

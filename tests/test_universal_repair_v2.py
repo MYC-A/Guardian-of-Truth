@@ -160,3 +160,26 @@ def test_mech_only_on_unresolved():
     assert v5.decide(_rec('UNRESOLVED'), mech=True)[0] == 1
     for st in ('NOT_EXECUTED', 'UNCHECKED', 'UNCHECKED_QUEUE_BOUND'):
         assert v5.decide(_rec(st), mech=True)[0] == 0, st
+
+
+def test_fuzzy_heading_merged_paraphrase_still_supported():
+    """lb3L_003 rep2 (v2 replay regression): the verifier merged the section heading into the rule."""
+    src = ("## Porting out\n- A port-out request (`port_out`) completes in 3 business days (Monday–Friday) counted from the "
+           "next business day after the request. When telling the customer the completion date, compute it from today.\n")
+    q = ("Porting out (`port_out`) completes in 3 business days (Monday–Friday) counted from the next business day after "
+         "the request. When telling the customer the completion date, compute it from today.")
+    assert E.support(q, src)['status'] == 'SUPPORTED'
+    assert E.support(q, src, decisive=True)['status'] != 'SUPPORTED'
+
+
+def test_cli_repair_is_opt_in(tmp_path):
+    import pytest
+    from guardian_truth.integrated import cli
+    row, _ = packet('Be accurate.', '', 'Total is 4.')
+    f = tmp_path / 'in.json'; f.write_text(json.dumps(dict(prompt=row['prompt'], response=row['response'])), encoding='utf-8')
+    o = tmp_path / 'out.jsonl'
+    assert cli.main([str(f), '--no-model', '--output', str(o)]) == 0
+    r = json.loads(o.read_text(encoding='utf-8'))
+    assert 'profile' not in r and 'binary' in r                       # default output unchanged
+    with pytest.raises(SystemExit):
+        cli.main([str(f), '--no-model', '--repair', 'r_fix'])
