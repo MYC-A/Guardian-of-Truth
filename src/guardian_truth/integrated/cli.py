@@ -2,7 +2,7 @@
 
   guardian-review INPUT.json|INPUT.jsonl [--profile guard_adm2] [--provider mistral|ollama] [--model M]
                   [--cache-dir DIR] [--offline] [--no-model] [--max-calls N] [--attempt K] [--output OUT.jsonl]
-                  [--repair r_fix]
+                  [--repair r_fix|v6]
 
 INPUT holds objects with 'prompt' and 'response' (other keys are ignored and never read by review()).
 --offline: zero-HTTP replay; a cache miss fails loudly (NetworkTripwire).
@@ -12,6 +12,9 @@ the guard proves an error.
 repaired DF/Ems/AT components and verifier (repair.v5, arm R_fix). Default stays --repair none (unchanged output).
 The confirmation component CB is NOT run in r_fix (shadow only). The output carries packet coverage, the components
 that ran, every candidate's verification status and the decision owner, so a NO_ERROR is never silent about gaps.
+--repair v6: OPT-IN (docs/guardian_v6/REPORT.md): r_fix plus code-checked layers F (policy turn-shape rules, quoted),
+P (invented identifiers), S (repeat of a failed call / undeclared tool). A mechanical finding decides ERROR and supplies the
+cause (certificate=MECHANICAL); otherwise the r_fix decision stands (certificate=MODEL).
 """
 from __future__ import annotations
 
@@ -48,7 +51,7 @@ def main(argv=None):
     ap.add_argument('--attempt', type=int, default=0)
     ap.add_argument('--output')
     ap.add_argument('--full', action='store_true', help='emit the full trace instead of the compact result')
-    ap.add_argument('--repair', choices=['none', 'r_fix'], default='none', help='opt-in research repair profile (default none)')
+    ap.add_argument('--repair', choices=['none', 'r_fix', 'v6'], default='none', help='opt-in research repair profile (default none)')
     a = ap.parse_args(argv)
     if a.repair != 'none':
         return _repair_main(a)
@@ -81,14 +84,21 @@ def _repair_main(a):
     tr = Transport(a.provider, model, a.cache_dir, offline=a.offline, max_calls=a.max_calls)
     client = ReadThrough(a.provider, model, [], live=tr)
     out = open(a.output, 'x', encoding='utf-8') if a.output else sys.stdout
+    layers = None
     try:
         for item in _inputs(a.input):
             row = dict(id=item.get('id', ''), prompt=item['prompt'], response=item['response'])
             rec = run_v5(row, client, flags=ARMS['R_fix'], provider=a.provider, model=model, budget=a.budget_bytes,
                          attempt=a.attempt, with_cb=False)
             binary, acc = decide(rec)
+            mech = None
+            if a.repair == 'v6':
+                from ..v6.pipeline import Layers
+                if layers is None:
+                    layers = Layers(client, model)
+                binary, acc, mech, _meta = layers.decide(row, rec)
             p = packet_for(row, a.budget_bytes)
-            res = dict(profile='repair_r_fix', binary=binary, decision_owner=(acc or {}).get('origin'), accusation=acc,
+            res = dict(profile='repair_' + a.repair, mechanical=mech, binary=binary, decision_owner=(acc or {}).get('origin'), accusation=acc,
                        base_reviewer=dict(final=rec['A'].get('final'), guard_error=rec['A'].get('guard_error')),
                        coverage=(p or {}).get('coverage'), triggers=rec.get('triggers'),
                        components={k: v.get('admission') for k, v in (rec.get('components') or {}).items()},
