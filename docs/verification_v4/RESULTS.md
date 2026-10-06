@@ -61,7 +61,9 @@ closed-tool and failed-receipt cases; stale state/wrong entity are reported as n
 Post-processing losses found and fixed on dev: BK3e (AT ERROR killed by single-quote verifier), H5e/K3e (DF correct,
 policy-quote downgrade), TL3e (binder operand naming).
 
-## 4. External evaluation (`ext_tau2`, 70 rows: 35 ERROR / 35 NO_ERROR; frozen in commit 4, see EXTERNAL_DATA.md)
+## 4. External evaluation (`ext_tau2`, gold v1 — **WITHDRAWN**, see §4b; kept for the record)
+
+### 4a. v1 numbers (`ext_tau2`, 70 rows: 35 ERROR / 35 NO_ERROR; frozen in commit 4, see EXTERNAL_DATA.md)
 
 3 primary reps, identical settings, paired; code frozen at commit 3 (no change after). Raw reports:
 `outputs/verification_v4/external/tau2/reports/`. cc = new cause-correct TP vs A; binary = new TP (any cause) / new FP.
@@ -97,3 +99,41 @@ policy-quote downgrade), TL3e (binder operand naming).
 | ≥25 positives | 35 | satisfied |
 
 Default stays **guard_adm2** (A). See FINAL_DECISION.md.
+
+**These v1 verdicts are withdrawn (Amendment 2):** gold v1 equated tau2 task success with Guardian compliance — all 15
+`multi_read` NO_ERROR rows violate "one tool call at a time", 4 `gold_write` rows mix prose and a tool call; causes were tau2
+action diffs. Several "V4 FP" above were correct detections.
+
+## 4b. Rescoring on gold v2 (Amendment 2; stored outputs, no new Guardian calls; **exploratory, unblinded**)
+
+Gold v2 (`ext_tau2v2`): 68 rows = 52 ERROR (19 format-only F1/F2, 33 with a substantive cause) / 16 NO_ERROR; 2 UNCERTAIN excluded.
+Cause judge re-run once per (accusation, acceptable cause): 184 jobs (+ retries; 3 unjudged → counted not SAME).
+Raw: `outputs/verification_v4/external/ext_tau2v2/RESCORE_v2.json`, logs in `.../tau2v2/reports/`.
+
+| rep | A tp/fp F1 (cc) | V4 = A_AT tp/fp F1 | V4 new TP / new FP | V4 new cc-TP | A_CTRL new TP / cc / FP | A_Ems new TP / cc | later-call A→V4 |
+|---|---|---|---|---|---|---|---|
+| 1 | 29/1 .707 (5) | 36/1 .809 | +7 / 0 | 2 | +3 / 1 / 0 | +1 / 1 | 7/9 → 9/9 |
+| 2 | 31/1 .738 (6) | 37/1 .822 | +6 / 0 | 1 | +2 / 0 / 0 | +1 / 0 | 7/9 → 9/9 |
+| 3 | 30/1 .723 (3) | 38/1 .835 | +8 / 0 | 0 | +5 / 2 / 0 | +1 / 0 | 6/9 → 9/9 |
+
+* Strata: format-only rows — V4 +5/+4/+4 TP (A catches 11–13 of 19); substantive rows — V4 +2/+2/+4 TP. Strict variant
+  (`ext_tau2v2_strict`, 65 rows without oracle-only causes): identical gains, F1 .837/.851/.851 vs A .734/.765/.734.
+* **Most V4 gains are right row, wrong reason.** Manual reading of all 21 gain accusations: correct cause in ≈3/2/1 per rep
+  (judge SAME on 4; PARTIAL on 3 accusations that literally cite "one tool call at a time" — judge noise); the rest accuse
+  generic confirmation / "one user per conversation" / "made-up information" boilerplate on multi-call moves, or claim missing
+  confirmation that is present (ext_air_043, ext_ret_019, ext_ret_041).
+* DF never triggered; Ems gains are SEMANTIC-mode confirmation claims, no compositional case. Verifier: V4 = V4_mechanical = strict.
+* Only 16 negatives: A FP = ext_tel_015 (r1, borderline: total price not restated) / ext_ret_046 (r2, r3, false "confirmation must
+  be in the tool call"); V4 adds no FP on negatives.
+
+### §7 applied to gold v2 (exploratory — cannot ADOPT, Amendment 2 §4)
+| rule | evidence | outcome |
+|---|---|---|
+| Combined V4 | new cc 2/1/0 (≤3/2/1 counting PARTIAL) — need ≥3 each rep; FP 0; T_multi V4−CTRL cc +1/+1/−2 | **not met** |
+| DF-only | never triggered | **INSUFFICIENT EVIDENCE** (external τ² says nothing about DF transfer) |
+| All-target | T_multi net cc AT 2/1/0 vs CTRL 1/0/2 → AT > CTRL in 2/3 reps; later-call recall 9/9 > 6–7/9 | **formally met, by one accusation per rep** → candidate for a blinded external test, not adoption |
+| Multi-source proof | no compositional positive | **NOT TESTED externally** |
+| §5 verifier | never rejected a code-proven candidate | not met; verified stays |
+
+Observation: 19/52 errors are mechanical format violations that a deterministic check (calls ≥ 2, prose + call, when the policy
+states the rule) would catch with no model call; A and V4 miss several of them or catch them for the wrong reason.

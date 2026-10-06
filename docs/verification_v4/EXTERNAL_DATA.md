@@ -1,5 +1,7 @@
 # V4 external evaluation set (`ext_tau2`)
 
+> **Gold v1 below is invalid for Guardian verdicts** (task success ≠ policy compliance). Use gold v2 `outputs/verification_v4/external/tau2v2/` (Amendment 2, `gold_v2.py`): 68 rows, 52 ERROR / 16 NO_ERROR, 2 UNCERTAIN excluded. The review claim below is reproducible via `build.py review-selected` (`tau2/REVIEW_selected_errors.txt`); 3 selected candidates with ordinal > 60 were originally reviewed with an ad-hoc view.
+
 Frozen before any V4 run on it (Commit 4). Builder: `experiments/verification_v4/external/build.py` (stages `pool` → `review` → `finalize`), renderer `experiments/verification_v4/external/render.py` (frozen in Commit 3). Artifacts: `outputs/verification_v4/external/tau2/{inputs.jsonl, GOLD_eval_only.json, MANIFEST.json, pool.jsonl}`. Guardian sees only `inputs.jsonl` (`id, prompt, response`); ids are assigned in sha256 order so they do not reveal the stratum.
 
 ## Source
