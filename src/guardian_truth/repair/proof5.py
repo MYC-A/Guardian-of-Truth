@@ -27,8 +27,8 @@ POS_SET = re.compile(r'\bonly\b[^.;]{0,120}\b(?:includ\w*|contain\w*|listed|amon
                      r'только[^.;]{0,120}(?:входит|включа\w*|в списке|из списка|разреш\w*)', re.I)
 NEG_SET = re.compile(r'\bmust not (?:be )?(?:in|one of|among|listed)|\b(?:excluded|blocked|blacklist\w*|forbidden|prohibited|banned)\b|'
                      r'\bcannot be (?:in|one of)|не (?:должн\w* )?(?:входить|быть в)|запрещ\w*|исключ\w*', re.I)
-EXC = re.compile(r'\b(?:except|unless|other than|excluding|with the exception|only if|provided that|if and only if)\b|'
-                 r'кроме|за исключением|если не|если только|при условии', re.I)
+EXC = re.compile(r'\b(?:except|unless|other than|excluding|with the exception|only if|provided that|if and only if|if|whenever|'
+                 r'only when|in case|as long as)\b|кроме|за исключением|если|в случае|при условии|пока', re.I)
 
 
 def orientation(policy_text):
@@ -69,14 +69,41 @@ def _offset(quote, src):
     return m.start() if m else None
 
 
+def _parent_ids(src, ptr):
+    par = ptr.rsplit('/', 1)[0] if ptr else ''
+    try:
+        return J.id_fields(J.get(src, par) if par else J.payload(src))
+    except (KeyError, IndexError, ValueError, TypeError):
+        return {}
+
+
+def _resolve_json(quote, src, typ, want, now):
+    """A verbatim quote on a JSON source names ONE leaf: the unique scalar leaf with the wanted value whose path keys
+    occur in the quote. -> (pointer, value) or None. Gives JSON-addressed and verbatim views of one fact the same atom id."""
+    q = (quote or '').lower()
+    hits = []
+    for ptr, node in J.nodes(J.payload(src)):
+        if isinstance(node, (dict, list)) or not ptr:
+            continue
+        v = _typed(node, typ, now)
+        if v is None or want is None or not (N.eq(v, want) if typ == 'number' else v == want):
+            continue
+        keys = [k.replace('~1', '/').replace('~0', '~').lower() for k in ptr.split('/')[1:] if not k.isdigit()]
+        if keys and any(k in q for k in keys):
+            hits.append((ptr, v))
+    return hits[0] if len(hits) == 1 else None
+
+
 def parse_leaf(o, texts, now=None):
     """-> (list of (value, identity, meta), None) or (None, NOTE). A member operand quoting an array yields every
-    element (meta closure='ARRAY'); every other operand yields exactly one value."""
+    element (meta closure='ARRAY'; an empty array yields one marker with meta empty=True); every other operand yields
+    exactly one value. Identities are code-owned atoms: (source_id, JSON pointer) for any leaf of a JSON source — also
+    when the quote is verbatim text — so one fact has one id; an ARRAY_SUM term owns the whole array pointer."""
     sid, quote, typ, role = o.get('source_id'), o.get('quote') or '', o.get('type'), o.get('role')
     src = texts.get(sid)
     if src is None:
         return None, 'SOURCE_MISSING'
-    sup = E.support(quote, src)
+    sup = E.support(quote, src, decisive=True)
     if sup['status'] != 'SUPPORTED':
         return None, 'QUOTE_NOT_SUPPORTED:' + sup['how']
     want = _typed(o.get('value'), typ, now) if typ != 'number' else N.to_dec(o.get('value'))
@@ -86,7 +113,10 @@ def parse_leaf(o, texts, now=None):
             arrays = [(p, v) for p, v in a['values'].items() if isinstance(v, list)]
             if len(arrays) == 1 and all(not isinstance(x, (list, dict)) for x in arrays[0][1]):
                 p, arr = arrays[0]
-                vals = [(_typed(x, typ, now), (sid, f'{p}/{i}'), dict(closure='ARRAY', array=(sid, p))) for i, x in enumerate(arr)]
+                ids = _parent_ids(src, p)
+                if not arr:
+                    return [(None, (sid, p), dict(closure='ARRAY', array=(sid, p), empty=True, ids=ids))], None
+                vals = [(_typed(x, typ, now), (sid, f'{p}/{i}'), dict(closure='ARRAY', array=(sid, p), ids=ids)) for i, x in enumerate(arr)]
                 if any(v is None for v, _, _ in vals):
                     return None, 'VALUE_NOT_PARSED'
                 return vals, None
@@ -97,18 +127,27 @@ def parse_leaf(o, texts, now=None):
         hit = [(p, v) for p, v in cands if (N.eq(v, want) if typ == 'number' else v == want)]
         if not hit and role == 'term' and typ == 'number' and want is not None:
             # amendment A2: a SUM term may be the exact total of ONE addressed array of numbers (empty array -> 0);
-            # the whole array is the leaf, so closure is the literal array (no element can be missing or doubled)
+            # the term owns the whole array pointer, so any element or other view of it overlaps (DUPLICATE_LEAF)
             arrays = [(p, v) for p, v in a['values'].items() if isinstance(v, list)]
             if len(arrays) == 1 and all(isinstance(x, (int, float)) and not isinstance(x, bool) for x in arrays[0][1]):
                 p, arr = arrays[0]
                 tot = sum((N.to_dec(x) for x in arr), N.to_dec(0))
                 if N.eq(tot, want):
-                    return [(tot, (sid, p, 'sum'), dict(closure='ARRAY_SUM', n=len(arr)))], None
+                    return [(tot, (sid, p), dict(closure='ARRAY_SUM', n=len(arr), ids=_parent_ids(src, p)))], None
         if len(hit) != 1:
             return None, 'VALUE_NOT_IN_QUOTE' if not hit else 'VALUE_AMBIGUOUS_IN_QUOTE'
         p, v = hit[0]
         par = J.get(src, a['parent']) if a['parent'] else J.payload(src)
         return [(v, (sid, p), dict(ids=J.id_fields(par), ambiguous=a['ambiguous']))], None
+    if J.payload(src) is not None:
+        if role == 'member' and typ != 'number':
+            pass                                           # prose member lists of a JSON source: handled below as text
+        else:
+            r = _resolve_json(quote, src, typ, want, now)
+            if r is None:
+                return None, 'VERBATIM_ON_JSON_UNRESOLVED'
+            p, v = r
+            return [(v, (sid, p), dict(ids=_parent_ids(src, p)))], None
     # prose / verbatim quote
     base = _offset(quote, src)
     q = MD.sub('', quote)
@@ -207,14 +246,18 @@ def execute(plan, texts, target_ids, now=None, policy_text=''):
     if not any(o.get('source_id') in target_ids for o in ops):
         rc['binding_status'] = 'NO_TARGET_OPERAND'
         return out('UNRESOLVED', note='NO_TARGET_OPERAND')
-    vals, leaves, seen = {}, [], {}
+    vals, leaves, seen, arrays = {}, [], {}, {}
     for o in ops:
         got, err = parse_leaf(o, texts, now)
         if err:
             rc['source_supported'] = False
             return out('UNRESOLVED', note=err, role=o.get('role'), source_id=o.get('source_id'))
         for v, ident, meta in got:
-            if ident in seen and o.get('role') != 'member':
+            arrays.setdefault(o.get('role'), set()).add(meta.get('array'))
+            if meta.get('empty'):
+                vals.setdefault(o.get('role'), [])
+                continue
+            if o.get('role') != 'member' and any(_overlap(ident, x) for x in seen):
                 rc['source_supported'], rc['binding_status'] = True, 'DUPLICATE_LEAF'
                 return out('UNRESOLVED', note='DUPLICATE_LEAF', identity=list(map(str, ident)))
             seen[ident] = o.get('role')
@@ -222,7 +265,8 @@ def execute(plan, texts, target_ids, now=None, policy_text=''):
             leaves.append(dict(role=o.get('role'), source_id=o.get('source_id'), value=_f(v), type=o.get('type'),
                                leaf=str(ident[1]) if len(ident) == 2 else None))
     rc['source_supported'] = True
-    if op in ENTITY_OPS:
+    # entity binding for EVERY operation (numeric LE/SUM too, ENTITY_OPS kept for compatibility)
+    if op:
         tgt = [m.get('ids') or {} for r in vals for v, o, m in vals[r] if o.get('source_id') in target_ids]
         oth = [m.get('ids') or {} for r in vals for v, o, m in vals[r] if o.get('source_id') not in target_ids]
         if any(k in b and str(a[k]) != str(b[k]) for a in tgt for b in oth for k in a):
@@ -230,8 +274,10 @@ def execute(plan, texts, target_ids, now=None, policy_text=''):
             return out('UNRESOLVED', note='ENTITY_CONFLICT', leaves=leaves)
     rc['binding_status'] = rc['binding_status'] or 'BOUND'
     if op in ('MEMBER_OF', 'NOT_MEMBER_OF'):
-        arrs = {m.get('array') for _, _, m in vals['member']}
+        arrs = arrays.get('member', set())
         rc['closure_status'] = 'COMPLETE' if len(arrs) == 1 and None not in arrs else 'PARTIAL'
+    if any(not vals.get(r) for r in single):
+        return out('UNRESOLVED', note='EMPTY_OPERAND', leaves=leaves)
     one = {r: vals[r][0][0] for r in single}
     many = {r: [v for v, _, _ in vals[r]] for r in repeated}
     try:
@@ -245,6 +291,16 @@ def execute(plan, texts, target_ids, now=None, policy_text=''):
         if not inside:                                     # 'not in the set' needs the complete set
             return out('UNRESOLVED', note='MEMBERSHIP_SET_INCOMPLETE', leaves=leaves, detail=detail)
     return out('HOLDS' if holds else 'VIOLATED', detail=detail, leaves=leaves, operation=op)
+
+
+def _overlap(a, b):
+    """Two atom ids denote overlapping facts: same id, or one JSON pointer contains the other (array vs its element)."""
+    if a == b:
+        return True
+    if len(a) == 2 and len(b) == 2 and a[0] == b[0] and isinstance(a[1], str) and isinstance(b[1], str) \
+            and a[1].startswith('/') and b[1].startswith('/'):
+        return a[1].startswith(b[1] + '/') or b[1].startswith(a[1] + '/')
+    return False
 
 
 def _run(op, one, many, vals):

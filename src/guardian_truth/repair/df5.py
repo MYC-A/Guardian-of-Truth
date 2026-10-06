@@ -34,9 +34,26 @@ def _sentence(text, start, end):
     return text[a + 1:(min(bs) if bs else len(text))]
 
 
+CLAUSE = re.compile(r';|:\s|\s[—–-]\s|,\s*(?:but|however|and now|now|но|однако|а теперь)\b|\b(?:but|however)\b|(?<!\w)(?:но|однако)(?!\w)', re.I)
+
+
+def _clause(text, start, end):
+    """The clause of the sentence containing text[start:end]: a rejection in another clause ("the previous quote was
+    wrong; your new total is 5") does not scope the new assertion."""
+    sent = _sentence(text, start, end)
+    off = text.find(sent)
+    if off < 0:
+        return sent
+    a, b = start - off, end - off
+    cuts = [m.span() for m in CLAUSE.finditer(sent)]
+    lo = max([e for s_, e in cuts if e <= a] or [0])
+    hi = min([s_ for s_, e in cuts if s_ >= b] or [len(sent)])
+    return sent[lo:hi]
+
+
 def asserted(text, start, end):
     """-> None if the move asserts the value at text[start:end], else the reason it does not."""
-    if REJECT.search(_sentence(text, start, end)):
+    if REJECT.search(_clause(text, start, end)):
         return 'REJECTED_OR_ATTRIBUTED'
     if NEG_BEFORE.search(text[max(0, start - 30):start]):
         return 'NEGATED'
@@ -70,32 +87,40 @@ def entity_conflict(claim_ctx, operand_quote, operand_src):
     return False
 
 
+def _word_in(w, ctx):
+    """Whole-word occurrence (a one-letter id 'A' or a key fragment inside another word is not a mention)."""
+    return bool(w) and re.search(r'(?<![\w])' + re.escape(w) + r'(?![\w])', ctx) is not None
+
+
 def scoped_copied(claim, results, bound_sources, nd):
-    """results: {source_id: text}. The claimed value is copied when it is a value of a cited result, or of a result
-    whose object identifier or key words occur in the claim's context."""
+    """results: {source_id: text}. The claimed value counts as COPIED only from a successful result leaf whose FIELD
+    fits the claim: a date-typed leaf for a date claim, or a field whose key words occur in the claim's context (or
+    whose object identifier does). Citing the result is not enough (`due_days` 30 does not make a stated total 30 a
+    copy), and a failed result only echoes the request. `bound_sources` is kept for the receipt only."""
     v, ctx = claim['value'], (claim.get('context') or '').lower()
     for sid, t in results.items():
-        if claim['kind'] == 'date':
-            has = v in {d for d, _ in D.dates(t, nd)}
-        else:
-            has = v >= 10 and any(N.eq(v, y) for y, _, _ in N.numbers(t))
-        if not has:
+        if J.failed(t):
             continue
-        if sid in bound_sources:
-            return True
         p = J.payload(t)
         if p is None:
             continue
         for ptr, node in J.nodes(p):
             if not isinstance(node, dict):
                 continue
+            idv = [str(i).lower() for i in J.id_fields(node).values()]
             for k, x in node.items():
+                if isinstance(x, (dict, list)):
+                    continue
                 xv = (D.parse_date(str(x), nd) if claim['kind'] == 'date' else N.to_dec(x) if isinstance(x, (int, float, str)) else None)
                 if xv is None or (xv != v if claim['kind'] == 'date' else not N.eq(xv, v)):
                     continue
+                if claim['kind'] != 'date' and not (N.to_dec(v) is not None and N.to_dec(v) >= 10):
+                    continue
                 words = [w for w in re.split(r'[_\W]+', str(k).lower()) if len(w) >= 3]
-                idv = [str(i).lower() for i in J.id_fields(node).values()]
-                if any(w in ctx for w in words) or any(i and i in ctx for i in idv):
+                named = any(_word_in(w, ctx) for w in words) or any(_word_in(i, ctx) for i in idv if len(i) >= 2)
+                if claim['kind'] == 'date' and (sid in bound_sources or named):
+                    return True
+                if claim['kind'] != 'date' and named:
                     return True
     return False
 
@@ -108,7 +133,9 @@ def call_result_pairs(history):
         if h.get('kind') == 'call':
             open_.setdefault(h.get('tool'), []).append(h['source_id'])
         elif h.get('kind') == 'result' and open_.get(h.get('tool')):
-            pairs[open_[h.get('tool')].pop(0)] = h['source_id']
+            c = open_[h.get('tool')].pop(0)
+            if not J.failed(h.get('text')):                 # a failed result echoes the request: no copy evidence
+                pairs[c] = h['source_id']
     return pairs
 
 

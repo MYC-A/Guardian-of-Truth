@@ -380,7 +380,7 @@ def decide(rec, mech=False, alone=False, cb=False):
         if it['component'] == 'CB' and not cb:
             continue
         c, vs = it['candidate'], it.get('verification_status')
-        if vs == 'SUPPORTED' or (mech and c.get('certificate') and vs not in ('REFUTED',)):
+        if vs == 'SUPPORTED' or (mech and c.get('certificate') and vs == 'UNRESOLVED'):   # diagnostic only: verifier ran, could not decide
             return 1, dict(origin=it['component'], kind=c.get('kind'), target_id=c['target_id'], verification=vs,
                            certificate=bool(c.get('certificate')), text=(c.get('requirement') or '') + ' — ' + c['reason'])
     return 0, None

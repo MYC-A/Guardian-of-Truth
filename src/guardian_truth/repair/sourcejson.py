@@ -10,13 +10,43 @@ from ..verification.common import MD
 from . import numeric as N
 
 MARK = re.compile(r'(?:TOOL_RESPONSE|TOOL_CALL)\s+[^:\n{]*:\s*')
-_dec = json.JSONDecoder()
+
+
+def _no_dup(pairs):
+    """Duplicate keys make the object ambiguous (the production parser marks it json_valid=False): reject, never last-wins."""
+    d = {}
+    for k, v in pairs:
+        if k in d:
+            raise ValueError('DUPLICATE_KEY')
+        d[k] = v
+    return d
+
+
+_dec = json.JSONDecoder(object_pairs_hook=_no_dup)
+
+
+def _body(text):
+    m = MARK.search(text or '')
+    return (text or '')[m.end():].lstrip() if m else (text or '').strip()
+
+
+def json_shaped(text):
+    """The source is written as a JSON tool payload (whether or not it decodes)."""
+    return bool(MARK.search(text or '')) and _body(text)[:1] in ('{', '[')
+
+
+def failed(text):
+    """A tool result that reports failure ([ERROR] marker, ok/success false, or a non-empty error field): its fields
+    echo the request, they are not evidence of the state of the world."""
+    if re.search(r'TOOL_RESPONSE[^:\n]*\[(?:ERROR|FAIL\w*)\]', text or '', re.I):
+        return True
+    p = payload(text)
+    return isinstance(p, dict) and (p.get('ok') is False or p.get('success') is False or bool(p.get('error')))
 
 
 def payload(text):
-    """The JSON payload of a TOOL_CALL / TOOL_RESPONSE source text, else None."""
-    m = MARK.search(text or '')
-    s = (text or '')[m.end():].lstrip() if m else (text or '').strip()
+    """The JSON payload of a TOOL_CALL / TOOL_RESPONSE source text, else None (also None for duplicate keys)."""
+    s = _body(text)
     if not s[:1] in ('{', '['):
         return None
     try:

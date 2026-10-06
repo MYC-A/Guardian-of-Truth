@@ -18,6 +18,25 @@ POL = re.compile(r"(?<!\w)(not|no|never|none|nothing|nor|cannot|can't|won't|don'
                  r"without|except|unless|only|neither|n't|не|нет|ни|никогда|без|кроме|только|нельзя|запрещ\w*|исключ\w*)(?!\w)", re.I)
 
 
+# comparators / quantifiers: a changed one reverses the rule ("at least" -> "at most"), so they must match exactly too
+CMPW = re.compile(r"(?<!\w)(least|most|more|less|fewer|greater|minimum|maximum|min|max|exceed\w*|over|under|above|below|before|after|"
+                  r"within|until|earliest|latest|all|any|every|each|some|больше|меньше|более|менее|минимум|максимум|до|после|"
+                  r"раньше|позже|все|любой|каждый)(?!\w)", re.I)
+STOP = {'the', 'a', 'an', 'of', 'to', 'and', 'or', 'is', 'are', 'be', 'by', 'for', 'in', 'on', 'at', 'it', 'this', 'that', 'with',
+        'as', 'и', 'в', 'на', 'по', 'с', 'к', 'о', 'что', 'это'}
+
+
+def _content_kept(qw, win):
+    """Every quote word that is not in the window is a stop word or an inflection of a window word (shared 5-char stem);
+    a substituted content word ("deleted" -> "modified") is a different rule."""
+    ws = set(win)
+    for w in set(qw) - ws:
+        if w in STOP or (len(w) >= 5 and any(len(x) >= 5 and x[:5] == w[:5] for x in ws)):
+            continue
+        return False
+    return True
+
+
 def polarity(s):
     return Counter(m.lower() for m in POL.findall(s or ''))
 
@@ -53,7 +72,9 @@ def near_verbatim(quote, text, threshold=0.9, min_words=6):
             if SequenceMatcher(None, qw, win, autojunk=False).ratio() < threshold:
                 continue
             ctx = polarity(' '.join(tw[max(0, i - 3):i + n + 3]))     # a NOT just outside the window counts too
-            if polarity(' '.join(win)) == pq and not any(pq[k] == 0 for k in ctx):
+            if polarity(' '.join(win)) == pq and not any(pq[k] == 0 for k in ctx) and \
+                    Counter(m.lower() for m in CMPW.findall(' '.join(win))) == Counter(m.lower() for m in CMPW.findall(' '.join(qw))) and \
+                    _content_kept(qw, win):
                 return True
     return False
 
@@ -63,16 +84,20 @@ def looks_json(quote):
     return bool(pairs) and pure
 
 
-def support(quote, text):
-    """-> dict(status SUPPORTED|UNSUPPORTED, how, address) — contract 2 receipt for one piece."""
+def support(quote, text, decisive=False):
+    """-> dict(status SUPPORTED|UNSUPPORTED, how, address) — contract 2 receipt for one piece. `decisive=True` (a premise
+    of a code proof / certificate) admits only addressed JSON or verbatim text: a near-verbatim match may FIND a candidate
+    source, it never certifies a premise. A JSON-shaped source that does not decode (e.g. duplicate keys) supports nothing."""
     if not quote or not text:
         return dict(status='UNSUPPORTED', how='EMPTY')
+    if decisive and J.json_shaped(text) and J.payload(text) is None:
+        return dict(status='UNSUPPORTED', how='SOURCE_JSON_INVALID')
     if J.payload(text) is not None and looks_json(quote):
         a = J.addressed(quote, text)
         return dict(status='SUPPORTED', how='JSON_ADDRESSED', address=a) if a else dict(status='UNSUPPORTED', how='JSON_NOT_ONE_OBJECT')
     if verbatim(quote, text) and numbers_grounded(quote, text):
         return dict(status='SUPPORTED', how='VERBATIM')
-    if near_verbatim(quote, text) and numbers_grounded(quote, text):
+    if not decisive and near_verbatim(quote, text) and numbers_grounded(quote, text):
         return dict(status='SUPPORTED', how='NEAR_VERBATIM_POLARITY_KEPT')
     return dict(status='UNSUPPORTED', how='NOT_FOUND')
 
