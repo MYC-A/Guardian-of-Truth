@@ -1,0 +1,899 @@
+{
+  "scope": "Admission-safety/parser counterexamples and matched regression unit checks; no live-model quality claim.",
+  "model_http_calls": 0,
+  "network_blocked": true,
+  "old_regressions": {
+    "test_add_zero_is_not_eager_division": "PASS",
+    "test_datetime_keeps_seconds_and_timezone": "PASS",
+    "test_same_leaf_counted_twice_is_unresolved": "PASS",
+    "test_exception_clause_blocks_mechanical_certificate": "PASS",
+    "test_latest_value_of_another_entity_is_entity_conflict": "PASS",
+    "test_rejected_claim_is_not_an_assertion": "PASS",
+    "test_copy_suppression_is_scoped": "PASS"
+  },
+  "new_cases": {
+    "empty_member_array_crash": {
+      "input": {
+        "prompt": "⟦SYSTEM⟧\nThe requested category must be in the allowed list.\n⟦ASSISTANT · ход 1⟧\n← TOOL_RESPONSE categories: {\"allowed\":[]}",
+        "response": "⟦ASSISTANT · ход 2⟧\n→ TOOL_CALL select: {\"category\":\"boxing\"}"
+      },
+      "plan": {
+        "operation": "MEMBER_OF",
+        "target_ids": [
+          "t0"
+        ],
+        "operands": [
+          {
+            "role": "value",
+            "source_id": "t0",
+            "quote": "\"category\":\"boxing\"",
+            "value": "boxing",
+            "type": "string"
+          },
+          {
+            "role": "member",
+            "source_id": "h1",
+            "quote": "\"allowed\":[]",
+            "value": "boxing",
+            "type": "string"
+          }
+        ]
+      },
+      "exception": "KeyError",
+      "detail": "'member'",
+      "expected": "Empty certified allowed set is valid input; boxing is not a member, without crashing."
+    },
+    "mixed_address_duplicate": {
+      "input": {
+        "prompt": "⟦SYSTEM⟧\nThe total amount must not exceed 1000.\n⟦ASSISTANT · ход 1⟧\n",
+        "response": "⟦ASSISTANT · ход 2⟧\n→ TOOL_CALL transfer: {\"amount\":600}"
+      },
+      "plan": {
+        "operation": "SUM_COMPARE_LE",
+        "target_ids": [
+          "t0"
+        ],
+        "operands": [
+          {
+            "role": "term",
+            "source_id": "t0",
+            "quote": "\"amount\":600",
+            "value": "600",
+            "type": "number"
+          },
+          {
+            "role": "term",
+            "source_id": "t0",
+            "quote": "amount\":600",
+            "value": "600",
+            "type": "number"
+          },
+          {
+            "role": "bound",
+            "source_id": "h0",
+            "quote": "The total amount must not exceed 1000.",
+            "value": "1000",
+            "type": "number"
+          }
+        ]
+      },
+      "execution": {
+        "status": "VIOLATED",
+        "receipt": {
+          "schema_valid": true,
+          "source_supported": true,
+          "binding_status": "BOUND",
+          "applicability_status": "APPLICABLE",
+          "closure_status": "NA",
+          "execution_status": "VIOLATED",
+          "orientation": "MODEL"
+        },
+        "detail": "600 + 600 = 1200; 1200 LE 1000 required",
+        "leaves": [
+          {
+            "role": "term",
+            "source_id": "t0",
+            "value": "600",
+            "type": "number",
+            "leaf": "/amount"
+          },
+          {
+            "role": "term",
+            "source_id": "t0",
+            "value": "600",
+            "type": "number",
+            "leaf": "32"
+          },
+          {
+            "role": "bound",
+            "source_id": "h0",
+            "value": "1000",
+            "type": "number",
+            "leaf": "33"
+          }
+        ],
+        "operation": "SUM_COMPARE_LE"
+      },
+      "certificate": true,
+      "ems_candidate": {
+        "origin": "Ems",
+        "kind": "STRUCTURED_PROOF",
+        "code_proven": true,
+        "target_id": "t0",
+        "requirement": "The total amount must not exceed 1000.",
+        "policy_source_ids": [
+          "h0"
+        ],
+        "evidence_source_ids": [
+          "t0"
+        ],
+        "reason": "Offline hypothesis. Code-executed proof (SUM_COMPARE_LE): 600 + 600 = 1200; 1200 LE 1000 required — the condition required by the policy does not hold.",
+        "proof": {
+          "operation": "SUM_COMPARE_LE",
+          "leaves": [
+            {
+              "role": "term",
+              "source_id": "t0",
+              "value": "600",
+              "type": "number",
+              "leaf": "/amount"
+            },
+            {
+              "role": "term",
+              "source_id": "t0",
+              "value": "600",
+              "type": "number",
+              "leaf": "32"
+            },
+            {
+              "role": "bound",
+              "source_id": "h0",
+              "value": "1000",
+              "type": "number",
+              "leaf": "33"
+            }
+          ],
+          "detail": "600 + 600 = 1200; 1200 LE 1000 required"
+        },
+        "receipt": {
+          "schema_valid": true,
+          "source_supported": true,
+          "binding_status": "BOUND",
+          "applicability_status": "APPLICABLE",
+          "closure_status": "NA",
+          "execution_status": "VIOLATED",
+          "orientation": "MODEL"
+        },
+        "certificate": true
+      },
+      "final_on_unresolved_verifier": {
+        "ordinary": 0,
+        "mechanical": 1
+      },
+      "expected": "One transfer600 is one amount, not1200."
+    },
+    "array_sum_overlap_A2": {
+      "input": {
+        "prompt": "⟦SYSTEM⟧\nThe total amount must not exceed 1000.\n⟦ASSISTANT · ход 1⟧\n← TOOL_RESPONSE past: {\"transfers_today\":[600]}",
+        "response": "⟦ASSISTANT · ход 2⟧\n→ TOOL_CALL transfer: {\"amount\":100}"
+      },
+      "plan": {
+        "operation": "SUM_COMPARE_LE",
+        "target_ids": [
+          "t0"
+        ],
+        "operands": [
+          {
+            "role": "term",
+            "source_id": "h1",
+            "quote": "\"transfers_today\":[600]",
+            "value": "600",
+            "type": "number"
+          },
+          {
+            "role": "term",
+            "source_id": "h1",
+            "quote": "transfers_today\":[600]",
+            "value": "600",
+            "type": "number"
+          },
+          {
+            "role": "term",
+            "source_id": "t0",
+            "quote": "\"amount\":100",
+            "value": "100",
+            "type": "number"
+          },
+          {
+            "role": "bound",
+            "source_id": "h0",
+            "quote": "The total amount must not exceed 1000.",
+            "value": "1000",
+            "type": "number"
+          }
+        ]
+      },
+      "execution": {
+        "status": "VIOLATED",
+        "receipt": {
+          "schema_valid": true,
+          "source_supported": true,
+          "binding_status": "BOUND",
+          "applicability_status": "APPLICABLE",
+          "closure_status": "NA",
+          "execution_status": "VIOLATED",
+          "orientation": "MODEL"
+        },
+        "detail": "600 + 600 + 100 = 1300; 1300 LE 1000 required",
+        "leaves": [
+          {
+            "role": "term",
+            "source_id": "h1",
+            "value": "600",
+            "type": "number",
+            "leaf": null
+          },
+          {
+            "role": "term",
+            "source_id": "h1",
+            "value": "600",
+            "type": "number",
+            "leaf": "42"
+          },
+          {
+            "role": "term",
+            "source_id": "t0",
+            "value": "100",
+            "type": "number",
+            "leaf": "/amount"
+          },
+          {
+            "role": "bound",
+            "source_id": "h0",
+            "value": "1000",
+            "type": "number",
+            "leaf": "33"
+          }
+        ],
+        "operation": "SUM_COMPARE_LE"
+      },
+      "certificate": true,
+      "ems_candidate": {
+        "origin": "Ems",
+        "kind": "STRUCTURED_PROOF",
+        "code_proven": true,
+        "target_id": "t0",
+        "requirement": "The total amount must not exceed 1000.",
+        "policy_source_ids": [
+          "h0"
+        ],
+        "evidence_source_ids": [
+          "h1",
+          "t0"
+        ],
+        "reason": "Offline hypothesis. Code-executed proof (SUM_COMPARE_LE): 600 + 600 + 100 = 1300; 1300 LE 1000 required — the condition required by the policy does not hold.",
+        "proof": {
+          "operation": "SUM_COMPARE_LE",
+          "leaves": [
+            {
+              "role": "term",
+              "source_id": "h1",
+              "value": "600",
+              "type": "number",
+              "leaf": null
+            },
+            {
+              "role": "term",
+              "source_id": "h1",
+              "value": "600",
+              "type": "number",
+              "leaf": "42"
+            },
+            {
+              "role": "term",
+              "source_id": "t0",
+              "value": "100",
+              "type": "number",
+              "leaf": "/amount"
+            },
+            {
+              "role": "bound",
+              "source_id": "h0",
+              "value": "1000",
+              "type": "number",
+              "leaf": "33"
+            }
+          ],
+          "detail": "600 + 600 + 100 = 1300; 1300 LE 1000 required"
+        },
+        "receipt": {
+          "schema_valid": true,
+          "source_supported": true,
+          "binding_status": "BOUND",
+          "applicability_status": "APPLICABLE",
+          "closure_status": "NA",
+          "execution_status": "VIOLATED",
+          "orientation": "MODEL"
+        },
+        "certificate": true
+      },
+      "final_on_unresolved_verifier": {
+        "ordinary": 0,
+        "mechanical": 1
+      },
+      "expected": "600 prior plus100 current is700; the array is not a second event."
+    },
+    "ordinary_if_guard_certified": {
+      "input": {
+        "prompt": "⟦SYSTEM⟧\nThe amount must not exceed 1000 if the account is enterprise.\n⟦ASSISTANT · ход 1⟧\n",
+        "response": "⟦ASSISTANT · ход 2⟧\n→ TOOL_CALL transfer: {\"account_type\":\"consumer\",\"amount\":1300}"
+      },
+      "plan": {
+        "operation": "LE",
+        "target_ids": [
+          "t0"
+        ],
+        "operands": [
+          {
+            "role": "left",
+            "source_id": "t0",
+            "quote": "\"amount\":1300",
+            "value": "1300",
+            "type": "number"
+          },
+          {
+            "role": "right",
+            "source_id": "h0",
+            "quote": "The amount must not exceed 1000 if the account is enterprise.",
+            "value": "1000",
+            "type": "number"
+          }
+        ]
+      },
+      "execution": {
+        "status": "VIOLATED",
+        "receipt": {
+          "schema_valid": true,
+          "source_supported": true,
+          "binding_status": "BOUND",
+          "applicability_status": "APPLICABLE",
+          "closure_status": "NA",
+          "execution_status": "VIOLATED",
+          "orientation": "MODEL"
+        },
+        "detail": "1300 LE 1000",
+        "leaves": [
+          {
+            "role": "left",
+            "source_id": "t0",
+            "value": "1300",
+            "type": "number",
+            "leaf": "/amount"
+          },
+          {
+            "role": "right",
+            "source_id": "h0",
+            "value": "1000",
+            "type": "number",
+            "leaf": "27"
+          }
+        ],
+        "operation": "LE"
+      },
+      "certificate": true,
+      "ems_candidate": {
+        "origin": "Ems",
+        "kind": "STRUCTURED_PROOF",
+        "code_proven": true,
+        "target_id": "t0",
+        "requirement": "The amount must not exceed 1000 if the account is enterprise.",
+        "policy_source_ids": [
+          "h0"
+        ],
+        "evidence_source_ids": [
+          "t0"
+        ],
+        "reason": "Offline hypothesis. Code-executed proof (LE): 1300 LE 1000 — the condition required by the policy does not hold.",
+        "proof": {
+          "operation": "LE",
+          "leaves": [
+            {
+              "role": "left",
+              "source_id": "t0",
+              "value": "1300",
+              "type": "number",
+              "leaf": "/amount"
+            },
+            {
+              "role": "right",
+              "source_id": "h0",
+              "value": "1000",
+              "type": "number",
+              "leaf": "27"
+            }
+          ],
+          "detail": "1300 LE 1000"
+        },
+        "receipt": {
+          "schema_valid": true,
+          "source_supported": true,
+          "binding_status": "BOUND",
+          "applicability_status": "APPLICABLE",
+          "closure_status": "NA",
+          "execution_status": "VIOLATED",
+          "orientation": "MODEL"
+        },
+        "certificate": true
+      },
+      "final_on_unresolved_verifier": {
+        "ordinary": 0,
+        "mechanical": 1
+      },
+      "expected": "The enterprise-only guard is false for the consumer account."
+    },
+    "numeric_entity_not_checked": {
+      "input": {
+        "prompt": "⟦SYSTEM⟧\nA transfer may not exceed the daily limit of the same account.\n⟦ASSISTANT · ход 1⟧\n← TOOL_RESPONSE get_account: {\"account_id\":\"A\",\"limit\":1000}\n← TOOL_RESPONSE get_account: {\"account_id\":\"B\",\"limit\":400}",
+        "response": "⟦ASSISTANT · ход 2⟧\n→ TOOL_CALL transfer: {\"account_id\":\"A\",\"amount\":500}"
+      },
+      "plan": {
+        "operation": "LE",
+        "target_ids": [
+          "t0"
+        ],
+        "operands": [
+          {
+            "role": "left",
+            "source_id": "t0",
+            "quote": "\"amount\":500",
+            "value": "500",
+            "type": "number"
+          },
+          {
+            "role": "right",
+            "source_id": "h2",
+            "quote": "\"limit\":400",
+            "value": "400",
+            "type": "number"
+          }
+        ]
+      },
+      "execution": {
+        "status": "VIOLATED",
+        "receipt": {
+          "schema_valid": true,
+          "source_supported": true,
+          "binding_status": "BOUND",
+          "applicability_status": "APPLICABLE",
+          "closure_status": "NA",
+          "execution_status": "VIOLATED",
+          "orientation": "MODEL"
+        },
+        "detail": "500 LE 400",
+        "leaves": [
+          {
+            "role": "left",
+            "source_id": "t0",
+            "value": "500",
+            "type": "number",
+            "leaf": "/amount"
+          },
+          {
+            "role": "right",
+            "source_id": "h2",
+            "value": "400",
+            "type": "number",
+            "leaf": "/limit"
+          }
+        ],
+        "operation": "LE"
+      },
+      "certificate": true,
+      "ems_candidate": {
+        "origin": "Ems",
+        "kind": "STRUCTURED_PROOF",
+        "code_proven": true,
+        "target_id": "t0",
+        "requirement": "A transfer may not exceed the daily limit of the same account.",
+        "policy_source_ids": [
+          "h0"
+        ],
+        "evidence_source_ids": [
+          "h2",
+          "t0"
+        ],
+        "reason": "Offline hypothesis. Code-executed proof (LE): 500 LE 400 — the condition required by the policy does not hold.",
+        "proof": {
+          "operation": "LE",
+          "leaves": [
+            {
+              "role": "left",
+              "source_id": "t0",
+              "value": "500",
+              "type": "number",
+              "leaf": "/amount"
+            },
+            {
+              "role": "right",
+              "source_id": "h2",
+              "value": "400",
+              "type": "number",
+              "leaf": "/limit"
+            }
+          ],
+          "detail": "500 LE 400"
+        },
+        "receipt": {
+          "schema_valid": true,
+          "source_supported": true,
+          "binding_status": "BOUND",
+          "applicability_status": "APPLICABLE",
+          "closure_status": "NA",
+          "execution_status": "VIOLATED",
+          "orientation": "MODEL"
+        },
+        "certificate": true
+      },
+      "final_on_unresolved_verifier": {
+        "ordinary": 0,
+        "mechanical": 1
+      },
+      "expected": "Same accountA limit1000 permits amount500; B is unrelated."
+    },
+    "array_parent_identity_lost": {
+      "input": {
+        "prompt": "⟦SYSTEM⟧\nCategory must be in the allowed list for the same trainer.\n⟦ASSISTANT · ход 1⟧\n← TOOL_RESPONSE trainer: {\"trainer_id\":\"T-1\",\"allowed\":[\"boxing\"]}\n← TOOL_RESPONSE trainer: {\"trainer_id\":\"T-2\",\"allowed\":[\"swim\"]}",
+        "response": "⟦ASSISTANT · ход 2⟧\n→ TOOL_CALL select: {\"trainer_id\":\"T-1\",\"category\":\"boxing\"}"
+      },
+      "plan": {
+        "operation": "MEMBER_OF",
+        "target_ids": [
+          "t0"
+        ],
+        "operands": [
+          {
+            "role": "value",
+            "source_id": "t0",
+            "quote": "\"category\":\"boxing\"",
+            "value": "boxing",
+            "type": "string"
+          },
+          {
+            "role": "member",
+            "source_id": "h2",
+            "quote": "\"allowed\":[\"swim\"]",
+            "value": "boxing",
+            "type": "string"
+          }
+        ]
+      },
+      "execution": {
+        "status": "VIOLATED",
+        "receipt": {
+          "schema_valid": true,
+          "source_supported": true,
+          "binding_status": "BOUND",
+          "applicability_status": "APPLICABLE",
+          "closure_status": "COMPLETE",
+          "execution_status": "VIOLATED",
+          "orientation": "MODEL"
+        },
+        "detail": "boxing not in {swim}",
+        "leaves": [
+          {
+            "role": "value",
+            "source_id": "t0",
+            "value": "boxing",
+            "type": "string",
+            "leaf": "/category"
+          },
+          {
+            "role": "member",
+            "source_id": "h2",
+            "value": "swim",
+            "type": "string",
+            "leaf": "/allowed/0"
+          }
+        ],
+        "operation": "MEMBER_OF"
+      },
+      "certificate": true,
+      "ems_candidate": {
+        "origin": "Ems",
+        "kind": "STRUCTURED_PROOF",
+        "code_proven": true,
+        "target_id": "t0",
+        "requirement": "Category must be in the allowed list for the same trainer.",
+        "policy_source_ids": [
+          "h0"
+        ],
+        "evidence_source_ids": [
+          "h2",
+          "t0"
+        ],
+        "reason": "Offline hypothesis. Code-executed proof (MEMBER_OF): boxing not in {swim} — the condition required by the policy does not hold.",
+        "proof": {
+          "operation": "MEMBER_OF",
+          "leaves": [
+            {
+              "role": "value",
+              "source_id": "t0",
+              "value": "boxing",
+              "type": "string",
+              "leaf": "/category"
+            },
+            {
+              "role": "member",
+              "source_id": "h2",
+              "value": "swim",
+              "type": "string",
+              "leaf": "/allowed/0"
+            }
+          ],
+          "detail": "boxing not in {swim}"
+        },
+        "receipt": {
+          "schema_valid": true,
+          "source_supported": true,
+          "binding_status": "BOUND",
+          "applicability_status": "APPLICABLE",
+          "closure_status": "COMPLETE",
+          "execution_status": "VIOLATED",
+          "orientation": "MODEL"
+        },
+        "certificate": true
+      },
+      "final_on_unresolved_verifier": {
+        "ordinary": 0,
+        "mechanical": 1
+      },
+      "expected": "TrainerT-1 supports boxing; trainerT-2 set is irrelevant."
+    },
+    "bound_result_wrong_field_copy": {
+      "input": {
+        "prompt": "⟦SYSTEM⟧\nReport subtotal plus tax.\n⟦ASSISTANT · ход 1⟧\n← TOOL_RESPONSE invoice: {\"invoice_id\":\"A\",\"subtotal\":10,\"tax\":10,\"due_days\":30}",
+        "response": "⟦ASSISTANT · ход 2⟧\nTotal is 30 EUR."
+      },
+      "binding": {
+        "operation": "ARITHMETIC",
+        "expression": "a+b",
+        "operands": [
+          {
+            "name": "a",
+            "source_id": "h1",
+            "quote": "\"subtotal\":10",
+            "value": "10"
+          },
+          {
+            "name": "b",
+            "source_id": "h1",
+            "quote": "\"tax\":10",
+            "value": "10"
+          }
+        ]
+      },
+      "claim": {
+        "kind": "number",
+        "value": 30.0,
+        "span": "30 EUR",
+        "context": "Total is 30 EUR."
+      },
+      "without_result_pairing": {
+        "status": "SKIP",
+        "note": "CLAIM_VALUE_COPIED_FROM_BOUND_RESULT"
+      },
+      "with_result_pairing": {
+        "status": "SKIP",
+        "note": "CLAIM_VALUE_COPIED_FROM_BOUND_RESULT"
+      },
+      "pairs": null,
+      "expected": "10+10=20; a due_days field does not establish total30."
+    },
+    "failed_result_echo_suppression_A1": {
+      "input": {
+        "prompt": "⟦SYSTEM⟧\nThe date reported must be the next business day after the requested date.\n⟦ASSISTANT · ход 1⟧\n→ TOOL_CALL get_slots: {\"requested_date\":\"2025-04-11\"}\n← TOOL_RESPONSE get_slots [ERROR]: {\"ok\":false,\"requested_date\":\"2025-04-11\",\"error\":\"No schedule available\"}",
+        "response": "⟦ASSISTANT · ход 2⟧\nThe next business day is 11 April 2025."
+      },
+      "binding": {
+        "operation": "NEXT_BUSINESS_DAY",
+        "expression": "",
+        "operands": [
+          {
+            "name": "date",
+            "source_id": "h1",
+            "quote": "\"requested_date\":\"2025-04-11\"",
+            "value": "2025-04-11"
+          }
+        ]
+      },
+      "claim": {
+        "kind": "date",
+        "value": "2025-04-11",
+        "span": "11 April 2025",
+        "context": "The next business day is 11 April 2025."
+      },
+      "without_result_pairing": {
+        "status": "MISMATCH",
+        "claimed": "2025-04-11",
+        "computed": "2025-04-14",
+        "detail": "NEXT_BUSINESS_DAY(2025-04-11) = 2025-04-14 (Monday); weekends only, no holidays"
+      },
+      "with_result_pairing": {
+        "status": "SKIP",
+        "note": "CLAIM_VALUE_COPIED_FROM_BOUND_RESULT"
+      },
+      "pairs": {
+        "h1": "h2"
+      },
+      "expected": "Friday11April next business day isMonday14April; failure echo is not success/state evidence."
+    },
+    "duplicate_json_key_reaccepted": {
+      "input": {
+        "prompt": "⟦SYSTEM⟧\nUse the latest unambiguous tool-provided limit for the amount.\n⟦ASSISTANT · ход 1⟧\n← TOOL_RESPONSE limits: {\"limit\":1000,\"limit\":100}",
+        "response": "⟦ASSISTANT · ход 2⟧\n→ TOOL_CALL transfer: {\"amount\":500}"
+      },
+      "plan": {
+        "operation": "LE",
+        "target_ids": [
+          "t0"
+        ],
+        "operands": [
+          {
+            "role": "left",
+            "source_id": "t0",
+            "quote": "\"amount\":500",
+            "value": "500",
+            "type": "number"
+          },
+          {
+            "role": "right",
+            "source_id": "h1",
+            "quote": "\"limit\":100",
+            "value": "100",
+            "type": "number"
+          }
+        ]
+      },
+      "execution": {
+        "status": "VIOLATED",
+        "receipt": {
+          "schema_valid": true,
+          "source_supported": true,
+          "binding_status": "BOUND",
+          "applicability_status": "APPLICABLE",
+          "closure_status": "NA",
+          "execution_status": "VIOLATED",
+          "orientation": "MODEL"
+        },
+        "detail": "500 LE 100",
+        "leaves": [
+          {
+            "role": "left",
+            "source_id": "t0",
+            "value": "500",
+            "type": "number",
+            "leaf": "/amount"
+          },
+          {
+            "role": "right",
+            "source_id": "h1",
+            "value": "100",
+            "type": "number",
+            "leaf": "/limit"
+          }
+        ],
+        "operation": "LE"
+      },
+      "certificate": true,
+      "ems_candidate": {
+        "origin": "Ems",
+        "kind": "STRUCTURED_PROOF",
+        "code_proven": true,
+        "target_id": "t0",
+        "requirement": "Use the latest unambiguous tool-provided limit for the amount.",
+        "policy_source_ids": [
+          "h0"
+        ],
+        "evidence_source_ids": [
+          "h1",
+          "t0"
+        ],
+        "reason": "Offline hypothesis. Code-executed proof (LE): 500 LE 100 — the condition required by the policy does not hold.",
+        "proof": {
+          "operation": "LE",
+          "leaves": [
+            {
+              "role": "left",
+              "source_id": "t0",
+              "value": "500",
+              "type": "number",
+              "leaf": "/amount"
+            },
+            {
+              "role": "right",
+              "source_id": "h1",
+              "value": "100",
+              "type": "number",
+              "leaf": "/limit"
+            }
+          ],
+          "detail": "500 LE 100"
+        },
+        "receipt": {
+          "schema_valid": true,
+          "source_supported": true,
+          "binding_status": "BOUND",
+          "applicability_status": "APPLICABLE",
+          "closure_status": "NA",
+          "execution_status": "VIOLATED",
+          "orientation": "MODEL"
+        },
+        "certificate": true
+      },
+      "final_on_unresolved_verifier": {
+        "ordinary": 0,
+        "mechanical": 1
+      },
+      "production_result_json_valid": [
+        false
+      ],
+      "expected": "Production rejects duplicate keys; proof cannot pick last limit as an unambiguous source."
+    },
+    "double_negation_false_not_asserted": {
+      "input": {
+        "prompt": "⟦SYSTEM⟧\nBe accurate.\n⟦ASSISTANT · ход 1⟧\n",
+        "response": "⟦ASSISTANT · ход 2⟧\nMy estimate 2 + 2 = 5 EUR is not incorrect."
+      },
+      "self_checks": [
+        {
+          "target_id": "t0",
+          "check": "INLINE_ARITHMETIC",
+          "claim_quote": "2 + 2 = 5 EUR",
+          "status": "NOT_ASSERTED",
+          "claimed": 5.0,
+          "computed": 4.0,
+          "detail": "2.0+2.0 = 4",
+          "span": [
+            12,
+            25
+          ],
+          "scope": "REJECTED_OR_ATTRIBUTED"
+        }
+      ],
+      "candidates": [],
+      "expected": "Assistant endorses the incorrect equality by saying it is not incorrect."
+    },
+    "quantifier_reversal_fuzzy": {
+      "source": "At least two successful checks are required before any change to an account.",
+      "altered": "At most two successful checks are required before any change to an account.",
+      "support": {
+        "status": "SUPPORTED",
+        "how": "NEAR_VERBATIM_POLARITY_KEPT"
+      },
+      "expected": "Changed semantic relation must not be certified as the original quote."
+    },
+    "regulated_action_substitution_fuzzy": {
+      "source": "An account must not be deleted before identity verification is complete.",
+      "altered": "An account must not be modified before identity verification is complete.",
+      "support": {
+        "status": "SUPPORTED",
+        "how": "NEAR_VERBATIM_POLARITY_KEPT"
+      },
+      "expected": "Changed semantic relation must not be certified as the original quote."
+    }
+  },
+  "source_sha256": {
+    "src\\guardian_truth\\repair\\__init__.py": "6d2455c809025145b648925c710ca12f09ba27e7d02edb9cb0c192a120e54a67",
+    "src\\guardian_truth\\repair\\cause.py": "86060f71c4900e41094370cdcfa4978d84ee41760282a5c7872538e31589581a",
+    "src\\guardian_truth\\repair\\clients.py": "7866d4ddb89f51d91f840e678ee8083685d81a38f70be148be960df6ba47c4d7",
+    "src\\guardian_truth\\repair\\closure.py": "dcaa4d8abde88725a0d24001612eac6fe4139437d5b49c4362aa33d648469099",
+    "src\\guardian_truth\\repair\\confirm5.py": "c688cd17fa62878087aacf3870c0d3ad44ada557a06d744040d5b5bff7fbb5df",
+    "src\\guardian_truth\\repair\\df5.py": "dbaad916e1252e39e1b39c9ddf4f43d10d0a9ad93d2ba2df63003e5408a4f525",
+    "src\\guardian_truth\\repair\\evidence.py": "665b0b7347dbfc87f015f91aca3c268246621e2f4d20a0f1a3c05d69d6de5128",
+    "src\\guardian_truth\\repair\\numeric.py": "986c97db4a9b410f66091e240e1184ace0eafca87f92b5ddae9e8b350bbececb",
+    "src\\guardian_truth\\repair\\proof5.py": "37d6f1fdc08d2e86fa5c3a7f8136444651b939ef431375edef78e14f3db754c8",
+    "src\\guardian_truth\\repair\\records.py": "7c8de0e7cbafe563ec35b6193f406d10c63d87d07eb8c08c6fa557c6bc9763be",
+    "src\\guardian_truth\\repair\\sourcejson.py": "0d62fc0c8fab29fccd2e1039bf7150ba5162fb1c1f260b4cebd7d1bd86e81215",
+    "src\\guardian_truth\\repair\\v5.py": "fa4d65ab94947f14cad87c62a395d603a9b40c370bb1b67fcdf6842136972152"
+  }
+}
