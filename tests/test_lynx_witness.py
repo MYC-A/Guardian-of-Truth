@@ -69,3 +69,20 @@ def test_review_inventory_rejects_duplicates_and_missing(tmp_path):
     path.write_text('', encoding='utf-8')
     with pytest.raises(ValueError, match='INCOMPLETE'):
         witness.read_records(path, {'one'})
+
+
+def test_filter_metrics_do_not_turn_missing_primary_into_clean_negative(tmp_path, monkeypatch):
+    from experiments.guardian_local_a100 import score_lynx_witness as scorer
+    monkeypatch.setattr(scorer,'gold_for',lambda _: {'one':{'label':1}})
+    base=tmp_path/'phase'
+    base.mkdir()
+    (base/'runs.jsonl').write_text(json.dumps({'id':'one','legacy_turn':{'status':'VALID','verdict':'PASS'},
+        'turn':{'status':'VALID','verdict':'PASS'},'turn_meta':{'complete_input':True},'accusations':[]})+'\n',encoding='utf-8')
+    reviewer=tmp_path/'reviewer/valid46'
+    reviewer.mkdir(parents=True)
+    (reviewer/'B2_rep1.jsonl').write_text(json.dumps({'id':'one','binary':None,'error':'missing primary'})+'\n',encoding='utf-8')
+    result=scorer.score(base,reviewer.parent)
+    assert result['qwen_base']['unavailable_positive']==1
+    for filtered in result['filters'].values():
+        assert filtered['raw_filter']['unavailable_positive']==1
+        assert filtered['raw_filter']['FN']==0

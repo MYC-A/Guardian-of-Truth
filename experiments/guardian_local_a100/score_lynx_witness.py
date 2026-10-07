@@ -1,11 +1,13 @@
 """Offline paired metrics; binary labels do not certify accusation truth."""
 import argparse
 from collections import Counter
+import hashlib
 import json
 from pathlib import Path
 
 from experiments.guardian_local_a100.method_synthesis import metrics
 from experiments.guardian_local_a100.score_local import gold_for
+from experiments.guardian_local_a100.score_local import classify_row
 from experiments.guardian_local_a100.lynx_witness import read_records
 
 
@@ -13,23 +15,37 @@ def binary(check):
     return int(check['verdict'] == 'FAIL') if check.get('status') == 'VALID' else None
 
 
+def measure(predictions, gold):
+    result = metrics(predictions, gold)
+    tp,fp,fn = result['TP'],result['FP'],result['FN']
+    result['conditional_precision'] = tp/(tp+fp) if tp+fp else None
+    result['conditional_recall'] = tp/(tp+fn) if tp+fn else None
+    return result
+
+
 def score(base, qwen_root):
     gold = {key: value['label'] for key, value in gold_for('valid46').items()}
     result = read_records(base/'runs.jsonl', gold)
     qwen = read_records(qwen_root/'valid46/B2_rep1.jsonl', gold)
+    qwen_values = {key:row.get('binary') if classify_row(row,'B2','binary') not in ('missing','no_solution') else None
+                   for key,row in qwen.items()}
     old = {key: binary(value['legacy_turn']) for key, value in result.items()}
     new = {key: binary(value.get('turn') or {}) for key, value in result.items()}
-    report = dict(rows=len(gold), turn_old=metrics(old, gold), turn_witness=metrics(new, gold),
+    report = dict(rows=len(gold), turn_old=measure(old, gold), turn_witness=measure(new, gold),
                   full_prompt_rows=sum(bool(r.get('turn_meta', {}).get('complete_input')) for r in result.values()),
                   turn_flips=[dict(id=k,label=gold[k],old=old[k],new=new[k]) for k in sorted(gold) if old[k]!=new[k]],
-                  qwen_base=metrics({key:r['binary'] for key,r in qwen.items()},gold), filters={}, accusations={})
+                  qwen_base=measure(qwen_values,gold), filters={}, accusations={})
     for field in ('old_check','action_check','witness_check'):
         raw, cautious = {}, {}
         counts = Counter()
         for key, r in result.items():
-            value = qwen[key]['binary']
+            value = qwen_values[key]
             matches = [a for a in r.get('accusations',[]) if a['model']=='qwen']
-            if not value:
+            if value is None:
+                raw[key] = cautious[key] = None
+                counts['base_unavailable'] += 1
+                continue
+            if value == 0:
                 raw[key] = cautious[key] = 0
                 continue
             if len(matches) != 1:
@@ -44,8 +60,8 @@ def score(base, qwen_root):
             raw[key] = int(verdict=='PASS') if verdict is not None else None
             meta = item.get('witness_meta') if field=='witness_check' else item.get('old_meta')
             cautious[key] = (0 if verdict=='FAIL' and (meta or {}).get('complete_input') else value)
-        report['filters'][field] = dict(raw_filter=metrics(raw,gold),
-                                       retain_base_on_gaps_or_failure=metrics(cautious,gold),
+        report['filters'][field] = dict(raw_filter=measure(raw,gold),
+                                       retain_base_on_gaps_or_failure=measure(cautious,gold),
                                        accusation_binary_label_proxy=dict(counts))
     for model in ('qwen','distill'):
         for field in ('old_check','action_check','witness_check'):
@@ -58,6 +74,9 @@ def score(base, qwen_root):
     report['actual_new_phase'] = dict(attempts=len(sent),
                                     tokens=sum((a.get('usage') or {}).get('total_tokens') or 0 for a in sent),
                                     usage_missing=sum(not a.get('usage') for a in sent))
+    report['fingerprints'] = {str(path.name):hashlib.sha256(path.read_bytes()).hexdigest()
+                              for path in (Path(__file__),base/'runs.jsonl',qwen_root/'valid46/B2_rep1.jsonl')}
+    report['fingerprints']['binary_gold_sha256'] = hashlib.sha256(json.dumps(gold,sort_keys=True).encode('utf-8')).hexdigest()
     report['interpretation'] = 'Diagnostic FAIL->ERROR projection and experimental filters. Binary-positive row does not prove a correct cause. No policy certificate.'
     return report
 

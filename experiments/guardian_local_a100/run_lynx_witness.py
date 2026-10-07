@@ -34,6 +34,9 @@ def main():
         print(json.dumps(value),flush=True)
     with process_lock(OUT/'job.lock'):
         if (OUT/'done.json').exists():
+            # Inference completion and remote publication are separate facts.
+            # A previous failed push must not suppress publication on resume.
+            publish([OUT],'lynx: resume publication of completed witness phase')
             return
         server=None
         try:
