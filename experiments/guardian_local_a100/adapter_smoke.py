@@ -105,12 +105,23 @@ def main():
         d_rfix, _ = decide_v5(rec)
         lay = layers.findings(row)
         d = decide(rec, lay['findings'])
-        review_steps = [s for s in (rec.get('steps') or []) if isinstance(s, dict) and s.get('tag') == 'review'] \
-            if isinstance(rec, dict) else []
+        # recursive search for the review step record (same traversal as the offline scorer's cost())
+        found = []
+        def _walk(o):
+            if isinstance(o, dict):
+                if o.get('tag') == 'review' and ('usage' in o or 'content' in o or 'raw_content' in o):
+                    found.append(o)
+                for v in o.values():
+                    _walk(v)
+            elif isinstance(o, list):
+                for v in o:
+                    _walk(v)
+        _walk(rec)
         e2e[tag] = dict(id=row['id'], gold=gold[row['id']]['label'],
                         binary_rfix=d_rfix, binary=d['binary'], owner=d['decision_owner'],
                         findings=len(lay.get('findings') or []),
-                        review_response_model=next((s.get('response_model') for s in review_steps), None),
+                        review_response_model=found[0].get('response_model') if found else None,
+                        review_usage=found[0].get('usage') if found else None,
                         seconds=round(time.time() - t0, 2))
     receipt['checks']['end_to_end'] = e2e
     receipt['ok'] = (receipt['checks']['models_listed']['ok'] and receipt['checks']['guided_json']['ok']
