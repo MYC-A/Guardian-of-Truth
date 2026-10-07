@@ -6,6 +6,7 @@ before current-turn access; input token fit is checked, never silently truncated
 from __future__ import annotations
 
 import argparse
+import ast
 import hashlib
 import json
 import os
@@ -23,7 +24,7 @@ from experiments.guardian_local_a100.run_local import OUTROOT, ROOT, client_for,
 from experiments.guardian_semantic.neutral import VERSION as VIEW_VERSION
 from experiments.research_records import freeze_phase
 
-VERSION = 'lynx-native-json-v2'
+VERSION = 'lynx-native-object-v3'
 MODEL_CARD = 'https://huggingface.co/PatronusAI/Llama-3-Patronus-Lynx-70B-Instruct'
 PROMPT = '''Given the following QUESTION, DOCUMENT and ANSWER you must analyze the provided answer and determine whether it is faithful to the contents of the DOCUMENT. The ANSWER must not offer new information beyond the context provided in the DOCUMENT. The ANSWER also must not contradict information provided in the DOCUMENT. Output your final verdict by strictly following this format: "PASS" if the answer is faithful to the DOCUMENT and "FAIL" if the answer is not faithful to the DOCUMENT. Show your reasoning.
 
@@ -50,6 +51,7 @@ def messages(document, question, answer):
     return [dict(role='user', content=PROMPT.format(document=document, question=question, answer=answer))]
 
 
+
 def parse(content):
     if not isinstance(content, str):
         return None
@@ -67,7 +69,24 @@ def parse(content):
         value = json.loads(text, object_pairs_hook=unique,
                            parse_constant=lambda x: (_ for _ in ()).throw(ValueError(x)))
     except (ValueError, TypeError):
-        return None
+        # Native Lynx also emits a complete Python-style object: single-quoted
+        # reason strings and an unquoted SCORE: PASS/FAIL. Decode that finite
+        # dialect, never search a verdict substring and never execute model code.
+        try:
+            tree = ast.parse(text, mode='eval').body
+            if not isinstance(tree, ast.Dict):
+                return None
+            value = {}
+            for keynode, valnode in zip(tree.keys, tree.values):
+                key = ast.literal_eval(keynode)
+                if not isinstance(key, str) or key in value:
+                    return None
+                if key == 'SCORE' and isinstance(valnode, ast.Name) and valnode.id in ('PASS', 'FAIL'):
+                    value[key] = valnode.id
+                else:
+                    value[key] = ast.literal_eval(valnode)
+        except (ValueError, SyntaxError, TypeError, RecursionError):
+            return None
     if not isinstance(value, dict) or set(value) != {'REASONING', 'SCORE'}:
         return None
     reason = value['REASONING']
@@ -136,10 +155,10 @@ def execute(client, request, base, context_tokens):
     if n + request['max_tokens'] > context_tokens:
         return dict(status='CONTEXT_NOT_FIT', verdict=None, input_tokens=n,
                     reserved_output_tokens=request['max_tokens'], request_sha256=key)
-    receipt = client.call(request, tag='lynx_native_json_v2')
+    receipt = client.call(request, tag='lynx_native_object_v3')
     parsed = None if transport_failure(receipt) else parse(receipt.get('content'))
     return dict(status='VALID' if parsed else 'TECHNICAL_UNJUDGED',
-                verdict=parsed['SCORE'] if parsed else None, parsed=parsed,
+                verdict=parsed['SCORE'] if parsed else None, parsed=parsed, object_codec=VERSION,
                 input_tokens=n, request_sha256=key, receipt=receipt)
 
 

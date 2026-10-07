@@ -64,3 +64,20 @@ def test_explicit_partial_accusations_preserve_missing_reviewer_gap(tmp_path, mo
         lynx.saved_accusations(root, 'dev', ['one'], ['B2'])
     result = lynx.saved_accusations(root, 'dev', ['one'], ['B2'], allow_partial=True)
     assert result['one'] == [dict(arm='B2', text=None, status='REVIEWER_ROW_NOT_EXECUTED')]
+
+
+def test_complete_native_lynx_object_dialect_is_decoded_without_verdict_search():
+    assert lynx.parse('{"REASONING": [\'The clean sentence contains FAIL but is supported.\'], "SCORE": PASS}') == {'REASONING': ['The clean sentence contains FAIL but is supported.'], 'SCORE': 'PASS'}
+    assert lynx.parse('{"REASONING": [\'Contradicts two with seven.\'], "SCORE": FAIL}')['SCORE'] == 'FAIL'
+
+
+@pytest.mark.parametrize('text', [
+    '{"REASONING": [\'ok\'], "SCORE": PASS',
+    '{"REASONING": [\'ok\'], "SCORE": UNKNOWN}',
+    '{"REASONING": [\'ok\'], "SCORE": PASS, "SCORE": FAIL}',
+    '{"REASONING": [FAIL], "SCORE": PASS}',
+    '{"REASONING": [\'ok\'], "SCORE": __import__(\'os\')}',
+    '{"REASONING": [\'ok\'], "SCORE": PASS} trailing PASS',
+])
+def test_native_dialect_rejects_incomplete_duplicate_unknown_or_executable_objects(text):
+    assert lynx.parse(text) is None

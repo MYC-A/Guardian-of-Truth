@@ -54,3 +54,7 @@ Owner requested faster execution. Existing Distill config and completed rows rem
 ## Owner-directed immediate Lynx start
 
 The owner explicitly stopped the remaining Distill B2 cell. Full AM and all completed B2 replies/caches are preserved. Exact partial coverage and missing IDs are in continuation_20261007/distill_stopped_by_owner.json. Missing reviewer rows are NOT_EXECUTED, not negatives. Lynx still processes all 70 current turns and every available A/B2 accusation; unavailable B2 accusations remain explicit reviewer gaps. New flag is frozen before native inference. Partial Distill is not ranked as a complete B2 candidate.
+
+## Native object codec v3
+
+First Lynx smoke produced correct complete PASS/FAIL objects, but with single-quoted REASONING strings and bare SCORE enum tokens. The strict JSON-only adapter rejected both. Original v2 smoke/receipts remain immutable. New phase lynx-native-object-v3 decodes complete objects through JSON or a restricted Python AST literal codec; only the direct SCORE value may be bare PASS/FAIL. No eval, substring search, missing-field inference, duplicate keys, or truncated object acceptance. Same exact two-field schema is checked after decoding and raw output is retained. This is native dialect normalization, not a new model-quality claim.
