@@ -167,12 +167,18 @@ def score_set(set_name, runs_dir):
     res, rows_out = {}, []
     for p in sorted((runs_dir / set_name).glob('*_rep*.jsonl')):
         stem, rep = p.stem.rsplit('_rep', 1)
-        # Expected ids = the full phase manifest (ALL rows, including unlabelled ext_tau2 rows);
-        # binary metrics use only ids present in gold, coverage counts everything executed.
-        manifest = p.with_suffix('.phase.json')
-        try:
-            expected = json.loads(manifest.read_text(encoding='utf-8'))['expected_ids']
-        except Exception:
+        # Expected ids: the runner's .expected.json; the L (old-v6fix) script records
+        # them in .phase.json['expected_ids']. ALL rows incl. unlabelled ext_tau2;
+        # binary metrics use only ids present in gold, coverage counts everything.
+        expected = None
+        for mf, key in ((p.with_suffix('.expected.json'), None), (p.with_suffix('.phase.json'), 'expected_ids')):
+            try:
+                data = json.loads(mf.read_text(encoding='utf-8'))
+                expected = data if key is None else data[key]
+                break
+            except Exception:
+                continue
+        if not expected:
             expected = sorted(gold)
         recs, record_coverage = load_records(p, expected)
         variants = ['A', 'M'] if stem == 'AM' else [stem]
