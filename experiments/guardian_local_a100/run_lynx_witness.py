@@ -90,6 +90,8 @@ def main():
             subprocess.run(command,
                            cwd=ROOT,check=True,timeout=1800)
             if not (OUT/'score.json').exists():
+                if args.phase == 'question':
+                    raise RuntimeError('MISSING_QUESTION_SCORE')
                 subprocess.run([sys.executable,'-X','utf8','-m','experiments.guardian_local_a100.score_lynx_witness',
                                 '--input',str(OUT),'--qwen-root',str(qwen),'--output',str(OUT/'score.json')],
                                cwd=ROOT,check=True,timeout=90)
