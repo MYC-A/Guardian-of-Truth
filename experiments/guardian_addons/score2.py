@@ -5,6 +5,7 @@ REPORT.md); method calls/tokens per row from the saved steps (cached replays inc
 import argparse, json
 from collections import Counter, defaultdict
 from pathlib import Path
+from experiments.research_records import load_records, expected_for_score, technical_gaps
 
 ROOT = Path(__file__).resolve().parents[2]
 OUT = ROOT / 'outputs/guardian_addons'
@@ -24,7 +25,7 @@ def steps(o, acc):
 
 
 def cost(r):
-    ss, seen = steps(dict(a=r.get('pre_steps'), b=r.get('rec')), []), set()
+    ss, seen = steps(dict(a=r.get('pre_steps'), b=r.get('rec'), layers=r.get('layer_trace')), []), set()
     n = tok = 0
     for s in ss:
         if s['key'] in seen:
@@ -48,20 +49,20 @@ def met(c):
                 cause_auto=c.get('cause', 0), technical=c.get('tech', 0))
 
 
-def score(s):
+def score(s, runs_dir=None, expected_by_run=None):
     gold = json.loads((data_dir(s) / f'{s}_GOLD.json').read_text(encoding='utf-8'))
     res, rows = {}, []
-    for p in sorted((OUT / 'runs' / s).glob('*_rep*.jsonl')):
+    for p in sorted(((Path(runs_dir) if runs_dir else OUT / 'runs') / s).glob('*_rep*.jsonl')):
         var, rep = p.stem.rsplit('_rep', 1)
-        recs = {}
-        for x in p.read_text(encoding='utf-8').splitlines():
-            r = json.loads(x); recs[r['id']] = r              # last record of a row wins (resume)
+        expected = expected_for_score(p, gold, expected_by_run)
+        recs, record_coverage = load_records(p, expected)
         c, fam, n, tok = Counter(), defaultdict(Counter), 0, 0
-        for i, g in gold.items():
+        for i in expected:
+            g = gold[i]
             r = recs.get(i)
             if r is None:
                 c['missing'] += 1; continue
-            if failed_rec(r) or any(x.get('parsed_ok') is False or ('parsed' in x and x['parsed'] is None) for x in r.get('pre_steps') or []):
+            if failed_rec(r) or technical_gaps(r) or any(x.get('parsed_ok') is False or ('parsed' in x and x['parsed'] is None) for x in r.get('pre_steps') or []):
                 c['tech'] += 1          # transport failure, or a pre-pass reply that could not be parsed (e.g. finish_reason=length)
             d = int(r.get('binary') or 0)
             o = ('tp' if d else 'fn') if g['label'] == 1 else ('fp' if d else 'tn')
@@ -75,7 +76,7 @@ def score(s):
                              executions=r.get('executions'), pre=[dict(tag=x['tag'], injected=x.get('injected'),
                              status=(x.get('receipt') or {}).get('status'), eval_changed=x.get('eval_changed'),
                              checks=[(c['consistency'], c['computation']) for c in x.get('code_checks') or []]) for x in r.get('pre_steps') or []]))
-        m = met(c); m.update(rows=len(recs), calls_per_row=round(n / max(1, len(recs)), 2), tokens_per_row=round(tok / max(1, len(recs))),
+        m = met(c); m.update(record_coverage=record_coverage, subset=len(expected) != len(gold), rows=len(recs), calls_per_row=round(n / max(1, len(recs)), 2), tokens_per_row=round(tok / max(1, len(recs))),
                              missing=c.get('missing', 0), by_family={f: met(v) for f, v in sorted(fam.items())})
         res[f'{var}_rep{rep}'] = m
     return res, rows
@@ -83,8 +84,11 @@ def score(s):
 
 def main():
     ap = argparse.ArgumentParser(); ap.add_argument('--set', default='dev'); ap.add_argument('--json'); ap.add_argument('--rows', action='store_true')
+    ap.add_argument('--runs-dir')
+    ap.add_argument('--expected-ids-file', help='JSON mapping run stem to preregistered subset IDs')
     a = ap.parse_args()
-    res, rows = score(a.set)
+    expected = json.loads(Path(a.expected_ids_file).read_text(encoding='utf-8')) if a.expected_ids_file else None
+    res, rows = score(a.set, a.runs_dir, expected)
     for k, m in res.items():
         print(f"{k:12s} TP{m['tp']} FP{m['fp']} FN{m['fn']} TN{m['tn']} P={m['precision']} R={m['recall']} F1={m['f1']} cause={m['cause_auto']} "
               f"tech={m['technical']} calls/row={m['calls_per_row']} tok/row={m['tokens_per_row']} | " +
@@ -93,7 +97,8 @@ def main():
         for r in rows:
             print(json.dumps(r, ensure_ascii=False))
     if a.json:
-        Path(a.json).write_text(json.dumps(dict(summary=res, rows=rows), ensure_ascii=False, indent=1), encoding='utf-8')
+        with Path(a.json).open('x', encoding='utf-8', newline='\n') as handle:
+            json.dump(dict(summary=res, rows=rows), handle, ensure_ascii=False, indent=1)
 
 
 if __name__ == '__main__':

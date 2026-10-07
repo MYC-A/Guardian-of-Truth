@@ -28,11 +28,11 @@ EVAL_ADDENDUM = ('\nCode check: blind_analysis.code_checks recomputes some condi
                  'considered, or that the bindings are the right entities. Re-derive the requirement from the sources yourself.')
 
 
-def blind_packet2(packet):
-    p = V.blind_packet(packet)
-    cov = dict(p.get('coverage') or {})
-    cov.pop('declaration_status', None)
-    p['coverage'] = cov
+def blind_packet2(packet=None, *, original_row=None, budget_bytes=20000):
+    """Require original prompt; deleting current-target metadata is insufficient."""
+    p, receipt = V.neutral_view(original_row, budget_bytes)
+    if p is None:
+        raise ValueError(receipt['reason'])
     return p
 
 
@@ -74,12 +74,19 @@ class Hook2(V.Hook):
         if self.pre not in ('blind2', 'blind2_typed', 'blind2_typed_eval'):
             return super().inject(request, attempt)
         packet = json.loads(request['messages'][1]['content'])
-        user = blind_packet2(packet)
+        user, view_receipt = V.neutral_view(self.original_row, self.blind_budget_bytes)
+        if user is None:
+            self.log.append(dict(tag='pre_blind', injected=False, view=view_receipt))
+            return request
         typed = self.pre != 'blind2'
-        r = self.inner.call(V._req(self.model, TYPED_PROMPT if typed else V.BLIND_PROMPT, user,
-                                   typed_schema(user) if typed else V.analysis_schema(user), 'pre_analysis', self.max_tokens),
+        schema = typed_schema(user) if typed else V.analysis_schema(user)
+        r = self._send(V._req(self.model, TYPED_PROMPT if typed else V.BLIND_PROMPT, user,
+                                   schema, 'pre_analysis_neutral_v2', self.max_tokens),
                             attempt=attempt, tag='pre_blind')
-        st = V._step(r, 'pre_blind'); v = V._parse(r); st['parsed_ok'] = v is not None
+        st = V._step(r, 'pre_blind'); v = V._parse(r, schema); st['parsed_ok'] = v is not None
+        st['view'] = view_receipt
+        st['schema_validation'] = r.get('schema_validation')
+        st['input_budget'] = r.get('input_budget')
         self.log.append(st)
         if v is None:
             st['injected'] = False
@@ -97,7 +104,7 @@ class Hook2(V.Hook):
         st['injected'] = True
         req = copy.deepcopy(request)
         req['messages'][0]['content'] += add
-        req['messages'][1]['content'] = json.dumps(dict(packet, blind_analysis=v), ensure_ascii=False, separators=(',', ':'))
+        req['messages'][1]['content'] = json.dumps(dict(packet, blind_analysis=v, blind_analysis_sources=user), ensure_ascii=False, separators=(',', ':'))
         return req
 
 

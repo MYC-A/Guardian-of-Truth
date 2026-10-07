@@ -8,7 +8,9 @@ SRC = {'p1': 'Moves above 1000.00 need approval, except between accounts of the 
 
 
 def chk(owner2, claimed, owner2_src='h2'):
-    return dict(requirement_source_id='p1', expression='IF (amount > 1000.00 AND src.holder != dst.holder) THEN approval = TRUE',
+    # Evaluate the applicability predicate itself; IF/THEN was never a supported
+    # boolean grammar and previously silently dropped the consequent.
+    return dict(requirement_source_id='p1', expression='amount > 1000.00 AND src.holder != dst.holder',
                 bindings=[dict(name='amount', value='1500.00', type='NUMBER', source_id='h3'),
                           dict(name='src.holder', value='kim_a', type='STRING', source_id='h1'),
                           dict(name='dst.holder', value=owner2, type='STRING', source_id=owner2_src)], claimed_result=claimed)

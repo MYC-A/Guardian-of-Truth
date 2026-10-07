@@ -7,9 +7,10 @@ from experiments.guardian_semantic import sandbox, variants
 from experiments.guardian_semantic.run import rows
 from guardian_truth.repair.v5 import ARMS, run_v5
 
-pytestmark = pytest.mark.skipif(not sandbox.preflight()[0], reason='isolation unavailable on this host')
+needs_isolation = pytest.mark.skipif(not sandbox.preflight()[0], reason='isolation unavailable on this host')
 
 
+@needs_isolation
 def test_isolation():
     ok, r = sandbox.preflight()
     assert ok and 'net 0' not in r['stdout'] and "data []" in r['stdout']
@@ -18,6 +19,7 @@ def test_isolation():
     assert 'False' in r['stdout'] and 'KEY' not in r['stdout']
 
 
+@needs_isolation
 def test_limits():
     assert sandbox.run('while True: pass', {})['status'] in ('ERROR', 'TIMEOUT')
     assert 'MemoryError' in sandbox.run("x = bytearray(800*1024*1024)", {})['stderr']
@@ -32,6 +34,12 @@ def test_refuses_without_isolation():
     assert r['status'] == 'ISOLATION_UNAVAILABLE' and r['stdout'] == ''
 
 
+def fake_code(code, packet):
+    failed = 'raise SystemExit' in code
+    return dict(status='ERROR' if failed else 'OK', exit_code=3 if failed else 0,
+                stdout='' if failed else 'fact\n', stderr='', stdout_truncated=False)
+
+
 class Fake:
     """Records every request; answers by tag-like inspection of the schema name."""
     def __init__(self, code="print('fact')"):
@@ -40,7 +48,7 @@ class Fake:
     def call(self, request, attempt=0, tag=''):
         self.calls.append(dict(tag=tag, request=request))
         name = request['response_format']['json_schema']['name']
-        if name == 'pre_analysis':
+        if name in ('pre_analysis', 'pre_analysis_neutral_v2'):
             c = dict(requirements=[], entities=[], computed_values=[], expected_actions=[], uncertainties=['u'])
         elif name == 'python_probe':
             c = dict(need_check=True, purpose='p', source_ids=[], code=self.code)
@@ -59,7 +67,7 @@ ROW = next(r for r in rows('dev') if 'P08' in r['id'])
 @pytest.mark.parametrize('pre', ['blind', 'open', 'probe', 'probe_noexec'])
 def test_injection_only_into_review(pre):
     f = Fake()
-    h = variants.Hook(f, pre, variants.SMALL)
+    h = variants.Hook(f, pre, variants.SMALL, original_row=ROW, run_code=fake_code)
     run_v5(ROW, h, flags=ARMS['R_fix'], model=variants.SMALL)
     tags = [c['tag'] for c in f.calls]
     assert tags.count('review') == 1 and tags.index('review') > 0
@@ -67,7 +75,7 @@ def test_injection_only_into_review(pre):
     base = run_v5_req(ROW)
     user = json.loads(review['messages'][1]['content'])
     key = {'blind': 'blind_analysis', 'open': 'pre_analysis'}.get(pre, 'python_probe')
-    assert key in user and {k: v for k, v in user.items() if k != key} == json.loads(base['messages'][1]['content'])
+    assert key in user and {k: v for k, v in user.items() if k not in (key, 'blind_analysis_sources')} == json.loads(base['messages'][1]['content'])
     assert review['messages'][0]['content'].startswith(base['messages'][0]['content'])
     for c in f.calls:                       # every other request is untouched by the hook
         if c['tag'] not in ('review',) and not c['tag'].startswith(('pre_', 'probe')):
@@ -86,7 +94,7 @@ def run_v5_req(row):
 
 def test_blind_hides_current_move():
     f = Fake()
-    run_v5(ROW, variants.Hook(f, 'blind', variants.SMALL), flags=ARMS['R_fix'], model=variants.SMALL)
+    run_v5(ROW, variants.Hook(f, 'blind', variants.SMALL, original_row=ROW), flags=ARMS['R_fix'], model=variants.SMALL)
     pre = f.calls[0]
     assert pre['tag'] == 'pre_blind'
     user = json.loads(pre['request']['messages'][1]['content'])
@@ -99,6 +107,6 @@ def test_blind_hides_current_move():
 
 def test_at_most_two_executions():
     f = Fake(code='raise SystemExit(3)')
-    h = variants.Hook(f, 'probe', variants.SMALL)
+    h = variants.Hook(f, 'probe', variants.SMALL, run_code=fake_code)
     run_v5(ROW, h, flags=ARMS['R_fix'], model=variants.SMALL)
     assert h.executions == 2 and [c['tag'] for c in f.calls][:2] == ['probe1', 'probe2']

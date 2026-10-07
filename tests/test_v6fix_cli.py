@@ -37,10 +37,10 @@ def _run(stub, tmp_path, p, *extra):
 
 
 def test_compact_output_has_certificate_bases(stub, tmp_path):
-    r = _run(stub, tmp_path, UNDECL)
+    r = _run(stub, tmp_path, UNDECL, '--tool-universe-closed')
     assert r['binary'] == 1 and r['accusation']['certificate'] == 'MECHANICAL' and r['decision_owner'] == 'S'
     m = r['mechanical'][0]
-    assert m['fact_basis'] == 'CODE_CHECKED_ON_INPUT' and m['norm_basis'] == 'CONTRACT_TEXT' and m['decisive']
+    assert m['fact_basis'] == 'CODE_CHECKED_ON_INPUT' and m['norm_basis'] == 'CALLER_CLOSED_TOOL_UNIVERSE' and m['decisive']
     assert r['layer_budget_bytes'] == 20000          # same context as r_fix by default
 
 
@@ -51,8 +51,13 @@ def test_hypothesis_is_reported_not_decisive(stub, tmp_path):
 
 
 def test_full_output_is_the_v6fix_result(stub, tmp_path):
-    r = _run(stub, tmp_path, UNDECL, '--full', '--layer-budget-bytes', '400000')
+    r = _run(stub, tmp_path, UNDECL, '--tool-universe-closed', '--full', '--layer-budget-bytes', '400000')
     assert set(r) == {'result', 'layers', 'recheck', 'r_fix'}
     assert r['result']['binary'] == 1 and r['layers']['budget'] == 400000
     assert {'findings', 'rules', 'records', 'coverage', 'extraction'} <= set(r['layers'])
     assert r['recheck'] == [dict(kind='UNDECLARED_TOOL', target_id='t0', recheck=True)]
+
+
+def test_catalog_parse_does_not_implicitly_close_tool_universe(stub, tmp_path):
+    result = _run(stub, tmp_path, UNDECL)
+    assert result['binary'] == 0 and result['accusation'] is None

@@ -59,6 +59,8 @@ def main(argv=None):
     ap.add_argument('--attempt', type=int, default=0)
     ap.add_argument('--output')
     ap.add_argument('--layer-budget-bytes', type=int, default=None, help='packet budget of the v6fix layers (default --budget-bytes)')
+    ap.add_argument('--tool-universe-closed', action='store_true', help='explicit format contract: only enumerated tools are available (v6fix)')
+    ap.add_argument('--history-complete', action='store_true', help='explicit contract: input contains the complete provenance history (v6fix)')
     ap.add_argument('--full', action='store_true', help='emit the full trace instead of the compact result')
     ap.add_argument('--repair', choices=['none', 'r_fix', 'v6', 'v6fix'], default='none', help='opt-in research repair profile (default none)')
     a = ap.parse_args(argv)
@@ -111,7 +113,9 @@ def _repair_main(a):
             elif a.repair == 'v6fix':
                 from ..v6fix.pipeline import Layers as FixLayers, recheck_all
                 if layers is None:
-                    layers = FixLayers(client, model, budget=a.layer_budget_bytes or a.budget_bytes)
+                    layers = FixLayers(client, model, budget=a.layer_budget_bytes or a.budget_bytes,
+                                       tool_universe_closed=a.tool_universe_closed,
+                                       provenance_universe_closed=a.history_complete)
                 full_layers = layers.decide(row, rec)
                 binary, acc = full_layers['binary'], full_layers['accusation']
                 mech = [_certificate(f) for f in full_layers['findings']]

@@ -45,7 +45,10 @@ def agent(sid, text):
 
 
 def packet(history=(), targets=(), policy='Be helpful.', policy_id='q1', complete=True, status=None, decl=CATALOG):
-    return dict(coverage=dict(complete_input=complete, declaration_status=status or {}),
+    # This synthetic fixture explicitly declares both universes closed. Runtime
+    # defaults are open; tests of unclosed inputs use production-parser fixtures.
+    return dict(coverage=dict(complete_input=complete, declaration_status=status or {},
+                              provenance_universe_closed=complete, tool_universe_closed=True),
                 normative_sources=[dict(source_id=policy_id, text=policy)], declarations=[dict(source_id='q90', text=decl)],
                 history=list(history), current_targets=list(targets))
 

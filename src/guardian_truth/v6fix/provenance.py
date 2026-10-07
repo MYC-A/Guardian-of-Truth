@@ -1,34 +1,28 @@
-"""Layer P (fixed): argument provenance with field schema, exact case, and an explicit provenance contract.
+"""P: observed value provenance, separate from semantic/entity correctness.
 
-For each string argument of a current call the layer records provenance (never correctness):
-  FOUND            exact, case-sensitive match as a JSON leaf of a tool result, or as a whole token of a user message,
-                   or in the policy (declaration examples 'such as ...' do not count); paths/keys of every match kept
-  NOT_FOUND        none of the above on a COMPLETE input
-  UNKNOWN_INCOMPLETE  input not complete: absence is never evidence
-A FOUND value says nothing about binding to the right entity (binding='UNVERIFIED'); a match only under a different key
-is flagged FOUND_UNDER_OTHER_KEY.
-A finding UNSOURCED_REFERENCE is raised only for a field the catalog schema declares as a reference to an existing
-object (name/description is an id/identifier; no 'new'/'generate'/'create' wording; string or array type), with value
-NOT_FOUND. Computed values (amounts, counts, free text) and fields whose ids may be newly generated are out of scope.
-Status MECHANICAL requires an explicit provenance contract in the current input (policy/declaration sentence forbidding
-made-up values or requiring the value to come from the user/tools), quoted, whose scope covers the field: it names the
-field, or speaks of ids/values in general; a sentence about another field ("The recipient must come from the user")
-does not cover order_id. Otherwise HYPOTHESIS. A user-only contract (".. must come from the user") that names a field
-also covers non-reference fields (NOT_FROM_USER): the value must occur in a user message of this input."""
+FOUND is exact occurrence, never correct entity binding. NOT_FOUND only describes
+a completely read input. Decisive absence additionally requires explicit caller
+provenance_universe_closed, or a norm explicitly bounded to this input.
+
+Only full clauses in the documented no-invent/user-origin grammar can decide.
+Field names match exactly modulo underscores/spaces; optional tool scope matches
+an explicit identifier. Other scopes, negation, source alternatives and inherited
+guards remain hypotheses. This bounded compiler is not an arbitrary NL compiler.
+"""
 from __future__ import annotations
 
 import json
 import re
 
-from .common import catalog, complete, parse_call, parse_result
+from .common import catalog, complete, coverage, parse_call, parse_result
 
 REF_NAME = re.compile(r'(^|_)(id|ids|identifier)$', re.I)
 REF_DESC = re.compile(r'\b(id|ids|identifier|identifiers)\b', re.I)
-GENERATED = re.compile(r'\b(new|generate[sd]?|create[sd]?|choose|chosen|custom|arbitrary|any)\b', re.I)
+GENERATED = re.compile(r'\b(generate[sd]?|create[sd]?|chosen|custom|arbitrary)\b|\bnew (?:unique )?(?:id|identifier|password)\b', re.I)
 EXAMPLE = re.compile(r'(such as|e\.g\.|for example|for instance|например|example:?)[^.\n;]{0,60}$', re.I)
 CONTRACT = re.compile(r"[^.\n]*\b(?:(?:not|never|don't|do not)\s+(?:make up|invent|fabricate|guess)\b[^.\n]*"
                       r"|must (?:come|be obtained|be taken) (?:directly )?from\b[^.\n]*"
-                      r"|only (?:use )?(?:values|ids|identifiers) (?:provided|returned) by\b[^.\n]*)[.\n]?", re.I)
+                      r"|only (?:use )?(?:values|ids|identifiers) (?:provided|returned)(?: verbatim)? by\b[^.\n]*)[.\n]?", re.I)
 FROM_USER = re.compile(r'(directly )?from the user\b(?! or)', re.I)
 
 
@@ -107,32 +101,160 @@ AGENT = re.compile(r'^\s*(you|we|i|the agent|the assistant|agents?)?\s*(should|m
 
 
 def _names(field):
-    stem = re.sub(r'_(id|ids|identifier)$', '', field)
-    return {field, field.replace('_', ' '), stem.replace('_', ' ')}
+    # Field identity is exact modulo presentation. A stem such as "order" is
+    # useful for retrieval, but is not the field "order_id".
+    return {field.lower(), field.replace('_', ' ').lower()}
+
+
+USER_REQUIREMENT = re.compile(
+    r'(?P<subject>.+?)\s+must (?:come|be obtained|be taken) (?:directly )?from the user'
+    r'(?P<window> in this (?:input|conversation))?[.!]?$', re.I)
+NO_INVENT = re.compile(
+    r'(?:you|the agent|the assistant)\s+(?:(?:must|should|shall) not|may not|cannot|can not|'
+    r"do not|don't|must never|should never)\s+(?:make up|invent|fabricate|guess)\s+"
+    r'(?P<object>.+?)[.!]?$', re.I)
+SOURCE_ONLY = re.compile(
+    r'(?:you (?:must|should|shall) )?only use (?P<object>values|ids|identifiers) '
+    r'(?:provided|returned)(?P<verbatim> verbatim)? by the user or the tools'
+    r'(?P<window> in this (?:input|conversation))?[.!]?$', re.I)
+GENERIC_OBJECT = re.compile(
+    r'(?:any |the )?(?:ids?|identifiers?|values?|arguments?|parameters?|inputs?|information|data|details|knowledge)'
+    r'(?:\s+or\s+(?:knowledge|information|procedures))*'
+    r'(?:\s+not provided by the user or the tools(?: in this (?:input|conversation))?)?'
+    r'(?:,\s*or give subjective recommendations or comments)?', re.I)
+CONTEXT_GUARD = re.compile(
+    r'\b(if|when|unless|except|excluding|provided that|only for|only when|does not apply|not applicable|'
+    r'for .+ users|for .+ operations|for .+ tools|otherwise|however|alternatively|instead)\b', re.I)
+GENERAL_HEADING = re.compile(r'(?:general )?(?:policy|rules|interaction rules|provenance rules|provenance requirements)', re.I)
+
+
+def _context_gaps(text, line_index):
+    """Conservative surrounding-scope check, never an NL applicability proof.
+
+    All preceding headings are retained (including nested headings), and the
+    containing paragraph is checked for guards. Unsupported context is exposed.
+    """
+    lines = text.splitlines()
+    headings = [line.strip() for line in lines[:line_index] if line.strip().endswith(':') or line.lstrip().startswith('#')]
+    lo = line_index
+    while lo > 0 and lines[lo - 1].strip():
+        lo -= 1
+    hi = line_index + 1
+    while hi < len(lines) and lines[hi].strip():
+        hi += 1
+    if any(h.endswith(':') and not GENERAL_HEADING.fullmatch(h.rstrip(':').lstrip('# ').strip()) for h in headings):
+        return ['unsupported inherited heading scope']
+    surrounding = headings + lines[lo:line_index] + lines[line_index + 1:hi]
+    references = [line for line in lines if re.search(r'\b(?:this|the) (?:requirement|rule|restriction)\b', line, re.I)]
+    if references:
+        return ['unparsed cross-reference to requirement/rule/restriction']
+    if any(CONTEXT_GUARD.search(x) for x in surrounding):
+        return ['unsupported surrounding condition/exception']
+    # The compiler owns only a complete bounded block, not an arbitrary clause
+    # detached from unparsed modifiers. This avoids an endless exception-word
+    # denylist ("exempt", "waived", "superseded", ... all remain unparsed).
+    clauses = re.split(r'(?<=[.!])\s+|\n', '\n'.join(lines[lo:hi]))
+    for clause in clauses:
+        clean = clause.strip()
+        if not clean or GENERAL_HEADING.fullmatch(clean.rstrip(':').lstrip('# ').strip()):
+            continue
+        if _compile_contract(clean) is None:
+            return ['unparsed policy-block clause; applicability unresolved']
+    return []
+
+
+def _compile_contract(q):
+    """Bounded English grammar. Anything else remains a search hypothesis.
+
+    The *entire* clause must parse: an embedded or negated requirement, scoped
+    refund clause or an OR-source clause cannot acquire unconditional authority.
+    Explicit tool scopes are exact declaration identifiers, never verb guesses.
+    """
+    q = re.sub(r'^\s*(?:[-*]\s+|\d+\.\s+)', '', q).strip()
+    m = USER_REQUIREMENT.fullmatch(q)
+    if m:
+        subject = re.sub(r'^(?:the |a |an )', '', m['subject'], flags=re.I).strip()
+        tool = None
+        scope = re.fullmatch(r'(.+?)\s+(?:of|given to|passed to)\s+([\w.\-]+)', subject, re.I)
+        if scope:
+            subject, tool = scope.groups()
+        # A small adjective is allowed only as presentation of a field, never
+        # arbitrary descriptive prose that could conceal conditions or roles.
+        subject = re.sub(r'^new\s+', '', subject, flags=re.I)
+        parts = re.split(r'\s*,\s*|\s+and\s+', subject)
+        if all(re.fullmatch(r'[A-Za-z_][A-Za-z0-9_]*(?: [A-Za-z_][A-Za-z0-9_]*)*', x) for x in parts):
+            # Embedded logical prose is explicitly outside this grammar.
+            if any(re.search(r'\b(not|true|that|if|for|unless|except|or|when)\b', x, re.I) for x in parts):
+                return None
+            return dict(grammar='user-origin-v1', fields=[x.lower() for x in parts], tool=tool,
+                        generic=False, user_only=True, input_bound=bool(m['window']), source_only=False,
+                        exact_source_required=True)
+    m = SOURCE_ONLY.fullmatch(q)
+    if m:
+        return dict(grammar='source-only-v1', fields=[], tool=None, generic=True, user_only=False,
+                    input_bound=bool(m['window']), source_only=True, object_kind=m['object'].lower(),
+                    exact_source_required=bool(m['verbatim']))
+    m = NO_INVENT.fullmatch(q)
+    if m and GENERIC_OBJECT.fullmatch(m['object']):
+        return dict(grammar='no-invent-v1', fields=[], tool=None, generic=True, user_only=False,
+                    input_bound=bool(re.search(r'\bin this (input|conversation)\b', m['object'], re.I)),
+                    source_only=False, exact_source_required=False)
+    return None
+
+
+def _unparsed_context_sources(sources):
+    """Code authority is bounded to documents wholly covered by this grammar.
+
+    An unparsed sibling paragraph/document may qualify a rule without using an
+    expected exception word. It must be resolved semantically, never ignored.
+    """
+    unchecked = []
+    for source in sources:
+        for clause in re.split(r'(?<=[.!])\s+|\n', source['text']):
+            clean = clause.strip()
+            if not clean or GENERAL_HEADING.fullmatch(clean.rstrip(':').lstrip('# ').strip()):
+                continue
+            if _compile_contract(clean) is None:
+                unchecked.append(source['source_id'])
+                break
+    return unchecked
 
 
 def contracts(p):
     """Every explicit provenance-contract sentence of the current input, quoted, with its scope: the fields it names, or
     GENERIC when it speaks of ids/values/arguments in general."""
     out = []
+    unchecked_sources = _unparsed_context_sources(p['normative_sources'])
     for s in p['normative_sources'] + p['declarations']:
         for m in CONTRACT.finditer(s['text']):
             q = m.group(0).strip()
-            out.append(dict(basis='CONTRACT_TEXT', source_id=s['source_id'], quote=q, user_only=bool(FROM_USER.search(q))))
+            parsed = _compile_contract(q)
+            line = s['text'][:m.start()].count('\n')
+            gaps = _context_gaps(s['text'], line)
+            if unchecked_sources:
+                gaps.append('unparsed normative context; semantic applicability unresolved')
+            out.append(dict(basis='BOUNDED_CONTRACT' if parsed else 'LEXICAL_CANDIDATE',
+                            source_id=s['source_id'], quote=q,
+                            user_only=parsed['user_only'] if parsed else bool(FROM_USER.search(q)),
+                            binding=parsed, binding_status='SUPPORTED_GRAMMAR' if parsed and not gaps else 'UNRESOLVED',
+                            unparsed_context_source_ids=unchecked_sources,
+                            gaps=gaps if parsed else ['unsupported contract grammar'] + gaps))
     return out
 
 
-def applies(con, field):
+def applies(con, field, tool=None):
     """-> 'NAMED' if the contract sentence names this field, 'GENERIC' if it is about ids/values/information in general,
     else None. A sentence whose grammatical subject is a specific other thing ("The recipient must come from the user")
     covers only what it names."""
-    q = con['quote']
-    if any(re.search(r'(?<![A-Za-z0-9_])' + re.escape(n) + r'(?![A-Za-z0-9_])', q, re.I) for n in _names(field) if len(n) >= 3):
-        return 'NAMED'
-    subject = re.split(r"\b(?:must|should|shall|do not|don't|never|not|only)\b", q, maxsplit=1, flags=re.I)[0]
-    if AGENT.match(subject):                     # "You should not make up any information ..." -> object decides
-        return 'GENERIC' if GENERIC.search(q) else None
-    return 'GENERIC' if GENERIC.search(subject) else None
+    binding = con.get('binding')
+    if binding and con.get('binding_status') == 'SUPPORTED_GRAMMAR':
+        if binding['tool'] is not None and binding['tool'] != tool:
+            return None
+        if binding['generic']:
+            return 'GENERIC'
+        return 'NAMED' if _names(field).intersection(binding['fields']) else None
+    # Retrieval can preserve an unresolved candidate; it cannot promote it.
+    return 'UNRESOLVED' if any(_token_in(n, con['quote'].lower()) for n in _names(field)) or GENERIC.search(con['quote']) else None
 
 
 def contract(p):
@@ -144,7 +266,7 @@ def check(p):
     cat, out, records = catalog(p), [], []
     cons = contracts(p)
     for t in p['current_targets']:
-        if t['kind'] != 'call':
+        if t['kind'] != 'call' or t.get('role') != 'assistant':
             continue
         tool, args = parse_call(t)
         if not isinstance(args, dict):
@@ -153,7 +275,7 @@ def check(p):
         for name, v in args.items():
             vals = [v] if isinstance(v, str) else [x for x in v if isinstance(x, str)] if isinstance(v, list) else []
             fk = field_kind(fields.get(name), name)
-            scoped = [(c, applies(c, name)) for c in cons]
+            scoped = [(c, applies(c, name, tool)) for c in cons]
             scoped = [(c, a) for c, a in scoped if a]
             for val in vals:
                 pr = provenance(p, val, name)
@@ -163,28 +285,56 @@ def check(p):
                 # (a) user-only contract that NAMES this field: any field kind, value must occur in a user message
                 user_named = [c for c, a in scoped if a == 'NAMED' and c['user_only']]
                 # (b) reference field: NOT_FOUND, or a generic/named user-only contract and not from the user
-                user_ref = [c for c, a in scoped if c['user_only']]
+                user_ref = [c for c, a in scoped if a in ('NAMED', 'GENERIC') and c['user_only']]
+                source_ref = [c for c, a in scoped if a == 'GENERIC' and (c.get('binding') or {}).get('source_only')
+                              and (fk == 'REFERENCE' or (c['binding'].get('object_kind') == 'values'))]
                 con = None
                 if user_named and pr['status'] != 'UNKNOWN_INCOMPLETE' and not from_user:
                     con = user_named[0]
+                elif source_ref and pr['status'] != 'UNKNOWN_INCOMPLETE' and not any(
+                        f['kind'] in ('user', 'tool_result') for f in pr['found']):
+                    con = source_ref[0]
                 elif fk == 'REFERENCE' and pr['status'] == 'NOT_FOUND':
-                    con = scoped[0][0] if scoped else False
+                    con = next((c for c, a in scoped if a in ('NAMED', 'GENERIC')), scoped[0][0] if scoped else False)
+                elif pr['status'] == 'NOT_FOUND':
+                    con = next((c for c, a in scoped if a == 'GENERIC' and (c.get('binding') or {}).get('source_only')
+                                and (c.get('binding') or {}).get('object_kind') == 'values'), None)
                 elif fk == 'REFERENCE' and user_ref and pr['status'].startswith('FOUND') and not from_user:
                     con = user_ref[0]
+                elif pr['status'] != 'UNKNOWN_INCOMPLETE' and not from_user:
+                    con = next((c for c, a in scoped if a == 'UNRESOLVED' and c['user_only']
+                                and any(_token_in(n, c['quote'].lower()) for n in _names(name))), None)
                 if con is None:
                     continue
+                intrinsic_bound = bool(con and (con.get('binding') or {}).get('input_bound'))
+                closed = coverage(p).get('provenance_universe_closed') is True or intrinsic_bound
+                policy_gaps = [gap for gap in coverage(p).get('unread', []) if gap.get('category') == 'POLICY']
+                exact_origin_requirement = bool(con and (con.get('binding') or {}).get('exact_source_required'))
+                decisive = bool(con and con.get('binding_status') == 'SUPPORTED_GRAMMAR' and exact_origin_requirement
+                                and closed and not policy_gaps)
+                if con:
+                    con = dict(con, closure_status='BOUNDED_BY_NORM' if intrinsic_bound else
+                               'CLOSED_BY_CALLER' if closed else 'UNRESOLVED')
+                    if policy_gaps:
+                        con['applicability_status'] = 'UNRESOLVED_POLICY_COVERAGE'
+                    if not exact_origin_requirement:
+                        con['provenance_implication'] = 'UNRESOLVED_DERIVATION_VS_INVENTION'
                 out.append(dict(layer='P', kind='UNSOURCED_REFERENCE' if fk == 'REFERENCE' else 'NOT_FROM_USER',
-                                target_id=t['source_id'], status='MECHANICAL' if con else 'HYPOTHESIS',
+                                target_id=t['source_id'], status='MECHANICAL' if decisive else 'HYPOTHESIS',
                                 fact=dict(tool=tool, field=name, value=val, provenance=pr['status'],
                                           found_kinds=sorted({f['kind'] for f in pr['found']}), field_kind=fk),
                                 norm=con or dict(basis='NONE', text='no provenance contract of this input covers this field'),
                                 reason=f'{t["source_id"]} calls {tool} with {name}={json.dumps(val)}: ' +
-                                       ('a reference to an existing object that appears in no user message, tool result or '
-                                        'policy of this complete input.' if pr['status'] == 'NOT_FOUND' else
+                                       ('the value appears in no user message, tool result or '
+                                        'policy of this completely read input; this observation alone does not establish invention.'
+                                        if pr['status'] == 'NOT_FOUND' else
+                                        'the value occurs only outside the sources permitted by the source-only contract.'
+                                        if con and (con.get('binding') or {}).get('source_only') else
                                         'the value does not occur in any user message, but the contract requires it from the user.')))
     return out, records
 
 
 def recheck(p, f):
-    again = [x for x in check(p)[0] if x['kind'] == f['kind'] and x['target_id'] == f['target_id'] and x['fact'] == f['fact']]
+    again = [x for x in check(p)[0] if x['kind'] == f['kind'] and x['target_id'] == f['target_id']
+             and x['fact'] == f['fact'] and x['status'] == f['status'] and x['norm'] == f['norm']]
     return bool(again)

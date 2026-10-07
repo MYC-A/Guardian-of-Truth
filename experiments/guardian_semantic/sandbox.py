@@ -41,6 +41,9 @@ def run(code, packet, *, _cmd_override=None):
             status, out = 'ISOLATION_UNAVAILABLE', ''
     except subprocess.TimeoutExpired as e:
         status, out, err, rc = 'TIMEOUT', (e.stdout or b'').decode('utf-8', 'replace'), (e.stderr or b'').decode('utf-8', 'replace'), None
+    except OSError as e:
+        # A missing isolation executable must never fall back to host execution.
+        status, out, err, rc = 'ISOLATION_UNAVAILABLE', '', type(e).__name__, None
     return dict(status=status, exit_code=rc, seconds=round(time.time() - t, 3), stdout=out[:CAP], stderr=err[-CAP:],
                 stdout_truncated=len(out) > CAP, code_sha256=hashlib.sha256(code.encode()).hexdigest(),
                 input_sha256=hashlib.sha256(inp.encode()).hexdigest(), isolation='unshare -rnm + tmpfs masks + env -i + prlimit')

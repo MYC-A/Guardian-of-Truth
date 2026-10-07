@@ -3,6 +3,7 @@ from __future__ import annotations
 
 import json
 import re
+from guardian_truth.parsing import decode_json
 
 CALL_RE = re.compile(r'TOOL_CALL\s+([^\s:]+):\s*(.*)\s*$', re.S)
 RES_RE = re.compile(r'TOOL_RESPONSE\s+([^\s:]+):\s*(.*)\s*$', re.S)
@@ -13,9 +14,8 @@ def parse_call(item):
     m = CALL_RE.search(item.get('text') or '')
     if not m:
         return item.get('tool'), None
-    try:
-        a = json.loads(m.group(2).strip())
-    except Exception:
+    a, valid = decode_json(m.group(2).strip())
+    if not valid:
         return m.group(1), None
     return m.group(1), a if isinstance(a, dict) else None
 
@@ -26,10 +26,8 @@ def parse_result(item):
     if not m:
         return item.get('tool'), (item.get('text') or '').strip()
     raw = m.group(2).strip()
-    try:
-        return m.group(1), json.loads(raw)
-    except Exception:
-        return m.group(1), raw
+    value, valid = decode_json(raw)
+    return m.group(1), value if valid else raw
 
 
 TRANSIENT = re.compile(r'time ?d? ?out|timeout|temporar|rate.?limit|too many requests|\b429\b|\b50[234]\b|try again later|'

@@ -73,35 +73,42 @@ def _pay(args, history=None, policy=NO_MAKE_UP, complete=True, tool='pay'):
     return packet(h, [call('t0', tool, args)], policy=policy, complete=complete)
 
 
-def test_P_computed_amount_string_is_allowed_but_unseen_reference_is_not():
+def test_P_no_invent_does_not_prove_unseen_reference_was_invented():
     assert p_decisive(_pay({'order_id': '#W1', 'payment_method_id': 'credit_card_7', 'amount': '1000'})) == []
-    assert p_decisive(_pay({'order_id': '1000', 'payment_method_id': 'credit_card_7', 'amount': '10'})) == [('order_id', '1000')]
+    p = _pay({'order_id': '1000', 'payment_method_id': 'credit_card_7', 'amount': '10'})
+    assert p_decisive(p) == []
+    assert p_records(p)[('order_id', '1000')]['status'] == 'NOT_FOUND'
 
 
 def test_P_new_id_allowed_by_contract_vs_unknown_existing_id():
     h = [user('h0', 'open a ticket about my delivery')]
     assert p_decisive(_pay({'ticket_id': 'T-777', 'subject': 'delivery'}, history=h, tool='create_ticket')) == []
-    assert p_decisive(_pay({'ticket_id': 'T-777'}, history=h, tool='lookup_ticket')) == [('ticket_id', 'T-777')]
+    p = _pay({'ticket_id': 'T-777'}, history=h, tool='lookup_ticket')
+    assert p_decisive(p) == []
+    assert p_records(p)[('ticket_id', 'T-777')]['field_kind'] == 'REFERENCE'
 
 
 def test_P_unknown_opaque_id_needs_an_explicit_provenance_contract_to_decide():
     args = {'order_id': '#W9', 'payment_method_id': 'credit_card_7', 'amount': '5'}
-    assert p_decisive(_pay(args)) == [('order_id', '#W9')]
+    assert p_decisive(_pay(args)) == []  # a broad no-invent norm does not require verbatim copying
+    assert p_decisive(_pay(args, policy='The order_id must come directly from the user.')) == [('order_id', '#W9')]
     assert p_decisive(_pay(args, policy='Be helpful and concise.')) == []          # same fact, no contract -> hypothesis only
 
 
 def test_P_identifiers_are_case_sensitive():
     h = [user('h0', 'pay'), res('h1', 'get_order', {'order_id': 'AB12cd', 'payment_methods': [{'id': 'credit_card_7'}]})]
     assert p_decisive(_pay({'order_id': 'AB12cd', 'payment_method_id': 'credit_card_7', 'amount': '1'}, history=h)) == []
-    assert p_decisive(_pay({'order_id': 'ab12CD', 'payment_method_id': 'credit_card_7', 'amount': '1'}, history=h)) == [('order_id', 'ab12CD')]
+    p = _pay({'order_id': 'ab12CD', 'payment_method_id': 'credit_card_7', 'amount': '1'}, history=h)
+    assert p_decisive(p) == []
+    assert p_records(p)[('order_id', 'ab12CD')]['status'] == 'NOT_FOUND'
 
 
 def test_P_digits_inside_an_email_are_not_provenance():
     h_email = [user('h0', 'My email is ann.lee3019@x.com')]
     h_said = [user('h0', 'My order is 3019')]
     args = {'order_id': '3019', 'payment_method_id': 'x', 'amount': '1'}
-    assert ('order_id', '3019') in p_decisive(_pay(args, history=h_email))
-    assert ('order_id', '3019') not in p_decisive(_pay(args, history=h_said))
+    assert p_records(_pay(args, history=h_email))[('order_id', '3019')]['status'] == 'NOT_FOUND'
+    assert p_records(_pay(args, history=h_said))[('order_id', '3019')]['status'] == 'FOUND'
 
 
 @new_only
@@ -116,7 +123,9 @@ def test_P_existing_id_of_another_entity_is_not_a_correct_binding():
 def test_P_incomplete_history_cannot_prove_absence():
     args = {'order_id': '#W9', 'payment_method_id': 'credit_card_7', 'amount': '5'}
     assert p_decisive(_pay(args, complete=False)) == []
-    assert p_decisive(_pay(args, complete=True)) == [('order_id', '#W9')]
+    assert p_decisive(_pay(args, complete=True)) == []
+    assert p_records(_pay(args, complete=False))[('order_id', '#W9')]['status'] == 'UNKNOWN_INCOMPLETE'
+    assert p_records(_pay(args, complete=True))[('order_id', '#W9')]['status'] == 'NOT_FOUND'
 
 
 # ============================================================== F: turn-shape rules
@@ -177,7 +186,9 @@ def test_F_partial_agreement_between_extractions_is_not_full_agreement():
     a = [rule('MAX_TOOL_CALLS_PER_TURN', 'You should only make one tool call at a time.', 1)]
     b = [rule('MAX_TOOL_CALLS_PER_TURN', 'Make one call per turn when the user is waiting.', 1, condition='the user is waiting')]
     assert [x for x in _f(pol, [a, b]) if x[1]] == []
-    assert [x[0] for x in _f(pol, [a, a]) if x[1]] == ['MAX_TOOL_CALLS_PER_TURN']
+    # Agreement does not discharge an unparsed neighbouring scoped clause.
+    assert [x for x in _f(pol, [a, a]) if x[1]] == []
+    assert [x[0] for x in _f(a[0]['quote'], [a, a]) if x[1]] == ['MAX_TOOL_CALLS_PER_TURN']
 
 
 def test_F_message_with_tool_call_rule_and_its_own_trigger():

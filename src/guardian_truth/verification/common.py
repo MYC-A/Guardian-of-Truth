@@ -3,6 +3,10 @@ from __future__ import annotations
 
 import json
 import re
+from functools import lru_cache
+
+from jsonschema import validators
+from jsonschema.exceptions import SchemaError
 
 from ..integrated.reviewer import decode_reply
 
@@ -14,10 +18,69 @@ def request(model, system, user_obj, schema, name, max_tokens=1500):
                 response_format=dict(type='json_schema', json_schema=dict(name=name, strict=True, schema=schema)))
 
 
+@lru_cache(maxsize=256)
+def _validator(serialized_schema):
+    schema = json.loads(serialized_schema)
+    cls = validators.validator_for(schema)
+    cls.check_schema(schema)
+    return cls(schema)
+
+
+def schema_errors(value, schema):
+    """Validate code-owned JSON schemas locally, independent of provider strict mode.
+
+    Diagnostics contain addresses and failed keywords rather than unbounded source text.
+    An invalid code-owned schema is a visible technical/configuration failure too.
+    """
+    try:
+        validator = _validator(json.dumps(schema, sort_keys=True, separators=(',', ':')))
+    except (SchemaError, TypeError, ValueError) as exc:
+        return [dict(path=[], keyword='INVALID_SCHEMA', message=str(exc)[:240])]
+    errors = sorted(validator.iter_errors(value), key=lambda e: (str(list(e.absolute_path)), e.validator or ''))
+    return [dict(path=list(e.absolute_path), keyword=e.validator, message=e.message[:240]) for e in errors[:20]]
+
+
+def transport_failure(rec):
+    """An explicit failed receipt cannot become a verdict by carrying valid JSON.
+
+    Legacy replay fixtures may omit transport metadata. Complete schema-valid
+    JSON at a length limit is accepted; explicit error/refusal finishes are not.
+    """
+    if rec.get('finish_reason') in ('error', 'content_filter', 'refusal'):
+        return True
+    transport = rec.get('transport')
+    if transport is None:
+        return False
+    if not isinstance(transport, dict):
+        return True
+    if transport.get('error') or transport.get('ok') is False:
+        return True
+    status = transport.get('status')
+    if status is None:
+        return False
+    if type(status) is int:
+        return not 200 <= status < 300
+    if isinstance(status, str):
+        return status.upper() not in ('OK', 'SUCCESS') and not (status.isdigit() and 200 <= int(status) < 300)
+    return True
+
+
 def call(client, req, attempt, tag):
-    rec = client.call(req, attempt=attempt, tag=tag)
+    rec = dict(client.call(req, attempt=attempt, tag=tag))
+    if transport_failure(rec):
+        rec['schema_validation'] = dict(status='TRANSPORT_FAILURE', errors=[])
+        return rec, None, None
     value, valid, norm = decode_reply(rec.get('content'))
-    return rec, (value if valid and isinstance(value, dict) else None), norm
+    schema = ((req.get('response_format') or {}).get('json_schema') or {}).get('schema')
+    if not valid or not isinstance(value, dict):
+        rec['schema_validation'] = dict(status='INVALID_JSON', errors=[])
+        return rec, None, norm
+    if schema is None:
+        rec['schema_validation'] = dict(status='MISSING_REQUEST_SCHEMA', errors=[])
+        return rec, None, norm
+    errors = schema_errors(value, schema)
+    rec['schema_validation'] = dict(status='INVALID_SCHEMA' if errors else 'VALID', errors=errors)
+    return rec, (None if errors else value), norm
 
 
 def norm_ws(s):
@@ -76,7 +139,8 @@ def step_record(rec, tag, req):
     from ..integrated.transport import sha
     return dict(tag=tag, key=rec.get('key'), cached=rec.get('cached'), usage=rec.get('usage'), transport=rec.get('transport'),
                 finish_reason=rec.get('finish_reason'), seconds=rec.get('seconds'), request_sha256=sha(req),
-                request_bytes=len(json.dumps(req, ensure_ascii=False).encode()), raw_content=rec.get('content'))
+                request_bytes=len(json.dumps(req, ensure_ascii=False).encode()), raw_content=rec.get('content'),
+                schema_validation=rec.get('schema_validation'))
 
 
 MD = re.compile(r'\*\*|__|(?<!\w)\*(?!\s)|(?<!\s)\*(?!\w)')

@@ -17,6 +17,9 @@ from __future__ import annotations
 import copy, json
 
 from . import sandbox
+from .neutral import neutral_view
+from guardian_truth.verification.common import schema_errors
+from guardian_truth.parsing import decode_json
 
 SMALL, LARGE = 'ministral-14b-2512', 'mistral-large-4'
 VARIANTS = {
@@ -45,7 +48,10 @@ CONTEXT_ADDENDUM = {
     'blind': ('\nIndependent pre-analysis: blind_analysis was produced by a separate pass that did NOT see the current move '
               '(MODEL_HYPOTHESIS, never evidence). Compare the current move with it: entity identifiers, computed values, whether '
               'conditions and exceptions hold, required order. A difference is a violation only if the cited original sources '
-              'support it; several moves may be valid and the pre-analysis itself may be wrong.'),
+              'support it; several moves may be valid and the pre-analysis itself may be wrong. '
+              'blind_analysis_sources contains the separate prompt-only view used by that pass. Its blind: source IDs '
+              'are local to that analysis; final citations must use the ordinary review packet source IDs. '
+              'A source absent from the ordinary review packet remains a citation/coverage gap.'),
     'open': ('\nPre-analysis: pre_analysis was produced by a separate pass over the same packet, including the current move '
              '(MODEL_HYPOTHESIS, never evidence). Compare the current move with it: entity identifiers, computed values, whether '
              'conditions and exceptions hold, required order. A difference is a violation only if the cited original sources '
@@ -110,11 +116,12 @@ def probe_schema(packet, noexec):
 
 
 def blind_packet(packet):
-    """Review packet with the current move removed (no current_targets, no reference to their text)."""
-    p = copy.deepcopy(packet)
-    p.pop('current_targets', None)
-    p['note'] = 'The assistant\'s next move is hidden.'
-    return p
+    """Prepacked current-action views cannot be certified as blind.
+
+    Use neutral_view(original_row) before retrieval instead. Keep an explicit
+    failure for historical callers rather than silently leaking move selection.
+    """
+    raise ValueError('ORIGINAL_PROMPT_REQUIRED: action-conditioned packets are not blind')
 
 
 def _req(model, system, user, schema, name, max_tokens):
@@ -123,10 +130,18 @@ def _req(model, system, user, schema, name, max_tokens):
                 response_format=dict(type='json_schema', json_schema=dict(name=name, strict=True, schema=schema)))
 
 
-def _parse(rec):
+def _parse(rec, schema=None):
     try:
-        v = json.loads(rec.get('content') or '')
-        return v if isinstance(v, dict) else None
+        v, valid = decode_json(rec.get('content') or '')
+        if not valid or not isinstance(v, dict):
+            rec['schema_validation'] = dict(status='INVALID_JSON', errors=[])
+            return None
+        if schema is not None:
+            errors = schema_errors(v, schema)
+            rec['schema_validation'] = dict(status='INVALID_SCHEMA' if errors else 'VALID', errors=errors)
+            if errors:
+                return None
+        return v
     except Exception:
         return None
 
@@ -139,27 +154,68 @@ def _step(rec, tag):
 class Hook:
     """Per-row client wrapper. Only the request tagged 'review' is changed; everything else passes through unchanged."""
 
-    def __init__(self, inner, pre, model, run_code=sandbox.run, max_tokens=1700):
+    def __init__(self, inner, pre, model, run_code=sandbox.run, max_tokens=1700, *, original_row=None, blind_budget_bytes=20000,
+                 max_request_bytes=60000):
         self.inner, self.pre, self.model, self.run_code, self.max_tokens = inner, pre, model, run_code, max_tokens
         self.log, self.injected, self.executions = [], 0, 0
+        self.original_row = {'prompt': original_row['prompt']} if isinstance(original_row, dict) and isinstance(original_row.get('prompt'), str) else None
+        self.blind_budget_bytes = blind_budget_bytes
+        if type(max_request_bytes) is not int or max_request_bytes < 1:
+            raise ValueError('max_request_bytes must be a positive integer')
+        self.max_request_bytes = max_request_bytes
+
+    def _wire_budget(self, request):
+        return dict(request_bytes=len(json.dumps(request, ensure_ascii=False, separators=(',', ':')).encode('utf-8')),
+                    max_request_bytes=self.max_request_bytes, reserved_completion_tokens=request.get('max_tokens'),
+                    validation='SERIALIZED_UTF8_BYTE_CAP_ONLY_NOT_PROVIDER_TOKENIZER')
+
+    def _send(self, request, attempt=0, tag=''):
+        budget = self._wire_budget(request)
+        if budget['request_bytes'] > self.max_request_bytes:
+            return dict(content=None, usage=None, cached=False, transport=dict(status='NOT_EXECUTED_INPUT_BUDGET'),
+                        input_budget=budget)
+        result = dict(self.inner.call(request, attempt=attempt, tag=tag))
+        result['input_budget'] = budget
+        return result
 
     def __getattr__(self, k):
         return getattr(self.inner, k)
 
     def call(self, request, attempt=0, tag=''):
+        base = request
         if tag == 'review' and self.pre and self.injected == 0:
             self.injected += 1
             request = self.inject(request, attempt)
-        return self.inner.call(request, attempt=attempt, tag=tag)
+            budget = self._wire_budget(request)
+            if request != base and budget['request_bytes'] > self.max_request_bytes:
+                for step in self.log:
+                    if step.get('injected'):
+                        step['injected'] = False
+                self.log.append(dict(tag='pre_injection_budget', injected=False, transport=dict(status='NOT_EXECUTED_INPUT_BUDGET'),
+                                     input_budget=budget, fallback='UNCHANGED_BASE_REVIEW_IF_WITHIN_BYTE_CAP'))
+                request = base
+        return self._send(request, attempt=attempt, tag=tag)
 
     def inject(self, request, attempt):
         packet = json.loads(request['messages'][1]['content'])
         if self.pre in ('blind', 'open'):
-            user = blind_packet(packet) if self.pre == 'blind' else packet
-            r = self.inner.call(_req(self.model, BLIND_PROMPT if self.pre == 'blind' else OPEN_PROMPT, user,
-                                     analysis_schema(user), 'pre_analysis', self.max_tokens), attempt=attempt, tag='pre_' + self.pre)
+            view_receipt = None
+            if self.pre == 'blind':
+                user, view_receipt = neutral_view(self.original_row, self.blind_budget_bytes)
+                if user is None:
+                    self.log.append(dict(tag='pre_blind', injected=False, view=view_receipt))
+                    return request
+            else:
+                user = packet
+            schema = analysis_schema(user)
+            r = self._send(_req(self.model, BLIND_PROMPT if self.pre == 'blind' else OPEN_PROMPT, user,
+                                     schema, 'pre_analysis_neutral_v2' if self.pre == 'blind' else 'pre_analysis', self.max_tokens), attempt=attempt, tag='pre_' + self.pre)
             st = _step(r, 'pre_' + self.pre)
-            v = _parse(r)
+            v = _parse(r, schema)
+            st['schema_validation'] = r.get('schema_validation')
+            st['input_budget'] = r.get('input_budget')
+            if view_receipt:
+                st['view'] = view_receipt
             st['parsed_ok'] = v is not None
             self.log.append(st)
             if v is None:                                # failed pre-pass: review runs unchanged (recorded)
@@ -167,12 +223,17 @@ class Hook:
                 return request
             key = 'blind_analysis' if self.pre == 'blind' else 'pre_analysis'
             extra, add = {key: v}, CONTEXT_ADDENDUM[self.pre]
+            if self.pre == 'blind':
+                extra['blind_analysis_sources'] = user
         else:
             noexec = self.pre == 'probe_noexec'
             sys0 = PROBE_PROMPT + (PROBE_NOEXEC_EXTRA if noexec else '')
-            r = self.inner.call(_req(self.model, sys0, packet, probe_schema(packet, noexec), 'python_probe', self.max_tokens),
+            schema = probe_schema(packet, noexec)
+            r = self._send(_req(self.model, sys0, packet, schema, 'python_probe', self.max_tokens),
                                 attempt=attempt, tag='probe1')
-            st = _step(r, 'probe1'); v = _parse(r); st['parsed'] = v
+            st = _step(r, 'probe1'); v = _parse(r, schema); st['parsed'] = v
+            st['schema_validation'] = r.get('schema_validation')
+            st['input_budget'] = r.get('input_budget')
             self.log.append(st)
             if v is None or not v.get('need_check') or not (v.get('code') or '').strip():
                 st['injected'] = False
@@ -185,9 +246,11 @@ class Hook:
                 st['receipt'] = rc
                 if rc['status'] != 'OK' and self.executions < MAX_EXEC and rc['status'] != 'ISOLATION_UNAVAILABLE':
                     prev = dict(code=v['code'], status=rc['status'], stdout=rc['stdout'][-1500:], stderr=rc['stderr'][-1500:])
-                    r2 = self.inner.call(_req(self.model, sys0 + REPAIR_NOTE, dict(packet, previous_attempt=prev),
+                    r2 = self._send(_req(self.model, sys0 + REPAIR_NOTE, dict(packet, previous_attempt=prev),
                                               probe_schema(packet, False), 'python_probe', self.max_tokens), attempt=attempt, tag='probe2')
-                    st2 = _step(r2, 'probe2'); v2 = _parse(r2); st2['parsed'] = v2
+                    st2 = _step(r2, 'probe2'); v2 = _parse(r2, probe_schema(packet, False)); st2['parsed'] = v2
+                    st2['schema_validation'] = r2.get('schema_validation')
+                    st2['input_budget'] = r2.get('input_budget')
                     self.log.append(st2)
                     if v2 and v2.get('need_check') and (v2.get('code') or '').strip():
                         rc = self.run_code(v2['code'], packet); self.executions += 1

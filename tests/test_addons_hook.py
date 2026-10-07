@@ -14,13 +14,16 @@ class Fake:
 
     def call(self, request, attempt=0, tag=''):
         self.calls.append(dict(tag=tag, request=request))
-        if request['response_format']['json_schema']['name'] == 'pre_analysis':
-            c = dict(requirements=[dict(source_id='q3', quote='q', requirement='r', applies='YES', why='w')], entities=[], computed_values=[],
+        if request['response_format']['json_schema']['name'] in ('pre_analysis', 'pre_analysis_neutral_v2'):
+            u = json.loads(request['messages'][1]['content'])
+            ps = next(x['source_id'] for x in u['normative_sources'])
+            hs = next(x['source_id'] for x in u['history'])
+            c = dict(requirements=[dict(source_id=ps, quote='q', requirement='r', applies='YES', why='w')], entities=[], computed_values=[],
                      expected_actions=[], uncertainties=[], condition_checks=[dict(
-                         requirement_source_id='q3', expression='amount > 1000.00 AND a.owner != b.owner',
-                         bindings=[dict(name='amount', value='1500.00', type='NUMBER', source_id='h5'),
-                                   dict(name='a.owner', value='u1', type='STRING', source_id='h2'),
-                                   dict(name='b.owner', value='u1', type='STRING', source_id='h7')],
+                         requirement_source_id=ps, expression='amount > 1000.00 AND a.owner != b.owner',
+                         bindings=[dict(name='amount', value='1500.00', type='NUMBER', source_id=hs),
+                                   dict(name='a.owner', value='u1', type='STRING', source_id=hs),
+                                   dict(name='b.owner', value='u1', type='STRING', source_id=hs)],
                          claimed_result=self.claimed, meaning_if_true='approval')])
         else:
             u = json.loads(request['messages'][1]['content'])
@@ -31,7 +34,7 @@ class Fake:
 
 def review_of(pre, claimed):
     f = Fake(claimed)
-    run_v5(ROW, V2.Hook2(f, pre, V2.V.SMALL), flags=ARMS['R_fix'], model=V2.V.SMALL)
+    run_v5(ROW, V2.Hook2(f, pre, V2.V.SMALL, original_row=ROW), flags=ARMS['R_fix'], model=V2.V.SMALL)
     blind = json.loads(f.calls[0]['request']['messages'][1]['content'])
     return blind, next(c['request'] for c in f.calls if c['tag'] == 'review')
 

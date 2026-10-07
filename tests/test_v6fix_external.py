@@ -75,15 +75,19 @@ def test_tau2_unknown_task_id_without_contract_is_a_hypothesis_only():
     assert p_decisive(p) == []
 
 
-def test_tau2_retail_no_make_up_contract_decides_unsourced_reference():
+def test_tau2_retail_no_make_up_contract_leaves_unsourced_reference_hypothetical():
     cat = '[AVAILABLE TOOLS]\n- get_order_details — Get the status and details of an order.\n    order_id: string! — The order id, such as \'#W0000000\'.'
     pol = TAU2_RETAIL_NO_MAKE_UP
     seen = packet([user('h0', 'My order is #W2378156')], [call('t0', 'get_order_details', {'order_id': '#W2378156'})], policy=pol, decl=cat)
     made = packet([user('h0', 'Where is my order?')], [call('t0', 'get_order_details', {'order_id': '#W0000001'})], policy=pol, decl=cat)
     example = packet([user('h0', 'Where is my order?')], [call('t0', 'get_order_details', {'order_id': '#W0000000'})], policy=pol, decl=cat)
     assert p_decisive(seen) == []
-    assert p_decisive(made) == [('order_id', '#W0000001')]
-    assert p_decisive(example) == [('order_id', '#W0000000')]       # the schema example is not a source
+    # Preserve the original external policy: it prohibits invention but does
+    # not establish that every lawful ID must be copied verbatim.
+    from guardian_truth.v6fix import provenance as P
+    assert p_decisive(made) == [] and p_decisive(example) == []
+    assert P.check(made)[0][0]['status'] == 'HYPOTHESIS'
+    assert P.check(example)[1][0]['status'] == 'NOT_FOUND'  # example is not a source
 
 
 def test_tau2_retail_one_call_rule_with_own_trigger_clause():

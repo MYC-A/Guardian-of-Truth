@@ -14,7 +14,8 @@ from ..integrated import ReviewConfig, review
 from ..integrated.transport import sha
 from ..verification import alltarget, confirm, df, df4, ems, verifier
 from ..verification.admission import interpret_v2
-from ..verification.common import call, norm_ws, quote_q2, request, step_record, quote_fragments_ok
+from ..verification.common import call, norm_ws, quote_q2, request, step_record, quote_fragments_ok, schema_errors, transport_failure
+from ..integrated.reviewer import decode_reply
 from ..verification.pipeline import packet_for
 from ..verification.proof import execute as execute_v4, leaf_quote_ok, texts_of
 from . import confirm5, df5, evidence as Ev, proof5
@@ -78,8 +79,16 @@ def verify(client, rp, cand, model, attempt, tag, flags, extra_evidence=None):
         rec, value, _ = call(client, req, att, tag)
         st = step_record(rec, tag, req)
         st.update(candidate_origin=cand.get('origin'), witness_added=added)
+        if rec.get('finish_reason') == 'error' and not transport_failure(dict(rec, finish_reason=None)):
+            # A failed completion is never parsed as a verdict, but retains the
+            # pre-existing bounded technical retry. HTTP quota/auth failures do not.
+            st.update(admission='COMPLETION_FAILURE', verdict=None)
+            return st
         if rec.get('content') is None:
             st.update(admission='NOT_EXECUTED' if (rec.get('transport') or {}).get('status') == 'NOT_EXECUTED_OFFLINE' else 'TRANSPORT_FAILURE', verdict=None)
+            return st
+        if transport_failure(rec):
+            st.update(admission='TRANSPORT_FAILURE', verdict=None)
             return st
         if value is None or value.get('verdict') not in ('SUPPORTED', 'REFUTED', 'UNRESOLVED'):
             st.update(admission='INVALID_JSON', verdict=None)
@@ -103,7 +112,7 @@ def verify(client, rp, cand, model, attempt, tag, flags, extra_evidence=None):
         st['verdict'] = verdict
         return st
     v = once(attempt)
-    if v.get('admission') == 'INVALID_JSON':
+    if v.get('admission') in ('INVALID_JSON', 'COMPLETION_FAILURE'):
         v2 = once(attempt + 100)
         v2['first_invalid'] = {k: v.get(k) for k in ('key', 'finish_reason', 'admission')}
         v = v2
@@ -232,21 +241,51 @@ def at_run(client, packet, model, attempt, flags):
     if rec.get('content') is None:
         st.update(admission=_miss(rec), candidates=[])
         return st
-    if not v:
-        st.update(admission='INVALID_JSON', candidates=[])
+    if transport_failure(rec):
+        st.update(admission='TRANSPORT_FAILURE', candidates=[])
         return st
     tids = [t['source_id'] for t in packet['current_targets']]
+    # AT is an independent-item contract: an invalid item cannot certify anything,
+    # but must not erase a different valid target. Decode only complete JSON and
+    # validate its envelope before isolating items under the SAME requested schema.
+    if v is None:
+        raw, decoded, _ = decode_reply(rec.get('content'))
+        envelope = dict(alltarget.schema(packet))
+        envelope['properties'] = dict(envelope['properties'])
+        envelope['properties']['targets'] = dict(envelope['properties']['targets'])
+        envelope['properties']['targets'].pop('items', None)
+        if not decoded or schema_errors(raw, envelope):
+            st.update(admission='INVALID_JSON', candidates=[])
+            return st
+        v = raw
     items = v.get('targets') if isinstance(v, dict) else None
     if not isinstance(items, list):
         st.update(admission='INVALID_JSON', candidates=[])
         return st
-    cov = alltarget.coverage(items, tids)
+    item_schema = alltarget.schema(packet)['properties']['targets']['items']
+    known_ids = [x.get('target_id') for x in items if isinstance(x, dict) and isinstance(x.get('target_id'), str)]
+    duplicated = sorted({t for t in known_ids if known_ids.count(t) > 1})
+    invented = sorted({t for t in known_ids if t not in tids})
+    quarantined, valid_items = [], []
+    for index, item in enumerate(items):
+        errors = schema_errors(item, item_schema)
+        tid = item.get('target_id') if isinstance(item, dict) else None
+        if errors or tid in duplicated:
+            quarantined.append(dict(index=index, target_id=tid, errors=errors,
+                                    reason='DUPLICATED_TARGET' if tid in duplicated else 'INVALID_ITEM_SCHEMA'))
+        else:
+            valid_items.append(item)
+    checked_ids = {x['target_id'] for x in valid_items}
+    missing = [t for t in tids if t not in known_ids]
+    unchecked = [t for t in tids if t not in checked_ids]
+    cov = dict(complete=not unchecked and not quarantined, missing=missing,
+               duplicated=duplicated, invented=invented, unchecked=unchecked)
     texts = texts_of(packet)
     pol = {s['source_id']: s['text'] for s in packet['normative_sources']}
     strict = 'evidence' in flags
     rows, cands = [], []
     order = {t: i for i, t in enumerate(tids)}
-    for x in sorted(items, key=lambda x: order.get(x.get('target_id'), 99)):
+    for x in sorted(valid_items, key=lambda x: order[x['target_id']]):
         r = dict(target_id=x.get('target_id'), status=x.get('status'))
         if x.get('status') == 'ERROR':
             ptexts = [pol[p] for p in x.get('policy_source_ids') or [] if p in pol]
@@ -254,13 +293,17 @@ def at_run(client, packet, model, attempt, flags):
             chk = Ev.ok if strict else leaf_quote_ok
             r['evidence_ok'] = [bool(texts.get(e.get('source_id')) and chk(e.get('quote'), texts[e['source_id']])) for e in x.get('evidence') or []]
             r['admitted'] = r['policy_ok'] and any(r['evidence_ok'])
-            if r['admitted'] and cov['complete']:
+            if r['admitted']:
                 ev = [e['source_id'] for e, ok in zip(x.get('evidence') or [], r['evidence_ok']) if ok]
                 cands.append(dict(origin='AT', target_id=x['target_id'], requirement=x.get('policy_quote') or '', reason=x.get('reason') or '',
                                   policy_source_ids=[p for p in x.get('policy_source_ids') or [] if p in pol], evidence_source_ids=ev,
                                   code_proven=False, certificate=False))
         rows.append(r)
-    st.update(admission='ADMITTED' if cov.get('complete') else 'COVERAGE_INCOMPLETE', coverage=cov, targets=rows, candidates=cands)
+    rows += [dict(target_id=t, status='UNCHECKED', admitted=False,
+                  reason='DUPLICATED_TARGET' if t in duplicated else 'MISSING_OR_INVALID_TARGET') for t in unchecked]
+    rows.sort(key=lambda x: order[x['target_id']])
+    st.update(admission='ADMITTED' if cov.get('complete') else 'COVERAGE_INCOMPLETE', coverage=cov,
+              targets=rows, quarantined=quarantined, candidates=cands)
     return st
 
 
@@ -342,7 +385,9 @@ def run_v5(row, client, *, flags=frozenset(), provider='mistral', model='ministr
     if 'pool' in flags:
         seen, q2 = set(), []
         for k, i, c in sorted(queue, key=lambda x: (_prio(x[2]), ('DF4', 'Ems', 'AT', 'CB').index(x[0]), x[1])):
-            sig = (c['target_id'], c['origin'], norm_ws(c.get('requirement') or '')[:200], c.get('kind'))
+            # Only identical candidate contracts are duplicates. Different witnesses,
+            # proof plans, scopes or reasons remain independent hypotheses.
+            sig = json.dumps(c, sort_keys=True, ensure_ascii=False, separators=(',', ':'))
             if sig not in seen:
                 seen.add(sig)
                 q2.append((k, i, c))
