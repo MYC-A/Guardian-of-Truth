@@ -42,6 +42,22 @@ def test_failed_judge_receipt_is_technical_unjudged_even_with_valid_complete_bod
 
 
 @pytest.mark.parametrize('judge', [cause.judge, cause.judge_v2])
+@pytest.mark.parametrize('transport', [{'status': 403}, 'bad', [1], 3])
+def test_malformed_transport_metadata_is_a_technical_failure_not_an_exception(judge, transport):
+    row, accusation, value = fixture()
+    client = CauseClient(value)
+    original_call = client.call
+    def reply(request, attempt=0, tag=''):
+        return dict(original_call(request, attempt=attempt, tag=tag), transport=transport)
+    client.call = reply
+    result = judge(client, 'test', row, accusation, ['Forbidden word written.'])
+    assert result['category'] == 'technical_unjudged'
+    assert result['why'] == 'TRANSPORT_FAILURE'
+    assert result['raw_content'] == json.dumps(value)
+    assert result['transport'] == (transport['status'] if isinstance(transport, dict) else transport)
+
+
+@pytest.mark.parametrize('judge', [cause.judge, cause.judge_v2])
 @pytest.mark.parametrize('finish', ['stop', 'length'])
 def test_complete_successful_judge_contract_is_accepted_without_wire_changes(judge, finish):
     row, accusation, value = fixture()

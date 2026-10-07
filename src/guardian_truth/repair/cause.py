@@ -75,7 +75,8 @@ def _judge_response(rec):
     No category from a failed receipt or incomplete JSON may enter cause metrics.
     This does not add source truth or v2 cross-field invariants to the v1 judge.
     """
-    metadata = dict(key=rec.get('key'), transport=(rec.get('transport') or {}).get('status'),
+    transport = rec.get('transport')
+    metadata = dict(key=rec.get('key'), transport=transport.get('status') if isinstance(transport, dict) else transport,
                     finish_reason=rec.get('finish_reason'))
     if transport_failure(rec) or rec.get('content') is None:
         return dict(category='technical_unjudged', why='TRANSPORT_FAILURE', raw_content=rec.get('content'),
