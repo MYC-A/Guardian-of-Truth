@@ -32,3 +32,7 @@ turn document не содержит собственный answer; actual tokeni
 Добавлен regression test для None→0; локально **29 passed**. Эти дополнительные
 правки не изменяют witness selector, native prompt, model/settings, порядок
 запросов или acceptance threshold. Их не выдаём за улучшение model quality.
+# Отдельный v5 question-only review
+
+Независимый агент проверил точное сохранение DOCUMENT/ANSWER/settings, source address последнего USER, отсутствие gold в запросе, tokenizer preflight, все46 IDs и technical denominators. Блокирующих дефектов не найдено; по замечанию добавлены hashes scoring helpers и binary gold hash. Сводный локальный запуск новых и связанных тестов:31 passed. Это code review, не независимая разметка причин и не model quality validation.
+

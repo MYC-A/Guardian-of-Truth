@@ -1,4 +1,5 @@
 """Finite supervised server lifecycle for the preregistered Lynx witness repair."""
+import argparse
 import json
 import os
 from pathlib import Path
@@ -19,6 +20,15 @@ OUT = ROOT/'outputs/guardian_lynx_witness_20261007'
 
 
 def main():
+    ap = argparse.ArgumentParser()
+    ap.add_argument('--phase', choices=('witness','question'), default='witness')
+    args = ap.parse_args()
+    global OUT
+    witness_output = OUT
+    if args.phase == 'question':
+        if not (witness_output/'done.json').exists():
+            raise RuntimeError('WITNESS_PHASE_NOT_COMPLETE')
+        OUT = ROOT/'outputs/guardian_lynx_question_20261007'
     os.environ.update(PYTHONPATH=str(ROOT/'src')+':'+str(ROOT), PYTHONDONTWRITEBYTECODE='1',
                       GUARDIAN_DATA_ROOT=str(BASE/'data_root_403d811e'),
                       LOCAL_LLAMACPP_ENDPOINT='http://127.0.0.1:8081/v1/chat/completions',
@@ -65,14 +75,19 @@ def main():
                     time.sleep(2)
             else:
                 raise TimeoutError('SERVER_READY_DEADLINE')
-            state('RUNNING_VALID46_AND_PAIRED_ACCUSATIONS',pid=server.pid)
+            state('RUNNING_VALID46_'+args.phase.upper(),pid=server.pid)
             root=ROOT/'outputs/guardian_local_a100/llamacpp'
             qwen=root/'qwen3.8-27b@71bc7b627595:Q8_0:llamacpp-b11459/runs'
             distill=root/'qwen3.8-27b-opus-distill-v2@64d56b13ea8d:Q8_0:llamacpp-b11459/runs'
             legacy=root/MODEL/'lynx-native-object-v3/runs.jsonl'
-            subprocess.run([sys.executable,'-X','utf8','-m','experiments.guardian_local_a100.lynx_witness',
+            command = ([sys.executable,'-X','utf8','-m','experiments.guardian_local_a100.lynx_witness',
                             '--model-id',MODEL,'--qwen-root',str(qwen),'--distill-root',str(distill),
-                            '--legacy-runs',str(legacy),'--output',str(OUT),'--workers','8','--max-calls','150'],
+                            '--legacy-runs',str(legacy),'--output',str(OUT),'--workers','8','--max-calls','150']
+                       if args.phase == 'witness' else
+                       [sys.executable,'-X','utf8','-m','experiments.guardian_local_a100.lynx_question',
+                        '--model-id',MODEL,'--witness',str(witness_output),'--output',str(OUT),
+                        '--workers','8','--max-calls','60'])
+            subprocess.run(command,
                            cwd=ROOT,check=True,timeout=1800)
             if not (OUT/'score.json').exists():
                 subprocess.run([sys.executable,'-X','utf8','-m','experiments.guardian_local_a100.score_lynx_witness',
