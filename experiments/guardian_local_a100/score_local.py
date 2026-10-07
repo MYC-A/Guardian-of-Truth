@@ -11,11 +11,30 @@ Decision rule actually scored per variant:
 AM runs are scored twice (A and M) from the same saved primary replies —
 mechanical postprocessing only, no extra model calls.
 
-Tech rows (transport failure / unparseable pre-pass reply / failed record) are
-counted separately, never as NO_ERROR. RU/EN split by Cyrillic share in the row
-prompt. cause_auto: accusation target == gold target AND a gold cause marker in
-the accusation text (where gold provides markers). Family breakdown where the
-gold provides one. Calls/tokens per row from saved receipts (ledger = actual).
+Decision accounting (offline re-classification of saved records; no inference):
+  verdict      valid final decision through the variant's intended path:
+               for B/B2/T/E the blind analysis was actually DELIVERED to the
+               review request (created-but-not-delivered is NOT a delivered
+               pre-pass); for M/L no layer/verification on the decision path
+               was technically unavailable.
+  fallback     valid decision via a degraded path: the review itself is valid
+               but (a) the blind analysis was NOT delivered (a B variant row
+               then behaves as plain AM on that row), or (b) the strict
+               layers/verifications were technically unavailable so the model
+               rule alone decided. Counted in TP/FP/FN/TN, reported separately.
+  extra_pass   valid verdict while an optional additional pass (a layer
+               finding or an in-review verification) did not execute.
+  no_solution  no valid decision at all (review transport/parse failure,
+               row exception, decision field absent). NEVER scored as
+               NO_ERROR: excluded from the confusion matrix entirely.
+  missing      row absent from the saved records.
+
+TP/FP/FN/TN are computed over verdict+fallback rows (valid decisions);
+'clean' repeats the confusion matrix over verdict-only rows.
+RU/EN split by Cyrillic share in the row prompt. cause_auto: accusation
+target == gold target AND a gold cause marker in the accusation text (where
+gold provides markers). Family breakdown where the gold provides one.
+Calls/tokens per row from saved receipts (ledger = actual).
 """
 import argparse
 import json
@@ -37,6 +56,8 @@ HOLDOUT2 = DATA_ROOT / 'outputs/guardian_v6/holdout2'
 LB = {'lb_long': 'lockbox', 'lb2_long': 'lockbox2', 'lb3_long': 'lockbox3'}
 
 CYR = re.compile(r'[А-Яа-яЁё]')
+REVIEW_BAD = ('INVALID_JSON', 'INVALID_SCHEMA', 'TRANSPORT_FAILURE', 'NOT_EXECUTED')
+MECH_LAYERS = ('F', 'S', 'P')
 
 
 def gold_for(set_name):
@@ -115,19 +136,83 @@ def cause_auto(r, g):
     return acc.get('target_id') == g.get('target_id') and bool(markers) and any(m in txt for m in markers)
 
 
-def met(c):
-    tp, fp, fn, tn = (c.get(x, 0) for x in ('tp', 'fp', 'fn', 'tn'))
-    q = lambda a, b: round(a / b, 3) if b else None
-    return dict(tp=tp, fp=fp, fn=fn, tn=tn, precision=q(tp, tp + fp), recall=q(tp, tp + fn),
-                f1=q(2 * tp, 2 * tp + fp + fn), specificity=q(tn, tn + fp),
-                cause_auto=c.get('cause', 0), technical=c.get('tech', 0))
+# ---------------------------------------------------------------- decision accounting
+
+def review_valid(r):
+    """Primary review path executed and parseable -> its decision is usable."""
+    if r is None or r.get('error'):
+        return False
+    rec_steps = ((r.get('rec') or {}).get('A') or {}).get('steps') or []
+    if not rec_steps:
+        return False
+    for step in rec_steps:
+        if step.get('admission') in REVIEW_BAD:
+            return False
+        validation = step.get('schema_validation') or {}
+        if validation.get('status') in REVIEW_BAD:
+            return False
+        if step.get('parsed_ok') is False or ('parsed' in step and step['parsed'] is None):
+            return False
+        if step.get('raw_content') is None and str((step.get('transport') or {}).get('status')) != '200':
+            return False
+    return True
+
+
+def prepass_info(r):
+    """(has_pre, delivered): delivered only when the analysis was actually
+    injected into the review request — a created-but-not-transmitted analysis
+    does not count as a delivered blind pass."""
+    pre_steps = [s for s in (r.get('pre_steps') or []) if str(s.get('tag', '')).startswith('pre_')]
+    if not pre_steps:
+        return False, False
+    return True, any(s.get('injected') is True for s in pre_steps)
+
+
+def _gaps(r, prefix):
+    return [g for g in technical_gaps(r) if str(g.get('path', '')).startswith(prefix)]
+
+
+def layer_gaps(r):
+    return _gaps(r, '/layer_trace')
+
+
+def review_gaps(r):
+    return _gaps(r, '/rec')
+
+
+def mechanical_owner(r):
+    """The final binary came from a strict mechanical layer (F/S/P), not the model rule."""
+    if r.get('owner') in MECH_LAYERS:
+        return True
+    return (r.get('accusation') or {}).get('certificate') == 'MECHANICAL'
+
+
+def classify_row(r, variant, pick):
+    """Mutually exclusive row class for the scored variant:
+    missing / no_solution / fallback / verdict (see module docstring)."""
+    if r is None:
+        return 'missing'
+    if not review_valid(r) or r.get(pick) is None:
+        return 'no_solution'
+    has_pre, delivered = prepass_info(r)
+    if has_pre and not delivered:
+        return 'fallback'
+    lg, rg = bool(layer_gaps(r)), bool(review_gaps(r))
+    if variant == 'A':
+        return 'fallback' if rg else 'verdict'
+    if (lg or rg) and not mechanical_owner(r):
+        return 'fallback'
+    return 'verdict'
 
 
 def failed_row(r):
+    """Back-compat boolean (old 'tech' definition) — kept for reference only."""
     from experiments.research_records import failed_record
     return r is None or failed_record(r) or technical_gaps(r) or any(
         x.get('parsed_ok') is False or ('parsed' in x and x['parsed'] is None) for x in (r.get('pre_steps') or []))
 
+
+# ---------------------------------------------------------------- set language map
 
 def inputs_lang(set_name):
     """id -> 'ru'/'en' from the set's inputs.jsonl (language is a property of the row, not the model output)."""
@@ -162,6 +247,21 @@ def inputs_lang(set_name):
         return {}
 
 
+def met(c):
+    tp, fp, fn, tn = (c.get(x, 0) for x in ('tp', 'fp', 'fn', 'tn'))
+    q = lambda a, b: round(a / b, 3) if b else None
+    return dict(tp=tp, fp=fp, fn=fn, tn=tn, precision=q(tp, tp + fp), recall=q(tp, tp + fn),
+                f1=q(2 * tp, 2 * tp + fp + fn), specificity=q(tn, tn + fp),
+                cause_auto=c.get('cause', 0),
+                technical=c.get('fallback', 0) + c.get('extra_pass', 0) + c.get('no_solution', 0),
+                n_verdict=c.get('verdict', 0), n_fallback=c.get('fallback', 0),
+                n_extra_pass=c.get('extra_pass', 0), n_no_solution=c.get('no_solution', 0))
+
+
+def _ratio(a, b):
+    return round(a / b, 3) if b else None
+
+
 def score_set(set_name, runs_dir):
     gold = gold_for(set_name)
     res, rows_out = {}, []
@@ -184,26 +284,42 @@ def score_set(set_name, runs_dir):
         variants = ['A', 'M'] if stem == 'AM' else [stem]
         langs = inputs_lang(set_name)
         for var in variants:
-            c, fam, lang, n, tok = Counter(), defaultdict(Counter), defaultdict(Counter), 0, 0
+            c, cc, fam, lang, n, tok = Counter(), Counter(), defaultdict(Counter), defaultdict(Counter), 0, 0
             pick = binary_pick(var)
             unlabelled = executed_unlabelled = 0
+            cov = Counter()
             for i in expected:
                 r = recs.get(i)
-                if r is None:
+                cls = classify_row(r, var, pick)
+                if cls == 'missing':
                     c['missing'] += 1
                     continue
+                has_pre, delivered = prepass_info(r)
+                if has_pre:
+                    c['prepass'] += 1
+                    c['prepass_delivered' if delivered else 'prepass_not_delivered'] += 1
                 if i not in gold:
                     # executed but no binary gold (ext_tau2v2): coverage only
                     unlabelled += 1
-                    executed_unlabelled += 0 if failed_row(r) else 1
-                    c['executed_unlabelled'] = executed_unlabelled
+                    cov[cls] += 1
+                    if cls in ('verdict', 'fallback'):
+                        executed_unlabelled += 1
                     continue
                 g = gold[i]
-                if failed_row(r):
-                    c['tech'] += 1
+                if cls == 'no_solution':
+                    c['no_solution'] += 1
+                    rows_out.append(dict(set=set_name, variant=var, rep=int(rep), id=i, label=g['label'],
+                                         family=g.get('family'), outcome='no_solution', cls=cls,
+                                         delivered=delivered if has_pre else None, calls=None, tokens=None))
+                    continue
                 d = int(r.get(pick) or 0)
                 o = ('tp' if d else 'fn') if g['label'] == 1 else ('fp' if d else 'tn')
                 c[o] += 1
+                c[cls] += 1
+                if cls == 'verdict':
+                    cc[o] += 1
+                if cls == 'verdict' and (layer_gaps(r) or review_gaps(r)):
+                    c['extra_pass'] += 1
                 fam[g.get('family') or '?'][o] += 1
                 lang[langs.get(i, 'en')][o] += 1
                 if o == 'tp' and cause_auto(r, g):
@@ -213,7 +329,8 @@ def score_set(set_name, runs_dir):
                 n += k
                 tok += t
                 rows_out.append(dict(set=set_name, variant=var, rep=int(rep), id=i, label=g['label'],
-                                     family=g.get('family'), outcome=o, owner=r.get('owner' if var != 'A' else 'owner_rfix'),
+                                     family=g.get('family'), outcome=o, cls=cls, delivered=delivered if has_pre else None,
+                                     owner=r.get('owner' if var != 'A' else 'owner_rfix'),
                                      target=(r.get('accusation' if var != 'A' else 'accusation_rfix') or {}).get('target_id'),
                                      cause_auto=o == 'tp' and cause_auto(r, g),
                                      reason=(((r.get('accusation' if var != 'A' else 'accusation_rfix') or {}).get('text')) or '')[:400],
@@ -221,7 +338,14 @@ def score_set(set_name, runs_dir):
             m = met(c)
             m.update(record_coverage=record_coverage, rows=len(recs), calls_per_row=round(n / max(1, len(recs)), 2),
                      tokens_per_row=round(tok / max(1, len(recs))), missing=c.get('missing', 0),
-                     executed_unlabelled=c.get('executed_unlabelled', 0),
+                     executed_unlabelled=executed_unlabelled,
+                     unlabelled_classes=dict(cov),
+                     prepass_rows=c.get('prepass', 0), prepass_delivered=c.get('prepass_delivered', 0),
+                     prepass_not_delivered=c.get('prepass_not_delivered', 0),
+                     clean=dict(tp=cc['tp'], fp=cc['fp'], fn=cc['fn'], tn=cc['tn'],
+                                precision=_ratio(cc['tp'], cc['tp'] + cc['fp']),
+                                recall=_ratio(cc['tp'], cc['tp'] + cc['fn']),
+                                f1=_ratio(2 * cc['tp'], 2 * cc['tp'] + cc['fp'] + cc['fn'])),
                      by_family={f: met(v) for f, v in sorted(fam.items())},
                      by_lang={l: met(v) for l, v in sorted(lang.items())})
             res[f'{var}_rep{rep}'] = m
@@ -245,8 +369,11 @@ def main():
             all_rows.extend(rows_out)
             for k, m in res.items():
                 print(f"{s:12s} {k:10s} TP{m['tp']} FP{m['fp']} FN{m['fn']} TN{m['tn']} P={m['precision']} "
-                      f"R={m['recall']} F1={m['f1']} cause={m['cause_auto']} tech={m['technical']} "
-                      f"calls/row={m['calls_per_row']} tok/row={m['tokens_per_row']}")
+                      f"R={m['recall']} F1={m['f1']} cause={m['cause_auto']} "
+                      f"verdict={m['n_verdict']} fallback={m['n_fallback']} extra={m['n_extra_pass']} "
+                      f"nosol={m['n_no_solution']} miss={m['missing']} "
+                      f"pre={m['prepass_rows']}(delivered {m['prepass_delivered']}/not {m['prepass_not_delivered']}) "
+                      f"cleanF1={m['clean']['f1']} calls/row={m['calls_per_row']} tok/row={m['tokens_per_row']}")
     if a.json:
         p = Path(a.json)
         p.parent.mkdir(parents=True, exist_ok=True)
