@@ -61,6 +61,7 @@ REAL_SETS = ('valid46', 'lb_long', 'lb2_long', 'lb3_long', 'ext_tau2', 'hold_tau
 VARIANTS = {
     'AM': dict(pre=None),
     'B': dict(pre='blind2'),
+    'B2': dict(pre='blind2', pre_max_tokens=3400),
     'Bopen': dict(pre='open'),
     'T': dict(pre='blind2_typed'),
     'E': dict(pre='blind2_typed_eval'),
@@ -136,6 +137,7 @@ def main():
     a = ap.parse_args()
     provider = f'local-{a.backend}'
     pre = VARIANTS[a.variant]['pre']
+    pre_max_tokens = VARIANTS[a.variant].get('pre_max_tokens', 1700)
     base = OUTROOT / a.backend / model_dir(a.model_id)
     review_cache = base / 'cache' / 'review'
     frules_cache = base / 'cache' / 'frules'
@@ -150,6 +152,7 @@ def main():
     with process_lock(path.with_suffix('.run.lock')):
         freeze_phase(path, ROOT, dict(variant=a.variant, rep=a.rep, set=a.set, backend=a.backend,
                                       provider=provider, model_id=a.model_id, pre=pre,
+                                      pre_max_tokens=pre_max_tokens,
                                       max_request_bytes=a.max_request_bytes, blind_budget_bytes=20000,
                                       layer_budget_bytes=a.layer_budget_bytes, workers=a.workers,
                                       flags=sorted(ARMS['R_fix'])),
@@ -160,7 +163,8 @@ def main():
         lock = threading.Lock()
 
         def one(row):
-            hook = Hook2(client, pre, a.model_id, original_row=row, max_request_bytes=a.max_request_bytes)
+            hook = Hook2(client, pre, a.model_id, original_row=row, max_request_bytes=a.max_request_bytes,
+                         max_tokens=pre_max_tokens)
             out = dict(id=row['id'], set=a.set, variant=a.variant, rep=a.rep, model=a.model_id,
                        backend=a.backend, provider=provider, pre=pre)
             try:
