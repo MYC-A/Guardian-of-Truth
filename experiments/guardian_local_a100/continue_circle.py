@@ -136,7 +136,7 @@ def main():
             with (BASE / 'logs/llamaserver_lynx_v2.log').open('a') as log:
                 owned = subprocess.Popen([str(server), '-m', str(weights), '--alias', LYNX,
                                           '--host', '127.0.0.1', '--port', '8081', '-ngl', '999',
-                                          '-c', '32000', '-np', '4', '--jinja', '--no-context-shift'],
+                                          '-c', '64000', '-np', '8', '--jinja', '--no-context-shift', '-fa', 'on'],
                                          stdin=subprocess.DEVNULL, stdout=log, stderr=subprocess.STDOUT)
             deadline = time.monotonic() + 300
             while time.monotonic() < deadline:
@@ -153,7 +153,8 @@ def main():
             event('LYNX_NATIVE_SMOKE_AND_70_GROUNDING')
             run([sys.executable, '-X', 'utf8', '-m', 'experiments.guardian_local_a100.lynx_native_v2',
                  '--model-id', LYNX, '--accuse-run-root', str(distill_root / 'runs'),
-                 '--sets', 'dev,contrast,valid46', '--arms', 'A,B2'], timeout=5400)
+                 '--sets', 'dev,contrast,valid46', '--arms', 'A,B2',
+                 '--workers', '8', '--max-tokens', '600'], timeout=5400)
             event('LYNX_COMPLETE')
             publish([lynx_root, OUTPUT], 'local-a100: preserve Lynx native JSON grounding receipts on 70 fixed inputs')
             report = OUTPUT / 'first_circle_comparison_qa.json'

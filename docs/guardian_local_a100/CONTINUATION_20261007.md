@@ -46,3 +46,7 @@ Log: `/workspace/guardian/logs/fast_circle_continuation.log`.
 Each checkpoint completion and terminal technical failure is committed/pushed.
 No checkpoint repeat or architecture sweep is scheduled by this finite job.
 Architecture stage 2 requires the completed comparison and a separate frozen plan.
+
+## Speed amendment before native inference
+
+Owner requested faster execution. Existing Distill config and completed rows remain unchanged. Lynx is not yet executed: allocate 8 slots x 8000 context (64000 total), enable Flash Attention, workers 8, native completion reserve 600 (model-card example), replacing the earlier 4 slots / 1024 reserve. Full 70 inputs and accusation checks remain mandatory. No hidden sampling or mixing of inference modes. Actual latency/coverage are measured, not assumed faster. Complete JSON at length remains valid; incomplete outputs stay technical_unjudged. All source/context preflights remain enforced.
