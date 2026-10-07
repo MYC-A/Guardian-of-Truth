@@ -43,7 +43,7 @@ ADDENDUM = ('\nConfirmation re-check: prior_review accused the move of acting wi
 def recheck(client, rp, row_accusation, fact, provider, model, attempt=0, max_tokens=1700):
     """Re-review A once with the code-checked confirmation fact. -> dict(decision, reason, target_id, admission, step)."""
     from ..integrated import reviewer
-    from ..verification.admission import interpret_v2
+    from ..verification.admission import interpret_receipt_v2
     hist = {h['source_id']: h['text'] for h in rp['history']}
     item = dict(item='code-checked confirmation fact', agent_request=dict(source_id=fact['ask'], text=hist.get(fact['ask'], '')[-600:]),
                 user_reply=dict(source_id=fact['user'], text=hist.get(fact['user'], '')[:600]))
@@ -51,7 +51,7 @@ def recheck(client, rp, row_accusation, fact, provider, model, attempt=0, max_to
                         extra=dict(prior_review=dict(decision='ERROR', reason=row_accusation), verification_checklist=[item]),
                         max_tokens=max_tokens)
     rec = client.call(req, attempt=attempt, tag='confirm_recheck')
-    v = interpret_v2(rec.get('content'), rp) if rec.get('content') is not None else dict(admission='NOT_EXECUTED', decision=None, admitted=None)
+    v = interpret_receipt_v2(rec, rp)
     out = dict(admission=v['admission'], decision=v['decision'], key=rec.get('key'), cached=rec.get('cached'))
     if v.get('admitted'):
         out.update(target_id=v['admitted']['regulated_action']['target_id'], reason=v['admitted']['reason'])

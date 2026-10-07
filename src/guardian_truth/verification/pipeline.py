@@ -9,7 +9,7 @@ from ..integrated import ReviewConfig, review, reviewer
 from ..integrated.transport import sha
 from ..source_search.store import SourceStore
 from . import checklist, probe, second, variants, verifier
-from .admission import interpret_v2
+from .admission import interpret_receipt_v2
 
 VERSION = 'guardian-verification-v2'
 
@@ -43,7 +43,7 @@ def run_row(row, client, *, provider='mistral', model='ministral-14b-2512', budg
     # admission v2 replay of A's own reply (no new call): receipt-actor ablation
     s0 = next((s for s in a['steps'] if s.get('tag') == 'review'), None)
     if s0 is not None and s0.get('raw_content') is not None:
-        v2 = interpret_v2(s0['raw_content'], rp)
+        v2 = interpret_receipt_v2(s0, rp)
         out['A_adm2'] = dict(admission=v2['admission'], decision=v2['decision'], actor_normalised=v2['actor_normalised'])
         if v2['admitted']:
             out['A_adm2'].update(target_id=v2['admitted']['regulated_action']['target_id'], reason=v2['admitted']['reason'])

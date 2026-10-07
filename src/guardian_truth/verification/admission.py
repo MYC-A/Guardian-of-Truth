@@ -12,6 +12,30 @@ from ..integrated.reviewer import Reply, decode_reply, sources
 TOOL_RESULT_ACTORS = {'assistant', 'system', 'unknown'}
 
 
+def receipt_failure(rec):
+    """Reject an explicitly unsuccessful receipt before interpreting its JSON.
+
+    Raw-only interpretation remains a separate offline API. A record's content
+    cannot shed known HTTP/completion failure when readmitted by another layer.
+    """
+    from .common import transport_failure
+    if not transport_failure(rec):
+        return None
+    completion = rec.get('finish_reason') == 'error' and not transport_failure(dict(rec, finish_reason=None))
+    return dict(parsed=None, normalization=None, raw_decision=None, actor_normalised=[], admitted=None,
+                decision=None, admission='COMPLETION_FAILURE' if completion else 'TRANSPORT_FAILURE',
+                schema_validation=dict(status='TRANSPORT_FAILURE', errors=[]))
+
+
+def interpret_receipt_v2(rec, packet):
+    """Admission v2 for a full transport receipt or a recorded raw-content step."""
+    failure = receipt_failure(rec)
+    if failure is not None:
+        return failure
+    content = rec.get('content') if 'content' in rec else rec.get('raw_content')
+    return interpret_v2(content, packet)
+
+
 def admit_v2(value, packet):
     value = Reply.model_validate(value).model_dump()
     ss = sources(packet)

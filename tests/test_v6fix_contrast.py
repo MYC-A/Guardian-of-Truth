@@ -91,7 +91,7 @@ def test_P_new_id_allowed_by_contract_vs_unknown_existing_id():
 def test_P_unknown_opaque_id_needs_an_explicit_provenance_contract_to_decide():
     args = {'order_id': '#W9', 'payment_method_id': 'credit_card_7', 'amount': '5'}
     assert p_decisive(_pay(args)) == []  # a broad no-invent norm does not require verbatim copying
-    assert p_decisive(_pay(args, policy='The order_id must come directly from the user.')) == [('order_id', '#W9')]
+    assert p_decisive(_pay(args, policy='The order_id must come verbatim from the user.')) == [('order_id', '#W9')]
     assert p_decisive(_pay(args, policy='Be helpful and concise.')) == []          # same fact, no contract -> hypothesis only
 
 

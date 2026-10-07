@@ -4,7 +4,7 @@ tool-result evidence normalised, see admission.py) so that B is not penalised by
 from __future__ import annotations
 
 from ..integrated import reviewer
-from .admission import interpret_v2
+from .admission import interpret_receipt_v2
 from .common import step_record
 
 ADDENDUM = ('\nSecond review: an earlier review of this same packet did not establish a violation. Review the whole '
@@ -17,7 +17,7 @@ def run(client, packet, provider, model, attempt=0):
     req = reviewer.body(packet, provider, model, addendum=ADDENDUM)
     rec = client.call(req, attempt=attempt, tag='second')
     st = step_record(rec, 'second', req)
-    st.update(interpret_v2(rec.get('content'), packet))
+    st.update(interpret_receipt_v2(rec, packet))
     a = st.pop('admitted', None)
     st.pop('parsed', None)
     st['candidate'] = None

@@ -13,7 +13,7 @@ import re
 from ..integrated import ReviewConfig, review
 from ..integrated.transport import sha
 from ..verification import alltarget, confirm, df, df4, ems, verifier
-from ..verification.admission import interpret_v2
+from ..verification.admission import interpret_receipt_v2
 from ..verification.common import call, norm_ws, quote_q2, request, step_record, quote_fragments_ok, schema_errors, transport_failure
 from ..integrated.reviewer import decode_reply
 from ..verification.pipeline import packet_for
@@ -350,7 +350,7 @@ def run_v5(row, client, *, flags=frozenset(), provider='mistral', model='ministr
     s0 = next((s for s in a['steps'] if s.get('tag') == 'review'), None)
     adm = dict(decision=None, admission='NO_REVIEW_STEP')
     if s0 is not None and s0.get('raw_content') is not None:
-        v2 = interpret_v2(s0['raw_content'], rp)
+        v2 = interpret_receipt_v2(s0, rp)
         adm = dict(admission=v2['admission'], decision=v2['decision'])
         if v2['admitted']:
             adm.update(target_id=v2['admitted']['regulated_action']['target_id'], reason=v2['admitted']['reason'])

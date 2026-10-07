@@ -27,7 +27,7 @@ from dataclasses import asdict, dataclass
 from ..evidence_packer import PackerConfig, pack, resolve
 from ..source_search.store import SourceStore
 from . import declarations, relations, reviewer
-from .transport import sha
+from .transport import sha, wire_body
 
 VERSION = 'guardian-integrated-v1'
 EXTRA_SOURCE_BYTES = 8000
@@ -124,10 +124,13 @@ def _step(client, request, packet, cfg, tag):
     step = dict(tag=tag, request_sha256=sha(request), key=rec.get('key'), cached=rec.get('cached'),
                 usage=rec.get('usage'), transport=rec.get('transport'), finish_reason=rec.get('finish_reason'),
                 response_model=rec.get('response_model'), seconds=rec.get('seconds', round(time.time() - t, 3)),
-                request_bytes=len(json.dumps(request, ensure_ascii=False).encode()), raw_content=rec.get('content'))
-    if cfg.admission == 'v2':
-        from ..verification.admission import interpret_v2      # lazy: verification imports integrated
-        step.update(interpret_v2(rec.get('content'), packet))
+                request_bytes=len(wire_body(request)), raw_content=rec.get('content'))
+    from ..verification.admission import receipt_failure, interpret_receipt_v2  # lazy: verification imports integrated
+    failure = receipt_failure(rec)
+    if failure is not None:
+        step.update(failure)
+    elif cfg.admission == 'v2':
+        step.update(interpret_receipt_v2(rec, packet))
     elif cfg.admission == 'v1':
         step.update(reviewer.interpret(rec.get('content'), packet))
     else:

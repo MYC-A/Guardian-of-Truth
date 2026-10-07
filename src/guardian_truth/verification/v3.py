@@ -12,7 +12,7 @@ from ..integrated.declarations import check as declarations_check
 from ..integrated.transport import sha
 from ..source_search.store import SourceStore
 from . import checklist, confirm, df, verifier
-from .admission import interpret_v2
+from .admission import interpret_receipt_v2
 from .pipeline import packet_for
 
 VERSION = 'guardian-v3 (amendment 4)'
@@ -68,7 +68,7 @@ def run_v3(row, client, *, provider='mistral', model='ministral-14b-2512', budge
     s0 = next((s for s in a['steps'] if s.get('tag') == 'review'), None)
     adm = dict(decision=None, admission='NO_REVIEW_STEP')
     if s0 is not None and s0.get('raw_content') is not None:
-        v2 = interpret_v2(s0['raw_content'], rp)
+        v2 = interpret_receipt_v2(s0, rp)
         adm = dict(admission=v2['admission'], decision=v2['decision'], actor_normalised=v2['actor_normalised'])
         if v2['admitted']:
             adm.update(target_id=v2['admitted']['regulated_action']['target_id'], reason=v2['admitted']['reason'])

@@ -4,7 +4,9 @@ FOUND is exact occurrence, never correct entity binding. NOT_FOUND only describe
 a completely read input. Decisive absence additionally requires explicit caller
 provenance_universe_closed, or a norm explicitly bounded to this input.
 
-Only full clauses in the documented no-invent/user-origin grammar can decide.
+Only full clauses explicitly requiring verbatim source occurrence can decide.
+Ordinary user origin can include spelling, normalization and legitimate derivation;
+its absence as a literal string is not a proof of failure, even with closed history.
 Field names match exactly modulo underscores/spaces; optional tool scope matches
 an explicit identifier. Other scopes, negation, source alternatives and inherited
 guards remain hypotheses. This bounded compiler is not an arbitrary NL compiler.
@@ -21,7 +23,7 @@ REF_DESC = re.compile(r'\b(id|ids|identifier|identifiers)\b', re.I)
 GENERATED = re.compile(r'\b(generate[sd]?|create[sd]?|chosen|custom|arbitrary)\b|\bnew (?:unique )?(?:id|identifier|password)\b', re.I)
 EXAMPLE = re.compile(r'(such as|e\.g\.|for example|for instance|например|example:?)[^.\n;]{0,60}$', re.I)
 CONTRACT = re.compile(r"[^.\n]*\b(?:(?:not|never|don't|do not)\s+(?:make up|invent|fabricate|guess)\b[^.\n]*"
-                      r"|must (?:come|be obtained|be taken) (?:directly )?from\b[^.\n]*"
+                      r"|must (?:come|be obtained|be taken) (?:directly )?(?:verbatim )?from\b[^.\n]*"
                       r"|only (?:use )?(?:values|ids|identifiers) (?:provided|returned)(?: verbatim)? by\b[^.\n]*)[.\n]?", re.I)
 FROM_USER = re.compile(r'(directly )?from the user\b(?! or)', re.I)
 
@@ -62,7 +64,11 @@ def provenance(p, val, field):
         return dict(status='UNKNOWN_INCOMPLETE', found=[], binding='UNVERIFIED')
     found = []
     for x in p['history']:
-        if x.get('kind') == 'result':
+        if x.get('role') == 'user' and _token_in(val, x.get('text') or ''):
+            # A user can provide JSON or call-shaped text. Syntax does not
+            # change the owner of the message or erase literal provenance.
+            found.append(dict(source_id=x['source_id'], kind='user', path=None))
+        elif x.get('kind') == 'result' and x.get('role') in ('assistant', 'tool'):
             _, pl = parse_result(x)
             if isinstance(pl, (dict, list)):
                 for path, leaf in _leaves(pl):
@@ -70,8 +76,6 @@ def provenance(p, val, field):
                         found.append(dict(source_id=x['source_id'], kind='tool_result', path=path))
             elif isinstance(pl, str) and _token_in(val, pl):
                 found.append(dict(source_id=x['source_id'], kind='tool_result', path=None))
-        elif x.get('role') == 'user' and x.get('kind') == 'text' and _token_in(val, x.get('text') or ''):
-            found.append(dict(source_id=x['source_id'], kind='user', path=None))
     for s in p['normative_sources'] + p['declarations']:
         if _norm_hits(val, s['text']):
             found.append(dict(source_id=s['source_id'], kind='policy', path=None))
@@ -107,7 +111,7 @@ def _names(field):
 
 
 USER_REQUIREMENT = re.compile(
-    r'(?P<subject>.+?)\s+must (?:come|be obtained|be taken) (?:directly )?from the user'
+    r'(?P<subject>.+?)\s+must (?:come|be obtained|be taken) (?:directly )?(?P<verbatim>verbatim )?from the user'
     r'(?P<window> in this (?:input|conversation))?[.!]?$', re.I)
 NO_INVENT = re.compile(
     r'(?:you|the agent|the assistant)\s+(?:(?:must|should|shall) not|may not|cannot|can not|'
@@ -188,7 +192,7 @@ def _compile_contract(q):
                 return None
             return dict(grammar='user-origin-v1', fields=[x.lower() for x in parts], tool=tool,
                         generic=False, user_only=True, input_bound=bool(m['window']), source_only=False,
-                        exact_source_required=True)
+                        exact_source_required=bool(m['verbatim']))
     m = SOURCE_ONLY.fullmatch(q)
     if m:
         return dict(grammar='source-only-v1', fields=[], tool=None, generic=True, user_only=False,
@@ -318,19 +322,23 @@ def check(p):
                     if policy_gaps:
                         con['applicability_status'] = 'UNRESOLVED_POLICY_COVERAGE'
                     if not exact_origin_requirement:
-                        con['provenance_implication'] = 'UNRESOLVED_DERIVATION_VS_INVENTION'
+                        con['provenance_implication'] = ('UNRESOLVED_LITERAL_VS_SEMANTIC_ORIGIN' if con.get('user_only') else
+                                                        'UNRESOLVED_DERIVATION_VS_INVENTION')
+                # State the actually checked predicate. Literal non-occurrence is
+                # not paraphrased into "the user never provided it" or invention.
+                detail = ('the value does not occur verbatim in user messages, contrary to the explicit verbatim-user contract.'
+                          if exact_origin_requirement and con.get('user_only') else
+                          'the value does not occur verbatim in the user/tool sources permitted by the explicit contract.'
+                          if exact_origin_requirement and (con.get('binding') or {}).get('source_only') else
+                          'the value has no literal source occurrence in this completely read input; semantic origin and lawful derivation remain unresolved.'
+                          if pr['status'] == 'NOT_FOUND' else
+                          'the value occurs only outside the permitted source classes; semantic origin remains unresolved.')
                 out.append(dict(layer='P', kind='UNSOURCED_REFERENCE' if fk == 'REFERENCE' else 'NOT_FROM_USER',
                                 target_id=t['source_id'], status='MECHANICAL' if decisive else 'HYPOTHESIS',
                                 fact=dict(tool=tool, field=name, value=val, provenance=pr['status'],
                                           found_kinds=sorted({f['kind'] for f in pr['found']}), field_kind=fk),
                                 norm=con or dict(basis='NONE', text='no provenance contract of this input covers this field'),
-                                reason=f'{t["source_id"]} calls {tool} with {name}={json.dumps(val)}: ' +
-                                       ('the value appears in no user message, tool result or '
-                                        'policy of this completely read input; this observation alone does not establish invention.'
-                                        if pr['status'] == 'NOT_FOUND' else
-                                        'the value occurs only outside the sources permitted by the source-only contract.'
-                                        if con and (con.get('binding') or {}).get('source_only') else
-                                        'the value does not occur in any user message, but the contract requires it from the user.')))
+                                reason=f'{t["source_id"]} calls {tool} with {name}={json.dumps(val)}: ' + detail))
     return out, records
 
 

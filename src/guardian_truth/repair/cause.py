@@ -8,6 +8,7 @@ import json
 
 from ..integrated.reviewer import decode_reply
 from ..verification.pipeline import packet_for
+from ..verification.common import schema_errors, transport_failure
 
 CATS = ['supported_correct_core', 'supported_core_with_unsupported_extra', 'unsupported', 'unresolved',
         'alternative_supported_cause', 'gold_conflict']
@@ -45,12 +46,7 @@ def judge_request(model, row, accusation, gold_causes, budget=20000):
 def judge(client, model, row, accusation, gold_causes, attempt=0):
     req = judge_request(model, row, accusation, gold_causes)
     rec = client.call(req, attempt=attempt, tag='cause_judge')
-    if rec.get('content') is None:
-        return dict(category='technical_unjudged', transport=(rec.get('transport') or {}).get('status'), key=rec.get('key'))
-    v, ok, _ = decode_reply(rec.get('content'))
-    if not ok or not isinstance(v, dict) or v.get('category') not in CATS:
-        return dict(category='technical_unjudged', raw=(rec.get('content') or '')[:300], key=rec.get('key'))
-    return dict(v, key=rec.get('key'))
+    return _judge_response(rec)
 
 
 def gold_causes(g):
@@ -67,6 +63,31 @@ def gold_causes(g):
 FIELDS = dict(accusation_supported={'yes', 'no', 'unclear'}, core_matches_gold={'yes', 'no', 'no_gold'},
               unsupported_extra={'yes', 'no'}, gold_supported={'yes', 'no', 'unclear', 'no_gold'})
 V2_BUDGET = 120000
+JUDGE_SCHEMA = dict(type='object', additionalProperties=False,
+                    required=list(FIELDS) + ['rationale', 'category'],
+                    properties={**{key: dict(type='string', enum=sorted(values)) for key, values in FIELDS.items()},
+                                'rationale': dict(type='string'), 'category': dict(type='string', enum=CATS)})
+
+
+def _judge_response(rec):
+    """Local response contract shared by both historical judge wires.
+
+    No category from a failed receipt or incomplete JSON may enter cause metrics.
+    This does not add source truth or v2 cross-field invariants to the v1 judge.
+    """
+    metadata = dict(key=rec.get('key'), transport=(rec.get('transport') or {}).get('status'),
+                    finish_reason=rec.get('finish_reason'))
+    if transport_failure(rec) or rec.get('content') is None:
+        return dict(category='technical_unjudged', why='TRANSPORT_FAILURE', raw_content=rec.get('content'),
+                    schema_validation=dict(status='TRANSPORT_FAILURE', errors=[]), **metadata)
+    value, valid, normalization = decode_reply(rec.get('content'))
+    errors = schema_errors(value, JUDGE_SCHEMA) if valid else []
+    if not valid or errors:
+        status = 'INVALID_SCHEMA' if valid else 'INVALID_JSON'
+        return dict(category='technical_unjudged', why=status, raw=(rec.get('content') or '')[:300],
+                    raw_content=rec.get('content'), normalization=normalization,
+                    schema_validation=dict(status=status, errors=errors), **metadata)
+    return dict(value, schema_validation=dict(status='VALID', errors=[]), normalization=normalization, **metadata)
 
 
 def invariant(v, has_gold):
@@ -119,11 +140,9 @@ def judge_v2(client, model, row, accusation, gold_causes, attempt=0):
     if req is None:
         return dict(category='technical_unjudged', why='NO_PACKET')
     rec = client.call(req, attempt=attempt, tag='cause_judge_v2')
-    if rec.get('content') is None:
-        return dict(category='technical_unjudged', transport=(rec.get('transport') or {}).get('status'), key=rec.get('key'))
-    v, ok, _ = decode_reply(rec.get('content'))
-    if not ok or not isinstance(v, dict):
-        return dict(category='technical_unjudged', raw=(rec.get('content') or '')[:300], key=rec.get('key'))
+    v = _judge_response(rec)
+    if v['category'] == 'technical_unjudged':
+        return v
     bad = invariant(v, bool(gold_causes))
     out = dict(v, key=rec.get('key'), raw_category=v.get('category'))
     if bad:

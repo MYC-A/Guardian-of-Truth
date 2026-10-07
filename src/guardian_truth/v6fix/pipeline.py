@@ -12,7 +12,7 @@ from . import provenance as P, structural as S, turnrules as F
 from .common import coverage
 
 ORDER = {'F': 0, 'S': 1, 'P': 2}
-VERSION = 'guardian-v6fix-contracts-2'
+VERSION = 'guardian-v6fix-contracts-3'
 
 
 def policy_key(normative_sources):

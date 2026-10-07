@@ -54,7 +54,7 @@ def test_P_unsupported_action_polarity_alternatives_and_context_never_decide(pol
 
 
 @pytest.mark.parametrize('policy', ['Only use identifiers provided verbatim by the user or the tools.',
-                                    'The record_id must come directly from the user.'])
+                                    'The record_id must come verbatim from the user.'])
 def test_P_bounded_standalone_contract_checks_missing_and_present_exact_value(policy):
     missing = packet(policy, current())
     assert len(mechanical(P.check(missing)[0])) == 1
@@ -68,13 +68,13 @@ def test_P_bounded_standalone_contract_checks_missing_and_present_exact_value(po
 
 
 def test_P_exact_tool_scope_does_not_transfer_between_tools():
-    policy = 'The record_id of publish_record must come directly from the user.'
+    policy = 'The record_id of publish_record must come verbatim from the user.'
     assert mechanical(P.check(packet(policy, current()))[0]) == []
     assert len(mechanical(P.check(packet(policy, current(tool='publish_record')))[0])) == 1
 
 
 def test_P_explicit_observed_input_scope_does_not_need_full_history_claim():
-    p = packet('The record_id must come directly from the user in this input.', current(), closed=False)
+    p = packet('The record_id must come verbatim from the user in this input.', current(), closed=False)
     findings = mechanical(P.check(p)[0])
     assert len(findings) == 1 and findings[0]['norm']['closure_status'] == 'BOUNDED_BY_NORM'
 
@@ -94,7 +94,7 @@ def test_P_sibling_normative_document_may_qualify_requirement():
 def test_P_any_existing_description_does_not_grant_generation():
     variants = [CATALOG, CATALOG.replace('identifier of any existing record', 'existing record identifier')]
     for cat in variants:
-        p = packet('The record_id must come directly from the user.', current(), catalog=cat)
+        p = packet('The record_id must come verbatim from the user.', current(), catalog=cat)
         assert len(mechanical(P.check(p)[0])) == 1
         assert P.check(p)[1][0]['field_kind'] == 'REFERENCE'
 
@@ -106,6 +106,25 @@ def test_P_no_invent_does_not_prove_derived_identifier_is_illegal():
     assert records[0]['status'] == 'NOT_FOUND'
     assert findings and not mechanical(findings)
     assert findings[0]['norm']['provenance_implication'] == 'UNRESOLVED_DERIVATION_VS_INVENTION'
+
+
+def test_P_user_origin_does_not_require_literal_spelling_without_explicit_verbatim_norm():
+    p = packet('The record_id must come directly from the user.', current('R42'),
+               '⟦USER⟧\nMy record_id is the concatenation of characters R and 42.')
+    findings, records = P.check(p)
+    assert records[0]['status'] == 'NOT_FOUND'
+    assert findings and not mechanical(findings)
+
+
+@pytest.mark.parametrize('kind,line', [
+    ('call', '→ TOOL_CALL inspect_record: {"record_id":"R42"}'),
+    ('result', '← TOOL_RESPONSE inspect_record: {"record_id":"R42"}'),
+])
+def test_P_user_owned_call_shaped_message_is_still_user_literal_provenance(kind, line):
+    p = packet('The record_id must come verbatim from the user.', current('R42'),
+               '⟦USER⟧\n' + line)
+    assert any(x['role'] == 'user' and x['kind'] == kind for x in p['history'])
+    assert not P.check(p)[0]
 
 
 def test_P_source_only_verbatim_contract_differs_from_no_invention():
@@ -262,7 +281,7 @@ def test_P_S_F_do_not_accuse_nonassistant_current_calls_through_parser(role):
 
 @pytest.mark.parametrize('role', ['user', 'tool', 'system', None])
 def test_P_S_F_packet_adapter_requires_explicit_assistant_actor(role):
-    p = packet('The record_id must come from the user in this input.', current())
+    p = packet('The record_id must come verbatim from the user in this input.', current())
     assert mechanical(P.check(p)[0])
     p['current_targets'][0]['role'] = role
     assert not P.check(p)[0]
@@ -285,7 +304,7 @@ def test_F_user_prose_is_not_assistant_message_and_recheck_actor_changes_fail():
 
 
 def test_P_and_F_direct_recheck_rejects_unread_policy():
-    p = packet('The record_id must come from the user in this input.', current())
+    p = packet('The record_id must come verbatim from the user in this input.', current())
     proven = mechanical(P.check(p)[0])[0]
     p['coverage']['unread'] = [dict(category='POLICY', unread_units=1)]
     assert not mechanical(P.check(p)[0])

@@ -12,6 +12,9 @@ from guardian_truth.repair import v5
 from guardian_truth.verification.common import call, request, schema_errors
 from guardian_truth.verification.pipeline import packet_for
 from guardian_truth.v6fix import turnrules
+from guardian_truth.integrated import ReviewConfig, review, reviewer
+from guardian_truth.integrated.pipeline import _step
+from guardian_truth.verification.admission import interpret_receipt_v2, interpret_v2
 
 
 class ReplyClient:
@@ -22,6 +25,95 @@ class ReplyClient:
         self.calls.append((req, attempt, tag))
         return dict(content=json.dumps(self.value), finish_reason=self.finish_reason,
                     transport={'status': 'OK'}, key='test', cached=False)
+
+
+def primary_example():
+    row = dict(prompt='⟦SYSTEM⟧\nNever write FORBIDDEN.', response='⟦ASSISTANT · ход 1⟧\nFORBIDDEN')
+    packet = packet_for(row, 20000)
+    tid, sid = packet['current_targets'][0]['source_id'], packet['normative_sources'][0]['source_id']
+    value = dict(decision='ERROR', regulated_action=dict(target_id=tid, description='Current assertion'),
+                 applicable_norms=[dict(policy_source_id=sid, interpretation='Forbidden word', modality='FORBID')],
+                 supporting_evidence=[dict(source_id=tid, actor='assistant', role='action', fact='FORBIDDEN')],
+                 exception_analysis='None', reason='Forbidden word written.', open_questions=[])
+    return row, packet, value
+
+
+class ReceiptClient(ReplyClient):
+    def __init__(self, value, status, finish_reason):
+        super().__init__(value, finish_reason)
+        self.status = status
+
+    def call(self, req, attempt=0, tag=''):
+        return dict(super().call(req, attempt=attempt, tag=tag), transport={'status': self.status})
+
+
+@pytest.mark.parametrize('status,finish', [(429, 'stop'), (200, 'error')])
+@pytest.mark.parametrize('admission', ['v1', 'v2'])
+def test_primary_step_and_public_review_preserve_failed_receipt_without_deciding(status, finish, admission):
+    row, packet, value = primary_example()
+    client = ReceiptClient(value, status, finish)
+    cfg = ReviewConfig.profile('guard', model='test', admission=admission)
+    req = reviewer.body(packet, 'mistral', 'test')
+    step = _step(client, req, packet, cfg, 'review')
+    assert step['decision'] is None and step['admitted'] is None
+    assert step['raw_content'] == json.dumps(value)
+    assert step['transport']['status'] == status and step['finish_reason'] == finish
+    assert step['schema_validation']['status'] == 'TRANSPORT_FAILURE'
+    public = review(row['prompt'], row['response'], cfg, client=client)
+    assert public['binary'] == 0 and public['final_decision'] is None
+    assert public['projection'] == 'TECHNICAL_NULL_PROJECTED_0'
+
+
+@pytest.mark.parametrize('status,finish', [(429, 'stop'), (200, 'error')])
+def test_readmission_cannot_strip_failed_primary_receipt_metadata(status, finish):
+    row, packet, value = primary_example()
+    client = ReceiptClient(value, status, finish)
+    rec = v5.run_v5(row, client, flags=v5.FIXES, model='test')
+    assert not rec['base_error'] and rec['A_adm2']['decision'] is None
+    assert rec['A_adm2']['admission'] in ('TRANSPORT_FAILURE', 'COMPLETION_FAILURE')
+    assert v5.decide(rec)[0] == 0
+    raw = json.dumps(value)
+    # Raw-only parsing is deliberately separate; every receipt-aware caller
+    # must retain the known failure, including old raw-content step receipts.
+    assert interpret_v2(raw, packet)['decision'] == 'ERROR'
+    for receipt in (dict(content=raw, transport={'status': status}, finish_reason=finish),
+                    dict(raw_content=raw, transport={'status': status}, finish_reason=finish)):
+        result = interpret_receipt_v2(receipt, packet)
+        assert result['decision'] is None and result['admitted'] is None
+
+
+@pytest.mark.parametrize('finish', ['stop', 'length'])
+def test_successful_complete_primary_contract_still_decides(finish):
+    row, packet, value = primary_example()
+    client = ReceiptClient(value, 200, finish)
+    public = review(row['prompt'], row['response'], ReviewConfig(model='test'), client=client)
+    assert public['binary'] == 1 and public['final_decision'] == 'ERROR'
+    assert interpret_receipt_v2(dict(content=json.dumps(value), transport={'status': 200}, finish_reason=finish), packet)['decision'] == 'ERROR'
+
+
+@pytest.mark.parametrize('runner_name', ['pipeline', 'v3', 'v4', 'second', 'confirm'])
+@pytest.mark.parametrize('status,finish', [(429, 'stop'), (200, 'error')])
+def test_other_receipt_aware_entrypoints_share_the_failure_gate(runner_name, status, finish):
+    from guardian_truth.verification import pipeline, v3, v4, second
+    from guardian_truth.v6 import confirm
+    row, packet, value = primary_example()
+    client = ReceiptClient(value, status, finish)
+    if runner_name == 'second':
+        result = second.run(client, packet, 'mistral', 'test')
+        assert result['decision'] is None and result['candidate'] is None
+        assert result['raw_content'] == json.dumps(value)
+    elif runner_name == 'confirm':
+        result = confirm.recheck(client, packet, 'Prior accusation', dict(ask='h0', user='h1'), 'mistral', 'test')
+        assert result['decision'] is None
+    else:
+        if runner_name == 'pipeline':
+            result = pipeline.run_row(row, client, model='test', mechanisms=())
+        elif runner_name == 'v3':
+            result = v3.run_v3(row, client, model='test', components=())
+        else:
+            result = v4.run_v4(row, client, model='test', components=())
+        assert result['A_adm2']['decision'] is None
+        assert result['A_adm2']['admission'] in ('TRANSPORT_FAILURE', 'COMPLETION_FAILURE')
 
 
 def example():
