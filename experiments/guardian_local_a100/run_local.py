@@ -24,7 +24,11 @@ Usage:
       [--rep 1] [--workers 4] [--ids a,b] [--max-calls 50000]
 
 Sets: dev, devT, frozen, contrast (short diagnostics), f120:regression / f120:dev /
-f120:holdout (frozen120 family splits), holdout2 (real tau2, holdout-family data).
+f120:holdout (frozen120 family splits), holdout2, and the REAL sets extracted from the
+pinned commit 403d811e into GUARDIAN_DATA_ROOT (default
+/workspace/guardian/data_root_403d811e): valid46, lb_long, lb2_long, lb3_long,
+ext_tau2 (inputs=tau2, gold=tau2v2: 2 unlabelled rows are executed and counted
+in coverage, excluded only from binary metrics), hold_tau2h, hold_holdout2.
 Output: outputs/guardian_local_a100/<backend>/<model_dir>/runs/<set>/<variant>_rep<k>.jsonl
 """
 import argparse
@@ -49,6 +53,10 @@ from .providers import register_local_providers
 
 ROOT = Path(__file__).resolve().parents[2]
 OUTROOT = ROOT / 'outputs/guardian_local_a100'
+DATA_ROOT = Path(os.environ.get('GUARDIAN_DATA_ROOT', '/workspace/guardian/data_root_403d811e'))
+
+LB = {'lb_long': 'lockbox', 'lb2_long': 'lockbox2', 'lb3_long': 'lockbox3'}
+REAL_SETS = ('valid46', 'lb_long', 'lb2_long', 'lb3_long', 'ext_tau2', 'hold_tau2h', 'hold_holdout2')
 
 VARIANTS = {
     'AM': dict(pre=None),
@@ -73,13 +81,27 @@ def data_dir(name):
 
 
 def rows(name):
+    if name == 'valid46':
+        import pandas as pd
+        return [dict(id=r.id, prompt=r.prompt, response=r.response)
+                for r in pd.read_parquet(DATA_ROOT / 'valid.parquet').itertuples()]
+    if name in LB:
+        p = DATA_ROOT / 'outputs/verification_v2' / LB[name] / 'long/inputs.jsonl'
+        return [json.loads(x) for x in p.read_text(encoding='utf-8').splitlines() if x.strip()]
+    if name == 'ext_tau2':
+        p = DATA_ROOT / 'outputs/verification_v4/external/tau2/inputs.jsonl'
+        return [json.loads(x) for x in p.read_text(encoding='utf-8').splitlines() if x.strip()]
+    if name == 'hold_tau2h':
+        p = DATA_ROOT / 'outputs/universal_repair/holdout/tau2h/inputs.jsonl'
+        return [json.loads(x) for x in p.read_text(encoding='utf-8').splitlines() if x.strip()]
+    if name == 'hold_holdout2':
+        p = DATA_ROOT / 'outputs/guardian_v6/holdout2/inputs.jsonl'
+        return [json.loads(x) for x in p.read_text(encoding='utf-8').splitlines() if x.strip()]
     if name.startswith('f120'):
         split = name.split(':', 1)[1] if ':' in name else 'dev'
         gold = json.loads((F120 / 'GOLD_frozen.json').read_text(encoding='utf-8'))
         out = [json.loads(x) for x in (F120 / 'inputs.jsonl').read_text(encoding='utf-8').splitlines() if x.strip()]
         return [r for r in out if gold[r['id']]['split'] == split]
-    if name == 'holdout2':
-        return [json.loads(x) for x in (HOLDOUT2 / 'inputs.jsonl').read_text(encoding='utf-8').splitlines() if x.strip()]
     return [json.loads(x) for x in (data_dir(name) / f'{name}_inputs.jsonl').read_text(encoding='utf-8').splitlines() if x.strip()]
 
 

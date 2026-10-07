@@ -41,18 +41,33 @@ OUTROOT = ROOT / 'outputs/guardian_local_a100'
 SEM = ROOT / 'outputs/guardian_semantic/data'
 ADD = ROOT / 'outputs/guardian_addons/data'
 F120 = ROOT / 'outputs/guardian_v6_fix/frozen120'
-HOLDOUT2 = ROOT / 'outputs/guardian_v6/holdout2'
+DATA_ROOT = Path(os.environ.get('GUARDIAN_DATA_ROOT', '/workspace/guardian/data_root_403d811e'))
+LB = {'lb_long': 'lockbox', 'lb2_long': 'lockbox2', 'lb3_long': 'lockbox3'}
 
 
 def rows(name):
     """Same set routing as run_local (duplicated to avoid transitive NEW imports)."""
+    if name == 'valid46':
+        import pandas as pd
+        return [dict(id=r.id, prompt=r.prompt, response=r.response)
+                for r in pd.read_parquet(DATA_ROOT / 'valid.parquet').itertuples()]
+    if name in LB:
+        p = DATA_ROOT / 'outputs/verification_v2' / LB[name] / 'long/inputs.jsonl'
+        return [json.loads(x) for x in p.read_text(encoding='utf-8').splitlines() if x.strip()]
+    if name == 'ext_tau2':
+        p = DATA_ROOT / 'outputs/verification_v4/external/tau2/inputs.jsonl'
+        return [json.loads(x) for x in p.read_text(encoding='utf-8').splitlines() if x.strip()]
+    if name == 'hold_tau2h':
+        p = DATA_ROOT / 'outputs/universal_repair/holdout/tau2h/inputs.jsonl'
+        return [json.loads(x) for x in p.read_text(encoding='utf-8').splitlines() if x.strip()]
+    if name == 'hold_holdout2':
+        p = DATA_ROOT / 'outputs/guardian_v6/holdout2/inputs.jsonl'
+        return [json.loads(x) for x in p.read_text(encoding='utf-8').splitlines() if x.strip()]
     if name.startswith('f120'):
         split = name.split(':', 1)[1] if ':' in name else 'dev'
         gold = json.loads((F120 / 'GOLD_frozen.json').read_text(encoding='utf-8'))
         out = [json.loads(x) for x in (F120 / 'inputs.jsonl').read_text(encoding='utf-8').splitlines() if x.strip()]
         return [r for r in out if gold[r['id']]['split'] == split]
-    if name == 'holdout2':
-        return [json.loads(x) for x in (HOLDOUT2 / 'inputs.jsonl').read_text(encoding='utf-8').splitlines() if x.strip()]
     d = ADD if name == 'contrast' else SEM
     return [json.loads(x) for x in (d / f'{name}_inputs.jsonl').read_text(encoding='utf-8').splitlines() if x.strip()]
 

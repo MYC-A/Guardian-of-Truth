@@ -19,6 +19,7 @@ gold provides one. Calls/tokens per row from saved receipts (ledger = actual).
 """
 import argparse
 import json
+import os
 import re
 from collections import Counter, defaultdict
 from pathlib import Path
@@ -27,24 +28,48 @@ from experiments.research_records import load_records, expected_for_score, techn
 
 ROOT = Path(__file__).resolve().parents[2]
 OUTROOT = ROOT / 'outputs/guardian_local_a100'
+DATA_ROOT = Path(os.environ.get('GUARDIAN_DATA_ROOT', '/workspace/guardian/data_root_403d811e'))
 
 SEM = ROOT / 'outputs/guardian_semantic/data'
 ADD = ROOT / 'outputs/guardian_addons/data'
 F120 = ROOT / 'outputs/guardian_v6_fix/frozen120'
-HOLDOUT2 = ROOT / 'outputs/guardian_v6/holdout2'
+HOLDOUT2 = DATA_ROOT / 'outputs/guardian_v6/holdout2'
+LB = {'lb_long': 'lockbox', 'lb2_long': 'lockbox2', 'lb3_long': 'lockbox3'}
 
 CYR = re.compile(r'[А-Яа-яЁё]')
 
 
 def gold_for(set_name):
+    if set_name == 'valid46':
+        import pandas as pd
+        df = pd.read_parquet(DATA_ROOT / 'valid.parquet')
+        return {r.id: dict(label=int(r.label), family=None,
+                           cause_markers=([r.explanation] if isinstance(r.explanation, str) and r.explanation.strip() else []),
+                           target_id=None) for r in df.itertuples()}
+    if set_name in LB:
+        g = json.loads((DATA_ROOT / 'outputs/verification_v2' / LB[set_name] / 'long/GOLD_eval_only.json').read_text(encoding='utf-8'))
+        return {k: dict(v, family=v.get('family'), target_id=v.get('target') or 't0',
+                        cause_markers=v.get('causes') or v.get('cause') or []) for k, v in g.items()}
+    if set_name == 'ext_tau2':
+        # tau2v2 gold (per PROMPT/universal_repair.score gold_for): 68 of 70 inputs have labels;
+        # the 2 unlabelled rows are executed and counted in coverage, excluded from binary metrics only.
+        g = json.loads((DATA_ROOT / 'outputs/verification_v4/external/tau2v2/GOLD_eval_only.json').read_text(encoding='utf-8'))
+        return {k: dict(v, family=v.get('family'), target_id=v.get('target') or 't0',
+                        cause_markers=v.get('causes') or v.get('cause') or []) for k, v in g.items()}
+    if set_name == 'hold_tau2h':
+        g = json.loads((DATA_ROOT / 'outputs/universal_repair/holdout/tau2h/GOLD_frozen.json').read_text(encoding='utf-8'))
+        return {k: dict(v, family=v.get('family') or v.get('domain'),
+                        cause_markers=[c for c in (v.get('causes') or [])][:1],
+                        target_id=(v.get('cause_meta') or [{}])[0].get('target') or 't0') for k, v in g.items()}
+    if set_name == 'hold_holdout2':
+        g = json.loads((HOLDOUT2 / 'GOLD_frozen.json').read_text(encoding='utf-8'))
+        return {k: dict(v, family=v.get('family') or v.get('domain'),
+                        cause_markers=[c for c in (v.get('causes') or [])][:1],
+                        target_id=(v.get('cause_meta') or [{}])[0].get('target') or 't0') for k, v in g.items()}
     if set_name.startswith('f120'):
         g = json.loads((F120 / 'GOLD_frozen.json').read_text(encoding='utf-8'))
         split = set_name.split(':', 1)[1] if ':' in set_name else 'dev'
         return {k: v for k, v in g.items() if v.get('split') == split}
-    if set_name == 'holdout2':
-        g = json.loads((HOLDOUT2 / 'GOLD_frozen.json').read_text(encoding='utf-8'))
-        return {k: dict(v, family=v.get('family') or v.get('domain'), cause_markers=[c for c in (v.get('causes') or [])][:1],
-                        target_id=(v.get('cause_meta') or [{}])[0].get('target') or 't0') for k, v in g.items()}
     d = ADD if set_name == 'contrast' else SEM
     return json.loads((d / f'{set_name}_GOLD.json').read_text(encoding='utf-8'))
 
@@ -106,8 +131,26 @@ def failed_row(r):
 
 def inputs_lang(set_name):
     """id -> 'ru'/'en' from the set's inputs.jsonl (language is a property of the row, not the model output)."""
-    src = {"contrast": ADD, "holdout2": HOLDOUT2}.get(set_name, F120 if set_name.startswith('f120') else SEM)
-    fname = 'inputs.jsonl' if set_name.startswith('f120') or set_name == 'holdout2' else f'{set_name}_inputs.jsonl'
+    if set_name == 'valid46':
+        src, fname = DATA_ROOT, 'valid.parquet'
+        try:
+            import pandas as pd
+            df = pd.read_parquet(DATA_ROOT / 'valid.parquet')
+            return {r.id: lang_of(dict(prompt=r.prompt, response=r.response)) for r in df.itertuples()}
+        except Exception:
+            return {}
+    if set_name in LB:
+        src, fname = DATA_ROOT / 'outputs/verification_v2' / LB[set_name] / 'long', 'inputs.jsonl'
+    elif set_name == 'ext_tau2':
+        src, fname = DATA_ROOT / 'outputs/verification_v4/external/tau2', 'inputs.jsonl'
+    elif set_name == 'hold_tau2h':
+        src, fname = DATA_ROOT / 'outputs/universal_repair/holdout/tau2h', 'inputs.jsonl'
+    elif set_name == 'hold_holdout2':
+        src, fname = DATA_ROOT / 'outputs/guardian_v6/holdout2', 'inputs.jsonl'
+    elif set_name.startswith('f120'):
+        src, fname = F120, 'inputs.jsonl'
+    else:
+        src, fname = (ADD if set_name == 'contrast' else SEM), f'{set_name}_inputs.jsonl'
     try:
         out = {}
         for line in (src / fname).read_text(encoding='utf-8').splitlines():
@@ -124,18 +167,32 @@ def score_set(set_name, runs_dir):
     res, rows_out = {}, []
     for p in sorted((runs_dir / set_name).glob('*_rep*.jsonl')):
         stem, rep = p.stem.rsplit('_rep', 1)
-        expected = expected_for_score(p, gold)
+        # Expected ids = the full phase manifest (ALL rows, including unlabelled ext_tau2 rows);
+        # binary metrics use only ids present in gold, coverage counts everything executed.
+        manifest = p.with_suffix('.phase.json')
+        try:
+            expected = json.loads(manifest.read_text(encoding='utf-8'))['expected_ids']
+        except Exception:
+            expected = sorted(gold)
         recs, record_coverage = load_records(p, expected)
         variants = ['A', 'M'] if stem == 'AM' else [stem]
         langs = inputs_lang(set_name)
         for var in variants:
             c, fam, lang, n, tok = Counter(), defaultdict(Counter), defaultdict(Counter), 0, 0
             pick = binary_pick(var)
+            unlabelled = executed_unlabelled = 0
             for i in expected:
-                g, r = gold[i], recs.get(i)
+                r = recs.get(i)
                 if r is None:
                     c['missing'] += 1
                     continue
+                if i not in gold:
+                    # executed but no binary gold (ext_tau2v2): coverage only
+                    unlabelled += 1
+                    executed_unlabelled += 0 if failed_row(r) else 1
+                    c['executed_unlabelled'] = executed_unlabelled
+                    continue
+                g = gold[i]
                 if failed_row(r):
                     c['tech'] += 1
                 d = int(r.get(pick) or 0)
@@ -158,6 +215,7 @@ def score_set(set_name, runs_dir):
             m = met(c)
             m.update(record_coverage=record_coverage, rows=len(recs), calls_per_row=round(n / max(1, len(recs)), 2),
                      tokens_per_row=round(tok / max(1, len(recs))), missing=c.get('missing', 0),
+                     executed_unlabelled=c.get('executed_unlabelled', 0),
                      by_family={f: met(v) for f, v in sorted(fam.items())},
                      by_lang={l: met(v) for l, v in sorted(lang.items())})
             res[f'{var}_rep{rep}'] = m
