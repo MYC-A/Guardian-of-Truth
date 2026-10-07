@@ -176,7 +176,7 @@ Telecom misses показывают другое: документ может о
 модели. Ни один из этих источников кандидатов не получает право решать через
 majority vote, regex или совпадение case ID.
 
-Lynx пока исследуется в **другой роли** — factual grounding document/question/
+Lynx исследуется в **другой роли** — factual grounding document/question/
 answer. Он может проверять поддержку фактической premise или material claim.
 PASS не доказывает применимость нормы; FAIL не означает автоматически policy
 violation. Для каждой candidate cause отдельно нужны action/policy binding,
@@ -184,6 +184,43 @@ exceptions и полнота поиска контрсвидетельств. П
 измерить, сколько истинных причин он удаляет, особенно на русском input и
 с negative/absence claims. Не использовать только pass/fail текущего ответа
 как binary label Guardian.
+
+### Дополнение: завершившийся Lynx, снимок 064b2152
+
+После основной фиксации анализа очередь завершилась и опубликовала результаты.
+Native v3: **70/70 current-turn checks, 0 technical rows, 47 PASS / 23 FAIL**;
+дополнительно 33 проверки сохранённых Distill accusations. У 10 строк отсутствует
+Distill B2, что записано отдельным reviewer gap. На valid46 current turn получает
+35 PASS / 11 FAIL; это не Guardian confusion matrix.
+[Независимый подсчёт по raw rows](lynx_analysis.json) сохраняет commit, blob hash,
+счётчики sets/arms и полноту document view.
+
+Обнаружены два существенных ограничения адаптации:
+
+1. **Все 46 document views valid46 неполны** (`complete_input=false`). FAIL
+   может зависеть от отсутствующего источника. Гарантия отсутствия truncation
+   уже сформированного request не означает полноту исходной истории в view.
+2. Для accusations renderer использует **только original prompt** — тот же
+   document, что для проверки current answer. Сам current response в document
+   отсутствует. Но обвинение часто утверждает, какое действие/аргумент содержится
+   в current response. У судьи нет этого независимого наблюдения, он видит его
+   лишь внутри проверяемого обвинения. Такой контракт непригоден как полный
+   source-based cause verifier; неподдержанную premise он может и отклонить,
+   и повторить из самой accusation.
+
+На valid46 сохранено 12 accusation checks (A7+B2 5), все относятся к строкам
+с positive binary gold: 8 FAIL / 4 PASS. Это не доля истинных/ложных причин:
+positive row не удостоверяет каждую accusation, часть исходных reviewer paths
+технически непригодна, отрицательных gold строк с accusation здесь нет.
+По этому опыту нельзя оценить FP rejection или принять фильтр Lynx.
+
+Следующая версия accusation witness должна включать code-addressed current
+action/argument как **наблюдение о тексте действия**, policy premises,
+supporting и contradicting history, coverage gaps. Историю брать из общего
+original index под проверяемые premises; neutral blind view сохранять для
+предварительного разбора, не переиспользовать автоматически как verifier bundle.
+Это изменение document/wire и новый эксперимент. Текущие raw ответы сохранены,
+не переинтерпретированы как результаты исправленного адаптера.
 
 ## 4. Что перенести из уже проверенных методов
 
