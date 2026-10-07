@@ -49,3 +49,13 @@ On valid46, Qwen B2 failed to deliver the blind analysis in 14/46 rows only beca
 the same cached pre-passes and the same delivered reviews (cache hits), so only rows that previously fell back are re-decided.
 Run on valid46 and on every held-out set after B2. Success: on valid46 and pooled held-out, no new FP from changed rows and ≥1 FN→TP.
 Report changed rows individually, with the cause read manually. Any row whose request exceeds the slot is reported as a technical failure.
+
+## Amendment 2 (before any Qwen held-out result was seen; lb_long had 10 rows written and they were not inspected)
+- The committed first-circle cache contains requests and attempt ledgers but **no response bodies**, so no replay is possible.
+  Any rerun is a fresh live sample. Measured throughput is about 1.5–2.3 min per row with 4 slots.
+- Scope cuts for time, made before results: (1) the QAM control is dropped. On valid46 QAM ⊂ QB2 (QB2∨QAM = QB2), so it can't be informative.
+  (2) Set order is ext_tau2, hold_tau2h, hold_holdout2 (real tau2-derived), then lb_long/lb2/lb3 (authored lockboxes) as time allows.
+  The pooled H1 is computed over the sets completed; incomplete sets are reported as such.
+- H2 is restricted to the 14 cap rows (`--ids`). For each row the fresh pre-pass raw_content is compared with the baseline's saved raw_content.
+  Only rows with an identical pre-pass count as a clean delivery-only comparison; the others are reported separately as resampled.
+  The first full-B2x attempt (4 rows) is archived in outputs/guardian_complementarity/aborted_b2x_full/ and not scored.
