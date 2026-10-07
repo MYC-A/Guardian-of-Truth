@@ -18,8 +18,9 @@ import copy, json
 
 from . import sandbox
 from .neutral import neutral_view
-from guardian_truth.verification.common import schema_errors
+from guardian_truth.verification.common import schema_errors, transport_failure
 from guardian_truth.parsing import decode_json
+from guardian_truth.integrated.transport import wire_body
 
 SMALL, LARGE = 'ministral-14b-2512', 'mistral-large-4'
 VARIANTS = {
@@ -132,6 +133,9 @@ def _req(model, system, user, schema, name, max_tokens):
 
 def _parse(rec, schema=None):
     try:
+        if transport_failure(rec):
+            rec['schema_validation'] = dict(status='TRANSPORT_FAILURE', errors=[])
+            return None
         v, valid = decode_json(rec.get('content') or '')
         if not valid or not isinstance(v, dict):
             rec['schema_validation'] = dict(status='INVALID_JSON', errors=[])
@@ -165,7 +169,7 @@ class Hook:
         self.max_request_bytes = max_request_bytes
 
     def _wire_budget(self, request):
-        return dict(request_bytes=len(json.dumps(request, ensure_ascii=False, separators=(',', ':')).encode('utf-8')),
+        return dict(request_bytes=len(wire_body(request)),
                     max_request_bytes=self.max_request_bytes, reserved_completion_tokens=request.get('max_tokens'),
                     validation='SERIALIZED_UTF8_BYTE_CAP_ONLY_NOT_PROVIDER_TOKENIZER')
 

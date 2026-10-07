@@ -56,6 +56,32 @@ def test_duplicate_bindings_and_unknown_types_rejected():
     assert evaluator.compute("x == '1'", [b('x', '1', 'ENTITY_MAGIC')])[0] == 'TYPE_ERROR'
 
 
+def test_prepass_valid_json_from_failed_transport_cannot_be_injected():
+    rec = dict(content=json.dumps({'requirements': []}), transport={'status': 429})
+    assert variants._parse(rec) is None
+    assert rec['schema_validation']['status'] == 'TRANSPORT_FAILURE'
+
+
+def test_expression_contradiction_does_not_change_other_rules_in_same_document():
+    analysis = dict(requirements=[dict(source_id='p1', requirement='Rule one', applies='YES'),
+                                  dict(source_id='p1', requirement='Rule two', applies='YES')])
+    checked = evaluator.check(dict(requirement_source_id='p1', expression='1 > 2', bindings=[], claimed_result='TRUE'), {})
+    result, changed = variants2.apply_eval(analysis, [checked])
+    assert changed and [r['applies'] for r in result['requirements']] == ['YES', 'YES']
+    assert result['code_checks'][0]['requirement_binding'] == 'UNRESOLVED'
+
+
+def test_byte_cap_matches_actual_transport_encoding():
+    from guardian_truth.integrated.transport import wire_body
+    request = {'model': variants.SMALL, 'messages': [{'role': 'user', 'content': 'Пример' * 30}], 'max_tokens': 1}
+    compact = len(json.dumps(request, ensure_ascii=False, separators=(',', ':')).encode('utf-8'))
+    assert len(wire_body(request)) > compact
+    client = Fake()
+    hook = variants.Hook(client, None, variants.SMALL, max_request_bytes=compact)
+    result = hook.call(request)
+    assert not client.calls and result['input_budget']['request_bytes'] == len(wire_body(request))
+
+
 def row(long=False):
     history = ''.join('⟦USER⟧\nOld context %s %s\n' % (i, 'x' * 120) for i in range(50)) if long else ''
     return dict(prompt='⟦SYSTEM⟧\n<policy>Do not invent identifiers.</policy>\n'
@@ -159,7 +185,7 @@ def test_augmented_review_over_cap_falls_back_to_unchanged_base(cls, pre):
     first = Fake()
     uncapped = cls(first, pre, variants.SMALL, original_row=row())
     augmented = uncapped.inject(request, 0)
-    wire_bytes = lambda r: len(json.dumps(r, ensure_ascii=False, separators=(',', ':')).encode('utf-8'))
+    wire_bytes = lambda r: len(json.dumps(r).encode('utf-8'))
     cap = max(wire_bytes(request), wire_bytes(first.calls[0]))
     assert wire_bytes(augmented) > cap
     client = Fake()

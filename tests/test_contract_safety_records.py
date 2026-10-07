@@ -90,7 +90,7 @@ def test_missing_usage_keeps_output_reservation_and_429_attempts_are_bounded(tmp
     payload = dict(model='ministral-14b-2512', messages=[dict(role='user', content='тест')], max_tokens=512)
     monkeypatch.setattr(budget.T, 'post', lambda *a, **k: ({'choices': []}, {'status': 200}))
     budget.sender('unused', 'unused', payload)
-    expected = len(json.dumps(payload, ensure_ascii=False).encode('utf-8')) + 256 + 512
+    expected = len(json.dumps(payload).encode('utf-8')) + 256 + 512
     assert budget.totals()['tokens'] == expected
     monkeypatch.setattr(budget.T, 'post', lambda *a, **k: (None, {'status': 429}))
     assert budget.sender('unused', 'unused', payload)[1]['status'] == 'RATE_LIMITED_GIVE_UP'

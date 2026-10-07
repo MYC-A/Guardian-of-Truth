@@ -38,8 +38,13 @@ def sha(x):
     return hashlib.sha256(json.dumps(x, ensure_ascii=False, sort_keys=True).encode()).hexdigest()
 
 
+def wire_body(payload):
+    """One serializer for the transmitted body and its preflight byte cap."""
+    return json.dumps(payload).encode('utf-8')
+
+
 def post(url, key, payload, timeout=180):
-    req = urllib.request.Request(url, data=json.dumps(payload).encode(), method='POST',
+    req = urllib.request.Request(url, data=wire_body(payload), method='POST',
                                  headers={'Authorization': f'Bearer {key}', 'Content-Type': 'application/json'})
     t = time.time()
     try:
@@ -122,7 +127,7 @@ class Transport:
             msg = choice.get('message') or {}
             rec = dict(key=key, request_sha256=sha(request), attempt=attempt, provider=self.provider, endpoint=self.endpoint,
                        model=self.model, response_model=(data or {}).get('model'), tag=tag,
-                       request_bytes=len(json.dumps(request, ensure_ascii=False).encode()), transport=log,
+                       request_bytes=len(wire_body(request)), transport=log,
                        seconds=log.get('seconds'), usage=(data or {}).get('usage'), finish_reason=choice.get('finish_reason'),
                        content=msg.get('content') if data else None,
                        reasoning=msg.get('reasoning') or msg.get('reasoning_content'), created=time.time())

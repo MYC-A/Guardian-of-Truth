@@ -57,11 +57,16 @@ def apply_eval(analysis, checks):
         return analysis, False
     a = copy.deepcopy(analysis)
     srcs = {c['requirement_source_id'] for c in bad}
+    counts = {source: sum(r.get('source_id') == source for r in a.get('requirements') or []) for source in srcs}
     for r in a.get('requirements') or []:
-        if r.get('source_id') in srcs:
+        # A source document may contain many norms. A check addressed only to
+        # that document cannot change all of their applicability statuses.
+        if r.get('source_id') in srcs and counts[r['source_id']] == 1:
             r['applies'] = 'UNCERTAIN'
             r['why'] = '[code check: an expression this analysis gave for this requirement contradicts its own claimed result] ' + (r.get('why') or '')
-    a['code_checks'] = [dict(requirement_source_id=c['requirement_source_id'], expression=c['expression'], claimed_result=c['claimed_result'],
+    a['code_checks'] = [dict(requirement_source_id=c['requirement_source_id'],
+                             requirement_binding='UNIQUE_REQUIREMENT_IN_ANALYSIS' if counts.get(c['requirement_source_id']) == 1 else 'UNRESOLVED',
+                             expression=c['expression'], claimed_result=c['claimed_result'],
                              recomputed_with_own_bindings=c['computed'], consistency=c['consistency'],
                              binding_source_status=[s['status'] for s in c['source_status']]) for c in bad]
     return a, True

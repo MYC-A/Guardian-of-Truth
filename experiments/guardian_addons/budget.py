@@ -61,7 +61,7 @@ def sender(url, key, payload, timeout=240):
     if model not in TARIFF:
         return None, dict(status='UNKNOWN_TARIFF_REFUSED')
     # Conservative UTF-8 byte estimate, not a measured provider tokenizer count.
-    est_in = len(json.dumps(payload, ensure_ascii=False).encode('utf-8')) + 256
+    est_in = len(T.wire_body(payload)) + 256
     est_out = int(payload.get('max_tokens') or 4000)
     for k in range(1):
         rid = f'{os.getpid()}-{time.time_ns()}'
