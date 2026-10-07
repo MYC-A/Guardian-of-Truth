@@ -62,6 +62,8 @@ VARIANTS = {
     'AM': dict(pre=None),
     'B': dict(pre='blind2'),
     'B2': dict(pre='blind2', pre_max_tokens=3400),
+    # complementarity H2: B2 with the self-imposed wire cap raised so long rows are delivered (still < 32k-token slot)
+    'B2x': dict(pre='blind2', pre_max_tokens=3400, max_request_bytes=80000),
     'Bopen': dict(pre='open'),
     'T': dict(pre='blind2_typed'),
     'E': dict(pre='blind2_typed_eval'),
@@ -130,7 +132,7 @@ def main():
     ap.add_argument('--rep', type=int, default=1)
     ap.add_argument('--ids')
     ap.add_argument('--workers', type=int, default=4)
-    ap.add_argument('--max-request-bytes', type=int, default=60000)
+    ap.add_argument('--max-request-bytes', type=int, default=None)
     ap.add_argument('--max-calls', type=int, default=50000, help='safety tripwire on the live transport (local calls are free but finite)')
     ap.add_argument('--layer-budget-bytes', type=int, default=20000)
     ap.add_argument('--retry-failed', type=int, default=0)
@@ -141,6 +143,8 @@ def main():
     ap.add_argument('--frules-max-tokens', type=int, default=None,
                     help='override the F-extraction max_tokens (default 700; reason-capable models need more)')
     a = ap.parse_args()
+    if a.max_request_bytes is None:
+        a.max_request_bytes = VARIANTS[a.variant].get('max_request_bytes', 60000)
     provider = f'local-{a.backend}'
     pre = VARIANTS[a.variant]['pre']
     pre_max_tokens = VARIANTS[a.variant].get('pre_max_tokens', 1700)

@@ -34,3 +34,18 @@ TP/FP/FN/TN, P, R, F1 per set and pooled. Paired row flips. Bootstrap 95% CI of 
 Technical failures are counted and never imputed as NO_ERROR; a row with a failure in one arm is reported separately.
 Granite gives no cause, so OR-added TPs are binary only (cause NOT_ASSESSED). That is fine for the binary competition metric, not for explanation.
 No tuning of thresholds, prompts or truncation after seeing held-out results.
+
+## Amendment 1 (after the Granite gate and before any Qwen held-out result was seen)
+- Gate 1 passed: Granite valid46 raw outputs are byte-identical to the saved control (46/46).
+- Gate 2 replaced: run_local re-runs rows whose earlier pre-pass failed, so a valid46 "replay" would re-send the 2 truncated pre-passes
+  and change the committed baseline. It was stopped after 3 sends. The saved attempts ledger is in outputs/guardian_complementarity/aborted_valid46_retry/,
+  and the committed cache file was restored. The baseline remains the committed valid46 Qwen B2/AM.
+- Granite alone on the held-out sets (seen while Qwen is still running): lb 18/9/10, lb2 14/8/9, lb3 19/9/9, ext_tau2 30/5/22, tau2h 18/7/23.
+  These are far more FP than on valid46. H1 stays as stated.
+
+## H2 (second hypothesis, frozen now): wire-cap delivery fix
+On valid46, Qwen B2 failed to deliver the blind analysis in 14/46 rows only because the self-imposed 60,000-byte wire cap was exceeded
+(sizes 60,045–76,399; 4 of these are FN). The llama.cpp slot is 32k tokens. Variant `B2x` = B2 with max_request_bytes 80,000. No other change:
+the same cached pre-passes and the same delivered reviews (cache hits), so only rows that previously fell back are re-decided.
+Run on valid46 and on every held-out set after B2. Success: on valid46 and pooled held-out, no new FP from changed rows and ≥1 FN→TP.
+Report changed rows individually, with the cause read manually. Any row whose request exceeds the slot is reported as a technical failure.
