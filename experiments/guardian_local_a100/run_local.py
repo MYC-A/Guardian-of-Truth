@@ -134,16 +134,27 @@ def main():
     ap.add_argument('--max-calls', type=int, default=50000, help='safety tripwire on the live transport (local calls are free but finite)')
     ap.add_argument('--layer-budget-bytes', type=int, default=20000)
     ap.add_argument('--retry-failed', type=int, default=0)
+    ap.add_argument('--review-max-tokens', type=int, default=None,
+                    help='override the main review-call max_tokens (default 1700; reason-capable models: budget 8192)')
+    ap.add_argument('--pre-max-tokens', type=int, default=None,
+                    help='override the blind pre-pass max_tokens (default: B2 3400, others 1700)')
+    ap.add_argument('--frules-max-tokens', type=int, default=None,
+                    help='override the F-extraction max_tokens (default 700; reason-capable models need more)')
     a = ap.parse_args()
     provider = f'local-{a.backend}'
     pre = VARIANTS[a.variant]['pre']
     pre_max_tokens = VARIANTS[a.variant].get('pre_max_tokens', 1700)
+    if a.pre_max_tokens is not None:
+        pre_max_tokens = a.pre_max_tokens
+    review_max_tokens = a.review_max_tokens if a.review_max_tokens is not None else 1700
+    frules_max_tokens = a.frules_max_tokens if a.frules_max_tokens is not None else 700
     base = OUTROOT / a.backend / model_dir(a.model_id)
     review_cache = base / 'cache' / 'review'
     frules_cache = base / 'cache' / 'frules'
     client = client_for(provider, a.model_id, review_cache, max_calls=a.max_calls, retry_failed=a.retry_failed)
     layers = Layers(client_for(provider, a.model_id, frules_cache, max_calls=a.max_calls),
-                    a.model_id, budget=a.layer_budget_bytes, attempts=(0, 1))
+                    a.model_id, budget=a.layer_budget_bytes, attempts=(0, 1),
+                    frules_max_tokens=frules_max_tokens)
     path = base / 'runs' / a.set / f'{a.variant}_rep{a.rep}.jsonl'
     path.parent.mkdir(parents=True, exist_ok=True)
     selected = [r for r in rows(a.set) if not a.ids or r['id'] in a.ids.split(',')]
@@ -153,6 +164,8 @@ def main():
         freeze_phase(path, ROOT, dict(variant=a.variant, rep=a.rep, set=a.set, backend=a.backend,
                                       provider=provider, model_id=a.model_id, pre=pre,
                                       pre_max_tokens=pre_max_tokens,
+                                      review_max_tokens=review_max_tokens,
+                                      frules_max_tokens=frules_max_tokens,
                                       max_request_bytes=a.max_request_bytes, blind_budget_bytes=20000,
                                       layer_budget_bytes=a.layer_budget_bytes, workers=a.workers,
                                       flags=sorted(ARMS['R_fix'])),
@@ -168,7 +181,8 @@ def main():
             out = dict(id=row['id'], set=a.set, variant=a.variant, rep=a.rep, model=a.model_id,
                        backend=a.backend, provider=provider, pre=pre)
             try:
-                rec = run_v5(row, hook, flags=ARMS['R_fix'], provider=provider, model=a.model_id, attempt=a.rep - 1)
+                rec = run_v5(row, hook, flags=ARMS['R_fix'], provider=provider, model=a.model_id, attempt=a.rep - 1,
+                             review_max_tokens=a.review_max_tokens)
                 d_rfix, acc_rfix = decide_v5(rec)
                 lay = layers.findings(row)
                 d = decide(rec, lay['findings'])
@@ -193,3 +207,4 @@ def main():
 
 if __name__ == '__main__':
     main()
+

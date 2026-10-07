@@ -214,9 +214,9 @@ def _key(r):
             'agent' if subj in AGENT_SUBJECTS else subj)
 
 
-def _extract(client, model, texts, attempt):
+def _extract(client, model, texts, attempt, max_tokens=700):
     req = request(model, SYSTEM, dict(policy_documents=texts, protocol_version=PROTOCOL_VERSION), SCHEMA,
-                  PROTOCOL_VERSION, max_tokens=700)
+                  PROTOCOL_VERSION, max_tokens=max_tokens)
     rec, v, _ = call(client, req, attempt, PROTOCOL_VERSION)
     raw_rules = (v or {}).get('rules') if isinstance(v, dict) else None
     rules = raw_rules if isinstance(raw_rules, list) else []
@@ -232,15 +232,15 @@ def _extract(client, model, texts, attempt):
     return rules, step, rec.get('content')
 
 
-def extract(client, model, normative_sources, attempts=(0, 1)):
+def extract(client, model, normative_sources, attempts=(0, 1), max_tokens=700):
     """Input-independent extraction (policy line texts only), two independent runs (cache attempts).
     -> dict(runs=[rules0, rules1], raw=[...], steps=[...])."""
     lines = candidate_lines(normative_sources)
     texts = sorted({s['text'] for s in normative_sources})
     if not texts:
         return dict(runs=[[], []], raw=[None, None], steps=[], n_lines=0, protocol_version=PROTOCOL_VERSION)
-    a, s0, r0 = _extract(client, model, texts, attempts[0])
-    b, s1, r1 = _extract(client, model, texts, attempts[1])
+    a, s0, r0 = _extract(client, model, texts, attempts[0], max_tokens)
+    b, s1, r1 = _extract(client, model, texts, attempts[1], max_tokens)
     return dict(runs=[a, b], raw=[r0, r1], steps=[s0, s1], n_lines=len(lines), protocol_version=PROTOCOL_VERSION)
 
 
@@ -337,3 +337,4 @@ def recheck(p, f):
     if f['kind'] == 'MAX_TOOL_CALLS_PER_TURN':
         return calls == f['fact']['call_ids'] and len(calls) > f['fact']['limit']
     return calls == f['fact']['call_ids'] and text == f['fact']['text_ids'] and bool(calls and text)
+

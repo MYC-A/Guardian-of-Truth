@@ -67,10 +67,11 @@ on/off is a separate ablation with time and output-truncation accounting.
 
 Available in-repo now: `dev`(10) `devT`(8) `frozen`(14) `contrast`(14) short
 diagnostics (author-labeled); `frozen120` with existing regression/dev/holdout
-family splits; `holdout2` (72 real tau2 rows, real gold). NOT available on this
-stand (owner-local runtime roots): valid46, lb_long, lb2_long, lb3_long,
-ext_tau2, hold_tau2h, hold_holdout2 — those cells stay NOT_EXECUTED until the
-owner uploads them; nothing is invented in their place.
+family splits; `holdout2` (72 real tau2 rows, real gold). Real sets recovered
+from pinned `403d811e` git objects into `/workspace/guardian/data_root_403d811e`
+(immutable; sha256 + uniqueness receipts in the extraction script): valid46
+(46 rows), lb_long(57), lb2_long(47), lb3_long(56), ext_tau2(70 inputs /
+68 tau2v2 gold), hold_tau2h(51), hold_holdout2(72).
 
 Dev usage: short diagnostics + frozen120 regression/dev + holdout2 diagnostics.
 Post-fixation comparison: lb2_long, lb3_long, hold_tau2h, hold_holdout2 and
@@ -79,11 +80,65 @@ synthetic holdout (pending upload), plus fresh paired runs per §Final.
 ## Fixed run parameters
 
 Evidence view 20 000 BYTES (the historical budget); serialized request cap
-60 000 bytes (UTF-8 body, checked pre-send); max_tokens 1700 (review and
-pre-pass); temperature 0; attempts `(0,1)` for v6fix F extraction; workers 4
-(wire bytes are worker-count independent; local server batching is recorded in
-receipts). Thinking mode: OFF for the main queue (native reasoning models emit
-reasoning only via their own contract; Qwen on/off ablation separately).
+60 000 bytes (UTF-8 body, checked pre-send); temperature 0; attempts `(0,1)`
+for v6fix F extraction; workers 4 (wire bytes are worker-count independent;
+local server batching is recorded in receipts).
+
+Output budgets (owner directive 2026-10-07 §3): reason-capable models get an
+initial budget of 8192 completion tokens (review + pre-pass + F extraction;
+`--review-max-tokens/--pre-max-tokens/--frules-max-tokens`, recorded in every
+phase manifest) because a mid-reasoning truncation is a FORMAT failure, never
+a comprehension verdict; one diagnostic config at 16384 is allowed on the same
+short part if truncation persists. Non-reasoning wire: 1700 review / 1700 pre
+/ 700 F (historical pin). Identical INPUTS matter more than identical
+completion limits; modes, budgets, times and tokens are reported separately
+per model. Thinking mode: OFF for the Qwen main circle (already-started launch
+completes at its pinned budgets; recorded exception), ON ablation on
+dev+contrast (24 rows) at 8192; native reasoning formats (gpt-oss Harmony) run
+as-native. A created-but-not-transmitted blind analysis is NOT a delivered B2.
+
+## First circle 2026-10-07 (owner directive; supersedes the older cell plan)
+
+Mandatory identical set for every universal reviewer candidate: dev(10) +
+contrast(14) + valid46(46) = 70 fixed rows. ONE AM run and ONE B2 run; A
+(binary_rfix) and M (binary, strict v6fix) are offline postprocessing of the
+same AM record — zero extra calls. Ministral baseline = saved results on the
+same 70 rows, no new inference. The running Qwen circle additionally covers
+devT+frozen (superset; those cells were already cached, zero extra calls).
+NOT in the first circle: per-model lockbox/holdout, triple repeats,
+architecture sweeps, long library tuning, per-model prompt perfecting.
+Checkpoint change order: save → offline recompute → commit/push → verify
+remote SHA → stop server → delete own weights → next model. BLOCKED ≠ EXECUTED.
+
+### Preregistered two-candidate selection (fixed BEFORE any first-circle result of models 2–5 is viewed)
+
+Ranked on the 70 fixed rows, A arm and B2 arm both reported:
+1. Executability gate: valid solution (valid verdict or valid fallback) on
+   ≥80% of the 70 rows in the AM arm; below that the model is reported but is
+   not a candidate.
+2. Diagnostics sanity gate: dev F1 ≥ 0.60 AND contrast F1 ≥ 0.60 (A arm) —
+   a model failing clean synthetic rows is not a candidate regardless of
+   valid46.
+3. Primary: valid46 F1 (the only non-synthetic set in the circle).
+4. Secondary: valid46 precision (accusation precision is delivery-critical).
+5. RU/EN reported separately; a candidate with RU F1 more than 2× below its EN
+   F1 is flagged as RU-limited in the report.
+6. Tie-breaks (in order): valid46 F1 → valid46 precision → valid-solution
+   coverage on the 70 → cause correctness on the valid46 self-check sample of
+   changed decisions (self-check, NOT independent labeling) → wall time per
+   row → peak VRAM.
+7. FP/FN compromise: two candidates with complementary profiles are allowed
+   (one precision-oriented, one recall-oriented) when their valid46 F1 differs
+   by ≤0.05; both are carried into stage 2.
+8. Differing coverage: additionally compare the common subgroup where BOTH
+   models have a valid solution; the full-row numbers stay primary.
+9. No convenient-set or best-seed selection; UNKNOWN/tech rows and delivery
+   failures are reported as-is and never deleted; B2 counted only where the
+   blind analysis was actually transmitted to the review request.
+10. Lynx runs the native document/question/answer factual-grounding role and
+    is rated SEPARATELY — never merged into the universal policy-reviewer
+    ranking. CompassJudger is checked through the explicitly-labeled pointwise
+    adapter first; its native pairwise judging is a separate experiment.
 
 ## Metrics and repeats
 
@@ -145,3 +200,4 @@ executed, what was NOT_EXECUTED, what actually helped, what was redundant, and
 which conclusions are limited by self-authored tests; ends with a concrete
 recommended checkpoint + architecture + components, a lighter delivery variant
 and the branch/SHA — or a plain statement that no semantic improvement was found.
+

@@ -23,13 +23,14 @@ def policy_key(normative_sources):
 
 class Layers:
     def __init__(self, client, model, budget=400000, layers=('F', 'S', 'P'), attempts=(0, 1), *,
-                 tool_universe_closed=False, provenance_universe_closed=False):
+                 tool_universe_closed=False, provenance_universe_closed=False, frules_max_tokens=700):
         if type(tool_universe_closed) is not bool or type(provenance_universe_closed) is not bool:
             raise ValueError('CLOSURE_CONTRACT_MUST_BE_BOOLEAN')
         self.client, self.model, self.budget, self.layers, self.cache = client, model, budget, tuple(layers), {}
         self.attempts = tuple(attempts)
         self.tool_universe_closed = tool_universe_closed
         self.provenance_universe_closed = provenance_universe_closed
+        self.frules_max_tokens = frules_max_tokens
 
     def packet(self, row):
         from ..verification.pipeline import packet_for
@@ -47,7 +48,8 @@ class Layers:
         if 'F' in self.layers:
             k = policy_key(p['normative_sources'])
             if k not in self.cache:
-                self.cache[k] = F.extract(self.client, self.model, p['normative_sources'], self.attempts)
+                self.cache[k] = F.extract(self.client, self.model, p['normative_sources'], self.attempts,
+                                          max_tokens=self.frules_max_tokens)
             ext = self.cache[k]
             rules = F.bind(ext, p['normative_sources'])
         out = F.check(rules, p['current_targets']) if 'F' in self.layers else []
@@ -91,3 +93,4 @@ def decide(rec, findings):
 def recheck_all(p, findings):
     mod = {'F': F, 'S': S, 'P': P}
     return [dict(kind=f['kind'], target_id=f['target_id'], recheck=mod[f['layer']].recheck(p, f)) for f in findings]
+

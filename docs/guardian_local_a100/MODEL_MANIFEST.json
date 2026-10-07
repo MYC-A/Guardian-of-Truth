@@ -12,8 +12,9 @@
     "llamacpp_build": "GGML_CUDA=ON, CMAKE_CUDA_ARCHITECTURES=80",
     "endpoints": {
       "vllm": "http://127.0.0.1:8000/v1/chat/completions",
-      "llamacpp": "http://127.0.0.1:8080/v1/chat/completions"
-    }
+      "llamacpp": "http://127.0.0.1:8081/v1/chat/completions"
+    },
+    "llamacpp_endpoint_note": "port 8081 because the instance jupyter-notebook service holds 8080 (system service, untouched); export LOCAL_LLAMACPP_ENDPOINT accordingly"
   },
   "queue": [
     {
@@ -37,7 +38,10 @@
       "backend": "llamacpp-b11459",
       "model_id": "qwen3.8-27b@71bc7b627595:Q8_0:llamacpp-b11459",
       "license": "check at download (Apache-2.0 expected)",
-      "status": "PENDING"
+      "status": "FIRST_CIRCLE_COMPLETED_20261007",
+      "native_template": "Qwen3.8 chat template is reasoning-capable (llama-server: template supports preserving reasoning). Smoke at native default: thinking extracted to reasoning_content, content=clean JSON, but analysis-style calls exceed the pinned 1700/3400 token budgets (finish=length, INVALID_JSON). Necessary native-format adaptation (recorded, identical budgets kept for the whole queue): template official enable_thinking=false via llama-server --reasoning off. Probe receipt: non-thinking content = strict JSON, 12 completion tokens; thinking extraction itself verified working.",
+      "weights_sha256": "aab65c67ef0dad127960efef9247f1832bca105faa1c7a052cc039b223cf86a1",
+      "first_circle_note": "70 fixed rows + devT/frozen superset (cached); A==M; dev B2 F1 1.0, contrast A 1.0/B2 .933, valid46 A P1.0 R.409 F1.581, B2 P.929 R.565 F1.703 (pre delivered 30/46, 16 request-size non-deliveries); 74 live review + 64 F calls on valid46 AM; thinking-ON ablation (dev+contrast, 8192) next as separate +think namespace"
     },
     {
       "step": 3,

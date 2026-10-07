@@ -336,9 +336,13 @@ def _prio(c):
     return PRIORITY[(c['origin'], None)]
 
 
-def run_v5(row, client, *, flags=frozenset(), provider='mistral', model='ministral-14b-2512', budget=20000, attempt=0, with_cb=False):
+def run_v5(row, client, *, flags=frozenset(), provider='mistral', model='ministral-14b-2512', budget=20000, attempt=0, with_cb=False,
+           review_max_tokens=None):
     flags = frozenset(flags)
-    cfg = ReviewConfig.profile('guard', provider=provider, model=model, budget_bytes=budget, attempt=attempt, admission='v1')
+    cfg_kw = dict(provider=provider, model=model, budget_bytes=budget, attempt=attempt, admission='v1')
+    if review_max_tokens is not None:
+        cfg_kw['max_tokens'] = review_max_tokens
+    cfg = ReviewConfig.profile('guard', **cfg_kw)
     a = review(row['prompt'], row['response'], cfg, client=client)
     out = dict(version=VERSION, flags=sorted(flags), A=dict(final=a['final_decision'], binary=a['binary'], owner=a['decision_owner'],
                guard_error=a['guard']['established_error'], reasons=a['reasons'], steps=a['steps']))
@@ -429,3 +433,4 @@ def decide(rec, mech=False, alone=False, cb=False):
             return 1, dict(origin=it['component'], kind=c.get('kind'), target_id=c['target_id'], verification=vs,
                            certificate=bool(c.get('certificate')), text=(c.get('requirement') or '') + ' — ' + c['reason'])
     return 0, None
+
