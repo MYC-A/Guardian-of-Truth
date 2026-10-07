@@ -104,25 +104,29 @@ def main():
         distill_root = ROOT / 'outputs/guardian_local_a100/llamacpp' / DISTILL
         lynx_root = ROOT / 'outputs/guardian_local_a100/llamacpp' / LYNX
         try:
-            parents = matching_processes('scripts_a100/distill_first_circle.sh')
-            if len(parents) > 1:
-                raise RuntimeError('MULTIPLE_EXISTING_DISTILL_JOBS')
-            if parents:
-                event('WAITING_EXISTING_DISTILL', pid=parents[0], deadline_seconds=10800)
-                wait_process(parents[0], 10800)
-            event('DISTILL_OFFLINE_SCORE')
-            score = distill_root / 'score_first_circle_qa.json'
-            if not score.exists():
-                run([sys.executable, '-X', 'utf8', '-m', 'experiments.guardian_local_a100.score_local',
-                     '--backend', 'llamacpp', '--model-id', DISTILL, '--sets', 'dev,contrast,valid46', '--json', str(score)])
-            summaries = json.loads(score.read_text(encoding='utf-8'))['summary']
-            for name, count in [('dev', 10), ('contrast', 14), ('valid46', 46)]:
-                for arm in ['A_rep1', 'M_rep1', 'B2_rep1']:
-                    item = summaries[name][arm]
-                    if item['rows'] != count or item.get('missing'):
-                        raise RuntimeError('DISTILL_INCOMPLETE_CELL')
-            event('DISTILL_COMPLETE_70_AM_B2')
-            publish([distill_root, OUTPUT], 'local-a100: preserve completed Distill 70-row circle and QA score')
+            if (OUTPUT / 'distill_stopped_by_owner.json').exists():
+                event('DISTILL_PARTIAL_STOPPED_BY_OWNER')
+                publish([distill_root, OUTPUT], 'local-a100: preserve owner-stopped partial Distill B2 before Lynx')
+            else:
+                parents = matching_processes('scripts_a100/distill_first_circle.sh')
+                if len(parents) > 1:
+                    raise RuntimeError('MULTIPLE_EXISTING_DISTILL_JOBS')
+                if parents:
+                    event('WAITING_EXISTING_DISTILL', pid=parents[0], deadline_seconds=10800)
+                    wait_process(parents[0], 10800)
+                event('DISTILL_OFFLINE_SCORE')
+                score = distill_root / 'score_first_circle_qa.json'
+                if not score.exists():
+                    run([sys.executable, '-X', 'utf8', '-m', 'experiments.guardian_local_a100.score_local',
+                         '--backend', 'llamacpp', '--model-id', DISTILL, '--sets', 'dev,contrast,valid46', '--json', str(score)])
+                summaries = json.loads(score.read_text(encoding='utf-8'))['summary']
+                for name, count in [('dev', 10), ('contrast', 14), ('valid46', 46)]:
+                    for arm in ['A_rep1', 'M_rep1', 'B2_rep1']:
+                        item = summaries[name][arm]
+                        if item['rows'] != count or item.get('missing'):
+                            raise RuntimeError('DISTILL_INCOMPLETE_CELL')
+                event('DISTILL_COMPLETE_70_AM_B2')
+                publish([distill_root, OUTPUT], 'local-a100: preserve completed Distill 70-row circle and QA score')
             server_pids = matching_processes(str(BASE / 'models/Qwen3.8-27B-Opus-Distill-v2-Q8_0.gguf'))
             for pid in server_pids:
                 event('STOPPING_SAVED_DISTILL_SERVER', pid=pid)
@@ -154,7 +158,7 @@ def main():
             run([sys.executable, '-X', 'utf8', '-m', 'experiments.guardian_local_a100.lynx_native_v2',
                  '--model-id', LYNX, '--accuse-run-root', str(distill_root / 'runs'),
                  '--sets', 'dev,contrast,valid46', '--arms', 'A,B2',
-                 '--workers', '8', '--max-tokens', '600'], timeout=5400)
+                 '--workers', '8', '--max-tokens', '600', '--allow-partial-accusations'], timeout=5400)
             event('LYNX_COMPLETE')
             publish([lynx_root, OUTPUT], 'local-a100: preserve Lynx native JSON grounding receipts on 70 fixed inputs')
             report = OUTPUT / 'first_circle_comparison_qa.json'

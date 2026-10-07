@@ -18,7 +18,8 @@ SCORES = {
     'qwen': ['llamacpp/qwen3.8-27b@71bc7b627595:Q8_0:llamacpp-b11459/score_first_circle.json'],
     'gptoss': ['vllm/gpt-oss-20b@6cee5e81ee83:mxfp4:vllm-0.31.0/score_first_circle.json'],
     'compass_pointwise': ['llamacpp/compassjudger-2-32b@7f6877f97adf:Q8_0:llamacpp-b11459/score_first_circle.json'],
-    'distill': ['llamacpp/qwen3.8-27b-opus-distill-v2@64d56b13ea8d:Q8_0:llamacpp-b11459/score_first_circle_qa.json'],
+    'distill': ['llamacpp/qwen3.8-27b-opus-distill-v2@64d56b13ea8d:Q8_0:llamacpp-b11459/score_first_circle_qa.json',
+                'llamacpp/qwen3.8-27b-opus-distill-v2@64d56b13ea8d:Q8_0:llamacpp-b11459/score_AM_early.json'],
 }
 
 

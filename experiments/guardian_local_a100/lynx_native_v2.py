@@ -97,7 +97,7 @@ def prompt_tokens(endpoint, request):
     return len(tokens)
 
 
-def saved_accusations(root, set_name, ids, arms):
+def saved_accusations(root, set_name, ids, arms, allow_partial=False):
     """AM and B2 are separate records; never overwrite one with the other."""
     out = {i: [] for i in ids}
     for arm in arms:
@@ -115,7 +115,10 @@ def saved_accusations(root, set_name, ids, arms):
                 out[i].append(dict(arm=arm, text=acc['text'], target_id=acc.get('target_id'),
                                    origin=acc.get('origin'), record_path=str(path.relative_to(ROOT))))
         if seen != set(ids):
-            raise ValueError('INCOMPLETE_ACCUSATION_INPUTS')
+            if not allow_partial:
+                raise ValueError('INCOMPLETE_ACCUSATION_INPUTS')
+            for i in set(ids) - seen:
+                out[i].append(dict(arm=arm, text=None, status='REVIEWER_ROW_NOT_EXECUTED'))
     return out
 
 
@@ -151,6 +154,7 @@ def main():
     ap.add_argument('--context-tokens', type=int, default=8000)
     ap.add_argument('--budget-bytes', type=int, default=20000)
     ap.add_argument('--smoke-only', action='store_true')
+    ap.add_argument('--allow-partial-accusations', action='store_true')
     a = ap.parse_args()
     base = OUTROOT / 'llamacpp' / model_dir(a.model_id) / VERSION
     client = client_for('local-llamacpp', a.model_id, base / 'cache', max_calls=260, timeout=300)
@@ -175,13 +179,14 @@ def main():
     jobs = []
     for name in a.sets.split(','):
         data = rows(name)
-        acc = saved_accusations(a.accuse_run_root, name, [r['id'] for r in data], a.arms.split(','))
+        acc = saved_accusations(a.accuse_run_root, name, [r['id'] for r in data], a.arms.split(','), allow_partial=a.allow_partial_accusations)
         for row in data:
             jobs.append(dict(set=name, row=row, accusations=acc[row['id']]))
     path = base / 'runs.jsonl'
     config = dict(version=VERSION, model=a.model_id, view_version=VIEW_VERSION,
                   budget_bytes=a.budget_bytes, max_tokens=a.max_tokens, context_tokens=a.context_tokens,
                   arms=a.arms, sets=a.sets, model_card=MODEL_CARD,
+                  allow_partial_accusations=a.allow_partial_accusations,
                   runner_sha256=hashlib.sha256(Path(__file__).read_bytes()).hexdigest(),
                   document_renderer_sha256=hashlib.sha256(Path(__file__).with_name('lynx_ground.py').read_bytes()).hexdigest())
     with process_lock(base / 'run.lock'):
@@ -211,9 +216,10 @@ def main():
                 if doc is None:
                     entry['status'] = 'NO_EVIDENCE_VIEW'
                 else:
+                    entry['accusation_gaps'] = [acc for acc in job['accusations'] if acc.get('text') is None]
                     entry['turn'] = call(doc, row['response'])
                     entry['accusations'] = [dict(acc, check=call(doc, acc['text'], 'Is the claim supported by the document?'))
-                                            for acc in job['accusations']]
+                                            for acc in job['accusations'] if acc.get('text') is not None]
                     checks = [entry['turn']] + [r['check'] for r in entry['accusations']]
                     entry['status'] = 'EXECUTED' if all(c['status'] == 'VALID' for c in checks) else 'PARTIAL_TECHNICAL'
             except Exception as error:
@@ -234,6 +240,7 @@ def main():
         summary = dict(version=VERSION, rows=len(existing), expected_rows=len(jobs),
                        turn={v: sum(r.get('verdict') == v for r in checks) for v in ('PASS', 'FAIL', None)},
                        technical_rows=sum(r['status'] != 'EXECUTED' for r in existing.values()),
+                       reviewer_gap_rows=sum(bool(r.get('accusation_gaps')) for r in existing.values()),
                        note='Factual grounding only. Neither PASS nor FAIL is a policy-compliance gold label.')
         summary_path = base / 'summary.json'
         if not summary_path.exists():

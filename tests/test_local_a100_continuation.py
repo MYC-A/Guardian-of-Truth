@@ -53,3 +53,14 @@ def test_accusations_keep_am_and_b2_separate(tmp_path, monkeypatch):
     (root/'dev/B2_rep1.jsonl').write_text(json.dumps({'id':'one', 'accusation':{'text':'B2 reason'}}))
     result = lynx.saved_accusations(root, 'dev', ['one'], ['A', 'B2'])
     assert [(r['arm'], r['text']) for r in result['one']] == [('A','AM reason'), ('B2','B2 reason')]
+
+
+def test_explicit_partial_accusations_preserve_missing_reviewer_gap(tmp_path, monkeypatch):
+    monkeypatch.setattr(lynx, 'ROOT', tmp_path)
+    root = tmp_path / 'reviewer'
+    (root / 'dev').mkdir(parents=True)
+    (root / 'dev/B2_rep1.jsonl').write_text('')
+    with pytest.raises(ValueError, match='INCOMPLETE_ACCUSATION_INPUTS'):
+        lynx.saved_accusations(root, 'dev', ['one'], ['B2'])
+    result = lynx.saved_accusations(root, 'dev', ['one'], ['B2'], allow_partial=True)
+    assert result['one'] == [dict(arm='B2', text=None, status='REVIEWER_ROW_NOT_EXECUTED')]
