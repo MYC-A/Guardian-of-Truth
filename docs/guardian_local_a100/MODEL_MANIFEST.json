@@ -1,0 +1,99 @@
+{
+  "schema": "guardian-local-a100-model-manifest/1",
+  "note": "One main checkpoint resident at a time; weights are deleted after receipts+push between steps. Model id == served name == cache identity (never a Mistral API name).",
+  "environment": {
+    "gpu": "NVIDIA A100 80GB PCIe (cc 8.0)",
+    "driver": "595.71.05",
+    "cuda_toolkit": "12.8",
+    "experiment_venv": "/workspace/guardian/venv (guardian-truth editable, python 3.12)",
+    "serve_venv": "/workspace/guardian/serve_venv (vllm 0.31.0, torch 2.13.0+cu130)",
+    "llamacpp_commit": "f498f864fbc0472004ee1c3616c1188c68eb157f",
+    "llamacpp_tag": "b11459",
+    "llamacpp_build": "GGML_CUDA=ON, CMAKE_CUDA_ARCHITECTURES=80",
+    "endpoints": {
+      "vllm": "http://127.0.0.1:8000/v1/chat/completions",
+      "llamacpp": "http://127.0.0.1:8080/v1/chat/completions"
+    }
+  },
+  "queue": [
+    {
+      "step": 1,
+      "repo": "mistralai/Ministral-3-14B-Instruct-2512",
+      "revision": "29439f81c2be264d8d393273f99e7db9c0961120",
+      "precision": "bf16",
+      "files": "model-0000{1..4}-of-00004.safetensors + tokenizer/config",
+      "bytes_estimated": 29000000000,
+      "backend": "vllm-0.31.0",
+      "model_id": "ministral-3-14b-instruct-2512@29439f81c2be:bf16:vllm-0.31.0",
+      "license": "Apache-2.0 (research use recorded separately from delivery suitability)",
+      "status": "DOWNLOADED"
+    },
+    {
+      "step": 2,
+      "repo": "ggml-org/Qwen3.8-27B-GGUF",
+      "revision": "71bc7b627595dc8a91039addd9c791ae548d6747",
+      "file": "Qwen3.8-27B-Q8_0.gguf",
+      "bytes_estimated": 28600000000,
+      "backend": "llamacpp-b11459",
+      "model_id": "qwen3.8-27b@71bc7b627595:Q8_0:llamacpp-b11459",
+      "license": "check at download (Apache-2.0 expected)",
+      "status": "PENDING"
+    },
+    {
+      "step": 3,
+      "repo": "openai/gpt-oss-20b",
+      "revision": "6cee5e81ee83917806bbde320786a8fb61efebee",
+      "file": "native MXFP4",
+      "backend": "vllm-0.31.0 (Harmony format, mxfp4-capable; no native FP4 instructions required on A100)",
+      "model_id": "gpt-oss-20b@6cee5e81ee83:mxfp4:vllm-0.31.0",
+      "license": "Apache-2.0",
+      "status": "PENDING"
+    },
+    {
+      "step": 4,
+      "repo": "mradermacher/CompassJudger-2-32B-Instruct-GGUF",
+      "revision": "7f6877f97adfda54095498c94030e6d3e650d7d8",
+      "file": "CompassJudger-2-32B-Instruct.Q8_0.gguf",
+      "bytes_estimated": 34800000000,
+      "backend": "llamacpp-b11459",
+      "model_id": "compassjudger-2-32b@7f6877f97adf:Q8_0:llamacpp-b11459",
+      "license": "check at download",
+      "note": "pointwise Guardian adapter first; native pairwise mode only as a separate controlled experiment",
+      "status": "PENDING"
+    },
+    {
+      "step": 5,
+      "repo": "barozp/Qwen3.8-27B-Opus-Distill-v2-GGUF",
+      "revision": "64d56b13ea8d6aa770eeaf8a6ca1358299c6f44c",
+      "file": "Qwen3.8-27B-Opus-Distill-v2-Q8_0.gguf",
+      "bytes_estimated": 29000000000,
+      "backend": "llamacpp-b11459",
+      "model_id": "qwen3.8-27b-opus-distill-v2@64d56b13ea8d:Q8_0:llamacpp-b11459",
+      "license": "check at download",
+      "status": "PENDING"
+    },
+    {
+      "step": 6,
+      "repo": "bartowski/Llama-3-Patronus-Lynx-70B-Instruct-GGUF",
+      "revision": "581017200918d887e8171efc4b083979a74444ab",
+      "file": "Llama-3-Patronus-Lynx-70B-Instruct-IQ4_XS.gguf",
+      "bytes_estimated": 37900000000,
+      "backend": "llamacpp-b11459",
+      "model_id": "llama-3-patronus-lynx-70b@581017200918:IQ4_XS:llamacpp-b11459",
+      "license": "check at download (Llama-3 community license)",
+      "note": "factual grounding, mostly English; results not claimed as all-norms/RU capability",
+      "status": "PENDING"
+    }
+  ],
+  "optional_queue_after_mains": [
+    {"repo": "PatronusAI/glider-gguf", "file": "glider_Q8_0.gguf", "role": "rubric checker"},
+    {"repo": "ai-forever/Pollux-4B-Judge", "role": "Russian criterion judge"},
+    {"repo": "MoritzLaurer/mDeBERTa-v3-base-mnli-xnli", "role": "multilingual NLI"}
+  ],
+  "components": {
+    "granite": ["ibm-granite/granite-guardian-3.3-8b", "ibm-granite/granite-guardian-4.1-8b"],
+    "nuextract": ["numind/NuExtract3-W4A16"],
+    "minicheck": ["bespokelabs/Bespoke-MiniCheck-7B"],
+    "note": "native contracts only (BYOC/groundedness for Granite, MiniCheck adapter, Lynx doc/question/answer); each requires a local adapter-fires test on an error/clean pair"
+  }
+}
