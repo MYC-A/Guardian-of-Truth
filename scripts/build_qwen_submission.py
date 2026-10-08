@@ -52,8 +52,9 @@ def prepare(repo, stage, model, llama_bin):
     shutil.copytree(repo / 'src', stage / 'src', ignore=shutil.ignore_patterns('__pycache__', '*.pyc'))
     for relative in EXPERIMENTS:
         p = repo / 'experiments' / relative
-        if p.exists():
-            copy_file(p, stage / 'experiments' / relative)
+        if not p.is_file():
+            raise ValueError('MISSING_RUNTIME_SOURCE: ' + relative)
+        copy_file(p, stage / 'experiments' / relative)
     for directory in ('experiments', 'experiments/guardian_addons', 'experiments/guardian_semantic'):
         (stage / directory / '__init__.py').touch(exist_ok=True)
     for source, dest in [('submission/predict.py', 'scripts/predict.py'),
@@ -141,12 +142,19 @@ def archive(stage, destination):
     try:
         with zipfile.ZipFile(output, 'w', allowZip64=True, compression=zipfile.ZIP_STORED) as z:
             for path in sorted(stage.rglob('*')):
-                if not path.is_file():
-                    continue
                 name = path.relative_to(stage).as_posix()
+                if path.is_dir():
+                    info = zipfile.ZipInfo(name + '/')
+                    info.create_system = 3
+                    info.external_attr = (0o40755 << 16) | 0x10
+                    z.writestr(info, b'')
+                    continue
+                if not path.is_file():
+                    raise ValueError('UNSUPPORTED_ARCHIVE_ENTRY: ' + name)
                 info = zipfile.ZipInfo(name)
                 info.create_system = 3
-                executable = name in ('runtime/llama/llama-server', 'runtime/python/bin/python3.12')
+                executable = name in ('runtime/llama/llama-server', 'runtime/python/bin/python3.12',
+                                      'runtime/lib/ld-linux-x86-64.so.2')
                 info.external_attr = (0o100755 if executable else 0o100644) << 16
                 with z.open(info, 'w', force_zip64=True) as target, path.open('rb') as source:
                     shutil.copyfileobj(source, target, 8 * 1024 * 1024)

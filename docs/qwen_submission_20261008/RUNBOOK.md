@@ -38,7 +38,8 @@ Local Docker verification (from unpacked archive root):
 
 ```sh
 docker build -t guardian-qwen:b2 .
-docker run --rm --gpus all --network none -v /absolute/data:/data guardian-qwen:b2 \
+docker run --rm --gpus all --network none --user "$(id -u):$(id -g)" \
+  -v /absolute/data:/data guardian-qwen:b2 \
   --input /data/test.parquet --output /data/predictions.parquet
 ```
 
