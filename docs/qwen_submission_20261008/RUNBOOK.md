@@ -49,3 +49,16 @@ directly at root, no wrapper folder or metrics directory. Verify uploaded file
 size strictly below40GB and compare the published SHA256 after download.
 The package is a candidate until a complete cold full-run timing/quality check
 has passed. No competition submission is made automatically.
+
+Research-only replay after a complete benchmark (not included in the archive):
+
+```sh
+python scripts/qwen_submission_reproject.py --input valid.parquet \
+  --traces /path/to/frozen/traces.jsonl --output-dir /path/to/NEW/projection
+```
+
+It blocks network access, requires exactly the full input ID set, shares the
+live final projection, preserves raw files and reports the wrapper correction
+separately. Labels are read only after projection for scoring; they never enter
+the runtime. A real primary failure prevents a full prediction file and produces
+explicit full-denominator sensitivity bounds rather than an imputed negative.

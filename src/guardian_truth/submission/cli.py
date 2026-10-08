@@ -245,16 +245,26 @@ class ModelServer:
 
 def predict_one(row, client, layers):
     from experiments.guardian_addons.variants2 import Hook2
-    from experiments.research_records import failed_record, technical_gaps
     from guardian_truth.repair.v5 import ARMS, run_v5
-    from guardian_truth.v6fix.pipeline import decide
     hook = Hook2(client, 'blind2', MODEL, original_row=row,
                  max_tokens=3400, max_request_bytes=60000)
     rec = run_v5(row, hook, flags=ARMS['R_fix'], provider='local-llamacpp', model=MODEL, attempt=0)
     layer = layers.findings(row)
-    decision = decide(rec, layer['findings'])
-    trace = dict(id=row['id'], rec=rec, pre_steps=hook.log, layer_trace=layer,
-                 binary=decision['binary'], owner=decision['decision_owner'], accusation=decision['accusation'])
+    return finalize_trace(dict(id=row['id'], rec=rec, pre_steps=hook.log, layer_trace=layer))
+
+
+def finalize_trace(raw):
+    """Shared live/offline projection; never invokes a model or reads a label."""
+    from experiments.research_records import failed_record, technical_gaps
+    from guardian_truth.v6fix.pipeline import decide
+    # Preserve an exception outside the declared projection. It cannot be
+    # repaired by interpreting an incomplete record as an ordinary negative.
+    if raw.get('error') not in (None, 'PRIMARY_INFERENCE_FAILURE'):
+        return dict(raw)
+    rec = raw['rec']
+    decision = decide(rec, raw['layer_trace']['findings'])
+    trace = dict(raw, binary=decision['binary'], owner=decision['decision_owner'], accusation=decision['accusation'])
+    trace.pop('error', None)
     trace['technical_gaps'] = technical_gaps(trace)
     primary_valid = (rec.get('A_adm2') or {}).get('decision') in ('ERROR', 'NO_ERROR', 'UNKNOWN')
     if 'A_adm2' not in rec:
