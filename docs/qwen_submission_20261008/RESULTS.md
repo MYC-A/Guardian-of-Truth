@@ -37,12 +37,37 @@ This equals the original Git blob contents at403d811e:valid.parquet. Legacy
 traces lack individual row hashes; the report explicitly records phase-level
 binding only. Future CLI traces include per-row prompt/response hashes.
 
-## Performance arm still running
+## Completed performance comparison
 
 The queued whole-valid46 run started after the control terminated: workers16,
 FlashAttention on, batch8192, microbatch512; same weights/context/prompts/budgets.
-Its terminal external timing and corrected full-input score are pending. No
-default profile is changed on partial progress.
+It processed all46 rows. External launcher timing was1641.955s (27min22s),
+exit1 due to the same frozen wrapper bug. The separate amended projection has
+46/46 valid predictions:14TP/1FP/9FN/22TN, F1 .7368421053. Nine optional fallback
+markers were incorrectly counted as failures in its frozen CLI report.
+
+|Profile|TP|FP|FN|F1|Recorded elapsed|
+|---|---:|---:|---:|---:|---:|
+|8 slots, baseline|14|0|9|.7568|1615.49s, internal CLI clock|
+|16 slots, FA on, batch8192|14|1|9|.7368|1641.96s, external launcher clock|
+
+Clock scopes differ slightly, so the27-second difference is not a precise speed
+regression estimate. This single comparison does not demonstrate an acceleration
+or improved quality. Keep the8-slot default. It does not establish repeatability
+of either fresh model output. Background archive construction/transfer also ran
+during part of the16-slot arm; this is an application-level comparison, not an
+isolated kernel benchmark.
+
+Five binary decisions differ: two baseline true positives are lost, two other
+true positives are gained, and one false positive is added. The16-slot arm made
+180 calls,708390 input and122727 output tokens, versus179/687746/111936 in the
+control. Generated output is9.64% larger, so elapsed time alone does not isolate
+engine speed from changed model output length. The per-row changes are recorded
+in `receipts/paired_binary_changes.json`; IDs are diagnostic only.
+
+The original and amended16-slot phases are retained under
+`outputs/qwen_submission_20261008/bench-speed16-20261008/` and
+`bench-speed16-projection-v2-20261008/`. No old output is overwritten.
 
 548 is a participant-reported evaluated cohort, not a confirmed complete input
 size. Different lengths and triggered checks can change total cost substantially.
@@ -52,7 +77,8 @@ that uncertainty; do not present linear extrapolation as a platform result.
 
 ## Native runtime / archive checks
 
-- Local targeted suite:25 passed,2 POSIX skips on Windows.
+- Local targeted suite:27 passed,2 POSIX skips on Windows, including authenticated
+  range transfer and refusal to publish a tampered archive.
 - Actual Linux signal ownership test:2 passed; harmless subprocess lifecycle,
   not a blocked GPU HTTP-worker stress test.
 - Runtime-only ZIP roundtrip:1,851,469,211 bytes; unzip, offline `pip install`,
@@ -61,13 +87,18 @@ that uncertainty; do not present linear extrapolation as a platform result.
   actual28.6GB model roundtrip is not implied.
 - The first CPU-smoke attempt used the build venv, which has no pip. The second
   explicitly used the platform `/usr/bin/python3` for install/dispatch and passed.
-- Actual full model executed in the live46 control. Complete ZIP transfer and
-  local per-file manifest/CRC validation are underway.
+- Actual full model executed in both live46 arms. Full ZIP is ready on the server:
+  30,447,402,247 bytes, SHA256
+  `46317b9570c76833771f14468e045e642f9802c7b516fba8234fefa23a493835`.
+  Local transfer ontoA and per-file manifest/CRC validation are still underway.
 - Full Windows raw replay rebuilt179 exact request/attempt identities across
   all46 rows, consumed all179 frozen receipts and reproduced every binary
   decision, winning owner and accusation text/target, with zero network calls
   and zero mismatches against the amended projection. This is processing
   reproducibility, not a new inference repetition.
+- The16-slot raw replay also rebuilt180/180 exact request/attempt identities
+  over all46 rows, consumed all180 frozen receipts and had zero final
+  binary/owner/accusation mismatches. The same projection is used in both arms.
 - Dockerfile is provided. Docker build/run is NOT_EXECUTED: no Docker/Podman or
   daemon socket is available, and namespace creation is denied. The native
   runtime checks are not represented as an actual Docker-engine test.
