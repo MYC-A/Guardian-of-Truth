@@ -166,6 +166,10 @@ class ModelServer:
                        '--reasoning', 'off', '--no-context-shift', '--metrics', '--api-key', self.api_key]
             if self.fast:
                 command += ['-fa', 'on']
+            loader = self.root / 'runtime/lib/ld-linux-x86-64.so.2'
+            if loader.is_file():
+                command = [str(loader), '--library-path',
+                           str(self.root / 'runtime/llama') + ':' + str(self.root / 'runtime/lib'), *command]
             environment = dict(os.environ)
             environment['LD_LIBRARY_PATH'] = str(self.root / 'runtime/llama') + ':' + str(self.root / 'runtime/lib')
             try:
