@@ -49,7 +49,7 @@ class Hook(Hook2):
         return super().call(request, attempt=attempt, tag=tag)
 
 
-def inspect(row, record):
+def capture_request(row, record):
     client = Client(record)
     hook = Hook(client, 'blind2', record['model'], original_row=row,
                 max_tokens=3400, max_request_bytes=60000)
@@ -58,7 +58,7 @@ def inspect(row, record):
     except Captured:
         pass
     if client.request is None:
-        return dict(id=row['id'], status='NO_DISPATCHED_REVIEW')
+        return None
     saved = next(s for s in record['rec']['A']['steps'] if s.get('tag') == 'review')
     if sha(hook.original_request) != saved['request_sha256']:
         raise ValueError('CALLER_REQUEST_HASH_MISMATCH:' + row['id'])
@@ -67,10 +67,18 @@ def inspect(row, record):
                    model=record['model'], request=client.request, attempt=0))
     if key != saved['key']:
         raise ValueError('DISPATCH_CACHE_KEY_MISMATCH:' + row['id'])
-    packet = json.loads(client.request['messages'][1]['content'])
+    return client.request, saved, key
+
+
+def inspect(row, record):
+    captured = capture_request(row, record)
+    if captured is None:
+        return dict(id=row['id'], status='NO_DISPATCHED_REVIEW')
+    request, saved, key = captured
+    packet = json.loads(request['messages'][1]['content'])
     augmented, receipt = complete(row, packet)
     return dict(id=row['id'], status='EXACT_REQUEST_RECONSTRUCTED', binary=record.get('binary'),
-                original_request_sha256=saved['request_sha256'], dispatched_request_sha256=sha(client.request),
+                original_request_sha256=saved['request_sha256'], dispatched_request_sha256=sha(request),
                 dispatched_cache_key=key, history_before=[s['source_id'] for s in packet['history']],
                 completion=receipt, added_sources=[s for s in augmented['history']
                     if s['source_id'] in receipt['sources_added'] + receipt['sources_expanded']])
