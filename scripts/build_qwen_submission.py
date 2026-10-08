@@ -42,6 +42,42 @@ def copy_file(source, dest):
     shutil.copy2(source, dest)
 
 
+def artifact_files(stage):
+    for path in sorted(Path(stage).rglob('*')):
+        if '__pycache__' in path.parts or path.suffix == '.pyc':
+            continue
+        if path.is_file() and path.name != 'MANIFEST.json':
+            yield path
+
+
+def refreeze(repo, stage):
+    """Freeze completed packaging changes; refuse to conceal changed weights."""
+    stage = Path(stage)
+    previous = json.loads((stage / 'MANIFEST.json').read_text(encoding='utf-8'))
+    model = stage / 'model/Qwen3.8-27B-Q8_0.gguf'
+    if digest(model) != previous['model_sha256'] or model.stat().st_size != previous['model_bytes']:
+        raise ValueError('MODEL_CHANGED_SINCE_PREPARE')
+    previous['commit'] = subprocess.check_output(['git', '-C', str(repo), 'rev-parse', 'HEAD'], text=True).strip()
+    previous['files'] = {str(p.relative_to(stage)): dict(bytes=p.stat().st_size, sha256=digest(p))
+                         for p in artifact_files(stage) if p != model}
+    (stage / 'MANIFEST.json').write_text(json.dumps(previous, indent=2, sort_keys=True), encoding='utf-8')
+
+
+def verify_stage(stage):
+    stage = Path(stage)
+    manifest = json.loads((stage / 'MANIFEST.json').read_text(encoding='utf-8'))
+    expected = dict(manifest['files'])
+    expected['model/Qwen3.8-27B-Q8_0.gguf'] = dict(bytes=manifest['model_bytes'], sha256=manifest['model_sha256'])
+    actual = {p.relative_to(stage).as_posix(): p for p in artifact_files(stage)}
+    if actual.keys() != expected.keys():
+        raise ValueError('STAGE_FILE_SET_CHANGED')
+    for name, metadata in expected.items():
+        path = actual[name]
+        if path.is_symlink() or path.stat().st_size != metadata['bytes'] or digest(path) != metadata['sha256']:
+            raise ValueError('STAGE_FILE_CHANGED: ' + name)
+    return manifest
+
+
 def prepare(repo, stage, model, llama_bin):
     repo, stage, model, llama_bin = map(Path, (repo, stage, model, llama_bin))
     if stage.exists():
@@ -138,10 +174,13 @@ def archive(stage, destination):
     # A stdout stream can go straight from SSH onto another disk. ZIP64 and UNIX
     # permissions are required; files are at archive root (no wrapper directory).
     stage = Path(stage)
+    verify_stage(stage)
     output = sys.stdout.buffer if destination == '-' else open(destination, 'xb')
     try:
         with zipfile.ZipFile(output, 'w', allowZip64=True, compression=zipfile.ZIP_STORED) as z:
             for path in sorted(stage.rglob('*')):
+                if '__pycache__' in path.parts or path.suffix == '.pyc':
+                    continue
                 name = path.relative_to(stage).as_posix()
                 if path.is_dir():
                     info = zipfile.ZipInfo(name + '/')
@@ -171,11 +210,16 @@ if __name__ == '__main__':
     p.add_argument('--stage', required=True)
     p.add_argument('--model', required=True)
     p.add_argument('--llama-bin', required=True)
+    p = sub.add_parser('refreeze')
+    p.add_argument('--repo', required=True)
+    p.add_argument('--stage', required=True)
     p = sub.add_parser('zip')
     p.add_argument('--stage', required=True)
     p.add_argument('--destination', required=True)
     a = ap.parse_args()
     if a.command == 'prepare':
         prepare(a.repo, a.stage, a.model, a.llama_bin)
+    elif a.command == 'refreeze':
+        refreeze(a.repo, a.stage)
     else:
         archive(a.stage, a.destination)

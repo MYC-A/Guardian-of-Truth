@@ -14,6 +14,7 @@ import os
 from pathlib import Path
 import socket
 import secrets
+import signal
 import subprocess
 import tempfile
 import threading
@@ -101,6 +102,7 @@ class LocalClient:
         self.lock = threading.Lock()
         self.key_locks, self.cache = {}, {}
         self.calls = []
+        self.preflight_http = self.completion_http = self.cache_hits = 0
 
     def call(self, request, attempt=0, tag=''):
         from guardian_truth.integrated.transport import sha
@@ -111,12 +113,16 @@ class LocalClient:
             lock = self.key_locks.setdefault(key, threading.Lock())
         with lock:
             if key in self.cache:
+                with self.lock:
+                    self.cache_hits += 1
                 return dict(self.cache[key], cached=True)
             start = time.monotonic()
             record = dict(key=key, request_sha256=sha(request), model=self.model,
                           attempt=attempt, tag=tag, cached=False, content=None, usage=None)
             try:
                 # Uses the server's own tokenizer and chat template, not bytes/4.
+                with self.lock:
+                    self.preflight_http += 1
                 count = http_json(self.base + '/v1/chat/completions/input_tokens', request, api_key=self.api_key)
                 tokens = count.get('input_tokens')
                 if type(tokens) is not int or tokens < 0:
@@ -125,6 +131,8 @@ class LocalClient:
                 if tokens + request['max_tokens'] > self.context:
                     record['transport'] = dict(status='NOT_EXECUTED_CONTEXT_BUDGET')
                 else:
+                    with self.lock:
+                        self.completion_http += 1
                     data = http_json(self.base + '/v1/chat/completions', request, self.timeout, api_key=self.api_key)
                     choice = data['choices'][0]
                     record.update(content=choice['message'].get('content'),
@@ -141,12 +149,16 @@ class LocalClient:
 
 
 class ModelServer:
-    def __init__(self, root, work, slots, context, *, port=None, attach=False, fast=False):
+    def __init__(self, root, work, slots, context, *, port=None, attach=False, fast=False,
+                 batch_size=None, ubatch_size=None):
         self.root, self.work = Path(root), Path(work)
         self.slots, self.context = slots, context
         self.port, self.attach, self.fast = port, attach, fast
         self.process, self.log = None, None
         self.api_key = None if attach else secrets.token_hex(24)
+        self.batch_size, self.ubatch_size = batch_size, ubatch_size
+        self.signal_handlers = {}
+        self.props = None
 
     def __enter__(self):
         if self.port is None:
@@ -166,6 +178,10 @@ class ModelServer:
                        '--reasoning', 'off', '--no-context-shift', '--metrics', '--api-key', self.api_key]
             if self.fast:
                 command += ['-fa', 'on']
+            if self.batch_size is not None:
+                command += ['-b', str(self.batch_size)]
+            if self.ubatch_size is not None:
+                command += ['-ub', str(self.ubatch_size)]
             loader = self.root / 'runtime/lib/ld-linux-x86-64.so.2'
             if loader.is_file():
                 command = [str(loader), '--library-path',
@@ -175,6 +191,10 @@ class ModelServer:
             try:
                 self.process = subprocess.Popen(command, stdout=self.log, stderr=subprocess.STDOUT,
                                                 env=environment, start_new_session=(os.name != 'nt'))
+                if threading.current_thread() is threading.main_thread():
+                    for signum in (signal.SIGTERM, signal.SIGINT):
+                        self.signal_handlers[signum] = signal.getsignal(signum)
+                        signal.signal(signum, self._handle_signal)
             except BaseException:
                 self.log.close()
                 raise
@@ -192,6 +212,7 @@ class ModelServer:
                         raise RuntimeError('MODEL_HEALTH_FAILED')
                 time.sleep(0.2)
             props = http_json(f'http://127.0.0.1:{self.port}/props', api_key=self.api_key)
+            self.props = props
             if props.get('model_alias') != MODEL:
                 raise ValueError('SERVED_MODEL_MISMATCH')
             if props.get('default_generation_settings', {}).get('n_ctx') != self.context:
@@ -204,6 +225,9 @@ class ModelServer:
             raise
 
     def __exit__(self, *args):
+        for signum, previous in self.signal_handlers.items():
+            signal.signal(signum, previous)
+        self.signal_handlers.clear()
         if self.process is not None and self.process.poll() is None:
             self.process.terminate()
             try:
@@ -213,6 +237,10 @@ class ModelServer:
                 self.process.wait()
         if self.log is not None:
             self.log.close()
+
+    def _handle_signal(self, signum, frame):
+        self.__exit__(None, None, None)
+        raise SystemExit(128 + signum)
 
 
 def predict_one(row, client, layers):
@@ -240,6 +268,7 @@ def predict_one(row, client, layers):
 
 
 def main(argv=None):
+    started = time.monotonic()
     parser = argparse.ArgumentParser()
     parser.add_argument('--input', required=True)
     parser.add_argument('--output', required=True)
@@ -251,9 +280,13 @@ def main(argv=None):
     parser.add_argument('--port', type=int)
     parser.add_argument('--attach', action='store_true', help='Diagnostics only: use existing verified local model')
     parser.add_argument('--fast', action='store_true', help='Separate profile: enable FlashAttention; quality must be measured')
+    parser.add_argument('--batch-size', type=int, help='Separate performance profile: logical prefill batch limit')
+    parser.add_argument('--ubatch-size', type=int, help='Separate performance profile: physical prefill microbatch limit')
     options = parser.parse_args(argv)
     if options.workers < 1 or options.context < 4096 or (options.attach and options.port is None):
         parser.error('invalid workers/context/attach port')
+    if any(value is not None and value < 1 for value in (options.batch_size, options.ubatch_size)):
+        parser.error('batch sizes must be positive')
     if Path(options.input).resolve() == Path(options.output).resolve():
         parser.error('input and output must differ')
     if Path(options.output).exists():
@@ -264,12 +297,12 @@ def main(argv=None):
         return
     work = options.work_dir or Path(tempfile.mkdtemp(prefix='guardian-qwen-'))
     work.mkdir(parents=True, exist_ok=True)
-    started = time.monotonic()
     # No research records or gold/caches are read. IDs only align the output.
     traces = {}
     try:
         with ModelServer(options.root, work, options.workers, options.context,
-                         port=options.port, attach=options.attach, fast=options.fast) as server:
+                         port=options.port, attach=options.attach, fast=options.fast,
+                         batch_size=options.batch_size, ubatch_size=options.ubatch_size) as server:
             client = LocalClient(server.port, options.context, api_key=server.api_key)
             from guardian_truth.v6fix.pipeline import Layers
             layers = Layers(client, MODEL, budget=20000, attempts=(0, 1), frules_max_tokens=700)
@@ -289,15 +322,22 @@ def main(argv=None):
         invalid = [r['id'] for r in rows if type(traces[r['id']].get('binary')) is not int
                    or traces[r['id']]['binary'] not in (0, 1)]
         report = dict(rows=len(rows), completed=len(rows) - len(invalid), invalid_ids=invalid,
-                      seconds=time.monotonic() - started, profile='B2-fast' if options.fast else 'B2',
+                      profile='B2-fast' if options.fast else 'B2',
                       model=MODEL, calls=len(client.calls),
+                      workers=options.workers, context_per_slot=options.context,
+                      explicit_flash=options.fast, batch_size=options.batch_size, ubatch_size=options.ubatch_size,
+                      server_props=server.props, preflight_http=client.preflight_http,
+                      completion_http=client.completion_http, cache_hits=client.cache_hits,
                       input_tokens=sum((c.get('usage') or {}).get('prompt_tokens', 0) for c in client.calls),
                       output_tokens=sum((c.get('usage') or {}).get('completion_tokens', 0) for c in client.calls))
-        (work / 'run.json').write_text(json.dumps(report, indent=2), encoding='utf-8')
         if invalid:
+            report.update(seconds=time.monotonic() - started, output_written=False)
+            (work / 'run.json').write_text(json.dumps(report, indent=2), encoding='utf-8')
             raise RuntimeError(f'INCOMPLETE_PREDICTIONS: {invalid}; traces at {work}')
         write_predictions(options.output, [dict(id=r['id'], label=traces[r['id']]['binary']) for r in rows],
                           options.output_format)
+        report.update(seconds=time.monotonic() - started, output_written=True)
+        (work / 'run.json').write_text(json.dumps(report, indent=2), encoding='utf-8')
     finally:
         print(f'receipts={work} elapsed={time.monotonic()-started:.2f}s', flush=True)
 

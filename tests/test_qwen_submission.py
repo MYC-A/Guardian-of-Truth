@@ -63,6 +63,8 @@ def test_client_reserves_completion_and_never_sends_overflow(monkeypatch):
     record = client.call(dict(model=client.model, messages=[], max_tokens=1700))
     assert record['transport']['status'] == 'NOT_EXECUTED_CONTEXT_BUDGET'
     assert len(calls) == 1
+    assert client.preflight_http == 1
+    assert client.completion_http == 0
 
 
 def test_client_exact_request_attempt_cache(monkeypatch):
@@ -80,6 +82,32 @@ def test_client_exact_request_attempt_cache(monkeypatch):
     assert client.call(request)['cached'] is True
     client.call(request, attempt=1)
     assert len(calls) == 4
+    assert client.preflight_http == 2
+    assert client.completion_http == 2
+    assert client.cache_hits == 1
+
+
+def test_full_entry_failure_writes_receipts_but_no_predictions(monkeypatch, tmp_path):
+    from guardian_truth.submission import cli
+    class Server:
+        closed = False
+        api_key = None
+        port = 9999
+        props = {}
+        def __init__(self, *a, **k): pass
+        def __enter__(self): return self
+        def __exit__(self, *args): Server.closed = True
+    monkeypatch.setattr(cli, 'ModelServer', Server)
+    monkeypatch.setattr(cli, 'predict_one', lambda *a: dict(id='001', binary=None, error='schema failure'))
+    source = tmp_path / 'input.csv'
+    source.write_text('id,prompt,response\n001,p,r\n', encoding='utf-8')
+    destination = tmp_path / 'predictions.parquet'
+    work = tmp_path / 'work'
+    with pytest.raises(RuntimeError, match='INCOMPLETE_PREDICTIONS'):
+        main(['--input', str(source), '--output', str(destination), '--work-dir', str(work)])
+    assert Server.closed
+    assert not destination.exists()
+    assert json.loads((work / 'run.json').read_text())['invalid_ids'] == ['001']
 
 
 def test_rejected_primary_cannot_become_negative(monkeypatch):
