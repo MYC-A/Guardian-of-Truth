@@ -99,6 +99,7 @@ def prepare(repo, stage, model, llama_bin):
                          ('submission/build_backend.py', 'build_backend.py'),
                          ('docs/qwen_submission_20261008/RUNBOOK.md', 'README.md')]:
         copy_file(repo / source, stage / dest)
+    shutil.copytree(repo / 'submission/licenses', stage / 'licenses')
     (stage / 'model').mkdir()
     # Same-filesystem hardlink: do not allocate another full weight file.
     os.link(model.resolve(), stage / 'model/Qwen3.8-27B-Q8_0.gguf')
