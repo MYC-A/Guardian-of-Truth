@@ -21,6 +21,7 @@ def main():
     ap = argparse.ArgumentParser()
     ap.add_argument('--stage', type=Path, required=True)
     ap.add_argument('--output-dir', type=Path, required=True)
+    ap.add_argument('--installer-python', default=shutil.which('python3'), help='Platform Python with pip; separate from builder venv')
     a = ap.parse_args()
     if sys.platform != 'linux' or os.getuid() != 0:
         raise RuntimeError('SMOKE_REQUIRES_LINUX_ROOT_FOR_RUNUSER')
@@ -61,9 +62,9 @@ def main():
         logs[name] = result.returncode
         if result.returncode:
             raise RuntimeError(name + '_FAILED')
-    run('offline_install', [sys.executable, '-m', 'pip', 'install', '--no-index', '--no-deps',
+    run('offline_install', [a.installer_python, '-m', 'pip', 'install', '--no-index', '--no-deps',
                             '--target', str(work / 'installed'), str(extracted)])
-    run('empty_entrypoint', [sys.executable, str(extracted / 'scripts/predict.py'),
+    run('empty_entrypoint', [a.installer_python, str(extracted / 'scripts/predict.py'),
                              '--input', str(source), '--output', str(work / 'predictions.csv')])
     if (work / 'predictions.csv').read_bytes()[:4] != b'PAR1':
         raise RuntimeError('DEFAULT_OUTPUT_NOT_PARQUET')
