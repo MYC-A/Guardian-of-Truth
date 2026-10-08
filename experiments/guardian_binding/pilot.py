@@ -97,16 +97,22 @@ def main():
     ap.add_argument('--max-calls', type=int, required=True)
     ap.add_argument('--context-tokens', type=int, default=32768)
     ap.add_argument('--max-verify', type=int, default=2)
+    ap.add_argument('--wire', choices=('verbose', 'compact'), default='verbose')
+    ap.add_argument('--timeout', type=int, default=90)
     a = ap.parse_args()
-    if min(a.workers, a.max_calls, a.context_tokens) < 1 or a.max_verify < 0:
+    if min(a.workers, a.max_calls, a.context_tokens, a.timeout) < 1 or a.max_verify < 0:
         ap.error('invalid budgets')
+    if a.wire == 'compact':
+        from . import blind_compact as binding_module
+    else:
+        binding_module = blind
     inputs = [json.loads(line) for line in a.input.read_text(encoding='utf-8').splitlines() if line.strip()]
     ids = [r['id'] for r in inputs]
     if len(ids) != len(set(ids)):
         raise ValueError('DUPLICATE_INPUT_IDS')
     if any(set(r) - {'id', 'prompt', 'response'} for r in inputs):
         raise ValueError('NON_RUNTIME_FIELDS_IN_INPUT')
-    files = [Path(__file__), Path(blind.__file__), Path(__file__).with_name('audit.py')]
+    files = [Path(__file__), Path(blind.__file__), Path(binding_module.__file__), Path(__file__).with_name('audit.py')]
     endpoint = backend_endpoint('local-llamacpp')
     if urlsplit(endpoint).hostname not in ('127.0.0.1', 'localhost', '::1'):
         raise ValueError('PILOT_REQUIRES_LOCAL_ENDPOINT')
@@ -118,7 +124,7 @@ def main():
         raise ValueError('SERVED_MODEL_OR_CONTEXT_MISMATCH')
     config = dict(version=VERSION, model=a.model_id, endpoint=endpoint, served_model_meta=served.get('meta'),
                   workers=a.workers, max_calls=a.max_calls,
-                  context_tokens=a.context_tokens, max_verify=a.max_verify, timeout=90,
+                  context_tokens=a.context_tokens, max_verify=a.max_verify, timeout=a.timeout, wire=a.wire,
                   input_sha256=hashlib.sha256(a.input.read_bytes()).hexdigest(), expected_ids=ids,
                   modes=list(blind.MODES), code={p.name: hashlib.sha256(p.read_bytes()).hexdigest() for p in files},
                   head=subprocess.check_output(['git', 'rev-parse', 'HEAD'], cwd=ROOT).decode().strip())
@@ -143,7 +149,7 @@ def main():
                 raise ValueError('INVALID_RESUME_IDS')
             done.add(key)
         client = ReservedClient(client_for('local-llamacpp', a.model_id, a.output / 'cache',
-                                          max_calls=a.max_calls, timeout=90), a.output / 'reservations.jsonl', a.max_calls)
+                                          max_calls=a.max_calls, timeout=a.timeout), a.output / 'reservations.jsonl', a.max_calls)
 
         def execute(request, tag):
             count = context_count(request, base)
@@ -164,13 +170,13 @@ def main():
                 elif not any(t.get('kind') == 'call' for t in packet['current_targets']):
                     record.update(status='NO_CALL', automatic_addition=False)
                 else:
-                    request = blind.construct_request(packet, a.model_id, mode)
+                    request = binding_module.construct_request(packet, a.model_id, mode)
                     reply = execute(request, 'extract_' + mode)
                     record.update(packet_sha256=sha(packet), extraction=reply, packet_coverage=packet['coverage'])
                     if transport_failure(reply) or reply.get('finish_reason') != 'stop':
                         record['status'] = 'TECHNICAL_FAILURE'
                     else:
-                        admitted = blind.admit(reply.get('content'), packet)
+                        admitted = binding_module.admit(reply.get('content'), packet)
                         record.update(status=admitted['admission'], admission=admitted, verifications=[])
                         candidates = admitted['mismatch_candidates']
                         for candidate in candidates[:a.max_verify]:
