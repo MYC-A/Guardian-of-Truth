@@ -24,8 +24,8 @@ SHA256: 46317b9570c76833771f14468e045e642f9802c7b516fba8234fefa23a493835
 Локальная цель скачивания:
 
 ```text
-A:\Guardian-submissions\guardian-qwen-b2-20261008-http.zip
-A:\Guardian-submissions\guardian-qwen-b2-20261008-http.zip.status.json
+A:\Guardian-submissions\guardian-qwen-b2-20261008-r3.zip
+A:\Guardian-submissions\guardian-qwen-b2-20261008-r3.zip.status.json
 ```
 
 Файл с окончанием `.partial` не готов. `READY` в status означает завершённую
@@ -34,7 +34,7 @@ A:\Guardian-submissions\guardian-qwen-b2-20261008-http.zip.status.json
 скачивание. Перед загрузкой проверяется именно окончательный файл:
 
 ```powershell
-Get-FileHash -Algorithm SHA256 A:\Guardian-submissions\guardian-qwen-b2-20261008-http.zip
+Get-FileHash -Algorithm SHA256 A:\Guardian-submissions\guardian-qwen-b2-20261008-r3.zip
 ```
 
 ## Загрузка
