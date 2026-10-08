@@ -14,7 +14,7 @@ def test_archive_root_and_all_native_executables_have_linux_permissions(tmp_path
     stage = tmp_path / 'stage'
     paths = ['runtime/llama/llama-server', 'runtime/python/bin/python3.12',
              'runtime/lib/ld-linux-x86-64.so.2', 'scripts/predict.py', 'pyproject.toml',
-             'model/Qwen3.8-27B-Q8_0.gguf']
+             'model/Qwen3.8-27B-Q8_0.gguf', 'Dockerfile']
     for name in paths:
         path = stage / name
         path.parent.mkdir(parents=True, exist_ok=True)
@@ -40,3 +40,12 @@ def test_archive_root_and_all_native_executables_have_linux_permissions(tmp_path
     with pytest.raises(ValueError, match='STAGE_FILE_CHANGED'):
         builder.archive(stage, str(tmp_path / 'tampered.zip'))
     assert not (tmp_path / 'tampered.zip').exists()
+    downloader_script = script.with_name('download_qwen_submission.py')
+    spec = importlib.util.spec_from_file_location('submission_downloader', downloader_script)
+    downloader = importlib.util.module_from_spec(spec)
+    spec.loader.exec_module(downloader)
+    assert downloader.verify_archive(archive)['model_sha256'] == metadata['sha256']
+    with zipfile.ZipFile(archive, 'a') as z:
+        z.writestr('unexpected_file', b'not in frozen manifest')
+    with pytest.raises(ValueError, match='ZIP_MANIFEST_FILE_SET_MISMATCH'):
+        downloader.verify_archive(archive)
