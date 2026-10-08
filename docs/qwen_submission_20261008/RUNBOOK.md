@@ -54,11 +54,15 @@ Research-only replay after a complete benchmark (not included in the archive):
 
 ```sh
 python scripts/qwen_submission_reproject.py --input valid.parquet \
-  --traces /path/to/frozen/traces.jsonl --output-dir /path/to/NEW/projection
+  --traces /path/to/frozen/traces.jsonl --output-dir /path/to/NEW/projection \
+  --expected-input-sha256 FROZEN_PHASE_INPUT_SHA256
 ```
 
 It blocks network access, requires exactly the full input ID set, shares the
 live final projection, preserves raw files and reports the wrapper correction
 separately. Labels are read only after projection for scoring; they never enter
-the runtime. A real primary failure prevents a full prediction file and produces
+the runtime. New runtime traces bind prompt/response bytes with a row fingerprint.
+Legacy traces without it are explicitly marked as relying on the phase-level
+fingerprint; matching IDs alone is not source authentication.
+A real primary failure prevents a full prediction file and produces
 explicit full-denominator sensitivity bounds rather than an imputed negative.

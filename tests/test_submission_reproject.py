@@ -1,5 +1,6 @@
 """Complete-input projection must be gold-blind and preserve old raw files."""
 import json
+import hashlib
 from pathlib import Path
 import subprocess
 import sys
@@ -11,7 +12,8 @@ ROOT = Path(__file__).resolve().parents[1]
 
 def run_projection(source, trace, output):
     return subprocess.run([sys.executable, '-X', 'utf8', str(ROOT / 'scripts/qwen_submission_reproject.py'),
-                           '--input', str(source), '--traces', str(trace), '--output-dir', str(output)],
+                           '--input', str(source), '--traces', str(trace), '--output-dir', str(output),
+                           '--expected-input-sha256', hashlib.sha256(source.read_bytes()).hexdigest()],
                           capture_output=True, text=True)
 
 
@@ -58,4 +60,18 @@ def test_missing_trace_ids_refuse_whole_input_score(tmp_path):
     process = run_projection(source, trace, output)
     assert process.returncode != 0
     assert 'INCOMPLETE_OR_UNEXPECTED_TRACE_IDS' in process.stderr
+    assert not output.exists()
+
+
+def test_same_id_different_source_bytes_cannot_reuse_a_bound_trace(tmp_path):
+    from guardian_truth.submission.cli import row_fingerprint
+    source = tmp_path / 'input.parquet'
+    pd.DataFrame([dict(id='a', prompt='changed policy', response='r', label=1)]).to_parquet(source)
+    trace = tmp_path / 'raw.jsonl'
+    trace.write_text(json.dumps(dict(id='a', input_row_sha256=row_fingerprint(dict(prompt='original policy', response='r')))),
+                     encoding='utf-8')
+    output = tmp_path / 'projection'
+    process = run_projection(source, trace, output)
+    assert process.returncode != 0
+    assert 'TRACE_SOURCE_FINGERPRINT_MISMATCH' in process.stderr
     assert not output.exists()

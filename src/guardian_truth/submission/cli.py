@@ -9,6 +9,7 @@ from __future__ import annotations
 import argparse
 from concurrent.futures import ThreadPoolExecutor, as_completed
 import csv
+import hashlib
 import json
 import os
 from pathlib import Path
@@ -250,7 +251,14 @@ def predict_one(row, client, layers):
                  max_tokens=3400, max_request_bytes=60000)
     rec = run_v5(row, hook, flags=ARMS['R_fix'], provider='local-llamacpp', model=MODEL, attempt=0)
     layer = layers.findings(row)
-    return finalize_trace(dict(id=row['id'], rec=rec, pre_steps=hook.log, layer_trace=layer))
+    return finalize_trace(dict(id=row['id'], input_row_sha256=row_fingerprint(row),
+                               rec=rec, pre_steps=hook.log, layer_trace=layer))
+
+
+def row_fingerprint(row):
+    data = {key: row[key] for key in ('prompt', 'response')}
+    return hashlib.sha256(json.dumps(data, sort_keys=True, ensure_ascii=False,
+                                     separators=(',', ':')).encode('utf-8')).hexdigest()
 
 
 def finalize_trace(raw):
@@ -305,7 +313,10 @@ def main(argv=None):
         parser.error('input and output must differ')
     if Path(options.output).exists():
         parser.error('output already exists; choose a fresh path')
+    input_sha256 = hashlib.sha256(Path(options.input).read_bytes()).hexdigest()
     rows = read_rows(options.input)
+    if hashlib.sha256(Path(options.input).read_bytes()).hexdigest() != input_sha256:
+        raise ValueError('INPUT_CHANGED_DURING_READ')
     if not rows:
         write_predictions(options.output, [], options.output_format)
         return
@@ -336,6 +347,8 @@ def main(argv=None):
         invalid = [r['id'] for r in rows if type(traces[r['id']].get('binary')) is not int
                    or traces[r['id']]['binary'] not in (0, 1)]
         report = dict(rows=len(rows), completed=len(rows) - len(invalid), invalid_ids=invalid,
+                      input_sha256=input_sha256,
+                      cli_sha256=hashlib.sha256(Path(__file__).read_bytes()).hexdigest(),
                       profile='B2-fast' if options.fast else 'B2',
                       model=MODEL, calls=len(client.calls),
                       workers=options.workers, context_per_slot=options.context,

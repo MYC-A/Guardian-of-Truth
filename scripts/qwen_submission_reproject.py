@@ -42,15 +42,20 @@ def main():
     ap.add_argument('--input', type=Path, required=True)
     ap.add_argument('--traces', type=Path, required=True)
     ap.add_argument('--output-dir', type=Path, required=True)
+    ap.add_argument('--expected-input-sha256', required=True, help='Frozen phase input fingerprint, not an inferred ID match')
     a = ap.parse_args()
     def deny_network(*args, **kwargs):
         raise RuntimeError('OFFLINE_REPROJECTION_NETWORK_FORBIDDEN')
     socket.create_connection = deny_network
     socket.socket.connect = deny_network
     socket.socket.connect_ex = deny_network
-    from guardian_truth.submission.cli import finalize_trace, read_rows, write_predictions
+    from guardian_truth.submission.cli import finalize_trace, read_rows, row_fingerprint, write_predictions
     import pandas as pd
-    identifiers = [r['id'] for r in read_rows(a.input)]
+    input_sha256 = hashlib.sha256(a.input.read_bytes()).hexdigest()
+    if input_sha256 != a.expected_input_sha256:
+        raise ValueError('FROZEN_INPUT_FINGERPRINT_MISMATCH')
+    input_rows = read_rows(a.input)
+    identifiers = [r['id'] for r in input_rows]
     original = [json.loads(s) for s in a.traces.read_text(encoding='utf-8').splitlines() if s.strip()]
     index = {}
     for row in original:
@@ -60,6 +65,12 @@ def main():
     if set(index) != set(identifiers):
         raise ValueError('INCOMPLETE_OR_UNEXPECTED_TRACE_IDS')
     original = [index[i] for i in identifiers]
+    legacy_rows = 0
+    for source, trace in zip(input_rows, original):
+        if 'input_row_sha256' not in trace:
+            legacy_rows += 1
+        elif trace['input_row_sha256'] != row_fingerprint(source):
+            raise ValueError('TRACE_SOURCE_FINGERPRINT_MISMATCH: ' + source['id'])
     revised = [finalize_trace(r) for r in original]
     # Only now access gold, entirely outside the runtime projection.
     gold = pd.read_parquet(a.input) if a.input.read_bytes()[:4] == b'PAR1' else pd.read_csv(a.input, dtype={'id': str})
@@ -69,7 +80,10 @@ def main():
     labels = [by_id[i] for i in identifiers]
     before, after = score(labels, original), score(labels, revised)
     report = dict(version='submission-terminal-projection-2', rows=len(identifiers),
-                  input_sha256=hashlib.sha256(a.input.read_bytes()).hexdigest(),
+                  input_sha256=input_sha256,
+                  row_fingerprints_verified=len(original) - legacy_rows,
+                  legacy_without_row_fingerprint=legacy_rows,
+                  input_binding='PHASE_HASH_ONLY_LEGACY_ROWS_PRESENT' if legacy_rows else 'ROW_HASH_VERIFIED',
                   traces_sha256=hashlib.sha256(a.traces.read_bytes()).hexdigest(),
                   commit=subprocess.check_output(['git', '-C', str(ROOT), 'rev-parse', 'HEAD'], text=True).strip(),
                   model_calls=0, before=before, after=after,
