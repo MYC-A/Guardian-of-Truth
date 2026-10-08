@@ -124,6 +124,43 @@ def test_rejected_primary_cannot_become_negative(monkeypatch):
     assert trace['error'] == 'PRIMARY_INFERENCE_FAILURE'
 
 
+@pytest.mark.parametrize('decision,expected', [('NO_ERROR', 0), ('ERROR', 1)])
+def test_optional_prepass_budget_fallback_keeps_valid_terminal_review(monkeypatch, decision, expected):
+    from guardian_truth.repair import v5
+    from guardian_truth.submission.cli import predict_one
+    class Layers:
+        def findings(self, row):
+            return dict(findings=[])
+    def terminal(row, hook, **kwargs):
+        hook.log.append(dict(tag='pre_injection_budget', injected=False,
+                             transport=dict(status='NOT_EXECUTED_INPUT_BUDGET'),
+                             fallback='UNCHANGED_BASE_REVIEW_IF_WITHIN_BYTE_CAP'))
+        return dict(base_error=bool(expected), A=dict(final=decision, binary=expected, owner='review',
+                           reasons=[], steps=[dict(tag='review', raw_content='{}',
+                                                   transport=dict(status=200))]),
+                    A_adm2=dict(decision=decision, admission='ADMITTED', reason='valid terminal receipt'))
+    monkeypatch.setattr(v5, 'run_v5', terminal)
+    trace = predict_one(dict(id='arbitrary', prompt='p', response='r'), LocalClient(9999, 32768), Layers())
+    assert trace['binary'] == expected
+    assert 'error' not in trace
+    assert trace['technical_gaps'] == [dict(path='/pre_steps/0', status='NOT_EXECUTED_INPUT_BUDGET')]
+
+
+def test_actual_primary_transport_failure_stays_failure(monkeypatch):
+    from guardian_truth.repair import v5
+    from guardian_truth.submission.cli import predict_one
+    class Layers:
+        def findings(self, row):
+            return dict(findings=[])
+    monkeypatch.setattr(v5, 'run_v5', lambda *a, **k: dict(
+        A=dict(final='NO_ERROR', binary=0, owner='review', reasons=[],
+               steps=[dict(tag='review', raw_content=None, transport=dict(status='EXC'))]),
+        A_adm2=dict(decision='NO_ERROR', admission='ADMITTED')))
+    trace = predict_one(dict(id='arbitrary', prompt='p', response='r'), LocalClient(9999, 32768), Layers())
+    assert trace['binary'] is None
+    assert trace['error'] == 'PRIMARY_INFERENCE_FAILURE'
+
+
 def test_occupied_port_does_not_spawn(monkeypatch, tmp_path):
     import socket
     from guardian_truth.submission import cli

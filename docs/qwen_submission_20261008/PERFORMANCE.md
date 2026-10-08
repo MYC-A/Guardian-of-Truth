@@ -55,9 +55,16 @@ Queued candidate: workers16, same context/weights/prompts, FlashAttention on,
 batch8192, microbatch512. Each phase writes to a fresh directory under
 `/workspace/guardian/submission/bench-{baseline,speed16}-20261008/`.
 
-A partial control trace already contains a primary admission failure. It is
-recorded as a technical gap, not projected to a negative label. Partial progress
-does not establish a complete quality score or compliance with the30-minute
-whole-input limit. Final receipts and the paired result are still pending.
+A partial control trace exposed a packaging classification bug: a skipped blind
+analysis injection had an explicit fallback to the unchanged reviewer. The
+reviewer returned a valid admitted NO_ERROR, but the wrapper classified the
+optional pre-injection budget marker as a primary failure. The fix checks the
+terminal primary receipt separately; the auxiliary gap remains visible. A failed
+actual reviewer still cannot produce a negative prediction. This changes no
+model request. Running stages remain unchanged; corrected projection of their
+raw traces must be reported separately rather than editing historical outputs.
+
+Partial progress does not establish a complete quality score or compliance with
+the30-minute whole-input limit. Final receipts and paired results are pending.
 
 See EXVRAM_RELEVANCE.md for the low-bit article and the limits of that comparison.

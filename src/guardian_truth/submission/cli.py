@@ -259,9 +259,13 @@ def predict_one(row, client, layers):
     primary_valid = (rec.get('A_adm2') or {}).get('decision') in ('ERROR', 'NO_ERROR', 'UNKNOWN')
     if 'A_adm2' not in rec:
         primary_valid = (rec.get('A') or {}).get('final') in ('ERROR', 'NO_ERROR', 'UNKNOWN')
+    # The blind pre-pass is optional: Hook's declared fallback can execute the
+    # unchanged reviewer after an injection exceeds its byte cap. Its failed or
+    # skipped proposal stays in technical_gaps, but does not invalidate a valid
+    # terminal reviewer receipt. Inspect the actual primary receipt separately.
     # A separately established violation survives a failed auxiliary pass;
     # an invalid primary receipt must never manufacture a negative decision.
-    if decision['binary'] == 0 and (failed_record(trace) or not primary_valid):
+    if decision['binary'] == 0 and (failed_record(dict(rec=rec)) or not primary_valid):
         trace['binary'] = None
         trace['error'] = 'PRIMARY_INFERENCE_FAILURE'
     return trace
