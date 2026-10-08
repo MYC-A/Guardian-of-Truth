@@ -41,3 +41,22 @@ The first test attempt used an older unrelated replay environment lacking `jsons
 ## Limits for interpreting the pilot
 
 The schema caps assessments at 12 scalar leaves and output at 1700 tokens; omitted arguments remain visible in coverage. A valid model abstention or empty assessment can yield no addition and therefore a binary FN under an explicit OR projection. No addition must not be described as proof of no violation. Empty-norm packets cannot establish a policy violation through this verifier. Native live preflight and malformed server-response behavior have not been exercised by the independent reviewer. This review does not claim improved F1, generalization or independence of the synthetic diagnostics.
+
+## Phase 2 compact-format addendum, 2026-10-08
+
+**No blocking code issue found for the separately frozen compact diagnostic phase.** Reviewed `blind_compact.py` and the runner's new `--wire compact` / `--timeout 240` routing without SSH or API calls. The parent reported Phase 1 explicitly stopped after transport timeouts; partial records, reservations and manifest are preserved under `phase1_transport_stop`. This review does not certify completion of that stopped phase or reuse its incomplete inventory as a completed evaluation.
+
+The compact module reuses the exact v1 user-message source view and blind/visible intervention, with six output fields and a 900-token output budget. Source-address admission delegates to the same strict typed-leaf and target-identity code. Duplicate JSON keys, unknown IDs, noncanonical pointers, failed receipts and assistant-summary request sources remain rejected or unresolved. `request_quote` is the full code-owned source text, explicitly marked `CODE_SOURCE_TEXT`; it is not a quote selected by the model. Both records and mismatch candidates retain `MODEL_HYPOTHESIS`, unresolved binding/applicability, no certificate and no final code authority. The unchanged full-packet policy verifier remains necessary before an addition.
+
+This changes more than key length: the system prompt changes, model rationale/policy selection/quotes are removed, and request references are restricted to historical USER text rather than all history. Therefore Phase 2 must remain a distinct output/cache/config phase, and it is not a pure output-length latency ablation or a repair of frozen Phase 1 predictions. The paired blind/visible comparison within Phase 2 uses the same compact contract in both arms. Lower latency is a hypothesis until measured.
+
+The runner freezes `wire`, timeout and compact-module hash, and passes the chosen timeout to the actual client. Existing phase fingerprints refuse an incompatible resume; extraction request/cache identity changes with the compact prompt/schema, and verifier hypotheses carry the compact provenance fields. The durable reservation cap, null technical-failure projection, native context check and complete paired output inventory are unchanged. Timeout 240 changes inference waiting time; preflight HTTP helpers retain their existing shorter timeouts. The 520-call limit applies to Phase 2's own reservations, not retrospectively to the sum of separately stopped phases; report cross-phase attempts separately.
+
+Independent validation with bytecode writing disabled:
+
+```text
+python -X utf8 -m pytest -q tests/test_qwen_blind_compact.py tests/test_qwen_blind_binding.py tests/test_qwen_binding_pilot.py
+60 passed in 0.76s
+```
+
+An additional offline main-runner probe exercised compact extraction and the existing policy verifier in both modes: four mocked calls, 900-token requests, timeout 240 passed to the client, `wire=compact` and compact-file hash frozen in the manifest, compact admission version retained, and byte-identical resume with no additional calls. Reviewer HTTP/SSH/model inference calls: zero. The v1 binding module was not edited by this review.
