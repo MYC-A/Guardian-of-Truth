@@ -27,3 +27,11 @@ QB2 6/0/4 F1 .750 -> THINK 8/0/2 F1 .889; changes: ext_ret_000 FN->TP, ext_tel_0
 found generically by the reviewer), 0 new FP. All 13 rows delivered as verdict (the 2026-10-07 delivery collapse is fixed
 by budget+cap). Cost ~7 min/row-slot (~0.6 rows/min with 6 slots). Too small for a conclusion; runs continue
 (ext_tau2 -> hold_tau2h -> lb3_long).
+
+## Final status (stopped on user request, 2026-10-08 ~04:50 UTC) — thinking arm NOT concluded
+Paired, labelled rows only: ext_tau2 17 rows QB2 9/1/4 F1 .783 -> THINK 10/1/3 .833 (OR 11/1/2 .880);
+valid46 5 rows QB2 1/0/0 -> THINK 1/1/0 (new FP airline__10::t19). Too few rows for any decision.
+Incidents: thinking server was killed with its parent script (my error); failed attempts are not retried by default
+(retry_failed=0), so the next run wrote instant no_solution records -> removed, rerun with --retry-failed 1.
+Cost: ~7 min per row per slot (6 slots, llama.cpp, A100) -> 548 rows ~13-14 h; not viable without vLLM/cascade.
+Thinking server (8083) stopped. Granite stopped. Port 8081 (non-thinking Qwen, started by the other agent) left running.
