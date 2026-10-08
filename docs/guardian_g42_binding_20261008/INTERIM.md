@@ -8,3 +8,15 @@ Decision: Qwen stays the base model. Sample is small (15 rows) -> indicative, no
 H3 binding audit (Qwen, code-verified mismatch): 0 VERIFIED_MISMATCH on 59 dev rows (valid46 + ext_tau2 partial) -> no change.
 Root cause: Qwen itself maps the entity wrongly (ext_tel_008: user phone ...2002, call used L1001, audit says MATCH).
 The model-side audit inherits the reviewer's blind spot; needs a deterministic entity-attribute check instead.
+
+## Deterministic checks (no LLM), experiments/guardian_binding/idcheck.py — designed AFTER inspecting dev errors
+- A UNGROUNDED_ID (id-like arg of a non-read, non-create call never seen in user/tool/system text): 0 changes on dev and test.
+  Before the create-verb exclusion it fired on 3 frozen120 "new id allowed" traps (FP) -> exclusion added.
+- B ATTRIBUTE_CONFLICT (call id selects an object whose attribute, e.g. phone number, differs from the user-stated value
+  of the same attribute): dev +5 TP / 0 FP. First version gave test +1 TP / +8 FP (foreign-key matches); fixed to
+  "own (first) identifier + non-id attribute" AFTER seeing those test FPs -> test is no longer fully clean for B.
+  0 fires on 314 other unlabelled/synthetic rows. All 5 gains are one scenario family (telecom line binding).
+- C TURN_FORMAT (call + user message in one turn, only if policy text forbids doing both): 35/35 such rows are gold
+  errors; QB2 already catches 34 -> +1 TP.
+- QB2 | A | B | C: dev 130/8/34 F1 .861 -> 136/8/28 .883; test (lb2+lb3+lb_long, 148 rows) 71/2/2 .973 -> unchanged.
+- LLM binding audit (H3): stopped; 0 verified mismatches on 77 call rows (same blind spot as the reviewer).
