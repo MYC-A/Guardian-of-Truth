@@ -2,7 +2,7 @@
 Usage (server, PYTHONPATH=src:.): python -m experiments.guardian_complementarity.combine --json out.json"""
 import argparse, json, random
 from pathlib import Path
-from experiments.guardian_local_a100.score_local import gold_for, classify_row
+from experiments.guardian_local_a100.score_local import gold_for, classify_row, steps
 
 ROOT = Path(__file__).resolve().parents[2]
 LOC = ROOT / 'outputs/guardian_local_a100'
@@ -18,7 +18,22 @@ def runs(p, variant, pick='binary'):
     out = {}
     for x in p.read_text(encoding='utf-8').splitlines():
         if x.strip():
-            r = json.loads(x); out[r['id']] = dict(b=r.get(pick), cls=classify_row(r, variant, pick))
+            r = json.loads(x)
+            cls = classify_row(r, variant, pick)
+            b = r.get(pick) if cls not in ('no_solution', 'missing') else None
+            if b is not None and (type(b) is not int or b not in (0, 1)):
+                raise ValueError('INVALID_BINARY: ' + str(r.get('id')))
+            # Cached duplicate receipts are not independent attempts. Conflicting
+            # successful raw replies require an explicit selection/retry ledger.
+            signature = json.dumps(dict(binary=b, cls=cls, owner=r.get('owner'), accusation=r.get('accusation'),
+                                         raw=[dict(key=s.get('key'), request_sha256=s.get('request_sha256'),
+                                                   raw_content=s.get('raw_content'), content=s.get('content'))
+                                              for s in steps(r, [])]), sort_keys=True)
+            previous = out.get(r['id'])
+            if previous and previous['receipt_signature'] != signature:
+                raise ValueError('CONFLICTING_DUPLICATE_ID: ' + r['id'])
+            out[r['id']] = dict(b=b, cls=cls, receipt_signature=signature,
+                                duplicate_receipts=(previous or {}).get('duplicate_receipts', 0) + bool(previous))
     return out
 
 
@@ -26,22 +41,41 @@ def granite(s):
     p = GR / f'compl_{s}/records.jsonl'
     if not p.exists():
         return None
-    return {r['id']: dict(b=(1 if r.get('risk_token') == 'yes' else 0 if r.get('risk_token') == 'no' else None), cls=r.get('status'))
-            for r in map(json.loads, p.read_text(encoding='utf-8').splitlines())}
+    out = {}
+    for line in p.read_text(encoding='utf-8').splitlines():
+        if not line.strip():
+            continue
+        r = json.loads(line)
+        if r['id'] in out:
+            raise ValueError('DUPLICATE_GRANITE_ID: ' + r['id'])
+        good = r.get('status') == 'ok'
+        out[r['id']] = dict(b=(1 if good and r.get('risk_token') == 'yes' else
+                               0 if good and r.get('risk_token') == 'no' else None), cls=r.get('status'))
+    return out
 
 
 def score(gold, pred):
-    tp = fp = fn = tn = und = 0
+    tp = fp = fn = tn = und = und_pos = und_neg = 0
     for i, y in gold.items():
         b = pred.get(i)
         if b is None:
-            und += 1; continue
+            und += 1
+            if y: und_pos += 1
+            else: und_neg += 1
+            continue
         if y and b: tp += 1
         elif y: fn += 1
         elif b: fp += 1
         else: tn += 1
     f1 = 2 * tp / (2 * tp + fp + fn) if tp else 0.0
-    return dict(tp=tp, fp=fp, fn=fn, tn=tn, undecided=und, f1=round(f1, 4))
+    def f(num_tp, num_fp, num_fn):
+        den = 2 * num_tp + num_fp + num_fn
+        return round(2 * num_tp / den, 4) if den else 0.0
+    return dict(tp=tp, fp=fp, fn=fn, tn=tn, undecided=und, f1=round(f1, 4),
+                f1_scope='decided_rows_only', expected=len(gold), decided=tp + fp + fn + tn,
+                undecided_positive=und_pos, undecided_negative=und_neg,
+                f1_if_unknown_zero=f(tp, fp, fn + und_pos),
+                f1_full_completion_bounds=[f(tp, fp + und_neg, fn + und_pos), f(tp + und_pos, fp, fn)])
 
 
 def combos(sysd):

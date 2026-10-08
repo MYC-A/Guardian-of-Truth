@@ -1,4 +1,4 @@
-"""Phase g42+binding scorer (offline). Adds G42 (Granite 4.2 B2) and BIND (verified binding mismatch) to QB2.
+"""Phase g42+binding scorer (offline). Source support is not a binary binding verdict.
 Pools: dev (valid46, ext_tau2, hold_tau2h, hold_holdout2) and test (lb2_long, lb3_long, lb_long).
 Each comparison is scored on rows where all systems involved are present (paired)."""
 import argparse, json
@@ -17,7 +17,16 @@ def bind(s):
         return {}
     out = {}
     for x in p.read_text(encoding='utf-8').splitlines():
-        r = json.loads(x); out[r['id']] = dict(b=int(bool(r.get('verified'))), rec=r)
+        if not x.strip():
+            continue
+        r = json.loads(x)
+        if r['id'] in out:
+            raise ValueError('DUPLICATE_BINDING_ID: ' + r['id'])
+        # Historical VERIFIED_MISMATCH checked quotes/substrings only. It is
+        # quarantined too: no source-only proposal is an enforceable violation.
+        out[r['id']] = dict(b=0 if r.get('status') == 'NO_CALL' else None, rec=r,
+                            cls='not_applicable' if r.get('status') == 'NO_CALL' else
+                                'technical_failure' if r.get('status') not in ('OK',) else 'unresolved_binding')
     return out
 
 
@@ -26,22 +35,28 @@ def main():
     res = {}
     for pool, sets in POOLS.items():
         gold, S = {}, {k: {} for k in ('QB2', 'G42', 'BIND')}
+        coverage = {k: {} for k in S}
         for s in sets:
             g = {i: x['label'] for i, x in gold_for(s).items() if x.get('label') in (0, 1)}
             gold.update({f'{s}/{i}': y for i, y in g.items()})
             for k, v in (('QB2', runs(QW / s / 'B2_rep1.jsonl', 'B2')), ('G42', runs(G42 / s / 'B2_rep1.jsonl', 'B2')), ('BIND', bind(s))):
                 for i, x in (v or {}).items():
-                    if i in g and x['b'] is not None:
-                        S[k][f'{s}/{i}'] = int(x['b'])
+                    if i in g:
+                        coverage[k][f'{s}/{i}'] = x.get('cls')
+                        if x['b'] is not None:
+                            S[k][f'{s}/{i}'] = int(x['b'])
         arms = {'QB2|BIND': ('BIND', lambda q, o: q or o), 'G42': ('G42', lambda q, o: o),
                 'QB2|G42': ('G42', lambda q, o: q or o), 'QB2&G42': ('G42', lambda q, o: q and o)}
-        R = dict(n_gold=len(gold), n_qb2=len(S['QB2']), n_g42=len(S['G42']), n_bind=len(S['BIND']), arms={})
+        R = dict(n_gold=len(gold), n_qb2=len(S['QB2']), n_g42=len(S['G42']), n_bind=len(S['BIND']), arms={},
+                 coverage={k: dict(observed=len(v), missing_ids=sorted(set(gold) - set(v)),
+                                   nonbinary_ids=sorted(set(v) - set(S[k])), row_classes=v) for k, v in coverage.items()})
         for name, (other, f) in arms.items():
             ids = [i for i in gold if i in S['QB2'] and i in S[other]]
             if not ids:
                 continue
             g = {i: gold[i] for i in ids}; q = {i: S['QB2'][i] for i in ids}; c = {i: int(f(q[i], S[other][i])) for i in ids}
-            R['arms'][name] = dict(n=len(ids), QB2=score(g, q), arm=score(g, c), ci=boot(g, q, c),
+            R['arms'][name] = dict(n=len(ids), full_expected_comparison=len(ids) == len(gold),
+                                   excluded_ids=sorted(set(gold) - set(ids)), QB2=score(g, q), arm=score(g, c), ci=boot(g, q, c),
                                    fn_to_tp=sorted(i for i in ids if g[i] and not q[i] and c[i]),
                                    tn_to_fp=sorted(i for i in ids if not g[i] and not q[i] and c[i]),
                                    tp_to_fn=sorted(i for i in ids if g[i] and q[i] and not c[i]))

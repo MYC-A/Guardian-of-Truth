@@ -1,9 +1,12 @@
-"""Deterministic (no-LLM) entity checks on the assistant's current state-changing tool call(s).
+"""Heuristic proposal discovery; NEVER a policy certificate.
 C TURN_FORMAT: tool call and user message in the same turn when the policy text forbids doing both.
 A UNGROUNDED_ID: an identifier-like argument value never appears in user messages, tool results or system/catalog text.
 B ATTRIBUTE_CONFLICT: the call's identifier selects a tool-result object whose attribute (e.g. a contact value) has the
   same shape as, but differs from, the value the user stated for that same attribute name, while no user message mentions
-  the object's own value. No tool names, benchmark ids or domain rules; read-only calls (get/find/search/list/...) skipped."""
+  the object's own value. Tool-prefix, ID-shape and text-pattern assumptions are
+  historical discovery heuristics. They do not establish applicability, entity
+  binding, freshness or closure. Every returned item is an unverified hypothesis.
+"""
 import json, re
 
 READ = re.compile(r'^(get|find|search|list|lookup|check|calculate|verify|view|show|query|fetch|read|retrieve|describe|kb_|think|transfer)', re.I)
@@ -48,7 +51,7 @@ def shape(s):
     return re.sub(r'[A-Za-z]', 'a', re.sub(r'\d', '9', s))
 
 
-def check(packet):
+def _discover(packet):
     hist = packet.get('history', [])
     user = '\n'.join(s['text'] for s in hist if s.get('role') == 'user').lower()
     objs, restext = [], []
@@ -83,7 +86,7 @@ def check(packet):
             args = json.loads(m.group(2))
         except Exception:
             continue
-        for v in set(scalars(args)):
+        for v in sorted(set(scalars(args))):
             if not idlike(v):
                 continue
             if v.lower() not in ground:
@@ -100,3 +103,15 @@ def check(packet):
                     if any(shape(u) == shape(w) and u != w for u in stated[k2]):
                         out.append(dict(rule='B', tool=m.group(1), value=v, attr=k2, obj_value=w, user_value=sorted(stated[k2])))
     return out
+
+
+def check(packet):
+    """Keep suspicious observations available without promoting them to ERROR.
+
+    False suspicions (lawful mutations, stale results and unrelated prohibitions)
+    are intentionally possible. A separate semantic/policy checker is required.
+    Historical ABC-OR metrics remain available only as an explicit unsafe arm.
+    """
+    return [dict(x, status='HYPOTHESIS', verified=False,
+                 binding_status='UNRESOLVED', applicability_status='UNRESOLVED',
+                 final_authority='NONE') for x in _discover(packet)]
