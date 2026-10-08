@@ -33,7 +33,7 @@ the whole phase duration previously recorded is1489.87s. Thus aggregate output
 is~21.5 tokens/s over whole phase, despite~6.9 row-arm records/min. Two arms
 cover86 distinct inputs. This includes queue/prefill, not pure decode throughput.
 
-At inspection two Qwen instances occupy79071/81920MiB, GPU utilization100%.
+At the initial inspection two Qwen instances occupied79071/81920MiB, GPU utilization100%.
 One is the nonthinking baseline, the other an active thinking experiment.
 Two resident models do not prove simultaneous competing inference; do not infer
 CPU offload from process RSS or total VRAM alone. Baseline starts with -ngl999;
@@ -45,3 +45,19 @@ workers/slots4 vs8; FlashAttention; batch/prefill settings; warm prefix caching;
 stage-specific time/token/queue metrics. Smaller pre-analysis schemas or removal
 of a stage are separate quality arms. No silent output cap reduction, thinking
 switch or CPU fallback is part of the measured baseline.
+
+## Live comparison in progress (not completed results)
+
+After the user stopped the thinking experiment, the old idle baseline instance
+was stopped as well. The packaging control now owns a single model process.
+Full valid46 control: workers8,32768 tokens/slot, Q8 weights and unchanged B2 wire.
+Queued candidate: workers16, same context/weights/prompts, FlashAttention on,
+batch8192, microbatch512. Each phase writes to a fresh directory under
+`/workspace/guardian/submission/bench-{baseline,speed16}-20261008/`.
+
+A partial control trace already contains a primary admission failure. It is
+recorded as a technical gap, not projected to a negative label. Partial progress
+does not establish a complete quality score or compliance with the30-minute
+whole-input limit. Final receipts and the paired result are still pending.
+
+See EXVRAM_RELEVANCE.md for the low-bit article and the limits of that comparison.
