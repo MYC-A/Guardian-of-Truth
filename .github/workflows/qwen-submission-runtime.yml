@@ -1,0 +1,234 @@
+name: Rebuild offline Qwen A100 runtime on CPU
+
+on:
+  workflow_dispatch:
+  push:
+    branches: [submission/qwen-offline-20261008]
+    paths:
+      - .github/workflows/qwen-submission-runtime.yml
+      - scripts/rebuild_qwen_runtime.py
+      - submission/requirements-runtime.txt
+
+permissions:
+  contents: read
+  id-token: write
+  attestations: write
+
+concurrency:
+  group: qwen-runtime-${{ github.ref }}
+  cancel-in-progress: false
+
+jobs:
+  runtime:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 45
+    env:
+      # The public image's verified linux/amd64 digest, not a mutable tag alone.
+      CUDA_IMAGE: nvidia/cuda:12.8.1-devel-ubuntu24.04@sha256:4b9ed5fa8361736996499f64ecebf25d4ec37ff56e4d11323ccde10aa36e0c43
+      PYTHONDONTWRITEBYTECODE: '1'
+      PYTHONUTF8: '1'
+    steps:
+      - name: Checkout only research source and existing diagnostic receipts
+        uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683 # v4.2.2
+        with:
+          sparse-checkout: |
+            src
+            scripts
+            submission
+            tests
+            experiments
+            docs/qwen_submission_20261008
+            outputs/qwen_submission_20261008
+          persist-credentials: false
+
+      - name: Bound hosted-runner disk use before downloading CUDA
+        shell: bash
+        run: |
+          set -euo pipefail
+          if [[ "${GITHUB_ACTIONS:-}" != true || "${RUNNER_ENVIRONMENT:-}" != github-hosted || "${RUNNER_OS:-}" != Linux ]]; then
+            echo 'SDK cleanup is restricted to this ephemeral GitHub-hosted Linux runner.' >&2
+            exit 1
+          fi
+          for sdk in /usr/share/dotnet /usr/local/lib/android /opt/ghc /opt/hostedtoolcache/CodeQL; do
+            if [[ -d "$sdk" && ! -L "$sdk" ]]; then
+              resolved="$(realpath -e -- "$sdk")"
+              if [[ "$resolved" != "$sdk" ]]; then
+                echo "Refusing SDK cleanup outside its exact declared path: $sdk" >&2
+                exit 1
+              fi
+              sudo rm -rf -- "$sdk"
+            fi
+          done
+          docker_root="$(docker info --format '{{.DockerRootDir}}')"
+          for filesystem in "$RUNNER_TEMP" "$docker_root"; do
+            free="$(df -PB1 "$filesystem" | awk 'NR==2 {print $4}')"
+            echo "DISK_PREFLIGHT filesystem=$filesystem free_bytes=$free minimum_bytes=18000000000"
+            if (( free < 18000000000 )); then
+              echo 'Insufficient free disk for the pinned CUDA image and bounded build.' >&2
+              exit 1
+            fi
+          done
+
+      - name: Platform installer Python
+        uses: actions/setup-python@a26af69be951a213d495a4c3e4e4022e16d87065 # v5.6.0
+        with:
+          python-version: '3.12'
+
+      - name: Compile CUDA SM80 and exercise actual bundled runtime without GPU
+        shell: bash
+        run: |
+          set -euo pipefail
+          mkdir -p "$RUNNER_TEMP/qwen-build/artifacts"
+          docker pull "$CUDA_IMAGE"
+          docker run --rm \
+            -e CUDA_IMAGE -e PYTHONDONTWRITEBYTECODE=1 -e PYTHONUTF8=1 \
+            -v "$PWD:/repo:ro" -v "$RUNNER_TEMP/qwen-build:/build" \
+            "$CUDA_IMAGE" bash -euo pipefail -c '
+              export DEBIAN_FRONTEND=noninteractive
+              apt-get update
+              apt-get install -y --no-install-recommends ca-certificates git cmake ninja-build g++ python3.12 python3.12-venv
+              python3.12 -m venv /build/venv
+              /build/venv/bin/python -m pip install pip==25.2
+              /build/venv/bin/python -m pip download --only-binary=:all: --no-deps \
+                --dest /build/wheels -r /repo/submission/requirements-runtime.txt
+              /build/venv/bin/python -m pip install --no-index --no-deps --find-links /build/wheels \
+                -r /repo/submission/requirements-runtime.txt
+              /build/venv/bin/python -m pip check
+              /build/venv/bin/python /repo/scripts/rebuild_qwen_runtime.py build \
+                --repo /repo --stage /build/runtime --llama-source /build/llama.cpp \
+                --jobs 2 --image-identity "$CUDA_IMAGE"
+              /build/venv/bin/python /repo/scripts/rebuild_qwen_runtime.py smoke \
+                --stage /build/runtime --output-dir /build/cpu-smoke
+              /build/venv/bin/python -m pip install pytest==8.4.2 pytest-asyncio==1.2.0
+              cd /repo
+              export PYTHONPATH=src:.
+              /build/venv/bin/python -m pytest -q -p no:cacheprovider \
+                tests/test_qwen_submission.py tests/test_submission_backend.py \
+                tests/test_submission_archive.py tests/test_submission_wire.py \
+                tests/test_runtime_rebuild.py | tee /build/artifacts/tests.log
+              for phase in bench-baseline-20261008 bench-speed16-20261008; do
+                if test "$phase" = bench-speed16-20261008; then receipts=receipts/; else receipts=; fi
+                /build/venv/bin/python scripts/qwen_submission_raw_replay.py \
+                  --input /repo/valid.parquet \
+                  --expected-input-sha256 8e730cc999a6cf07c3f17f273300a17ce16539c5b6166885e74b41e93cfc47ba \
+                  --calls "/repo/outputs/qwen_submission_20261008/$phase/${receipts}calls.json" \
+                  --traces "/repo/outputs/qwen_submission_20261008/$phase/${receipts}traces.jsonl" \
+                  --output "/build/artifacts/${phase}-cpu-replay.json"
+              done
+              /build/venv/bin/python /repo/scripts/rebuild_qwen_runtime.py verify --stage /build/runtime
+              /build/venv/bin/python /repo/scripts/rebuild_qwen_runtime.py archive \
+                --stage /build/runtime --destination /build/artifacts/guardian-qwen-a100-runtime.tar.gz
+              cp /build/runtime/MANIFEST.json /build/artifacts/RUNTIME_MANIFEST.json
+              cp /build/runtime/BUILD_PROVENANCE.json /build/artifacts/BUILD_PROVENANCE.json
+              cp /build/cpu-smoke/report.json /build/artifacts/cpu-smoke.json
+              cp /build/cpu-smoke/offline_pip_install.log /build/artifacts/
+              cp /build/cpu-smoke/public_empty_entrypoint.log /build/artifacts/
+              cp /build/cpu-smoke/bundled_native_imports.log /build/artifacts/
+              cp /build/cpu-smoke/rebuilt_llama_version.log /build/artifacts/
+            '
+          sudo chown -R "$(id -u):$(id -g)" "$RUNNER_TEMP/qwen-build"
+
+      - name: Release only completed owned build intermediates before Docker COPY
+        shell: bash
+        run: |
+          set -euo pipefail
+          parent="$(realpath -e -- "$RUNNER_TEMP")"
+          build_root="$(realpath -e -- "$RUNNER_TEMP/qwen-build")"
+          if [[ "$build_root" != "$parent/qwen-build" || ! -f "$build_root/runtime/MANIFEST.json" || ! -f "$build_root/artifacts/RUNTIME_MANIFEST.json" ]]; then
+            echo 'Refusing cleanup without the completed owned runtime and provenance.' >&2
+            exit 1
+          fi
+          for intermediate in llama.cpp venv wheels cpu-smoke; do
+            target="$build_root/$intermediate"
+            if [[ -e "$target" ]]; then
+              if [[ -L "$target" || "$(realpath -e -- "$target")" != "$build_root/$intermediate" ]]; then
+                echo "Refusing build cleanup outside its exact owned path: $target" >&2
+                exit 1
+              fi
+              rm -rf -- "$target"
+            fi
+          done
+          docker image rm "$CUDA_IMAGE"
+          runtime_bytes="$(du -sb "$build_root/runtime" | awk '{print $1}')"
+          minimum=$((runtime_bytes * 3 + 2000000000))
+          docker_root="$(docker info --format '{{.DockerRootDir}}')"
+          for filesystem in "$RUNNER_TEMP" "$docker_root"; do
+            free="$(df -PB1 "$filesystem" | awk 'NR==2 {print $4}')"
+            echo "DOCKER_COPY_PREFLIGHT filesystem=$filesystem free_bytes=$free minimum_bytes=$minimum"
+            if (( free < minimum )); then
+              echo 'Insufficient remaining disk for actual Docker COPY and image smoke.' >&2
+              exit 1
+            fi
+          done
+
+      - name: Offline platform install and actual Docker entry point on CPU
+        shell: bash
+        run: |
+          set -euo pipefail
+          python -m pip install --no-index --no-deps --target "$RUNNER_TEMP/platform-installed" "$RUNNER_TEMP/qwen-build/runtime"
+          mkdir -p "$RUNNER_TEMP/qwen-build/docker-io"
+          printf 'id,prompt,response\n' > "$RUNNER_TEMP/qwen-build/docker-io/empty.csv"
+          docker pull ubuntu:24.04
+          docker build --network=none -t guardian-qwen-runtime-cpu "$RUNNER_TEMP/qwen-build/runtime"
+          docker run --rm --network=none --read-only --tmpfs /tmp \
+            --user "$(id -u):$(id -g)" \
+            -v "$RUNNER_TEMP/qwen-build/docker-io:/io" guardian-qwen-runtime-cpu \
+            --input /io/empty.csv --output /io/predictions.parquet
+          python -c 'import os,pathlib; p=pathlib.Path(os.environ["RUNNER_TEMP"])/"qwen-build/docker-io/predictions.parquet"; assert p.read_bytes()[:4]==b"PAR1"; print("DOCKER_CPU_OFFLINE_ENTRYPOINT_OK; GPU_INFERENCE=NOT_EXECUTED")' \
+            | tee "$RUNNER_TEMP/qwen-build/artifacts/docker-cpu-smoke.log"
+          # Unlike the empty-input check, these exercise all Guardian imports and
+          # actual frozen processing through the bundled Python in a read-only
+          # image. Diagnostic sources are mounted only for validation, never
+          # copied into the runtime artifact or the final submission archive.
+          for phase in bench-baseline-20261008 bench-speed16-20261008; do
+            if test "$phase" = bench-speed16-20261008; then receipts=receipts/; else receipts=; fi
+            docker run --rm --network=none --read-only --tmpfs /tmp \
+              --user "$(id -u):$(id -g)" \
+              -e PYTHONPATH=/app/runtime/site-packages:/app/src:/app \
+              -v "$RUNNER_TEMP/qwen-build/docker-io:/io" \
+              -v "$PWD/scripts/qwen_submission_raw_replay.py:/app/scripts/qwen_submission_raw_replay.py:ro" \
+              -v "$PWD/valid.parquet:/app/valid.parquet:ro" \
+              -v "$PWD/outputs/qwen_submission_20261008:/app/validation-receipts:ro" \
+              --entrypoint /app/runtime/lib/ld-linux-x86-64.so.2 guardian-qwen-runtime-cpu \
+              --library-path /app/runtime/lib /app/runtime/python/bin/python3.12 -X utf8 \
+              /app/scripts/qwen_submission_raw_replay.py \
+              --input /app/valid.parquet \
+              --expected-input-sha256 8e730cc999a6cf07c3f17f273300a17ce16539c5b6166885e74b41e93cfc47ba \
+              --calls "/app/validation-receipts/$phase/${receipts}calls.json" \
+              --traces "/app/validation-receipts/$phase/${receipts}traces.jsonl" \
+              --output "/io/${phase}-bundled-docker-replay.json"
+            cp "$RUNNER_TEMP/qwen-build/docker-io/${phase}-bundled-docker-replay.json" "$RUNNER_TEMP/qwen-build/artifacts/"
+          done
+
+      - name: Sign runtime archive and manifest provenance
+        id: provenance
+        uses: actions/attest-build-provenance@e8998f949152b193b063cb0ec769d69d929409be # v2.4.0
+        with:
+          subject-path: |
+            ${{ runner.temp }}/qwen-build/artifacts/guardian-qwen-a100-runtime.tar.gz
+            ${{ runner.temp }}/qwen-build/artifacts/RUNTIME_MANIFEST.json
+
+      - name: Retain the public signature verification bundle
+        shell: bash
+        run: cp '${{ steps.provenance.outputs.bundle-path }}' "$RUNNER_TEMP/qwen-build/artifacts/runtime-attestation.sigstore.json"
+
+      - name: Upload weight-free runtime and verification receipts
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4.6.2
+        with:
+          name: guardian-qwen-a100-runtime-${{ github.sha }}
+          path: ${{ runner.temp }}/qwen-build/artifacts/
+          if-no-files-found: error
+          retention-days: 3
+          compression-level: 0
+
+      - name: Preserve small failure diagnostics without publishing a ready runtime
+        if: failure()
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4.6.2
+        with:
+          name: guardian-qwen-runtime-failed-diagnostics-${{ github.sha }}
+          path: |
+            ${{ runner.temp }}/qwen-build/cpu-smoke/*.log
+            ${{ runner.temp }}/qwen-build/artifacts/*.log
+            ${{ runner.temp }}/qwen-build/runtime/BUILD_PROVENANCE.json
+          if-no-files-found: warn
+          retention-days: 3
