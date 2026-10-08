@@ -1,4 +1,4 @@
-# Artifact transfer: protocol and current limits
+# Artifact transfer history and server-independent replacement
 
 The artifact is unchanged:30,447,402,247 bytes, SHA256
 `46317b9570c76833771f14468e045e642f9802c7b516fba8234fefa23a493835`.
@@ -11,7 +11,7 @@ valid ledger. A second attempt was stopped before network data while CPython's
 Windows truncate manually wrote zeroes even on a sparse file. Native NTFS
 SetFilePointerEx/SetEndOfFile was verified onA:30GB logical allocation took0.03s.
 
-The current phase is `guardian-qwen-b2-20261008-r3.zip`. It has a durable chunk
+The final historical transfer phase was `guardian-qwen-b2-20261008-r3.zip`. It has a durable chunk
 ledger, sparse allocation, strict206/Content-Range/length/encoding checks,
 per-range absolute timeout and visible received/completed-byte counters. Resume
 rehashes all completed chunks and only downloads missing ones. A hard-killed
@@ -46,10 +46,30 @@ requests receive no Authorization. HTTPS redirects are restricted to the declare
 HF host suffixes; the private server token is only used at its original endpoint.
 Tokens are outside Git and the archive. Signed redirect URLs are not published.
 
-## Remaining deliverable
+## Server-independent replacement
 
-Server ZIP is complete. LocalA transfer is still incomplete until its status
-reads READY and an actual final file exists. Preallocated logical size, a running
-PID, a successful tiny probe or local tests do not establish completion of30GB.
-Do not upload a partial or stop/delete the server while it holds the only full
-prepared ZIP in volatile `/dev/shm`.
+The user stopped the server. The historical ZIP was in volatile `/dev/shm` and
+is not assumed available after Stop; its old hash remains a historical receipt.
+The persistent server stage was checked before Stop, but this new path neither
+starts nor accesses that machine. The r3 transfer terminated without READY;
+its local sparse partial is not a submission and is not reused silently.
+
+See RUNTIME_REBUILD.md: ordinary CPU GitHub Actions compiles the pinned llama.cpp
+for SM80 and checks the bundled native runtime. Exact public model bytes download
+separately ontoA using the official Hugging Face SDK. SDK network-byte and
+reconstruction-byte counters are separate: buffered network data can exist while
+the incomplete file is still empty. Neither counter alone establishes completion.
+
+The first SDK wrapper had a static status and non-TTY hidden progress bars. Its
+own PID was stopped once for an instrumented replacement; the old status was
+preserved. The replacement records numeric SDK payload counters at10s intervals.
+It still requires the full exact size/SHA before READY. There is no model change,
+benchmark inference or use of server credentials in this download.
+
+After verified model+runtime assembly, the new final ZIP is independently checked
+by `scripts/verify_qwen_submission.py`, including the known pinned model identity,
+not just self-reported manifest hashes. Its expected path is
+`A:/Guardian-submissions/guardian-qwen-b2-rebuilt.zip`; actual availability and SHA
+must come from its new packaging-verification receipt. The original ZIP hash must
+not be assigned to a newly compiled binary. GPU inference/quality/time of the new
+runtime are separate NOT_EXECUTED checks until a real GPU performs them.

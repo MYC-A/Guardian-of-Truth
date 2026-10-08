@@ -43,10 +43,11 @@ def copy_file(source, dest):
 
 
 def artifact_files(stage):
-    for path in sorted(Path(stage).rglob('*')):
+    stage = Path(stage)
+    for path in sorted(stage.rglob('*')):
         if '__pycache__' in path.parts or path.suffix == '.pyc':
             continue
-        if path.is_file() and path.name != 'MANIFEST.json':
+        if path.is_file() and path != stage / 'MANIFEST.json':
             yield path
 
 

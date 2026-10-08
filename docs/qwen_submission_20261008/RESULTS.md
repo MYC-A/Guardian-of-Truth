@@ -87,10 +87,13 @@ that uncertainty; do not present linear extrapolation as a platform result.
   actual28.6GB model roundtrip is not implied.
 - The first CPU-smoke attempt used the build venv, which has no pip. The second
   explicitly used the platform `/usr/bin/python3` for install/dispatch and passed.
-- Actual full model executed in both live46 arms. Full ZIP is ready on the server:
+- Actual full model executed in both live46 arms. Historical full ZIP was built on the server:
   30,447,402,247 bytes, SHA256
   `46317b9570c76833771f14468e045e642f9802c7b516fba8234fefa23a493835`.
-  Local transfer ontoA and per-file manifest/CRC validation are still underway.
+  The server is now stopped. This ZIP lived in volatile `/dev/shm`, so it is not
+  considered available after Stop. Local partial files are not READY. A separate
+  CPU CI rebuild and the exact public weight download replace this transfer;
+  see RUNTIME_REBUILD.md. New-runtime GPU inference remains NOT_EXECUTED.
 - Full Windows raw replay rebuilt179 exact request/attempt identities across
   all46 rows, consumed all179 frozen receipts and reproduced every binary
   decision, winning owner and accusation text/target, with zero network calls
@@ -99,9 +102,10 @@ that uncertainty; do not present linear extrapolation as a platform result.
 - The16-slot raw replay also rebuilt180/180 exact request/attempt identities
   over all46 rows, consumed all180 frozen receipts and had zero final
   binary/owner/accusation mismatches. The same projection is used in both arms.
-- Dockerfile is provided. Docker build/run is NOT_EXECUTED: no Docker/Podman or
-  daemon socket is available, and namespace creation is denied. The native
-  runtime checks are not represented as an actual Docker-engine test.
+- Historical Docker build/run was NOT_EXECUTED: no Docker/Podman or daemon socket
+  was available and namespace creation was denied. New CPU CI explicitly runs a
+  real Docker image and both full raw replay phases. Its results are a separate
+  phase and must be recorded after completion, rather than inferred from YAML.
 
 Receipts: `docs/qwen_submission_20261008/receipts/`. No API/private credentials,
 model weights, historic predictions or gold are included in the submission ZIP.

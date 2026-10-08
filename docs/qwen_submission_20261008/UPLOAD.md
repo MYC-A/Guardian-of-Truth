@@ -24,27 +24,38 @@ SHA256: 46317b9570c76833771f14468e045e642f9802c7b516fba8234fefa23a493835
 и проверить по SHA256. Delete инстанса или диска — другое действие; сохранность
 при Delete этим планом не обещается. Выгрузка runtime отложена по указанию пользователя.
 
-Локальная цель скачивания:
+Текущий путь завершения без сервера — `RUNTIME_REBUILD.md`: Linux CUDA SM80 runtime
+собирается в GitHub Actions, точные прежние веса скачиваются из pinned публичного
+источника. Затем helper соединяет их на дискеA и строит новый ZIP. Исторический
+SHA выше **не является SHA новой сборки**.
+
+Локальная цель нового артефакта:
 
 ```text
-A:\Guardian-submissions\guardian-qwen-b2-20261008-r3.zip
-A:\Guardian-submissions\guardian-qwen-b2-20261008-r3.zip.status.json
+A:\Guardian-submissions\guardian-qwen-b2-rebuilt.zip
+A:\Guardian-submissions\guardian-qwen-b2-rebuilt.verification.json
 ```
 
-Файл с окончанием `.partial` не готов. `READY` в status означает завершённую
-передачу, полный SHA256 и проверку каждого файла по manifest/CRC, ожидаемых прав
-доступа и состава ZIP. Наличие заранее выделенных30GB само по себе не доказывает
-скачивание. Перед загрузкой проверяется именно окончательный файл:
+Файл с окончанием `.partial` не готов. Для новой сборки
+`VERIFIED_OFFLINE_PACKAGING` в receipt означает проверку известного размера/SHA
+исходной модели, полного ZIP SHA, каждого файла по manifest/CRC, Unix permissions,
+корневой структуры, ELF и отсутствия host driver/известных secret paths.
+Наличие заранее выделенных30GB само по себе не доказывает скачивание.
+Перед загрузкой проверяется именно окончательный файл:
 
 ```powershell
-Get-FileHash -Algorithm SHA256 A:\Guardian-submissions\guardian-qwen-b2-20261008-r3.zip
+python -X utf8 scripts/verify_qwen_submission.py `
+  --archive A:\Guardian-submissions\guardian-qwen-b2-rebuilt.zip `
+  --receipt A:\Guardian-submissions\guardian-qwen-b2-rebuilt.verification.json
 ```
 
 На момент проверки локальных receipts ни одна копия не имеет `READY`. Старые
 `DOWNLOADING`/`ALLOCATING_LOCAL_FILE` могут оставаться после остановки процесса;
 они не доказывают активную передачу или готовый файл. Указанный путь — цель, а не
-наличие готового ZIP. Повторную передачу запускать позже отдельным операторским
-шагом; не загружать в конкурс ни один текущий `.partial`.
+наличие готового ZIP. Старый `r3.zip.partial` не участвует в новой сборке.
+Не загружать в конкурс ни один `.partial` или weight-free CI artifact. Packaging
+receipt не доказывает GPU inference новой сборки, её качество или30min hidden run;
+эти границы явно записаны отдельно.
 
 ## Загрузка
 

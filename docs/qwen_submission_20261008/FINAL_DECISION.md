@@ -16,15 +16,21 @@ gold, ни домен не участвуют в исправлении. Неи�
 exit1; corrected projections сохранены отдельно. Полный exact-request raw replay
 на Windows восстановил179/179 запросов и все final binary/owner/accusation.
 
-Архив30.45GB собран на сервере, SHA зафиксирован; локальная копия наA ещё требует
-завершения передачи и проверки. Исходный GitHub branch не содержит весов/архива.
-Инструкции передачи: UPLOAD.md. Самостоятельного submission в аккаунт не было.
+Исторический архив30.45GB был собран на сервере, SHA сохранён. Сервер остановлен;
+ZIP в `/dev/shm` после Stop не считается сохранённым, локальные partial не готовы.
+Текущий путь завершения — новая Linux CUDA SM80 сборка в GitHub Actions и получение
+точных прежних весов из публичного pinned источника на дискA. Это другой бинарник,
+а не побайтное восстановление прежнего окружения. Статусы и команды:
+RUNTIME_REBUILD.md, UPLOAD.md. Ветка GitHub не содержит весов/архива.
+Самостоятельного submission в аккаунт не было.
 
-Dockerfile подготовлен, но реальный Docker engine здесь отсутствует. Проверены
-реальный model runtime на A100, Linux ZIP permissions/loader, offline install,
-native imports, empty public CLI и точная обработка сохранённых replies. Это
-не заменяет фактический Docker build/run и не доказывает runner compatibility
-на неизвестной платформе. Для Guardian официально описан unpacked source archive.
+Историческая серверная фаза проверила model runtime на A100, Linux ZIP permissions,
+offline install, native imports, empty public CLI и обработку прежних replies.
+В ней Docker engine отсутствовал. Новая CI фаза включает настоящий CPU Docker
+build/run, native llama version и полный replay обоих valid46 через bundled Python.
+Пока CI не завершён, эти новые проверки не считаются выполненными. Без GPU новая
+сборка не имеет собственных измерений предсказаний, скорости и driver compatibility.
+Для Guardian официально описан unpacked source archive.
 
 До первой отправки нужно иметь READY local archive. Платформенный запуск затем
 даст свидетельство о реальном input size, environment, time limit и score.

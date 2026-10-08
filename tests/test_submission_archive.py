@@ -14,7 +14,8 @@ def test_archive_root_and_all_native_executables_have_linux_permissions(tmp_path
     stage = tmp_path / 'stage'
     paths = ['runtime/llama/llama-server', 'runtime/python/bin/python3.12',
              'runtime/lib/ld-linux-x86-64.so.2', 'scripts/predict.py', 'pyproject.toml',
-             'model/Qwen3.8-27B-Q8_0.gguf', 'Dockerfile']
+             'model/Qwen3.8-27B-Q8_0.gguf', 'Dockerfile',
+             'runtime/site-packages/pkg/MANIFEST.json']
     for name in paths:
         path = stage / name
         path.parent.mkdir(parents=True, exist_ok=True)
