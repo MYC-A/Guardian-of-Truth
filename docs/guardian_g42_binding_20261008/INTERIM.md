@@ -20,3 +20,10 @@ The model-side audit inherits the reviewer's blind spot; needs a deterministic e
   errors; QB2 already catches 34 -> +1 TP.
 - QB2 | A | B | C: dev 130/8/34 F1 .861 -> 136/8/28 .883; test (lb2+lb3+lb_long, 148 rows) 71/2/2 .973 -> unchanged.
 - LLM binding audit (H3): stopped; 0 verified mismatches on 77 call rows (same blind spot as the reviewer).
+
+## Qwen thinking ON (reasoning budget 1024 tok, request cap 90KB) — partial, 2026-10-08 04:09 UTC
+Separate llama.cpp instance (port 8083, alias +think1k), same B2 variant. ext_tau2 13/70 rows done (12 labelled, paired):
+QB2 6/0/4 F1 .750 -> THINK 8/0/2 F1 .889; changes: ext_ret_000 FN->TP, ext_tel_008 FN->TP (the wrong-line case,
+found generically by the reviewer), 0 new FP. All 13 rows delivered as verdict (the 2026-10-07 delivery collapse is fixed
+by budget+cap). Cost ~7 min/row-slot (~0.6 rows/min with 6 slots). Too small for a conclusion; runs continue
+(ext_tau2 -> hold_tau2h -> lb3_long).
