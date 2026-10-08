@@ -182,7 +182,7 @@ def download(url, token_file, expected_sha256, expected_size, output, *,
             entry = json.loads(line)
             key = entry.pop('start')
             if entry.get('kind') == 'retry':
-                if key not in {str(x) for x in chunks} or entry.get('error') not in ('TimeoutError', 'ConnectionError', 'OSError', 'URLError', 'HTTP_RANGE_TRUNCATED', 'HTTP_502', 'HTTP_503', 'HTTP_504'):
+                if key not in {str(x) for x in chunks} or entry.get('error') not in ('TimeoutError', 'ConnectionError', 'OSError', 'URLError', 'HTTP_RANGE_TRUNCATED', 'HTTP_RANGE_DEADLINE', 'HTTP_502', 'HTTP_503', 'HTTP_504'):
                     raise ValueError('RESUME_RETRY_RECORD_INVALID')
                 ledger['retries'][key] = ledger['retries'].get(key, 0) + 1
                 durable_length += len(line)
@@ -211,8 +211,13 @@ def download(url, token_file, expected_sha256, expected_size, output, *,
     def save(state, **extra):
         with lock:
             size, received = completed_bytes, received_bytes
+            server_expected = sum(part['length'] for part in chunks.values() if part['segment']['authenticated'])
+            server_completed = sum(metadata['bytes'] for start, metadata in ledger['chunks'].items()
+                                   if chunks[int(start)]['segment']['authenticated'])
         body = dict(state=state, pid=os.getpid(), bytes=size, expected_bytes=expected_size,
                     received_bytes=received,
+                    server_bytes=server_completed, expected_server_bytes=server_expected,
+                    server_sources_complete=server_completed == server_expected,
                     retry_calls=sum(ledger['retries'].values()), max_retry_calls=max_retry_calls,
                     elapsed_seconds=time.monotonic() - started, **extra)
         _atomic_json(status, body)
@@ -367,7 +372,9 @@ def download(url, token_file, expected_sha256, expected_size, output, *,
                         completed_bytes += length
                 except Exception as error:
                     if time.monotonic() >= deadline:
-                        raise ValueError('HTTP_RANGE_DEADLINE') from None
+                        overdue = ValueError('HTTP_RANGE_DEADLINE')
+                        overdue.range_network_failure = not network_complete
+                        raise overdue from None
                     if not network_complete:
                         error.range_network_failure = True
                     raise
@@ -395,8 +402,8 @@ def download(url, token_file, expected_sha256, expected_size, output, *,
                     except Exception as error:
                         if not getattr(error, 'range_network_failure', False):
                             retry_type = None
-                        elif isinstance(error, ValueError) and str(error) == 'HTTP_RANGE_TRUNCATED':
-                            retry_type = 'HTTP_RANGE_TRUNCATED'
+                        elif isinstance(error, ValueError) and str(error) in ('HTTP_RANGE_TRUNCATED', 'HTTP_RANGE_DEADLINE'):
+                            retry_type = str(error)
                         elif isinstance(error, urllib.error.HTTPError):
                             retry_type = 'HTTP_' + str(error.code) if error.code in (502, 503, 504) else None
                         elif isinstance(error, (TimeoutError, ConnectionError, OSError)):
@@ -419,7 +426,10 @@ def download(url, token_file, expected_sha256, expected_size, output, *,
 
             save('DOWNLOADING')
             with ThreadPoolExecutor(max_workers=workers) as executor:
-                pending = {executor.submit(bounded_fetch, start) for start in chunks
+                # Collect the server-only assets first. Public model bytes can
+                # continue downloading independently once these are complete.
+                ordered = sorted(chunks, key=lambda start: (not chunks[start]['segment']['authenticated'], start))
+                pending = {executor.submit(bounded_fetch, start) for start in ordered
                            if str(start) not in ledger['chunks']}
                 try:
                     last = time.monotonic()
