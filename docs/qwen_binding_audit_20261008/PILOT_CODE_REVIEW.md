@@ -60,3 +60,24 @@ python -X utf8 -m pytest -q tests/test_qwen_blind_compact.py tests/test_qwen_bli
 ```
 
 An additional offline main-runner probe exercised compact extraction and the existing policy verifier in both modes: four mocked calls, 900-token requests, timeout 240 passed to the client, `wire=compact` and compact-file hash frozen in the manifest, compact admission version retained, and byte-identical resume with no additional calls. Reviewer HTTP/SSH/model inference calls: zero. The v1 binding module was not edited by this review.
+
+## Offline scorer review and independent regressions
+
+Reviewed `scripts/qwen_binding_pilot_score.py` while Phase 2 ran; no live Phase 2 quality results were read. Added only `tests/test_qwen_binding_pilot_score.py` and this documentation. Scorer fixes were implemented by the parent, outside the frozen inference modules.
+
+The initial scorer had three reproduced reporting issues: a complete subset of expected inputs could claim quality eligibility while scoring additional gold IDs; a non-boolean integer addition could be quality-eligible yet counted as an undecided detector prediction; and the two unlabeled external inputs were omitted from `unlabelled_external_ids` because they were absent entirely from the 68-key gold file. The corrected scorer rejects gold outside expected IDs, overlapping external/contrast gold and non-boolean/non-null additions, and reports expected IDs outside labeled external/contrast gold explicitly.
+
+The initial archived-baseline loader used last-write selection whenever binaries agreed. The frozen blob contains 72 records for 70 IDs. The parent inspected the two duplicate records and found differences confined to nested cache-hit flags; no changed raw answer or validity was established. The revised loader explicitly selects the first record, requires equivalence apart from cache metadata and reports the duplicate IDs. Independent tests reject equal-binary duplicates with changed raw reply, request key or admission. The actual archived loader returns 70 IDs and reports `ext_ret_000` / `ext_ret_003` as equivalent duplicates. This is metadata deduplication, not selection of a better answer.
+
+Independent regression result:
+
+```text
+python -X utf8 -m pytest -q tests/test_qwen_binding_pilot_score.py
+25 passed in 0.16s
+```
+
+The tests cover partial/unequal mode inventories, null detector predictions versus explicit cached-base fallback, an unusable baseline remaining unknown unless a positive candidate rescues it, independent external/contrast FP lists, foreign/duplicate rows, strict addition types, gold cohort identity, unlabeled execution coverage, input immutability, receipt/usage accounting, duplicate expected inventory, and archived duplicate equivalence. No model/network calls occur.
+
+Read-only scoring of the stopped Phase 1 artifact confirms four records per mode, quality eligibility false in both modes, and the two unlabeled external IDs `ext_ret_005` / `ext_ret_033` explicitly reported. The saved Phase 1 score was not overwritten. Failed/missing extra-detector rows remain undecided; the candidate combination may explicitly fall back to a usable cached base, which is separately named and must not be confused with a successful extra-detector verdict. Per-mode metrics with missing or null outputs have different decided cohorts; any paired quality comparison must respect the complete/eligibility flags rather than compare conditional F1 as if denominators matched.
+
+Accounting/provenance limits: `receipt_calls` counts saved extraction/verifier receipts, not durable reservations, unfinished requests or actual HTTP attempts; totals require the transport/reservation ledgers. The analysis reads the provided inventory and gold, but does not itself authenticate input text against the inference manifest; use the frozen manifest/input hashes when assembling final reports. The cache-equivalence helper's recursive `cached` normalization is broader than the known receipt paths, so it must not be treated as arbitrary source/business-data equivalence. Actual archived differences were independently narrowed to receipt cache flags. Cause correctness remains pending independent source review; binary recoveries alone do not establish a correct cause. No remaining blocker was found for scoring the frozen known pilot inputs under these stated limits.

@@ -20,12 +20,48 @@ def blob(path):
     return subprocess.check_output(['git', 'show', REF + ':' + path], cwd=ROOT)
 
 
+def load_baseline(records):
+    """Only transport cache-hit flags may differ between repeated saved rows."""
+    def comparable(value, path=()):
+        if isinstance(value, dict):
+            receipt_path = (len(path) == 2 and path[0] == 'pre_steps'
+                            or len(path) == 4 and path[:3] in (
+                                ('rec', 'A', 'steps'), ('layer_trace', 'extraction', 'steps')))
+            return {k: comparable(v, path + (k,)) for k, v in value.items()
+                    if not (k == 'cached' and receipt_path and type(v) is bool)}
+        if isinstance(value, list):
+            return [comparable(v, path + (i,)) for i, v in enumerate(value)]
+        return value
+    selected, duplicates = {}, []
+    for row in records:
+        key = row['id']
+        if key in selected:
+            if comparable(selected[key]) != comparable(row):
+                raise ValueError('CONFLICTING_ARCHIVED_BASELINE')
+            duplicates.append(key)
+            continue
+        selected[key] = row
+    return selected, dict(policy='First record; duplicates must be identical except cached flags',
+                          equivalent_duplicate_ids=duplicates)
+
+
 def analyze(records, expected_ids, external_gold, contrast_gold, baseline):
+    if len(expected_ids) != len(set(expected_ids)):
+        raise ValueError('DUPLICATE_EXPECTED_ID')
+    expected = set(expected_ids)
+    if not set(external_gold) <= expected or not set(contrast_gold) <= expected:
+        raise ValueError('GOLD_OUTSIDE_EXPECTED_INPUTS')
+    if set(external_gold) & set(contrast_gold):
+        raise ValueError('OVERLAPPING_GOLD_COHORTS')
+    if any(type(g.get('label')) is not int or g['label'] not in (0, 1) for g in contrast_gold.values()):
+        raise ValueError('INVALID_CONTRAST_LABEL')
     seen = {}
     for row in records:
         key = (row['id'], row['mode'])
         if key in seen or row['id'] not in expected_ids or row['mode'] not in ('blind', 'visible'):
             raise ValueError('DUPLICATE_OR_FOREIGN_PILOT_RECORD')
+        if row.get('automatic_addition') is not None and type(row['automatic_addition']) is not bool:
+            raise ValueError('INVALID_AUTOMATIC_ADDITION_TYPE')
         seen[key] = row
     result = dict(expected_inputs=len(expected_ids), observed_rows=len(seen), models='local Qwen, one diagnostic repetition',
                   cause_truth='PENDING_INDEPENDENT_SOURCE_REVIEW', modes={})
@@ -59,7 +95,7 @@ def analyze(records, expected_ids, external_gold, contrast_gold, baseline):
                                     and all(r.get('automatic_addition') is not None for r in sources)),
             status_counts=dict(Counter(r['status'] for r in sources)),
             technical_or_unmeasured_ids=sorted(i for i, r in selected.items() if not r or r.get('automatic_addition') is None),
-            labelled_external=len(ext), unlabelled_external_ids=sorted(set(external_gold) - set(ext)),
+            labelled_external=len(ext), unlabelled_external_ids=sorted(expected - set(ext) - set(contrast_gold)),
             archived_binary_projection=dict(QB2=score(ext, legacy), candidate=score(ext, legacy_end),
                                              contract='Historical binary field including invalid zero; diagnostic only'),
             valid_base_with_explicit_fallback=dict(QB2=score(ext, usable), candidate=score(ext, end),
@@ -89,12 +125,9 @@ def main():
     ids = [json.loads(line)['id'] for line in a.inputs.read_text(encoding='utf-8').splitlines() if line.strip()]
     if len(ids) != len(set(ids)):
         raise ValueError('DUPLICATE_EXPECTED_ID')
-    baseline = {}
-    for row in map(json.loads, blob(BASE).splitlines()):
-        if row['id'] in baseline and baseline[row['id']].get('binary') != row.get('binary'):
-            raise ValueError('CONFLICTING_ARCHIVED_BASELINE')
-        baseline[row['id']] = row
+    baseline, baseline_receipt = load_baseline(map(json.loads, blob(BASE).splitlines()))
     result = analyze(rows, ids, json.loads(blob(GOLD)), json.loads(a.contrast_gold.read_text(encoding='utf-8')), baseline)
+    result['baseline_load'] = baseline_receipt
     a.output.parent.mkdir(parents=True, exist_ok=True)
     with a.output.open('x', encoding='utf-8', newline='\n') as stream:
         json.dump(result, stream, ensure_ascii=False, indent=2)
