@@ -38,6 +38,55 @@ KEY_MARKERS = (b'-----BEGIN PRIVATE KEY-----', b'-----BEGIN RSA PRIVATE KEY-----
                b'-----BEGIN EC PRIVATE KEY-----', b'-----BEGIN OPENSSH PRIVATE KEY-----')
 LITERAL_SECRET = re.compile(rb'(?i)(?:api[_-]?key|access[_-]?token|secret[_-]?key|password)'
                             rb'\s*[\"\']?\s*[:=]\s*[\"\']([^\"\'\r\n]{12,})[\"\']')
+VENDOR_REGISTRY = ROOT / 'docs/qwen_submission_20261008/PINNED_VENDOR_FILES.json'
+
+
+def load_vendor_registry():
+    registry = json.loads(VENDOR_REGISTRY.read_text(encoding='utf-8'))
+    requirements = ROOT / 'submission/requirements-runtime.txt'
+    if (registry.get('version') != 'guardian-official-vendor-wheel-registry-1'
+            or registry.get('coverage') != 'ALL_PINNED_DISTRIBUTIONS'
+            or registry.get('requirements_sha256') != sha256(requirements)):
+        raise ValueError('COMPLETE_PINNED_VENDOR_PROVENANCE_REGISTRY_REQUIRED')
+    return registry
+
+
+def authenticated_vendor_files(archive, registry):
+    """Public vendor docs/fixtures are admitted only as exact official bytes.
+
+    The registry belongs to the operator's reviewed repository, not to the ZIP's
+    self-reported manifest. A changed/unregistered vendor module is rejected,
+    even when no credential heuristic fires. No library-name exception exists.
+    """
+    trusted = set()
+    dist_info = {name.split('/')[2] for name in registry['files']
+                 if len(name.split('/')) > 3 and name.split('/')[2].endswith('.dist-info')}
+    for entry in archive.infolist():
+        if entry.is_dir() or not entry.filename.startswith('runtime/site-packages/'):
+            continue
+        expected = registry['files'].get(entry.filename)
+        if expected is None:
+            pieces = PurePosixPath(entry.filename).parts
+            generated = (len(pieces) == 4 and pieces[2] in dist_info
+                         and pieces[3] in {'RECORD', 'INSTALLER', 'REQUESTED'})
+            if not generated:
+                raise ValueError('UNREGISTERED_VENDOR_FILE: ' + entry.filename)
+            data = archive.read(entry)
+            if ((pieces[3] == 'INSTALLER' and data != b'pip\n')
+                    or (pieces[3] == 'REQUESTED' and data != b'')
+                    or any(marker in data for marker in KEY_MARKERS) or LITERAL_SECRET.search(data)):
+                raise ValueError('UNAPPROVED_OR_PRIVATE_INSTALLER_METADATA: ' + entry.filename)
+            continue  # Generated metadata receives no public-example exemption.
+        if entry.file_size != expected['bytes']:
+            raise ValueError('OFFICIAL_VENDOR_FILE_CHANGED: ' + entry.filename)
+        value = hashlib.sha256()
+        with archive.open(entry) as source:
+            for chunk in iter(lambda: source.read(8 * 1024 * 1024), b''):
+                value.update(chunk)
+        if value.hexdigest() != expected['sha256']:
+            raise ValueError('OFFICIAL_VENDOR_FILE_CHANGED: ' + entry.filename)
+        trusted.add(entry.filename)
+    return trusted
 
 
 def sha256(path):
@@ -61,7 +110,7 @@ def _json(archive, name):
     return json.loads(archive.read(name), object_pairs_hook=unique)
 
 
-def _entry_scope(name):
+def _entry_scope(name, trusted_vendor=False):
     path = PurePosixPath(name)
     pieces = path.parts
     if (not pieces or path.is_absolute() or '..' in pieces or '\\' in name or ':' in name
@@ -69,6 +118,10 @@ def _entry_scope(name):
         raise ValueError('UNSAFE_OR_PROHIBITED_SUBMISSION_PATH: ' + name)
     if pieces[0] not in ROOT_DIRECTORIES and name not in ROOT_FILES:
         raise ValueError('UNAPPROVED_SUBMISSION_ROOT_ENTRY: ' + name)
+    if trusted_vendor:
+        if pieces[:2] != ('runtime', 'site-packages'):
+            raise ValueError('VENDOR_EXEMPTION_OUTSIDE_VENDOR_SOURCE')
+        return  # Exact official bytes; benchmark/docs/key examples are public.
     # Source modules may implement caches; this excludes data archives rather
     # than legitimate runtime names such as src/guardian_truth/.../cache.py.
     if pieces[0] == 'model' and name.rstrip('/') not in {'model', 'model/' + MODEL_REFERENCE['filename']}:
@@ -97,8 +150,16 @@ def verify_submission(path, expected_zip_sha256=None):
         names = archive.namelist()
         if len(names) != len(set(names)):
             raise ValueError('DUPLICATE_ZIP_ENTRIES')
+        registry = load_vendor_registry()
+        trusted_vendor = authenticated_vendor_files(archive, registry)
         for entry in archive.infolist():
-            _entry_scope(entry.filename)
+            if entry.is_dir() and entry.filename.startswith('runtime/site-packages/'):
+                # Explicit ZIP directory metadata must correspond to at least
+                # one authenticated file; empty unknown directories stay strict.
+                vendor = any(name.startswith(entry.filename) for name in trusted_vendor)
+            else:
+                vendor = entry.filename in trusted_vendor
+            _entry_scope(entry.filename, trusted_vendor=vendor)
         manifest = _json(archive, 'MANIFEST.json')
         if manifest.get('fixture_only') or manifest.get('runtime_only') is not False:
             raise ValueError('FULL_REAL_SUBMISSION_NOT_RUNTIME_OR_FIXTURE_REQUIRED')
@@ -126,7 +187,7 @@ def verify_submission(path, expected_zip_sha256=None):
         # Scan text/source/config members only; weights and native binaries are
         # inspected by exact hashes, not by an unreliable binary secret heuristic.
         for entry in archive.infolist():
-            if entry.is_dir() or entry.file_size > 10_000_000:
+            if entry.is_dir() or entry.file_size > 10_000_000 or entry.filename in trusted_vendor:
                 continue
             if PurePosixPath(entry.filename).suffix.lower() in {'.py', '.json', '.toml', '.txt', '.md'}:
                 data = archive.read(entry)
@@ -147,6 +208,8 @@ def verify_submission(path, expected_zip_sha256=None):
                 status='VERIFIED_OFFLINE_PACKAGING', path=str(path), bytes=size,
                 zip_sha256=checksum, model_reference=MODEL_REFERENCE, profile='B2',
                 source_commit=manifest.get('commit'), llama_revision=runtime.LLAMA_REVISION,
+                authenticated_vendor_files=len(trusted_vendor), vendor_registry_sha256=sha256(VENDOR_REGISTRY),
+                vendor_scope='Exact official pinned wheel bytes; public examples distinguished from operator secrets',
                 validation=['pinned_model_identity', 'complete_model_hash', 'all_member_crc_and_hashes',
                             'exact_manifest_file_set', 'root_layout_and_unix_permissions',
                             'native_elf_headers', 'host_driver_exclusion', 'known_secret_path_and_text_scan'],

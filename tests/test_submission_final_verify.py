@@ -121,3 +121,62 @@ def test_existing_receipt_is_preserved_without_archive_read(tmp_path, monkeypatc
     with pytest.raises(ValueError, match='RECEIPT_ALREADY_EXISTS'):
         verifier.main()
     assert receipt.read_text(encoding='utf-8') == 'Historical receipt'
+
+
+def trusted_fixture_registry(monkeypatch, name, data):
+    # Private test provenance only; the production registry contains4669 exact
+    # files from17 official pinned wheels, authenticated during construction.
+    monkeypatch.setattr(verifier, 'load_vendor_registry', lambda: {'files': {
+        name: dict(bytes=len(data), sha256=hashlib.sha256(data).hexdigest())}})
+
+
+def test_public_vendor_docstring_requires_exact_authenticated_bytes(tmp_path, monkeypatch):
+    name = 'runtime/site-packages/example/documentation.py'
+    data = b'"""Public documentation example: password = \'public-documentation-example\'"""'
+    path, reference = candidate(tmp_path, extra={name: data})
+    monkeypatch.setattr(verifier, 'MODEL_REFERENCE', reference)
+    with pytest.raises(ValueError, match='UNREGISTERED_VENDOR_FILE'):
+        verifier.verify_submission(path)
+    trusted_fixture_registry(monkeypatch, name, data)
+    assert verifier.verify_submission(path)['authenticated_vendor_files'] == 1
+
+
+def test_modified_vendor_bytes_rejected_even_without_secret_pattern(tmp_path, monkeypatch):
+    name = 'runtime/site-packages/example/module.py'
+    path, reference = candidate(tmp_path, extra={name: b'changed = True\n'})
+    monkeypatch.setattr(verifier, 'MODEL_REFERENCE', reference)
+    trusted_fixture_registry(monkeypatch, name, b'original = True\n')
+    with pytest.raises(ValueError, match='OFFICIAL_VENDOR_FILE_CHANGED'):
+        verifier.verify_submission(path)
+
+
+def test_public_vendor_benchmark_is_distinct_from_project_benchmark(tmp_path, monkeypatch):
+    name = 'runtime/site-packages/example/benchmarks/example.py'
+    data = b'# Public vendor benchmark example\n'
+    path, reference = candidate(tmp_path, extra={name: data})
+    monkeypatch.setattr(verifier, 'MODEL_REFERENCE', reference)
+    trusted_fixture_registry(monkeypatch, name, data)
+    assert verifier.verify_submission(path)['authenticated_vendor_files'] == 1
+    with pytest.raises(ValueError, match='RESEARCH_CACHE_FIXTURE_OR_SECRET'):
+        verifier._entry_scope('src/project/benchmarks/example.py')
+
+
+def test_public_vendor_key_example_cannot_exempt_project_private_key(tmp_path, monkeypatch):
+    name = 'runtime/site-packages/example/fixtures/key_example.py'
+    data = b'# Public illustrative fixture: -----BEGIN PRIVATE KEY-----\n'
+    path, reference = candidate(tmp_path, extra={name: data})
+    monkeypatch.setattr(verifier, 'MODEL_REFERENCE', reference)
+    trusted_fixture_registry(monkeypatch, name, data)
+    assert verifier.verify_submission(path)['authenticated_vendor_files'] == 1
+    with pytest.raises(ValueError, match='VENDOR_EXEMPTION_OUTSIDE_VENDOR_SOURCE'):
+        verifier._entry_scope('src/project/private.py', trusted_vendor=True)
+
+
+def test_pip_metadata_does_not_get_unconditional_vendor_exemption(tmp_path, monkeypatch):
+    known = 'runtime/site-packages/example-1.dist-info/METADATA'
+    name = 'runtime/site-packages/example-1.dist-info/INSTALLER'
+    path, reference = candidate(tmp_path, extra={name: b'not-a-reviewed-installer\n'})
+    monkeypatch.setattr(verifier, 'MODEL_REFERENCE', reference)
+    trusted_fixture_registry(monkeypatch, known, b'Known official metadata\n')
+    with pytest.raises(ValueError, match='UNAPPROVED_OR_PRIVATE_INSTALLER_METADATA'):
+        verifier.verify_submission(path)

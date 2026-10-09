@@ -164,3 +164,21 @@ Pinned llama.cpp с включённым VMM требует `CUDA::cuda_driver`;
 дополнительно отклоняет посторонние RPATH/RUNPATH. POSIX regression использует
 настоящий GCC для проверки транзитивной зависимости и отсутствия runtime path.
 Исправление ещё требует успешного нового CI; локальный unit pass его не заменяет.
+
+## Исправление проверки происхождения vendor files
+
+В точных wheels `pydantic==2.11.7` и `jsonschema==4.25.1` воспроизведены ложные
+отказы первоначального final verifier: публичный пример пароля в docstring
+считался private credential, а vendor `benchmarks` — нашими research data.
+Это дефект операторской проверки, отдельный от compile/link и модели.
+
+`PINNED_VENDOR_FILES.json` фиксирует17 объявленных зависимостей и4669 файлов:
+официальные Linux CPython3.12 wheels проверены по PyPI SHA256, затем вычислены
+точные file hashes. Любой vendor scope требует совпадения **содержимого**, а не
+имени библиотеки или текста примера. Changed/unregistered vendor files
+отклоняются; наши private/research sources остаются под прежними проверками.
+Generated pip metadata проверяется отдельно. Registry — операторский артефакт,
+не добавка к модельному pipeline и не доказательство отсутствия любых секретов.
+Сборка CI не перезапускается из-за этой проверки. Первый completion watcher
+остановлен до скачивания и помечен SUPERSEDED; новая phase использует исправленный
+verifier, тот же CI run и те же проверенные веса.
