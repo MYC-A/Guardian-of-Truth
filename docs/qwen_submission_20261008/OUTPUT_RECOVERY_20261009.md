@@ -1,5 +1,10 @@
 # Обработка отказов без изменения reviewer — 2026-10-09
 
+Готовый архив: `A:\Guardian-submissions\guardian-qwen-b2-output-recovery.zip`.
+Полный packaging receipt:`receipts/output_recovery_packaging_20261009.json`.
+Source commit:`5711da67c3a5427a0f88005761d8d149a16a670f`.
+Новый native runtime не компилировался; веса/бинарники прежние.
+
 ## Итоговый контракт
 
 Пользователь явно выбрал полный binary output с fallback0. Новый протокол

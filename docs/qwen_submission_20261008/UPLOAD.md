@@ -2,8 +2,21 @@
 
 ## Новый кандидат после платформенного отказа — 2026-10-09
 
-В этой fix-ветке готовится `guardian-qwen-b2-output-recovery.zip`.
-Не загружать `.partial` или считать архив проверенным до появления нового receipt.
+**Готовый проверенный ZIP текущего согласованного варианта:**
+
+```text
+A:\Guardian-submissions\guardian-qwen-b2-output-recovery.zip
+bytes:30395839470 (30.395839470 GB, около28.31 GiB)
+SHA256:e1021dfd843da7c5ecdca4c41a804a5d40d60c655da43aef3c9d0086acd8cd5d
+source commit:5711da67c3a5427a0f88005761d8d149a16a670f
+receipt:A:\Guardian-submissions\platform-output-recovery-5711da67\final-verification.json
+```
+
+Проверены full CRC/per-file hashes, original model SHA, Unix permissions,
+root inventory/ELF/driver exclusion и4669 official vendor files.
+Receipt в Git:`receipts/output_recovery_packaging_20261009.json`.
+Операция выполнялась локально; GitHub CI и новый GPU прогон не запускались.
+
 Предыдущий экспериментальный `guardian-qwen-b2-decision-first.zip` отклонён:
 его **не использовать**, даже несмотря на успешную проверку упаковки.
 
