@@ -9,6 +9,25 @@ ZIP. В репозитории веса и ZIP не коммитятся.
 
 ## Артефакт
 
+**Готовый проверенный архив, 2026-10-09:**
+
+```text
+A:\Guardian-submissions\guardian-qwen-b2-rebuilt.zip
+bytes: 30395847624 (30.395847624 GB)
+SHA256: 912fd1cd11121797efa433d459e67907c041b6200ea420d82d2b4a5418b27311
+receipt: A:\Guardian-submissions\guardian-qwen-b2-rebuilt.verification.json
+```
+
+Это полный ZIP с кодом, настоящими весами и Linux runtime. Все member CRC/hashes,
+известный GGUF SHA, manifest inventory, root layout, Unix permissions и native ELF
+проверены;4669 vendor files совпали с официальными pinned wheel bytes.
+Status: `READY_VERIFIED_PACKAGING`. Именно этот файл загружать в форму решения.
+GPU inference новой сборки и hidden30min limit остаются непроверенными.
+Receipt также опубликован в `receipts/final_packaging_20261009.json`.
+
+Ниже — история восстановления; её старый server ZIP SHA не относится к готовому
+архиву выше.
+
 Исторически на сервере был собран полный архив:
 
 ```text
@@ -24,9 +43,9 @@ SHA256: 46317b9570c76833771f14468e045e642f9802c7b516fba8234fefa23a493835
 и проверить по SHA256. Delete инстанса или диска — другое действие; сохранность
 при Delete этим планом не обещается. Выгрузка runtime отложена по указанию пользователя.
 
-Текущий путь завершения без сервера — `RUNTIME_REBUILD.md`: Linux CUDA SM80 runtime
-собирается в GitHub Actions, точные прежние веса скачиваются из pinned публичного
-источника. Затем helper соединяет их на дискеA и строит новый ZIP. Исторический
+Путь завершения без сервера выполнен — `RUNTIME_REBUILD.md`: Linux CUDA SM80 runtime
+собран в GitHub Actions, точные прежние веса получены из pinned публичного
+источника. Helper соединил их на дискеA и проверил новый ZIP. Исторический
 SHA выше **не является SHA новой сборки**.
 
 Локальная цель нового артефакта:
@@ -53,7 +72,7 @@ python -X utf8 scripts/verify_qwen_submission.py `
 `A:/GIS_Загрузки/Не подтвержден 625998.crdownload` имеет точные28595763648bytes,
 GGUF magic и совпавший полный SHA256. Его расширение не означает, что данные
 неполные; повторное скачивание не требуется. Receipt:
-`receipts/browser_model_20261009.json`. Полный конкурсный ZIP ещё не готов.
+`receipts/browser_model_20261009.json`. Полный ZIP теперь готов и указан выше.
 Первый CI run завершился на link без host CUDA driver; это отдельная ошибка
 сборки runtime, а не недокачанные веса. Исправления сохраняют исходные веса/VMM.
 

@@ -18,8 +18,8 @@ exit1; corrected projections сохранены отдельно. Полный e
 
 Исторический архив30.45GB был собран на сервере, SHA сохранён. Сервер остановлен;
 ZIP в `/dev/shm` после Stop не считается сохранённым, локальные partial не готовы.
-Текущий путь завершения — новая Linux CUDA SM80 сборка в GitHub Actions и получение
-точных прежних весов из публичного pinned источника на дискA. Это другой бинарник,
+Текущий путь завершения выполнен: новая Linux CUDA SM80 сборка в GitHub Actions и
+точные прежние веса соединены на дискеA. Это другой бинарник,
 а не побайтное восстановление прежнего окружения. Статусы и команды:
 RUNTIME_REBUILD.md, UPLOAD.md. Ветка GitHub не содержит весов/архива.
 Самостоятельного submission в аккаунт не было.
@@ -28,15 +28,22 @@ RUNTIME_REBUILD.md, UPLOAD.md. Ветка GitHub не содержит весо�
 offline install, native imports, empty public CLI и обработку прежних replies.
 В ней Docker engine отсутствовал. Новая CI фаза включает настоящий CPU Docker
 build/run, native llama version и полный replay обоих valid46 через bundled Python.
-Пока CI не завершён, эти новые проверки не считаются выполненными. Без GPU новая
+CI37872100649 успешно завершён:50 tests, offline install/imports/empty CLI и
+два full46 replay179/180 requests прошли как в build venv, так и в actual Docker.
+Native engine version отдельно NOT_EXECUTED_MISSING_HOST_DRIVER; stub для
+исполнения не использовался. Без GPU новая
 сборка не имеет собственных измерений предсказаний, скорости и driver compatibility.
 Для Guardian официально описан unpacked source archive.
 
-До первой отправки нужно иметь READY local archive. Платформенный запуск затем
+READY local archive теперь есть:30395847624bytes, SHA256
+`912fd1cd11121797efa433d459e67907c041b6200ea420d82d2b4a5418b27311`.
+Все ZIP CRC/member hashes/manifest/permissions/model identity проверены,4669
+vendor files подтверждены по официальным wheel bytes. Платформенный запуск затем
 даст свидетельство о реальном input size, environment, time limit и score.
 30min для548 строк не обещаны;548 не подтверждены как размер всего входа.
 Длины и eligibility дополнительных проверок также неизвестны.
 
 Новых универсальных гарантий или качества hidden test не заявляется. Общая цель
-сборки и передачи ещё не завершена, пока локальный ZIP не проверен; публикация
-кода и отдельного набора receipts уже выполнена.
+сборки локального reviewable кандидата и проверки упаковки завершена; публикация
+кода и receipts выполнена. Отправка в аккаунт и новый GPU/hidden эксперимент
+не выполнялись. Packaging completion не равна universal deployment validation.

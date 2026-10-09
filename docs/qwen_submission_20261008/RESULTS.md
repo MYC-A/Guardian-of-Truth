@@ -1,5 +1,16 @@
 # Offline Qwen package: measured results, 2026-10-08
 
+Update2026-10-09: server-independent runtime built successfully in CI37872100649.
+50 Linux tests passed; baseline179/speed16-180 full46 raw replay had0 mismatches
+both in build venv and in actual read-only/offline Docker. No new GPU inference.
+Manual transport adopted only after matching authenticated GitHub size/full SHA.
+Final ZIP is verified and present onA:30395847624bytes, SHA256
+`912fd1cd11121797efa433d459e67907c041b6200ea420d82d2b4a5418b27311`.
+All ZIP CRC/member hashes/root layout/permissions/model identity passed;4669
+vendor files authenticated. See `receipts/final_packaging_20261009.json`,
+`receipts/final_cpu_ci/`, CI_SUCCESS_20261009.md and UPLOAD.md. This completes
+packaging; new-runtime GPU quality/time and competition submission are unexecuted.
+
 This is a packaging and serving comparison of the existing B2 method. No new
 quality improvement is claimed from a different fresh model output.
 
