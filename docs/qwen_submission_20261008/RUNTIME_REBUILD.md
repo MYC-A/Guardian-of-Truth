@@ -202,3 +202,19 @@ Run37869021647 завершил compile/link на100%, RPATH audit и сбор n
 и configuration. Он не содержит ready runtime manifest и не принимается обычным
 downloader/assembler как успешный результат. Проверки cuobjdump/CPU install/
 replay/Docker нового run по-прежнему требуют собственного успешного исполнения.
+
+## Использование runtime, скачанного браузером
+
+После успешного CI37872100649 автоматический HTTP download оборвался с
+WinError10054. Пользователь сохранил полный transport ZIP вручную на дискеA.
+`complete_qwen_submission.py --local-artifact <ZIP>` использует этот файл без
+повторного скачивания: сначала проверяет successful run/exact commit, затем
+размер и полный SHA256 по независимым authenticated GitHub artifact metadata.
+Далее выполняются те же transport/tar/manifest/assembly/final gates.
+
+Manual source:1157010908bytes, SHA256
+`73a193fc779d24180d06a1a687a9e58450dc88f846e99e962950dc846d0e1db6`.
+Phase: `A:/Guardian-submissions/completion-manual-6b1413f1/`.
+Исходный failed transport phase сохраняется отдельно, его partial не принят.
+Эта смена способа передачи не меняет runtime bytes, веса, inference prompts
+или измеренные предсказания. Final ZIP публикуется только после полной проверки.

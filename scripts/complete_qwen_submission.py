@@ -2,6 +2,7 @@
 from __future__ import annotations
 
 import argparse
+import hashlib
 import importlib.util
 import json
 import os
@@ -52,6 +53,28 @@ def publish_verified(source, destination):
         source.unlink()
 
 
+def verify_local_artifact(path, artifact):
+    """Adopt browser bytes only against independent authenticated CI metadata."""
+    path = Path(path)
+    expected = artifact.get('digest', '')
+    if not isinstance(expected, str) or not re.fullmatch(r'sha256:[0-9a-f]{64}', expected):
+        raise ValueError('AUTHORITATIVE_CI_ARTIFACT_DIGEST_REQUIRED')
+    if path.is_symlink() or not path.is_file() or path.stat().st_size != artifact['size_in_bytes']:
+        raise ValueError('COMPLETE_LOCAL_CI_ARTIFACT_SIZE_REQUIRED')
+    before = path.stat()
+    value = hashlib.sha256()
+    with path.open('rb') as source:
+        for chunk in iter(lambda: source.read(8 * 1024 * 1024), b''):
+            value.update(chunk)
+    after = path.stat()
+    if (before.st_size, before.st_mtime_ns, before.st_ino) != (after.st_size, after.st_mtime_ns, after.st_ino):
+        raise ValueError('LOCAL_CI_ARTIFACT_CHANGED_DURING_VERIFICATION')
+    if 'sha256:' + value.hexdigest() != expected:
+        raise ValueError('AUTHORITATIVE_LOCAL_CI_ARTIFACT_HASH_MISMATCH')
+    return dict(path=str(path.resolve()), bytes=after.st_size, sha256=value.hexdigest(),
+                artifact_id=artifact['id'], identity_source='authenticated GitHub CI metadata')
+
+
 def extract_transport(source, destination):
     """Extract only the flat known CI artifact; no links, traversal or ZIP bomb."""
     destination = Path(destination)
@@ -87,6 +110,7 @@ def main():
     parser.add_argument('--run', type=int)
     parser.add_argument('--repo', default='MYC-A/Guardian-of-Truth')
     parser.add_argument('--model', type=Path, required=True)
+    parser.add_argument('--local-artifact', type=Path)
     parser.add_argument('--phase', type=Path, required=True)
     parser.add_argument('--output', type=Path, default=Path('A:/Guardian-submissions/guardian-qwen-b2-rebuilt.zip'))
     parser.add_argument('--timeout-minutes', type=int, default=90)
@@ -158,11 +182,23 @@ def main():
                     break
                 save('WAITING_FOR_EXACT_CI_RUN', ci_status=run.get('status'))
             time.sleep(min(60, left()))
-        save('DOWNLOADING_VERIFIED_EXACT_COMMIT_RUNTIME')
-        transport_dir = args.phase / 'download'
-        command('runtime-download', [ROOT / 'scripts/github_runtime_artifacts.py', '--repo', args.repo,
-                                     '--sha', args.sha, '--run', context['run_id'], '--directory', transport_dir])
-        transport_zip = transport_dir / ('guardian-qwen-a100-runtime-' + args.sha + '.zip')
+        if args.local_artifact:
+            save('VERIFYING_LOCAL_RUNTIME_ARTIFACT')
+            artifacts = api('actions/runs/' + str(context['run_id']) + '/artifacts')['artifacts']
+            matching = [item for item in artifacts
+                        if item['name'] == 'guardian-qwen-a100-runtime-' + args.sha]
+            if len(matching) != 1:
+                raise ValueError('ONE_EXACT_COMMIT_CI_ARTIFACT_REQUIRED')
+            adopted = verify_local_artifact(args.local_artifact, matching[0])
+            (args.phase / 'local-artifact-verification.json').write_text(
+                json.dumps(adopted, indent=2), encoding='utf-8')
+            transport_zip = args.local_artifact
+        else:
+            save('DOWNLOADING_VERIFIED_EXACT_COMMIT_RUNTIME')
+            transport_dir = args.phase / 'download'
+            command('runtime-download', [ROOT / 'scripts/github_runtime_artifacts.py', '--repo', args.repo,
+                                         '--sha', args.sha, '--run', context['run_id'], '--directory', transport_dir])
+            transport_zip = transport_dir / ('guardian-qwen-a100-runtime-' + args.sha + '.zip')
         transport = args.phase / 'transport'
         extract_transport(transport_zip, transport)
         checksum_line = (transport / 'guardian-qwen-a100-runtime.tar.gz.sha256').read_text(encoding='utf-8').strip()

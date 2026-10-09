@@ -1,5 +1,6 @@
 """Operator supervisor identity and extraction bounds; no network/GPU requests."""
 import importlib.util
+import hashlib
 from pathlib import Path
 import zipfile
 
@@ -71,3 +72,18 @@ def test_verified_publication_refuses_existing_file_and_moves_exact_bytes(tmp_pa
     completion.publish_verified(source, destination)
     assert destination.read_bytes() == b'DECLARED_PRIVATE_PUBLICATION_FIXTURE'
     assert not source.exists()
+
+
+def test_browser_artifact_requires_independent_complete_hash_and_size(tmp_path):
+    source = tmp_path / 'browser.zip'
+    source.write_bytes(b'DECLARED_PRIVATE_CI_TRANSPORT_FIXTURE')
+    metadata = dict(id=12, size_in_bytes=source.stat().st_size,
+                    digest='sha256:' + hashlib.sha256(source.read_bytes()).hexdigest())
+    assert completion.verify_local_artifact(source, metadata)['artifact_id'] == 12
+    with pytest.raises(ValueError, match='AUTHORITATIVE_CI_ARTIFACT_DIGEST_REQUIRED'):
+        completion.verify_local_artifact(source, dict(metadata, digest=None))
+    with pytest.raises(ValueError, match='COMPLETE_LOCAL_CI_ARTIFACT_SIZE_REQUIRED'):
+        completion.verify_local_artifact(source, dict(metadata, size_in_bytes=999))
+    source.write_bytes(b'X' * source.stat().st_size)
+    with pytest.raises(ValueError, match='AUTHORITATIVE_LOCAL_CI_ARTIFACT_HASH_MISMATCH'):
+        completion.verify_local_artifact(source, metadata)
