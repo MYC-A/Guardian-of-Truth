@@ -182,3 +182,23 @@ Generated pip metadata проверяется отдельно. Registry — о�
 Сборка CI не перезапускается из-за этой проверки. Первый completion watcher
 остановлен до скачивания и помечен SUPERSEDED; новая phase использует исправленный
 verifier, тот же CI run и те же проверенные веса.
+
+## Второй CI отказ: notice path, 2026-10-09
+
+Run37869021647 завершил compile/link на100%, RPATH audit и сбор native/Python
+зависимостей, но остановился на `CUDA_REDISTRIBUTABLE_LICENSE_MISSING`.
+Сборщик неверно предполагал наличие `EULA.txt` в двух локальных toolkit путях.
+Этот отказ не является ошибкой весов или отрицательным GPU-экспериментом.
+
+Теперь в repository и final package включён неизменённый официальный
+[CUDA12.8.1 EULA PDF](https://docs.nvidia.com/cuda/archive/12.8.1/pdf/EULA.pdf):
+228502bytes, SHA256`94736434ff4409100167951f4a76c0a6ab9ba98cf75b41bb74fae53610d9940b`.
+`preflight` проверяет точные байты до Docker/CUDA compilation; build повторяет
+эту проверку перед clone. PDF сохраняется как binary Git artifact без EOL
+преобразований. Отсутствующий/изменённый notice теперь fail-fast, а не late fail.
+
+После успешной компиляции записывается `ENGINE_COMPILE_RECEIPT.json`. При позднем
+отказе workflow сохраняет отдельный `FAILED_COMPILE_SNAPSHOT` с compiled binaries
+и configuration. Он не содержит ready runtime manifest и не принимается обычным
+downloader/assembler как успешный результат. Проверки cuobjdump/CPU install/
+replay/Docker нового run по-прежнему требуют собственного успешного исполнения.

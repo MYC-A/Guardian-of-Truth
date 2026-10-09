@@ -24,6 +24,11 @@ import tarfile
 import tempfile
 
 LLAMA_REVISION = 'f498f864fbc0472004ee1c3616c1188c68eb157f'
+CUDA_EULA = dict(
+    relative_path='submission/licenses/NVIDIA_CUDA_12.8.1_EULA.pdf',
+    source_url='https://docs.nvidia.com/cuda/archive/12.8.1/pdf/EULA.pdf',
+    bytes=228502,
+    sha256='94736434ff4409100167951f4a76c0a6ab9ba98cf75b41bb74fae53610d9940b')
 MODEL_REFERENCE = dict(
     filename='Qwen3.8-27B-Q8_0.gguf', bytes=28595763648,
     sha256='aab65c67ef0dad127960efef9247f1832bca105faa1c7a052cc039b223cf86a1',
@@ -41,6 +46,19 @@ def digest(path):
         for chunk in iter(lambda: source.read(8 * 1024 * 1024), b''):
             value.update(chunk)
     return value.hexdigest()
+
+
+def verify_cuda_notice(repo):
+    """Fail before compilation if the pinned official notice is unavailable."""
+    path = Path(repo) / CUDA_EULA['relative_path']
+    if path.is_symlink() or not path.is_file():
+        raise RuntimeError('PINNED_CUDA_NOTICE_MISSING')
+    if path.stat().st_size != CUDA_EULA['bytes'] or digest(path) != CUDA_EULA['sha256']:
+        raise RuntimeError('PINNED_CUDA_NOTICE_CHANGED')
+    with path.open('rb') as source:
+        if source.read(5) != b'%PDF-':
+            raise RuntimeError('OFFICIAL_CUDA_NOTICE_PDF_REQUIRED')
+    return path
 
 
 def command(args, **kwargs):
@@ -272,6 +290,7 @@ def build(repo, stage, llama_source, jobs, image_identity):
         raise ValueError('REBUILD_REQUIRES_FRESH_STAGE_AND_LLAMA_SOURCE')
     if jobs < 1 or jobs > 4:
         raise ValueError('BUILD_JOBS_MUST_BE_1_TO_4')
+    cuda_notice = verify_cuda_notice(repo)
     # The read-only CI checkout belongs to the host runner UID, while the build
     # container runs as root. Trust only this exact supplied checkout, per call;
     # do not modify global Git settings or permit every directory.
@@ -291,6 +310,15 @@ def build(repo, stage, llama_source, jobs, image_identity):
     build_dir = llama_source / 'build'
     command(['cmake', '-S', llama_source, '-B', build_dir, *cmake_flags])
     command(['cmake', '--build', build_dir, '--target', 'llama-server', '--parallel', str(jobs)])
+    # Preserve the expensive completed engine if a later packaging gate fails.
+    # This snapshot is explicitly incomplete and is never a ready runtime.
+    engine_snapshot = dict(status='COMPILED_ENGINE_ONLY_NOT_SUBMITTABLE',
+                           source_commit=source_commit, llama_revision=LLAMA_REVISION,
+                           image_identity=image_identity, cmake_flags=cmake_flags,
+                           files={p.name: dict(bytes=p.stat().st_size, sha256=digest(p))
+                                  for p in sorted((build_dir / 'bin').iterdir()) if p.is_file()})
+    (llama_source.parent / 'ENGINE_COMPILE_RECEIPT.json').write_text(
+        json.dumps(engine_snapshot, indent=2, sort_keys=True), encoding='utf-8')
     stage.mkdir(parents=True)
     collect_sources(repo, stage)
     native = stage / 'runtime/llama'
@@ -305,11 +333,9 @@ def build(repo, stage, llama_source, jobs, image_identity):
         (stage / name).chmod(0o755)
     copy_file(repo / 'submission/requirements-runtime.txt', stage / 'licenses/PYTHON_RUNTIME_REQUIREMENTS.txt')
     # Include vendor/system legal notices; package .dist-info licences were copied above.
-    candidates = [Path('/usr/local/cuda/EULA.txt'), Path('/usr/local/cuda/doc/EULA.txt')]
-    eula = next((p for p in candidates if p.is_file()), None)
-    if eula is None:
-        raise RuntimeError('CUDA_REDISTRIBUTABLE_LICENSE_MISSING')
-    copy_file(eula, stage / 'licenses/NVIDIA_CUDA_EULA.txt')
+    # collect_sources already copied this exact repository-owned official PDF.
+    if digest(stage / 'licenses' / cuda_notice.name) != CUDA_EULA['sha256']:
+        raise RuntimeError('STAGED_CUDA_NOTICE_CHANGED')
     doc_root = Path('/usr/share/doc')
     for notice in sorted(doc_root.glob('*/copyright')):
         if notice.is_file():
@@ -325,6 +351,7 @@ def build(repo, stage, llama_source, jobs, image_identity):
                       image_identity=image_identity, cuda_architectures=['80'], cmake_flags=cmake_flags,
                       cuda_driver_link=driver_link_info,
                       built_native_rpaths=native_rpaths,
+                      cuda_notice=CUDA_EULA,
                       cuda_binary_architectures=embedded_architectures,
                       c_compiler=output(['gcc', '--version']), cxx_compiler=output(['g++', '--version']),
                       cmake=output(['cmake', '--version']), nvcc=output(['nvcc', '--version']),
@@ -496,6 +523,8 @@ def assemble(runtime, model, destination):
 def main():
     parser = argparse.ArgumentParser()
     sub = parser.add_subparsers(dest='command', required=True)
+    preflight_parser = sub.add_parser('preflight')
+    preflight_parser.add_argument('--repo', type=Path, default=ROOT)
     build_parser = sub.add_parser('build')
     build_parser.add_argument('--repo', type=Path, default=ROOT)
     build_parser.add_argument('--stage', type=Path, required=True)
@@ -519,7 +548,10 @@ def main():
     extract_parser.add_argument('--destination', type=Path, required=True)
     extract_parser.add_argument('--expected-sha256', required=True)
     args = parser.parse_args()
-    if args.command == 'build':
+    if args.command == 'preflight':
+        verify_cuda_notice(args.repo)
+        print(json.dumps(dict(status='PINNED_CUDA_NOTICE_VERIFIED', **CUDA_EULA)), flush=True)
+    elif args.command == 'build':
         build(args.repo, args.stage, args.llama_source, args.jobs, args.image_identity)
     elif args.command == 'verify':
         manifest = verify(args.stage)

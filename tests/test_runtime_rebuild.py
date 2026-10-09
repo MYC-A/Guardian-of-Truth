@@ -146,6 +146,31 @@ def test_only_cuda_driver_gaps_are_exempt_from_dependency_closure():
     assert not runtime.NVIDIA_DRIVER.fullmatch('libcublas.so.12')
 
 
+def test_official_notice_is_checked_by_exact_bytes_and_corruption_is_rejected(tmp_path):
+    assert runtime.verify_cuda_notice(ROOT).name == 'NVIDIA_CUDA_12.8.1_EULA.pdf'
+    with pytest.raises(RuntimeError, match='PINNED_CUDA_NOTICE_MISSING'):
+        runtime.verify_cuda_notice(tmp_path)
+    notice = tmp_path / runtime.CUDA_EULA['relative_path']
+    notice.parent.mkdir(parents=True)
+    notice.write_bytes(b'%PDF- DECLARED_CORRUPTED_UNIT_FIXTURE_NOT_AN_OFFICIAL_NOTICE')
+    with pytest.raises(RuntimeError, match='PINNED_CUDA_NOTICE_CHANGED'):
+        runtime.verify_cuda_notice(tmp_path)
+
+
+def test_missing_notice_aborts_before_git_network_or_compiler(tmp_path, monkeypatch):
+    from types import SimpleNamespace
+    seen = []
+    monkeypatch.setattr(runtime.sys, 'platform', 'linux')
+    monkeypatch.setattr(runtime.sys, 'version_info', (3, 12))
+    monkeypatch.setattr(runtime.os, 'uname', lambda: SimpleNamespace(machine='x86_64'), raising=False)
+    monkeypatch.setattr(runtime, 'command', lambda *args, **kwargs: seen.append(args))
+    monkeypatch.setattr(runtime, 'output', lambda *args: seen.append(args))
+    with pytest.raises(RuntimeError, match='PINNED_CUDA_NOTICE_MISSING'):
+        runtime.build(tmp_path, tmp_path / 'stage', tmp_path / 'llama.cpp', 2, 'DECLARED_UNIT_IMAGE')
+    assert seen == []
+    assert not (tmp_path / 'stage').exists() and not (tmp_path / 'llama.cpp').exists()
+
+
 def test_link_only_driver_requires_toolkit_stub_and_fresh_external_directory(tmp_path, monkeypatch):
     stage = tmp_path / 'stage'
     source = tmp_path / 'llama.cpp'

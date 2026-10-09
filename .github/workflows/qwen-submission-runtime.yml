@@ -74,6 +74,10 @@ jobs:
         with:
           python-version: '3.12'
 
+      - name: Validate pinned build notices before expensive compilation
+        shell: bash
+        run: python -X utf8 scripts/rebuild_qwen_runtime.py preflight --repo "$PWD"
+
       - name: Compile CUDA SM80 and exercise actual bundled runtime without GPU
         shell: bash
         run: |
@@ -230,5 +234,18 @@ jobs:
             ${{ runner.temp }}/qwen-build/cpu-smoke/*.log
             ${{ runner.temp }}/qwen-build/artifacts/*.log
             ${{ runner.temp }}/qwen-build/runtime/BUILD_PROVENANCE.json
+          if-no-files-found: warn
+          retention-days: 3
+
+      - name: Preserve compiled engine after a later packaging failure
+        if: failure()
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4.6.2
+        with:
+          name: FAILED_COMPILE_SNAPSHOT-${{ github.sha }}
+          path: |
+            ${{ runner.temp }}/qwen-build/ENGINE_COMPILE_RECEIPT.json
+            ${{ runner.temp }}/qwen-build/llama.cpp/build/bin/
+            ${{ runner.temp }}/qwen-build/llama.cpp/build/CMakeCache.txt
+            ${{ runner.temp }}/qwen-build/runtime/runtime/llama/
           if-no-files-found: warn
           retention-days: 3
