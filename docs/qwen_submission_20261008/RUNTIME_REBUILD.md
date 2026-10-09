@@ -78,6 +78,19 @@ Ubuntu packages устанавливаются из текущего репоз�
 
 ## Локальное соединение частей на дискеA
 
+Выполняемый операторский supervisor `scripts/complete_qwen_submission.py` может
+закончить весь путь самостоятельно: ждёт конкретный успешный CI, скачивает его
+artifact, проверяет transport/tar/manifest/commit, соединяет проверенные веса,
+создаёт `.zip.partial`, проверяет все байты и только затем атомарно публикует ZIP.
+Опрос CI — раз в60секунд, общий предел90минут; failed CI останавливает процесс,
+автоматических rerun и перезаписи прежних файлов нет. Статус и logs лежат в новом
+`--phase` каталоге. `READY_VERIFIED_PACKAGING` означает готовую упаковку;
+GPU-инференс, качество и time limit остаются отдельными проверками.
+
+На2026-10-09 целые исходные веса уже доступны по нормальному имени
+`A:/Guardian-submissions/model/Qwen3.8-27B-Q8_0.gguf`: это hardlink на проверенный
+browser download, а не ещё одна28.6GB копия.
+
 После успешного workflow скачать его artifact целиком. Внутри находится runtime
 tar.gz, внешний SHA256, `RUNTIME_MANIFEST.json` и `runtime-attestation.sigstore.json`.
 GitHub Actions artifact ZIP — транспортный контейнер; **организаторам его не
