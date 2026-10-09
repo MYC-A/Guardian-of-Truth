@@ -66,3 +66,13 @@ Legacy traces without it are explicitly marked as relying on the phase-level
 fingerprint; matching IDs alone is not source authentication.
 A real primary failure prevents a full prediction file and produces
 explicit full-denominator sensitivity bounds rather than an imputed negative.
+
+# Platform primary contract amendment (2026-10-09)
+
+The public CLI defaults to `--primary-contract decision-first`, with primary
+retries disabled. A complete first `decision` in a successful truncated JSON
+generation can supply a model classification, while its unfinished reason and
+evidence remain explicitly NOT_VALIDATED. An empty response is never imputed0.
+`--primary-contract reason-last` keeps the historical B2 wire control;
+`--retry-primary` enables separately bounded optional recovery. Quality and total
+GPU time of the new wire have not been measured. See PLATFORM_PRIMARY_REPAIR_20261009.md.

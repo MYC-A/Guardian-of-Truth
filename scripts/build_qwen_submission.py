@@ -59,7 +59,7 @@ def refreeze(repo, stage):
     if digest(model) != previous['model_sha256'] or model.stat().st_size != previous['model_bytes']:
         raise ValueError('MODEL_CHANGED_SINCE_PREPARE')
     previous['commit'] = subprocess.check_output(['git', '-C', str(repo), 'rev-parse', 'HEAD'], text=True).strip()
-    previous['files'] = {str(p.relative_to(stage)): dict(bytes=p.stat().st_size, sha256=digest(p))
+    previous['files'] = {p.relative_to(stage).as_posix(): dict(bytes=p.stat().st_size, sha256=digest(p))
                          for p in artifact_files(stage) if p != model}
     (stage / 'MANIFEST.json').write_text(json.dumps(previous, indent=2, sort_keys=True), encoding='utf-8')
 

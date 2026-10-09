@@ -22,6 +22,8 @@ def main():
     ap.add_argument('--calls', type=Path, required=True)
     ap.add_argument('--traces', type=Path, required=True)
     ap.add_argument('--output', type=Path, required=True)
+    ap.add_argument('--primary-contract', choices=['reason-last', 'decision-first'], default='reason-last')
+    ap.add_argument('--retry-primary', action='store_true')
     a = ap.parse_args()
     if a.output.exists():
         raise ValueError('REPLAY_OUTPUT_ALREADY_EXISTS')
@@ -46,6 +48,8 @@ def main():
         records[r['key']] = r
     class Client:
         model = MODEL
+        primary_contract = a.primary_contract
+        primary_recovery_enabled = a.retry_primary
         used = set()
         lookups = 0
         def call(self, request, attempt=0, tag=''):
@@ -71,6 +75,7 @@ def main():
                                    frozen={k: prior.get(k) for k in fields}))
         predictions.append(dict(id=row['id'], binary=fresh['binary']))
     report = dict(scope='same raw processing; not new inference', rows=len(rows), actual_http_calls=0,
+                  primary_contract=a.primary_contract, primary_recovery_enabled=a.retry_primary,
                   exact_request_lookups=client.lookups, unique_exact_requests=len(client.used),
                   frozen_records=len(records), unused_records=len(set(records) - client.used),
                   input_sha256=a.expected_input_sha256,

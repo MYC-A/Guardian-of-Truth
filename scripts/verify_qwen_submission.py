@@ -208,6 +208,8 @@ def verify_submission(path, expected_zip_sha256=None):
                 status='VERIFIED_OFFLINE_PACKAGING', path=str(path), bytes=size,
                 zip_sha256=checksum, model_reference=MODEL_REFERENCE, profile='B2',
                 source_commit=manifest.get('commit'), llama_revision=runtime.LLAMA_REVISION,
+                primary_contract=manifest.get('primary_contract', 'reason-last-v1'),
+                primary_recovery_enabled=manifest.get('primary_recovery_enabled', False),
                 authenticated_vendor_files=len(trusted_vendor), vendor_registry_sha256=sha256(VENDOR_REGISTRY),
                 vendor_scope='Exact official pinned wheel bytes; public examples distinguished from operator secrets',
                 validation=['pinned_model_identity', 'complete_model_hash', 'all_member_crc_and_hashes',

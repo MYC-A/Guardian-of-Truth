@@ -87,7 +87,7 @@ def test_client_exact_request_attempt_cache(monkeypatch):
     assert client.cache_hits == 1
 
 
-def test_full_entry_failure_writes_receipts_but_no_predictions(monkeypatch, tmp_path):
+def test_full_entry_failure_writes_receipts_but_no_predictions(monkeypatch, tmp_path, capsys):
     from guardian_truth.submission import cli
     class Server:
         closed = False
@@ -107,7 +107,10 @@ def test_full_entry_failure_writes_receipts_but_no_predictions(monkeypatch, tmp_
         main(['--input', str(source), '--output', str(destination), '--work-dir', str(work)])
     assert Server.closed
     assert not destination.exists()
-    assert json.loads((work / 'run.json').read_text())['invalid_ids'] == ['001']
+    report = json.loads((work / 'run.json').read_text())
+    assert report['invalid_ids'] == ['001']
+    assert report['failures'][0]['error'] == 'schema failure'
+    assert 'prediction_failure=' in capsys.readouterr().out
 
 
 def test_rejected_primary_cannot_become_negative(monkeypatch):

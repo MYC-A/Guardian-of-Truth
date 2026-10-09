@@ -20,6 +20,7 @@ import subprocess
 import tempfile
 import threading
 import time
+import urllib.error
 import urllib.request
 
 MODEL = 'qwen3.8-27b@71bc7b627595:Q8_0:llamacpp-b11459'
@@ -104,8 +105,20 @@ class LocalClient:
         self.key_locks, self.cache = {}, {}
         self.calls = []
         self.preflight_http = self.completion_http = self.cache_hits = 0
+        self.recovery_calls = 0
+        self.recovery_call_limit = 4
 
-    def call(self, request, attempt=0, tag=''):
+    def reserve_recovery(self):
+        with self.lock:
+            if self.recovery_calls >= self.recovery_call_limit:
+                return False
+            self.recovery_calls += 1
+            return True
+
+    def call_recovery(self, request, attempt=0, tag=''):
+        return self.call(request, attempt=attempt, tag=tag, timeout=min(120, self.timeout))
+
+    def call(self, request, attempt=0, tag='', *, timeout=None):
         from guardian_truth.integrated.transport import sha
         if request.get('model') != self.model:
             raise ValueError('REQUEST_MODEL_MISMATCH')
@@ -118,13 +131,22 @@ class LocalClient:
                     self.cache_hits += 1
                 return dict(self.cache[key], cached=True)
             start = time.monotonic()
+            deadline = None if timeout is None else start + timeout
+            def remaining(default):
+                if deadline is None:
+                    return default
+                left = deadline - time.monotonic()
+                if left <= 0:
+                    raise TimeoutError('REQUEST_DEADLINE_EXCEEDED')
+                return min(default, left)
             record = dict(key=key, request_sha256=sha(request), model=self.model,
                           attempt=attempt, tag=tag, cached=False, content=None, usage=None)
             try:
                 # Uses the server's own tokenizer and chat template, not bytes/4.
                 with self.lock:
                     self.preflight_http += 1
-                count = http_json(self.base + '/v1/chat/completions/input_tokens', request, api_key=self.api_key)
+                count = http_json(self.base + '/v1/chat/completions/input_tokens', request,
+                                  timeout=remaining(20), api_key=self.api_key)
                 tokens = count.get('input_tokens')
                 if type(tokens) is not int or tokens < 0:
                     raise ValueError('INVALID_TOKEN_COUNT')
@@ -134,7 +156,8 @@ class LocalClient:
                 else:
                     with self.lock:
                         self.completion_http += 1
-                    data = http_json(self.base + '/v1/chat/completions', request, self.timeout, api_key=self.api_key)
+                    data = http_json(self.base + '/v1/chat/completions', request,
+                                     remaining(self.timeout), api_key=self.api_key)
                     choice = data['choices'][0]
                     record.update(content=choice['message'].get('content'),
                                   finish_reason=choice.get('finish_reason'), usage=data.get('usage'),
@@ -142,6 +165,8 @@ class LocalClient:
                                   transport=dict(status=200))
             except Exception as error:
                 record['transport'] = dict(status='EXC', error=type(error).__name__, detail=str(error)[:300])
+                if isinstance(error, urllib.error.HTTPError):
+                    record['transport']['http_status'] = error.code
             record['seconds'] = round(time.monotonic() - start, 4)
             with self.lock:
                 self.calls.append(record)
@@ -245,14 +270,35 @@ class ModelServer:
 
 
 def predict_one(row, client, layers):
-    from experiments.guardian_addons.variants2 import Hook2
+    from guardian_truth.submission.primary import PrimaryReviewHook
     from guardian_truth.repair.v5 import ARMS, run_v5
-    hook = Hook2(client, 'blind2', MODEL, original_row=row,
+    hook = PrimaryReviewHook(client, 'blind2', MODEL, original_row=row,
                  max_tokens=3400, max_request_bytes=60000)
     rec = run_v5(row, hook, flags=ARMS['R_fix'], provider='local-llamacpp', model=MODEL, attempt=0)
     layer = layers.findings(row)
-    return finalize_trace(dict(id=row['id'], input_row_sha256=row_fingerprint(row),
-                               rec=rec, pre_steps=hook.log, layer_trace=layer))
+    raw = dict(id=row['id'], input_row_sha256=row_fingerprint(row),
+               rec=rec, pre_steps=hook.log, layer_trace=layer,
+               primary_contract=getattr(client, 'primary_contract', 'reason-last'))
+    trace = finalize_trace(raw)
+    if trace.get('error') != 'PRIMARY_INFERENCE_FAILURE':
+        return trace
+    if not getattr(client, 'primary_recovery_enabled', False):
+        return trace
+    recovery = hook.retry()
+    if recovery is None:
+        return finalize_trace(raw)
+    receipt, admitted = recovery
+    rec['A_adm2'] = {k: admitted.get(k) for k in ('decision', 'admission')}
+    value = admitted.get('admitted')
+    if value:
+        rec['A_adm2'].update(target_id=value['regulated_action']['target_id'], reason=value['reason'])
+    rec['base_error'] = admitted.get('decision') == 'ERROR' or bool(rec['A'].get('guard_error'))
+    rec['A'].update(final=admitted.get('decision'), binary=int(admitted.get('decision') == 'ERROR'),
+                    steps=[dict(tag='review', raw_content=receipt.get('content'), transport=receipt.get('transport'),
+                                finish_reason=receipt.get('finish_reason'), key=receipt.get('key'),
+                                request_sha256=hook.log[-1]['terminal_request_sha256'],
+                                admission=admitted['admission'])])
+    return finalize_trace(raw)
 
 
 def row_fingerprint(row):
@@ -273,6 +319,8 @@ def finalize_trace(raw):
     decision = decide(rec, raw['layer_trace']['findings'])
     trace = dict(raw, binary=decision['binary'], owner=decision['decision_owner'], accusation=decision['accusation'])
     trace.pop('error', None)
+    for key in ('partial_model_decision', 'explanation_status', 'source_support_status', 'projection'):
+        trace.pop(key, None)
     trace['technical_gaps'] = technical_gaps(trace)
     primary_valid = (rec.get('A_adm2') or {}).get('decision') in ('ERROR', 'NO_ERROR', 'UNKNOWN')
     if 'A_adm2' not in rec:
@@ -286,7 +334,43 @@ def finalize_trace(raw):
     if decision['binary'] == 0 and (failed_record(dict(rec=rec)) or not primary_valid):
         trace['binary'] = None
         trace['error'] = 'PRIMARY_INFERENCE_FAILURE'
+        if raw.get('primary_contract') == 'decision-first':
+            from guardian_truth.submission.primary import partial_decision
+            primary = next((s for s in (rec.get('A') or {}).get('steps', []) if s.get('tag') == 'review'), {})
+            label = partial_decision(dict(primary, content=primary.get('raw_content')))
+            if label is not None:
+                # Recompute from the actual receipt in both live and replay.
+                # Incomplete explanation/references never become a certificate.
+                trace.update(binary=int(label == 'ERROR'), owner='PARTIAL_MODEL_DECISION', accusation=None,
+                             partial_model_decision=label, explanation_status='INCOMPLETE',
+                             source_support_status='NOT_VALIDATED', projection='UNKNOWN_PROJECTED_0' if label == 'UNKNOWN'
+                             else 'PARTIAL_MODEL_CLASSIFICATION')
+                trace.pop('error', None)
     return trace
+
+
+def failure_summary(trace):
+    """Small diagnostic for platform stdout; full evidence stays in receipts."""
+    rec = trace.get('rec') or {}
+    steps = (rec.get('A') or {}).get('steps') or []
+    primary = next((s for s in steps if s.get('tag') == 'review'), {})
+    def category(value):
+        return ':'.join(value.split(':')[:2]) if isinstance(value, str) else value
+    transport = primary.get('transport') or {}
+    return dict(id=trace.get('id'), error=category(trace.get('error')),
+                partial_model_decision=trace.get('partial_model_decision'),
+                explanation_status=trace.get('explanation_status'),
+                primary_admission=category((rec.get('A_adm2') or {}).get('admission')),
+                review_admission=category(primary.get('admission')),
+                finish_reason=primary.get('finish_reason'),
+                transport={k: transport.get(k) for k in ('status', 'error', 'http_status')},
+                request_sha256=primary.get('request_sha256'),
+                effective_request_sha256=next((s.get('effective_request_sha256') for s in trace.get('pre_steps', [])
+                                               if s.get('tag') == 'primary_wire'), primary.get('request_sha256')),
+                technical_gaps=trace.get('technical_gaps', []),
+                recovery=[{k: category(s.get(k)) if k == 'admission' else s.get(k)
+                           for k in ('tag', 'attempt', 'admission', 'terminal_request_sha256')}
+                          for s in trace.get('pre_steps', []) if s.get('tag') == 'primary_review_retry'])
 
 
 def main(argv=None):
@@ -304,6 +388,9 @@ def main(argv=None):
     parser.add_argument('--fast', action='store_true', help='Separate profile: enable FlashAttention; quality must be measured')
     parser.add_argument('--batch-size', type=int, help='Separate performance profile: logical prefill batch limit')
     parser.add_argument('--ubatch-size', type=int, help='Separate performance profile: physical prefill microbatch limit')
+    parser.add_argument('--primary-contract', choices=['reason-last', 'decision-first'], default='decision-first',
+                        help='Versioned review wire; decision-first permits partial model classification')
+    parser.add_argument('--retry-primary', action='store_true', help='Optional bounded recovery; off by default')
     options = parser.parse_args(argv)
     if options.workers < 1 or options.context < 4096 or (options.attach and options.port is None):
         parser.error('invalid workers/context/attach port')
@@ -329,6 +416,8 @@ def main(argv=None):
                          port=options.port, attach=options.attach, fast=options.fast,
                          batch_size=options.batch_size, ubatch_size=options.ubatch_size) as server:
             client = LocalClient(server.port, options.context, api_key=server.api_key)
+            client.primary_contract = options.primary_contract
+            client.primary_recovery_enabled = options.retry_primary
             from guardian_truth.v6fix.pipeline import Layers
             layers = Layers(client, MODEL, budget=20000, attempts=(0, 1), frules_max_tokens=700)
             with ThreadPoolExecutor(max_workers=options.workers) as executor:
@@ -342,6 +431,10 @@ def main(argv=None):
                     traces[identifier] = trace
                     with (work / 'traces.jsonl').open('a', encoding='utf-8', newline='\n') as f:
                         f.write(json.dumps(trace, ensure_ascii=False, default=str) + '\n')
+                    if trace.get('error'):
+                        print('prediction_failure=' + json.dumps(failure_summary(trace), ensure_ascii=False), flush=True)
+                    elif trace.get('partial_model_decision') or any(s.get('tag') == 'primary_review_retry' for s in trace.get('pre_steps', [])):
+                        print('prediction_recovery=' + json.dumps(failure_summary(trace), ensure_ascii=False), flush=True)
                     print(f'{len(traces)}/{len(rows)}', flush=True)
             (work / 'calls.json').write_text(json.dumps(client.calls, ensure_ascii=False), encoding='utf-8')
         invalid = [r['id'] for r in rows if type(traces[r['id']].get('binary')) is not int
@@ -355,9 +448,13 @@ def main(argv=None):
                       explicit_flash=options.fast, batch_size=options.batch_size, ubatch_size=options.ubatch_size,
                       server_props=server.props, preflight_http=client.preflight_http,
                       completion_http=client.completion_http, cache_hits=client.cache_hits,
+                      recovery_calls=client.recovery_calls, recovery_call_limit=client.recovery_call_limit,
+                      primary_contract=options.primary_contract, primary_recovery_enabled=options.retry_primary,
+                      partial_model_predictions=sum('partial_model_decision' in t for t in traces.values()),
                       input_tokens=sum((c.get('usage') or {}).get('prompt_tokens', 0) for c in client.calls),
                       output_tokens=sum((c.get('usage') or {}).get('completion_tokens', 0) for c in client.calls))
         if invalid:
+            report['failures'] = [failure_summary(traces[identifier]) for identifier in invalid]
             report.update(seconds=time.monotonic() - started, output_written=False)
             (work / 'run.json').write_text(json.dumps(report, indent=2), encoding='utf-8')
             raise RuntimeError(f'INCOMPLETE_PREDICTIONS: {invalid}; traces at {work}')
