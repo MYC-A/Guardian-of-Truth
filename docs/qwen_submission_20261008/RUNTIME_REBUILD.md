@@ -53,7 +53,10 @@ Workflow выполняет:
 4. Проверяет native imports и настоящий public entrypoint на пустом CSV с Parquet
    output; `pip install . --no-index` использует stdlib-only build backend. Запускает
    actual rebuilt`llama-server --version` через bundled ELF loader, проверяет
-   returncode0 и source revision; это не загрузка модели и не GPU inference.
+   returncode0 и source revision, если доступен реальный NVIDIA driver.
+   Только точная loader-ошибка отсутствующего host driver даёт
+   `NOT_EXECUTED_MISSING_HOST_DRIVER`. Ошибки userspace библиотек, символов
+   и crashes остаются фатальными. Stub для исполнения не используется.
 5. Запускает boundary/wire tests, POSIX signal ownership и полный точный raw replay
    сохранённых baseline46/speed16-46. Сеть replay блокируется; отсутствие request
    hash не допускает fallback. Replay — проверка обработки, не новое качество.
@@ -132,3 +135,19 @@ CPU checks могут доказать корректность установк
 обработки прежних raw ответов и manifest. Они не доказывают полное GPU end-to-end
 качество или соблюдение временного лимита на неизвестном тесте. Исторические server
 results сохраняются отдельно, новая сборка не наследует их как свои измерения.
+
+## Первый реальный CI отказ и исправление, 2026-10-09
+
+Run37812838193 от8октября завершился после компиляции CUDA при финальном link
+`llama-server`: GNUld не находил `libcuda.so.1` и оставлял `cuMem*` references
+неразрешёнными. Это не отказ загрузки весов и не ошибка Qwen-предсказаний.
+Pinned llama.cpp с включённым VMM требует `CUDA::cuda_driver`; toolkit stub
+называется `libcuda.so`, но его ELF SONAME — `libcuda.so.1`.
+
+Исправленный builder создаёт отдельный link-only SONAME symlink **вне stage**
+и передаёт `-Wl,-rpath-link,<dir>`. Ни driver, ни stub не входят в архив и не
+используются для исполнения CPU smoke. VMM не отключён. Для built ELF задан
+`CMAKE_INSTALL_RPATH=$ORIGIN` и `CMAKE_BUILD_WITH_INSTALL_RPATH=ON`; readelf
+дополнительно отклоняет посторонние RPATH/RUNPATH. POSIX regression использует
+настоящий GCC для проверки транзитивной зависимости и отсутствия runtime path.
+Исправление ещё требует успешного нового CI; локальный unit pass его не заменяет.

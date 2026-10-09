@@ -194,6 +194,76 @@ def collect_libraries(stage, python):
     return sorted(host_driver_gaps)
 
 
+def prepare_cuda_driver_link(stage, llama_source, toolkit=Path('/usr/local/cuda')):
+    """Expose the toolkit driver's SONAME to the linker, outside the archive.
+
+    CUDA's libcuda.so is a link-only stub whose ELF SONAME is libcuda.so.1.
+    GNU ld resolving dependencies of libggml-cuda needs that SONAME as a file.
+    -rpath-link searches only during linking; it does not add a runtime search
+    path or replace the real driver furnished by the target GPU host.
+    """
+    stage, llama_source, toolkit = map(lambda p: Path(p).resolve(), (stage, llama_source, toolkit))
+    link_dir = llama_source.parent / 'cuda-driver-link'
+    if link_dir.is_relative_to(stage) or link_dir.exists():
+        raise ValueError('CUDA_DRIVER_LINK_DIR_MUST_BE_FRESH_AND_OUTSIDE_RUNTIME')
+    candidates = [toolkit / 'targets/x86_64-linux/lib/stubs/libcuda.so',
+                  toolkit / 'lib64/stubs/libcuda.so']
+    stub = next((p.resolve() for p in candidates if p.is_file()), None)
+    if stub is None or 'stubs' not in stub.parts:
+        raise RuntimeError('CUDA_TOOLKIT_LINK_ONLY_DRIVER_STUB_REQUIRED')
+    soname = output(['readelf', '-d', stub])
+    if not re.search(r'\(SONAME\).*\[libcuda\.so\.1\]', soname):
+        raise RuntimeError('CUDA_DRIVER_STUB_SONAME_MISMATCH')
+    link_dir.mkdir()
+    (link_dir / 'libcuda.so.1').symlink_to(stub)
+    return link_dir, dict(scope='link-only; never shipped or used for runtime execution',
+                          stub_sha256=digest(stub), stub_soname='libcuda.so.1',
+                          linker_flag='-Wl,-rpath-link,' + str(link_dir),
+                          runtime_driver='supplied by GPU host; NOT_BUNDLED', VMM='UNCHANGED')
+
+
+def check_native_version(stage, output_dir, environment):
+    """Run the packaged engine if loadable; a missing real GPU driver is explicit."""
+    library_path = str(stage / 'runtime/llama') + os.pathsep + str(stage / 'runtime/lib')
+    command_line = [str(stage / 'runtime/lib/ld-linux-x86-64.so.2'), '--library-path',
+                    library_path, str(stage / 'runtime/llama/llama-server'), '--version']
+    result = subprocess.run(command_line, env=dict(environment, LD_LIBRARY_PATH=library_path),
+                            text=True, capture_output=True, timeout=180)
+    text = result.stdout + result.stderr
+    (output_dir / 'rebuilt_llama_version.log').write_text(text, encoding='utf-8')
+    if result.returncode:
+        # A GPU-free builder intentionally contains no real NVIDIA host driver.
+        # Only an exact loader failure for that omitted dependency is skippable;
+        # unresolved userspace libraries, symbols, crashes and other errors fail.
+        missing = re.search(r'error while loading shared libraries: (\S+): cannot open shared object file: '
+                            r'No such file or directory', text)
+        if missing and NVIDIA_DRIVER.fullmatch(missing.group(1)):
+            return None, dict(status='NOT_EXECUTED_MISSING_HOST_DRIVER',
+                              missing_dependency=missing.group(1), loader_exit_code=result.returncode,
+                              link_only_stub_used_for_execution=False)
+        print(text, file=sys.stderr, flush=True)
+        raise RuntimeError('CPU_RUNTIME_SMOKE_FAILED: rebuilt_llama_version')
+    if LLAMA_REVISION[:7] not in text:
+        raise RuntimeError('REBUILT_LLAMA_VERSION_REVISION_MISMATCH')
+    return text.strip(), dict(status='CPU_VERSION_EXECUTED_NO_GPU_INFERENCE',
+                             loader_exit_code=0, link_only_stub_used_for_execution=False)
+
+
+def check_built_runtime_rpaths(native):
+    """No developer toolkit/stub directory may become runtime loader authority."""
+    result = {}
+    for path in sorted(Path(native).iterdir()):
+        if not path.is_file():
+            continue
+        dynamic = output(['readelf', '-d', path])
+        paths = re.findall(r'\((?:RPATH|RUNPATH)\).*\[([^\]]*)\]', dynamic)
+        for group in paths:
+            if any(entry not in {'$ORIGIN', '${ORIGIN}'} for entry in group.split(':') if entry):
+                raise RuntimeError('BUILT_RUNTIME_UNAPPROVED_RPATH: ' + path.name + ': ' + group)
+        result[path.name] = paths
+    return result
+
+
 def build(repo, stage, llama_source, jobs, image_identity):
     repo, stage, llama_source = map(lambda p: Path(p).resolve(), (repo, stage, llama_source))
     if sys.platform != 'linux' or sys.version_info[:2] != (3, 12) or os.uname().machine != 'x86_64':
@@ -211,10 +281,13 @@ def build(repo, stage, llama_source, jobs, image_identity):
     command(['git', '-C', llama_source, 'checkout', '--detach', LLAMA_REVISION])
     if output(['git', '-C', llama_source, 'rev-parse', 'HEAD']) != LLAMA_REVISION:
         raise ValueError('LLAMA_SOURCE_REVISION_MISMATCH')
+    driver_link_dir, driver_link_info = prepare_cuda_driver_link(stage, llama_source)
     cmake_flags = ['-DCMAKE_BUILD_TYPE=Release', '-DGGML_CUDA=ON', '-DGGML_NATIVE=OFF',
                    '-DCMAKE_CUDA_ARCHITECTURES=80', '-DLLAMA_OPENSSL=OFF',
                    '-DLLAMA_BUILD_TESTS=OFF', '-DLLAMA_BUILD_EXAMPLES=OFF', '-DLLAMA_BUILD_SERVER=ON',
-                   '-DCMAKE_BUILD_RPATH_USE_ORIGIN=ON']
+                   '-DCMAKE_BUILD_RPATH_USE_ORIGIN=ON',
+                   '-DCMAKE_BUILD_WITH_INSTALL_RPATH=ON', '-DCMAKE_INSTALL_RPATH=$ORIGIN',
+                   '-DCMAKE_EXE_LINKER_FLAGS=-Wl,-rpath-link,' + str(driver_link_dir)]
     build_dir = llama_source / 'build'
     command(['cmake', '-S', llama_source, '-B', build_dir, *cmake_flags])
     command(['cmake', '--build', build_dir, '--target', 'llama-server', '--parallel', str(jobs)])
@@ -225,6 +298,7 @@ def build(repo, stage, llama_source, jobs, image_identity):
     for library in (build_dir / 'bin').glob('*.so*'):
         if library.is_file():
             copy_file(library, native / library.name)
+    native_rpaths = check_built_runtime_rpaths(native)
     python, distributions = collect_python(repo, stage)
     gaps = collect_libraries(stage, python)
     for name in EXECUTABLES:
@@ -249,6 +323,8 @@ def build(repo, stage, llama_source, jobs, image_identity):
         raise RuntimeError('CUDA_BINARY_ARCHITECTURES_MISMATCH: ' + repr(embedded_architectures))
     build_info = dict(source_commit=source_commit, llama_revision=LLAMA_REVISION,
                       image_identity=image_identity, cuda_architectures=['80'], cmake_flags=cmake_flags,
+                      cuda_driver_link=driver_link_info,
+                      built_native_rpaths=native_rpaths,
                       cuda_binary_architectures=embedded_architectures,
                       c_compiler=output(['gcc', '--version']), cxx_compiler=output(['g++', '--version']),
                       cmake=output(['cmake', '--version']), nvcc=output(['nvcc', '--version']),
@@ -328,20 +404,14 @@ def smoke(stage, output_dir):
     run('bundled_native_imports', [stage / 'runtime/lib/ld-linux-x86-64.so.2', '--library-path',
                                  stage / 'runtime/lib', stage / 'runtime/python/bin/python3.12',
                                  '-X', 'utf8', '-c', code, stage, prediction], native_env)
-    llama_library_path = str(stage / 'runtime/llama') + os.pathsep + str(stage / 'runtime/lib')
-    run('rebuilt_llama_version', [stage / 'runtime/lib/ld-linux-x86-64.so.2', '--library-path',
-                                  llama_library_path, stage / 'runtime/llama/llama-server', '--version'],
-        dict(native_env, LD_LIBRARY_PATH=llama_library_path))
-    llama_version = (output_dir / 'rebuilt_llama_version.log').read_text(encoding='utf-8').strip()
-    if LLAMA_REVISION[:7] not in llama_version:
-        raise RuntimeError('REBUILT_LLAMA_VERSION_REVISION_MISMATCH')
+    llama_version, version_check = check_native_version(stage, output_dir, native_env)
     if prediction.read_bytes()[:4] != b'PAR1':
         raise RuntimeError('DEFAULT_OUTPUT_NOT_PARQUET')
     report = dict(scope='CPU-only rebuilt native runtime and offline platform entrypoint',
                   runtime_manifest_sha256=digest(stage / 'MANIFEST.json'),
                   model_present=False, inference_calls=0, GPU_INFERENCE='NOT_EXECUTED', logs=logs,
                   source_commit=manifest['commit'], llama_revision=manifest['build']['llama_revision'],
-                  rebuilt_llama_version=llama_version)
+                  rebuilt_llama_version=llama_version, native_version_check=version_check)
     (output_dir / 'report.json').write_text(json.dumps(report, indent=2), encoding='utf-8')
     print(json.dumps(report), flush=True)
 

@@ -7,8 +7,10 @@ import hashlib
 import importlib.util
 import io
 import json
+import os
 from pathlib import Path
 import struct
+import subprocess
 import tarfile
 
 import pytest
@@ -142,3 +144,98 @@ def test_only_cuda_driver_gaps_are_exempt_from_dependency_closure():
     assert runtime.ldd_missing(text) == ['libcuda.so.1', 'libfoo.so.2']
     assert runtime.NVIDIA_DRIVER.fullmatch('libcuda.so.1')
     assert not runtime.NVIDIA_DRIVER.fullmatch('libcublas.so.12')
+
+
+def test_link_only_driver_requires_toolkit_stub_and_fresh_external_directory(tmp_path, monkeypatch):
+    stage = tmp_path / 'stage'
+    source = tmp_path / 'llama.cpp'
+    toolkit = tmp_path / 'cuda'
+    with pytest.raises(RuntimeError, match='LINK_ONLY_DRIVER_STUB_REQUIRED'):
+        runtime.prepare_cuda_driver_link(stage, source, toolkit)
+    stub = toolkit / 'targets/x86_64-linux/lib/stubs/libcuda.so'
+    stub.parent.mkdir(parents=True)
+    stub.write_bytes(b'DECLARED_UNIT_LINK_STUB_NOT_A_DRIVER')
+    monkeypatch.setattr(runtime, 'output', lambda args: '(SONAME) Library soname: [wrong.so]')
+    with pytest.raises(RuntimeError, match='SONAME_MISMATCH'):
+        runtime.prepare_cuda_driver_link(stage, source, toolkit)
+    # Refuse placing the link-only area under runtime, even with a valid stub.
+    monkeypatch.setattr(runtime, 'output', lambda args: '(SONAME) Library soname: [libcuda.so.1]')
+    with pytest.raises(ValueError, match='OUTSIDE_RUNTIME'):
+        runtime.prepare_cuda_driver_link(tmp_path, source, toolkit)
+
+
+@pytest.mark.skipif(os.name != 'posix', reason='Actual linker and symlink behavior require POSIX')
+def test_link_only_soname_search_resolves_transitive_driver_without_runtime_rpath(tmp_path):
+    import shutil
+    if not shutil.which('gcc') or not shutil.which('readelf'):
+        pytest.skip('gcc/readelf unavailable on this POSIX host')
+    toolkit = tmp_path / 'cuda'
+    stub = toolkit / 'targets/x86_64-linux/lib/stubs/libcuda.so'
+    stub.parent.mkdir(parents=True)
+    driver = tmp_path / 'driver.c'
+    driver.write_text('int private_test_driver_symbol(void) { return 0; }', encoding='utf-8')
+    subprocess.run(['gcc', '-shared', '-fPIC', str(driver), '-Wl,-soname,libcuda.so.1', '-o', str(stub)], check=True)
+    backend_source = tmp_path / 'backend.c'
+    backend_source.write_text('extern int private_test_driver_symbol(void); int backend(void) { '
+                              'return private_test_driver_symbol(); }', encoding='utf-8')
+    backend = tmp_path / 'libbackend.so'
+    subprocess.run(['gcc', '-shared', '-fPIC', str(backend_source), str(stub), '-o', str(backend)], check=True)
+    program = tmp_path / 'main.c'
+    program.write_text('extern int backend(void); int main(void) { return backend(); }', encoding='utf-8')
+    destination = tmp_path / 'linked'
+    without = subprocess.run(['gcc', str(program), str(backend), '-o', str(destination)], capture_output=True)
+    assert without.returncode != 0 and b'libcuda.so.1' in without.stderr
+    link_dir, info = runtime.prepare_cuda_driver_link(tmp_path / 'stage', tmp_path / 'llama.cpp', toolkit)
+    subprocess.run(['gcc', str(program), str(backend), info['linker_flag'], '-o', str(destination)], check=True)
+    dynamic = subprocess.run(['readelf', '-d', str(destination)], check=True, text=True, capture_output=True).stdout
+    assert str(link_dir) not in dynamic  # rpath-link is not runtime RPATH/RUNPATH.
+    assert (link_dir / 'libcuda.so.1').is_symlink()
+    assert info['VMM'] == 'UNCHANGED'
+    assert not (tmp_path / 'stage').exists()
+    # This toy linkage test does not load the fake stub or execute GPU inference.
+
+
+@pytest.mark.parametrize('message,acceptable', [
+    ('llama-server: error while loading shared libraries: libcuda.so.1: cannot open shared object file: '
+     'No such file or directory\n', True),
+    ('llama-server: error while loading shared libraries: libcublas.so.12: cannot open shared object file: '
+     'No such file or directory\n', False),
+    ('llama-server: undefined symbol: cuMemCreate\n', False),
+    ('Segmentation fault\n', False),
+])
+def test_native_version_only_marks_exact_missing_host_driver_as_not_executed(tmp_path, monkeypatch, message, acceptable):
+    seen = []
+    def completed(args, **kwargs):
+        seen.append((args, kwargs))
+        return subprocess.CompletedProcess(args, 127, '', message)
+    monkeypatch.setattr(runtime.subprocess, 'run', completed)
+    if acceptable:
+        version, status = runtime.check_native_version(tmp_path / 'stage', tmp_path, {})
+        assert version is None and status['status'] == 'NOT_EXECUTED_MISSING_HOST_DRIVER'
+        assert status['link_only_stub_used_for_execution'] is False
+    else:
+        with pytest.raises(RuntimeError, match='CPU_RUNTIME_SMOKE_FAILED'):
+            runtime.check_native_version(tmp_path / 'stage', tmp_path, {})
+    assert 'cuda-driver-link' not in seen[0][1]['env']['LD_LIBRARY_PATH']
+    assert (tmp_path / 'rebuilt_llama_version.log').read_text(encoding='utf-8') == message
+
+
+def test_native_version_still_requires_pinned_revision_when_executed(tmp_path, monkeypatch):
+    monkeypatch.setattr(runtime.subprocess, 'run', lambda args, **kwargs:
+                        subprocess.CompletedProcess(args, 0, 'version: unpinned\n', ''))
+    with pytest.raises(RuntimeError, match='REVISION_MISMATCH'):
+        runtime.check_native_version(tmp_path / 'stage', tmp_path, {})
+
+
+@pytest.mark.parametrize('path,allowed', [('$ORIGIN', True), ('${ORIGIN}', True),
+                                        ('/usr/local/cuda/lib64/stubs', False),
+                                        ('/build/cuda-driver-link', False),
+                                        ('$ORIGIN:/build/cuda-driver-link', False)])
+def test_built_rpaths_cannot_embed_toolkit_stubs_or_link_only_directory(tmp_path, monkeypatch, path, allowed):
+    (tmp_path / 'llama-server').write_bytes(b'DECLARED_PRIVATE_UNIT_NATIVE_FIXTURE')
+    monkeypatch.setattr(runtime, 'output', lambda args: '(RUNPATH) Library runpath: [' + path + ']')
+    if allowed:
+        assert runtime.check_built_runtime_rpaths(tmp_path) == {'llama-server': [path]}
+    else:
+        with pytest.raises(RuntimeError, match='UNAPPROVED_RPATH'):
+            runtime.check_built_runtime_rpaths(tmp_path)
