@@ -97,7 +97,7 @@ def main():
                     coverage='ALL_PINNED_DISTRIBUTIONS', distributions=distributions, files=files,
                     note='Public vendor provenance, not a semantic policy proof or a secret-detection guarantee.')
     args.output.parent.mkdir(parents=True, exist_ok=True)
-    with args.output.open('x', encoding='utf-8') as output:
+    with args.output.open('x', encoding='utf-8', newline='\n') as output:
         output.write(json.dumps(registry, indent=2, sort_keys=True) + '\n')
     print(json.dumps(dict(registry=str(args.output.resolve()), distributions=len(distributions), files=len(files),
                           sha256=hashlib.sha256(args.output.read_bytes()).hexdigest())))
