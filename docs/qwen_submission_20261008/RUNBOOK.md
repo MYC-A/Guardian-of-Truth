@@ -69,10 +69,10 @@ explicit full-denominator sensitivity bounds rather than an imputed negative.
 
 # Platform primary contract amendment (2026-10-09)
 
-The public CLI defaults to `--primary-contract decision-first`, with primary
-retries disabled. A complete first `decision` in a successful truncated JSON
-generation can supply a model classification, while its unfinished reason and
-evidence remain explicitly NOT_VALIDATED. An empty response is never imputed0.
-`--primary-contract reason-last` keeps the historical B2 wire control;
-`--retry-primary` enables separately bounded optional recovery. Quality and total
-GPU time of the new wire have not been measured. See PLATFORM_PRIMARY_REPAIR_20261009.md.
+The public CLI preserves the historical B2 wire, with decision last and no
+additional reviewer retry. A missing final JSON root close is accepted only after
+all original schema/reference checks pass. After an unresolved strict result,
+a complete model decision may supply classification without a supported cause;
+otherwise output is0 under the user-selected DEFAULT_ZERO policy. Each recovery
+is traced separately and counted in run.json. See OUTPUT_RECOVERY_20261009.md.
+The earlier decision-first candidate was rejected; do not upload that archive.

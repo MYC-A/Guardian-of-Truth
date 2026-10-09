@@ -1,5 +1,29 @@
 # Как передать решение организаторам
 
+## Новый кандидат после платформенного отказа — 2026-10-09
+
+В этой fix-ветке готовится `guardian-qwen-b2-output-recovery.zip`.
+Не загружать `.partial` или считать архив проверенным до появления нового receipt.
+Предыдущий экспериментальный `guardian-qwen-b2-decision-first.zip` отклонён:
+его **не использовать**, даже несмотря на успешную проверку упаковки.
+
+Старый архив ниже был реально запущен:46/46 строк обработаны за29:05, затем
+обёртка отказала из-за одного отсутствующего допустимого результата. Runtime
+запускался; подробного raw reply проблемной строки в платформенном логе нет.
+
+Новый вариант сохраняет прежний reviewer/порядок и не добавляет повторных
+запросов. Ошибка соседнего модуля не теряет уже принятый результат; недостающая
+root brace восстанавливается только с полной валидацией. При отказе admission
+полный model enum может дать классификацию без подтверждённой причины. Если
+пригодного решения нет, используется явно отмеченный DEFAULT_ZERO.
+Полные92 cached rows и179+180 запросов сохранили результаты и причины.
+Этот patch не гарантирует GPU startup, запись на неисправный диск или30min.
+Подробности: OUTPUT_RECOVERY_20261009.md.
+
+Код: https://github.com/MYC-A/Guardian-of-Truth/tree/fix/qwen-primary-recovery-20261009
+
+## Предыдущий архив — история первой отправки
+
 Код и результаты опубликованы отдельно от весов:
 https://github.com/MYC-A/Guardian-of-Truth/tree/submission/qwen-offline-20261008
 
@@ -21,7 +45,8 @@ receipt: A:\Guardian-submissions\guardian-qwen-b2-rebuilt.verification.json
 Это полный ZIP с кодом, настоящими весами и Linux runtime. Все member CRC/hashes,
 известный GGUF SHA, manifest inventory, root layout, Unix permissions и native ELF
 проверены;4669 vendor files совпали с официальными pinned wheel bytes.
-Status: `READY_VERIFIED_PACKAGING`. Именно этот файл загружать в форму решения.
+Исторический status: `READY_VERIFIED_PACKAGING`; его первый платформенный запуск
+завершился application failure, см. поправку выше. Этот receipt проверял упаковку.
 GPU inference новой сборки и hidden30min limit остаются непроверенными.
 Receipt также опубликован в `receipts/final_packaging_20261009.json`.
 

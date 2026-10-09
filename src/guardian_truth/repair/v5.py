@@ -9,6 +9,7 @@ from __future__ import annotations
 
 import json
 import re
+from copy import deepcopy
 
 from ..integrated import ReviewConfig, review
 from ..integrated.transport import sha
@@ -337,7 +338,13 @@ def _prio(c):
 
 
 def run_v5(row, client, *, flags=frozenset(), provider='mistral', model='ministral-14b-2512', budget=20000, attempt=0, with_cb=False,
-           review_max_tokens=None):
+           review_max_tokens=None, tolerate_component_errors=False, on_primary=None):
+    """Run unchanged contracts; submission callers may isolate optional exceptions.
+
+    The opt-in isolation never upgrades a failed component to a candidate or a
+    verdict. The observer receives detached primary snapshots so a later optional
+    failure need not erase an already completed reviewer receipt.
+    """
     flags = frozenset(flags)
     cfg_kw = dict(provider=provider, model=model, budget_bytes=budget, attempt=attempt, admission='v1')
     if review_max_tokens is not None:
@@ -346,6 +353,12 @@ def run_v5(row, client, *, flags=frozenset(), provider='mistral', model='ministr
     a = review(row['prompt'], row['response'], cfg, client=client)
     out = dict(version=VERSION, flags=sorted(flags), A=dict(final=a['final_decision'], binary=a['binary'], owner=a['decision_owner'],
                guard_error=a['guard']['established_error'], reasons=a['reasons'], steps=a['steps']))
+    if on_primary is not None:
+        snapshot = deepcopy(out)
+        # Only the already established guard has authority before admission v2.
+        # A raw reviewer ERROR must still pass its original admission contract.
+        snapshot['base_error'] = bool(a['guard']['established_error'])
+        on_primary(snapshot)
     rp = packet_for(row, budget)
     if rp is None:
         out['skipped'] = 'NO_PACKET'
@@ -360,6 +373,8 @@ def run_v5(row, client, *, flags=frozenset(), provider='mistral', model='ministr
             adm.update(target_id=v2['admitted']['regulated_action']['target_id'], reason=v2['admitted']['reason'])
     out['A_adm2'] = adm
     out['base_error'] = adm.get('decision') == 'ERROR' or bool(a['guard']['established_error'])
+    if on_primary is not None:
+        on_primary(deepcopy(out))
     if out['base_error'] or not rp['current_targets'] or not rp['normative_sources']:
         out['triggers'] = None
         return out
@@ -368,14 +383,28 @@ def run_v5(row, client, *, flags=frozenset(), provider='mistral', model='ministr
                 T_confirm=(confirm5.trigger(rp, row) if 'confirm' in flags else confirm.trigger(rp, row)) if with_cb else [])
     out['triggers'] = trig
     comps = {}
+    out['components'] = comps
+
+    def optional_stage(stage, operation):
+        if not tolerate_component_errors:
+            return operation()
+        try:
+            return operation()
+        except Exception as exc:
+            # Do not include exception messages: they may contain source text or
+            # credentials. No synthetic claim, retry or model request is made.
+            return dict(tag=stage, admission='TECHNICAL_FAILURE',
+                        verification_status='TECHNICAL_FAILURE',
+                        error_type=type(exc).__name__, candidates=[])
+
     if trig['T_calc']:
-        comps['DF4'] = df5.run(client, rp, model, attempt, row=row, flags=flags)
+        comps['DF4'] = optional_stage('DF4', lambda: df5.run(client, rp, model, attempt, row=row, flags=flags))
     if trig['T_multi'] or trig['T_quant']:
-        comps['Ems'] = ems_run(client, rp, model, attempt, row, et['fallback'], flags)
+        comps['Ems'] = optional_stage('Ems', lambda: ems_run(client, rp, model, attempt, row, et['fallback'], flags))
     if trig['T_multi']:
-        comps['AT'] = at_run(client, rp, model, attempt, flags)
+        comps['AT'] = optional_stage('AT', lambda: at_run(client, rp, model, attempt, flags))
     if with_cb:
-        cbs = [cb_run(client, row, rp, t, model, attempt) for t in trig['T_confirm'][:2]]
+        cbs = [optional_stage('CB', lambda: cb_run(client, row, rp, t, model, attempt)) for t in trig['T_confirm'][:2]]
         if cbs:
             comps['CB'] = dict(tag='cb5', runs=cbs, candidates=[c for x in cbs for c in x['candidates']])
     # queue: V4 = first candidate of each component; pool = all candidates, priority order, bounded K
@@ -397,18 +426,19 @@ def run_v5(row, client, *, flags=frozenset(), provider='mistral', model='ministr
                 q2.append((k, i, c))
         queue = q2
     pool = []
+    out['pool'] = pool
     for n, (k, i, c) in enumerate(queue):
         item = dict(component=k, index=i, candidate=c, priority=_prio(c))
         if 'pool' in flags and n >= K_QUEUE:
             item['verification_status'] = 'UNCHECKED_QUEUE_BOUND'
         else:
             tag = {'DF4': 'verify_DF4', 'Ems': 'verify_Ems', 'AT': 'verify_AT', 'CB': 'verify_CB'}[k]
-            v = verify(client, rp, c, model, attempt, tag, flags, extra_evidence=c.get('extra_evidence'))
+            v = optional_stage(tag, lambda: verify(client, rp, c, model, attempt, tag, flags, extra_evidence=c.get('extra_evidence')))
             item['verify'] = v
             item['verification_status'] = v['verification_status']
         pool.append(item)
-    out['components'] = comps
-    out['pool'] = pool
+        if on_primary is not None:
+            on_primary(deepcopy(out))
     return out
 
 

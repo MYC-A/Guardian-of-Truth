@@ -43,6 +43,7 @@ def main():
     ap.add_argument('--traces', type=Path, required=True)
     ap.add_argument('--output-dir', type=Path, required=True)
     ap.add_argument('--expected-input-sha256', required=True, help='Frozen phase input fingerprint, not an inferred ID match')
+    ap.add_argument('--output-recovery', choices=['strict', 'fallback-zero'], default='strict')
     a = ap.parse_args()
     def deny_network(*args, **kwargs):
         raise RuntimeError('OFFLINE_REPROJECTION_NETWORK_FORBIDDEN')
@@ -72,6 +73,10 @@ def main():
         elif trace['input_row_sha256'] != row_fingerprint(source):
             raise ValueError('TRACE_SOURCE_FINGERPRINT_MISMATCH: ' + source['id'])
     revised = [finalize_trace(r) for r in original]
+    strict_metrics_rows = revised
+    if a.output_recovery == 'fallback-zero':
+        from guardian_truth.submission.recovery import recover_output
+        revised = [recover_output(r) for r in revised]
     # Only now access gold, entirely outside the runtime projection.
     gold = pd.read_parquet(a.input) if a.input.read_bytes()[:4] == b'PAR1' else pd.read_csv(a.input, dtype={'id': str})
     if 'label' not in gold or any(type(x) not in (int, bool) or x not in (0, 1) for x in gold['label'].tolist()):
@@ -87,6 +92,9 @@ def main():
                   traces_sha256=hashlib.sha256(a.traces.read_bytes()).hexdigest(),
                   commit=subprocess.check_output(['git', '-C', str(ROOT), 'rev-parse', 'HEAD'], text=True).strip(),
                   model_calls=0, before=before, after=after,
+                  output_recovery=a.output_recovery, strict_after=score(labels, strict_metrics_rows),
+                  raw_model_recoveries=sum((r.get('output_recovery') or {}).get('mode') == 'RAW_MODEL_DECISION' for r in revised),
+                  default_zero_fallbacks=sum((r.get('output_recovery') or {}).get('mode') == 'DEFAULT_ZERO' for r in revised),
                   changes=[dict(id=x['id'], before=x.get('binary'), after=y.get('binary'),
                                 before_error=x.get('error'), after_error=y.get('error'))
                            for x, y in zip(original, revised) if x.get('binary') != y.get('binary') or x.get('error') != y.get('error')])

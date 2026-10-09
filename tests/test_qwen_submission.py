@@ -87,7 +87,7 @@ def test_client_exact_request_attempt_cache(monkeypatch):
     assert client.cache_hits == 1
 
 
-def test_full_entry_failure_writes_receipts_but_no_predictions(monkeypatch, tmp_path, capsys):
+def test_full_entry_failure_writes_explicit_zero_fallback_and_receipts(monkeypatch, tmp_path, capsys):
     from guardian_truth.submission import cli
     class Server:
         closed = False
@@ -103,14 +103,16 @@ def test_full_entry_failure_writes_receipts_but_no_predictions(monkeypatch, tmp_
     source.write_text('id,prompt,response\n001,p,r\n', encoding='utf-8')
     destination = tmp_path / 'predictions.parquet'
     work = tmp_path / 'work'
-    with pytest.raises(RuntimeError, match='INCOMPLETE_PREDICTIONS'):
-        main(['--input', str(source), '--output', str(destination), '--work-dir', str(work)])
+    main(['--input', str(source), '--output', str(destination), '--work-dir', str(work)])
     assert Server.closed
-    assert not destination.exists()
+    assert pd.read_parquet(destination).to_dict('records') == [dict(id='001', label=0)]
     report = json.loads((work / 'run.json').read_text())
-    assert report['invalid_ids'] == ['001']
-    assert report['failures'][0]['error'] == 'schema failure'
-    assert 'prediction_failure=' in capsys.readouterr().out
+    assert report['invalid_ids'] == []
+    assert report['default_zero_fallbacks'] == 1
+    trace = json.loads((work/'traces.jsonl').read_text(encoding='utf-8'))
+    assert trace['technical_error'] == 'schema failure'
+    assert trace['output_recovery']['strict_binary'] is None
+    assert 'prediction_recovery=' in capsys.readouterr().out
 
 
 def test_rejected_primary_cannot_become_negative(monkeypatch):
@@ -123,8 +125,10 @@ def test_rejected_primary_cannot_become_negative(monkeypatch):
         A=dict(final=None, steps=[dict(admission='REJECTED:ValidationError', raw_content='{}', transport=dict(status=200))]),
         A_adm2=dict(decision=None, admission='REJECTED:ValidationError')))
     trace = predict_one(dict(id='a', prompt='p', response='r'), LocalClient(9999, 32768), Layers())
-    assert trace['binary'] is None
-    assert trace['error'] == 'PRIMARY_INFERENCE_FAILURE'
+    assert trace['binary'] == 0
+    assert trace['technical_error'] == 'PRIMARY_INFERENCE_FAILURE'
+    assert trace['output_recovery']['mode'] == 'DEFAULT_ZERO'
+    assert trace['rec']['A_adm2']['decision'] is None
 
 
 @pytest.mark.parametrize('decision,expected', [('NO_ERROR', 0), ('ERROR', 1)])
@@ -160,8 +164,9 @@ def test_actual_primary_transport_failure_stays_failure(monkeypatch):
                steps=[dict(tag='review', raw_content=None, transport=dict(status='EXC'))]),
         A_adm2=dict(decision='NO_ERROR', admission='ADMITTED')))
     trace = predict_one(dict(id='arbitrary', prompt='p', response='r'), LocalClient(9999, 32768), Layers())
-    assert trace['binary'] is None
-    assert trace['error'] == 'PRIMARY_INFERENCE_FAILURE'
+    assert trace['binary'] == 0
+    assert trace['technical_error'] == 'PRIMARY_INFERENCE_FAILURE'
+    assert trace['output_recovery']['mode'] == 'DEFAULT_ZERO'
 
 
 def test_occupied_port_does_not_spawn(monkeypatch, tmp_path):

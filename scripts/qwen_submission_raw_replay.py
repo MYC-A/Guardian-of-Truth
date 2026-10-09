@@ -22,8 +22,6 @@ def main():
     ap.add_argument('--calls', type=Path, required=True)
     ap.add_argument('--traces', type=Path, required=True)
     ap.add_argument('--output', type=Path, required=True)
-    ap.add_argument('--primary-contract', choices=['reason-last', 'decision-first'], default='reason-last')
-    ap.add_argument('--retry-primary', action='store_true')
     a = ap.parse_args()
     if a.output.exists():
         raise ValueError('REPLAY_OUTPUT_ALREADY_EXISTS')
@@ -34,6 +32,7 @@ def main():
     socket.create_connection = socket.socket.connect = socket.socket.connect_ex = deny
     from guardian_truth.integrated.transport import sha
     from guardian_truth.submission.cli import MODEL, finalize_trace, predict_one, read_rows
+    from guardian_truth.submission.recovery import recover_output
     from guardian_truth.v6fix.pipeline import Layers
     rows = read_rows(a.input)
     previous_rows = [json.loads(s) for s in a.traces.read_text(encoding='utf-8').splitlines() if s.strip()]
@@ -48,14 +47,14 @@ def main():
         records[r['key']] = r
     class Client:
         model = MODEL
-        primary_contract = a.primary_contract
-        primary_recovery_enabled = a.retry_primary
         used = set()
         lookups = 0
+        missing = []
         def call(self, request, attempt=0, tag=''):
             self.lookups += 1
             key = sha(dict(model=MODEL, request=request, attempt=attempt))
             if key not in records:
+                self.missing.append(dict(key=key, tag=tag, attempt=attempt))
                 raise ValueError('EXACT_REQUEST_NOT_IN_FROZEN_RECEIPTS: ' + tag)
             rec = records[key]
             if rec['request_sha256'] != sha(request) or rec['attempt'] != attempt or rec['model'] != MODEL or rec['tag'] != tag:
@@ -63,21 +62,22 @@ def main():
             self.used.add(key)
             return copy.deepcopy(rec)
     client = Client()
-    layers = Layers(client, MODEL, budget=20000, attempts=(0, 1), frules_max_tokens=700)
+    layers = Layers(client, MODEL, budget=20000, attempts=(0, 1), frules_max_tokens=700, tolerate_component_errors=True)
     mismatches = []
     predictions = []
     for row in rows:
         fresh = predict_one(row, client, layers)
-        prior = finalize_trace(expected[row['id']])
+        prior = recover_output(finalize_trace(expected[row['id']]))
         fields = ('binary', 'owner', 'accusation')
         if any(fresh.get(k) != prior.get(k) for k in fields):
             mismatches.append(dict(id=row['id'], replay={k: fresh.get(k) for k in fields},
                                    frozen={k: prior.get(k) for k in fields}))
         predictions.append(dict(id=row['id'], binary=fresh['binary']))
     report = dict(scope='same raw processing; not new inference', rows=len(rows), actual_http_calls=0,
-                  primary_contract=a.primary_contract, primary_recovery_enabled=a.retry_primary,
+                  primary_contract='reason-last', primary_recovery_enabled=False, output_policy='fallback-zero-v1',
                   exact_request_lookups=client.lookups, unique_exact_requests=len(client.used),
                   frozen_records=len(records), unused_records=len(set(records) - client.used),
+                  missing_requests=client.missing,
                   input_sha256=a.expected_input_sha256,
                   calls_sha256=hashlib.sha256(a.calls.read_bytes()).hexdigest(),
                   traces_sha256=hashlib.sha256(a.traces.read_bytes()).hexdigest(),
@@ -89,6 +89,8 @@ def main():
     print(json.dumps({k: v for k, v in report.items() if k != 'predictions'}, ensure_ascii=False))
     if mismatches:
         raise RuntimeError('RAW_REPLAY_DIFFERENCE')
+    if client.missing:
+        raise RuntimeError('RAW_REPLAY_MISSING_EXACT_REQUESTS')
 
 
 if __name__ == '__main__':

@@ -1,8 +1,8 @@
 """Competition I/O, owned llama-server lifecycle and unchanged B2 inference.
 
 Only prompt/response enter the inference pipeline. The model is local and all
-transport endpoints are fixed to loopback. Technical primary failures abort the
-submission rather than manufacturing a negative prediction.
+transport endpoints are fixed to loopback. Row failures are retained as diagnostics; an explicitly versioned output
+recovery uses an available model classification or the user-selected fallback0.
 """
 from __future__ import annotations
 
@@ -105,20 +105,8 @@ class LocalClient:
         self.key_locks, self.cache = {}, {}
         self.calls = []
         self.preflight_http = self.completion_http = self.cache_hits = 0
-        self.recovery_calls = 0
-        self.recovery_call_limit = 4
 
-    def reserve_recovery(self):
-        with self.lock:
-            if self.recovery_calls >= self.recovery_call_limit:
-                return False
-            self.recovery_calls += 1
-            return True
-
-    def call_recovery(self, request, attempt=0, tag=''):
-        return self.call(request, attempt=attempt, tag=tag, timeout=min(120, self.timeout))
-
-    def call(self, request, attempt=0, tag='', *, timeout=None):
+    def call(self, request, attempt=0, tag=''):
         from guardian_truth.integrated.transport import sha
         if request.get('model') != self.model:
             raise ValueError('REQUEST_MODEL_MISMATCH')
@@ -131,22 +119,13 @@ class LocalClient:
                     self.cache_hits += 1
                 return dict(self.cache[key], cached=True)
             start = time.monotonic()
-            deadline = None if timeout is None else start + timeout
-            def remaining(default):
-                if deadline is None:
-                    return default
-                left = deadline - time.monotonic()
-                if left <= 0:
-                    raise TimeoutError('REQUEST_DEADLINE_EXCEEDED')
-                return min(default, left)
             record = dict(key=key, request_sha256=sha(request), model=self.model,
                           attempt=attempt, tag=tag, cached=False, content=None, usage=None)
             try:
                 # Uses the server's own tokenizer and chat template, not bytes/4.
                 with self.lock:
                     self.preflight_http += 1
-                count = http_json(self.base + '/v1/chat/completions/input_tokens', request,
-                                  timeout=remaining(20), api_key=self.api_key)
+                count = http_json(self.base + '/v1/chat/completions/input_tokens', request, api_key=self.api_key)
                 tokens = count.get('input_tokens')
                 if type(tokens) is not int or tokens < 0:
                     raise ValueError('INVALID_TOKEN_COUNT')
@@ -156,8 +135,7 @@ class LocalClient:
                 else:
                     with self.lock:
                         self.completion_http += 1
-                    data = http_json(self.base + '/v1/chat/completions', request,
-                                     remaining(self.timeout), api_key=self.api_key)
+                    data = http_json(self.base + '/v1/chat/completions', request, self.timeout, api_key=self.api_key)
                     choice = data['choices'][0]
                     record.update(content=choice['message'].get('content'),
                                   finish_reason=choice.get('finish_reason'), usage=data.get('usage'),
@@ -272,33 +250,50 @@ class ModelServer:
 def predict_one(row, client, layers):
     from guardian_truth.submission.primary import PrimaryReviewHook
     from guardian_truth.repair.v5 import ARMS, run_v5
+    from guardian_truth.submission.recovery import recover_output
+    from guardian_truth.verification.admission import interpret_receipt_v2
     hook = PrimaryReviewHook(client, 'blind2', MODEL, original_row=row,
-                 max_tokens=3400, max_request_bytes=60000)
-    rec = run_v5(row, hook, flags=ARMS['R_fix'], provider='local-llamacpp', model=MODEL, attempt=0)
-    layer = layers.findings(row)
-    raw = dict(id=row['id'], input_row_sha256=row_fingerprint(row),
-               rec=rec, pre_steps=hook.log, layer_trace=layer,
-               primary_contract=getattr(client, 'primary_contract', 'reason-last'))
-    trace = finalize_trace(raw)
-    if trace.get('error') != 'PRIMARY_INFERENCE_FAILURE':
-        return trace
-    if not getattr(client, 'primary_recovery_enabled', False):
-        return trace
-    recovery = hook.retry()
-    if recovery is None:
-        return finalize_trace(raw)
-    receipt, admitted = recovery
-    rec['A_adm2'] = {k: admitted.get(k) for k in ('decision', 'admission')}
-    value = admitted.get('admitted')
-    if value:
-        rec['A_adm2'].update(target_id=value['regulated_action']['target_id'], reason=value['reason'])
-    rec['base_error'] = admitted.get('decision') == 'ERROR' or bool(rec['A'].get('guard_error'))
-    rec['A'].update(final=admitted.get('decision'), binary=int(admitted.get('decision') == 'ERROR'),
-                    steps=[dict(tag='review', raw_content=receipt.get('content'), transport=receipt.get('transport'),
-                                finish_reason=receipt.get('finish_reason'), key=receipt.get('key'),
-                                request_sha256=hook.log[-1]['terminal_request_sha256'],
-                                admission=admitted['admission'])])
-    return finalize_trace(raw)
+                             max_tokens=3400, max_request_bytes=60000)
+    snapshot, stage_errors = {}, []
+    def capture(value):
+        snapshot.clear()
+        snapshot.update(value)
+    try:
+        rec = run_v5(row, hook, flags=ARMS['R_fix'], provider='local-llamacpp', model=MODEL, attempt=0,
+                     tolerate_component_errors=True, on_primary=capture)
+    except Exception as error:
+        stage_errors.append(dict(stage='review_pipeline', admission='TECHNICAL_FAILURE', error_type=type(error).__name__))
+        rec = snapshot or None
+        # Initial observer precedes admission v2. Re-admit the actual successful
+        # receipt against the same packet already sent, never a new packet.
+        if rec is not None and 'A_adm2' not in rec and hook.review_request is not None:
+            step = next((s for s in rec['A'].get('steps', []) if s.get('tag') == 'review'), None)
+            if step is not None:
+                try:
+                    admission = interpret_receipt_v2(step, json.loads(hook.review_request['messages'][1]['content']))
+                    rec['A_adm2'] = {k: admission.get(k) for k in ('decision', 'admission')}
+                    if admission.get('admitted'):
+                        value = admission['admitted']
+                        rec['A_adm2'].update(target_id=value['regulated_action']['target_id'], reason=value['reason'])
+                    rec['base_error'] = bool(rec['A'].get('guard_error')) or admission.get('decision') == 'ERROR'
+                except Exception as admission_error:
+                    stage_errors.append(dict(stage='primary_readmission', admission='TECHNICAL_FAILURE',
+                                             error_type=type(admission_error).__name__))
+    try:
+        layer = layers.findings(row)
+    except Exception as error:
+        layer = dict(findings=[], admission='TECHNICAL_FAILURE', error_type=type(error).__name__)
+    raw = dict(id=row['id'], input_row_sha256=row_fingerprint(row), rec=rec,
+               pre_steps=hook.log, layer_trace=layer, primary_receipt=hook.first_receipt)
+    if stage_errors:
+        raw['stage_errors'] = stage_errors
+    if rec is None:
+        raw.update(binary=None, error='PRIMARY_INFERENCE_FAILURE')
+    try:
+        strict = finalize_trace(raw)
+    except Exception as error:
+        strict = dict(raw, binary=None, error='DECISION_EXCEPTION:' + type(error).__name__)
+    return recover_output(strict)
 
 
 def row_fingerprint(row):
@@ -315,15 +310,19 @@ def finalize_trace(raw):
     # repaired by interpreting an incomplete record as an ordinary negative.
     if raw.get('error') not in (None, 'PRIMARY_INFERENCE_FAILURE'):
         return dict(raw)
-    rec = raw['rec']
+    if raw.get('output_recovery') and raw.get('technical_error'):
+        raw = dict(raw, error=raw['technical_error'], binary=None)
+        raw.pop('output_recovery', None)
+        raw.pop('technical_error', None)
+        if raw['error'] != 'PRIMARY_INFERENCE_FAILURE':
+            return raw
+    rec = raw.get('rec')
     decision = decide(rec, raw['layer_trace']['findings'])
     trace = dict(raw, binary=decision['binary'], owner=decision['decision_owner'], accusation=decision['accusation'])
     trace.pop('error', None)
-    for key in ('partial_model_decision', 'explanation_status', 'source_support_status', 'projection'):
-        trace.pop(key, None)
     trace['technical_gaps'] = technical_gaps(trace)
-    primary_valid = (rec.get('A_adm2') or {}).get('decision') in ('ERROR', 'NO_ERROR', 'UNKNOWN')
-    if 'A_adm2' not in rec:
+    primary_valid = rec is not None and (rec.get('A_adm2') or {}).get('decision') in ('ERROR', 'NO_ERROR', 'UNKNOWN')
+    if rec is not None and 'A_adm2' not in rec:
         primary_valid = (rec.get('A') or {}).get('final') in ('ERROR', 'NO_ERROR', 'UNKNOWN')
     # The blind pre-pass is optional: Hook's declared fallback can execute the
     # unchanged reviewer after an injection exceeds its byte cap. Its failed or
@@ -334,18 +333,6 @@ def finalize_trace(raw):
     if decision['binary'] == 0 and (failed_record(dict(rec=rec)) or not primary_valid):
         trace['binary'] = None
         trace['error'] = 'PRIMARY_INFERENCE_FAILURE'
-        if raw.get('primary_contract') == 'decision-first':
-            from guardian_truth.submission.primary import partial_decision
-            primary = next((s for s in (rec.get('A') or {}).get('steps', []) if s.get('tag') == 'review'), {})
-            label = partial_decision(dict(primary, content=primary.get('raw_content')))
-            if label is not None:
-                # Recompute from the actual receipt in both live and replay.
-                # Incomplete explanation/references never become a certificate.
-                trace.update(binary=int(label == 'ERROR'), owner='PARTIAL_MODEL_DECISION', accusation=None,
-                             partial_model_decision=label, explanation_status='INCOMPLETE',
-                             source_support_status='NOT_VALIDATED', projection='UNKNOWN_PROJECTED_0' if label == 'UNKNOWN'
-                             else 'PARTIAL_MODEL_CLASSIFICATION')
-                trace.pop('error', None)
     return trace
 
 
@@ -354,12 +341,35 @@ def failure_summary(trace):
     rec = trace.get('rec') or {}
     steps = (rec.get('A') or {}).get('steps') or []
     primary = next((s for s in steps if s.get('tag') == 'review'), {})
+    receipt = trace.get('primary_receipt') or {}
+    content = receipt.get('content', primary.get('raw_content'))
+    from guardian_truth.integrated.reviewer import decode_reply, Reply
+    value, decoded, normalization = decode_reply(content)
+    schema_errors = []
+    if decoded:
+        try:
+            Reply.model_validate(value)
+        except Exception as error:
+            if hasattr(error, 'errors'):
+                schema_errors = [{k: item[k] for k in ('type', 'loc')}
+                                 for item in error.errors(include_input=False, include_context=False, include_url=False)]
+    admission = (rec.get('A_adm2') or {}).get('admission') or ''
+    reference_error = next((code for code in ('TARGET_INVALID', 'NORM_REFERENCE_INVALID',
+                                             'EVIDENCE_REFERENCE_OR_ACTOR_INVALID', 'EMPTY_ACCUSATION')
+                            if str(admission).endswith(':' + code)), None)
     def category(value):
         return ':'.join(value.split(':')[:2]) if isinstance(value, str) else value
     transport = primary.get('transport') or {}
-    return dict(id=trace.get('id'), error=category(trace.get('error')),
+    return dict(id=trace.get('id'), error=category(trace.get('error', trace.get('technical_error'))),
+                output_recovery=trace.get('output_recovery'),
                 partial_model_decision=trace.get('partial_model_decision'),
                 explanation_status=trace.get('explanation_status'),
+                json_valid=decoded, normalization=normalization, schema_errors=schema_errors,
+                reference_error=reference_error,
+                raw_decision=value.get('decision') if isinstance(value, dict) and value.get('decision') in ('ERROR', 'NO_ERROR', 'UNKNOWN') else None,
+                raw_content_bytes=len(content.encode('utf-8')) if isinstance(content, str) else None,
+                raw_content_sha256=hashlib.sha256(content.encode('utf-8')).hexdigest() if isinstance(content, str) else None,
+                input_tokens=receipt.get('input_tokens'),
                 primary_admission=category((rec.get('A_adm2') or {}).get('admission')),
                 review_admission=category(primary.get('admission')),
                 finish_reason=primary.get('finish_reason'),
@@ -388,9 +398,6 @@ def main(argv=None):
     parser.add_argument('--fast', action='store_true', help='Separate profile: enable FlashAttention; quality must be measured')
     parser.add_argument('--batch-size', type=int, help='Separate performance profile: logical prefill batch limit')
     parser.add_argument('--ubatch-size', type=int, help='Separate performance profile: physical prefill microbatch limit')
-    parser.add_argument('--primary-contract', choices=['reason-last', 'decision-first'], default='decision-first',
-                        help='Versioned review wire; decision-first permits partial model classification')
-    parser.add_argument('--retry-primary', action='store_true', help='Optional bounded recovery; off by default')
     options = parser.parse_args(argv)
     if options.workers < 1 or options.context < 4096 or (options.attach and options.port is None):
         parser.error('invalid workers/context/attach port')
@@ -416,10 +423,8 @@ def main(argv=None):
                          port=options.port, attach=options.attach, fast=options.fast,
                          batch_size=options.batch_size, ubatch_size=options.ubatch_size) as server:
             client = LocalClient(server.port, options.context, api_key=server.api_key)
-            client.primary_contract = options.primary_contract
-            client.primary_recovery_enabled = options.retry_primary
             from guardian_truth.v6fix.pipeline import Layers
-            layers = Layers(client, MODEL, budget=20000, attempts=(0, 1), frules_max_tokens=700)
+            layers = Layers(client, MODEL, budget=20000, attempts=(0, 1), frules_max_tokens=700, tolerate_component_errors=True)
             with ThreadPoolExecutor(max_workers=options.workers) as executor:
                 futures = {executor.submit(predict_one, row, client, layers): row['id'] for row in rows}
                 for future in as_completed(futures):
@@ -428,12 +433,14 @@ def main(argv=None):
                         trace = future.result()
                     except Exception as error:
                         trace = dict(id=identifier, binary=None, error=f'{type(error).__name__}: {error}')
+                    from guardian_truth.submission.recovery import recover_output
+                    trace = recover_output(trace)
                     traces[identifier] = trace
                     with (work / 'traces.jsonl').open('a', encoding='utf-8', newline='\n') as f:
                         f.write(json.dumps(trace, ensure_ascii=False, default=str) + '\n')
                     if trace.get('error'):
                         print('prediction_failure=' + json.dumps(failure_summary(trace), ensure_ascii=False), flush=True)
-                    elif trace.get('partial_model_decision') or any(s.get('tag') == 'primary_review_retry' for s in trace.get('pre_steps', [])):
+                    elif trace.get('output_recovery') or any(s.get('tag') == 'primary_root_close' for s in trace.get('pre_steps', [])):
                         print('prediction_recovery=' + json.dumps(failure_summary(trace), ensure_ascii=False), flush=True)
                     print(f'{len(traces)}/{len(rows)}', flush=True)
             (work / 'calls.json').write_text(json.dumps(client.calls, ensure_ascii=False), encoding='utf-8')
@@ -448,9 +455,11 @@ def main(argv=None):
                       explicit_flash=options.fast, batch_size=options.batch_size, ubatch_size=options.ubatch_size,
                       server_props=server.props, preflight_http=client.preflight_http,
                       completion_http=client.completion_http, cache_hits=client.cache_hits,
-                      recovery_calls=client.recovery_calls, recovery_call_limit=client.recovery_call_limit,
-                      primary_contract=options.primary_contract, primary_recovery_enabled=options.retry_primary,
-                      partial_model_predictions=sum('partial_model_decision' in t for t in traces.values()),
+                      primary_contract='reason-last', primary_recovery_enabled=False,
+                      raw_model_recoveries=sum((t.get('output_recovery') or {}).get('mode') == 'RAW_MODEL_DECISION' for t in traces.values()),
+                      default_zero_fallbacks=sum((t.get('output_recovery') or {}).get('mode') == 'DEFAULT_ZERO' for t in traces.values()),
+                      root_close_recoveries=sum(any(s.get('tag') == 'primary_root_close' for s in t.get('pre_steps', []))
+                                                for t in traces.values()),
                       input_tokens=sum((c.get('usage') or {}).get('prompt_tokens', 0) for c in client.calls),
                       output_tokens=sum((c.get('usage') or {}).get('completion_tokens', 0) for c in client.calls))
         if invalid:
