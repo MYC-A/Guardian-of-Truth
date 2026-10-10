@@ -40,3 +40,12 @@ ext_tau2, hold_tau2h, hold_holdout2, lb_long, lb2_long, lb3_long, contrast, dev,
 Reported for each check: raw fires on gold-positive / gold-negative rows, new TP / new FP
 vs B2, per pool. No threshold or rule is changed after seeing these numbers; any change
 requires a new protocol version and a fresh pool.
+
+## Amendment 1 (parser bug, before re-evaluation)
+First evaluation (`outputs/contract_lint_20261010/result_0a9ebb09.json`, kept) produced 0 fires
+on decision pools. Structural diagnostics (no labels viewed) showed the catalog parser
+anchored on the first textual mention of `[AVAILABLE TOOLS]`; several policies mention it
+inline ("never call a tool that is not listed there"), so 10–14 rows per lb pool abstained.
+Fix: the catalog header must be a line of its own and occur exactly once; otherwise abstain.
+After the fix every row parses except 2 contrast rows with a duplicated tool declaration
+(correct abstention). Checks, arms and the decision rule are unchanged.

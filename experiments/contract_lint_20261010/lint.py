@@ -8,6 +8,7 @@ check abstains. Code never asserts "no violation".
 import json
 import re
 
+HEADER = re.compile(r'^\[AVAILABLE TOOLS\][ \t]*$', re.M)
 TOOL_LINE = re.compile(r'^- ([\w.\-]+) —', re.M)
 PARAM_LINE = re.compile(r'^    (\w+): (string|integer|number|boolean|array|object)(!)?(?: \[enum: ([^\]]*)\])?(?: —|$)')
 CALL = re.compile(r'→ TOOL_CALL ([\w.\-]+): (.*)$')
@@ -23,10 +24,11 @@ JSON_TYPES = dict(string=lambda v: isinstance(v, str),
 
 def parse_catalog(prompt):
     """{tool: {'params': {name: {'type', 'required', 'enum'}}}} or None if no catalog block."""
-    start = prompt.find('[AVAILABLE TOOLS]')
-    if start < 0:
-        return None
-    lines = prompt[start:].splitlines()[1:]
+    # The header must be a line of its own: policies may mention "[AVAILABLE TOOLS]" inline.
+    headers = list(HEADER.finditer(prompt))
+    if len(headers) != 1:
+        return None                               # missing or ambiguous catalog block: abstain
+    lines = prompt[headers[0].end():].splitlines()[1:]
     catalog, current = {}, None
     for line in lines:
         if SECTION.match(line):

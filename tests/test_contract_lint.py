@@ -73,3 +73,9 @@ def test_repeat_not_flagged_after_success_or_intervening_call():
 
 def test_abstain_without_catalog():
     assert lint('no catalog here', turn('anything: {}')) == []
+
+
+def test_inline_mention_of_header_is_not_the_catalog():
+    p = 'Use only tools listed in [AVAILABLE TOOLS]. Never call others.\n' + CAT
+    assert set(parse_catalog(p)) == {'get_order', 'cancel_order'}
+    assert checks(p, turn('reset_vpn: {}')) == ['UNKNOWN_TOOL']
