@@ -177,14 +177,20 @@ def emit(name, value):
                                            ensure_ascii=True, sort_keys=True), flush=True)
 
 
-def run_probe(name, code, timeout=30, *, python=None, environment_overrides=None):
+def run_probe(name, code, timeout=30, *, python=None, environment_overrides=None,
+              argv=None, environment=None):
+    """Bounded child. Defaults: host Python -c code in os.environ; argv/environment replace them."""
     process, handlers = None, {}
     launching, cleaning, pending_signal = False, False, None
     owner_token = secrets.token_hex(24)
-    environment = dict(os.environ, PYTHONDONTWRITEBYTECODE='1',
+    base_environment = os.environ if environment is None else environment
+    environment = dict(base_environment, PYTHONDONTWRITEBYTECODE='1',
         OMP_NUM_THREADS='2', OPENBLAS_NUM_THREADS='1', GUARDIAN_VLLM_OWNER_TOKEN=owner_token)
     environment.update(environment_overrides or {})
-    values = sensitive_values(os.environ) + [owner_token]
+    values = sorted(set(sensitive_values(os.environ) + sensitive_values(environment)),
+                    key=len, reverse=True) + [owner_token]
+    command = (list(argv) if argv is not None
+               else [str(python or sys.executable), '-X', 'utf8', '-u', '-c', code])
     report = {}
     def interrupted(signum, frame):
         nonlocal pending_signal
@@ -208,7 +214,7 @@ def run_probe(name, code, timeout=30, *, python=None, environment_overrides=None
                 elif cleanup_mode == 'unreaped_leader':
                     raise RuntimeError('UNREAPED_LEADER_REQUIRES_MAIN_THREAD')
                 launching = True
-                process = subprocess.Popen([str(python or sys.executable), '-X', 'utf8', '-u', '-c', code],
+                process = subprocess.Popen(command,
                     stdout=stdout, stderr=stderr, env=environment, start_new_session=(os.name != 'nt'))
                 process._guardian_unreaped_leader = cleanup_mode == 'unreaped_leader'
                 launching = False
