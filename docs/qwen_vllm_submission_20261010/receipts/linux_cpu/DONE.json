@@ -1,0 +1,178 @@
+{
+  "caveats": [
+    "Hardlink relocation on same Linux host/filesystem; not final Windows-assembled ZIP extraction.",
+    "No GPU initialization, model load, nonempty inference, private/full-cohort quality or runtime validation.",
+    "Manifest and listed critical content verified; full large asset hashes not reread here."
+  ],
+  "gpu_inference": "NOT_RUN",
+  "phases": [
+    {
+      "cap_seconds": 180,
+      "command": [
+        "/workspace/guardian/vllm_final_cpu_relocation_20261010/stage/runtime/python/run_python.sh",
+        "-c",
+        "import importlib,json,os,pathlib,subprocess,sys\nroot=pathlib.Path(sys.argv[1]);result=pathlib.Path(sys.argv[2])\nexpected=root/'runtime/python/bin/python3.12'\nassert pathlib.Path(sys.executable).resolve()==expected.resolve(),(sys.executable,str(expected))\nassert os.environ['CUDA_VISIBLE_DEVICES']==''\nversions={name:importlib.import_module(name).__version__ for name in ['torch','vllm','pandas','pyarrow']}\nchild_code='import importlib,json,os,sys; assert os.environ[\"CUDA_VISIBLE_DEVICES\"]==\"\"; print(json.dumps(dict(executable=sys.executable,versions={n:importlib.import_module(n).__version__ for n in [\"torch\",\"vllm\",\"pandas\",\"pyarrow\"]})))'\nchild_env=dict(os.environ,CUDA_VISIBLE_DEVICES='',NVIDIA_VISIBLE_DEVICES='',OMP_NUM_THREADS='2',OPENBLAS_NUM_THREADS='1')\nchild=subprocess.run([sys.executable,'-c',child_code],env=child_env,capture_output=True,text=True,timeout=90,check=True)\nlines=[line for line in child.stdout.splitlines() if line.startswith('{')]\ndata=json.loads(lines[-1]);assert pathlib.Path(data['executable']).resolve()==expected.resolve()\nassert data['versions']==versions\nresult.write_text(json.dumps(dict(status='PASSED',executable=sys.executable,versions=versions,child=data,child_returncode=child.returncode,child_stderr=child.stderr,cuda_visible_devices=os.environ['CUDA_VISIBLE_DEVICES'],omp_num_threads=os.environ['OMP_NUM_THREADS'],openblas_num_threads=os.environ['OPENBLAS_NUM_THREADS']),indent=2)+'\\n')\nprint(result.read_text())\n",
+        "/workspace/guardian/vllm_final_cpu_relocation_20261010/stage",
+        "/workspace/guardian/vllm_final_cpu_relocation_20261010/native_imports.json"
+      ],
+      "cwd": "/workspace/guardian/vllm_final_cpu_relocation_20261010",
+      "environment": {
+        "CUDA_VISIBLE_DEVICES": "",
+        "NVIDIA_VISIBLE_DEVICES": "",
+        "OMP_NUM_THREADS": "2",
+        "OPENBLAS_NUM_THREADS": "1",
+        "PIP_NO_INDEX": "1",
+        "PYTHONDONTWRITEBYTECODE": "1"
+      },
+      "phase": "native_shim_and_child_imports",
+      "returncode": 0,
+      "seconds": 17.413081089034677
+    },
+    {
+      "cap_seconds": 30,
+      "command": [
+        "/usr/bin/python3",
+        "-m",
+        "pip",
+        "--version"
+      ],
+      "cwd": "/workspace/guardian/vllm_final_cpu_relocation_20261010",
+      "environment": {
+        "CUDA_VISIBLE_DEVICES": "",
+        "NVIDIA_VISIBLE_DEVICES": "",
+        "OMP_NUM_THREADS": "2",
+        "OPENBLAS_NUM_THREADS": "1",
+        "PIP_NO_INDEX": "1",
+        "PYTHONDONTWRITEBYTECODE": "1"
+      },
+      "phase": "host_pip_version",
+      "returncode": 0,
+      "seconds": 0.3072047680034302
+    },
+    {
+      "cap_seconds": 120,
+      "command": [
+        "/usr/bin/python3",
+        "-m",
+        "pip",
+        "install",
+        ".",
+        "--no-index",
+        "--no-deps",
+        "--no-build-isolation",
+        "--no-cache-dir",
+        "--prefix",
+        "/workspace/guardian/vllm_final_cpu_relocation_20261010/installed_prefix"
+      ],
+      "cwd": "/workspace/guardian/vllm_final_cpu_relocation_20261010/stage",
+      "environment": {
+        "CUDA_VISIBLE_DEVICES": "",
+        "NVIDIA_VISIBLE_DEVICES": "",
+        "OMP_NUM_THREADS": "2",
+        "OPENBLAS_NUM_THREADS": "1",
+        "PIP_NO_INDEX": "1",
+        "PYTHONDONTWRITEBYTECODE": "1"
+      },
+      "phase": "offline_pip_install",
+      "returncode": 0,
+      "seconds": 1.6687408270081505
+    },
+    {
+      "cap_seconds": 30,
+      "command": [
+        "/usr/bin/python3",
+        "-c",
+        "from pathlib import Path\nimport hashlib,json,sys\nprefix=Path(sys.argv[1]);stage=Path(sys.argv[2]);out=Path(sys.argv[3])\nmetadata=list(prefix.rglob('guardian_qwen_submission-0.1.0.dist-info/METADATA'))\nassert len(metadata)==1,metadata\ntext=metadata[0].read_text();assert 'Name: guardian-qwen-submission' in text\nassert 'Requires-Dist:' not in text\nsites=metadata[0].parent.parent\nsys.path[:0]=[str(sites)]\nimport guardian_truth,experiments\nassert Path(guardian_truth.__file__).is_relative_to(prefix)\nassert Path(experiments.__file__).is_relative_to(prefix)\nfiles=list(sites.rglob('*.py'));assert files\nout.write_text(json.dumps(dict(status='PASSED',prefix=str(prefix),metadata=str(metadata[0]),python_file_count=len(files),guardian_truth_path=guardian_truth.__file__,experiments_path=experiments.__file__,requires_dist=[]),indent=2)+'\\n')\nprint(out.read_text())\n",
+        "/workspace/guardian/vllm_final_cpu_relocation_20261010/installed_prefix",
+        "/workspace/guardian/vllm_final_cpu_relocation_20261010/stage",
+        "/workspace/guardian/vllm_final_cpu_relocation_20261010/installation.json"
+      ],
+      "cwd": "/workspace/guardian/vllm_final_cpu_relocation_20261010",
+      "environment": {
+        "CUDA_VISIBLE_DEVICES": "",
+        "NVIDIA_VISIBLE_DEVICES": "",
+        "OMP_NUM_THREADS": "2",
+        "OPENBLAS_NUM_THREADS": "1",
+        "PIP_NO_INDEX": "1",
+        "PYTHONDONTWRITEBYTECODE": "1"
+      },
+      "phase": "installed_metadata_and_imports",
+      "returncode": 0,
+      "seconds": 0.0687421050388366
+    },
+    {
+      "cap_seconds": 30,
+      "command": [
+        "/workspace/guardian/vllm_final_cpu_relocation_20261010/stage/runtime/python/run_python.sh",
+        "-c",
+        "import pandas as pd,sys; pd.DataFrame(columns=[\"id\",\"prompt\",\"response\"]).to_parquet(sys.argv[1],index=False)",
+        "/workspace/guardian/vllm_final_cpu_relocation_20261010/empty.parquet"
+      ],
+      "cwd": "/workspace/guardian/vllm_final_cpu_relocation_20261010",
+      "environment": {
+        "CUDA_VISIBLE_DEVICES": "",
+        "NVIDIA_VISIBLE_DEVICES": "",
+        "OMP_NUM_THREADS": "2",
+        "OPENBLAS_NUM_THREADS": "1",
+        "PIP_NO_INDEX": "1",
+        "PYTHONDONTWRITEBYTECODE": "1"
+      },
+      "phase": "create_empty_input",
+      "returncode": 0,
+      "seconds": 1.680829421035014
+    },
+    {
+      "cap_seconds": 120,
+      "command": [
+        "/usr/bin/python3",
+        "/workspace/guardian/vllm_final_cpu_relocation_20261010/stage/scripts/predict.py",
+        "--input",
+        "/workspace/guardian/vllm_final_cpu_relocation_20261010/empty.parquet",
+        "--output",
+        "/workspace/guardian/vllm_final_cpu_relocation_20261010/empty-predictions.parquet",
+        "--work-dir",
+        "/workspace/guardian/vllm_final_cpu_relocation_20261010/public_empty_work"
+      ],
+      "cwd": "/workspace/guardian/vllm_final_cpu_relocation_20261010",
+      "environment": {
+        "CUDA_VISIBLE_DEVICES": "",
+        "NVIDIA_VISIBLE_DEVICES": "",
+        "OMP_NUM_THREADS": "2",
+        "OPENBLAS_NUM_THREADS": "1",
+        "PIP_NO_INDEX": "1",
+        "PYTHONDONTWRITEBYTECODE": "1"
+      },
+      "phase": "public_empty",
+      "returncode": 0,
+      "seconds": 2.18631986703258
+    },
+    {
+      "cap_seconds": 30,
+      "command": [
+        "/workspace/guardian/vllm_final_cpu_relocation_20261010/stage/runtime/python/run_python.sh",
+        "-c",
+        "from pathlib import Path\nimport hashlib,json,pandas as pd,sys\noutput=Path(sys.argv[1]);work=Path(sys.argv[2]);report=Path(sys.argv[3]);stage=Path(sys.argv[4])\nframe=pd.read_parquet(output);receipt=json.loads((work/'submission.json').read_text())\nassert list(frame.columns)==['id','label'] and len(frame)==0\nassert pd.api.types.is_integer_dtype(frame['label']) and not pd.api.types.is_bool_dtype(frame['label'])\nassert receipt['status']=='COMPLETE' and receipt['rows']==0\nassert receipt['run']==dict(rows=0,completion_http=0,preflight_http=0,default_zero_fallbacks=0)\nassert receipt['output_sha256']==hashlib.sha256(output.read_bytes()).hexdigest()\nassert not work.is_relative_to(stage)\nreport.write_text(json.dumps(dict(status='PASSED',output=str(output),output_columns=list(frame.columns),output_rows=len(frame),output_dtypes={n:str(t) for n,t in frame.dtypes.items()},receipt=receipt,gpu_inference='NOT_RUN_EMPTY_INPUT'),indent=2)+'\\n');print(report.read_text())\n",
+        "/workspace/guardian/vllm_final_cpu_relocation_20261010/empty-predictions.parquet",
+        "/workspace/guardian/vllm_final_cpu_relocation_20261010/public_empty_work",
+        "/workspace/guardian/vllm_final_cpu_relocation_20261010/public_empty.json",
+        "/workspace/guardian/vllm_final_cpu_relocation_20261010/stage"
+      ],
+      "cwd": "/workspace/guardian/vllm_final_cpu_relocation_20261010",
+      "environment": {
+        "CUDA_VISIBLE_DEVICES": "",
+        "NVIDIA_VISIBLE_DEVICES": "",
+        "OMP_NUM_THREADS": "2",
+        "OPENBLAS_NUM_THREADS": "1",
+        "PIP_NO_INDEX": "1",
+        "PYTHONDONTWRITEBYTECODE": "1"
+      },
+      "phase": "public_empty_validation",
+      "returncode": 0,
+      "seconds": 1.715690564014949
+    }
+  ],
+  "source": "/workspace/guardian/vllm_submission_build_20261010_v4/stage",
+  "source_unchanged": true,
+  "stage": "/workspace/guardian/vllm_final_cpu_relocation_20261010/stage",
+  "status": "CPU_RELOCATION_INSTALL_PUBLIC_EMPTY_PASSED"
+}

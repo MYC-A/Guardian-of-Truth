@@ -53,7 +53,8 @@ assets and are excluded. No external benchmark inputs, gold or predictions
 are included. Wheel-owned fixture names remain distinguishable from application
 data. Filename review is not a general secret-content certification.
 
-109 packaging/public-entrypoint/B2 tests passed. Actual local assembly separately
+178 tests passed: 109 packaging/public-entrypoint/B2 checks and 69 vLLM adapter
+and upstream asset integrity checks. Actual local assembly separately
 checks every runtime and model file SHA, then all final ZIP members and modes.
 The output is root-level ZIP64 with stored safetensors, immutable sources,
 exclusive publication and a strict 40,000,000,000-byte cap.
@@ -64,6 +65,12 @@ The user requested that the separate active `guardian-arm` GPU experiment
 remain running. No GPU process is stopped, and no 36GB ZIP is uploaded to the
 server. CPU-only relocation checks use existing frozen server stage bytes.
 Their receipts and final local assembly receipt are recorded separately.
+All seven CPU child phases returned 0: relocated main/child Python imports,
+offline project installation, installed metadata/imports, public empty-input
+execution and Parquet validation. All 52,672 source files preserved inode,
+size, mtime and mode. These were same-host hardlink relocation checks, not
+extraction of the final Windows-built ZIP or nonempty GPU inference.
+CPU receipts are preserved in `receipts/linux_cpu/`.
 
 Historical graph16 valid46 was 16TP/0FP/7FN, F1 .8205, whole wall 677.55s in
 one development repetition. That is not cold GPU validation of this package
