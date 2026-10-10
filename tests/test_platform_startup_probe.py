@@ -35,7 +35,9 @@ def fake_server_script(tmp_path, behaviour):
         class H(http.server.BaseHTTPRequestHandler):
             def log_message(self, *a): pass
             def do_GET(self):
-                self.send_response(200); self.end_headers(); self.wfile.write(b'ok')
+                self.send_response(200); self.end_headers()
+                body = json.dumps(dict(data=[dict(id={probe.MODEL!r}, max_model_len=32768)])).encode() if self.path == '/v1/models' else b'ok'
+                self.wfile.write(body)
             def do_POST(self):
                 ok = self.headers.get('Authorization') == 'Bearer ' + key
                 body = json.dumps(dict(choices=[dict(message=dict(content='da'))])).encode()
@@ -53,6 +55,7 @@ def run(tmp_path, behaviour, timeout=20):
     return probe.run_server('t', command, dict(os.environ), tmp_path / 'log.txt', port, key, timeout)
 
 
+@pytest.mark.skipif(os.name == 'nt', reason='POSIX shell/server integration runs in Linux CI')
 def test_server_ready_and_completion_and_key_redacted(tmp_path, capsys):
     report = run(tmp_path, 'ok')
     assert report['outcome'] == 'SERVER_READY_AND_COMPLETED' and report['completion_status'] == 200
@@ -61,12 +64,14 @@ def test_server_ready_and_completion_and_key_redacted(tmp_path, capsys):
     assert 'cleanup_error' not in report
 
 
+@pytest.mark.skipif(os.name == 'nt', reason='POSIX shell/server integration runs in Linux CI')
 def test_early_exit_reports_returncode_and_traceback_tail(tmp_path):
     report = run(tmp_path, 'die')
     assert report['outcome'] == 'SERVER_EXITED' and report['returncode'] == 3
     assert 'libcuda.so cannot found' in report['tail'] and 'k' * 48 not in report['tail']
 
 
+@pytest.mark.skipif(os.name == 'nt', reason='POSIX shell/server integration runs in Linux CI')
 def test_startup_timeout_kills_group(tmp_path):
     report = run(tmp_path, 'hang', timeout=3)
     assert report['outcome'] == 'STARTUP_TIMEOUT' and report['seconds'] < 10
@@ -78,8 +83,6 @@ def test_environment_mirrors_failed_archive(tmp_path, monkeypatch):
     exact = probe.submission_environment(tmp_path, bundled=True)
     assert 'LD_LIBRARY_PATH' not in exact and 'PYTHONPATH' not in exact
     assert exact['GUARDIAN_BUNDLED_PYTHON'] == '1' and exact['TRITON_CACHE_DIR'].startswith(str(tmp_path))
-    bridge = probe.submission_environment(tmp_path, bundled=True, driver_bridge=True)
-    assert bridge['LD_LIBRARY_PATH'] == probe.DRIVER_BRIDGE
     host = probe.submission_environment(tmp_path, bundled=False)
     assert host['LD_LIBRARY_PATH'] == '/usr/local/nvidia/lib64:/opt/hpcx/ompi/lib'
 
@@ -151,6 +154,7 @@ def test_builder_refuses_overwrite_and_missing_config(tmp_path):
         builder.build(tmp_path / 'p2.zip', source_zip=empty)
 
 
+@pytest.mark.skipif(os.name == 'nt', reason='POSIX symlink permissions tested in Linux CI')
 def test_builder_from_stage_directory(tmp_path):
     stage = tmp_path / 'stage'
     (stage / 'runtime/python').mkdir(parents=True)

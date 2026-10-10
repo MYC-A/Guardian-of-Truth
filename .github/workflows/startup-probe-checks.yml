@@ -1,0 +1,51 @@
+name: Check diagnostic startup probe on Linux without GPU
+
+on:
+  push:
+    branches: [fix/qwen-startup-probe-v3-checked-20261011]
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  cpu-tests:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 10
+    env:
+      PYTHONDONTWRITEBYTECODE: '1'
+      PYTHONUTF8: '1'
+      CUDA_VISIBLE_DEVICES: ''
+    steps:
+      - uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683
+        with:
+          persist-credentials: false
+          sparse-checkout: |
+            src
+            scripts
+            tests
+            submission
+      - name: Isolated CPU test environment
+        shell: bash
+        run: |
+          set -euo pipefail
+          python3 -m venv "$RUNNER_TEMP/probe-tests"
+          "$RUNNER_TEMP/probe-tests/bin/python" -m pip install 'pytest>=8,<9' 'pydantic>=2.10,<3' 'jsonschema>=4.18,<5'
+      - name: Test ZIP packaging, owned-process cleanup and public diagnostic entrypoint
+        shell: bash
+        run: |
+          set -euo pipefail
+          export PYTHONPATH="$PWD/src:$PWD"
+          "$RUNNER_TEMP/probe-tests/bin/python" -m pytest -q \
+            tests/test_platform_environment_probe.py tests/test_build_platform_environment_probe.py \
+            tests/test_bundled_loader_probe.py tests/test_platform_startup_probe.py \
+            tests/test_platform_startup_probe_builder_checked.py tests/test_platform_startup_probe_runtime_checked.py \
+            | tee "$RUNNER_TEMP/startup-probe-tests.log"
+      - name: Preserve CPU test results
+        if: always()
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02
+        with:
+          name: startup-probe-cpu-tests-${{ github.sha }}
+          path: ${{ runner.temp }}/startup-probe-tests.log
+          if-no-files-found: warn
+          retention-days: 7
