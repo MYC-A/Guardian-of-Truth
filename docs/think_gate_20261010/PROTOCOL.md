@@ -55,3 +55,13 @@ Gemma's valid46 gain comes from 2 rows (banking_005 t6: 3/3,3/3,2/3; retail_48 t
 **Status:** "Qwen-score gate (p ≥ .005) → Gemma ≥2/3" is the best candidate so far, cheap (~4 min incl. model load),
 but it was a diagnostic rule and its valid46 gain rests on 2 rows → needs a preregistered confirmation run
 (fixed rule, fresh samples; ideally unseen data) before production.
+
+## Amendment 2 (before generation): confirmation + Gemma as the lead model
+Gemma server as round 1. Jobs (`experiments/think_gate_20261010/gemma2.py`), evaluator `evaluate2.py`:
+- **C (primary, confirmation):** fresh samples of exactly the round-1 rule — Qwen score p ≥ .005 → Gemma ≥2/3.
+  Same acceptance criteria. If C fails, the round-1 Gemma result is treated as a lucky draw.
+- **L1:** Gemma ≥2/3 on every base-0 row (no Qwen gate).
+- **L2:** Gemma's own 1-token score as the gate: t chosen on decision pools only (max pool TP with pool FP ≤ 3,
+  ties → higher t), then Gemma ≥2/3.
+- **L3 (diagnostic):** Gemma ≥2/3 alone instead of the base, valid46 F1 per pass vs .800.
+  Replacing the full B2 pipeline model by Gemma is a separate, larger step, considered only if L3 is close to base.

@@ -59,8 +59,12 @@ def main():
         def one(j):
             try:
                 d = post(base + '/v1/chat/completions', dict(j['body'], model=SERVED))
-                return j['id'], dict(samples=[dict(content=c['message'].get('content'), finish=c['finish_reason'])
-                                              for c in d['choices']], completion_tokens=d['usage']['completion_tokens'])
+                r = dict(samples=[dict(content=c['message'].get('content'), finish=c['finish_reason'])
+                                  for c in d['choices']], completion_tokens=d['usage']['completion_tokens'])
+                c = d['choices'][0]
+                if (c.get('logprobs') or {}).get('content'):
+                    r['top'] = [dict(token=t['token'], logprob=t['logprob']) for t in c['logprobs']['content'][0]['top_logprobs']]
+                return j['id'], r
             except Exception as e:
                 return j['id'], dict(error=f'{type(e).__name__}: {str(e)[:300]}')
         for kind in dict.fromkeys(j['id'].split('|')[0] for j in jobs):
