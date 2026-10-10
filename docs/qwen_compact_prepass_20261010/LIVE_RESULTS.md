@@ -1,4 +1,4 @@
-# GPU pilot — промежуточные результаты
+# GPU pilot — первая полная пара, остальные arms продолжаются
 
 Снимок runtime: `8911b35f8ca895aad5c68bbe1fca7d1721f7f867`.
 Qwen3.8-27B Q8_0, native llama.cpp f498f864f/build11459,
@@ -49,9 +49,51 @@ completionHTTP179/cachehits0 и суммы usage. Credential patterns в export 
 негативных integrity probes (tampered member, missing ID, label/trace drift)
 отвергнуты. Это review обработки/метрик, не source-based аудит всех15 причин.
 
+## Compact rep1 — завершён, улучшение не подтверждено
+
+| arm | TP | FP | FN | TN | F1 | CLI seconds | calls | input tokens | output tokens |
+|---|---|---|---|---|---|---|---|---|---|
+| legacy | 15 | 0 | 8 | 23 | .789474 | 1743.834 | 179 | 686653 | 118421 |
+| compact | 14 | 0 | 9 | 23 | .756757 | 1724.684 | 186 | 760055 | 100638 |
+
+Все46 labels записаны. Экономия19.150s (1.10%) за один ordered repetition не
+подтверждает устойчивое ускорение. Binary flips ровно1: прежний TP сталFN,
+новых TP/FP нет. Default-zero0 обоих arms. Compact3 RAW_MODEL_DECISION —
+полные NO_ERROR ответы HTTP200/finish_reason=stop, rejected source/actor admission;
+это не token-limit truncation. Причины таких terminal negatives не validated.
+
+Pre output66057→45467 (-31.2%), reviewer29882→25322 (-15.3%). Но input вырос
+на10.7%, дополнительные checker/verifier calls23→30. Checklist4→6, Ems3→5,
+AT4→6, verify_AT4→5. F extraction64 calls неизменна. Pre proposals валидны46/46
+обоих; доставлено32→45. Единственный compact discard —61565bytes>60000.
+Именно рост покрытия и downstream работы не позволяет вывести wall gain из
+экономии pre tokens. Нужны отдельные ablations, а не простое дальнейшее уменьшение cap.
+
+Независимый reviewer подтвердил оба полных ID sets, row hashes, live/trace/replay,
+usage, source addressing и отсутствие credentials по проверенным patterns.
+427 compact aliases expanded точно; unit parent/slice associations совпали.
+Потерянный telecom TP объясняется содержанием pre/reviewer: policy-mentioned
+diagnostic procedures названы доступными assistant tools при отсутствии их в
+полном parsed catalog. Legacy сохранил эту границу. IDs используются только
+в receipts/regression analysis, не routing/prompts/runtime rules.
+
+В3 recovered primary replies policy q-sources названы actor=assistant вместо
+authoritative system. Actor correction сама по себе не меняет отрицательную
+классификацию модели. Ослаблять evidence gate ради этой строки не требуется.
+Две положительные airline строки поменяли substantive winning reason/target на
+format move-level AT; одинаковый binary не доказывает прежнюю cause localization.
+Ещё в обоих arms один Ems winner имеет неподдержанное procedural explanation,
+хотя правильный alternative AT candidate присутствует. Row TP не равен полной
+cause correctness. Это diagnostic audit, не частота ошибок на independent holdout.
+
+Compact export SHA256:
+`28feb69e85450cb546194bb940d96d9b15754643bd0790df2b6c2200c2e51e69`.
+Pair receipt: `outputs/qwen_gpu_pilot_20261010/paired_rep1.json`.
+CLI default и ready competition ZIP остаются прежними.
+
 ## Остальные arms
 
-Compact rep1 начался после legacy. N0/RF ожидают complete marker обеих arms;
+N0 запустился после завершения legacy/compact. RF выполняется после N0;
 GPU jobs не перекрываются. Для них quality/time метрик здесь пока нет.
 N0/RF — отдельная matched пара без blind/F layers; её сравнение с B2 смешивает
 удаление стадий с эффектом retrieval. Retrieval — lexical TF-IDF reading aid,
