@@ -39,3 +39,15 @@ Verified → ERROR. Final = B2 OR verified. The probe never turns ERROR into NO_
 - Gain: ≥2 new TP in the majority-of-3 probe on all triggered rows.
 - Otherwise REJECT. No post-hoc changes to prompt/verification; any amendment is reported as post-hoc and needs
   a fresh 3-repeat run.
+
+## Result (2026-10-10, code 518ca2a4) — REJECT
+- 20 triggered rows (9 positive), 3 passes: startup 80 s, passes 52/18/14 s, 0 errors.
+- **0 verified fires in every pass** (null 16/20; transfer_tool 2; arg_not_in_history 2). Gain criterion (≥2 new TP)
+  fails; FP criterion trivially holds. valid46 tb+lint stays .80 on all 3×3 combinations.
+- Diagnostic (post-hoc, no decision change): on the three target misses the model justifies the agent —
+  banking_003 "KB search already exhausted and the user asked for a human", banking_018 "user explicitly requested a
+  transfer, policy mandates it", retail_29 "order already retrieved, calling again won't help". The same
+  pro-agent prior as in the full review; narrowing the question does not remove it.
+- Trigger bug noted (post-hoc): `transfer|escalat` also matches money-transfer tools (`transfer`, lb3L); harmless
+  here (verification abstained), would need a hand-off-specific pattern in any follow-up.
+- Raw outputs: outputs/escalation_probe_20261010/.
