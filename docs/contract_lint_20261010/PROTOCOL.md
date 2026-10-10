@@ -49,3 +49,11 @@ inline ("never call a tool that is not listed there"), so 10–14 rows per lb po
 Fix: the catalog header must be a line of its own and occur exactly once; otherwise abstain.
 After the fix every row parses except 2 contrast rows with a duplicated tool declaration
 (correct abstention). Checks, arms and the decision rule are unchanged.
+
+## Result (evaluator at 2a45dfe0, `outputs/contract_lint_20261010/result_2a45dfe0.json`)
+Decision pools (397 de-duplicated labelled rows, 10 pools; B2 F1 .9211):
+- `UNKNOWN_TOOL`: 3 fires, all gold-positive, 0 new FP, 0 new TP (B2 already caught them) → **HARD** by the rule.
+- `SCHEMA`/`INVALID_ARGS_JSON`: 0 fires → INSUFFICIENT_FIRES (not adopted).
+- `REPEAT_FAILED`: 0 fires → INSUFFICIENT_FIRES (not adopted).
+valid46 (report only, contaminated): UNKNOWN_TOOL 5 fires / 5 positive, +3 TP vs stored B2 Q8 rep1;
+REPEAT_FAILED 1/1 positive. Adoption is limited to UNKNOWN_TOOL; evidence for it outside valid46 is thin (3 rows).
