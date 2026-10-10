@@ -302,6 +302,163 @@ def test_owned_server_readiness_and_cleanup_offline(tmp_path, monkeypatch, serve
     assert not server.handlers
 
 
+@pytest.fixture
+def failing_server(tmp_path, monkeypatch):
+    """Fake subprocess only: preserve startup status before simulated cleanup."""
+    directory = checkpoint(tmp_path)
+    monkeypatch.setattr(adapter.subprocess, 'check_output', lambda *a, **k: adapter.ENGINE_VERSION)
+    clock = [100.0]
+    monkeypatch.setattr(adapter.time, 'monotonic', lambda: clock[0])
+
+    def make(returncode=1, log=b'underlying startup error\n', cleanup_error=None):
+        class Process:
+            pid = 123456789
+            waited = terminated = False
+            def poll(self):
+                return returncode if not self.terminated else -15
+            def terminate(self):
+                self.terminated = True
+            def wait(self, timeout):
+                self.waited = True
+                clock[0] += 20
+                if cleanup_error is not None:
+                    raise cleanup_error
+                return self.poll()
+
+        process = Process()
+        server = adapter.OwnedVllmServer('python', directory, tmp_path, 32, 1,
+            deadline=1000, asset_manifest=tmp_path / 'manifest.json')
+        original_exit = server.__exit__
+        def cleanup(*args):
+            try:
+                return original_exit(*args)
+            finally:
+                if log is None and server.log.closed:
+                    (tmp_path / 'vllm-server.log').unlink()
+        monkeypatch.setattr(server, '__exit__', cleanup)
+        def spawn(*args, **kwargs):
+            clock[0] += 2
+            if log is not None:
+                raw = log(server) if callable(log) else log
+                kwargs['stdout'].buffer.write(raw)
+                kwargs['stdout'].flush()
+            return process
+        monkeypatch.setattr(adapter.subprocess, 'Popen', spawn)
+        monkeypatch.setattr(server, '_cleanup_group', process.terminate)
+        return server, process
+    return make
+
+
+@pytest.mark.parametrize('returncode', [1, -9])
+def test_startup_exit_reports_pre_cleanup_status_and_log(failing_server, tmp_path, capsys, returncode):
+    server, process = failing_server(returncode)
+    with pytest.raises(RuntimeError, match='^VLLM_START_FAILED$'):
+        server.__enter__()
+    failure = json.loads((tmp_path / 'startup_failure.json').read_text(encoding='utf-8'))
+    assert failure['returncode'] == returncode
+    assert failure['seconds_since_popen'] == 2
+    assert failure['log_tail'] == 'underlying startup error\n'
+    assert process.waited and server.log.closed and not server.handlers
+    stderr = capsys.readouterr().err
+    assert '=== GUARDIAN VLLM STARTUP FAILURE BEGIN ===' in stderr
+    assert 'underlying startup error' in stderr
+    assert '=== GUARDIAN VLLM STARTUP FAILURE END ===' in stderr
+
+
+@pytest.mark.parametrize('log', [b'bad utf8: \xff\xfe\n', None])
+def test_startup_diagnostics_handles_invalid_utf8_or_missing_log(failing_server, tmp_path, log):
+    server, process = failing_server(log=log)
+    with pytest.raises(RuntimeError, match='VLLM_START_FAILED'):
+        server.__enter__()
+    failure = json.loads((tmp_path / 'startup_failure.json').read_text(encoding='utf-8'))
+    if log is None:
+        assert failure['log_tail'] == ''
+        assert failure['diagnostic_errors'] == ['LOG_READ:FileNotFoundError']
+    else:
+        assert '\ufffd' in failure['log_tail']
+    assert process.waited and server.log.closed
+
+
+def test_startup_tail_is_bounded_and_local_secrets_are_redacted(failing_server, tmp_path, capsys):
+    def log(server):
+        return (b'old diagnostic\n' + b'x' * adapter.STARTUP_LOG_TAIL_BYTES +
+                f'\n--api-key {server.api_key}\nGUARDIAN_VLLM_OWNER_TOKEN={server.owner_token}\n'.encode())
+    server, process = failing_server(log=log)
+    with pytest.raises(RuntimeError, match='VLLM_START_FAILED'):
+        server.__enter__()
+    raw = (tmp_path / 'startup_failure.json').read_text(encoding='utf-8')
+    failure = json.loads(raw)
+    assert len(failure['log_tail'].encode('utf-8')) <= 64 * 1024
+    assert failure['log_tail_truncated'] and 'old diagnostic' not in failure['log_tail']
+    stderr = capsys.readouterr().err
+    for secret in (server.api_key, server.owner_token):
+        assert secret not in raw and secret not in stderr
+    assert failure['log_tail'].count('[REDACTED]') == 2
+    assert process.waited
+
+
+def test_startup_tail_bounds_invalid_utf8_expansion(failing_server, tmp_path):
+    server, _ = failing_server(log=b'\xff' * adapter.STARTUP_LOG_TAIL_BYTES)
+    with pytest.raises(RuntimeError, match='VLLM_START_FAILED'):
+        server.__enter__()
+    failure = json.loads((tmp_path / 'startup_failure.json').read_text(encoding='utf-8'))
+    assert 0 < len(failure['log_tail'].encode('utf-8')) <= adapter.STARTUP_LOG_TAIL_BYTES
+    assert failure['log_tail_truncated']
+
+
+def test_startup_tail_redacts_secret_split_by_tail_boundary(failing_server, tmp_path):
+    server, _ = failing_server(log=lambda current:
+        b'prefix' + current.api_key.encode() + b'y' * (adapter.STARTUP_LOG_TAIL_BYTES - 12))
+    with pytest.raises(RuntimeError, match='VLLM_START_FAILED'):
+        server.__enter__()
+    failure = json.loads((tmp_path / 'startup_failure.json').read_text(encoding='utf-8'))
+    assert failure['log_tail'].startswith('[REDACTED]')
+    assert server.api_key[-12:] not in failure['log_tail']
+
+
+def test_popen_exception_remains_original_with_startup_receipt(failing_server, tmp_path, monkeypatch):
+    server, _ = failing_server()
+    original = PermissionError('fixture cannot execute bundled Python')
+    def spawn(*args, **kwargs):
+        raise original
+    monkeypatch.setattr(adapter.subprocess, 'Popen', spawn)
+    with pytest.raises(PermissionError) as raised:
+        server.__enter__()
+    assert raised.value is original
+    failure = json.loads((tmp_path / 'startup_failure.json').read_text(encoding='utf-8'))
+    assert failure['returncode'] is None and failure['seconds_since_popen'] == 0
+    assert failure['error'] == 'PermissionError' and server.log.closed
+
+
+def test_startup_keeps_original_error_when_cleanup_and_receipt_write_fail(
+        failing_server, tmp_path, monkeypatch, capsys):
+    server, process = failing_server(cleanup_error=OSError('cleanup fixture failure'))
+    original_write = adapter.write_json
+    def write(path, value):
+        if path.name in ('startup_failure.json', 'cleanup.json'):
+            raise OSError('diagnostic fixture write failure')
+        return original_write(path, value)
+    monkeypatch.setattr(adapter, 'write_json', write)
+    with pytest.raises(RuntimeError, match='^VLLM_START_FAILED$'):
+        server.__enter__()
+    stderr = capsys.readouterr().err
+    assert 'cleanup_error' in stderr and 'RECEIPT_WRITE:OSError' in stderr
+    assert process.waited and server.log.closed and not server.handlers
+    assert not (tmp_path / 'startup_failure.json').exists()
+
+
+def test_readiness_exception_preserved_after_cleanup(failing_server, tmp_path, monkeypatch):
+    server, process = failing_server(returncode=None)
+    monkeypatch.setattr(adapter, 'http', lambda *a, **k: payload(dict(data=[])))
+    with pytest.raises(ValueError, match='^SERVED_IDENTITY_OR_CONTEXT_MISMATCH$'):
+        server.__enter__()
+    failure = json.loads((tmp_path / 'startup_failure.json').read_text(encoding='utf-8'))
+    assert failure['error'] == 'ValueError'
+    assert failure['returncode'] is None
+    assert failure['seconds_since_popen'] == 2
+    assert process.waited and server.log.closed
+
+
 def test_runner_passes_opt_in_identity_preserves_order_and_discards_gold(tmp_path, monkeypatch):
     source = tmp_path / 'input.csv'
     source.write_text('id,prompt,response,gold\na,system,one,1\nb,system,two,0\nc,system,three,1\n')

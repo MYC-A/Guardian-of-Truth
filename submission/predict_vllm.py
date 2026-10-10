@@ -6,7 +6,10 @@ reads id/prompt/response. Empty inputs produce a genuine Parquet without a GPU.
 from __future__ import annotations
 
 import argparse
+import ctypes
+import ctypes.util
 import hashlib
+import importlib.metadata
 import json
 import os
 from pathlib import Path
@@ -19,6 +22,42 @@ REVISION = '017b9c7af6b5689d5dd426a76e0bc077eb5ca20a'
 PROFILE = 'B2-vllm-0.19.1-FP8-graphs16-legacy-recovery1'
 
 
+def host_environment_record():
+    """Bounded read-only metadata before exec; never imports Torch or runs CUDA."""
+    versions = {}
+    for package in ('vllm', 'torch', 'transformers', 'flashinfer-python', 'triton', 'pandas', 'pyarrow'):
+        try:
+            versions[package] = importlib.metadata.version(package)
+        except Exception as error:
+            versions[package] = 'UNAVAILABLE:' + type(error).__name__
+    record = dict(python=sys.version.split()[0], executable=sys.executable,
+                  packages=versions, nvcc=shutil.which('nvcc'),
+                  environment={key: os.environ.get(key, '')[:2048] for key in (
+                      'CUDA_VISIBLE_DEVICES', 'NVIDIA_VISIBLE_DEVICES', 'CUDA_HOME', 'CUDA_PATH',
+                      'LD_LIBRARY_PATH', 'TRITON_LIBCUDA_PATH', 'FLASHINFER_WORKSPACE_BASE')})
+    try:
+        record['find_libcuda'] = ctypes.util.find_library('cuda')
+        # Loading the library only tests visibility; do not call cuInit.
+        ctypes.CDLL('libcuda.so.1')
+        record['libcuda_load'] = 'SUCCESS_NO_CUDA_INITIALIZATION'
+    except Exception as error:
+        record['libcuda_load'] = type(error).__name__ + ':' + str(error)[:1024]
+    return record
+
+
+def emit_host_environment():
+    try:
+        print('GUARDIAN_HOST_ENVIRONMENT=' + json.dumps(host_environment_record(), sort_keys=True),
+              file=sys.stderr, flush=True)
+    except Exception as error:
+        # Optional diagnostics must not alter the boot path or read input data.
+        try:
+            print('GUARDIAN_HOST_ENVIRONMENT_UNAVAILABLE=' + type(error).__name__,
+                  file=sys.stderr, flush=True)
+        except Exception:
+            pass
+
+
 def bootstrap(root, arguments):
     """Only the platform dispatcher uses system Python; no system-site fallback."""
     wrapper = root / 'runtime/python/run_python.sh'
@@ -28,6 +67,7 @@ def bootstrap(root, arguments):
     if (os.environ.get('GUARDIAN_BUNDLED_PYTHON') == '1'
             and Path(sys.executable).resolve() == binary.resolve()):
         return
+    emit_host_environment()
     env = dict(os.environ, GUARDIAN_BUNDLED_PYTHON='1', PYTHONDONTWRITEBYTECODE='1',
                PYTHONUTF8='1', PYTHONNOUSERSITE='1')
     os.execve(str(wrapper), [str(wrapper), str(Path(__file__).resolve()), *arguments], env)

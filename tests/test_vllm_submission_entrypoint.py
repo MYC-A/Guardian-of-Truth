@@ -10,6 +10,44 @@ from submission import predict_vllm as public
 from scripts import qwen_vllm_adapter as adapter
 
 
+def test_host_environment_reports_versions_driver_paths_without_dumping_secrets(monkeypatch):
+    monkeypatch.setenv('MISTRAL_API_KEY', 'must-not-be-printed')
+    monkeypatch.setenv('CUDA_HOME', '/platform/cuda')
+    monkeypatch.setenv('LD_LIBRARY_PATH', '/platform/nvidia/lib64')
+    monkeypatch.setattr(public.importlib.metadata, 'version', lambda name: '0.19.1' if name == 'vllm' else 'fixture')
+    monkeypatch.setattr(public.shutil, 'which', lambda name: '/platform/cuda/bin/nvcc')
+    monkeypatch.setattr(public.ctypes.util, 'find_library', lambda name: 'libcuda.so.1')
+    loads = []
+    monkeypatch.setattr(public.ctypes, 'CDLL', lambda name: loads.append(name))
+    record = public.host_environment_record()
+    assert record['packages']['vllm'] == '0.19.1'
+    assert record['environment']['LD_LIBRARY_PATH'] == '/platform/nvidia/lib64'
+    assert record['libcuda_load'] == 'SUCCESS_NO_CUDA_INITIALIZATION'
+    assert loads == ['libcuda.so.1']
+    assert 'must-not-be-printed' not in json.dumps(record)
+
+
+def test_optional_host_probe_failure_is_nonfatal_and_bounded(monkeypatch, capsys):
+    def broken():
+        raise RuntimeError('sensitive-detail')
+    monkeypatch.setattr(public, 'host_environment_record', broken)
+    public.emit_host_environment()
+    output = capsys.readouterr().err
+    assert 'GUARDIAN_HOST_ENVIRONMENT_UNAVAILABLE=RuntimeError' in output
+    assert 'sensitive-detail' not in output
+
+
+def test_host_probe_records_missing_driver_without_initializing_cuda(monkeypatch):
+    monkeypatch.setattr(public.importlib.metadata, 'version', lambda name: 'fixture')
+    monkeypatch.setattr(public.ctypes.util, 'find_library', lambda name: None)
+    def missing(name):
+        raise OSError('libcuda.so.1 absent')
+    monkeypatch.setattr(public.ctypes, 'CDLL', missing)
+    record = public.host_environment_record()
+    assert record['find_libcuda'] is None
+    assert record['libcuda_load'] == 'OSError:libcuda.so.1 absent'
+
+
 @pytest.fixture
 def archive(tmp_path):
     root = tmp_path / 'archive'

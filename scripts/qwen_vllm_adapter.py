@@ -18,6 +18,7 @@ import secrets
 import signal
 import socket
 import subprocess
+import sys
 import threading
 import time
 import urllib.error
@@ -30,6 +31,7 @@ VERSION = 'qwen-vllm-research-transport-v1'
 ENGINE_VERSION = '0.19.1'
 REVISION = '017b9c7af6b5689d5dd426a76e0bc077eb5ca20a'
 MODEL = f'Qwen/Qwen3.8-27B-FP8@{REVISION}:vllm-{ENGINE_VERSION}'
+STARTUP_LOG_TAIL_BYTES = 64 * 1024
 
 
 def write_json(path, value):
@@ -280,6 +282,7 @@ class OwnedVllmServer:
         self.owner_token = secrets.token_hex(24)
         self.cleanup_done = False
         self.handlers = {}
+        self.popen_started = None
         with socket.socket() as probe:
             probe.bind(('127.0.0.1', 0))
             self.port = probe.getsockname()[1]
@@ -385,6 +388,7 @@ class OwnedVllmServer:
         try:
             with socket.socket() as probe:
                 probe.bind(('127.0.0.1', self.port))
+            self.popen_started = time.monotonic()
             self.process = subprocess.Popen(self.command(), stdout=self.log, stderr=subprocess.STDOUT,
                                             env=env, start_new_session=(os.name != 'nt'))
             # start_new_session creates a session/group whose ID is this PID.
@@ -411,9 +415,74 @@ class OwnedVllmServer:
                 self.props = models
                 return self
             raise TimeoutError('VLLM_STARTUP_DEADLINE')
-        except BaseException:
-            self.__exit__()
+        except BaseException as error:
+            # Observe the failure before cleanup can change a live process's
+            # status. Diagnostics and cleanup must preserve the startup cause.
+            failure = dict(error=type(error).__name__, detail=self._redact_startup_text(str(error)),
+                           returncode=None, seconds_since_popen=None, diagnostic_errors=[])
+            try:
+                if self.popen_started is not None:
+                    failure['seconds_since_popen'] = time.monotonic() - self.popen_started
+                if self.process is not None:
+                    failure['returncode'] = self.process.poll()
+            except BaseException as diagnostic_error:
+                failure['diagnostic_errors'].append(type(diagnostic_error).__name__)
+            try:
+                self.__exit__()
+            except BaseException as cleanup_error:
+                failure['cleanup_error'] = dict(error=type(cleanup_error).__name__,
+                    detail=self._redact_startup_text(str(cleanup_error)))
+            try:
+                self._report_startup_failure(failure)
+            except BaseException:
+                pass
             raise
+
+    def _redact_startup_text(self, text):
+        for secret in (self.api_key, self.owner_token):
+            text = text.replace(secret, '[REDACTED]')
+        return text
+
+    def _report_startup_failure(self, failure):
+        """Best-effort bounded post-cleanup log capture; never issue a retry."""
+        path = self.work / 'vllm-server.log'
+        failure['log_path'] = self._redact_startup_text(str(path))
+        failure['log_tail'] = ''
+        try:
+            with path.open('rb') as stream:
+                size = stream.seek(0, os.SEEK_END)
+                offset = max(0, size - STARTUP_LOG_TAIL_BYTES)
+                stream.seek(offset)
+                raw = stream.read(STARTUP_LOG_TAIL_BYTES)
+            text = raw.decode('utf-8', errors='replace')
+            if offset:
+                # A tail boundary may bisect one of our secrets. Remove a
+                # leading suffix before replacing complete tokens below.
+                for secret in (self.api_key, self.owner_token):
+                    for start in range(1, len(secret)):
+                        if text.startswith(secret[start:]):
+                            text = '[REDACTED]' + text[len(secret) - start:]
+                            break
+            text = self._redact_startup_text(text)
+            # UTF-8 replacement characters can expand malformed raw bytes.
+            encoded = text.encode('utf-8')
+            failure['log_tail'] = encoded[-STARTUP_LOG_TAIL_BYTES:].decode('utf-8', errors='ignore')
+            failure['log_bytes'] = size
+            failure['log_tail_truncated'] = bool(offset or len(encoded) > STARTUP_LOG_TAIL_BYTES)
+        except BaseException as diagnostic_error:
+            failure['diagnostic_errors'].append('LOG_READ:' + type(diagnostic_error).__name__)
+        try:
+            write_json(self.work / 'startup_failure.json', failure)
+        except BaseException as diagnostic_error:
+            failure['diagnostic_errors'].append('RECEIPT_WRITE:' + type(diagnostic_error).__name__)
+        try:
+            metadata = {key: value for key, value in failure.items() if key != 'log_tail'}
+            print('=== GUARDIAN VLLM STARTUP FAILURE BEGIN ===', file=sys.stderr)
+            print(json.dumps(metadata, ensure_ascii=False), file=sys.stderr)
+            print(failure['log_tail'], file=sys.stderr)
+            print('=== GUARDIAN VLLM STARTUP FAILURE END ===', file=sys.stderr, flush=True)
+        except BaseException:
+            pass
 
     def _signal(self, signum, frame):
         self.__exit__()
