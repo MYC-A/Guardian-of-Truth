@@ -321,6 +321,17 @@ def row_fingerprint(row):
                                      separators=(',', ':')).encode('utf-8')).hexdigest()
 
 
+def scheduled_rows(rows, order='input'):
+    """Submission order only; original output alignment and every row stay intact."""
+    if order == 'input':
+        return list(rows)
+    if order == 'longest-first':
+        # Bytes are a cheap scheduling proxy, NEVER a context-budget estimate.
+        # Stable sorting preserves input order for ties; no label/ID routing.
+        return sorted(rows, key=lambda row: -sum(len(row[k].encode('utf-8')) for k in ('prompt', 'response')))
+    raise ValueError('INVALID_QUEUE_ORDER')
+
+
 def finalize_trace(raw):
     """Shared live/offline projection; never invokes a model or reads a label."""
     from experiments.research_records import failed_record, technical_gaps
@@ -420,6 +431,10 @@ def main(argv=None):
     parser.add_argument('--ubatch-size', type=int, help='Separate performance profile: physical prefill microbatch limit')
     parser.add_argument('--spec-type', choices=['none', 'ngram-mod'], default='none',
                         help='Separate opt-in speculative profile; none preserves the native baseline')
+    parser.add_argument('--queue-order', choices=['input', 'longest-first'], default='input',
+                        help='Opt-in submission scheduling by source bytes; output retains input order')
+    parser.add_argument('--skip-inapplicable-f', action='store_true',
+                        help='Opt-in: skip current F capability only when parsed move has no assistant call')
     parser.add_argument('--pre-profile', choices=['legacy', 'dedup', 'compact'], default='legacy',
                         help='Frozen baseline or opt-in compaction; new profiles require live quality/timing comparison')
     options = parser.parse_args(argv)
@@ -455,9 +470,12 @@ def main(argv=None):
                          batch_size=options.batch_size, ubatch_size=options.ubatch_size, spec_type=spec_type) as server:
             client = LocalClient(server.port, options.context, api_key=server.api_key)
             from guardian_truth.v6fix.pipeline import Layers
-            layers = Layers(client, MODEL, budget=20000, attempts=(0, 1), frules_max_tokens=700, tolerate_component_errors=True)
+            layer_options = dict(skip_inapplicable_f=True) if options.skip_inapplicable_f else {}
+            layers = Layers(client, MODEL, budget=20000, attempts=(0, 1), frules_max_tokens=700,
+                            tolerate_component_errors=True, **layer_options)
+            submission_rows = scheduled_rows(rows, options.queue_order)
             with ThreadPoolExecutor(max_workers=options.workers) as executor:
-                futures = {executor.submit(predict_one, row, client, layers, options.pre_profile): row['id'] for row in rows}
+                futures = {executor.submit(predict_one, row, client, layers, options.pre_profile): row['id'] for row in submission_rows}
                 for future in as_completed(futures):
                     identifier = futures[future]
                     try:
@@ -487,6 +505,11 @@ def main(argv=None):
                       model=MODEL, calls=len(client.calls),
                       workers=options.workers, gpu_slots=gpu_slots, context_per_slot=options.context,
                       spec_type=options.spec_type,
+                      queue_order=options.queue_order,
+                      submission_order=[r['id'] for r in submission_rows],
+                      skip_inapplicable_f=options.skip_inapplicable_f,
+                      f_skipped_rows=sum((t.get('layer_trace', {}).get('f_eligibility') or {}).get('status') ==
+                                        'SKIPPED_NO_CURRENT_ASSISTANT_CALL' for t in traces.values()),
                       explicit_flash=options.fast, batch_size=options.batch_size, ubatch_size=options.ubatch_size,
                       server_props=server.props, preflight_http=client.preflight_http,
                       completion_http=client.completion_http, cache_hits=client.cache_hits,

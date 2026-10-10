@@ -170,3 +170,34 @@ def test_cli_explicit_none_retains_default_native_profile(monkeypatch, tmp_path)
     assert launches[0]['slots'] == 3 and launches[0]['spec_type'] is None
     report = json.loads((work / 'run.json').read_text(encoding='utf-8'))
     assert report['workers'] == report['gpu_slots'] == 3 and report['spec_type'] == 'none'
+
+
+def test_longest_first_changes_execution_order_only_and_keeps_all_original_outputs(monkeypatch, tmp_path):
+    calls = []
+    def predict(row, client, layers, profile):
+        calls.append((row['id'], row['prompt'], row['response'], profile))
+        assert layers.skip_inapplicable_f is True
+        return dict(id=row['id'], binary=int(row['response'] == 'one'))
+    launches, output, work, arguments = cli_fixture(monkeypatch, tmp_path, predict)
+    source = tmp_path / 'input.csv'
+    source.write_text('id,prompt,response\nshort,p,zero\nlong,very long prompt,one\ntieA,tie,zero\ntieB,tie,zero\n',
+                      encoding='utf-8')
+    cli.main([*arguments, '--workers', '1', '--slots', '8', '--queue-order', 'longest-first', '--skip-inapplicable-f'])
+    assert [c[0] for c in calls] == ['long', 'tieA', 'tieB', 'short']
+    assert pd.read_parquet(output).to_dict('records') == [dict(id='short', label=0), dict(id='long', label=1),
+                                                       dict(id='tieA', label=0), dict(id='tieB', label=0)]
+    report = json.loads((work / 'run.json').read_text(encoding='utf-8'))
+    assert report['submission_order'] == [c[0] for c in calls]
+    assert report['queue_order'] == 'longest-first' and report['skip_inapplicable_f'] is True
+    assert launches[0]['slots'] == 8
+
+
+def test_source_scheduling_never_uses_gold_or_id_and_default_keeps_original_order():
+    rows = [dict(id='ZZ', prompt='p', response='r', label=1),
+            dict(id='AA', prompt='longer', response='r', label=0)]
+    assert cli.scheduled_rows(rows) == rows
+    assert cli.scheduled_rows(rows, 'longest-first') == list(reversed(rows))
+    relabeled = [dict(r, id=str(i), label=1-r['label']) for i, r in enumerate(rows)]
+    assert [r['prompt'] for r in cli.scheduled_rows(relabeled, 'longest-first')] == ['longer', 'p']
+    with pytest.raises(ValueError, match='INVALID_QUEUE_ORDER'):
+        cli.scheduled_rows(rows, 'unsupported')

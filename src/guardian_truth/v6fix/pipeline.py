@@ -24,15 +24,18 @@ def policy_key(normative_sources):
 class Layers:
     def __init__(self, client, model, budget=400000, layers=('F', 'S', 'P'), attempts=(0, 1), *,
                  tool_universe_closed=False, provenance_universe_closed=False, frules_max_tokens=700,
-                 tolerate_component_errors=False):
+                 tolerate_component_errors=False, skip_inapplicable_f=False):
         if type(tool_universe_closed) is not bool or type(provenance_universe_closed) is not bool:
             raise ValueError('CLOSURE_CONTRACT_MUST_BE_BOOLEAN')
+        if type(skip_inapplicable_f) is not bool:
+            raise ValueError('SKIP_INAPPLICABLE_F_MUST_BE_BOOLEAN')
         self.client, self.model, self.budget, self.layers, self.cache = client, model, budget, tuple(layers), {}
         self.attempts = tuple(attempts)
         self.tool_universe_closed = tool_universe_closed
         self.provenance_universe_closed = provenance_universe_closed
         self.frules_max_tokens = frules_max_tokens
         self.tolerate_component_errors = tolerate_component_errors
+        self.skip_inapplicable_f = skip_inapplicable_f
 
     def packet(self, row):
         from ..verification.pipeline import packet_for
@@ -45,8 +48,16 @@ class Layers:
     def findings(self, row):
         p = self.packet(row)
         if p is None:
-            return dict(findings=[], rules=[], records=[], coverage=None, budget=self.budget, extraction=None)
+            result = dict(findings=[], rules=[], records=[], coverage=None, budget=self.budget, extraction=None)
+            if self.skip_inapplicable_f:
+                result['f_eligibility'] = dict(version='lazy-f-1', status='UNRESOLVED_NO_PACKET',
+                                               skipped=True, authority='CHECKER_CAPABILITY_ONLY')
+            return result
         rules, ext = [], None
+        # This predicate matches F.check exactly. Malformed argument JSON does
+        # not erase a parsed call, and a single call matters for a zero limit.
+        skip_f = self.skip_inapplicable_f and not any(
+            t['kind'] == 'call' and t.get('role') == 'assistant' for t in p['current_targets'])
         errors = []
         def stage(name, operation, fallback):
             if not self.tolerate_component_errors:
@@ -56,7 +67,7 @@ class Layers:
             except Exception as error:
                 errors.append(dict(stage=name, admission='TECHNICAL_FAILURE', error_type=type(error).__name__))
                 return fallback
-        if 'F' in self.layers:
+        if 'F' in self.layers and not skip_f:
             def extract():
                 k = policy_key(p['normative_sources'])
                 if k not in self.cache:
@@ -66,7 +77,7 @@ class Layers:
             ext = stage('F_extract', extract, None)
             if ext is not None:
                 rules = stage('F_bind', lambda: F.bind(ext, p['normative_sources']), [])
-        out = stage('F_check', lambda: F.check(rules, p['current_targets']), []) if 'F' in self.layers else []
+        out = stage('F_check', lambda: F.check(rules, p['current_targets']), []) if 'F' in self.layers and not skip_f else []
         if 'S' in self.layers:
             out += stage('S_check', lambda: S.check(p), [])
         recs = []
@@ -86,6 +97,11 @@ class Layers:
                                     n_lines=ext.get('n_lines') if ext else 0, steps=ext.get('steps', []) if ext else []))
         if errors:
             result['stage_errors'] = errors
+        if self.skip_inapplicable_f:
+            result['f_eligibility'] = dict(version='lazy-f-1',
+                status='DISABLED_LAYER' if 'F' not in self.layers else
+                       'SKIPPED_NO_CURRENT_ASSISTANT_CALL' if skip_f else 'ELIGIBLE_CURRENT_ASSISTANT_CALL',
+                skipped='F' not in self.layers or skip_f, authority='CHECKER_CAPABILITY_ONLY')
         return result
 
     def decide(self, row, rec):
