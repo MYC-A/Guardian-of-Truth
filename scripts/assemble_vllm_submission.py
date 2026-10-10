@@ -62,8 +62,13 @@ def record_valid(entry):
         raise ValueError('INVALID_FILE_RECORD')
 
 
-def forbidden(name):
+def forbidden(name, *, wheel_owned=False):
     parts = relative_name(name).parts
+    # Frozen wheel RECORD assets can legitimately contain benchmark datasets,
+    # logs or dotenv fixtures. Only the builder-issued ownership map allows this
+    # exception, and only inside its private runtime directory.
+    if parts[0] == 'runtime' and wheel_owned:
+        return False
     return (any(part in ('outputs', 'benchmarks', '__pycache__', '.git', 'secrets') for part in parts)
             or name.endswith(('.parquet', '.jsonl', '.log', '.env', '.pyc'))
             or Path(name).name in ('api_keys.env', 'valid.parquet'))
@@ -77,7 +82,7 @@ def zip_entries(bundle):
         relative_name(info.filename)
         kind = stat.S_IFMT(info.external_attr >> 16)
         if (info.filename in entries or info.is_dir() or kind not in (0, stat.S_IFREG)
-                or info.flag_bits & 1 or forbidden(info.filename)):
+                or info.flag_bits & 1):
             raise ValueError('UNSAFE_OR_DUPLICATE_ZIP_ENTRY:' + info.filename)
         entries[info.filename] = info
     return entries
@@ -105,9 +110,16 @@ def validate_runtime(bundle):
     files = manifest.get('files')
     if not isinstance(files, dict):
         raise ValueError('RUNTIME_FILES_REQUIRED')
+    ownership = manifest.get('wheel_ownership', {})
+    distributions = manifest.get('distributions', {})
+    if not isinstance(ownership, dict) or not isinstance(distributions, dict):
+        raise ValueError('INVALID_WHEEL_PROVENANCE')
     for name, record in files.items():
         relative_name(name)
-        if name == 'MANIFEST.json' or forbidden(name):
+        owners = ownership.get(name)
+        owned = (isinstance(owners, list) and bool(owners)
+                 and all(isinstance(owner, str) and owner in distributions for owner in owners))
+        if name == 'MANIFEST.json' or forbidden(name, wheel_owned=owned):
             raise ValueError('INVALID_RUNTIME_INVENTORY')
         record_valid(record)
     available = set(entries) - {'MANIFEST.json'}

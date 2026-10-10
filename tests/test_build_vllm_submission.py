@@ -224,7 +224,6 @@ def test_wheel_record_detects_same_size_corruption_before_export(tmp_path):
 @pytest.mark.parametrize('relative,raw,error', [
     ('../../../../outside/secret', b'secret', 'OUTSIDE_VENV'),
     ('bad.pth', b'/root/private\n', 'EXTERNAL_PTH_PATH'),
-    ('bad.pth', b'import arbitrary_hook\n', 'EXECUTABLE_PTH_HOOK'),
     ('vendor/stubs/libcuda.so', b'driver', 'HOST_DRIVER_OR_STUB'),
 ])
 def test_package_escape_hooks_and_driver_stubs_fail_explicitly(tmp_path, relative, raw, error):
@@ -233,6 +232,19 @@ def test_package_escape_hooks_and_driver_stubs_fail_explicitly(tmp_path, relativ
     dist = Distribution(base, {relative: raw})
     with pytest.raises(ValueError, match=error):
         builder.collect_wheels(tmp_path / 'stage', [dist], prefix=venv)
+
+
+def test_authenticated_vendor_hook_is_preserved_without_package_name_routing(tmp_path):
+    venv = tmp_path / 'venv'
+    base = venv / 'lib/python3.12/site-packages'
+    raw = b'import fixture_redirector\n'
+    dist = Distribution(base, {'vendor.pth': raw, 'fixture_redirector.py': b'# vendor module\n'})
+    versions, owner = builder.collect_wheels(tmp_path / 'stage', [dist], prefix=venv)
+    assert (tmp_path / 'stage/runtime/site-packages/vendor.pth').read_bytes() == raw
+    assert owner['runtime/site-packages/vendor.pth'] == ['fixture-wheel']
+    dist.files[0].hash = None
+    with pytest.raises(ValueError, match='UNVERIFIED_PTH_HOOK'):
+        builder.collect_wheels(tmp_path / 'unverified', [dist], prefix=venv)
 
 
 def test_python_launcher_uses_private_loader_and_reentrant_sys_executable(tmp_path):

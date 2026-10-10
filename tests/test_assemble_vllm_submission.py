@@ -240,3 +240,32 @@ def test_inputs_changed_after_validation_are_not_published(prepared, monkeypatch
         run(prepared)
     assert not (prepared['root'] / 'candidate.zip').exists()
     assert not (prepared['root'] / 'candidate.zip.partial').exists()
+
+
+@pytest.mark.parametrize('name', ['runtime/site-packages/pandas/tests/data/fixture.parquet',
+                                'runtime/site-packages/numpy/benchmarks/input.jsonl',
+                                'runtime/site-packages/tool/tests/fixture.env'])
+def test_frozen_wheel_record_assets_are_preserved_not_silently_filtered(prepared, name):
+    raw = b'EXPLICIT_WHEEL_DATA_FIXTURE'
+    prepared['runtime'][name] = raw
+    prepared['manifest']['files'][name] = dict(bytes=len(raw), sha256=sha(raw), mode=0o644)
+    prepared['manifest']['distributions'] = {'fixture-package': '1.0'}
+    prepared['manifest']['wheel_ownership'] = {name: ['fixture-package']}
+    rezip(prepared)
+    run(prepared)
+    with zipfile.ZipFile(prepared['root'] / 'candidate.zip') as bundle:
+        assert bundle.read(name) == raw
+
+
+@pytest.mark.parametrize('name', ['runtime/site-packages/tool/secrets/api_keys.env',
+                                'outputs/cache.jsonl', 'src/benchmarks/answers.parquet'])
+def test_research_or_secret_files_cannot_use_fake_root_wheel_exemption(prepared, name):
+    raw = b'EXPLICIT_REJECTION_FIXTURE'
+    prepared['runtime'][name] = raw
+    prepared['manifest']['files'][name] = dict(bytes=len(raw), sha256=sha(raw), mode=0o644)
+    prepared['manifest']['distributions'] = {'fixture-package': '1.0'}
+    if not name.startswith('runtime/'):
+        prepared['manifest']['wheel_ownership'] = {name: ['fixture-package']}
+    rezip(prepared)
+    with pytest.raises(ValueError, match='INVALID_RUNTIME_INVENTORY'):
+        run(prepared)

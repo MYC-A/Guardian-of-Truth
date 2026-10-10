@@ -220,10 +220,12 @@ def collect_wheels(stage, distributions=None, *, prefix=None):
                         line = line.strip()
                         if not line or line.startswith('#'):
                             continue
-                        # Known installed setuptools shim is self-contained.
                         if line.startswith(('import ', 'import\t')):
-                            if name.lower() != 'setuptools' or source.name != 'distutils-precedence.pth':
-                                raise ValueError('EXECUTABLE_PTH_HOOK_FORBIDDEN:' + item_text)
+                            # Vendor hooks (including CUDA's bindings redirector)
+                            # are part of the pinned wheel, not host customization.
+                            # They must have an authenticated installed RECORD.
+                            if getattr(item, 'hash', None) is None or getattr(item, 'size', None) is None:
+                                raise ValueError('UNVERIFIED_PTH_HOOK:' + item_text)
                         elif PurePosixPath(line).is_absolute() or Path(line).is_absolute() or '..' in Path(line).parts:
                             raise ValueError('EXTERNAL_PTH_PATH_FORBIDDEN:' + item_text)
                 destination = Path(stage) / 'runtime/site-packages' / relative
@@ -342,6 +344,14 @@ exec "$ROOT/runtime/lib/ld-linux-x86-64.so.2" --library-path "$LIBRARY_PATHS" \\
     shim.write_text('#!/bin/sh\nset -eu\nHERE=$(CDPATH= cd -- "$(dirname -- "$0")" && pwd)\n'
                     'exec "$HERE/../run_python.sh" "$@"\n', encoding='utf-8', newline='\n')
     shim.chmod(0o755)
+    # PYTHONPATH alone does not execute vendor .pth files. Activate the frozen
+    # wheel directory through Python's standard site initialization, just as
+    # the validated venv does. No host /etc/sitecustomize is included.
+    vendor_site = root / 'runtime/python/lib/python3.12/site-packages'
+    vendor_site.mkdir(parents=True, exist_ok=True)
+    (vendor_site / 'guardian-vendor.pth').write_text(
+        'import site, sys, os; site.addsitedir(os.path.join(os.path.dirname(sys.prefix), "site-packages"))\n',
+        encoding='utf-8', newline='\n')
 
 
 def collect_sources(repo, stage):
