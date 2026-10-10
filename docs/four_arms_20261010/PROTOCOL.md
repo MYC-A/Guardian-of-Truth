@@ -31,3 +31,34 @@ UNKNOWN_TOOL HARD (3 bases × 3 passes = 9 combinations).
 - Arm-level time: measured; production estimate on base-0 rows must keep the total within 30 min.
 Several arms are tested at once; an arm is a candidate only if it passes both data sets. Amendments after seeing
 results are reported as post-hoc and need a fresh run.
+
+## Deviation (before generation)
+Granite 4.0-H-Small did not fit the disk/time budget; arm 4 used **ibm-granite/granite-3.3-8b-instruct** (bf16,
+checksums verified against HF). All other settings as above.
+
+## Result — no preregistered arm accepted
+Runs: Qwen startup 135 s; score 397 s / judge2 226 s / think 2305 s for 298 requests (3 passes × 99 keys + 1);
+Granite score 89 s / judge1 48 s / judge2 33 s; 0 request errors. Evaluator: `experiments/four_arms_20261010/evaluate.py`
+(its PJ-R1 sanity line reproduces the prosecutor/judge numbers exactly).
+
+| arm | pools newTP/26 | pools newFP/132 | prec | valid46 mean (base .800) | new FP/pass | verdict |
+|---|---|---|---|---|---|---|
+| 1 THINK | 15 | 3 | .83 | .813 | 1,3,0 | reject (valid) |
+| 1-control / 2 SCORE Qwen, t*=0.5 | 2 | 0 | 1.00 | .800 | 0,0,0 | reject (TP<5, no gain) |
+| 3 PJ-V2 Qwen | 8 | 3 | .73 | .733 | 3,4,4 | reject |
+| 4a SCORE Granite, t*=0.9 | 0 | 1 | 0 | .800 | 0,0,0 | reject |
+| 4b cross-judge Qwen∧Granite | 15 | 5 | .75 | .733 | 3,4,4 | reject — Granite judge says VIOLATION 77/81, adds nothing |
+| 4c PJ-V2 Granite | 11 | 10 | .52 | .717 | 4,5,5 | reject |
+
+THINK: 40/298 outputs unusable (finish=length at 6144 tokens: 38; no verdict: 2); time ≈ 7.7 s/request, too slow for
+production on all rows.
+
+### POST-HOC (not preregistered; `experiments/four_arms_20261010/posthoc.py`)
+The preregistered grid started at 0.5; Qwen's P(YES) is low-calibrated (most positives 0.01–0.2). Extended grid
+{0.5 … 0.005}, t* still chosen on decision pools only (lowest t with pool FP ≤ 3) → **t* = 0.05**:
+pools 11/26 TP, 2 FP, prec .85; valid46 mean **.857**, 0 new FP per pass → would pass all criteria.
+Fragility: acceptance holds only for t ∈ {0.06, 0.05}; at 0.04 pools FP=4 and valid46 new FP 1–2/pass (reject).
+The valid46 gain comes from 2 rows (telecom resume_line p .076–.095, banking_003 p .060–.068); negative banking_081
+sits at p .047, just under the threshold. p is stable across passes (spread ≤ .05).
+Granite score is anti-informative at every threshold (pool precision ≤ .25).
+**Status: hypothesis only.** Needs a fresh preregistered run (fixed t*=0.05, new unseen data) before any production use.
