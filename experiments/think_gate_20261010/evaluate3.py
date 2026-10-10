@@ -6,6 +6,7 @@ import sys
 
 from experiments.four_arms_20261010.evaluate import Data
 from experiments.think_gate_20261010.cascade import VOTES, votes
+from experiments.think_gate_20261010.round4 import V6
 
 
 def main(paths):
@@ -25,7 +26,8 @@ def main(paths):
             toks = [r['completion_tokens'] / len(r['samples']) for r in res.values() if r.get('samples')]
             print(f'  {kind}: finish {fin}, mean tokens/sample {sum(toks) / max(1, len(toks)):.0f}')
             nv = {pk: votes(r.get('samples')) for pk, r in res.items()}
-            oks.append(d.report(f'{kind} >=2/3 [prereg]', lambda p, k: nv.get((p, k), 0) >= VOTES))
+            need = V6 if kind.startswith('q6') else VOTES
+            oks.append(d.report(f'{kind} >={need} votes [prereg]', lambda p, k, need=need: nv.get((p, k), 0) >= need))
         print('  ARM', 'ACCEPT (both replicates)' if oks and all(oks) else 'reject')
 
 

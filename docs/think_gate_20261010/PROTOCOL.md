@@ -101,3 +101,8 @@ POST-HOC (diagnostic): pooling both Q-CoT replicates (6 samples), ≥4/6 → poo
 ≥3/6 → pools 14/2, valid .832. Q-CoT is strong on the pools (≈2× Gemma-27B's pool TP) but its valid46 gain is
 essentially one row (telecom break_apn, 3/3 in every pass), so valid46 sits at the .830 boundary.
 Gemma-27B's extra valid46 rows (banking_005, retail_48) are rows Qwen in any mode rarely flags.
+
+## Amendment 4 (before generation): Q-CoT n=6, ≥4/6
+Rule fixed from the post-hoc pooled analysis above: same gate and request as Q-CoT, n=6 samples in one request,
+fire iff ≥4 of 6 end with VERDICT: VIOLATION. Two fresh replicates (q6r1, q6r2); ACCEPT only if both pass the
+usual criteria. Archive cost 0 GB.
