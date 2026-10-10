@@ -9,6 +9,11 @@ Logprob triage ветки `58a48d25` завершён: 46/46, TP14/FP0/FN9, F1 .
 Готовый архив соревнования не пересобирался.
 Работа в отдельной ветке `perf/qwen-inference-20261010`, от `f1152066`.
 
+Native GPU screen завершён: fixed-work concurrency8/1 =2.35×;
+reviewer queue16 =1.041×, ngram =1.026×, оба ниже порога10%.
+Подготовка отдельного vLLM+official FP8 идёт8 потоками, engine install параллельно.
+Контракт и measured screen: [VLLM_PHASE.md](VLLM_PHASE.md).
+
 Ниже сохранён снимок подготовки предыдущей фазы, когда сервер был остановлен.
 Её NOT_EXECUTED и 133 tests относятся к тому снимку. В текущей фазе **176 passed,
 2 skipped**; новые GPU receipts публикуются отдельно.

@@ -261,7 +261,7 @@ class ModelServer:
         raise SystemExit(128 + signum)
 
 
-def predict_one(row, client, layers, pre_profile='legacy'):
+def predict_one(row, client, layers, pre_profile='legacy', *, model=None, provider='local-llamacpp'):
     from guardian_truth.submission.primary import PrimaryReviewHook
     from guardian_truth.submission.blind_compact import CompactPrimaryReviewHook, PROFILES
     from guardian_truth.repair.v5 import ARMS, run_v5
@@ -269,16 +269,22 @@ def predict_one(row, client, layers, pre_profile='legacy'):
     from guardian_truth.verification.admission import interpret_receipt_v2
     if pre_profile not in PROFILES:
         raise ValueError('INVALID_PRE_PROFILE')
+    effective_model = MODEL if model is None else model
+    if (not isinstance(effective_model, str) or not effective_model
+            or effective_model != client.model):
+        raise ValueError('PREDICTOR_CLIENT_MODEL_MISMATCH')
+    if model is not None and getattr(layers, 'model', effective_model) != effective_model:
+        raise ValueError('PREDICTOR_LAYERS_MODEL_MISMATCH')
     hook_class = PrimaryReviewHook if pre_profile == 'legacy' else CompactPrimaryReviewHook
     profile_args = {} if pre_profile == 'legacy' else dict(profile=pre_profile)
-    hook = hook_class(client, 'blind2', MODEL, original_row=row,
+    hook = hook_class(client, 'blind2', effective_model, original_row=row,
                       max_tokens=3400, max_request_bytes=60000, **profile_args)
     snapshot, stage_errors = {}, []
     def capture(value):
         snapshot.clear()
         snapshot.update(value)
     try:
-        rec = run_v5(row, hook, flags=ARMS['R_fix'], provider='local-llamacpp', model=MODEL, attempt=0,
+        rec = run_v5(row, hook, flags=ARMS['R_fix'], provider=provider, model=effective_model, attempt=0,
                      tolerate_component_errors=True, on_primary=capture)
     except Exception as error:
         stage_errors.append(dict(stage='review_pipeline', admission='TECHNICAL_FAILURE', error_type=type(error).__name__))
@@ -304,6 +310,8 @@ def predict_one(row, client, layers, pre_profile='legacy'):
         layer = dict(findings=[], admission='TECHNICAL_FAILURE', error_type=type(error).__name__)
     raw = dict(id=row['id'], input_row_sha256=row_fingerprint(row), pre_profile=pre_profile, rec=rec,
                pre_steps=hook.log, layer_trace=layer, primary_receipt=hook.first_receipt)
+    if model is not None or provider != 'local-llamacpp':
+        raw['inference_profile'] = dict(model=effective_model, provider=provider)
     if stage_errors:
         raw['stage_errors'] = stage_errors
     if rec is None:

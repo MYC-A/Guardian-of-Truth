@@ -85,6 +85,47 @@ def test_valid_results_keep_original_wire_and_authority(decision, binary):
     assert request['max_tokens'] == 1700
 
 
+@pytest.mark.parametrize('decision', ['ERROR', 'NO_ERROR', 'UNKNOWN'])
+def test_opt_in_backend_identity_preserves_b2_tasks_and_projection(decision):
+    row = dict(id='alignment-only', prompt='⟦SYSTEM⟧\nNever write FORBIDDEN.',
+               response='⟦ASSISTANT⟧\n' + ('FORBIDDEN' if decision == 'ERROR' else 'Hello.'))
+    baseline = Client(decision=decision)
+    before = predict_one(row, baseline, NoLayers())
+    candidate = Client(decision=decision)
+    candidate.model = 'qwen-fp8@pinned-revision:vllm-0.19.1'
+    after = predict_one(row, candidate, NoLayers(), model=candidate.model, provider='local-vllm')
+    assert {k: before.get(k) for k in ('binary', 'owner', 'accusation', 'output_recovery')} == {
+        k: after.get(k) for k in ('binary', 'owner', 'accusation', 'output_recovery')}
+    assert 'inference_profile' not in before
+    assert after['inference_profile'] == dict(model=candidate.model, provider='local-vllm')
+    assert len(candidate.calls) == len(baseline.calls)
+    for old, new in zip(baseline.calls, candidate.calls):
+        assert new['request']['model'] == candidate.model
+        old, new = copy.deepcopy(old), copy.deepcopy(new)
+        old['request'].pop('model')
+        new['request'].pop('model')
+        assert old == new
+
+
+def test_wrong_opt_in_backend_identity_fails_before_any_model_call():
+    client = Client()
+    with pytest.raises(ValueError, match='PREDICTOR_CLIENT_MODEL_MISMATCH'):
+        predict_one(dict(id='x', prompt='unused', response='unused'), client, NoLayers(),
+                    model='different-serving-identity', provider='local-vllm')
+    assert not client.calls
+
+
+def test_mixed_backend_layers_fail_before_silent_optional_stage_loss():
+    client = Client()
+    client.model = 'qwen-fp8@pinned-revision:vllm-0.19.1'
+    layers = NoLayers()
+    layers.model = MODEL
+    with pytest.raises(ValueError, match='PREDICTOR_LAYERS_MODEL_MISMATCH'):
+        predict_one(dict(id='x', prompt='unused', response='unused'), client, layers,
+                    model=client.model, provider='local-vllm')
+    assert not client.calls
+
+
 @pytest.mark.parametrize('decision,binary', [('ERROR', 1), ('NO_ERROR', 0), ('UNKNOWN', 0)])
 def test_missing_root_close_revalidates_all_original_fields_and_references(decision, binary):
     client = Client('missing_close', decision)
