@@ -20,3 +20,7 @@ Cost per row (completion tokens / calls): N0 ≈ 920-1340 / 1.4-1.9; C1 ≈ 1460
 
 ## Caveats
 Single run per cell; identical N0 on valid46 varied .70-.77 (temperature 0 is not deterministic on the API), so differences <0.05 are noise. Local-vLLM wall-clock was not measured (compute server unreachable). Older local ministral-3-14b runs showed B2 > AM by +0.01..+0.12 on 4 of 5 sets; that gain does not reproduce with the API model.
+
+## Round 2 (blocked): retrieval hint RF, from-scratch grounded reviewer S1/S1F
+Code is in `experiments/guardian_fast/{retrieval,s1,score_s1}.py` and variant `RF` in `run_fast.py`. The Mistral API returned HTTP 402 (budget exhausted) mid-run, so **RF has no valid result** (failed calls look like NO_ERROR in a naive score; files kept as `*.partial_402.jsonl`) and S1/S1F finished only ~22 of 46/47 rows per set (not a random subset).
+Partial S1 (rows that completed, valid46 / lb2): raw verdict flagged ERROR on ~21 of 22 rows in both sets (FP 10 of ~12 clean rows, F1 .71/.65); quote grounding keeps the FP (the quotes exist but do not prove a violation). Output is ~200 tokens/row, i.e. ~3.5x shorter than the R_fix review, but this version over-flags and is not a candidate. Rerun after budget top-up.

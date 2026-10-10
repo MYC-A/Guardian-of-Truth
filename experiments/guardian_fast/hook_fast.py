@@ -54,6 +54,18 @@ class Hook3(Hook2):
              '35 words; cite at most 4 supporting_evidence items. Decide on the evidence; do not restate the policy.')
 
     def inject(self, request, attempt):
+        if self.pre == 'rf':
+            from .retrieval import rank, move_text
+            packet = json.loads(request['messages'][1]['content'])
+            pol = ' \n'.join(x['text'] for x in packet.get('normative_sources', []))
+            focus = rank(pol, move_text(packet), 8)
+            self.log.append(dict(tag='rule_focus', injected=True, n=len(focus)))
+            req = copy.deepcopy(request)
+            req['messages'][0]['content'] += ('\nrule_focus lists verbatim policy excerpts that a deterministic retriever ranked as most similar to the '
+                                              'current move. It is a reading aid, not a judgment: check these rules first against the exact move, but the '
+                                              'full policy and all exceptions still apply.')
+            req['messages'][1]['content'] = json.dumps(dict(packet, rule_focus=focus), ensure_ascii=False, separators=(',', ':'))
+            return req
         if self.pre == 'terse':
             self.log.append(dict(tag='terse', injected=True))
             req = copy.deepcopy(request)

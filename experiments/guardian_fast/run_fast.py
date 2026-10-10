@@ -32,6 +32,7 @@ LOCAL = ROOT / 'outputs/guardian_local_a100'
 VARIANTS = {
     'N0': dict(pre=None),                                   # R_fix only (no pre-pass, no layers)
     'T0': dict(pre='terse'),                                  # R_fix with a length-capped review (speed)
+    'RF': dict(pre='rf'),                                     # R_fix + deterministic rule_focus excerpts (no extra call)
     'B2': dict(pre='blind2', pre_max_tokens=3400),          # old blind pass, no layers
     'C1': dict(pre='cb1', pre_max_tokens=900),              # compact grounded rules
     'C2': dict(pre='cb2', pre_max_tokens=1300),             # + entities + computed values
