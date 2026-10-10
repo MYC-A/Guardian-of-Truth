@@ -1,5 +1,6 @@
 """Offline export/integrity boundaries, never substitutes fixtures for real weights."""
 import base64
+import errno
 import hashlib
 import io
 import json
@@ -11,6 +12,34 @@ import zipfile
 import pytest
 
 from scripts import build_vllm_submission as builder
+
+
+@pytest.mark.parametrize('error_number', [errno.EPERM, errno.EACCES])
+def test_root_owned_file_can_be_copied_without_modifying_source(tmp_path, monkeypatch, error_number):
+    source = tmp_path / 'system-python'
+    source.write_bytes(b'original system executable')
+    destination = tmp_path / 'stage' / 'python'
+    before = source.stat()
+    def forbidden_link(*args):
+        raise OSError(error_number, 'hardlink forbidden')
+    monkeypatch.setattr(builder.os, 'link', forbidden_link)
+    builder.materialize(source, destination)
+    assert destination.read_bytes() == source.read_bytes()
+    assert not os.path.samefile(source, destination)
+    assert source.stat().st_mtime_ns == before.st_mtime_ns
+    assert source.stat().st_mode == before.st_mode
+
+
+def test_hardlink_storage_error_is_not_silently_copied(tmp_path, monkeypatch):
+    source = tmp_path / 'source'
+    source.write_bytes(b'keep')
+    def no_space(*args):
+        raise OSError(errno.ENOSPC, 'disk full')
+    monkeypatch.setattr(builder.os, 'link', no_space)
+    with pytest.raises(OSError) as error:
+        builder.materialize(source, tmp_path / 'destination')
+    assert error.value.errno == errno.ENOSPC
+    assert not (tmp_path / 'destination').exists()
 
 
 def freeze(stage):

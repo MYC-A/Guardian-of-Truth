@@ -8,6 +8,7 @@ from __future__ import annotations
 
 import argparse
 import base64
+import errno
 import hashlib
 import importlib.metadata as md
 import json
@@ -74,7 +75,16 @@ def materialize(source, destination, *, allowed_root=None):
         return
     if source.stat().st_dev != destination.parent.stat().st_dev:
         raise ValueError('SAME_FILESYSTEM_HARDLINK_REQUIRED:' + str(source))
-    os.link(source, destination)
+    try:
+        os.link(source, destination)
+    except OSError as error:
+        if error.errno not in (errno.EPERM, errno.EACCES):
+            raise
+        # Hosted runners prohibit hardlinks to root-owned system files.
+        # Copy only for this permission boundary; retain other error handling.
+        with source.open('rb') as original, destination.open('xb') as copied:
+            shutil.copyfileobj(original, copied, 8 * 1024 * 1024)
+        shutil.copystat(source, destination)
 
 
 def copy_tree(source, destination, *, exclude=()):
