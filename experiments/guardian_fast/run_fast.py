@@ -15,11 +15,55 @@ from .hook_fast import Hook3
 _orig_post = _T.post
 
 
+def _compat(payload):
+    """Endpoints without json_schema support (AI Horde, Pollinations): put the schema in the prompt, drop response_format."""
+    if os.environ.get('GUARD_COMPAT') != 'strip_schema' or 'response_format' not in payload:
+        return payload
+    import copy, re
+    p = copy.deepcopy(payload)
+    sch = ((p.pop('response_format') or {}).get('json_schema') or {}).get('schema')
+    msgs = p['messages']
+    msgs[0]['content'] += ('\n\nReturn ONLY one JSON object (no markdown, no prose) that validates against this JSON Schema, fields in the given order:\n'
+                           + json.dumps(sch, ensure_ascii=False, separators=(',', ':')))
+    return p
+
+
+def _clean(data):
+    if data:
+        try:
+            m = data['choices'][0]['message']
+            c = m.get('content')
+            if isinstance(c, str):
+                c = c.strip()
+                if c.startswith('```'):
+                    c = c.split('\n', 1)[1] if '\n' in c else c
+                    c = c.rsplit('```', 1)[0].strip()
+                m['content'] = c
+        except Exception:
+            pass
+    return data
+
+
+_THR = threading.Lock(); _LAST = [0.0]
+
+
+def _throttle():
+    gap = float(os.environ.get('GUARD_MIN_INTERVAL', '0') or 0)
+    if gap > 0:
+        with _THR:                       # process-wide spacing between requests (free endpoints: ~1 request / 15 s)
+            w = _LAST[0] + gap - time.time()
+            if w > 0:
+                time.sleep(w)
+            _LAST[0] = time.time()
+
+
 def _post_retry(url, key, payload, timeout=180):
     # API rate limits / transient errors are infrastructure, not model output: back off and retry.
     for k in range(8):
-        data, log = _orig_post(url, key, payload, timeout=timeout)
-        if data is not None or log.get('status') not in (429, 500, 502, 503, 504, 'EXC'):
+        _throttle()
+        data, log = _orig_post(url, key, _compat(payload), timeout=timeout)
+        data = _clean(data)
+        if data is not None or log.get('status') not in ((429, 402) if os.environ.get('GUARD_RETRY_402') else (429,)) + (500, 502, 503, 504, 'EXC'):
             return data, log
         time.sleep(min(30, 2 ** k) * (0.5 + random.random()))
     return data, log

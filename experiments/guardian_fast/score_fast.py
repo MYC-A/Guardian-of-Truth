@@ -22,7 +22,7 @@ def score(path, set_name, key='binary'):
         r = json.loads(l)
         if r['id'] not in g or g[r['id']].get('label') is None: continue
         y = int(g[r['id']]['label']); p = r.get(key)
-        if r.get('error') or p is None: bad += 1; continue
+        if r.get('error') or p is None or r.get('technical_gaps'): bad += 1; continue   # infrastructure failures are not predictions
         a, b, c, n, ps, pc = cost(r); S += a; C += b; N += n; PS += ps; PC += pc
         pp = [s for s in r.get('pre_steps') or [] if s.get('tag') == 'pre_blind']
         pre += bool(pp); deliv += any(s.get('injected') for s in pp)
