@@ -23,7 +23,9 @@ def parse_elf(data):
     """Return dict(kind, interp, glibc=[versions]) for 64-bit little-endian ELF, else None."""
     if len(data) < 64 or data[:4] != b'\x7fELF' or data[4] != 2 or data[5] != 1:
         return None
-    e_type, = struct.unpack_from('<H', data, 16)
+    e_type, e_machine = struct.unpack_from('<HH', data, 16)
+    if e_machine != 62:  # x86-64 only; CUDA cubins (EM_CUDA=190) are GPU code, not programs
+        return dict(kind='NON_X86_64', interp=None, glibc=[], needed=[])
     e_phoff, e_shoff = struct.unpack_from('<QQ', data, 32)
     e_phentsize, e_phnum, e_shentsize, e_shnum, e_shstrndx = struct.unpack_from('<HHHHH', data, 54)
     interp = None
@@ -68,8 +70,20 @@ def parse_elf(data):
             if not vn_next:
                 break
             cursor += vn_next
+    needed = []
+    for _, sh_type, sh_offset, sh_size, sh_link in sections:
+        if sh_type != 6 or sh_link >= len(sections):  # SHT_DYNAMIC
+            continue
+        strtab = sections[sh_link]
+        for cursor in range(sh_offset, sh_offset + sh_size, 16):
+            tag, value = struct.unpack_from('<qQ', data, cursor)
+            if tag == 0:
+                break
+            if tag == 1:  # DT_NEEDED
+                start = strtab[2] + value
+                needed.append(data[start:data.index(b'\0', start)].decode('ascii', 'replace'))
     kind = {2: 'EXEC', 3: 'DYN'}.get(e_type, str(e_type))
-    return dict(kind=kind, interp=interp, glibc=sorted(versions, key=glibc_key))
+    return dict(kind=kind, interp=interp, glibc=sorted(versions, key=glibc_key), needed=needed)
 
 
 def entries(source):
@@ -97,10 +111,15 @@ def entries(source):
 
 def scan(source, host_glibc='2.35'):
     limit = glibc_key('GLIBC_' + host_glibc)
-    programs, libraries, statics = [], 0, []
+    programs, libraries, statics, gpu_objects = [], 0, [], 0
+    names = set()
     for name, executable, read in entries(source):
+        names.add(name.rsplit('/', 1)[-1])
         info = parse_elf(read())
         if info is None:
+            continue
+        if info['kind'] == 'NON_X86_64':
+            gpu_objects += 1
             continue
         newest = info['glibc'][-1] if info['glibc'] else None
         too_new = bool(newest and glibc_key(newest) > limit)
@@ -112,12 +131,22 @@ def scan(source, host_glibc='2.35'):
             continue
         # Has PT_INTERP: started as its own process via that loader (host one unless bundled).
         programs.append(dict(path=name, interp=info['interp'], newest_glibc=newest,
-                             needs_newer_than_host=too_new, executable_bit=executable))
+                             needs_newer_than_host=too_new, executable_bit=executable,
+                             needed=info['needed']))
     risky = [p for p in programs if p['needs_newer_than_host']]
+    # Shared-library names a program needs that are not shipped anywhere in the
+    # archive: the loader then takes the host copy (or fails if the host lacks it).
+    # Symlinked sonames are skipped by entries(), so match by soname prefix too.
+    for item in programs:
+        item['needed_not_in_archive'] = sorted(
+            lib for lib in item['needed'] if lib not in names
+            and not any(other.startswith(lib + '.') or other.startswith(lib.split('.so')[0] + '.so') for other in names)
+            and not lib.startswith(('libc.so', 'libm.so', 'ld-linux', 'libpthread.so', 'libdl.so', 'librt.so')))
     return dict(host_glibc=host_glibc, programs_with_interpreter=len(programs),
                 at_risk=sorted(risky, key=lambda p: p['path']),
                 safe_programs=sorted(p['path'] for p in programs if not p['needs_newer_than_host']),
-                static_programs=sorted(statics),
+                programs=sorted(programs, key=lambda p: p['path']),
+                static_programs=sorted(statics), gpu_code_objects_skipped=gpu_objects,
                 in_process_libraries_needing_newer_glibc=libraries)
 
 
@@ -134,3 +163,7 @@ if __name__ == '__main__':
           f"{len(report['at_risk'])} at risk, {len(report['static_programs'])} static")
     for item in report['at_risk']:
         print(f"AT RISK  {item['path']}  needs {item['newest_glibc']}  interp={item['interp']}")
+    for item in report['programs']:
+        if item['needed_not_in_archive']:
+            print(f"NOT SHIPPED  {item['path']}: {', '.join(item['needed_not_in_archive'])}")
+    print(f"gpu code objects skipped (cubin etc.): {report['gpu_code_objects_skipped']}")
