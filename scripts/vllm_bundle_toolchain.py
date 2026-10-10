@@ -31,7 +31,7 @@ def tree(source, target):
                 link_file(path, target / path.relative_to(source))
 
 
-def wrapper(stage, path, native, *, driver=False, machine='', version=''):
+def wrapper_text(stage, path, native, *, driver=False, machine='', version=''):
     climb = os.path.relpath(stage, path.parent).replace(os.sep, '/')
     relative = native.relative_to(stage).as_posix()
     text = '#!/bin/sh\nset -eu\n'
@@ -43,9 +43,18 @@ def wrapper(stage, path, native, *, driver=False, machine='', version=''):
     if driver:
         args = (f'--sysroot="$tools" -B"$tools/usr/libexec/gcc/{machine}/{version}/" '
                 f'-B"$tools/usr/lib/gcc/{machine}/{version}/" -B"$tools/usr/bin/" ')
+    # --library-path is local to this exec. Never export private libc into the
+    # environment of host shells/tools. gcc's children enter their own wrappers.
+    libraries = (f'$tools/lib/{machine}:$tools/usr/lib/{machine}:'
+                 f'$tools/usr/lib/gcc/{machine}/{version}:$tools/lib64:$root/runtime/lib')
     text += ('exec "$root/runtime/lib/ld-linux-x86-64.so.2" '
-             '--library-path "$root/runtime/lib" '
+             f'--library-path "{libraries}" '
              f'"$root/{relative}" {args}"$@"\n')
+    return text
+
+
+def wrapper(stage, path, native, *, driver=False, machine='', version=''):
+    text = wrapper_text(stage, path, native, driver=driver, machine=machine, version=version)
     path.write_text(text, encoding='utf-8', newline='\n')
     path.chmod(0o755)
 
@@ -94,7 +103,7 @@ def prepare(stage):
     # Frontends are executed by gcc; wrap them too so a newer bundled libc
     # never gets loaded by an older host ELF interpreter.
     for path in list((tools / 'usr/libexec').rglob('*')) + list((tools / 'usr/lib/gcc').rglob('*')):
-        if (path.name in {'cc1', 'cc1plus', 'collect2', 'lto1', 'lto-wrapper'}
+        if (path.name in {'cc1', 'cc1plus', 'collect2', 'lto1', 'lto-wrapper', 'g++-mapper-server'}
                 and path.is_file() and os.access(path, os.X_OK)):
             with path.open('rb') as stream:
                 elf = stream.read(4) == b'\x7fELF'

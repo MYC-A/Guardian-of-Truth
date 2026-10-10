@@ -83,6 +83,22 @@ def test_http200_does_not_imply_valid_completion(fake_server, monkeypatch, body)
     monkeypatch.setattr(probe, 'http', http)
     result = run()
     assert result['outcome'] == 'SERVER_READY_COMPLETION_FAILED'
+    assert result['completion_response'] == body
+    assert any(call[0] == 'cleanup' for call in calls)
+
+
+def test_random_weights_empty_completion_requires_generation_evidence(fake_server, monkeypatch):
+    run, calls, _ = fake_server
+    original = probe.http
+    body = json.dumps(dict(choices=[dict(message=dict(content=''), finish_reason='stop')],
+                           usage=dict(completion_tokens=1)))
+    def http(url, *args, **kwargs):
+        return (200, body) if url.endswith('/v1/chat/completions') else original(url, *args, **kwargs)
+    monkeypatch.setattr(probe, 'http', http)
+    result = run()
+    assert result['outcome'] == 'SERVER_READY_DUMMY_EMPTY_COMPLETION'
+    assert result['completion_tokens'] == 1
+    assert result['completion_response'] == body
     assert any(call[0] == 'cleanup' for call in calls)
 
 
@@ -225,6 +241,15 @@ def test_dependency_checks_do_not_warm_server_cache(tmp_path, monkeypatch):
     monkeypatch.setattr(probe, 'run_server', lambda *a: {})
     probe.run_variant('exact', 'fixture-python', environment, tmp_path, tmp_path)
     assert calls[0]['TRITON_CACHE_DIR'] != environment['TRITON_CACHE_DIR']
+
+
+def test_system_compiler_selection_reaches_dependency_checks(tmp_path, monkeypatch):
+    environment = probe.submission_environment(tmp_path / 'cache', bundled=True)
+    environment['GUARDIAN_USE_SYSTEM_COMPILER'] = '1'
+    calls = []
+    monkeypatch.setattr(probe.base, 'run_probe', lambda *a, **k: calls.append(k['environment']) or {})
+    probe.run_variant('system', 'fixture-python', environment, tmp_path, tmp_path, server=False)
+    assert calls[0]['GUARDIAN_USE_SYSTEM_COMPILER'] == '1'
 
 
 @pytest.mark.parametrize('failed_stage', ['checks', 'server'])

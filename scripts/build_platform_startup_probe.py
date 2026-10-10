@@ -183,7 +183,7 @@ def source_entries(source_zip=None, source_root=None):
                        (lambda path=path: path.open('rb')))
 
 
-def build(output, source_zip=None, source_root=None):
+def build(output, source_zip=None, source_root=None, *, repair_toolchain=False):
     if (source_zip is None) == (source_root is None):
         raise ValueError('EXACTLY_ONE_SOURCE_REQUIRED')
     root = Path(__file__).resolve().parents[1]
@@ -209,6 +209,7 @@ def build(output, source_zip=None, source_root=None):
     copied_bytes = 0
     source = None
     source_identity = dict(whole_source_sha256_verified=False)
+    patches, changes = {}, {}
     try:
         if source_zip is not None:
             source_zip = Path(source_zip)
@@ -239,7 +240,15 @@ def build(output, source_zip=None, source_root=None):
                 source_identity['manifest_sha256'] = hashlib.sha256(manifest_raw).hexdigest()
             entries = [(i.filename, i.file_size, stat.S_IMODE(i.external_attr >> 16), i.is_dir(),
                         stat.S_ISLNK(i.external_attr >> 16), lambda i=i: source.open(i)) for i in infos]
+            if repair_toolchain:
+                try:
+                    from .repair_vllm_toolchain import archive_patches
+                except ImportError:
+                    from repair_vllm_toolchain import archive_patches
+                patches, changes = archive_patches(source)
         else:
+            if repair_toolchain:
+                raise ValueError('TOOLCHAIN_REPAIR_REQUIRES_SOURCE_ZIP')
             entries = source_entries(source_root=source_root)
             manifest_files = None
         with partial.open('xb') as raw, zipfile.ZipFile(raw, 'w', compression=zipfile.ZIP_DEFLATED, allowZip64=True) as archive:
@@ -277,7 +286,12 @@ def build(output, source_zip=None, source_root=None):
                 if symlink:
                     data = source.read(name) if source is not None else opener()
                     safe_link(name, data)
-                if source is not None:
+                if name in patches:
+                    data, mode = patches[name]
+                    size = len(data)
+                    archive.writestr(file_info(name, mode), data)
+                    expected[name] = dict(bytes=len(data), sha256=hashlib.sha256(data).hexdigest(), mode=mode)
+                elif source is not None:
                     raw_copy(source, archive, source.getinfo(name), boundaries[name])
                 elif symlink:
                     info = file_info(name, mode)
@@ -303,10 +317,17 @@ def build(output, source_zip=None, source_root=None):
                 raise ValueError('MODEL_CONFIG_MISSING_IN_SOURCE')
             if not counts['runtime']:
                 raise ValueError('RUNTIME_MISSING_IN_SOURCE')
+            for name in sorted(set(patches) - seen):
+                data, mode = patches[name]
+                archive.writestr(file_info(name, mode), data)
+                expected[name] = dict(bytes=len(data), sha256=hashlib.sha256(data).hexdigest(), mode=mode)
+                counts['runtime'] += 1
+                copied_bytes += len(data)
             manifest = dict(purpose='DIAGNOSTIC_ONLY_NOT_FOR_SCORING', expected_exit_code=2, revision=REVISION,
                             load_format='dummy', counts=counts, copied_uncompressed_bytes=copied_bytes,
                             model_metadata_files=sorted(model_files), files=expected, source_identity=source_identity,
-                            probe_files={name: hashlib.sha256(value).hexdigest() for name, value in payload.items()})
+                            probe_files={name: hashlib.sha256(value).hexdigest() for name, value in payload.items()},
+                            toolchain_wrapper_repairs=changes)
             archive.writestr(file_info('MANIFEST.json'), json.dumps(manifest, indent=2, sort_keys=True) + '\n')
         with zipfile.ZipFile(partial) as check:
             names = check.namelist()
@@ -349,8 +370,10 @@ def build(output, source_zip=None, source_root=None):
 if __name__ == '__main__':
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument('--output', type=Path, required=True)
+    parser.add_argument('--repair-toolchain', action='store_true')
     group = parser.add_mutually_exclusive_group(required=True)
     group.add_argument('--source-zip', type=Path)
     group.add_argument('--source-root', type=Path)
     options = parser.parse_args()
-    print(json.dumps(build(options.output, options.source_zip, options.source_root), indent=2))
+    print(json.dumps(build(options.output, options.source_zip, options.source_root,
+                           repair_toolchain=options.repair_toolchain), indent=2))

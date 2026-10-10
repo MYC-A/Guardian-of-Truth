@@ -46,15 +46,40 @@ class BudgetExpired(TimeoutError):
     pass
 
 CHECKS = r'''
-import ctypes, json, os, sys, traceback
+import ctypes, json, os, sys, traceback, subprocess, tempfile
+from pathlib import Path
+failures = []
 def step(label, action):
     try:
         print(label + ':' + str(action()), flush=True)
     except BaseException as error:
+        failures.append(label)
         print(label + ':ERROR:' + type(error).__name__ + ':' + str(error)[:400], flush=True)
         print(''.join(traceback.format_exception(error)[-3:])[-1200:], flush=True)
 print('PYTHON:' + sys.version.split()[0] + ' ' + sys.executable)
 print('LD_LIBRARY_PATH:' + repr(os.environ.get('LD_LIBRARY_PATH')))
+def compile_library(cpp=False, lto=False):
+    compiler = os.environ['CXX' if cpp else 'CC']
+    source = ('#include <vector>\n#include <numeric>\n'
+              'extern "C" int answer(){std::vector<int> v{10,12,20};return std::accumulate(v.begin(),v.end(),0);}\n'
+              if cpp else '#include <stdlib.h>\nint answer(){return abs(-42);}\n')
+    with tempfile.TemporaryDirectory(prefix='guardian-compiler-') as folder:
+        path = Path(folder) / ('probe.cpp' if cpp else 'probe.c')
+        path.write_text(source)
+        library = Path(folder) / 'probe.so'
+        argv = [compiler, '-O2', '-shared', '-fPIC', str(path), '-o', str(library)]
+        if lto:
+            argv.append('-flto')
+        result = subprocess.run(argv, capture_output=True, text=True, timeout=45)
+        if result.returncode:
+            raise RuntimeError(result.stderr[-1600:])
+        value = ctypes.CDLL(str(library)).answer()
+        if value != 42:
+            raise RuntimeError('COMPILED_LIBRARY_WRONG_RESULT:' + str(value))
+        return 'OK compiler=' + compiler + ' answer=42'
+step('c_compile_and_load', compile_library)
+step('cpp_compile_and_load', lambda: compile_library(cpp=True))
+step('cpp_lto_compile_and_load', lambda: compile_library(cpp=True, lto=True))
 for name in ('cuda', 'nvidia-ml'):
     step(name + '_dlopen', lambda name=name: ctypes.CDLL('lib' + name + '.so.1') and 'OK')
 for module in ('torch', 'triton', 'transformers', 'vllm', 'flashinfer'):
@@ -84,6 +109,8 @@ def vllm_platform():
     from vllm.platforms import current_platform
     return type(current_platform).__name__
 step('vllm_platform', vllm_platform)
+print('CHECKS_SUMMARY:' + json.dumps(dict(failed=failures)), flush=True)
+sys.exit(1 if failures else 0)
 '''
 
 
@@ -170,6 +197,7 @@ def submission_environment(cache, *, bundled):
                        TORCHINDUCTOR_CACHE_DIR=str(cache / 'torchinductor'),
                        VLLM_NO_USAGE_STATS='1', DO_NOT_TRACK='1', PYTHONDONTWRITEBYTECODE='1',
                        PYTHONNOUSERSITE='1', SPT_NOENV='1')
+    environment.pop('GUARDIAN_USE_SYSTEM_COMPILER', None)
     if bundled:
         environment.update(GUARDIAN_BUNDLED_PYTHON='1', PYTHONUTF8='1')
         for key in ('LD_LIBRARY_PATH', 'PYTHONPATH', 'PYTHONHOME', 'LD_PRELOAD'):
@@ -339,17 +367,34 @@ def run_server(name, argv, environment, log_path, port, api_key, startup_timeout
                         chat_template_kwargs=dict(enable_thinking=False),
                         messages=[dict(role='user', content='Ответь одним словом: да или нет?')]),
                         api_key=api_key, timeout=120)
+                    report.update(completion_status=status,
+                                  completion_response=base.redact(body, values)[:4096])
                     data = json.loads(body)
                     choices = data.get('choices') if isinstance(data, dict) else None
                     message = (choices[0].get('message') if isinstance(choices, list) and
                                len(choices) == 1 and isinstance(choices[0], dict) else None)
                     if (status != 200 or not isinstance(message, dict) or
                             not isinstance(message.get('content'), str) or not message['content'].strip()):
+                        # A random checkpoint may immediately emit EOS. Report
+                        # this separately; never infer useful real-weight output.
+                        usage = data.get('usage', {}) if isinstance(data, dict) else {}
+                        tokens = usage.get('completion_tokens') if isinstance(usage, dict) else None
+                        if (status == 200 and isinstance(message, dict) and
+                                message.get('content') in ('', None) and
+                                isinstance(tokens, int) and not isinstance(tokens, bool) and tokens > 0 and
+                                choices[0].get('finish_reason') in ('stop', 'length')):
+                            report.update(outcome='SERVER_READY_DUMMY_EMPTY_COMPLETION',
+                                          completion_tokens=tokens, finish_reason=choices[0]['finish_reason'],
+                                          seconds=round(time.monotonic() - started, 1))
+                            break
                         raise ValueError('INVALID_COMPLETION_RESPONSE')
                     report.update(outcome='SERVER_READY_AND_COMPLETED', completion_status=status,
                                   completion_excerpt=base.redact(body[:600], values),
                                   seconds=round(time.monotonic() - started, 1))
                 except Exception as error:
+                    if isinstance(error, urllib.error.HTTPError):
+                        report.update(completion_status=error.code,
+                                      completion_response=base.redact(error.read(4096).decode('utf-8', 'replace'), values))
                     report.update(outcome='SERVER_READY_COMPLETION_FAILED', error=type(error).__name__,
                                   detail=base.redact(str(error), values)[:600],
                                   seconds=round(time.monotonic() - started, 1))
@@ -389,6 +434,8 @@ def run_variant(name, python, environment, work, model_dir, *, server=True, chec
         # Dependency checks have a separate fresh cache; server remains cold.
         check_environment = submission_environment(work / (name + '_checks_cache'),
             bundled=environment.get('GUARDIAN_BUNDLED_PYTHON') == '1')
+        if environment.get('GUARDIAN_USE_SYSTEM_COMPILER') == '1':
+            check_environment['GUARDIAN_USE_SYSTEM_COMPILER'] = '1'
         child = owned_probe(name + '_checks', None, timeout=phase_timeout(180),
                                argv=[python, '-X', 'utf8', '-u', str(script)], environment=check_environment)
         if child.get('cleanup_error'):
@@ -403,6 +450,14 @@ def run_variant(name, python, environment, work, model_dir, *, server=True, chec
     timeout = phase_timeout(SERVER_STARTUP_SECONDS)
     return child, run_server(name + '_server', server_command(python, model_dir, port, api_key), environment,
                              work / (name + '_vllm-server.log'), port, api_key, timeout)
+
+
+def variant_passed(checks, server):
+    return bool(checks and checks.get('returncode') == 0 and not checks.get('cleanup_error') and
+                server and not server.get('cleanup_error') and server.get('outcome') in (
+                    'SERVER_READY_AND_COMPLETED', 'SERVER_READY_DUMMY_EMPTY_COMPLETION') and
+                isinstance(server.get('gpu_after_cleanup'), dict) and
+                server['gpu_after_cleanup'].get('released') is True)
 
 
 def main(arguments=None):
@@ -432,7 +487,7 @@ def main(arguments=None):
         if not can_serve:
             emit('server_variants', 'SKIPPED_NO_MODEL_METADATA')
         wrapper = root / 'runtime/python/run_python.sh'
-        checked, exact = None, None
+        checked, exact, system_checks, system_server = None, None, None, None
         if facts['bundled_runtime']:
             checked, exact = run_variant('bundled_exact', str(wrapper),
                 submission_environment(work / 'exact_server_cache', bundled=True), work, model_dir,
@@ -445,9 +500,18 @@ def main(arguments=None):
                     exact['gpu_after_cleanup'].get('released') is False)):
                 emit('host_vllm_server', dict(outcome='SKIPPED_AFTER_PREVIOUS_CLEANUP_FAILURE'))
             else:
-                run_variant('host_vllm', sys.executable,
-                    submission_environment(work / 'host_server_cache', bundled=False), work, model_dir,
-                    checks=False)
+                if wrapper.is_file() and 'GUARDIAN_USE_SYSTEM_COMPILER' in wrapper.read_text():
+                    environment = submission_environment(work / 'system_compiler_server_cache', bundled=True)
+                    environment['GUARDIAN_USE_SYSTEM_COMPILER'] = '1'
+                    system_checks, system_server = run_variant(
+                        'bundled_system_compiler', str(wrapper), environment, work, model_dir)
+                else:
+                    run_variant('host_vllm', sys.executable,
+                        submission_environment(work / 'host_server_cache', bundled=False), work, model_dir,
+                        checks=False)
+        emit('validation', dict(bundled_compiler_passed=variant_passed(checked, exact),
+                               system_compiler_passed=variant_passed(system_checks, system_server),
+                               scope='DUMMY_WEIGHTS_RUNTIME_ONLY_REAL_CHECKPOINT_AND_QUALITY_UNTESTED'))
     except BudgetExpired:
         emit('budget', dict(outcome='WHOLE_PROBE_BUDGET', remaining_seconds=round(remaining(), 1)))
     finally:
