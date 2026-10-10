@@ -211,12 +211,14 @@ def test_log_head_tail_reads_are_bounded_and_secrets_are_redacted():
     assert len(json.dumps(result['head'], ensure_ascii=True)) <= 8192
 
 
-def test_main_runs_only_exact_and_host_with_fresh_cache_scopes(tmp_path, monkeypatch):
+@pytest.mark.parametrize('system_compiler_contrast', [False, True])
+def test_main_runs_two_cold_variants(tmp_path, monkeypatch, system_compiler_contrast):
     script = tmp_path / 'scripts/predict.py'
     script.parent.mkdir()
     monkeypatch.setattr(probe, '__file__', str(script))
     (tmp_path / 'runtime/python').mkdir(parents=True)
-    (tmp_path / 'runtime/python/run_python.sh').write_text('fixture')
+    (tmp_path / 'runtime/python/run_python.sh').write_text(
+        'GUARDIAN_USE_SYSTEM_COMPILER' if system_compiler_contrast else 'fixture')
     model = tmp_path / 'model' / probe.REVISION
     model.mkdir(parents=True)
     (model / 'config.json').write_text('{}')
@@ -228,9 +230,16 @@ def test_main_runs_only_exact_and_host_with_fresh_cache_scopes(tmp_path, monkeyp
     monkeypatch.setattr(probe, 'run_variant', variant)
     monkeypatch.setattr(probe.base, 'run_probe', lambda *a, **k: pytest.fail('no duplicate host checks'))
     assert probe.main(['--input', 'does-not-exist', '--output', str(tmp_path / 'predictions')]) == 2
-    assert [row[0] for row in calls] == ['bundled_exact', 'host_vllm']
+    assert [row[0] for row in calls] == ['bundled_exact',
+        'bundled_system_compiler' if system_compiler_contrast else 'host_vllm']
     assert calls[0][1]['TRITON_CACHE_DIR'] != calls[1][1]['TRITON_CACHE_DIR']
-    assert calls[1][2]['checks'] is False
+    if system_compiler_contrast:
+        assert 'GUARDIAN_USE_SYSTEM_COMPILER' not in calls[0][1]
+        assert calls[1][1]['GUARDIAN_USE_SYSTEM_COMPILER'] == '1'
+        assert calls[1][1]['GUARDIAN_BUNDLED_PYTHON'] == '1'
+        assert calls[1][2].get('checks', True)
+    else:
+        assert calls[1][2]['checks'] is False
     assert not (tmp_path / 'predictions').exists()
 
 
