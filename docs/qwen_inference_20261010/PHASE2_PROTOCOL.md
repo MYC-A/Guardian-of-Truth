@@ -45,7 +45,11 @@ F/CLI/replay. Найденный masked metadata failure исправлен до
    triage-only full valid46, 8 workers/8 slots, два one-token views, без threshold
    fitting. Внешний timeout900s и durable raw response capture, потому что
    собственный deadline начинается после triage, а исходный client теряет raw
-   logprobs. Результат TP14/FP0/FN9/TN23, F1 .756757. Это не full cascade/B2.
+   logprobs. Результат TP14/FP0/FN9/TN23, F1 .756757. CLI wall393.69s (6:33.69),
+   startup7.70s, triage385.98s;92 completion calls, все HTTP200. Download/clone
+   не включены в CLI wall. Raw export и summary опубликованы отдельно:
+   `outputs/qwen_inference_20261010/cascade_diag_58a48d25.zip`,
+   `cascade_diag_summary.json`. Это не full cascade/B2.
 2. `scripts/qwen_engine_scaling.py`: тот же pinned Q8/native, свежий сервер на
    каждый arm, CPU8, 8 slots ×32768 в обоих arms. Одни и те же 8 разных synthetic
    requests ×256 tokens, concurrency1 против8. Warmup16 tokens отдельно;
@@ -60,6 +64,14 @@ F/CLI/replay. Найденный masked metadata failure исправлен до
    эффекты. Screen adoption: минимум10% wall gain, без новых technical failures;
    full valid46 обязан не добавить FP/FN и показать whole-script time. Один rep
    даёт development diagnostic, не гарантию на private test.
+
+Phases2→3 запущены последовательно Supervisor job
+`guardian_engine_screen_20261010`, source frozen
+`ea8d8c8b680ff092bccf613aa04aac9349be7580`, remote root
+`/workspace/guardian/engine_screen_20261010_ea8d8c8b`.
+Один свежий server за раз, общая верхняя граница66 completion calls,
+1200s на фазу и2500s coordinator cap. Первый запуск подтверждён GPU activity
+и `scaling/protocol.json`; это подтверждение исполнения, ещё не ускорение.
 
 Scaling<2x не доказывает неисправность движка или бесполезность остальных flags.
 68 tok/s из total pipeline output / wall — не isolated decode throughput.
