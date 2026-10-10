@@ -79,3 +79,11 @@ Gemma: startup 80 s; gconf 64×3 in 110 s; gscore 298 in 209 s; gall 298×3 in 3
 Reading: the Qwen score gate is essential (removes ~10 Gemma pool FPs); Gemma alone is precise but very lenient.
 Gemma-as-lead-judge is rejected; the cascade (Qwen base + Qwen gate + Gemma verdict) is confirmed on fresh samples
 (same rows; still needs unseen data). Full B2 with Gemma as the pipeline model: separate run (gemma_b2_20261010).
+
+## Amendment 3 (before generation): 40 GB archive limit
+Archive today ≈ Qwen 29 GB + runtime 5.4 GB + code → ~5.5 GB free; Gemma 27B (28 GB) does not fit.
+Same gated rows (Qwen score p ≥ .005), rule ≥2/3, same criteria; **two independent replicates per arm, ACCEPT only
+if both pass** (round 1/2 showed sample variance).
+- **Q-CoT:** Qwen itself, enable_thinking=False, short reasoning + VERDICT line, n=3, max_tokens 4096,
+  T .7 / top_p .8 / top_k 20 (Qwen non-thinking recommendation). 0 extra GB.
+- **G4B:** Gemma 3 4B-it FP8 (RedHatAI/gemma-3-4b-it-FP8-dynamic, 5.4 GB), request identical to the Gemma-27B arm.
