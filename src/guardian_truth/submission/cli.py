@@ -1,4 +1,4 @@
-"""Competition I/O, owned llama-server lifecycle and unchanged B2 inference.
+"""Competition I/O, owned llama-server and frozen B2 or opt-in compact inference.
 
 Only prompt/response enter the inference pipeline. The model is local and all
 transport endpoints are fixed to loopback. Row failures are retained as diagnostics; an explicitly versioned output
@@ -247,13 +247,18 @@ class ModelServer:
         raise SystemExit(128 + signum)
 
 
-def predict_one(row, client, layers):
+def predict_one(row, client, layers, pre_profile='legacy'):
     from guardian_truth.submission.primary import PrimaryReviewHook
+    from guardian_truth.submission.blind_compact import CompactPrimaryReviewHook, PROFILES
     from guardian_truth.repair.v5 import ARMS, run_v5
     from guardian_truth.submission.recovery import recover_output
     from guardian_truth.verification.admission import interpret_receipt_v2
-    hook = PrimaryReviewHook(client, 'blind2', MODEL, original_row=row,
-                             max_tokens=3400, max_request_bytes=60000)
+    if pre_profile not in PROFILES:
+        raise ValueError('INVALID_PRE_PROFILE')
+    hook_class = PrimaryReviewHook if pre_profile == 'legacy' else CompactPrimaryReviewHook
+    profile_args = {} if pre_profile == 'legacy' else dict(profile=pre_profile)
+    hook = hook_class(client, 'blind2', MODEL, original_row=row,
+                      max_tokens=3400, max_request_bytes=60000, **profile_args)
     snapshot, stage_errors = {}, []
     def capture(value):
         snapshot.clear()
@@ -283,7 +288,7 @@ def predict_one(row, client, layers):
         layer = layers.findings(row)
     except Exception as error:
         layer = dict(findings=[], admission='TECHNICAL_FAILURE', error_type=type(error).__name__)
-    raw = dict(id=row['id'], input_row_sha256=row_fingerprint(row), rec=rec,
+    raw = dict(id=row['id'], input_row_sha256=row_fingerprint(row), pre_profile=pre_profile, rec=rec,
                pre_steps=hook.log, layer_trace=layer, primary_receipt=hook.first_receipt)
     if stage_errors:
         raw['stage_errors'] = stage_errors
@@ -398,6 +403,8 @@ def main(argv=None):
     parser.add_argument('--fast', action='store_true', help='Separate profile: enable FlashAttention; quality must be measured')
     parser.add_argument('--batch-size', type=int, help='Separate performance profile: logical prefill batch limit')
     parser.add_argument('--ubatch-size', type=int, help='Separate performance profile: physical prefill microbatch limit')
+    parser.add_argument('--pre-profile', choices=['legacy', 'dedup', 'compact'], default='legacy',
+                        help='Frozen baseline or opt-in compaction; new profiles require live quality/timing comparison')
     options = parser.parse_args(argv)
     if options.workers < 1 or options.context < 4096 or (options.attach and options.port is None):
         parser.error('invalid workers/context/attach port')
@@ -426,7 +433,7 @@ def main(argv=None):
             from guardian_truth.v6fix.pipeline import Layers
             layers = Layers(client, MODEL, budget=20000, attempts=(0, 1), frules_max_tokens=700, tolerate_component_errors=True)
             with ThreadPoolExecutor(max_workers=options.workers) as executor:
-                futures = {executor.submit(predict_one, row, client, layers): row['id'] for row in rows}
+                futures = {executor.submit(predict_one, row, client, layers, options.pre_profile): row['id'] for row in rows}
                 for future in as_completed(futures):
                     identifier = futures[future]
                     try:
@@ -450,6 +457,9 @@ def main(argv=None):
                       input_sha256=input_sha256,
                       cli_sha256=hashlib.sha256(Path(__file__).read_bytes()).hexdigest(),
                       profile='B2-fast' if options.fast else 'B2',
+                      pre_profile=options.pre_profile,
+                      pre_completion_budget=1700 if options.pre_profile == 'compact' else 3400,
+                      pre_contract_sha256=hashlib.sha256((Path(__file__).parent / 'blind_compact.py').read_bytes()).hexdigest(),
                       model=MODEL, calls=len(client.calls),
                       workers=options.workers, context_per_slot=options.context,
                       explicit_flash=options.fast, batch_size=options.batch_size, ubatch_size=options.ubatch_size,
