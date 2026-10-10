@@ -76,3 +76,13 @@ def test_failed_read_does_not_count_and_unknown_pairing_is_lenient():
 def test_read_turn_and_no_map_never_fire():
     assert near_miss(PROMPT, turn('get_order: {"order_id": "#W1"}'), m()) == []
     assert near_miss(PROMPT, turn('cancel_order: {"order_id": "#W1"}'), None) == []
+
+
+def test_array_argument_matches_elementwise():
+    import copy
+    s = copy.deepcopy(SAMPLE)
+    s['tools']['cancel_order']['requires'][0]['entity_arg'] = 'order_id'
+    body = PROMPT + '⟦ASSISTANT · ход 1⟧\n\t→ TOOL_CALL get_order: {"order_id": "x"}\n\t← TOOL_RESPONSE get_order: {"items": {"111": 1, "222": 2}}\n'
+    assert near_miss(body, turn('cancel_order: {"order_id": ["111", "222"]}'), m()) == []
+    assert len(near_miss(body, turn('cancel_order: {"order_id": ["111", "333"]}'), m())) == 1
+    assert near_miss(body, turn('cancel_order: {"order_id": [{"a": 1}]}'), m()) == []

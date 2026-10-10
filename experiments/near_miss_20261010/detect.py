@@ -47,6 +47,17 @@ def as_text(value):
     return value if isinstance(value, str) else json.dumps(value, ensure_ascii=False)
 
 
+def needles(value):
+    """Scalar texts that must all occur in a covering read; [] means nothing checkable (abstain)."""
+    if isinstance(value, list):
+        if not all(isinstance(v, (str, int, float)) and not isinstance(v, bool) for v in value):
+            return []
+        return [as_text(v) for v in value if as_text(v)]
+    if isinstance(value, (str, int, float)) and not isinstance(value, bool):
+        return [as_text(value)]
+    return []
+
+
 def near_miss(prompt, response, tool_map):
     """Findings for the current turn given a voted map {'mutating': [...], 'requires': [...]}."""
     if not tool_map:
@@ -58,11 +69,13 @@ def near_miss(prompt, response, tool_map):
         if name in tool_map['mutating'] and reqs and isinstance(args, dict):
             for r in reqs:
                 value = args.get(r['entity_arg']) if r['entity_arg'] else None
-                if r['entity_arg'] and value in (None, '', [], {}):
-                    continue                      # nothing to match: abstain
-                needle = as_text(value) if value is not None else None
-                hit = any(p[0] in r['satisfied_by'] and p[2] is not False and (needle is None or needle in p[3])
-                          for p in prior)
+                wanted = needles(value) if r['entity_arg'] else None
+                if r['entity_arg'] and not wanted:
+                    continue                      # nothing checkable: abstain
+                # every element must be covered by some successful read (not necessarily the same one)
+                hit = all(any(p[0] in r['satisfied_by'] and p[2] is not False and (w is None or w in p[3])
+                              for p in prior) for w in (wanted or [None]))
+                needle = wanted
                 if not hit:
                     findings.append(dict(check='NEAR_MISS', tool=name, entity_arg=r['entity_arg'], value=needle,
                                          satisfied_by=r['satisfied_by'], policy_quote=r['policy_quote']))
