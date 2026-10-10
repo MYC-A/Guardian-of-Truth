@@ -46,7 +46,9 @@ F/CLI/replay. Найденный masked metadata failure исправлен до
    fitting. Внешний timeout900s и durable raw response capture, потому что
    собственный deadline начинается после triage, а исходный client теряет raw
    logprobs. Результат TP14/FP0/FN9/TN23, F1 .756757. CLI wall393.69s (6:33.69),
-   startup7.70s, triage385.98s;92 completion calls, все HTTP200. Download/clone
+   startup7.70s, triage385.98s;92 completion attempts:90 HTTP200 и2 TimeoutError
+   после300s. Финальные46 labels записаны, но не все92 views успешно выполнены.
+   Usage неуспешных attempts неизвестен; их нельзя считать бесплатными. Download/clone
    не включены в CLI wall. Raw export и summary опубликованы отдельно:
    `outputs/qwen_inference_20261010/cascade_diag_58a48d25.zip`,
    `cascade_diag_summary.json`. Это не full cascade/B2.
