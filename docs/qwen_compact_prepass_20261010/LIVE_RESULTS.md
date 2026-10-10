@@ -1,4 +1,4 @@
-# GPU pilot — первая полная пара, остальные arms продолжаются
+# GPU pilot — обе полные пары завершены
 
 Снимок runtime: `8911b35f8ca895aad5c68bbe1fca7d1721f7f867`.
 Qwen3.8-27B Q8_0, native llama.cpp f498f864f/build11459,
@@ -91,10 +91,43 @@ Compact export SHA256:
 Pair receipt: `outputs/qwen_gpu_pilot_20261010/paired_rep1.json`.
 CLI default и ready competition ZIP остаются прежними.
 
-## Остальные arms
+## N0/RF rep1 — завершены
 
-N0 запустился после завершения legacy/compact. RF выполняется после N0;
-GPU jobs не перекрываются. Для них quality/time метрик здесь пока нет.
+N0 запустился после завершения legacy/compact. RF выполнен после N0;
+GPU jobs не перекрывались. Обе фазы полные46/46, live predictions совпали сtraces,
+offline reproject и независимым scorer. Default-zero иraw-model recovery0 обоих.
+
+| arm | TP | FP | FN | TN | F1 | arm seconds | calls | input tokens | output tokens |
+|---|---|---|---|---|---|---|---|---|---|
+| N0 | 9 | 0 | 14 | 23 | .562500 | 862.862 | 78 | 302822 | 53337 |
+| RF | 12 | 1 | 11 | 22 | .666667 | 779.089 | 73 | 298690 | 46677 |
+
+RF относительноN0: +3TP,+1FP,−83.773s(9.71%) в единственном repetition.
+R_fix-only arms безblind/F/S/P, поэтому сравнение сB2 одновременно меняет
+несколько стадий; это не standalone RF contribution наB2. Arm stopwatch включает
+model startup/health, pipeline, shutdown, predictions/call export, но исключает
+input read иoffline scoring. B2 CLI timer включаетinput read. Различие timer scope
+явно сохранено в independent summaries; основной gap объясняют разные workloads,
+не только это малое отличие. Repetitions/warmup/order controls пока не выполнены.
+
+Source-based review новых winners:
+
+| diagnostic case | binary gain | source/causal finding |
+|---|---|---|
+| airline9 | TP | Неподдержанное procedural 'не проверил booking/business'; сведения ужеесть. Истинное separate move-level2calls нарушение winner не назвал |
+| banking task003 | TP | Winner требует 'спросить согласие', хотя предложение оператора и просьба пользователя соединить ужеесть вdelivered history |
+| retail106 | TP | Поддержанное ядро: придуманныйZIP3019 изemail, нарушает переданную норму оневымышленных данных |
+| banking task057 | FP | Unresolved capability инеполное чтение подняты доERROR; lawful identity information request передlookup обвинён как gap |
+
+Это ручной независимый source review4flips, не модельныйjudge и не оценка всей
+cause precision. IDs используются только вpost-run diagnostics. Нельзя назвать
+RF3TP приростом3correct causes. НиRFниcompact не принимаются как новый default.
+
+N0ZIP SHA `c332f6b69d998f32a67810fd8079e3bfc4f9f822771a089af44461b40d293e52`;
+RFZIP SHA `0b144549bfb2d965b89fb33909f42f7d2ef94afd6075a58133e691831216729a`.
+Raw exports, summaries иpair receipt: `outputs/qwen_gpu_pilot_20261010/`.
+
+Ограниченияretrieval:
 N0/RF — отдельная matched пара без blind/F layers; её сравнение с B2 смешивает
 удаление стадий с эффектом retrieval. Retrieval — lexical TF-IDF reading aid,
 не LSH и не code-issued certificate.

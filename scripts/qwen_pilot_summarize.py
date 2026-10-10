@@ -48,7 +48,9 @@ def summarize(bundle, input_path, arm):
     metrics['F1'] = 2 * tp / (2 * tp + fp + fn) if 2 * tp + fp + fn else 0.0
     if report['before']['metrics'] != metrics or report['after']['metrics'] != metrics or report['changes']:
         raise ValueError('SCORE_OR_REPROJECTION_DRIFT')
-    if not run.get('output_written') or run['rows'] != len(expected) or len(calls) != run['calls']:
+    # Some operator arms omit CLI-only telemetry. The actual Parquet/trace/ID
+    # checks above are mandatory even when the output_written flag is absent.
+    if run.get('output_written') is False or run['rows'] != len(expected) or len(calls) != run['calls']:
         raise ValueError('INCOMPLETE_RUN')
     groups = defaultdict(list)
     for c in calls:
@@ -66,7 +68,9 @@ def summarize(bundle, input_path, arm):
         bundle_sha256=hashlib.sha256(bundle.read_bytes()).hexdigest(),
         metrics=metrics, live_predictions_equal_saved_traces=True, replay_metrics_equal_live=True,
         cli_seconds=run['seconds'],
-        time_scope='CLI model startup/health, pipeline, shutdown, output write; excludes bootstrap/probes/scoring',
+        time_scope=('CLI model startup/health, pipeline, shutdown, output write; excludes bootstrap/probes/scoring'
+                    if run.get('pre_profile') is not None else
+                    'Operator arm startup/health, pipeline, shutdown, output and call export; input loading and offline scoring excluded'),
         calls=run['calls'], input_tokens=run['input_tokens'], output_tokens=run['output_tokens'],
         whole_cli_completion_tokens_per_second=run['output_tokens']/run['seconds'],
         whole_cli_rows_per_minute=len(expected)*60/run['seconds'],

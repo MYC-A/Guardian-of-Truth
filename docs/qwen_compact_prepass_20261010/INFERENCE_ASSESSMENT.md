@@ -132,7 +132,8 @@ acceptance; full matched46/repeats and packaging/runbook обязательны.
 
 ## Порядок решения
 
-1. Закончить текущие full N0/RF; сохранить receipts и source/quality regressions.
+1. Full N0/RF закончены; raw receipts сохранены, source/quality audit опубликован
+   вLIVE_RESULTS. N0.5625/14:23, RF.6667/12:59; RF gains2из3 сwrong cause,1FP.
 2. Freeze separate mechanical lazy-F and worker/slot controls; full offline replay
    плюс live profile по изменившимся call sequences. Gold/IDs не влияют наgate.
 3. Native ngram/batch screen наunchanged Q8; если эффект слабый, native vLLM/SGLang

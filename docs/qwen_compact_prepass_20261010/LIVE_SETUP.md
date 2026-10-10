@@ -96,6 +96,8 @@ Primary references: [speculative docs](https://github.com/ggml-org/llama.cpp/blo
 [target sampling](https://github.com/ggml-org/llama.cpp/blob/f498f864fbc0472004ee1c3616c1188c68eb157f/common/sampling.cpp),
 [matching draft files](https://huggingface.co/ggml-org/Qwen3.8-27B-GGUF/tree/71bc7b627595dc8a91039addd9c791ae548d6747).
 
-Контроль legacy rep1 завершён; независимый пересчёт и промежуточные метрики:
-[LIVE_RESULTS.md](LIVE_RESULTS.md). Остальные arms продолжаются; финального
-paired verdict и принятия compact по этим данным пока нет.
+Обе полные пары legacy/compact иN0/RF rep1 завершены; independent scores,
+source-based cause audit и вывод: [LIVE_RESULTS.md](LIVE_RESULTS.md).
+Supervisor jobs EXITED, оба complete markers записаны, owned model servers
+остановлены. Compact/RF не приняты как новый default; это feasibility phase.
+Разбор CPU/serving/миграции: [INFERENCE_ASSESSMENT.md](INFERENCE_ASSESSMENT.md).
