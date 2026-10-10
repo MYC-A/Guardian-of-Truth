@@ -524,6 +524,8 @@ def main(argv=None):
     parser.add_argument('--limit', type=int, default=2)
     parser.add_argument('--token-budget', action='store_true',
                         help='Research arm: check requests against the served context in native tokens instead of the 60 000-byte cap')
+    parser.add_argument('--contract-lint', action='store_true',
+                        help='Opt-in UNKNOWN_TOOL HARD contract lint on the final label (0 -> 1 only)')
     parser.add_argument('--checklist', action='store_true',
                         help='Research arm: build per-policy checklists at runtime and add them to the review')
     args = parser.parse_args(argv)
@@ -541,8 +543,9 @@ def main(argv=None):
         rows=len(rows), limit=args.limit, workers=args.workers, slots=args.slots, context=args.context,
         timeout=args.timeout, duration=args.duration, max_calls=args.max_calls,
         prediction_contract='B2 legacy + unchanged submission recovery' + (' + policy checklist' if args.checklist else '')
-                            + (' + native-token request budget' if args.token_budget else ''),
-        checklist=args.checklist, token_budget=args.token_budget, code_sha256=digest(__file__)))
+                            + (' + native-token request budget' if args.token_budget else '')
+                            + (' + UNKNOWN_TOOL HARD contract lint' if args.contract_lint else ''),
+        checklist=args.checklist, token_budget=args.token_budget, contract_lint=args.contract_lint, code_sha256=digest(__file__)))
     traces, client = {}, None
     try:
         with OwnedVllmServer(args.python, args.model_dir, args.output, args.context, args.slots,
@@ -565,6 +568,8 @@ def main(argv=None):
                 extra = {} if checklists is None else dict(checklists=checklists)   # off: unchanged call
                 if args.token_budget:
                     extra['token_budget'] = TokenBudget(client)
+                if args.contract_lint:
+                    extra['contract_lint'] = True
                 futures = {executor.submit(predict_one, row, client, layers, model=MODEL,
                                            provider='local-vllm', **extra): row['id'] for row in rows}
                 for future in as_completed(futures):

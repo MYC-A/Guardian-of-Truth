@@ -261,7 +261,8 @@ class ModelServer:
         raise SystemExit(128 + signum)
 
 
-def predict_one(row, client, layers, pre_profile='legacy', *, model=None, provider='local-llamacpp', checklists=None, token_budget=None):
+def predict_one(row, client, layers, pre_profile='legacy', *, model=None, provider='local-llamacpp', checklists=None, token_budget=None,
+                contract_lint=False):
     from guardian_truth.submission.primary import PrimaryReviewHook
     from guardian_truth.submission.blind_compact import CompactPrimaryReviewHook, PROFILES
     from guardian_truth.repair.v5 import ARMS, run_v5
@@ -328,7 +329,28 @@ def predict_one(row, client, layers, pre_profile='legacy', *, model=None, provid
         strict = finalize_trace(raw)
     except Exception as error:
         strict = dict(raw, binary=None, error='DECISION_EXCEPTION:' + type(error).__name__)
-    return recover_output(strict)
+    out = recover_output(strict)
+    return apply_contract_lint(out, row) if contract_lint else out
+
+
+def apply_contract_lint(trace, row):
+    """Opt-in HARD rule: a current-turn call to a tool absent from [AVAILABLE TOOLS] is a violation.
+
+    Only UNKNOWN_TOOL changes the label (0 -> 1); other findings are recorded in shadow. The lint abstains on any
+    catalog/format doubt, never turns 1 into 0, and a lint exception leaves the label untouched.
+    """
+    from guardian_truth.contract_lint import lint
+    out = dict(trace)
+    try:
+        findings = lint(row['prompt'], row.get('response') or '')
+    except Exception as error:
+        out['contract_lint'] = dict(status='EXCEPTION', error_type=type(error).__name__)
+        return out
+    hard = [f for f in findings if f['check'] == 'UNKNOWN_TOOL']
+    out['contract_lint'] = dict(status='OK', findings=findings, hard=bool(hard), binary_before=trace.get('binary'))
+    if hard and out.get('binary') != 1:
+        out.update(binary=1, owner='contract_lint')
+    return out
 
 
 def row_fingerprint(row):
