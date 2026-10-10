@@ -1,0 +1,18 @@
+{
+  "scope": "Full original B2 (legacy) on vLLM 0.19.1 + Qwen3.8-27B-FP8@017b9c7a, engine-only change vs eager8 run: CUDA graphs/torch.compile on (no --enforce-eager), workers 16, slots 16",
+  "source_sha": "ea4b7b34b0c3ca138f5b4e15b9a48a713acf3d5e",
+  "engine_args": {"workers": 16, "slots": 16, "context": 32768, "http_timeout_s": 600, "duration_s": 1800, "max_calls": 400, "enforce_eager": false, "startup_timeout_s": 900},
+  "metrics": {"TP": 16, "FP": 0, "FN": 7, "TN": 23, "F1": 0.820513},
+  "whole_wall_s": 677.5, "adapter_seconds": 676.99, "startup_s_approx": 162, "torch_compile_s": 50.7, "engine_init_s": 89.7,
+  "calls": 174, "cache_hits": 4, "prompt_tokens": 663050, "completion_tokens": 110399,
+  "technical_calls": 0, "default_zero_fallbacks": 0,
+  "gpu": "~99% util, ~276 W, peak generation ~340 tok/s",
+  "label_flips_vs_eager8_run": [["airline__10::t19", 1, 0], ["banking_knowledge__task_018::t6", 1, 0], ["retail__48::t4", 0, 1], ["telecom__mms_issueairplane_mode_on-bad_network_preference-bad_wifi_calling-data_usage_exce::t7", 0, 1]],
+  "caveats": [
+    "4/46 labels flipped between two vLLM FP8 runs differing only in batching/kernels: run-to-run variance is large; F1 0.8205 vs 0.7692 is within that noise",
+    "torch.compile cache (/root/.cache/vllm) was cold for this config; startup counted in whole wall",
+    "Not a matched control vs llama.cpp Q8 (historical numbers)"
+  ],
+  "receipts_zip": "vllm_b2_fp8_graph16_full46_ea4b7b34.zip",
+  "receipts_zip_sha256": "40600b1f12648d587c9ab6348a93a2b9a6cea59f4e64a8cefeb8ec8de7020a93"
+}

@@ -21,3 +21,16 @@ full46 launched directly (`full_direct.sh` in receipts).
 
 Headroom: GPU ~38 % / ~130 W. Next engine-only step: drop `--enforce-eager`, raise workers/slots.
 Receipts: `outputs/qwen_inference_20261010/vllm_b2_fp8_full46_c11f4aca.zip`, summary JSON alongside.
+
+## Run 2: CUDA graphs on, 16×16 (engine-only change)
+
+| | eager, 8×8 | graphs, 16×16 |
+|---|---|---|
+| TP/FP/FN/TN | 15/1/8/22 | 16/0/7/23 |
+| F1 | 0.7692 | 0.8205 |
+| Whole wall | 1417.5 s | **677.5 s** (startup ≈162 s, compile 51 s) |
+| Calls / tokens out | 171 / 107958 | 174 / 110399 |
+| GPU | ~38 %, 130 W | ~99 %, 276 W |
+
+4/46 labels flipped between the two runs (batching/kernel numerics) → F1 difference is noise-level.
+Receipts: `vllm_b2_fp8_graph16_full46_ea4b7b34.zip` + summary JSON.
