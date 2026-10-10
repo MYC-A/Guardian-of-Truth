@@ -25,7 +25,7 @@ def test_probe_never_reads_input_or_creates_fake_predictions(tmp_path, monkeypat
     assert 'PRIVATE_BENCHMARK_DATA_NOT_TO_PRINT' not in output
     assert 'PRIVATE_KEY_NOT_TO_PRINT' not in output
     assert not target.exists()
-    assert calls == ['driver_libraries', 'torch_cuda', 'vllm_import']
+    assert calls == ['driver_libraries', 'nvidia_smi', 'torch_cuda', 'vllm_import', 'model_config_support']
 
 
 def test_child_timeout_is_recorded_and_does_not_abort_other_probes(monkeypatch, capsys):
@@ -233,3 +233,137 @@ def test_real_owned_descendant_is_cleaned_after_leader_exit_or_timeout(leader_ex
     except FileNotFoundError:
         state = None
     assert state in (None, 'Z')
+
+
+def test_unset_and_empty_cuda_environment_are_distinct(tmp_path, monkeypatch, capsys):
+    monkeypatch.delenv('CUDA_VISIBLE_DEVICES', raising=False)
+    monkeypatch.setenv('CUDA_HOME', '')
+    monkeypatch.setattr(probe.importlib.metadata, 'version', lambda name: 'fixture')
+    monkeypatch.setattr(probe, 'run_probe', lambda *args: None)
+    probe.main(['--input', str(tmp_path/'absent'), '--output', str(tmp_path/'output')])
+    reports = [json.loads(row.split(' ', 1)[1]) for row in capsys.readouterr().out.splitlines()]
+    host = next(row['result'] for row in reports if row['probe'] == 'host')
+    assert host['selected_environment']['CUDA_VISIBLE_DEVICES'] is None
+    assert host['selected_environment']['CUDA_HOME'] == ''
+
+
+def test_waitid_mode_observes_exit_without_reaping(monkeypatch):
+    from types import SimpleNamespace
+    calls = []
+    process = SimpleNamespace(pid=700, _guardian_unreaped_leader=True)
+    process.wait = lambda **kwargs: pytest.fail('must not reap leader before cleanup')
+    def observe(which, pid, options):
+        calls.append((which, pid, options))
+        return SimpleNamespace(si_code=1, si_status=7)
+    for name, value in dict(P_PID=1, WEXITED=4, WNOHANG=1, WNOWAIT=0x1000000, CLD_EXITED=1).items():
+        monkeypatch.setattr(probe.os, name, value, raising=False)
+    monkeypatch.setattr(probe.os, 'waitid', observe, raising=False)
+    assert probe.wait_child(process, 1) == 7
+    assert calls == [(1, 700, 4 | 1 | 0x1000000)]
+
+
+def test_waitid_cleanup_signals_group_before_reap_and_refuses_foreign_pid(monkeypatch):
+    from types import SimpleNamespace
+    calls = []
+    process = SimpleNamespace(pid=700, wait=lambda **kwargs: calls.append('reap'))
+    monkeypatch.setattr(probe.os, 'waitid', lambda *args: calls.append('owned_unreaped'), raising=False)
+    monkeypatch.setattr(probe.os, 'killpg', lambda pid, sig: calls.append(('signal', pid, sig)), raising=False)
+    monkeypatch.setattr(probe.signal, 'SIGKILL', 9, raising=False)
+    for name, value in dict(P_PID=1, WEXITED=4, WNOHANG=1, WNOWAIT=0x1000000).items():
+        monkeypatch.setattr(probe.os, name, value, raising=False)
+    monkeypatch.setattr(probe.time, 'sleep', lambda seconds: None)
+    probe.cleanup_anchored_group(process)
+    assert calls == ['owned_unreaped', ('signal', 700, signal.SIGTERM),
+                     'owned_unreaped', ('signal', 700, 9), 'reap']
+    calls.clear()
+    def foreign(*args):
+        raise ChildProcessError('no longer our unreaped child')
+    monkeypatch.setattr(probe.os, 'waitid', foreign)
+    with pytest.raises(ChildProcessError):
+        probe.cleanup_anchored_group(process)
+    assert calls == []
+
+
+@pytest.mark.parametrize('pidfd_present', [False, True])
+def test_missing_or_blocked_pidfd_uses_waitid(monkeypatch, pidfd_present):
+    with monkeypatch.context() as patch:
+        patch.setattr(probe.os, 'name', 'posix')
+        patch.setattr(probe.sys, 'platform', 'linux')
+        for name in ('waitid', 'P_PID', 'WEXITED', 'WNOHANG', 'WNOWAIT', 'CLD_EXITED', 'killpg'):
+            patch.setattr(probe.os, name, 1, raising=False)
+        if pidfd_present:
+            def blocked(*args):
+                raise PermissionError('pidfd blocked')
+            patch.setattr(probe.os, 'pidfd_open', blocked, raising=False)
+            patch.setattr(probe.signal, 'pidfd_send_signal', lambda *args: None, raising=False)
+        else:
+            patch.delattr(probe.os, 'pidfd_open', raising=False)
+        assert probe.require_cleanup_support() == 'unreaped_leader'
+
+
+def test_blocked_pidfd_send_closes_descriptor_before_fallback(monkeypatch):
+    closed = []
+    with monkeypatch.context() as patch:
+        patch.setattr(probe.os, 'name', 'posix')
+        patch.setattr(probe.sys, 'platform', 'linux')
+        patch.setattr(probe, 'Path', lambda *args: type('Proc', (), {'is_dir': lambda self: True})())
+        for name in ('waitid', 'P_PID', 'WEXITED', 'WNOHANG', 'WNOWAIT', 'CLD_EXITED', 'killpg'):
+            patch.setattr(probe.os, name, 1, raising=False)
+        patch.setattr(probe.os, 'pidfd_open', lambda *args: 42, raising=False)
+        def blocked(*args):
+            raise PermissionError('pidfd_send_signal blocked')
+        patch.setattr(probe.signal, 'pidfd_send_signal', blocked, raising=False)
+        patch.setattr(probe.os, 'close', closed.append)
+        assert probe.require_cleanup_support() == 'unreaped_leader'
+    assert closed == [42]
+
+
+def test_signal_during_spawn_is_deferred_until_cleanup_can_own_child(monkeypatch):
+    cleanup = []
+    class Process:
+        pid = 700
+    def spawn(*args, **kwargs):
+        signal.getsignal(signal.SIGTERM)(signal.SIGTERM, None)
+        return Process()
+    monkeypatch.setattr(probe, 'require_cleanup_support', lambda: None)
+    monkeypatch.setattr(probe.subprocess, 'Popen', spawn)
+    monkeypatch.setattr(probe, 'cleanup_child', lambda *args: cleanup.append(True))
+    with pytest.raises(SystemExit) as error:
+        probe.run_probe('signal_during_spawn', 'unused')
+    assert error.value.code == 128 + signal.SIGTERM
+    assert cleanup == [True]
+
+
+@pytest.mark.parametrize('spawn_fails', [False, True])
+def test_pending_termination_survives_spawn_error_and_cannot_interrupt_cleanup(monkeypatch, spawn_fails):
+    events = []
+    previous = signal.getsignal(signal.SIGTERM)
+    class Process:
+        pid = 700
+        def wait(self, timeout):
+            return 0
+    def spawn(*args, **kwargs):
+        if spawn_fails:
+            signal.getsignal(signal.SIGTERM)(signal.SIGTERM, None)
+            raise OSError('spawn failed after signal')
+        return Process()
+    def cleanup(*args):
+        events.append('cleanup_start')
+        signal.getsignal(signal.SIGTERM)(signal.SIGTERM, None)
+        events.append('cleanup_complete')
+    monkeypatch.setattr(probe, 'require_cleanup_support', lambda: None)
+    monkeypatch.setattr(probe.subprocess, 'Popen', spawn)
+    monkeypatch.setattr(probe, 'cleanup_child', cleanup)
+    with pytest.raises(SystemExit) as error:
+        probe.run_probe('signal_in_cleanup', 'unused')
+    assert error.value.code == 128 + signal.SIGTERM
+    assert events == ([] if spawn_fails else ['cleanup_start', 'cleanup_complete'])
+    assert signal.getsignal(signal.SIGTERM) == previous
+
+
+@pytest.mark.skipif(not sys.platform.startswith('linux') or not hasattr(os, 'waitid'),
+                   reason='Linux unreaped-leader cleanup integration')
+@pytest.mark.parametrize('leader_exits', [True, False])
+def test_real_fallback_descendant_cleanup_without_pidfd(leader_exits, monkeypatch):
+    monkeypatch.delattr(probe.os, 'pidfd_open', raising=False)
+    test_real_owned_descendant_is_cleaned_after_leader_exit_or_timeout(leader_exits)

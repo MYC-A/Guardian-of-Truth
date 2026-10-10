@@ -51,15 +51,58 @@ def owned_group_handles(pgid, owner_token, proc_root=Path('/proc')):
 
 def require_cleanup_support():
     if os.name == 'nt':
-        return  # Unit-test fallback; no Windows descendant-cleanup guarantee.
-    if (not sys.platform.startswith('linux') or not hasattr(os, 'pidfd_open')
-            or not hasattr(signal, 'pidfd_send_signal') or not Path('/proc').is_dir()):
-        raise RuntimeError('LINUX_PIDFD_CLEANUP_REQUIRED')
-    descriptor = os.pidfd_open(os.getpid(), 0)
-    os.close(descriptor)
+        return 'direct_child'  # No Windows descendant-cleanup guarantee.
+    if (sys.platform.startswith('linux') and hasattr(os, 'pidfd_open')
+            and hasattr(signal, 'pidfd_send_signal') and Path('/proc').is_dir()):
+        try:
+            descriptor = os.pidfd_open(os.getpid(), 0)
+            try:
+                signal.pidfd_send_signal(descriptor, 0)
+            finally:
+                os.close(descriptor)
+            return 'pidfd'
+        except OSError:
+            pass  # Old kernels / container syscall filters may block pidfd.
+    if all(hasattr(os, name) for name in (
+            'waitid', 'P_PID', 'WEXITED', 'WNOHANG', 'WNOWAIT', 'CLD_EXITED', 'killpg')):
+        return 'unreaped_leader'
+    raise RuntimeError('NO_SAFE_CHILD_GROUP_CLEANUP_AVAILABLE')
+
+
+def wait_child(process, timeout):
+    if not getattr(process, '_guardian_unreaped_leader', False):
+        return process.wait(timeout=timeout)
+    deadline = time.monotonic() + timeout
+    while True:
+        # WNOWAIT keeps our child (including its zombie) unreaped, pinning its
+        # PID/PGID until cleanup has signalled the private process group.
+        result = os.waitid(os.P_PID, process.pid, os.WEXITED | os.WNOHANG | os.WNOWAIT)
+        if result is not None:
+            return result.si_status if result.si_code == os.CLD_EXITED else -result.si_status
+        remaining = deadline - time.monotonic()
+        if remaining <= 0:
+            raise subprocess.TimeoutExpired(process.args, timeout)
+        time.sleep(min(0.05, remaining))
+
+
+def cleanup_anchored_group(process):
+    # Do not call poll()/wait() before group signalling: either would reap the
+    # leader and permit PID reuse. ECHILD fails closed without signalling.
+    for signum in (signal.SIGTERM, signal.SIGKILL):
+        os.waitid(os.P_PID, process.pid, os.WEXITED | os.WNOHANG | os.WNOWAIT)
+        try:
+            os.killpg(process.pid, signum)
+        except ProcessLookupError:
+            pass
+        if signum == signal.SIGTERM:
+            time.sleep(0.2)
+    process.wait(timeout=2)
 
 
 def cleanup_child(process, owner_token):
+    if getattr(process, '_guardian_unreaped_leader', False):
+        cleanup_anchored_group(process)
+        return
     if os.name == 'nt':
         if process.poll() is None:
             process.kill()
@@ -136,31 +179,51 @@ def emit(name, value):
 
 def run_probe(name, code, timeout=30):
     process, handlers = None, {}
+    launching, cleaning, pending_signal = False, False, None
     owner_token = secrets.token_hex(24)
     environment = dict(os.environ, PYTHONDONTWRITEBYTECODE='1',
         OMP_NUM_THREADS='2', OPENBLAS_NUM_THREADS='1', GUARDIAN_VLLM_OWNER_TOKEN=owner_token)
     values = sensitive_values(os.environ) + [owner_token]
     report = {}
     def interrupted(signum, frame):
+        nonlocal pending_signal
+        if launching or cleaning:
+            pending_signal = signum
+            return
         raise SystemExit(128 + signum)
     try:
-        require_cleanup_support()
+        cleanup_mode = require_cleanup_support()
+        if cleanup_mode is not None:
+            report['cleanup_mode'] = cleanup_mode
         with tempfile.TemporaryFile() as stdout, tempfile.TemporaryFile() as stderr:
             try:
                 if threading.current_thread() is threading.main_thread():
                     for signum in (signal.SIGTERM, signal.SIGINT):
                         handlers[signum] = signal.getsignal(signum)
                         signal.signal(signum, interrupted)
+                    if cleanup_mode == 'unreaped_leader':
+                        handlers[signal.SIGCHLD] = signal.getsignal(signal.SIGCHLD)
+                        signal.signal(signal.SIGCHLD, signal.SIG_DFL)
+                elif cleanup_mode == 'unreaped_leader':
+                    raise RuntimeError('UNREAPED_LEADER_REQUIRES_MAIN_THREAD')
+                launching = True
                 process = subprocess.Popen([sys.executable, '-X', 'utf8', '-u', '-c', code],
                     stdout=stdout, stderr=stderr, env=environment, start_new_session=(os.name != 'nt'))
+                process._guardian_unreaped_leader = cleanup_mode == 'unreaped_leader'
+                launching = False
+                if pending_signal is not None:
+                    raise SystemExit(128 + pending_signal)
                 try:
-                    report['returncode'] = process.wait(timeout=timeout)
+                    report['returncode'] = wait_child(process, timeout)
                 except subprocess.TimeoutExpired:
                     report.update(error='TIMEOUT', seconds=timeout)
                 except Exception as error:
                     report.update(error=type(error).__name__, detail=redact(str(error), values)[:1024])
             finally:
+                cleaning = True
+                launching = False
                 if process is not None:
+                    process._guardian_unreaped_leader = cleanup_mode == 'unreaped_leader'
                     try:
                         cleanup_child(process, owner_token)
                     except Exception as error:
@@ -179,6 +242,8 @@ def run_probe(name, code, timeout=30):
     finally:
         for signum, previous in handlers.items():
             signal.signal(signum, previous)
+        if pending_signal is not None:
+            raise SystemExit(128 + pending_signal)
     emit(name, report)
     return report
 
@@ -189,6 +254,16 @@ def main(arguments=None):
     parser.add_argument('--output', required=True)
     parser.parse_args(arguments)
     emit('purpose', 'DIAGNOSTIC_ONLY_NO_INPUT_READ_NO_MODEL_NO_PREDICTIONS')
+    emit('supervisor_capabilities', dict(platform=sys.platform, os_name=os.name,
+        pidfd_open=hasattr(os, 'pidfd_open'), pidfd_send_signal=hasattr(signal, 'pidfd_send_signal'),
+        waitid=hasattr(os, 'waitid'), wnowait=hasattr(os, 'WNOWAIT'), proc_present=Path('/proc').is_dir()))
+    devices = {}
+    for folder, pattern in ((Path('/dev'), 'nvidia*'), (Path('/proc/driver/nvidia/gpus'), '*')):
+        try:
+            devices[str(folder)] = [str(path) for path in sorted(folder.glob(pattern))][:64]
+        except OSError as error:
+            devices[str(folder)] = type(error).__name__
+    emit('gpu_device_inventory', devices)
     versions = {}
     for name in ('vllm', 'torch', 'transformers', 'triton', 'flashinfer-python',
                  'flashinfer-cubin', 'flashinfer-jit-cache', 'pandas', 'pyarrow'):
@@ -197,7 +272,7 @@ def main(arguments=None):
         except Exception as error:
             versions[name] = 'UNAVAILABLE:' + type(error).__name__
     emit('host', dict(python=sys.version.split()[0], executable=sys.executable, packages=versions,
-        selected_environment={key: os.environ.get(key, '')[:2048] for key in (
+        selected_environment={key: (os.environ[key][:2048] if key in os.environ else None) for key in (
             'CUDA_VISIBLE_DEVICES', 'NVIDIA_VISIBLE_DEVICES', 'LD_LIBRARY_PATH',
             'CUDA_HOME', 'CUDA_PATH', 'TRITON_LIBCUDA_PATH', 'FLASHINFER_WORKSPACE_BASE')},
         executables={name: shutil.which(name) for name in ('nvcc', 'ptxas', 'nvidia-smi', 'gcc', 'g++', 'ninja')}))
@@ -217,6 +292,12 @@ for name in ('cuda','nvidia-ml'):
   ctypes.CDLL('lib'+name+'.so.1');print(name+': DLOPEN_OK')
  except Exception as error:print(name+': '+str(error))
 ''', 15)
+    run_probe('nvidia_smi', '''import os,shutil
+tool=shutil.which('nvidia-smi')
+if tool:
+ os.execv(tool,[tool,'--query-gpu=name,driver_version,memory.total,memory.free','--format=csv,noheader'])
+else:print('NVIDIA_SMI_NOT_FOUND')
+''', 15)
     run_probe('torch_cuda', '''import torch,json
 print(json.dumps(dict(torch=torch.__version__,compiled_cuda=torch.version.cuda,available=torch.cuda.is_available())))
 if torch.cuda.is_available():
@@ -228,6 +309,18 @@ if torch.cuda.is_available():
 print(json.dumps(dict(version=vllm.__version__,path=vllm.__file__)))
 from vllm.platforms import current_platform
 print('PLATFORM:'+str(current_platform))
+''')
+    run_probe('model_config_support', '''import json,transformers
+from transformers import AutoConfig
+print(json.dumps(dict(transformers=transformers.__version__,model_type='qwen3_5',architecture='Qwen3_5ForConditionalGeneration')))
+try:
+ config=AutoConfig.for_model('qwen3_5',text_config={'model_type':'qwen3_5_text'})
+ print('AUTOCONFIG_OK:'+type(config).__name__)
+except Exception as error:print('AUTOCONFIG_ERROR:'+type(error).__name__+':'+str(error))
+try:
+ from vllm.model_executor.models import ModelRegistry
+ print('VLLM_ARCH_REGISTERED:'+str('Qwen3_5ForConditionalGeneration' in ModelRegistry.get_supported_archs()))
+except Exception as error:print('VLLM_REGISTRY_ERROR:'+type(error).__name__+':'+str(error))
 ''')
     emit('done', 'DIAGNOSTIC_COMPLETE_NO_OUTPUT_FILE_EXPECTED_PLATFORM_FAILURE')
     return 2
