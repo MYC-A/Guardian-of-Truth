@@ -26,6 +26,9 @@ from scripts.build_vllm_submission import (
 
 CHUNK = 8 * 1024 * 1024
 JSON_CAP = 16 * 1024 * 1024
+# Full runtime inventory contains over 52,000 individually hashed files.
+# Keep model metadata limits separate from this larger bounded inventory.
+MANIFEST_JSON_CAP = 64 * 1024 * 1024
 
 
 def json_bytes(value):
@@ -89,7 +92,8 @@ def zip_entries(bundle):
 
 
 def small_json(bundle, entries, name):
-    if name not in entries or entries[name].file_size > JSON_CAP:
+    cap = MANIFEST_JSON_CAP if name == 'MANIFEST.json' else JSON_CAP
+    if name not in entries or entries[name].file_size > cap:
         raise ValueError('MISSING_OR_OVERSIZE_METADATA:' + name)
     raw = bundle.read(entries[name])
     return raw, json_read(raw)

@@ -1,5 +1,6 @@
 """Public archive join boundary tests with explicit tiny non-model fixtures."""
 import hashlib
+import io
 import json
 import os
 from pathlib import Path
@@ -12,6 +13,32 @@ import pytest
 
 from scripts import assemble_vllm_submission as assembler
 from scripts import build_vllm_submission as builder
+
+
+def test_full_runtime_inventory_may_exceed_model_metadata_limit():
+    payload = b'{}' + b' ' * assembler.JSON_CAP
+    storage = io.BytesIO()
+    with zipfile.ZipFile(storage, 'w', compression=zipfile.ZIP_DEFLATED) as bundle:
+        bundle.writestr('MANIFEST.json', payload)
+        bundle.writestr('MODEL_MANIFEST.json', payload)
+    storage.seek(0)
+    with zipfile.ZipFile(storage) as bundle:
+        entries = assembler.zip_entries(bundle)
+        raw, parsed = assembler.small_json(bundle, entries, 'MANIFEST.json')
+        assert len(raw) > 16 * 1024 * 1024 and parsed == {}
+        with pytest.raises(ValueError, match='OVERSIZE_METADATA'):
+            assembler.small_json(bundle, entries, 'MODEL_MANIFEST.json')
+
+
+def test_runtime_inventory_still_has_a_bounded_size(monkeypatch):
+    monkeypatch.setattr(assembler, 'MANIFEST_JSON_CAP', 8)
+    storage = io.BytesIO()
+    with zipfile.ZipFile(storage, 'w') as bundle:
+        bundle.writestr('MANIFEST.json', b'{}'+b' '*7)
+    storage.seek(0)
+    with zipfile.ZipFile(storage) as bundle:
+        with pytest.raises(ValueError, match='OVERSIZE_METADATA'):
+            assembler.small_json(bundle, assembler.zip_entries(bundle), 'MANIFEST.json')
 
 
 def encode(value):
