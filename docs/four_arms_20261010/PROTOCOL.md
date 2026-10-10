@@ -50,7 +50,7 @@ Granite score 89 s / judge1 48 s / judge2 33 s; 0 request errors. Evaluator: `ex
 | 4b cross-judge Qwen∧Granite | 15 | 5 | .75 | .733 | 3,4,4 | reject — Granite judge says VIOLATION 77/81, adds nothing |
 | 4c PJ-V2 Granite | 11 | 10 | .52 | .717 | 4,5,5 | reject |
 
-THINK: 40/298 outputs unusable (finish=length at 6144 tokens: 38; no verdict: 2); time ≈ 7.7 s/request, too slow for
+THINK: 40/298 outputs unusable (all finish=length at 6144 tokens; 38 still inside <think>); time ≈ 7.7 s/request, too slow for
 production on all rows.
 
 ### POST-HOC (not preregistered; `experiments/four_arms_20261010/posthoc.py`)
