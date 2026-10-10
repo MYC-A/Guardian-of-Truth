@@ -177,12 +177,13 @@ def emit(name, value):
                                            ensure_ascii=True, sort_keys=True), flush=True)
 
 
-def run_probe(name, code, timeout=30):
+def run_probe(name, code, timeout=30, *, python=None, environment_overrides=None):
     process, handlers = None, {}
     launching, cleaning, pending_signal = False, False, None
     owner_token = secrets.token_hex(24)
     environment = dict(os.environ, PYTHONDONTWRITEBYTECODE='1',
         OMP_NUM_THREADS='2', OPENBLAS_NUM_THREADS='1', GUARDIAN_VLLM_OWNER_TOKEN=owner_token)
+    environment.update(environment_overrides or {})
     values = sensitive_values(os.environ) + [owner_token]
     report = {}
     def interrupted(signum, frame):
@@ -207,7 +208,7 @@ def run_probe(name, code, timeout=30):
                 elif cleanup_mode == 'unreaped_leader':
                     raise RuntimeError('UNREAPED_LEADER_REQUIRES_MAIN_THREAD')
                 launching = True
-                process = subprocess.Popen([sys.executable, '-X', 'utf8', '-u', '-c', code],
+                process = subprocess.Popen([str(python or sys.executable), '-X', 'utf8', '-u', '-c', code],
                     stdout=stdout, stderr=stderr, env=environment, start_new_session=(os.name != 'nt'))
                 process._guardian_unreaped_leader = cleanup_mode == 'unreaped_leader'
                 launching = False
