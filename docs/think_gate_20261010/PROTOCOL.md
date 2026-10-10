@@ -119,3 +119,16 @@ both pass. Evaluator `evaluate5.py`.
   violations by themselves"); fire iff ≥2 of 3 framings say VIOLATION.
 Honesty note: the definition sentence is motivated by the Qwen FPs seen on valid46 (transfer "search first"),
 but it is domain-independent and contains no row-specific content.
+
+## Result of amendments 4+5 (Qwen FP8 only, 0 extra GB; run time q6 ~700 s per replicate, each framing ~250 s)
+| arm | rep | pools TP/26 | pools FP/132 | prec | valid46 mean | new FP/pass | |
+|---|---|---|---|---|---|---|---|
+| A4 Q-CoT n6 ≥4/6 | 1 | 10 | 1 | .91 | .826 | 0,0,1 | fail |
+| | 2 | 11 | 1 | .92 | .832 | 0,0,0 | pass |
+| **A5a score ≥.05 OR A4** | 1 | 13 | 2 | .87 | **.854** | 0,0,1 | pass |
+| | 2 | 14 | 2 | .88 | **.860** | 0,0,0 | pass |
+| A5b 3 framings ≥2/3 | 1 | 11 | 1 | .92 | .844 | 0,0,1 | pass |
+| | 2 | 11 | 1 | .92 | .833 | 2,2,2 | fail (FP) |
+**A5a ACCEPT (both replicates); A4 and A5b reject.** Single framings are diagnostics only (unstable across
+replicates). Caveat: the 0.05 score threshold was found post-hoc on these rows; the Q-CoT part is fresh samples.
+A5a is the best candidate within the 40 GB archive; it needs confirmation on unseen labelled data.
