@@ -35,3 +35,23 @@ file sizes verified against HF) on the same gated rows, same question, full cont
 VERDICT line, n=3, T 1.0 / top_p .95 / top_k 64, max_tokens 4096.
 Primary rule (prereg): fire iff Qwen-A ≥2/3 AND Gemma ≥2/3. Diagnostics: Gemma alone, pooled ≥4/6, Qwen-A OR Gemma.
 Same acceptance criteria. Note: the veto idea is motivated by the valid46 FPs seen above → confirm on unseen data.
+
+## Result
+Time: Qwen THINK A 1411 s, B 1427 s (64 requests × 3 samples each; 13 / 9 of 192 samples hit 12288 tokens);
+Gemma startup 120 s, 64 requests × 3 in **108 s** (mean 116 tokens/sample, 0 truncated). 0 request errors.
+
+| rule | pools TP/26 | pools FP/132 | prec | valid46 mean (base .800) | new FP/pass | verdict |
+|---|---|---|---|---|---|---|
+| Qwen A ≥2/3 [prereg] | 16 | 1 | .94 | .834 | 2,3,2 | reject (FP) |
+| Qwen B ≥2/3 [prereg] | 15 | 1 | .94 | .827 | 2,3,3 | reject |
+| Qwen A AND Gemma [prereg, amendment 1] | 5 | 0 | 1.00 | .820 | 0,0,0 | reject (valid gain) |
+| Gemma ≥2/3 [diag] | 7 | 0 | 1.00 | **.848** | 0,0,0 | passes all criteria — diagnostic, not prereg |
+| Gemma ≥1/3 [diag] | 7 | 0 | 1.00 | .875 | 0,0,0 | passes — diagnostic |
+| Qwen A OR Gemma [diag] | 18 | 1 | .95 | .859 | 2,3,2 | reject |
+
+Narrow context (B) ≈ A: not the cause. Qwen's valid46 FPs are stable (banking_081, banking_063, airline_10 t19);
+Gemma never fires on them. Qwen and Gemma find mostly different positives (OR: 18 pool TP), so AND is too strict.
+Gemma's valid46 gain comes from 2 rows (banking_005 t6: 3/3,3/3,2/3; retail_48 t4: 2,1,3), both missed by Qwen.
+**Status:** "Qwen-score gate (p ≥ .005) → Gemma ≥2/3" is the best candidate so far, cheap (~4 min incl. model load),
+but it was a diagnostic rule and its valid46 gain rests on 2 rows → needs a preregistered confirmation run
+(fixed rule, fresh samples; ideally unseen data) before production.
