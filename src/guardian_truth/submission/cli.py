@@ -154,13 +154,20 @@ class LocalClient:
 
 class ModelServer:
     def __init__(self, root, work, slots, context, *, port=None, attach=False, fast=False,
-                 batch_size=None, ubatch_size=None):
+                 batch_size=None, ubatch_size=None, spec_type=None):
+        if type(slots) is not int or slots < 1:
+            raise ValueError('INVALID_SERVER_SLOTS')
+        if spec_type not in (None, 'ngram-mod'):
+            raise ValueError('INVALID_SPEC_TYPE')
+        if attach and (fast or batch_size is not None or ubatch_size is not None or spec_type is not None):
+            raise ValueError('ATTACH_CANNOT_CHANGE_BACKEND_FLAGS')
         self.root, self.work = Path(root), Path(work)
         self.slots, self.context = slots, context
         self.port, self.attach, self.fast = port, attach, fast
         self.process, self.log = None, None
         self.api_key = None if attach else secrets.token_hex(24)
         self.batch_size, self.ubatch_size = batch_size, ubatch_size
+        self.spec_type = spec_type
         self.signal_handlers = {}
         self.props = None
 
@@ -186,6 +193,8 @@ class ModelServer:
                 command += ['-b', str(self.batch_size)]
             if self.ubatch_size is not None:
                 command += ['-ub', str(self.ubatch_size)]
+            if self.spec_type is not None:
+                command += ['--spec-type', self.spec_type]
             loader = self.root / 'runtime/lib/ld-linux-x86-64.so.2'
             if loader.is_file():
                 command = [str(loader), '--library-path',
@@ -221,6 +230,11 @@ class ModelServer:
                 raise ValueError('SERVED_MODEL_MISMATCH')
             if props.get('default_generation_settings', {}).get('n_ctx') != self.context:
                 raise ValueError('SERVED_CONTEXT_MISMATCH')
+            if 'total_slots' in props:
+                if type(props['total_slots']) is not int or props['total_slots'] != self.slots:
+                    raise ValueError('SERVED_SLOTS_MISMATCH')
+            elif self.attach:
+                raise ValueError('SERVED_SLOTS_NOT_VERIFIED')
             if self.process is not None and self.process.poll() is not None:
                 raise RuntimeError('MODEL_START_FAILED')
             return self
@@ -397,17 +411,27 @@ def main(argv=None):
     parser.add_argument('--root', type=Path, default=Path(__file__).resolve().parents[3])
     parser.add_argument('--work-dir', type=Path)
     parser.add_argument('--workers', type=int, default=8)
+    parser.add_argument('--slots', type=int, help='Native GPU slots; defaults to workers for the unchanged baseline')
     parser.add_argument('--context', type=int, default=32768)
     parser.add_argument('--port', type=int)
     parser.add_argument('--attach', action='store_true', help='Diagnostics only: use existing verified local model')
     parser.add_argument('--fast', action='store_true', help='Separate profile: enable FlashAttention; quality must be measured')
     parser.add_argument('--batch-size', type=int, help='Separate performance profile: logical prefill batch limit')
     parser.add_argument('--ubatch-size', type=int, help='Separate performance profile: physical prefill microbatch limit')
+    parser.add_argument('--spec-type', choices=['none', 'ngram-mod'], default='none',
+                        help='Separate opt-in speculative profile; none preserves the native baseline')
     parser.add_argument('--pre-profile', choices=['legacy', 'dedup', 'compact'], default='legacy',
                         help='Frozen baseline or opt-in compaction; new profiles require live quality/timing comparison')
     options = parser.parse_args(argv)
     if options.workers < 1 or options.context < 4096 or (options.attach and options.port is None):
         parser.error('invalid workers/context/attach port')
+    gpu_slots = options.workers if options.slots is None else options.slots
+    spec_type = None if options.spec_type == 'none' else options.spec_type
+    if gpu_slots < 1:
+        parser.error('slots must be positive')
+    if options.attach and (options.fast or options.batch_size is not None
+                           or options.ubatch_size is not None or spec_type is not None):
+        parser.error('attach cannot change backend flags; launch a separate owned server profile')
     if any(value is not None and value < 1 for value in (options.batch_size, options.ubatch_size)):
         parser.error('batch sizes must be positive')
     if Path(options.input).resolve() == Path(options.output).resolve():
@@ -426,9 +450,9 @@ def main(argv=None):
     # No research records or gold/caches are read. IDs only align the output.
     traces = {}
     try:
-        with ModelServer(options.root, work, options.workers, options.context,
+        with ModelServer(options.root, work, gpu_slots, options.context,
                          port=options.port, attach=options.attach, fast=options.fast,
-                         batch_size=options.batch_size, ubatch_size=options.ubatch_size) as server:
+                         batch_size=options.batch_size, ubatch_size=options.ubatch_size, spec_type=spec_type) as server:
             client = LocalClient(server.port, options.context, api_key=server.api_key)
             from guardian_truth.v6fix.pipeline import Layers
             layers = Layers(client, MODEL, budget=20000, attempts=(0, 1), frules_max_tokens=700, tolerate_component_errors=True)
@@ -461,7 +485,8 @@ def main(argv=None):
                       pre_completion_budget=1700 if options.pre_profile == 'compact' else 3400,
                       pre_contract_sha256=hashlib.sha256((Path(__file__).parent / 'blind_compact.py').read_bytes()).hexdigest(),
                       model=MODEL, calls=len(client.calls),
-                      workers=options.workers, context_per_slot=options.context,
+                      workers=options.workers, gpu_slots=gpu_slots, context_per_slot=options.context,
+                      spec_type=options.spec_type,
                       explicit_flash=options.fast, batch_size=options.batch_size, ubatch_size=options.ubatch_size,
                       server_props=server.props, preflight_http=client.preflight_http,
                       completion_http=client.completion_http, cache_hits=client.cache_hits,
