@@ -290,7 +290,7 @@ class OwnedVllmServer:
                 '--host', '127.0.0.1', '--port', str(self.port), '--api-key', self.api_key,
                 '--max-model-len', str(self.context), '--max-num-seqs', str(self.slots),
                 '--gpu-memory-utilization', str(self.gpu_memory_utilization), '--generation-config', 'vllm',
-                '--chat-template-content-format', 'string', '--disable-log-requests',
+                '--chat-template-content-format', 'string',  # request logging is opt-in in vLLM 0.19 (--disable-log-requests removed)
                 '--enable-prefix-caching', '--enable-chunked-prefill', '--dtype', 'bfloat16',
                 '--kv-cache-dtype', 'auto']
         if self.enforce_eager:
