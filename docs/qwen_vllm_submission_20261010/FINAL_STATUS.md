@@ -25,6 +25,21 @@ missing labels use explicit DEFAULT_ZERO. No benchmark labels/ID lookup
 are included and no prediction caches are shipped.
 
 **Status is assembled candidate, not cold GPU validated deployment.**
+The selected model and full B2 pipeline **have already completed real A100
+GPU inference**: graph16 valid46 finished all 46 rows, 16TP/0FP/7FN,
+F1 .820513, whole wall 677.5s, 174 completion calls, zero technical calls
+and zero default-zero fallbacks. Configuration-specific torch.compile cache
+was cold; approximately 162s startup, including 50.7s compile, was counted.
+The saved baseline eager8 also completed valid46 (15TP/1FP/8FN,
+F1 .769231, 1417.5s). These results are preserved in
+`outputs/qwen_inference_20261010/vllm_b2_fp8_graph16_full46_summary.json`
+and `vllm_b2_fp8_full46_summary.json` with original raw receipt ZIPs.
+
+The remaining GPU check concerns the new portable runtime/entrypoint after
+extraction, not whether Qwen/vLLM/B2 has ever run on GPU. The code/adapter
+identity comparison against the successful graph16 run is documented in
+`FINAL_BUILD_REVIEW.md`.
+
 The user's separate GPU experiment remains running. This final ZIP was not
 uploaded to that server. Linux checks used its equivalent existing frozen
 stage, not extraction of this ZIP. Nonempty public inference, cold JIT/startup
