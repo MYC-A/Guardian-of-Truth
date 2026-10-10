@@ -65,7 +65,11 @@ def materialize(source, destination, *, allowed_root=None):
         raise ValueError('REGULAR_SOURCE_REQUIRED')
     destination.parent.mkdir(parents=True, exist_ok=True)
     if destination.exists():
-        if destination.is_symlink() or digest(destination) != digest(source):
+        if destination.is_symlink():
+            raise ValueError('STAGE_PATH_COLLISION:' + str(destination))
+        if os.path.samefile(source, destination):
+            return
+        if digest(destination) != digest(source):
             raise ValueError('STAGE_PATH_COLLISION:' + str(destination))
         return
     if source.stat().st_dev != destination.parent.stat().st_dev:
@@ -188,10 +192,15 @@ def shell_python_script(stage, name, source):
         target.chmod(0o755)
 
 
-def collect_wheels(stage, distributions=None, *, prefix=None):
+def collect_wheels(stage, distributions=None, *, prefix=None, overlays=None):
     distributions = list(md.distributions()) if distributions is None else list(distributions)
     prefix = Path(sys.prefix if prefix is None else prefix).resolve()
     versions, ownership = {}, {}
+    record_owners = {}
+    for dist in distributions:
+        for item in dist.files or []:
+            resolved = Path(dist.locate_file(item)).resolve()
+            record_owners.setdefault(resolved, []).append((dist.metadata['Name'], item))
     for dist in sorted(distributions, key=lambda d: d.metadata['Name'].lower()):
         name = dist.metadata['Name']
         if name in versions:
@@ -210,9 +219,29 @@ def collect_wheels(stage, distributions=None, *, prefix=None):
             source = Path(dist.locate_file(item)).resolve(strict=True)
             if not source.is_file() or not source.is_relative_to(prefix):
                 raise ValueError('WHEEL_RECORD_OUTSIDE_VENV:' + item_text)
-            if DRIVER.fullmatch(source.name) or 'stubs' in source.parts:
+            if DRIVER.fullmatch(source.name):
                 raise ValueError('HOST_DRIVER_OR_STUB_FORBIDDEN')
-            check_record(source, item)
+            try:
+                check_record(source, item)
+            except ValueError as original:
+                # pip may install two wheels declaring the same path. Preserve
+                # the actual validated environment only when its final bytes
+                # match another authenticated RECORD; never accept arbitrary
+                # tampering or guess an owner from installation order.
+                winners = []
+                for owner, other in record_owners[source]:
+                    if getattr(other, 'hash', None) is None or getattr(other, 'size', None) is None:
+                        continue
+                    try:
+                        check_record(source, other)
+                    except ValueError:
+                        continue
+                    winners.append(owner)
+                if not winners:
+                    raise original
+                if overlays is not None:
+                    overlays.append(dict(path=item_text, shadowed_distribution=name,
+                                         actual_record_owners=sorted(set(winners)), sha256=digest(source)))
             if source.is_relative_to(base):
                 relative = source.relative_to(base)
                 if source.suffix == '.pth':
@@ -266,7 +295,7 @@ def collect_native(stage, *, run=subprocess.run):
     libraries = root / 'runtime/lib'
     libraries.mkdir(parents=True, exist_ok=True)
     queue = [p for p in stage_files(root) if elf(p)]
-    seen, dependencies = set(), {}
+    seen, dependencies, unresolved = set(), {}, set()
     search_dirs = library_directories(root)
     env = dict(os.environ, LD_LIBRARY_PATH=os.pathsep.join(map(str, search_dirs)))
     for variable in ('LD_PRELOAD', 'PYTHONHOME', 'PYTHONPATH'):
@@ -286,13 +315,12 @@ def collect_native(stage, *, run=subprocess.run):
             if missing:
                 if DRIVER.fullmatch(missing.group(1)):
                     continue
-                raise RuntimeError('UNRESOLVED_NATIVE_DEPENDENCY:' + missing.group(1))
+                unresolved.add(missing.group(1))
+                continue
             for value in re.findall(r'(?:=>\s*)?((?:[A-Za-z]:)?/[^\s()]+)', line):
                 source = Path(value).resolve(strict=True)
                 if DRIVER.fullmatch(source.name):
                     continue
-                if 'stubs' in source.parts:
-                    raise ValueError('HOST_DRIVER_OR_STUB_FORBIDDEN')
                 if source.is_relative_to(root):
                     found.append(source.relative_to(root).as_posix())
                     continue
@@ -305,6 +333,8 @@ def collect_native(stage, *, run=subprocess.run):
                 found.append(destination.relative_to(root).as_posix())
                 queue.append(destination)
         dependencies[path.relative_to(root).as_posix()] = sorted(set(found))
+    if unresolved:
+        raise RuntimeError('UNRESOLVED_NATIVE_DEPENDENCY:' + ','.join(sorted(unresolved)))
     if not (libraries / 'ld-linux-x86-64.so.2').is_file():
         raise RuntimeError('PRIVATE_GLIBC_LOADER_REQUIRED')
     return dependencies
@@ -414,7 +444,8 @@ def prepare(repo, stage, model_dir, asset_manifest, *, runtime_only=False):
             materialize(library.resolve(), stage / 'runtime/lib' / library.resolve().name)
     for include in set(filter(None, (sysconfig.get_path('include'), sysconfig.get_path('platinclude')))):
         copy_tree(include, stage / 'runtime/python/include/python3.12', exclude=('__pycache__',))
-    versions, ownership = collect_wheels(stage)
+    overlays = []
+    versions, ownership = collect_wheels(stage, overlays=overlays)
     for name, source in models:
         materialize(source, stage / 'model' / REVISION / name, allowed_root=model_dir)
     materialize(asset_manifest, stage / 'MODEL_MANIFEST.json')
@@ -434,7 +465,7 @@ def prepare(repo, stage, model_dir, asset_manifest, *, runtime_only=False):
         model_mode='RUNTIME_ONLY_MODELS_NOT_LOCALLY_VERIFIED' if runtime_only else 'FULL_MODELS_SHA256_VERIFIED',
         models_expected=declarations,
         model_manifest_sha256=digest(stage / 'MODEL_MANIFEST.json'), distributions=versions,
-        wheel_ownership=ownership, native_dependencies=native, toolchain=toolchain,
+        wheel_ownership=ownership, wheel_record_overlays=overlays, native_dependencies=native, toolchain=toolchain,
         integrity_contract=('Every staged runtime file SHA256; model metadata only, local bytes NOT_VERIFIED'
                             if runtime_only else 'Every staged file SHA256; model upstream manifest independently rechecked'),
         gpu_validation='NOT_EXECUTED_BY_BUILDER', files=inventory(stage))
@@ -451,7 +482,7 @@ def verify_stage(stage):
         raise ValueError('STAGE_FILE_SET_OR_BYTES_CHANGED')
     for name in manifest['files']:
         relative_name(name)
-        if DRIVER.fullmatch(Path(name).name) or 'stubs' in PurePosixPath(name).parts:
+        if DRIVER.fullmatch(Path(name).name):
             raise ValueError('HOST_DRIVER_OR_STUB_FORBIDDEN')
     if digest(root / 'MODEL_MANIFEST.json') != manifest['model_manifest_sha256']:
         raise ValueError('MODEL_MANIFEST_CHANGED')

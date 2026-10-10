@@ -221,6 +221,21 @@ def test_wheel_record_detects_same_size_corruption_before_export(tmp_path):
         builder.collect_wheels(tmp_path / 'stage', [dist], prefix=venv)
 
 
+def test_wheel_overlay_preserves_final_authenticated_bytes_and_records_shadowed_owner(tmp_path):
+    venv = tmp_path / 'venv'
+    base = venv / 'lib/python3.12/site-packages'
+    first = Distribution(base, {'shared_backend.py': b'original'}, name='first-wheel')
+    last = Distribution(base, {'shared_backend.py': b'final'}, name='last-wheel')
+    overlays = []
+    builder.collect_wheels(tmp_path / 'stage', [first, last], prefix=venv, overlays=overlays)
+    assert (tmp_path / 'stage/runtime/site-packages/shared_backend.py').read_bytes() == b'final'
+    assert overlays[0]['shadowed_distribution'] == 'first-wheel'
+    assert overlays[0]['actual_record_owners'] == ['last-wheel']
+    (base / 'shared_backend.py').write_bytes(b'rogue')
+    with pytest.raises(ValueError, match='WHEEL_RECORD'):
+        builder.collect_wheels(tmp_path / 'bad', [first, last], prefix=venv)
+
+
 @pytest.mark.parametrize('relative,raw,error', [
     ('../../../../outside/secret', b'secret', 'OUTSIDE_VENV'),
     ('bad.pth', b'/root/private\n', 'EXTERNAL_PTH_PATH'),
@@ -245,6 +260,14 @@ def test_authenticated_vendor_hook_is_preserved_without_package_name_routing(tmp
     dist.files[0].hash = None
     with pytest.raises(ValueError, match='UNVERIFIED_PTH_HOOK'):
         builder.collect_wheels(tmp_path / 'unverified', [dist], prefix=venv)
+
+
+def test_python_type_stubs_are_not_confused_with_nvidia_driver_libraries(tmp_path):
+    venv = tmp_path / 'venv'
+    base = venv / 'lib/python3.12/site-packages'
+    dist = Distribution(base, {'package/stubs/types.pyi': b'def function() -> int: ...\n'})
+    builder.collect_wheels(tmp_path / 'stage', [dist], prefix=venv)
+    assert (tmp_path / 'stage/runtime/site-packages/package/stubs/types.pyi').is_file()
 
 
 def test_python_launcher_uses_private_loader_and_reentrant_sys_executable(tmp_path):
@@ -311,7 +334,8 @@ def test_source_whitelist_does_not_copy_gold_caches_or_other_experiments(tmp_pat
     assert not any(path.read_bytes() == b'NEVER_EXPORTED' for path in stage.rglob('*') if path.is_file())
 
 
-def test_builder_never_installs_or_runs_gpu_on_unsupported_host(tmp_path):
+def test_builder_never_installs_or_runs_gpu_on_unsupported_host(tmp_path, monkeypatch):
+    monkeypatch.setattr(builder.sys, 'platform', 'win32')
     with pytest.raises(RuntimeError, match='VALIDATED_LINUX_CPYTHON312_VENV_REQUIRED'):
         builder.prepare(tmp_path, tmp_path / 'stage', tmp_path / 'model', tmp_path / 'manifest')
     assert not (tmp_path / 'stage').exists()
