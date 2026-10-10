@@ -1,3 +1,5 @@
+> HISTORICAL PROPOSAL (7361d0d3), superseded. Its builder/runtime contained reproduced defects. Use CHECKED_STARTUP_PROBE_GUIDE.md and CHECKED_STARTUP_PROBE_FINAL.md; the driver-bridge arm and equivalence claims below are not the checked protocol.
+
 # Startup probe v3 (dummy weights) — 2026-10-11
 
 Goal: find why the bundled vLLM child exited (`VLLM_START_FAILED`) without
