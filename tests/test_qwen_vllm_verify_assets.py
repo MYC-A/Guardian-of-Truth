@@ -57,3 +57,19 @@ def test_unsafe_manifest_paths_are_rejected(tmp_path, bad):
     meta, selected = fixture(tmp_path)
     with pytest.raises(ValueError, match='UNSAFE_ASSET_PATH'):
         assets.verify(tmp_path, meta, selected + [bad])
+
+
+def test_lfs_tracked_non_weight_asset_uses_lfs_sha_not_pointer_blob(tmp_path):
+    meta, selected = fixture(tmp_path)
+    raw = b'{"model": "large tokenizer"}'
+    (tmp_path / 'tokenizer.json').write_bytes(raw)
+    pointer = b'version https://git-lfs.github.com/spec/v1\n'
+    meta['siblings'].append(dict(rfilename='tokenizer.json', size=len(raw),
+                                 blobId=hashlib.sha1(f'blob {len(pointer)}\0'.encode() + pointer).hexdigest(),
+                                 lfs=dict(sha256=hashlib.sha256(raw).hexdigest())))
+    result = assets.verify(tmp_path, meta, selected + ['tokenizer.json'])
+    record = next(r for r in result['files'] if r['path'] == 'tokenizer.json')
+    assert record['upstream_verification']['method'] == 'UPSTREAM_LFS_SHA256'
+    (tmp_path / 'tokenizer.json').write_bytes(bytes([raw[0] ^ 1]) + raw[1:])
+    with pytest.raises(ValueError, match='SHA_MISMATCH'):
+        assets.verify(tmp_path, meta, selected + ['tokenizer.json'])

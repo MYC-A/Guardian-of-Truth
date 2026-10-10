@@ -38,7 +38,9 @@ def verify(model_dir, metadata, selected, workers=4):
                 digest.update(chunk)
                 blob.update(chunk)
         actual = digest.hexdigest()
-        if name.endswith('.safetensors'):
+        # Any LFS-tracked asset (all weights, plus e.g. tokenizer.json) is proven by its
+        # LFS content SHA256; its Git blobId hashes only the pointer file.
+        if name.endswith('.safetensors') or source.get('lfs') is not None:
             expected = (source.get('lfs') or {}).get('sha256')
             if not isinstance(expected, str) or len(expected) != 64:
                 raise ValueError('MISSING_UPSTREAM_WEIGHT_SHA:' + name)
