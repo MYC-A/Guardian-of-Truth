@@ -494,6 +494,8 @@ def main(argv=None):
     parser.add_argument('--duration', type=float, default=1800)
     parser.add_argument('--max-calls', type=int, default=520)
     parser.add_argument('--limit', type=int, default=2)
+    parser.add_argument('--checklist', action='store_true',
+                        help='Research arm: build per-policy checklists at runtime and add them to the review')
     args = parser.parse_args(argv)
     if (not 1 <= args.workers <= args.slots or args.limit < 1 or args.max_calls < 1
             or not math.isfinite(args.duration) or args.duration <= 0):
@@ -508,7 +510,8 @@ def main(argv=None):
     write_json(args.output / 'protocol.json', dict(version=VERSION, model=MODEL, input_sha256=input_hash,
         rows=len(rows), limit=args.limit, workers=args.workers, slots=args.slots, context=args.context,
         timeout=args.timeout, duration=args.duration, max_calls=args.max_calls,
-        prediction_contract='B2 legacy + unchanged submission recovery', code_sha256=digest(__file__)))
+        prediction_contract='B2 legacy + unchanged submission recovery' + (' + policy checklist' if args.checklist else ''),
+        checklist=args.checklist, code_sha256=digest(__file__)))
     traces, client = {}, None
     try:
         with OwnedVllmServer(args.python, args.model_dir, args.output, args.context, args.slots,
@@ -520,9 +523,17 @@ def main(argv=None):
             from guardian_truth.v6fix.pipeline import Layers
             layers = Layers(client, MODEL, budget=20000, attempts=(0, 1), frules_max_tokens=700,
                             tolerate_component_errors=True)
+            checklists = None
+            if args.checklist:
+                from guardian_truth.checklist.build import build as build_checklists
+                built_at = time.monotonic()
+                checklists = build_checklists(client, MODEL, rows, workers=args.workers)
+                write_json(args.output / 'checklists.json', dict(seconds=time.monotonic() - built_at,
+                           policies=len(checklists), checklists=checklists))
             with ThreadPoolExecutor(max_workers=args.workers) as executor:
+                extra = {} if checklists is None else dict(checklists=checklists)   # off: unchanged call
                 futures = {executor.submit(predict_one, row, client, layers, model=MODEL,
-                                           provider='local-vllm'): row['id'] for row in rows}
+                                           provider='local-vllm', **extra): row['id'] for row in rows}
                 for future in as_completed(futures):
                     identifier = futures[future]
                     # Unexpected code failures stop this diagnostic; never fabricate a prediction.

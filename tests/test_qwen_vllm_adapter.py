@@ -441,3 +441,35 @@ def test_open_pidfd_is_closed_if_proc_disappears(tmp_path, monkeypatch):
     monkeypatch.setattr(adapter.os, 'close', closed.append)
     assert adapter.owned_group_handles(700, 'ours', proc_root=tmp_path) == []
     assert closed == [42]
+
+
+def test_runner_checklist_flag_builds_once_and_passes_maps(tmp_path, monkeypatch):
+    source = tmp_path / 'input.csv'
+    source.write_text('id,prompt,response\na,system,one\nb,system,two\n')
+    target = tmp_path / 'artifacts'
+    class Server:
+        def __init__(self, *args, **kwargs):
+            self.port, self.api_key = 1234, 'offline'
+            self.manifest = dict(model=adapter.MODEL)
+        def __enter__(self):
+            return self
+        def __exit__(self, *args):
+            pass
+    monkeypatch.setattr(adapter, 'OwnedVllmServer', Server)
+    from guardian_truth.v6fix import pipeline
+    from guardian_truth.checklist import build as checklist_build
+    monkeypatch.setattr(pipeline, 'Layers', lambda *a, **k: object())
+    built = []
+    def fake_build(client, model, rows, workers=1):
+        built.append([r['id'] for r in rows])
+        return {'k': dict(items=[])}
+    monkeypatch.setattr(checklist_build, 'build', fake_build)
+    seen = []
+    monkeypatch.setattr(adapter, 'predict_one', lambda row, client, layers, **o: seen.append(o) or dict(id=row['id'], binary=0))
+    monkeypatch.setattr(adapter, 'write_predictions', lambda path, rows: None)
+    adapter.main(['--python', 'unused', '--model-dir', str(tmp_path), '--asset-manifest', str(tmp_path / 'unused.json'),
+                  '--input', str(source), '--output', str(target), '--checklist'])
+    assert built == [['a', 'b']]
+    assert all(o == dict(model=adapter.MODEL, provider='local-vllm', checklists={'k': dict(items=[])}) for o in seen)
+    assert json.loads((target / 'checklists.json').read_text())['policies'] == 1
+    assert json.loads((target / 'protocol.json').read_text())['checklist'] is True

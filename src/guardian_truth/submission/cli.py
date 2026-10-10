@@ -261,7 +261,7 @@ class ModelServer:
         raise SystemExit(128 + signum)
 
 
-def predict_one(row, client, layers, pre_profile='legacy', *, model=None, provider='local-llamacpp'):
+def predict_one(row, client, layers, pre_profile='legacy', *, model=None, provider='local-llamacpp', checklists=None):
     from guardian_truth.submission.primary import PrimaryReviewHook
     from guardian_truth.submission.blind_compact import CompactPrimaryReviewHook, PROFILES
     from guardian_truth.repair.v5 import ARMS, run_v5
@@ -277,6 +277,12 @@ def predict_one(row, client, layers, pre_profile='legacy', *, model=None, provid
         raise ValueError('PREDICTOR_LAYERS_MODEL_MISMATCH')
     hook_class = PrimaryReviewHook if pre_profile == 'legacy' else CompactPrimaryReviewHook
     profile_args = {} if pre_profile == 'legacy' else dict(profile=pre_profile)
+    if checklists is not None:
+        # Opt-in research arm; None keeps the B2 request byte-identical.
+        if pre_profile != 'legacy':
+            raise ValueError('CHECKLIST_REQUIRES_LEGACY_PROFILE')
+        from guardian_truth.checklist.hook import ChecklistReviewHook
+        hook_class, profile_args = ChecklistReviewHook, dict(checklists=checklists)
     hook = hook_class(client, 'blind2', effective_model, original_row=row,
                       max_tokens=3400, max_request_bytes=60000, **profile_args)
     snapshot, stage_errors = {}, []
