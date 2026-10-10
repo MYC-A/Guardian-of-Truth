@@ -1,0 +1,22 @@
+{
+  "scope": "Full original B2 (legacy profile, no lazy-F/compact/logprob) on vLLM 0.19.1 + transformers 5.8.0 + Qwen/Qwen3.8-27B-FP8@017b9c7af6b5689d5dd426a76e0bc077eb5ca20a, one development repetition on valid46",
+  "source_sha": "c11f4aca50c26d08c786bd8682f2497ca1556b80",
+  "hardware": "1x A100-SXM4-80GB (no native FP8: vLLM used weight-only FP8 via Marlin)",
+  "engine_args": {"workers": 8, "slots": 8, "context": 32768, "http_timeout_s": 600, "duration_s": 1800, "max_calls": 400, "enforce_eager": true},
+  "metrics": {"TP": 15, "FP": 1, "FN": 8, "TN": 22, "F1": 0.769231},
+  "whole_wall_s": 1417.5,
+  "adapter_seconds": 1416.91,
+  "startup_s_approx": 198,
+  "calls": 171, "completion_http": 171, "cache_hits": 2,
+  "prompt_tokens": 664515, "completion_tokens": 107958,
+  "technical_calls": 0, "default_zero_fallbacks": 0,
+  "fp_ids": ["airline__10::t19"],
+  "historical_reference_not_contemporaneous": {"engine": "llama.cpp Q8_0", "TP": 15, "FP": 0, "FN": 8, "TN": 23, "F1": 0.789474, "whole_wall_s": 1743.834, "calls": 179, "prompt_tokens": 686653, "completion_tokens": 118421},
+  "caveats": [
+    "Engine and quantization changed together; F1 delta (-1 TN -> FP) is a single repetition and not attributable to either factor",
+    "GPU smoke gate failed (2 technical deadline calls, 1 default-zero) because the 600s smoke budget includes ~200s vLLM startup with workers=1; engine returned HTTP 200 for all 8 completed calls; full46 was launched directly via full_direct.sh (gate deviation, user-requested speed)",
+    "GPU utilization ~37-39%, ~130W: eager mode + batch 8 leave headroom"
+  ],
+  "receipts_zip": "vllm_b2_fp8_full46_c11f4aca.zip",
+  "receipts_zip_sha256": "7a55cd9becb15133a53f222e82f8a7b1debd6e49fca818950a341a486f16661a"
+}
