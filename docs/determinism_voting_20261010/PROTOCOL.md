@@ -48,3 +48,15 @@ valid46 is contaminated and small: this is a feasibility and variance measuremen
 - vs graph16 B2 single run (.8205): banking_005, retail_48, telecom mms t7 are TP in graph16 and FN in all 3
   token-budget runs, with identical pre_blind prompt token counts. Undecided between "graph16 was a lucky
   draw" and a systematic downstream effect → two repeats of plain B2 on the same code (base2, base3) queued.
+
+### Baseline repeats (plain B2, same code, no `--token-budget`)
+| config | run F1s | mean | mean + UNKNOWN_TOOL HARD |
+|---|---|---|---|
+| B2 | .8205 (graph16) / .7027 / .7027 | .742 | .796 |
+| B2 + token budget | .7368 / .7368 / .7368 | .737 | .800 |
+
+- graph16 (.8205) was a favourable draw; the earlier "token budget / checklist lose ~.08" conclusions were
+  artefacts of comparing against a single run. Token budget is quality-neutral (Δmean −.005, within noise) and
+  removes technical gaps → keep as a technical fix.
+- UNKNOWN_TOOL HARD adds +.05…+.07 on every run (5/5 fires are true violations) → production candidate.
+- Rule going forward: compare variants on ≥3 runs, by mean and by per-row stability, never against graph16.
