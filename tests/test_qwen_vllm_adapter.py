@@ -473,3 +473,48 @@ def test_runner_checklist_flag_builds_once_and_passes_maps(tmp_path, monkeypatch
     assert all(o == dict(model=adapter.MODEL, provider='local-vllm', checklists={'k': dict(items=[])}) for o in seen)
     assert json.loads((target / 'checklists.json').read_text())['policies'] == 1
     assert json.loads((target / 'protocol.json').read_text())['checklist'] is True
+
+
+def test_count_tokens_uses_same_preflight_caches_and_validates(tmp_path):
+    transport = Transport()
+    current = client(tmp_path, transport)
+    assert current.count_tokens(request()) == 3
+    assert current.count_tokens(request()) == 3                     # cached by exact preflight
+    assert current.budget_preflight_http == 1 and current.preflight_http == 0 and current.completion_http == 0
+    url, wire, _ = transport.calls[0]
+    assert url.endswith('/tokenize') and wire == adapter.prepare_wire(request(), adapter.MODEL)[1]
+    current.call(request())                                         # the call's own preflight matches
+    assert transport.calls[1][1] == wire
+    transport.count = dict(count=3, max_model_len=64, tokens=[1, 2, 3])
+    with pytest.raises(ValueError):
+        current.count_tokens(request(messages=[dict(role='user', content='other')]))   # served context mismatch
+    assert current.count_tokens(request(max_tokens=5)) == 3         # max_tokens is not part of the input count
+    budget = adapter.TokenBudget(current)
+    assert budget.context == 32 and budget.count(request()) == 3
+
+
+def test_runner_token_budget_flag_only_when_requested(tmp_path, monkeypatch):
+    source = tmp_path / 'input.csv'
+    source.write_text('id,prompt,response\na,system,one\n')
+    class Server:
+        def __init__(self, *args, **kwargs):
+            self.port, self.api_key = 1234, 'offline'
+            self.manifest = dict(model=adapter.MODEL)
+        def __enter__(self):
+            return self
+        def __exit__(self, *args):
+            pass
+    monkeypatch.setattr(adapter, 'OwnedVllmServer', Server)
+    from guardian_truth.v6fix import pipeline
+    monkeypatch.setattr(pipeline, 'Layers', lambda *a, **k: object())
+    seen = []
+    monkeypatch.setattr(adapter, 'predict_one', lambda row, client, layers, **o: seen.append(o) or dict(id=row['id'], binary=0))
+    monkeypatch.setattr(adapter, 'write_predictions', lambda path, rows: None)
+    common = ['--python', 'unused', '--model-dir', str(tmp_path), '--asset-manifest', str(tmp_path / 'unused.json'),
+              '--input', str(source)]
+    adapter.main(common + ['--output', str(tmp_path / 'on'), '--token-budget'])
+    assert set(seen[0]) == {'model', 'provider', 'token_budget'} and isinstance(seen[0]['token_budget'], adapter.TokenBudget)
+    assert json.loads((tmp_path / 'on' / 'protocol.json').read_text())['token_budget'] is True
+    assert 'budget_preflight_http' in json.loads((tmp_path / 'on' / 'DONE.json').read_text())
+    adapter.main(common + ['--output', str(tmp_path / 'off')])
+    assert seen[1] == dict(model=adapter.MODEL, provider='local-vllm')

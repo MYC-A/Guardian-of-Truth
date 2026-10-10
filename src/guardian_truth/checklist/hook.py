@@ -3,7 +3,7 @@
 Off by default: without a checklist the request is byte-identical to B2. With one, only items that apply
 to the current move (its tools + ANY) and whose quote is located inside a normative source *present in the
 packet* are added, each with that source ID, so the reviewer can cite it. If the addition would exceed the
-request byte cap, the checklist is dropped and the B2 request (incl. other pre-analysis) is kept.
+request budget (bytes, or provider tokens when a token budget is set), the checklist is dropped and the B2 request (incl. other pre-analysis) is kept.
 """
 import copy
 import json
@@ -64,7 +64,7 @@ class ChecklistReviewHook(PrimaryReviewHook):
         new['messages'][1]['content'] = json.dumps(dict(packet, policy_checklist=items), ensure_ascii=False,
                                                    separators=(',', ':'))
         budget = self._wire_budget(new)
-        if budget['request_bytes'] > self.max_request_bytes:
+        if self._exceeds(budget):
             receipt.update(dropped='INPUT_BUDGET', input_budget=budget)
             return req
         receipt['injected'] = True

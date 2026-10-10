@@ -173,6 +173,25 @@ class VllmClient:
         self.lock, self.key_locks, self.cache = threading.Lock(), {}, {}
         self.calls = []
         self.preflight_http = self.completion_http = self.cache_hits = 0
+        self.budget_preflight_http, self.token_counts = 0, {}
+
+    def count_tokens(self, request):
+        """Native input token count of the exact wire this client would send (same /tokenize preflight)."""
+        _, preflight = prepare_wire(copy.deepcopy(request), self.model)
+        key = sha(preflight)
+        with self.lock:
+            if key in self.token_counts:
+                return self.token_counts[key]
+            self.budget_preflight_http += 1
+        count = decode(self.transport(self.base + '/tokenize', preflight, self.remaining(), self.api_key))
+        tokens, ids = count.get('count'), count.get('tokens')
+        if (type(tokens) is not int or tokens < 0 or not isinstance(ids, list) or len(ids) != tokens
+                or type(count.get('max_model_len')) is not int or count['max_model_len'] != self.context):
+            raise ValueError('INVALID_NATIVE_TOKEN_COUNT')
+        with self.lock:
+            self.token_counts[key] = tokens
+        return tokens
+
 
     def remaining(self):
         remaining = self.timeout if self.deadline is None else min(self.timeout, self.deadline - time.monotonic())
@@ -259,6 +278,15 @@ class VllmClient:
             write_json(path, dict(record, phase='FINISHED'))
             self.cache[key] = copy.deepcopy(record)
             return copy.deepcopy(record)
+
+
+class TokenBudget:
+    """Request budget = served context in native tokens (input + reserved completion), replacing the byte cap."""
+    def __init__(self, client):
+        self.client, self.context = client, client.context
+
+    def count(self, request):
+        return self.client.count_tokens(request)
 
 
 class OwnedVllmServer:
@@ -494,6 +522,8 @@ def main(argv=None):
     parser.add_argument('--duration', type=float, default=1800)
     parser.add_argument('--max-calls', type=int, default=520)
     parser.add_argument('--limit', type=int, default=2)
+    parser.add_argument('--token-budget', action='store_true',
+                        help='Research arm: check requests against the served context in native tokens instead of the 60 000-byte cap')
     parser.add_argument('--checklist', action='store_true',
                         help='Research arm: build per-policy checklists at runtime and add them to the review')
     args = parser.parse_args(argv)
@@ -510,8 +540,9 @@ def main(argv=None):
     write_json(args.output / 'protocol.json', dict(version=VERSION, model=MODEL, input_sha256=input_hash,
         rows=len(rows), limit=args.limit, workers=args.workers, slots=args.slots, context=args.context,
         timeout=args.timeout, duration=args.duration, max_calls=args.max_calls,
-        prediction_contract='B2 legacy + unchanged submission recovery' + (' + policy checklist' if args.checklist else ''),
-        checklist=args.checklist, code_sha256=digest(__file__)))
+        prediction_contract='B2 legacy + unchanged submission recovery' + (' + policy checklist' if args.checklist else '')
+                            + (' + native-token request budget' if args.token_budget else ''),
+        checklist=args.checklist, token_budget=args.token_budget, code_sha256=digest(__file__)))
     traces, client = {}, None
     try:
         with OwnedVllmServer(args.python, args.model_dir, args.output, args.context, args.slots,
@@ -532,6 +563,8 @@ def main(argv=None):
                            policies=len(checklists), checklists=checklists))
             with ThreadPoolExecutor(max_workers=args.workers) as executor:
                 extra = {} if checklists is None else dict(checklists=checklists)   # off: unchanged call
+                if args.token_budget:
+                    extra['token_budget'] = TokenBudget(client)
                 futures = {executor.submit(predict_one, row, client, layers, model=MODEL,
                                            provider='local-vllm', **extra): row['id'] for row in rows}
                 for future in as_completed(futures):
@@ -545,6 +578,7 @@ def main(argv=None):
                               [dict(id=row['id'], label=traces[row['id']]['binary']) for row in rows])
         write_json(args.output / 'DONE.json', dict(rows=len(traces), seconds=time.monotonic() - started,
             completion_http=client.completion_http, preflight_http=client.preflight_http,
+            budget_preflight_http=client.budget_preflight_http,
             cache_hits=client.cache_hits, technical_calls=sum(c['transport']['status'] != 200 for c in client.calls),
             default_zero_fallbacks=sum((t.get('output_recovery') or {}).get('mode') == 'DEFAULT_ZERO' for t in traces.values())))
     except BaseException as error:

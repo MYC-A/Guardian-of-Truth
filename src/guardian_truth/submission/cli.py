@@ -261,7 +261,7 @@ class ModelServer:
         raise SystemExit(128 + signum)
 
 
-def predict_one(row, client, layers, pre_profile='legacy', *, model=None, provider='local-llamacpp', checklists=None):
+def predict_one(row, client, layers, pre_profile='legacy', *, model=None, provider='local-llamacpp', checklists=None, token_budget=None):
     from guardian_truth.submission.primary import PrimaryReviewHook
     from guardian_truth.submission.blind_compact import CompactPrimaryReviewHook, PROFILES
     from guardian_truth.repair.v5 import ARMS, run_v5
@@ -284,7 +284,9 @@ def predict_one(row, client, layers, pre_profile='legacy', *, model=None, provid
         from guardian_truth.checklist.hook import ChecklistReviewHook
         hook_class, profile_args = ChecklistReviewHook, dict(checklists=checklists)
     hook = hook_class(client, 'blind2', effective_model, original_row=row,
-                      max_tokens=3400, max_request_bytes=60000, **profile_args)
+                      max_tokens=3400, max_request_bytes=60000,
+                      # None: historical 60 000-byte cap; else provider-token check against the served context
+                      **(dict(token_budget=token_budget) if token_budget is not None else {}), **profile_args)
     snapshot, stage_errors = {}, []
     def capture(value):
         snapshot.clear()

@@ -159,7 +159,7 @@ class Hook:
     """Per-row client wrapper. Only the request tagged 'review' is changed; everything else passes through unchanged."""
 
     def __init__(self, inner, pre, model, run_code=sandbox.run, max_tokens=1700, *, original_row=None, blind_budget_bytes=20000,
-                 max_request_bytes=60000):
+                 max_request_bytes=60000, token_budget=None):
         self.inner, self.pre, self.model, self.run_code, self.max_tokens = inner, pre, model, run_code, max_tokens
         self.log, self.injected, self.executions = [], 0, 0
         self.original_row = {'prompt': original_row['prompt']} if isinstance(original_row, dict) and isinstance(original_row.get('prompt'), str) else None
@@ -167,15 +167,40 @@ class Hook:
         if type(max_request_bytes) is not int or max_request_bytes < 1:
             raise ValueError('max_request_bytes must be a positive integer')
         self.max_request_bytes = max_request_bytes
+        # Optional provider-tokenizer budget: object with .count(request) -> int and .context (int tokens).
+        # None keeps the historical byte cap exactly.
+        if token_budget is not None and (not callable(getattr(token_budget, 'count', None))
+                                         or type(getattr(token_budget, 'context', None)) is not int
+                                         or token_budget.context < 1):
+            raise ValueError('token_budget needs count(request) and a positive int context')
+        self.token_budget = token_budget
 
     def _wire_budget(self, request):
-        return dict(request_bytes=len(wire_body(request)),
-                    max_request_bytes=self.max_request_bytes, reserved_completion_tokens=request.get('max_tokens'),
-                    validation='SERIALIZED_UTF8_BYTE_CAP_ONLY_NOT_PROVIDER_TOKENIZER')
+        budget = dict(request_bytes=len(wire_body(request)),
+                      max_request_bytes=self.max_request_bytes, reserved_completion_tokens=request.get('max_tokens'),
+                      validation='SERIALIZED_UTF8_BYTE_CAP_ONLY_NOT_PROVIDER_TOKENIZER')
+        if self.token_budget is not None:
+            try:
+                tokens = self.token_budget.count(request)
+                if type(tokens) is not int or tokens < 0:
+                    raise ValueError('INVALID_TOKEN_COUNT')
+                budget.update(input_tokens=tokens, context_tokens=self.token_budget.context,
+                              validation='PROVIDER_TOKENIZER_INPUT_PLUS_RESERVED_COMPLETION')
+            except Exception as error:            # cannot count: keep the historical byte cap for this request
+                budget.update(token_count_error=type(error).__name__,
+                              validation='SERIALIZED_UTF8_BYTE_CAP_FALLBACK_TOKEN_COUNT_FAILED')
+        return budget
+
+    def _exceeds(self, budget):
+        if 'input_tokens' in budget:
+            reserved = budget['reserved_completion_tokens']
+            reserved = reserved if type(reserved) is int and reserved > 0 else 0
+            return budget['input_tokens'] + reserved > budget['context_tokens']
+        return budget['request_bytes'] > self.max_request_bytes
 
     def _send(self, request, attempt=0, tag=''):
         budget = self._wire_budget(request)
-        if budget['request_bytes'] > self.max_request_bytes:
+        if self._exceeds(budget):
             return dict(content=None, usage=None, cached=False, transport=dict(status='NOT_EXECUTED_INPUT_BUDGET'),
                         input_budget=budget)
         result = dict(self.inner.call(request, attempt=attempt, tag=tag))
@@ -191,7 +216,7 @@ class Hook:
             self.injected += 1
             request = self.inject(request, attempt)
             budget = self._wire_budget(request)
-            if request != base and budget['request_bytes'] > self.max_request_bytes:
+            if request != base and self._exceeds(budget):
                 for step in self.log:
                     if step.get('injected'):
                         step['injected'] = False
