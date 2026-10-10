@@ -50,9 +50,19 @@ def texts_of(user):
 
 class Hook3(Hook2):
     LEVEL = {'cb1': 1, 'cb2': 2}
-    HEADROOM = 4000
+    TERSE = ('\nOutput length: keep every free-text field (description, interpretation, fact, exception_analysis, reason) to at most '
+             '35 words; cite at most 4 supporting_evidence items. Decide on the evidence; do not restate the policy.')
 
     def inject(self, request, attempt):
+        if self.pre == 'terse':
+            self.log.append(dict(tag='terse', injected=True))
+            req = copy.deepcopy(request)
+            req['messages'][0]['content'] += self.TERSE
+            return req
+        return self._inject(request, attempt)
+    HEADROOM = 4000
+
+    def _inject(self, request, attempt):
         if self.pre not in self.LEVEL:
             return super().inject(request, attempt)
         level = self.LEVEL[self.pre]
