@@ -25,3 +25,13 @@ their prediction cannot change). 128 requests × 3 samples. Server: max-num-seqs
 - Time: measured; production estimate must fit the 30-min limit with a deadline guard (THINK by descending p,
   stop before the deadline; unprocessed rows keep the base answer).
 Because the gate and the vote were inspired by the same data, an ACCEPT here is still to be confirmed on unseen data.
+
+## Amendment 1 (after arm A results, before arm B results and before any Gemma generation)
+Arm A: pools 16/26 TP, 1 FP; valid46 mean .834 but new FP per pass [2,3,2] → **reject** (FP rule). The valid46 FPs are
+consistent, not noise: banking_081 t35 and banking_063 t8 (both `transfer_to_human_agents`; Qwen argues the tool
+description requires a knowledge-base search to pick the reason) and airline_10 t19.
+Second family to veto consistent single-model errors: **Gemma 3 27B-it FP8** (RedHatAI/gemma-3-27b-it-FP8-dynamic,
+file sizes verified against HF) on the same gated rows, same question, full context, explicit reasoning + final
+VERDICT line, n=3, T 1.0 / top_p .95 / top_k 64, max_tokens 4096.
+Primary rule (prereg): fire iff Qwen-A ≥2/3 AND Gemma ≥2/3. Diagnostics: Gemma alone, pooled ≥4/6, Qwen-A OR Gemma.
+Same acceptance criteria. Note: the veto idea is motivated by the valid46 FPs seen above → confirm on unseen data.
