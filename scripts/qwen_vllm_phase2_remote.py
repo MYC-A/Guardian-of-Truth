@@ -135,7 +135,7 @@ assert vllm.__version__ == '0.19.1' and transformers.__version__ == '5.8.0' and 
     frozen = subprocess.check_output(['uv', 'pip', 'freeze', '--python', PYTHON], env=env, text=True, timeout=120)
     (ROOT / 'requirements-frozen.txt').write_text(frozen)
     (RESCUE / 'SETUP_DONE.json').write_text(json.dumps(dict(status='COMPLETE', venv=str(VENV),
-        wheels=len(wheels), frozen_sha_lines=len(frozen.splitlines()))))
+        wheels=len(lines), frozen_sha_lines=len(frozen.splitlines()))))
     source_model = OLD / 'model'
     model_dir = TARGET if TARGET.exists() else source_model
     patch = r"""import json, pathlib, sys
@@ -211,7 +211,10 @@ except BaseException:
 (BASE / 'STARTED.json').write_text(json.dumps(dict(source_sha=head, scope='vLLM install rescue + full B2 on FP8',
                                                     outer_cap_seconds=7200)))
 name = 'guardian_vllm_phase2_20261010'
-with (Path('/etc/supervisor/conf.d') / (name + '.conf')).open('x') as stream:
+state = subprocess.run(['supervisorctl', 'status', name], capture_output=True, text=True, timeout=30).stdout
+if 'RUNNING' in state or 'STARTING' in state:
+    raise SystemExit('PHASE2_ALREADY_ACTIVE: ' + state)
+with (Path('/etc/supervisor/conf.d') / (name + '.conf')).open('w') as stream:
     stream.write(f"""[program:{name}]
 command=/usr/bin/timeout --signal=TERM --kill-after=30 7200 /usr/bin/python3 -u {BASE}/run.py
 directory={BASE}
