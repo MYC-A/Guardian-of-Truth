@@ -65,3 +65,17 @@ Gemma server as round 1. Jobs (`experiments/think_gate_20261010/gemma2.py`), eva
   ties → higher t), then Gemma ≥2/3.
 - **L3 (diagnostic):** Gemma ≥2/3 alone instead of the base, valid46 F1 per pass vs .800.
   Replacing the full B2 pipeline model by Gemma is a separate, larger step, considered only if L3 is close to base.
+
+## Result of amendment 2
+Gemma: startup 80 s; gconf 64×3 in 110 s; gscore 298 in 209 s; gall 298×3 in 336 s; 0 errors, 298/298 scores parsed.
+
+| rule | pools TP/26 | pools FP/132 | prec | valid46 mean | new FP/pass | verdict |
+|---|---|---|---|---|---|---|
+| **C: Qwen gate p≥.005 → Gemma ≥2/3 (fresh samples) [prereg]** | 6 | 2 | .75 | **.839** | 0,0,0 | **ACCEPT** (round 1: 7/0, .848) |
+| L1: Gemma ≥2/3 on all base-0 rows, no gate | 5 | 12 | .29 | .854 | 0,0,0 | reject (pool FP) |
+| L2: Gemma own score gate | — | — | — | — | — | no t with pool FP ≤ 3 → reject |
+| L3: Gemma alone instead of the base | — | — | — | .545 (.56/.61/.47; FP 0, FN 13–16) | — | far below .800 |
+
+Reading: the Qwen score gate is essential (removes ~10 Gemma pool FPs); Gemma alone is precise but very lenient.
+Gemma-as-lead-judge is rejected; the cascade (Qwen base + Qwen gate + Gemma verdict) is confirmed on fresh samples
+(same rows; still needs unseen data). Full B2 with Gemma as the pipeline model: separate run (gemma_b2_20261010).
