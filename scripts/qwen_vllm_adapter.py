@@ -483,6 +483,8 @@ def main(argv=None):
     parser.add_argument('--model-dir', type=Path, required=True, help='Pinned HF snapshots/<revision> directory')
     parser.add_argument('--asset-manifest', type=Path, required=True, help='External pinned full asset verification receipt')
     parser.add_argument('--enforce-eager', action='store_true')
+    parser.add_argument('--startup-timeout', type=float, default=300,
+                        help='Seconds for vLLM readiness (torch.compile + CUDA graph capture need more without eager)')
     parser.add_argument('--input', type=Path, required=True)
     parser.add_argument('--output', type=Path, required=True, help='Fresh research artifact directory')
     parser.add_argument('--context', type=int, default=32768)
@@ -511,7 +513,8 @@ def main(argv=None):
     try:
         with OwnedVllmServer(args.python, args.model_dir, args.output, args.context, args.slots,
                              deadline=deadline, asset_manifest=args.asset_manifest,
-                             enforce_eager=args.enforce_eager) as server:
+                             enforce_eager=args.enforce_eager,
+                             startup_timeout=args.startup_timeout) as server:
             client = VllmClient(server.port, args.context, args.output / 'calls', api_key=server.api_key,
                 backend_manifest=server.manifest, timeout=args.timeout, deadline=deadline, max_calls=args.max_calls)
             from guardian_truth.v6fix.pipeline import Layers
