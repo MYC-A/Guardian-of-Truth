@@ -31,6 +31,8 @@ def main():
     ap.add_argument('--calls', type=Path, required=True)
     ap.add_argument('--traces', type=Path, required=True)
     ap.add_argument('--output', type=Path, required=True)
+    ap.add_argument('--candidate-accounting', action='store_true',
+                    help='Measure new wires only; saved replies are NOT new-profile predictions')
     a = ap.parse_args()
     if a.output.exists():
         raise ValueError('OUTPUT_EXISTS')
@@ -42,6 +44,8 @@ def main():
     from guardian_truth.submission.recovery import recover_output
     from guardian_truth.v6fix.pipeline import Layers
     from experiments.guardian_semantic.variants import CONTEXT_ADDENDUM
+    if a.candidate_accounting:
+        from guardian_truth.submission.blind_compact import construct_compact_request, deduplicate_request, expand_sources
     rows = read_rows(a.input)
     saved = [json.loads(s) for s in a.traces.read_text(encoding='utf-8').splitlines() if s.strip()]
     expected = {r['id']: r for r in saved}
@@ -123,6 +127,33 @@ def main():
                                                         blind_analysis_sources=pre_user))
         case['minimum_injection_wire_bytes'] = len(wire_body(lower_req))
         case['necessarily_undeliverable_with_existing_sources'] = case['minimum_injection_wire_bytes'] > 60000
+        if a.candidate_accounting:
+            if not st.get('parsed_ok'):
+                raise ValueError('CANDIDATE_ACCOUNTING_REQUIRES_VALID_OLD_PRE')
+            # Same historical pre proposal, changed reviewer wire. These bytes
+            # do not authorize reuse of the old reviewer reply or its metric.
+            dedup_base = copy.deepcopy(req)
+            dedup_base['messages'][0]['content'] = system + add
+            dedup_base['messages'][1]['content'] = compact(base)
+            dq, dr = deduplicate_request(dedup_base, pre_user, json.loads(raw))
+            dview = json.loads(dq['messages'][1]['content'])['blind_analysis_sources']
+            if expand_sources(base, dview) != pre_user:
+                raise ValueError('SOURCE_ROUNDTRIP_MISMATCH')
+            cq, units = construct_compact_request(pre_user, MODEL)
+            compact_base = copy.deepcopy(req)
+            compact_base['messages'][0]['content'] = system
+            compact_base['messages'][1]['content'] = compact(base)
+            minimum, _ = deduplicate_request(compact_base, pre_user, {f: [] for f in fields}, units)
+            case['candidate_accounting'] = dict(
+                scope='new wire size only; no new prediction',
+                legacy_pre_wire_bytes=len(wire_body(pres[0])),
+                dedup_reviewer_wire_bytes=len(wire_body(dq)), dedup_alias_count=dr['alias_count'],
+                dedup_saved_proposal_fits_byte_cap=len(wire_body(dq)) <= 60000,
+                dedup_request_sha256=sha(dq), compact_pre_wire_bytes=len(wire_body(cq)),
+                compact_pre_fits_byte_cap=len(wire_body(cq)) <= 60000, compact_pre_sha256=sha(cq),
+                compact_minimum_reviewer_wire_bytes=len(wire_body(minimum)),
+                compact_minimum_fits_byte_cap=len(wire_body(minimum)) <= 60000,
+                compact_unit_count=len(units), full_source_roundtrip=True)
         if b:
             # Exact text equality measures duplication only; it is not a semantic/source certificate.
             base_texts = {s['text'] for k in ('normative_sources', 'declarations', 'history') for s in p.get(k, [])}
@@ -135,6 +166,7 @@ def main():
     if client.missing or total['mismatches']:
         raise ValueError(f"REPLAY_FAILED: missing={client.missing}, mismatches={total['mismatches']}")
     report = dict(scope='frozen payload accounting; no new inference, tokenizer timing, or quality claim',
+                  candidate_accounting=a.candidate_accounting,
                   input_sha256=hashlib.sha256(a.input.read_bytes()).hexdigest(),
                   calls_sha256=hashlib.sha256(a.calls.read_bytes()).hexdigest(),
                   traces_sha256=hashlib.sha256(a.traces.read_bytes()).hexdigest(), rows=len(rows), totals=total,
