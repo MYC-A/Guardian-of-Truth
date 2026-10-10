@@ -1,0 +1,124 @@
+name: Build offline vLLM FP8 runtime and verify public entrypoint
+
+on:
+  workflow_dispatch:
+  push:
+    branches: [build/qwen-vllm-fp8-submission-20261010]
+    paths:
+      - .github/workflows/qwen-vllm-runtime.yml
+      - scripts/build_vllm_submission.py
+      - scripts/vllm_bundle_toolchain.py
+      - submission/predict_vllm.py
+      - submission/vllm_model_manifest.json
+
+permissions:
+  contents: read
+
+concurrency:
+  group: guardian-vllm-runtime-${{ github.ref }}
+  cancel-in-progress: false
+
+jobs:
+  runtime:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 60
+    env:
+      PYTHONDONTWRITEBYTECODE: '1'
+      PYTHONUTF8: '1'
+      OPENBLAS_NUM_THREADS: '1'
+      OMP_NUM_THREADS: '2'
+    steps:
+      - uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683
+        with:
+          persist-credentials: false
+          sparse-checkout: |
+            src
+            scripts
+            tests
+            submission
+            experiments/guardian_addons
+            experiments/guardian_semantic
+            experiments/guardian_local_a100
+            outputs/qwen_inference_20261010/vllm_rescue
+            docs/qwen_vllm_submission_20261010
+
+      - name: Make room only on ephemeral hosted runner
+        shell: bash
+        run: |
+          set -euo pipefail
+          test "${GITHUB_ACTIONS:-}" = true
+          test "${RUNNER_ENVIRONMENT:-}" = github-hosted
+          test "${RUNNER_OS:-}" = Linux
+          for sdk in /usr/share/dotnet /usr/local/lib/android /opt/ghc /opt/hostedtoolcache/CodeQL; do
+            if [[ -d "$sdk" && ! -L "$sdk" ]]; then
+              test "$(realpath -e -- "$sdk")" = "$sdk"
+              sudo rm -rf -- "$sdk"
+            fi
+          done
+          free=$(df -PB1 "$RUNNER_TEMP" | awk 'NR==2 {print $4}')
+          test "$free" -ge 25000000000
+
+      - name: Install hash-locked wheels into Linux Python3.12
+        shell: bash
+        run: |
+          set -euo pipefail
+          sudo apt-get update
+          sudo apt-get install -y --no-install-recommends python3.12-venv python3.12-dev gcc g++ binutils
+          /usr/bin/python3.12 -m venv "$RUNNER_TEMP/vllm-env"
+          mkdir -p "$RUNNER_TEMP/vllm-wheels" "$RUNNER_TEMP/artifacts"
+          "$RUNNER_TEMP/vllm-env/bin/python" -m pip download --require-hashes --only-binary=:all: --no-deps \
+            --dest "$RUNNER_TEMP/vllm-wheels" -r outputs/qwen_inference_20261010/vllm_rescue/requirements.lock
+          "$RUNNER_TEMP/vllm-env/bin/python" -m pip install --no-index --no-deps --require-hashes \
+            --find-links "$RUNNER_TEMP/vllm-wheels" -r outputs/qwen_inference_20261010/vllm_rescue/requirements.lock
+          "$RUNNER_TEMP/vllm-env/bin/python" -m pip check
+          "$RUNNER_TEMP/vllm-env/bin/python" -m pip freeze > "$RUNNER_TEMP/artifacts/requirements-frozen.txt"
+
+      - name: Check public B2 wiring and bundle contracts
+        shell: bash
+        run: |
+          set -euo pipefail
+          export PYTHONPATH="$PWD/src:$PWD"
+          "$RUNNER_TEMP/vllm-env/bin/python" -m pytest -q -p no:cacheprovider \
+            tests/test_build_vllm_submission.py tests/test_vllm_submission_entrypoint.py \
+            tests/test_qwen_vllm_adapter.py tests/test_qwen_vllm_verify_assets.py \
+            tests/test_submission_primary_retry.py | tee "$RUNNER_TEMP/artifacts/tests.log"
+
+      - name: Build and exercise actual portable runtime without model weights
+        shell: bash
+        run: |
+          set -euo pipefail
+          export PYTHONPATH="$PWD/src:$PWD"
+          "$RUNNER_TEMP/vllm-env/bin/python" scripts/build_vllm_submission.py prepare --runtime-only \
+            --repo "$PWD" --stage "$RUNNER_TEMP/vllm-stage" \
+            --asset-manifest submission/vllm_model_manifest.json
+          "$RUNNER_TEMP/vllm-env/bin/python" scripts/build_vllm_submission.py smoke \
+            --stage "$RUNNER_TEMP/vllm-stage" > "$RUNNER_TEMP/artifacts/cpu-smoke.json"
+          "$RUNNER_TEMP/vllm-env/bin/python" -c \
+            'import pandas as p,sys;p.DataFrame(columns=["id","prompt","response"]).to_parquet(sys.argv[1],index=False)' \
+            "$RUNNER_TEMP/empty.parquet"
+          python3 "$RUNNER_TEMP/vllm-stage/scripts/predict.py" --input "$RUNNER_TEMP/empty.parquet" \
+            --output "$RUNNER_TEMP/empty-predictions.parquet" --work-dir "$RUNNER_TEMP/empty-public-run"
+          "$RUNNER_TEMP/vllm-env/bin/python" scripts/build_vllm_submission.py zip --runtime-only \
+            --stage "$RUNNER_TEMP/vllm-stage" --destination "$RUNNER_TEMP/artifacts/guardian-vllm-runtime.zip" \
+            --report "$RUNNER_TEMP/artifacts/runtime-export.json"
+          cp "$RUNNER_TEMP/vllm-stage/MANIFEST.json" "$RUNNER_TEMP/artifacts/RUNTIME_MANIFEST.json"
+          printf '%s\n' 'PARTIAL_RUNTIME_TRANSPORT: model weights excluded; GPU validation not executed by CPU CI.' \
+            > "$RUNNER_TEMP/artifacts/NOT_FOR_UPLOAD.txt"
+
+      - name: Upload separately verified runtime transport
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02
+        with:
+          name: guardian-vllm-fp8-runtime-${{ github.sha }}
+          path: ${{ runner.temp }}/artifacts/
+          compression-level: 0
+          retention-days: 7
+          if-no-files-found: error
+
+      - name: Preserve failed build diagnostics
+        if: failure()
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02
+        with:
+          name: guardian-vllm-failed-${{ github.sha }}
+          path: ${{ runner.temp }}/artifacts/
+          retention-days: 3
+          if-no-files-found: warn
