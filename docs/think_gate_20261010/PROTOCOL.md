@@ -87,3 +87,17 @@ if both pass** (round 1/2 showed sample variance).
 - **Q-CoT:** Qwen itself, enable_thinking=False, short reasoning + VERDICT line, n=3, max_tokens 4096,
   T .7 / top_p .8 / top_k 20 (Qwen non-thinking recommendation). 0 extra GB.
 - **G4B:** Gemma 3 4B-it FP8 (RedHatAI/gemma-3-4b-it-FP8-dynamic, 5.4 GB), request identical to the Gemma-27B arm.
+
+## Result of amendment 3
+| arm | replicate | pools TP/26 | pools FP/132 | valid46 mean | new FP/pass | |
+|---|---|---|---|---|---|---|
+| Q-CoT (Qwen, no thinking, short reasoning) | 1 | 12 | 2 | .836 | 0,0,0 | pass |
+| | 2 | 13 | 1 | .825 | 0,1,1 | fail (valid < .830) |
+| G4B (Gemma 3 4B FP8) | 1 | 3 | 0 | .844 | 1,1,0 | fail (pool TP) |
+| | 2 | 2 | 1 | .837 | 1,1,1 | fail |
+Both arms **reject** under the two-replicate rule. Time: Q-CoT 64×3 in ~410 s (mean ~1070 tokens/sample);
+G4B 64×3 in 8–18 s.
+POST-HOC (diagnostic): pooling both Q-CoT replicates (6 samples), ≥4/6 → pools 11/1, valid46 .832, 0 new FP;
+≥3/6 → pools 14/2, valid .832. Q-CoT is strong on the pools (≈2× Gemma-27B's pool TP) but its valid46 gain is
+essentially one row (telecom break_apn, 3/3 in every pass), so valid46 sits at the .830 boundary.
+Gemma-27B's extra valid46 rows (banking_005, retail_48) are rows Qwen in any mode rarely flags.
