@@ -57,3 +57,23 @@ Decision pools (397 de-duplicated labelled rows, 10 pools; B2 F1 .9211):
 - `REPEAT_FAILED`: 0 fires → INSUFFICIENT_FIRES (not adopted).
 valid46 (report only, contaminated): UNKNOWN_TOOL 5 fires / 5 positive, +3 TP vs stored B2 Q8 rep1;
 REPEAT_FAILED 1/1 positive. Adoption is limited to UNKNOWN_TOOL; evidence for it outside valid46 is thin (3 rows).
+
+## Amendment 2 (logic review; checks re-specified before re-evaluation)
+Review of the code against the input format found one bug and three universality gaps:
+1. **Call→response pairing (bug).** In a turn all `→ TOOL_CALL` lines precede all `← TOOL_RESPONSE`
+   lines, in the same (FIFO) order; the old code paired a call only with the line right after it, so
+   only ~53% of history calls were paired. Now history is split into `⟦ROLE …⟧` blocks and the i-th
+   response of a block is paired with its i-th call; if counts or names disagree the outcome is unknown
+   (abstain). On all pools every block matched (2023/2023).
+2. **REPEAT_FAILED** now fires only if the *last history event* is the failed call (no USER turn in
+   between): a user message may change external state (e.g. device actions), so a retry can be legitimate.
+3. **SCHEMA:** a parameter-like line in an unknown notation (`    name: <not a known JSON type>`) marks
+   the tool's parameter list incomplete → the "unknown parameter" check is skipped for that tool.
+4. **Catalog robustness:** a catalog that is not terminated by a following section (possibly truncated)
+   → abstain; an "unknown" tool whose name is mentioned inside the catalog text (alias/note) → abstain.
+Decision rule and pools unchanged. Result (`outputs/contract_lint_20261010/result_amend2.json`):
+decision pools identical — UNKNOWN_TOOL 3 fires / 3 positive, 0 new FP → **HARD**; SCHEMA 0 fires,
+REPEAT_FAILED 0 fires (also 0 without the USER-turn restriction, diagnostic) → not adopted.
+valid46 (report only): UNKNOWN_TOOL 5/5 positive, +3 TP; REPEAT_FAILED 0 (the earlier 1 fire had a USER
+turn in between). Note: valid46 comparison is against stored B2 **Q8 rep1** (F1 .7027 → .80), not the
+production run (.789); for vLLM graph16 (.8205) UNKNOWN_TOOL would add banking_083 → est. TP17/FP0/FN6, F1 ≈ .85.

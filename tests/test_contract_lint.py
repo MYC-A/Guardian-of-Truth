@@ -56,9 +56,9 @@ def test_invalid_json():
     assert checks(hist(), turn('get_order: {order_id: W1}')) == ['INVALID_ARGS_JSON']
 
 
-def test_repeat_failed_identical_after_user_message():
-    p = hist('\t→ TOOL_CALL get_order: {"order_id": "#W1"}', '\t← TOOL_RESPONSE get_order [ERROR]: not found',
-             '⟦USER⟧', 'try again')
+def test_repeat_failed_identical_immediately():
+    p = hist('⟦ASSISTANT · ход 3⟧', '\t→ TOOL_CALL get_order: {"order_id": "#W1"}',
+             '\t← TOOL_RESPONSE get_order [ERROR]: not found')
     assert checks(p, turn('get_order: {"order_id": "#W1"}')) == ['REPEAT_FAILED']
     assert checks(p, turn('get_order: {"order_id": "#W2"}')) == []
 
@@ -79,3 +79,38 @@ def test_inline_mention_of_header_is_not_the_catalog():
     p = 'Use only tools listed in [AVAILABLE TOOLS]. Never call others.\n' + CAT
     assert set(parse_catalog(p)) == {'get_order', 'cancel_order'}
     assert checks(p, turn('reset_vpn: {}')) == ['UNKNOWN_TOOL']
+
+
+def test_multi_call_turn_pairs_fifo():
+    # two calls then two responses; the LAST call failed, the first succeeded
+    h = hist('⟦ASSISTANT · ход 3⟧', '\t→ TOOL_CALL get_order: {"order_id": "#W1"}',
+             '\t→ TOOL_CALL get_order: {"order_id": "#W2"}',
+             '\t← TOOL_RESPONSE get_order: {"ok": 1}', '\t← TOOL_RESPONSE get_order [ERROR]: not found')
+    assert checks(h, turn('get_order: {"order_id": "#W2"}')) == ['REPEAT_FAILED']
+    assert checks(h, turn('get_order: {"order_id": "#W1"}')) == []
+
+
+def test_repeat_failed_abstains_after_user_turn_or_mismatch():
+    h = hist('⟦ASSISTANT · ход 3⟧', '\t→ TOOL_CALL get_order: {"order_id": "#W2"}',
+             '\t← TOOL_RESPONSE get_order [ERROR]: not found', '⟦USER · ход 4⟧', 'try again')
+    assert checks(h, turn('get_order: {"order_id": "#W2"}')) == []
+    h2 = hist('⟦ASSISTANT · ход 3⟧', '\t→ TOOL_CALL get_order: {"order_id": "#W2"}',
+              '\t← TOOL_RESPONSE cancel_order [ERROR]: not found')
+    assert checks(h2, turn('get_order: {"order_id": "#W2"}')) == []
+
+
+def test_unknown_param_notation_disables_unknown_parameter_check():
+    cat = CAT.replace('    count: integer — How many.', '    count: int — How many.')
+    assert checks(cat, turn('cancel_order: {"order_id": "#W1", "count": 2}')) == []
+    assert checks(cat, turn('cancel_order: {"reason": "x"}')) == ['SCHEMA', 'SCHEMA']  # missing order_id + enum
+
+
+def test_truncated_catalog_abstains():
+    cat = CAT.split('⟦USER⟧')[0]
+    assert checks(cat, turn('check_network_status: {}')) == []
+
+
+def test_unknown_tool_mentioned_in_catalog_abstains():
+    cat = CAT.replace('Read an order.', 'Read an order (formerly fetch_order).')
+    assert checks(cat, turn('fetch_order: {}')) == []
+    assert checks(cat, turn('check_network_status: {}')) == ['UNKNOWN_TOOL']

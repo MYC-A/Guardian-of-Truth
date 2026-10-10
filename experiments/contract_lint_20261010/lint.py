@@ -14,6 +14,8 @@ PARAM_LINE = re.compile(r'^    (\w+): (string|integer|number|boolean|array|objec
 CALL = re.compile(r'→ TOOL_CALL ([\w.\-]+): (.*)$')
 RESP = re.compile(r'← TOOL_RESPONSE ([\w.\-]+)( \[ERROR\])?:')
 SECTION = re.compile(r'^(?:\[[A-Z][A-Z _]{2,40}\]|⟦|</?[a-z_]+>)')
+PARAM_LIKE = re.compile(r'^    [a-z_][a-z0-9_]*: ')       # looks like a parameter line
+BLOCK = re.compile(r'^⟦([A-Z]+)[^⟧]*⟧[^\n]*$', re.M)
 JSON_TYPES = dict(string=lambda v: isinstance(v, str),
                   integer=lambda v: isinstance(v, int) and not isinstance(v, bool),
                   number=lambda v: isinstance(v, (int, float)) and not isinstance(v, bool),
@@ -29,21 +31,62 @@ def parse_catalog(prompt):
     if len(headers) != 1:
         return None                               # missing or ambiguous catalog block: abstain
     lines = prompt[headers[0].end():].splitlines()[1:]
-    catalog, current = {}, None
+    catalog, current, terminated = {}, None, False
     for line in lines:
         if SECTION.match(line):
+            terminated = True
             break
         m = TOOL_LINE.match(line)
         if m:
             if m.group(1) in catalog:
                 return None                       # duplicate tool name: ambiguous catalog
-            current = catalog.setdefault(m.group(1), dict(params={}))
+            current = catalog.setdefault(m.group(1), dict(params={}, complete=True))
             continue
         p = PARAM_LINE.match(line)
         if p and current is not None:
             enum = [x.strip() for x in p.group(4).split('|')] if p.group(4) else None
             current['params'][p.group(1)] = dict(type=p.group(2), required=bool(p.group(3)), enum=enum)
+        elif current is not None and PARAM_LIKE.match(line):
+            current['complete'] = False           # parameter in an unknown notation: schema unknown
+    if not terminated:
+        return None                               # catalog runs to end of prompt: possibly truncated
     return catalog or None
+
+
+def catalog_text(prompt):
+    headers = list(HEADER.finditer(prompt))
+    rest = prompt[headers[0].end():] if len(headers) == 1 else ''
+    m = re.search(r'^(?:\[[A-Z][A-Z _]{2,40}\]|⟦|</?[a-z_]+>)', rest, re.M)
+    return rest[:m.start()] if m else rest
+
+
+def blocks(text):
+    """[(role, body)] for ⟦ROLE ...⟧ blocks; text before the first block is role None."""
+    marks = list(BLOCK.finditer(text))
+    out = [(None, text[:marks[0].start()] if marks else text)]
+    for i, m in enumerate(marks):
+        out.append((m.group(1), text[m.end():marks[i + 1].start() if i + 1 < len(marks) else len(text)]))
+    return out
+
+
+def paired_history(prompt):
+    """Chronological [(role, name, args|None, failed|None)] for calls, and 'USER' markers.
+
+    Within a turn all TOOL_CALL lines precede all TOOL_RESPONSE lines (FIFO order); the i-th
+    response belongs to the i-th call. If names/counts disagree, `failed` is None (unknown).
+    """
+    out = []
+    for role, body in blocks(prompt):
+        if role == 'USER':
+            out.append(('USER', None, None, None))
+            continue
+        ev = parse_calls(body)
+        calls = [e for e in ev if e[0] == 'call']
+        resps = [e for e in ev if e[0] == 'resp']
+        ok = len(calls) == len(resps) and all(c[1] == r[1] for c, r in zip(calls, resps))
+        for i, c in enumerate(calls):
+            out.append(('call', c[1], c[2], resps[i][2] if ok else None))
+    return out
 
 
 def parse_calls(text):
@@ -73,13 +116,15 @@ def schema_findings(name, args, entry):
     out, params = [], entry['params']
     if not params:
         return out                                # no parsed parameters: abstain
+    check_unknown = entry.get('complete', True)
     for key, spec in params.items():
         if spec['required'] and key not in args:
             out.append(dict(check='SCHEMA', tool=name, detail=f'missing required parameter {key}'))
     for key, value in args.items():
         spec = params.get(key)
         if spec is None:
-            out.append(dict(check='SCHEMA', tool=name, detail=f'unknown parameter {key}'))
+            if check_unknown:
+                out.append(dict(check='SCHEMA', tool=name, detail=f'unknown parameter {key}'))
             continue
         if value is None and not spec['required']:
             continue
@@ -95,19 +140,18 @@ def lint(prompt, response):
     catalog = parse_catalog(prompt)
     if catalog is None:
         return []
-    history = parse_calls(prompt)
-    failed_tail = None                            # last history call if it failed and nothing followed
-    for i, ev in enumerate(history):
-        if ev[0] == 'call':
-            nxt = history[i + 1] if i + 1 < len(history) else None
-            failed = nxt is not None and nxt[0] == 'resp' and nxt[1] == ev[1] and nxt[2]
-            failed_tail = (ev[1], canon(ev[2])) if failed and ev[2] is not None else None
+    history = paired_history(prompt)
+    failed_tail = None                            # last history event, if it is a call known to have failed
+    if history and history[-1][0] == 'call' and history[-1][3] is True and history[-1][2] is not None:
+        failed_tail = (history[-1][1], canon(history[-1][2]))
     findings, first = [], True
     for ev in parse_calls(response):
         if ev[0] != 'call':
             continue
         name, args = ev[1], ev[2]
         if name not in catalog:
+            if re.search(r'(?<![\w.\-])' + re.escape(name) + r'(?![\w.\-])', catalog_text(prompt)):
+                continue                          # mentioned inside the catalog (alias/note): abstain
             findings.append(dict(check='UNKNOWN_TOOL', tool=name, detail='not in [AVAILABLE TOOLS]'))
         elif not isinstance(args, dict):
             findings.append(dict(check='INVALID_ARGS_JSON', tool=name, detail=ev[3][:200]))
