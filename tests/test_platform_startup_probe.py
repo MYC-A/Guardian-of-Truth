@@ -78,8 +78,6 @@ def test_environment_mirrors_failed_archive(tmp_path, monkeypatch):
     exact = probe.submission_environment(tmp_path, bundled=True)
     assert 'LD_LIBRARY_PATH' not in exact and 'PYTHONPATH' not in exact
     assert exact['GUARDIAN_BUNDLED_PYTHON'] == '1' and exact['TRITON_CACHE_DIR'].startswith(str(tmp_path))
-    bridge = probe.submission_environment(tmp_path, bundled=True, driver_bridge=True)
-    assert bridge['LD_LIBRARY_PATH'] == probe.DRIVER_BRIDGE
     host = probe.submission_environment(tmp_path, bundled=False)
     assert host['LD_LIBRARY_PATH'] == '/usr/local/nvidia/lib64:/opt/hpcx/ompi/lib'
 
@@ -179,3 +177,39 @@ def test_unpacked_probe_runs_end_to_end_without_gpu(tmp_path):
                             capture_output=True, text=True, timeout=600, cwd=tmp_path)
     assert result.returncode == 2, result.stderr[-2000:]
     assert 'GUARDIAN_STARTUP_PROBE {"probe": "done"' in result.stdout
+
+
+WRAPPER = """#!/bin/sh
+set -eu
+HERE=$(CDPATH= cd -- "$(dirname -- "$0")" && pwd)
+ROOT=$(CDPATH= cd -- "$HERE/../.." && pwd)
+export CC="$ROOT/runtime/toolchain/usr/bin/gcc"
+export CXX="$ROOT/runtime/toolchain/usr/bin/g++"
+export PATH="$ROOT/runtime/toolchain/usr/bin:$ROOT/runtime/python/bin:/usr/bin:/bin"
+export PATH="$ROOT/runtime/bin:$PATH"
+echo "ROOT=$ROOT CC=$CC CXX=$CXX PATH=$PATH"
+"""
+
+
+def test_host_compiler_wrapper_swaps_only_compiler_and_keeps_root(tmp_path):
+    root = tmp_path / 'archive'
+    (root / 'runtime/python').mkdir(parents=True)
+    (root / 'runtime/python/run_python.sh').write_text(WRAPPER)
+    work = tmp_path / 'work'
+    work.mkdir()
+    target, replaced = probe.host_compiler_wrapper(root, work)
+    assert target is not None and set(replaced.values()) == {1}
+    out = subprocess.run([str(target)], capture_output=True, text=True, check=True).stdout
+    assert f'ROOT={root} ' in out and 'CC=/usr/bin/gcc CXX=/usr/bin/g++' in out
+    assert 'toolchain' not in out and out.strip().endswith('/usr/bin:/bin:' + str(root) + '/runtime/python/bin')
+    original = WRAPPER.splitlines()
+    changed = target.read_text().splitlines()
+    assert [a for a, b in zip(original, changed) if a != b] == [original[2], original[4], original[5], original[6]]
+
+
+def test_host_compiler_wrapper_refuses_unexpected_layout(tmp_path):
+    root = tmp_path / 'archive'
+    (root / 'runtime/python').mkdir(parents=True)
+    (root / 'runtime/python/run_python.sh').write_text(WRAPPER.replace('export CC=', 'export MYCC='))
+    target, replaced = probe.host_compiler_wrapper(root, tmp_path)
+    assert target is None and replaced['cc'] == 0

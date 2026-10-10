@@ -12,6 +12,7 @@ import os
 from pathlib import Path
 import resource
 import secrets
+import shlex
 import shutil
 import signal
 import socket
@@ -28,7 +29,11 @@ import platform_environment_probe as base  # noqa: E402
 REVISION = '017b9c7af6b5689d5dd426a76e0bc077eb5ca20a'
 ENGINE_VERSION = '0.19.1'
 MODEL = f'Qwen/Qwen3.8-27B-FP8@{REVISION}:vllm-{ENGINE_VERSION}'
-DRIVER_BRIDGE = '/usr/local/nvidia/lib64:/usr/local/nvidia/lib'
+HOST_CC, HOST_CXX = '/usr/bin/gcc', '/usr/bin/g++'
+# 2026-10-11 v3 run: the bundled gcc.real needs GLIBC_2.36/2.38 but runs on the
+# host libc (it is not started through the private loader), so Triton's
+# cuda_utils.c build fails and vLLM's model inspection exits. This variant keeps
+# the whole bundled runtime and only swaps the C/C++ compiler to the host one.
 WEIGHT_SUFFIXES = ('.safetensors', '.bin', '.pt', '.pth', '.gguf', '.npz')
 LOG_TAIL_BYTES = 24576
 TOTAL_BUDGET_SECONDS = 1500   # platform limit is 1800; keep margin for teardown
@@ -140,7 +145,29 @@ def host_facts(root):
     return facts
 
 
-def submission_environment(cache, *, bundled, driver_bridge=False):
+def host_compiler_wrapper(root, work):
+    """Copy run_python.sh with only CC/CXX and the toolchain-first PATH replaced."""
+    source = (root / 'runtime/python/run_python.sh').read_text(encoding='utf-8')
+    replaced, lines = dict(here=0, cc=0, cxx=0, path=0), []
+    for line in source.splitlines():
+        if line.startswith('HERE='):
+            line, replaced['here'] = 'HERE=' + shlex.quote(str(root / 'runtime/python')), replaced['here'] + 1
+        elif line.startswith('export CC='):
+            line, replaced['cc'] = 'export CC=' + HOST_CC, replaced['cc'] + 1
+        elif line.startswith('export CXX='):
+            line, replaced['cxx'] = 'export CXX=' + HOST_CXX, replaced['cxx'] + 1
+        elif line.startswith('export PATH="$ROOT/runtime/toolchain/usr/bin:'):
+            line, replaced['path'] = 'export PATH="/usr/bin:/bin:$ROOT/runtime/python/bin"', replaced['path'] + 1
+        lines.append(line)
+    if set(replaced.values()) != {1}:
+        return None, replaced
+    target = work / 'run_python_host_compiler.sh'
+    target.write_text('\n'.join(lines) + '\n', encoding='utf-8')
+    target.chmod(0o755)
+    return target, replaced
+
+
+def submission_environment(cache, *, bundled):
     """Mirror the failed archive: run() caches, bootstrap flags, adapter removals."""
     environment = dict(os.environ, HF_HUB_OFFLINE='1', TRANSFORMERS_OFFLINE='1',
                        HF_HOME=str(cache / 'huggingface'), XDG_CACHE_HOME=str(cache),
@@ -152,8 +179,6 @@ def submission_environment(cache, *, bundled, driver_bridge=False):
         environment.update(GUARDIAN_BUNDLED_PYTHON='1', PYTHONUTF8='1')
         for key in ('LD_LIBRARY_PATH', 'PYTHONPATH', 'PYTHONHOME', 'LD_PRELOAD'):
             environment.pop(key, None)
-        if driver_bridge:
-            environment['LD_LIBRARY_PATH'] = DRIVER_BRIDGE
     return environment
 
 
@@ -328,9 +353,13 @@ def main(arguments=None):
                                submission_environment(cache / 'exact', bundled=True), work, model_dir,
                                server=can_serve)
         if exact is None or not str(exact.get('outcome', '')).startswith('SERVER_READY'):
-            run_variant('bundled_driver_bridge', str(wrapper),
-                        submission_environment(cache / 'bridge', bundled=True, driver_bridge=True),
-                        work, model_dir, server=can_serve)
+            wrapper_copy, replaced = host_compiler_wrapper(root, work)
+            emit('host_compiler_wrapper', dict(created=wrapper_copy is not None, replacements=replaced,
+                                               host_cc=shutil.which(HOST_CC), host_cxx=shutil.which(HOST_CXX)))
+            if wrapper_copy is not None:
+                run_variant('bundled_host_compiler', str(wrapper_copy),
+                            submission_environment(cache / 'hostcc', bundled=True), work, model_dir,
+                            server=can_serve)
     else:
         emit('bundled_variants', 'SKIPPED_NO_BUNDLED_RUNTIME')
     if can_serve:
