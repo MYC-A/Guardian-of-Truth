@@ -392,7 +392,16 @@ def prepare(repo, stage, model_dir, asset_manifest, *, runtime_only=False):
     python = Path(sys._base_executable).resolve()
     materialize(python, stage / 'runtime/python/bin/python3.12.real')
     copy_tree(sysconfig.get_path('stdlib'), stage / 'runtime/python/lib/python3.12',
-              exclude=('__pycache__', 'site-packages', 'dist-packages', 'tests', 'test', 'idlelib', 'tkinter', 'ensurepip'))
+              exclude=('__pycache__', 'site-packages', 'dist-packages', 'tests', 'test', 'idlelib', 'tkinter',
+                       'ensurepip', 'sitecustomize.py', 'libpython3.12.so'))
+    # Debian's stdlib contains links to host customization and its shared
+    # interpreter outside the stdlib tree. Never import /etc/sitecustomize;
+    # include the declared interpreter library explicitly instead.
+    library = Path(sysconfig.get_config_var('LIBDIR')) / sysconfig.get_config_var('LDLIBRARY')
+    if library.is_file():
+        materialize(library, stage / 'runtime/lib' / library.name)
+        if library.resolve().name != library.name:
+            materialize(library.resolve(), stage / 'runtime/lib' / library.resolve().name)
     for include in set(filter(None, (sysconfig.get_path('include'), sysconfig.get_path('platinclude')))):
         copy_tree(include, stage / 'runtime/python/include/python3.12', exclude=('__pycache__',))
     versions, ownership = collect_wheels(stage)
