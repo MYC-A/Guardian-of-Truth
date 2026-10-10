@@ -432,17 +432,17 @@ def main(arguments=None):
         if not can_serve:
             emit('server_variants', 'SKIPPED_NO_MODEL_METADATA')
         wrapper = root / 'runtime/python/run_python.sh'
-        exact = None
+        checked, exact = None, None
         if facts['bundled_runtime']:
-            _, exact = run_variant('bundled_exact', str(wrapper),
+            checked, exact = run_variant('bundled_exact', str(wrapper),
                 submission_environment(work / 'exact_server_cache', bundled=True), work, model_dir,
                 server=can_serve)
         else:
             emit('bundled_variants', 'SKIPPED_NO_BUNDLED_RUNTIME')
         if can_serve:
-            if exact and (exact.get('cleanup_error') or
+            if (checked and checked.get('cleanup_error')) or (exact and (exact.get('cleanup_error') or
                     isinstance(exact.get('gpu_after_cleanup'), dict) and
-                    exact['gpu_after_cleanup'].get('released') is False):
+                    exact['gpu_after_cleanup'].get('released') is False)):
                 emit('host_vllm_server', dict(outcome='SKIPPED_AFTER_PREVIOUS_CLEANUP_FAILURE'))
             else:
                 run_variant('host_vllm', sys.executable,

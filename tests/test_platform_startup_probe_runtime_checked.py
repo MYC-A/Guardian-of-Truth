@@ -227,7 +227,8 @@ def test_dependency_checks_do_not_warm_server_cache(tmp_path, monkeypatch):
     assert calls[0]['TRITON_CACHE_DIR'] != environment['TRITON_CACHE_DIR']
 
 
-def test_failed_cleanup_prevents_next_gpu_server(tmp_path, monkeypatch, capsys):
+@pytest.mark.parametrize('failed_stage', ['checks', 'server'])
+def test_failed_cleanup_prevents_next_gpu_server(tmp_path, monkeypatch, capsys, failed_stage):
     script = tmp_path / 'scripts/predict.py'
     script.parent.mkdir()
     monkeypatch.setattr(probe, '__file__', str(script))
@@ -236,8 +237,11 @@ def test_failed_cleanup_prevents_next_gpu_server(tmp_path, monkeypatch, capsys):
     (model / 'config.json').write_text('{}')
     monkeypatch.setattr(probe, 'host_facts', lambda root: dict(bundled_runtime=True))
     calls = []
-    monkeypatch.setattr(probe, 'run_variant', lambda name, *a, **k:
-        (calls.append(name), dict(cleanup_error=dict(error='OSError'))))
+    def variant(name, *args, **kwargs):
+        calls.append(name)
+        failure = dict(cleanup_error=dict(error='OSError'))
+        return (failure, None) if failed_stage == 'checks' else (None, failure)
+    monkeypatch.setattr(probe, 'run_variant', variant)
     assert probe.main(['--input', 'none', '--output', 'none']) == 2
     assert calls == ['bundled_exact']
     assert 'SKIPPED_AFTER_PREVIOUS_CLEANUP_FAILURE' in capsys.readouterr().out

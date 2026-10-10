@@ -272,9 +272,10 @@ def test_waitid_cleanup_signals_group_before_reap_and_refuses_foreign_pid(monkey
     for name, value in dict(P_PID=1, WEXITED=4, WNOHANG=1, WNOWAIT=0x1000000).items():
         monkeypatch.setattr(probe.os, name, value, raising=False)
     monkeypatch.setattr(probe.time, 'sleep', lambda seconds: None)
+    monkeypatch.setattr(probe, 'live_group_members', lambda pgid: [])
     probe.cleanup_anchored_group(process)
     assert calls == ['owned_unreaped', ('signal', 700, signal.SIGTERM),
-                     'owned_unreaped', ('signal', 700, 9), 'reap']
+                     'owned_unreaped', ('signal', 700, 9), 'owned_unreaped', 'reap']
     calls.clear()
     def foreign(*args):
         raise ChildProcessError('no longer our unreaped child')
@@ -282,6 +283,54 @@ def test_waitid_cleanup_signals_group_before_reap_and_refuses_foreign_pid(monkey
     with pytest.raises(ChildProcessError):
         probe.cleanup_anchored_group(process)
     assert calls == []
+
+
+def test_anchored_cleanup_waits_for_pending_kill_before_reaping(monkeypatch):
+    from types import SimpleNamespace
+    calls = []
+    process = SimpleNamespace(pid=700, wait=lambda **kwargs: calls.append('reap'))
+    for name, value in dict(P_PID=1, WEXITED=4, WNOHANG=1, WNOWAIT=0x1000000).items():
+        monkeypatch.setattr(probe.os, name, value, raising=False)
+    monkeypatch.setattr(probe.signal, 'SIGKILL', 9, raising=False)
+    monkeypatch.setattr(probe.os, 'waitid', lambda *a: calls.append('verify_anchor'), raising=False)
+    monkeypatch.setattr(probe.os, 'killpg', lambda pid, sig: calls.append(('signal', sig)), raising=False)
+    states = iter([[701], [701], []])
+    def members(pgid):
+        assert pgid == 700 and 'reap' not in calls
+        result = next(states)
+        calls.append(('live_group', bool(result)))
+        return result
+    monkeypatch.setattr(probe, 'live_group_members', members)
+    monkeypatch.setattr(probe.time, 'sleep', lambda seconds: None)
+    probe.cleanup_anchored_group(process)
+    assert calls[-2:] == [('live_group', False), 'reap']
+    assert calls.index(('signal', 9)) < calls.index(('live_group', True))
+    assert calls.count('verify_anchor') == 5
+
+
+def test_anchored_cleanup_reports_live_group_timeout_without_reaping(monkeypatch):
+    from types import SimpleNamespace
+    process = SimpleNamespace(pid=700, wait=lambda **kwargs: pytest.fail('must retain anchor on failure'))
+    for name, value in dict(P_PID=1, WEXITED=4, WNOHANG=1, WNOWAIT=0x1000000).items():
+        monkeypatch.setattr(probe.os, name, value, raising=False)
+    monkeypatch.setattr(probe.signal, 'SIGKILL', 9, raising=False)
+    monkeypatch.setattr(probe.os, 'waitid', lambda *a: None, raising=False)
+    monkeypatch.setattr(probe.os, 'killpg', lambda *a: None, raising=False)
+    monkeypatch.setattr(probe, 'live_group_members', lambda pgid: [701])
+    clock = iter([0, 0.5, 1.0, 1.5])
+    monkeypatch.setattr(probe.time, 'monotonic', lambda: next(clock))
+    monkeypatch.setattr(probe.time, 'sleep', lambda seconds: None)
+    with pytest.raises(RuntimeError, match='OWNED_PROBE_GROUP_SURVIVED_CLEANUP'):
+        probe.cleanup_anchored_group(process)
+
+
+def test_live_group_scan_excludes_zombies_and_other_sessions(tmp_path):
+    for pid, state, group, session in ((701, 'R', 700, 700), (702, 'Z', 700, 700),
+                                        (703, 'S', 700, 703), (704, 'S', 704, 700)):
+        folder = tmp_path / str(pid)
+        folder.mkdir()
+        (folder / 'stat').write_text(f'{pid} (worker (child)) {state} 1 {group} {session} 0')
+    assert probe.live_group_members(700, proc_root=tmp_path) == [701]
 
 
 @pytest.mark.parametrize('pidfd_present', [False, True])

@@ -85,6 +85,22 @@ def wait_child(process, timeout):
         time.sleep(min(0.05, remaining))
 
 
+def live_group_members(pgid, proc_root=Path('/proc')):
+    """Observe live private-session members while the leader remains unreaped."""
+    members = []
+    for directory in proc_root.iterdir():
+        if not directory.name.isdigit():
+            continue
+        try:
+            fields = (directory / 'stat').read_text().rsplit(')', 1)[1].split()
+            if (fields[0] not in ('Z', 'X') and int(fields[2]) == pgid
+                    and int(fields[3]) == pgid):
+                members.append(int(directory.name))
+        except (FileNotFoundError, ProcessLookupError):
+            pass
+    return members
+
+
 def cleanup_anchored_group(process):
     # Do not call poll()/wait() before group signalling: either would reap the
     # leader and permit PID reuse. ECHILD fails closed without signalling.
@@ -96,7 +112,18 @@ def cleanup_anchored_group(process):
             pass
         if signum == signal.SIGTERM:
             time.sleep(0.2)
-    process.wait(timeout=2)
+    # SIGKILL delivery is asynchronous. Reaping an already-zombie leader does
+    # not wait for its descendants, so keep the anchor until the group is dead.
+    deadline = time.monotonic() + 1
+    while True:
+        os.waitid(os.P_PID, process.pid, os.WEXITED | os.WNOHANG | os.WNOWAIT)
+        if not live_group_members(process.pid):
+            process.wait(timeout=2)
+            return
+        remaining = deadline - time.monotonic()
+        if remaining <= 0:
+            raise RuntimeError('OWNED_PROBE_GROUP_SURVIVED_CLEANUP')
+        time.sleep(min(0.02, remaining))
 
 
 def cleanup_child(process, owner_token):
