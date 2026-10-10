@@ -27,3 +27,17 @@ valid46, graph16 config, `--token-budget` only (no checklist). Compare with B2 g
 Gates: 0 technical calls; no NOT_EXECUTED_CONTEXT_BUDGET; pre-analysis delivered on all rows where it was
 produced; wall ≤ 1800 s. Report: delivered count, label changes (expected only among the 14 rows plus noise),
 max input tokens. valid46 is contaminated/small (noise ±0.05 F1): no adoption decision from this alone.
+
+## Result (code c1ae1aad, valid46, graph16 config, `--token-budget`)
+Technical gates all passed: 0 technical calls, 0 NOT_EXECUTED, 0 add-on drops, token-count errors 0,
+wall 690 s (incl. startup); 126 extra /tokenize preflights (cheap). Pre-analysis delivered on 45/46 rows
+(graph16 B2: 31/46; the one remaining row had no parsable pre-analysis, not a budget drop).
+Largest pre-step input 4.6k tokens; review requests far below 32k context.
+Labels vs B2 graph16: TP14 FP1 FN9 TN22, F1 .7368 (B2 graph16 .8205). 5 rows changed:
+- among the 14 former cap rows: retail__29::t13 FN→TP (the only change; 13 unchanged);
+- among rows whose delivery did NOT change: banking_005 TP→FN, retail_48 TP→FN, telecom mms t10 TP→FN,
+  banking_057 TN→FP — pure resampling noise (pre-analysis resampled; T=0 under batching is non-deterministic).
+banking_005 and retail_48 also flipped in the checklist run → unstable rows.
+Conclusion: the fix works as intended (delivery 31→45, no failures, no time cost); its own effect on the
+cap rows is +1 TP / 0 FP. A single valid46 run cannot measure quality: noise here is up to ~0.08 F1.
+Not a decision; quality comparisons need repeated runs and/or the larger decision pools.

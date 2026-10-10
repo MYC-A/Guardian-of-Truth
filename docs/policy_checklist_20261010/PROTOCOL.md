@@ -38,3 +38,10 @@ manual inspection of the checklists for quality, per-row label changes vs B2 gra
 
 ## Stage 2 (only if stage 1 passes and is not clearly negative) — decision
 Same-engine A/B on decision pools (B2 vs B2+checklist), protocol to be committed before that run.
+
+## Stage 1 result (code b3eb1f1d, valid46, graph16 config, `--checklist`)
+Technical: 0 technical calls, wall 729 s, checklists built in 110 s (4 policies, 12/12 valid samples,
+21–39 rules each, `checklists_valid46.json`). Gate "injected ≥80%" FAILED: 26/46 — 20 rows dropped the
+checklist on the 60 000-byte cap (60.4–80.2 KB) → motivated the token budget fix (docs/token_budget_20261010).
+Labels: TP15 FP0 FN8 TN23, F1 .7895 vs .8205; changes: telecom t13 FN→TP; banking_005, retail_48 TP→FN
+(both unstable, also flipped in the token-budget run). Within noise. To be re-run with `--token-budget`.
