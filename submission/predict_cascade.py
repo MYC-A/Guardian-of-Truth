@@ -39,7 +39,9 @@ def main(argv=None):
     parser.add_argument('--input', type=Path, required=True)
     parser.add_argument('--output', type=Path, required=True)
     parser.add_argument('--work-dir', type=Path, help='Receipt directory outside the archive')
-    args = parser.parse_args(arguments)
+    args, unknown = parser.parse_known_args(arguments)
+    if unknown:
+        print('GUARDIAN_CASCADE ignoring unknown arguments: %d' % len(unknown), flush=True)
     if args.input.resolve() == args.output.resolve():
         raise ValueError('INPUT_OUTPUT_SAME_PATH')
     from scripts.cascade_submission import run

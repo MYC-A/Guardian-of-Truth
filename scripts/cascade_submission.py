@@ -136,7 +136,31 @@ def write_labels(path, ids, labels):
 
 
 def kill_owned_group(pgid, token, seconds=(10, 3)):
-    """TERM then KILL every live member of our session marked with our token; verify none remain."""
+    """Owner-verified pidfd cleanup; falls back to killpg of our own new session if pidfd fails."""
+    try:
+        return _kill_owned_group(pgid, token, seconds)
+    except Exception as error:
+        print('GUARDIAN_CASCADE pidfd cleanup unavailable: %s; using killpg' % type(error).__name__, flush=True)
+    for signum, budget in ((signal.SIGTERM, seconds[0]), (signal.SIGKILL, seconds[1])):
+        try:
+            os.killpg(pgid, signum)
+        except ProcessLookupError:
+            return True
+        except Exception:
+            return False
+        stop = time.monotonic() + budget
+        while time.monotonic() < stop:
+            try:
+                os.killpg(pgid, 0)
+            except ProcessLookupError:
+                return True
+            except Exception:
+                return False
+            time.sleep(0.1)
+    return False
+
+
+def _kill_owned_group(pgid, token, seconds):
     from scripts.qwen_vllm_adapter import owned_group_handles
     for signum, budget in zip((signal.SIGTERM, signal.SIGKILL), seconds):
         stop = time.monotonic() + budget

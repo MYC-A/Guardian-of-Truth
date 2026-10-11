@@ -272,3 +272,26 @@ def test_duplicate_ids_keep_all_rows(tmp_path, monkeypatch):
     out = tmp_path / 'pred.csv'
     cs.run(tmp_path, write_input(tmp_path, data), out, work=tmp_path / 'w')
     assert read_csv(out) == [('a', 1), ('a', 1), ('b', 0)]
+
+
+def test_kill_group_falls_back_to_killpg(monkeypatch):
+    import subprocess
+    process = subprocess.Popen(['sleep', '60'], start_new_session=True)
+    def broken(*args):
+        raise OSError('pidfd blocked')
+    monkeypatch.setattr(cs, '_kill_owned_group', broken)
+    assert cs.kill_owned_group(process.pid, 'tok', seconds=(3, 2)) in (True, False)
+    process.wait(timeout=5)
+    assert process.returncode is not None
+
+
+def test_entrypoint_ignores_unknown_args(tmp_path, monkeypatch):
+    import importlib.util
+    spec = importlib.util.spec_from_file_location('entry', Path(__file__).resolve().parents[1] / 'submission/predict_cascade.py')
+    entry = importlib.util.module_from_spec(spec)
+    spec.loader.exec_module(entry)
+    monkeypatch.setattr(entry, 'bootstrap', lambda root, arguments: None)
+    seen = {}
+    monkeypatch.setattr(cs, 'run', lambda root, i, o, **kw: seen.update(i=i, o=o) or 0)
+    assert entry.main(['--input', 'a.csv', '--output', 'b.csv', '--gpus', '1']) == 0
+    assert seen['i'].name == 'a.csv' and seen['o'].name == 'b.csv'
