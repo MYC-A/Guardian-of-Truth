@@ -1,0 +1,54 @@
+name: Check Granite Qwen cascade and ZIP contracts
+
+on:
+  push:
+    branches: [build/cascade-archive-checks-5bee205d]
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  cascade-cpu-tests:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 10
+    env:
+      PYTHONDONTWRITEBYTECODE: '1'
+      PYTHONUTF8: '1'
+      CUDA_VISIBLE_DEVICES: ''
+    steps:
+      - uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683
+        with:
+          persist-credentials: false
+          sparse-checkout: |
+            src
+            scripts
+            tests
+            submission
+            experiments/guardian_addons
+            experiments/guardian_semantic
+            experiments/guardian_local_a100
+            docs/cascade_20261011
+      - name: Install CPU test dependencies
+        run: |
+          python3 -m venv "$RUNNER_TEMP/cascade-tests"
+          "$RUNNER_TEMP/cascade-tests/bin/python" -m pip install 'pytest>=8,<9' 'pytest-asyncio>=0.24,<2' 'pydantic>=2.10,<3' 'jsonschema>=4.18,<5' 'pandas>=2,<3' 'pyarrow>=17,<24'
+      - name: Check deadlines, fallback, long CSV fields and archive contracts
+        shell: bash
+        run: |
+          set -euo pipefail
+          export PYTHONPATH="$PWD/src:$PWD"
+          "$RUNNER_TEMP/cascade-tests/bin/python" -m pytest -q \
+            tests/test_cascade_submission.py tests/test_build_cascade_submission.py \
+            tests/test_qwen_vllm_adapter.py tests/test_qwen_vllm_verify_assets.py \
+            tests/test_vllm_submission_entrypoint.py tests/test_assemble_vllm_submission.py \
+            tests/test_repair_full_vllm_submission.py tests/test_submission_primary_retry.py \
+            | tee "$RUNNER_TEMP/cascade-tests.log"
+      - name: Preserve test results
+        if: always()
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02
+        with:
+          name: cascade-cpu-tests-${{ github.sha }}
+          path: ${{ runner.temp }}/cascade-tests.log
+          if-no-files-found: warn
+          retention-days: 7
