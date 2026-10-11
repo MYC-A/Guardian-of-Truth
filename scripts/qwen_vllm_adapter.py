@@ -29,8 +29,12 @@ from guardian_truth.submission.cli import predict_one, read_rows, write_predicti
 
 VERSION = 'qwen-vllm-research-transport-v1'
 ENGINE_VERSION = '0.19.1'
+REPOSITORY = 'Qwen/Qwen3.8-27B-FP8'
 REVISION = '017b9c7af6b5689d5dd426a76e0bc077eb5ca20a'
-MODEL = f'Qwen/Qwen3.8-27B-FP8@{REVISION}:vllm-{ENGINE_VERSION}'
+MODEL = f'{REPOSITORY}@{REVISION}:vllm-{ENGINE_VERSION}'
+# Research hooks (scripts/moe_model_bench.py); production keeps these defaults.
+QUANT_METHODS = ('fp8',)
+EXTRA_SERVER_ARGS = ()
 STARTUP_LOG_TAIL_BYTES = 64 * 1024
 
 
@@ -298,6 +302,7 @@ class OwnedVllmServer:
                 '--kv-cache-dtype', 'auto']
         if self.enforce_eager:
             command.append('--enforce-eager')
+        command.extend(EXTRA_SERVER_ARGS)
         return command
 
     def __enter__(self):
@@ -325,7 +330,7 @@ class OwnedVllmServer:
             raise ValueError('CHECKPOINT_SNAPSHOT_REVISION_MISMATCH')
         asset_manifest_sha256 = digest(self.asset_manifest)
         supplied = json.loads(self.asset_manifest.read_text(encoding='utf-8'))
-        if supplied.get('repository') != 'Qwen/Qwen3.8-27B-FP8' or supplied.get('revision') != REVISION:
+        if supplied.get('repository') != REPOSITORY or supplied.get('revision') != REVISION:
             raise ValueError('ASSET_MANIFEST_IDENTITY_MISMATCH')
         files = supplied.get('files')
         if not isinstance(files, list) or not files:
@@ -355,7 +360,7 @@ class OwnedVllmServer:
             assets[path.name] = digest(path)
         config = json.loads((self.model_dir / 'config.json').read_text(encoding='utf-8'))
         quantization = config.get('quantization_config')
-        if not isinstance(quantization, dict) or quantization.get('quant_method') != 'fp8':
+        if not isinstance(quantization, dict) or quantization.get('quant_method') not in QUANT_METHODS:
             raise ValueError('CHECKPOINT_QUANTIZATION_MISMATCH')
         index = json.loads((self.model_dir / 'model.safetensors.index.json').read_text(encoding='utf-8'))
         weight_map = index.get('weight_map')
