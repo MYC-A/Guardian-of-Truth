@@ -72,9 +72,16 @@ def main(argv=None):
 
     from scripts import qwen_vllm_adapter as adapter
     import guardian_truth
-    for module in (adapter, guardian_truth):
-        if not Path(module.__file__).resolve().is_relative_to(ROOT):
-            raise RuntimeError(f'FOREIGN_MODULE {module.__file__}')
+    # Fail fast (before a multi-minute engine start) on the lazy imports predict_one/Layers use.
+    import experiments
+    from guardian_truth.submission import primary, blind_compact, recovery  # noqa: F401
+    from guardian_truth.repair import v5  # noqa: F401
+    from guardian_truth.v6fix import pipeline  # noqa: F401
+    from guardian_truth.verification import admission  # noqa: F401
+    for module in (adapter, guardian_truth, experiments, primary):
+        location = Path(getattr(module, '__file__', None) or next(iter(module.__path__)))
+        if not location.resolve().is_relative_to(ROOT):
+            raise RuntimeError(f'FOREIGN_MODULE {location}')
     from guardian_truth.submission.cli import read_rows
     import pandas as pd
 
