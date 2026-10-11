@@ -115,6 +115,11 @@ def main(argv=None):
                 records.append(record)
             if prompts:
                 results = llm.generate(prompts, sp, use_tqdm=False)
+                # vLLM returns outputs in prompt order; verify instead of trusting it (a shifted
+                # pairing would silently scramble labels). Failing here = no output, attempt not scored.
+                if len(results) != len(prompts) or any(
+                        getattr(result, "prompt", text) not in (None, text) for result, text in zip(results, prompts)):
+                    raise RuntimeError("GRANITE_OUTPUT_ORDER_MISMATCH")
                 for record, result in zip(live, results):
                     sample = result.outputs[0]
                     risk = parse(sample.text)
