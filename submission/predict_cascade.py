@@ -50,4 +50,8 @@ def main(argv=None):
 
 
 if __name__ == '__main__':
-    raise SystemExit(main())
+    code = main()
+    # Exit now: a stray non-daemon thread must not keep the process past the time limit.
+    sys.stdout.flush()
+    sys.stderr.flush()
+    os._exit(code or 0)

@@ -40,6 +40,8 @@ GRANITE_END = 14 * 60       # Granite must be done (partial results are used aft
 QWEN_LAUNCH_LATEST = 14 * 60  # do not start the Qwen engine later than this
 ACCEPT_UNTIL = 21 * 60      # no new Qwen rows after this
 HARD_STOP = 25 * 60         # every Qwen call ends by this; then cleanup and final write
+LOOP_GRACE = 90             # stop waiting for Qwen rows this long after HARD_STOP (should never trigger)
+WATCHDOG = 28 * 60          # last resort: exit (0 if an output file exists) whatever is still running
 WRITE_EVERY = 15
 
 
@@ -342,6 +344,9 @@ def run_qwen(root, python, rows, work, clock, on_positive):
             pending = {executor.submit(task, row) for row in rows}
             last = time.monotonic()
             while pending:
+                if time.monotonic() > hard_stop + LOOP_GRACE:
+                    log(clock, 'qwen_abandoned_rows', rows=len(pending))
+                    break
                 done, pending = wait(pending, timeout=5, return_when=FIRST_COMPLETED)
                 for future in done:
                     try:
@@ -366,14 +371,33 @@ def run_qwen(root, python, rows, work, clock, on_positive):
                     log(clock, 'qwen_progress', **stats, pending=len(pending))
                     last = time.monotonic()
         finally:
-            executor.shutdown(wait=True, cancel_futures=True)
+            # Rows still running here are past the deadline; never wait on them beyond the grace.
+            executor.shutdown(wait=time.monotonic() <= hard_stop + LOOP_GRACE, cancel_futures=True)
             traces.close()
         log(clock, 'qwen_done', **stats, completion_http=inner.completion_http)
     return stats
 
 
-def run(root, input_path, output, *, python=None, work=None, started_wall=None):
+def start_watchdog(clock, output, exit=os._exit):
+    """Daemon timer: the platform must never see the script exceed its 30 min limit."""
+    def fire():
+        code = 0 if Path(output).is_file() else 1
+        try:
+            log(clock, 'watchdog_exit', code=code)
+            sys.stdout.flush()
+            sys.stderr.flush()
+        finally:
+            exit(code)
+    timer = threading.Timer(max(0.0, WATCHDOG - clock.elapsed()), fire)
+    timer.daemon = True
+    timer.start()
+    return timer
+
+
+def run(root, input_path, output, *, python=None, work=None, started_wall=None, watchdog=True):
     clock = Clock(started_wall)
+    if watchdog:
+        start_watchdog(clock, output)
     root = Path(root).resolve()
     python = python or root / 'runtime/python/run_python.sh'
     rows = read_input(input_path)

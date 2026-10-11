@@ -10,6 +10,13 @@ import pytest
 from scripts import cascade_submission as cs
 
 
+def _run_nowd(*args, **kwargs):
+    return cs.run(*args, watchdog=False, **kwargs)
+
+
+cs.run_nowd = _run_nowd
+
+
 @pytest.fixture(autouse=True)
 def bundled_qwen(tmp_path):
     (tmp_path / 'model' / cs.QWEN_REVISION).mkdir(parents=True)
@@ -88,7 +95,7 @@ def test_cascade_or_and_order(tmp_path, monkeypatch):
     granite = {'r0': g(1, .9), 'r1': g(0, .1), 'r2': g(0, .4), 'r3': g(0, .4), 'r4': g(0, .0)}
     fake_stages(monkeypatch, granite, qwen=['r3'], calls=calls)
     out = tmp_path / 'pred.csv'
-    assert cs.run(tmp_path, write_input(tmp_path, data), out, work=tmp_path / 'w') == 0
+    assert cs.run_nowd(tmp_path, write_input(tmp_path, data), out, work=tmp_path / 'w') == 0
     assert calls == [['r2', 'r3', 'r1', 'r4']]  # P(yes) desc, ties in input order
     assert read_csv(out) == [('r0', 1), ('r1', 0), ('r2', 0), ('r3', 1), ('r4', 0)]
 
@@ -100,7 +107,7 @@ def test_long_csv_fields(tmp_path, monkeypatch):
     data[1]['prompt'] = 'x' * 300000 + '\n"quoted",\n' + 'y' * 1000
     fake_stages(monkeypatch, {'r0': g(0, .1), 'r1': g(1, 1)})
     out = tmp_path / 'pred.csv'
-    assert cs.run(tmp_path, write_input(tmp_path, data), out, work=tmp_path / 'w') == 0
+    assert cs.run_nowd(tmp_path, write_input(tmp_path, data), out, work=tmp_path / 'w') == 0
     assert read_csv(out) == [('r0', 0), ('r1', 1)]
     import pandas as pd
     assert pd.read_parquet(tmp_path / 'w' / 'input.parquet')['prompt'][1] == data[1]['prompt']
@@ -109,7 +116,7 @@ def test_long_csv_fields(tmp_path, monkeypatch):
 def test_qwen_failure_keeps_granite_and_positives(tmp_path, monkeypatch):
     fake_stages(monkeypatch, {'r0': g(0, .5), 'r1': g(1, 1)}, qwen=['r0'], qwen_error=RuntimeError('VLLM_START_FAILED'))
     out = tmp_path / 'pred.csv'
-    assert cs.run(tmp_path, write_input(tmp_path, rows(2)), out, work=tmp_path / 'w') == 0
+    assert cs.run_nowd(tmp_path, write_input(tmp_path, rows(2)), out, work=tmp_path / 'w') == 0
     assert read_csv(out) == [('r0', 1), ('r1', 1)]
 
 
@@ -117,7 +124,7 @@ def test_signal_during_qwen_writes_then_reraises(tmp_path, monkeypatch):
     fake_stages(monkeypatch, {'r0': g(0, .5), 'r1': g(1, 1)}, qwen=['r0'], qwen_error=SystemExit(143))
     out = tmp_path / 'pred.csv'
     with pytest.raises(SystemExit):
-        cs.run(tmp_path, write_input(tmp_path, rows(2)), out, work=tmp_path / 'w')
+        cs.run_nowd(tmp_path, write_input(tmp_path, rows(2)), out, work=tmp_path / 'w')
     assert read_csv(out) == [('r0', 1), ('r1', 1)]
 
 
@@ -125,7 +132,7 @@ def test_no_granite_means_failure_without_output(tmp_path, monkeypatch):
     fake_stages(monkeypatch, {})
     out = tmp_path / 'pred.csv'
     with pytest.raises(RuntimeError, match='GRANITE_PRODUCED_NO_PREDICTIONS'):
-        cs.run(tmp_path, write_input(tmp_path, rows(2)), out, work=tmp_path / 'w')
+        cs.run_nowd(tmp_path, write_input(tmp_path, rows(2)), out, work=tmp_path / 'w')
     assert not out.exists()
 
 
@@ -134,7 +141,7 @@ def test_qwen_skipped_on_incomplete_granite(tmp_path, monkeypatch, kwargs):
     calls = []
     fake_stages(monkeypatch, {'r0': g(1, 1)}, calls=calls, **kwargs)  # r1 missing -> 0
     out = tmp_path / 'pred.csv'
-    assert cs.run(tmp_path, write_input(tmp_path, rows(2)), out, work=tmp_path / 'w') == 0
+    assert cs.run_nowd(tmp_path, write_input(tmp_path, rows(2)), out, work=tmp_path / 'w') == 0
     assert calls == [] and read_csv(out) == [('r0', 1), ('r1', 0)]
 
 
@@ -142,7 +149,7 @@ def test_qwen_skipped_when_late(tmp_path, monkeypatch):
     calls = []
     fake_stages(monkeypatch, {'r0': g(0, .2)}, calls=calls)
     out = tmp_path / 'pred.csv'
-    cs.run(tmp_path, write_input(tmp_path, rows(1)), out, work=tmp_path / 'w',
+    cs.run_nowd(tmp_path, write_input(tmp_path, rows(1)), out, work=tmp_path / 'w',
            started_wall=time.time() - cs.QWEN_LAUNCH_LATEST - 5)
     assert calls == [] and read_csv(out) == [('r0', 0)]
 
@@ -151,7 +158,7 @@ def test_empty_input(tmp_path, monkeypatch):
     fake_stages(monkeypatch, {})
     path = tmp_path / 'e.csv'
     path.write_text('id,prompt,response\n', encoding='utf-8')
-    assert cs.run(tmp_path, path, tmp_path / 'o.csv', work=tmp_path / 'w') == 0
+    assert cs.run_nowd(tmp_path, path, tmp_path / 'o.csv', work=tmp_path / 'w') == 0
     assert read_csv(tmp_path / 'o.csv') == []
 
 
@@ -235,7 +242,7 @@ def test_granite_only_variant_skips_qwen(tmp_path, monkeypatch):
     calls = []
     fake_stages(monkeypatch, {'r0': g(0, .9), 'r1': g(1, 1)}, calls=calls)
     out = tmp_path / 'pred.csv'
-    assert cs.run(tmp_path, write_input(tmp_path, rows(2)), out, work=tmp_path / 'w') == 0
+    assert cs.run_nowd(tmp_path, write_input(tmp_path, rows(2)), out, work=tmp_path / 'w') == 0
     assert calls == [] and read_csv(out) == [('r0', 0), ('r1', 1)]
 
 
@@ -270,7 +277,7 @@ def test_duplicate_ids_keep_all_rows(tmp_path, monkeypatch):
             dict(id='b', prompt='p', response='r')]
     fake_stages(monkeypatch, {'a': g(1, 1), 'b': g(0, 0)})
     out = tmp_path / 'pred.csv'
-    cs.run(tmp_path, write_input(tmp_path, data), out, work=tmp_path / 'w')
+    cs.run_nowd(tmp_path, write_input(tmp_path, data), out, work=tmp_path / 'w')
     assert read_csv(out) == [('a', 1), ('a', 1), ('b', 0)]
 
 
@@ -295,3 +302,17 @@ def test_entrypoint_ignores_unknown_args(tmp_path, monkeypatch):
     monkeypatch.setattr(cs, 'run', lambda root, i, o, **kw: seen.update(i=i, o=o) or 0)
     assert entry.main(['--input', 'a.csv', '--output', 'b.csv', '--gpus', '1']) == 0
     assert seen['i'].name == 'a.csv' and seen['o'].name == 'b.csv'
+
+
+def test_watchdog_exit_code(tmp_path):
+    import threading
+    codes, fired = [], threading.Event()
+    def fake_exit(code):
+        codes.append(code); fired.set()
+    clock = cs.Clock(time.time() - cs.WATCHDOG)
+    cs.start_watchdog(clock, tmp_path / 'none.csv', exit=fake_exit)
+    assert fired.wait(5) and codes == [1]
+    (tmp_path / 'o.csv').write_text('id,label\n')
+    fired.clear()
+    cs.start_watchdog(clock, tmp_path / 'o.csv', exit=fake_exit)
+    assert fired.wait(5) and codes == [1, 0]
