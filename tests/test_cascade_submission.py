@@ -280,7 +280,7 @@ def test_kill_group_falls_back_to_killpg(monkeypatch):
     def broken(*args):
         raise OSError('pidfd blocked')
     monkeypatch.setattr(cs, '_kill_owned_group', broken)
-    assert cs.kill_owned_group(process.pid, 'tok', seconds=(3, 2)) in (True, False)
+    assert cs.kill_owned_group(process.pid, 'tok', seconds=(3, 2)) is True
     process.wait(timeout=5)
     assert process.returncode is not None
 

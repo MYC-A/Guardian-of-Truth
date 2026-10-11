@@ -150,6 +150,10 @@ def kill_owned_group(pgid, token, seconds=(10, 3)):
             return False
         stop = time.monotonic() + budget
         while time.monotonic() < stop:
+            try:  # the leader is our child: reap it, or its zombie keeps the group "alive"
+                os.waitpid(pgid, os.WNOHANG)
+            except ChildProcessError:
+                pass
             try:
                 os.killpg(pgid, 0)
             except ProcessLookupError:
