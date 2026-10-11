@@ -97,3 +97,15 @@ def test_build_requires_toolchain_fixed_source(tmp_path):
     repo = make_repo(tmp_path, granite, qwen)
     with pytest.raises(ValueError, match='TOOLCHAIN_FIXED_FULL_SOURCE_REQUIRED'):
         bc.build(source, digest, granite, qwen, tmp_path / 'c.zip', repo=repo)
+
+
+def test_build_granite_only(tmp_path):
+    source, digest = make_source(tmp_path)
+    granite, qwen = models(tmp_path)
+    repo = make_repo(tmp_path, granite, qwen)
+    result = bc.build(source, digest, granite, None, tmp_path / 'g.zip', repo=repo)
+    assert result['cascade_build']['granite_only']
+    with zipfile.ZipFile(tmp_path / 'g.zip') as z:
+        names = set(z.namelist())
+    assert not any(n.startswith('model/' + cs.QWEN_REVISION) for n in names)
+    assert cs.QWEN_MANIFEST not in names and f'{cs.GRANITE_MODEL}/config.json' in names

@@ -10,6 +10,11 @@ import pytest
 from scripts import cascade_submission as cs
 
 
+@pytest.fixture(autouse=True)
+def bundled_qwen(tmp_path):
+    (tmp_path / 'model' / cs.QWEN_REVISION).mkdir(parents=True)
+
+
 def rows(n):
     return [dict(id=f'r{i}', prompt=f'p{i}', response=f'a{i}') for i in range(n)]
 
@@ -222,3 +227,48 @@ def test_run_qwen_with_fake_engine(tmp_path, monkeypatch):
     (tmp_path / 'late').mkdir()
     stats = cs.run_qwen(tmp_path, 'py', rows(2), tmp_path / 'late', late, positives.append)
     assert stats['skipped_late'] == 2 and not [p for p in positives if p]
+
+
+def test_granite_only_variant_skips_qwen(tmp_path, monkeypatch):
+    import shutil
+    shutil.rmtree(tmp_path / 'model' / cs.QWEN_REVISION)
+    calls = []
+    fake_stages(monkeypatch, {'r0': g(0, .9), 'r1': g(1, 1)}, calls=calls)
+    out = tmp_path / 'pred.csv'
+    assert cs.run(tmp_path, write_input(tmp_path, rows(2)), out, work=tmp_path / 'w') == 0
+    assert calls == [] and read_csv(out) == [('r0', 0), ('r1', 1)]
+
+
+def test_read_input_csv_quirks(tmp_path):
+    path = tmp_path / 'q.csv'
+    big = 'z' * 200000
+    text = ('\ufeff Id ,extra,PROMPT,response\r\n'
+            '7,x,"line1\r\nline2, ""q""",ok\r\n'
+            '8,y,' + big + ',\r\n'
+            '7,z,,dup\r\n')
+    path.write_bytes(text.encode('utf-8') + b'9,w,\xff\xfe bad bytes,r\r\n')
+    got = cs.read_input(path)
+    assert [r['id'] for r in got] == ['7', '8', '7', '9']
+    assert got[0]['prompt'] == 'line1\r\nline2, "q"' and got[0]['response'] == 'ok'
+    assert got[1]['prompt'] == big and got[1]['response'] == ''
+    assert got[2]['prompt'] == '' and '\ufffd' in got[3]['prompt']
+
+
+def test_read_input_parquet_nulls_and_int_ids(tmp_path):
+    import pandas as pd
+    path = tmp_path / 'p.bin'
+    pd.DataFrame({'id': [1, 2], 'prompt': ['a', None], 'response': [None, 'b'], 'label': [0, 1]}).to_parquet(path)
+    assert cs.read_input(path) == [dict(id='1', prompt='a', response=''), dict(id='2', prompt='', response='b')]
+    with pytest.raises(ValueError, match='REQUIRED_COLUMNS'):
+        bad = tmp_path / 'b.csv'
+        bad.write_text('id,text\n1,a\n', encoding='utf-8')
+        cs.read_input(bad)
+
+
+def test_duplicate_ids_keep_all_rows(tmp_path, monkeypatch):
+    data = [dict(id='a', prompt='p', response='r'), dict(id='a', prompt='p2', response='r2'),
+            dict(id='b', prompt='p', response='r')]
+    fake_stages(monkeypatch, {'a': g(1, 1), 'b': g(0, 0)})
+    out = tmp_path / 'pred.csv'
+    cs.run(tmp_path, write_input(tmp_path, data), out, work=tmp_path / 'w')
+    assert read_csv(out) == [('a', 1), ('a', 1), ('b', 0)]

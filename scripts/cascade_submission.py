@@ -43,6 +43,47 @@ HARD_STOP = 25 * 60         # every Qwen call ends by this; then cleanup and fin
 WRITE_EVERY = 15
 
 
+def _text(value):
+    """None/NaN -> '', everything else -> str; never fail the whole run on one cell."""
+    if value is None:
+        return ''
+    if isinstance(value, float) and value != value:
+        return ''
+    return value if isinstance(value, str) else str(value)
+
+
+def read_input(path):
+    """id/prompt/response from Parquet (by magic bytes) or CSV, tolerant of the platform's quirks.
+
+    CSV: UTF-8 with or without BOM (undecodable bytes replaced), quoted multi-line fields,
+    fields far above the csv module's default 128 KiB limit, extra columns. Missing cells
+    become ''. Column names are matched after stripping whitespace/BOM. Ids are kept as
+    text exactly as given; duplicates are allowed (they share one label).
+    """
+    path = Path(path)
+    with path.open('rb') as stream:
+        parquet = stream.read(4) == b'PAR1'
+    if parquet:
+        import pyarrow.parquet as pq
+        table = pq.read_table(path)
+        names = {name.strip().lstrip('\ufeff').lower(): name for name in table.column_names}
+        if not {'id', 'prompt', 'response'} <= set(names):
+            raise ValueError('REQUIRED_COLUMNS: id,prompt,response; got %s' % table.column_names)
+        columns = {key: table.column(names[key]).to_pylist() for key in ('id', 'prompt', 'response')}
+        records = [dict(zip(columns, values)) for values in zip(*columns.values())]
+    else:
+        csv.field_size_limit(2 ** 31 - 1)
+        with path.open(encoding='utf-8-sig', errors='replace', newline='') as stream:
+            reader = csv.DictReader(stream)
+            fields = reader.fieldnames or []
+            names = {(name or '').strip().lstrip('\ufeff').lower(): name for name in fields}
+            if not {'id', 'prompt', 'response'} <= set(names):
+                raise ValueError('REQUIRED_COLUMNS: id,prompt,response; got %s' % fields)
+            records = [{key: row.get(names[key]) for key in ('id', 'prompt', 'response')} for row in reader]
+    rows = [{key: _text(record[key]) for key in ('id', 'prompt', 'response')} for record in records]
+    return rows
+
+
 class Clock:
     def __init__(self, started_wall=None):
         now_wall, now = time.time(), time.monotonic()
@@ -307,12 +348,11 @@ def run(root, input_path, output, *, python=None, work=None, started_wall=None):
     clock = Clock(started_wall)
     root = Path(root).resolve()
     python = python or root / 'runtime/python/run_python.sh'
-    from guardian_truth.submission.cli import read_rows
-    # Agent transcripts exceed the csv module's default 128 KiB field limit.
-    csv.field_size_limit(2 ** 31 - 1)
-    rows = read_rows(input_path)
+    rows = read_input(input_path)
     ids = [row['id'] for row in rows]
-    log(clock, 'input', rows=len(rows), profile=PROFILE)
+    log(clock, 'input', rows=len(rows), profile=PROFILE, unique_ids=len(set(ids)),
+        empty_prompt=sum(not r['prompt'] for r in rows), empty_response=sum(not r['response'] for r in rows),
+        max_prompt_chars=max([len(r['prompt']) for r in rows] or [0]))
     if not rows:
         write_labels(output, [], {})
         log(clock, 'written', rows=0)
@@ -339,7 +379,9 @@ def run(root, input_path, output, *, python=None, work=None, started_wall=None):
     order = {i: k for k, i in enumerate(ids)}
     candidates.sort(key=lambda r: (-float(granite[r['id']].get('p_yes') or 0.0), order[r['id']]))
     reason = None
-    if not granite_done:
+    if not (root / 'model' / QWEN_REVISION).is_dir():
+        reason = 'QWEN_NOT_BUNDLED'  # Granite-only archive variant
+    elif not granite_done:
         reason = 'GRANITE_INCOMPLETE'
     elif not gone:
         reason = 'GRANITE_GROUP_SURVIVED'
