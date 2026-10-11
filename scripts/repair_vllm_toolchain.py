@@ -10,7 +10,7 @@ except ImportError:
     from vllm_bundle_toolchain import wrapper_text
 
 
-def archive_patches(source):
+def archive_patches(source, *, system_compiler_contrast=True):
     names = set(source.namelist())
     machine, version = 'x86_64-linux-gnu', '13'
     base = f'runtime/toolchain/usr/libexec/gcc/{machine}/{version}/'
@@ -49,6 +49,8 @@ def archive_patches(source):
         patches[name] = (new, 0o755)
         changes[name] = dict(original_sha256=sha, repaired_sha256=hashlib.sha256(new).hexdigest(),
                              native=native)
+    if not system_compiler_contrast:
+        return patches, changes
     name = 'runtime/python/run_python.sh'
     raw = source.read(name)
     record = manifest.get(name, {})

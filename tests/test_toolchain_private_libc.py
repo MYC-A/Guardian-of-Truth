@@ -78,3 +78,44 @@ def test_unknown_wrapper_is_rejected(tmp_path):
     with zipfile.ZipFile(target) as archive:
         with pytest.raises(ValueError, match='UNKNOWN_TOOLCHAIN_WRAPPER'):
             archive_patches(archive)
+
+
+def test_production_repair_preserves_python_launcher(tmp_path):
+    source, _ = fixture_source(tmp_path)
+    with zipfile.ZipFile(source) as archive:
+        patches, changes = archive_patches(archive, system_compiler_contrast=False)
+    assert 'runtime/python/run_python.sh' not in patches
+    assert len(changes) == 10
+    lto = next(raw for name, (raw, _) in patches.items() if name.endswith('/lto-wrapper'))
+    assert b'export COLLECT_GCC="$tools/usr/bin/g++"' in lto
+
+
+@pytest.mark.parametrize('compiler', ['gcc', 'g++'])
+def test_lto_reentry_uses_wrapper_and_preserves_arguments(tmp_path, compiler):
+    import os
+    import shutil
+    import subprocess
+    bash = shutil.which('bash') if os.name != 'nt' else 'C:/Program Files/Git/bin/bash.exe'
+    if not bash or not Path(bash).exists():
+        pytest.skip('POSIX shell required')
+    stage = tmp_path / 'stage with spaces'
+    path = stage / 'runtime/toolchain/usr/libexec/gcc/x86_64-linux-gnu/13/lto-wrapper'
+    path.parent.mkdir(parents=True)
+    path.write_text(wrapper_text(stage, path, path.with_name('lto-wrapper.real'),
+                    machine='x86_64-linux-gnu', version='13'), newline='\n')
+    loader = stage / 'runtime/lib/ld-linux-x86-64.so.2'
+    loader.parent.mkdir(parents=True)
+    loader.write_text('#!/bin/sh\nprintf "%s\\n" "$COLLECT_GCC" "$LD_LIBRARY_PATH" "$@"\n', newline='\n')
+    loader.chmod(0o755)
+    # Obtain the same POSIX spelling that the wrapper's pwd will return.
+    root = subprocess.check_output([bash, '-c', 'cd -- "$1" && pwd', 'test', str(stage)], text=True).strip()
+    for incoming, expected in [(f'{root}/runtime/toolchain/usr/bin/{compiler}.real',
+                                f'{root}/runtime/toolchain/usr/bin/{compiler}'),
+                               ('/foreign/compiler.real', '/foreign/compiler.real')]:
+        env = dict(os.environ, COLLECT_GCC=incoming, LD_LIBRARY_PATH='host-marker',
+                   MSYS_NO_PATHCONV='1', MSYS2_ENV_CONV_EXCL='*')
+        result = subprocess.run([bash, str(path), 'object with spaces.o', '-o', 'result.so'],
+                                env=env, capture_output=True, text=True, check=True)
+        lines = result.stdout.splitlines()
+        assert lines[0:2] == [expected, 'host-marker']
+        assert lines[-3:] == ['object with spaces.o', '-o', 'result.so']

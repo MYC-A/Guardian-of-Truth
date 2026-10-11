@@ -39,6 +39,13 @@ def wrapper_text(stage, path, native, *, driver=False, machine='', version=''):
     text += 'tools="$root/runtime/toolchain"\n'
     text += 'unset LIBRARY_PATH CPATH C_INCLUDE_PATH CPLUS_INCLUDE_PATH GCC_EXEC_PREFIX\n'
     text += 'export GCC_EXEC_PREFIX="$tools/usr/lib/gcc/"\n'
+    if path.name == 'lto-wrapper':
+        # GCC records its native driver in COLLECT_GCC. LTO re-executes that
+        # path, so restore our loader wrapper at this subprocess boundary.
+        text += ('case "${COLLECT_GCC:-}" in\n'
+                 '    "$tools/usr/bin/gcc.real") export COLLECT_GCC="$tools/usr/bin/gcc" ;;\n'
+                 '    "$tools/usr/bin/g++.real") export COLLECT_GCC="$tools/usr/bin/g++" ;;\n'
+                 'esac\n')
     args = ''
     if driver:
         args = (f'--sysroot="$tools" -B"$tools/usr/libexec/gcc/{machine}/{version}/" '
