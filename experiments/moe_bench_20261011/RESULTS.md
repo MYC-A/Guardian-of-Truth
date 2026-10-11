@@ -20,3 +20,14 @@ OR-ensembles with Qwen3.8 give no gain (q38|g4 = 0.821, q38|q36 = 0.744).
 GLM error cause (vLLM 0.19.1 bug): on A100 Marlin repacks FP8 kv_b_proj weights to int32; MLA `_compute_prefill_context` (used for prefix-cache hits / chunked context) casts input to the weight dtype -> int32 -> marlin_gemm rejects it. Avoided by disabling prefix caching and chunked prefill. With the workaround outputs are valid JSON (376 stop / 10 length), so the low F1 is model quality, not a failure.
 
 Conclusion: no tested MoE model approaches Qwen3.8-27B quality; keep Qwen3.8 and speed it up instead.
+
+## Dense 9B and Granite Guardian (2026-10-11)
+| Model | F1 | TP/FP/FN | rows/min | startup s | DEFAULT_ZERO |
+|---|---|---|---|---|---|
+| Qwen3.5-9B (B2, 64 slots, compact JSON) | 0.516 | 8/0/15 | 15.4 | 279 | 0 |
+| Qwen3.8-9B-Distill (empero-ai, same) | 0.375 | 6/3/17 | 14.9 | 269 | 2 |
+| Granite Guardian 4.1 8B (gate41 protocol, vLLM offline, `scripts/granite41_vllm_bench.py`) | 0.718 | 14/2/9 | 366 (46 rows in 7.5 s) | 80 | 0 (no_score 0) |
+
+Granite vLLM vs Sept transformers run (0.810, 17/2/6): 3 rows flipped yes->no (airline__8::t7, airline__9::t6, telecom break_apn t15).
+OR with Qwen3.8 q38c64 predictions: q38|granite = 20/2/3, F1 0.889 (identical with old or new granite records); q38&granite = 0.562.
+Caveat: valid46 rows were seen during the Sept granite protocol work; OR rule is generic but not validated on unseen data.
