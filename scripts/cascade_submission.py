@@ -109,11 +109,17 @@ def log(clock, event, **values):
                                            ensure_ascii=False, default=str), flush=True)
 
 
-def write_labels(path, ids, labels):
-    """Atomic: id,label as CSV unless the requested path ends with .parquet."""
+def write_labels(path, keys, labels, ids=None):
+    """Atomic: id,label as CSV unless the requested path ends with .parquet.
+
+    keys address labels (internal row keys); ids are the output ids, same order (default keys).
+    """
     path = Path(path)
     path.parent.mkdir(parents=True, exist_ok=True)
-    values = [int(labels[i]) for i in ids]
+    values = [int(labels[k]) for k in keys]
+    ids = list(keys) if ids is None else list(ids)
+    if len(ids) != len(values):
+        raise ValueError('IDS_KEYS_MISMATCH')
     if any(v not in (0, 1) for v in values):
         raise ValueError('NON_BINARY_LABEL')
     fd, tmp = tempfile.mkstemp(prefix='.' + path.name + '.', suffix='.tmp', dir=path.parent)
@@ -405,7 +411,10 @@ def run(root, input_path, output, *, python=None, work=None, started_wall=None, 
     root = Path(root).resolve()
     python = python or root / 'runtime/python/run_python.sh'
     rows = read_input(input_path)
-    ids = [row['id'] for row in rows]
+    ids = [row['id'] for row in rows]  # original ids, output in input order
+    # Address everything by row position: ids may repeat or be odd; the scorer gets ids back verbatim.
+    keys = ['row%07d' % k for k in range(len(rows))]
+    rows = [dict(row, id=key) for row, key in zip(rows, keys)]
     log(clock, 'input', rows=len(rows), profile=PROFILE, unique_ids=len(set(ids)),
         empty_prompt=sum(not r['prompt'] for r in rows), empty_response=sum(not r['response'] for r in rows),
         max_prompt_chars=max([len(r['prompt']) for r in rows] or [0]))
@@ -427,12 +436,13 @@ def run(root, input_path, output, *, python=None, work=None, started_wall=None, 
     granite, granite_done, gone = run_granite(root, python, snapshot, work, clock)
     if not granite:
         raise RuntimeError('GRANITE_PRODUCED_NO_PREDICTIONS')
-    labels = {i: int(granite[i]['pred']) if i in granite else 0 for i in ids}
-    write_labels(output, ids, labels)
-    log(clock, 'written', stage='granite', positives=sum(labels.values()), missing=len(ids) - len(granite))
+    labels = {k: int(granite[k]['pred']) if k in granite else 0 for k in keys}
+    write_labels(output, keys, labels, ids)
+    log(clock, 'written', stage='granite', positives=sum(labels.values()),
+        missing=sum(k not in granite for k in keys))
 
     candidates = [row for row in rows if labels[row['id']] == 0 and row['id'] in granite]
-    order = {i: k for k, i in enumerate(ids)}
+    order = {key: k for k, key in enumerate(keys)}
     candidates.sort(key=lambda r: (-float(granite[r['id']].get('p_yes') or 0.0), order[r['id']]))
     reason = None
     if not (root / 'model' / QWEN_REVISION).is_dir():
@@ -458,15 +468,15 @@ def run(root, input_path, output, *, python=None, work=None, started_wall=None, 
                 labels[identifier] = 1
                 state['dirty'] = True
             elif state['dirty']:
-                write_labels(output, ids, labels)
+                write_labels(output, keys, labels, ids)
                 state['dirty'] = False
     try:
         run_qwen(root, python, candidates, work, clock, on_positive)
     except BaseException as error:  # Granite output stays valid; keep any Qwen positives
         log(clock, 'qwen_failed', error=type(error).__name__, detail=str(error)[:300])
         if not isinstance(error, Exception):
-            write_labels(output, ids, labels)
+            write_labels(output, keys, labels, ids)
             raise
-    write_labels(output, ids, labels)
+    write_labels(output, keys, labels, ids)
     log(clock, 'written', stage='final', positives=sum(labels.values()))
     return 0

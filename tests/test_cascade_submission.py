@@ -70,15 +70,28 @@ def test_read_granite_tolerates_torn_tail(tmp_path):
     assert set(records) == {'a'} and ready['startup_s'] == 5 and not done
 
 
-def fake_stages(monkeypatch, granite, *, done=True, gone=True, qwen=None, qwen_error=None, calls=None):
+def fake_stages(monkeypatch, granite, *, done=True, gone=True, qwen=None, qwen_error=None, calls=None, ids=None):
+    """granite: {original id: result} in input order, or a per-row list. Stages see internal row keys."""
+    if isinstance(granite, dict):
+        ids = list(granite) if ids is None else ids
+        per_row = [granite.get(i) for i in ids]
+    else:
+        per_row = list(granite)
+    key = lambda k: 'row%07d' % k
+    seen = {}
+
     def run_granite(root, python, snapshot, work, clock):
-        return granite, done, gone
+        import pandas as pd
+        snap = pd.read_parquet(snapshot)
+        assert list(snap['id']) == [key(k) for k in range(len(snap))]
+        seen['n'] = len(snap)
+        return {key(k): r for k, r in enumerate(per_row) if r is not None}, done, gone
 
     def run_qwen(root, python, candidates, work, clock, on_positive):
         if calls is not None:
-            calls.append([r['id'] for r in candidates])
+            calls.append([ids[int(r['id'][3:])] if ids else r['id'] for r in candidates])
         for identifier in qwen or []:
-            on_positive(identifier)
+            on_positive(key(ids.index(identifier)) if ids and identifier in ids else identifier)
         on_positive(None)
         if qwen_error:
             raise qwen_error
@@ -276,12 +289,41 @@ def test_read_input_parquet_nulls_and_int_ids(tmp_path):
 
 
 def test_duplicate_ids_keep_all_rows(tmp_path, monkeypatch):
+    # Repeated ids are distinct rows: each keeps its own label, output follows input order verbatim.
     data = [dict(id='a', prompt='p', response='r'), dict(id='a', prompt='p2', response='r2'),
-            dict(id='b', prompt='p', response='r')]
-    fake_stages(monkeypatch, {'a': g(1, 1), 'b': g(0, 0)})
+            dict(id='b', prompt='p', response='r'), dict(id='a', prompt='p3', response='r3')]
+    calls = []
+    fake_stages(monkeypatch, [g(1, 1), g(0, .2), g(0, 0), g(0, .7)], calls=calls)
     out = tmp_path / 'pred.csv'
-    cs.run_nowd(tmp_path, write_input(tmp_path, data), out, work=tmp_path / 'w')
-    assert read_csv(out) == [('a', 1), ('a', 1), ('b', 0)]
+    assert cs.run_nowd(tmp_path, write_input(tmp_path, data), out, work=tmp_path / 'w') == 0
+    assert read_csv(out) == [('a', 1), ('a', 0), ('b', 0), ('a', 0)]
+    assert calls == [['row0000003', 'row0000001', 'row0000002']]
+
+
+def test_duplicate_ids_qwen_positive_hits_one_row(tmp_path, monkeypatch):
+    data = [dict(id='x', prompt='p', response='r'), dict(id='x', prompt='p2', response='r2')]
+
+    def run_qwen(root, python, candidates, work, clock, on_positive):
+        on_positive(candidates[-1]['id'])
+        on_positive(None)
+    fake_stages(monkeypatch, [g(0, .9), g(0, .1)])
+    monkeypatch.setattr(cs, 'run_qwen', run_qwen)
+    out = tmp_path / 'pred.csv'
+    assert cs.run_nowd(tmp_path, write_input(tmp_path, data), out, work=tmp_path / 'w') == 0
+    assert read_csv(out) == [('x', 0), ('x', 1)]
+
+
+def test_ids_written_verbatim(tmp_path, monkeypatch):
+    data = [dict(id=' 007 ', prompt='p', response='r'), dict(id='1.0', prompt='p', response='r'),
+            dict(id='id,"q"', prompt='p', response='r')]
+    fake_stages(monkeypatch, [g(1, 1), g(0, 0), g(1, 1)])
+    out = tmp_path / 'pred.csv'
+    with open(tmp_path / 'test.csv', 'w', newline='', encoding='utf-8') as stream:
+        writer = csv.DictWriter(stream, ['id', 'prompt', 'response'])
+        writer.writeheader()
+        writer.writerows(data)
+    assert cs.run_nowd(tmp_path, tmp_path / 'test.csv', out, work=tmp_path / 'w') == 0
+    assert read_csv(out) == [(' 007 ', 1), ('1.0', 0), ('id,"q"', 1)]
 
 
 def test_kill_group_falls_back_to_killpg(monkeypatch):
