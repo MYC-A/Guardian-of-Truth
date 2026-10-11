@@ -131,6 +131,10 @@ def write_labels(path, ids, labels):
                 writer.writerows(zip(ids, values))
                 stream.flush()
                 os.fsync(stream.fileno())
+        # mkstemp creates 0600; the platform's scorer may run as another user.
+        umask = os.umask(0)
+        os.umask(umask)
+        os.chmod(tmp, 0o666 & ~umask | 0o444)
         os.replace(tmp, path)
     finally:
         if os.path.exists(tmp):

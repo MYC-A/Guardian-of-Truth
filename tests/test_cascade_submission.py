@@ -47,6 +47,9 @@ def test_write_labels_csv_and_parquet(tmp_path):
     assert list(frame.columns) == ['id', 'label'] and str(frame['label'].dtype) == 'int64'
     assert frame['label'].tolist() == [0, 1]
     assert not [p for p in tmp_path.iterdir() if p.name.endswith('.tmp')]
+    import stat
+    for name in ('o.csv', 'o.parquet'):
+        assert stat.S_IMODE((tmp_path / name).stat().st_mode) & 0o444 == 0o444  # readable by everyone
     with pytest.raises(ValueError):
         cs.write_labels(tmp_path / 'x.csv', ['a'], {'a': 2})
     assert not (tmp_path / 'x.csv').exists()
