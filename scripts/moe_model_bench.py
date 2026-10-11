@@ -31,6 +31,20 @@ def sha256(path):
     return h.hexdigest()
 
 
+def ensure_index(model_dir):
+    """Single-file checkpoints ship no index; the adapter's shard checks need one."""
+    index, single = model_dir / 'model.safetensors.index.json', model_dir / 'model.safetensors'
+    if index.exists() or not single.exists():
+        return False
+    import struct
+    with open(single, 'rb') as stream:
+        header = json.loads(stream.read(struct.unpack('<Q', stream.read(8))[0]))
+    weight_map = {name: single.name for name in header if name != '__metadata__'}
+    index.write_text(json.dumps(dict(metadata=dict(total_size=single.stat().st_size), weight_map=weight_map)),
+                     encoding='utf-8')
+    return True
+
+
 def asset_manifest(model_dir, repository, revision, output):
     files = sorted(p for p in model_dir.iterdir() if p.is_file() and not p.name.startswith('.'))
     with ThreadPoolExecutor(8) as pool:
@@ -94,6 +108,7 @@ def main(argv=None):
 
     args.output.mkdir(parents=True, exist_ok=False)
     started = time.monotonic()
+    generated_index = ensure_index(model_dir)
     manifest_path = args.output / 'asset_manifest.json'
     asset_manifest(model_dir, args.repository, revision, manifest_path)
     hashing_seconds = time.monotonic() - started
@@ -127,7 +142,7 @@ def main(argv=None):
 
     summary = dict(repository=args.repository, model_dir=str(model_dir), rows=len(rows),
                    workers=args.workers, slots=args.slots, context=args.context,
-                   extra_server_args=list(args.extra_server_arg), hashing_seconds=round(hashing_seconds, 1),
+                   extra_server_args=list(args.extra_server_arg), generated_index=generated_index, hashing_seconds=round(hashing_seconds, 1),
                    run_seconds=round(total, 1), error=error, **timing)
     if 'startup_seconds' in timing:
         summary['inference_seconds'] = round(total - timing['startup_seconds'], 1)
