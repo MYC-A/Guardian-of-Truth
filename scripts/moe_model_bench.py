@@ -15,7 +15,12 @@ import sys
 import time
 
 ROOT = Path(__file__).resolve().parents[1]
-sys.path[:0] = [str(ROOT / 'src'), str(ROOT)]
+# The bundled runtime wrapper prepends its own archive root/src to PYTHONPATH;
+# drop foreign copies of our packages so this checkout's code is what runs.
+sys.path[:] = [str(ROOT / 'src'), str(ROOT)] + [
+    p for p in sys.path if p and Path(p).resolve() not in (ROOT, ROOT / 'src')
+    and not (Path(p) / 'scripts' / 'qwen_vllm_adapter.py').exists()
+    and not (Path(p) / 'guardian_truth').is_dir()]
 
 
 def sha256(path):
@@ -66,6 +71,10 @@ def main(argv=None):
     args = parser.parse_args(argv)
 
     from scripts import qwen_vllm_adapter as adapter
+    import guardian_truth
+    for module in (adapter, guardian_truth):
+        if not Path(module.__file__).resolve().is_relative_to(ROOT):
+            raise RuntimeError(f'FOREIGN_MODULE {module.__file__}')
     from guardian_truth.submission.cli import read_rows
     import pandas as pd
 
