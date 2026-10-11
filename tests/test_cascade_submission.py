@@ -20,6 +20,7 @@ cs.run_nowd = _run_nowd
 @pytest.fixture(autouse=True)
 def bundled_qwen(tmp_path):
     (tmp_path / 'model' / cs.QWEN_REVISION).mkdir(parents=True)
+    (tmp_path / cs.GRANITE_MODEL).mkdir(parents=True)
 
 
 def rows(n):
@@ -361,3 +362,85 @@ def test_watchdog_exit_code(tmp_path):
     fired.clear()
     cs.start_watchdog(clock, tmp_path / 'o.csv', exit=fake_exit)
     assert fired.wait(5) and codes == [1, 0]
+
+
+def qwen_only(tmp_path, monkeypatch, trace_binary, *, error=None, positives_before_error=()):
+    import shutil
+    shutil.rmtree(tmp_path / cs.GRANITE_MODEL)
+    seen = []
+
+    def run_granite(*args):
+        raise AssertionError('granite must not run')
+
+    def run_qwen(root, python, candidates, work, clock, on_positive):
+        seen.extend(r['id'] for r in candidates)
+        for r in candidates:
+            if r['id'] in positives_before_error:
+                on_positive(r['id'])
+        on_positive(None)
+        if error:
+            raise error
+        clean = 0
+        for r in candidates:
+            if trace_binary(r) == 1:
+                on_positive(r['id'])
+            clean += 1
+        on_positive(None)
+        return dict(clean=clean)
+    monkeypatch.setattr(cs, 'run_granite', run_granite)
+    monkeypatch.setattr(cs, 'run_qwen', run_qwen)
+    return seen
+
+
+def test_qwen_only_variant(tmp_path, monkeypatch):
+    data = [dict(id='d', prompt=f'p{i}', response='hall' if i % 3 == 0 else 'ok') for i in range(9)]
+    by_key = {}
+    seen = qwen_only(tmp_path, monkeypatch, lambda r: int(r['response'] == 'hall'))
+    out = tmp_path / 'pred.csv'
+    assert cs.run_nowd(tmp_path, write_input(tmp_path, data), out, work=tmp_path / 'w') == 0
+    keys = ['row%07d' % k for k in range(9)]
+    assert sorted(seen) == keys and seen != keys  # all rows, seeded shuffle
+    assert read_csv(out) == [('d', int(i % 3 == 0)) for i in range(9)]
+
+
+def test_qwen_only_order_is_deterministic(tmp_path, monkeypatch):
+    first = qwen_only(tmp_path, monkeypatch, lambda r: 0)
+    cs.run_nowd(tmp_path, write_input(tmp_path, rows(20)), tmp_path / 'a.csv', work=tmp_path / 'w1')
+    second = []
+    monkeypatch.setattr(cs, 'run_qwen', lambda root, python, c, work, clock, op: (second.extend(r['id'] for r in c),
+                                                                                  dict(clean=1))[1])
+    cs.run_nowd(tmp_path, write_input(tmp_path, rows(20)), tmp_path / 'b.csv', work=tmp_path / 'w2')
+    assert first == second
+
+
+def test_qwen_only_no_clean_rows_fails_without_output(tmp_path, monkeypatch):
+    qwen_only(tmp_path, monkeypatch, lambda r: 0)
+    monkeypatch.setattr(cs, 'run_qwen', lambda *a: dict(clean=0))
+    out = tmp_path / 'pred.csv'
+    with pytest.raises(RuntimeError, match='QWEN_PRODUCED_NO_PREDICTIONS'):
+        cs.run_nowd(tmp_path, write_input(tmp_path, rows(3)), out, work=tmp_path / 'w')
+    assert not out.exists()
+
+
+def test_qwen_only_failure_before_any_positive_raises(tmp_path, monkeypatch):
+    qwen_only(tmp_path, monkeypatch, lambda r: 0, error=RuntimeError('VLLM_START_FAILED'))
+    out = tmp_path / 'pred.csv'
+    with pytest.raises(RuntimeError, match='VLLM_START_FAILED'):
+        cs.run_nowd(tmp_path, write_input(tmp_path, rows(3)), out, work=tmp_path / 'w')
+    assert not out.exists()
+
+
+def test_qwen_only_failure_after_positive_keeps_them(tmp_path, monkeypatch):
+    qwen_only(tmp_path, monkeypatch, lambda r: 0, error=RuntimeError('ENGINE_DIED'),
+              positives_before_error=('row0000001',))
+    out = tmp_path / 'pred.csv'
+    assert cs.run_nowd(tmp_path, write_input(tmp_path, rows(3)), out, work=tmp_path / 'w') == 0
+    assert read_csv(out) == [('r0', 0), ('r1', 1), ('r2', 0)]
+
+
+def test_no_model_bundled(tmp_path, monkeypatch):
+    import shutil
+    qwen_only(tmp_path, monkeypatch, lambda r: 0)
+    shutil.rmtree(tmp_path / 'model' / cs.QWEN_REVISION)
+    with pytest.raises(RuntimeError, match='NO_MODEL_BUNDLED'):
+        cs.run_nowd(tmp_path, write_input(tmp_path, rows(2)), tmp_path / 'p.csv', work=tmp_path / 'w')

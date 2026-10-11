@@ -109,3 +109,26 @@ def test_build_granite_only(tmp_path):
         names = set(z.namelist())
     assert not any(n.startswith('model/' + cs.QWEN_REVISION) for n in names)
     assert cs.QWEN_MANIFEST not in names and f'{cs.GRANITE_MODEL}/config.json' in names
+
+
+def test_build_qwen_only(tmp_path):
+    source, digest = make_source(tmp_path)
+    granite, qwen = models(tmp_path)
+    repo = make_repo(tmp_path, granite, qwen)
+    result = bc.build(source, digest, None, qwen, tmp_path / 'q.zip', repo=repo)
+    assert result['cascade_build']['qwen_only'] and not result['cascade_build']['granite_only']
+    with zipfile.ZipFile(tmp_path / 'q.zip') as z:
+        names = set(z.namelist())
+        assert z.testzip() is None
+        assert json.loads(z.read('MANIFEST.json'))['profile'] == 'QWEN38_AWQ_B2_ONLY'
+    assert not any(n.startswith(cs.GRANITE_MODEL) for n in names)
+    assert 'GRANITE_MANIFEST.json' not in names and cs.QWEN_MANIFEST in names
+    assert f'model/{cs.QWEN_REVISION}/model-00001.safetensors' in names
+
+
+def test_build_requires_some_model(tmp_path):
+    source, digest = make_source(tmp_path)
+    granite, qwen = models(tmp_path)
+    repo = make_repo(tmp_path, granite, qwen)
+    with pytest.raises(ValueError, match='NO_MODELS'):
+        bc.build(source, digest, None, None, tmp_path / 'n.zip', repo=repo)

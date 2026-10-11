@@ -17,6 +17,7 @@ import csv
 import json
 import os
 from pathlib import Path
+import random
 import secrets
 import shutil
 import signal
@@ -41,6 +42,7 @@ QWEN_LAUNCH_LATEST = 14 * 60  # do not start the Qwen engine later than this
 ACCEPT_UNTIL = 21 * 60      # no new Qwen rows after this
 HARD_STOP = 25 * 60         # every Qwen call ends by this; then cleanup and final write
 LOOP_GRACE = 90             # stop waiting for Qwen rows this long after HARD_STOP (should never trigger)
+QWEN_ONLY_SEED = 20261012  # fixed shuffle: covered rows are a representative sample
 WATCHDOG = 28 * 60          # last resort: exit (0 if an output file exists) whatever is still running
 WRITE_EVERY = 15
 
@@ -404,6 +406,49 @@ def start_watchdog(clock, output, exit=os._exit):
     return timer
 
 
+def run_qwen_only(root, python, rows, keys, ids, work, clock, output):
+    """Diagnostic variant (no Granite bundled): B2 alone, rows in seeded-shuffled order.
+
+    Unreached rows stay 0. The output file appears only once Qwen has produced a clean positive,
+    and a run without any clean Qwen row fails without output (so the attempt is not scored).
+    """
+    if not (root / 'model' / QWEN_REVISION).is_dir():
+        raise RuntimeError('NO_MODEL_BUNDLED')
+    labels = {k: 0 for k in keys}
+    candidates = list(rows)
+    random.Random(QWEN_ONLY_SEED).shuffle(candidates)
+    lock = threading.Lock()
+    state = dict(dirty=False, written=False)
+
+    def flush():
+        write_labels(output, keys, labels, ids)
+        state.update(dirty=False, written=True)
+
+    def on_positive(identifier):
+        with lock:
+            if identifier is not None:
+                labels[identifier] = 1
+                state['dirty'] = True
+            elif state['dirty']:
+                flush()
+    log(clock, 'qwen_only', rows=len(candidates), seed=QWEN_ONLY_SEED)
+    try:
+        stats = run_qwen(root, python, candidates, work, clock, on_positive)
+    except BaseException as error:
+        log(clock, 'qwen_failed', error=type(error).__name__, detail=str(error)[:300])
+        if state['written'] or state['dirty']:
+            flush()
+            if isinstance(error, Exception):
+                return 0
+        raise
+    if not stats.get('clean'):
+        raise RuntimeError('QWEN_PRODUCED_NO_PREDICTIONS')
+    flush()
+    log(clock, 'written', stage='qwen_only', positives=sum(labels.values()), covered=stats['clean'],
+        rows=len(keys))
+    return 0
+
+
 def run(root, input_path, output, *, python=None, work=None, started_wall=None, watchdog=True):
     clock = Clock(started_wall)
     if watchdog:
@@ -433,6 +478,8 @@ def run(root, input_path, output, *, python=None, work=None, started_wall=None, 
     import pandas as pd
     pd.DataFrame(rows, columns=['id', 'prompt', 'response']).to_parquet(snapshot, index=False)
 
+    if not (root / GRANITE_MODEL).is_dir():
+        return run_qwen_only(root, python, rows, keys, ids, work, clock, output)
     granite, granite_done, gone = run_granite(root, python, snapshot, work, clock)
     if not granite:
         raise RuntimeError('GRANITE_PRODUCED_NO_PREDICTIONS')
