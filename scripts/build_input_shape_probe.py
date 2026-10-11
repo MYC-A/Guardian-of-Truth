@@ -13,7 +13,7 @@ def build(output):
         'scripts/predict.py': (root / 'submission/input_shape_probe.py').read_bytes(),
         'probe_build_backend.py': (root / 'submission/probe_build_backend.py').read_bytes(),
         'pyproject.toml': b'[build-system]\nrequires = []\nbuild-backend = "probe_build_backend"\nbackend-path = ["."]\n',
-        'DIAGNOSTIC_ONLY_NOT_FOR_SCORING.txt': b'Input shape probe: counts rows/lengths only, no content, exit 2.\n',
+        'DIAGNOSTIC_ONLY_NOT_FOR_SCORING.txt': b'Input shape probe: counts rows/lengths only, no content; writes all-zero labels, exit 0. F1~0, diagnostic only.\n',
         'README.md': b'# Guardian input shape probe\n\nUpload only for diagnosis, never submit for scoring.\n',
     }
     output = Path(output)

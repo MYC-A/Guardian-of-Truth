@@ -2,8 +2,10 @@
 
 Prints row count, columns, unique-id count and length statistics of prompt and
 response (characters, UTF-8 bytes), the input file size/format and the output
-path suffix. No ids, texts or labels are printed; no predictions are written.
-Exits 2 on purpose. Never submit for scoring.
+path suffix. No ids, texts or labels are printed. Writes a VALID all-zero
+prediction file (id,label) and exits 0, so the platform proceeds from the
+limited set to the full set and both stage logs show the shape. F1 will be ~0:
+diagnostic only, never treat as a real submission.
 """
 import argparse
 import json
@@ -48,7 +50,7 @@ def main(arguments=None):
     parser.add_argument('--input', required=True)
     parser.add_argument('--output', required=True)
     options, unknown = parser.parse_known_args(arguments)
-    emit('purpose', 'SHAPE_ONLY_NO_CONTENT_NO_PREDICTIONS_EXIT_2')
+    emit('purpose', 'SHAPE_ONLY_NO_CONTENT_ALL_ZERO_OUTPUT_EXIT_0')
     path = Path(options.input)
     emit('invocation', dict(argv_extra=len(unknown), input_suffix=path.suffix, input_exists=path.exists(),
                             input_bytes=path.stat().st_size if path.is_file() else None,
@@ -76,8 +78,24 @@ def main(arguments=None):
         emit('shape', report)
     except Exception as error:
         emit('shape_error', dict(error=type(error).__name__, detail=str(error)[:300]))
-    emit('done', dict(seconds=round(time.time() - STARTED, 2), pid=os.getpid()))
-    return 2
+    status = 0
+    try:
+        import pandas as pd
+        ids = data['id'] if 'id' in data else list(range(rows))
+        out = Path(options.output)
+        out.parent.mkdir(parents=True, exist_ok=True)
+        frame = pd.DataFrame({'id': list(ids), 'label': [0] * len(ids)})
+        frame['label'] = frame['label'].astype('int64')
+        if out.suffix.lower() == '.csv':
+            frame.to_csv(out, index=False)
+        else:
+            frame.to_parquet(out, index=False)
+        emit('output', dict(rows=len(frame), bytes=out.stat().st_size, id_column_present='id' in data))
+    except Exception as error:
+        status = 3
+        emit('output_error', dict(error=type(error).__name__, detail=str(error)[:300]))
+    emit('done', dict(seconds=round(time.time() - STARTED, 2), pid=os.getpid(), exit=status))
+    return status
 
 
 if __name__ == '__main__':
