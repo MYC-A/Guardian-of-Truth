@@ -11,6 +11,10 @@
 | GLM-4.7-Flash-FP8-Dynamic | 64 | yes | n/a (0.083) | 1/0/22 | - | - | - | - | 45 (Marlin FP8 kernel error on A100: unsupported `a` scalar_type) |
 | GLM-4.7-Flash-FP8-Dynamic (workaround: --no-enable-prefix-caching --no-enable-chunked-prefill --max-num-batched-tokens 32768) | 64 | yes | 0.143 | 2/3/21 | 0.40 | 0.09 | 10.2 | 171 | 3 |
 
+| Qwen3.8-27B + MTP speculative (num_speculative_tokens=2) | 64 | yes | 0.757 | 14/0/9 | 1.00 | 0.61 | 6.63 | 347 | 0 |
+
+MTP: acceptance ~80-84% (mean length 2.4-2.6), but inference only 416.5 s vs 444.8 s (-6%) and startup +47 s, so end-to-end slower; run is prefill-bound and MTP draft memory pushes KV to 97% with queueing. 1 row flipped vs q38c64 (airline__8::t7 1->0); only 43/106 identical call outputs, i.e. temperature-0 batch numerics already differ between runs. Not adopted.
+
 Compact JSON = `--structured-outputs-config '{"backend":"xgrammar","disable_any_whitespace":true}'`.
 OR-ensembles with Qwen3.8 give no gain (q38|g4 = 0.821, q38|q36 = 0.744).
 GLM error cause (vLLM 0.19.1 bug): on A100 Marlin repacks FP8 kv_b_proj weights to int32; MLA `_compute_prefill_context` (used for prefix-cache hits / chunked context) casts input to the weight dtype -> int32 -> marlin_gemm rejects it. Avoided by disabling prefix caching and chunked prefill. With the workaround outputs are valid JSON (376 stop / 10 length), so the low F1 is model quality, not a failure.

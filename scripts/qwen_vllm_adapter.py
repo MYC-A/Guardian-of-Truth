@@ -360,7 +360,8 @@ class OwnedVllmServer:
             assets[path.name] = digest(path)
         config = json.loads((self.model_dir / 'config.json').read_text(encoding='utf-8'))
         quantization = config.get('quantization_config')
-        if not isinstance(quantization, dict) or quantization.get('quant_method') not in QUANT_METHODS:
+        unquantized_ok = quantization is None and 'none' in QUANT_METHODS  # bench-only opt-in; default ('fp8',) rejects
+        if not unquantized_ok and (not isinstance(quantization, dict) or quantization.get('quant_method') not in QUANT_METHODS):
             raise ValueError('CHECKPOINT_QUANTIZATION_MISMATCH')
         index = json.loads((self.model_dir / 'model.safetensors.index.json').read_text(encoding='utf-8'))
         weight_map = index.get('weight_map')
