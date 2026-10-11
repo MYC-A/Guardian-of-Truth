@@ -206,14 +206,19 @@ def test_row_tagging_client():
     assert client.unclean == {'b', 'c'}
 
 
-def test_run_qwen_with_fake_engine(tmp_path, monkeypatch):
+SERVERS = []
+
+
+def test_run_qwen_with_fake_engine(tmp_path, monkeypatch, variant='awq'):
     """Clean positives are reported; unclean rows and late rows are not."""
     adapter = types.ModuleType('scripts.qwen_vllm_adapter')
     adapter.ENGINE_VERSION = '0.19.1'
+    SERVERS.clear()
 
     class Server:
         def __init__(self, *args, **kwargs):
             self.kwargs = kwargs
+            SERVERS.append((args, kwargs))
             self.port, self.api_key, self.manifest = 1, 'k', {}
         def __enter__(self):
             return self
@@ -245,7 +250,12 @@ def test_run_qwen_with_fake_engine(tmp_path, monkeypatch):
     stats = cs.run_qwen(tmp_path, 'py', rows(4), tmp_path, clock, positives.append)
     assert sorted(p for p in positives if p) == ['r0', 'r3']
     assert stats['clean'] == 3 and stats['unclean'] == 1 and stats['positives'] == 2
-    assert adapter.QUANT_METHODS == cs.QWEN_QUANT_METHODS and adapter.REVISION == cs.QWEN_REVISION
+    profile = cs.QWEN_PROFILES[variant]
+    assert adapter.QUANT_METHODS == profile['quant'] and adapter.REVISION == profile['revision']
+    assert adapter.EXTRA_SERVER_ARGS == profile['server_args']
+    args, kwargs = SERVERS[0]
+    assert args[1] == tmp_path / 'model' / profile['revision'] and args[4] == profile['slots']
+    assert kwargs['asset_manifest'] == tmp_path / profile['manifest']
     late = cs.Clock(time.time() - cs.ACCEPT_UNTIL - 1)
     positives.clear()
     (tmp_path / 'late').mkdir()
@@ -444,3 +454,28 @@ def test_no_model_bundled(tmp_path, monkeypatch):
     shutil.rmtree(tmp_path / 'model' / cs.QWEN_REVISION)
     with pytest.raises(RuntimeError, match='NO_MODEL_BUNDLED'):
         cs.run_nowd(tmp_path, write_input(tmp_path, rows(2)), tmp_path / 'p.csv', work=tmp_path / 'w')
+
+
+def test_run_qwen_fp8_profile(tmp_path, monkeypatch):
+    import shutil
+    shutil.rmtree(tmp_path / 'model' / cs.QWEN_REVISION)
+    (tmp_path / 'model' / cs.QWEN_PROFILES['fp8']['revision']).mkdir()
+    assert cs.qwen_profile(tmp_path)[0] == 'fp8'
+    test_run_qwen_with_fake_engine(tmp_path, monkeypatch, variant='fp8')
+
+
+def test_fp8_profile_matches_old_production_adapter():
+    from scripts import qwen_vllm_adapter as adapter
+    fp8 = cs.QWEN_PROFILES['fp8']
+    assert (adapter.REPOSITORY, adapter.REVISION) == (fp8['repository'], fp8['revision'])
+    assert tuple(adapter.QUANT_METHODS) == fp8['quant'] and tuple(adapter.EXTRA_SERVER_ARGS) == fp8['server_args']
+
+
+def test_qwen_only_with_fp8(tmp_path, monkeypatch):
+    import shutil
+    seen = qwen_only(tmp_path, monkeypatch, lambda r: int(r['id'] == 'row0000001'))
+    shutil.rmtree(tmp_path / 'model' / cs.QWEN_REVISION)
+    (tmp_path / 'model' / cs.QWEN_PROFILES['fp8']['revision']).mkdir()
+    out = tmp_path / 'pred.csv'
+    assert cs.run_nowd(tmp_path, write_input(tmp_path, rows(3)), out, work=tmp_path / 'w') == 0
+    assert read_csv(out) == [('r0', 0), ('r1', 1), ('r2', 0)] and len(seen) == 3

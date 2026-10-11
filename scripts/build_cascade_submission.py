@@ -10,6 +10,7 @@ python scripts/build_cascade_submission.py --source-zip <toolchain-fixed.zip> \
     --source-sha256 <sha> [--granite-dir <dir>] [--qwen-dir <dir>] --output <new.zip>
 Without --qwen-dir the archive is Granite-only (~14 GB; the cascade skips Qwen).
 Without --granite-dir it is Qwen-only (diagnostic; Qwen B2 on rows in seeded-shuffled order).
+--keep-source-qwen keeps the source's Qwen3.8 FP8 (old production settings) instead of AWQ.
 """
 from __future__ import annotations
 
@@ -81,7 +82,7 @@ def write_file(target, name, path):
         shutil.copyfileobj(source, stream, 8 << 20)
 
 
-def build(source_zip, source_sha256, granite_dir, qwen_dir, output, repo=None):
+def build(source_zip, source_sha256, granite_dir, qwen_dir, output, repo=None, keep_source_qwen=False):
     repo = Path(repo or Path(__file__).resolve().parents[1])
     source_zip, output = Path(source_zip), Path(output)
     partial = output.with_name(output.name + '.partial')
@@ -91,9 +92,12 @@ def build(source_zip, source_sha256, granite_dir, qwen_dir, output, repo=None):
         if path.exists():
             raise FileExistsError(path)
     code = {name: (repo / source).read_bytes().replace(b'\r\n', b'\n') for name, source in CODE.items()}
-    if granite_dir is None and qwen_dir is None:
+    if keep_source_qwen and qwen_dir is not None:
+        raise ValueError('KEEP_SOURCE_QWEN_EXCLUDES_QWEN_DIR')
+    if granite_dir is None and qwen_dir is None and not keep_source_qwen:
         raise ValueError('NO_MODELS')
-    granite_only = qwen_dir is None  # variant: no Qwen weights; the runtime then skips stage 2
+    # keep_source_qwen: the source archive's Qwen3.8 FP8 and MODEL_MANIFEST.json stay as they are.
+    granite_only = qwen_dir is None and not keep_source_qwen  # runtime then skips stage 2
     qwen_only = granite_dir is None  # variant: no Granite; the runtime runs Qwen alone
     qwen_manifest, granite_manifest = (json_read(code[cascade.QWEN_MANIFEST]), json_read(code['GRANITE_MANIFEST.json']))
     if (qwen_manifest.get('repository'), qwen_manifest.get('revision')) != (cascade.QWEN_REPOSITORY, cascade.QWEN_REVISION):
@@ -105,7 +109,7 @@ def build(source_zip, source_sha256, granite_dir, qwen_dir, output, repo=None):
     models = [] if qwen_only else model_members(granite_dir, granite_manifest, cascade.GRANITE_MODEL + '/')
     if qwen_only:
         del code['GRANITE_MANIFEST.json']
-    if granite_only:
+    if qwen_dir is None:
         del code[cascade.QWEN_MANIFEST]
     else:
         models += model_members(qwen_dir, qwen_manifest, 'model/' + cascade.QWEN_REVISION + '/')
@@ -126,6 +130,8 @@ def build(source_zip, source_sha256, granite_dir, qwen_dir, output, repo=None):
         dropped = sorted(n for n in files if n.startswith(DROP_PREFIXES) or n in DROP_NAMES)
         if not any(n.startswith(DROP_PREFIXES) for n in dropped):
             raise ValueError('SOURCE_FP8_MODEL_NOT_FOUND')
+        if keep_source_qwen:
+            dropped = []
         expected = {n: dict(r) for n, r in files.items() if n not in dropped}
         for name, data in code.items():
             mode = expected.get(name, {}).get('mode', 0o644)
@@ -136,13 +142,15 @@ def build(source_zip, source_sha256, granite_dir, qwen_dir, output, repo=None):
             expected[name] = record
         provenance = dict(source_zip_sha256=source_sha256,
                           source_manifest_sha256=hashlib.sha256(original_raw).hexdigest(),
-                          profile=cascade.PROFILE, granite_only=granite_only, qwen_only=qwen_only, dropped=len(dropped),
+                          profile=cascade.PROFILE, granite_only=granite_only, qwen_only=qwen_only,
+                          qwen_variant='fp8' if keep_source_qwen else None if granite_only else 'awq', dropped=len(dropped),
                           replaced_or_added_code={n: expected[n]['sha256'] for n in code},
                           models=dict(granite=cascade.GRANITE_MODEL,
                                       qwen='model/' + cascade.QWEN_REVISION, qwen_repository=cascade.QWEN_REPOSITORY))
         final = dict(manifest, files=expected, cascade_build=provenance,
                      profile=('GRANITE41_FP8_ONLY' if granite_only else
-                              'QWEN38_AWQ_B2_ONLY' if qwen_only else 'CASCADE_GRANITE41_FP8_OR_QWEN38_AWQ_B2'))
+                              ('QWEN38_FP8_B2_ONLY' if keep_source_qwen else 'QWEN38_AWQ_B2_ONLY') if qwen_only else
+                              'CASCADE_GRANITE41_FP8_OR_QWEN38_%s_B2' % ('FP8' if keep_source_qwen else 'AWQ')))
         final_raw = json_bytes(final)
         expected_all = dict(expected, **{'MANIFEST.json': dict(bytes=len(final_raw),
                             sha256=hashlib.sha256(final_raw).hexdigest(), mode=0o644)})
@@ -203,6 +211,9 @@ if __name__ == '__main__':
     parser.add_argument('--source-sha256', required=True)
     parser.add_argument('--granite-dir', type=Path, help='Omit for the Qwen-only archive')
     parser.add_argument('--qwen-dir', type=Path, help='Omit for the Granite-only archive')
+    parser.add_argument('--keep-source-qwen', action='store_true',
+                        help="Keep the source archive's Qwen3.8 FP8 (instead of --qwen-dir AWQ)")
     parser.add_argument('--output', type=Path, required=True)
     args = parser.parse_args()
-    build(args.source_zip, args.source_sha256, args.granite_dir, args.qwen_dir, args.output)
+    build(args.source_zip, args.source_sha256, args.granite_dir, args.qwen_dir, args.output,
+          keep_source_qwen=args.keep_source_qwen)

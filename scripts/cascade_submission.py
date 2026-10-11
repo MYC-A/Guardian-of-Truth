@@ -308,11 +308,30 @@ class RowTaggingClient:
         return record
 
 
-def configure_adapter(adapter):
-    adapter.REPOSITORY, adapter.REVISION = QWEN_REPOSITORY, QWEN_REVISION
-    adapter.MODEL = f'{QWEN_REPOSITORY}@{QWEN_REVISION}:vllm-{adapter.ENGINE_VERSION}'
-    adapter.QUANT_METHODS = QWEN_QUANT_METHODS
-    adapter.EXTRA_SERVER_ARGS = QWEN_SERVER_ARGS
+QWEN_PROFILES = {
+    # Tested cascade stage: AWQ INT4, compact JSON, 24 workers / 32 slots.
+    'awq': dict(repository=QWEN_REPOSITORY, revision=QWEN_REVISION, quant=QWEN_QUANT_METHODS,
+                server_args=QWEN_SERVER_ARGS, workers=QWEN_WORKERS, slots=QWEN_SLOTS, manifest=QWEN_MANIFEST),
+    # The earlier production archive's model and settings, unchanged (16/16, no extra server flags).
+    'fp8': dict(repository='Qwen/Qwen3.8-27B-FP8', revision='017b9c7af6b5689d5dd426a76e0bc077eb5ca20a',
+                quant=('fp8',), server_args=(), workers=16, slots=16, manifest='MODEL_MANIFEST.json'),
+}
+
+
+def qwen_profile(root):
+    """The bundled Qwen variant (by model directory), or (None, None)."""
+    for name, profile in QWEN_PROFILES.items():
+        if (Path(root) / 'model' / profile['revision']).is_dir():
+            return name, profile
+    return None, None
+
+
+def configure_adapter(adapter, profile=None):
+    profile = profile or QWEN_PROFILES['awq']
+    adapter.REPOSITORY, adapter.REVISION = profile['repository'], profile['revision']
+    adapter.MODEL = f"{profile['repository']}@{profile['revision']}:vllm-{adapter.ENGINE_VERSION}"
+    adapter.QUANT_METHODS = tuple(profile['quant'])
+    adapter.EXTRA_SERVER_ARGS = tuple(profile['server_args'])
     return adapter.MODEL
 
 
@@ -321,13 +340,16 @@ def run_qwen(root, python, rows, work, clock, on_positive):
     from scripts import qwen_vllm_adapter as adapter
     from guardian_truth.submission.cli import predict_one
     from guardian_truth.v6fix.pipeline import Layers
-    model = configure_adapter(adapter)
+    name, profile = qwen_profile(root)
+    if profile is None:
+        raise RuntimeError('NO_QWEN_BUNDLED')
+    model = configure_adapter(adapter, profile)
     hard_stop = clock.at(HARD_STOP)
     stats = dict(submitted=len(rows), started=0, clean=0, unclean=0, positives=0, skipped_late=0, errors=0)
-    log(clock, 'qwen_start', rows=len(rows))
+    log(clock, 'qwen_start', rows=len(rows), profile=name, workers=profile['workers'], slots=profile['slots'])
     startup = max(30.0, min(600.0, HARD_STOP - clock.elapsed() - 60))
-    with adapter.OwnedVllmServer(str(python), root / 'model' / QWEN_REVISION, work, QWEN_CONTEXT, QWEN_SLOTS,
-                                 deadline=hard_stop, asset_manifest=root / QWEN_MANIFEST,
+    with adapter.OwnedVllmServer(str(python), root / 'model' / profile['revision'], work, QWEN_CONTEXT,
+                                 profile['slots'], deadline=hard_stop, asset_manifest=root / profile['manifest'],
                                  startup_timeout=startup) as server:
         log(clock, 'qwen_ready')
         inner = adapter.VllmClient(server.port, QWEN_CONTEXT, work / 'calls', api_key=server.api_key,
@@ -351,7 +373,7 @@ def run_qwen(root, python, rows, work, clock, on_positive):
             return row['id'], trace
 
         traces = (work / 'qwen_traces.jsonl').open('a', encoding='utf-8')
-        executor = ThreadPoolExecutor(max_workers=QWEN_WORKERS)
+        executor = ThreadPoolExecutor(max_workers=profile['workers'])
         try:
             pending = {executor.submit(task, row) for row in rows}
             last = time.monotonic()
@@ -412,7 +434,7 @@ def run_qwen_only(root, python, rows, keys, ids, work, clock, output):
     Unreached rows stay 0. The output file appears only once Qwen has produced a clean positive,
     and a run without any clean Qwen row fails without output (so the attempt is not scored).
     """
-    if not (root / 'model' / QWEN_REVISION).is_dir():
+    if qwen_profile(root)[1] is None:
         raise RuntimeError('NO_MODEL_BUNDLED')
     labels = {k: 0 for k in keys}
     candidates = list(rows)
@@ -492,7 +514,7 @@ def run(root, input_path, output, *, python=None, work=None, started_wall=None, 
     order = {key: k for k, key in enumerate(keys)}
     candidates.sort(key=lambda r: (-float(granite[r['id']].get('p_yes') or 0.0), order[r['id']]))
     reason = None
-    if not (root / 'model' / QWEN_REVISION).is_dir():
+    if qwen_profile(root)[1] is None:
         reason = 'QWEN_NOT_BUNDLED'  # Granite-only archive variant
     elif not granite_done:
         reason = 'GRANITE_INCOMPLETE'

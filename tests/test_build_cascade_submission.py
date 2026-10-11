@@ -132,3 +132,28 @@ def test_build_requires_some_model(tmp_path):
     repo = make_repo(tmp_path, granite, qwen)
     with pytest.raises(ValueError, match='NO_MODELS'):
         bc.build(source, digest, None, None, tmp_path / 'n.zip', repo=repo)
+
+
+def test_build_qwen_only_fp8_keeps_source_model(tmp_path):
+    source, digest = make_source(tmp_path)
+    granite, qwen = models(tmp_path)
+    repo = make_repo(tmp_path, granite, qwen)
+    result = bc.build(source, digest, None, None, tmp_path / 'f.zip', repo=repo, keep_source_qwen=True)
+    assert result['cascade_build']['qwen_only'] and result['cascade_build']['qwen_variant'] == 'fp8'
+    with zipfile.ZipFile(tmp_path / 'f.zip') as z:
+        names = set(z.namelist())
+        assert z.testzip() is None
+        assert z.read(f'model/{bc.OLD_REVISION}/model.safetensors') == b'W' * 1000
+        assert z.read('scripts/predict.py') != b'old\n'
+        assert json.loads(z.read('MANIFEST.json'))['profile'] == 'QWEN38_FP8_B2_ONLY'
+    assert 'MODEL_MANIFEST.json' in names and cs.QWEN_MANIFEST not in names
+    assert not any(n.startswith(cs.GRANITE_MODEL) or n.startswith('model/' + cs.QWEN_REVISION) for n in names)
+    assert bc.OLD_REVISION == cs.QWEN_PROFILES['fp8']['revision']
+
+
+def test_keep_source_qwen_excludes_qwen_dir(tmp_path):
+    source, digest = make_source(tmp_path)
+    granite, qwen = models(tmp_path)
+    repo = make_repo(tmp_path, granite, qwen)
+    with pytest.raises(ValueError, match='KEEP_SOURCE_QWEN_EXCLUDES_QWEN_DIR'):
+        bc.build(source, digest, None, qwen, tmp_path / 'x.zip', repo=repo, keep_source_qwen=True)
