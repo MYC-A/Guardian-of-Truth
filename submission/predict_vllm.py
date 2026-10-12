@@ -1,11 +1,13 @@
 """Archive public entrypoint: B2 legacy on pinned FP8/vLLM, graphs 16 x 16.
 
 The archive builder installs this file at scripts/predict.py. Inference only
-reads id/prompt/response. Empty inputs produce a genuine Parquet without a GPU.
+reads id/prompt/response. Row positions identify inference; original ids are echoed.
+Empty inputs produce CSV or Parquet without a GPU.
 """
 from __future__ import annotations
 
 import argparse
+import csv
 import ctypes
 import ctypes.util
 import hashlib
@@ -20,6 +22,59 @@ import time
 
 REVISION = '017b9c7af6b5689d5dd426a76e0bc077eb5ca20a'
 PROFILE = 'B2-vllm-0.19.1-FP8-graphs16-legacy-recovery1'
+IO_VERSION = 'position-identity-csv-large-fields-20261012'
+
+
+def read_input(path):
+    """Read only inference columns, preserving CSV ids and permitting duplicates."""
+    import pandas as pd
+    path = Path(path)
+    with path.open('rb') as stream:
+        parquet = stream.read(4) == b'PAR1'
+
+    def columns(fields):
+        names = [name.strip().lstrip('\ufeff').lower() for name in fields]
+        if len(names) != len(set(names)):
+            raise ValueError('DUPLICATE_COLUMNS')
+        lookup = dict(zip(names, fields))
+        if not {'id', 'prompt', 'response'} <= set(lookup):
+            raise ValueError('REQUIRED_COLUMNS: id,prompt,response')
+        return lookup
+
+    if parquet:
+        frame = pd.read_parquet(path)
+        lookup = columns(list(frame.columns))
+        records = frame[[lookup[key] for key in ('id', 'prompt', 'response')]].to_dict('records')
+        records = [dict(zip(('id', 'prompt', 'response'), row.values())) for row in records]
+    else:
+        csv.field_size_limit(2 ** 31 - 1)
+        with path.open(encoding='utf-8-sig', newline='') as stream:
+            reader = csv.DictReader(stream)
+            lookup = columns(reader.fieldnames or [])
+            records = [{key: row.get(lookup[key]) for key in ('id', 'prompt', 'response')}
+                       for row in reader]
+    rows = []
+    for number, record in enumerate(records):
+        identifier = record['id']
+        if identifier is None or (not isinstance(identifier, str) and pd.isna(identifier)):
+            identifier = ''
+        if not isinstance(identifier, str):
+            identifier = str(identifier)
+        row = {'id': identifier}
+        for key in ('prompt', 'response'):
+            if not isinstance(record[key], str):
+                raise ValueError(f'NON_STRING_OR_NULL_{key}: row {number}')
+            row[key] = record[key]
+        rows.append(row)
+    return rows
+
+
+def emit_progress(event, **values):
+    """Best-effort bounded metadata; do not print prompts, responses or ids."""
+    try:
+        print('GUARDIAN_B2 ' + json.dumps(dict(event=event, **values), sort_keys=True), flush=True)
+    except Exception:
+        pass
 
 
 def host_environment_record():
@@ -83,7 +138,7 @@ def digest(path):
 
 
 def atomic_publish(source, output):
-    """Publish the exact verified Parquet bytes atomically without overwriting."""
+    """Publish the verified export atomically without overwriting."""
     output = Path(output)
     output.parent.mkdir(parents=True, exist_ok=True)
     descriptor, temporary = tempfile.mkstemp(prefix=output.name + '.', suffix='.tmp', dir=output.parent)
@@ -120,7 +175,7 @@ def completion_cap(rows):
 
 def run(root, input_path, output, work_dir=None):
     """Run the frozen public profile; failures retain receipts and no output."""
-    from guardian_truth.submission.cli import read_rows, write_predictions
+    from guardian_truth.submission.cli import write_predictions
     from scripts import qwen_vllm_adapter as adapter
     started = time.monotonic()
     input_path, output = Path(input_path).resolve(), Path(output).resolve()
@@ -129,9 +184,14 @@ def run(root, input_path, output, work_dir=None):
     if output.exists():
         raise FileExistsError(output)
     original_sha = digest(input_path)
-    rows = read_rows(input_path)
+    rows = read_input(input_path)
     if digest(input_path) != original_sha:
         raise ValueError('INPUT_CHANGED_DURING_READ')
+    model_rows = [dict(row, id=f'row{number:07d}') for number, row in enumerate(rows)]
+    output_format = 'PARQUET' if output.suffix.lower() in ('.parquet', '.pq') else 'CSV'
+    duplicate_rows = len(rows) - len({row['id'] for row in rows})
+    emit_progress('input', profile=PROFILE, io_version=IO_VERSION, rows=len(rows),
+                  duplicate_id_rows=duplicate_rows, output_format=output_format)
     if work_dir is None:
         work = Path(tempfile.mkdtemp(prefix='guardian-vllm-submission-')).resolve()
         if work.is_relative_to(root):
@@ -149,7 +209,8 @@ def run(root, input_path, output, work_dir=None):
                       TORCHINDUCTOR_CACHE_DIR=str(cache / 'torchinductor'),
                       VLLM_NO_USAGE_STATS='1', DO_NOT_TRACK='1', PYTHONDONTWRITEBYTECODE='1')
     record = dict(profile=PROFILE, rows=len(rows), input_sha256=original_sha,
-                  input_format='PARQUET_OR_CSV', output_format='PARQUET',
+                  input_format='PARQUET_OR_CSV', output_format=output_format,
+                  io_version=IO_VERSION, row_identity='POSITION', duplicate_id_rows=duplicate_rows,
                   runtime_input_columns=['id', 'prompt', 'response'], completion_cap=completion_cap(rows),
                   completion_cap_formula='64 + 32*rows + sum(ceil(response_utf8_bytes/10))',
                   cache=str(cache), work=str(work), entrypoint_sha256=digest(__file__))
@@ -157,11 +218,14 @@ def run(root, input_path, output, work_dir=None):
     # the already validated source. No labels or external receipts are read.
     snapshot = work / 'input.parquet'
     import pandas as pd
-    pd.DataFrame(rows, columns=['id', 'prompt', 'response']).to_parquet(snapshot, index=False)
+    pd.DataFrame(model_rows, columns=['id', 'prompt', 'response']).to_parquet(snapshot, index=False)
+    adapter.write_json(work / 'original-ids.json', [row['id'] for row in rows])
     record['snapshot_sha256'] = digest(snapshot)
     adapter.write_json(work / 'submission.json', record)
     try:
         if rows:
+            emit_progress('inference_start', rows=len(rows), workers=16, slots=16,
+                          context=32768, duration=1800)
             adapter.main(['--python', str(root / 'runtime/python/run_python.sh'),
                           '--model-dir', str(root / 'model' / REVISION),
                           '--asset-manifest', str(root / 'MODEL_MANIFEST.json'),
@@ -181,13 +245,30 @@ def run(root, input_path, output, work_dir=None):
             record['run'] = dict(rows=0, completion_http=0, preflight_http=0, default_zero_fallbacks=0)
         if digest(snapshot) != record['snapshot_sha256']:
             raise ValueError('SNAPSHOT_CHANGED_DURING_INFERENCE')
-        verify_predictions(prediction_path, rows)
-        atomic_publish(prediction_path, output)
+        verify_predictions(prediction_path, model_rows)
+        predictions = pd.read_parquet(prediction_path)
+        predictions['id'] = [row['id'] for row in rows]
+        exported = work / ('export.parquet' if output_format == 'PARQUET' else 'export.csv')
+        if output_format == 'PARQUET':
+            predictions.to_parquet(exported, index=False)
+            check = pd.read_parquet(exported)
+        else:
+            predictions.to_csv(exported, index=False, encoding='utf-8', lineterminator='\n')
+            check = pd.read_csv(exported, dtype={'id': str}, keep_default_na=False)
+        if (list(check.columns) != ['id', 'label']
+                or check['id'].tolist() != [row['id'] for row in rows]
+                or check['label'].tolist() != predictions['label'].tolist()):
+            raise ValueError('EXPORT_ALIGNMENT_MISMATCH')
+        atomic_publish(exported, output)
         record.update(status='COMPLETE', output_sha256=digest(output), seconds=time.monotonic() - started)
         adapter.write_json(work / 'submission.json', record)
+        emit_progress('complete', rows=len(rows), seconds=round(record['seconds'], 2),
+                      positives=int(predictions['label'].sum()), output_format=output_format,
+                      default_zero_fallbacks=record['run'].get('default_zero_fallbacks', 0))
     except BaseException as error:
         record.update(status='FAILED', error=type(error).__name__, seconds=time.monotonic() - started)
         adapter.write_json(work / 'submission.json', record)
+        emit_progress('failed', error=type(error).__name__, seconds=round(record['seconds'], 2))
         raise
     finally:
         print(f'receipts={work}', flush=True)

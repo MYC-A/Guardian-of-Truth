@@ -546,6 +546,17 @@ class OwnedVllmServer:
                 os.close(descriptor)
 
 
+def emit_row_progress(trace, completed, total, started, completion_http):
+    """Diagnostics only: no source text, ids or model request changes."""
+    try:
+        print('GUARDIAN_B2 ' + json.dumps(dict(event='row', completed=completed, total=total,
+            seconds=round(time.monotonic() - started, 2), binary=trace.get('binary'),
+            recovery=(trace.get('output_recovery') or {}).get('mode'),
+            completion_http=completion_http), sort_keys=True), flush=True)
+    except Exception:
+        pass
+
+
 def main(argv=None):
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument('--python', required=True)
@@ -599,6 +610,7 @@ def main(argv=None):
                     traces[identifier] = trace
                     with (args.output / 'traces.jsonl').open('a', encoding='utf-8') as stream:
                         stream.write(json.dumps(trace, ensure_ascii=False, allow_nan=False) + '\n')
+                    emit_row_progress(trace, len(traces), len(rows), started, client.completion_http)
             write_predictions(args.output / 'predictions.parquet',
                               [dict(id=row['id'], label=traces[row['id']]['binary']) for row in rows])
         write_json(args.output / 'DONE.json', dict(rows=len(traces), seconds=time.monotonic() - started,

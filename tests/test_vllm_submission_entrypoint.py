@@ -113,6 +113,8 @@ def test_all_rows_equal_fixed_profile_and_original_output_order(tmp_path, archiv
     assert options['--asset-manifest'] == str(archive / 'MODEL_MANIFEST.json')
     snapshot = pd.read_parquet(work / 'input.parquet')
     assert snapshot[['prompt', 'response']].equals(frame[['prompt', 'response']])
+    assert snapshot['id'].tolist() == [f'row{n:07d}' for n in range(count)]
+    assert json.loads((work / 'original-ids.json').read_text()) == frame['id'].tolist()
     assert os.environ['HF_HUB_OFFLINE'] == os.environ['TRANSFORMERS_OFFLINE'] == '1'
     assert Path(os.environ['VLLM_CACHE_ROOT']).is_relative_to(work)
     receipt = json.loads((work / 'submission.json').read_text())
@@ -244,13 +246,12 @@ def test_completion_cap_scales_with_rows_and_current_move_bytes_only():
 
 def test_input_replacement_during_read_is_refused(tmp_path, archive, monkeypatch):
     source, _ = input_frame(tmp_path)
-    from guardian_truth.submission import cli
-    original = cli.read_rows
+    original = public.read_input
     def replaced(path):
         rows = original(path)
         source.write_bytes(b'replaced after read')
         return rows
-    monkeypatch.setattr(cli, 'read_rows', replaced)
+    monkeypatch.setattr(public, 'read_input', replaced)
     with pytest.raises(ValueError, match='INPUT_CHANGED'):
         public.run(archive, source, tmp_path / 'output.parquet', tmp_path / 'work')
     assert not (tmp_path / 'work').exists()
@@ -268,3 +269,88 @@ def test_snapshot_replacement_during_run_refuses_publication(tmp_path, archive, 
     with pytest.raises(ValueError, match='SNAPSHOT_CHANGED'):
         public.run(archive, source, tmp_path / 'output.parquet', tmp_path / 'work')
     assert not (tmp_path / 'output.parquet').exists()
+
+
+@pytest.mark.parametrize('input_format', ['csv', 'parquet'])
+@pytest.mark.parametrize('output_format', ['csv', 'parquet'])
+def test_duplicate_and_literal_ids_keep_distinct_labels_and_order(
+        tmp_path, archive, monkeypatch, input_format, output_format):
+    ids = ['same', 'same', '', '  id  ', '1.0', '001', 'NA', 'a,b', '"quoted"', 'line\nbreak']
+    frame = pd.DataFrame({'id': ids, 'prompt': [f'policy-{n}' for n in range(len(ids))],
+                          'response': [f'move-{n}' for n in range(len(ids))], 'label': [9] * len(ids)})
+    source = tmp_path / ('input.' + input_format)
+    if input_format == 'csv':
+        frame.to_csv(source, index=False, encoding='utf-8-sig')
+    else:
+        frame.to_parquet(source, index=False)
+    before = source.read_bytes()
+    labels = [n % 2 for n in range(len(ids))]
+    fake_adapter(monkeypatch, labels=labels)
+    output = tmp_path / ('predictions.' + output_format)
+    work = tmp_path / 'work'
+    public.run(archive, source, output, work)
+    if output_format == 'csv':
+        actual = pd.read_csv(output, dtype={'id': str}, keep_default_na=False)
+        assert output.read_bytes().startswith(b'id,label\n')
+    else:
+        actual = pd.read_parquet(output)
+        assert output.read_bytes()[:4] == b'PAR1'
+    assert actual['id'].tolist() == ids
+    assert actual['label'].tolist() == labels
+    assert source.read_bytes() == before
+    snapshot = pd.read_parquet(work / 'input.parquet')
+    assert snapshot['id'].is_unique
+    assert snapshot[['prompt', 'response']].equals(frame[['prompt', 'response']])
+    assert list(snapshot.columns) == ['id', 'prompt', 'response']
+    assert json.loads((work / 'submission.json').read_text())['duplicate_id_rows'] == 1
+
+
+def test_large_multiline_csv_fields_survive_whole_entrypoint(tmp_path, archive, monkeypatch):
+    prompt = 'policy\n"quoted",Привет\n' * 12000
+    response = 'response\n' * 20000
+    source = tmp_path / 'large.csv'
+    pd.DataFrame([dict(id='id', prompt=prompt, response=response)]).to_csv(source, index=False)
+    fake_adapter(monkeypatch, labels=[1])
+    public.run(archive, source, tmp_path / 'predictions.csv', tmp_path / 'work')
+    snapshot = pd.read_parquet(tmp_path / 'work/input.parquet')
+    assert snapshot.iloc[0]['prompt'] == prompt
+    assert snapshot.iloc[0]['response'] == response
+
+
+def test_parquet_detected_by_content_and_numeric_ids_are_not_row_keys(tmp_path, archive, monkeypatch):
+    source = tmp_path / 'input.csv'
+    pd.DataFrame(dict(id=[42, 42], prompt=['policy', 'policy'], response=['a', 'b'])).to_parquet(source)
+    fake_adapter(monkeypatch, labels=[0, 1])
+    output = tmp_path / 'predictions.csv'
+    public.run(archive, source, output, tmp_path / 'work')
+    actual = pd.read_csv(output, dtype={'id': str})
+    assert actual['id'].tolist() == ['42', '42']
+    assert actual['label'].tolist() == [0, 1]
+
+
+@pytest.mark.parametrize('header', ['id,prompt,response, ID', 'id,prompt', 'id,prompt,prompt,response'])
+def test_ambiguous_or_missing_columns_fail_before_model(tmp_path, archive, monkeypatch, header):
+    source = tmp_path / 'bad.csv'
+    source.write_text(header + '\nx,y,z,w\n', encoding='utf-8')
+    monkeypatch.setattr(adapter, 'main', lambda *a: pytest.fail('invalid input must not start GPU'))
+    with pytest.raises(ValueError, match='COLUMNS'):
+        public.run(archive, source, tmp_path / 'out.csv', tmp_path / 'work')
+
+
+def test_empty_csv_output_has_header_without_gpu(tmp_path, archive, monkeypatch):
+    source, _ = input_frame(tmp_path, 0, csv=True)
+    monkeypatch.setattr(adapter, 'main', lambda *a: pytest.fail('empty input must not start GPU'))
+    output = tmp_path / 'predictions.csv'
+    public.run(archive, source, output, tmp_path / 'work')
+    assert output.read_text(encoding='utf-8') == 'id,label\n'
+
+
+def test_row_progress_never_prints_source_text_or_id(capsys):
+    import time
+    trace = dict(id='private-id', prompt='private-source', binary=1,
+                 output_recovery=dict(mode='UNCHANGED'))
+    adapter.emit_row_progress(trace, 2, 9, time.monotonic(), 4)
+    output = capsys.readouterr().out
+    assert 'private-' not in output
+    event = json.loads(output.split('GUARDIAN_B2 ', 1)[1])
+    assert event['completed'] == 2 and event['total'] == 9 and event['binary'] == 1
