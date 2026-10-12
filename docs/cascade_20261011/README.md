@@ -1,5 +1,7 @@
 # Guardian of Truth — каскад Granite Guardian 4.1 FP8 → Qwen3.8-27B AWQ (B2)
 
+Актуальная сводка на 12.10.2026: [результаты, платформенное расхождение, аудит и следующий эксперимент](../cascade_results_20261012/README.md). F1 0.889 ниже относится к разработочному valid46; на платформе пользователь получил F1 0.32448, причина пока не установлена.
+
 `python scripts/predict.py --input <test.csv|parquet> --output <predictions.csv|parquet>`
 
 Вывод: `id,label` (CSV, либо Parquet если путь оканчивается на `.parquet`).
