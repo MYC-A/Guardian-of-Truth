@@ -1,0 +1,55 @@
+name: Check Qwen3.5 B2 host-vLLM submission on Linux
+
+on:
+  push:
+    branches: [submission/qwen35-b2-system-vllm-20261013]
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  cpu-tests:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 15
+    env:
+      PYTHONDONTWRITEBYTECODE: '1'
+      PYTHONUTF8: '1'
+      CUDA_VISIBLE_DEVICES: ''
+    steps:
+      - uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683
+        with:
+          persist-credentials: false
+          sparse-checkout: |
+            src
+            scripts
+            submission
+            tests
+            docs/qwen35_system_20261013
+            experiments/guardian_addons
+            experiments/guardian_semantic
+            experiments/guardian_local_a100
+      - name: Install CPU test dependencies
+        shell: bash
+        run: |
+          set -euo pipefail
+          python3 -m venv "$RUNNER_TEMP/q35-tests"
+          "$RUNNER_TEMP/q35-tests/bin/python" -m pip install 'pytest>=8,<9' 'pydantic>=2.10,<3' 'jsonschema>=4.18,<5' pandas pyarrow packaging
+      - name: Check real B2 transport, output and process lifecycle
+        shell: bash
+        run: |
+          set -euo pipefail
+          export PYTHONPATH="$PWD/src:$PWD"
+          "$RUNNER_TEMP/q35-tests/bin/python" -m pytest -q -p no:cacheprovider \
+            tests/test_qwen35_system_submission.py tests/test_build_qwen35_system.py \
+            tests/test_qwen_vllm_adapter.py tests/test_vllm_submission_entrypoint.py \
+            tests/test_platform_environment_probe.py tests/test_platform_startup_probe_runtime_checked.py \
+            | tee "$RUNNER_TEMP/qwen35-system-tests.log"
+      - name: Preserve test report
+        if: always()
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02
+        with:
+          name: qwen35-system-cpu-tests-${{ github.sha }}
+          path: ${{ runner.temp }}/qwen35-system-tests.log
+          if-no-files-found: warn
+          retention-days: 7
