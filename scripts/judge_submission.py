@@ -4,12 +4,14 @@ Time line, seconds since the platform launched scripts/predict.py (GUARDIAN_STAR
   start          read input; mechanical layer on CPU for every row
   then           GPU stage scripts/judge_stage.py in its own process group; it starts no chunk
                  that would end after judge_stop_seconds
-  every 20 s     output rewritten atomically from all scores so far (rank rule over scored rows)
+  every 20 s     once model coverage >= min_coverage, the output is rewritten atomically
   kill_seconds   stage group killed if still alive; final write; exit 0
-  watchdog       hard exit (code 0 if an output exists)
-If the stage produced no score at all, no output is written and the exit code is non-zero, so the
-platform does not count the attempt. Rows are addressed by position; ids are written back verbatim
-in input order.
+  watchdog       hard exit (code 0 only if an output exists)
+Coverage gate: an output is written only when at least min_coverage of the rows have a model score.
+Below that no output exists and the exit code is non-zero, so a near-empty run is never reported as
+complete and the platform does not count the attempt. Within an accepted run, rows without a model
+score are explicit fallback rows: label 1 if a hard finding exists, else 0; they are counted in the
+log and in decisions.jsonl. Rows are addressed by position; ids are written back verbatim in order.
 """
 from __future__ import annotations
 
@@ -32,8 +34,8 @@ for _p in (str(ROOT), str(ROOT / 'src')):
 from guardian_truth.judge.decision import decide  # noqa: E402
 from guardian_truth.judge.mechanical import analyze  # noqa: E402
 
-PROFILE = 'single-pass-judge-v1'
-DEFAULTS = dict(model_dir='model/judge', positive_rate=0.30, hard_unknown_identifier=True,
+PROFILE = 'single-pass-judge-v2'
+DEFAULTS = dict(model_dir='model/judge', positive_rate=0.30, hard_unknown_identifier=True, min_coverage=0.9,
                 judge_stop_seconds=1380, kill_seconds=1530, watchdog_seconds=1680, write_every_seconds=20)
 
 
@@ -131,22 +133,27 @@ def load_config(root, path=None):
 
 
 def read_scores(path):
-    scores, missing = {}, 0
+    """-> ({key: log-odds}, rows without a score, rows with a bounded (inexact) score, stage events)."""
+    scores, missing, inexact, events = {}, 0, 0, {}
     if not Path(path).exists():
-        return scores, missing
+        return scores, missing, inexact, events
     with open(path, encoding='utf-8') as stream:
         for line in stream:
             try:
                 item = json.loads(line)
             except ValueError:
                 break  # torn last line of a killed writer
+            if 'event' in item:
+                events[item['event']] = item
+                continue
             if 'key' not in item:
                 continue
-            if item.get('p') is None:
+            if item.get('score') is None:
                 missing += 1
             else:
-                scores[int(item['key'])] = float(item['p'])
-    return scores, missing
+                scores[int(item['key'])] = float(item['score'])
+                inexact += not item.get('exact', False)
+    return scores, missing, inexact, events
 
 
 def kill_group(process, grace=15):
@@ -240,18 +247,20 @@ def run(root, input_path, output, *, python=None, work=None, started_wall=None, 
         for key in ('LD_LIBRARY_PATH', 'PYTHONPATH', 'PYTHONHOME', 'LD_PRELOAD'):
             env.pop(key, None)
 
-    state = dict(scored=0, positives=None)
+    need = max(1, int(-(-float(cfg['min_coverage']) * n // 1)))
+    state = dict(scored=0, positives=None, written=False, fallback=None, inexact=0)
 
     def publish():
-        scores, _ = read_scores(scores_path)
-        if not scores:
-            return 0
+        scores, _, inexact, _ = read_scores(scores_path)
+        state.update(scored=len(scores), inexact=inexact)
+        if len(scores) < need:
+            return False
         labels = decide(n, hard, scores, float(cfg['positive_rate']))
         write_labels(output, ids, labels)
-        state.update(scored=len(scores), positives=sum(labels))
-        return len(scores)
+        state.update(positives=sum(labels), written=True, fallback=n - len(scores), labels=labels, scores=scores)
+        return True
 
-    log(clock, 'stage_start', model=str(model))
+    log(clock, 'stage_start', model=str(model), coverage_needed=need)
     status, gone = 'UNKNOWN', None
     with (work / 'stage.log').open('w', encoding='utf-8') as stream:
         process = subprocess.Popen(command, stdout=stream, stderr=subprocess.STDOUT, env=env,
@@ -268,16 +277,27 @@ def run(root, input_path, output, *, python=None, work=None, started_wall=None, 
                     break
                 if time.monotonic() - last >= float(cfg['write_every_seconds']):
                     publish()
-                    log(clock, 'progress', scored=state['scored'], positives=state['positives'])
+                    log(clock, 'progress', scored=state['scored'], of=n, written=state['written'],
+                        positives=state['positives'])
                     last = time.monotonic()
                 time.sleep(1)
         finally:
             gone = kill_group(process)
-    scored = publish()
+    accepted = publish()
+    _, missing, _, events = read_scores(scores_path)
     tail = (work / 'stage.log').read_text(encoding='utf-8', errors='replace')[-4000:]
     print('=== GUARDIAN JUDGE STAGE LOG TAIL ===\n' + tail, file=sys.stderr, flush=True)
-    log(clock, 'final', status=status, group_gone=gone, rows=n, scored=scored, hard_rows=len(hard),
-        positives=state['positives'], work=str(work))
-    if not scored:
-        raise RuntimeError('JUDGE_PRODUCED_NO_SCORES')
+    if accepted:
+        with (work / 'decisions.jsonl').open('w', encoding='utf-8') as stream:
+            for i in range(n):
+                source = 'model' if i in state['scores'] else ('hard_fallback' if i in hard else 'fallback_zero')
+                stream.write(json.dumps(dict(key=i, id=ids[i], label=state['labels'][i], source=source,
+                                             hard=findings[i].hard, score=state['scores'].get(i))) + '\n')
+    log(clock, 'final', status=status, group_gone=gone, accepted=accepted, rows=n, scored=state['scored'],
+        coverage_needed=need, fallback_rows=state['fallback'], no_score_rows=missing, inexact_rows=state['inexact'],
+        hard_rows=len(hard), positives=state['positives'], stage_failed=events.get('failed'), work=str(work))
+    if not accepted:
+        if Path(output).exists():
+            Path(output).unlink()
+        raise RuntimeError('JUDGE_COVERAGE_BELOW_MINIMUM: %d of %d scored, need %d' % (state['scored'], n, need))
     return 0
