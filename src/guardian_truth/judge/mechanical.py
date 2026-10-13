@@ -1,7 +1,13 @@
 """Mechanical layer.
 
 hard  : findings provable from the transcript structure; any hard finding forces label 1.
+        Tool not in the declared catalog; schema violation (required field, type, enum); arguments that
+        are not an object; a reference argument (key *_id, *_ids, *_number, *_code, not new_*) whose value
+        appears nowhere in the transcript; the narrow expired-contract date gate.
 hints : suspicious spots code cannot prove; shown to the judge, never a label by themselves.
+        Several calls or text plus call against an explicit policy rule (the task does not treat this
+        as a hallucination by itself), unknown id-like values in non-reference arguments, numbers not
+        found in the transcript, completion claims without a call, refusals, escalations, repeats.
 Only prompt/response text is read. No domain names, row ids or labels. Errors -> no findings.
 """
 from __future__ import annotations
@@ -33,6 +39,8 @@ CURRENT_DATE = re.compile(r"\bthe\s+current\s+(?:time|date)\s+is\s+(\d{4}-\d{2}-
 _ID = r'(?=[A-Za-z0-9_\-]*[A-Za-z])(?=[A-Za-z0-9_\-]*\d)[A-Za-z0-9][A-Za-z0-9_\-]{4,63}'
 ID_VALUE = re.compile(r'^#?' + _ID + r'$')
 TEXT_ID = re.compile(r'(?<![\w#-])#?' + _ID + r'(?![\w-])')
+REF_KEY = re.compile(r'(?:^|_)(?:id|ids|number|code)$', re.I)
+REF_VALUE = re.compile(r'^#?[A-Za-z0-9][A-Za-z0-9_\-]{3,63}$')
 NUM_REPLY = re.compile(r'(?<![\w.:/-])\$?(\d{1,3}(?:,\d{3})+|\d+)(\.\d+)?(?![\w])')
 NUM_CTX = re.compile(r'\d+(?:\.\d+)?')
 REFUSAL = re.compile(r"\b(?:unable to|cannot|can't|can not|not able to|not possible|isn't possible|"
@@ -41,6 +49,7 @@ DONE_CLAIM = re.compile(r"\b(?:has been|have been|i've|i have|successfully|is no
                         r"\b(?:cancel|refund|updat|chang|modif|book|exchang|return|process|transferr|resum|"
                         r"suspend|enabl|disabl|reset|upgrad|downgrad|issu|creat|submit)", re.I)
 ERRORISH = re.compile(r'\b(?:error|not found|failed|invalid|denied|unauthori[sz]ed|exception)\b', re.I)
+NON_ALNUM = re.compile(r'[\W_]+')
 MAX_HINTS, HINT_CHARS = 8, 220
 
 
@@ -197,15 +206,16 @@ def validate(value, fields, prefix='$'):
     return issues
 
 
-def _strings(obj):
+def _keyed_strings(obj, key=None):
+    """(nearest dict key, string value) for every string in the arguments; list items keep the list key."""
     if isinstance(obj, dict):
-        for v in obj.values():
-            yield from _strings(v)
+        for k, v in obj.items():
+            yield from _keyed_strings(v, k)
     elif isinstance(obj, list):
         for v in obj:
-            yield from _strings(v)
+            yield from _keyed_strings(v, key)
     elif isinstance(obj, str):
-        yield obj
+        yield key, obj
 
 
 def _numbers(obj):
@@ -217,6 +227,16 @@ def _numbers(obj):
             yield from _numbers(v)
     elif type(obj) in (int, float):
         yield float(obj)
+
+
+def is_reference_key(key):
+    """Argument keys that point at an entity that must already exist (reservation_id, item_ids,
+    flight_number, ...). new_* keys may legitimately carry values chosen for a new entity."""
+    return bool(key) and bool(REF_KEY.search(key)) and not key.lower().startswith('new')
+
+
+def _compact(text):
+    return NON_ALNUM.sub('', text.lower())
 
 
 def _collect_numbers(text):
@@ -299,6 +319,7 @@ def _analyze(prompt, response, out, hard_unknown_identifier):
     calls = [e for e in turn if e.kind == 'call' and e.role == 'assistant']
     reply = '\n'.join(e.body for e in turn if e.kind == 'text' and e.role == 'assistant')
     context = prompt.lower()
+    context_compact = _compact(prompt)
     numbers = _Numbers(prompt)
 
     for call in calls:
@@ -317,13 +338,21 @@ def _analyze(prompt, response, out, hard_unknown_identifier):
             continue
         if spec.understood:
             out.hard.extend(f'schema {call.name}: {issue}' for issue in validate(call.value, spec.fields))
-        for value in _strings(call.value):
+        for key, value in _keyed_strings(call.value):
             v = value.strip()
-            if ID_VALUE.match(v) and v.lstrip('#').lower() not in context:
-                if hard_unknown_identifier:
-                    out.hard.append(f'unknown_identifier {call.name}: {v}')
-                else:
-                    out.hints.append(f'{call.name} uses "{v}", which appears nowhere in the transcript.')
+            if not v:
+                continue
+            if is_reference_key(key) and REF_VALUE.match(v):
+                c = _compact(v)
+                if len(c) >= 4 and c not in context_compact:
+                    if hard_unknown_identifier:
+                        out.hard.append(f'unknown_reference {call.name}.{key}: {v}')
+                    else:
+                        out.hints.append(f'{call.name}.{key} = "{v}" refers to an entity that appears nowhere '
+                                         'in the transcript.')
+            elif ID_VALUE.match(v) and v.lstrip('#').lower() not in context:
+                out.hints.append(f'{call.name}.{key or "argument"} uses "{v}", which appears nowhere in the '
+                                 'transcript.')
         odd = [x for x in _numbers(call.value) if x >= 10 and not numbers.derivable(x)]
         if odd:
             out.hints.append(f'{call.name} uses numbers not found in the transcript: '
@@ -337,9 +366,11 @@ def _analyze(prompt, response, out, hard_unknown_identifier):
                              'and that no permitted action is still available to the agent.')
 
     if ONE_CALL.search(system_text) and len(calls) > 1:
-        out.hard.append('policy allows one tool call per turn')
+        out.hints.append('The policy asks for one tool call at a time and this turn makes several: '
+                         'judge only whether this changes the outcome.')
     if EXCLUSIVE.search(system_text) and calls and reply.strip():
-        out.hard.append('policy forbids a message and a tool call in one turn')
+        out.hints.append('The policy separates messages and tool calls and this turn does both: '
+                         'judge only whether this changes the outcome.')
     out.hard.extend(_date_gate(history, calls, system_text))
 
     if reply:

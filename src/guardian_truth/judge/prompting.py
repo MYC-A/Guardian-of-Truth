@@ -1,4 +1,9 @@
-"""Judge prompt, deterministic trimming, rendering with the model's chat template."""
+"""Judge prompt, deterministic trimming, rendering with the model's chat template.
+
+The system block of the transcript (everything before the first USER marker: policy and tools) is
+never trimmed by trim_prompt. Only when that block alone cannot fit the cap does build_prompt fall
+back to a head/tail cut of the whole prompt and report policy_trimmed=True.
+"""
 from __future__ import annotations
 
 import re
@@ -10,6 +15,7 @@ RESCUE_TAIL = '\n[... end of excerpts ...]\n'
 TEXT_ID = re.compile(r'(?<![\w#-])#?(?=[A-Za-z0-9_\-]*[A-Za-z])(?=[A-Za-z0-9_\-]*\d)'
                      r'[A-Za-z0-9][A-Za-z0-9_\-]{4,63}(?![\w-])')
 RESPONSE_CHARS = 30000
+MIN_DIALOGUE_CHARS = 3000
 
 JUDGE_SYSTEM = """You audit one turn of a customer-service AI agent for contextual hallucinations.
 
@@ -68,14 +74,12 @@ def headtail(text, limit):
 
 
 def trim_prompt(prompt, response, budget):
-    """Keep the system block (policy + tools), the latest part of the dialogue, and lines from the
-    omitted middle that mention identifiers used in the turn under review."""
+    """System block (policy + tools) kept whole, the latest part of the dialogue kept, plus lines
+    from the omitted middle that mention identifiers used in the turn under review."""
     if len(prompt) <= budget:
         return prompt
     head = system_block(prompt)
     rest = prompt[len(head):]
-    if len(head) > budget * 0.6:
-        head = headtail(head, int(budget * 0.6))
     room = max(budget - len(head), 1000)
     tail = rest[-int(room * 0.8):]
     cut = tail.find('\n')
@@ -101,25 +105,26 @@ def trim_prompt(prompt, response, budget):
 
 
 def build_prompt(tok, row, cap_tokens):
-    """-> (text, n_tokens, trimmed). n_tokens can exceed cap_tokens only in pathological cases;
-    the caller must skip such a row instead of sending it."""
+    """-> (text, n_tokens, trimmed, policy_trimmed). n_tokens can exceed cap_tokens only in pathological
+    cases; the caller must skip such a row instead of sending it."""
     prompt, hints = row['prompt'], row.get('hints') or []
     response = headtail(row['response'], RESPONSE_CHARS)
     text = render(tok, prompt, response, hints)
     n = count_tokens(tok, text)
     if n <= cap_tokens:
-        return text, n, False
+        return text, n, False, False
+    floor = len(system_block(prompt)) + MIN_DIALOGUE_CHARS
     ratio = len(text) / max(n, 1)
     budget = len(prompt) - int((n - cap_tokens) * ratio * 1.08) - 500
     for _ in range(5):
-        budget = max(budget, 2000)
+        budget = max(budget, floor)
         text = render(tok, trim_prompt(prompt, response, budget), response, hints)
         n = count_tokens(tok, text)
-        if n <= cap_tokens or budget == 2000:
+        if n <= cap_tokens or budget == floor:
             break
         budget = int(budget * cap_tokens / n * 0.95)
-    if n > cap_tokens:
-        text = render(tok, headtail(prompt, int(cap_tokens * ratio * 0.5)),
-                      headtail(response, int(cap_tokens * ratio * 0.3)), [])
-        n = count_tokens(tok, text)
-    return text, n, True
+    if n <= cap_tokens:
+        return text, n, True, False
+    text = render(tok, headtail(prompt, int(cap_tokens * ratio * 0.5)),
+                  headtail(response, int(cap_tokens * ratio * 0.3)), [])
+    return text, count_tokens(tok, text), True, True
