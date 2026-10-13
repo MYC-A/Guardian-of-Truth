@@ -525,4 +525,3 @@ def emit_row_progress(trace, completed, total, started, completion_http):
             completion_http=completion_http), sort_keys=True), flush=True)
     except Exception:
         pass
-

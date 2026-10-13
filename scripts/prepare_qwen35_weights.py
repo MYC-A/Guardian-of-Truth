@@ -52,15 +52,17 @@ def prepare(inventory,stage,temporary,workers=8):
                 url=f"https://huggingface.co/{repo}/resolve/{revision}/{entry['name']}?download=true&range_nonce={uuid.uuid4().hex}"
                 req=urllib.request.Request(url,headers={'Range':f'bytes={off}-{off+length-1}','Accept-Encoding':'identity'})
                 with urllib.request.urlopen(req,timeout=90) as response:
-                    if response.status!=206 or response.headers.get('Content-Range')!=f"bytes {off}-{off+length-1}/{entry['bytes']}":raise ValueError('RANGE_MISMATCH')
+                    if response.status!=206 or response.headers.get('Content-Range')!=f"bytes {off}-{off+length-1}/{entry['bytes']}":
+                        raise ValueError(f"RANGE_MISMATCH:status={response.status}:range={response.headers.get('Content-Range')}")
                     data=response.read(length+1)
-                if len(data)!=length:raise ValueError('SHORT_RANGE')
+                if len(data)!=length:raise ValueError(f'SHORT_RANGE:expected={length}:actual={len(data)}')
                 with path.open('r+b',buffering=0) as f:f.seek(off);f.write(data)
                 save(receipt,dict(offset=off,length=length,sha256=hashlib.sha256(data).hexdigest()))
                 with lock:downloaded+=length
                 return
             except Exception as error:
-                emit('download_retry',file=entry['name'],offset=off,attempt=attempt+1,error=type(error).__name__)
+                emit('download_retry',file=entry['name'],offset=off,attempt=attempt+1,
+                     error=type(error).__name__,detail=str(error)[:120])
                 if attempt==4:raise
                 time.sleep(min(2**attempt,10))
     with zipfile.ZipFile(stage,mode,allowZip64=True) as z, ThreadPoolExecutor(workers) as pool:
