@@ -2,7 +2,7 @@
 
 Runs the submission pieces unchanged: mechanical layer -> scripts/judge_stage.py subprocess -> scores.
 Reports AUC (threshold-free; the model-selection metric), F1 when a fixed share of rows is labelled 1,
-mechanical findings per gold label, time and throughput.
+mechanical findings per gold label, exactness of the scores, time and throughput.
 
   # CPU only: which hard checks fire on label-0 rows (must be zero)
   python scripts/eval_judge_valid.py --input valid.parquet --mechanical-only --out runs/mech
@@ -128,28 +128,25 @@ def main(argv=None):
         summary['stage_exit'] = code
         summary['stage_wall_seconds'] = round(time.time() - t1, 1)
         summary['total_wall_seconds'] = round(time.time() - started, 1)
-        scores, missing = read_scores(scores_path)
-        summary['scored'], summary['no_score'] = len(scores), missing
-        for line in scores_path.read_text(encoding='utf-8').splitlines() if scores_path.exists() else []:
-            item = json.loads(line)
-            if item.get('event') in ('ready', 'done'):
-                summary['stage_' + item['event']] = item
+        scores, missing, inexact, events = read_scores(scores_path)
+        summary.update(scored=len(scores), no_score=missing, inexact=inexact,
+                       **{'stage_' + k: v for k, v in events.items()})
         if labels and scores:
             idx = [i for i in range(n) if i in scores]
             summary['auc_judge'] = auc([labels[i] for i in idx], [scores[i] for i in idx])
-            combined = [2.0 if findings[i].hard else scores[i] for i in idx]
+            combined = [1e9 if findings[i].hard else scores[i] for i in idx]
             summary['auc_with_mechanical'] = auc([labels[i] for i in idx], combined)
             hard = {i for i, f in enumerate(findings) if f.hard}
             summary['f1_at_rate'] = {rate: confusion(labels, decide(n, hard, scores, float(rate)))
                                      for rate in a.rates.split(',')}
-            candidates = [(confusion(labels, [1 if (i in hard or scores.get(i, -1.0) >= t) else 0
+            candidates = [(confusion(labels, [1 if (i in hard or scores.get(i, float('-inf')) >= t) else 0
                                               for i in range(n)]), t) for t in sorted(set(scores.values()))]
             best, threshold = max(candidates, key=lambda item: item[0]['f1'])
             summary['best_threshold_in_sample'] = dict(best, threshold=threshold,
                                                        note='selected on the same rows: optimistic')
     with (a.out / 'rows.csv').open('w', encoding='utf-8', newline='') as stream:
         writer = csv.writer(stream)
-        writer.writerow(['index', 'id', 'label', 'p', 'hard', 'hints'])
+        writer.writerow(['index', 'id', 'label', 'score', 'hard', 'hints'])
         for i, (row, f) in enumerate(zip(rows, findings)):
             writer.writerow([i, row['id'], '' if labels is None else labels[i], scores.get(i, ''),
                              ' | '.join(f.hard), ' | '.join(f.hints)])
