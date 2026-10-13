@@ -142,9 +142,10 @@ def main(argv=None):
             hard = {i for i, f in enumerate(findings) if f.hard}
             summary['f1_at_rate'] = {rate: confusion(labels, decide(n, hard, scores, float(rate)))
                                      for rate in a.rates.split(',')}
-            best = max((confusion(labels, [1 if (i in hard or scores.get(i, -1) >= t) else 0 for i in range(n)]),
-                        t) for t in sorted(set(scores.values())))
-            summary['best_threshold_in_sample'] = dict(best[0], threshold=best[1],
+            candidates = [(confusion(labels, [1 if (i in hard or scores.get(i, -1.0) >= t) else 0
+                                              for i in range(n)]), t) for t in sorted(set(scores.values()))]
+            best, threshold = max(candidates, key=lambda item: item[0]['f1'])
+            summary['best_threshold_in_sample'] = dict(best, threshold=threshold,
                                                        note='selected on the same rows: optimistic')
     with (a.out / 'rows.csv').open('w', encoding='utf-8', newline='') as stream:
         writer = csv.writer(stream)
