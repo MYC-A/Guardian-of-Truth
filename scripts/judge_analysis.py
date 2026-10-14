@@ -6,7 +6,9 @@ Each --run is an eval_judge_valid.py --out directory (stage_input.jsonl, scores.
 Checks before any number is reported:
   * every run's stage_input.jsonl matches the input file row by row (position and SHA256 of prompt and
     response), so all runs saw identical rows;
-  * scores are finite, exact (bounded scores are ignored) and keys follow '<question>@<on|off>';
+  * every input position occurs exactly once, no row has a second primary record or a repeated score key;
+  * scores are finite and exact (exact != true and bounded scores are skipped and counted), keys follow
+    '<question>@<on|off>';
   * comparisons use only the INTERSECTION of rows scored by every compared variant (coverage reported);
   * groups (id prefix before the first ':') are the unit of the bootstrap and of cross-validation.
 Variants: every score key of every run ('run:key'); mean_z / max_z / out-of-fold logistic over the keys of
@@ -161,20 +163,28 @@ def read_labelled(path):
 
 
 def read_run(run_dir, digests):
+    """Scores of one run with integrity checks. Problems (any one blocks every comparison): stage rows that do
+    not cover each input position exactly once with matching SHA256, labels in the stage input, a second
+    primary record for a row, a repeated extra score key for a row, keys outside the schema, non-finite or
+    out-of-range rows. Inexact results (primary exact != true, extra keys in "bounded") are skipped and counted."""
     run_dir = Path(run_dir)
     problems = []
     stage = [json.loads(l) for l in (run_dir / 'stage_input.jsonl').read_text(encoding='utf-8').splitlines() if l.strip()]
-    if len(stage) != len(digests):
-        problems.append('ROW_COUNT %d != %d' % (len(stage), len(digests)))
+    positions = [int(row['key']) for row in stage]
+    if sorted(positions) != list(range(len(digests))):
+        problems.append('STAGE_POSITIONS_NOT_A_PERMUTATION (%d rows, %d unique, input %d)'
+                        % (len(positions), len(set(positions)), len(digests)))
     for row in stage:
         k = int(row['key'])
-        if k >= len(digests) or (sha(row['prompt']), sha(row['response'])) != digests[k]:
+        if not 0 <= k < len(digests) or (sha(row['prompt']), sha(row['response'])) != digests[k]:
             problems.append('ROW_MISMATCH key %d' % k)
             break
         if 'label' in row or 'explanation' in row:
             problems.append('LABEL_LEAKED_INTO_STAGE_INPUT')
             break
     qs, shown, done = defaultdict(dict), {}, {}
+    primary_seen, extra_seen = set(), set()
+    skipped = dict(inexact_primary=0, unscored_primary=0, inexact_extra=0)
     for line in (run_dir / 'scores.jsonl').read_text(encoding='utf-8').splitlines():
         try:
             item = json.loads(line)
@@ -182,14 +192,46 @@ def read_run(run_dir, digests):
             break
         if item.get('event') == 'done':
             done = item
-        if 'key' not in item or not isinstance(item.get('scores'), dict):
-            continue
-        if not item.get('extra') and item.get('score') is None:
+        if 'key' not in item or 'event' in item:
             continue
         k = int(item['key'])
-        if not item.get('extra'):
-            shown[k] = bool(item.get('hints_shown'))
-        for name, v in item['scores'].items():
+        if not 0 <= k < len(digests):
+            problems.append('KEY_OUT_OF_RANGE %d' % k)
+            continue
+        if item.get('extra'):
+            bounded = item.get('bounded') or {}
+            skipped['inexact_extra'] += len(bounded)
+            for name, v in (item.get('scores') or {}).items():
+                if (k, name) in extra_seen:
+                    problems.append('DUPLICATE_EXTRA %s row %d' % (name, k))
+                extra_seen.add((k, name))
+                if name in bounded:
+                    continue
+                if not KEY.match(name):
+                    problems.append('BAD_KEY %s' % name)
+                elif isinstance(v, (int, float)) and not isinstance(v, bool) and math.isfinite(v):
+                    qs[k][name] = float(v)
+                else:
+                    problems.append('NON_FINITE %s row %d' % (name, k))
+            continue
+        if k in primary_seen:
+            problems.append('DUPLICATE_PRIMARY row %d' % k)
+            continue
+        primary_seen.add(k)
+        if item.get('score') is None:
+            skipped['unscored_primary'] += 1
+            continue
+        if item.get('exact') is not True:
+            skipped['inexact_primary'] += 1
+            continue
+        shown[k] = bool(item.get('hints_shown'))
+        scores = item.get('scores')
+        if not isinstance(scores, dict):
+            scores = {item.get('score_key') or 'overall@on': item['score']}
+        for name, v in scores.items():
+            if (k, name) in extra_seen:
+                problems.append('DUPLICATE_EXTRA %s row %d' % (name, k))
+            extra_seen.add((k, name))
             if not KEY.match(name):
                 problems.append('BAD_KEY %s' % name)
             elif isinstance(v, (int, float)) and not isinstance(v, bool) and math.isfinite(v):
@@ -199,7 +241,7 @@ def read_run(run_dir, digests):
     summary = {}
     if (run_dir / 'summary.json').is_file():
         summary = json.loads((run_dir / 'summary.json').read_text(encoding='utf-8'))
-    return dict(qs=dict(qs), shown=shown, done=done, summary=summary, problems=problems)
+    return dict(qs=dict(qs), shown=shown, done=done, summary=summary, problems=problems, skipped=skipped)
 
 
 def compare(name, score, reference, idx, labels, groups, iterations, smoke):
@@ -236,7 +278,7 @@ def main(argv=None):
     runs = [read_run(r, digests) for r in a.run]
     report = dict(rows=len(ids), positives=sum(labels), groups=len(set(groups)), smoke_only=smoke,
                   rule='promote only when the lower end of the grouped 95% CI of delta AUC > 0',
-                  runs=[dict(path=str(p), problems=r['problems'], coverage={k: sum(1 for v in r['qs'].values() if k in v)
+                  runs=[dict(path=str(p), problems=r['problems'], skipped=r['skipped'], coverage={k: sum(1 for v in r['qs'].values() if k in v)
                                                                               for k in sorted({k for v in r['qs'].values() for k in v})},
                              stage_primary=r['done'].get('primary'), stage_extras=r['done'].get('extras'),
                              total_wall_seconds=r['summary'].get('total_wall_seconds'),
