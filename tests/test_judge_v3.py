@@ -244,6 +244,25 @@ class Stage(unittest.TestCase):
         self.assertIn('policy@on', extra[0]['bounded'])
         self.assertEqual(done['extras']['inexact'], 1)
 
+    def test_exact_requires_the_whole_contract_per_result(self):
+        from scripts.judge_stage import answer_score
+        lp = lambda x: SimpleNamespace(logprob=x)
+        out = lambda entries, token=1: SimpleNamespace(outputs=[SimpleNamespace(logprobs=[entries], token_ids=[token])])
+        good = {1: lp(math.log(0.7)), 4: lp(math.log(0.3))}
+        self.assertEqual(answer_score(out(good), {1}, {4})[1], True)
+        self.assertEqual(answer_score(out({**good, 9: lp(-8.0)}), {1}, {4})[1], False)     # outside token
+        self.assertEqual(answer_score(out({1: lp(math.log(0.5)), 4: lp(math.log(0.3))}), {1}, {4})[1], False)  # mass
+        self.assertEqual(answer_score(out(good, token=9), {1}, {4})[1], False)                    # sampled token
+        score, exact = answer_score(out({**good, 9: lp(-8.0)}), {1}, {4})
+        self.assertAlmostEqual(score, math.log(0.7 / 0.3))
+
+    def test_contract_breach_in_a_row_is_not_scored_and_extras_stay_bounded(self):
+        rows = stage_rows(2, marks=('ROWA', 'ROWB'))
+        primary, extra, done, _ = run_stage(rows, {'questions': ['overall', 'policy'], 'require_exact_scores': False},
+                                            {}, inexact=lambda t: 'ROWB' in t and QUESTIONS['policy'] in t)
+        self.assertEqual(extra[-1]['scores'], {})
+        self.assertIn('policy@on', extra[-1]['bounded'])
+
     def test_cache_metric_unavailable_is_not_zero(self):
         from scripts.judge_stage import Usage
         u = Usage()
@@ -422,6 +441,40 @@ class Analysis(unittest.TestCase):
                 report = judge_analysis.main(['--input', str(dev), '--run', str(run), '--out', str(Path(folder) / 'a.json')])
             self.assertIn('error', report)
             self.assertTrue(report['smoke_only'])
+
+    def test_duplicates_and_inexact_scores_are_not_trusted(self):
+        from scripts import judge_analysis
+        with tempfile.TemporaryDirectory() as folder:
+            dev, run = self.make(Path(folder))
+            lines = (run / 'scores.jsonl').read_text().splitlines()
+            first = json.loads(lines[0])
+            (run / 'scores.jsonl').write_text('\n'.join(lines + [json.dumps(first)]) + '\n')
+            with contextlib.redirect_stdout(io.StringIO()):
+                report = judge_analysis.main(['--input', str(dev), '--run', str(run), '--out', str(Path(folder) / 'a.json')])
+            self.assertIn('error', report)
+            self.assertTrue(any(p.startswith('DUPLICATE_PRIMARY') for p in report['runs'][0]['problems']))
+        with tempfile.TemporaryDirectory() as folder:
+            dev, run = self.make(Path(folder))
+            stage = (run / 'stage_input.jsonl').read_text().splitlines()
+            (run / 'stage_input.jsonl').write_text('\n'.join(stage[:-1] + [stage[0]]) + '\n')
+            with contextlib.redirect_stdout(io.StringIO()):
+                report = judge_analysis.main(['--input', str(dev), '--run', str(run), '--out', str(Path(folder) / 'a.json')])
+            self.assertTrue(any(p.startswith('STAGE_POSITIONS_NOT_A_PERMUTATION') for p in report['runs'][0]['problems']))
+        with tempfile.TemporaryDirectory() as folder:
+            dev, run = self.make(Path(folder))
+            items = [json.loads(l) for l in (run / 'scores.jsonl').read_text().splitlines()]
+            for item in items:
+                if item.get('key') == 7 and not item.get('extra'):
+                    item['exact'] = False
+                if item.get('key') == 8 and item.get('extra'):
+                    item['bounded'] = dict(item['scores'])
+            (run / 'scores.jsonl').write_text(''.join(json.dumps(i) + '\n' for i in items))
+            with contextlib.redirect_stdout(io.StringIO()):
+                report = judge_analysis.main(['--input', str(dev), '--run', str(run), '--out', str(Path(folder) / 'a.json'),
+                                              '--iterations', '100', '--min-rows', '30'])
+            self.assertNotIn('error', report)
+            self.assertEqual(report['runs'][0]['skipped'], dict(inexact_primary=1, unscored_primary=1, inexact_extra=1))
+            self.assertEqual(report['common_rows'], 37)
 
 
 class Packaging(unittest.TestCase):
