@@ -2,12 +2,15 @@
 
 hard  : findings provable from the transcript structure; any hard finding forces label 1.
         Tool not in the declared catalog; schema violation (required field, type, enum); arguments that
-        are not an object; a reference argument (key *_id, *_ids, *_number, *_code, not new_*) whose value
-        appears nowhere in the transcript; the narrow expired-contract date gate.
+        are not an object; the narrow expired-contract date gate.
 hints : suspicious spots code cannot prove; shown to the judge, never a label by themselves.
-        Several calls or text plus call against an explicit policy rule (the task does not treat this
-        as a hallucination by itself), unknown id-like values in non-reference arguments, numbers not
-        found in the transcript, completion claims without a call, refusals, escalations, repeats.
+        Reference-like arguments (key *_id, *_ids, *_number, *_code, not new_*) whose value appears
+        nowhere in the transcript: a key name cannot tell an existing entity from one the call creates
+        (create_coupon code=SUMMER99), so this stays a hint unless hard_unknown_identifier=True is set
+        for an experiment. Also: several calls or text plus call against an explicit policy rule (the
+        task does not treat this as a hallucination by itself), unknown id-like values in other
+        arguments, numbers not found in the transcript, completion claims without a call, refusals,
+        escalations, repeats.
 Only prompt/response text is read. No domain names, row ids or labels. Errors -> no findings.
 """
 from __future__ import annotations
@@ -230,8 +233,9 @@ def _numbers(obj):
 
 
 def is_reference_key(key):
-    """Argument keys that point at an entity that must already exist (reservation_id, item_ids,
-    flight_number, ...). new_* keys may legitimately carry values chosen for a new entity."""
+    """Argument keys that usually point at an entity (reservation_id, item_ids, flight_number, ...).
+    Usually is not always: create_* tools take codes and numbers for the entity they create, which is
+    why an unknown value under such a key is a hint by default. new_* keys are skipped."""
     return bool(key) and bool(REF_KEY.search(key)) and not key.lower().startswith('new')
 
 
@@ -301,7 +305,7 @@ def _date_gate(history, calls, system_text):
     return found
 
 
-def analyze(prompt, response, hard_unknown_identifier=True):
+def analyze(prompt, response, hard_unknown_identifier=False):
     out = Findings()
     try:
         _analyze(prompt or '', response or '', out, hard_unknown_identifier)
@@ -348,8 +352,8 @@ def _analyze(prompt, response, out, hard_unknown_identifier):
                     if hard_unknown_identifier:
                         out.hard.append(f'unknown_reference {call.name}.{key}: {v}')
                     else:
-                        out.hints.append(f'{call.name}.{key} = "{v}" refers to an entity that appears nowhere '
-                                         'in the transcript.')
+                        out.hints.append(f'{call.name}.{key}="{v}" is not in the transcript: invented if it must '
+                                         'name an existing entity, legitimate if this call creates it.')
             elif ID_VALUE.match(v) and v.lstrip('#').lower() not in context:
                 out.hints.append(f'{call.name}.{key or "argument"} uses "{v}", which appears nowhere in the '
                                  'transcript.')
