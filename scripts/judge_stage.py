@@ -1,21 +1,35 @@
-"""GPU stage of the single-pass judge: offline vLLM, one forward pass per row.
+"""GPU stage of the single-pass judge: offline vLLM, one forward pass per row (plus optional extras).
 
-Input JSON lines {"key", "prompt", "response", "hints"}. Output JSON lines (fsync after every chunk):
-{"event": "ready"}, one record per row, {"event": "done"} (or {"event": "failed"}).
+Input JSON lines {"key", "prompt", "response", "hints"}. Output JSON lines (fsync after every portion):
+{"event": "ready"}, one primary record per row, optional extra records, {"event": "done"} (or "failed").
 
 Score. The answer token is restricted to the YES/NO token ids (allowed_token_ids) and logprobs are
 read in processed mode, i.e. after that restriction, so both answers always get an explicit
 probability: score = log P(YES) - log P(NO) over exactly these tokens (exact=true). A start-up probe
-verifies this on the running engine. If this vLLM does not honour it, the stage stops when
-require_exact_scores is true (default); otherwise it falls back to bounded log-odds from the raw
-top-20: a missing answer is placed at the lowest returned logprob, which keeps the ordering
-(exact=false on every such record).
+verifies this on the running engine; without it the stage stops when require_exact_scores is true.
+With require_exact_scores every individual result must be exact too: an inexact primary result is
+written as score=null with bounded_score and error INEXACT_SCORE; an inexact extra goes to "bounded".
+
+Score keys (v3). prompting.score_keys(cfg): cfg['questions'] x cfg['hint_modes'] -> '<question>@<mode>',
+default ['overall'] x ['on'] = overall@on. The FIRST key is the primary score and its prompt is rendered
+for that key (question and hint mode). All variants of a row come from ONE built prompt (same trimmed
+transcript, cap and response) and differ only in the hint block and the final question.
+
+Priority. Primary records of a chunk are written and fsynced before anything else runs. Extra keys never
+delay primary coverage: with extras_schedule 'after_primary' (default) they run only after every row has
+a primary score; with 'per_chunk' (offline experiments, prefix cache still warm) they run after a chunk
+only when the projected time of the remaining primary rows still fits, otherwise the rows are deferred.
+Every extras portion is preceded by a time check from MEASURED extras cost (pessimistic before the first
+measurement), optionally capped by extras_max_seconds. An extras failure is logged and ends the extras;
+primary scores are never lost. Extra records: {"key", "extra": true, "scores", "bounded"}.
+
+Diagnostics in the done event, separately for primary and extras: prompts, prompt / generated / cached
+tokens and wall seconds. cached is "unavailable" when the engine does not report it (never a measured 0).
 
 Context budget. Every row is rendered once at full length before inference. One per-row token cap is
-planned from the total token count, the time left and planning_tokens_per_second, and applied to all
-rows. Only if the measured throughput would miss --stop-at is the cap lowered for the remaining rows
-(event emergency_cap; every record carries its cap). The system block (policy + tools) is never
-trimmed unless it alone exceeds the cap (policy_trimmed=true).
+planned from the total primary token count, the time left and planning_tokens_per_second. Only if the
+measured primary throughput would miss --stop-at is the cap lowered for the remaining rows (event
+emergency_cap). The system block (policy + tools) is never trimmed unless it alone exceeds the cap.
 """
 from __future__ import annotations
 
@@ -35,7 +49,10 @@ for _p in (str(ROOT), str(ROOT / 'src')):
     if _p not in sys.path:
         sys.path.insert(0, _p)
 
-from guardian_truth.judge.prompting import build_prompt, render, system_block  # noqa: E402
+from guardian_truth.judge.prompting import (build_prompt, count_tokens, hints_shown,  # noqa: E402
+                                            question_margin, render, score_keys, system_block, variant_text)
+
+SCHEDULES = ('after_primary', 'per_chunk')
 
 ANSWERS = {'yes': ('YES', 'Yes', 'yes', ' YES', ' Yes', ' yes'),
            'no': ('NO', 'No', 'no', ' NO', ' No', ' no')}
@@ -95,8 +112,7 @@ def _lse(values):
 
 
 def answer_score(output, yes_ids, no_ids):
-    """-> (log P(YES) - log P(NO), exact). Exact when both answers carry an explicit logprob.
-    Otherwise the missing answer is bounded by the lowest returned logprob (ordering preserved)."""
+    """-> (log P(YES) - log P(NO), exact)."""
     sample = output.outputs[0] if output.outputs else None
     if sample is None or not sample.logprobs:
         return None, False
@@ -123,7 +139,7 @@ def sigmoid(x):
 
 def probe(llm, tok, params, yes_ids, no_ids):
     """True when the engine returns logprobs normalised over exactly the allowed answer tokens."""
-    text = render(tok, '⟦USER⟧\nHello.', '⟦ASSISTANT⟧\nHello! How can I help you today?', [])
+    text = render(tok, '\\u27e6USER\\u27e7\\nHello.', '\\u27e6ASSISTANT\\u27e7\\nHello! How can I help you today?', [])
     sample = llm.generate([text], params, use_tqdm=False)[0].outputs[0]
     entries = sample.logprobs[0] if sample.logprobs else {}
     allowed = yes_ids | no_ids
@@ -149,25 +165,72 @@ def solve_cap(estimates, budget, low, high):
     return lo
 
 
+class Usage:
+    """Prompt / generated / cached tokens and wall time of one kind of call."""
+
+    def __init__(self):
+        self.prompts = self.prompt_tokens = self.generated_tokens = 0
+        self.cached_tokens, self.cache_reported, self.wall = 0, True, 0.0
+
+    def add(self, outputs, seconds):
+        self.wall += seconds
+        for o in outputs:
+            self.prompts += 1
+            ids = getattr(o, 'prompt_token_ids', None)
+            self.prompt_tokens += len(ids) if ids is not None else 0
+            sample = o.outputs[0] if getattr(o, 'outputs', None) else None
+            self.generated_tokens += len(getattr(sample, 'token_ids', None) or []) if sample is not None else 0
+            cached = getattr(o, 'num_cached_tokens', None)
+            if isinstance(cached, int) and not isinstance(cached, bool):
+                self.cached_tokens += cached
+            else:
+                self.cache_reported = False
+
+    def report(self):
+        known = self.cache_reported and self.prompts > 0
+        return dict(prompts=self.prompts, prompt_tokens=self.prompt_tokens, generated_tokens=self.generated_tokens,
+                    cached_tokens=self.cached_tokens if known else 'unavailable',
+                    uncached_tokens=self.prompt_tokens - self.cached_tokens if known else 'unavailable',
+                    cache_hit=round(self.cached_tokens / self.prompt_tokens, 4) if known and self.prompt_tokens
+                    else 'unavailable', wall_seconds=round(self.wall, 2))
+
+
+def check_order(outputs, prompts):
+    # vLLM keeps prompt order; verify instead of trusting it.
+    if len(outputs) != len(prompts) or any(
+            getattr(o, 'prompt', None) not in (None, t) for o, t in zip(outputs, prompts)):
+        raise RuntimeError('JUDGE_OUTPUT_ORDER_MISMATCH')
+
+
 def main(argv=None):
     ap = argparse.ArgumentParser(description=__doc__)
     ap.add_argument('--model', required=True)
     ap.add_argument('--input', required=True)
     ap.add_argument('--output', required=True)
     ap.add_argument('--config', required=True)
-    ap.add_argument('--stop-at', type=float, required=True, help='wall-clock epoch; no chunk may end after it')
+    ap.add_argument('--stop-at', type=float, required=True, help='wall-clock epoch; no portion may end after it')
     a = ap.parse_args(argv)
     cfg = json.loads(Path(a.config).read_text(encoding='utf-8'))
     rows = [json.loads(line) for line in Path(a.input).read_text(encoding='utf-8').splitlines() if line.strip()]
+    keys = score_keys(cfg)
+    primary_key, primary_q, primary_m = keys[0]
+    extras_keys = keys[1:]
+    schedule = cfg.get('extras_schedule', 'after_primary')
+    if schedule not in SCHEDULES:
+        raise ValueError('BAD_EXTRAS_SCHEDULE: %s' % schedule)
+    extras_cap = cfg.get('extras_max_seconds')
+    require_exact = bool(cfg.get('require_exact_scores', True))
+    if all(m == 'off' for _, _, m in keys):
+        for row in rows:
+            row['hints'] = []
     max_len = int(cfg['max_model_len'])
-    cap_max, cap_min = max_len - 8, int(cfg.get('min_cap_tokens', 8000))
     chunk = int(cfg.get('chunk', 48))
 
     import vllm
     from vllm import LLM, SamplingParams
     kwargs, dropped = engine_kwargs(a.model, cfg)
-    log('engine_start', vllm=getattr(vllm, '__version__', '?'), dropped=dropped,
-        kwargs={k: v for k, v in kwargs.items() if k not in ('model', 'tokenizer')})
+    log('engine_start', vllm=getattr(vllm, '__version__', '?'), dropped=dropped, keys=[k for k, _, _ in keys],
+        schedule=schedule, kwargs={k: v for k, v in kwargs.items() if k not in ('model', 'tokenizer')})
     llm = LLM(**kwargs)
     tok = llm.get_tokenizer()
     yes_ids, no_ids = answer_ids(tok)
@@ -175,36 +238,93 @@ def main(argv=None):
                             allowed_token_ids=sorted(yes_ids | no_ids))
     exact_mode, probe_info = probe(llm, tok, params, yes_ids, no_ids)
     log('probe', exact=exact_mode, yes_ids=sorted(yes_ids), no_ids=sorted(no_ids), **probe_info)
-    if not exact_mode and cfg.get('require_exact_scores', True):
+    if not exact_mode and require_exact:
         with open(a.output, 'a', encoding='utf-8') as out:
             emit(out, [dict(event='failed', reason='EXACT_SCORES_UNAVAILABLE', **probe_info)])
         log('failed', reason='EXACT_SCORES_UNAVAILABLE')
         sys.stdout.flush()
         os._exit(3)
+    margin = question_margin(tok, keys)
+    cap_max = max_len - 8 - margin
+    cap_min = min(int(cfg.get('min_cap_tokens', 8000)), cap_max)
 
     order = sorted(range(len(rows)), key=lambda i: (
         hashlib.sha1(system_block(rows[i]['prompt']).encode('utf-8', 'replace')).hexdigest(), rows[i]['prompt']))
     prepared = time.time()
     built = {i: build_prompt(tok, rows[i], cap_max) for i in order}
     full = {i: built[i][1] for i in order}
-    budget = (a.stop_at - time.time() - 20) * float(cfg.get('planning_tokens_per_second', 6000)) * 0.9
+    plan_tps = float(cfg.get('planning_tokens_per_second', 6000))
+    budget = (a.stop_at - time.time() - 20) * plan_tps * 0.9
     cap = solve_cap(list(full.values()), budget, cap_min, cap_max)
-    log('plan', cap=cap, total_tokens=sum(full.values()), rows_over_cap=sum(1 for v in full.values() if v > cap),
-        prepare_seconds=round(time.time() - prepared, 1))
+    log('plan', cap=cap, margin=margin, total_tokens=sum(full.values()),
+        rows_over_cap=sum(1 for v in full.values() if v > cap), prepare_seconds=round(time.time() - prepared, 1))
 
+    primary_use, extras_use = Usage(), Usage()
     stats = dict(scored=0, inexact=0, no_score=0, trimmed=0, policy_trimmed=0, skipped=0, tokens=0,
-                 gpu_seconds=0.0, emergency_caps=0, planned_cap=cap)
+                 emergency_caps=0, planned_cap=cap, hints_shown=0)
+    xstats = dict(rows_done=0, rows_deferred=0, rows_skipped_deadline=0, inexact=0, failed=None)
+    bases, pending = {}, []
+
+    def primary_tps():
+        return stats['tokens'] / primary_use.wall if primary_use.wall > 30 and stats['tokens'] else plan_tps
+
+    def extras_seconds(n_rows):
+        n = n_rows * len(extras_keys)
+        if extras_use.prompts:
+            return extras_use.wall / extras_use.prompts * n * 1.15
+        per_row = (primary_use.wall / primary_use.prompts) if primary_use.prompts else 0.0
+        return max(per_row, sum(bases[i][1] for i in pending[:1]) / plan_tps if pending else 0.0) * n * 1.15
+
+    def extras_allowed(n_rows, reserve_primary):
+        if xstats['failed'] or not n_rows:
+            return False
+        need = extras_seconds(n_rows)
+        if extras_cap is not None and extras_use.wall + need > float(extras_cap):
+            return False
+        return time.time() + need + reserve_primary <= a.stop_at - 10
+
+    def run_extras(out, idx):
+        prompts, where = [], []
+        for i in idx:
+            text = bases[i][0]
+            for key, question, mode in extras_keys:
+                prompts.append(variant_text(text, question, mode))
+                where.append((i, key))
+        t0 = time.time()
+        try:
+            outputs = llm.generate(prompts, params, use_tqdm=False)
+            check_order(outputs, prompts)
+        except Exception as error:  # noqa: BLE001 - extras must never cost the primary scores
+            xstats['failed'] = '%s: %s' % (type(error).__name__, error)
+            log('extras_failed', error=xstats['failed'])
+            return
+        extras_use.add(outputs, time.time() - t0)
+        per = {i: (dict(), dict()) for i in idx}
+        for (i, key), o in zip(where, outputs):
+            score, exact = answer_score(o, yes_ids, no_ids)
+            if score is None:
+                continue
+            if exact or not require_exact:
+                per[i][0][key] = score
+            else:
+                per[i][1][key] = score
+                xstats['inexact'] += 1
+        emit(out, [dict(key=rows[i]['key'], extra=True, scores=per[i][0], bounded=per[i][1]) for i in idx])
+        xstats['rows_done'] += len(idx)
+        for i in idx:
+            bases.pop(i, None)
+
     with open(a.output, 'a', encoding='utf-8') as out:
         emit(out, [dict(event='ready', startup_s=round(time.time() - STARTED, 1), rows=len(rows), cap=cap,
-                        exact=exact_mode)])
+                        exact=exact_mode, keys=[k for k, _, _ in keys], schedule=schedule)])
         position, last_dt = 0, 0.0
         while position < len(order):
             now = time.time()
             if now + last_dt * 1.15 > a.stop_at:
                 log('stop_deadline', remaining=len(order) - position)
                 break
-            if stats['gpu_seconds'] > 30 and stats['tokens']:
-                tps = stats['tokens'] / stats['gpu_seconds']
+            if primary_use.wall > 30 and stats['tokens']:
+                tps = primary_tps()
                 remaining = order[position:]
                 if now + sum(min(full[i], cap) for i in remaining) / tps > a.stop_at - 10:
                     new_cap = solve_cap([full[i] for i in remaining], (a.stop_at - now - 10) * tps * 0.9, cap_min, cap)
@@ -224,43 +344,71 @@ def main(argv=None):
                         stats['skipped'] += 1
                         records.append(dict(key=rows[i]['key'], score=None, error=type(error).__name__))
                         continue
-                if n > max_len - 2:
+                if n + margin > max_len - 2:
                     stats['skipped'] += 1
                     records.append(dict(key=rows[i]['key'], score=None, error='TOO_LONG', tokens=n))
                     continue
-                prompts.append(text)
-                metas.append((i, n, trimmed, policy_trimmed))
+                ptext = variant_text(text, primary_q, primary_m)
+                n_p = n if ptext == text else count_tokens(tok, ptext)
+                if extras_keys:
+                    bases[i] = (text, n)
+                prompts.append(ptext)
+                metas.append((i, n_p, trimmed, policy_trimmed, hints_shown(text)))
             if prompts:
                 t0 = time.time()
                 outputs = llm.generate(prompts, params, use_tqdm=False)
-                dt = time.time() - t0
-                # vLLM keeps prompt order; verify instead of trusting it.
-                if len(outputs) != len(prompts) or any(
-                        getattr(o, 'prompt', None) not in (None, t) for o, t in zip(outputs, prompts)):
-                    raise RuntimeError('JUDGE_OUTPUT_ORDER_MISMATCH')
-                for (i, n, trimmed, policy_trimmed), o in zip(metas, outputs):
+                check_order(outputs, prompts)
+                last_dt = time.time() - t0
+                primary_use.add(outputs, last_dt)
+                for (i, n, trimmed, policy_trimmed, shown), o in zip(metas, outputs):
                     score, exact = answer_score(o, yes_ids, no_ids)
-                    if score is None:
+                    record = dict(key=rows[i]['key'], score_key=primary_key, tokens=n, trimmed=bool(trimmed),
+                                  policy_trimmed=bool(policy_trimmed), hints_shown=bool(shown), cap=cap)
+                    if score is not None and not exact and require_exact:
+                        stats['inexact'] += 1
+                        record.update(score=None, bounded_score=score, exact=False, error='INEXACT_SCORE')
+                        bases.pop(i, None)
+                    elif score is None:
                         stats['no_score'] += 1
+                        record.update(score=None, exact=False)
+                        bases.pop(i, None)
                     else:
                         stats['scored'] += 1
                         stats['inexact'] += not exact
+                        record.update(score=score, p=round(sigmoid(score), 6), exact=exact, scores={primary_key: score})
+                        if i in bases:
+                            pending.append(i)
                     stats['trimmed'] += bool(trimmed)
                     stats['policy_trimmed'] += bool(policy_trimmed)
-                    records.append(dict(key=rows[i]['key'], score=score,
-                                        p=None if score is None else round(sigmoid(score), 6), exact=exact,
-                                        tokens=n, trimmed=bool(trimmed), policy_trimmed=bool(policy_trimmed),
-                                        cap=cap))
+                    stats['hints_shown'] += bool(shown)
+                    records.append(record)
                 stats['tokens'] += sum(m[1] for m in metas)
-                stats['gpu_seconds'] += dt
-                last_dt = dt
-            emit(out, records)
+            emit(out, records)          # primary results are durable before any extra call
             position += len(batch)
             log('chunk', done=position, of=len(order), seconds=round(last_dt, 1), cap=cap)
-        stats['gpu_seconds'] = round(stats['gpu_seconds'], 1)
-        stats['tokens_per_second'] = round(stats['tokens'] / stats['gpu_seconds']) if stats['gpu_seconds'] else None
-        emit(out, [dict(event='done', seconds=round(time.time() - STARTED, 1), **stats)])
-        log('done', **stats)
+            if schedule == 'per_chunk' and pending:
+                current = [i for i in pending if i in batch]
+                reserve = sum(min(full[i], cap) for i in order[position:]) / primary_tps()
+                if extras_allowed(len(current), reserve):
+                    run_extras(out, current)
+                    pending = [i for i in pending if i not in current]
+                else:
+                    xstats['rows_deferred'] += len(current)
+        while pending and not xstats['failed']:
+            portion = pending[:chunk]
+            if not extras_allowed(len(portion), 0.0):
+                break
+            run_extras(out, portion)
+            pending = pending[len(portion):]
+        xstats['rows_skipped_deadline'] = len(pending) if not xstats['failed'] else 0
+        if pending and not xstats['failed']:
+            log('extras_deadline', rows_without_extras=len(pending))
+        report_p, report_x = primary_use.report(), extras_use.report()
+        tps = round(stats['tokens'] / primary_use.wall) if primary_use.wall else None
+        emit(out, [dict(event='done', seconds=round(time.time() - STARTED, 1), keys=[k for k, _, _ in keys],
+                        gpu_seconds=round(primary_use.wall + extras_use.wall, 1), tokens_per_second=tps,
+                        primary=report_p, extras=dict(report_x, **xstats), **stats)])
+        log('done', tokens_per_second=tps, primary=report_p, extras=dict(report_x, **xstats), **stats)
     try:
         llm.llm_engine.engine_core.shutdown()
     except Exception as error:
