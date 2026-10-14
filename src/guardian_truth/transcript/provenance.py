@@ -41,6 +41,7 @@ class ContextIndex:
         self._starts = [e.span.start for e in document.events]
         self._compact = None
         self._numbers = None
+        self._order = None
 
     def kind_at(self, pos):
         region = self.system.region_of(pos) if self.system is not None else None
@@ -85,7 +86,7 @@ class ContextIndex:
     def numbers(self):
         """{value: set(kinds)} for every number in grounding sources."""
         if self._numbers is None:
-            found = {}
+            found, events = {}, []
             for e in self.doc.events:
                 kind = _event_kind(e)
                 if kind not in GROUNDING_KINDS:
@@ -93,20 +94,31 @@ class ContextIndex:
                 for nm in parse_numbers(e.body):
                     for v in nm.values:
                         found.setdefault(v, set()).add(kind)
+                        events.append(v)
+            policy = []
             if self.system is not None and self.system.policy:
                 for nm in parse_numbers(self.system.policy_text(self.text)):
                     for v in nm.values:
                         found.setdefault(v, set()).add('policy')
+                        policy.append(v)
             self._numbers = found
+            self._order = policy + events          # document order: the policy precedes the dialogue
         return self._numbers
+
+    def recent_numbers(self, limit):
+        """Up to `limit` distinct grounding values, most recently mentioned first."""
+        self.numbers()
+        return list(dict.fromkeys(reversed(self._order)))[:limit]
 
     def number_derivable(self, values, pair_pool=150):
         """True when one reading of the number occurs in grounding sources, or is a sum/difference of
-        two of them, or a small multiple of one. This does not establish semantic support."""
+        two of them, or a small multiple of one. This does not establish semantic support.
+        Pairs use the `pair_pool` most RECENTLY mentioned distinct values (not the smallest ones), so
+        amounts of the latest tool results are never pushed out by long lists of small numbers."""
         known = self.numbers()
         if any(v in known for v in values):
             return True
-        pool = sorted(known)[:pair_pool] if len(known) > pair_pool else list(known)
+        pool = self.recent_numbers(pair_pool) if len(known) > pair_pool else list(known)
         for v in values:
             for a in known:
                 for k in (2, 3, 4, 5, 6, 7, 8, 9, 10):
