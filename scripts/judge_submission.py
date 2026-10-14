@@ -1,17 +1,19 @@
-"""Supervisor of the single-pass judge submission.
+"""Supervisor of the single-pass judge submission. It always produces an answer file.
 
 Time line, seconds since the platform launched scripts/predict.py (GUARDIAN_STARTED_AT):
-  start          read input; mechanical layer on CPU for every row
+  start          read input; mechanical layer on CPU for every row; a first answer file is written at
+                 once (hard findings -> 1, every other row 0), so a file exists whatever happens next
   then           GPU stage scripts/judge_stage.py in its own process group; it starts no chunk
                  that would end after judge_stop_seconds
-  every 20 s     once model coverage >= min_coverage, the output is rewritten atomically
+  every 20 s     when new model scores arrived, the file is rewritten atomically
   kill_seconds   stage group killed if still alive; final write; exit 0
-  watchdog       hard exit (code 0 only if an output exists)
-Coverage gate: an output is written only when at least min_coverage of the rows have a model score.
-Below that no output exists and the exit code is non-zero, so a near-empty run is never reported as
-complete and the platform does not count the attempt. Within an accepted run, rows without a model
-score are explicit fallback rows: label 1 if a hard finding exists, else 0; they are counted in the
-log and in decisions.jsonl. Rows are addressed by position; ids are written back verbatim in order.
+  watchdog       hard exit (code 0 when the file exists, i.e. from the first seconds on)
+Coverage. Rows without a model score are explicit fallback rows: label 1 if a hard finding exists, else 0
+(a row labelled 1 raises F1 only when P(error) > F1/2, about 0.3 for a working judge, above the ~0.24
+base rate). Coverage below coverage_warning never blocks the file: it is reported as JUDGE_COVERAGE_LOW
+in the log and in the final event, so a weak run is visible instead of silent. A stage that cannot start
+or crashes leaves the mechanical answer. Rows are addressed by position; ids are written back verbatim
+in input order.
 """
 from __future__ import annotations
 
@@ -34,9 +36,10 @@ for _p in (str(ROOT), str(ROOT / 'src')):
 from guardian_truth.judge.decision import decide  # noqa: E402
 from guardian_truth.judge.mechanical import analyze  # noqa: E402
 
-PROFILE = 'single-pass-judge-v2'
-DEFAULTS = dict(model_dir='model/judge', positive_rate=0.30, hard_unknown_identifier=True, min_coverage=0.9,
-                judge_stop_seconds=1380, kill_seconds=1530, watchdog_seconds=1680, write_every_seconds=20)
+PROFILE = 'single-pass-judge-v3'
+DEFAULTS = dict(model_dir='model/judge', positive_rate=0.30, hard_unknown_identifier=False,
+                coverage_warning=0.9, judge_stop_seconds=1380, kill_seconds=1530, watchdog_seconds=1680,
+                write_every_seconds=20)
 
 
 class Clock:
@@ -125,8 +128,10 @@ def write_labels(path, ids, labels):
 def load_config(root, path=None):
     cfg = dict(DEFAULTS)
     source = Path(path) if path else Path(root) / 'JUDGE_CONFIG.json'
-    if source.is_file():
-        cfg.update(json.loads(source.read_text(encoding='utf-8')))
+    loaded = json.loads(source.read_text(encoding='utf-8')) if source.is_file() else {}
+    cfg.update(loaded)
+    if 'min_coverage' in loaded and 'coverage_warning' not in loaded:
+        cfg['coverage_warning'] = loaded['min_coverage']  # old key: now a warning level, never a gate
     if os.environ.get('GUARDIAN_POSITIVE_RATE'):
         cfg['positive_rate'] = float(os.environ['GUARDIAN_POSITIVE_RATE'])
     return cfg
@@ -135,7 +140,7 @@ def load_config(root, path=None):
 def read_scores(path):
     """-> ({key: log-odds}, rows without a score, rows with a bounded (inexact) score, stage events)."""
     scores, missing, inexact, events = {}, 0, 0, {}
-    if not Path(path).exists():
+    if not path or not Path(path).exists():
         return scores, missing, inexact, events
     with open(path, encoding='utf-8') as stream:
         for line in stream:
@@ -193,31 +198,8 @@ def start_watchdog(clock, output, seconds):
     return timer
 
 
-def run(root, input_path, output, *, python=None, work=None, started_wall=None, config=None, watchdog=True):
-    clock = Clock(started_wall)
-    root = Path(root).resolve()
-    cfg = load_config(root, config)
-    if watchdog:
-        start_watchdog(clock, output, float(cfg['watchdog_seconds']))
-    rows = read_input(input_path)
-    ids, n = [row['id'] for row in rows], len(rows)
-    log(clock, 'input', rows=n, profile=PROFILE, unique_ids=len(set(ids)),
-        max_prompt_chars=max([len(r['prompt']) for r in rows] or [0]), positive_rate=cfg['positive_rate'])
-    if not rows:
-        write_labels(output, [], [])
-        return 0
-
-    findings = [analyze(r['prompt'], r['response'], bool(cfg['hard_unknown_identifier'])) for r in rows]
-    hard = {i for i, f in enumerate(findings) if f.hard}
-    kinds = {}
-    for f in findings:
-        for item in f.hard:
-            kinds[item.split()[0]] = kinds.get(item.split()[0], 0) + 1
-    log(clock, 'mechanical', hard_rows=len(hard), hard_kinds=kinds,
-        rows_with_hints=sum(1 for f in findings if f.hints))
-
-    work = Path(work or tempfile.mkdtemp(prefix='guardian-judge-')).resolve()
-    work.mkdir(parents=True, exist_ok=True)
+def prepare_stage(root, cfg, rows, findings, clock, work, python):
+    """Stage input, config and command. -> (command, env, scores_path, model)."""
     cache = work / 'cache'
     os.environ.update(HF_HUB_OFFLINE='1', TRANSFORMERS_OFFLINE='1', HF_HOME=str(cache / 'huggingface'),
                       XDG_CACHE_HOME=str(cache), VLLM_CACHE_ROOT=str(cache / 'vllm'),
@@ -231,7 +213,6 @@ def run(root, input_path, output, *, python=None, work=None, started_wall=None, 
     stage_config = work / 'judge_config.json'
     stage_config.write_text(json.dumps(cfg), encoding='utf-8')
     scores_path = work / 'scores.jsonl'
-
     bundled = root / 'runtime/python/run_python.sh'
     if python is None:
         python = bundled if bundled.is_file() else Path(sys.executable)
@@ -246,26 +227,63 @@ def run(root, input_path, output, *, python=None, work=None, started_wall=None, 
         # Same environment contract as the platform-tested Granite stage.
         for key in ('LD_LIBRARY_PATH', 'PYTHONPATH', 'PYTHONHOME', 'LD_PRELOAD'):
             env.pop(key, None)
+    return command, env, scores_path, model
 
-    need = max(1, int(-(-float(cfg['min_coverage']) * n // 1)))
-    state = dict(scored=0, positives=None, written=False, fallback=None, inexact=0)
 
-    def publish():
-        scores, _, inexact, _ = read_scores(scores_path)
-        state.update(scored=len(scores), inexact=inexact)
-        if len(scores) < need:
-            return False
-        labels = decide(n, hard, scores, float(cfg['positive_rate']))
+def run(root, input_path, output, *, python=None, work=None, started_wall=None, config=None, watchdog=True):
+    clock = Clock(started_wall)
+    root = Path(root).resolve()
+    cfg = load_config(root, config)
+    if watchdog:
+        start_watchdog(clock, output, float(cfg['watchdog_seconds']))
+    rows = read_input(input_path)
+    ids, n = [row['id'] for row in rows], len(rows)
+    log(clock, 'input', rows=n, profile=PROFILE, unique_ids=len(set(ids)),
+        max_prompt_chars=max([len(r['prompt']) for r in rows] or [0]), positive_rate=cfg['positive_rate'])
+    if not rows:
+        write_labels(output, [], [])
+        return 0
+
+    strict = bool(cfg.get('hard_unknown_identifier', False))
+    findings = [analyze(r['prompt'], r['response'], strict) for r in rows]
+    hard = {i for i, f in enumerate(findings) if f.hard}
+    kinds = {}
+    for f in findings:
+        for item in f.hard:
+            kinds[item.split()[0]] = kinds.get(item.split()[0], 0) + 1
+    log(clock, 'mechanical', hard_rows=len(hard), hard_kinds=kinds,
+        rows_with_hints=sum(1 for f in findings if f.hints))
+
+    rate = float(cfg['positive_rate'])
+    state = dict(scored=0, positives=None, labels=None, scores={}, writes=0)
+
+    def publish(scores):
+        labels = decide(n, hard, scores, rate)
         write_labels(output, ids, labels)
-        state.update(positives=sum(labels), written=True, fallback=n - len(scores), labels=labels, scores=scores)
-        return True
+        state.update(scored=len(scores), positives=sum(labels), labels=labels, scores=scores,
+                     writes=state['writes'] + 1)
 
-    log(clock, 'stage_start', model=str(model), coverage_needed=need)
-    status, gone = 'UNKNOWN', None
-    with (work / 'stage.log').open('w', encoding='utf-8') as stream:
-        process = subprocess.Popen(command, stdout=stream, stderr=subprocess.STDOUT, env=env,
-                                   start_new_session=True, cwd=str(work))
+    publish({})
+    log(clock, 'baseline_written', positives=state['positives'])
+
+    status, gone, stage_error, process, scores_path, work_dir = 'NOT_STARTED', None, None, None, None, None
+
+    def refresh():
         try:
+            scores = read_scores(scores_path)[0]
+            if len(scores) != state['scored']:
+                publish(scores)
+        except Exception as error:
+            log(clock, 'write_error', error='%s: %s' % (type(error).__name__, error))
+
+    try:
+        work_dir = Path(work or tempfile.mkdtemp(prefix='guardian-judge-')).resolve()
+        work_dir.mkdir(parents=True, exist_ok=True)
+        command, env, scores_path, model = prepare_stage(root, cfg, rows, findings, clock, work_dir, python)
+        log(clock, 'stage_start', model=str(model))
+        with (work_dir / 'stage.log').open('w', encoding='utf-8') as stream:
+            process = subprocess.Popen(command, stdout=stream, stderr=subprocess.STDOUT, env=env,
+                                       start_new_session=True, cwd=str(work_dir))
             last = time.monotonic()
             while True:
                 code = process.poll()
@@ -276,28 +294,48 @@ def run(root, input_path, output, *, python=None, work=None, started_wall=None, 
                     status = 'KILLED_AT_DEADLINE'
                     break
                 if time.monotonic() - last >= float(cfg['write_every_seconds']):
-                    publish()
-                    log(clock, 'progress', scored=state['scored'], of=n, written=state['written'],
-                        positives=state['positives'])
+                    refresh()
+                    log(clock, 'progress', scored=state['scored'], of=n, positives=state['positives'])
                     last = time.monotonic()
                 time.sleep(1)
-        finally:
+    except Exception as error:
+        status, stage_error = 'STAGE_ERROR', '%s: %s' % (type(error).__name__, error)
+        log(clock, 'stage_error', error=stage_error)
+    finally:
+        if process is not None:
             gone = kill_group(process)
-    accepted = publish()
-    _, missing, _, events = read_scores(scores_path)
-    tail = (work / 'stage.log').read_text(encoding='utf-8', errors='replace')[-4000:]
-    print('=== GUARDIAN JUDGE STAGE LOG TAIL ===\n' + tail, file=sys.stderr, flush=True)
-    if accepted:
-        with (work / 'decisions.jsonl').open('w', encoding='utf-8') as stream:
-            for i in range(n):
-                source = 'model' if i in state['scores'] else ('hard_fallback' if i in hard else 'fallback_zero')
-                stream.write(json.dumps(dict(key=i, id=ids[i], label=state['labels'][i], source=source,
-                                             hard=findings[i].hard, score=state['scores'].get(i))) + '\n')
-    log(clock, 'final', status=status, group_gone=gone, accepted=accepted, rows=n, scored=state['scored'],
-        coverage_needed=need, fallback_rows=state['fallback'], no_score_rows=missing, inexact_rows=state['inexact'],
-        hard_rows=len(hard), positives=state['positives'], stage_failed=events.get('failed'), work=str(work))
-    if not accepted:
-        if Path(output).exists():
-            Path(output).unlink()
-        raise RuntimeError('JUDGE_COVERAGE_BELOW_MINIMUM: %d of %d scored, need %d' % (state['scored'], n, need))
+
+    try:
+        scores, missing, inexact, events = read_scores(scores_path)
+    except Exception as error:
+        log(clock, 'read_error', error='%s: %s' % (type(error).__name__, error))
+        scores, missing, inexact, events = state['scores'], 0, 0, {}
+    try:
+        publish(scores)
+    except Exception as error:
+        log(clock, 'final_write_error', error='%s: %s' % (type(error).__name__, error), kept_writes=state['writes'])
+        if not Path(output).is_file():
+            raise
+    coverage = state['scored'] / n
+    low = coverage < float(cfg['coverage_warning'])
+    if low:
+        log(clock, 'JUDGE_COVERAGE_LOW', scored=state['scored'], rows=n, coverage=round(coverage, 4),
+            warning_below=cfg['coverage_warning'], fallback_rows=n - state['scored'])
+    if work_dir is not None:
+        stage_log = work_dir / 'stage.log'
+        if stage_log.exists():
+            tail = stage_log.read_text(encoding='utf-8', errors='replace')[-4000:]
+            print('=== GUARDIAN JUDGE STAGE LOG TAIL ===\n' + tail, file=sys.stderr, flush=True)
+        try:
+            with (work_dir / 'decisions.jsonl').open('w', encoding='utf-8') as stream:
+                for i in range(n):
+                    source = 'hard' if i in hard else ('model' if i in state['scores'] else 'fallback_zero')
+                    stream.write(json.dumps(dict(key=i, id=ids[i], label=state['labels'][i], source=source,
+                                                 hard=findings[i].hard, score=state['scores'].get(i))) + '\n')
+        except Exception as error:
+            log(clock, 'decisions_write_error', error=type(error).__name__)
+    log(clock, 'final', status=status, group_gone=gone, rows=n, scored=state['scored'], coverage=round(coverage, 4),
+        coverage_low=low, fallback_rows=n - state['scored'], no_score_rows=missing, inexact_rows=inexact,
+        hard_rows=len(hard), positives=state['positives'], writes=state['writes'], stage_error=stage_error,
+        stage_failed=events.get('failed'), work=str(work_dir))
     return 0
