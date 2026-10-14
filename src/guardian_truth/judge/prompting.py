@@ -1,8 +1,13 @@
 """Judge prompt, deterministic trimming, rendering with the model's chat template.
 
-The system block of the transcript (everything before the first USER marker: policy and tools) is
-never trimmed by trim_prompt. Only when that block alone cannot fit the cap does build_prompt fall
-back to a head/tail cut of the whole prompt and report policy_trimmed=True.
+When the rendered prompt exceeds the token cap, build_prompt gives up content in this order:
+  1. the dialogue after the system block, down to nothing but an omission marker (its latest part and
+     lines that mention identifiers of the turn under review are kept longest);
+  2. the automatic hints;
+  3. the turn under review (head + tail), down to MIN_RESPONSE_CHARS;
+  4. only then the system block itself (policy + tools): policy_trimmed=True.
+The system block is everything before the first USER marker. There is no fixed dialogue reserve: a
+policy that fits is never cut to make room for dialogue.
 """
 from __future__ import annotations
 
@@ -10,12 +15,14 @@ import re
 
 USER_MARK = '⟦USER⟧'
 OMIT = '\n[... {n} characters of the earlier conversation are omitted to fit the context window ...]\n'
+POLICY_OMIT = '\n[... {n} characters of the system instructions are omitted to fit the context window ...]\n'
 RESCUE_HEAD = '[Excerpts from the omitted part that mention identifiers used in the turn under review:]\n'
 RESCUE_TAIL = '\n[... end of excerpts ...]\n'
 TEXT_ID = re.compile(r'(?<![\w#-])#?(?=[A-Za-z0-9_\-]*[A-Za-z])(?=[A-Za-z0-9_\-]*\d)'
                      r'[A-Za-z0-9][A-Za-z0-9_\-]{4,63}(?![\w-])')
 RESPONSE_CHARS = 30000
-MIN_DIALOGUE_CHARS = 3000
+MIN_RESPONSE_CHARS = 4000
+FIT_STEPS = 6
 
 JUDGE_SYSTEM = """You audit one turn of a customer-service AI agent for contextual hallucinations.
 
@@ -66,28 +73,28 @@ def count_tokens(tok, text):
     return len(tok(text, add_special_tokens=False)['input_ids'])
 
 
-def headtail(text, limit):
+def headtail(text, limit, marker=OMIT):
     if len(text) <= limit:
         return text
     keep = max(0, limit - 120)
-    return text[:keep // 2] + OMIT.format(n=len(text) - keep) + text[len(text) - (keep - keep // 2):]
+    return text[:keep // 2] + marker.format(n=len(text) - keep) + text[len(text) - (keep - keep // 2):]
 
 
-def trim_prompt(prompt, response, budget):
-    """System block (policy + tools) kept whole, the latest part of the dialogue kept, plus lines
-    from the omitted middle that mention identifiers used in the turn under review."""
-    if len(prompt) <= budget:
-        return prompt
-    head = system_block(prompt)
-    rest = prompt[len(head):]
-    room = max(budget - len(head), 1000)
-    tail = rest[-int(room * 0.8):]
+def trim_dialogue(rest, response, chars):
+    """About `chars` characters of the dialogue: its latest part (80%) plus lines from the omitted middle
+    that mention identifiers used in the turn under review. chars <= 0 leaves only the omission marker."""
+    if len(rest) <= chars:
+        return rest
+    if chars <= 0:
+        return OMIT.format(n=len(rest))
+    keep = int(chars * 0.8)
+    tail = rest[len(rest) - keep:] if keep > 0 else ''
     cut = tail.find('\n')
-    if 0 <= cut < 2000:
+    if 0 <= cut < min(2000, len(tail) // 4):
         tail = tail[cut + 1:]
     middle = rest[:len(rest) - len(tail)]
     wanted = {t.lstrip('#').lower() for t in TEXT_ID.findall(response)}
-    spare, rescued = room - len(tail) - len(RESCUE_HEAD) - len(RESCUE_TAIL), []
+    spare, rescued = chars - len(tail) - len(RESCUE_HEAD) - len(RESCUE_TAIL), []
     if wanted and spare > 500:
         for line in middle.splitlines():
             low = line.lower()
@@ -98,33 +105,86 @@ def trim_prompt(prompt, response, budget):
                 rescued.append(piece)
                 spare -= len(piece) + 1
     omitted = max(len(middle) - sum(len(r) + 1 for r in rescued), 0)
-    body = head + OMIT.format(n=omitted)
+    body = OMIT.format(n=omitted)
     if rescued:
         body += RESCUE_HEAD + '\n'.join(rescued) + RESCUE_TAIL
     return body + tail
 
 
+def trim_prompt(prompt, response, budget):
+    """System block (policy + tools) kept whole; the dialogue gets what is left of `budget` characters."""
+    if len(prompt) <= budget:
+        return prompt
+    head = system_block(prompt)
+    return head + trim_dialogue(prompt[len(head):], response, budget - len(head))
+
+
+def _fit_dialogue(tok, head, rest, response, hints, cap_tokens, full_tokens=None):
+    """-> (text, n) with the whole system block and as much dialogue as fits, or None when the system
+    block, response and hints do not fit even without any dialogue. Tokens grow almost linearly with
+    characters, so a few interpolation steps between a fitting and a non-fitting length suffice."""
+    def attempt(chars):
+        text = render(tok, head + trim_dialogue(rest, response, chars), response, hints)
+        return text, count_tokens(tok, text)
+
+    best = attempt(0)
+    if best[1] > cap_tokens:
+        return None
+    if full_tokens is None:
+        full = attempt(len(rest))
+        if full[1] <= cap_tokens:
+            return full
+        full_tokens = full[1]
+    lo_chars, lo_n, hi_chars, hi_n = 0, best[1], len(rest), full_tokens
+    for _ in range(FIT_STEPS):
+        share = (cap_tokens - lo_n) / max(hi_n - lo_n, 1)
+        chars = lo_chars + int((hi_chars - lo_chars) * share * 0.97)
+        if chars <= lo_chars:
+            break
+        text, n = attempt(chars)
+        if n <= cap_tokens:
+            best, lo_chars, lo_n = (text, n), chars, n
+            if cap_tokens - n <= max(64, int(cap_tokens * 0.02)):
+                break
+        else:
+            hi_chars, hi_n = chars, n
+    return best
+
+
 def build_prompt(tok, row, cap_tokens):
     """-> (text, n_tokens, trimmed, policy_trimmed). n_tokens can exceed cap_tokens only in pathological
     cases; the caller must skip such a row instead of sending it."""
-    prompt, hints = row['prompt'], row.get('hints') or []
+    prompt, hints = row['prompt'], list(row.get('hints') or [])
     response = headtail(row['response'], RESPONSE_CHARS)
     text = render(tok, prompt, response, hints)
     n = count_tokens(tok, text)
     if n <= cap_tokens:
         return text, n, False, False
-    floor = len(system_block(prompt)) + MIN_DIALOGUE_CHARS
-    ratio = len(text) / max(n, 1)
-    budget = len(prompt) - int((n - cap_tokens) * ratio * 1.08) - 500
-    for _ in range(5):
-        budget = max(budget, floor)
-        text = render(tok, trim_prompt(prompt, response, budget), response, hints)
-        n = count_tokens(tok, text)
-        if n <= cap_tokens or budget == floor:
+    head = system_block(prompt)
+    rest = prompt[len(head):]
+    fitted = _fit_dialogue(tok, head, rest, response, hints, cap_tokens, n)
+    if fitted is None and hints:
+        hints = []
+        fitted = _fit_dialogue(tok, head, rest, response, hints, cap_tokens)
+    while fitted is None and len(response) > MIN_RESPONSE_CHARS:
+        response = headtail(response, max(MIN_RESPONSE_CHARS, len(response) // 2))
+        fitted = _fit_dialogue(tok, head, rest, response, hints, cap_tokens)
+    if fitted is not None:
+        return fitted[0], fitted[1], True, False
+    # The system block alone does not fit next to the response: shorten it (head + tail; the tool list
+    # sits at its end), without any dialogue.
+    marker = OMIT.format(n=len(rest))
+    ratio = len(head) / max(count_tokens(tok, head), 1) if head else 3.0
+    fixed = count_tokens(tok, render(tok, marker, response, hints))
+    limit = int((cap_tokens - fixed) * ratio * 0.95)
+    for _ in range(FIT_STEPS):
+        if limit < 200:
             break
-        budget = int(budget * cap_tokens / n * 0.95)
-    if n <= cap_tokens:
-        return text, n, True, False
+        text = render(tok, headtail(head, limit, POLICY_OMIT) + marker, response, hints)
+        n = count_tokens(tok, text)
+        if n <= cap_tokens:
+            return text, n, True, True
+        limit -= int((n - cap_tokens) * ratio * 1.05) + 50
     text = render(tok, headtail(prompt, int(cap_tokens * ratio * 0.5)),
                   headtail(response, int(cap_tokens * ratio * 0.3)), [])
     return text, count_tokens(tok, text), True, True
