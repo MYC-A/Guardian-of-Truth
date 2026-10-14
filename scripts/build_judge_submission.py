@@ -42,6 +42,9 @@ CODE = {
     'README.md': 'docs/judge_20261013/README.md',
 }
 DROP_NAMES = {'MODEL_MANIFEST.json', 'GRANITE_MANIFEST.json', 'QWEN_MANIFEST.json', 'JUDGE_MANIFEST.json'}
+for _module in ('__init__', 'model', 'parser', 'system', 'catalog', 'values', 'provenance', 'features', 'audit'):
+    _name = f'src/guardian_truth/transcript/{_module}.py'
+    CODE[_name] = _name
 REQUIRED = ('runtime/python/run_python.sh', 'runtime/python/bin/python3.12')
 
 

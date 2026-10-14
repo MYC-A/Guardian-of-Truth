@@ -5,12 +5,18 @@
 Выход `id,label`, id в исходном порядке. Читаются только `id, prompt, response`. Без сети, всё из архива
 (встроенный рантайм vLLM 0.19.1 из прежнего проверенного архива). Почему именно так и что дальше: [STRATEGY.md](STRATEGY.md).
 
+Парсер и подсказки подключены через `guardian_truth.transcript`; подробности и границы проверки:
+[TRANSCRIPT_INTEGRATION.md](TRANSCRIPT_INTEGRATION.md), [CPU-проверки](TRANSCRIPT_CPU_VALIDATION.json).
+В лог добавлена статистика форматов и ошибок разбора; `decisions.jsonl` содержит признаки, источники
+меток и хэши входного prompt/response. Формат выходного файла и число вызовов модели сохранены.
+
 ## Что изменилось в v3 (замечания ревью)
 
 1. **Проверка ссылок теперь подсказка.** Аргумент `*_id/_ids/_number/_code`, значения которого нет в контексте,
    больше не ставит «1»: имя поля не отличает ссылку на существующую сущность от создания новой
-   (`create_coupon code=SUMMER99`). Судья видит подсказку с обоими прочтениями. Жёсткий режим остался для экспериментов:
-   `"hard_unknown_identifier": true`.
+   (`create_coupon code=SUMMER99`). Судья видит подсказку с обоими прочтениями. После подключения нового
+   парсера старый флаг `hard_unknown_identifier` принимается для совместимости, но не превращает ссылки
+   в жёсткие метки.
 2. **Политика не теряется, если помещается.** Фиксированного резерва в 3000 символов под диалог больше нет.
    Порядок уступок: диалог (до нуля, дольше всего живут конец и строки с id из ответа) -> подсказки ->
    проверяемый ответ (голова + хвост, не меньше 4000 символов) -> и только потом сама политика
@@ -44,7 +50,7 @@
    huggingface-cli download cyankiwi/Qwen3.5-35B-A3B-AWQ-4bit --local-dir models/qwen35-a3b-awq
    ```
    Запишите commit каждой модели со страницы HF: он нужен сборщику.
-1. Тесты (CPU, из корня): `PYTHONPATH=src python -m unittest tests.test_judge_mechanical -v`
+1. Тесты (CPU, из корня): `PYTHONPATH=src python -m unittest tests.test_transcript tests.test_judge_mechanical tests.test_judge_transcript_integration -v`
 2. Механика на valid: `python scripts/eval_judge_valid.py --input valid.parquet --mechanical-only --out runs/mech`.
    **Ворота:** `hard_rows_on_label0` = 0; иначе смотрим `hard_on_label0_details`. На 46 строках это
    необходимое, но не достаточное условие (см. STRATEGY.md).

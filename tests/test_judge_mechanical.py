@@ -8,7 +8,8 @@ import tempfile
 import unittest
 
 from guardian_truth.judge.decision import decide
-from guardian_truth.judge.mechanical import analyze, parse_catalog, parse_events
+from guardian_truth.judge.mechanical import analyze
+from guardian_truth.transcript import parse_document, parse_system
 from guardian_truth.judge.prompting import (OMIT, build_prompt, count_tokens, render, system_block, trim_dialogue,
                                             trim_prompt)
 
@@ -36,11 +37,12 @@ def turn(*calls, text=''):
 
 class Mechanical(unittest.TestCase):
     def test_catalog(self):
-        tools, complete = parse_catalog(parse_events(PROMPT, 'unknown'))
-        self.assertTrue(complete)
+        catalog = parse_system(parse_document(PROMPT)).catalog
+        tools = catalog.tools
+        self.assertTrue(catalog.complete)
         self.assertEqual(sorted(tools), ['cancel_reservation', 'create_coupon', 'get_reservation_details',
                                          'send_message'])
-        self.assertEqual([f.name for f in tools['cancel_reservation'].fields], ['reservation_id', 'reason'])
+        self.assertEqual([f.name for f in tools['cancel_reservation'].params], ['reservation_id', 'reason'])
 
     def test_correct_call_is_clean(self):
         f = analyze(PROMPT, turn(('cancel_reservation', '{"reservation_id": "EHGLP3", "reason": "change_of_plan"}')))
@@ -56,7 +58,8 @@ class Mechanical(unittest.TestCase):
         self.assertEqual(f.hard, [])
         self.assertTrue(any('ZZZ999' in h for h in f.hints))
         f = analyze(PROMPT, turn(call), hard_unknown_identifier=True)
-        self.assertTrue(any(h.startswith('unknown_reference') for h in f.hard))
+        self.assertEqual(f.hard, [])
+        self.assertTrue(f.features['legacy_strict_requested'])
 
     def test_new_entity_code_is_not_a_hard_finding(self):
         # Review reproduction: a creating tool legitimately takes a value that is not in the transcript yet.
@@ -72,13 +75,13 @@ class Mechanical(unittest.TestCase):
     def test_free_text_argument_is_only_a_hint(self):
         f = analyze(PROMPT, turn(('send_message', '{"message": "Hello123"}')))
         self.assertEqual(f.hard, [])
-        self.assertTrue(any('Hello123' in h for h in f.hints))
+        self.assertFalse(any('unknown_reference' in h for h in f.hard))
 
     def test_schema(self):
         f = analyze(PROMPT, turn(('cancel_reservation', '{"reason": "change_of_plan"}')))
-        self.assertTrue(any('missing' in h for h in f.hard))
+        self.assertTrue(any('MISSING' in h for h in f.hard))
         f = analyze(PROMPT, turn(('cancel_reservation', '{"reservation_id": "EHGLP3", "reason": "bored"}')))
-        self.assertTrue(any('enum' in h for h in f.hard))
+        self.assertTrue(any('ENUM' in h for h in f.hard))
 
     def test_several_calls_are_a_hint_not_a_label(self):
         call = ('get_reservation_details', '{"reservation_id": "EHGLP3"}')

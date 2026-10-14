@@ -12,6 +12,9 @@ policy that fits is never cut to make room for dialogue.
 from __future__ import annotations
 
 import re
+from functools import lru_cache
+
+from guardian_truth.transcript.parser import parse_document
 
 USER_MARK = '⟦USER⟧'
 OMIT = '\n[... {n} characters of the earlier conversation are omitted to fit the context window ...]\n'
@@ -44,9 +47,19 @@ QUESTION = ('Does the turn under review contain at least one hallucination as de
             'Answer with exactly one word: YES or NO.')
 
 
+@lru_cache(maxsize=64)
 def system_block(prompt):
-    i = prompt.find(USER_MARK)
-    return prompt[:i] if i > 0 else ''
+    """Initial parsed system message, including role headers with attributes and CRLF."""
+    document = parse_document(prompt)
+    system = next((m for m in document.messages if m.role == 'system'), None)
+    if system is None:
+        return ''
+    end = system.span.end
+    for event in document.events:
+        if event.kind != 'text' and system.body_start <= event.span.start < end:
+            end = event.span.start
+            break
+    return prompt[:end]
 
 
 def user_message(prompt_text, response, hints):

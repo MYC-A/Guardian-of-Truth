@@ -18,6 +18,7 @@ in input order.
 from __future__ import annotations
 
 import csv
+import hashlib
 import json
 import os
 from pathlib import Path
@@ -208,7 +209,8 @@ def prepare_stage(root, cfg, rows, findings, clock, work, python):
     stage_input = work / 'stage_input.jsonl'
     with stage_input.open('w', encoding='utf-8') as stream:
         for i, (row, f) in enumerate(zip(rows, findings)):
-            stream.write(json.dumps(dict(key=i, prompt=row['prompt'], response=row['response'], hints=f.hints),
+            stream.write(json.dumps(dict(key=i, prompt=row['prompt'], response=row['response'], hints=f.hints,
+                                        features=f.features, strong=f.strong, weak=f.weak),
                                     ensure_ascii=False) + '\n')
     stage_config = work / 'judge_config.json'
     stage_config.write_text(json.dumps(cfg), encoding='utf-8')
@@ -253,6 +255,16 @@ def run(root, input_path, output, *, python=None, work=None, started_wall=None, 
             kinds[item.split()[0]] = kinds.get(item.split()[0], 0) + 1
     log(clock, 'mechanical', hard_rows=len(hard), hard_kinds=kinds,
         rows_with_hints=sum(1 for f in findings if f.hints))
+    format_counts = {}
+    for finding in findings:
+        for key, value in finding.features.items():
+            if key.startswith(('prompt_', 'response_')) and isinstance(value, int):
+                format_counts[key] = format_counts.get(key, 0) + value
+    log(clock, 'transcript', counts=format_counts,
+        analysis_errors=sum('analysis_error' in f.features for f in findings),
+        date_gate_errors=sum('date_gate_error' in f.features for f in findings),
+        incomplete_catalog_rows=sum(not f.features.get('catalog_complete', False) for f in findings),
+        strong_rows=sum(bool(f.strong) for f in findings))
 
     rate = float(cfg['positive_rate'])
     state = dict(scored=0, positives=None, labels=None, scores={}, writes=0)
@@ -331,7 +343,11 @@ def run(root, input_path, output, *, python=None, work=None, started_wall=None, 
                 for i in range(n):
                     source = 'hard' if i in hard else ('model' if i in state['scores'] else 'fallback_zero')
                     stream.write(json.dumps(dict(key=i, id=ids[i], label=state['labels'][i], source=source,
-                                                 hard=findings[i].hard, score=state['scores'].get(i))) + '\n')
+                                                 hard=findings[i].hard, strong=findings[i].strong,
+                                                 weak=findings[i].weak, features=findings[i].features,
+                                                 prompt_sha256=hashlib.sha256(rows[i]['prompt'].encode('utf-8')).hexdigest(),
+                                                 response_sha256=hashlib.sha256(rows[i]['response'].encode('utf-8')).hexdigest(),
+                                                 score=state['scores'].get(i))) + '\n')
         except Exception as error:
             log(clock, 'decisions_write_error', error=type(error).__name__)
     log(clock, 'final', status=status, group_gone=gone, rows=n, scored=state['scored'], coverage=round(coverage, 4),
