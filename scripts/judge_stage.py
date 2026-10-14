@@ -139,7 +139,7 @@ def sigmoid(x):
 
 def probe(llm, tok, params, yes_ids, no_ids):
     """True when the engine returns logprobs normalised over exactly the allowed answer tokens."""
-    text = render(tok, '\\u27e6USER\\u27e7\\nHello.', '\\u27e6ASSISTANT\\u27e7\\nHello! How can I help you today?', [])
+    text = render(tok, '\u27e6USER\u27e7\nHello.', '\u27e6ASSISTANT\u27e7\nHello! How can I help you today?', [])
     sample = llm.generate([text], params, use_tqdm=False)[0].outputs[0]
     entries = sample.logprobs[0] if sample.logprobs else {}
     allowed = yes_ids | no_ids
