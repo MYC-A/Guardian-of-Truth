@@ -5,7 +5,8 @@ Time line, seconds since the platform launched scripts/predict.py (GUARDIAN_STAR
                  once (hard findings -> 1, every other row 0), so a file exists whatever happens next
   then           GPU stage scripts/judge_stage.py in its own process group; it starts no chunk
                  that would end after judge_stop_seconds
-  every 20 s     when new model scores arrived, the file is rewritten atomically
+  every 20 s     when the stage file changed (new primary scores or extra scores), the file is rewritten
+                 atomically
   kill_seconds   stage group killed if still alive; final write; exit 0
   watchdog       hard exit (code 0 when the file exists, i.e. from the first seconds on)
 Coverage. Rows without a model score are explicit fallback rows: label 1 if a hard finding exists, else 0
@@ -14,14 +15,23 @@ base rate). Coverage below coverage_warning never blocks the file: it is reporte
 in the log and in the final event, so a weak run is visible instead of silent. A stage that cannot start
 or crashes leaves the mechanical answer. Rows are addressed by position; ids are written back verbatim
 in input order.
+
+v3. The scoring profile (questions x hint_modes, aggregate, extras_schedule) is validated before the stage
+starts; an invalid profile is logged as CONFIG_INVALID and replaced by the production profile overall@on +
+primary. A non-primary aggregate is used only when every scored row has all its input keys; otherwise the
+primary score is used for every row (aggregate_incomplete in the log). Hard findings are never switched off
+by their share: a high share is only logged per rule kind (HARD_RATE_HIGH) together with parse diagnostics.
 """
 from __future__ import annotations
 
+from collections import Counter
 import csv
 import hashlib
 import json
+import math
 import os
 from pathlib import Path
+import re
 import signal
 import subprocess
 import sys
@@ -34,13 +44,15 @@ for _p in (str(ROOT), str(ROOT / 'src')):
     if _p not in sys.path:
         sys.path.insert(0, _p)
 
-from guardian_truth.judge.decision import decide  # noqa: E402
+from guardian_truth.judge.decision import combine, complete_inputs, decide, validate_aggregate  # noqa: E402
 from guardian_truth.judge.mechanical import analyze  # noqa: E402
+from guardian_truth.judge.prompting import score_keys  # noqa: E402
 
-PROFILE = 'single-pass-judge-v3'
+PROFILE = 'single-pass-judge-v3.1'
+PRODUCTION_PROFILE = dict(questions=['overall'], hint_modes=['on'], aggregate='primary', extras_schedule='after_primary')
 DEFAULTS = dict(model_dir='model/judge', positive_rate=0.30, hard_unknown_identifier=False,
                 coverage_warning=0.9, judge_stop_seconds=1380, kill_seconds=1530, watchdog_seconds=1680,
-                write_every_seconds=20)
+                write_every_seconds=20, hard_rate_warning=0.2, **PRODUCTION_PROFILE)
 
 
 class Clock:
@@ -138,8 +150,24 @@ def load_config(root, path=None):
     return cfg
 
 
+def normalize_profile(cfg):
+    """-> (cfg, error). A profile that cannot run is replaced by the production profile."""
+    try:
+        keys = [k for k, _, _ in score_keys(cfg)]
+        if cfg.get('extras_schedule', 'after_primary') not in ('after_primary', 'per_chunk'):
+            raise ValueError('BAD_EXTRAS_SCHEDULE: %s' % cfg.get('extras_schedule'))
+        validate_aggregate(cfg, keys)
+        return cfg, None
+    except Exception as error:  # noqa: BLE001 - a bad profile must not cost the submission
+        safe = dict(cfg, **PRODUCTION_PROFILE)
+        safe.pop('aggregator', None)
+        safe.pop('aggregate_keys', None)
+        return safe, '%s: %s' % (type(error).__name__, error)
+
+
 def read_scores(path):
-    """-> ({key: log-odds}, rows without a score, rows with a bounded (inexact) score, stage events)."""
+    """-> ({key: log-odds}, rows without a score, rows with a bounded (inexact) score, stage events).
+    Primary records only; extra-score records ({"extra": true}) are read by read_question_scores."""
     scores, missing, inexact, events = {}, 0, 0, {}
     if not path or not Path(path).exists():
         return scores, missing, inexact, events
@@ -152,7 +180,7 @@ def read_scores(path):
             if 'event' in item:
                 events[item['event']] = item
                 continue
-            if 'key' not in item:
+            if 'key' not in item or item.get('extra'):
                 continue
             if item.get('score') is None:
                 missing += 1
@@ -160,6 +188,61 @@ def read_scores(path):
                 scores[int(item['key'])] = float(item['score'])
                 inexact += not item.get('exact', False)
     return scores, missing, inexact, events
+
+
+def read_question_scores(path):
+    """-> {row: {score key: log-odds}}: primary record keys merged with later extra records of the same row.
+    Only finite exact scores (bounded scores stay out)."""
+    out = {}
+    if not path or not Path(path).exists():
+        return out
+    with open(path, encoding='utf-8') as stream:
+        for line in stream:
+            try:
+                item = json.loads(line)
+            except ValueError:
+                break
+            if 'key' not in item or 'event' in item or not isinstance(item.get('scores'), dict):
+                continue
+            if not item.get('extra') and item.get('score') is None:
+                continue
+            row = out.setdefault(int(item['key']), {})
+            for k, v in item['scores'].items():
+                if isinstance(v, (int, float)) and not isinstance(v, bool) and math.isfinite(v):
+                    row[k] = float(v)
+    return out
+
+
+def effective_scores(scores, question, cfg, features):
+    """-> (scores used for ranking, aggregate actually used, rows lacking aggregate inputs)."""
+    mode = cfg.get('aggregate', 'primary')
+    if mode == 'primary' or not scores:
+        return scores, 'primary', 0
+    lacking = complete_inputs(question, list(scores), cfg)
+    if lacking:
+        return scores, 'primary(aggregate_incomplete)', len(lacking)
+    merged = combine({i: question[i] for i in scores}, cfg, {i: features[i] for i in scores})
+    if set(merged) != set(scores):
+        return scores, 'primary(aggregate_incomplete)', len(set(scores) - set(merged))
+    return merged, mode, 0
+
+
+def id_shape(identifier):
+    return re.sub(r'[A-Za-z]+', 'a', re.sub(r'\d+', '9', str(identifier)))[:40]
+
+
+def quantiles(values, points=(0.1, 0.25, 0.5, 0.75, 0.9)):
+    xs = sorted(values)
+    if not xs:
+        return {}
+    return {str(p): round(xs[min(len(xs) - 1, int(p * len(xs)))], 4) for p in points}
+
+
+def file_size(path):
+    try:
+        return Path(path).stat().st_size if path else -1
+    except OSError:
+        return -1
 
 
 def kill_group(process, grace=15):
@@ -238,10 +321,15 @@ def run(root, input_path, output, *, python=None, work=None, started_wall=None, 
     cfg = load_config(root, config)
     if watchdog:
         start_watchdog(clock, output, float(cfg['watchdog_seconds']))
+    cfg, config_error = normalize_profile(cfg)
+    if config_error:
+        log(clock, 'CONFIG_INVALID', error=config_error, using=PRODUCTION_PROFILE)
     rows = read_input(input_path)
     ids, n = [row['id'] for row in rows], len(rows)
     log(clock, 'input', rows=n, profile=PROFILE, unique_ids=len(set(ids)),
-        max_prompt_chars=max([len(r['prompt']) for r in rows] or [0]), positive_rate=cfg['positive_rate'])
+        max_prompt_chars=max([len(r['prompt']) for r in rows] or [0]), positive_rate=cfg['positive_rate'],
+        keys=[k for k, _, _ in score_keys(cfg)], aggregate=cfg['aggregate'],
+        id_shapes=Counter(id_shape(i) for i in ids).most_common(5))
     if not rows:
         write_labels(output, [], [])
         return 0
@@ -249,12 +337,14 @@ def run(root, input_path, output, *, python=None, work=None, started_wall=None, 
     strict = bool(cfg.get('hard_unknown_identifier', False))
     findings = [analyze(r['prompt'], r['response'], strict) for r in rows]
     hard = {i for i, f in enumerate(findings) if f.hard}
-    kinds = {}
-    for f in findings:
-        for item in f.hard:
-            kinds[item.split()[0]] = kinds.get(item.split()[0], 0) + 1
-    log(clock, 'mechanical', hard_rows=len(hard), hard_kinds=kinds,
-        rows_with_hints=sum(1 for f in findings if f.hints))
+    kinds = Counter(item.split()[0] for f in findings for item in f.hard)
+    log(clock, 'mechanical', hard_rows=len(hard), hard_kinds=dict(kinds),
+        rows_with_hints=sum(1 for f in findings if f.hints),
+        hint_kinds=dict(Counter(item.split()[0] for f in findings for item in list(f.strong) + list(f.weak))))
+    if n and len(hard) > float(cfg.get('hard_rate_warning', 0.2)) * n:
+        log(clock, 'HARD_RATE_HIGH', hard_rows=len(hard), rows=n, hard_kinds=dict(kinds),
+            incomplete_catalog_rows=sum(not f.features.get('catalog_complete', False) for f in findings),
+            analysis_errors=sum('analysis_error' in f.features for f in findings))
     format_counts = {}
     for finding in findings:
         for key, value in finding.features.items():
@@ -267,24 +357,30 @@ def run(root, input_path, output, *, python=None, work=None, started_wall=None, 
         strong_rows=sum(bool(f.strong) for f in findings))
 
     rate = float(cfg['positive_rate'])
-    state = dict(scored=0, positives=None, labels=None, scores={}, writes=0)
+    features = [f.features for f in findings]
+    state = dict(scored=0, positives=None, labels=None, scores={}, used={}, writes=0, aggregate='primary',
+                 lacking=0, size=-1)
+    scores_path = None
 
     def publish(scores):
-        labels = decide(n, hard, scores, rate)
+        question = read_question_scores(scores_path) if cfg['aggregate'] != 'primary' else {}
+        used, mode, lacking = effective_scores(scores, question, cfg, features)
+        labels = decide(n, hard, used, rate)
         write_labels(output, ids, labels)
-        state.update(scored=len(scores), positives=sum(labels), labels=labels, scores=scores,
-                     writes=state['writes'] + 1)
+        state.update(scored=len(scores), positives=sum(labels), labels=labels, scores=scores, used=used,
+                     writes=state['writes'] + 1, aggregate=mode, lacking=lacking)
 
     publish({})
     log(clock, 'baseline_written', positives=state['positives'])
 
-    status, gone, stage_error, process, scores_path, work_dir = 'NOT_STARTED', None, None, None, None, None
+    status, gone, stage_error, process, work_dir = 'NOT_STARTED', None, None, None, None
 
     def refresh():
         try:
-            scores = read_scores(scores_path)[0]
-            if len(scores) != state['scored']:
-                publish(scores)
+            size = file_size(scores_path)
+            if size != state['size']:
+                state['size'] = size
+                publish(read_scores(scores_path)[0])
         except Exception as error:
             log(clock, 'write_error', error='%s: %s' % (type(error).__name__, error))
 
@@ -333,12 +429,14 @@ def run(root, input_path, output, *, python=None, work=None, started_wall=None, 
     if low:
         log(clock, 'JUDGE_COVERAGE_LOW', scored=state['scored'], rows=n, coverage=round(coverage, 4),
             warning_below=cfg['coverage_warning'], fallback_rows=n - state['scored'])
+    question = {}
     if work_dir is not None:
         stage_log = work_dir / 'stage.log'
         if stage_log.exists():
             tail = stage_log.read_text(encoding='utf-8', errors='replace')[-4000:]
             print('=== GUARDIAN JUDGE STAGE LOG TAIL ===\n' + tail, file=sys.stderr, flush=True)
         try:
+            question = read_question_scores(scores_path)
             with (work_dir / 'decisions.jsonl').open('w', encoding='utf-8') as stream:
                 for i in range(n):
                     source = 'hard' if i in hard else ('model' if i in state['scores'] else 'fallback_zero')
@@ -347,11 +445,17 @@ def run(root, input_path, output, *, python=None, work=None, started_wall=None, 
                                                  weak=findings[i].weak, features=findings[i].features,
                                                  prompt_sha256=hashlib.sha256(rows[i]['prompt'].encode('utf-8')).hexdigest(),
                                                  response_sha256=hashlib.sha256(rows[i]['response'].encode('utf-8')).hexdigest(),
-                                                 score=state['scores'].get(i))) + '\n')
+                                                 score=state['scores'].get(i), scores=question.get(i),
+                                                 ranked_by=state['used'].get(i))) + '\n')
         except Exception as error:
             log(clock, 'decisions_write_error', error=type(error).__name__)
+    probs = [1.0 / (1.0 + math.exp(-max(-60.0, min(60.0, s)))) for s in state['scores'].values()]
+    done = events.get('done') or {}
     log(clock, 'final', status=status, group_gone=gone, rows=n, scored=state['scored'], coverage=round(coverage, 4),
         coverage_low=low, fallback_rows=n - state['scored'], no_score_rows=missing, inexact_rows=inexact,
-        hard_rows=len(hard), positives=state['positives'], writes=state['writes'], stage_error=stage_error,
+        hard_rows=len(hard), positives=state['positives'], writes=state['writes'], aggregate=state['aggregate'],
+        aggregate_lacking_rows=state['lacking'], rows_with_extra_scores=sum(1 for v in question.values() if len(v) > 1),
+        primary_p_quantiles=quantiles(probs), stage_primary=done.get('primary'), stage_extras=done.get('extras'),
+        tokens_per_second=done.get('tokens_per_second'), config_error=config_error, stage_error=stage_error,
         stage_failed=events.get('failed'), work=str(work_dir))
     return 0
