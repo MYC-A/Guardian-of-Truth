@@ -8,7 +8,8 @@ read in processed mode, i.e. after that restriction, so both answers always get 
 probability: score = log P(YES) - log P(NO) over exactly these tokens (exact=true). A start-up probe
 verifies this on the running engine; without it the stage stops when require_exact_scores is true.
 With require_exact_scores every individual result must be exact too: an inexact primary result is
-written as score=null with bounded_score and error INEXACT_SCORE; an inexact extra goes to "bounded".
+written as score=null with bounded_score and error INEXACT_SCORE. An inexact extra always goes to "bounded"
+(never into "scores"), so per-key scores used by aggregates are exact only.
 
 Score keys (v3). prompting.score_keys(cfg): cfg['questions'] x cfg['hint_modes'] -> '<question>@<mode>',
 default ['overall'] x ['on'] = overall@on. The FIRST key is the primary score and its prompt is rendered
@@ -112,7 +113,12 @@ def _lse(values):
 
 
 def answer_score(output, yes_ids, no_ids):
-    """-> (log P(YES) - log P(NO), exact)."""
+    """-> (log P(YES) - log P(NO), exact). exact=True only when THIS result meets the whole scoring contract
+    (the start-up probe checks it once, every result is checked again): both answers carry a finite logprob,
+    no token outside the allowed answers has a finite logprob, the allowed answers carry the whole mass
+    (|sum - 1| < 1e-3) and the sampled token is an allowed answer. A result with both answers that breaks the
+    contract keeps its log-odds but exact=False. With one answer missing, it is bounded by the lowest returned
+    logprob (ordering preserved), exact=False."""
     sample = output.outputs[0] if output.outputs else None
     if sample is None or not sample.logprobs:
         return None, False
@@ -123,7 +129,12 @@ def answer_score(output, yes_ids, no_ids):
     ys = [lp for tid, lp in finite.items() if tid in yes_ids]
     ns = [lp for tid, lp in finite.items() if tid in no_ids]
     if ys and ns:
-        return _lse(ys) - _lse(ns), True
+        allowed = yes_ids | no_ids
+        outside = any(tid not in allowed for tid in finite)
+        mass = sum(math.exp(lp) for tid, lp in finite.items() if tid in allowed)
+        tokens = getattr(sample, 'token_ids', None)
+        chosen = bool(tokens) and tokens[0] in allowed
+        return _lse(ys) - _lse(ns), (not outside) and abs(mass - 1.0) < 1e-3 and chosen
     floor = min(finite.values())
     if ys:
         return _lse(ys) - floor, False
@@ -304,9 +315,9 @@ def main(argv=None):
             score, exact = answer_score(o, yes_ids, no_ids)
             if score is None:
                 continue
-            if exact or not require_exact:
+            if exact:
                 per[i][0][key] = score
-            else:
+            else:                       # never mixed with exact scores, whatever require_exact says
                 per[i][1][key] = score
                 xstats['inexact'] += 1
         emit(out, [dict(key=rows[i]['key'], extra=True, scores=per[i][0], bounded=per[i][1]) for i in idx])
