@@ -31,6 +31,14 @@ Context budget. Every row is rendered once at full length before inference. One 
 planned from the total primary token count, the time left and planning_tokens_per_second. Only if the
 measured primary throughput would miss --stop-at is the cap lowered for the remaining rows (event
 emergency_cap). The system block (policy + tools) is never trimmed unless it alone exceeds the cap.
+
+Rows. stage_input is split on LF only (read_jsonl): splitlines() also breaks on U+2028, U+2029 and U+0085,
+which json.dumps(ensure_ascii=False) keeps inside strings. A row whose prompt cannot be built, or that
+the engine rejects, gets its own score=null record (error PROMPT_BUILD_ERROR / GENERATE_ERROR) and the
+other rows are still scored. A grouping failure only disables prefix grouping for that row. A failing
+batch is retried row by row; only when every row fails and the
+known-good probe prompt fails too is the engine treated as broken and the stage stops (the supervisor
+keeps the mechanical answer for the rows without a score).
 """
 from __future__ import annotations
 
@@ -58,6 +66,13 @@ SCHEDULES = ('after_primary', 'per_chunk')
 ANSWERS = {'yes': ('YES', 'Yes', 'yes', ' YES', ' Yes', ' yes'),
            'no': ('NO', 'No', 'no', ' NO', ' No', ' no')}
 
+PROBE_PROMPT = '\u27e6USER\u27e7\nHello.'
+PROBE_RESPONSE = '\u27e6ASSISTANT\u27e7\nHello! How can I help you today?'
+
+
+class RowDeadline(Exception):
+    """A row that was not submitted or retried because --stop-at had passed."""
+
 
 def log(event, **values):
     print('GUARDIAN_JUDGE_STAGE ' + json.dumps(dict(t=round(time.time() - STARTED, 1), event=event, **values),
@@ -69,6 +84,14 @@ def emit(stream, records):
         stream.write(json.dumps(record, ensure_ascii=False, allow_nan=False) + '\n')
     stream.flush()
     os.fsync(stream.fileno())
+
+
+def read_jsonl(path):
+    """Records of a JSONL file, split on LF only. CRLF and blank lines are tolerated (JSON allows the
+    trailing CR). Unicode line separators inside strings stay inside their record."""
+    with open(path, encoding='utf-8', newline='') as stream:
+        text = stream.read()
+    return [json.loads(line) for line in text.split('\n') if line.strip()]
 
 
 def engine_kwargs(model, cfg):
@@ -150,7 +173,7 @@ def sigmoid(x):
 
 def probe(llm, tok, params, yes_ids, no_ids):
     """True when the engine returns logprobs normalised over exactly the allowed answer tokens."""
-    text = render(tok, '\u27e6USER\u27e7\nHello.', '\u27e6ASSISTANT\u27e7\nHello! How can I help you today?', [])
+    text = render(tok, PROBE_PROMPT, PROBE_RESPONSE, [])
     sample = llm.generate([text], params, use_tqdm=False)[0].outputs[0]
     entries = sample.logprobs[0] if sample.logprobs else {}
     allowed = yes_ids | no_ids
@@ -213,16 +236,50 @@ def check_order(outputs, prompts):
         raise RuntimeError('JUDGE_OUTPUT_ORDER_MISMATCH')
 
 
+def _error_text(error):
+    return ('%s: %s' % (type(error).__name__, error))[:300]
+
+
+def generate_rows(llm, prompts, params, deadline, healthy):
+    """-> (one output or Exception per prompt, batch error or None). A failing batch is retried prompt by
+    prompt, so an input the engine rejects costs only its own row. When every retried prompt fails and
+    the known-good probe fails too, raise the batch error. No new call, including the probe, starts at
+    or after the deadline. In-flight calls are bounded by the supervisor."""
+    if time.time() >= deadline:
+        return [RowDeadline('STOP_AT_PASSED') for _ in prompts], None
+    try:
+        outputs = llm.generate(prompts, params, use_tqdm=False)
+        check_order(outputs, prompts)
+        return list(outputs), None
+    except Exception as error:  # noqa: BLE001 - decided below: a bad row or a broken engine
+        batch_error = error
+    results = []
+    for text in prompts:
+        if time.time() >= deadline:
+            results.append(RowDeadline('STOP_AT_PASSED'))
+            continue
+        try:
+            one = llm.generate([text], params, use_tqdm=False)
+            check_order(one, [text])
+            results.append(one[0])
+        except Exception as error:  # noqa: BLE001 - recorded for this row only
+            results.append(error)
+    failed = [r for r in results if isinstance(r, Exception) and not isinstance(r, RowDeadline)]
+    if failed and len(failed) == len(results) and time.time() < deadline and not healthy():
+        raise batch_error
+    return results, batch_error
+
+
 def main(argv=None):
     ap = argparse.ArgumentParser(description=__doc__)
     ap.add_argument('--model', required=True)
     ap.add_argument('--input', required=True)
     ap.add_argument('--output', required=True)
     ap.add_argument('--config', required=True)
-    ap.add_argument('--stop-at', type=float, required=True, help='wall-clock epoch; no portion may end after it')
+    ap.add_argument('--stop-at', type=float, required=True, help='wall-clock epoch; no new primary call starts after it')
     a = ap.parse_args(argv)
     cfg = json.loads(Path(a.config).read_text(encoding='utf-8'))
-    rows = [json.loads(line) for line in Path(a.input).read_text(encoding='utf-8').splitlines() if line.strip()]
+    rows = read_jsonl(a.input)
     keys = score_keys(cfg)
     primary_key, primary_q, primary_m = keys[0]
     extras_keys = keys[1:]
@@ -258,21 +315,45 @@ def main(argv=None):
     margin = question_margin(tok, keys)
     cap_max = max_len - 8 - margin
     cap_min = min(int(cfg.get('min_cap_tokens', 8000)), cap_max)
+    probe_text = render(tok, PROBE_PROMPT, PROBE_RESPONSE, [])
 
-    order = sorted(range(len(rows)), key=lambda i: (
-        hashlib.sha1(system_block(rows[i]['prompt']).encode('utf-8', 'replace')).hexdigest(), rows[i]['prompt']))
+    def healthy():
+        try:
+            check_order(llm.generate([probe_text], params, use_tqdm=False), [probe_text])
+            return True
+        except Exception:  # noqa: BLE001 - the engine itself is broken
+            return False
+
+    group_errors = []
+
+    def group_key(i):
+        try:
+            return hashlib.sha1(system_block(rows[i]['prompt']).encode('utf-8', 'replace')).hexdigest()
+        except Exception:  # noqa: BLE001 - an ungroupable row is still scored, only without prefix grouping
+            group_errors.append(i)
+            return ''
+
+    order = sorted(range(len(rows)), key=lambda i: (group_key(i), str(rows[i].get('prompt', ''))))
     prepared = time.time()
-    built = {i: build_prompt(tok, rows[i], cap_max) for i in order}
-    full = {i: built[i][1] for i in order}
+    built, row_errors = {}, {}
+    for i in order:
+        try:
+            built[i] = build_prompt(tok, rows[i], cap_max)
+        except Exception as error:  # noqa: BLE001 - one bad row must not cost the other rows
+            row_errors[i] = _error_text(error)
+    full = {i: built[i][1] if i in built else 0 for i in order}
     plan_tps = float(cfg.get('planning_tokens_per_second', 6000))
     budget = (a.stop_at - time.time() - 20) * plan_tps * 0.9
     cap = solve_cap(list(full.values()), budget, cap_min, cap_max)
     log('plan', cap=cap, margin=margin, total_tokens=sum(full.values()),
-        rows_over_cap=sum(1 for v in full.values() if v > cap), prepare_seconds=round(time.time() - prepared, 1))
+        rows_over_cap=sum(1 for v in full.values() if v > cap), prepare_seconds=round(time.time() - prepared, 1),
+        prompt_build_errors=len(row_errors), group_errors=len(group_errors),
+        first_build_error=next(iter(row_errors.values()), None))
 
     primary_use, extras_use = Usage(), Usage()
     stats = dict(scored=0, inexact=0, no_score=0, trimmed=0, policy_trimmed=0, skipped=0, tokens=0,
-                 emergency_caps=0, planned_cap=cap, hints_shown=0)
+                 emergency_caps=0, planned_cap=cap, hints_shown=0, row_errors=0, deadline_rows=0,
+                 group_errors=len(group_errors))
     xstats = dict(rows_done=0, rows_deferred=0, rows_skipped_deadline=0, inexact=0, failed=None)
     bases, pending = {}, []
 
@@ -331,8 +412,12 @@ def main(argv=None):
         position, last_dt = 0, 0.0
         while position < len(order):
             now = time.time()
-            if now + last_dt * 1.15 > a.stop_at:
-                log('stop_deadline', remaining=len(order) - position)
+            if now + last_dt * 1.15 >= a.stop_at:
+                remaining = order[position:]
+                stats['deadline_rows'] += len(remaining)
+                stats['skipped'] += len(remaining)
+                emit(out, [dict(key=rows[i]['key'], score=None, error='DEADLINE') for i in remaining])
+                log('stop_deadline', remaining=len(remaining))
                 break
             if primary_use.wall > 30 and stats['tokens']:
                 tps = primary_tps()
@@ -347,31 +432,57 @@ def main(argv=None):
             batch = order[position:position + chunk]
             records, prompts, metas = [], [], []
             for i in batch:
+                if i in row_errors:
+                    stats['skipped'] += 1
+                    stats['row_errors'] += 1
+                    records.append(dict(key=rows[i]['key'], score=None, error='PROMPT_BUILD_ERROR',
+                                        detail=row_errors[i]))
+                    continue
                 text, n, trimmed, policy_trimmed = built.pop(i)
                 if n > cap:
                     try:
                         text, n, trimmed, policy_trimmed = build_prompt(tok, rows[i], cap)
                     except Exception as error:
                         stats['skipped'] += 1
-                        records.append(dict(key=rows[i]['key'], score=None, error=type(error).__name__))
+                        stats['row_errors'] += 1
+                        records.append(dict(key=rows[i]['key'], score=None, error='PROMPT_BUILD_ERROR',
+                                            detail=_error_text(error)))
                         continue
                 if n + margin > max_len - 2:
                     stats['skipped'] += 1
                     records.append(dict(key=rows[i]['key'], score=None, error='TOO_LONG', tokens=n))
                     continue
-                ptext = variant_text(text, primary_q, primary_m)
-                n_p = n if ptext == text else count_tokens(tok, ptext)
+                try:
+                    ptext = variant_text(text, primary_q, primary_m)
+                    n_p = n if ptext == text else count_tokens(tok, ptext)
+                    shown = hints_shown(text)
+                except Exception as error:  # noqa: BLE001 - one bad row must not cost the chunk
+                    stats['skipped'] += 1
+                    stats['row_errors'] += 1
+                    records.append(dict(key=rows[i]['key'], score=None, error='PROMPT_BUILD_ERROR',
+                                        detail=_error_text(error)))
+                    continue
                 if extras_keys:
                     bases[i] = (text, n)
                 prompts.append(ptext)
-                metas.append((i, n_p, trimmed, policy_trimmed, hints_shown(text)))
+                metas.append((i, n_p, trimmed, policy_trimmed, shown))
             if prompts:
                 t0 = time.time()
-                outputs = llm.generate(prompts, params, use_tqdm=False)
-                check_order(outputs, prompts)
+                outputs, batch_error = generate_rows(llm, prompts, params, a.stop_at, healthy)
+                if batch_error is not None:
+                    log('chunk_error', error=_error_text(batch_error), rows=len(prompts),
+                        failed_rows=sum(1 for o in outputs if isinstance(o, Exception)))
                 last_dt = time.time() - t0
-                primary_use.add(outputs, last_dt)
+                primary_use.add([o for o in outputs if not isinstance(o, Exception)], last_dt)
                 for (i, n, trimmed, policy_trimmed, shown), o in zip(metas, outputs):
+                    if isinstance(o, Exception):
+                        stats['skipped'] += 1
+                        late = isinstance(o, RowDeadline)
+                        stats['deadline_rows' if late else 'row_errors'] += 1
+                        bases.pop(i, None)
+                        records.append(dict(key=rows[i]['key'], score=None, tokens=n, cap=cap,
+                                            error='DEADLINE' if late else 'GENERATE_ERROR', detail=_error_text(o)))
+                        continue
                     score, exact = answer_score(o, yes_ids, no_ids)
                     record = dict(key=rows[i]['key'], score_key=primary_key, tokens=n, trimmed=bool(trimmed),
                                   policy_trimmed=bool(policy_trimmed), hints_shown=bool(shown), cap=cap)
@@ -393,7 +504,7 @@ def main(argv=None):
                     stats['policy_trimmed'] += bool(policy_trimmed)
                     stats['hints_shown'] += bool(shown)
                     records.append(record)
-                stats['tokens'] += sum(m[1] for m in metas)
+                stats['tokens'] += sum(m[1] for m, o in zip(metas, outputs) if not isinstance(o, Exception))
             emit(out, records)          # primary results are durable before any extra call
             position += len(batch)
             log('chunk', done=position, of=len(order), seconds=round(last_dt, 1), cap=cap)
