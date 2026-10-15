@@ -458,6 +458,16 @@ class RealEncoder(unittest.TestCase):
         enc.encode(['word ' * 2000])
         self.assertEqual(enc.stats['truncated_texts'], before + 1)
 
+    def test_windows_use_native_special_tokens_and_fit_the_real_limit(self):
+        enc = self.encoder
+        text = 'Please cancel order W12345. ' * 100
+        expected = enc.tokenizer(text, add_special_tokens=True, truncation=True, max_length=enc.max_tokens,
+                                 return_overflowing_tokens=True)['input_ids']
+        self.assertGreater(len(expected), enc.max_windows)
+        windows = enc._windows(text)
+        self.assertEqual(windows, expected[:enc.max_windows])
+        self.assertTrue(all(0 < len(w) <= enc.max_tokens for w in windows))
+
     def test_dense_packet_and_its_deadline(self):
         self.encoder.deadline = None
         record = u2_context.context_for(*BIG, embedder=self.encoder)

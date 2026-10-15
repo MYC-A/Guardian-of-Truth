@@ -60,7 +60,6 @@ class LocalEncoder:
         config = json.loads((directory / 'sentence_bert_config.json').read_text(encoding='utf-8'))
         positions = int(getattr(self.model.config, 'max_position_embeddings', 512))
         self.max_tokens = min(int(config.get('max_seq_length', 128)), positions - 2)
-        self.body = self.max_tokens - self.tokenizer.num_special_tokens_to_add(pair=False)
         self.batch_size, self.max_windows = int(batch_size), int(max_windows)
         self.name = 'paraphrase-multilingual-MiniLM-L12-v2@' + PINNED_REVISION[:12]
         self.deadline = None
@@ -69,8 +68,10 @@ class LocalEncoder:
                           max_tokens=self.max_tokens)
 
     def _windows(self, text):
-        ids = self.tokenizer(text, add_special_tokens=False)['input_ids']
-        windows = [ids[k:k + self.body] for k in range(0, len(ids), self.body)] or [[]]
+        # Let the tokenizer's native post-processor add the correct special tokens to every window.
+        # Transformers 5 TokenizersBackend no longer exposes build_inputs_with_special_tokens.
+        windows = self.tokenizer(text, add_special_tokens=True, truncation=True, max_length=self.max_tokens,
+                                 return_overflowing_tokens=True)['input_ids']
         if len(windows) > self.max_windows:
             self.stats['truncated_texts'] += 1
             windows = windows[:self.max_windows]
@@ -82,7 +83,7 @@ class LocalEncoder:
         for k in range(0, len(windows), self.batch_size):
             if self.deadline is not None and time.time() >= self.deadline:
                 raise EncoderBudgetExceeded('EMBED_DEADLINE')
-            chunk = [self.tokenizer.build_inputs_with_special_tokens(w) for w in windows[k:k + self.batch_size]]
+            chunk = windows[k:k + self.batch_size]
             width = max(len(c) for c in chunk)
             ids = torch.tensor([c + [pad] * (width - len(c)) for c in chunk])
             mask = torch.tensor([[1] * len(c) + [0] * (width - len(c)) for c in chunk])
