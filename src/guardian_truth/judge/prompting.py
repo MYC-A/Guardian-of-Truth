@@ -27,7 +27,7 @@ RESCUE_HEAD = '[Excerpts from the omitted part that mention identifiers used in 
 RESCUE_TAIL = '\n[... end of excerpts ...]\n'
 TEXT_ID = re.compile(r'(?<![\w#-])#?(?=[A-Za-z0-9_\-]*[A-Za-z])(?=[A-Za-z0-9_\-]*\d)'
                      r'[A-Za-z0-9][A-Za-z0-9_\-]{4,63}(?![\w-])')
-RESPONSE_CHARS = 30000
+RESPONSE_CHARS = 30000  # kept for importers: the turn is no longer cut up front (see build_prompt)
 MIN_RESPONSE_CHARS = 4000
 FIT_STEPS = 6
 
@@ -169,10 +169,14 @@ def _fit_dialogue(tok, head, rest, response, hints, cap_tokens, full_tokens=None
 
 
 def build_prompt(tok, row, cap_tokens):
-    """-> (text, n_tokens, trimmed, policy_trimmed). n_tokens can exceed cap_tokens only in pathological
-    cases; the caller must skip such a row instead of sending it."""
+    """-> (text, n_tokens, trimmed, policy_trimmed). n_tokens exceeds cap_tokens only when even the shortest
+    transcript does not fit next to the protected turn under review (whole, or head + tail of at least
+    MIN_RESPONSE_CHARS); the turn is never cut further to meet a planned cap. The caller sees n_tokens and
+    decides (judge_stage: over_cap within the model context, TOO_LONG beyond it)."""
     prompt, hints = row['prompt'], list(row.get('hints') or [])
-    response = headtail(row['response'], RESPONSE_CHARS)
+    # The turn under review is not cut up front: dialogue and hints give way first (steps 1-2), the turn only
+    # when nothing else fits (step 3). A former up-front cut to RESPONSE_CHARS lost claims from its middle.
+    response = row['response']
     text = render(tok, prompt, response, hints)
     n = count_tokens(tok, text)
     if n <= cap_tokens:
@@ -202,9 +206,16 @@ def build_prompt(tok, row, cap_tokens):
         if n <= cap_tokens:
             return text, n, True, True
         limit -= int((n - cap_tokens) * ratio * 1.05) + 50
-    text = render(tok, headtail(prompt, int(cap_tokens * ratio * 0.5)),
-                  headtail(response, int(cap_tokens * ratio * 0.3)), [])
-    return text, count_tokens(tok, text), True, True
+    # Last resort: only the transcript is shortened (head + tail, no hints); the turn under review keeps what
+    # step 3 left of it. If even that does not fit, the prompt is returned over the cap, visibly.
+    p_chars = min(int(cap_tokens * ratio * 0.5), len(prompt))
+    for _ in range(FIT_STEPS):
+        text = render(tok, headtail(prompt, p_chars), response, [])
+        n = count_tokens(tok, text)
+        if n <= cap_tokens or p_chars < 200:
+            break
+        p_chars = int(p_chars * cap_tokens / n * 0.95)
+    return text, n, True, True
 
 # ---- v3: score keys and prompt variants --------------------------------------------------------------
 HINTS_HEAD = 'Automatic pre-checks (heuristic, may be false alarms; verify each against the transcript):\n'

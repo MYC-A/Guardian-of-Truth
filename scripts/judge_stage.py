@@ -39,6 +39,21 @@ other rows are still scored. A grouping failure only disables prefix grouping fo
 batch is retried row by row; only when every row fails and the
 known-good probe prompt fails too is the engine treated as broken and the stage stops (the supervisor
 keeps the mechanical answer for the rows without a score).
+
+Context. cfg context_mode: 'legacy' (default: the bounded transcript builder of prompting), 'u2' (U2
+exact-source packet, lexical ranking) or 'u2_dense' (the same packer plus the pinned local multilingual
+encoder as a ranking signal). For u2 modes the stage starts guardian_truth.judge.u2_context as its own CPU
+process before the engine (packing overlaps the model start-up) with a fresh run id, waits for it after
+the probe at most u2_wait_seconds and always stops it (finally). A packet record is used only for the same
+run id, the same stage_input SHA256 and the same row hash. A row uses its packet in place of the transcript
+only when the rendered prompt, with the turn under review WHOLE, fits the planned cap; otherwise, and for
+every row the packer rejected, did not finish or that failed a check, the legacy builder runs on the full
+transcript with the reason in the record (legacy:<reason>). One model call per row in every mode.
+
+Caps. cap is the planned per-row token cap (time plan); the model context (max_model_len minus the question
+margin) is the hard limit. A prompt over the planned cap is sent only within the hard limit, marked over_cap,
+and its extra tokens enter the time forecast of the remaining rows. response_trimmed marks every row whose
+turn under review is not shown whole (legacy builder: head + tail only when even no dialogue leaves room).
 """
 from __future__ import annotations
 
@@ -49,8 +64,10 @@ import json
 import math
 import os
 from pathlib import Path
+import subprocess
 import sys
 import time
+import uuid
 
 STARTED = time.time()
 ROOT = Path(__file__).resolve().parents[1]
@@ -62,6 +79,8 @@ from guardian_truth.judge.prompting import (build_prompt, count_tokens, hints_sh
                                             question_margin, render, score_keys, system_block, variant_text)
 
 SCHEDULES = ('after_primary', 'per_chunk')
+CONTEXT_MODES = ('legacy', 'u2', 'u2_dense')
+_SLEEP = time.sleep
 
 ANSWERS = {'yes': ('YES', 'Yes', 'yes', ' YES', ' Yes', ' yes'),
            'no': ('NO', 'No', 'no', ' NO', ' No', ' no')}
@@ -270,6 +289,91 @@ def generate_rows(llm, prompts, params, deadline, healthy):
     return results, batch_error
 
 
+def build_row(tok, row, cap):
+    """-> (text, n_tokens, trimmed, policy_trimmed, context). The turn under review is shown whole whenever
+    the prompt fits the cap with it: first with the U2 packet (row['context']) in place of the transcript, then
+    through the legacy builder, which gives up dialogue and hints before it touches the turn (then turn head +
+    tail, then policy); context says which path was taken (u2 label, legacy, legacy:<reason>)."""
+    hints = list(row.get('hints') or [])
+    packet = row.get('context')
+    if packet is not None:
+        text = render(tok, packet, row['response'], hints)
+        n = count_tokens(tok, text)
+        if n <= cap:
+            return text, n, False, False, row.get('context_label') or 'u2'
+        reason = 'legacy:PACKET_OVER_CAP'
+    else:
+        reason = row.get('context_reason') or 'legacy'
+    return tuple(build_prompt(tok, row, cap)) + (reason,)
+
+
+def row_digest(prompt, response):
+    """Same as guardian_truth.judge.u2_context.row_digest (kept here so that the stage does not import the packer)."""
+    return hashlib.sha256((str(prompt) + '\x00' + str(response)).encode('utf-8', 'surrogatepass')).hexdigest()
+
+
+def file_sha256(path):
+    with open(path, 'rb') as stream:
+        return hashlib.sha256(stream.read()).hexdigest()
+
+
+def start_packer(a, cfg, mode, packets_path, run_id):
+    """U2 packing as its own CPU process (same process group as the stage)."""
+    env = dict(os.environ)
+    env['PYTHONPATH'] = os.pathsep.join([str(ROOT / 'src'), str(ROOT)] + ([env['PYTHONPATH']] if env.get('PYTHONPATH') else []))
+    command = [sys.executable, '-m', 'guardian_truth.judge.u2_context', '--input', str(a.input),
+               '--output', str(packets_path), '--run-id', run_id, '--deadline', repr(a.stop_at),
+               '--budget-bytes', str(int(cfg.get('u2_budget_bytes', 20000))),
+               '--embed-seconds-per-row', str(float(cfg.get('u2_embed_seconds_per_row', 2.0))),
+               '--embed-total-seconds', str(float(cfg.get('u2_embed_total_seconds', 240.0)))]
+    if not cfg.get('u2_full_catalog', True):
+        command.append('--no-full-catalog')
+    if mode == 'u2_dense':
+        encoder = Path(cfg.get('u2_encoder_dir', 'model/encoder'))
+        command += ['--dense-encoder', str(encoder if encoder.is_absolute() else ROOT / encoder)]
+    with open(Path(packets_path).with_suffix('.log'), 'w', encoding='utf-8') as stream:
+        return subprocess.Popen(command, stdout=stream, stderr=subprocess.STDOUT, env=env)
+
+
+def stop_packer(packer):
+    if packer is None or packer.poll() is not None:
+        return
+    try:
+        packer.kill()
+        packer.wait(5)
+    except Exception:  # noqa: BLE001 - cleanup must not raise
+        pass
+
+
+def collect_packets(packer, packets_path, wait_until, run_id, input_sha256):
+    """-> ({row key: packet record}, status, done event). Waits for the packer at most until wait_until, then
+    stops it. Records of another run or another stage_input are rejected; a torn last line is ignored."""
+    while packer.poll() is None and time.time() < wait_until:
+        _SLEEP(0.2)
+    code = packer.poll()
+    status = 'DONE' if code == 0 else ('STOPPED_AT_WAIT_LIMIT' if code is None else 'EXITED_%d' % code)
+    stop_packer(packer)
+    items = []
+    try:
+        with open(packets_path, encoding='utf-8', newline='') as stream:
+            lines = stream.read().split('\n')
+    except OSError:
+        lines = []
+    for line in lines:
+        try:
+            item = json.loads(line) if line.strip() else None
+        except ValueError:
+            continue
+        if isinstance(item, dict):
+            items.append(item)
+    start = items[0] if items and items[0].get('event') == 'start' else None
+    if start is None or start.get('run_id') != run_id or start.get('input_sha256') != input_sha256:
+        return {}, status + ':REJECTED_RUN_OR_INPUT', None
+    records = {i['key']: i for i in items[1:] if 'key' in i and i.get('run_id') == run_id and 'event' not in i}
+    done = next((i for i in items if i.get('event') == 'done' and i.get('run_id') == run_id), None)
+    return records, status, done
+
+
 def main(argv=None):
     ap = argparse.ArgumentParser(description=__doc__)
     ap.add_argument('--model', required=True)
@@ -278,6 +382,15 @@ def main(argv=None):
     ap.add_argument('--config', required=True)
     ap.add_argument('--stop-at', type=float, required=True, help='wall-clock epoch; no new primary call starts after it')
     a = ap.parse_args(argv)
+    packers = []
+    try:
+        return _main(a, packers)
+    finally:
+        for packer in packers:
+            stop_packer(packer)
+
+
+def _main(a, packers):
     cfg = json.loads(Path(a.config).read_text(encoding='utf-8'))
     rows = read_jsonl(a.input)
     keys = score_keys(cfg)
@@ -293,6 +406,21 @@ def main(argv=None):
             row['hints'] = []
     max_len = int(cfg['max_model_len'])
     chunk = int(cfg.get('chunk', 48))
+    context_mode = cfg.get('context_mode', 'legacy')
+    if context_mode not in CONTEXT_MODES:
+        log('context_mode_invalid', value=context_mode, using='legacy')
+        context_mode = 'legacy'
+    run_id = uuid.uuid4().hex
+    packets_path = Path(a.output).with_name('packets-%s.jsonl' % run_id)
+    packer, packer_error, input_sha256 = None, None, None
+    if context_mode != 'legacy':
+        try:
+            input_sha256 = file_sha256(a.input)
+            packer = start_packer(a, cfg, context_mode, packets_path, run_id)
+            packers.append(packer)
+        except Exception as error:  # noqa: BLE001 - without a packer every row keeps the legacy context
+            packer_error = _error_text(error)
+            log('packer_start_failed', error=packer_error)
 
     import vllm
     from vllm import LLM, SamplingParams
@@ -310,12 +438,49 @@ def main(argv=None):
         with open(a.output, 'a', encoding='utf-8') as out:
             emit(out, [dict(event='failed', reason='EXACT_SCORES_UNAVAILABLE', **probe_info)])
         log('failed', reason='EXACT_SCORES_UNAVAILABLE')
+        for process in packers:
+            stop_packer(process)
         sys.stdout.flush()
         os._exit(3)
     margin = question_margin(tok, keys)
     cap_max = max_len - 8 - margin
     cap_min = min(int(cfg.get('min_cap_tokens', 8000)), cap_max)
     probe_text = render(tok, PROBE_PROMPT, PROBE_RESPONSE, [])
+    hard_cap = max_len - 2 - margin
+    context_stats = dict(mode=context_mode)
+    if context_mode != 'legacy':
+        if packer is None:
+            packets, packer_status, packer_done = {}, 'NOT_STARTED', None
+        else:
+            packets, packer_status, packer_done = collect_packets(
+                packer, packets_path, min(time.time() + float(cfg.get('u2_wait_seconds', 90)), a.stop_at - 60),
+                run_id, input_sha256)
+        sizes = []
+        for row in rows:
+            packet = packets.get(row.get('key'))
+            if packet is None:
+                row['context_reason'] = 'legacy:PACKET_NOT_READY'
+            elif packet.get('row_sha256') != row_digest(row.get('prompt'), row.get('response')):
+                row['context_reason'] = 'legacy:PACKET_ROW_MISMATCH'
+            elif packet.get('mode') == 'u2' and isinstance(packet.get('text'), str):
+                row['context'] = packet['text']
+                fallback = packet.get('dense_fallback')
+                row['context_label'] = ('u2_dense' if packet.get('ranking') == 'dense' else
+                                        'u2(dense_fallback:%s)' % fallback.split(':')[0] if fallback else 'u2')
+                sizes.append(int(packet.get('source_bytes') or 0))
+            elif packet.get('mode') == 'full_input':
+                row['context_reason'] = 'full_input'
+            else:
+                row['context_reason'] = 'legacy:%s' % (packet.get('reason') or packet.get('mode'))
+        context_stats.update(run_id=run_id, packer=packer_status, packer_error=packer_error, packets=len(packets),
+                             packer_seconds=(packer_done or {}).get('seconds'),
+                             packer_modes=(packer_done or {}).get('modes'),
+                             packer_rankings=(packer_done or {}).get('rankings'),
+                             encoder=(packer_done or {}).get('encoder'),
+                             encoder_stats=(packer_done or {}).get('encoder_stats'), packet_rows=len(sizes),
+                             packet_source_bytes_max=max(sizes) if sizes else None,
+                             packet_source_bytes_total=sum(sizes))
+        log('packets', **context_stats)
 
     def healthy():
         try:
@@ -338,7 +503,7 @@ def main(argv=None):
     built, row_errors = {}, {}
     for i in order:
         try:
-            built[i] = build_prompt(tok, rows[i], cap_max)
+            built[i] = build_row(tok, rows[i], cap_max)
         except Exception as error:  # noqa: BLE001 - one bad row must not cost the other rows
             row_errors[i] = _error_text(error)
     full = {i: built[i][1] if i in built else 0 for i in order}
@@ -353,7 +518,8 @@ def main(argv=None):
     primary_use, extras_use = Usage(), Usage()
     stats = dict(scored=0, inexact=0, no_score=0, trimmed=0, policy_trimmed=0, skipped=0, tokens=0,
                  emergency_caps=0, planned_cap=cap, hints_shown=0, row_errors=0, deadline_rows=0,
-                 group_errors=len(group_errors))
+                 group_errors=len(group_errors), over_cap=0, over_cap_tokens=0, response_trimmed=0, contexts={},
+                 hard_cap=hard_cap)
     xstats = dict(rows_done=0, rows_deferred=0, rows_skipped_deadline=0, inexact=0, failed=None)
     bases, pending = {}, []
 
@@ -422,8 +588,11 @@ def main(argv=None):
             if primary_use.wall > 30 and stats['tokens']:
                 tps = primary_tps()
                 remaining = order[position:]
-                if now + sum(min(full[i], cap) for i in remaining) / tps > a.stop_at - 10:
-                    new_cap = solve_cap([full[i] for i in remaining], (a.stop_at - now - 10) * tps * 0.9, cap_min, cap)
+                # rows sent over the planned cap so far: assume the same mean excess for the rest
+                extra = stats['over_cap_tokens'] / max(primary_use.prompts, 1) * len(remaining)
+                if now + (sum(min(full[i], cap) for i in remaining) + extra) / tps > a.stop_at - 10:
+                    new_cap = solve_cap([full[i] for i in remaining], (a.stop_at - now - 10) * tps * 0.9 - extra,
+                                        cap_min, cap)
                     if new_cap < cap:
                         stats['emergency_caps'] += 1
                         log('emergency_cap', cap=new_cap, previous=cap, tokens_per_s=round(tps),
@@ -438,20 +607,22 @@ def main(argv=None):
                     records.append(dict(key=rows[i]['key'], score=None, error='PROMPT_BUILD_ERROR',
                                         detail=row_errors[i]))
                     continue
-                text, n, trimmed, policy_trimmed = built.pop(i)
+                text, n, trimmed, policy_trimmed, context = built.pop(i)
                 if n > cap:
                     try:
-                        text, n, trimmed, policy_trimmed = build_prompt(tok, rows[i], cap)
+                        text, n, trimmed, policy_trimmed, context = build_row(tok, rows[i], cap)
                     except Exception as error:
                         stats['skipped'] += 1
                         stats['row_errors'] += 1
                         records.append(dict(key=rows[i]['key'], score=None, error='PROMPT_BUILD_ERROR',
                                             detail=_error_text(error)))
                         continue
-                if n + margin > max_len - 2:
+                if n > hard_cap:
                     stats['skipped'] += 1
-                    records.append(dict(key=rows[i]['key'], score=None, error='TOO_LONG', tokens=n))
+                    records.append(dict(key=rows[i]['key'], score=None, error='TOO_LONG', tokens=n, context=context))
                     continue
+                over = n > cap
+                response_trimmed = rows[i]['response'] not in text
                 try:
                     ptext = variant_text(text, primary_q, primary_m)
                     n_p = n if ptext == text else count_tokens(tok, ptext)
@@ -465,7 +636,8 @@ def main(argv=None):
                 if extras_keys:
                     bases[i] = (text, n)
                 prompts.append(ptext)
-                metas.append((i, n_p, trimmed, policy_trimmed, shown))
+                metas.append((i, n_p, trimmed, policy_trimmed, shown, context, over, response_trimmed))
+                stats['contexts'][context] = stats['contexts'].get(context, 0) + 1
             if prompts:
                 t0 = time.time()
                 outputs, batch_error = generate_rows(llm, prompts, params, a.stop_at, healthy)
@@ -474,7 +646,7 @@ def main(argv=None):
                         failed_rows=sum(1 for o in outputs if isinstance(o, Exception)))
                 last_dt = time.time() - t0
                 primary_use.add([o for o in outputs if not isinstance(o, Exception)], last_dt)
-                for (i, n, trimmed, policy_trimmed, shown), o in zip(metas, outputs):
+                for (i, n, trimmed, policy_trimmed, shown, context, over, response_trimmed), o in zip(metas, outputs):
                     if isinstance(o, Exception):
                         stats['skipped'] += 1
                         late = isinstance(o, RowDeadline)
@@ -485,7 +657,11 @@ def main(argv=None):
                         continue
                     score, exact = answer_score(o, yes_ids, no_ids)
                     record = dict(key=rows[i]['key'], score_key=primary_key, tokens=n, trimmed=bool(trimmed),
-                                  policy_trimmed=bool(policy_trimmed), hints_shown=bool(shown), cap=cap)
+                                  policy_trimmed=bool(policy_trimmed), hints_shown=bool(shown), cap=cap,
+                                  context=context, over_cap=bool(over), response_trimmed=bool(response_trimmed))
+                    stats['over_cap'] += bool(over)
+                    stats['over_cap_tokens'] += max(0, n - cap)
+                    stats['response_trimmed'] += bool(response_trimmed)
                     if score is not None and not exact and require_exact:
                         stats['inexact'] += 1
                         record.update(score=None, bounded_score=score, exact=False, error='INEXACT_SCORE')
@@ -529,8 +705,9 @@ def main(argv=None):
         tps = round(stats['tokens'] / primary_use.wall) if primary_use.wall else None
         emit(out, [dict(event='done', seconds=round(time.time() - STARTED, 1), keys=[k for k, _, _ in keys],
                         gpu_seconds=round(primary_use.wall + extras_use.wall, 1), tokens_per_second=tps,
-                        primary=report_p, extras=dict(report_x, **xstats), **stats)])
-        log('done', tokens_per_second=tps, primary=report_p, extras=dict(report_x, **xstats), **stats)
+                        primary=report_p, extras=dict(report_x, **xstats), context=context_stats, **stats)])
+        log('done', tokens_per_second=tps, primary=report_p, extras=dict(report_x, **xstats), context=context_stats,
+            **stats)
     try:
         llm.llm_engine.engine_core.shutdown()
     except Exception as error:
