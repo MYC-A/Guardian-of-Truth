@@ -32,6 +32,12 @@ u2_dense: the same packer with a multilingual sentence encoder as one more ranki
 and recency signals stay). Encoder unavailable, row embedding budget or total embedding budget exhausted,
 or an encoder error: that row is packed by lexical U2, with dense_fallback naming the reason.
 
+Judge options (all off by default, so u2 and u2_dense stay as measured): --action-policy protects, in a ranked policy,
+the sections whose heading path names a called action (round-robin between actions, final coverage per action in the
+record); --action-synonyms adds generic verb groups; --dense-fusion remainder lets the encoder order only units without
+lexical/entity/recency evidence; --dense-scope policy embeds policy units only; --dense-query-chars N splits dense
+queries into sentence pieces and then into single encoder windows; --dense-passage-pieces scores a policy unit by its
+best window-sized piece. Chosen options are written into the start event and every record (packer_options).
 Budget units: budget_bytes is the packer's own unit (UTF-8 bytes of the serialised packet records, metadata
 included; default 20000 as in the U2 experiments; reported as packet_json_bytes). source_bytes is the UTF-8
 size of the quoted prompt text. Rendered tokens are measured by the stage. Different units, never mixed.
@@ -55,6 +61,17 @@ from guardian_truth.transcript.parser import parse_document
 
 VERSION = 'u2-context-2'
 DEFAULT_BUDGET = 20000
+PACKER_OPTION_DEFAULTS = dict(action_policy=False, action_synonyms=False, dense_fusion='rrf', dense_scope='all',
+                              dense_query_chars=None, dense_passage_pieces=False)
+
+
+def packer_options(**values):
+    """-> the packer options among `values` that differ from the defaults; unknown names raise. {} is U2 exactly as
+    measured before these options existed (records then carry no packer_options key)."""
+    unknown = sorted(set(values) - set(PACKER_OPTION_DEFAULTS))
+    if unknown:
+        raise ValueError('UNKNOWN_PACKER_OPTIONS: %s' % ','.join(unknown))
+    return {k: v for k, v in values.items() if v != PACKER_OPTION_DEFAULTS[k]}
 OMIT = '\n[... {n} characters of the transcript are not quoted here; not proof that they are irrelevant ...]\n'
 NOTICE = ('\n[Evidence selection: {q} of {t} characters of the transcript are quoted above, in their original '
           'order; omitted parts are marked. An omitted part is not evidence either way.]')
@@ -162,7 +179,7 @@ def _utf8(prompt, spans):
 
 
 def context_for(prompt, response, budget_bytes=DEFAULT_BUDGET, full_catalog=True, embedder=None,
-                dense_fallback=None):
+                dense_fallback=None, options=None, with_spans=False):
     """-> record {mode: u2 | full_input | legacy, reason, ranking, text (u2 only), sizes, packet summary}.
     embedder: an encoder for u2_dense or None. Never raises."""
     started = time.perf_counter()
@@ -174,12 +191,15 @@ def context_for(prompt, response, budget_bytes=DEFAULT_BUDGET, full_catalog=True
         from guardian_truth.evidence_packer.packer import PackerConfig, pack
         from guardian_truth.judge.dense_encoder import EncoderBudgetExceeded
         from guardian_truth.parsing import parse_catalog, parse_events
+        options = packer_options(**dict(options or {}))
+        if options:
+            info['packer_options'] = options
         prompt_doc, response_doc = parse_document(prompt, 'prompt'), parse_document(response, 'response')
         prompt_events, response_events = parse_events(prompt, 'prompt'), parse_events(response, 'response')
         agree, detail = parsers_agree(prompt_doc, response_doc, prompt_events, response_events)
         if not agree:
             return result(mode='legacy', reason='PARSER_DISAGREEMENT', detail=detail)
-        row, cfg, ranking = {'prompt': prompt, 'response': response}, PackerConfig(budget_bytes=budget_bytes), 'lexical'
+        row, cfg, ranking = {'prompt': prompt, 'response': response}, PackerConfig(budget_bytes=budget_bytes, **options), 'lexical'
         packet = None
         if embedder is not None:
             try:
@@ -196,6 +216,19 @@ def context_for(prompt, response, budget_bytes=DEFAULT_BUDGET, full_catalog=True
                        uncovered=sorted({str(u.get('category')) for u in packet.get('uncovered', [])}),
                        partial_receipt_groups=sum(1 for g in packet.get('receipt_groups', [])
                                                   if g.get('completeness') == 'PARTIAL'))
+        if 'action_policy' in packet:
+            summary['action_policy'] = [dict(tool=m['tool'], status=m['status'], score=m['score'],
+                                             match_kind=m['match_kind'],
+                                             sections=len(m['headings']), units=len(m['units']),
+                                             coverage=m['final']['coverage'], missing=len(m['final']['missing']),
+                                             missing_spans=m['final'].get('missing_spans', []))
+                                        for m in packet['action_policy']]
+            summary['action_anchor'] = (packet.get('anchors') or {}).get('action_policy', {}).get('status')
+            summary['action_complete'] = all(m['final']['coverage'] in ('COMPLETE', 'NO_SECTION')
+                                             for m in packet['action_policy'])
+
+        if 'dense_windows' in packet:
+            summary['dense_windows'] = packet['dense_windows']
         if packet.get('failure'):
             return result(mode='legacy', reason='PACKET_FAILURE:%s' % packet['failure'], **summary)
         if packet.get('mode') == 'FULL_INPUT':
@@ -214,6 +247,8 @@ def context_for(prompt, response, budget_bytes=DEFAULT_BUDGET, full_catalog=True
         quoted = sum(b - a for a, b in merged)
         text += NOTICE.format(q=quoted, t=len(prompt))
         source_bytes = _utf8(prompt, merged)
+        if with_spans:
+            info['spans'] = [list(s) for s in merged]
         return result(mode='u2', reason='U2_SELECTED', text=text, source_bytes=source_bytes,
                       catalog_added_bytes=source_bytes - base_bytes, quoted_spans=len(merged), quoted_chars=quoted,
                       prompt_chars=len(prompt), context_chars=len(text), **summary)
@@ -238,7 +273,16 @@ def main(argv=None):
     ap.add_argument('--dense-encoder', default=None, help='local encoder directory: mode u2_dense')
     ap.add_argument('--embed-seconds-per-row', type=float, default=2.0)
     ap.add_argument('--embed-total-seconds', type=float, default=240.0)
+    ap.add_argument('--action-policy', action='store_true', help='ranked policy: protect sections named by called actions')
+    ap.add_argument('--action-synonyms', action='store_true', help='with --action-policy: generic verb groups')
+    ap.add_argument('--dense-fusion', choices=('rrf', 'remainder'), default='rrf')
+    ap.add_argument('--dense-scope', choices=('all', 'policy'), default='all')
+    ap.add_argument('--dense-query-chars', type=int, default=None)
+    ap.add_argument('--dense-passage-pieces', action='store_true', help='score policy units by encoder-window pieces')
     a = ap.parse_args(argv)
+    options = packer_options(action_policy=a.action_policy, action_synonyms=a.action_synonyms,
+                             dense_fusion=a.dense_fusion, dense_scope=a.dense_scope,
+                             dense_query_chars=a.dense_query_chars, dense_passage_pieces=a.dense_passage_pieces)
     started = time.time()
     with open(a.input, 'rb') as stream:
         input_sha256 = hashlib.sha256(stream.read()).hexdigest()
@@ -250,7 +294,7 @@ def main(argv=None):
             out.flush()
             os.fsync(out.fileno())
         emit(dict(event='start', version=VERSION, run_id=a.run_id, input_sha256=input_sha256, rows=len(rows),
-                  dense=bool(a.dense_encoder)))
+                  dense=bool(a.dense_encoder), **({'packer_options': options} if options else {})))
         if a.dense_encoder:
             try:
                 from guardian_truth.judge.dense_encoder import LocalEncoder
@@ -272,7 +316,7 @@ def main(argv=None):
                 elif encoder is not None:
                     encoder.deadline = min(time.time() + a.embed_seconds_per_row, dense_until, a.deadline)
                     embedder = encoder
-                record = context_for(prompt, response, a.budget_bytes, not a.no_full_catalog, embedder, fallback)
+                record = context_for(prompt, response, a.budget_bytes, not a.no_full_catalog, embedder, fallback, options)
             record.update(key=row.get('key'), row_sha256=row_digest(prompt, response), run_id=a.run_id)
             modes[record['mode']] = modes.get(record['mode'], 0) + 1
             if record.get('ranking'):

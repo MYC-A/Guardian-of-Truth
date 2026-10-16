@@ -77,6 +77,14 @@ class LocalEncoder:
             windows = windows[:self.max_windows]
         return windows
 
+    def fits_one_window(self, text):
+        """True when `text` with its special tokens fits ONE window (max_tokens): the encoder sees all of it."""
+        try:
+            ids = self.tokenizer(text, add_special_tokens=True, verbose=False)['input_ids']
+        except TypeError:  # a tokenizer without the verbose switch
+            ids = self.tokenizer(text, add_special_tokens=True)['input_ids']
+        return len(ids) <= self.max_tokens
+
     def _encode_windows(self, windows):
         torch, out = self.torch, []
         pad = self.tokenizer.pad_token_id if self.tokenizer.pad_token_id is not None else 0

@@ -317,6 +317,37 @@ def file_sha256(path):
         return hashlib.sha256(stream.read()).hexdigest()
 
 
+U2_OPTION_FLAGS = (('u2_action_policy', '--action-policy', bool), ('u2_action_synonyms', '--action-synonyms', bool),
+                   ('u2_dense_passage_pieces', '--dense-passage-pieces', bool),
+                   ('u2_dense_fusion', '--dense-fusion', ('rrf', 'remainder')),
+                   ('u2_dense_scope', '--dense-scope', ('all', 'policy')),
+                   ('u2_dense_query_chars', '--dense-query-chars', int))
+
+
+def u2_packer_flags(cfg):
+    """Packer flags for the u2_* option keys (absent or None: packer default). An invalid value raises
+    ValueError('U2_OPTIONS_INVALID') BEFORE the packer starts: the stage logs packer_start_failed and every row keeps
+    the legacy context, instead of a packer process that dies in argparse."""
+    flags = []
+    for key, flag, kind in U2_OPTION_FLAGS:
+        value = cfg.get(key)
+        if value is None:
+            continue
+        if kind is bool:
+            if not isinstance(value, bool):
+                raise ValueError('U2_OPTIONS_INVALID: %s=%r' % (key, value))
+            flags += [flag] if value else []
+        elif kind is int:
+            if isinstance(value, bool) or not isinstance(value, int) or value < 32:
+                raise ValueError('U2_OPTIONS_INVALID: %s=%r' % (key, value))
+            flags += [flag, str(value)]
+        elif value not in kind:
+            raise ValueError('U2_OPTIONS_INVALID: %s=%r' % (key, value))
+        else:
+            flags += [flag, value]
+    return flags
+
+
 def start_packer(a, cfg, mode, packets_path, run_id):
     """U2 packing as its own CPU process (same process group as the stage)."""
     env = dict(os.environ)
@@ -328,6 +359,7 @@ def start_packer(a, cfg, mode, packets_path, run_id):
                '--embed-total-seconds', str(float(cfg.get('u2_embed_total_seconds', 240.0)))]
     if not cfg.get('u2_full_catalog', True):
         command.append('--no-full-catalog')
+    command += u2_packer_flags(cfg)
     if mode == 'u2_dense':
         encoder = Path(cfg.get('u2_encoder_dir', 'model/encoder'))
         command += ['--dense-encoder', str(encoder if encoder.is_absolute() else ROOT / encoder)]
@@ -480,6 +512,9 @@ def _main(a, packers):
                              encoder_stats=(packer_done or {}).get('encoder_stats'), packet_rows=len(sizes),
                              packet_source_bytes_max=max(sizes) if sizes else None,
                              packet_source_bytes_total=sum(sizes))
+        u2_options = {k: cfg[k] for k, _, _ in U2_OPTION_FLAGS if k in cfg}
+        if u2_options:
+            context_stats['u2_options'] = u2_options
         log('packets', **context_stats)
 
     def healthy():

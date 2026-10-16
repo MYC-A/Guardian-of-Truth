@@ -68,6 +68,15 @@ class PackerConfig:
     extra_queries: tuple = ()          # gap-directed text added to the lexical/dense query
     exclude_uids: frozenset = frozenset()  # units already read elsewhere; never chosen as primary units
     shared_anchors: tuple = ('last_user', 'last_assistant')  # anchors exempt from exclusion
+    # Judge options (defaults keep U2 byte-identical; docs/judge_20261013/U2_ACTION_POLICY_20261016.md):
+    action_policy: bool = False         # ranked policy: protect sections whose heading path names a called action
+    action_synonyms: bool = False       # with action_policy: the verb also matches its generic English verb group
+    action_policy_max_sections: int = 2
+    action_policy_share: float = 0.5    # of the policy share left after policy_root, shared round-robin by actions
+    dense_fusion: str = 'rrf'           # 'remainder': dense only orders units without lexical/entity/recency
+    dense_scope: str = 'all'            # 'policy': only POLICY units are embedded
+    dense_query_chars: int | None = None  # split dense queries into sentence pieces, then to one encoder window
+    dense_passage_pieces: bool = False  # score a policy unit by its best piece that fits one encoder window
 
 
 # ---------------------------------------------------------------- units
@@ -274,6 +283,300 @@ def _fuse(signal_scores, weights, k):
     return fused
 
 
+# ---------------------------------------------------------------- judge options: action policy, dense fusion
+# Off by default (PackerConfig); see docs/judge_20261013/U2_ACTION_POLICY_20261016.md.
+
+ACTION_STOPWORDS = frozenset(('a', 'an', 'and', 'at', 'by', 'for', 'from', 'in', 'into', 'of', 'on', 'or',
+                              'the', 'to', 'with'))
+CAMEL = re.compile(r'(?<=[a-z0-9])(?=[A-Z])')
+NAME_WORD = re.compile(r'[^\W_]+', re.UNICODE)
+QUERY_BREAK = re.compile(r'(?<=[.!?;\u2026])\s+|\n+')
+DENSE_FUSIONS = ('rrf', 'remainder')
+DENSE_SCOPES = ('all', 'policy')
+MIN_QUERY_CHARS = 32
+MIN_BODY_CHARS = 32
+
+ACTION_VERB_GROUPS_RAW = (('update', 'modify', 'change', 'edit', 'amend', 'alter', 'adjust'),
+                          ('cancel', 'void', 'revoke', 'annul', 'terminate'),
+                          ('create', 'add', 'make', 'register'),
+                          ('remove', 'delete', 'drop'),
+                          ('transfer', 'escalate'))
+
+
+def check_options(cfg):
+    """Reject option values the packer does not implement (the caller names the row fallback)."""
+    if cfg.dense_fusion not in DENSE_FUSIONS:
+        raise ValueError('BAD_DENSE_FUSION: %r' % (cfg.dense_fusion,))
+    if cfg.dense_scope not in DENSE_SCOPES:
+        raise ValueError('BAD_DENSE_SCOPE: %r' % (cfg.dense_scope,))
+    chars = cfg.dense_query_chars
+    if chars is not None and (isinstance(chars, bool) or not isinstance(chars, int) or chars < MIN_QUERY_CHARS):
+        raise ValueError('BAD_DENSE_QUERY_CHARS: %r' % (chars,))
+    for name in ('action_policy', 'action_synonyms', 'dense_passage_pieces'):
+        if not isinstance(getattr(cfg, name), bool):
+            raise ValueError('BAD_%s: %r' % (name.upper(), getattr(cfg, name)))
+    if not 0 < float(cfg.action_policy_share) <= 1 or int(cfg.action_policy_max_sections) < 1:
+        raise ValueError('BAD_ACTION_POLICY_LIMITS')
+
+
+def name_words(text):
+    """Lower-case words of a tool name or heading: split on non-letters, '_' and camelCase. A plural -s is removed
+    (not -ss) and a final -y becomes -i, so that modify/modified and item/items meet in words_match."""
+    out = []
+    for word in NAME_WORD.findall(CAMEL.sub(' ', str(text or ''))):
+        w = word.casefold()
+        if len(w) > 3 and w.endswith('s') and not w.endswith('ss'):
+            w = w[:-1]
+        if len(w) > 3 and w.endswith('y'):
+            w = w[:-1] + 'i'
+        out.append(w)
+    return out
+
+
+def verb_forms(verb, synonyms=False):
+    """The verb itself, plus, with synonyms, the other members of its generic English verb group."""
+    if synonyms:
+        for group in ACTION_VERB_GROUPS_RAW:
+            forms = [name_words(w)[0] for w in group]
+            if any(words_match(verb, f) for f in forms):
+                return [verb] + [f for f in forms if not words_match(verb, f)]
+    return [verb]
+
+
+def words_match(a, b):
+    """Equal, or one is a prefix (at least 4 letters) of the other that is at most 3 letters longer."""
+    if a == b:
+        return True
+    short, long_ = (a, b) if len(a) <= len(b) else (b, a)
+    return len(short) >= 4 and long_.startswith(short) and len(long_) - len(short) <= 3
+
+
+def action_terms(name):
+    """Distinct words of a tool name in order, without stopwords, digits and words under 3 letters.
+    The first term is taken as the action verb."""
+    terms = []
+    for w in name_words(name):
+        if len(w) >= 3 and not w.isdigit() and w not in ACTION_STOPWORDS and w not in terms:
+            terms.append(w)
+    return terms
+
+
+def _heading_level(text):
+    match = HEADING.match(text)
+    return len(match.group(1)) if match else None
+
+
+def action_policy_sections(units, tool_names, max_sections=2, synonyms=False):
+    """Policy sections whose markdown heading path names a called action. Domain-agnostic: only the words of the
+    called tool's own name are compared with the words of a heading and its ancestor headings.
+
+    A heading is a candidate when its path contains the verb (first term). Its score is the number of terms found in
+    the path. The best-scoring candidates win; a winner that is an ancestor of another winner subsumes it. A best score
+    below min(2, number of terms) is accepted only when the verb occurs under a single heading. More than
+    max_sections winners select nothing (AMBIGUOUS). Statuses: NO_TERMS, ABSENT, WEAK_MATCH_SKIPPED, AMBIGUOUS, MATCHED.
+    -> [{tool, terms, status, score, candidates, headings, units}]; units are the POLICY blocks under the chosen
+    headings (sub-sections included) in source order; parent headings and governing bodies enter through the
+    packer closure. With synonyms the verb also matches the other members of its generic verb group
+    (ACTION_VERB_GROUPS_RAW), only if no direct verb candidate exists. match_kind distinguishes the direct lexical
+    match ('exact', including the bounded word-prefix comparison) from a synonym-only candidate. A match is a
+    retrieval anchor, never evidence that the rule applies or was broken."""
+    by_uid = {u['uid']: u for u in units}
+    headings = [u for u in units if u['category'] == 'POLICY' and u['kind'] == 'heading'
+                and _heading_level(u['text'])]
+    paths = {}
+    for h in headings:
+        chain = [p for p in h['parents'] if p in by_uid and by_uid[p]['kind'] == 'heading'] + [h['uid']]
+        paths[h['uid']] = (chain, [w for p in chain for w in name_words(by_uid[p]['text'])])
+    out = []
+    for name in tool_names:
+        terms = action_terms(name)
+        item = dict(tool=name, terms=terms, status='NO_TERMS', score=0, candidates=0, headings=[], units=[],
+                    match_kind='none')
+        out.append(item)
+        if not terms:
+            continue
+        forms = verb_forms(terms[0], synonyms)
+        exact, related = [], []
+        for h in headings:
+            words = paths[h['uid']][1]
+            direct = any(words_match(terms[0], w) for w in words)
+            if direct or any(words_match(f, w) for f in forms for w in words):
+                (exact if direct else related).append(
+                    (1 + sum(1 for t in terms[1:] if any(words_match(t, w) for w in words)), h))
+        # A synonym adds candidates only when this action has no direct heading match.
+        # It must not replace a previously identifiable section of the same action.
+        scored = exact or related
+        item['match_kind'] = 'exact' if exact else 'synonym' if related else 'none'
+        item['candidates'] = len(scored)
+        if not scored:
+            item['status'] = 'ABSENT'
+            continue
+        best = max(s for s, _ in scored)
+        item['score'] = best
+        if best < min(2, len(terms)) and len(scored) > 1:
+            item['status'] = 'WEAK_MATCH_SKIPPED'
+            continue
+        top = {h['uid'] for s, h in scored if s == best}
+        winners = [h for s, h in scored if s == best and not any(p in top for p in paths[h['uid']][0][:-1])]
+        if len(winners) > max_sections:
+            item['status'] = 'AMBIGUOUS'
+            continue
+        chosen = set()
+        for h in winners:
+            level = _heading_level(h['text'])
+            end = min((g['start'] for g in headings if g['event'] == h['event'] and g['start'] > h['start']
+                       and _heading_level(g['text']) <= level), default=None)
+            chosen.update(u['uid'] for u in units if u['category'] == 'POLICY' and u['kind'] == 'block'
+                          and u['event'] == h['event'] and u['start'] >= h['end']
+                          and (end is None or u['start'] < end))
+        item.update(status='MATCHED', headings=[h['uid'] for h in winners],
+                    units=sorted(chosen, key=lambda uid: by_uid[uid]['start']))
+    return out
+
+
+def split_query(text, limit):
+    """Dense query pieces of at most `limit` characters: sentence ends and line breaks first, then the last space
+    before the limit, then a hard cut. Pieces keep the text order; whitespace between pieces is dropped."""
+    if isinstance(limit, bool) or not isinstance(limit, int) or limit < MIN_QUERY_CHARS:
+        raise ValueError('BAD_DENSE_QUERY_CHARS: %r' % (limit,))
+    text = str(text or '')
+    if len(text) <= limit:
+        return [text] if text.strip() else []
+    pieces, current = [], ''
+    for sentence in QUERY_BREAK.split(text):
+        sentence = sentence.strip()
+        while len(sentence) > limit:
+            cut = sentence.rfind(' ', 0, limit + 1)
+            cut = cut if cut > 0 else limit
+            head, sentence = sentence[:cut].rstrip(), sentence[cut:].lstrip()
+            if current:
+                pieces.append(current)
+                current = ''
+            if head:
+                pieces.append(head)
+        if not sentence:
+            continue
+        if current and len(current) + 1 + len(sentence) > limit:
+            pieces.append(current)
+            current = sentence
+        else:
+            current = current + ' ' + sentence if current else sentence
+    if current:
+        pieces.append(current)
+    return pieces
+
+
+def fused_order(signals, cfg):
+    """Pool indices in ranking order. 'rrf' (U2 as measured): every signal is fused. 'remainder': lexical, entity and
+    recency are fused first; dense only orders, after them, the units none of those signals found."""
+    if cfg.dense_fusion == 'rrf' or 'dense' not in signals:
+        fused = _fuse(signals, cfg.weights, cfg.rrf_k)
+        return sorted(fused, key=lambda i: (-fused[i], i))
+    fused = _fuse({k: v for k, v in signals.items() if k != 'dense'}, cfg.weights, cfg.rrf_k)
+    order = sorted(fused, key=lambda i: (-fused[i], i))
+    seen, dense = set(order), signals['dense']
+    return order + sorted((i for i, s in enumerate(dense) if s > 0 and i not in seen), key=lambda i: (-dense[i], i))
+
+
+def action_priority(matches, units, policy_rank):
+    """Order in which the action anchor tries the matched blocks: round-robin over the matched actions, so that a
+    short reserve is shared and no directly matched action takes it whole. Direct matches are tried before optional
+    synonym-only sections. Per action: the governing first paragraph of each chosen section, then its other blocks
+    in the fused ranking order (most query-relevant first), then source order."""
+    by_uid = {u['uid']: u for u in units}
+    position = {uid: k for k, uid in enumerate(policy_rank)}
+    queues = {'exact': [], 'synonym': []}
+    for m in matches:
+        if not m['units']:
+            continue
+        heads = set(m['headings'])
+        first = [u for u in m['units'] if by_uid[u].get('scope_of') in heads]
+        rest = sorted((u for u in m['units'] if u not in first),
+                      key=lambda u: (position.get(u, len(position)), by_uid[u]['start']))
+        tier = 'synonym' if m.get('match_kind') == 'synonym' else 'exact'
+        queues[tier].append(first + rest)
+    out, seen = [], set()
+    # Keep the same round-robin reservation for directly matched actions. Additional
+    # synonym sections can spend only what is left after those original candidates.
+    for tier in ('exact', 'synonym'):
+        while any(queues[tier]):
+            for queue in queues[tier]:
+                if queue:
+                    uid = queue.pop(0)
+                    if uid not in seen:
+                        seen.add(uid)
+                        out.append(uid)
+    return out
+
+
+def action_coverage(matches, chosen, units=None):
+    """Final coverage of every matched section after the WHOLE packet is assembled (later ranking can add blocks the
+    anchor could not). -> copies of the matches with final={coverage, selected, missing[, missing_spans]}; coverage is
+    COMPLETE, PARTIAL, NONE (nothing of a matched section) or NO_SECTION (no section matched). With units, the prompt
+    offsets of the missing blocks are reported too, so that a reviewer can read exactly what is absent."""
+    by_uid = {u['uid']: u for u in units or ()}
+    out = []
+    for m in matches:
+        missing = [u for u in m['units'] if u not in chosen]
+        if not m['units']:
+            coverage = 'NO_SECTION'
+        elif not missing:
+            coverage = 'COMPLETE'
+        else:
+            coverage = 'NONE' if len(missing) == len(m['units']) else 'PARTIAL'
+        final = dict(coverage=coverage, selected=len(m['units']) - len(missing), missing=missing)
+        if units is not None:
+            final['missing_spans'] = [[by_uid[u]['start'], by_uid[u]['end']] for u in missing if u in by_uid]
+        out.append(dict(m, final=final))
+    return out
+
+
+class EncoderWindowError(ValueError):
+    """Even the minimum ranking fragment cannot fit the encoder's window."""
+
+
+def fit_pieces(pieces, fits, min_chars=1):
+    """Split every piece (at a space near its middle, else at the middle) until fits(piece) holds, so that an encoder
+    with a token window sees the whole piece; fits is the encoder's own token check. Order is kept. An impossible
+    minimum raises EncoderWindowError rather than silently returning a truncated ranking fragment."""
+    out, stack = [], list(reversed(pieces))
+    while stack:
+        piece = stack.pop()
+        if fits(piece):
+            out.append(piece)
+            continue
+        if len(piece) <= max(1, min_chars):
+            raise EncoderWindowError('ENCODER_WINDOW_UNFIT')
+        mid = len(piece) // 2
+        cut = piece.rfind(' ', 0, mid + 1)
+        cut = cut if cut > 0 else piece.find(' ', mid)
+        cut = cut if cut > 0 else mid
+        head, tail = piece[:cut].rstrip(), piece[cut:].lstrip()
+        if not head or not tail:
+            head, tail = piece[:mid], piece[mid:]
+        stack.extend([tail, head])
+    return out
+
+
+def passage_pieces(headings, text, limit, fits):
+    """Dense passages of one policy unit: its heading path (outer to inner) as a prefix plus each piece of its text.
+    -> (pieces, dropped, unfit). Without fits (encoder cannot tell its window): sentence pieces under the whole path.
+    With fits: when the path leaves no room for MIN_BODY_CHARS of text in ONE window, outer headings are dropped one
+    by one (dropped counts them; the nearest heading stays longest; at the end there is no prefix at all); the text is
+    then split until every piece fits with that prefix. An impossible minimum piece raises EncoderWindowError;
+    context_for names the embedding error and retries this row with lexical U2."""
+    parts = split_query(text, limit) or [text]
+    if fits is None:
+        head = ' '.join(headings)
+        return [head + '\n' + p for p in parts], 0, 0
+    sample = text[:MIN_BODY_CHARS] or 'x'
+    dropped = 0
+    while dropped < len(headings) and not fits(' '.join(headings[dropped:]) + '\n' + sample):
+        dropped += 1
+    head = ' '.join(headings[dropped:])
+    head = head + '\n' if head else ''
+    pieces = [head + p for p in fit_pieces(parts, lambda p: fits(head + p))]
+    return pieces, dropped, sum(1 for p in pieces if not fits(p))
 # ---------------------------------------------------------------- records
 
 def _native_ref(store, unit_like):
@@ -339,6 +642,7 @@ def _cost(records):
 
 def pack(row, cfg=PackerConfig(), embedder=None):
     embedder = embedder or NoEmbedder()
+    check_options(cfg)
     units, target_units, store, catalog = build_units(row, cfg)
     history, targets = store.history_events, store.target_events
     by_uid = {u['uid']: u for u in units}
@@ -408,15 +712,48 @@ def pack(row, cfg=PackerConfig(), embedder=None):
     signals = {'lexical': bm25(_terms(' '.join(facets + context)), [u['text'] for u in pool]),
                'entity': _entity_scores(entities, [u['text'] for u in pool])}
     queries = facets + context
+    dense_windows = {}
+    if cfg.dense_query_chars:
+        queries = [piece for q in queries for piece in split_query(q, cfg.dense_query_chars)]
+        fits = getattr(embedder, 'fits_one_window', None)
+        if fits is not None:
+            queries = fit_pieces(queries, fits)
+            dense_windows.update(queries=len(queries), unfit_queries=sum(1 for q in queries if not fits(q)))
     q_vec = embedder.encode(queries, is_query=True) if queries else None
     if q_vec:
-        d_vec = embedder.encode([' '.join(heading_text.get(p, '') for p in u['parents']) + '\n' + u['text'] for u in pool], is_query=False)
-        signals['dense'] = [max(sum(a * b for a, b in zip(q, d)) for q in q_vec) for d in d_vec]
+        dense_idx = [i for i, u in enumerate(pool) if cfg.dense_scope == 'all' or u['category'] == 'POLICY']
+        dense = [0.0] * len(pool)
+        if cfg.dense_passage_pieces:
+            fits = getattr(embedder, 'fits_one_window', None)
+            owners, flat = [], []
+            dense_windows.update(passages=0, unfit_passages=0, prefix_trimmed_units=0)
+            for i in dense_idx:
+                path = [heading_text[p] for p in pool[i]['parents'] if p in heading_text]
+                pieces, dropped, unfit = passage_pieces(path, pool[i]['text'], cfg.dense_query_chars or 400, fits)
+                dense_windows['passages'] += len(pieces)
+                dense_windows['unfit_passages'] += unfit
+                dense_windows['prefix_trimmed_units'] += 1 if dropped else 0
+                owners.extend([i] * len(pieces))
+                flat.extend(pieces)
+            d_vec = embedder.encode(flat, is_query=False) if flat else []
+            best = {}
+            for i, d in zip(owners, d_vec):
+                score = max(sum(a * b for a, b in zip(q, d)) for q in q_vec)
+                best[i] = max(best.get(i, score), score)
+            for i, score in best.items():
+                dense[i] = score
+        else:
+            d_texts = [' '.join(heading_text.get(p, '') for p in pool[i]['parents']) + '\n' + pool[i]['text'] for i in dense_idx]
+            d_vec = embedder.encode(d_texts, is_query=False) if d_texts or cfg.dense_scope == 'all' else []
+            for i, d in zip(dense_idx, d_vec):
+                dense[i] = max(sum(a * b for a, b in zip(q, d)) for q in q_vec)
+        signals['dense'] = dense
     last_event = max((u['event'] for u in pool if u['category'] == 'HISTORY'), default=0)
     signals['recency'] = [1.0 / (1 + last_event - u['event']) if u['category'] == 'HISTORY' else 0.0 for u in pool]
-    fused = _fuse(signals, cfg.weights, cfg.rrf_k)
-    ranked = {c: [pool[i]['uid'] for i in sorted(fused, key=lambda i: (-fused[i], i)) if pool[i]['category'] == c]
-              for c in ('POLICY', 'HISTORY')}
+    order = fused_order(signals, cfg)
+    ranked = {c: [pool[i]['uid'] for i in order if pool[i]['category'] == c] for c in ('POLICY', 'HISTORY')}
+    action_matches = (action_policy_sections(units, called, cfg.action_policy_max_sections, cfg.action_synonyms)
+                      if cfg.action_policy else [])
 
     # ---- selection
     selected = []
@@ -523,6 +860,10 @@ def pack(row, cfg=PackerConfig(), embedder=None):
             policy_mode = 'RANKED'
             if 'policy_root' in cfg.anchors:
                 anchor('policy_root', [u['uid'] for u in units if u['root_scope']], policy_cap)
+            if cfg.action_policy:
+                here = cost()
+                action_cap = None if policy_cap is None else here + int(cfg.action_policy_share * (policy_cap - here))
+                anchor('action_policy', action_priority(action_matches, units, ranked['POLICY']), action_cap)
             for uid in ranked['POLICY']:
                 try_add(uid, 'RANKED_POLICY', policy_cap)
         if 'current_segment' in cfg.anchors:
@@ -576,7 +917,7 @@ def pack(row, cfg=PackerConfig(), embedder=None):
                               reason='CALL_OR_RESULT_UNITS_NOT_ALL_READ'))
     if not targets:
         uncovered.append(dict(category='CURRENT_TARGET', reason='NO_PARSED_ASSISTANT_TARGET'))
-    return {'version': VERSION, 'method': 'U2' + ('+dense' if 'dense' in signals else ''),
+    packet = {'version': VERSION, 'method': 'U2' + ('+dense' if 'dense' in signals else ''),
             'source_sha256': store.source_sha256,
             'read_sources': read_sources, 'current_targets': mandatory[:len(target_units)],
             'declarations': mandatory[len(target_units):], 'declaration_status': declaration_status,
@@ -594,6 +935,14 @@ def pack(row, cfg=PackerConfig(), embedder=None):
             'query': {'facets': len(facets), 'context_events': [i for i in (last_user, last_asst) if i is not None],
                       'entities': entities},
             'uncovered': uncovered, 'completeness_certified': False, 'absence_proves_semantic_absence': False}
+    if dense_windows:
+        packet['dense_windows'] = dense_windows
+    if cfg.action_policy:
+        packet['action_policy'] = action_coverage(action_matches, chosen if failure is None else set(), units)
+        missing = {m['tool']: m['final']['missing'] for m in packet['action_policy'] if m['final']['missing']}
+        if missing:
+            uncovered.append(dict(category='ACTION_POLICY', missing_units=missing, reason='ACTION_SECTION_NOT_ALL_READ'))
+    return packet
 
 
 def reference_store(row, selected_units, mandatory_units):
