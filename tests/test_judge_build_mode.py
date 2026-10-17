@@ -30,12 +30,15 @@ class BuildMode(unittest.TestCase):
                 directory.mkdir()
                 for name in files:
                     (directory / name).write_bytes(b'{}')
-            for mode in (None, 'u2_dense'):
-                output = root / ('default.zip' if mode is None else 'dense.zip')
+            repo = Path(__file__).resolve().parents[1]
+            production_before = (repo / 'submission/JUDGE_CONFIG.json').read_bytes()
+            for mode, profile, label in ((None, None, 'default'), ('u2_dense', None, 'dense'),
+                                         ('legacy', repo / 'submission/JUDGE_BLIND_REVIEW_EXPERIMENT.json', 'blind')):
+                output = root / (label + '.zip')
                 with contextlib.redirect_stdout(io.StringIO()):
                     receipt = build(source, digest, model, 'fixture', 'fixture', output,
                                     encoder_dir=encoder, encoder_id=ENCODER_PIN[0], encoder_revision=ENCODER_PIN[1],
-                                    context_mode=mode)
+                                    context_mode=mode, judge_config=profile, source_revision='f' * 40)
                 self.assertTrue(receipt['all_members_verified'])
                 self.assertTrue(receipt['under_cap'])
                 with zipfile.ZipFile(output) as z:
@@ -48,6 +51,11 @@ class BuildMode(unittest.TestCase):
                     self.assertIn('src/guardian_truth/judge/review_stage.py', z.namelist())
                     self.assertEqual(config['questions'], ['overall'])
                     self.assertEqual(config['positive_rate'], .30)
+                    self.assertEqual(config.get('review_mode', 'off'), 'blind' if profile else 'off')
+                    self.assertEqual(manifest['judge_build']['source_revision'], 'f' * 40)
+                    if profile:
+                        self.assertIn(b'GPU_UNTESTED', z.read('README.md'))
+                self.assertEqual((repo / 'submission/JUDGE_CONFIG.json').read_bytes(), production_before)
 
     def test_dense_without_encoder_is_rejected_before_any_file_is_read(self):
         with self.assertRaisesRegex(ValueError, 'DENSE_BUILD_REQUIRES_ENCODER'):

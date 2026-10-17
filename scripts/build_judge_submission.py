@@ -188,7 +188,8 @@ def write_file(target, name, path):
 
 
 def build(source_zip, source_sha256, model_dir, model_id, model_revision, output, repo=None,
-          encoder_dir=None, encoder_id=None, encoder_revision=None, context_mode=None):
+          encoder_dir=None, encoder_id=None, encoder_revision=None, context_mode=None,
+          judge_config=None, source_revision=None):
     repo = Path(repo or Path(__file__).resolve().parents[1])
     if context_mode is not None and context_mode not in ('legacy', 'u2', 'u2_dense'):
         raise ValueError('INVALID_BUILD_CONTEXT_MODE:' + str(context_mode))
@@ -208,10 +209,17 @@ def build(source_zip, source_sha256, model_dir, model_id, model_revision, output
     if unpacked:
         raise ValueError('RUNTIME_MODULES_NOT_PACKED:' + ','.join(unpacked))
     code = {name: (repo / src).read_bytes().replace(b'\r\n', b'\n') for name, src in CODE.items()}
-    config = json.loads(code['JUDGE_CONFIG.json'])
+    config = json.loads(Path(judge_config).read_text(encoding='utf-8')) if judge_config else json.loads(code['JUDGE_CONFIG.json'])
     if context_mode is not None:
         config['context_mode'] = context_mode
-        code['JUDGE_CONFIG.json'] = json_bytes(config)
+    from guardian_truth.judge.prompting import score_keys
+    from guardian_truth.judge.decision import validate_aggregate
+    from guardian_truth.judge.blind_review import validate_review_config
+    validate_aggregate(config, [k for k, _, _ in score_keys(config)])
+    review = validate_review_config(config)
+    code['JUDGE_CONFIG.json'] = json_bytes(config)
+    if review['review_mode'] != 'off':
+        code['README.md'] = (repo / 'docs/judge_20261013/README_BLIND_REVIEW_SUBMISSION.md').read_bytes().replace(b'\r\n', b'\n')
     members, files_manifest = model_members(model_dir)
     judge_manifest = dict(repository=model_id, revision=model_revision, files=files_manifest)
     if encoder_dir is not None:
@@ -254,7 +262,9 @@ def build(source_zip, source_sha256, model_dir, model_id, model_revision, output
             expected[name] = record
         provenance = dict(source_zip_sha256=source_sha256,
                           source_manifest_sha256=hashlib.sha256(original_raw).hexdigest(),
-                          profile='single-pass-judge-v1', model=dict(repository=model_id, revision=model_revision,
+                          profile=config.get('profile', 'single-pass-judge'), source_revision=source_revision,
+                          config_sha256=hashlib.sha256(code['JUDGE_CONFIG.json']).hexdigest(),
+                          review_mode=review['review_mode'], model=dict(repository=model_id, revision=model_revision,
                                                                     directory=MODEL_PREFIX.rstrip('/')),
                           context_mode=config.get('context_mode', 'legacy'),
                           dropped=len(dropped), replaced_or_added_code={n: expected[n]['sha256'] for n in code})
@@ -326,7 +336,10 @@ if __name__ == '__main__':
     parser.add_argument('--encoder-revision', default=None)
     parser.add_argument('--context-mode', choices=('legacy', 'u2', 'u2_dense'), default=None,
                         help='Override the context mode in the ZIP only; repository defaults are unchanged')
+    parser.add_argument('--judge-config', type=Path, default=None,
+                        help='Explicit opt-in archive config; repository production defaults stay unchanged')
+    parser.add_argument('--source-revision', default=None, help='Pinned code commit recorded in the archive manifest')
     args = parser.parse_args()
     build(args.source_zip, args.source_sha256, args.model_dir, args.model_id, args.model_revision, args.output,
           encoder_dir=args.encoder_dir, encoder_id=args.encoder_id, encoder_revision=args.encoder_revision,
-          context_mode=args.context_mode)
+          context_mode=args.context_mode, judge_config=args.judge_config, source_revision=args.source_revision)
