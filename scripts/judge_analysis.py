@@ -14,9 +14,9 @@ Checks before any number is reported:
 Variants: every score key of every run ('run:key'); mean_z / max_z / out-of-fold logistic over the keys of
 one run are reported for information. Hint A/B: '<q>@on' vs '<q>@off' of the same run share prompts that
 differ only in the hint block; the delta is also reported on rows where hints were shown.
-Decision rule: a variant replaces the reference (default: first run's primary key) only when the lower end
-of the grouped 95% interval of delta AUC is > 0. Files with fewer than --min-rows rows (valid46) are
-reported as smoke only: no promotion is computed.
+Metric signal requires positive lower grouped 95% bounds for both delta F1 (production quota .30)
+and delta AUC. Independence, exact coverage, notes delivery and whole-script runtime are separate gates;
+this diagnostic script never promotes a model automatically. Small inputs are smoke only.
 """
 from __future__ import annotations
 
@@ -35,8 +35,11 @@ for _p in (str(ROOT), str(ROOT / 'src')):
     if _p not in sys.path:
         sys.path.insert(0, _p)
 
-from guardian_truth.judge.decision import combine, linear_inputs, logistic_logit  # noqa: E402
+from guardian_truth.judge.decision import combine, decide, linear_inputs, logistic_logit  # noqa: E402
 from guardian_truth.judge.prompting import HINT_MODES, QUESTIONS  # noqa: E402
+from scripts.eval_judge_valid import confusion  # noqa: E402
+from scripts.judge_submission import read_input  # noqa: E402
+from guardian_truth.judge.mechanical import analyze  # noqa: E402
 
 TARGET_PREVALENCE = 130 / 548
 RATES = (0.25, 0.30, 0.35, 0.40)
@@ -62,6 +65,29 @@ def auc(labels, scores):
         rank_sum += ((i + j) / 2 + 1) * sum(1 for k in range(i, j + 1) if pairs[k][1] == 1)
         i = j + 1
     return (rank_sum - npos * (npos + 1) / 2) / (npos * nneg)
+
+
+def average_precision(labels, scores):
+    """Non-interpolated AP; ties enter at the same threshold."""
+    positives = sum(labels)
+    if not positives:
+        return None
+    pairs = sorted(zip(scores, labels), reverse=True)
+    found = ap = 0.0
+    i = 0
+    while i < len(pairs):
+        j = i + 1
+        while j < len(pairs) and pairs[j][0] == pairs[i][0]:
+            j += 1
+        added = sum(y for _, y in pairs[i:j])
+        found += added
+        ap += (added / positives) * (found / j)
+        i = j
+    return ap
+
+
+def fixed_metrics(labels, values, hard=()):
+    return confusion(labels, decide(len(labels), set(hard), dict(enumerate(values)), .30))
 
 
 def groups_of(ids, pattern=r'^([^:]+)'):
@@ -158,8 +184,11 @@ def read_labelled(path):
     for column in ('id', 'prompt', 'response', 'label'):
         if column not in frame.columns:
             raise SystemExit('labelled file needs column %s' % column)
-    return ([str(v) for v in frame['id']], [int(v) for v in frame['label']],
-            [(sha(str(p)), sha(str(r))) for p, r in zip(frame['prompt'], frame['response'])])
+    rows = read_input(path)
+    if any(v not in (0, 1, '0', '1') for v in frame['label']):
+        raise SystemExit('labels must be binary 0/1')
+    return ([r['id'] for r in rows], [int(v) for v in frame['label']],
+            [(sha(r['prompt']), sha(r['response'])) for r in rows])
 
 
 def read_run(run_dir, digests):
@@ -169,7 +198,7 @@ def read_run(run_dir, digests):
     out-of-range rows. Inexact results (primary exact != true, extra keys in "bounded") are skipped and counted."""
     run_dir = Path(run_dir)
     problems = []
-    stage = [json.loads(l) for l in (run_dir / 'stage_input.jsonl').read_text(encoding='utf-8').splitlines() if l.strip()]
+    stage = [json.loads(l) for l in (run_dir / 'stage_input.jsonl').read_text(encoding='utf-8').split('\n') if l.strip()]
     positions = [int(row['key']) for row in stage]
     if sorted(positions) != list(range(len(digests))):
         problems.append('STAGE_POSITIONS_NOT_A_PERMUTATION (%d rows, %d unique, input %d)'
@@ -184,8 +213,12 @@ def read_run(run_dir, digests):
             break
     qs, shown, done = defaultdict(dict), {}, {}
     primary_seen, extra_seen = set(), set()
-    skipped = dict(inexact_primary=0, unscored_primary=0, inexact_extra=0)
-    for line in (run_dir / 'scores.jsonl').read_text(encoding='utf-8').splitlines():
+    finals, review_seen = {}, set()
+    primary_inputs, final_bases = {}, {}
+    skipped = dict(inexact_primary=0, unscored_primary=0, inexact_extra=0, inexact_final=0, unscored_final=0)
+    for line in (run_dir / 'scores.jsonl').read_text(encoding='utf-8').split('\n'):
+        if not line.strip():
+            continue
         try:
             item = json.loads(line)
         except ValueError:
@@ -197,6 +230,25 @@ def read_run(run_dir, digests):
         k = int(item['key'])
         if not 0 <= k < len(digests):
             problems.append('KEY_OUT_OF_RANGE %d' % k)
+            continue
+        if item.get('review'):  # blind review records: one prepass and one final per row at most
+            role = item['review']
+            if role not in ('prepass', 'final') or (k, role) in review_seen:
+                problems.append('BAD_OR_DUPLICATE_REVIEW %s row %d' % (role, k))
+                continue
+            review_seen.add((k, role))
+            if role == 'final':
+                if item.get('base_sha256'):
+                    final_bases[k] = item['base_sha256']
+                v = item.get('final_score')
+                if v is None:
+                    skipped['inexact_final' if 'bounded_score' in item else 'unscored_final'] += 1
+                elif item.get('exact') is not True:
+                    skipped['inexact_final'] += 1
+                elif isinstance(v, (int, float)) and not isinstance(v, bool) and math.isfinite(v):
+                    finals[k] = float(v)
+                else:
+                    problems.append('NON_FINITE final row %d' % k)
             continue
         if item.get('extra'):
             bounded = item.get('bounded') or {}
@@ -218,6 +270,8 @@ def read_run(run_dir, digests):
             problems.append('DUPLICATE_PRIMARY row %d' % k)
             continue
         primary_seen.add(k)
+        if item.get('model_input_sha256'):
+            primary_inputs[k] = item['model_input_sha256']
         if item.get('score') is None:
             skipped['unscored_primary'] += 1
             continue
@@ -241,24 +295,41 @@ def read_run(run_dir, digests):
     summary = {}
     if (run_dir / 'summary.json').is_file():
         summary = json.loads((run_dir / 'summary.json').read_text(encoding='utf-8'))
-    return dict(qs=dict(qs), shown=shown, done=done, summary=summary, problems=problems, skipped=skipped)
+    for k, base in final_bases.items():
+        if k in primary_inputs and base != primary_inputs[k]:
+            problems.append('FINAL_BASE_MISMATCH row %d' % k)
+    return dict(qs=dict(qs), shown=shown, done=done, summary=summary, problems=problems, skipped=skipped,
+                finals=finals, primary_inputs=primary_inputs, final_bases=final_bases)
 
 
-def compare(name, score, reference, idx, labels, groups, iterations, smoke):
+def compare(name, score, reference, idx, labels, groups, iterations, smoke, hard=()):
     y = [labels[i] for i in idx]
-    a = auc(y, [score[i] for i in idx])
+    values = [score[i] for i in idx]
+    h = {j for j, i in enumerate(idx) if i in hard}
+    a = auc(y, values)
     out = dict(name=name, rows=len(idx), auc=None if a is None else round(a, 4),
+               ap=average_precision(y, values), fixed_rate=.30,
+               model_only=fixed_metrics(y, values), pipeline=fixed_metrics(y, values, h),
                auc_ci=group_bootstrap([groups[i] for i in idx],
                                       lambda s: auc([labels[idx[j]] for j in s], [score[idx[j]] for j in s]), iterations),
-               f1_at_rate_prev237={str(r): f1_at_rate(y, [score[i] for i in idx], r, TARGET_PREVALENCE) for r in RATES})
+               f1_at_rate_observed={str(r): f1_at_rate(y, values, r) for r in RATES})
     if reference is not None and reference is not score:
         def delta(s):
             p = auc([labels[idx[j]] for j in s], [score[idx[j]] for j in s])
             q = auc([labels[idx[j]] for j in s], [reference[idx[j]] for j in s])
             return None if p is None or q is None else p - q
         ci = group_bootstrap([groups[i] for i in idx], delta, iterations)
+        def delta_f1(s):
+            ys = [labels[idx[j]] for j in s]
+            hs = {k for k, j in enumerate(s) if idx[j] in hard}
+            p = fixed_metrics(ys, [score[idx[j]] for j in s], hs)['f1']
+            q = fixed_metrics(ys, [reference[idx[j]] for j in s], hs)['f1']
+            return p - q
+        fci = group_bootstrap([groups[i] for i in idx], delta_f1, iterations)
         out['delta_auc_ci'] = ci
-        out['promote'] = None if smoke else bool(ci and ci[0] > 0)
+        out['delta_f1_ci'] = fci
+        out['positive_metric_signal'] = None if smoke else bool(ci and ci[0] > 0 and fci and fci[0] > 0)
+        out['promote'] = None  # runtime, independence and delivery gates are outside this conditional comparison
     return out
 
 
@@ -274,13 +345,25 @@ def main(argv=None):
     a = ap.parse_args(argv)
     ids, labels, digests = read_labelled(a.input)
     groups = groups_of(ids, a.group_regex)
+    hard = {i for i, row in enumerate(read_input(a.input)) if analyze(row['prompt'], row['response'], False).hard}
     smoke = len(ids) < a.min_rows
     runs = [read_run(r, digests) for r in a.run]
+    hashes = {}
+    for r in runs:
+        for k, value in r['primary_inputs'].items():
+            if k in hashes and hashes[k] != value:
+                r['problems'].append('MATCHED_CONTEXT_MISMATCH row %d' % k)
+            hashes[k] = value
     report = dict(rows=len(ids), positives=sum(labels), groups=len(set(groups)), smoke_only=smoke,
-                  rule='promote only when the lower end of the grouped 95% CI of delta AUC > 0',
+                  rule='metric signal requires grouped lower 95% delta F1 > 0 and delta AUC > 0 at rate .30; '
+                       'independence, exact coverage, blind delivery and runtime must also be checked',
+                  verdict='INSUFFICIENT_EVIDENCE',
+                  context_hashes_checked=all(len(r['primary_inputs']) == len(ids) for r in runs),
+                  context_hash_coverage=[len(r['primary_inputs']) for r in runs],
                   runs=[dict(path=str(p), problems=r['problems'], skipped=r['skipped'], coverage={k: sum(1 for v in r['qs'].values() if k in v)
                                                                               for k in sorted({k for v in r['qs'].values() for k in v})},
-                             stage_primary=r['done'].get('primary'), stage_extras=r['done'].get('extras'),
+                              final_rows=len(r['finals']), stage_review=r['done'].get('review'),
+                              stage_primary=r['done'].get('primary'), stage_extras=r['done'].get('extras'),
                              total_wall_seconds=r['summary'].get('total_wall_seconds'),
                              stage_wall_seconds=r['summary'].get('stage_wall_seconds')) for p, r in zip(a.run, runs)])
     if any(r['problems'] for r in runs):
@@ -290,13 +373,15 @@ def main(argv=None):
         for n, r in enumerate(runs):
             for k in sorted({k for v in r['qs'].values() for k in v}):
                 variants['%d:%s' % (n, k)] = {i: v[k] for i, v in r['qs'].items() if k in v}
+            if r['finals']:  # exact-intersection comparison; all-row metrics with fallback: eval summary
+                variants['%d:final' % n] = dict(r['finals'])
         ref_name = a.reference or '0:%s' % (runs[0]['done'].get('keys') or ['overall@on'])[0]
         if ref_name not in variants:
             raise SystemExit('reference %s not scored' % ref_name)
         common = sorted(set.intersection(*[set(v) for v in variants.values()]))
         report['reference'], report['common_rows'] = ref_name, len(common)
         ref = variants[ref_name]
-        report['variants'] = [compare(name, s, ref, common, labels, groups, a.iterations, smoke)
+        report['variants'] = [compare(name, s, ref, common, labels, groups, a.iterations, smoke, hard)
                               for name, s in variants.items()]
         info = []
         for n, r in enumerate(runs):
@@ -306,10 +391,10 @@ def main(argv=None):
             rows_n = [i for i in common if all(k in r['qs'][i] for k in keys)]
             for mode in ('mean_z', 'max_z'):
                 s = combine({i: r['qs'][i] for i in rows_n}, dict(aggregate=mode, aggregate_keys=keys))
-                info.append(compare('%d:%s' % (n, mode), s, ref, rows_n, labels, groups, a.iterations, smoke))
+                info.append(compare('%d:%s' % (n, mode), s, ref, rows_n, labels, groups, a.iterations, smoke, hard))
             s = oof_logistic(keys, rows_n, r['qs'], groups, labels)
             if len(s) == len(rows_n):
-                info.append(compare('%d:logistic_oof' % n, s, ref, rows_n, labels, groups, a.iterations, smoke))
+                info.append(compare('%d:logistic_oof' % n, s, ref, rows_n, labels, groups, a.iterations, smoke, hard))
             for q in QUESTIONS:
                 on, off = '%s@on' % q, '%s@off' % q
                 if on in keys and off in keys:

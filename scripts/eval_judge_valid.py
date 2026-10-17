@@ -33,7 +33,8 @@ for _p in (str(ROOT), str(ROOT / 'src')):
 
 from guardian_truth.judge.decision import decide  # noqa: E402
 from guardian_truth.judge.mechanical import analyze  # noqa: E402
-from scripts.judge_submission import load_config, read_input, read_scores  # noqa: E402
+from scripts.judge_submission import load_config, read_input, read_review_scores, read_scores  # noqa: E402
+from guardian_truth.judge.blind_review import effective_for_eval  # noqa: E402
 
 
 def read_labels(path, n):
@@ -61,7 +62,9 @@ def confusion(labels, preds):
     fp = sum(1 for y, p in zip(labels, preds) if y == 0 and p == 1)
     fn = sum(1 for y, p in zip(labels, preds) if y == 1 and p == 0)
     f1 = 2 * tp / (2 * tp + fp + fn) if tp else 0.0
-    return dict(tp=tp, fp=fp, fn=fn, tn=len(labels) - tp - fp - fn, f1=round(f1, 4))
+    return dict(tp=tp, fp=fp, fn=fn, tn=len(labels) - tp - fp - fn, f1=round(f1, 4),
+                precision=round(tp / (tp + fp), 4) if tp + fp else 0.0,
+                recall=round(tp / (tp + fn), 4) if tp + fn else 0.0)
 
 
 def main(argv=None):
@@ -75,6 +78,8 @@ def main(argv=None):
     ap.add_argument('--timing-rows', type=int, default=0)
     ap.add_argument('--rates', default='0.25,0.30,0.35,0.40,0.50')
     ap.add_argument('--mechanical-only', action='store_true')
+    ap.add_argument('--exploratory-thresholds', action='store_true',
+                    help='report optimistic in-sample threshold diagnostics; never a promotion criterion')
     a = ap.parse_args(argv)
     started = time.time()
     a.out.mkdir(parents=True, exist_ok=False)
@@ -103,7 +108,7 @@ def main(argv=None):
         summary['hard_rows_on_label1'] = sum(1 for f, y in zip(findings, labels) if f.hard and y == 1)
         summary['hard_on_label0_details'] = [dict(id=r['id'], hard=f.hard)
                                              for r, f, y in zip(rows, findings, labels) if f.hard and y == 0]
-    scores = {}
+    scores, primary_scores, review_scores = {}, {}, {}
     if not a.mechanical_only:
         if a.model is None:
             raise SystemExit('--model is required unless --mechanical-only')
@@ -131,6 +136,18 @@ def main(argv=None):
         scores, missing, inexact, events = read_scores(scores_path)
         summary.update(scored=len(scores), no_score=missing, inexact=inexact,
                        **{'stage_' + k: v for k, v in events.items()})
+        # metrics below score the ranking the supervisor would use: final only with complete exact coverage
+        primary_scores, review_scores = scores, read_review_scores(scores_path)
+        scores, ranking, lacking = effective_for_eval(cfg, primary_scores, review_scores, n)
+        summary['ranking'] = ranking
+        if cfg.get('review_mode', 'off') != 'off':
+            common = [i for i in range(n) if i in primary_scores and i in review_scores]
+            summary['review'] = dict(arm=cfg['review_mode'], rows_without_final=lacking,
+                                     final_scored=len(review_scores), exact_intersection=len(common))
+            if labels and common:
+                summary['review'].update(
+                    auc_primary_intersection=auc([labels[i] for i in common], [primary_scores[i] for i in common]),
+                    auc_final_intersection=auc([labels[i] for i in common], [review_scores[i] for i in common]))
         if labels and scores:
             idx = [i for i in range(n) if i in scores]
             summary['auc_judge'] = auc([labels[i] for i in idx], [scores[i] for i in idx])
@@ -139,16 +156,18 @@ def main(argv=None):
             hard = {i for i, f in enumerate(findings) if f.hard}
             summary['f1_at_rate'] = {rate: confusion(labels, decide(n, hard, scores, float(rate)))
                                      for rate in a.rates.split(',')}
-            candidates = [(confusion(labels, [1 if (i in hard or scores.get(i, float('-inf')) >= t) else 0
-                                              for i in range(n)]), t) for t in sorted(set(scores.values()))]
-            best, threshold = max(candidates, key=lambda item: item[0]['f1'])
-            summary['best_threshold_in_sample'] = dict(best, threshold=threshold,
-                                                       note='selected on the same rows: optimistic')
+            if a.exploratory_thresholds:
+                candidates = [(confusion(labels, [1 if (i in hard or scores.get(i, float('-inf')) >= t) else 0
+                                                  for i in range(n)]), t) for t in sorted(set(scores.values()))]
+                best, threshold = max(candidates, key=lambda item: item[0]['f1'])
+                summary['best_threshold_in_sample'] = dict(best, threshold=threshold,
+                                                            note='selected on the same rows: optimistic')
     with (a.out / 'rows.csv').open('w', encoding='utf-8', newline='') as stream:
         writer = csv.writer(stream)
-        writer.writerow(['index', 'id', 'label', 'score', 'hard', 'hints'])
+        writer.writerow(['index', 'id', 'label', 'score', 'primary_score', 'final_score', 'hard', 'hints'])
         for i, (row, f) in enumerate(zip(rows, findings)):
             writer.writerow([i, row['id'], '' if labels is None else labels[i], scores.get(i, ''),
+                             primary_scores.get(i, ''), review_scores.get(i, ''),
                              ' | '.join(f.hard), ' | '.join(f.hints)])
     (a.out / 'summary.json').write_text(json.dumps(summary, indent=2, ensure_ascii=False, default=str),
                                         encoding='utf-8')

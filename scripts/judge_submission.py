@@ -47,6 +47,7 @@ for _p in (str(ROOT), str(ROOT / 'src')):
 from guardian_truth.judge.decision import combine, complete_inputs, decide, validate_aggregate  # noqa: E402
 from guardian_truth.judge.mechanical import analyze  # noqa: E402
 from guardian_truth.judge.prompting import score_keys  # noqa: E402
+from guardian_truth.judge.blind_review import select_ranking, validate_review_config  # noqa: E402
 
 PROFILE = 'single-pass-judge-v3.1'
 PRODUCTION_PROFILE = dict(questions=['overall'], hint_modes=['on'], aggregate='primary', extras_schedule='after_primary')
@@ -157,9 +158,10 @@ def normalize_profile(cfg):
         if cfg.get('extras_schedule', 'after_primary') not in ('after_primary', 'per_chunk'):
             raise ValueError('BAD_EXTRAS_SCHEDULE: %s' % cfg.get('extras_schedule'))
         validate_aggregate(cfg, keys)
+        validate_review_config(cfg)
         return cfg, None
     except Exception as error:  # noqa: BLE001 - a bad profile must not cost the submission
-        safe = dict(cfg, **PRODUCTION_PROFILE)
+        safe = dict(cfg, review_mode='off', **PRODUCTION_PROFILE)
         safe.pop('aggregator', None)
         safe.pop('aggregate_keys', None)
         return safe, '%s: %s' % (type(error).__name__, error)
@@ -180,7 +182,7 @@ def read_scores(path):
             if 'event' in item:
                 events[item['event']] = item
                 continue
-            if 'key' not in item or item.get('extra'):
+            if 'key' not in item or item.get('extra') or item.get('review'):
                 continue
             if item.get('score') is None:
                 missing += 1
@@ -210,6 +212,33 @@ def read_question_scores(path):
             for k, v in item['scores'].items():
                 if isinstance(v, (int, float)) and not isinstance(v, bool) and math.isfinite(v):
                     row[k] = float(v)
+    return out
+
+
+def read_review_scores(path):
+    """-> {row: final log-odds}: finite exact scores of review records {'review': 'final'} only."""
+    out, seen = {}, set()
+    if not path or not Path(path).exists():
+        return out
+    with open(path, encoding='utf-8', newline='') as stream:
+        lines = stream.read().split('\n')
+    for line in lines:
+        if not line.strip():
+            continue
+        try:
+            item = json.loads(line)
+        except ValueError:
+            break  # torn last line of a killed writer
+        value = item.get('final_score')
+        if item.get('review') != 'final':
+            continue
+        key = item.get('key')
+        if isinstance(key, bool) or not isinstance(key, int) or key < 0 or key in seen:
+            return {}  # an ambiguous row invalidates the final ranking globally
+        seen.add(key)
+        if (item.get('exact') is True
+                and isinstance(value, (int, float)) and not isinstance(value, bool) and math.isfinite(value)):
+            out[key] = float(value)
     return out
 
 
@@ -365,6 +394,9 @@ def run(root, input_path, output, *, python=None, work=None, started_wall=None, 
     def publish(scores):
         question = read_question_scores(scores_path) if cfg['aggregate'] != 'primary' else {}
         used, mode, lacking = effective_scores(scores, question, cfg, features)
+        if cfg.get('review_mode', 'off') != 'off':
+            # final only when EVERY input row has a finite exact final score; else primary for all rows
+            used, mode, lacking = select_ranking(used, read_review_scores(scores_path), list(range(n)))
         labels = decide(n, hard, used, rate)
         write_labels(output, ids, labels)
         state.update(scored=len(scores), positives=sum(labels), labels=labels, scores=scores, used=used,
@@ -455,7 +487,7 @@ def run(root, input_path, output, *, python=None, work=None, started_wall=None, 
         coverage_low=low, fallback_rows=n - state['scored'], no_score_rows=missing, inexact_rows=inexact,
         hard_rows=len(hard), positives=state['positives'], writes=state['writes'], aggregate=state['aggregate'],
         aggregate_lacking_rows=state['lacking'], rows_with_extra_scores=sum(1 for v in question.values() if len(v) > 1),
-        primary_p_quantiles=quantiles(probs), stage_primary=done.get('primary'), stage_extras=done.get('extras'),
+        primary_p_quantiles=quantiles(probs), stage_primary=done.get('primary'), stage_extras=done.get('extras'), stage_review=events.get('review_done'),
         tokens_per_second=done.get('tokens_per_second'), config_error=config_error, stage_error=stage_error,
         stage_failed=events.get('failed'), work=str(work_dir))
     return 0

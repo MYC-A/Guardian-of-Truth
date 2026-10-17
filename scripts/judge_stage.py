@@ -58,6 +58,7 @@ turn under review is not shown whole (legacy builder: head + tail only when even
 from __future__ import annotations
 
 import argparse
+from contextlib import ExitStack
 import dataclasses
 import hashlib
 import json
@@ -77,6 +78,7 @@ for _p in (str(ROOT), str(ROOT / 'src')):
 
 from guardian_truth.judge.prompting import (build_prompt, count_tokens, hints_shown,  # noqa: E402
                                             question_margin, render, score_keys, system_block, variant_text)
+from guardian_truth.judge.blind_review import validate_review_config  # noqa: E402
 
 SCHEDULES = ('after_primary', 'per_chunk')
 CONTEXT_MODES = ('legacy', 'u2', 'u2_dense')
@@ -433,6 +435,11 @@ def _main(a, packers):
         raise ValueError('BAD_EXTRAS_SCHEDULE: %s' % schedule)
     extras_cap = cfg.get('extras_max_seconds')
     require_exact = bool(cfg.get('require_exact_scores', True))
+    try:
+        review_settings = validate_review_config(cfg)
+    except ValueError as error:
+        log('review_config_invalid', error=str(error), using='off')
+        review_settings = validate_review_config({})
     if all(m == 'off' for _, _, m in keys):
         for row in rows:
             row['hints'] = []
@@ -453,6 +460,8 @@ def _main(a, packers):
         except Exception as error:  # noqa: BLE001 - without a packer every row keeps the legacy context
             packer_error = _error_text(error)
             log('packer_start_failed', error=packer_error)
+    if review_settings['review_mode'] != 'off' and input_sha256 is None:
+        input_sha256 = file_sha256(a.input)
 
     import vllm
     from vllm import LLM, SamplingParams
@@ -607,7 +616,18 @@ def _main(a, packers):
         for i in idx:
             bases.pop(i, None)
 
-    with open(a.output, 'a', encoding='utf-8') as out:
+    with open(a.output, 'a', encoding='utf-8') as out, ExitStack() as review_files:
+        primary_inputs = None
+        primary_input_meta = {}
+        if review_settings['review_mode'] != 'off':
+            from guardian_truth.judge.review_stage import PrimaryInputs
+            try:
+                primary_inputs = review_files.enter_context(PrimaryInputs(
+                    Path(a.output).with_name('primary-inputs-%s.jsonl' % run_id), run_id, input_sha256))
+                emit(out, [dict(event='primary_inputs', path=str(primary_inputs.path),
+                                run_id=run_id, input_sha256=input_sha256)])
+            except Exception as error:
+                log('primary_inputs_unavailable', error=_error_text(error))
         emit(out, [dict(event='ready', startup_s=round(time.time() - STARTED, 1), rows=len(rows), cap=cap,
                         exact=exact_mode, keys=[k for k, _, _ in keys], schedule=schedule)])
         position, last_dt = 0, 0.0
@@ -670,6 +690,12 @@ def _main(a, packers):
                     continue
                 if extras_keys:
                     bases[i] = (text, n)
+                primary_input_meta[i] = dict(model_input_sha256=hashlib.sha256(ptext.encode('utf-8')).hexdigest())
+                if primary_inputs is not None:
+                    try:
+                        primary_input_meta[i] = primary_inputs.put(rows[i], ptext, tok, cap, trimmed, policy_trimmed)
+                    except Exception as error:
+                        log('primary_input_write_error', key=rows[i]['key'], error=_error_text(error))
                 prompts.append(ptext)
                 metas.append((i, n_p, trimmed, policy_trimmed, shown, context, over, response_trimmed))
                 stats['contexts'][context] = stats['contexts'].get(context, 0) + 1
@@ -694,6 +720,7 @@ def _main(a, packers):
                     record = dict(key=rows[i]['key'], score_key=primary_key, tokens=n, trimmed=bool(trimmed),
                                   policy_trimmed=bool(policy_trimmed), hints_shown=bool(shown), cap=cap,
                                   context=context, over_cap=bool(over), response_trimmed=bool(response_trimmed))
+                    record.update(primary_input_meta.get(i, {}))
                     stats['over_cap'] += bool(over)
                     stats['over_cap_tokens'] += max(0, n - cap)
                     stats['response_trimmed'] += bool(response_trimmed)
@@ -717,6 +744,11 @@ def _main(a, packers):
                     records.append(record)
                 stats['tokens'] += sum(m[1] for m, o in zip(metas, outputs) if not isinstance(o, Exception))
             emit(out, records)          # primary results are durable before any extra call
+            if primary_inputs is not None:
+                try:
+                    primary_inputs.flush()
+                except Exception as error:
+                    log('primary_input_flush_error', error=_error_text(error))
             position += len(batch)
             log('chunk', done=position, of=len(order), seconds=round(last_dt, 1), cap=cap)
             if schedule == 'per_chunk' and pending:
@@ -736,11 +768,33 @@ def _main(a, packers):
         xstats['rows_skipped_deadline'] = len(pending) if not xstats['failed'] else 0
         if pending and not xstats['failed']:
             log('extras_deadline', rows_without_extras=len(pending))
+        review_stats = None
+        if review_settings['review_mode'] != 'off':
+            from guardian_truth.judge.review_stage import ReviewContext, run_review
+            gen_params = SamplingParams(temperature=float(review_settings['prepass_temperature']), top_p=1.0,
+                                        max_tokens=int(review_settings['prepass_max_tokens']),
+                                        seed=int(review_settings['prepass_seed']))
+            log('review_start', arm=review_settings['review_mode'], prepass_max_tokens=gen_params.max_tokens)
+            try:
+                review_stats = run_review(ReviewContext(
+                    llm=llm, tok=tok, rows=rows, order=order, settings=review_settings, score_params=params,
+                    gen_params=gen_params, yes_ids=yes_ids, no_ids=no_ids, answer_score=answer_score,
+                    generate_rows=generate_rows, healthy=healthy, emit=lambda records: emit(out, records),
+                    stop_at=a.stop_at, hard_cap=hard_cap, prepass_cap=max_len - 8, chunk=chunk, log=log,
+                    primary_inputs=primary_inputs,
+                    usage=Usage, primary_seconds_per_row=(primary_use.wall / primary_use.prompts
+                                                          if primary_use.prompts else 5.0)))
+            except Exception as error:  # noqa: BLE001 - review must never cost the primary scores
+                review_stats = dict(failed=_error_text(error))
+                log('review_failed', error=review_stats['failed'])
         report_p, report_x = primary_use.report(), extras_use.report()
+        review_wall = sum((review_stats or {}).get(role, {}).get('wall_seconds', 0)
+                          for role in ('prepass', 'final'))
         tps = round(stats['tokens'] / primary_use.wall) if primary_use.wall else None
         emit(out, [dict(event='done', seconds=round(time.time() - STARTED, 1), keys=[k for k, _, _ in keys],
-                        gpu_seconds=round(primary_use.wall + extras_use.wall, 1), tokens_per_second=tps,
-                        primary=report_p, extras=dict(report_x, **xstats), context=context_stats, **stats)])
+                        gpu_seconds=round(primary_use.wall + extras_use.wall + review_wall, 1), tokens_per_second=tps,
+                        primary=report_p, extras=dict(report_x, **xstats), context=context_stats, review=review_stats,
+                        **stats)])
         log('done', tokens_per_second=tps, primary=report_p, extras=dict(report_x, **xstats), context=context_stats,
             **stats)
     try:

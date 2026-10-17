@@ -44,6 +44,8 @@ class BuildMode(unittest.TestCase):
                     self.assertEqual(config.get('context_mode', 'legacy'), mode or 'legacy')
                     self.assertEqual(manifest['judge_build']['context_mode'], mode or 'legacy')
                     self.assertIn('model/encoder/tokenizer.json', z.namelist())
+                    self.assertIn('src/guardian_truth/judge/blind_review.py', z.namelist())
+                    self.assertIn('src/guardian_truth/judge/review_stage.py', z.namelist())
                     self.assertEqual(config['questions'], ['overall'])
                     self.assertEqual(config['positive_rate'], .30)
 

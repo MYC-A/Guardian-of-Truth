@@ -473,12 +473,14 @@ class Analysis(unittest.TestCase):
                 report = judge_analysis.main(['--input', str(dev), '--run', str(run), '--out', str(Path(folder) / 'a.json'),
                                               '--iterations', '100', '--min-rows', '30'])
             self.assertNotIn('error', report)
-            self.assertEqual(report['runs'][0]['skipped'], dict(inexact_primary=1, unscored_primary=1, inexact_extra=1))
+            self.assertEqual(report['runs'][0]['skipped'], dict(inexact_primary=1, unscored_primary=1, inexact_extra=1,
+                                                             inexact_final=0, unscored_final=0))
             self.assertEqual(report['common_rows'], 37)
 
 
 class Packaging(unittest.TestCase):
     def test_archive_inventory_covers_every_runtime_module(self):
+        from scripts.build_judge_submission import runtime_closure, CODE
         text = (ROOT / 'scripts/build_judge_submission.py').read_text(encoding='utf-8')
         packed = set(re.findall(r"'(src/guardian_truth/[\w/]+\.py)'", text))
         loop = re.search(r"for _module in \(([^)]*)\):\s*\n\s*_name = f'src/guardian_truth/transcript/\{_module\}\.py'", text)
@@ -505,7 +507,8 @@ class Packaging(unittest.TestCase):
                             target = 'src/' + module.replace('.', '/') + '/__init__.py'
                         todo.append(target)
         needed = {p for p in seen if p.startswith('src/') and not p.endswith('guardian_truth/__init__.py')}
-        self.assertEqual(sorted(needed - packed), [])
+        self.assertEqual(sorted(needed - set(runtime_closure(ROOT))), [])
+        self.assertEqual(sorted(set(runtime_closure(ROOT)) - set(CODE)), [])
 
     def test_production_config_is_the_validated_default_profile(self):
         cfg = json.loads((ROOT / 'submission/JUDGE_CONFIG.json').read_text(encoding='utf-8'))
