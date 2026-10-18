@@ -1,4 +1,4 @@
-param([switch]$Probe)
+param([switch]$Probe, [switch]$ProbeState)
 $ErrorActionPreference = 'Stop'
 $workspace = 'C:\Users\Igor\Guardian-v3-threshold-data-lora-20261019'
 $evidence = 'A:\Guardian-submissions\guardian-v3-20261019\overnight'
@@ -24,7 +24,8 @@ $backupExit = $LASTEXITCODE
 $ErrorActionPreference = 'Stop'
 if ($backupExit -eq 0) {
     $index = ($backupText -join "`n") | ConvertFrom-Json
-    foreach ($entry in $index) {
+    # Protect the newest checkpoint/final result first if transfer time is limited.
+    foreach ($entry in (@($index) | Sort-Object -Property name -Descending)) {
         if ($entry.name -notmatch '^[a-zA-Z0-9_.-]+\.tar\.gz$') { throw 'UNSAFE_BACKUP_NAME' }
         $target = Join-Path $evidence $entry.name
         if (Test-Path -LiteralPath $target) {
@@ -43,7 +44,7 @@ if ($backupExit -eq 0) {
         ('BACKUP_VERIFIED: ' + $entry.name) | Out-File $log -Append
     }
 }
-if (([DateTime]::UtcNow - (Get-Item -LiteralPath $rollout).LastWriteTimeUtc).TotalMinutes -lt 20) {
+if (-not $ProbeState -and ([DateTime]::UtcNow - (Get-Item -LiteralPath $rollout).LastWriteTimeUtc).TotalMinutes -lt 20) {
     'ACTIVE_ORIGINAL_CHAT: no concurrent Codex launched' | Out-File $log -Append
     exit 0
 }
@@ -55,11 +56,13 @@ $ErrorActionPreference = 'Stop'
 if ($stateExit -eq 0) {
     $stateText | Set-Content -LiteralPath $stateFile
     $serverState = ($stateText -join "`n") | ConvertFrom-Json
+    if ($ProbeState) { ('STATE_PROBE_OK: ' + $serverState.phase + '; no Codex launched') | Out-File $log -Append; exit 0 }
     if (-not $serverState.needs_agent -and ([DateTimeOffset]::UtcNow.ToUnixTimeSeconds() - $serverState.unix) -lt 1800) {
         ('SERVER_WORKING: ' + $serverState.phase + '; no Codex request consumed') | Out-File $log -Append
         exit 0
     }
 }
+if ($ProbeState) { throw 'STATE_PROBE_FAILED: no Codex launched' }
 $counterFile = Join-Path $evidence 'codex-runs.txt'
 $count = 0
 if (Test-Path -LiteralPath $counterFile) { $count = [int](Get-Content -LiteralPath $counterFile) }

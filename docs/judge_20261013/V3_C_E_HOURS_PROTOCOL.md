@@ -71,3 +71,15 @@ waiver. Long/human gates remain failed if unmet. Longest-ten pilot has no optimi
 updates and a constant target: no holdout-label use for optimization or selection.
 Natural trajectories are retained independently; handcrafted retail histories
 must never be relabeled as natural simply because native tools validate states.
+
+Before any optimization, additionally freeze untrained consent-mismatch stress
+contrasts from pending-order consent negatives in the HOLDOUT components only:
+"yes" for another existing order of the same user, or "yes" conditional on a
+refund10 greater than the native original refund. Target call remains original.
+Explicitly these are machine-constructed violations, HUMAN_UNVERIFIED. Keep the
+original correct twin in holdout and the same split component. They add ZERO
+independent scenarios and are not used for training, checkpoint choice or tuning.
+Report per-pair positive-vs-correct score ordering and margins for base/adapter;
+do not turn all-positive stress quotas into meaningful precision/F1 claims.
+This probes the important coverage gap: training currently has explicit withheld
+consent/eligibility, but not the full range of conditional/mismatched approvals.

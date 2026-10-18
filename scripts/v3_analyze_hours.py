@@ -75,6 +75,19 @@ def main():
             arms={arm:assess(y,s) for arm,s in ss.items()},
             paired=paired_ci(y,ss['base'],ss['adapter'],[r['split_component'] for r in gold]),
             all_yes=metrics(y,[1]*len(y)))
+    stress=read(a.frozen/'stress.jsonl');stress_results={}
+    for arm in ('base','adapter'):
+        details=[]
+        for r in stress:
+            wrong=lookup['stress',arm,r['id']]['score']
+            good=lookup['holdout',arm,r['stress_parent_id']]['score']
+            details.append(dict(id=r['id'],kind=r['stress_kind'],positive_score=wrong,correct_twin_score=good,
+                                ranked_correctly=wrong>good,margin=wrong-good))
+        stress_results[arm]=dict(cases=len(details),ranked_correctly=sum(r['ranked_correctly'] for r in details),
+            ties=sum(r['margin']==0 for r in details),details=details)
+    result['consent_mismatch_stress']=dict(human_verified=False,new_independent_scenarios=0,
+        used_for_training_or_selection=False,arms=stress_results,
+        scope='Untrained correlated contrasts of held-out correct cases; no all-positive quota F1 claim')
     inputs=table(a.protected/'regression_seen/inputs.csv');gold=read(a.protected/'regression_seen/labels.jsonl')
     saved=table(a.saved/'regression_r1/rows.csv');valid=table(a.saved/'valid46_r1/rows.csv')
     assert len(inputs)==len(gold)==len(saved)==397

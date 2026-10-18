@@ -38,7 +38,7 @@ def main():
     if not args.pilot:
         frozen=json.loads((args.data/'FROZEN.json').read_bytes())
         assert frozen['status']=='EXPLORATORY_ONLY_HUMAN_UNVERIFIED'
-        for name in ('train.jsonl','dev_inputs.jsonl','holdout_inputs.jsonl'):
+        for name in ('train.jsonl','dev_inputs.jsonl','holdout_inputs.jsonl','stress_inputs.jsonl'):
             assert sha(args.data/name)==frozen['files'][name],'FROZEN_DATA_HASH_DRIFT'
     tok=AutoTokenizer.from_pretrained(args.model,local_files_only=True,trust_remote_code=False)
     yes,no=answer_ids(tok)
@@ -130,7 +130,7 @@ def main():
     del optimizer;model.gradient_checkpointing_disable();model.eval();torch.cuda.empty_cache()
     if stopped:return
     plans={}
-    for name in ('dev','holdout'):
+    for name in ('dev','holdout','stress'):
         plans[name]=[]
         for r in read(args.data/(name+'_inputs.jsonl')):
             assert set(r)=={'id','prompt','response'}

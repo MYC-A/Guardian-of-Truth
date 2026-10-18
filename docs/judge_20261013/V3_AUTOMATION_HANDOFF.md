@@ -98,3 +98,30 @@ in V3_C_E_HOURS_PROTOCOL.md; valid46/real191 subsets, no hidden-test claim.
 Report CIs and failed original gates; update V3_RESULTS.md, commit evidence hashes
 and report, push research branch, verify remote commit. No ZIP or submission.
 Do not wait repeatedly while TRAIN running; let script finish and keep Codex budget.
+After final analysis/report/offbox backup and verified research push, disable
+Guardian-V3-Overnight-20261018 immediately; do not repeat already-completed analysis
+on subsequent ticks. No need to wait until deadline to disable a completed task.
+Before concluding archive/index all new tau trajectories (including failed/aborted
+versions), relevant guardian-lab-v3*.log wrappers and source revisions; snapshots
+already protect core training/data but do not yet include every tau debug folder.
+Any missing executed-source artifact of an early preparation failure must be noted,
+not reconstructed and presented as a preserved original.
+
+Pretraining offbox archive is already verified locally,268 indexed file hashes:
+overnight/hours-pretraining-offbox-v1.tar.gz,26,016,117bytes,
+SHA2563bd1bc39d359e65f7c25bd1519a8f8ff90dbce855c42bfb77370c5c348b88457.
+Native tau debug subdirectories contain Windows-invalid task-ID characters:
+retain/read inside tar rather than blindly extracting every native path on Windows.
+Core training snapshots have portable names. PROOF_AUDIT.json independently
+rechecked all3972 construction/source/schema records, passed; specifically NOT
+semantic-truth certification. Use this to distinguish teacher error vs data error,
+then inspect actual disagreements, especially ToolRM/RAG inherited labels.
+
+Before optimization, freeze script now also constructs consent mismatch STRESS
+cases only from HOLDOUT pending-order negatives: yes to a different existing order,
+or yes conditional on refund10 higher than the known native amount. No training
+or checkpoint selection on these cases, zero additional independent scenarios.
+New trainer scores stress_inputs.jsonl; new analysis reports per-pair ordering
+against correct holdout twins (no misleading all-positive quota F1). This exposes
+the remaining training-coverage gap instead of silently assuming any yes suffices.
+Both freeze/train scripts updated on server before starting any optimization.
