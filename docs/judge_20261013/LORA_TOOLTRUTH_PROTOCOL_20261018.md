@@ -80,3 +80,11 @@ fixed.5/.5 rule, with no fitting. Report its TP/FP changes against current-max.
 Keep the original overall ensemble and gate; do not retrospectively substitute
 a winning comparator. This adds a relevant reference before new results, not
 a change of training targets or architecture.
+
+Before v2b validation results/checkpoint freeze: add72 style controls, no training
+changes. On the same held-out entities, replace artificial prefix-different
+incorrect emails with another held-out actual email and replace appended-digit
+incorrect IDs with same-length ID mutations. Keep correct source values and
+labels. These controls test superficial corruption cues; they are dependent
+diagnostics, not72 independent tasks or a new natural holdout. Evaluate base and
+the one final adapter regardless of the main quality outcome. No retuning.

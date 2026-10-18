@@ -61,5 +61,24 @@ class ToolTruthData(unittest.TestCase):
                 self.assertEqual(r['label'],int('full refund has already arrived' in c[0].value['summary']))
                 self.assertFalse(analyze_turn(r['prompt'],r['response']).hard)
 
+    def test_style_controls_remove_superficial_corruption_cues(self):
+        records=json.loads(self.raw['SOURCE_RECORDS.json'])
+        with tarfile.open(DATA/'style-probe-controls.tar.gz') as t:
+            rows=[json.loads(l) for l in t.extractfile('style_probe_gold.jsonl').read().splitlines()]
+        self.assertEqual(len(rows),72)
+        self.assertEqual(sum(r['label'] for r in rows),36)
+        for r in rows:
+            self.assertNotIn('different.',r['response'])
+            if r['family'] in ('fact','history_scope'):
+                actual=records[r['domain']+':'+r['oracle']['user_id']]['user']['email']
+                claimed=r['response'].split()[-1].removesuffix('.')
+                self.assertEqual(r['label'],int(claimed!=actual))
+            else:
+                c=parse_document(r['response'],doc='response').calls(owner='assistant')[0]
+                expected=r['oracle']['eligible_id']
+                argument=next(iter(c.value.values()))
+                self.assertEqual(len(argument),len(expected))
+                self.assertEqual(r['label'],int(argument!=expected))
+
 
 if __name__=='__main__':unittest.main()
