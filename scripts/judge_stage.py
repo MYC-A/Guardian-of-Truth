@@ -564,7 +564,7 @@ def _main(a, packers):
                  emergency_caps=0, planned_cap=cap, hints_shown=0, row_errors=0, deadline_rows=0,
                  group_errors=len(group_errors), over_cap=0, over_cap_tokens=0, response_trimmed=0, contexts={},
                  hard_cap=hard_cap)
-    xstats = dict(rows_done=0, rows_deferred=0, rows_skipped_deadline=0, inexact=0, failed=None)
+    xstats = dict(rows_done=0, rows_deferred=0, rows_skipped_deadline=0, inexact=0, row_errors=0, failed=None)
     bases, pending = {}, []
 
     def primary_tps():
@@ -602,16 +602,30 @@ def _main(a, packers):
             return
         extras_use.add(outputs, time.time() - t0)
         per = {i: (dict(), dict()) for i in idx}
-        for (i, key), o in zip(where, outputs):
-            score, exact = answer_score(o, yes_ids, no_ids)
+        status, hashes, errors = ({i: {} for i in idx} for _ in range(3))
+        for (i, key), text, o in zip(where, prompts, outputs):
+            hashes[i][key] = hashlib.sha256(text.encode('utf-8')).hexdigest()
+            try:
+                score, exact = answer_score(o, yes_ids, no_ids)
+                if score is not None and not math.isfinite(score):
+                    raise ValueError('NON_FINITE_SCORE')
+            except Exception as error:
+                xstats['row_errors'] += 1
+                status[i][key] = 'error'
+                errors[i][key] = _error_text(error)
+                continue
             if score is None:
+                status[i][key] = 'missing'
                 continue
             if exact:
+                status[i][key] = 'exact'
                 per[i][0][key] = score
             else:                       # never mixed with exact scores, whatever require_exact says
+                status[i][key] = 'inexact'
                 per[i][1][key] = score
                 xstats['inexact'] += 1
-        emit(out, [dict(key=rows[i]['key'], extra=True, scores=per[i][0], bounded=per[i][1]) for i in idx])
+        emit(out, [dict(key=rows[i]['key'], extra=True, scores=per[i][0], bounded=per[i][1],
+                        score_status=status[i], model_input_sha256=hashes[i], errors=errors[i]) for i in idx])
         xstats['rows_done'] += len(idx)
         for i in idx:
             bases.pop(i, None)

@@ -187,6 +187,43 @@ def stage_rows(n, hints=True, marks=()):
 
 
 class Stage(unittest.TestCase):
+    def test_release_six_questions_share_context_and_record_actual_hashes(self):
+        import hashlib
+        cfg = json.loads((ROOT / 'submission/JUDGE_6Q_SUBMISSION.json').read_text())
+        record = {}
+        primary, extras, done, _ = run_stage(stage_rows(3), cfg, record)
+        self.assertEqual(done['primary']['prompts'], 3)
+        self.assertEqual(done['extras']['prompts'], 15)
+        self.assertIsNone(done['review'])
+        primary_texts = record['calls'][1]
+        variants = record['calls'][2]
+        for index, extra in enumerate(extras):
+            self.assertEqual(set(extra['scores']), set(cfg['aggregate_keys'][1:]))
+            for offset, question in enumerate(cfg['questions'][1:]):
+                text = variants[index * 5 + offset]
+                key = question + '@on'
+                self.assertEqual(text, variant_text(primary_texts[index], question, 'on'))
+                self.assertEqual(extra['model_input_sha256'][key], hashlib.sha256(text.encode()).hexdigest())
+                self.assertEqual(extra['score_status'][key], 'exact')
+            self.assertEqual(extra['errors'], {})
+
+    def test_malformed_extra_does_not_discard_other_scores_or_primary(self):
+        from scripts import judge_stage
+        original = judge_stage.answer_score
+        def scoring(output, yes, no):
+            if QUESTIONS['values'] in getattr(output, 'prompt', ''):
+                raise ValueError('MALFORMED_EXTRA_FIXTURE')
+            return original(output, yes, no)
+        cfg = json.loads((ROOT / 'submission/JUDGE_6Q_SUBMISSION.json').read_text())
+        with patch.object(judge_stage, 'answer_score', side_effect=scoring):
+            primary, extras, done, _ = run_stage(stage_rows(3), cfg, {})
+        self.assertTrue(all(row['score'] is not None for row in primary))
+        self.assertEqual(done['extras']['row_errors'], 3)
+        for row in extras:
+            self.assertEqual(row['score_status']['values@on'], 'error')
+            self.assertNotIn('values@on', row['scores'])
+            self.assertEqual(len(row['scores']), 4)
+
     def test_primary_prompt_follows_the_first_key(self):
         record = {}
         primary, extra, done, _ = run_stage(stage_rows(3), {'questions': ['policy']}, record)
@@ -301,6 +338,26 @@ GOOD = ASSIST + 'Your order W12345 is on its way.'
 
 
 class Supervisor(unittest.TestCase):
+    def test_release_profile_changes_output_and_missing_key_reverts_globally(self):
+        cfg = json.loads((ROOT / 'submission/JUDGE_6Q_SUBMISSION.json').read_text())
+        rows = [(str(i), CATALOG, GOOD) for i in range(10)]
+        primary = [dict(key=i, score=float(-i), exact=True, scores={'overall@on': float(-i)}) for i in range(10)]
+        extras = [dict(key=i, extra=True, scores={k: float(i) for k in cfg['aggregate_keys'][1:]}, bounded={})
+                  for i in range(10)]
+        labels, log, work = run_supervisor(self, rows, cfg, primary + extras)
+        self.assertEqual(labels, [0] * 7 + [1] * 3)
+        self.assertIn('"aggregate": "mean_z"', log)
+        self.assertNotIn('CONFIG_INVALID', log)
+        self.assertEqual(json.loads((work / 'judge_config.json').read_text())['aggregate'], 'mean_z')
+        base, _, _ = run_supervisor(self, rows, dict(cfg, aggregate='primary'), primary)
+        self.assertEqual(base, [1] * 3 + [0] * 7)
+        self.assertNotEqual(labels, base)
+        del extras[-1]['scores']['values@on']
+        extras[-1]['bounded'] = {'values@on': 9.0}
+        fallback, log, _ = run_supervisor(self, rows, cfg, primary + extras)
+        self.assertEqual(fallback, base)
+        self.assertIn('primary(aggregate_incomplete)', log)
+
     def test_extra_updates_and_aggregate_completeness(self):
         from scripts.judge_submission import read_question_scores, read_scores
         rows = [(str(i), CATALOG, GOOD) for i in range(10)]

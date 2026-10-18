@@ -220,6 +220,8 @@ def build(source_zip, source_sha256, model_dir, model_id, model_revision, output
     code['JUDGE_CONFIG.json'] = json_bytes(config)
     if review['review_mode'] != 'off':
         code['README.md'] = (repo / 'docs/judge_20261013/README_BLIND_REVIEW_SUBMISSION.md').read_bytes().replace(b'\r\n', b'\n')
+    elif config.get('profile') == 'judge-6q-mean-z-20261018':
+        code['README.md'] = (repo / 'docs/judge_20261013/README_6Q_SUBMISSION.md').read_bytes().replace(b'\r\n', b'\n')
     members, files_manifest = model_members(model_dir)
     judge_manifest = dict(repository=model_id, revision=model_revision, files=files_manifest)
     if encoder_dir is not None:
@@ -267,6 +269,8 @@ def build(source_zip, source_sha256, model_dir, model_id, model_revision, output
                           review_mode=review['review_mode'], model=dict(repository=model_id, revision=model_revision,
                                                                     directory=MODEL_PREFIX.rstrip('/')),
                           context_mode=config.get('context_mode', 'legacy'),
+                          questions=config.get('questions', ['overall']), aggregate=config.get('aggregate', 'primary'),
+                          aggregate_keys=config.get('aggregate_keys', []),
                           dropped=len(dropped), replaced_or_added_code={n: expected[n]['sha256'] for n in code})
         final = dict(manifest, files=expected, judge_build=provenance, profile='SINGLE_PASS_JUDGE')
         final_raw = json_bytes(final)
