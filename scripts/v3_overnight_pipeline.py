@@ -19,6 +19,7 @@ DATA_NAME='hours-decontam-v1'
 AUDIT_NAME='hours-machine-audit-v2'
 REVIEW_NAME='MACHINE_AUDIT_REVIEW.json'
 AUDIT_JOB='guardian-lab-v3-tau-35b-audit-r2'
+FROZEN_NAME='hours-frozen-v1'
 def write(path,value):
     tmp=path.with_suffix(path.suffix+'.tmp');tmp.write_text(json.dumps(value,indent=2));tmp.replace(path)
 def state(phase,needs_agent=False,**extra):
@@ -30,7 +31,8 @@ def snapshot(stage):
     stamp=datetime.datetime.now(datetime.timezone.utc).strftime('%Y%m%d-%H%M%S')
     target=folder/(stamp+'-'+stage+'.tar.gz')
     candidates=list(dict.fromkeys(['hours-candidates-v4','hours-decontam-v1','hours-machine-audit-v2',DATA_NAME,AUDIT_NAME,
-                'hours-pilot-v1','hours-frozen-v1',REVIEW_NAME,'OVERNIGHT_STATE.json']))
+                'hours-pilot-v1','hours-frozen-v1',FROZEN_NAME,REVIEW_NAME,'OVERNIGHT_STATE.json',
+                'PILOT.log','FREEZE.log','FREEZE_REPAIRED.log','TRAIN.log']))
     run=BASE/'hours-l1-v1'
     if run.exists():
         candidates += [str(p.relative_to(BASE)) for p in run.iterdir() if p.is_file()]
@@ -101,12 +103,16 @@ def main():
             assert not pilot.exists(),'PILOT_PARTIAL_REQUIRES_REVIEW'
             run('PILOT',[PY,SCRIPTS/'v3_train_hours.py','--pilot','--model',LAB/'models/qwen3-4b-instruct',
                 '--data',BASE/DATA_NAME,'--out',pilot],900)
-        frozen=BASE/'hours-frozen-v1'
+        pilot_done=json.loads((pilot/'DONE.json').read_bytes())
+        assert pilot_done['complete'] and pilot_done['optimizer_updates']==0
+        assert pilot_done['data_sha256']==sha(BASE/DATA_NAME/'candidate_rows.jsonl'),'PILOT_DATA_DRIFT'
+        assert pilot_done['script_sha256']==sha(SCRIPTS/'v3_train_hours.py'),'PILOT_TRAINER_DRIFT'
+        frozen=BASE/FROZEN_NAME
         budget=int(min(10800,max(0,(DEADLINE-time.time())*.75-180)))
         assert budget>=1800,'NOT_ENOUGH_TRAIN_EVAL_TIME'
         if not (frozen/'FROZEN.json').exists():
             assert not frozen.exists(),'FREEZE_PARTIAL_REQUIRES_REVIEW'
-            run('FREEZE',[PY,SCRIPTS/'v3_freeze_hours_split.py','--data',BASE/DATA_NAME/'candidate_rows.jsonl',
+            run('FREEZE' if FROZEN_NAME=='hours-frozen-v1' else 'FREEZE_REPAIRED',[PY,SCRIPTS/'v3_freeze_hours_split.py','--data',BASE/DATA_NAME/'candidate_rows.jsonl',
                 '--pilot',pilot/'DONE.json','--out',frozen,'--training-seconds',str(budget)],300)
         run_folder=BASE/'hours-l1-v1'
         if not (run_folder/'DONE.json').exists():
@@ -129,9 +135,11 @@ if __name__=='__main__':
     parser.add_argument('--audit-name',default=AUDIT_NAME)
     parser.add_argument('--review-name',default=REVIEW_NAME)
     parser.add_argument('--audit-job',default=AUDIT_JOB)
+    parser.add_argument('--frozen-name',default=FROZEN_NAME)
     args=parser.parse_args()
     DATA_NAME,AUDIT_NAME,REVIEW_NAME,AUDIT_JOB=args.data_name,args.audit_name,args.review_name,args.audit_job
-    assert all('/' not in value and '..' not in value for value in (DATA_NAME,AUDIT_NAME,REVIEW_NAME,AUDIT_JOB))
+    FROZEN_NAME=args.frozen_name
+    assert all('/' not in value and '..' not in value for value in (DATA_NAME,AUDIT_NAME,REVIEW_NAME,AUDIT_JOB,FROZEN_NAME))
     os.environ.update(PYTHON_DOTENV_DISABLED='1',HF_HUB_OFFLINE='1',TRANSFORMERS_OFFLINE='1')
     signal.signal(signal.SIGTERM,stop)
     try:main()

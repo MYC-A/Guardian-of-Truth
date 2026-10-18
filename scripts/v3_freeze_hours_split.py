@@ -11,6 +11,32 @@ from v3_data import training_text,canonical
 import copy
 
 def stable(x):return hashlib.sha256(('guardian-v3-split:'+x).encode()).hexdigest()
+def balance_training_pairs(training):
+    """Trim complete pairs by class composition only, never evaluation scores."""
+    selected=defaultdict(list)
+    for row in training:selected[(row['source'],row.get('pair_id') or row['id'])].append(row)
+    removed=[]
+    while sum(r['label'] for batch in selected.values() for r in batch)>.40*sum(map(len,selected.values())):
+        total=sum(map(len,selected.values()))
+        positive=sum(r['label'] for batch in selected.values() for r in batch)
+        candidates=sorted(selected,key=lambda key:(-sum(r['label'] for r in selected[key])/len(selected[key]),stable(key[1]),key))
+        for key in candidates:
+            batch=selected[key];batch_positive=sum(r['label'] for r in batch)
+            if batch_positive/len(batch)<=positive/total:continue
+            remaining=[r for other,values in selected.items() if other!=key for r in values]
+            if not remaining:continue
+            counts=Counter(r['source'] for r in remaining)
+            negatives=sum(not r['label'] for r in remaining)
+            if max(counts.values())>.40*len(remaining):continue
+            if sum(r['is_hard_negative'] for r in remaining)<.30*max(1,negatives):continue
+            removed.append(dict(source=key[0],pair_id=key[1],row_ids=[r['id'] for r in batch],
+                                rows=len(batch),positive=batch_positive,reason='TRAIN_CLASS_UPPER_BOUND'))
+            del selected[key]
+            break
+        else:raise ValueError('NO_PAIR_PRESERVING_CLASS_BALANCE_REPAIR')
+    retained={r['id'] for batch in selected.values() for r in batch}
+    return [r for r in training if r['id'] in retained],removed
+
 def main():
     parser=argparse.ArgumentParser();parser.add_argument('--data',type=Path,required=True)
     parser.add_argument('--pilot',type=Path,required=True);parser.add_argument('--out',type=Path,required=True)
@@ -67,6 +93,9 @@ def main():
             training.extend(batch);counts[source]+=len(batch);used_tokens+=size;progress=True
         if not progress and not pending:break
     assert training and len(parts['holdout'])>=300 and parts['dev'],'INSUFFICIENT_CLEAN_COMPONENTS'
+    initial_selection=dict(rows=len(training),positive=sum(r['label'] for r in training),sources=dict(counts))
+    training,class_balance_exclusions=balance_training_pairs(training)
+    counts=Counter(r['source'] for r in training);used_tokens=sum(r['n_tokens'] for r in training)
     positive=sum(r['label'] for r in training);negative=len(training)-positive
     hard=sum(r['is_hard_negative'] for r in training)
     gates=dict(source_cap=max(counts.values())/len(training)<=.40,
@@ -111,6 +140,8 @@ def main():
         dev_rows=len(parts['dev']),holdout_rows=len(parts['holdout']),component_assignments=assigned,
         stress_rows=len(stress),stress_new_independent_scenarios=0,stress_used_for_training_or_checkpoint_selection=False,
         gates=gates,source_data_sha256=hashlib.sha256(a.data.read_bytes()).hexdigest(),
+        initial_selection=initial_selection,class_balance_exclusions=class_balance_exclusions,
+        script_sha256=hashlib.sha256(Path(__file__).read_bytes()).hexdigest(),
         files={p.name:hashlib.sha256(p.read_bytes()).hexdigest() for p in a.out.glob('*.jsonl')})
     (a.out/'FROZEN.json').write_text(json.dumps(manifest,indent=2));print(json.dumps({k:v for k,v in manifest.items() if k!='component_assignments'}),flush=True)
 

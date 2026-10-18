@@ -23,6 +23,8 @@ def main():
     stamp = datetime.datetime.now(datetime.timezone.utc).strftime('%Y%m%d-%H%M%S')
     target = folder / (stamp + '-' + a.stage + '.tar.gz')
     files = set()
+    if not a.pins_only:
+        files.update(BASE.glob('*.log'))
     for pattern in (() if a.pins_only else ('hours-*', 'tau4b-*', 'tau8b-*', 'tau35b-*', '*REVIEW*.json', 'OVERNIGHT_STATE.json')):
         for path in BASE.glob(pattern):
             files.update(x for x in path.rglob('*') if x.is_file()) if path.is_dir() else files.add(path)
