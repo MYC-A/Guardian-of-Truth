@@ -19,6 +19,7 @@ from __future__ import annotations
 
 import argparse
 import csv
+import hashlib
 import json
 import os
 from pathlib import Path
@@ -49,6 +50,26 @@ def read_labels(path, n):
     return [int(v) for v in frame['label']]
 
 
+def read_labels_sidecar(path, rows):
+    """Gold-only JSONL, aligned by position AND literal id; never passed to the stage."""
+    records = [json.loads(line) for line in Path(path).read_bytes().split(b'\n') if line.strip()]
+    if len(records) != len(rows):
+        raise ValueError('LABEL_SIDECAR_LENGTH')
+    result = []
+    for position, (record, row) in enumerate(zip(records, rows)):
+        if type(record.get('position')) is not int or record['position'] != position or record.get('id') != row['id']:
+            raise ValueError('LABEL_SIDECAR_POSITION_ID')
+        if type(record.get('label')) is not int or record['label'] not in (0, 1):
+            raise ValueError('LABEL_SIDECAR_BINARY')
+        if record.get('source_pair_sha256') is not None:
+            raw = json.dumps([row['prompt'], row['response']], ensure_ascii=False,
+                             sort_keys=True, separators=(',', ':')).encode('utf-8')
+            if hashlib.sha256(raw).hexdigest() != record['source_pair_sha256']:
+                raise ValueError('LABEL_SIDECAR_SOURCE_PAIR')
+        result.append(record['label'])
+    return result
+
+
 def auc(labels, scores):
     pos = [s for y, s in zip(labels, scores) if y == 1]
     neg = [s for y, s in zip(labels, scores) if y == 0]
@@ -71,6 +92,7 @@ def confusion(labels, preds):
 def main(argv=None):
     ap = argparse.ArgumentParser(description=__doc__, formatter_class=argparse.RawDescriptionHelpFormatter)
     ap.add_argument('--input', type=Path, required=True)
+    ap.add_argument('--labels-file', type=Path, help='gold-only positional JSONL; labels stay outside model input')
     ap.add_argument('--out', type=Path, required=True)
     ap.add_argument('--model', type=Path)
     ap.add_argument('--config', type=Path, default=ROOT / 'submission/JUDGE_CONFIG.json')
@@ -86,7 +108,7 @@ def main(argv=None):
     a.out.mkdir(parents=True, exist_ok=False)
     cfg = load_config(ROOT, a.config)
     rows = read_input(a.input)
-    labels = read_labels(a.input, len(rows))
+    labels = read_labels_sidecar(a.labels_file, rows) if a.labels_file else read_labels(a.input, len(rows))
     if a.timing_rows:
         base = rows
         rows = [dict(base[k % len(base)], prompt='[timing row %d]\n' % k + base[k % len(base)]['prompt'])
@@ -98,6 +120,9 @@ def main(argv=None):
     summary = dict(rows=n, mechanical_seconds=round(time.time() - t0, 2),
                    hard_rows=sum(1 for f in findings if f.hard),
                    rows_with_hints=sum(1 for f in findings if f.hints))
+    if a.labels_file:
+        summary['labels_sidecar_sha256'] = hashlib.sha256(a.labels_file.read_bytes()).hexdigest()
+        summary['input_file_sha256'] = hashlib.sha256(a.input.read_bytes()).hexdigest()
     if labels:
         by_kind = {}
         for f, y in zip(findings, labels):
