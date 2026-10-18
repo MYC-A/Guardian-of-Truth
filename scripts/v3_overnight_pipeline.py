@@ -1,5 +1,6 @@
 """Finite, restart-aware overnight stage controller; no model API or credentials."""
 import datetime
+import argparse
 import hashlib
 import json
 import os
@@ -14,6 +15,10 @@ PY=LAB/'venv/bin/python';SCRIPTS=LAB/'code/scripts'
 DEADLINE=datetime.datetime.fromisoformat('2026-10-19T02:18:43+00:00').timestamp()
 STATE=BASE/'OVERNIGHT_STATE.json'
 current=None
+DATA_NAME='hours-decontam-v1'
+AUDIT_NAME='hours-machine-audit-v2'
+REVIEW_NAME='MACHINE_AUDIT_REVIEW.json'
+AUDIT_JOB='guardian-lab-v3-tau-35b-audit-r2'
 def write(path,value):
     tmp=path.with_suffix(path.suffix+'.tmp');tmp.write_text(json.dumps(value,indent=2));tmp.replace(path)
 def state(phase,needs_agent=False,**extra):
@@ -24,8 +29,8 @@ def snapshot(stage):
     folder=BASE/'overnight-backups';folder.mkdir(exist_ok=True)
     stamp=datetime.datetime.now(datetime.timezone.utc).strftime('%Y%m%d-%H%M%S')
     target=folder/(stamp+'-'+stage+'.tar.gz')
-    candidates=['hours-candidates-v4','hours-decontam-v1','hours-machine-audit-v2','hours-pilot-v1',
-                'hours-frozen-v1','MACHINE_AUDIT_REVIEW.json','OVERNIGHT_STATE.json']
+    candidates=list(dict.fromkeys(['hours-candidates-v4','hours-decontam-v1','hours-machine-audit-v2',DATA_NAME,AUDIT_NAME,
+                'hours-pilot-v1','hours-frozen-v1',REVIEW_NAME,'OVERNIGHT_STATE.json']))
     run=BASE/'hours-l1-v1'
     if run.exists():
         candidates += [str(p.relative_to(BASE)) for p in run.iterdir() if p.is_file()]
@@ -69,24 +74,24 @@ def main():
     with lock.open('w') as guard:
         fcntl.flock(guard,fcntl.LOCK_EX|fcntl.LOCK_NB)
         state('WAIT_AUDIT')
-        while not (BASE/'hours-machine-audit-v2/DONE.json').exists():
+        while not (BASE/AUDIT_NAME/'DONE.json').exists():
             if time.time()>DEADLINE-3600:raise TimeoutError('AUDIT_NOT_DONE_IN_TIME')
-            result=subprocess.run(['supervisorctl','status','guardian-lab-v3-tau-35b-audit-r2'],capture_output=True,text=True)
+            result=subprocess.run(['supervisorctl','status',AUDIT_JOB],capture_output=True,text=True)
             if 'EXITED' in result.stdout or 'FATAL' in result.stdout:
                 raise RuntimeError('AUDIT_JOB_ENDED_WITHOUT_DONE: '+result.stdout.strip())
             state('WAIT_AUDIT')
             time.sleep(15)
         state('WAIT_SOURCE_REVIEW',needs_agent=True)
-        while not (BASE/'MACHINE_AUDIT_REVIEW.json').exists():
+        while not (BASE/REVIEW_NAME).exists():
             if time.time()>DEADLINE-3600:raise TimeoutError('SOURCE_REVIEW_NOT_DONE')
             state('WAIT_SOURCE_REVIEW',needs_agent=True)
             time.sleep(15)
-        review=json.loads((BASE/'MACHINE_AUDIT_REVIEW.json').read_bytes())
+        review=json.loads((BASE/REVIEW_NAME).read_bytes())
         assert review['allow_exploratory_training'] and not review['human_reviewed']
-        assert review['candidate_sha256']==sha(BASE/'hours-decontam-v1/candidate_rows.jsonl')
+        assert review['candidate_sha256']==sha(BASE/DATA_NAME/'candidate_rows.jsonl')
         # Wait for inference server's supervisor process to exit and release GPU.
         for _ in range(60):
-            status=subprocess.run(['supervisorctl','status','guardian-lab-v3-tau-35b-audit-r2'],capture_output=True,text=True).stdout
+            status=subprocess.run(['supervisorctl','status',AUDIT_JOB],capture_output=True,text=True).stdout
             if 'RUNNING' not in status:break
             time.sleep(2)
         else:raise RuntimeError('35B_SERVER_NOT_RELEASED')
@@ -95,13 +100,13 @@ def main():
         if not (pilot/'DONE.json').exists():
             assert not pilot.exists(),'PILOT_PARTIAL_REQUIRES_REVIEW'
             run('PILOT',[PY,SCRIPTS/'v3_train_hours.py','--pilot','--model',LAB/'models/qwen3-4b-instruct',
-                '--data',BASE/'hours-decontam-v1','--out',pilot],900)
+                '--data',BASE/DATA_NAME,'--out',pilot],900)
         frozen=BASE/'hours-frozen-v1'
         budget=int(min(10800,max(0,(DEADLINE-time.time())*.75-180)))
         assert budget>=1800,'NOT_ENOUGH_TRAIN_EVAL_TIME'
         if not (frozen/'FROZEN.json').exists():
             assert not frozen.exists(),'FREEZE_PARTIAL_REQUIRES_REVIEW'
-            run('FREEZE',[PY,SCRIPTS/'v3_freeze_hours_split.py','--data',BASE/'hours-decontam-v1/candidate_rows.jsonl',
+            run('FREEZE',[PY,SCRIPTS/'v3_freeze_hours_split.py','--data',BASE/DATA_NAME/'candidate_rows.jsonl',
                 '--pilot',pilot/'DONE.json','--out',frozen,'--training-seconds',str(budget)],300)
         run_folder=BASE/'hours-l1-v1'
         if not (run_folder/'DONE.json').exists():
@@ -119,6 +124,14 @@ def stop(_sig,_frame):
     raise SystemExit('Controller terminated; preserve partial artifacts')
 
 if __name__=='__main__':
+    parser=argparse.ArgumentParser()
+    parser.add_argument('--data-name',default=DATA_NAME)
+    parser.add_argument('--audit-name',default=AUDIT_NAME)
+    parser.add_argument('--review-name',default=REVIEW_NAME)
+    parser.add_argument('--audit-job',default=AUDIT_JOB)
+    args=parser.parse_args()
+    DATA_NAME,AUDIT_NAME,REVIEW_NAME,AUDIT_JOB=args.data_name,args.audit_name,args.review_name,args.audit_job
+    assert all('/' not in value and '..' not in value for value in (DATA_NAME,AUDIT_NAME,REVIEW_NAME,AUDIT_JOB))
     os.environ.update(PYTHON_DOTENV_DISABLED='1',HF_HUB_OFFLINE='1',TRANSFORMERS_OFFLINE='1')
     signal.signal(signal.SIGTERM,stop)
     try:main()
