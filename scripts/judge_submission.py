@@ -161,7 +161,8 @@ def normalize_profile(cfg):
         validate_review_config(cfg)
         return cfg, None
     except Exception as error:  # noqa: BLE001 - a bad profile must not cost the submission
-        safe = dict(cfg, review_mode='off', **PRODUCTION_PROFILE)
+        safe = dict(cfg, review_mode='off', review_content='state_notes', review_schedule='after_primary',
+                    review_ranking='complete', review_input_reserve_tokens=0, **PRODUCTION_PROFILE)
         safe.pop('aggregator', None)
         safe.pop('aggregate_keys', None)
         return safe, '%s: %s' % (type(error).__name__, error)
@@ -220,9 +221,9 @@ def read_question_scores(path):
     return out
 
 
-def read_review_scores(path):
+def read_review_scores(path, isolate_duplicates=False):
     """-> {row: final log-odds}: finite exact scores of review records {'review': 'final'} only."""
-    out, seen = {}, set()
+    out, seen, duplicates = {}, set(), set()
     if not path or not Path(path).exists():
         return out
     with open(path, encoding='utf-8', newline='') as stream:
@@ -238,11 +239,19 @@ def read_review_scores(path):
         if item.get('review') != 'final':
             continue
         key = item.get('key')
-        if isinstance(key, bool) or not isinstance(key, int) or key < 0 or key in seen:
+        if isolate_duplicates:
+            if isinstance(key, bool) or not isinstance(key, int) or key < 0:
+                continue
+            if key in seen:
+                duplicates.add(key)
+                out.pop(key, None)
+                continue
+        elif isinstance(key, bool) or not isinstance(key, int) or key < 0 or key in seen:
             return {}  # an ambiguous row invalidates the final ranking globally
         seen.add(key)
         if (item.get('exact') is True
-                and isinstance(value, (int, float)) and not isinstance(value, bool) and math.isfinite(value)):
+                and isinstance(value, (int, float)) and not isinstance(value, bool) and math.isfinite(value)
+                and key not in duplicates):
             out[key] = float(value)
     return out
 
@@ -415,20 +424,23 @@ def run(root, input_path, output, *, python=None, work=None, started_wall=None, 
 
     rate = float(cfg['positive_rate'])
     features = [f.features for f in findings]
-    state = dict(scored=0, positives=None, labels=None, scores={}, used={}, writes=0, aggregate='primary',
+    state = dict(scored=0, positives=None, labels=None, scores={}, used={}, final_scores={}, writes=0, aggregate='primary',
                  lacking=0, size=-1)
     scores_path = None
 
     def publish(scores):
         question = read_question_scores(scores_path) if cfg['aggregate'] != 'primary' else {}
         used, mode, lacking = effective_scores(scores, question, cfg, features)
+        final_scores = {}
         if cfg.get('review_mode', 'off') != 'off':
-            # final only when EVERY input row has a finite exact final score; else primary for all rows
-            used, mode, lacking = select_ranking(used, read_review_scores(scores_path), list(range(n)))
+            policy = cfg.get('review_ranking', 'complete')
+            final_scores = read_review_scores(scores_path, isolate_duplicates=policy == 'max_exact')
+            final_scores = {i: v for i, v in final_scores.items() if 0 <= i < n}
+            used, mode, lacking = select_ranking(used, final_scores, list(range(n)), policy)
         labels = decide(n, hard, used, rate)
         write_labels(output, ids, labels)
         state.update(scored=len(scores), positives=sum(labels), labels=labels, scores=scores, used=used,
-                     writes=state['writes'] + 1, aggregate=mode, lacking=lacking)
+                     final_scores=final_scores, writes=state['writes'] + 1, aggregate=mode, lacking=lacking)
 
     publish({})
     log(clock, 'baseline_written', positives=state['positives'])
@@ -440,7 +452,8 @@ def run(root, input_path, output, *, python=None, work=None, started_wall=None, 
             size = file_size(scores_path)
             if size != state['size']:
                 state['size'] = size
-                publish(read_scores(scores_path, exact_only=cfg['aggregate'] == 'max_logit')[0])
+                publish(read_scores(scores_path, exact_only=(cfg['aggregate'] == 'max_logit' or
+                    cfg.get('review_ranking') == 'max_exact'))[0])
         except Exception as error:
             log(clock, 'write_error', error='%s: %s' % (type(error).__name__, error))
 
@@ -474,7 +487,8 @@ def run(root, input_path, output, *, python=None, work=None, started_wall=None, 
             gone = kill_group(process)
 
     try:
-        scores, missing, inexact, events = read_scores(scores_path, exact_only=cfg['aggregate'] == 'max_logit')
+        scores, missing, inexact, events = read_scores(scores_path, exact_only=(cfg['aggregate'] == 'max_logit' or
+            cfg.get('review_ranking') == 'max_exact'))
     except Exception as error:
         log(clock, 'read_error', error='%s: %s' % (type(error).__name__, error))
         scores, missing, inexact, events = state['scores'], 0, 0, {}
@@ -506,6 +520,11 @@ def run(root, input_path, output, *, python=None, work=None, started_wall=None, 
                                                  prompt_sha256=hashlib.sha256(rows[i]['prompt'].encode('utf-8')).hexdigest(),
                                                  response_sha256=hashlib.sha256(rows[i]['response'].encode('utf-8')).hexdigest(),
                                                  score=state['scores'].get(i), scores=question.get(i),
+                                                 final_score=state['final_scores'].get(i),
+                                                 ranking=state['aggregate'],
+                                                 winning_score=('final' if i in state['final_scores'] and
+                                                     (i not in state['scores'] or state['final_scores'][i] > state['scores'][i])
+                                                     else 'overall' if i in state['scores'] else 'none'),
                                                  ranked_by=state['used'].get(i))) + '\n')
         except Exception as error:
             log(clock, 'decisions_write_error', error=type(error).__name__)
@@ -514,6 +533,8 @@ def run(root, input_path, output, *, python=None, work=None, started_wall=None, 
     log(clock, 'final', status=status, group_gone=gone, rows=n, scored=state['scored'], coverage=round(coverage, 4),
         coverage_low=low, fallback_rows=n - len(state['used']), no_score_rows=missing, inexact_rows=inexact,
         ranked_rows=len(state['used']), ranked_coverage=round(len(state['used']) / n, 4),
+        review_exact_rows=len(state['final_scores']),
+        review_wins=sum(i not in state['scores'] or v > state['scores'][i] for i, v in state['final_scores'].items()),
         question_coverage={key: sum(key in values for values in question.values()) for key in aggregate_inputs(cfg)},
         hard_rows=len(hard), positives=state['positives'], writes=state['writes'], aggregate=state['aggregate'],
         aggregate_lacking_rows=state['lacking'], rows_with_extra_scores=sum(1 for v in question.values() if len(v) > 1),

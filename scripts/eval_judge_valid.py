@@ -134,11 +134,13 @@ def main(argv=None):
         summary['stage_exit'] = code
         summary['stage_wall_seconds'] = round(time.time() - t1, 1)
         summary['total_wall_seconds'] = round(time.time() - started, 1)
-        scores, missing, inexact, events = read_scores(scores_path, exact_only=cfg.get('aggregate') == 'max_logit')
+        partial_review = cfg.get('review_ranking') == 'max_exact'
+        scores, missing, inexact, events = read_scores(scores_path, exact_only=(
+            cfg.get('aggregate') == 'max_logit' or partial_review))
         summary.update(scored=len(scores), no_score=missing, inexact=inexact,
                        **{'stage_' + k: v for k, v in events.items()})
         # Apply the same aggregate and review selection as the actual supervisor.
-        primary_scores, review_scores = scores, read_review_scores(scores_path)
+        primary_scores, review_scores = scores, read_review_scores(scores_path, isolate_duplicates=partial_review)
         question = read_question_scores(scores_path)
         aggregated, aggregate_ranking, aggregate_lacking = effective_scores(
             primary_scores, question, cfg, [f.features for f in findings])

@@ -35,7 +35,8 @@ class BuildMode(unittest.TestCase):
             for mode, profile, label in ((None, None, 'default'), ('u2_dense', None, 'dense'),
                                          ('legacy', repo / 'submission/JUDGE_BLIND_REVIEW_EXPERIMENT.json', 'blind'),
                                          ('legacy', repo / 'submission/JUDGE_6Q_SUBMISSION.json', '6q'),
-                                         ('legacy', repo / 'submission/JUDGE_6Q_MAX.json', 'max')):
+                                         ('legacy', repo / 'submission/JUDGE_6Q_MAX.json', 'max'),
+                                         ('legacy', repo / 'submission/JUDGE_OPEN_REVIEW40.json', 'open40')):
                 output = root / (label + '.zip')
                 with contextlib.redirect_stdout(io.StringIO()):
                     receipt = build(source, digest, model, 'fixture', 'fixture', output,
@@ -53,8 +54,14 @@ class BuildMode(unittest.TestCase):
                     self.assertIn('src/guardian_truth/judge/review_stage.py', z.namelist())
                     self.assertEqual(config['questions'], ['overall', 'values', 'actions', 'tool_use', 'policy', 'refusal']
                                      if label in ('6q', 'max') else ['overall'])
-                    self.assertEqual(config['positive_rate'], .30)
-                    self.assertEqual(config.get('review_mode', 'off'), 'blind' if label == 'blind' else 'off')
+                    self.assertEqual(config['positive_rate'], .40 if label == 'open40' else .30)
+                    self.assertEqual(config.get('review_mode', 'off'), 'open' if label == 'open40' else
+                                     'blind' if label == 'blind' else 'off')
+                    if label == 'open40':
+                        self.assertEqual(config['review_content'], 'answer_audit')
+                        self.assertEqual(config['review_ranking'], 'max_exact')
+                        self.assertIn('src/guardian_truth/judge/answer_review.py', z.namelist())
+                        self.assertIn(b'max(available finite exact overall, final)', z.read('README.md'))
                     if label in ('6q', 'max'):
                         expected_mode = 'max_logit' if label == 'max' else 'mean_z'
                         self.assertEqual(config['aggregate'], expected_mode)

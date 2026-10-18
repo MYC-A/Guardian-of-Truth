@@ -31,7 +31,9 @@ DELIVERY = ('NOT_DELIVERED', 'DROPPED_SIZE', 'DELIVERED')
 PREPASS_BUDGETS = (384, 768)  # 768 only through the pre-registered pilot rule (truncations > 15%)
 DEFAULTS = dict(review_mode='off', prepass_max_tokens=384, prepass_temperature=0.0, prepass_seed=0,
                 prepass_response_reserve_tokens=6000, notes_max_tokens=1536, unit_chars=600, max_units=400,
-                max_items=12, max_text_chars=200, quote_chars=300)
+                max_items=12, max_text_chars=200, quote_chars=300,
+                review_content='state_notes', review_schedule='after_primary', review_ranking='complete',
+                review_input_reserve_tokens=0)
 UNIT_MARK = '\u27e8%s\u27e9'  # rendered as <u12> with mathematical angle brackets
 ROLE_MARK = re.compile(r'\u27e6[^\u27e7\n]{1,80}\u27e7')
 OMIT_RE = re.compile(r'\[\.\.\. \d+ characters of the (?:earlier conversation|system instructions) are omitted')
@@ -86,6 +88,19 @@ def validate_review_config(cfg):
     """-> settings dict. ValueError('REVIEW_CONFIG_INVALID: ...') for anything that cannot run as declared."""
     s = {k: cfg.get(k, v) for k, v in DEFAULTS.items()}
     bad = []
+    for key, allowed in (('review_content', ('state_notes', 'answer_audit')),
+                         ('review_schedule', ('after_primary', 'per_chunk')),
+                         ('review_ranking', ('complete', 'max_exact'))):
+        if s[key] not in allowed:
+            bad.append('%s=%r' % (key, s[key]))
+    reserve = s['review_input_reserve_tokens']
+    if isinstance(reserve, bool) or not isinstance(reserve, int) or not 0 <= reserve <= 8192:
+        bad.append('review_input_reserve_tokens=%r' % reserve)
+    if s['review_content'] == 'answer_audit':
+        if s['review_mode'] != 'open' or s['review_schedule'] != 'per_chunk' or s['review_ranking'] != 'max_exact':
+            bad.append('answer_audit requires open/per_chunk/max_exact')
+        if not 2048 <= reserve <= 8192:
+            bad.append('answer_audit requires at least 2048 input reserve tokens')
     if s['review_mode'] not in REVIEW_MODES:
         bad.append('review_mode=%r' % s['review_mode'])
     if s['prepass_max_tokens'] not in PREPASS_BUDGETS:
@@ -99,6 +114,8 @@ def validate_review_config(cfg):
     if isinstance(t, bool) or not isinstance(t, (int, float)) or not math.isfinite(t) or t < 0:
         bad.append('prepass_temperature=%r' % t)
     if s['review_mode'] != 'off':
+        if s['review_ranking'] == 'max_exact' and cfg.get('require_exact_scores', True) is not True:
+            bad.append('max_exact requires exact scores')
         if cfg.get('aggregate', 'primary') != 'primary':
             bad.append('aggregate must be primary with review')
         if (cfg.get('questions') or ['overall']) != ['overall'] or (cfg.get('hint_modes') or ['on']) != ['on']:
@@ -405,12 +422,26 @@ def _finite(v):
     return isinstance(v, (int, float)) and not isinstance(v, bool) and math.isfinite(v)
 
 
-def select_ranking(primary, final, required):
-    """-> (scores, source, missing). final only when EVERY required row has a finite exact final score;
-    otherwise primary for all rows (never a per-row mix of scales)."""
-    missing = [i for i in required if not _finite(final.get(i))]
+def select_ranking(primary, final, required, policy='complete'):
+    """-> (scores, source, missing).
+
+    Default complete: final only if every required row is present, else primary.
+    Opt-in max_exact: per-row maximum of available finite exact primary/final;
+    neither replaces a larger score. Exactness is enforced by the readers.
+    """
+    wanted = set(required)
+    primary = {i: float(v) for i, v in primary.items() if i in wanted and _finite(v)}
+    final = {i: float(v) for i, v in final.items() if i in wanted and _finite(v)}
+    missing = [i for i in required if i not in final]
+    if policy == 'max_exact':
+        used = dict(primary)
+        for i, score in final.items():
+            used[i] = max(used[i], score) if i in used else score
+        return used, 'max_exact_overall_final', len(missing)
     if not missing and required:
         return {i: float(final[i]) for i in required}, 'final', 0
+    if policy != 'complete':
+        raise ValueError('UNKNOWN_REVIEW_RANKING')
     return dict(primary), 'primary(review_incomplete)', len(missing)
 
 
@@ -418,7 +449,7 @@ def effective_for_eval(cfg, primary, review, n):
     """Ranking an evaluation must score: primary when review is off, else the supervisor rule (select_ranking)."""
     if cfg.get('review_mode', 'off') == 'off':
         return dict(primary), 'primary', 0
-    return select_ranking(primary, review, list(range(n)))
+    return select_ranking(primary, review, list(range(n)), cfg.get('review_ranking', 'complete'))
 
 
 def main(argv=None):

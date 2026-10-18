@@ -1,4 +1,6 @@
-"""Review phase of judge_stage (opt-in, review_mode != off). Runs AFTER every primary record is durable.
+"""Review phase of judge_stage (opt-in, review_mode != off).
+
+Default: after all primary rows. Opt-in per_chunk: after each durable primary portion.
 
 Per chunk: [prepass generate -> validate -> durable prepass records] -> final scoring -> durable final records.
 The engine, tokenizer, score params, generate_rows and answer_score are the stage's own objects, injected so
@@ -44,10 +46,40 @@ class ReviewContext:
     primary_seconds_per_row: float
     primary_inputs: Any = None
     clock: Callable = time.time
+    timing: Any = None
+    primary_tokens_per_row: float = 1.0
+    defer_on_budget: bool = False
 
 
 def _err(error):
     return ('%s: %s' % (type(error).__name__, error))[:300]
+
+
+def merge_review_stats(parts, required, settings):
+    """Combine disjoint per-chunk receipts; unknown cache counters stay unavailable."""
+    out = dict(arm=settings['review_mode'], content=settings['review_content'],
+               schedule='per_chunk', required=required, portions=len(parts))
+    for name in ('prepass_attempted', 'notes_empty', 'delivered_empty', 'final_exact', 'final_inexact',
+                 'final_missing', 'final_deadline', 'final_row_errors', 'prepass_transcript_trimmed',
+                 'prepass_response_trimmed'):
+        out[name] = sum(p.get(name, 0) for p in parts)
+    for name in ('prepass_status', 'delivery', 'base_modes'):
+        counts = Counter()
+        for part in parts:
+            counts.update(part.get(name, {}))
+        out[name] = dict(counts)
+    for name in ('prepass', 'final'):
+        reports = [p[name] for p in parts if name in p]
+        report = {k: sum(r[k] for r in reports) for k in ('prompts', 'prompt_tokens', 'generated_tokens', 'wall_seconds')}
+        known = bool(reports) and all(isinstance(r['cached_tokens'], int) for r in reports)
+        report['cached_tokens'] = sum(r['cached_tokens'] for r in reports) if known else 'unavailable'
+        report['uncached_tokens'] = report['prompt_tokens'] - report['cached_tokens'] if known else 'unavailable'
+        report['cache_hit'] = (round(report['cached_tokens'] / report['prompt_tokens'], 4)
+                               if known and report['prompt_tokens'] else 'unavailable')
+        out[name] = report
+    out['review_complete'] = out['final_exact'] == required
+    out['unattempted_rows'] = max(0, required - sum(p['required'] for p in parts))
+    return out
 
 
 class PrimaryInputs:
@@ -127,10 +159,13 @@ def run_review(ctx):
         return None
     pre_use, fin_use = ctx.usage(), ctx.usage()
     gen, delivery, finals = Counter(), Counter(), Counter()
-    stats = dict(arm=mode, rows=len(ctx.rows), required=len(ctx.rows), prepass_attempted=0, notes_empty=0,
+    audit = s.get('review_content') == 'answer_audit'
+    if audit:
+        from guardian_truth.judge import answer_review
+    stats = dict(arm=mode, rows=len(ctx.order), required=len(ctx.order), prepass_attempted=0, notes_empty=0,
                  delivered_empty=0, final_exact=0, final_inexact=0, final_missing=0, final_deadline=0,
                  final_row_errors=0, prepass_transcript_trimmed=0, prepass_response_trimmed=0,
-                 hard_cap=ctx.hard_cap, prepass_cap=ctx.prepass_cap, base_modes=Counter())
+                 hard_cap=ctx.hard_cap, prepass_cap=ctx.prepass_cap, base_modes=Counter(), deferred_rows=0)
     position = 0
     while position < len(ctx.order):
         batch = ctx.order[position:position + ctx.chunk]
@@ -138,8 +173,40 @@ def run_review(ctx):
                    (fin_use.wall / fin_use.prompts if fin_use.prompts else 0.0))
         if not fin_use.prompts:  # pessimistic before the first measurement
             per_row = ctx.primary_seconds_per_row * (3.0 if mode in br.PREPASS_MODES else 1.2)
-        if ctx.clock() + per_row * len(batch) * 1.15 >= ctx.stop_at - 10:
+        need = per_row * len(batch)
+        prepared_audit = {}
+        if audit:
+            final_tokens = 0
+            for i in batch:
+                try:
+                    saved = ctx.primary_inputs.get(ctx.rows[i], ctx.tok)
+                    final_tokens += count_tokens(ctx.tok, saved['text']) + s['notes_max_tokens']
+                    prepared_audit[i] = answer_review.prepare(ctx.tok, saved, s, ctx.prepass_cap)
+                except Exception:
+                    pass  # the normal row path records the specific build error
+            pre_tokens = sum(p['n'] for p in prepared_audit.values())
+            measured = ctx.timing or {}
+            if all(measured.get(role, {}).get('prompts') for role in ('prepass', 'final')):
+                # Conservative projection from real input/output counts and wall.
+                # Charging each component the observed wall avoids assuming free APC.
+                need = 0.0
+                for role, inputs, outputs in (('prepass', pre_tokens, len(batch)*s['prepass_max_tokens']),
+                                              ('final', final_tokens, len(batch))):
+                    r = measured[role]
+                    need += r['wall_seconds'] * (inputs/max(r['prompt_tokens'],1)
+                                                  + outputs/max(r['generated_tokens'],1))
+            else:
+                # Initial prior only. No actual decode-speed measurement exists yet.
+                need *= max(1.0, (pre_tokens + final_tokens) / max(
+                    2.0 * len(batch) * ctx.primary_tokens_per_row, 1.0))
+            ctx.log('review_projection', input_tokens=pre_tokens+final_tokens,
+                    reserved_output_tokens=len(batch)*(s['prepass_max_tokens']+1),
+                    projected_seconds=round(need*1.15,2), measured=bool(measured))
+        if ctx.clock() + need * 1.15 >= ctx.stop_at - 10:
             rest = ctx.order[position:]
+            if ctx.defer_on_budget:
+                stats['deferred_rows'] += len(rest)
+                break
             stats['final_deadline'] += len(rest)
             ctx.emit([dict(key=ctx.rows[i]['key'], review='final', arm=mode, final_score=None, exact=False,
                            error='DEADLINE') for i in rest])
@@ -152,8 +219,15 @@ def run_review(ctx):
                 row = ctx.rows[i]
                 stats['prepass_attempted'] += 1
                 try:
-                    pre = br.prepass_transcript(ctx.tok, row['prompt'], s, ctx.prepass_cap)
-                    text, n, rtrim = br.prepass_prompt(ctx.tok, pre, row['response'] if mode == 'open' else None, s)
+                    if audit:
+                        pre = prepared_audit.get(i)
+                        if pre is None:
+                            saved = ctx.primary_inputs.get(row, ctx.tok)
+                            pre = answer_review.prepare(ctx.tok, saved, s, ctx.prepass_cap)
+                        text, n, rtrim = pre['text'], pre['n'], row['response'] not in pre['source']
+                    else:
+                        pre = br.prepass_transcript(ctx.tok, row['prompt'], s, ctx.prepass_cap)
+                        text, n, rtrim = br.prepass_prompt(ctx.tok, pre, row['response'] if mode == 'open' else None, s)
                     if n + s['prepass_max_tokens'] > ctx.prepass_cap:
                         raise ValueError('PREPASS_TOO_LONG')
                 except Exception as error:  # noqa: BLE001 - this row only
@@ -172,7 +246,8 @@ def run_review(ctx):
                 if batch_error is not None:
                     ctx.log('prepass_chunk_error', error=_err(batch_error))
                 for (i, pre, text, n, rtrim), o in zip(metas, outputs):
-                    base = dict(key=ctx.rows[i]['key'], review='prepass', arm=mode, version=br.VERSION, tokens=n,
+                    base = dict(key=ctx.rows[i]['key'], review='prepass', arm=mode,
+                                version=answer_review.VERSION if audit else br.VERSION, tokens=n,
                                 input_sha256=br.sha(text), input_token_sha256=br.token_sha(ctx.tok, text),
                                 source_sha256=br.sha(pre['source']), units=len(pre['units']),
                                 transcript_trimmed=pre['trimmed'], response_trimmed=rtrim)
@@ -182,8 +257,8 @@ def run_review(ctx):
                         continue
                     try:
                         sample = o.outputs[0]
-                        status, parsed, report = br.parse_notes(sample.text, sample.finish_reason,
-                                                                br.citable(pre['units']), s)
+                        parser = answer_review.parse_notes if audit else br.parse_notes
+                        status, parsed, report = parser(sample.text, sample.finish_reason, br.citable(pre['units']), s)
                         generated_tokens = len(sample.token_ids or [])
                     except Exception as error:  # a malformed output must cost only its own row
                         gen['ERROR'] += 1
@@ -204,7 +279,8 @@ def run_review(ctx):
                 base_text, base_n, trimmed, policy_trimmed, base_mode = final_base(ctx, row)
                 block, reason = '', ('NO_PREPASS' if mode == 'none' else 'NOTES_NOT_VALID')
                 if i in notes:
-                    block = br.render_notes(notes[i][0], notes[i][1], s)
+                    renderer = answer_review.render_notes if audit else br.render_notes
+                    block = renderer(notes[i][0], notes[i][1], s)
                     if count_tokens(ctx.tok, block) > s['notes_max_tokens']:
                         block, reason = '', 'NOTES_OVER_ALLOWANCE'
                         state = 'DROPPED_SIZE'
@@ -268,7 +344,12 @@ def run_review(ctx):
         ctx.log('review_chunk', done=position, of=len(ctx.order), arm=mode)
     stats['base_modes'] = dict(stats['base_modes'])
     stats.update(prepass_status=dict(gen), delivery=dict(delivery), prepass=pre_use.report(), final=fin_use.report(),
-                 review_complete=stats['final_exact'] == len(ctx.rows))
+                 review_complete=stats['final_exact'] == len(ctx.order))
+    if ctx.timing is not None:
+        for role in ('prepass', 'final'):
+            values = ctx.timing.setdefault(role, dict(prompts=0,prompt_tokens=0,generated_tokens=0,wall_seconds=0.0))
+            for key in values:
+                values[key] += stats[role][key]
     stats['truncation_rate_attempted'] = (round(gen['TRUNCATED'] / stats['prepass_attempted'], 4)
                                           if stats['prepass_attempted'] else None)
     ctx.emit([dict(event='review_done', **stats)])

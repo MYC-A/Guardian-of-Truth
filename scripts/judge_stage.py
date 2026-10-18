@@ -484,7 +484,7 @@ def _main(a, packers):
         sys.stdout.flush()
         os._exit(3)
     margin = question_margin(tok, keys)
-    cap_max = max_len - 8 - margin
+    cap_max = max_len - 8 - margin - review_settings['review_input_reserve_tokens']
     cap_min = min(int(cfg.get('min_cap_tokens', 8000)), cap_max)
     probe_text = render(tok, PROBE_PROMPT, PROBE_RESPONSE, [])
     hard_cap = max_len - 2 - margin
@@ -644,6 +644,41 @@ def _main(a, packers):
                 log('primary_inputs_unavailable', error=_error_text(error))
         emit(out, [dict(event='ready', startup_s=round(time.time() - STARTED, 1), rows=len(rows), cap=cap,
                         exact=exact_mode, keys=[k for k, _, _ in keys], schedule=schedule)])
+        review_parts, deferred_review, review_timing = [], [], {}
+
+        def review_batch(portion, reserve_primary=0.0):
+            from guardian_truth.judge.review_stage import ReviewContext, run_review
+            per_row = primary_use.wall / primary_use.prompts if primary_use.prompts else 5.0
+            if time.time() >= a.stop_at - reserve_primary - 10:
+                return False
+            gen_params = SamplingParams(temperature=float(review_settings['prepass_temperature']), top_p=1.0,
+                                        max_tokens=int(review_settings['prepass_max_tokens']),
+                                        seed=int(review_settings['prepass_seed']))
+            def record_review(records):
+                for record in records:
+                    if record.get('event') == 'review_done':
+                        record['event'] = 'review_portion_done'
+                emit(out, records)
+            log('review_start', arm=review_settings['review_mode'], content=review_settings['review_content'],
+                rows=len(portion), reserve_primary_seconds=round(reserve_primary, 2))
+            try:
+                part = run_review(ReviewContext(
+                    llm=llm, tok=tok, rows=rows, order=portion, settings=review_settings, score_params=params,
+                    gen_params=gen_params, yes_ids=yes_ids, no_ids=no_ids, answer_score=answer_score,
+                    generate_rows=generate_rows, healthy=healthy, emit=record_review,
+                    stop_at=a.stop_at - reserve_primary, hard_cap=hard_cap, prepass_cap=max_len - 8,
+                    chunk=chunk, log=log, primary_inputs=primary_inputs, usage=Usage,
+                    primary_seconds_per_row=per_row, timing=review_timing,
+                    primary_tokens_per_row=stats['tokens']/max(primary_use.prompts,1),
+                    defer_on_budget=reserve_primary > 0))
+                if part.get('deferred_rows'):
+                    return False
+                review_parts.append(part)
+            except Exception as error:
+                # Earlier portions stay durable; an engine failure cannot erase them.
+                log('review_portion_failed', error=_error_text(error))
+            return True
+
         position, last_dt = 0, 0.0
         while position < len(order):
             now = time.time()
@@ -730,7 +765,15 @@ def _main(a, packers):
                         records.append(dict(key=rows[i]['key'], score=None, tokens=n, cap=cap,
                                             error='DEADLINE' if late else 'GENERATE_ERROR', detail=_error_text(o)))
                         continue
-                    score, exact = answer_score(o, yes_ids, no_ids)
+                    try:
+                        score, exact = answer_score(o, yes_ids, no_ids)
+                        if score is not None and not math.isfinite(score):
+                            raise ValueError('NON_FINITE_SCORE')
+                    except Exception as error:
+                        stats['row_errors'] += 1
+                        records.append(dict(key=rows[i]['key'], score=None, exact=False,
+                                            error='PRIMARY_SCORE_ERROR', detail=_error_text(error)))
+                        continue
                     record = dict(key=rows[i]['key'], score_key=primary_key, tokens=n, trimmed=bool(trimmed),
                                   policy_trimmed=bool(policy_trimmed), hints_shown=bool(shown), cap=cap,
                                   context=context, over_cap=bool(over), response_trimmed=bool(response_trimmed))
@@ -765,6 +808,11 @@ def _main(a, packers):
                     log('primary_input_flush_error', error=_error_text(error))
             position += len(batch)
             log('chunk', done=position, of=len(order), seconds=round(last_dt, 1), cap=cap)
+            if review_settings['review_mode'] != 'off' and review_settings['review_schedule'] == 'per_chunk':
+                reserve = sum(min(full[i], cap) for i in order[position:]) / primary_tps() * 1.15
+                if not review_batch(batch, reserve):
+                    deferred_review.extend(batch)
+                    log('review_deferred', rows=len(batch), reserve_primary_seconds=round(reserve, 2))
             if schedule == 'per_chunk' and pending:
                 current = [i for i in pending if i in batch]
                 reserve = sum(min(full[i], cap) for i in order[position:]) / primary_tps()
@@ -783,7 +831,15 @@ def _main(a, packers):
         if pending and not xstats['failed']:
             log('extras_deadline', rows_without_extras=len(pending))
         review_stats = None
-        if review_settings['review_mode'] != 'off':
+        if review_settings['review_mode'] != 'off' and review_settings['review_schedule'] == 'per_chunk':
+            from guardian_truth.judge.review_stage import merge_review_stats
+            for offset in range(0, len(deferred_review), chunk):
+                if not review_batch(deferred_review[offset:offset + chunk]):
+                    break
+            review_stats = merge_review_stats(review_parts, len(rows), review_settings)
+            emit(out, [dict(event='review_done', **review_stats)])
+            log('review_done', **review_stats)
+        elif review_settings['review_mode'] != 'off':
             from guardian_truth.judge.review_stage import ReviewContext, run_review
             gen_params = SamplingParams(temperature=float(review_settings['prepass_temperature']), top_p=1.0,
                                         max_tokens=int(review_settings['prepass_max_tokens']),

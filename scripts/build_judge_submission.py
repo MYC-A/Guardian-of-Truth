@@ -218,7 +218,9 @@ def build(source_zip, source_sha256, model_dir, model_id, model_revision, output
     validate_aggregate(config, [k for k, _, _ in score_keys(config)])
     review = validate_review_config(config)
     code['JUDGE_CONFIG.json'] = json_bytes(config)
-    if review['review_mode'] != 'off':
+    if review['review_content'] == 'answer_audit':
+        code['README.md'] = (repo / 'docs/judge_20261013/README_OPEN_REVIEW40.md').read_bytes().replace(b'\r\n', b'\n')
+    elif review['review_mode'] != 'off':
         code['README.md'] = (repo / 'docs/judge_20261013/README_BLIND_REVIEW_SUBMISSION.md').read_bytes().replace(b'\r\n', b'\n')
     elif config.get('profile') == 'judge-6q-mean-z-20261018':
         code['README.md'] = (repo / 'docs/judge_20261013/README_6Q_SUBMISSION.md').read_bytes().replace(b'\r\n', b'\n')
@@ -268,7 +270,9 @@ def build(source_zip, source_sha256, model_dir, model_id, model_revision, output
                           source_manifest_sha256=hashlib.sha256(original_raw).hexdigest(),
                           profile=config.get('profile', 'single-pass-judge'), source_revision=source_revision,
                           config_sha256=hashlib.sha256(code['JUDGE_CONFIG.json']).hexdigest(),
-                          review_mode=review['review_mode'], model=dict(repository=model_id, revision=model_revision,
+                          review_mode=review['review_mode'], review_content=review['review_content'],
+                          review_schedule=review['review_schedule'], review_ranking=review['review_ranking'],
+                          positive_rate=config.get('positive_rate', .30), model=dict(repository=model_id, revision=model_revision,
                                                                     directory=MODEL_PREFIX.rstrip('/')),
                           context_mode=config.get('context_mode', 'legacy'),
                           questions=config.get('questions', ['overall']), aggregate=config.get('aggregate', 'primary'),
