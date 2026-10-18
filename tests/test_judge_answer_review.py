@@ -27,6 +27,23 @@ NOTE = dict(checks=[dict(action='current action', fact='entity binding uncertain
 
 
 class AuditHelpers(unittest.TestCase):
+    def test_explicit_citation_contract_is_opt_in_and_keeps_validation(self):
+        tok = FakeTok(); row = rows(1)[0]
+        base = judge_stage.build_prompt(tok, row, 20000)[0]
+        saved = dict(text=base, trimmed=False)
+        legacy = ar.prepare(tok, saved, S, 49144)
+        explicit_s = br.validate_review_config(dict(CONFIG, review_citation_contract='explicit'))
+        explicit = ar.prepare(tok, saved, explicit_s, 49144)
+        self.assertNotIn(ar.CITATION_CONTRACT, legacy['text'])
+        self.assertIn(ar.CITATION_CONTRACT, explicit['text'])
+        self.assertEqual(legacy['source'], explicit['source'])
+        self.assertEqual(legacy['units'], explicit['units'])
+        note = json.loads(json.dumps(NOTE)); note['checks'][0].update(assessment='SUPPORTED', support=[])
+        for settings in (S, explicit_s):
+            self.assertEqual(ar.parse_notes(json.dumps(note), 'stop', ['u0'], settings)[0], 'INVALID')
+        with self.assertRaises(ValueError):
+            br.validate_review_config(dict(CONFIG, review_citation_contract='bad'))
+
     def test_input_is_saved_context_answer_aware_and_offsets_are_exact(self):
         tok = FakeTok()
         row = rows(1)[0]

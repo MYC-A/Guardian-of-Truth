@@ -38,6 +38,16 @@ AUDIT DEFINITION (criterion only):
 
 TASK = 'Audit the current turn against the supplied source. Include counterevidence. Return compact JSON only.'
 
+# Opt-in clarification of the existing validator, prompted by technical pilot
+# AUDIT_SUPPORT_REQUIRED failures; no change to schema/admission or legacy input.
+CITATION_CONTRACT = '''
+Citation validity is mandatory: every SUPPORTED or CONCERN check must have at
+least one supplied source id in support. If you cannot cite support, use UNKNOWN.
+An empty counter list is allowed. An empty support list is allowed ONLY for UNKNOWN.
+If there is no material check to report, return an empty checks list. Never invent
+a source id or treat a citation as proof that a rule applies.
+'''
+
 
 def prepare(tok, saved, settings, cap):
     text = saved['text']
@@ -48,7 +58,8 @@ def prepare(tok, saved, settings, cap):
         raise ValueError('AUDIT_SAVED_INPUT_FORMAT')
     source = text[start:end]
     units = br.split_units(source, unit_chars=2000, max_units=128)
-    rendered = br.render_chat(tok, SYSTEM, '<source>\n' + br.annotate(source, units) + '\n</source>\n' + TASK)
+    system = SYSTEM + (CITATION_CONTRACT if settings.get('review_citation_contract') == 'explicit' else '')
+    rendered = br.render_chat(tok, system, '<source>\n' + br.annotate(source, units) + '\n</source>\n' + TASK)
     n = count_tokens(tok, rendered)
     if n + settings['prepass_max_tokens'] > cap:
         raise ValueError('AUDIT_INPUT_OVER_CAP')

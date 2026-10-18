@@ -33,7 +33,7 @@ DEFAULTS = dict(review_mode='off', prepass_max_tokens=384, prepass_temperature=0
                 prepass_response_reserve_tokens=6000, notes_max_tokens=1536, unit_chars=600, max_units=400,
                 max_items=12, max_text_chars=200, quote_chars=300,
                 review_content='state_notes', review_schedule='after_primary', review_ranking='complete',
-                review_input_reserve_tokens=0)
+                review_input_reserve_tokens=0, review_citation_contract='legacy')
 UNIT_MARK = '\u27e8%s\u27e9'  # rendered as <u12> with mathematical angle brackets
 ROLE_MARK = re.compile(r'\u27e6[^\u27e7\n]{1,80}\u27e7')
 OMIT_RE = re.compile(r'\[\.\.\. \d+ characters of the (?:earlier conversation|system instructions) are omitted')
@@ -90,10 +90,13 @@ def validate_review_config(cfg):
     bad = []
     for key, allowed in (('review_content', ('state_notes', 'answer_audit')),
                          ('review_schedule', ('after_primary', 'per_chunk')),
-                         ('review_ranking', ('complete', 'max_exact'))):
+                         ('review_ranking', ('complete', 'max_exact')),
+                         ('review_citation_contract', ('legacy', 'explicit'))):
         if s[key] not in allowed:
             bad.append('%s=%r' % (key, s[key]))
     reserve = s['review_input_reserve_tokens']
+    if s['review_citation_contract'] == 'explicit' and s['review_content'] != 'answer_audit':
+        bad.append('explicit citation contract requires answer_audit')
     if isinstance(reserve, bool) or not isinstance(reserve, int) or not 0 <= reserve <= 8192:
         bad.append('review_input_reserve_tokens=%r' % reserve)
     if s['review_content'] == 'answer_audit':
