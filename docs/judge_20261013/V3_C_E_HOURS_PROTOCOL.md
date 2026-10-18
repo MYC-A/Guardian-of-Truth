@@ -46,3 +46,28 @@ reported distinctly. No tuning on those evaluations. Veto only if semantic
 prerequisites demonstrated; UNKNOWN keeps label, citation match alone insufficient.
 No invented held-out acceptance; retain original E/F thresholds and runtime
 requirements. If anything fails do not assemble ZIP or alter production.
+
+## Fixed analysis details, still before new checkpoint/evaluation
+
+Primary R0 .40. Diagnostic quotas .30/.50/.60 and matched recall
+.50/.615/.80/.90 are reporting only, never a selection grid. A production blend
+diagnostic is fixed equal percentile ranks of saved35B current max and new4B
+adapter, computed separately in each cohort (including valid46), exactly.50/.50.
+Do not search blend weights. Forced hard positives consume the quota as production.
+For matched-recall diagnostics use deterministic ranked prefixes (score descending,
+index ascending), always retaining hard rows; stop at the target integer TP count.
+These use labels as an oracle for diagnosis and are not deployable thresholds.
+Bootstrap1000 conversation/component draws, common resamples between frozen arms,
+recompute quota and matched-recall prefix in each draw. Report skipped one-class/
+zero-baseline-FP draws. CIs condition on these models, not training-seed variation.
+
+Source-balanced exploratory training caps: tau2 <=600, ToolACE <=600,
+ToolRM <=400, RAGTruth <=200 rows. Entire pairs remain together; component and
+named-entity unions precede split. Freeze >=300 holdout rows and >=150 DEV rows
+using source hashes, never scores. Select within TRAIN components by stable pair
+hash and measured pilot token budget with1.5 safety factor. Preserve source40%,
+positive30-40% and hard-negative30% basic checks; failure needs review, not silent
+waiver. Long/human gates remain failed if unmet. Longest-ten pilot has no optimizer
+updates and a constant target: no holdout-label use for optimization or selection.
+Natural trajectories are retained independently; handcrafted retail histories
+must never be relabeled as natural simply because native tools validate states.

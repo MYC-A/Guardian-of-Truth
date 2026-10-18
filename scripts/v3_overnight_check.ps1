@@ -18,9 +18,47 @@ $sshExit = $LASTEXITCODE
 $ErrorActionPreference = 'Stop'
 if ($sshExit -ne 0) { 'SSH_UNAVAILABLE: no automatic restart' | Out-File $log -Append; exit 1 }
 if ($Probe) { 'PROBE_OK: no Codex launched' | Out-File $log -Append; exit 0 }
+$ErrorActionPreference = 'Continue'
+$backupText = & 'C:\Program Files\Git\usr\bin\ssh.exe' -T -n -i C:/Users/Igor/.ssh/guardian_vast_me -o BatchMode=yes -o ConnectTimeout=15 -p 18293 root@209.137.198.14 'cat /workspace/guardian-lab-20261018/v3-20261019/overnight-backups/INDEX.json' 2> (Join-Path $evidence ($stamp + '-backup-ssh.log'))
+$backupExit = $LASTEXITCODE
+$ErrorActionPreference = 'Stop'
+if ($backupExit -eq 0) {
+    $index = ($backupText -join "`n") | ConvertFrom-Json
+    foreach ($entry in $index) {
+        if ($entry.name -notmatch '^[a-zA-Z0-9_.-]+\.tar\.gz$') { throw 'UNSAFE_BACKUP_NAME' }
+        $target = Join-Path $evidence $entry.name
+        if (Test-Path -LiteralPath $target) {
+            if ((Get-FileHash -LiteralPath $target -Algorithm SHA256).Hash.ToLowerInvariant() -ne $entry.sha256) { throw 'LOCAL_BACKUP_HASH_MISMATCH' }
+            continue
+        }
+        $partial = $target + '.partial'
+        $remoteArchive = 'root@209.137.198.14:/workspace/guardian-lab-20261018/v3-20261019/overnight-backups/' + $entry.name
+        $ErrorActionPreference = 'Continue'
+        & 'C:\Program Files\Git\usr\bin\scp.exe' -P 18293 -i C:/Users/Igor/.ssh/guardian_vast_me -o BatchMode=yes -o ConnectTimeout=15 $remoteArchive $partial 2>> (Join-Path $evidence ($stamp + '-backup-ssh.log'))
+        $copyExit = $LASTEXITCODE
+        $ErrorActionPreference = 'Stop'
+        if ($copyExit -ne 0) { throw 'BACKUP_TRANSFER_FAILED' }
+        if ((Get-FileHash -LiteralPath $partial -Algorithm SHA256).Hash.ToLowerInvariant() -ne $entry.sha256) { throw 'BACKUP_HASH_MISMATCH' }
+        Move-Item -LiteralPath $partial -Destination $target
+        ('BACKUP_VERIFIED: ' + $entry.name) | Out-File $log -Append
+    }
+}
 if (([DateTime]::UtcNow - (Get-Item -LiteralPath $rollout).LastWriteTimeUtc).TotalMinutes -lt 20) {
     'ACTIVE_ORIGINAL_CHAT: no concurrent Codex launched' | Out-File $log -Append
     exit 0
+}
+$stateFile = Join-Path $evidence ($stamp + '-server-state.json')
+$ErrorActionPreference = 'Continue'
+$stateText = & 'C:\Program Files\Git\usr\bin\ssh.exe' -T -n -i C:/Users/Igor/.ssh/guardian_vast_me -o BatchMode=yes -o ConnectTimeout=15 -p 18293 root@209.137.198.14 'cat /workspace/guardian-lab-20261018/v3-20261019/OVERNIGHT_STATE.json' 2> (Join-Path $evidence ($stamp + '-state-ssh.log'))
+$stateExit = $LASTEXITCODE
+$ErrorActionPreference = 'Stop'
+if ($stateExit -eq 0) {
+    $stateText | Set-Content -LiteralPath $stateFile
+    $serverState = ($stateText -join "`n") | ConvertFrom-Json
+    if (-not $serverState.needs_agent -and ([DateTimeOffset]::UtcNow.ToUnixTimeSeconds() - $serverState.unix) -lt 1800) {
+        ('SERVER_WORKING: ' + $serverState.phase + '; no Codex request consumed') | Out-File $log -Append
+        exit 0
+    }
 }
 $counterFile = Join-Path $evidence 'codex-runs.txt'
 $count = 0
@@ -31,7 +69,7 @@ $prompt = 'Scheduled continuation explicitly requested by the user. Read docs/ju
 Push-Location $workspace
 try {
     $ErrorActionPreference = 'Continue'
-    & 'C:\Users\Igor\AppData\Local\Programs\OpenAI\Codex\bin\codex.exe' exec -C $workspace -s danger-full-access --json -o (Join-Path $evidence ($stamp + '-status.md')) $prompt 2>&1 | Out-File (Join-Path $evidence ($stamp + '-codex.jsonl'))
+    & 'C:\Users\Igor\AppData\Local\Programs\OpenAI\Codex\bin\codex.exe' exec -C $workspace -s danger-full-access -c 'approval_policy="never"' --json -o (Join-Path $evidence ($stamp + '-status.md')) $prompt 2>&1 | Out-File (Join-Path $evidence ($stamp + '-codex.jsonl'))
     $result = $LASTEXITCODE
     ('CODEX_EXIT=' + $result) | Out-File $log -Append
     exit $result

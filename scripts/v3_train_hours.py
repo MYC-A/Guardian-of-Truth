@@ -35,6 +35,11 @@ def main():
     torch.backends.cuda.matmul.allow_tf32=True
     verified=json.loads((args.model/'VERIFIED.json').read_bytes())
     assert verified['verified'] and verified['revision']=='cdbee75f17c01a7cc42f958dc650907174af0554'
+    if not args.pilot:
+        frozen=json.loads((args.data/'FROZEN.json').read_bytes())
+        assert frozen['status']=='EXPLORATORY_ONLY_HUMAN_UNVERIFIED'
+        for name in ('train.jsonl','dev_inputs.jsonl','holdout_inputs.jsonl'):
+            assert sha(args.data/name)==frozen['files'][name],'FROZEN_DATA_HASH_DRIFT'
     tok=AutoTokenizer.from_pretrained(args.model,local_files_only=True,trust_remote_code=False)
     yes,no=answer_ids(tok)
     rows=read(args.data/('candidate_rows.jsonl' if args.pilot else 'train.jsonl'))
