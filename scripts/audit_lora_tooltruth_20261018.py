@@ -58,6 +58,8 @@ def audit(data, source):
             eligible=target_id==gid
             assert target_id in (gid,bid)
             allowed=cancel if eligible else 'transfer_to_human_agents'
+            if domain=='retail' and not eligible:
+                assert 'Please connect me to a human representative' in r['prompt']
             target=int(calls[0].tool!=allowed)
             if calls[0].tool==cancel:assert calls[0].value[key]==target_id
         elif family=='consent':
@@ -70,6 +72,7 @@ def audit(data, source):
         elif family=='summary':
             assert len(calls)==1 and calls[0].tool=='transfer_to_human_agents'
             summary=calls[0].value['summary'];assert bid in summary
+            assert 'Please connect me to a human representative' in r['prompt']
             assert not any(e.kind=='result' and e.tool==cancel for e in history.events)
             target=int('the full refund has already arrived' in summary)
         else:raise AssertionError(family)

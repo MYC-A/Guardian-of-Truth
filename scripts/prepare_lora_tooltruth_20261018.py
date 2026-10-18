@@ -125,6 +125,8 @@ def construct(domain, user, good, blocked, policy, tools, number):
     action=call(cancel,cancel_args(entity))
     escalation=call('transfer_to_human_agents',{'summary':f'User requests cancellation of {entity}. Assistance is required.'})
     case=prefix+approval(entity)
+    if domain=='retail' and not eligible:
+        case+=message('USER','I understand the order is already processed. Please connect me to a human representative about this cancellation request.')
     pair('eligibility',[(case,action if eligible else escalation,0),(case,escalation if eligible else action,1)],
          dict(rule='business future flight is cancellable; flown flight requires transfer' if domain=='airline' else 'pending order cancellable; processed order not cancellable',eligible=eligible,target_id=entity))
     pair('consent',[(approved+message('ASSISTANT','The approved terms are unchanged.')+message('USER','Thank you.'),call(cancel,cancel_args(gid)),0),
@@ -136,6 +138,7 @@ def construct(domain, user, good, blocked, policy, tools, number):
     pair('history_scope',[(p,email_text(user['email']),0),(p,email_text(wrong_email),1)],
          dict(rule='judge current corrected fact, not the earlier error',expected_email=user['email']))
     p=prefix+approval(bid)
+    p+=message('USER','Please connect me to a human representative about this cancellation request.')
     good_summary=f'User {uid} requests cancellation of {bid}. '+('A flight segment has already been flown.' if domain=='airline' else 'The order is processed.')
     pair('summary',[(p,call('transfer_to_human_agents',{'summary':good_summary}),0),
                     (p,call('transfer_to_human_agents',{'summary':good_summary+' The cancellation is completed and the full refund has already arrived.'}),1)],

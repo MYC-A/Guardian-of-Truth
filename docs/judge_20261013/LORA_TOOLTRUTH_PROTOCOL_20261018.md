@@ -61,3 +61,22 @@ Failing a gate rejects promotion, not all future training. Passing only permits
 fresh target-like validation and a full target-runtime test before a controlled
 platform trial. Explicitly report if a veto/ensemble loses genuine detections.
 No production readiness or F1 .6+ claim follows from this protocol.
+
+Data revision v2b: training-input review identified ambiguity in the interaction
+between retail refusal and generic transfer rules. Add an explicit user request
+for a human to blocked retail eligibility contrasts and all transfer-summary
+contrasts; labels remain unchanged. This makes transfer permission explicit,
+rather than relying on an interpretation of inability to fulfil cancellation.
+The initial v2 run is aborted after its first observed optimizer step; retain
+its actual final step count and partial receipts, never use its weights or
+validation results. Rebuild/audit v2b, then restart from the original base with
+the same fixed epoch/seed/hyperparameters. No checkpoint or quality selection.
+
+Before v2b optimization: include the actual saved max(overall,final) reference
+from rows.csv/score alongside overall and final individually. The last reported
+platform configuration uses this max ranking; overall alone is not that solution.
+Secondary equal-rank mean of this saved current-max score and v2 uses the same
+fixed.5/.5 rule, with no fitting. Report its TP/FP changes against current-max.
+Keep the original overall ensemble and gate; do not retrospectively substitute
+a winning comparator. This adds a relevant reference before new results, not
+a change of training targets or architecture.
