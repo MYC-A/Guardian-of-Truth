@@ -207,3 +207,27 @@ tau4b-v1 attempted18/completed0, tau35b-v1 has no DONE; retained as failures.
 tau4b-v2, tau8b-v1, tau35b-v2 each completed18/18 (54 total), not turn-label gold.
 At21:44Z source-audit-r3 has START and growing reviews.jsonl, localhost inference
 requests are completing; controller WAIT_AUDIT, no training approval/checkpoint.
+
+## Scheduled tick update 2026-10-18T22:08Z
+
+Original rollout last activity21:05:00Z, checked again before writes; inactive>60min.
+Repaired candidate audit-v3 completed190 rows,24 disagreements/failures including
+7 malformed teacher JSON outputs. Reviewed all24 against full source histories,
+plus all5 sampled RAGTruth Data2txt records. Independent JSON indexing confirms
+ToolACE values; tau refusals match non-pending source status and perform no write;
+ToolRM disagreements involve schema/default/scope/keyword issues. No labels changed.
+Review: v3_hours_audit_evidence/MACHINE_AUDIT_REVIEW_V2.json, SHA256
+a4045fb5e9c86e972a4043ad3900dc3f03b5bea1f15a17b3e04090aca372848f.
+Only NEW3643-row SHA3e7f97f0... is allowed for EXPLORATORY_ONLY training;
+human_reviewed:false.24/190 is NOT an annotation-error rate or semantic certificate.
+Five Data2txt source reviews support their inherited labels, not the entire source.
+
+Live source-audit-r3 EXITED, GPU0MiB; controller WAIT_SOURCE_REVIEW before unlock.
+The existing controller command/data/audit/review names above remain authoritative.
+Unlock command after committing review (atomic server rename): scp review to
+/workspace/guardian-lab-20261018/v3-20261019/MACHINE_AUDIT_REVIEW_V2.json.upload,
+then mv that exact file to MACHINE_AUDIT_REVIEW_V2.json. No second GPU job launch.
+Controller performs longest-ten pilot(no optimizer), deterministic freeze and fresh
+L1 only if source40%/positive30-40%/hard-negative30% gates pass. Partial/failed
+stages require review; do not auto-retry or resume without matching checkpoint pins.
+Deadline remains2026-10-19T02:18:43Z. No production/ZIP changes or original acceptance.
