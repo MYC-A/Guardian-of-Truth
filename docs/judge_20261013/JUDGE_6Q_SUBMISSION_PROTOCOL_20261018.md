@@ -48,7 +48,7 @@ Reproduce technical caps:
 
 ```powershell
 $env:PYTHONPATH='C:/Users/Igor/Guardian-judge-6q-20261018/src'
-python scripts/check_judge_6q_profile.py --model A:/Guardian-weights/qwen36-awq --input C:/Users/Igor/Guardian-judge-ci-v3-20261014/valid.parquet --out TOKENIZER_CHECK.json
+& 'A:/Guardian-submissions/cascade-build-20261011/u2-build-venv/Scripts/python.exe' scripts/check_judge_6q_profile.py --model A:/Guardian-weights/qwen36-awq --input C:/Users/Igor/Guardian-judge-ci-v3-20261014/valid.parquet --out TOKENIZER_CHECK.json
 ```
 
 Full build uses build_judge_submission.py with `--judge-config submission/JUDGE_6Q_SUBMISSION.json`,
