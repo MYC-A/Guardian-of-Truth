@@ -52,6 +52,7 @@ def main():
     for arm in ('base','adapter'):
         scores=[by[arm,'dev520',r['id']]['score'] for r in inp];ar=ranks(scores)
         ensembles[arm]=assess(y,[(x+z)/(2*len(y)) for x,z in zip(rr,ar)])
+        ensembles[arm].pop('zero')  # Percentile ranks have no meaningful zero-logodds boundary.
     dev=results['dev520']['whole_turn']['arms'];bd=dev['base'];ad=dev['adapter']
     reference=assess(y,primary);q='.4' if '.4' in ad['quotas'] else '0.4'
     conditions=dict(full_coverage=len(records)==expected,
