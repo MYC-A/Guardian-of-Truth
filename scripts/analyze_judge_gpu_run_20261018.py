@@ -26,6 +26,9 @@ def paired_ci(y, before, after, groups):
     """Resample groups, frozen quota predictions; not a new threshold search."""
     vectors = defaultdict(lambda: [[0, 0, 0], [0, 0, 0]])
     for label, a, b, g in zip(y, before, after, groups):
+        # TN-only groups have zero F1 counts but still belong in the resampling
+        # population. Excluding them silently changes the bootstrap experiment.
+        vectors[g]
         for k, pred in enumerate((a, b)):
             if pred and label:
                 vectors[g][k][0] += 1

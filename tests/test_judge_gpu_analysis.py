@@ -1,8 +1,13 @@
 import unittest
-from scripts.analyze_judge_gpu_run_20261018 import scope_result
+from scripts.analyze_judge_gpu_run_20261018 import scope_result, paired_ci
 
 
 class SavedGpuAnalysisTests(unittest.TestCase):
+    def test_bootstrap_includes_true_negative_only_groups(self):
+        result = paired_ci([0, 0, 1], [0, 0, 1], [0, 0, 0], ['tn1', 'tn2', 'positive'])
+        self.assertEqual(result['groups'], 3)
+        self.assertIsNotNone(result['ci95'])
+
     def fixture(self):
         rows = [dict(id=str(i), primary=a, final=b, hard=False)
                 for i,(a,b) in enumerate(zip([2.,3.,1.,0.],[3.,0.,2.,1.]))]
