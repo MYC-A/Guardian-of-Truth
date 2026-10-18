@@ -1,22 +1,22 @@
 """Rank-based labelling instead of a probability threshold.
 
-Public leaderboard: every team's recall is a multiple of 1/130, so the public test has 130 positives
-in 548 rows (23.7%); top teams label 25-34% of rows. Probabilities are not calibrated for this task
-(valid46 is 50/50), so we label a fixed share of the scored rows by rank, plus every hard finding.
+Label a predeclared share of scored rows by rank, plus hard findings.
+The .30 rule is experimental, not a known prevalence of future input data.
 
 Aggregation (v3, cfg['aggregate']) over per-row score keys '<question>@<hint mode>':
   primary   the stage's primary score (first key); the production default
   mean_z    mean of per-key z-scores over cfg['aggregate_keys']
   max_z     maximum of those z-scores
+  max_logit maximum available finite exact score per row (no global completeness gate)
   logistic  the linear model cfg['aggregator'], fitted offline on an INDEPENDENT labelled set
-A non-primary aggregate is used only when every scored row has every input key (see complete_inputs);
-otherwise the caller keeps the primary score for all rows, so rankings never mix scales.
+mean_z/max_z/logistic require complete inputs. max_logit is a distinct opt-in
+rule that admits partial scores and has unmeasured cross-question calibration risk.
 """
 from __future__ import annotations
 
 import math
 
-MODES = ('primary', 'mean_z', 'max_z', 'logistic')
+MODES = ('primary', 'mean_z', 'max_z', 'max_logit', 'logistic')
 
 
 def decide(n, hard, scores, positive_rate):
@@ -38,7 +38,7 @@ def aggregate_inputs(cfg):
     mode = cfg.get('aggregate', 'primary')
     if mode == 'logistic':
         return [n for n in cfg['aggregator']['inputs'] if not n.startswith('feat:')]
-    if mode in ('mean_z', 'max_z'):
+    if mode in ('mean_z', 'max_z', 'max_logit'):
         return list(cfg.get('aggregate_keys') or [])
     return []
 
@@ -48,6 +48,8 @@ def validate_aggregate(cfg, keys):
     mode = cfg.get('aggregate', 'primary')
     if mode not in MODES:
         raise ValueError('UNKNOWN_AGGREGATE: %s' % mode)
+    if mode == 'max_logit' and cfg.get('require_exact_scores', True) is not True:
+        raise ValueError('MAX_LOGIT_REQUIRES_EXACT_SCORES')
     if mode == 'primary':
         return
     if mode == 'logistic':
@@ -58,6 +60,8 @@ def validate_aggregate(cfg, keys):
     needed = aggregate_inputs(cfg)
     if not needed:
         raise ValueError('AGGREGATE_WITHOUT_INPUTS')
+    if len(needed) != len(set(needed)):
+        raise ValueError('DUPLICATE_AGGREGATE_INPUTS')
     missing = [k for k in needed if k not in keys]
     if missing:
         raise ValueError('AGGREGATE_KEYS_NOT_SCORED: %s' % missing)
@@ -111,6 +115,18 @@ def combine(question_scores, cfg, features=None):
     """{row: {key: log-odds}} -> {row: aggregated score} for a non-primary cfg['aggregate']."""
     mode = cfg.get('aggregate', 'primary')
     rows = list(question_scores)
+    if mode == 'max_logit':
+        # One fixed function for every row. Missing/bounded/error inputs are absent,
+        # never zero or NO. Readers admit exact scores only; finiteness is checked again.
+        names = aggregate_inputs(cfg)
+        out = {}
+        for key, record in question_scores.items():
+            values = [float(record[name]) for name in names
+                      if isinstance(record.get(name), (int, float)) and not isinstance(record[name], bool)
+                      and math.isfinite(record[name])]
+            if values:
+                out[key] = max(values)
+        return out
     if mode == 'logistic':
         model = cfg['aggregator']
         return {k: logistic_logit(model, question_scores[k], (features or {}).get(k)) for k in rows}

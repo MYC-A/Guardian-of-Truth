@@ -44,7 +44,7 @@ for _p in (str(ROOT), str(ROOT / 'src')):
     if _p not in sys.path:
         sys.path.insert(0, _p)
 
-from guardian_truth.judge.decision import combine, complete_inputs, decide, validate_aggregate  # noqa: E402
+from guardian_truth.judge.decision import aggregate_inputs, combine, complete_inputs, decide, validate_aggregate  # noqa: E402
 from guardian_truth.judge.mechanical import analyze  # noqa: E402
 from guardian_truth.judge.prompting import score_keys  # noqa: E402
 from guardian_truth.judge.blind_review import select_ranking, validate_review_config  # noqa: E402
@@ -167,7 +167,7 @@ def normalize_profile(cfg):
         return safe, '%s: %s' % (type(error).__name__, error)
 
 
-def read_scores(path):
+def read_scores(path, exact_only=False):
     """-> ({key: log-odds}, rows without a score, rows with a bounded (inexact) score, stage events).
     Primary records only; extra-score records ({"extra": true}) are read by read_question_scores."""
     scores, missing, inexact, events = {}, 0, 0, {}
@@ -186,6 +186,10 @@ def read_scores(path):
                 continue
             if item.get('score') is None:
                 missing += 1
+            elif exact_only and (item.get('exact') is not True or not isinstance(item['score'], (int, float))
+                                 or isinstance(item['score'], bool) or not math.isfinite(item['score'])):
+                missing += 1
+                inexact += item.get('exact') is not True
             else:
                 scores[int(item['key'])] = float(item['score'])
                 inexact += not item.get('exact', False)
@@ -206,11 +210,12 @@ def read_question_scores(path):
                 break
             if 'key' not in item or 'event' in item or not isinstance(item.get('scores'), dict):
                 continue
-            if not item.get('extra') and item.get('score') is None:
+            if not item.get('extra') and (item.get('score') is None or item.get('exact') is not True):
                 continue
             row = out.setdefault(int(item['key']), {})
             for k, v in item['scores'].items():
-                if isinstance(v, (int, float)) and not isinstance(v, bool) and math.isfinite(v):
+                if (k not in (item.get('bounded') or {}) and isinstance(v, (int, float))
+                        and not isinstance(v, bool) and math.isfinite(v)):
                     row[k] = float(v)
     return out
 
@@ -245,6 +250,11 @@ def read_review_scores(path):
 def effective_scores(scores, question, cfg, features):
     """-> (scores used for ranking, aggregate actually used, rows lacking aggregate inputs)."""
     mode = cfg.get('aggregate', 'primary')
+    if mode == 'max_logit':
+        matrix = exact_max_inputs(scores, question, cfg, len(features))
+        used = combine(matrix, cfg)
+        lacking = sum(any(name not in matrix.get(i, {}) for name in aggregate_inputs(cfg)) for i in range(len(features)))
+        return used, 'max_logit', lacking
     if mode == 'primary' or not scores:
         return scores, 'primary', 0
     lacking = complete_inputs(question, list(scores), cfg)
@@ -254,6 +264,24 @@ def effective_scores(scores, question, cfg, features):
     if set(merged) != set(scores):
         return scores, 'primary(aggregate_incomplete)', len(set(scores) - set(merged))
     return merged, mode, 0
+
+
+def exact_max_inputs(scores, question, cfg, n):
+    """Allowed exact question scores plus the exact primary fallback; stable input positions only."""
+    names = aggregate_inputs(cfg)
+    matrix = {}
+    for i, values in question.items():
+        if isinstance(i, bool) or not isinstance(i, int) or not 0 <= i < n:
+            continue
+        matrix[i] = {name: float(values[name]) for name in names
+                     if isinstance(values.get(name), (int, float)) and not isinstance(values[name], bool)
+                     and math.isfinite(values[name])}
+    primary = score_keys(cfg)[0][0]
+    for i, value in scores.items():
+        if (isinstance(i, int) and not isinstance(i, bool) and 0 <= i < n and primary in names
+                and isinstance(value, (int, float)) and not isinstance(value, bool) and math.isfinite(value)):
+            matrix.setdefault(i, {})[primary] = float(value)
+    return matrix
 
 
 def id_shape(identifier):
@@ -412,7 +440,7 @@ def run(root, input_path, output, *, python=None, work=None, started_wall=None, 
             size = file_size(scores_path)
             if size != state['size']:
                 state['size'] = size
-                publish(read_scores(scores_path)[0])
+                publish(read_scores(scores_path, exact_only=cfg['aggregate'] == 'max_logit')[0])
         except Exception as error:
             log(clock, 'write_error', error='%s: %s' % (type(error).__name__, error))
 
@@ -446,7 +474,7 @@ def run(root, input_path, output, *, python=None, work=None, started_wall=None, 
             gone = kill_group(process)
 
     try:
-        scores, missing, inexact, events = read_scores(scores_path)
+        scores, missing, inexact, events = read_scores(scores_path, exact_only=cfg['aggregate'] == 'max_logit')
     except Exception as error:
         log(clock, 'read_error', error='%s: %s' % (type(error).__name__, error))
         scores, missing, inexact, events = state['scores'], 0, 0, {}
@@ -471,7 +499,7 @@ def run(root, input_path, output, *, python=None, work=None, started_wall=None, 
             question = read_question_scores(scores_path)
             with (work_dir / 'decisions.jsonl').open('w', encoding='utf-8') as stream:
                 for i in range(n):
-                    source = 'hard' if i in hard else ('model' if i in state['scores'] else 'fallback_zero')
+                    source = 'hard' if i in hard else ('model' if i in state['used'] else 'fallback_zero')
                     stream.write(json.dumps(dict(key=i, id=ids[i], label=state['labels'][i], source=source,
                                                  hard=findings[i].hard, strong=findings[i].strong,
                                                  weak=findings[i].weak, features=findings[i].features,
@@ -484,7 +512,9 @@ def run(root, input_path, output, *, python=None, work=None, started_wall=None, 
     probs = [1.0 / (1.0 + math.exp(-max(-60.0, min(60.0, s)))) for s in state['scores'].values()]
     done = events.get('done') or {}
     log(clock, 'final', status=status, group_gone=gone, rows=n, scored=state['scored'], coverage=round(coverage, 4),
-        coverage_low=low, fallback_rows=n - state['scored'], no_score_rows=missing, inexact_rows=inexact,
+        coverage_low=low, fallback_rows=n - len(state['used']), no_score_rows=missing, inexact_rows=inexact,
+        ranked_rows=len(state['used']), ranked_coverage=round(len(state['used']) / n, 4),
+        question_coverage={key: sum(key in values for values in question.values()) for key in aggregate_inputs(cfg)},
         hard_rows=len(hard), positives=state['positives'], writes=state['writes'], aggregate=state['aggregate'],
         aggregate_lacking_rows=state['lacking'], rows_with_extra_scores=sum(1 for v in question.values() if len(v) > 1),
         primary_p_quantiles=quantiles(probs), stage_primary=done.get('primary'), stage_extras=done.get('extras'), stage_review=events.get('review_done'),

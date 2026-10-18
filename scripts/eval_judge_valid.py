@@ -33,7 +33,8 @@ for _p in (str(ROOT), str(ROOT / 'src')):
 
 from guardian_truth.judge.decision import decide  # noqa: E402
 from guardian_truth.judge.mechanical import analyze  # noqa: E402
-from scripts.judge_submission import load_config, read_input, read_review_scores, read_scores  # noqa: E402
+from scripts.judge_submission import (effective_scores, load_config, read_input, read_question_scores,
+                                     read_review_scores, read_scores)  # noqa: E402
 from guardian_truth.judge.blind_review import effective_for_eval  # noqa: E402
 
 
@@ -133,13 +134,22 @@ def main(argv=None):
         summary['stage_exit'] = code
         summary['stage_wall_seconds'] = round(time.time() - t1, 1)
         summary['total_wall_seconds'] = round(time.time() - started, 1)
-        scores, missing, inexact, events = read_scores(scores_path)
+        scores, missing, inexact, events = read_scores(scores_path, exact_only=cfg.get('aggregate') == 'max_logit')
         summary.update(scored=len(scores), no_score=missing, inexact=inexact,
                        **{'stage_' + k: v for k, v in events.items()})
-        # metrics below score the ranking the supervisor would use: final only with complete exact coverage
+        # Apply the same aggregate and review selection as the actual supervisor.
         primary_scores, review_scores = scores, read_review_scores(scores_path)
-        scores, ranking, lacking = effective_for_eval(cfg, primary_scores, review_scores, n)
+        question = read_question_scores(scores_path)
+        aggregated, aggregate_ranking, aggregate_lacking = effective_scores(
+            primary_scores, question, cfg, [f.features for f in findings])
+        scores, ranking, lacking = effective_for_eval(cfg, aggregated, review_scores, n)
+        if cfg.get('review_mode', 'off') == 'off':
+            ranking, lacking = aggregate_ranking, aggregate_lacking
         summary['ranking'] = ranking
+        summary['ranked_rows'] = len(scores)
+        summary['aggregate_lacking_rows'] = aggregate_lacking
+        summary['question_coverage'] = {
+            key: sum(key in v for v in question.values()) for key in cfg.get('aggregate_keys', [])}
         if cfg.get('review_mode', 'off') != 'off':
             common = [i for i in range(n) if i in primary_scores and i in review_scores]
             summary['review'] = dict(arm=cfg['review_mode'], rows_without_final=lacking,

@@ -31,7 +31,7 @@ def main(argv=None):
     raw = args.config.read_bytes()
     cfg, error = normalize_profile(json.loads(raw))
     expected = ['overall', 'values', 'actions', 'tool_use', 'policy', 'refusal']
-    if (error or cfg['questions'] != expected or cfg['aggregate'] != 'mean_z'
+    if (error or cfg['questions'] != expected or cfg['aggregate'] not in ('mean_z', 'max_logit')
             or cfg['aggregate_keys'] != [q + '@on' for q in expected]
             or cfg['context_mode'] != 'legacy' or cfg['review_mode'] != 'off'):
         raise ValueError('NOT_THE_RELEASE_6Q_PROFILE:' + str(error))

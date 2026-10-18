@@ -34,7 +34,8 @@ class BuildMode(unittest.TestCase):
             production_before = (repo / 'submission/JUDGE_CONFIG.json').read_bytes()
             for mode, profile, label in ((None, None, 'default'), ('u2_dense', None, 'dense'),
                                          ('legacy', repo / 'submission/JUDGE_BLIND_REVIEW_EXPERIMENT.json', 'blind'),
-                                         ('legacy', repo / 'submission/JUDGE_6Q_SUBMISSION.json', '6q')):
+                                         ('legacy', repo / 'submission/JUDGE_6Q_SUBMISSION.json', '6q'),
+                                         ('legacy', repo / 'submission/JUDGE_6Q_MAX.json', 'max')):
                 output = root / (label + '.zip')
                 with contextlib.redirect_stdout(io.StringIO()):
                     receipt = build(source, digest, model, 'fixture', 'fixture', output,
@@ -51,14 +52,15 @@ class BuildMode(unittest.TestCase):
                     self.assertIn('src/guardian_truth/judge/blind_review.py', z.namelist())
                     self.assertIn('src/guardian_truth/judge/review_stage.py', z.namelist())
                     self.assertEqual(config['questions'], ['overall', 'values', 'actions', 'tool_use', 'policy', 'refusal']
-                                     if label == '6q' else ['overall'])
+                                     if label in ('6q', 'max') else ['overall'])
                     self.assertEqual(config['positive_rate'], .30)
                     self.assertEqual(config.get('review_mode', 'off'), 'blind' if label == 'blind' else 'off')
-                    if label == '6q':
-                        self.assertEqual(config['aggregate'], 'mean_z')
+                    if label in ('6q', 'max'):
+                        expected_mode = 'max_logit' if label == 'max' else 'mean_z'
+                        self.assertEqual(config['aggregate'], expected_mode)
                         self.assertEqual(config['aggregate_keys'], [q + '@on' for q in config['questions']])
-                        self.assertIn(b'aggregate=mean_z', z.read('README.md'))
-                        self.assertEqual(manifest['judge_build']['aggregate'], 'mean_z')
+                        self.assertIn(expected_mode.encode(), z.read('README.md'))
+                        self.assertEqual(manifest['judge_build']['aggregate'], expected_mode)
                     self.assertEqual(manifest['judge_build']['source_revision'], 'f' * 40)
                     if profile:
                         self.assertIn(b'GPU_UNTESTED', z.read('README.md'))

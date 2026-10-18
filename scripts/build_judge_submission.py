@@ -222,6 +222,8 @@ def build(source_zip, source_sha256, model_dir, model_id, model_revision, output
         code['README.md'] = (repo / 'docs/judge_20261013/README_BLIND_REVIEW_SUBMISSION.md').read_bytes().replace(b'\r\n', b'\n')
     elif config.get('profile') == 'judge-6q-mean-z-20261018':
         code['README.md'] = (repo / 'docs/judge_20261013/README_6Q_SUBMISSION.md').read_bytes().replace(b'\r\n', b'\n')
+    elif config.get('profile') == 'judge-6q-max-logit-20261018':
+        code['README.md'] = (repo / 'docs/judge_20261013/README_6Q_MAX.md').read_bytes().replace(b'\r\n', b'\n')
     members, files_manifest = model_members(model_dir)
     judge_manifest = dict(repository=model_id, revision=model_revision, files=files_manifest)
     if encoder_dir is not None:

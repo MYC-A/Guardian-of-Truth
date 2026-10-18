@@ -107,6 +107,33 @@ class StageIntegration(unittest.TestCase):
 
 
 class EvalIntegration(unittest.TestCase):
+    def test_eval_uses_partial_max_scores_instead_of_primary(self):
+        with tempfile.TemporaryDirectory() as folder:
+            root=Path(folder)
+            source=root/'input.csv'
+            with source.open('w',encoding='utf-8',newline='') as stream:
+                writer=csv.writer(stream)
+                writer.writerow(['id','prompt','response','label'])
+                writer.writerows((str(i),prompt(),'⟦ASSISTANT⟧\nHello',i%2) for i in range(4))
+            def score_fixture(command, **kwargs):
+                path=Path(command[command.index('--output')+1])
+                records=[dict(key=i,score=float(-i),exact=True,scores={'overall@on':float(-i)}) for i in range(4)]
+                records += [dict(key=3,extra=True,scores={'values@on':20.},bounded={})]
+                path.write_text(''.join(json.dumps(r)+'\n' for r in records))
+                return 0
+            out=root/'run'
+            with patch.object(eval_judge_valid.subprocess,'call',side_effect=score_fixture), \
+                    contextlib.redirect_stdout(io.StringIO()):
+                eval_judge_valid.main(['--input',str(source),'--out',str(out),'--model','fixture',
+                                      '--config',str(ROOT/'submission/JUDGE_6Q_MAX.json')])
+            summary=json.loads((out/'summary.json').read_text())
+            self.assertEqual(summary['ranking'],'max_logit')
+            self.assertEqual(summary['question_coverage']['values@on'],1)
+            with (out/'rows.csv').open(newline='',encoding='utf-8') as stream:
+                exported=list(csv.DictReader(stream))
+            self.assertEqual([float(r['score']) for r in exported],[0.,-1.,-2.,20.])
+            self.assertEqual([float(r['primary_score']) for r in exported],[0.,-1.,-2.,-3.])
+
     def test_eval_reports_effective_ranking_and_global_fallback(self):
         for complete in (True, False):
             with self.subTest(complete=complete), tempfile.TemporaryDirectory() as folder:

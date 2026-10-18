@@ -410,6 +410,92 @@ class Supervisor(unittest.TestCase):
         self.assertEqual(labels, [0, 0, 1, 0, 0])
 
 
+class MaxAvailable(unittest.TestCase):
+    def config(self):
+        return json.loads((ROOT/'submission/JUDGE_6Q_MAX.json').read_text())
+
+    def test_max_preserves_strong_signal_and_missing_never_becomes_zero(self):
+        cfg = self.config()
+        values = {0: {'overall@on': -5., 'values@on': 9., 'policy@on': -10.},
+                  1: {'overall@on': -5., 'values@on': float('nan'), 'policy@on': None},
+                  2: {'overall@on': float('inf'), 'values@on': True},
+                  3: {'policy@on': -3.}}
+        self.assertEqual(combine(values, cfg), {0: 9., 1: -5., 3: -3.})
+        with self.assertRaisesRegex(ValueError, 'REQUIRES_EXACT'):
+            validate_aggregate(dict(cfg, require_exact_scores=False), cfg['aggregate_keys'])
+
+    def test_partial_rows_and_questions_never_trigger_global_primary(self):
+        from scripts.judge_submission import effective_scores
+        cfg = self.config()
+        primary = {0: -5., 1: 2., 2: -7.}
+        qs = {0: {'values@on': 9.}, 1: {'policy@on': -1.}}
+        scores, mode, _ = effective_scores(primary, qs, cfg, [{}]*3)
+        self.assertEqual((scores, mode), ({0: 9., 1: 2., 2: -7.}, 'max_logit'))
+        qs[1]['policy@on'] = float('nan')
+        self.assertEqual(effective_scores(primary, qs, cfg, [{}]*3)[0], scores)
+        self.assertEqual(effective_scores(primary, {}, cfg, [{}]*3)[0], primary)
+
+    def test_inexact_and_bounded_receipts_are_not_max_candidates(self):
+        from scripts.judge_submission import read_scores, read_question_scores, effective_scores
+        cfg = self.config()
+        with tempfile.TemporaryDirectory() as folder:
+            path = Path(folder)/'scores.jsonl'
+            records = [dict(key=0,score=999.,exact=False,scores={'overall@on':999.}),
+                       dict(key=1,score=-5.,exact=True,scores={'overall@on':-5.}),
+                       dict(key=0,extra=True,scores={'values@on':9.},bounded={}),
+                       dict(key=1,extra=True,scores={'policy@on':999.},bounded={'policy@on':999.})]
+            path.write_text(''.join(json.dumps(r)+'\n' for r in records))
+            primary = read_scores(path, exact_only=True)[0]
+            qs = read_question_scores(path)
+            self.assertEqual(primary, {1:-5.})
+            self.assertEqual(effective_scores(primary, qs, cfg, [{},{}])[0], {0:9.,1:-5.})
+
+    def test_one_extra_changes_actual_output_despite_other_rows_missing_it(self):
+        cfg = self.config()
+        rows = [(str(i), CATALOG, GOOD) for i in range(10)]
+        primary = [dict(key=i,score=float(-i),exact=True,scores={'overall@on':float(-i)}) for i in range(10)]
+        extra = dict(key=9,extra=True,scores={'values@on':20.},bounded={})
+        labels, log, work = run_supervisor(self, rows, cfg, primary+[extra])
+        self.assertEqual(labels, [1,1]+[0]*7+[1])
+        self.assertIn('"aggregate": "max_logit"', log)
+        self.assertNotIn('aggregate_incomplete', log)
+        decision = [json.loads(line) for line in (work/'decisions.jsonl').read_text().split('\n') if line][9]
+        self.assertEqual(decision['ranked_by'],20.)
+
+    def test_extra_only_row_has_model_coverage_and_model_source(self):
+        cfg = self.config()
+        rows = [(str(i), CATALOG, GOOD) for i in range(4)]
+        records = [dict(key=i,score=float(-i),exact=True,scores={'overall@on':float(-i)}) for i in range(3)]
+        records += [dict(key=3,score=None,exact=False),dict(key=3,extra=True,scores={'values@on':20.},bounded={})]
+        labels, log, work = run_supervisor(self, rows, cfg, records)
+        self.assertEqual(labels, [0,0,0,1])
+        self.assertIn('"ranked_rows": 4',log)
+        row = [json.loads(line) for line in (work/'decisions.jsonl').read_text().split('\n') if line][3]
+        self.assertEqual(row['source'],'model')
+        self.assertIsNone(row['score'])
+        self.assertEqual(row['ranked_by'],20.)
+
+    def test_valid_extra_scores_survive_a_different_malformed_question(self):
+        from scripts import judge_stage
+        from scripts.judge_submission import effective_scores
+        cfg = self.config()
+        original = judge_stage.answer_score
+        def scoring(output, yes, no):
+            if QUESTIONS['policy'] in getattr(output,'prompt',''):
+                raise ValueError('MALFORMED_POLICY')
+            return original(output,yes,no)
+        with patch.object(judge_stage,'answer_score',side_effect=scoring):
+            primary,extras,done,_ = run_stage(stage_rows(3),cfg,{})
+        qs = {r['key']:dict(r['scores']) for r in primary}
+        for row in extras:
+            qs[row['key']].update(row['scores'])
+        scores,mode,_ = effective_scores({r['key']:r['score'] for r in primary},qs,cfg,[{}]*3)
+        self.assertEqual(mode,'max_logit')
+        self.assertEqual(len(scores),3)
+        self.assertEqual(done['extras']['row_errors'],3)
+        self.assertTrue(all('policy@on' not in row for row in qs.values()))
+
+
 REFRESH_STAGE = """import argparse, json, time
 ap = argparse.ArgumentParser()
 for name in ('--model', '--input', '--output', '--config', '--stop-at'):
