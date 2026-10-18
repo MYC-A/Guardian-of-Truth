@@ -4,7 +4,7 @@ from pathlib import Path
 ROOT=Path(__file__).resolve().parents[1]
 sys.path[:0]=[str(ROOT),str(ROOT/'src')]
 from guardian_truth.judge.decision import decide
-from scripts.analyze_judge_dependencies_20261018 import metrics,rank_metrics
+from scripts.analyze_judge_dependencies_20261018 import metrics,rank_metrics,ranks
 
 def read(p):return [json.loads(l) for l in p.read_bytes().splitlines() if l.strip()]
 def csvrows(p):
@@ -53,9 +53,18 @@ def main():
                 [s for s,g in zip(ss,gold) if g['domain']==d],set()) for arm,ss in sc.items()} for d in sorted({g['domain'] for g in gold})})
         if ref:
             result['saved_35b_reference']={arm:assess(y,[float(r[col]) for r in ref],hard) for arm,col in [('overall','primary_score'),('final','final_score')]}
+            main_ranks=ranks([float(r['primary_score']) for r in ref])
+            ensemble=[(x+z)/(2*count) for x,z in zip(main_ranks,ranks(sc['adapter']))]
+            result['fixed_rank_ensemble']=dict(weights=[.5,.5],defined_in='LORA_PILOT_PROTOCOL_BEFORE_REAL_SCORES',
+                threshold_fitting=False,metrics=assess(y,ensemble,hard))
+            result['fixed_rank_ensemble']['metrics'].pop('zero')
             valid=csvrows(a.saved/'valid46_r1/rows.csv');ix={r['id']:i for i,r in enumerate(inputs)};keys=[ix[r['id']] for r in valid]
             assert all(int(v['label'])==y[k] for v,k in zip(valid,keys))
             result['valid46_subset']=dict(independent=False,rows=46,arms={arm:assess([y[k] for k in keys],[ss[k] for k in keys],{i for i,k in enumerate(keys) if k in hard}) for arm,ss in sc.items()})
+            # Recompute percentile ranks within valid46, preserving that subset's decision contract.
+            vmain=ranks([float(ref[k]['primary_score']) for k in keys]);vadapt=ranks([sc['adapter'][k] for k in keys])
+            vm=assess([y[k] for k in keys],[(x+z)/(2*len(keys)) for x,z in zip(vmain,vadapt)],{i for i,k in enumerate(keys) if k in hard});vm.pop('zero')
+            result['valid46_subset']['fixed_rank_ensemble']=vm
             real_detail=[dict(id=r['id'],key=k,label=y[k],base=sc['base'][k],adapter=sc['adapter'][k],before=b[k],after=p[k]) for k,r in enumerate(inputs)]
         out[name]=result
     fresh=out['compli_eval']['arms'];real=out['regression_seen']['arms']
