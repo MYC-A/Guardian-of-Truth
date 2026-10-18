@@ -15,6 +15,7 @@ import time
 ROOT = Path(__file__).resolve().parents[1]
 sys.path[:0] = [str(ROOT), str(ROOT / 'src')]
 from guardian_truth.judge import answer_review, blind_review as br, partial_audit
+from guardian_truth.judge.review_stage import PrimaryInputs
 from scripts import judge_stage as stage
 
 ARMS = ('no_notes', 'strict', 'partial')
@@ -52,7 +53,7 @@ def close_source(run):
     digest = hashlib.sha256((run / 'stage_input.jsonl').read_bytes()).hexdigest()
     for key, row in rows.items():
         s = saved[key]
-        if (s['input_sha256'] != digest or s['row_sha256'] != stage.row_digest(row['prompt'], row['response'])
+        if (s['input_sha256'] != digest or s['row_sha256'] != PrimaryInputs.row_sha(row)
                 or br.sha(s['text']) != s['model_input_sha256']
                 or final[key]['base_sha256'] != s['model_input_sha256']):
             raise ValueError('SAVED_SOURCE_IDENTITY')
