@@ -54,6 +54,13 @@ def main():
         if name=='tooltruth_validation':
             arms['qwen35b_unhinted']=assess(y,[ps[420+i]['score'] for i in range(len(gold))])
         out['datasets'][name]=dict(rows=len(y),positives=sum(y),all_yes=metrics(y,[1]*len(y)),arms=arms)
+        if name=='tooltruth_validation':
+            families={}
+            for family in sorted({r['family'] for r in gold}):
+                gg=[r for r in gold if r['family']==family];yy=[r['label'] for r in gg]
+                families[family]=dict(rows=len(gg),positives=sum(yy),arms={
+                    arm:assess(yy,[by[name,arm,r['id']]['score'] for r in gg]) for arm in ('base','adapter')})
+            out['datasets'][name]['families']=families
     inputs=table(a.protected/'regression_seen/inputs.csv');gold=read(a.protected/'regression_seen/labels.jsonl')
     saved=table(a.saved/'regression_r1/rows.csv');old=read(a.old/'transfer/scores.jsonl')
     ob={(r['arm'],r['id']):r for r in old if r['dataset']=='regression_seen'}
