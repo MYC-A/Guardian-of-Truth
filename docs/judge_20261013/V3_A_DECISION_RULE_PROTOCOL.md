@@ -7,8 +7,11 @@ The attachment V3_USER_REQUEST.md and subsequent user noise amendment govern.
 
 ## Current implementation
 
-- scripts/predict.py:1-4 delegates to guardian_truth.cli; the judge submission
-  path is scripts/judge_submission.py, publish():432-441.
+- Repository scripts/predict.py:1-4 delegates to the different generic
+  guardian_truth.cli detector. It is NOT the packaged judge entrypoint.
+  scripts/build_judge_submission.py:35 replaces archive scripts/predict.py with
+  submission/predict_judge.py, which calls scripts/judge_submission.py.
+  Judge decisions are in its publish():432-441.
 - submission/JUDGE_OPEN_REVIEW40.json:5,8,20 selects open review, max_exact and .40.
   Repository DEFAULTS .30 is not the reported .40 platform profile.
 - src/guardian_truth/judge/blind_review.py:428-448 takes the row-wise maximum
@@ -38,7 +41,8 @@ actual original rows, preserving the published baseline exactly. Duplicates are
 separate batch positions; original order resolves equal scores reproducibly.
 All rules see exactly the same batch. Resample conversation groups1000 times
 with replacement, keep all their turns (including TN-only groups), then apply
-the same class-weighted batch resampling to the resulting pool. Recompute quota
+the same class-weighted batch resampling to the resulting pool; at the native
+point the group-resampled pool itself is used without additional row sampling. Recompute quota
 and unlabeled EM on every batch. Paired 2.5/97.5 percentiles for F1 differences
 against R0. Degenerate one-class bootstrap pools are counted and omitted, not
 silently replaced. Calibration/thresholds remain the frozen cross-fit estimates
