@@ -41,6 +41,8 @@ def main():
                   'qwen35b_overall': [float(saved[i]['primary_score']) for i in ix],
                   'qwen35b_final': [float(saved[i]['final_score']) for i in ix]}
         v = dict(rows=len(ix), positives=sum(y), hard=len(hard),
+                 baselines=dict(all_yes=metrics(y, [1] * len(y)),
+                                all_no=metrics(y, [0] * len(y))),
                  ids=[gold[i]['id'] for i in ix], arms={})
         for arm, ss in scores.items():
             v['arms'][arm] = dict(roc_auc=float(roc_auc_score(y, ss)),
