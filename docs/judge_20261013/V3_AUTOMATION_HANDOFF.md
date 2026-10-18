@@ -125,3 +125,85 @@ New trainer scores stress_inputs.jsonl; new analysis reports per-pair ordering
 against correct holdout twins (no misleading all-positive quota F1). This exposes
 the remaining training-coverage gap instead of silently assuming any yes suffices.
 Both freeze/train scripts updated on server before starting any optimization.
+
+## Scheduled tick update 2026-10-18T21:42Z — authoritative current phase
+
+Original rollout checked before writes: last activity21:05:00Z, >30min inactive.
+No optimizer update or checkpoint exists yet. GPU was free before the new audit.
+All original budgets and production/ZIP prohibitions remain unchanged.
+
+Audit v2 completed205 sampled rows:33 disagreements/technical failures, not a
+33/205 annotation-error rate. Source review of all33 is committed in
+v3_hours_audit_evidence/MACHINE_AUDIT_REVIEW_REJECTED_V1.json. Original3972-row
+candidate is REJECTED for training. Teacher has clear scope/index/schema errors,
+but ToolRM has missing calendar anchors and RAGTruth QA/Summary inherited
+negative labels are unreliable under the strict grounding policy. Do NOT approve
+the old candidate based on PROOF_AUDIT alone. No protected eval was opened/tuned.
+
+Repair protocol: V3_SOURCE_REPAIR_PROTOCOL.md (commit25b115df before repair).
+Executed v3_quarantine_hours_data.py on hours-decontam-v1/candidate_rows.jsonl,
+writing NEW hours-decontam-v2. Entire components/twins retained or quarantined;
+all labels unchanged.329 excluded:219 RAGTruth QA/Summary,110 ToolRM rows in55
+unanchored-date components.3643 retained:tau21470,ToolACE1602,ToolRM490,
+RAGTruth Data2txt81;1405 positive. New candidate SHA256:
+3e7f97f058ed8af46e25733c63832b8172559e8779f8454d03125f81dacffcdd.
+Independent server mechanical proof and local deterministic replay both pass;
+neither certifies semantic truth. QUARANTINED.jsonl retains complete removed rows.
+
+Live supervisor job guardian-lab-v3-source-audit-r3, started21:40:56Z, finite2400s
+plus60s TERM grace, no automatic restart. Only the pinned35B local server and new
+blind audit, NO repeated tau simulations. Wrapper:
+/workspace/guardian-lab-20261018/guardian-lab-v3-source-audit-r3.sh.
+Audit command (wrapper starts local vLLM on18140 first):
+venv/bin/python -u code/scripts/v3_machine_audit.py --data
+v3-20261019/hours-decontam-v2/candidate_rows.jsonl --out
+v3-20261019/hours-machine-audit-v3
+
+Existing controller deliberately stopped while waiting, then restarted with:
+venv/bin/python -u code/scripts/v3_overnight_pipeline.py
+--data-name hours-decontam-v2 --audit-name hours-machine-audit-v3
+--review-name MACHINE_AUDIT_REVIEW_V2.json
+--audit-job guardian-lab-v3-source-audit-r3
+Current phase WAIT_AUDIT. After audit completes it waits for NEW source review
+MACHINE_AUDIT_REVIEW_V2.json with exact NEW hash, allow_exploratory_training:true
+and human_reviewed:false. That file DOES NOT EXIST and training is not approved.
+Inspect new actual disagreements and Data2txt inherited labels before creating it.
+Prior rejected review must never unlock the controller. If data errors remain,
+repair/version again within deadline, not rubber-stamp. Training/frozen/pilot
+paths are still hours-l1-v1 / hours-frozen-v1 / hours-pilot-v1 and currently absent.
+If reduced-source mixture fails freeze source/class checks, fix deterministic
+selection before optimization; do not waive or claim full original v3 readiness.
+
+Backups now include every present tau4b-*,tau8b-*,tau35b-* debug directory,
+relevant guardian-lab-v3 logs/wrappers/configs, executed-source files where present,
+current research scripts/renderer, source Git revisions, and per-file SHA256.
+Created by v3_preserve_hours_evidence.py; immutable archives are listed at
+v3-20261019/overnight-backups/INDEX.json for the existing Windows fetcher.
+Before repair:20261018-213958-before-source-repair.tar.gz,389 indexed files,
+53,100,841bytes,SHA2563504366664298a8b7915e808440d26e4fad443420808de63f30f117b16cb9cee.
+After launch:20261018-214116-source-repair-audit-r3.tar.gz,400 indexed files,
+58,956,460bytes,SHA256263b33afa6e3dd7c0fa971599b292d8028d85c330f426054093aef59e35b8683.
+Read native paths inside tar; do not extract invalid task IDs on Windows.
+Missing historical executed-source artifacts are not reconstructed as originals.
+Live logs are snapshots; archive again once the new audit ends.
+
+The scheduled task remains enabled for the pending review/training/evaluation.
+No long job is awaited in this tick. New35B audit can finish independently of
+Codex quota. Controller still enforces02:18:43Z, source-review wait ends an hour
+earlier if no approval arrives. At deadline preserve/report/stop own overruns;
+never extend the six-hour budget. See overnight status and backup verification.
+
+Offbox verification completed21:44:29Z: both above archives and supplemental
+20261018-214352-source-pins.tar.gz (1,614,736bytes,463 indexed files,
+SHA25613bbd21a21cc72816c358afe93266d76fe8b46b672b09dd2fabe9e45e7606639)
+are on A:/Guardian-submissions/guardian-v3-20261019/overnight/. All archive and
+all indexed content hashes passed; total113,672,037bytes (file counts overlap).
+Verification: v3_hours_audit_evidence/TICK1_BACKUPS_VERIFIED.json.
+Server source directories have no Git metadata: initial archive revision fields
+were empty, so supplemental archive explicitly records that absence and preserves
+upstream revision/license receipts, actual tau Python source and model VERIFIED
+receipts. Do not describe an empty Git field as independently checked Git HEAD.
+tau4b-v1 attempted18/completed0, tau35b-v1 has no DONE; retained as failures.
+tau4b-v2, tau8b-v1, tau35b-v2 each completed18/18 (54 total), not turn-label gold.
+At21:44Z source-audit-r3 has START and growing reviews.jsonl, localhost inference
+requests are completing; controller WAIT_AUDIT, no training approval/checkpoint.
