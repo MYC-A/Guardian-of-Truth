@@ -215,3 +215,52 @@ SHA2563e7f97f058ed8af46e25733c63832b8172559e8779f8454d03125f81dacffcdd.
 revision/license receipts и фактические tau Python-исходники сохранены отдельно,
 пустой Git HEAD не выдаётся за проверенный commit. Успешно завершены54 tau2
 траектории (по18 для4B/8B/35B); они остаются вне обучающей разметки.
+
+## Scheduled repaired-source review, 18.10 22:08 UTC
+
+The repaired3643-row candidate completed a fresh blind35B sample:190 rows,
+24 disagreements or technical failures(7 malformed JSON outputs). All24 cases
+were reviewed against their full inputs, plus all5 sampled RAGTruth Data2txt
+records. ToolACE answers match independently indexed zero-based JSON values;
+tau2 refusal targets accurately deny non-pending cancellations without writes;
+ToolRM cases expose teacher schema/default/scope mistakes. No labels changed;
+24/190 is not an annotation-error rate. This is agent source review, not human
+review or certification of every inherited label. Detailed decisions and hashes:
+[repaired-source review](v3_hours_audit_evidence/MACHINE_AUDIT_REVIEW_V2.json).
+
+Review was committed before unlocking the existing controller at22:08:07UTC.
+Only the new candidate SHA3e7f97f0... is approved for shortened exploratory
+training. The longest-ten full-input forward/backward pilot is running without
+optimizer updates; deterministic freeze and fresh L1 follow only if source40%,
+positive30-40% and hard-negative30% checks pass. No new model endpoint or duplicate
+GPU job was launched. Original human/long-input/volume and acceptance gates
+remain unmet; no quality or runtime improvement has yet been measured.
+
+The controller retains the frozen02:18:43UTC deadline, checkpoints and finite
+timeouts. The current live phase and new backup verification are recorded in
+[handoff](V3_AUTOMATION_HANDOFF.md). Production and ZIP remain unchanged;
+recommendation remains to keep the existing submission until acceptance is proven.
+
+The pilot subsequently completed10/10,73.44s whole-script time,1653.1tokens/s
+for forward/backward passes and11282222592bytes peak allocated memory. These
+are technical-pilot measurements, not full training/evaluation/submission runtime.
+The first freeze failed before optimization:672/1672 positives(40.1914%).
+[Repair protocol](V3_FREEZE_REPAIR_PROTOCOL.md) was committed before correction;
+all failed evidence retained. Whole-pair class/hash selection removes six TRAIN
+singleton positives without label changes. Four focused data/selection tests pass.
+
+NEW frozen hours-frozen-v2 matches independent local replay:1666TRAIN rows,
+666 positives(39.976%),1000 negatives including755 hard negatives;4,662,007tokens.
+Sources:tau2=600,ToolACE=600,ToolRM=400,RAGTruth=66. Source<=40%,positive30-40%
+and hard-negative>=30% gates pass. Original long-input and human gates fail.
+DEV154,HOLDOUT301,65 untrained stress contrasts adding zero independent scenarios.
+The component split is unchanged by the class repair. Frozen manifest SHA256
+57aa807977966115b547defdad893b09268aea423cb2034d623bb788527d3b7a;
+[manifest and file hashes](v3_hours_audit_evidence/hours-frozen-v2_FROZEN.json).
+
+The existing finite controller restarted with --frozen-name hours-frozen-v2 and
+launched the fresh L1 training stage at22:13:58UTC. No previous optimizer state
+was resumed. One-epoch target105updates,checkpoints every20updates; actual completed
+rows/updates and quality remain pending. Do not claim a completed epoch or useful
+adapter until the recorded run and paired evaluation complete. Offbox source/log
+backups and their per-file hash checks are recorded in the handoff and evidence.

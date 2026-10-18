@@ -231,3 +231,78 @@ Controller performs longest-ten pilot(no optimizer), deterministic freeze and fr
 L1 only if source40%/positive30-40%/hard-negative30% gates pass. Partial/failed
 stages require review; do not auto-retry or resume without matching checkpoint pins.
 Deadline remains2026-10-19T02:18:43Z. No production/ZIP changes or original acceptance.
+
+## Scheduled tick update 2026-10-18T22:13Z — repaired freeze launch
+
+Audit/source-review unlock above remains valid. Pilot completed10/10 actual longest
+inputs,0 optimizer updates,1653.1tokens/s,peak11282222592bytes,73.44s whole pilot.
+Training was stopped BEFORE any optimizer update by the first freeze's label gate:
+1672 selected,672 positive(40.1914%). Source/hard-negative gates passed. Failed
+hours-frozen-v1(empty), FREEZE.log and original source are preserved; do not retry it.
+
+V3_FREEZE_REPAIR_PROTOCOL.md committed ec320609 BEFORE changing selection.
+Code614a995d removes whole TRAIN pairs solely by class fraction then stable hash,
+preserving source/hard-negative checks. A local data-only replay yields1666 rows,
+666 positive(39.976%),sources tau2=600,ToolACE=600,ToolRM=400,RAGTruth=66.
+Six positive RAGTruth singleton pairs are excluded with a ledger; no labels changed
+or model/evaluation scores used. HOLDOUT301,DEV154, component split unchanged.
+Both unit tests for pair/order/source/determinism/failure and existing data tests
+pass(4 total). Original long/human gates stay false; reduced data EXPLORATORY_ONLY.
+
+Controller was confirmed EXITED/GPU free; no training directory/checkpoint existed.
+After verifying completed pilot data/trainer SHA, restarted same supervisor job:
+supervisorctl start guardian-lab-v3-overnight-controller
+Wrapper now executes venv/bin/python -u code/scripts/v3_overnight_pipeline.py
+--data-name hours-decontam-v2 --audit-name hours-machine-audit-v3
+--review-name MACHINE_AUDIT_REVIEW_V2.json --audit-job guardian-lab-v3-source-audit-r3
+--frozen-name hours-frozen-v2
+It reuses the zero-update pilot, writes NEW freeze, then fresh hours-l1-v1.
+Repaired freeze log FREEZE_REPAIRED.log; original FREEZE.log retained.
+For later analysis use --frozen <extracted>/hours-frozen-v2, replacing v1 above.
+No resumed/duplicated optimizer job; deadline remains02:18:43Z.
+
+Source-review offbox archive20261018-220821-source-review-v2-unlock.tar.gz is fully
+verified:60789118bytes,SHA256cb8274fc53d4cae730e4609973b0c2a4d2cc2a77d69e57981609458352a707ba,
+775 indexed file hashes passed. See v3_hours_audit_evidence/TICK2_BACKUPS_VERIFIED.json.
+Failure snapshot20261018-221111-failed-freeze-before-repair.tar.gz:60817058bytes,
+SHA25661cb80ecfa6ff0613847ec939283727d11b606641cd35fb7dca48217c1685662.
+New prelaunch snapshot includes BASE stage logs as well as wrappers/debug paths:
+20261018-221326-freeze-repair-prelaunch.tar.gz,60819678bytes,782 files,
+SHA2561ce65b036d1f35185abb73a64c5123a43124da8ae0069c650e65aa215c7c96a3.
+Offbox transfer of newest snapshot pending final verification below. The earlier
+source-review archive preserves the original failed freezer source; do not present
+the corrected source as the source executed for that failure.
+
+## Scheduled tick final state 2026-10-18T22:16Z — TRAIN running
+
+Repaired server freeze completed and matches independent local replay, including
+all six class-balance exclusions and source/label/hard-negative checks. Authoritative
+manifest: v3_hours_audit_evidence/hours-frozen-v2_FROZEN.json, SHA256
+57aa807977966115b547defdad893b09268aea423cb2034d623bb788527d3b7a.
+TRAIN1666 rows/4662007tokens,666positive,755hard negatives of1000negatives.
+DEV154,HOLDOUT301,STRESS65 from existing holdout components,zero new scenarios.
+
+Fresh L1 job20159 under the existing controller is RUNNING; actual optimizer
+progress confirmed2updates/32rows of1666 in the saved tick2 snapshot. START
+candidate/train/trainer/base hashes independently checked against the manifest.
+GPU100%,12367MiB at22:15:39Z. No quality results, epoch completion or checkpoint
+is claimed; first checkpoint is scheduled at20updates. Do NOT wait for training,
+restart it or launch another GPU job on subsequent ticks while heartbeat is fresh.
+Paired evaluation follows automatically, still under the frozen02:18:43Z deadline.
+On READY_FOR_ANALYSIS fetch final snapshot and run local v3_analyze_hours.py using
+hours-frozen-v2, not v1. Preserve any partial checkpoint if the deadline interrupts.
+
+Offbox verification complete for three NEW archives this tick:
+- source-review-v2-unlock:60789118bytes,775 indexed files,cb8274fc... above.
+- freeze-repair-prelaunch:60819678bytes,782 indexed files,1ce65b03... above.
+- 20261018-221440-frozen-v2-training-launch.tar.gz:68965339bytes,794 files,
+  SHA2561b108a811143727c86fee726c6247f098eb8bc31b791f81134b8e08fe8852e5d.
+Total190574135bytes,file counts overlap. All archive/per-file hashes and every
+frozen data-file hash passed; failed FREEZE.log is explicitly retained. Evidence:
+TICK2_BACKUPS_VERIFIED.json,TICK2_FREEZE_REPAIR_BACKUP_VERIFIED.json,
+TICK2_TRAINING_LAUNCH_BACKUP_VERIFIED.json under v3_hours_audit_evidence/.
+Live training logs remain snapshots, not final logs. Automatic immutable checkpoint
+snapshots and the Windows offbox fetcher continue independently of Codex quota.
+The scheduled task remains enabled for pending evaluation/analysis; disable it
+after final analysis/report/verified push, or apply the original deadline cleanup.
+Production/ZIP unchanged; original human/long/volume gates remain failed.
