@@ -20,7 +20,9 @@ RELATED = re.compile(r'\b(?:one|1|two|multiple|several|more than|at most|only)\b
 SCOPE = re.compile(r'\b(?:if|when|before|after|during|unless|except|only for|only when|'
                    r'authentication|unauthenticated|unverified|payment tools)\b',re.I)
 MODIFIER = re.compile(r'\b(?:except|unless|exempt|override|overridden|revoked|obsolete|supersed|'
-                      r'previous rule|quoted rule|this rule|above rule|following rule)\w*\b',re.I)
+                      r'previous rule|quoted rule|this rule|above rule|following rule|this restriction|'
+                      r'this limit|the restriction|the limit|does not (?:apply|cover)|do not (?:apply|cover)|'
+                      r'need not|not bound|waiv|ignore the)\w*\b',re.I)
 THOUGHT = re.compile(r'<(think|analysis)>.*?</\1>',re.I|re.S)
 
 

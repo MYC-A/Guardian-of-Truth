@@ -16,6 +16,7 @@ from __future__ import annotations
 
 import json
 import re
+from functools import lru_cache
 from dataclasses import dataclass, field
 from typing import Optional
 
@@ -31,6 +32,21 @@ CONFIRM = re.compile(r'explicit\s+(?:user\s+)?confirmation|ask\s+for\s+explicit|
 TYPES = {'string': 'string', 'str': 'string', 'integer': 'integer', 'int': 'integer', 'number': 'number',
          'float': 'number', 'boolean': 'boolean', 'bool': 'boolean', 'array': 'array', 'list': 'array',
          'object': 'object', 'dict': 'object', 'null': 'null', 'any': 'any'}
+
+
+@lru_cache(maxsize=512)
+def _json_validator(schema_text):
+    """Cache immutable schema compilation, never row arguments or verdicts."""
+    from jsonschema import Draft202012Validator, validators
+    schema=json.loads(schema_text)
+    cls=validators.validator_for(schema,default=None) if '$schema' in schema else Draft202012Validator
+    if cls is None:raise ValueError('UNSUPPORTED_SCHEMA_DIALECT')
+    cls.check_schema(schema)
+    return cls(schema)
+
+
+def _schema_key(schema):
+    return json.dumps(schema,sort_keys=True,separators=(',',':'))
 
 
 @dataclass
@@ -54,6 +70,7 @@ class ToolSpec:
     params: list = field(default_factory=list)
     understood: bool = True
     issues: list = field(default_factory=list)
+    json_schema: Optional[dict] = None
 
     @property
     def requires_confirmation(self):
@@ -98,6 +115,10 @@ def parse_catalog(text, start, end):
     """Parse the catalog that begins at `start` (the [AVAILABLE TOOLS] line) and runs to `end`."""
     if start < 0:
         return Catalog(False, issues=['NO_CATALOG'])
+    first_end=text.find('\n',start,end)
+    payload_start=first_end+1 if first_end>=0 else end
+    if text[payload_start:end].lstrip().startswith('['):
+        return _parse_json_catalog(text,start,end,payload_start)
     cat = Catalog(True, start, end)
     tool, stack, base = None, [], None
     lines = list(_line_iter(text, start, end))[1:]
@@ -173,6 +194,68 @@ def parse_catalog(text, start, end):
     return cat
 
 
+def _parse_json_catalog(text,start,end,payload_start):
+    """Read complete OpenAI function lists; unsupported schemas stay untrusted.
+
+    Presence/completeness of tool names is separate from schema understanding.
+    Validate JSON schemas directly so nullable/refs/arrays retain their semantics.
+    """
+    cat=Catalog(True,start,end);duplicates=[]
+    def local_refs_only(value):
+        if isinstance(value,dict):
+            for key in ('$ref','$dynamicRef','$recursiveRef'):
+                if key in value and (not isinstance(value[key],str) or not value[key].startswith('#/')):return False
+            return all(local_refs_only(v) for v in value.values())
+        if isinstance(value,list):return all(local_refs_only(v) for v in value)
+        return True
+    def pairs(items):
+        out={}
+        for k,v in items:
+            if k in out:duplicates.append(k)
+            out[k]=v
+        return out
+    try:tools=json.loads(text[payload_start:end],object_pairs_hook=pairs)
+    except (ValueError,TypeError,RecursionError):
+        cat.issues.append('MALFORMED_JSON_CATALOG');return cat
+    if not isinstance(tools,list):cat.issues.append('JSON_CATALOG_NOT_A_LIST');return cat
+    if duplicates:cat.issues.extend('DUPLICATE_JSON_KEY:'+k for k in duplicates)
+    for entry in tools:
+        if not isinstance(entry,dict):cat.issues.append('UNSUPPORTED_JSON_TOOL');continue
+        function=entry.get('function',entry)
+        if not isinstance(function,dict) or entry.get('type','function')!='function':
+            cat.issues.append('UNSUPPORTED_JSON_TOOL');continue
+        name=function.get('name')
+        if not isinstance(name,str) or not re.fullmatch(r'[A-Za-z0-9_.-]+',name):
+            cat.issues.append('INVALID_JSON_TOOL_NAME');continue
+        if name in cat.tools:cat.issues.append('DUPLICATE_TOOL:'+name)
+        spec=ToolSpec(name,str(function.get('description') or ''),payload_start,end)
+        schema=function.get('parameters')
+        if not isinstance(schema,dict) or schema.get('type')!='object' or not isinstance(schema.get('properties',{}),dict) or not local_refs_only(schema):
+            spec.understood=False;spec.issues.append('UNSUPPORTED_JSON_SCHEMA')
+        else:
+            try:
+                _json_validator(_schema_key(schema))
+                spec.json_schema=schema
+            except Exception as error:
+                spec.understood=False;spec.issues.append('JSON_SCHEMA_UNAVAILABLE_OR_INVALID:'+type(error).__name__)
+            for key,value in schema.get('properties',{}).items():
+                if not isinstance(value,dict):continue
+                kind=value.get('type','any');kind=kind if isinstance(kind,str) else 'any'
+                values=value.get('enum')
+                spec.params.append(Param(key,TYPES.get(kind,'any'),key in schema.get('required',[]),
+                    [v if isinstance(v,str) else json.dumps(v) for v in values] if isinstance(values,list) else None,
+                    str(value.get('description') or ''),payload_start,raw_type=kind))
+        cat.tools[name]=spec
+    # An ambiguous catalog can still provide hints, but never a schema verdict:
+    # duplicate keys or tool declarations do not identify an authoritative schema.
+    if duplicates or any(i.startswith('DUPLICATE_TOOL:') for i in cat.issues):
+        for spec in cat.tools.values():
+            spec.understood=False
+            spec.issues.append('AMBIGUOUS_JSON_CATALOG')
+    cat.complete=bool(cat.tools) and not cat.issues
+    return cat
+
+
 def _type_ok(value, kind):
     if kind == 'any':
         return True
@@ -212,6 +295,22 @@ def validate_arguments(spec, args):
         return ['ARGUMENTS_NOT_OBJECT']
     if spec is None or not spec.understood:
         return []
+    if spec.json_schema is not None:
+        out=[]
+        try:
+            for error in _json_validator(_schema_key(spec.json_schema)).iter_errors(args):
+                path='$'+''.join('['+str(k)+']' if isinstance(k,int) else '.'+str(k) for k in error.absolute_path)
+                if error.validator=='required':
+                    out.extend('MISSING '+path+'.'+str(k) for k in error.validator_value if k not in error.instance)
+                elif error.validator=='additionalProperties':
+                    out.append('UNEXPECTED '+path+': '+error.message)
+                elif error.validator in {'type','enum','const'}:
+                    out.append(error.validator.upper()+' '+path+': '+error.message)
+                # Complex union/ref failures are not reduced to an invented
+                # definite type error. Other constraints remain diagnostic.
+        except Exception:
+            return []
+        return list(dict.fromkeys(out))
     return _validate(args, spec.params, '$', top=True)
 
 

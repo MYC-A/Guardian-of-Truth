@@ -34,6 +34,7 @@ LINE = re.compile(r'[^\n]*\n|[^\n]+')
 ROLE_NAMES = {'system': 'system', 'user': 'user', 'assistant': 'assistant', 'agent': 'assistant',
               'tool': 'tool'}
 MAX_JSON_LINES = 200
+FENCE = re.compile(r'^ {0,3}(`{3,}|~{3,})([^\r\n]*)$')
 
 
 def decode_json(text):
@@ -316,9 +317,28 @@ def parse_document(text, doc='prompt'):
         b.diag.append('TRANSPORT_TAGS')
     lines = _lines(text, lo, hi)
     i = 0
+    fence = None
     while i < len(lines):
         line = lines[i]
         content = line[3]
+        # The documented TAB + two spaces belongs to an open result payload.
+        # Its embedded role headers/arrows are data, never transport markers.
+        if b.open is not None and b.open['kind']=='result' and content.startswith('\t  '):
+            b.on_plain(line)
+            i += 1
+            continue
+        fm = FENCE.match(content)
+        if fence is not None:
+            b.on_plain(line)
+            if fm and fm.group(1)[0] == fence[0] and len(fm.group(1)) >= fence[1] and not fm.group(2).strip():
+                fence = None
+            i += 1
+            continue
+        if fm:
+            fence = (fm.group(1)[0], len(fm.group(1)))
+            b.on_plain(line)
+            i += 1
+            continue
         hm = HEADER.match(content)
         if hm:
             kind, who, attrs, number = classify_header(hm.group('inner'))
@@ -350,6 +370,8 @@ def parse_document(text, doc='prompt'):
         b.on_plain(line)
         i += 1
     b.close()
+    if fence is not None:
+        b.diag.append('UNCLOSED_MARKDOWN_FENCE')
     if b.messages:
         last = b.messages[-1]
         last.span = Span(doc, last.span.start, hi)
@@ -366,8 +388,17 @@ def _pair(b):
             pending[e.tool].append(e)
         elif e.kind == 'result':
             queue = pending.get(e.tool)
-            if queue:
-                call = queue.popleft()
+            # Header-dialect requestor is authoritative. An explicit user
+            # result must not close an older pending assistant call (or vice versa).
+            if queue and e.owner != 'unknown':
+                call = next((c for c in queue if c.owner == e.owner), None)
+                if call is not None:
+                    queue.remove(call)
+                else:
+                    call = None
+            else:
+                call = queue.popleft() if queue else None
+            if call is not None:
                 call.pair, e.pair = e.index, call.index
                 if e.owner == 'unknown':
                     e.owner = call.owner
