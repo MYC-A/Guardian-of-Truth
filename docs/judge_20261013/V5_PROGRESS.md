@@ -1,5 +1,32 @@
 # V5: отдельная LoRA 35B, обучение запущено — 19.10.2026
 
+## 20.10, около 02:53 МСК: восстановление после перезапуска
+
+Доступ вернулся. PID1 нового контейнера стартовал в02:46:53МСК, собственные
+supervisor programs были STOPPED/Not started, GPU0MiB. Факт перезапуска подтверждён;
+инициирующая причина неизвестна. Последний complete checkpoint — step70/1120rows.
+Step71–72 были записаны в training log, но не checkpoint: 32примера повторяются.
+100LoRA tensors и100Adam states проверены на CPU, все конечные, Adam counters70.
+Backup `A:/Guardian-submissions/guardian-35b-lora-20261019/recovery70-export.tar.gz`
+42 887 300bytes, SHA `316fa2bad3375326f77967b52e180dd9618318a97fe2db93536340ecd93ed1cb`.
+Off-box размер/SHA проверены до запуска. Незавершённому run не добавлялся TRAINED.
+
+Новый `guardian-lab-v5-35b-recover-v1` (код `ab76843a`) запущен с полным
+состоянием step70; checkpoint теперь после каждого optimizer update.
+Разрешённый cap16часов сохраняется и учитывает последние зарегистрированные
+затраты, включая потерянные updates, плюс600секунд запаса на оборванный batch.
+Предыдущий admitted numeric gate проверяется по SHA; тёплая проверка весов
+повторяется. Adam/LR/данные/порядок/целевая функция не меняются.
+Итоговая full-only оценка: `guardian-lab-v5-35b-finish-v6`.
+Актуальный finite collector: `collection-v6`, указатель `LATEST_COLLECTION.json`.
+Протокол: [V5_RECOVERY_20261020.md](V5_RECOVERY_20261020.md).
+
+Проверка около 02:56 МСК: оба новых supervisor programs RUNNING, START подтверждает
+step70/1120 и `optimizer_reset=false`, `data_reordered=false`. Модель загружается
+на GPU (24 807 MiB), первого нового optimizer update ещё нет. Новый collector-v6
+получает свежие receipts; старый collector-v5 остановлен после проверки нового.
+Снимок: `v5_evidence/recovery_20261020/RUNNING.json`.
+
 ## 20.10, около 02:45 МСК: текущий статус не подтверждён из-за потери SSH
 
 Последняя синхронизация collection-v5 — 02:08 МСК. В ней train-full-v1:
