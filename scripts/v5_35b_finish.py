@@ -75,7 +75,7 @@ def main():
         # failed. Optimizer checkpoints remain separately in the training dir.
         with tarfile.open(archive, 'w:gz', compresslevel=3) as tar:
             for name in ('START.json', 'MODEL_READY.json', 'LOADER_COMPATIBILITY.json', 'TRAINED.json',
-                         'PROGRESS.json', 'FAIL.json', 'train.jsonl', 'adapter'):
+                         'PROGRESS.json', 'FAIL.json', 'training.jsonl', 'adapter', 'final'):
                 p = a.training / name
                 if p.exists():
                     tar.add(p, arcname='training/' + name)

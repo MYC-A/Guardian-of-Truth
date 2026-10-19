@@ -32,11 +32,16 @@ def main():
         while time.monotonic() - started < 46800:
             # Only fixed small status receipts, never stdout from a live model.
             names = ['TRAINING_PROFILE.json', 'train-v1/PROGRESS.json', 'train-v1/TRAINED.json', 'train-v1/FAIL.json',
+                     'launch-v1/PROGRESS.json', 'launch-v1/HEALTH_LATEST.json', 'launch-v1/FAIL.json',
                      a.finish + '/PROGRESS.json', a.finish + '/DONE.json', a.finish + '/FAIL.json',
                      a.finish + '-export.INDEX.json']
             code = ('from pathlib import Path\nimport json\nr=Path(' + repr(str(root)) + ')\n' +
                     'names=' + repr(names) + '\nprint(json.dumps({n:json.loads((r/n).read_bytes()) for n in names if (r/n).exists()}))\n')
-            result = subprocess.run(args + ['python3 -'], input=code.encode(), capture_output=True, timeout=50)
+            try:
+                result = subprocess.run(args + ['python3 -'], input=code.encode(), capture_output=True, timeout=50)
+            except subprocess.TimeoutExpired:
+                errors.append(dict(seconds=time.monotonic() - started, error='SSH_STATUS_TIMEOUT'))
+                write(a.out / 'COLLECTOR_ERRORS.json', errors[-20:]); time.sleep(60); continue
             if result.returncode:
                 errors.append(dict(seconds=time.monotonic() - started, exit_code=result.returncode))
                 write(a.out / 'COLLECTOR_ERRORS.json', errors[-20:]); time.sleep(60); continue
@@ -53,7 +58,8 @@ def main():
                     with part.open('wb') as stream:
                         result = subprocess.run(args + ['cat -- ' + shlex.quote(str(root / name))],
                                                 stdout=stream, stderr=subprocess.PIPE, timeout=1800)
-                    digest = hashlib.file_digest(part.open('rb'), 'sha256').hexdigest()
+                    with part.open('rb') as stream:
+                        digest = hashlib.file_digest(stream, 'sha256').hexdigest()
                     if result.returncode or part.stat().st_size != index['bytes'] or digest != index['sha256']:
                         raise ValueError('EXPORTED_BYTES_OR_SHA_MISMATCH')
                     part.replace(target); write(a.out / (name + '.INDEX.json'), index)
