@@ -35,6 +35,8 @@ CODE = {
     'scripts/predict.py': 'submission/predict_judge.py',
     'scripts/judge_submission.py': 'scripts/judge_submission.py',
     'scripts/judge_stage.py': 'scripts/judge_stage.py',
+    'scripts/judge_blend_submission.py': 'scripts/judge_blend_submission.py',
+    'scripts/judge_lora_stage.py': 'scripts/judge_lora_stage.py',
     'src/guardian_truth/judge/__init__.py': 'src/guardian_truth/judge/__init__.py',
     'src/guardian_truth/judge/mechanical.py': 'src/guardian_truth/judge/mechanical.py',
     'src/guardian_truth/judge/prompting.py': 'src/guardian_truth/judge/prompting.py',
@@ -48,7 +50,8 @@ for _module in ('__init__', 'model', 'parser', 'system', 'catalog', 'values', 'p
     CODE[_name] = _name
 REQUIRED = ('runtime/python/run_python.sh', 'runtime/python/bin/python3.12')
 # Runtime entry points. judge_stage starts u2_context as `python -m ...`, so no import leads to it.
-ENTRY_POINTS = ('scripts/judge_submission.py', 'scripts/judge_stage.py', 'src/guardian_truth/judge/u2_context.py')
+ENTRY_POINTS = ('scripts/judge_submission.py', 'scripts/judge_stage.py', 'scripts/judge_blend_submission.py',
+                'scripts/judge_lora_stage.py', 'src/guardian_truth/judge/u2_context.py')
 ENCODER_PREFIX = 'model/encoder/'
 # Must equal guardian_truth.judge.dense_encoder PINNED_* / REQUIRED_FILES (checked by tests/test_judge_u2.py).
 ENCODER_PIN = ('sentence-transformers/paraphrase-multilingual-MiniLM-L12-v2', 'e8f8c211226b894fcb81acc59f3b34ba3efd5f42')
@@ -187,9 +190,38 @@ def write_file(target, name, path):
         shutil.copyfileobj(source, stream, 8 << 20)
 
 
+def secondary_members(model_dir,adapter_dir,settings):
+    """Hash every pinned base file and the actual trained adapter; never trust a flag."""
+    from guardian_truth.judge.ensemble import BASE_ID,BASE_REVISION,ADAPTER_SHA256
+    model_dir,adapter_dir=Path(model_dir),Path(adapter_dir)
+    source=json.loads((model_dir/'VERIFIED.json').read_bytes())
+    if (source['repository'],source['revision'])!=(BASE_ID,BASE_REVISION):raise ValueError('SECONDARY_BASE_PIN')
+    members,manifest=model_members(model_dir,'model/judge4b/')
+    found={r['path']:r for r in manifest}
+    for row in source['files']:
+        actual=found.get(row['path'])
+        if actual is None or actual['size']!=row['bytes']:raise ValueError('SECONDARY_BASE_SIZE')
+        if row['algorithm']=='sha256':digest=actual['sha256']
+        elif row['algorithm']=='git-sha1':
+            raw=(model_dir/row['path']).read_bytes();digest=hashlib.sha1(('blob '+str(len(raw))+'\0').encode()+raw).hexdigest()
+        else:raise ValueError('SECONDARY_DIGEST_ALGORITHM')
+        if digest!=row['digest']:raise ValueError('SECONDARY_BASE_HASH:'+row['path'])
+    config=json.loads((adapter_dir/'adapter_config.json').read_bytes())
+    if config.get('r')!=16 or config.get('lora_alpha')!=32 or config.get('peft_type')!='LORA':
+        raise ValueError('SECONDARY_ADAPTER_CONFIG')
+    adapter_files=[]
+    for name in ('adapter_config.json','adapter_model.safetensors'):
+        path=adapter_dir/name;size,digest=sha256_file(path)
+        if name.endswith('.safetensors') and digest!=ADAPTER_SHA256:raise ValueError('SECONDARY_ADAPTER_HASH')
+        members.append(('model/judge4b-adapter/'+name,path,dict(bytes=size,sha256=digest,mode=0o644)))
+        adapter_files.append(dict(path=name,size=size,sha256=digest))
+    return members,dict(repository=BASE_ID,revision=BASE_REVISION,directory='model/judge4b',files=manifest,
+        adapter=dict(directory='model/judge4b-adapter',sha256=ADAPTER_SHA256,files=adapter_files))
+
+
 def build(source_zip, source_sha256, model_dir, model_id, model_revision, output, repo=None,
           encoder_dir=None, encoder_id=None, encoder_revision=None, context_mode=None,
-          judge_config=None, source_revision=None):
+          judge_config=None, source_revision=None, secondary_model_dir=None, adapter_dir=None):
     repo = Path(repo or Path(__file__).resolve().parents[1])
     if context_mode is not None and context_mode not in ('legacy', 'u2', 'u2_dense'):
         raise ValueError('INVALID_BUILD_CONTEXT_MODE:' + str(context_mode))
@@ -218,7 +250,16 @@ def build(source_zip, source_sha256, model_dir, model_id, model_revision, output
     validate_aggregate(config, [k for k, _, _ in score_keys(config)])
     review = validate_review_config(config)
     code['JUDGE_CONFIG.json'] = json_bytes(config)
-    if review['review_content'] == 'answer_audit':
+    if config.get('ensemble'):
+        from guardian_truth.judge.ensemble import validate,PRIMARY_ID,PRIMARY_REVISION
+        validate(config)
+        if (model_id,model_revision)!=(PRIMARY_ID,PRIMARY_REVISION):raise ValueError('ENSEMBLE_PRIMARY_PIN')
+        if secondary_model_dir is None or adapter_dir is None:raise ValueError('ENSEMBLE_WEIGHTS_REQUIRED')
+        if (config['model_dir'],config['ensemble']['model_dir'],config['ensemble']['adapter_dir'])!=('model/judge','model/judge4b','model/judge4b-adapter'):
+            raise ValueError('ENSEMBLE_ARCHIVE_PATHS')
+        code['README.md']=(repo/'docs/judge_20261013/README_BLEND40.md').read_bytes().replace(b'\r\n',b'\n')
+    elif secondary_model_dir is not None or adapter_dir is not None:raise ValueError('ENSEMBLE_CONFIG_REQUIRED')
+    elif review['review_content'] == 'answer_audit':
         code['README.md'] = (repo / 'docs/judge_20261013/README_OPEN_REVIEW40.md').read_bytes().replace(b'\r\n', b'\n')
     elif review['review_mode'] != 'off':
         code['README.md'] = (repo / 'docs/judge_20261013/README_BLIND_REVIEW_SUBMISSION.md').read_bytes().replace(b'\r\n', b'\n')
@@ -228,6 +269,9 @@ def build(source_zip, source_sha256, model_dir, model_id, model_revision, output
         code['README.md'] = (repo / 'docs/judge_20261013/README_6Q_MAX.md').read_bytes().replace(b'\r\n', b'\n')
     members, files_manifest = model_members(model_dir)
     judge_manifest = dict(repository=model_id, revision=model_revision, files=files_manifest)
+    if config.get('ensemble'):
+        extra,secondary=secondary_members(secondary_model_dir,adapter_dir,config['ensemble'])
+        members+=extra;judge_manifest['secondary']=secondary
     if encoder_dir is not None:
         check_encoder_dir(encoder_dir, encoder_id, encoder_revision)
         encoder_members, encoder_files = model_members(encoder_dir, ENCODER_PREFIX)
@@ -248,6 +292,11 @@ def build(source_zip, source_sha256, model_dir, model_id, model_revision, output
         original_raw = source.read('MANIFEST.json')
         manifest = json_read(original_raw)
         files = manifest['files']
+        if config.get('ensemble'):
+            prior=json.loads(source.read('JUDGE_MANIFEST.json'))
+            if (prior['repository'],prior['revision'])!=(model_id,model_revision):raise ValueError('PRIMARY_SOURCE_MODEL_PIN')
+            current={r['path']:(r['size'],r['sha256']) for r in files_manifest}
+            if any(current.get(r['path'])!=(r['size'],r['sha256']) for r in prior['files']):raise ValueError('PRIMARY_WEIGHTS_CHANGED')
         if set(files) != set(entries) - {'MANIFEST.json'}:
             raise ValueError('SOURCE_FILE_SET_MISMATCH')
         for name, row in files.items():
@@ -276,6 +325,7 @@ def build(source_zip, source_sha256, model_dir, model_id, model_revision, output
                                                                     directory=MODEL_PREFIX.rstrip('/')),
                           context_mode=config.get('context_mode', 'legacy'),
                           questions=config.get('questions', ['overall']), aggregate=config.get('aggregate', 'primary'),
+                          ensemble=config.get('ensemble'),bounded_turn_shape=bool(config.get('bounded_turn_shape',False)),
                           aggregate_keys=config.get('aggregate_keys', []),
                           dropped=len(dropped), replaced_or_added_code={n: expected[n]['sha256'] for n in code})
         final = dict(manifest, files=expected, judge_build=provenance, profile='SINGLE_PASS_JUDGE')
@@ -349,7 +399,10 @@ if __name__ == '__main__':
     parser.add_argument('--judge-config', type=Path, default=None,
                         help='Explicit opt-in archive config; repository production defaults stay unchanged')
     parser.add_argument('--source-revision', default=None, help='Pinned code commit recorded in the archive manifest')
+    parser.add_argument('--secondary-model-dir',type=Path)
+    parser.add_argument('--adapter-dir',type=Path)
     args = parser.parse_args()
     build(args.source_zip, args.source_sha256, args.model_dir, args.model_id, args.model_revision, args.output,
           encoder_dir=args.encoder_dir, encoder_id=args.encoder_id, encoder_revision=args.encoder_revision,
-          context_mode=args.context_mode, judge_config=args.judge_config, source_revision=args.source_revision)
+          context_mode=args.context_mode, judge_config=args.judge_config, source_revision=args.source_revision,
+          secondary_model_dir=args.secondary_model_dir,adapter_dir=args.adapter_dir)

@@ -44,7 +44,13 @@ def main(argv=None):
         print('GUARDIAN_JUDGE ignoring unknown arguments: %d' % len(unknown), flush=True)
     if args.input.resolve() == args.output.resolve():
         raise ValueError('INPUT_OUTPUT_SAME_PATH')
-    from scripts.judge_submission import run
+    config_path=root/'JUDGE_CONFIG.json'
+    import json
+    selected=json.loads(config_path.read_text(encoding='utf-8')) if config_path.is_file() else {}
+    if selected.get('ensemble'):
+        from scripts.judge_blend_submission import run
+    else:
+        from scripts.judge_submission import run
     return run(root, args.input, args.output, work=args.work_dir,
                started_wall=os.environ.get('GUARDIAN_STARTED_AT'))
 
