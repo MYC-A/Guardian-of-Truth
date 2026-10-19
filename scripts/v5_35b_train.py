@@ -14,7 +14,7 @@ sys.path[:0] = [str(ROOT), str(ROOT / 'src'), str(ROOT / 'scripts')]
 from v5_35b_common import BASE_ID, BASE_REVISION, FROZEN_SHA256, TRAIN_SHA256, awq_loader_compat, read, sha, target_names, target_suffixes, verify_model, write
 
 
-def check_gate(path, data, layers, shared):
+def check_gate(path, data, layers, shared, backend='AWQ_TORCH'):
     if path is None:
         raise ValueError('NATIVE_PREFLIGHT_GATE_REQUIRED')
     gate = json.loads(Path(path).read_bytes())
@@ -44,6 +44,8 @@ def check_gate(path, data, layers, shared):
         raise ValueError('NATIVE_MODEL_OR_ADAPTER_DRIFT')
     if native.get('pilot_tokens_sha256') != data['pilot_tokens_sha256']:
         raise ValueError('NATIVE_INPUT_DRIFT')
+    if gate.get('backend', 'AWQ_TORCH') != backend or pilot.get('backend') != backend:
+        raise ValueError('TRAINING_BACKEND_DRIFT')
     return gate
 
 
@@ -54,6 +56,7 @@ def main():
     parser.add_argument('--pilot', action='store_true')
     parser.add_argument('--layers', type=int, choices=(8, 40), default=40)
     parser.add_argument('--attention-only', action='store_true')
+    parser.add_argument('--backend', choices=('AWQ_TORCH', 'AWQ_GEMM_TRITON'), default='AWQ_TORCH')
     parser.add_argument('--gate', type=Path)
     parser.add_argument('--budget-seconds', type=int, default=14400)
     args = parser.parse_args()
@@ -71,7 +74,7 @@ def main():
         if len(records) != 1458 or any(r['label'] not in (0, 1) for r in records):
             raise ValueError('TRAIN_ROWS_OR_LABELS_DRIFT')
         shared = not args.attention_only
-        gate = None if args.pilot else check_gate(args.gate, data, args.layers, shared)
+        gate = None if args.pilot else check_gate(args.gate, data, args.layers, shared, args.backend)
         meta = dict(base_id=BASE_ID, base_revision=BASE_REVISION, pilot=args.pilot, optimizer_updates=0,
                     layers=args.layers, shared=shared, rank=16, alpha=32, dropout=.05, learning_rate=2e-5,
                     effective_batch=16, seed=20261019, rows=len(records), tokens=data['tokens'],
@@ -87,6 +90,8 @@ def main():
         import torch
         from peft import LoraConfig, get_peft_model
         from gptqmodel import GPTQModel, BACKEND
+        dtype = torch.bfloat16 if args.backend == 'AWQ_TORCH' else torch.float16
+        loss_scale = 1.0 if dtype == torch.bfloat16 else 128.0
         torch.set_num_threads(6)
         torch.manual_seed(20261019)
         random.seed(20261019)
@@ -99,10 +104,10 @@ def main():
             except importlib.metadata.PackageNotFoundError:
                 meta['versions'][name] = None
         timer = time.monotonic()
-        print(json.dumps(dict(event='load_35b_awq', backend='AWQ_TORCH', dtype='bfloat16')), flush=True)
+        print(json.dumps(dict(event='load_35b_awq', backend=args.backend, dtype=str(dtype))), flush=True)
         with awq_loader_compat(args.model, args.out / 'LOADER_COMPATIBILITY.json'):
-            quantized = GPTQModel.load(str(args.model), device='cuda:0', backend=BACKEND.AWQ_TORCH,
-                                       dtype=torch.bfloat16, trust_remote_code=False, local_files_only=True,
+            quantized = GPTQModel.load(str(args.model), device='cuda:0', backend=getattr(BACKEND, args.backend),
+                                       dtype=dtype, trust_remote_code=False, local_files_only=True,
                                        attn_implementation='sdpa')
         base = quantized.model
         for parameter in base.parameters():
@@ -132,7 +137,8 @@ def main():
         if any(p.device.type != 'cuda' for _, p in trainable):
             raise ValueError('TRAINABLE_PARAMETER_NOT_ON_GPU')
         meta.update(target_modules=targets, trainable_parameters=sum(p.numel() for _, p in trainable),
-                    model_load_seconds=time.monotonic() - timer, dtype='bfloat16', backend='AWQ_TORCH')
+                    model_load_seconds=time.monotonic() - timer, dtype=str(dtype).removeprefix('torch.'),
+                    backend=args.backend, loss_scale=loss_scale)
         meta['gdn_kernels'] = sorted({str(getattr(m.chunk_gated_delta_rule, '__module__', 'unknown')) + '.' +
                                       str(getattr(m.chunk_gated_delta_rule, '__name__', 'unknown'))
                                       for m in base.modules() if hasattr(m, 'chunk_gated_delta_rule')})
@@ -142,7 +148,7 @@ def main():
 
         def odds(record):
             ids = torch.tensor([record['ids']], device='cuda')
-            with torch.autocast('cuda', dtype=torch.bfloat16):
+            with torch.autocast('cuda', dtype=dtype):
                 logits = model(input_ids=ids, attention_mask=torch.ones_like(ids),
                     mm_token_type_ids=torch.zeros_like(ids), use_cache=False, logits_to_keep=1).logits[0, -1].float()
             return torch.logsumexp(logits[yi], 0) - torch.logsumexp(logits[ni], 0)
@@ -178,7 +184,10 @@ def main():
                 loss = torch.nn.functional.binary_cross_entropy_with_logits(score, score.new_tensor(float(record['label'])))
                 if not bool(torch.isfinite(loss)):
                     raise ValueError('NONFINITE_PILOT_LOSS')
-                loss.backward()
+                (loss * loss_scale).backward()
+                for _, parameter in trainable:
+                    if parameter.grad is not None:
+                        parameter.grad.div_(loss_scale)
                 grads = [(n, p.grad) for n, p in trainable]
                 if any(g is None for _, g in grads):
                     raise ValueError('MISSING_LORA_GRADIENT')
@@ -237,9 +246,12 @@ def main():
                     loss = torch.nn.functional.binary_cross_entropy_with_logits(score, score.new_tensor(float(record['label'])))
                     if not bool(torch.isfinite(loss)):
                         raise ValueError('NONFINITE_TRAIN_LOSS')
-                    (loss / len(batch)).backward(); losses.append(float(loss.detach())); forwarded += 1
+                    (loss * (loss_scale / len(batch))).backward(); losses.append(float(loss.detach())); forwarded += 1
                 if len(losses) != len(batch):
                     optimizer.zero_grad(set_to_none=True); break
+                for parameter in parameters:
+                    if parameter.grad is not None:
+                        parameter.grad.div_(loss_scale)
                 norm = float(torch.nn.utils.clip_grad_norm_(parameters, 1.0))
                 if not math.isfinite(norm):
                     raise ValueError('NONFINITE_TRAIN_GRADIENT_NORM')
