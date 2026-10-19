@@ -16,6 +16,8 @@ S_OR: flags добавлены после прежнего решения, бе�
 положительных. Показать оба для current35B и фиксированной M3, не выбирать
 вариант по наилучшему F1. Показать TP gained/lost и FP removed/added, flagged
 label0 IDs, исходные policy/turn hashes. Это проверка потенциала, не ACCEPT.
+Для разницы F1 —1000 common conversation-group bootstrap, пересчитать ранги
+M3, quota и flags/hard mappings внутри draw, seed20261019; CI95 и пропуски.
 
 До вывода о безопасном hard gate проверить production-parser-compatible
 контрпримеры: разрешено несколько вызовов; подтверждённый пользователь при
