@@ -1,0 +1,830 @@
+{
+  "status": "DIAGNOSTIC_NOT_ACCEPTED",
+  "gate": "bounded",
+  "production_changed": false,
+  "raw_flags_are_not_applicability_proof": true,
+  "counterexamples": [
+    {
+      "id": "explicit_one",
+      "policy": "You should only make one tool call at a time.",
+      "response": "\u27e6ASSISTANT \u00b7 \u0445\u043e\u0434 2\u27e7\n\t\u2192 TOOL_CALL lookup: {\"id\":\"a\"}\n\t\u2192 TOOL_CALL lookup: {\"id\":\"b\"}",
+      "user": "OK",
+      "expected_shape_violation": true,
+      "unsafe_raw_flag_positive": true,
+      "flags": [
+        "several_calls_against_policy"
+      ],
+      "facts": {
+        "n_calls": 2,
+        "has_text": false,
+        "one_call_rule": true,
+        "exclusive_rule": false,
+        "text_and_calls": false
+      },
+      "hard": [],
+      "analysis_error": null,
+      "bounded": {
+        "status": "BOUNDED_RESEARCH_CANDIDATE",
+        "violations": [
+          {
+            "kind": "MAX_ONE_CALL",
+            "quote": "You should only make one tool call at a time.",
+            "span": [
+              18,
+              63
+            ]
+          }
+        ],
+        "admitted": [
+          {
+            "kind": "MAX_ONE_CALL",
+            "quote": "You should only make one tool call at a time.",
+            "span": [
+              18,
+              63
+            ]
+          }
+        ],
+        "facts": {
+          "n_calls": 2,
+          "has_visible_text": false,
+          "call_spans": [
+            [
+              20,
+              51
+            ],
+            [
+              52,
+              83
+            ]
+          ],
+          "text": []
+        },
+        "general_semantic_proof": false,
+        "production_enabled": false
+      }
+    },
+    {
+      "id": "permission_more_than_one",
+      "policy": "You may make more than one tool call at a time.",
+      "response": "\u27e6ASSISTANT \u00b7 \u0445\u043e\u0434 2\u27e7\n\t\u2192 TOOL_CALL lookup: {\"id\":\"a\"}\n\t\u2192 TOOL_CALL lookup: {\"id\":\"b\"}",
+      "user": "OK",
+      "expected_shape_violation": false,
+      "unsafe_raw_flag_positive": false,
+      "flags": [
+        "several_calls_against_policy"
+      ],
+      "facts": {
+        "n_calls": 2,
+        "has_text": false,
+        "one_call_rule": true,
+        "exclusive_rule": false,
+        "text_and_calls": false
+      },
+      "hard": [],
+      "analysis_error": null,
+      "bounded": {
+        "status": "UNKNOWN",
+        "reason": "UNSUPPORTED_RELATED_CLAUSE",
+        "violations": [],
+        "facts": {
+          "n_calls": 2,
+          "has_visible_text": false,
+          "call_spans": [
+            [
+              20,
+              51
+            ],
+            [
+              52,
+              83
+            ]
+          ],
+          "text": []
+        }
+      }
+    },
+    {
+      "id": "scope_user_confirmed",
+      "policy": "Before confirmation, you should only make one tool call at a time.\nAfter confirmation, multiple calls are allowed.",
+      "response": "\u27e6ASSISTANT \u00b7 \u0445\u043e\u0434 2\u27e7\n\t\u2192 TOOL_CALL lookup: {\"id\":\"a\"}\n\t\u2192 TOOL_CALL lookup: {\"id\":\"b\"}",
+      "user": "Yes, confirmed.",
+      "expected_shape_violation": false,
+      "unsafe_raw_flag_positive": false,
+      "flags": [
+        "several_calls_against_policy"
+      ],
+      "facts": {
+        "n_calls": 2,
+        "has_text": false,
+        "one_call_rule": true,
+        "exclusive_rule": false,
+        "text_and_calls": false
+      },
+      "hard": [],
+      "analysis_error": null,
+      "bounded": {
+        "status": "UNKNOWN",
+        "reason": "UNSUPPORTED_RELATED_CLAUSE",
+        "violations": [],
+        "facts": {
+          "n_calls": 2,
+          "has_visible_text": false,
+          "call_spans": [
+            [
+              20,
+              51
+            ],
+            [
+              52,
+              83
+            ]
+          ],
+          "text": []
+        }
+      }
+    },
+    {
+      "id": "read_only_exception",
+      "policy": "You should only make one tool call at a time, except for read-only lookups.",
+      "response": "\u27e6ASSISTANT \u00b7 \u0445\u043e\u0434 2\u27e7\n\t\u2192 TOOL_CALL lookup: {\"id\":\"a\"}\n\t\u2192 TOOL_CALL lookup: {\"id\":\"b\"}",
+      "user": "OK",
+      "expected_shape_violation": false,
+      "unsafe_raw_flag_positive": false,
+      "flags": [
+        "several_calls_against_policy"
+      ],
+      "facts": {
+        "n_calls": 2,
+        "has_text": false,
+        "one_call_rule": true,
+        "exclusive_rule": false,
+        "text_and_calls": false
+      },
+      "hard": [],
+      "analysis_error": null,
+      "bounded": {
+        "status": "UNKNOWN",
+        "reason": "LINKED_EXCEPTION_OR_RULE_REVISION",
+        "violations": [],
+        "facts": {
+          "n_calls": 2,
+          "has_visible_text": false,
+          "call_spans": [
+            [
+              20,
+              51
+            ],
+            [
+              52,
+              83
+            ]
+          ],
+          "text": []
+        }
+      }
+    },
+    {
+      "id": "obsolete_quote",
+      "policy": "The obsolete rule was \"You should only make one tool call at a time.\"\nThat rule is revoked; multiple calls are allowed.",
+      "response": "\u27e6ASSISTANT \u00b7 \u0445\u043e\u0434 2\u27e7\n\t\u2192 TOOL_CALL lookup: {\"id\":\"a\"}\n\t\u2192 TOOL_CALL lookup: {\"id\":\"b\"}",
+      "user": "OK",
+      "expected_shape_violation": false,
+      "unsafe_raw_flag_positive": false,
+      "flags": [
+        "several_calls_against_policy"
+      ],
+      "facts": {
+        "n_calls": 2,
+        "has_text": false,
+        "one_call_rule": true,
+        "exclusive_rule": false,
+        "text_and_calls": false
+      },
+      "hard": [],
+      "analysis_error": null,
+      "bounded": {
+        "status": "UNKNOWN",
+        "reason": "LINKED_EXCEPTION_OR_RULE_REVISION",
+        "violations": [],
+        "facts": {
+          "n_calls": 2,
+          "has_visible_text": false,
+          "call_spans": [
+            [
+              20,
+              51
+            ],
+            [
+              52,
+              83
+            ]
+          ],
+          "text": []
+        }
+      }
+    },
+    {
+      "id": "user_only_prohibition",
+      "policy": "Multiple calls are allowed.",
+      "response": "\u27e6ASSISTANT \u00b7 \u0445\u043e\u0434 2\u27e7\n\t\u2192 TOOL_CALL lookup: {\"id\":\"a\"}\n\t\u2192 TOOL_CALL lookup: {\"id\":\"b\"}",
+      "user": "You should only make one tool call at a time.",
+      "expected_shape_violation": false,
+      "unsafe_raw_flag_positive": false,
+      "flags": [],
+      "facts": {
+        "n_calls": 2,
+        "has_text": false,
+        "one_call_rule": false,
+        "exclusive_rule": false,
+        "text_and_calls": false
+      },
+      "hard": [],
+      "analysis_error": null,
+      "bounded": {
+        "status": "NO_SUPPORTED_RULE",
+        "violations": [],
+        "admitted": [],
+        "facts": {
+          "n_calls": 2,
+          "has_visible_text": false,
+          "call_spans": [
+            [
+              20,
+              51
+            ],
+            [
+              52,
+              83
+            ]
+          ],
+          "text": []
+        },
+        "general_semantic_proof": false,
+        "production_enabled": false
+      }
+    },
+    {
+      "id": "mixed_allowed",
+      "policy": "You may explain the action and call a tool in the same turn.",
+      "response": "\u27e6ASSISTANT \u00b7 \u0445\u043e\u0434 2\u27e7\nI will look it up.\n\t\u2192 TOOL_CALL lookup: {\"id\":\"a\"}",
+      "user": "OK",
+      "expected_shape_violation": false,
+      "unsafe_raw_flag_positive": false,
+      "flags": [],
+      "facts": {
+        "n_calls": 1,
+        "has_text": true,
+        "one_call_rule": false,
+        "exclusive_rule": false,
+        "text_and_calls": true
+      },
+      "hard": [],
+      "analysis_error": null,
+      "bounded": {
+        "status": "NO_SUPPORTED_RULE",
+        "violations": [],
+        "admitted": [],
+        "facts": {
+          "n_calls": 1,
+          "has_visible_text": true,
+          "call_spans": [
+            [
+              39,
+              70
+            ]
+          ],
+          "text": [
+            {
+              "start": 20,
+              "end": 38,
+              "text": "I will look it up."
+            }
+          ]
+        },
+        "general_semantic_proof": false,
+        "production_enabled": false
+      }
+    },
+    {
+      "id": "mixed_explicit",
+      "policy": "If you make a tool call, you should not respond to the user at the same time.",
+      "response": "\u27e6ASSISTANT \u00b7 \u0445\u043e\u0434 2\u27e7\nI will look it up.\n\t\u2192 TOOL_CALL lookup: {\"id\":\"a\"}",
+      "user": "OK",
+      "expected_shape_violation": true,
+      "unsafe_raw_flag_positive": true,
+      "flags": [
+        "text_and_calls_against_policy"
+      ],
+      "facts": {
+        "n_calls": 1,
+        "has_text": true,
+        "one_call_rule": false,
+        "exclusive_rule": true,
+        "text_and_calls": true
+      },
+      "hard": [],
+      "analysis_error": null,
+      "bounded": {
+        "status": "BOUNDED_RESEARCH_CANDIDATE",
+        "violations": [
+          {
+            "kind": "NO_TEXT_WITH_CALL",
+            "quote": "If you make a tool call, you should not respond to the user at the same time.",
+            "span": [
+              18,
+              95
+            ]
+          }
+        ],
+        "admitted": [
+          {
+            "kind": "NO_TEXT_WITH_CALL",
+            "quote": "If you make a tool call, you should not respond to the user at the same time.",
+            "span": [
+              18,
+              95
+            ]
+          }
+        ],
+        "facts": {
+          "n_calls": 1,
+          "has_visible_text": true,
+          "call_spans": [
+            [
+              39,
+              70
+            ]
+          ],
+          "text": [
+            {
+              "start": 20,
+              "end": 38,
+              "text": "I will look it up."
+            }
+          ]
+        },
+        "general_semantic_proof": false,
+        "production_enabled": false
+      }
+    }
+  ],
+  "counterexample_false_positives": [],
+  "cohorts": {
+    "seen397": {
+      "rows": 397,
+      "flagged": 94,
+      "flagged_gold0": [],
+      "arms": {
+        "current35b": {
+          "reference": {
+            "tp": 151,
+            "fp": 8,
+            "fn": 92,
+            "tn": 146,
+            "precision": 0.949685534591195,
+            "recall": 0.6213991769547325,
+            "f1": 0.7512437810945274,
+            "fpr": 0.05194805194805195,
+            "false_discovery_rate": 0.050314465408805034,
+            "changes": {
+              "tp_gained": 0,
+              "tp_lost": 0,
+              "fp_added": 0,
+              "fp_removed": 0
+            }
+          },
+          "quota": {
+            "tp": 156,
+            "fp": 3,
+            "fn": 87,
+            "tn": 151,
+            "precision": 0.9811320754716981,
+            "recall": 0.6419753086419753,
+            "f1": 0.7761194029850746,
+            "fpr": 0.01948051948051948,
+            "false_discovery_rate": 0.018867924528301886,
+            "changes": {
+              "tp_gained": 36,
+              "tp_lost": 31,
+              "fp_added": 0,
+              "fp_removed": 5
+            },
+            "f1_difference_ci95": [
+              0.004987531172069737,
+              0.05224878957641513
+            ]
+          },
+          "OR": {
+            "tp": 187,
+            "fp": 8,
+            "fn": 56,
+            "tn": 146,
+            "precision": 0.958974358974359,
+            "recall": 0.7695473251028807,
+            "f1": 0.8538812785388128,
+            "fpr": 0.05194805194805195,
+            "false_discovery_rate": 0.041025641025641026,
+            "changes": {
+              "tp_gained": 36,
+              "tp_lost": 0,
+              "fp_added": 0,
+              "fp_removed": 0
+            },
+            "f1_difference_ci95": [
+              0.06703541538023897,
+              0.13839631591430154
+            ]
+          }
+        },
+        "blend": {
+          "reference": {
+            "tp": 155,
+            "fp": 4,
+            "fn": 88,
+            "tn": 150,
+            "precision": 0.9748427672955975,
+            "recall": 0.6378600823045267,
+            "f1": 0.7711442786069652,
+            "fpr": 0.025974025974025976,
+            "false_discovery_rate": 0.025157232704402517,
+            "changes": {
+              "tp_gained": 0,
+              "tp_lost": 0,
+              "fp_added": 0,
+              "fp_removed": 0
+            }
+          },
+          "quota": {
+            "tp": 158,
+            "fp": 1,
+            "fn": 85,
+            "tn": 153,
+            "precision": 0.9937106918238994,
+            "recall": 0.6502057613168725,
+            "f1": 0.7860696517412935,
+            "fpr": 0.006493506493506494,
+            "false_discovery_rate": 0.006289308176100629,
+            "changes": {
+              "tp_gained": 30,
+              "tp_lost": 27,
+              "fp_added": 0,
+              "fp_removed": 3
+            },
+            "f1_difference_ci95": [
+              0.0,
+              0.034828041835709186
+            ]
+          },
+          "OR": {
+            "tp": 185,
+            "fp": 4,
+            "fn": 58,
+            "tn": 150,
+            "precision": 0.9788359788359788,
+            "recall": 0.7613168724279835,
+            "f1": 0.8564814814814815,
+            "fpr": 0.025974025974025976,
+            "false_discovery_rate": 0.021164021164021163,
+            "changes": {
+              "tp_gained": 30,
+              "tp_lost": 0,
+              "fp_added": 0,
+              "fp_removed": 0
+            },
+            "f1_difference_ci95": [
+              0.05642644704704513,
+              0.11411663672312518
+            ]
+          }
+        }
+      }
+    },
+    "real191": {
+      "rows": 191,
+      "flagged": 88,
+      "flagged_gold0": [],
+      "arms": {
+        "current35b": {
+          "reference": {
+            "tp": 70,
+            "fp": 6,
+            "fn": 71,
+            "tn": 44,
+            "precision": 0.9210526315789473,
+            "recall": 0.49645390070921985,
+            "f1": 0.6451612903225806,
+            "fpr": 0.12,
+            "false_discovery_rate": 0.07894736842105263,
+            "changes": {
+              "tp_gained": 0,
+              "tp_lost": 0,
+              "fp_added": 0,
+              "fp_removed": 0
+            }
+          },
+          "quota": {
+            "tp": 88,
+            "fp": 0,
+            "fn": 53,
+            "tn": 50,
+            "precision": 1.0,
+            "recall": 0.624113475177305,
+            "f1": 0.7685589519650655,
+            "fpr": 0.0,
+            "false_discovery_rate": 0.0,
+            "changes": {
+              "tp_gained": 41,
+              "tp_lost": 23,
+              "fp_added": 0,
+              "fp_removed": 6
+            },
+            "f1_difference_ci95": [
+              0.056832262021416106,
+              0.20363317184931265
+            ]
+          },
+          "OR": {
+            "tp": 111,
+            "fp": 6,
+            "fn": 30,
+            "tn": 44,
+            "precision": 0.9487179487179487,
+            "recall": 0.7872340425531915,
+            "f1": 0.8604651162790697,
+            "fpr": 0.12,
+            "false_discovery_rate": 0.05128205128205128,
+            "changes": {
+              "tp_gained": 41,
+              "tp_lost": 0,
+              "fp_added": 0,
+              "fp_removed": 0
+            },
+            "f1_difference_ci95": [
+              0.17519785232955953,
+              0.26660377345220615
+            ]
+          }
+        },
+        "blend": {
+          "reference": {
+            "tp": 74,
+            "fp": 2,
+            "fn": 67,
+            "tn": 48,
+            "precision": 0.9736842105263158,
+            "recall": 0.524822695035461,
+            "f1": 0.6820276497695853,
+            "fpr": 0.04,
+            "false_discovery_rate": 0.02631578947368421,
+            "changes": {
+              "tp_gained": 0,
+              "tp_lost": 0,
+              "fp_added": 0,
+              "fp_removed": 0
+            }
+          },
+          "quota": {
+            "tp": 88,
+            "fp": 0,
+            "fn": 53,
+            "tn": 50,
+            "precision": 1.0,
+            "recall": 0.624113475177305,
+            "f1": 0.7685589519650655,
+            "fpr": 0.0,
+            "false_discovery_rate": 0.0,
+            "changes": {
+              "tp_gained": 37,
+              "tp_lost": 23,
+              "fp_added": 0,
+              "fp_removed": 2
+            },
+            "f1_difference_ci95": [
+              0.017918824261062543,
+              0.15577245507035672
+            ]
+          },
+          "OR": {
+            "tp": 111,
+            "fp": 2,
+            "fn": 30,
+            "tn": 48,
+            "precision": 0.9823008849557522,
+            "recall": 0.7872340425531915,
+            "f1": 0.8740157480314961,
+            "fpr": 0.04,
+            "false_discovery_rate": 0.017699115044247787,
+            "changes": {
+              "tp_gained": 37,
+              "tp_lost": 0,
+              "fp_added": 0,
+              "fp_removed": 0
+            },
+            "f1_difference_ci95": [
+              0.14922308519354735,
+              0.2460246540315652
+            ]
+          }
+        }
+      }
+    },
+    "valid46": {
+      "rows": 46,
+      "flagged": 6,
+      "flagged_gold0": [],
+      "arms": {
+        "current35b": {
+          "reference": {
+            "tp": 17,
+            "fp": 1,
+            "fn": 6,
+            "tn": 22,
+            "precision": 0.9444444444444444,
+            "recall": 0.7391304347826086,
+            "f1": 0.8292682926829268,
+            "fpr": 0.043478260869565216,
+            "false_discovery_rate": 0.05555555555555555,
+            "changes": {
+              "tp_gained": 0,
+              "tp_lost": 0,
+              "fp_added": 0,
+              "fp_removed": 0
+            }
+          },
+          "quota": {
+            "tp": 17,
+            "fp": 1,
+            "fn": 6,
+            "tn": 22,
+            "precision": 0.9444444444444444,
+            "recall": 0.7391304347826086,
+            "f1": 0.8292682926829268,
+            "fpr": 0.043478260869565216,
+            "false_discovery_rate": 0.05555555555555555,
+            "changes": {
+              "tp_gained": 0,
+              "tp_lost": 0,
+              "fp_added": 0,
+              "fp_removed": 0
+            },
+            "f1_difference_ci95": [
+              0.0,
+              0.0
+            ]
+          },
+          "OR": {
+            "tp": 17,
+            "fp": 1,
+            "fn": 6,
+            "tn": 22,
+            "precision": 0.9444444444444444,
+            "recall": 0.7391304347826086,
+            "f1": 0.8292682926829268,
+            "fpr": 0.043478260869565216,
+            "false_discovery_rate": 0.05555555555555555,
+            "changes": {
+              "tp_gained": 0,
+              "tp_lost": 0,
+              "fp_added": 0,
+              "fp_removed": 0
+            },
+            "f1_difference_ci95": [
+              0.0,
+              0.050724637681159424
+            ]
+          }
+        },
+        "blend": {
+          "reference": {
+            "tp": 18,
+            "fp": 0,
+            "fn": 5,
+            "tn": 23,
+            "precision": 1.0,
+            "recall": 0.782608695652174,
+            "f1": 0.8780487804878049,
+            "fpr": 0.0,
+            "false_discovery_rate": 0.0,
+            "changes": {
+              "tp_gained": 0,
+              "tp_lost": 0,
+              "fp_added": 0,
+              "fp_removed": 0
+            }
+          },
+          "quota": {
+            "tp": 18,
+            "fp": 0,
+            "fn": 5,
+            "tn": 23,
+            "precision": 1.0,
+            "recall": 0.782608695652174,
+            "f1": 0.8780487804878049,
+            "fpr": 0.0,
+            "false_discovery_rate": 0.0,
+            "changes": {
+              "tp_gained": 0,
+              "tp_lost": 0,
+              "fp_added": 0,
+              "fp_removed": 0
+            },
+            "f1_difference_ci95": [
+              0.0,
+              0.0
+            ]
+          },
+          "OR": {
+            "tp": 18,
+            "fp": 0,
+            "fn": 5,
+            "tn": 23,
+            "precision": 1.0,
+            "recall": 0.782608695652174,
+            "f1": 0.8780487804878049,
+            "fpr": 0.0,
+            "false_discovery_rate": 0.0,
+            "changes": {
+              "tp_gained": 0,
+              "tp_lost": 0,
+              "fp_added": 0,
+              "fp_removed": 0
+            },
+            "f1_difference_ci95": [
+              0.0,
+              0.0
+            ]
+          }
+        }
+      }
+    },
+    "dev520": {
+      "rows": 520,
+      "flagged": 0,
+      "flagged_gold0": [],
+      "arms": {
+        "current35b": {
+          "reference": {
+            "tp": 111,
+            "fp": 97,
+            "fn": 34,
+            "tn": 278,
+            "precision": 0.5336538461538461,
+            "recall": 0.7655172413793103,
+            "f1": 0.6288951841359773,
+            "fpr": 0.25866666666666666,
+            "false_discovery_rate": 0.46634615384615385,
+            "changes": {
+              "tp_gained": 0,
+              "tp_lost": 0,
+              "fp_added": 0,
+              "fp_removed": 0
+            }
+          },
+          "quota": {
+            "tp": 111,
+            "fp": 97,
+            "fn": 34,
+            "tn": 278,
+            "precision": 0.5336538461538461,
+            "recall": 0.7655172413793103,
+            "f1": 0.6288951841359773,
+            "fpr": 0.25866666666666666,
+            "false_discovery_rate": 0.46634615384615385,
+            "changes": {
+              "tp_gained": 0,
+              "tp_lost": 0,
+              "fp_added": 0,
+              "fp_removed": 0
+            },
+            "f1_difference_ci95": [
+              0.0,
+              0.0
+            ]
+          },
+          "OR": {
+            "tp": 111,
+            "fp": 97,
+            "fn": 34,
+            "tn": 278,
+            "precision": 0.5336538461538461,
+            "recall": 0.7655172413793103,
+            "f1": 0.6288951841359773,
+            "fpr": 0.25866666666666666,
+            "false_discovery_rate": 0.46634615384615385,
+            "changes": {
+              "tp_gained": 0,
+              "tp_lost": 0,
+              "fp_added": 0,
+              "fp_removed": 0
+            },
+            "f1_difference_ci95": [
+              0.0,
+              0.0
+            ]
+          }
+        }
+      }
+    }
+  }
+}
