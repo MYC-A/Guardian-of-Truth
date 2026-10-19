@@ -29,19 +29,22 @@ def main():
             print(json.dumps(dict(event='reused',path=row['path'])),flush=True);return
         path.parent.mkdir(parents=True,exist_ok=True);part=path.with_suffix(path.suffix+'.http-part');errors=0;last=0
         if row['bytes']>128<<20:
-            offset=part.stat().st_size if part.exists() else 0;block=32<<20
+            offset=part.stat().st_size if part.exists() else 0;block=4<<20
             ranges=[(start,min(row['bytes'],start+block)-1) for start in range(offset,row['bytes'],block)]
             def fetch(bounds):
                 start,end=bounds;chunk=part.with_name(part.name+'.range-'+str(start))
                 if chunk.is_file() and chunk.stat().st_size==end-start+1:return chunk
                 for attempt in range(4):
                     try:
-                        url='https://huggingface.co/'+m['repository']+'/resolve/'+m['revision']+'/'+row['path']+'?download=true&guardian_offset='+str(start)
+                        url='https://huggingface.co/'+m['repository']+'/resolve/'+m['revision']+'/'+row['path']+'?download=true&guardian_offset='+str(start)+'&request_ns='+str(time.time_ns())
                         request=urllib.request.Request(url,headers={'Range':f'bytes={start}-{end}'})
-                        with urllib.request.urlopen(request,timeout=30) as response:
+                        request_started=time.monotonic()
+                        with urllib.request.urlopen(request,timeout=20) as response:
                             assert response.status==206 and response.headers.get('Content-Range')==f'bytes {start}-{end}/{row["bytes"]}','BAD_PARALLEL_RANGE'
                             with chunk.open('wb') as out:
-                                for data in iter(lambda:response.read(4<<20),b''):out.write(data)
+                                for data in iter(lambda:response.read(1<<20),b''):
+                                    out.write(data)
+                                    if time.monotonic()-request_started>150:raise TimeoutError('HTTP_RANGE_WALL_LIMIT')
                         assert chunk.stat().st_size==end-start+1,'SHORT_PARALLEL_RANGE'
                         return chunk
                     except Exception:
