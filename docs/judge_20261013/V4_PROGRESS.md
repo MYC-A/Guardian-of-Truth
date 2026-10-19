@@ -2,13 +2,17 @@
 
 Это продолжение поручения: исправления + новые данные + fresh-base LoRA + сравнение.
 E2 завершён, опубликован отдельно в V3_E2_RESULTS.md. Здесь нет заявленного прироста
-на закрытом тесте и нет нового готового ZIP. **Fresh-base V4 LoRA обучается**,
-первый optimizer step подтверждён:16/1458 строк, finite loss. Ниже есть исторические
+на закрытом тесте и нет нового готового ZIP. **Обучение fresh-base V4 LoRA завершено**:
+1458/1458 строк,92 шага,полная эпоха за5102.83с. Ниже есть исторические
 этапы подготовки; актуальная цепочка и final data приведены первыми.
 
-Последняя живая проверка: train-v1 и finish-v1 RUNNING; step23,
-368/1458 строк, optimizer wall1290с, finite loss. Это состояние проверки,
-не обещание текущего значения и не результат quality evaluation.
+Train-v1 теперь выполняет парную оценку base/adapter; finish-v1 ждёт её завершения.
+Адаптер132187888bytes сохранён offbox, SHA256 сверён с TRAINED receipt.
+Первые полностью парные результаты: DEV152 F1 .7153→.8905 относительно base4B;
+HOLDOUT336 .7532→.8701. Однако valid46: LoRA .7805 против .8293 у35B/base4B,
+смесь с35B .8293. [Предварительный отчёт](V4_INTERIM_RESULTS.md).
+В последнем сохранённом interim2165/2810 scores, real191/dev520 ещё не полны.
+Интервалы и35B на новых synthetic DEV/HOLDOUT ещё ожидаются; конкурсный gain не установлен.
 
 По дополнительному поручению выполнен [повторный аудит парсера](V4_PARSER_REAUDIT.md):
 исправлены JSON-каталог, границы результатов/цитат, явный владелец и консервативное
@@ -26,6 +30,7 @@ E2 завершён, опубликован отдельно в V3_E2_RESULTS.md
   фактическое время/полная epoch_complete будут в TRAINED/DONE. Бюджет optimizer5400с;
   незаконченная эпоха обозначается честно. Последнее поручение пользователя допускает
   необходимые дальнейшие прогоны; оно не означает считать частичную эпоху полной.
+  Фактический результат: epoch_complete=true, training_seconds5102.83; сейчас evaluation.
 - `guardian-lab-v4-finish-v1` ждёт2810 exact оценок (base/adapter ×1405 inputs).
   Потом запускает прежний35B evaluator из сохранённого E2 source snapshot на новом
   DEV152/HOLDOUT336; затем paired grouped comparison, .30/.40/.50 и prior12%/20%,
@@ -33,6 +38,9 @@ E2 завершён, опубликован отдельно в V3_E2_RESULTS.md
   SHA/bytes и статус в `completed-v1.INDEX.json`. При ошибке FAIL, без quality retry.
 - Ни production config, ни ZIP не переключены. Старое Windows overnight-расписание
   остаётся Disabled. Supervisor programs имеют конечные timeout/autorestart=false.
+- Перед финальной стадией анализа добавлены отсутствовавшие CPU dependencies и3
+  helper scripts; numpy/torch/transformers/vllm/peft не обновлялись. Import v4_analyze
+  проверен. Изменение окружения и source SHA записаны в V4_RUNTIME_COMPLETION.json.
 
 ## Окончательные данные: frozen-v2
 
