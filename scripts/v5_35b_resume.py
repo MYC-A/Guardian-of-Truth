@@ -1,5 +1,6 @@
 """Resume the frozen V5 recipe, admitting only bit-exact dequant compilation."""
 import argparse
+import hashlib
 import json
 import math
 import os
@@ -118,24 +119,50 @@ def main():
             torch.set_rng_state(state['cpu_rng']); torch.cuda.set_rng_state_all(state['cuda_rng'])
         original = torch_awq.dequantize_gemm
         compiled = torch.compile(original, fullgraph=True, dynamic=False)
+        # Warm compilation outside both timed model arms and dropout RNG streams.
+        timer=time.monotonic(); shapes=set();warm=[]
+        for name,module in base.named_modules():
+            if not isinstance(module,torch_awq.AwqTorchLinear):continue
+            key=(tuple(module.qweight.shape),tuple(module.scales.shape))
+            if key in shapes:continue
+            shapes.add(key)
+            kwargs=dict(qweight=module.qweight,qzeros=module.qzeros,scales=module.scales,bits=4,group_size=32)
+            with torch.autocast('cuda',dtype=torch.bfloat16):
+                ref=original(**kwargs);fast=compiled(**kwargs)
+            exact=torch.equal(ref,fast)
+            warm.append(dict(name=name,shape=list(ref.shape),bit_exact=exact))
+            if not exact:raise ValueError('WARMED_DEQUANT_WEIGHT_NOT_EXACT')
+        torch.cuda.synchronize();warm_seconds=time.monotonic()-timer
+        write(a.out/'DEQUANT_WARMUP.json',dict(complete=True,examples=warm,seconds=warm_seconds))
         probes=[]
         # Same inputs, saved dropout RNG, adapter and gradients for both arms.
         for index in state['order'][state['rows_done']:state['rows_done']+2]:
             arms=[]
-            for key,fn in [('baseline',original),('compiled',compiled)]:
+            for key,fn in [('baseline',original),('baseline_repeat',original),('compiled',compiled)]:
                 torch_awq.dequantize_gemm=fn; restore_rng(); optimizer.zero_grad(set_to_none=True)
                 torch.cuda.synchronize(); timer=time.monotonic()
                 score=odds(records[index]); loss=torch.nn.functional.binary_cross_entropy_with_logits(score,score.new_tensor(float(records[index]['label'])))
                 loss.backward(); torch.cuda.synchronize()
                 grads=[v.grad.detach().clone() for v in parameters]
-                arms.append((float(score.detach()),float(loss.detach()),grads,time.monotonic()-timer))
-            exact=arms[0][0]==arms[1][0] and arms[0][1]==arms[1][1] and all(torch.equal(x,y) for x,y in zip(arms[0][2],arms[1][2]))
+                rng_hash=hashlib.sha256(torch.cuda.get_rng_state().cpu().numpy().tobytes()).hexdigest()
+                arms.append((float(score.detach()),float(loss.detach()),grads,time.monotonic()-timer,rng_hash))
+            def compare(left,right):
+                diffs=[float((x-y).abs().max()) for x,y in zip(left[2],right[2])]
+                scale=max(float(x.abs().max()) for x in left[2])
+                return dict(score_abs_delta=abs(left[0]-right[0]),loss_abs_delta=abs(left[1]-right[1]),
+                    max_gradient_abs_delta=max(diffs),gradient_reference_max_abs=scale,
+                    max_gradient_delta_relative_to_largest=max(diffs)/max(scale,1e-30),
+                    bit_exact=left[0]==right[0] and left[1]==right[1] and all(torch.equal(x,y) for x,y in zip(left[2],right[2])),
+                    post_dropout_rng_equal=left[4]==right[4])
+            control=compare(arms[0],arms[1]);treatment=compare(arms[0],arms[2])
+            exact=control['bit_exact'] and treatment['bit_exact']
             item=dict(id=records[index]['id'],tokens=records[index]['tokens'],score_and_gradients_exact=exact,
-                baseline_seconds=arms[0][3],compiled_seconds=arms[1][3],score=arms[0][0])
+                baseline_seconds=arms[0][3],compiled_seconds=arms[2][3],score=arms[0][0],
+                baseline_repeat_control=control,compiled_comparison=treatment)
             probes.append(item); print(json.dumps(dict(event='resume_speed_probe',**item)),flush=True)
             if not math.isfinite(arms[0][0]): raise ValueError('NONFINITE_REFERENCE_SPEED_PROBE')
         accepted=(all(x['score_and_gradients_exact'] for x in probes) and
-                  sum(x['compiled_seconds'] for x in probes)<.9*sum(x['baseline_seconds'] for x in probes))
+                  warm_seconds+sum(x['compiled_seconds'] for x in probes)<.9*sum(x['baseline_seconds'] for x in probes))
         write(a.out/'SPEED_GATE.json',dict(complete=True,probes=probes,optimizer_updates=0,quality_selection=False,
             compiled_accepted=accepted,criterion='all probe scores and gradients bit exact and at least 10 percent faster including warmup'))
         torch_awq.dequantize_gemm=compiled if accepted else original
