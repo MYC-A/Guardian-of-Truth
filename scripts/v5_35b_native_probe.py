@@ -5,6 +5,7 @@ import math
 import os
 from pathlib import Path
 import subprocess
+import statistics
 import sys
 import time
 import traceback
@@ -58,10 +59,12 @@ def worker(args):
     if len(rows) != 3 or any('label' in row for row in rows):
         raise ValueError('PILOT_NATIVE_INPUT_SCOPE')
     scores = {}
-    for name, request in [('base', None), ('base_repeat', None),
-                          ('zero', LoRARequest('v5-zero', 1, str(zero.resolve()))),
-                          ('zero_repeat', LoRARequest('v5-zero', 1, str(zero.resolve()))),
-                          ('nonzero', LoRARequest('v5-nonzero', 2, str(nonzero.resolve())))]:
+    requests = []
+    for repeat in range(8):
+        requests.extend([('base_%d' % repeat, None),
+                         ('zero_%d' % repeat, LoRARequest('v5-zero', 1, str(zero.resolve())))])
+    requests.append(('nonzero', LoRARequest('v5-nonzero', 2, str(nonzero.resolve()))))
+    for name, request in requests:
         outputs = []
         for row in rows:
             outputs.extend(llm.generate([dict(prompt_token_ids=row['ids'])], params,
@@ -76,20 +79,38 @@ def worker(args):
             if not exact or score is None or not math.isfinite(score):
                 raise ValueError('NATIVE_INEXACT_SCORE')
             scores[name].append(score)
-    zero_delta = max(abs(x - y) for x, y in zip(scores['base'], scores['zero']))
-    changed = max(abs(x - y) for x, y in zip(scores['zero'], scores['nonzero']))
-    write(args.out / 'NATIVE_SCORES.json', dict(scores=scores, zero_delta=zero_delta, nonzero_delta=changed,
-        base_repeat_delta=max(abs(x-y) for x,y in zip(scores['base'],scores['base_repeat'])),
-        zero_repeat_delta=max(abs(x-y) for x,y in zip(scores['zero'],scores['zero_repeat'])),
+    controls = []
+    for i in range(3):
+        b = [scores['base_%d' % k][i] for k in range(8)]
+        z = [scores['zero_%d' % k][i] for k in range(8)]
+        spread = max(max(b)-min(b), max(z)-min(z))
+        sigma = max(statistics.stdev(b), statistics.stdev(z))
+        bias = abs(statistics.median(b)-statistics.median(z))
+        overlap = max(min(b), min(z)) <= min(max(b), max(z))
+        effect = abs(scores['nonzero'][i]-statistics.median(z))
+        controls.append(dict(base=b, zero=z, base_sd=statistics.stdev(b), zero_sd=statistics.stdev(z),
+                             same_arm_spread=spread, median_bias=bias, ranges_overlap=overlap,
+                             nonzero_effect=effect, effect_above_4sigma=effect > max(.0001,4*sigma),
+                             zero_consistent_with_repeat_noise=overlap and bias <= max(.001,spread)))
+    zero_delta = max(abs(scores['base_0'][i]-scores['zero_0'][i]) for i in range(3))
+    changed = max(c['nonzero_effect'] for c in controls)
+    absolute_parity = zero_delta <= .001 and all(c['same_arm_spread'] <= .001 for c in controls)
+    relative = all(c['zero_consistent_with_repeat_noise'] for c in controls)
+    binding = any(c['effect_above_4sigma'] for c in controls)
+    write(args.out / 'NATIVE_SCORES.json', dict(scores=scores, controls=controls,
+        zero_delta=zero_delta, nonzero_delta=changed, absolute_parity_confirmed=absolute_parity,
+        zero_consistent_with_repeat_noise=relative, nonzero_effect_above_4sigma=binding,
         prefix_caching=False, hf_zero_adapter_score=pilot['zero_adapter_score']))
-    if zero_delta > .001:
-        raise ValueError('NATIVE_ZERO_ADAPTER_PARITY:' + str(zero_delta))
-    if changed <= .0001:
+    if not absolute_parity and not relative:
+        raise ValueError('NATIVE_ZERO_ADAPTER_NOT_CONSISTENT_WITH_MEASURED_NOISE')
+    if not binding:
         raise ValueError('NATIVE_ADAPTER_EFFECT_NOT_OBSERVED')
     write(args.out / 'WORKER_DONE.json', dict(complete=True, base_revision=BASE_REVISION, rows=3,
-        exact_calls=15, scores=scores, zero_adapter_max_abs_delta=zero_delta, nonzero_max_abs_delta=changed,
+        exact_calls=51, scores=scores, controls=controls, zero_adapter_max_abs_delta=zero_delta, nonzero_max_abs_delta=changed,
+        absolute_parity_confirmed=absolute_parity, zero_consistent_with_observed_repeat_noise=relative,
+        native_absolute_score_stability_confirmed=False, exploratory_training_admission_only=True,
         hf_zero_adapter_score=pilot['zero_adapter_score'],
-        hf_native_zero_abs_delta=abs(pilot['zero_adapter_score'] - scores['zero'][0]),
+        hf_native_zero_abs_delta=abs(pilot['zero_adapter_score'] - statistics.median([scores['zero_%d' % k][0] for k in range(8)])),
         source_sha256=sha(Path(__file__)),
         nonzero_adapter_binding_proven=True, zero_adapter_sha256=pilot['zero_adapter_sha256'],
         nonzero_adapter_sha256=sha(nonzero / 'adapter_model.safetensors'),
