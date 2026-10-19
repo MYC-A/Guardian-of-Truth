@@ -78,6 +78,9 @@ def worker(args):
         raise ValueError('NATIVE_ADAPTER_EFFECT_NOT_OBSERVED')
     write(args.out / 'WORKER_DONE.json', dict(complete=True, base_revision=BASE_REVISION, rows=3,
         exact_calls=9, scores=scores, zero_adapter_max_abs_delta=zero_delta, nonzero_max_abs_delta=changed,
+        hf_zero_adapter_score=pilot['zero_adapter_score'],
+        hf_native_zero_abs_delta=abs(pilot['zero_adapter_score'] - scores['zero'][0]),
+        source_sha256=sha(Path(__file__)),
         nonzero_adapter_binding_proven=True, zero_adapter_sha256=pilot['zero_adapter_sha256'],
         nonzero_adapter_sha256=sha(nonzero / 'adapter_model.safetensors'),
         pilot_tokens_sha256=data['pilot_tokens_sha256'], layers=pilot['layers'], shared=pilot['shared'],

@@ -11,7 +11,7 @@ import time
 import traceback
 ROOT = Path(__file__).resolve().parents[1]
 sys.path[:0] = [str(ROOT), str(ROOT / 'src'), str(ROOT / 'scripts')]
-from v5_35b_common import BASE_ID, BASE_REVISION, FROZEN_SHA256, TRAIN_SHA256, read, sha, target_names, target_suffixes, verify_model, write
+from v5_35b_common import BASE_ID, BASE_REVISION, FROZEN_SHA256, TRAIN_SHA256, awq_loader_compat, read, sha, target_names, target_suffixes, verify_model, write
 
 
 def check_gate(path, data, layers, shared):
@@ -94,9 +94,10 @@ def main():
         meta['versions'] = {n: importlib.metadata.version(n) for n in ('torch', 'transformers', 'peft', 'gptqmodel')}
         timer = time.monotonic()
         print(json.dumps(dict(event='load_35b_awq', backend='AWQ_TORCH', dtype='bfloat16')), flush=True)
-        quantized = GPTQModel.load(str(args.model), device='cuda:0', backend=BACKEND.AWQ_TORCH,
-                                   dtype=torch.bfloat16, trust_remote_code=False, local_files_only=True,
-                                   attn_implementation='sdpa')
+        with awq_loader_compat(args.model, args.out / 'LOADER_COMPATIBILITY.json'):
+            quantized = GPTQModel.load(str(args.model), device='cuda:0', backend=BACKEND.AWQ_TORCH,
+                                       dtype=torch.bfloat16, trust_remote_code=False, local_files_only=True,
+                                       attn_implementation='sdpa')
         base = quantized.model
         for parameter in base.parameters():
             parameter.requires_grad_(False)
@@ -105,6 +106,10 @@ def main():
             base.config.text_config.use_cache = False
             base.config.text_config.output_router_logits = False
         targets = target_names([n for n, m in base.named_modules() if isinstance(m, torch.nn.Linear)], args.layers, shared)
+        samples = [dict(name=n, type=type(m).__name__) for n, m in base.named_modules()
+                   if '.language_model.' in n and any(n.endswith('.' + s) for s in target_suffixes(shared))]
+        write(args.out / 'MODEL_MODULES.json', dict(model_type=type(base).__name__, target_count=len(targets),
+                                                  projection_modules=samples))
         expected = (250 if shared else 130) if args.layers == 40 else (50 if shared else 26)
         if len(targets) != expected:
             raise ValueError('TARGET_MODULE_SET_DRIFT:' + str(len(targets)))

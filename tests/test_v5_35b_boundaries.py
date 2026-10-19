@@ -1,8 +1,8 @@
 import copy
 import json
-from pathlib import Path
+import re
 import pytest
-from scripts.v5_35b_common import target_names, target_suffixes
+from scripts.v5_35b_common import exclusion_dynamic, target_names, target_suffixes
 from scripts.v5_35b_prepare import source_request
 from scripts.v5_35b_train import check_gate
 
@@ -42,3 +42,14 @@ def test_training_refuses_missing_native_activation_proof(tmp_path):
     native.write_text('{}')
     with pytest.raises(ValueError, match='GATE_RECEIPT_DRIFT'):
         check_gate(gate, dict(train_tokens_sha256='data'), 40, True)
+
+
+def test_awq_skip_rules_preserve_shared_float_and_routed_quantized_boundary():
+    name = 'model.language_model.layers.0.mlp.shared_expert'
+    rules = exclusion_dynamic([name, 'model.visual', 'lm_head'], {'.*': {'bits': 4}})
+    negative = [key[2:] for key in rules if key.startswith('-:')]
+    assert any(re.match(pattern, name + '.gate_proj') for pattern in negative)
+    assert not any(re.match(pattern, 'model.language_model.layers.0.mlp.experts.0.gate_proj') for pattern in negative)
+    assert not any(re.match(pattern, name + '_other.gate_proj') for pattern in negative)
+    assert list(rules)[0].startswith('-:')
+    assert rules['.*'] == {'bits': 4}

@@ -1,5 +1,6 @@
 """Pinned assets and target selection for the isolated 35B experiment."""
 import hashlib
+from contextlib import contextmanager
 import json
 from pathlib import Path
 import re
@@ -69,6 +70,59 @@ def verify_model(root, manifest_path):
 
 def target_suffixes(shared):
     return list(ATTENTION_TARGETS + (SHARED_TARGETS if shared else ()))
+
+
+def exclusion_dynamic(modules, existing=None):
+    """Translate the checkpoint's declared FP modules into GPTQModel skip rules."""
+    if not isinstance(modules, list) or not modules or any(not isinstance(n, str) or not n for n in modules):
+        raise ValueError('AWQ_FLOAT_EXCLUSIONS_REQUIRED')
+    negative = {'-:^' + re.escape(name) + r'(?:\.|$)': {} for name in modules}
+    return dict(negative, **(existing or {}))
+
+
+@contextmanager
+def awq_loader_compat(model_path, receipt_path):
+    """Scoped loader-only alias; preserve all original model files and quantized tensors."""
+    from gptqmodel.quantization import QuantizeConfig
+    model_path = Path(model_path).resolve()
+    source = json.loads((model_path / 'config.json').read_bytes())
+    exclusions = source['quantization_config']['modules_to_not_convert']
+    own = 'from_pretrained' in vars(QuantizeConfig)
+    descriptor = vars(QuantizeConfig).get('from_pretrained')
+    original = QuantizeConfig.from_pretrained
+
+    def load(cls, save_dir, **kwargs):
+        cfg = original(save_dir, **kwargs)
+        if Path(save_dir).resolve() != model_path:
+            return cfg
+        before = cfg.to_dict()
+        payload = dict(before, dynamic=exclusion_dynamic(exclusions, cfg.dynamic))
+        converted = type(cfg).from_quant_config(payload)
+        after = converted.to_dict()
+        for key in ('bits', 'group_size', 'quant_method', 'format', 'sym', 'desc_act'):
+            if before.get(key) != after.get(key):
+                raise ValueError('AWQ_GEOMETRY_CHANGED:' + key)
+        if any(converted.dynamic_get(name) is not False for name in exclusions):
+            raise ValueError('AWQ_FLOAT_SKIP_RULE_NOT_APPLIED')
+        for i in range(40):
+            for projection in ('gate_proj', 'up_proj', 'down_proj'):
+                name = 'model.language_model.layers.%d.mlp.experts.0.%s' % (i, projection)
+                if converted.dynamic_get(name) is False:
+                    raise ValueError('ROUTED_EXPERT_ACCIDENTALLY_EXCLUDED')
+        write(receipt_path, dict(complete=True, source_config_sha256=sha(model_path / 'config.json'),
+              weights_modified=False, compatibility='modules_to_not_convert mapped to negative dynamic rules',
+              declared_float_modules=exclusions, geometry_preserved=True, routed_experts_preserved=True,
+              before=before, after=after))
+        return converted
+
+    QuantizeConfig.from_pretrained = classmethod(load)
+    try:
+        yield
+    finally:
+        if own:
+            QuantizeConfig.from_pretrained = descriptor
+        else:
+            delattr(QuantizeConfig, 'from_pretrained')
 
 
 def target_names(names, layers, shared):
