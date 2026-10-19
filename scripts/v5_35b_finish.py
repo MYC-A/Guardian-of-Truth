@@ -16,6 +16,8 @@ def main():
     for name in ('training', 'data', 'model', 'manifest', 'runtime-python', 'out'):
         parser.add_argument('--' + name, type=Path, required=True)
     parser.add_argument('--training-program', required=True)
+    parser.add_argument('--training-wait-seconds', type=int, choices=(33900,43200), default=33900)
+    parser.add_argument('--require-full-epoch', action='store_true')
     a = parser.parse_args(); a.out.mkdir(exist_ok=False)
     started = time.monotonic(); phases = []
     write(a.out / 'START.json', dict(complete=False, training=str(a.training),
@@ -37,12 +39,14 @@ def main():
             status = subprocess.run(['supervisorctl', 'status', a.training_program], capture_output=True, text=True)
             if (a.training / 'FAIL.json').exists() or any(s in status.stdout for s in ('EXITED', 'FATAL', 'STOPPED')):
                 raise RuntimeError('TRAINING_EXITED_WITHOUT_TRAINED:' + status.stdout.strip())
-            if status.returncode or time.monotonic() - started > 33900:
+            if status.returncode or time.monotonic() - started > a.training_wait_seconds:
                 raise TimeoutError('TRAINING_WAIT_FAILED_OR_LIMIT')
             time.sleep(20)
         trained = json.loads((a.training / 'TRAINED.json').read_bytes())
         if not trained['complete'] or trained['optimizer_updates'] <= 0 or trained['base_revision'] != BASE_REVISION:
             raise ValueError('INVALID_TRAINED_RECEIPT')
+        if a.require_full_epoch and (not trained['epoch_complete'] or trained['rows_done'] != 1458):
+            raise ValueError('FULL_EPOCH_REQUIRED_FOR_THIS_EVALUATION')
         if sha(a.training / 'adapter/adapter_model.safetensors') != trained['adapter_sha256']:
             raise ValueError('FINAL_ADAPTER_IDENTITY_DRIFT')
         for _ in range(90):

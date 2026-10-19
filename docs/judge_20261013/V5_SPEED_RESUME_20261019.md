@@ -62,3 +62,31 @@ not assert absolute equivalence or improved validation/private quality.
 Both stopped optimizer checkpoints are backed up off-box. The discarded partial
 batch consumed dropout RNG; continuation restores the actually saved RNG state.
 It is not claimed to reproduce an uninterrupted trajectory bit for bit.
+
+## Measured admission and user-approved complete pass
+
+Both full-model controls passed the declared numeric-noise criterion. The first
+original/original repeat gradient relative L2 was 0.00045461; compiled/reference
+was 0.00043291. The second was 0.00096957 versus 0.00098463. All score/loss deltas
+were zero and post-dropout RNG matched. Full gradients were not bit exact.
+Warm projection dequantization was exact on both executed weight shapes.
+
+Steady second-input time: 45.8596 seconds reference versus 30.0702 seconds compiled
+(1.525x). The first reference took 150.5843 seconds on a cold model and is not
+used to claim a larger steady speedup. Optimized dequantization is enabled in
+resume-v2; no quality improvement has yet been measured.
+
+The user explicitly approved completing one full pass after the 8-9 hour remaining
+training estimate plus 1-2 hours evaluation. The active segment is not interrupted.
+A finite supervised followup waits for resume-v2, then continues its final saved
+adapter/Adam/order/RNG to 1458 total rows. It never starts a second epoch.
+Total optimizer wall time safety cap becomes 57600 seconds (16 hours INCLUDING
+all previous segments), not 16 additional hours. Technical setup/probes remain
+separate. This is a resource-budget amendment, not tuning on heldout results.
+
+The waiting followup deadline is 4 hours, its training monitor deadline is 8 hours,
+and its supervisor wrapper deadline is 12 hours. Final evaluation waits up to
+12 hours for a full-epoch receipt and has a 15-hour overall wrapper bound. The
+off-box collector has a finite 16-hour lifetime. Partial training is explicitly
+rejected by --require-full-epoch before evaluation; all diagnostics/checkpoints
+are still archived on failure. These are safety ceilings, not duration forecasts.

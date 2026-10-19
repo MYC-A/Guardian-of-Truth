@@ -54,7 +54,7 @@ def main():
     a = p.parse_args(); a.out.mkdir(exist_ok=False)
     started = time.monotonic()
     try:
-        if a.total_budget_seconds != 32400:
+        if a.total_budget_seconds not in (32400, 57600):
             raise ValueError('UNREGISTERED_TOTAL_TIME_BUDGET')
         os.environ['TORCHINDUCTOR_CACHE_DIR'] = str(a.out / 'compile-cache')
         os.environ['TORCHINDUCTOR_COMPILE_THREADS'] = '2'
@@ -82,7 +82,7 @@ def main():
         receipt = dict(source_checkpoint=str(a.resume), source_adapter_sha256=meta['adapter_sha256'],
             source_state_sha256=sha(a.resume / 'state.pt'), benchmark_sha256=sha(a.benchmark),
             resume_script_sha256=sha(Path(__file__)), baseline_trainer_sha256=sha(Path(__file__).with_name('v5_35b_train.py')),
-            starting_step=state['steps'], starting_rows=state['rows_done'], total_optimizer_budget_seconds=32400,
+            starting_step=state['steps'], starting_rows=state['rows_done'], total_optimizer_budget_seconds=a.total_budget_seconds,
             prior_training_seconds=previous['training_seconds'], fresh_initialization=False,
             optimizer_reset=False, data_reordered=False, quality_labels_used_for_speed_selection=False)
         write(a.out / 'START.json', receipt)
@@ -193,8 +193,9 @@ def main():
         signal.signal(signal.SIGTERM,stop)
         steps=state['steps']; rows_done=state['rows_done']; forwarded=0
         train_started=time.monotonic(); prior_seconds=previous['training_seconds']
-        remaining=max(0,32400-prior_seconds)
-        meta=dict(meta,resume=receipt,speed_gate_sha256=sha(a.out/'SPEED_GATE.json'),compiled_awq_dequant=accepted)
+        remaining=max(0,a.total_budget_seconds-prior_seconds)
+        meta=dict(meta,resume=receipt,speed_gate_sha256=sha(a.out/'SPEED_GATE.json'),compiled_awq_dequant=accepted,
+                  optimizer_budget_seconds=a.total_budget_seconds)
         write(a.out/'MODEL_READY.json',meta)
         def checkpoint(name):
             folder=a.out/name; folder.mkdir(exist_ok=False)

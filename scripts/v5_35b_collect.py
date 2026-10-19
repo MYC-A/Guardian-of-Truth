@@ -20,6 +20,7 @@ def main():
     p.add_argument('--host', required=True); p.add_argument('--port', type=int, required=True)
     p.add_argument('--remote-root', required=True); p.add_argument('--finish', required=True)
     p.add_argument('--training', default='train-v1'); p.add_argument('--launch', default='launch-v1')
+    p.add_argument('--budget-seconds', type=int, choices=(46800,57600), default=46800)
     a = p.parse_args(); root = PurePosixPath(a.remote_root)
     if not str(root).startswith('/workspace/') or '..' in root.parts or PurePosixPath(a.finish).name != a.finish:
         raise ValueError('UNSAFE_COLLECTION_SCOPE')
@@ -29,15 +30,20 @@ def main():
     args = [str(a.ssh), '-T', '-i', str(a.key), '-o', 'BatchMode=yes', '-o', 'ConnectTimeout=15',
             '-p', str(a.port), a.host]
     started = time.monotonic(); errors = []; attempts = 0
-    write(a.out / 'COLLECTOR_STARTED.json', dict(remote_root=str(root), finish=a.finish, budget_seconds=46800,
+    write(a.out / 'COLLECTOR_STARTED.json', dict(remote_root=str(root), finish=a.finish, budget_seconds=a.budget_seconds,
                                               source_sha256=hashlib.sha256(Path(__file__).read_bytes()).hexdigest()))
     try:
-        while time.monotonic() - started < 46800:
+        while time.monotonic() - started < a.budget_seconds:
             # Only fixed small status receipts, never stdout from a live model.
             names = ['TRAINING_PROFILE.json', a.training + '/PROGRESS.json', a.training + '/TRAINED.json', a.training + '/FAIL.json',
                      a.launch + '/PROGRESS.json', a.launch + '/HEALTH_LATEST.json', a.launch + '/FAIL.json',
                      a.finish + '/PROGRESS.json', a.finish + '/DONE.json', a.finish + '/FAIL.json',
                      a.finish + '-export.INDEX.json']
+            # During the approved full-pass handoff, expose both segments.
+            names += ['resume-v2/PROGRESS.json', 'resume-v2/TRAINED.json', 'resume-v2/FAIL.json',
+                      'resume-launch-v2/HEALTH_LATEST.json', 'full-followup-v1/START.json',
+                      'full-followup-v1/CONTINUING.json', 'full-followup-v1/DONE.json', 'full-followup-v1/FAIL.json',
+                      a.training + '/SPEED_GATE.json', a.training + '/START.json']
             code = ('from pathlib import Path\nimport json\nr=Path(' + repr(str(root)) + ')\n' +
                     'names=' + repr(names) + '\nprint(json.dumps({n:json.loads((r/n).read_bytes()) for n in names if (r/n).exists()}))\n')
             try:

@@ -14,19 +14,21 @@ def main():
     p=argparse.ArgumentParser()
     p.add_argument('--out',type=Path,required=True)
     p.add_argument('--training',type=Path,required=True)
+    p.add_argument('--timeout-seconds',type=int,choices=(14400,28800),default=14400)
+    p.add_argument('--require-full-epoch',action='store_true')
     p.add_argument('command',nargs=argparse.REMAINDER)
     a=p.parse_args();a.out.mkdir(exist_ok=False)
     command=a.command[1:] if a.command[:1]==['--'] else a.command
     started=time.monotonic()
-    write(a.out/'START.json',dict(command=command,timeout_seconds=14400,hourly_check_seconds=3600))
+    write(a.out/'START.json',dict(command=command,timeout_seconds=a.timeout_seconds,hourly_check_seconds=3600))
     try:
         with (a.out/'training.log').open('w',buffering=1) as stream:
             child=subprocess.Popen(command,stdout=stream,stderr=subprocess.STDOUT)
             previous=None;checks=0
             while child.poll() is None:
-                try:child.wait(timeout=min(3600,max(.1,14400-(time.monotonic()-started))))
+                try:child.wait(timeout=min(3600,max(.1,a.timeout_seconds-(time.monotonic()-started))))
                 except subprocess.TimeoutExpired:
-                    if time.monotonic()-started>=14400:raise TimeoutError('RESUME_FINITE_DEADLINE')
+                    if time.monotonic()-started>=a.timeout_seconds:raise TimeoutError('RESUME_FINITE_DEADLINE')
                     checks+=1
                     prog=json.loads((a.training/'PROGRESS.json').read_bytes())
                     healthy=(math.isfinite(prog['loss']) and math.isfinite(prog['grad_norm']) and
@@ -37,6 +39,10 @@ def main():
                     previous=prog['rows_done']
                     if not healthy:raise RuntimeError('RESUME_HOURLY_HEALTH_FAILED')
             if child.returncode:raise RuntimeError('RESUME_PROCESS_FAILED:'+str(child.returncode))
+            if a.require_full_epoch:
+                rec=json.loads((a.training/'TRAINED.json').read_bytes())
+                if not rec['epoch_complete'] or rec['rows_done']!=1458:
+                    raise RuntimeError('SAFETY_BUDGET_REACHED_WITHOUT_COMPLETE_EPOCH')
             write(a.out/'DONE.json',dict(complete=True,seconds=time.monotonic()-started))
     except Exception as e:
         if 'child' in locals() and child.poll() is None:
