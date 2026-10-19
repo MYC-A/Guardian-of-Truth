@@ -11,7 +11,8 @@ os.environ['TAU2_DATA_DIR']=str(BASE/'tau2-source/data')
 
 
 def main():
-    from tau2 import run
+    import importlib
+    run=importlib.import_module('tau2.run')
     preflight=Path('/workspace/guardian-lab-20261018/v4-20261019/task-preflight-v1/DONE.json')
     replay=preflight.parents[1]/'reference-all-v1/DONE.json'
     clean=json.loads(preflight.read_text()); reference=json.loads(replay.read_text())
