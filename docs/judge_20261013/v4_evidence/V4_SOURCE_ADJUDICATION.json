@@ -1,0 +1,211 @@
+{
+  "before_optimizer": true,
+  "evaluation_results_used": false,
+  "human_review": false,
+  "teacher_is_not_ground_truth": true,
+  "exclude_train_sources": [
+    "ToolRM"
+  ],
+  "exclude_train_domain_families": [
+    [
+      "telecom",
+      "expired_contract"
+    ]
+  ],
+  "adjudications": [
+    {
+      "id": "toolrm:0be13448-f467-5213-944e-4a7df2f5f3bf:1",
+      "family": "arguments_not_object",
+      "original_label": 1,
+      "teacher": {
+        "label": 0,
+        "reason": "The assistant correctly used the tool with the time intervals derived from the user's request.",
+        "rule_quote": "Use only tools and parameter names declared in the available catalog."
+      },
+      "action": "EXCLUDE_SOURCE_FROM_TRAIN",
+      "source_reason": "Upstream short-request/catalog semantics are not fully independently recoverable; schema-only correctness is insufficient. No benefit from keeping uncertain external negatives."
+    },
+    {
+      "id": "toolrm:07c669dd-7e19-5dca-8f1b-370b3d87f7ea:0",
+      "family": "undeclared_parameter",
+      "original_label": 0,
+      "teacher": {
+        "label": 1,
+        "reason": "The tool call uses 'binance' instead of 'Binance Smart Chain'. The policy requires argument values to be supported by the user request.",
+        "rule_quote": "All argument values must be supported by the user request"
+      },
+      "action": "EXCLUDE_SOURCE_FROM_TRAIN",
+      "source_reason": "Upstream short-request/catalog semantics are not fully independently recoverable; schema-only correctness is insufficient. No benefit from keeping uncertain external negatives."
+    },
+    {
+      "id": "toolrm:140d699b-9f76-5f72-9b0f-7f00e5eb9f4c:0",
+      "family": "unknown_function",
+      "original_label": 0,
+      "teacher": {
+        "label": 1,
+        "reason": "The tool description specifies it fetches suggestions from Twitter API, but the user asked for general discussions and suggestions, not limited to Twitter.",
+        "rule_quote": "All argument values must be supported by the user request"
+      },
+      "action": "EXCLUDE_SOURCE_FROM_TRAIN",
+      "source_reason": "Upstream short-request/catalog semantics are not fully independently recoverable; schema-only correctness is insufficient. No benefit from keeping uncertain external negatives."
+    },
+    {
+      "id": "v4:airline:83a63717dd4abbc4b1a4f77c:0",
+      "family": "cancellation_eligibility",
+      "original_label": 0,
+      "teacher": {
+        "label": 1,
+        "reason": "Agent cancelled without verifying eligibility rules (24h window, business class, insurance, or airline cancellation) required before calling the API.",
+        "rule_quote": "The API does not check that cancellation rules are met, so the agent must make sure the rules apply before calling the API!"
+      },
+      "action": "KEEP_SOURCE_LABEL",
+      "source_reason": "Native reservation created_at is2024-05-15T03:00:00,12h before source clock. Tools verify flights unflown. Exact reservation/reason cancellation details and explicit approval are in final history messages."
+    },
+    {
+      "id": "v4:airline:f244a7e3162f102511427e72:0",
+      "family": "cancellation_eligibility",
+      "original_label": 0,
+      "teacher": {
+        "label": 1,
+        "reason": "Policy requires explicit confirmation of action details before updating the database. The assistant skipped listing details and obtaining explicit 'yes' for the cancellation.",
+        "rule_quote": "Before taking any actions that update the booking database... you must list the action details and obtain explicit user confirmation"
+      },
+      "action": "KEEP_SOURCE_LABEL",
+      "source_reason": "Native reservation created_at is2024-05-15T03:00:00,12h before source clock. Tools verify flights unflown. Exact reservation/reason cancellation details and explicit approval are in final history messages."
+    },
+    {
+      "id": "v4:airline:d917e420075431b2b89d22f7:0",
+      "family": "compensation",
+      "original_label": 0,
+      "teacher": {
+        "label": 1,
+        "reason": "Policy requires confirming facts before offering compensation. The assistant skipped confirmation and proceeded directly to sending the certificate.",
+        "rule_quote": "Always confirms the facts before offering compensation."
+      },
+      "action": "KEEP_SOURCE_LABEL",
+      "source_reason": "Tool-confirmed airline cancellation; gold membership and insurance;3 passengers; user explicitly requests300 certificate. Facts are read and stated before current tool call."
+    },
+    {
+      "id": "tau2:retail:#W2842410:eligibility:0",
+      "family": "eligibility",
+      "original_label": 0,
+      "teacher": {
+        "label": 1,
+        "reason": "The assistant denied a cancellation request for a delivered order, which is correct per policy, but failed to offer the appropriate alternative action (return) for delivered orders.",
+        "rule_quote": "An order can only be cancelled if its status is 'pending'"
+      },
+      "action": "KEEP_SOURCE_LABEL",
+      "source_reason": "Latest native order status delivered; denying cancellation is permitted. Policy does not require offering return in every refusal. One reviewer explanation itself concludes label0 despite its label1 field."
+    },
+    {
+      "id": "v4:telecom:2fc000070ed9811009393dee:0",
+      "family": "expired_contract",
+      "original_label": 0,
+      "teacher": {
+        "label": 1,
+        "reason": "Line L1009 is suspended due to a disputed bill, not an overdue one. Policy requires paying overdue bills to lift suspension; disputed bills are not resolvable by agent.",
+        "rule_quote": "You are allowed to lift the suspension after the user has paid all their overdue bills."
+      },
+      "action": "EXCLUDE_BOTH_TWINS_FROM_TRAIN",
+      "source_reason": "Disputed unpaid bill and suspended account make the sufficient resume preconditions ambiguous. Native tool success alone is insufficient."
+    },
+    {
+      "id": "tau2:retail:#W1748126:eligibility:0",
+      "family": "eligibility",
+      "original_label": 0,
+      "teacher": {
+        "label": 1,
+        "reason": "The assistant denied a valid cancellation request. The policy allows cancelling pending orders, but the order status is 'delivered', making the denial factually correct based on policy. Wait, the policy says 'An order can only be cancelled if its status is 'pending''. The order is 'delivered'. So the denial is correct. Why label 1? Let me re-read. Ah, the user asked to cancel. The order is delivered. The policy says you can only cancel pending orders. So the assistant is correct to deny. Label should be 0. Let me double check if there are any other rules. 'Return or exchange delivered orders'. So for delivered orders, you return or exchange, not cancel. The assistant is correct. Label 0.",
+        "rule_quote": "An order can only be cancelled if its status is 'pending'"
+      },
+      "action": "KEEP_SOURCE_LABEL",
+      "source_reason": "Latest native order status delivered; denying cancellation is permitted. Policy does not require offering return in every refusal. One reviewer explanation itself concludes label0 despite its label1 field."
+    },
+    {
+      "id": "v4:retail:108f2c3d8aca0fc59440ee0f:0",
+      "family": "turn_shape",
+      "original_label": 0,
+      "teacher": {
+        "label": 1,
+        "reason": "The assistant repeats a tool call for order details that were already retrieved and processed in the previous turn, violating the one-call-at-a-time rule and showing redundant behavior.",
+        "rule_quote": "You should at most make one tool call at a time"
+      },
+      "action": "KEEP_SOURCE_LABEL",
+      "source_reason": "Exactly one assistant call in current turn; successful read in a prior turn does not violate one-call-at-a-time. No ban on repeated reads in policy."
+    },
+    {
+      "id": "v4:airline:373288419cd78db755bcb5c6:0",
+      "family": "turn_shape",
+      "original_label": 0,
+      "teacher": {
+        "label": 1,
+        "reason": "The assistant repeats a tool call for reservation details that were already retrieved and processed in the previous turn, violating the one-call-at-a-time rule and showing redundancy.",
+        "rule_quote": "You should only make one tool call at a time"
+      },
+      "action": "KEEP_SOURCE_LABEL",
+      "source_reason": "Exactly one assistant call in current turn; successful read in a prior turn does not violate one-call-at-a-time. No ban on repeated reads in policy."
+    },
+    {
+      "id": "v4:retail:4ce51f06158e70675c10cfae:0",
+      "family": "turn_shape",
+      "original_label": 0,
+      "teacher": {
+        "label": 1,
+        "reason": "The assistant made a redundant tool call for order details that were already retrieved and processed in the previous turn.",
+        "rule_quote": "You should at most make one tool call at a time"
+      },
+      "action": "KEEP_SOURCE_LABEL",
+      "source_reason": "Exactly one assistant call in current turn; successful read in a prior turn does not violate one-call-at-a-time. No ban on repeated reads in policy."
+    },
+    {
+      "id": "v4:retail:c1d0b5d8c964c249f33a2387:0",
+      "family": "turn_shape",
+      "original_label": 0,
+      "teacher": {
+        "label": 1,
+        "reason": "The assistant made a redundant tool call to check order status immediately after already retrieving and displaying the full order details in the previous turn.",
+        "rule_quote": "You should at most make one tool call at a time"
+      },
+      "action": "KEEP_SOURCE_LABEL",
+      "source_reason": "Exactly one assistant call in current turn; successful read in a prior turn does not violate one-call-at-a-time. No ban on repeated reads in policy."
+    },
+    {
+      "id": "v4:airline:160b7bdfe1ca37f268d57206:0",
+      "family": "turn_shape",
+      "original_label": 0,
+      "teacher": {
+        "label": 1,
+        "reason": "The assistant repeats a tool call that was already executed and responded to in the previous turn, violating the single tool call rule and causing redundancy.",
+        "rule_quote": "You should only make one tool call at a time"
+      },
+      "action": "KEEP_SOURCE_LABEL",
+      "source_reason": "Exactly one assistant call in current turn; successful read in a prior turn does not violate one-call-at-a-time. No ban on repeated reads in policy."
+    },
+    {
+      "id": "v4:retail:26782d9666224f2a54492bd8:0",
+      "family": "turn_shape",
+      "original_label": 0,
+      "teacher": {
+        "label": 1,
+        "reason": "The assistant makes a redundant tool call for order details already retrieved and processed in the previous turn, violating the one-call-at-a-time rule contextually by ignoring prior state.",
+        "rule_quote": "You should at most make one tool call at a time"
+      },
+      "action": "KEEP_SOURCE_LABEL",
+      "source_reason": "Exactly one assistant call in current turn; successful read in a prior turn does not violate one-call-at-a-time. No ban on repeated reads in policy."
+    },
+    {
+      "id": "v4:retail:ac64a7bd6ffa8dfae904189a:0",
+      "family": "turn_shape",
+      "original_label": 0,
+      "teacher": {
+        "label": 1,
+        "reason": "The assistant repeats a tool call for order details that was already executed and responded to in the previous turn, violating the one-call-at-a-time rule and showing redundancy.",
+        "rule_quote": "You should at most make one tool call at a time"
+      },
+      "action": "KEEP_SOURCE_LABEL",
+      "source_reason": "Exactly one assistant call in current turn; successful read in a prior turn does not violate one-call-at-a-time. No ban on repeated reads in policy."
+    }
+  ],
+  "policy_labels_changed": false,
+  "evaluation_partition_bytes_must_be_preserved": true
+}

@@ -2,7 +2,53 @@
 
 Это продолжение поручения: исправления + новые данные + fresh-base LoRA + сравнение.
 E2 завершён, опубликован отдельно в V3_E2_RESULTS.md. Здесь нет заявленного прироста
-на закрытом тесте и нет нового готового ZIP. Новая LoRA пока не обучена.
+на закрытом тесте и нет нового готового ZIP. **Fresh-base V4 LoRA обучается**,
+первый optimizer step подтверждён:16/1458 строк, finite loss. Ниже есть исторические
+этапы подготовки; актуальная цепочка и final data приведены первыми.
+
+## Активное обучение и дальнейшая цепочка
+
+- `guardian-lab-v4-train-v1`, `/workspace/guardian-lab-20261018/v4-20261019/train-v1`.
+  Fresh Qwen4B, без v3 adapter;1460 ориентировочных строк заменены фактическими1458.
+  Технический pilot:10 длинных TRAIN-входов,0 optimizer updates,91.28с с загрузкой,
+  1571.76 tokens/sec, пик12.43GiB allocated. Линейная оценка обучения5308с (~88.5мин),
+  фактическое время/полная epoch_complete будут в TRAINED/DONE. Бюджет optimizer5400с;
+  незаконченная эпоха обозначается честно. Последнее поручение пользователя допускает
+  необходимые дальнейшие прогоны; оно не означает считать частичную эпоху полной.
+- `guardian-lab-v4-finish-v1` ждёт2810 exact оценок (base/adapter ×1405 inputs).
+  Потом запускает прежний35B evaluator из сохранённого E2 source snapshot на новом
+  DEV152/HOLDOUT336; затем paired grouped comparison, .30/.40/.50 и prior12%/20%,
+  сравнение LoRA отдельно от bounded shape. Полный архив в `completed-v1.tar.gz`,
+  SHA/bytes и статус в `completed-v1.INDEX.json`. При ошибке FAIL, без quality retry.
+- Ни production config, ни ZIP не переключены. Старое Windows overnight-расписание
+  остаётся Disabled. Supervisor programs имеют конечные timeout/autorestart=false.
+
+## Окончательные данные: frozen-v2
+
+Сначала120 траекторий (пилоты24 + расширенные96) ->207 source-checked draft ходов,
+40 нарушений,730 неопределённых целей исключены. Native constructed pool2536 строк:
+аудит всех правил/пар прошёл. Три исходные airline-пары с несовпадающими prefix reads
+заменены исправленными; корректная смена только cabin у basic economy добавлена отдельно.
+
+После decontamination/components/caps initial freeze:TRAIN1600,DEV152,HOLDOUT336.
+Blind35B source audit99 TRAIN-строк:16 разногласий. Проверка исходников сохранила
+12 меток (включая выдуманный запрет повторного read и игнорирование24h/согласия).
+ToolRM140 строк исключены из TRAIN целиком: ограниченный upstream catalog/request не
+даёт достаточной семантической проверки корректных близнецов. Ещё2 telecom twins
+исключены из-за disputed unpaid bill/неполных оснований снятия suspension.
+Ни одну исходную метку не переписывали; DEV/HOLDOUT сохранены byte-for-byte.
+
+ИтогTRAIN1458,655 positive (44.92%),66 natural,280 legacy;8,342,300 tokens,
+max9545,>16k=0. Внешние источники100/1458=6.86% (ToolACE60,Data2txt40),
+tau2=1358. Максимум60 строк на template. Старые class30–40%, long-input и human gates
+не пройдены; это EXPLORATORY. Целевой new holdout336,44 разделённых группировкой
+components;DEV152,18components. Это не336 новых независимых задач конкурса.
+
+Архив frozen-v2 сохранён offbox и все9 JSONL хешей проверены:
+`A:/Guardian-submissions/guardian-v4-20261019/frozen-v2.tar.gz`,4,920,963 bytes,
+SHA256 `b05e8c1d1df33d7c2448e7f1e9dc24aff2cec09cb1bf56f7138ed081c6f3904d`.
+Рядом `frozen-completed-v2/OFFBOX_VERIFIED.json`; source-audit/adjudication/native/
+mechanical summaries опубликованы в `v4_evidence/` без полного текста benchmark rows.
 
 ## Уже проверено
 
