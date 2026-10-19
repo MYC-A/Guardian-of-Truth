@@ -43,6 +43,7 @@ def worker(args):
     cfg = json.loads((ROOT / 'submission/JUDGE_BLEND40.json').read_bytes())
     cfg.update(max_model_len=max(16384, data['max_tokens'] + 16), gpu_memory_utilization=.85,
                max_num_seqs=1, max_num_batched_tokens=16384, dtype='bfloat16', multimodal=True,
+               enable_prefix_caching=False,
                engine_overrides={'enforce_eager': True})
     kwargs, dropped = engine_kwargs(str(args.model), cfg)
     kwargs.update(enable_lora=True, max_lora_rank=16, max_loras=1, max_cpu_loras=2,
@@ -57,7 +58,9 @@ def worker(args):
     if len(rows) != 3 or any('label' in row for row in rows):
         raise ValueError('PILOT_NATIVE_INPUT_SCOPE')
     scores = {}
-    for name, request in [('base', None), ('zero', LoRARequest('v5-zero', 1, str(zero.resolve()))),
+    for name, request in [('base', None), ('base_repeat', None),
+                          ('zero', LoRARequest('v5-zero', 1, str(zero.resolve()))),
+                          ('zero_repeat', LoRARequest('v5-zero', 1, str(zero.resolve()))),
                           ('nonzero', LoRARequest('v5-nonzero', 2, str(nonzero.resolve())))]:
         outputs = llm.generate([dict(prompt_token_ids=row['ids']) for row in rows], params,
                                use_tqdm=False, lora_request=request)
@@ -73,12 +76,16 @@ def worker(args):
             scores[name].append(score)
     zero_delta = max(abs(x - y) for x, y in zip(scores['base'], scores['zero']))
     changed = max(abs(x - y) for x, y in zip(scores['zero'], scores['nonzero']))
+    write(args.out / 'NATIVE_SCORES.json', dict(scores=scores, zero_delta=zero_delta, nonzero_delta=changed,
+        base_repeat_delta=max(abs(x-y) for x,y in zip(scores['base'],scores['base_repeat'])),
+        zero_repeat_delta=max(abs(x-y) for x,y in zip(scores['zero'],scores['zero_repeat'])),
+        prefix_caching=False, hf_zero_adapter_score=pilot['zero_adapter_score']))
     if zero_delta > .001:
         raise ValueError('NATIVE_ZERO_ADAPTER_PARITY:' + str(zero_delta))
     if changed <= .0001:
         raise ValueError('NATIVE_ADAPTER_EFFECT_NOT_OBSERVED')
     write(args.out / 'WORKER_DONE.json', dict(complete=True, base_revision=BASE_REVISION, rows=3,
-        exact_calls=9, scores=scores, zero_adapter_max_abs_delta=zero_delta, nonzero_max_abs_delta=changed,
+        exact_calls=15, scores=scores, zero_adapter_max_abs_delta=zero_delta, nonzero_max_abs_delta=changed,
         hf_zero_adapter_score=pilot['zero_adapter_score'],
         hf_native_zero_abs_delta=abs(pilot['zero_adapter_score'] - scores['zero'][0]),
         source_sha256=sha(Path(__file__)),
