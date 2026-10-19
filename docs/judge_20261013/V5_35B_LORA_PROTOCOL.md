@@ -1,0 +1,74 @@
+# V5: отдельная LoRA для текущей 35B — 19.10.2026
+
+Поручение пользователя: после завершения экспериментального ZIP смеси начать
+LoRA именно для 35B. Адаптер 4B не переносится и не используется для инициализации.
+Этот протокол записан до optimizer updates V5. Превосходство будущей модели не заявлено.
+
+## База и данные
+
+База: `cyankiwi/Qwen3.6-35B-A3B-AWQ-4bit`, revision
+`00fcea2d3bcf5389b518d4fc082e5590e0ba4844`. Архитектура в config —
+`Qwen3_5MoeForConditionalGeneration`, 40 слоёв, 256 экспертов, 8 выбранных на токен.
+Название архитектуры не означает замену checkpoint на Qwen3.5.
+Существующие веса и их SHA должны совпасть с проверенным JUDGE_MANIFEST.
+
+Используется замороженный V4 frozen-v2: TRAIN1458, DEV152, HOLDOUT336.
+Зафиксировать SHA metadata, inputs и labels до обучения. Не добавлять строки
+dev520/seen397/valid46 в обучение, не менять метки и разбиение. Парные примеры,
+source proofs и ограничения шаблонов сохраняются. Недоступную человеческую проверку
+не подменять другой моделью: статус HUMAN_UNVERIFIED / EXPLORATORY остаётся.
+
+Промпт и tokenizer — для текущей 35B. TRAIN-текст не содержит label, gold, metadata
+про источник ошибки или сравнение с близнецом. Использовать production overall
+renderer и механические hints из входа, без информации из метки. Никакого silent
+truncation TRAIN; опубликовать фактические lengths и coverage. Один renderer
+для парной оценки base/adapter.
+
+## Техническая проверка перед обучением
+
+1. Изолированное окружение обучения; не обновлять рабочий venv V4/vLLM или runtime ZIP.
+   Закрепить версии и сохранить installation/import receipts.
+2. Сначала загрузить точную AWQ-базу в режиме, поддерживающем обратное распространение.
+   GPTQModel заявляет поддержку AWQ + LoRA; это ещё не доказательство работы данного
+   checkpoint. Пакет 7.6.0 требует Transformers >=5.14.0, в runtime ZIP остаётся5.8.0.
+   [Поддержка](https://github.com/ModelCloud/GPTQModel),
+   [metadata7.6.0](https://pypi.org/pypi/gptqmodel/7.6.0/json).
+3. Адаптер получает только attention-проекции и, если совместимы, shared-expert
+   проекции. Routed experts, router, vision, embeddings и lm_head остаются заморожены.
+   Конкретные имена модулей и trainable parameter count записать до optimizer updates.
+4. До полного обучения проверить экспорт/загрузку такого адаптера в исходном vLLM
+   на AWQ-базе, включая GDN-проекции. Проверить zero-adapter и ненулевой технический
+   adapter на TRAIN-входах. Это технические пробы, не отбор по качеству.
+   Неподдержанные модули можно исключить только по этой технической проверке.
+5. Forward/backward без optimizer updates на трёх самых длинных TRAIN-входах:
+   finite loss, finite и ненулевые градиенты LoRA B, базовые weights без gradients,
+   VRAM и tokens/sec. Учитывать, что нулевой B при стандартной инициализации может
+   дать нулевой gradient A на первом backward — это ожидаемо.
+6. Сначала все40 слоёв. Если память или время неприемлемы, заранее допустимая
+   техническая альтернатива — последние8 слоёв; остальной prefix без autograd.
+   Выбор основан на памяти/скорости, без DEV/HOLDOUT и без выбора по F1.
+   Окончательный профиль и оценка времени публикуются до первого optimizer step.
+
+## Обучение и оценка
+
+Начальная конфигурация: fresh LoRA r16, alpha32, dropout.05, AdamW lr2e-5,
+weight decay.01, clip1, accumulation16, seed20261019. Base weights frozen.
+Precision и gradient scaling выбираются техническим пилотом с проверкой finite;
+не переводить всю неквантованную базу в FP32 без расчёта памяти.
+Objective — BCE exact logsumexp(YES)-logsumexp(NO) на последнем токене,
+с тем же набором token IDs и температурой, что у production score.
+Цель — одна полная эпоха. Максимум optimizer wall-time4часа; неполная эпоха
+сохраняется с явными rows/steps/epoch_fraction и не выдаётся за полную.
+Чекпойнт по HOLDOUT не выбирается. Технические pilot weights в final не продолжаются.
+
+После обучения: парные base/adapter exact scores на новых DEV/HOLDOUT и прежних
+397/520, отдельно valid46 и real191. Одинаковые prompts/token IDs, контекст,
+механика и квота .40. Отдельно показать classifier-only base/adapter и сравнение
+с текущим R0; улучшение одного scorer не выдавать за выигрыш всей схемы open-review/MAX.
+При необходимости интеграцию в три вызова оценивать отдельным экспериментом.
+
+Публикуются TP/FP/FN/TN, F1, precision/recall, снятые FP и потерянные TP,
+group-aware неопределённость и фактическое покрытие. Пересекающиеся наборы не
+складываются как независимые примеры. Порог и коэффициенты не подбираются по valid46
+или HOLDOUT. Adapter/checkpoints и scores сохраняются offbox с SHA.
+Конкурсный прирост и прохождение полного private time budget требуют отдельного измерения.
