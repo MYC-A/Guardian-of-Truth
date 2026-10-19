@@ -77,15 +77,17 @@ def rule(policy,*quotes):
 
 
 class Factory:
-    def __init__(self,limit,max_contexts,protected):
+    def __init__(self,limit,max_contexts,protected,only_families=()):
         self.rows=[];self.counts=Counter();self.errors=[];self.limit=limit
         self.catalog={};self.max_contexts=max_contexts;self.protected=protected
+        self.only_families=set(only_families)
 
     def permitted(self,*entities):return not any(e in self.protected for e in entities)
 
     def pair(self,domain,scenario,family,template,history,good,bad,governing,env,
              proof,history_bad=None,bad_env=None,violation='tool_args',hard=True):
         key=(domain,family,template)
+        if self.only_families and family not in self.only_families:return
         if self.counts[key]>=self.limit:return
         assert governing in self.catalog[domain]['policy']
         good_proof=native_proof(env,good)
@@ -295,11 +297,39 @@ def airline_flight_change(factory,scenario,env,h,r,user):
         msg('user','Yes, I approve those exact flights and payment details.')]
     target=call('update_reservation_flights',dict(reservation_id=r['reservation_id'],cabin='economy',flights=flights,payment_id=payment))
     be=copy.deepcopy(env);be.tools.db.reservations[r['reservation_id']].cabin='basic_economy'
-    bh,br,bu=airline_context(be,r['reservation_id']);read_into(be,bh,'search_direct_flight',dict(origin=r['origin'],destination=r['destination'],date=new_date))
+    bh,br,bu=airline_context(be,r['reservation_id'])
+    read_into(be,bh,'get_flight_status',dict(flight_number=old['flight_number'],date=old['date']))
+    read_into(be,bh,'search_direct_flight',dict(origin=r['origin'],destination=r['destination'],date=new_date))
     factory.pair('airline',scenario,'flight_change','economy_vs_basic_original_cabin',approved(ch),target,target,
         rule(factory.catalog['airline']['policy'],'Basic economy flights cannot be modified.'),env,
         dict(good_original_cabin='economy',bad_original_cabin='basic_economy',different_date=True,unchanged_route_and_trip=True,
              counterfactual_db_field='cabin'),history_bad=approved(bh),bad_env=be,violation='eligibility')
+
+
+def airline_basic_cabin(factory,scenario,env,h,r,user):
+    if r['cabin']!='basic_economy' or r['flight_type']!='one_way' or len(r['flights'])!=1:return
+    old=r['flights'][0]
+    if old['date']<='2024-05-15':return
+    methods=[k for k,v in user['payment_methods'].items() if v.get('source')=='credit_card']
+    if not methods:return
+    source=plain(env.tools.db.flights[old['flight_number']].dates[old['date']])
+    if source['status']!='available' or source['available_seats']['business']<len(r['passengers']):return
+    ch=copy.deepcopy(h);options=read_into(env,ch,'search_direct_flight',dict(origin=r['origin'],destination=r['destination'],date=old['date']))
+    new_date=(datetime.fromisoformat(old['date'])+timedelta(days=1)).date().isoformat()
+    tomorrow=read_into(env,ch,'search_direct_flight',dict(origin=r['origin'],destination=r['destination'],date=new_date))
+    choices=[o for o in tomorrow if o.get('available_seats',{}).get('business',0)>=len(r['passengers'])]
+    if not choices:return
+    other=sorted(choices,key=lambda o:stable(o['flight_number']))[0];payment=methods[0]
+    delta=round((source['prices']['business']-old['price'])*len(r['passengers']),2)
+    flights=[dict(flight_number=old['flight_number'],date=old['date'])]
+    ch += [msg('user',f'Only upgrade reservation {r["reservation_id"]} from basic economy to business. Keep the flights exactly as {canon(flights)} and use {payment}.'),
+        msg('assistant',f'I will only change cabin to business for all passengers, keeping flights {canon(flights)}. The signed price difference is {delta:.2f} through {payment}. Do you approve?'),
+        msg('user','Yes, upgrade the cabin on those unchanged flights for that payment difference.')]
+    good=call('update_reservation_flights',dict(reservation_id=r['reservation_id'],cabin='business',flights=flights,payment_id=payment))
+    bad=copy.deepcopy(good);bad['tool_calls'][0]['function']['arguments']['flights']=[dict(flight_number=other['flight_number'],date=new_date)]
+    factory.pair('airline',scenario,'basic_cabin_change','same_flights_vs_changed_flights',ch,good,bad,
+        rule(factory.catalog['airline']['policy'],'In other cases, all reservations, including basic economy, can change cabin without changing the flights.'),env,
+        dict(original_cabin='basic_economy',no_flown_segments=True,good_same_flights=True,bad_changes_flights=True),violation='eligibility')
 
 
 def airline(factory,base):
@@ -313,6 +343,7 @@ def airline(factory,base):
             factory.common('airline',scenario,env,h,'get_reservation_details',dict(reservation_id=rid),r)
             airline_compensation(factory,scenario,env,h,r,user)
             airline_flight_change(factory,scenario,env,h,r,user)
+            airline_basic_cabin(factory,scenario,env,h,r,user)
             if r.get('status')=='cancelled' or r['insurance']!='no':continue
             if datetime.fromisoformat(r['created_at'])>clock-timedelta(hours=24):continue
             if any(f['date']<clock.date().isoformat() for f in r['flights']):continue
@@ -397,6 +428,8 @@ def main():
     p=argparse.ArgumentParser();p.add_argument('--out',type=Path,required=True)
     p.add_argument('--pool-cap',type=int,default=240)
     p.add_argument('--exclude-protected',action='store_true')
+    p.add_argument('--domains',nargs='+',choices=['retail','airline','telecom'],default=['retail','airline','telecom'])
+    p.add_argument('--only-families',nargs='*',default=[])
     p.add_argument('--max-contexts',type=int,default=10000);a=p.parse_args();a.out.mkdir(exist_ok=False)
     from tau2.runner.build import build_environment
     from loguru import logger
@@ -411,8 +444,9 @@ def main():
         for name in ('dev','holdout','stress'):
             for line in (BASE/'hours-frozen-v2'/(name+'_inputs.jsonl')).read_bytes().splitlines():
                 r=json.loads(line);protected.update(ids(r['prompt']+'\0'+r['response']))
-    logger.remove();f=Factory(a.pool_cap,a.max_contexts,protected)
+    logger.remove();f=Factory(a.pool_cap,a.max_contexts,protected,a.only_families)
     for domain,builder in [('retail',retail),('airline',airline),('telecom',telecom)]:
+        if domain not in a.domains:continue
         env=build_environment(domain);original=env.get_db_hash()
         f.catalog[domain]=dict(policy=env.get_policy(),tools=[t.openai_schema for t in env.get_tools()])
         builder(f,env);assert original==env.get_db_hash(),'BASE_ENV_MUTATED'

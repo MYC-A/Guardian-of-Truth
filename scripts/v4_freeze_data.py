@@ -68,6 +68,7 @@ def alias_pair(rows):
         f=t.get('function',t);names.add(f['name']);properties(f.get('parameters',{}))
     mapping={k:'tool_'+stable(k)[:10] for k in names}
     mapping.update({k:'arg_'+stable(k)[:10] for k in params if k not in names})
+    if not mapping:return rows
     pattern=re.compile(r'(?<![A-Za-z0-9_])(?:'+'|'.join(re.escape(k) for k in sorted(mapping,key=lambda k:(-len(k),k)))+r')(?![A-Za-z0-9_])')
     def rename(x):
         if isinstance(x,str):return pattern.sub(lambda m:mapping[m.group()],x)
@@ -128,10 +129,12 @@ def main():
         for r in read(path):
             text=pairtext(r);protected.add('old_eval:'+name+':'+r['id'],shingles(neartext(r)));entities.update(ids(text));exact.add(norm(text));pn+=1
     print(json.dumps(dict(event='protected_index',rows=pn,entities=len(entities))),flush=True)
-    rows=[];excluded=[]
+    rows=[];excluded=[];seen_ids=set()
     for path in a.drafts+[a.legacy]:
         hashes[str(path)]=sha(path)
         for r in read(path):
+            assert r['id'] not in seen_ids,('DUPLICATE_SOURCE_ROW',r['id'])
+            seen_ids.add(r['id'])
             r=copy.deepcopy(r);r['legacy_train']=path==a.legacy
             if r['legacy_train']:r['template_id']='legacy:'+r['family']
             try:request=audit(r)
@@ -240,6 +243,8 @@ def main():
         excluded=len(excluded),candidate_components=len(components),old_train_components_pinned=len(pinned),human_reviewed=False,
         protected_labels_used=False,private_test_improvement_measured=False,absolute_acceptance=False,
         gates=dict(external_fraction=sum(n for s,n in sources.items() if s!='tau2')/total,template_cap=60,
+                   label_positive_fraction=stats['train']['positive']/total,
+                   original_label_balance_30_to40=.30<=stats['train']['positive']/total<=.40,
                    long_input_fraction=stats['train']['over16k']/total,human_review=False,new_holdout_rows=stats['holdout']['rows']),
         script_sha256=sha(Path(__file__)),seconds=time.time()-start)
     write(a.out/'FROZEN.json',manifest);print(json.dumps({k:v for k,v in manifest.items() if k not in {'stats','files','source_files','component_partitions'}}),flush=True)
