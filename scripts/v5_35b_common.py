@@ -7,6 +7,7 @@ import re
 
 BASE_ID = 'cyankiwi/Qwen3.6-35B-A3B-AWQ-4bit'
 BASE_REVISION = '00fcea2d3bcf5389b518d4fc082e5590e0ba4844'
+NATIVE_LORA_TARGETS = ['qkv_proj', 'o_proj', 'in_proj_qkv', 'in_proj_z', 'out_proj', 'gate_up_proj', 'down_proj']
 FROZEN_SHA256 = '15a55e7e4a4f35b35f36e498f401ad9b373bd8d5533bec874ce8283a3d66f093'
 TRAIN_SHA256 = 'd45beff78c52727afdc775f52326f3097e2ce00001b748566a71daae04d6b9dd'
 ATTENTION_TARGETS = ('q_proj', 'k_proj', 'v_proj', 'o_proj', 'in_proj_qkv', 'in_proj_z', 'out_proj')

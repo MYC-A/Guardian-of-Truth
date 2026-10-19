@@ -14,7 +14,7 @@ import traceback
 
 ROOT = Path(__file__).resolve().parents[1]
 sys.path[:0] = [str(ROOT), str(ROOT / 'src'), str(ROOT / 'scripts')]
-from v5_35b_common import BASE_REVISION, read, sha, verify_frozen, verify_model, write
+from v5_35b_common import BASE_REVISION, NATIVE_LORA_TARGETS, read, sha, verify_frozen, verify_model, write
 
 
 def table(path):
@@ -104,7 +104,8 @@ def worker(a):
                max_num_batched_tokens=8192, dtype='bfloat16', multimodal=True,
                engine_overrides={'enforce_eager': True})
     kwargs, dropped = engine_kwargs(str(a.model), cfg)
-    kwargs.update(enable_lora=True, max_lora_rank=16, max_loras=1, max_cpu_loras=1)
+    kwargs.update(enable_lora=True, max_lora_rank=16, max_loras=1, max_cpu_loras=1,
+                  lora_target_modules=NATIVE_LORA_TARGETS)
     llm = LLM(**kwargs)
     yes, no = answer_ids(llm.get_tokenizer())
     if sorted(yes) != prepared['answer_ids']['yes'] or sorted(no) != prepared['answer_ids']['no']:

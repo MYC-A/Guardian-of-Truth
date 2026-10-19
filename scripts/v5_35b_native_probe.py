@@ -10,7 +10,7 @@ import time
 import traceback
 ROOT = Path(__file__).resolve().parents[1]
 sys.path[:0] = [str(ROOT), str(ROOT / 'src'), str(ROOT / 'scripts')]
-from v5_35b_common import BASE_REVISION, read, sha, verify_model, write
+from v5_35b_common import BASE_REVISION, NATIVE_LORA_TARGETS, read, sha, verify_model, write
 
 
 def worker(args):
@@ -42,10 +42,11 @@ def worker(args):
     del tensors
     cfg = json.loads((ROOT / 'submission/JUDGE_BLEND40.json').read_bytes())
     cfg.update(max_model_len=max(16384, data['max_tokens'] + 16), gpu_memory_utilization=.85,
-               max_num_seqs=1, max_num_batched_tokens=16384, dtype='bfloat16', multimodal=False,
+               max_num_seqs=1, max_num_batched_tokens=16384, dtype='bfloat16', multimodal=True,
                engine_overrides={'enforce_eager': True})
     kwargs, dropped = engine_kwargs(str(args.model), cfg)
-    kwargs.update(enable_lora=True, max_lora_rank=16, max_loras=1, max_cpu_loras=2)
+    kwargs.update(enable_lora=True, max_lora_rank=16, max_loras=1, max_cpu_loras=2,
+                  lora_target_modules=NATIVE_LORA_TARGETS)
     llm = LLM(**kwargs)
     yes, no = answer_ids(llm.get_tokenizer())
     if sorted(yes) != data['answer_ids']['yes'] or sorted(no) != data['answer_ids']['no']:
@@ -84,7 +85,8 @@ def worker(args):
         nonzero_adapter_binding_proven=True, zero_adapter_sha256=pilot['zero_adapter_sha256'],
         nonzero_adapter_sha256=sha(nonzero / 'adapter_model.safetensors'),
         pilot_tokens_sha256=data['pilot_tokens_sha256'], layers=pilot['layers'], shared=pilot['shared'],
-        dropped_engine_kwargs=dropped, scope='TRAIN technical binding only; no quality measurement'))
+        dropped_engine_kwargs=dropped, native_lora_targets=NATIVE_LORA_TARGETS,
+        scope='TRAIN technical binding only; no quality measurement'))
 
 
 def main():
