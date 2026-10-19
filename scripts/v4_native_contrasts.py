@@ -6,6 +6,7 @@ the model input. Native success is checked separately from policy applicability.
 import argparse
 from collections import Counter
 import copy
+import csv
 from datetime import datetime,timedelta
 import hashlib
 import json
@@ -20,6 +21,7 @@ sys.path[:0]=[str(Path(__file__).resolve().parents[1]/'src'),str(Path(__file__).
 from v3_data import validate
 from v4_shape_gate import scan
 PIN='96a3ef92329baf908ffe9dfe188cea34e8701d2a'
+PROOF_CACHE={}
 
 
 def plain(value):
@@ -52,7 +54,9 @@ def read_into(env,history,name,args):
 
 
 def native_proof(env,target):
-    original=env.get_db_hash();local=copy.deepcopy(env);before=local.get_db_hash()
+    original=env.get_db_hash();key=(original,canon(target))
+    if key in PROOF_CACHE:return copy.deepcopy(PROOF_CACHE[key])
+    local=copy.deepcopy(env);before=local.get_db_hash()
     try:
         outputs=[]
         for c in target.get('tool_calls',[]):
@@ -62,6 +66,7 @@ def native_proof(env,target):
         result=dict(complete=False,error_type=type(exc).__name__,error=str(exc),before_db_sha=before,
                     after_db_sha=local.get_db_hash())
     assert env.get_db_hash()==original,'NATIVE_CLONE_MUTATED_PARENT'
+    PROOF_CACHE[key]=copy.deepcopy(result)
     return result
 
 
@@ -72,9 +77,11 @@ def rule(policy,*quotes):
 
 
 class Factory:
-    def __init__(self,limit,max_contexts):
+    def __init__(self,limit,max_contexts,protected):
         self.rows=[];self.counts=Counter();self.errors=[];self.limit=limit
-        self.catalog={};self.max_contexts=max_contexts
+        self.catalog={};self.max_contexts=max_contexts;self.protected=protected
+
+    def permitted(self,*entities):return not any(e in self.protected for e in entities)
 
     def pair(self,domain,scenario,family,template,history,good,bad,governing,env,
              proof,history_bad=None,bad_env=None,violation='tool_args',hard=True):
@@ -122,7 +129,10 @@ class Factory:
             for field in ['status','cabin','membership','account_status','data_refueling_gb']:
                 value=result.get(field)
                 if value is None or isinstance(value,(dict,list)):continue
-                wrong=(float(value)+1 if isinstance(value,(int,float)) else 'not_'+str(value))
+                alternatives={'status':['pending','processed','delivered','cancelled'] if domain=='retail' else ['Active','Suspended','Closed'],
+                    'cabin':['business','economy','basic_economy'],'membership':['regular','silver','gold'],
+                    'account_status':['Active','Suspended','Closed']}
+                wrong=(float(value)+1 if isinstance(value,(int,float)) else next(x for x in alternatives[field] if x!=value))
                 h=history+[msg('user',f'Please report the {field} field from the latest returned record, without changing anything.')]
                 q=rule(policy,'You should not make up any information or knowledge or procedures not provided by the user or the tools, or give subjective recommendations or comments.',
                     'You should not provide any information, knowledge, or procedures not provided by the user or available tools, or give subjective recommendations or comments.')
@@ -194,7 +204,8 @@ def retail(factory,base):
     policy=factory.catalog['retail']['policy']
     consent=rule(policy,'Before taking any action that updates the database (cancel, modify, return, exchange), you must list the action details and obtain explicit user confirmation (yes) to proceed.')
     reason_rule=rule(policy,"The user needs to confirm the order id and the reason (either 'no longer needed' or 'ordered by mistake') for cancellation.")
-    for oid in sorted(base.tools.db.orders,key=stable)[:factory.max_contexts]:
+    eligible=[oid for oid,o in base.tools.db.orders.items() if factory.permitted(('order_id',oid),('user_id',o.user_id))]
+    for oid in sorted(eligible,key=stable)[:factory.max_contexts]:
         try:
             env=copy.deepcopy(base);h,order,user=retail_context(env,oid);scenario='retail:'+oid
             factory.common('retail',scenario,env,h,'get_order_details',dict(order_id=oid),order)
@@ -270,7 +281,9 @@ def airline_flight_change(factory,scenario,env,h,r,user):
     methods=[k for k,v in user['payment_methods'].items() if v.get('source')=='credit_card']
     if not methods:return
     new_date=(datetime.fromisoformat(old['date'])+timedelta(days=1)).date().isoformat()
-    ch=copy.deepcopy(h);options=read_into(env,ch,'search_direct_flight',dict(origin=r['origin'],destination=r['destination'],date=new_date))
+    ch=copy.deepcopy(h)
+    if read_into(env,ch,'get_flight_status',dict(flight_number=old['flight_number'],date=old['date'])) in {'flying','landed'}:return
+    options=read_into(env,ch,'search_direct_flight',dict(origin=r['origin'],destination=r['destination'],date=new_date))
     if not isinstance(options,list):return
     options=[o for o in options if o.get('available_seats',{}).get('economy',0)>=len(r['passengers'])]
     if not options:return
@@ -293,7 +306,8 @@ def airline(factory,base):
     policy=factory.catalog['airline']['policy']
     eligibility=rule(policy,'Otherwise, flight can be cancelled if any of the following is true:')
     clock=datetime(2024,5,15,15)
-    for rid in sorted(base.tools.db.reservations,key=stable)[:factory.max_contexts]:
+    eligible=[rid for rid,r in base.tools.db.reservations.items() if factory.permitted(('reservation_id',rid),('user_id',r.user_id))]
+    for rid in sorted(eligible,key=stable)[:factory.max_contexts]:
         try:
             env=copy.deepcopy(base);h,r,user=airline_context(env,rid);scenario='airline:'+rid
             factory.common('airline',scenario,env,h,'get_reservation_details',dict(reservation_id=rid),r)
@@ -341,7 +355,8 @@ def telecom_context(env,lid):
 def telecom(factory,base):
     policy=factory.catalog['telecom']['policy']
     limit=rule(policy,'The maximum amount of data that can be refueled is 2GB.')
-    for lid in sorted(by_id(base.tools.db.lines,'line_id'),key=stable)[:factory.max_contexts]:
+    eligible=[lid for lid in by_id(base.tools.db.lines,'line_id') if factory.permitted(('line_id',lid))]
+    for lid in sorted(eligible,key=stable)[:factory.max_contexts]:
         try:
             env=copy.deepcopy(base);h,line,user,plan=telecom_context(env,lid);scenario='telecom:'+lid
             factory.common('telecom',scenario,env,h,'get_details_by_id',dict(id=lid),line)
@@ -381,10 +396,22 @@ def telecom(factory,base):
 def main():
     p=argparse.ArgumentParser();p.add_argument('--out',type=Path,required=True)
     p.add_argument('--pool-cap',type=int,default=240)
+    p.add_argument('--exclude-protected',action='store_true')
     p.add_argument('--max-contexts',type=int,default=10000);a=p.parse_args();a.out.mkdir(exist_ok=False)
     from tau2.runner.build import build_environment
     from loguru import logger
-    logger.remove();f=Factory(a.pool_cap,a.max_contexts)
+    protected=set()
+    if a.exclude_protected:
+        from v3_decontaminate import ids
+        csv.field_size_limit(2**31-1)
+        for name in ('regression_seen','compli_dev','compli_eval'):
+            path=BASE.parent/'data/guardian-judge-eval-data-v1'/name/'inputs.csv'
+            with path.open(newline='') as source:
+                for r in csv.DictReader(source):protected.update(ids(r['prompt']+'\0'+r['response']))
+        for name in ('dev','holdout','stress'):
+            for line in (BASE/'hours-frozen-v2'/(name+'_inputs.jsonl')).read_bytes().splitlines():
+                r=json.loads(line);protected.update(ids(r['prompt']+'\0'+r['response']))
+    logger.remove();f=Factory(a.pool_cap,a.max_contexts,protected)
     for domain,builder in [('retail',retail),('airline',airline),('telecom',telecom)]:
         env=build_environment(domain);original=env.get_db_hash()
         f.catalog[domain]=dict(policy=env.get_policy(),tools=[t.openai_schema for t in env.get_tools()])
@@ -396,6 +423,7 @@ def main():
         (a.out/name).write_text(''.join(json.dumps(r,ensure_ascii=False)+'\n' for r in rows))
     (a.out/'DONE.json').write_text(json.dumps(dict(complete=True,status='RAW_CANDIDATES_NOT_TRAIN_READY',
         rows=len(f.rows),counts={':'.join(k):v for k,v in f.counts.items()},errors=len(f.errors),
+        protected_preflight=bool(a.exclude_protected),protected_entity_pairs=len(protected),
         natural_rows=0,source_revision=PIN,human_reviewed=False,
         script_sha256=hashlib.sha256(Path(__file__).read_bytes()).hexdigest(),
         original_template_cap_must_be_applied_after_decontamination=True),indent=2)+'\n')
