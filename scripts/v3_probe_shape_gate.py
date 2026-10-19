@@ -71,6 +71,7 @@ def variants(y, current, adapter, hard, flags):
 
 def main():
     p = argparse.ArgumentParser()
+    p.add_argument('--gate',choices=('raw','bounded'),default='raw')
     for name in ('data','saved','scores','out'):
         p.add_argument('--'+name,type=Path,required=True)
     a = p.parse_args(); a.out.mkdir(exist_ok=False); csv.field_size_limit(2**31-1)
@@ -78,6 +79,13 @@ def main():
     old = table(a.saved/'regression_r1/rows.csv'); valid = {r['id'] for r in table(a.saved/'valid46_r1/rows.csv')}
     scores = {r['id']:r['score'] for r in read(a.scores) if r['partition']=='regression_seen' and r['arm']=='adapter'}
     assert len(inputs)==len(gold)==len(old)==len(scores)==397
+    if a.gate=='bounded':
+        from v4_shape_gate import scan
+        def evaluate_shape(prompt,response):
+            value=scan(prompt,response)
+            return dict(flags=[v['kind'] for v in value['violations']],bounded=value)
+    else:
+        evaluate_shape=shape
     rows=[]
     for r,g,b in zip(inputs,gold,old):
         assert r['id']==g['id']==b['id']
@@ -85,14 +93,35 @@ def main():
                          score=float(b['score']),adapter=scores[r['id']],hard=bool(b['hard']),
                          prompt_sha256=hashlib.sha256(r['prompt'].encode()).hexdigest(),
                          response_sha256=hashlib.sha256(r['response'].encode()).hexdigest(),
-                         shape=shape(r['prompt'],r['response'])))
+                         shape=evaluate_shape(r['prompt'],r['response'])))
     (a.out/'FLAGS.jsonl').write_text(''.join(json.dumps(r)+'\n' for r in rows))
-    examples=counterexamples(); result=dict(status='DIAGNOSTIC_NOT_ACCEPTED',
+    examples=counterexamples()
+    if a.gate=='bounded':
+        for example in examples:
+            cp=('⟦SYSTEM⟧\n<policy>\n'+example['policy']+'\n</policy>\n[AVAILABLE TOOLS]\n'
+                '- lookup — Read-only lookup.\n    id: string!\n⟦USER⟧\n'+example['user'])
+            example['bounded']=scan(cp,example['response'])
+            example['unsafe_raw_flag_positive']=bool(example['bounded']['violations'])
+    result=dict(status='DIAGNOSTIC_NOT_ACCEPTED',gate=a.gate,
         production_changed=False, raw_flags_are_not_applicability_proof=True,
         counterexamples=examples, counterexample_false_positives=[r['id'] for r in examples
         if r['unsafe_raw_flag_positive'] and not r['expected_shape_violation']],cohorts={})
     cohorts=dict(seen397=rows,real191=[r for r in rows if r['domain'] in
                  {'ext_tau2','hold_tau2h','hold_holdout2'}],valid46=[r for r in rows if r['id'] in valid])
+    # DEV520 has no frozen L1 adapter scores; report only the current35B arm.
+    if a.gate=='bounded':
+        din=table(a.data/'compli_dev/inputs.csv'); dg=read(a.data/'compli_dev/labels.jsonl')
+        db=table(a.saved/'dev_r1b/rows.csv'); assert len(din)==len(dg)==len(db)==520
+        extra=[]
+        for r,g,b in zip(din,dg,db):
+            assert r['id']==g['id']==b['id'] and int(b['label'])==g['label']
+            extra.append(dict(id=r['id'],label=g['label'],group=g.get('conversation',g['group']),
+                domain=g['domain'],score=float(b['score']),adapter=0.,hard=bool(b['hard']),
+                prompt_sha256=hashlib.sha256(r['prompt'].encode()).hexdigest(),
+                response_sha256=hashlib.sha256(r['response'].encode()).hexdigest(),
+                shape=evaluate_shape(r['prompt'],r['response'])))
+        cohorts['dev520']=extra
+        (a.out/'DEV520_FLAGS.jsonl').write_text(''.join(json.dumps(r)+'\n' for r in extra))
     for name,data in cohorts.items():
         y=np.array([r['label'] for r in data]);b=np.array([r['score'] for r in data]);d=np.array([r['adapter'] for r in data])
         h=np.array([r['hard'] for r in data]);f=np.array([bool(r['shape']['flags']) for r in data])
@@ -107,6 +136,7 @@ def main():
                 for mode in ('quota','OR'): delta[arm,mode].append(metrics(y[ix],pp[mode])['f1']-ref)
         report=dict(rows=len(data),flagged=int(f.sum()),flagged_gold0=[r['id'] for r in data if r['shape']['flags'] and not r['label']],arms={})
         for arm,pp in variants0.items():
+            if name=='dev520' and arm=='blend':continue
             before=pp['reference']; report['arms'][arm]={}
             for mode,pred in pp.items():
                 item=metrics(y,pred)
