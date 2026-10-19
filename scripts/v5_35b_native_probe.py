@@ -35,7 +35,7 @@ def worker(args):
         raise ValueError('NONZERO_PILOT_ADAPTER')
     generator = torch.Generator(device='cpu').manual_seed(20261019)
     for key in sorted(bkeys):
-        tensors[key] = torch.randn(tensors[key].shape, generator=generator, dtype=tensors[key].dtype) * .01
+        tensors[key] = torch.randn(tensors[key].shape, generator=generator, dtype=tensors[key].dtype) * .1
     nonzero = args.out / 'technical-nonzero-adapter'; nonzero.mkdir(exist_ok=False)
     (nonzero / 'adapter_config.json').write_bytes((zero / 'adapter_config.json').read_bytes())
     save_file(tensors, nonzero / 'adapter_model.safetensors', metadata={'format': 'pt'})
@@ -44,7 +44,7 @@ def worker(args):
     cfg.update(max_model_len=max(16384, data['max_tokens'] + 16), gpu_memory_utilization=.85,
                max_num_seqs=1, max_num_batched_tokens=16384, dtype='bfloat16', multimodal=True,
                enable_prefix_caching=False,
-               engine_overrides={'enforce_eager': True})
+               engine_overrides={'enforce_eager': True, 'async_scheduling': False})
     kwargs, dropped = engine_kwargs(str(args.model), cfg)
     kwargs.update(enable_lora=True, max_lora_rank=16, max_loras=1, max_cpu_loras=2,
                   lora_target_modules=NATIVE_LORA_TARGETS)
@@ -62,8 +62,10 @@ def worker(args):
                           ('zero', LoRARequest('v5-zero', 1, str(zero.resolve()))),
                           ('zero_repeat', LoRARequest('v5-zero', 1, str(zero.resolve()))),
                           ('nonzero', LoRARequest('v5-nonzero', 2, str(nonzero.resolve())))]:
-        outputs = llm.generate([dict(prompt_token_ids=row['ids']) for row in rows], params,
-                               use_tqdm=False, lora_request=request)
+        outputs = []
+        for row in rows:
+            outputs.extend(llm.generate([dict(prompt_token_ids=row['ids'])], params,
+                                       use_tqdm=False, lora_request=request))
         if len(outputs) != len(rows):
             raise ValueError('NATIVE_OUTPUT_COUNT')
         scores[name] = []

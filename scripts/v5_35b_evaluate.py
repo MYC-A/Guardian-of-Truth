@@ -103,7 +103,7 @@ def worker(a):
     cfg.update(max_model_len=49152, gpu_memory_utilization=.85, max_num_seqs=1,
                max_num_batched_tokens=8192, dtype='bfloat16', multimodal=True,
                enable_prefix_caching=False,
-               engine_overrides={'enforce_eager': True})
+               engine_overrides={'enforce_eager': True, 'async_scheduling': False})
     kwargs, dropped = engine_kwargs(str(a.model), cfg)
     kwargs.update(enable_lora=True, max_lora_rank=16, max_loras=1, max_cpu_loras=1,
                   lora_target_modules=NATIVE_LORA_TARGETS)
