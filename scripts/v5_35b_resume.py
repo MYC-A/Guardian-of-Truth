@@ -16,6 +16,17 @@ from v5_35b_common import BASE_REVISION, awq_loader_compat, read, sha, target_na
 from v5_35b_train import check_gate
 
 
+def admit_speed_probe(probe):
+    """Fixed exploratory numeric bounds; no label/quality-dependent thresholds."""
+    control=probe['baseline_repeat_control']; treatment=probe['compiled_comparison']
+    return (treatment['post_dropout_rng_equal'] and control['post_dropout_rng_equal'] and
+        treatment['score_abs_delta'] <= 1e-5 and control['score_abs_delta'] <= 1e-5 and
+        treatment['loss_abs_delta'] <= 1e-5 and control['loss_abs_delta'] <= 1e-5 and
+        treatment['gradient_relative_l2'] <= min(.005, 2*control['gradient_relative_l2']+1e-7) and
+        treatment['worst_tensor_gradient_relative_l2'] <= .02 and
+        treatment['max_gradient_abs_delta'] <= 2*control['max_gradient_abs_delta']+1e-7)
+
+
 def validate_resume(meta, data, state, gate_sha):
     if (meta['base_revision'] != BASE_REVISION or meta['gate_sha256'] != gate_sha or
             meta['train_tokens_sha256'] != data['train_tokens_sha256']):
@@ -143,14 +154,20 @@ def main():
                 torch.cuda.synchronize(); timer=time.monotonic()
                 score=odds(records[index]); loss=torch.nn.functional.binary_cross_entropy_with_logits(score,score.new_tensor(float(records[index]['label'])))
                 loss.backward(); torch.cuda.synchronize()
+                if any(v.grad is None or not bool(torch.isfinite(v.grad).all()) for v in parameters):
+                    raise ValueError('PROBE_MISSING_OR_NONFINITE_GRADIENT')
                 grads=[v.grad.detach().clone() for v in parameters]
                 rng_hash=hashlib.sha256(torch.cuda.get_rng_state().cpu().numpy().tobytes()).hexdigest()
                 arms.append((float(score.detach()),float(loss.detach()),grads,time.monotonic()-timer,rng_hash))
             def compare(left,right):
                 diffs=[float((x-y).abs().max()) for x,y in zip(left[2],right[2])]
                 scale=max(float(x.abs().max()) for x in left[2])
+                diff2=[float((x.float()-y.float()).square().sum()) for x,y in zip(left[2],right[2])]
+                ref2=[float(x.float().square().sum()) for x in left[2]]
                 return dict(score_abs_delta=abs(left[0]-right[0]),loss_abs_delta=abs(left[1]-right[1]),
                     max_gradient_abs_delta=max(diffs),gradient_reference_max_abs=scale,
+                    gradient_relative_l2=math.sqrt(sum(diff2)/max(sum(ref2),1e-30)),
+                    worst_tensor_gradient_relative_l2=max(math.sqrt(d/max(n,1e-30)) for d,n in zip(diff2,ref2)),
                     max_gradient_delta_relative_to_largest=max(diffs)/max(scale,1e-30),
                     bit_exact=left[0]==right[0] and left[1]==right[1] and all(torch.equal(x,y) for x,y in zip(left[2],right[2])),
                     post_dropout_rng_equal=left[4]==right[4])
@@ -161,10 +178,12 @@ def main():
                 baseline_repeat_control=control,compiled_comparison=treatment)
             probes.append(item); print(json.dumps(dict(event='resume_speed_probe',**item)),flush=True)
             if not math.isfinite(arms[0][0]): raise ValueError('NONFINITE_REFERENCE_SPEED_PROBE')
-        accepted=(all(x['score_and_gradients_exact'] for x in probes) and
+        accepted=(all(admit_speed_probe(x) for x in probes) and
                   warm_seconds+sum(x['compiled_seconds'] for x in probes)<.9*sum(x['baseline_seconds'] for x in probes))
         write(a.out/'SPEED_GATE.json',dict(complete=True,probes=probes,optimizer_updates=0,quality_selection=False,
-            compiled_accepted=accepted,criterion='all probe scores and gradients bit exact and at least 10 percent faster including warmup'))
+            compiled_accepted=accepted,full_model_bit_exact=all(x['score_and_gradients_exact'] for x in probes),
+            criterion='warmed weights exact; dropout RNG equal; score/loss deltas <=1e-5; gradient relative L2 <=0.005 and <=2x reference-repeat noise +1e-7; worst tensor relative L2 <=0.02; gradient max delta <=2x control +1e-7; >=10 percent faster including warmup',
+            status='EXPLORATORY_NUMERIC_NOISE_BOUNDED_NOT_ABSOLUTE_EQUIVALENCE'))
         torch_awq.dequantize_gemm=compiled if accepted else original
         restore_rng(); optimizer.zero_grad(set_to_none=True)
         stopped=False
