@@ -91,7 +91,13 @@ def main():
         torch.manual_seed(20261019)
         random.seed(20261019)
         torch.backends.cuda.matmul.allow_tf32 = True
-        meta['versions'] = {n: importlib.metadata.version(n) for n in ('torch', 'transformers', 'peft', 'gptqmodel')}
+        meta['versions'] = {n: importlib.metadata.version(n) for n in
+                            ('torch', 'transformers', 'peft', 'gptqmodel', 'optimum')}
+        for name in ('flash-linear-attention', 'fla-core', 'causal-conv1d'):
+            try:
+                meta['versions'][name] = importlib.metadata.version(name)
+            except importlib.metadata.PackageNotFoundError:
+                meta['versions'][name] = None
         timer = time.monotonic()
         print(json.dumps(dict(event='load_35b_awq', backend='AWQ_TORCH', dtype='bfloat16')), flush=True)
         with awq_loader_compat(args.model, args.out / 'LOADER_COMPATIBILITY.json'):
@@ -127,6 +133,9 @@ def main():
             raise ValueError('TRAINABLE_PARAMETER_NOT_ON_GPU')
         meta.update(target_modules=targets, trainable_parameters=sum(p.numel() for _, p in trainable),
                     model_load_seconds=time.monotonic() - timer, dtype='bfloat16', backend='AWQ_TORCH')
+        meta['gdn_kernels'] = sorted({str(getattr(m.chunk_gated_delta_rule, '__module__', 'unknown')) + '.' +
+                                      str(getattr(m.chunk_gated_delta_rule, '__name__', 'unknown'))
+                                      for m in base.modules() if hasattr(m, 'chunk_gated_delta_rule')})
         write(args.out / 'MODEL_READY.json', meta)
         yi = torch.tensor(data['answer_ids']['yes'], device='cuda')
         ni = torch.tensor(data['answer_ids']['no'], device='cuda')
@@ -161,6 +170,8 @@ def main():
         if args.pilot:
             measurements = []
             for record in pilots:
+                write(args.out / 'PILOT_STEP_START.json', dict(id=record['id'], tokens=record['tokens'],
+                    phase='forward_backward', rows_done=len(measurements), optimizer_updates=0))
                 model.zero_grad(set_to_none=True)
                 torch.cuda.synchronize(); timer = time.monotonic()
                 score = odds(record)
