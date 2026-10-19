@@ -401,7 +401,8 @@ def run(root, input_path, output, *, python=None, work=None, started_wall=None, 
         return 0
 
     strict = bool(cfg.get('hard_unknown_identifier', False))
-    findings = [analyze(r['prompt'], r['response'], strict) for r in rows]
+    findings = [analyze(r['prompt'], r['response'], strict,
+                        bounded_turn_shape=bool(cfg.get('bounded_turn_shape',False))) for r in rows]
     hard = {i for i, f in enumerate(findings) if f.hard}
     kinds = Counter(item.split()[0] for f in findings for item in f.hard)
     log(clock, 'mechanical', hard_rows=len(hard), hard_kinds=dict(kinds),

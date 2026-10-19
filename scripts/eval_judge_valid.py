@@ -116,7 +116,8 @@ def main(argv=None):
         labels = None
     n = len(rows)
     t0 = time.time()
-    findings = [analyze(r['prompt'], r['response'], bool(cfg['hard_unknown_identifier'])) for r in rows]
+    findings = [analyze(r['prompt'], r['response'], bool(cfg['hard_unknown_identifier']),
+                        bounded_turn_shape=bool(cfg.get('bounded_turn_shape',False))) for r in rows]
     summary = dict(rows=n, mechanical_seconds=round(time.time() - t0, 2),
                    hard_rows=sum(1 for f in findings if f.hard),
                    rows_with_hints=sum(1 for f in findings if f.hints))

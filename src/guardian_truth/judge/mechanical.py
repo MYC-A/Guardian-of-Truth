@@ -40,7 +40,7 @@ def _date_gate(prompt, response):
     return findings
 
 
-def analyze(prompt, response, hard_unknown_identifier=False):
+def analyze(prompt, response, hard_unknown_identifier=False, *, bounded_turn_shape=False):
     prompt, response = prompt or '', response or ''
     findings = analyze_transcript(prompt, response, hard_unknown_identifier)
     try:
@@ -51,4 +51,15 @@ def analyze(prompt, response, hard_unknown_identifier=False):
             findings.features['n_hard'] = len(findings.hard)
     except Exception as error:
         findings.features['date_gate_error'] = type(error).__name__
+    if bounded_turn_shape:
+        try:
+            from .turn_shape import scan
+            shape=scan(prompt,response)
+            findings.features['bounded_turn_shape_status']=shape['status']
+            for rule in shape['violations']:
+                findings.hard.append('bounded_turn_shape '+rule['kind']+': '+rule['quote'])
+                findings.features['hard:bounded_turn_shape:'+rule['kind']]=1
+            findings.features['n_hard']=len(findings.hard)
+        except Exception as error:
+            findings.features['bounded_turn_shape_error']=type(error).__name__
     return findings

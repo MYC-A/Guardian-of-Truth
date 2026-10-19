@@ -5,6 +5,18 @@ import pytest
 sys.path.insert(0,str(Path(__file__).resolve().parents[1]/'scripts'))
 from v4_shape_gate import scan
 
+
+def test_opt_in_mechanical_gate_and_default_compatibility():
+    from guardian_truth.judge.mechanical import analyze
+    p=prompt(ONE);r=turn(CALL+CALL)
+    baseline=analyze(p,r)
+    enabled=analyze(p,r,bounded_turn_shape=True)
+    assert not any(x.startswith('bounded_turn_shape') for x in baseline.hard)
+    assert any(x.startswith('bounded_turn_shape MAX_ONE_CALL') for x in enabled.hard)
+    assert enabled.features['n_hard']==len(enabled.hard)
+    permitted=analyze(prompt(ONE+' Except for read-only lookups.'),r,bounded_turn_shape=True)
+    assert not any(x.startswith('bounded_turn_shape') for x in permitted.hard)
+
 ONE='You should only make one tool call at a time.'
 MIX='If you make a tool call, you should not respond to the user at the same time.'
 CALL='\t→ TOOL_CALL lookup: {"id":"a"}\n'
