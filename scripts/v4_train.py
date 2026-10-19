@@ -14,12 +14,16 @@ def main():
     # The exact same forward/backward, optimizer, budget, receipts and paired
     # base/adapter evaluation; only the explicitly versioned renderer changes.
     trainer.training_text=training_text
-    trainer.main()
+    import torch,transformers,peft
     metadata=dict(renderer='v4_explicit_current_assistant_header',
         fresh_base=True,continued_v3_adapter=False,
+        versions=dict(torch=torch.__version__,transformers=transformers.__version__,peft=peft.__version__,cuda=torch.version.cuda),
         source_sha256={p.name:hashlib.sha256(p.read_bytes()).hexdigest() for p in
             [Path(__file__),Path(trainer.__file__),Path(__file__).with_name('v4_data.py')]},
         frozen_sha256=hashlib.sha256((data/'FROZEN.json').read_bytes()).hexdigest() if (data/'FROZEN.json').exists() else None)
+    version=out.parent/(out.name+'.SOURCE.json')
+    with version.open('x') as f:f.write(json.dumps(metadata,indent=2)+'\n')
+    trainer.main()
     (out/'V4_VERSION.json').write_text(json.dumps(metadata,indent=2)+'\n')
 
 

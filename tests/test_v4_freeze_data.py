@@ -3,8 +3,18 @@ import sys
 from pathlib import Path
 sys.path.insert(0,str(Path(__file__).resolve().parents[1]/'scripts'))
 from v4_freeze_data import alias_pair,stable
+from v4_freeze_data import pair_key,group_keys
 from v4_data import judge_input
 from jsonschema import Draft202012Validator
+
+
+def test_unpaired_rows_never_merge_on_null_pair_identity():
+    a=dict(id='one',scenario_id='scenario-one',group_id='group-one',pair_id=None)
+    b=dict(id='two',scenario_id='scenario-two',group_id='group-two',pair_id=None)
+    assert pair_key(a)=='one' and pair_key(b)=='two'
+    assert not set(group_keys(a)) & set(group_keys(b))
+    a['pair_id']=b['pair_id']='real-pair'
+    assert set(group_keys(a)) & set(group_keys(b))=={('pair_id','real-pair')}
 
 
 def test_aliases_rename_argument_name_but_preserve_schema_and_message_structure():

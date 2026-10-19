@@ -28,6 +28,8 @@ def write(path,data):path.write_text(json.dumps(data,indent=2,ensure_ascii=False
 
 
 def template(r):return r['domain'],r['family'],r.get('template_id','legacy:'+r['family'])
+def pair_key(r):return r.get('pair_id') or r['id']
+def group_keys(r):return [(field,r[field]) for field in ('scenario_id','group_id','pair_id') if r.get(field)]
 
 
 def audit(r):
@@ -117,6 +119,7 @@ def main():
     a=argparse.ArgumentParser();a.add_argument('--drafts',type=Path,nargs='+',required=True)
     a.add_argument('--legacy',type=Path,required=True);a.add_argument('--protected',type=Path,required=True)
     a.add_argument('--old-frozen',type=Path,required=True);a.add_argument('--model',type=Path,required=True)
+    a.add_argument('--preview',action='store_true',help='component/source inventory only; never write FROZEN')
     a.add_argument('--out',type=Path,required=True);a=a.parse_args();a.out.mkdir(exist_ok=False);start=time.time()
     csv.field_size_limit(2**31-1);protected=NearIndex();entities=set();exact=set();hashes={};pn=0
     for name in ('regression_seen','compli_dev','compli_eval'):
@@ -129,7 +132,7 @@ def main():
         for r in read(path):
             text=pairtext(r);protected.add('old_eval:'+name+':'+r['id'],shingles(neartext(r)));entities.update(ids(text));exact.add(norm(text));pn+=1
     print(json.dumps(dict(event='protected_index',rows=pn,entities=len(entities))),flush=True)
-    rows=[];excluded=[];seen_ids=set()
+    rows=[];excluded=[];seen_ids=set();bad_pairs=set()
     for path in a.drafts+[a.legacy]:
         hashes[str(path)]=sha(path)
         for r in read(path):
@@ -138,8 +141,16 @@ def main():
             r=copy.deepcopy(r);r['legacy_train']=path==a.legacy
             if r['legacy_train']:r['template_id']='legacy:'+r['family']
             try:request=audit(r)
-            except Exception as e:excluded.append(dict(id=r.get('id'),reason='SOURCE_AUDIT',error=str(e)));continue
+            except Exception as e:
+                bad_pairs.add(r.get('pair_id') or r['id'])
+                excluded.append(dict(id=r.get('id'),reason='SOURCE_AUDIT',error_type=type(e).__name__,error=str(e).splitlines()[0][:600]));continue
             rows.append(r)
+    retained=[]
+    for r in rows:
+        if (r.get('pair_id') or r['id']) in bad_pairs:
+            excluded.append(dict(id=r['id'],reason='TWIN_SOURCE_AUDIT_FAILED'))
+        else:retained.append(r)
+    rows=retained
     parent=list(range(len(rows)));groups={};candidate=NearIndex();owner={};reasons={};old=set()
     def root(i):
         while parent[i]!=i:parent[i]=parent[parent[i]];i=parent[i]
@@ -155,8 +166,7 @@ def main():
         matches,_=protected.query(values)
         if matches:why.append(dict(near_protected=matches))
         if why:reasons[i]=why
-        for field in ('scenario_id','group_id','pair_id'):
-            key=(field,r[field])
+        for key in group_keys(r):
             if key in groups:join(i,groups[key])
             else:groups[key]=i
         for entity in ids(text):
@@ -184,7 +194,7 @@ def main():
     # Complete-pair template caps, source limits and external fraction. Selection
     # is independent of scores. Preserve old TRAIN lineage, never evaluation.
     pairs=defaultdict(list)
-    for r in train_pool:pairs[r['pair_id']].append(r)
+    for r in train_pool:pairs[pair_key(r)].append(r)
     training=[];caps=Counter();external=[];legacy=[]
     for k in sorted(pairs,key=stable):
         batch=pairs[k];key=template(batch[0]);n=len(batch)
@@ -201,6 +211,14 @@ def main():
     for batch in external:
         if len(batch)<=max_external:training.extend(batch);max_external-=len(batch)
         else:excluded.extend(dict(id=r['id'],reason='TOTAL_EXTERNAL_CAP_15_PERCENT') for r in batch)
+    if a.preview:
+        (a.out/'excluded.jsonl').write_text(''.join(json.dumps(r)+'\n' for r in excluded),encoding='utf-8')
+        result=dict(status='PREVIEW_NOT_FROZEN_NOT_TRAIN_READY',components=len(components),
+            new_components=sum(k not in pinned for k in components),excluded=len(excluded),
+            partitions={name:dict(rows=len(data),by_domain=dict(Counter(r['domain'] for r in data)),
+                by_family=dict(Counter(r['family'] for r in data)),natural=sum(r.get('natural_trajectory',False) for r in data))
+                for name,data in dict(train=training,**eval_parts).items()},source_sha256=hashes,seconds=time.time()-start)
+        write(a.out/'PREVIEW.json',result);print(json.dumps(result),flush=True);return
     assert training and eval_parts['dev'] and eval_parts['holdout'],'NO_CLEAN_NEW_TRAIN_OR_EVAL_COMPONENTS'
     from transformers import AutoTokenizer
     tok=AutoTokenizer.from_pretrained(a.model,local_files_only=True,trust_remote_code=False)
@@ -208,7 +226,7 @@ def main():
     # identifier/schema issue excludes the pair, never silently changes its gold.
     def finalize(data):
         batches=defaultdict(list)
-        for r in data:batches[r['pair_id']].append(r)
+        for r in data:batches[pair_key(r)].append(r)
         kept=[]
         for k in sorted(batches,key=stable):
             batch=alias_pair(batches[k])
