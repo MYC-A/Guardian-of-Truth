@@ -1,6 +1,7 @@
 import csv
 import contextlib
 import hashlib
+import importlib.util
 import io
 import json
 import math
@@ -81,6 +82,17 @@ def test_pins_and_exact_contract_are_mandatory():
         with pytest.raises(ValueError):validate(cfg)
 
 
+def test_public_entrypoint_dispatches_ensemble_config(tmp_path):
+    (tmp_path/'scripts').mkdir();entry=tmp_path/'scripts/predict.py'
+    entry.write_bytes((ROOT/'submission/predict_judge.py').read_bytes())
+    (tmp_path/'JUDGE_CONFIG.json').write_text(json.dumps(CONFIG))
+    spec=importlib.util.spec_from_file_location('blend_archive_predict',entry);module=importlib.util.module_from_spec(spec);spec.loader.exec_module(module)
+    with patch.object(module,'bootstrap'),patch.object(wrapper,'run',return_value=0) as selected,\
+         patch.object(wrapper.primary,'run',side_effect=AssertionError('WRONG_ENTRYPOINT')):
+        assert module.main(['--input',str(tmp_path/'in.csv'),'--output',str(tmp_path/'out.csv')])==0
+    assert selected.call_args.args[0]==tmp_path
+
+
 def test_two_model_archive_contains_verified_adapter_and_runtime_code(tmp_path):
     model=tmp_path/'primary';model.mkdir();base=tmp_path/'base';base.mkdir();adapter=tmp_path/'adapter';adapter.mkdir()
     for root in (model,base):
@@ -112,13 +124,17 @@ def test_two_model_archive_contains_verified_adapter_and_runtime_code(tmp_path):
 
 
 @pytest.mark.parametrize('complete',[True,False])
-def test_sequential_wrapper_uses_actual_auxiliary_scores_and_preserves_ids(tmp_path,complete):
-    p=tmp_path/'input.csv';out=tmp_path/'output.csv';cfg=tmp_path/'cfg.json';cfg.write_text(json.dumps(CONFIG))
+@pytest.mark.parametrize('file_format',['csv','parquet'])
+def test_sequential_wrapper_uses_actual_auxiliary_scores_and_preserves_ids(tmp_path,complete,file_format):
+    p=tmp_path/'input.csv';out=tmp_path/('output.'+file_format);cfg=tmp_path/'cfg.json';cfg.write_text(json.dumps(CONFIG))
     ids=['duplicate','duplicate','quote"id','unicode\u2028id','last']
     with p.open('w',encoding='utf8',newline='') as f:
         w=csv.DictWriter(f,fieldnames=['id','prompt','response','label']);w.writeheader()
         for key in ids:w.writerow(dict(id=key,prompt='\u27e6SYSTEM\u27e7\nBe helpful.\n\u27e6USER\u27e7\nHi',
             response='\u27e6ASSISTANT\u27e7\nHi',label='MUST_NOT_ENTER_STAGE'))
+    if file_format=='parquet':
+        import pandas as pd
+        frame=pd.read_csv(p,keep_default_na=False);p=tmp_path/'input.parquet';frame.to_parquet(p,index=False)
     auxiliary=[-8.,-9.,10.,9.,0.]
     def child(command,**kwargs):
         source=Path(command[command.index('--input')+1]).read_text(encoding='utf8')
@@ -134,7 +150,9 @@ def test_sequential_wrapper_uses_actual_auxiliary_scores_and_preserves_ids(tmp_p
     with patch.object(wrapper.subprocess,'Popen',side_effect=child),patch.object(wrapper.primary,'kill_group',return_value=True),\
          patch.object(wrapper.primary,'run',side_effect=main_run):
         wrapper.run(tmp_path,p,out,work=tmp_path/'work',config=cfg,watchdog=False)
-    with out.open(encoding='utf8',newline='') as f:rows=list(csv.DictReader(f))
+    if file_format=='parquet':rows=pd.read_parquet(out).to_dict('records')
+    else:
+        with out.open(encoding='utf8',newline='') as f:rows=list(csv.DictReader(f))
     assert [r['id'] for r in rows]==ids
     assert [int(r['label']) for r in rows]==([1,0,1,0,0] if complete else [1,1,0,0,0])
     done=json.loads((tmp_path/'work/BLEND_DONE.json').read_bytes())
