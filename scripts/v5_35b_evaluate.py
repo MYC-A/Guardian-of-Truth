@@ -135,17 +135,44 @@ def worker(a):
     effect = max(abs(x - y) for x, y in zip(values['base'], values['adapter']))
     if effect <= .0001:
         raise ValueError('TRAINED_ADAPTER_HAS_NO_NATIVE_EFFECT')
+    repeat_ids = json.loads((a.out / 'REPEAT_INPUTS.json').read_bytes())['ids']
+    selected = [r for r in rows if r['id'] in set(repeat_ids)]
+    if len(selected) != 46 or len(set(repeat_ids)) != 46:
+        raise ValueError('RUNTIME_REPEAT_INPUT_COUNT')
+    # Two additional measurements plus the full-run measurement give three
+    # paired valid46 repeats. They are not new independent evaluation tasks.
+    with (a.out / 'repeat_scores.jsonl').open('w', encoding='utf-8', buffering=1) as stream:
+        for repeat in (1, 2):
+            for arm, request in [('base', None), ('adapter', LoRARequest('v5-trained', 1, str(adapter.resolve())))]:
+                outputs = llm.generate([dict(prompt_token_ids=r['ids']) for r in selected], params,
+                                       use_tqdm=False, lora_request=request)
+                if len(outputs) != 46:
+                    raise ValueError('RUNTIME_REPEAT_OUTPUT_COUNT')
+                for row, output in zip(selected, outputs):
+                    score, exact = answer_score(output, yes, no)
+                    if list(output.prompt_token_ids) != row['ids'] or not exact or score is None or not math.isfinite(score):
+                        raise ValueError('RUNTIME_REPEAT_INEXACT_OR_TOKEN_DRIFT')
+                    stream.write(json.dumps(dict(id=row['id'], arm=arm, repeat=repeat, score=score, exact=True)) + '\n')
     write(a.out / 'WORKER_DONE.json', dict(complete=True, coverage=coverage, all_exact=True,
         tokens_sha256=prepared['tokens_sha256'], adapter_sha256=done['adapter_sha256'],
         epoch_complete=done['epoch_complete'], epoch_fraction=done['epoch_fraction'],
         max_abs_adapter_effect=effect, seconds=time.monotonic() - started, dropped_engine_kwargs=dropped,
         prefix_caching=False,
+        runtime_valid46_paired_repeats=3, runtime_repeats_are_independent_tasks=False,
+        repeat_scores_sha256=sha(a.out / 'repeat_scores.jsonl'),
         scores_sha256=sha(a.out / 'scores.jsonl'), source_sha256=sha(Path(__file__)),
         scope='paired classifier-only; not an end-to-end open-review/MAX comparison'))
 
 
 def score(a):
     from scripts.judge_submission import kill_group
+    prepared = json.loads((a.data / 'PREPARED.json').read_bytes())
+    if sha(a.data / 'INDEX.json') != prepared['index_sha256']:
+        raise ValueError('EVAL_INDEX_DRIFT')
+    index = json.loads((a.data / 'INDEX.json').read_bytes())['rows']
+    # CPU parent selects IDs only. The GPU worker receives no labels or gold.
+    write(a.out / 'REPEAT_INPUTS.json', dict(ids=[r['id'] for r in index if 'valid46' in r['cohorts']],
+                                          labels_included=False))
     with (a.out / 'worker.log').open('w', encoding='utf-8') as stream:
         process = subprocess.Popen([sys.executable, str(Path(__file__)), *sys.argv[1:], '--worker'],
             stdout=stream, stderr=subprocess.STDOUT, start_new_session=True)
@@ -179,6 +206,12 @@ def analyze_scores(a):
     result = dict(status='EXPLORATORY_ONLY_HUMAN_UNVERIFIED', classifier_only=True,
                   end_to_end_R0_improvement_measured=False, private_improvement_measured=False,
                   quota=.40, checkpoint_selection_on_holdout=False, datasets={})
+    if sha(a.run / 'repeat_scores.jsonl') != done['repeat_scores_sha256']:
+        raise ValueError('RUNTIME_REPEAT_SCORE_DRIFT')
+    repeats = read(a.run / 'repeat_scores.jsonl')
+    repeat_lookup = {(r['repeat'], r['arm'], r['id']): r['score'] for r in repeats}
+    if len(repeat_lookup) != len(repeats) or len(repeats) != 184 or not all(r['exact'] and math.isfinite(r['score']) for r in repeats):
+        raise ValueError('RUNTIME_REPEAT_COVERAGE')
     for name, rows in cohorts.items():
         y = [r['label'] for r in rows]; hard = {i for i, r in enumerate(rows) if r['hard']}
         arms = {arm: [lookup[arm, r['id']] for r in rows] for arm in ('base', 'adapter')}
@@ -192,6 +225,18 @@ def analyze_scores(a):
                          tp_lost=sum(b == 1 and n == 0 and label == 1 for b, n, label in zip(old, new, y))),
             diagnostic_quotas={str(q): {arm: metrics(y, quota(v, hard, q)) for arm, v in arms.items()} for q in (.30, .50)},
             paired=paired_ci(y, arms['base'], arms['adapter'], [r['group'] for r in rows], hard))
+        if name == 'valid46':
+            runs = []
+            for repeat in range(3):
+                vv = arms if repeat == 0 else {arm: [repeat_lookup[repeat, arm, r['id']] for r in rows] for arm in ('base', 'adapter')}
+                pp = {arm: quota(v, hard, .40) for arm, v in vv.items()}
+                mm = {arm: metrics(y, p) for arm, p in pp.items()}
+                runs.append(dict(repeat=repeat, metrics=mm,
+                    f1_delta=mm['adapter']['f1']-mm['base']['f1'],
+                    decision_flip_rate_vs_repeat0={arm: sum(x != z for x,z in zip(pp[arm],predictions[arm]))/46 for arm in pp}))
+            result['datasets'][name]['runtime_repeats'] = dict(runs=runs,
+                all_three_f1_deltas_positive=all(r['f1_delta'] > 0 for r in runs),
+                repeats_are_independent_tasks=False, quota_recomputed_per_repeat=True)
         write(a.out / 'RESULTS.json', result)
     write(a.out / 'DONE.json', dict(complete=True, source_sha256=sha(Path(__file__)), scores_sha256=done['scores_sha256']))
 
