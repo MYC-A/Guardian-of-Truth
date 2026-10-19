@@ -62,10 +62,12 @@ def test_training_gate_binds_backend_and_exact_trainer(tmp_path):
     data = dict(train_tokens_sha256='train', pilot_tokens_sha256='pilot')
     receipt = dict(complete=True, optimizer_updates=0, technical_feasible=True, layers=40, shared=True,
                    train_tokens_sha256='train', backend='AWQ_GEMM_TRITON', zero_adapter_sha256='zero',
-                   source_sha256={'v5_35b_train.py': sha(Path(__file__).resolve().parents[1] / 'scripts/v5_35b_train.py')})
+                   source_sha256={n: sha(Path(__file__).resolve().parents[1] / 'scripts' / n)
+                                  for n in ('v5_35b_train.py', 'v5_35b_common.py')})
     pilot.write_text(json.dumps(receipt))
     native.write_text(json.dumps(dict(complete=True, nonzero_adapter_binding_proven=True,
-        base_revision=BASE_REVISION, zero_adapter_sha256='zero', pilot_tokens_sha256='pilot')))
+        base_revision=BASE_REVISION, zero_adapter_sha256='zero', pilot_tokens_sha256='pilot',
+        source_sha256=sha(Path(__file__).resolve().parents[1] / 'scripts/v5_35b_native_probe.py'))))
     profile = dict(layers=40, shared=True, backend='AWQ_GEMM_TRITON', train_tokens_sha256='train',
                    pilot=dict(path=str(pilot), sha256=sha(pilot)), native=dict(path=str(native), sha256=sha(native)))
     gate.write_text(json.dumps(profile))

@@ -40,6 +40,10 @@ def check_gate(path, data, layers, shared, backend='AWQ_TORCH'):
         raise ValueError('PILOT_PROFILE_DRIFT')
     if pilot.get('source_sha256', {}).get('v5_35b_train.py') != sha(Path(__file__)):
         raise ValueError('TRAINER_CHANGED_AFTER_PILOT')
+    if pilot.get('source_sha256', {}).get('v5_35b_common.py') != sha(Path(__file__).with_name('v5_35b_common.py')):
+        raise ValueError('TRAINING_HELPER_CHANGED_AFTER_PILOT')
+    if native.get('source_sha256') != sha(Path(__file__).with_name('v5_35b_native_probe.py')):
+        raise ValueError('NATIVE_PROBE_CHANGED_AFTER_GATE')
     if native.get('zero_adapter_sha256') != pilot.get('zero_adapter_sha256') or native.get('base_revision') != BASE_REVISION:
         raise ValueError('NATIVE_MODEL_OR_ADAPTER_DRIFT')
     if native.get('pilot_tokens_sha256') != data['pilot_tokens_sha256']:
