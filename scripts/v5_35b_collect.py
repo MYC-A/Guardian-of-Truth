@@ -19,9 +19,12 @@ def main():
         p.add_argument('--' + name, type=Path, required=True)
     p.add_argument('--host', required=True); p.add_argument('--port', type=int, required=True)
     p.add_argument('--remote-root', required=True); p.add_argument('--finish', required=True)
+    p.add_argument('--training', default='train-v1'); p.add_argument('--launch', default='launch-v1')
     a = p.parse_args(); root = PurePosixPath(a.remote_root)
     if not str(root).startswith('/workspace/') or '..' in root.parts or PurePosixPath(a.finish).name != a.finish:
         raise ValueError('UNSAFE_COLLECTION_SCOPE')
+    if any(PurePosixPath(n).name != n or n in ('.', '..') for n in (a.training, a.launch)):
+        raise ValueError('UNSAFE_COLLECTION_DIRECTORY')
     a.out.mkdir(parents=True, exist_ok=True)
     args = [str(a.ssh), '-T', '-i', str(a.key), '-o', 'BatchMode=yes', '-o', 'ConnectTimeout=15',
             '-p', str(a.port), a.host]
@@ -31,8 +34,8 @@ def main():
     try:
         while time.monotonic() - started < 46800:
             # Only fixed small status receipts, never stdout from a live model.
-            names = ['TRAINING_PROFILE.json', 'train-v1/PROGRESS.json', 'train-v1/TRAINED.json', 'train-v1/FAIL.json',
-                     'launch-v1/PROGRESS.json', 'launch-v1/HEALTH_LATEST.json', 'launch-v1/FAIL.json',
+            names = ['TRAINING_PROFILE.json', a.training + '/PROGRESS.json', a.training + '/TRAINED.json', a.training + '/FAIL.json',
+                     a.launch + '/PROGRESS.json', a.launch + '/HEALTH_LATEST.json', a.launch + '/FAIL.json',
                      a.finish + '/PROGRESS.json', a.finish + '/DONE.json', a.finish + '/FAIL.json',
                      a.finish + '-export.INDEX.json']
             code = ('from pathlib import Path\nimport json\nr=Path(' + repr(str(root)) + ')\n' +
