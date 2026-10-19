@@ -27,6 +27,30 @@ def admit_speed_probe(probe):
         treatment['max_gradient_abs_delta'] <= 2*control['max_gradient_abs_delta']+1e-7)
 
 
+def interrupted_resume_source(checkpoint, record_path, meta):
+    """Authenticate interruption recovery without inventing a TRAINED receipt."""
+    rec=json.loads(Path(record_path).read_bytes());checkpoint=Path(checkpoint)
+    if (rec.get('kind')!='INTERRUPTED_VERIFIED_CHECKPOINT' or rec.get('complete') is not False or
+        not rec.get('checkpoint_complete') or Path(rec['source_checkpoint']).resolve()!=checkpoint.resolve()):
+        raise ValueError('INVALID_INTERRUPTION_RECOVERY_RECORD')
+    if (rec['adapter_sha256']!=meta['adapter_sha256'] or rec['state_sha256']!=sha(checkpoint/'state.pt') or
+        rec['training_log_sha256']!=sha(checkpoint.parent/'training.jsonl')):
+        raise ValueError('INTERRUPTED_CHECKPOINT_OR_LOG_DRIFT')
+    gate_path=checkpoint.parent/'SPEED_GATE.json'
+    if (meta.get('compiled_awq_dequant') is not True or sha(gate_path)!=meta.get('speed_gate_sha256') or
+        not json.loads(gate_path.read_bytes()).get('compiled_accepted')):
+        raise ValueError('INTERRUPTED_NUMERIC_ADMISSION_DRIFT')
+    logs=read(checkpoint.parent/'training.jsonl');last=logs[-1]
+    matching=[x for x in logs if x['step']==meta['steps']]
+    if (not matching or matching[-1]['rows_done']!=meta['rows_done'] or last!=rec['latest_logged_progress'] or
+        rec['steps']!=meta['steps'] or rec['rows_done']!=meta['rows_done'] or
+        rec['interrupted_batch_allowance_seconds']!=600 or
+        rec['accounted_training_seconds']!=last['seconds']+600):
+        raise ValueError('INTERRUPTION_POSITION_OR_TIME_DRIFT')
+    return dict(adapter_sha256=rec['adapter_sha256'],rows_done=rec['rows_done'],epoch_complete=False,
+        training_seconds=rec['accounted_training_seconds'])
+
+
 def validate_resume(meta, data, state, gate_sha):
     if (meta['base_revision'] != BASE_REVISION or meta['gate_sha256'] != gate_sha or
             meta['train_tokens_sha256'] != data['train_tokens_sha256']):
@@ -51,12 +75,14 @@ def main():
     for n in ('model', 'manifest', 'data', 'gate', 'resume', 'out', 'benchmark'):
         p.add_argument('--' + n, type=Path, required=True)
     p.add_argument('--total-budget-seconds', type=int, default=32400)
+    p.add_argument('--recovery-record',type=Path)
     a = p.parse_args(); a.out.mkdir(exist_ok=False)
     started = time.monotonic()
     try:
         if a.total_budget_seconds not in (32400, 57600):
             raise ValueError('UNREGISTERED_TOTAL_TIME_BUDGET')
-        os.environ['TORCHINDUCTOR_CACHE_DIR'] = str(a.out / 'compile-cache')
+        cache=(a.resume.parent/'compile-cache') if a.recovery_record else (a.out/'compile-cache')
+        os.environ['TORCHINDUCTOR_CACHE_DIR'] = str(cache)
         os.environ['TORCHINDUCTOR_COMPILE_THREADS'] = '2'
         import torch
         from safetensors.torch import load_file
@@ -71,7 +97,8 @@ def main():
         if not benchmark['complete'] or not all(x['bit_exact'] and x['output_and_input_gradient_exact'] for x in benchmark['results']):
             raise ValueError('DEQUANT_MICROBENCHMARK_NOT_PASSED')
         meta = json.loads((a.resume / 'CHECKPOINT.json').read_bytes())
-        previous = json.loads((a.resume.parent / 'TRAINED.json').read_bytes())
+        previous = (interrupted_resume_source(a.resume,a.recovery_record,meta) if a.recovery_record else
+                    json.loads((a.resume.parent / 'TRAINED.json').read_bytes()))
         if sha(a.resume / 'adapter/adapter_model.safetensors') != meta['adapter_sha256'] or previous['adapter_sha256'] != meta['adapter_sha256']:
             raise ValueError('RESUME_ADAPTER_CHECKSUM_DRIFT')
         # This is our own checkpoint; retain all optimizer and RNG state.
@@ -85,6 +112,9 @@ def main():
             starting_step=state['steps'], starting_rows=state['rows_done'], total_optimizer_budget_seconds=a.total_budget_seconds,
             prior_training_seconds=previous['training_seconds'], fresh_initialization=False,
             optimizer_reset=False, data_reordered=False, quality_labels_used_for_speed_selection=False)
+        if a.recovery_record:
+            receipt['interrupted_recovery_record_sha256']=sha(a.recovery_record)
+            receipt['interrupted_recovery_record']=json.loads(a.recovery_record.read_bytes())
         write(a.out / 'START.json', receipt)
         verify_model(a.model, a.manifest)
         records = read(a.data / 'train_tokens.jsonl')
@@ -147,7 +177,8 @@ def main():
         write(a.out/'DEQUANT_WARMUP.json',dict(complete=True,examples=warm,seconds=warm_seconds))
         probes=[]
         # Same inputs, saved dropout RNG, adapter and gradients for both arms.
-        for index in state['order'][state['rows_done']:state['rows_done']+2]:
+        probe_indices=[] if a.recovery_record else state['order'][state['rows_done']:state['rows_done']+2]
+        for index in probe_indices:
             arms=[]
             for key,fn in [('baseline',original),('baseline_repeat',original),('compiled',compiled)]:
                 torch_awq.dequantize_gemm=fn; restore_rng(); optimizer.zero_grad(set_to_none=True)
@@ -180,8 +211,11 @@ def main():
             if not math.isfinite(arms[0][0]): raise ValueError('NONFINITE_REFERENCE_SPEED_PROBE')
         accepted=(all(admit_speed_probe(x) for x in probes) and
                   warm_seconds+sum(x['compiled_seconds'] for x in probes)<.9*sum(x['baseline_seconds'] for x in probes))
+        if a.recovery_record:accepted=True  # source admission authenticated above; this is the same admitted recipe
         write(a.out/'SPEED_GATE.json',dict(complete=True,probes=probes,optimizer_updates=0,quality_selection=False,
-            compiled_accepted=accepted,full_model_bit_exact=all(x['score_and_gradients_exact'] for x in probes),
+            compiled_accepted=accepted,full_model_bit_exact=None if a.recovery_record else all(x['score_and_gradients_exact'] for x in probes),
+            source_admission_sha256=meta.get('speed_gate_sha256') if a.recovery_record else None,
+            reused_checkpoint_admission=bool(a.recovery_record),warmed_weight_parity=True,
             criterion='warmed weights exact; dropout RNG equal; score/loss deltas <=1e-5; gradient relative L2 <=0.005 and <=2x reference-repeat noise +1e-7; worst tensor relative L2 <=0.02; gradient max delta <=2x control +1e-7; >=10 percent faster including warmup',
             status='EXPLORATORY_NUMERIC_NOISE_BOUNDED_NOT_ABSOLUTE_EQUIVALENCE'))
         torch_awq.dequantize_gemm=compiled if accepted else original
@@ -222,7 +256,7 @@ def main():
                 item=dict(step=steps,rows_done=rows_done,rows_total=len(records),loss=sum(losses)/len(losses),grad_norm=norm,
                     seconds=prior_seconds+time.monotonic()-train_started,resumed_seconds=time.monotonic()-train_started)
                 log.write(json.dumps(item)+'\n');write(a.out/'PROGRESS.json',item);print(json.dumps(dict(event='train',**item)),flush=True)
-                if steps==state['steps']+1 or steps%10==0:checkpoint('checkpoint-%04d'%steps)
+                if a.recovery_record or steps==state['steps']+1 or steps%10==0:checkpoint('checkpoint-%04d'%steps)
         checkpoint('final');model.save_pretrained(a.out/'adapter',safe_serialization=True)
         write(a.out/'TRAINED.json',dict(meta,complete=True,optimizer_updates=steps,rows_done=rows_done,
             rows_forwarded_since_resume=forwarded,epoch_fraction=rows_done/len(records),epoch_complete=rows_done==len(records),

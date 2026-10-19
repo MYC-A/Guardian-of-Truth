@@ -2,7 +2,7 @@ import copy
 import random
 import pytest
 from scripts.v5_35b_common import BASE_REVISION
-from scripts.v5_35b_resume import validate_resume, admit_speed_probe
+from scripts.v5_35b_resume import validate_resume, admit_speed_probe, interrupted_resume_source
 
 
 def fixture():
@@ -36,3 +36,25 @@ def test_numeric_admission_requires_reference_control_hard_caps_and_same_rng():
         assert not admit_speed_probe(bad)
     bad=copy.deepcopy(probe);bad['baseline_repeat_control']['gradient_relative_l2']=0.
     assert not admit_speed_probe(bad)
+
+
+def test_interruption_recovery_binds_checkpoint_log_and_spent_time(tmp_path):
+    import json
+    from scripts.v5_35b_common import sha
+    parent=tmp_path/'interrupted';cp=parent/'checkpoint-0070';cp.mkdir(parents=True)
+    (cp/'state.pt').write_bytes(b'own checkpoint bytes')
+    logs=[dict(step=70,rows_done=1120,seconds=41000.),dict(step=72,rows_done=1152,seconds=42000.)]
+    log=parent/'training.jsonl';log.write_text(''.join(json.dumps(x)+'\n' for x in logs))
+    gate=parent/'SPEED_GATE.json';gate.write_text(json.dumps(dict(compiled_accepted=True)))
+    meta=dict(steps=70,rows_done=1120,adapter_sha256='adapter',compiled_awq_dequant=True,speed_gate_sha256=sha(gate))
+    rec=dict(kind='INTERRUPTED_VERIFIED_CHECKPOINT',complete=False,checkpoint_complete=True,source_checkpoint=str(cp),
+        adapter_sha256='adapter',state_sha256=sha(cp/'state.pt'),training_log_sha256=sha(log),steps=70,rows_done=1120,
+        latest_logged_progress=logs[-1],interrupted_batch_allowance_seconds=600,accounted_training_seconds=42600.)
+    record=tmp_path/'recovery.json';record.write_text(json.dumps(rec))
+    got=interrupted_resume_source(cp,record,meta)
+    assert got['rows_done']==1120 and got['training_seconds']==42600. and not got['epoch_complete']
+    assert not (parent/'TRAINED.json').exists()
+    rec['accounted_training_seconds']=0;record.write_text(json.dumps(rec))
+    with pytest.raises(ValueError,match='TIME_DRIFT'):interrupted_resume_source(cp,record,meta)
+    rec['accounted_training_seconds']=42600.;record.write_text(json.dumps(rec));log.write_text('{}\n')
+    with pytest.raises(ValueError,match='LOG_DRIFT'):interrupted_resume_source(cp,record,meta)
