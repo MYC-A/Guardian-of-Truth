@@ -53,3 +53,27 @@ def test_awq_skip_rules_preserve_shared_float_and_routed_quantized_boundary():
     assert not any(re.match(pattern, name + '_other.gate_proj') for pattern in negative)
     assert list(rules)[0].startswith('-:')
     assert rules['.*'] == {'bits': 4}
+
+
+def test_training_gate_binds_backend_and_exact_trainer(tmp_path):
+    from pathlib import Path
+    from scripts.v5_35b_common import BASE_REVISION, sha
+    pilot = tmp_path / 'pilot.json'; native = tmp_path / 'native.json'; gate = tmp_path / 'gate.json'
+    data = dict(train_tokens_sha256='train', pilot_tokens_sha256='pilot')
+    receipt = dict(complete=True, optimizer_updates=0, technical_feasible=True, layers=40, shared=True,
+                   train_tokens_sha256='train', backend='AWQ_GEMM_TRITON', zero_adapter_sha256='zero',
+                   source_sha256={'v5_35b_train.py': sha(Path(__file__).resolve().parents[1] / 'scripts/v5_35b_train.py')})
+    pilot.write_text(json.dumps(receipt))
+    native.write_text(json.dumps(dict(complete=True, nonzero_adapter_binding_proven=True,
+        base_revision=BASE_REVISION, zero_adapter_sha256='zero', pilot_tokens_sha256='pilot')))
+    profile = dict(layers=40, shared=True, backend='AWQ_GEMM_TRITON', train_tokens_sha256='train',
+                   pilot=dict(path=str(pilot), sha256=sha(pilot)), native=dict(path=str(native), sha256=sha(native)))
+    gate.write_text(json.dumps(profile))
+    assert check_gate(gate, data, 40, True, 'AWQ_GEMM_TRITON') == profile
+    with pytest.raises(ValueError, match='TRAINING_BACKEND_DRIFT'):
+        check_gate(gate, data, 40, True, 'AWQ_TORCH')
+    receipt['source_sha256']['v5_35b_train.py'] = 'different-trainer'
+    pilot.write_text(json.dumps(receipt)); profile['pilot']['sha256'] = sha(pilot)
+    gate.write_text(json.dumps(profile))
+    with pytest.raises(ValueError, match='TRAINER_CHANGED_AFTER_PILOT'):
+        check_gate(gate, data, 40, True, 'AWQ_GEMM_TRITON')
