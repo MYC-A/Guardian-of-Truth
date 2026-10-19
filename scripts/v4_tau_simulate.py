@@ -21,9 +21,10 @@ def main():
                 (d,r['task_id']) in native_complete} for d,v in clean['domains'].items()}
     previous_v4=set()
     for path in preflight.parents[1].glob('natural-*/START.json'):
-        for r in json.loads(path.read_bytes())['jobs']:
+        prior=json.loads(path.read_bytes())
+        for r in prior.get('jobs',[]):
             # Reuse task/seed across models, but do not rerun a pilot within the same model.
-            if ('--config-name' in sys.argv and json.loads(path.read_bytes()).get('config_name')==
+            if ('--config-name' in sys.argv and prior.get('config_name')==
                     sys.argv[sys.argv.index('--config-name')+1]):
                 previous_v4.add((r['domain'],r['task_id']))
     original=run.get_tasks
