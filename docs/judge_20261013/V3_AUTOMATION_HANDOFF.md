@@ -1,5 +1,28 @@
 # Overnight continuation, authorized 2026-10-18
 
+## FINAL 2026-10-19T00:33Z: COMPLETE, no further scheduled work
+
+Fresh L1 and paired evaluation finished. One full epoch1666rows/105updates,
+training2913.45s, process including paired eval4315.61s. Final1834scores have
+complete exact coverage. Local analysis and independent12-arm metric audit pass;
+re-evaluated base scores match saved base397/397 exactly. See V3_C_E_RESULTS.md
+and v3_C_evidence/INDEX.json for authoritative results, hashes and limitations.
+Blend real191 F1 .6452 -> .6820, valid46 .8293 -> .8780 at frozen quota .40;
+both CIs include zero. Standalone adapter fails transfer AUROC gates. Original
+human/long/volume/runtime gates unmet; EXPLORATORY_ONLY, no ZIP/production change.
+
+Final516790349-byte archive verified offbox on A:, including seven frozen-file
+hashes and both adapter copies. Archive SHA256 bad1973658f509f947acfee4111522407760802cbe43e63ac1d316e2ef03a9b3.
+Server OVERNIGHT_STATE.json is COMPLETE/needs_agent=false. Own controller EXITED,
+GPU0MiB; instance itself retained. Windows Guardian-V3-Overnight-20261018 disabled.
+Exact keep-awake helper PID22496 was command-line-verified and stopped; no global
+power settings changed. CLEANUP.json records completion. Codex quota delayed the
+automatic analysis, but server training and offbox fetcher completed independently.
+Do not resume this finite run, restart training, or treat old pending statuses below
+as current. Original02:18:43Z deadline was not exceeded.
+
+The following sections retain the historical continuation instructions and logs.
+
 User explicitly requested scheduled continuation and fault checks while sleeping.
 Target deadline 2026-10-19T02:18:43Z (six hours from hours amendment).
 Read V3_USER_REQUEST.md, V3_CONTINUATION_PROTOCOL.md, V3_HOURS_PROTOCOL.md and
