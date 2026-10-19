@@ -147,7 +147,7 @@ def score(a):
         process = subprocess.Popen([sys.executable, str(Path(__file__)), *sys.argv[1:], '--worker'],
             stdout=stream, stderr=subprocess.STDOUT, start_new_session=True)
         try:
-            code = process.wait(timeout=10800)
+            code = process.wait(timeout=7200)
         finally:
             gone = kill_group(process, grace=3)
     if code or not gone:

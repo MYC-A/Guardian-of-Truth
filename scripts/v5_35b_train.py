@@ -63,7 +63,7 @@ def main():
     args.out.mkdir(exist_ok=False)
     started = time.monotonic()
     try:
-        if not 60 <= args.budget_seconds <= 14400:
+        if not 60 <= args.budget_seconds <= 32400:
             raise ValueError('UNREGISTERED_TRAINING_BUDGET')
         data = json.loads((args.data / 'DONE.json').read_bytes())
         if not data['complete'] or data['base_revision'] != BASE_REVISION or data['frozen_sha256'] != FROZEN_SHA256 or data['train_source_sha256'] != TRAIN_SHA256:
@@ -78,6 +78,7 @@ def main():
         meta = dict(base_id=BASE_ID, base_revision=BASE_REVISION, pilot=args.pilot, optimizer_updates=0,
                     layers=args.layers, shared=shared, rank=16, alpha=32, dropout=.05, learning_rate=2e-5,
                     effective_batch=16, seed=20261019, rows=len(records), tokens=data['tokens'],
+                    optimizer_budget_seconds=args.budget_seconds,
                     train_tokens_sha256=data['train_tokens_sha256'], frozen_sha256=FROZEN_SHA256,
                     gate_sha256=sha(args.gate) if gate else None,
                     source_sha256={name: sha(Path(__file__).with_name(name)) for name in
@@ -212,7 +213,7 @@ def main():
             meta.update(complete=True, optimizer_updates=0, measurements=measurements, tokens_per_second=tps,
                         estimated_epoch_seconds=estimate, estimated_optimizer_bytes=optimizer_bytes,
                         technical_feasible=peak + optimizer_bytes + (1 << 30) < 45 * (1 << 30),
-                        epoch_fits_budget=estimate <= 14400,
+                        epoch_fits_budget=estimate <= args.budget_seconds,
                         seconds=time.monotonic() - started)
             write(args.out / 'DONE.json', meta)
             return

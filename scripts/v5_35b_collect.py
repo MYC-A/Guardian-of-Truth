@@ -26,10 +26,10 @@ def main():
     args = [str(a.ssh), '-T', '-i', str(a.key), '-o', 'BatchMode=yes', '-o', 'ConnectTimeout=15',
             '-p', str(a.port), a.host]
     started = time.monotonic(); errors = []; attempts = 0
-    write(a.out / 'COLLECTOR_STARTED.json', dict(remote_root=str(root), finish=a.finish, budget_seconds=32400,
+    write(a.out / 'COLLECTOR_STARTED.json', dict(remote_root=str(root), finish=a.finish, budget_seconds=46800,
                                               source_sha256=hashlib.sha256(Path(__file__).read_bytes()).hexdigest()))
     try:
-        while time.monotonic() - started < 32400:
+        while time.monotonic() - started < 46800:
             # Only fixed small status receipts, never stdout from a live model.
             names = ['TRAINING_PROFILE.json', 'train-v1/PROGRESS.json', 'train-v1/TRAINED.json', 'train-v1/FAIL.json',
                      a.finish + '/PROGRESS.json', a.finish + '/DONE.json', a.finish + '/FAIL.json',

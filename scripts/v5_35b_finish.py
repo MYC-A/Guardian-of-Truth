@@ -37,7 +37,7 @@ def main():
             status = subprocess.run(['supervisorctl', 'status', a.training_program], capture_output=True, text=True)
             if (a.training / 'FAIL.json').exists() or any(s in status.stdout for s in ('EXITED', 'FATAL', 'STOPPED')):
                 raise RuntimeError('TRAINING_EXITED_WITHOUT_TRAINED:' + status.stdout.strip())
-            if status.returncode or time.monotonic() - started > 16500:
+            if status.returncode or time.monotonic() - started > 33900:
                 raise TimeoutError('TRAINING_WAIT_FAILED_OR_LIMIT')
             time.sleep(20)
         trained = json.loads((a.training / 'TRAINED.json').read_bytes())
@@ -56,9 +56,9 @@ def main():
         script = str(Path(__file__).with_name('v5_35b_evaluate.py'))
         run('paired-native', [str(a.runtime_python), script, 'score', '--data', str(a.data),
             '--training', str(a.training), '--model', str(a.model), '--manifest', str(a.manifest),
-            '--out', str(a.out / 'paired-native')], 10900)
+            '--out', str(a.out / 'paired-native')], 7300)
         run('analysis', [str(a.runtime_python), script, 'analyze', '--data', str(a.data),
-            '--run', str(a.out / 'paired-native'), '--out', str(a.out / 'analysis')], 1800)
+            '--run', str(a.out / 'paired-native'), '--out', str(a.out / 'analysis')], 900)
         write(a.out / 'QUALITY_DONE.json', dict(complete=True, phases=phases,
             adapter_sha256=trained['adapter_sha256'], epoch_complete=trained['epoch_complete'],
             epoch_fraction=trained['epoch_fraction'], seconds=time.monotonic() - started,
