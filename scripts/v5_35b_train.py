@@ -263,11 +263,13 @@ def main():
                 for group in optimizer.param_groups:
                     group['lr'] = 2e-5 * min(1.0, (steps + 1) / 5)
                 optimizer.step(); steps += 1; rows_done += len(batch)
+                if steps == 1 and not any(bool(torch.count_nonzero(p)) for n, p in trainable if '.lora_B.' in n):
+                    raise ValueError('FIRST_UPDATE_DID_NOT_CHANGE_LORA_B')
                 item = dict(step=steps, rows_done=rows_done, rows_total=len(records), loss=sum(losses) / len(losses),
                             grad_norm=norm, seconds=time.monotonic() - train_started)
                 log.write(json.dumps(item) + '\n'); write(args.out / 'PROGRESS.json', item)
                 print(json.dumps(dict(event='train', **item)), flush=True)
-                if steps % 10 == 0:
+                if steps == 1 or steps % 10 == 0:
                     checkpoint('checkpoint-%04d' % steps)
         if not steps:
             raise ValueError('ZERO_OPTIMIZER_UPDATES')
