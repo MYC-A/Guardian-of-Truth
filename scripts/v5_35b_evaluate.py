@@ -102,6 +102,7 @@ def worker(a):
     cfg = json.loads((ROOT / 'submission/JUDGE_BLEND40.json').read_bytes())
     cfg.update(max_model_len=49152, gpu_memory_utilization=.85, max_num_seqs=1,
                max_num_batched_tokens=8192, dtype='bfloat16', multimodal=True,
+               enable_prefix_caching=False,
                engine_overrides={'enforce_eager': True})
     kwargs, dropped = engine_kwargs(str(a.model), cfg)
     kwargs.update(enable_lora=True, max_lora_rank=16, max_loras=1, max_cpu_loras=1,
@@ -138,6 +139,7 @@ def worker(a):
         tokens_sha256=prepared['tokens_sha256'], adapter_sha256=done['adapter_sha256'],
         epoch_complete=done['epoch_complete'], epoch_fraction=done['epoch_fraction'],
         max_abs_adapter_effect=effect, seconds=time.monotonic() - started, dropped_engine_kwargs=dropped,
+        prefix_caching=False,
         scores_sha256=sha(a.out / 'scores.jsonl'), source_sha256=sha(Path(__file__)),
         scope='paired classifier-only; not an end-to-end open-review/MAX comparison'))
 
