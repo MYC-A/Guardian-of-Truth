@@ -79,3 +79,62 @@ inputs, parser и worker до scoring. Данные и веса не дообу�
 просмотра V7, не независимый новый тест. Старый gate показывается без подмены;
 нулевые FP baseline отмечаются отдельно. Для принятия конечной системы всё ещё
 нужен полный парный quality/time/coverage тест целевой сборки.
+
+## Итог технического replay
+
+Оба arms завершили 757/757 строк и 92 повторных измерения exact score valid46.
+Binding новой LoRA: 100/100 модулей, ошибок нет. Источники цитат допущены:
+base 363 → 632, new 379 → 624. Это исправление происхождения цитаты, не доказательство
+семантической правильности вердикта.
+
+| Срез / применение | До фильтра | Base verifier V8 | Новая LoRA verifier V8 |
+|---|---:|---:|---:|
+| dev520, historical overall pool40, TP / FP | 106 / 102 | 105 / 86 | 106 / 88 |
+| dev520, тот же pool40, F1 | .600567 | .625000 | .625369 |
+| real191, historical overall pool40, TP / FP | 88 / 0 | 88 / 0 | 88 / 0 |
+| valid46, historical overall pool40, TP / FP | 18 / 0 | 17 / 0 | 18 / 0 |
+| valid46, best-pipeline pool70, TP / FP | 23 / 9 | 21 / 7 | 20 / 6 |
+| valid46, тот же best-pipeline pool70, F1 | .836364 | .823529 | .816327 |
+
+Новая LoRA сняла 14 FP без потерь TP с historical overall pool40 на dev520.
+Это полезный локальный сигнал фильтра, но его F1 практически совпадает с base verifier,
+а исходный pool40 здесь **не best-ZIP open-review/MAX**. На valid46 best-pipeline pool70
+новая LoRA снимает 3 FP ценой 3 TP и ухудшает F1. Оснований заменять текущую сборку нет.
+
+На всём dev520 самостоятельный verifier после исправления: base TP142/FP165/F1 .628319;
+new TP141/FP195/F1 .586279. На диагностическом пересечении 384 nonhard строк,
+где оба допустили цитату, base TP93/FP102/FN2/TN187, new TP92/FP114/FN3/TN175.
+Это отобранный моделью диагностический срез, не независимая оценка качества.
+После исправления контракта перенос нового обучения всё ещё не подтверждён.
+
+Фиксированные reviews проверены offbox: тексты и исходные prefix hashes не менялись,
+у ранее допущенных случаев SHA final-token inputs совпали. V7→V8 изменения решений
+разделены на новые допущенные цитаты и повторный score того же входа.
+В valid46 за 92 сравнения решений flips=0 в обоих arms. Все 66 admitted base и 72 admitted
+new score differences ненулевые; max abs difference 1.874975 и 1.124486 соответственно.
+SD различий / sqrt(2): .401956 у base, .244019 у new. Сравнения имеют общий reference;
+это не независимая сертификация абсолютного шума и не повтор генерации reviews.
+
+Контроль прежней V5 LoRA остановился по ABSOLUTE_GPU_DEADLINE на 592/757 строках,
+без повторов: полного трёхстороннего V7 результата нет. Полный base/new сохранён отдельно.
+Его частичный трёхсторонний архив помечен complete=false; результаты не подменялись.
+
+Offbox SHA256:
+
+- V8 evaluation: `01c1ba4cf538211fdc5e186a3d17713de04bb2cddc673429188403b5230ec0e9`.
+- V8 replay inputs: `94c27553fd9b45e40a167a502c2c6034538b83e1a403f2d4b4c0043f8fafb71b`.
+- Повторный offbox audit: `5ac00fa80b3a233895f633ffcfe1b31c0735f7b073164ebc21d1b32d9b74c9af`.
+- V7 partial old-control export: `e7fd6cf247e72f290311cd4db663477c389d7103824a8bb9f593ddcdf88e8e4e`.
+
+Aggregate receipts: `v8_evidence/OFFBOX_REPLAY_AUDIT.json`.
+Production, существующие ZIP и веса остались без изменения.
+
+## Следующий контроль V9
+
+После V8 запущен полный base 35B best-profile open-review/MAX на всех dev520 при .40,
+с bounded_turn_shape и прежним eager/synchronous LoRA-capable runtime, без активного адаптера.
+Затем CPU применяет те же замороженные base/new V8 veto scores: threshold 0, hard защищены,
+квота не добирается. Это отдельный проверочный прогон, не новое обучение.
+Все 520 overall и 520 final scores обязаны быть exact; при fallback или неполном покрытии
+результат не считается полным MAX-сравнением. GPU deadline остаётся 15:15 МСК.
+Выбор следующей проверки сделан после V8, поэтому результат остаётся exploratory.
