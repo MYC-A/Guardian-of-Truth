@@ -128,7 +128,8 @@ def arm_run(a):
         command[1] = str(Path(__file__).resolve())
         env.update(V5_PIPELINE_STAGE='1', V5_PIPELINE_ARM=a.arm,
                    V5_PIPELINE_ADAPTER=str(a.training / 'adapter'),
-                   V5_PIPELINE_AUDIT=str(a.out / 'generation_audit.jsonl'))
+                   V5_PIPELINE_AUDIT=str(a.out / 'generation_audit.jsonl'),
+                   VLLM_ALLOW_INSECURE_SERIALIZATION='1')
         return command, env, scores, model
 
     primary.prepare_stage = prepare
