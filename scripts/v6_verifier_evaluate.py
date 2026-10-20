@@ -5,6 +5,7 @@ import math
 import os
 from pathlib import Path
 import signal
+import statistics
 import subprocess
 import sys
 import tarfile
@@ -63,10 +64,23 @@ def worker(a):
                 f.write(json.dumps(dict(id=row['id'],arm=a.arm,score=value,exact=True,tokens=row['tokens'],text_sha256=row['text_sha256']))+'\n')
             done+=len(batch)
             write(a.out/'PROGRESS.json',dict(rows_done=done,rows_total=len(rows),seconds=time.monotonic()-started,arm=a.arm))
+    repeated=[r for r in rows if ':valid46:' in r['id']]
+    if len(repeated)!=46:raise ValueError('VALID46_REPEAT_IDENTITY')
+    with (a.out/'repeat_scores.jsonl').open('w',buffering=1) as f:
+        for repeat in (1,2):
+            for offset in range(0,len(repeated),16):
+                batch=repeated[offset:offset+16]
+                outputs=llm.generate([dict(prompt_token_ids=r['ids']) for r in batch],params,use_tqdm=False)
+                if len(outputs)!=len(batch):raise ValueError('REPEAT_OUTPUT_COUNT')
+                for row,output in zip(batch,outputs):
+                    value,exact=answer_score(output,yes,no)
+                    if list(output.prompt_token_ids)!=row['ids'] or not exact or value is None or not math.isfinite(value):raise ValueError('REPEAT_INEXACT_OR_TOKEN_DRIFT')
+                    f.write(json.dumps(dict(id=row['id'],arm=a.arm,repeat=repeat,score=value,exact=True))+'\n')
     write(a.out/'DONE.json',dict(complete=True,arm=a.arm,rows=done,all_exact=True,
         input_sha256=data['eval_tokens_sha256'],scores_sha256=sha(a.out/'scores.jsonl'),
         adapter_sha256=sha(adapter/'adapter_model.safetensors') if adapter else None,
         seconds=time.monotonic()-started,dropped_engine_kwargs=dropped,
+        repeat_scores_sha256=sha(a.out/'repeat_scores.jsonl'),valid46_measurements=3,
         apc=True,result_cache=False,scope='whole-turn verifier score; not full ZIP pipeline'))
     sys.stdout.flush();sys.stderr.flush();os._exit(0)
 
@@ -96,9 +110,20 @@ def analyse(a):
     if set(baseline)!=set(gold) or any(not r['exact'] or not math.isfinite(r['score']) for r in baseline.values()):raise ValueError('ORIGINAL_BASE_COVERAGE')
     result=dict(complete=True,status='EXPLORATORY_ONLY_HUMAN_UNVERIFIED',independent_validation=False,
         private_improvement_measured=False,production_promoted=False,threshold=0,threshold_search=False,
-        quota_refill=False,input_sha256=prepared['eval_tokens_sha256'],cohorts={},
+        quota_refill=False,input_sha256=prepared['eval_tokens_sha256'],cohorts={},stability={},
         historical_original_base_scores_sha256=receipt['scores_sha256'],
         original_pool_scope='historical classifier-only overall with hard; not best-ZIP open-review MAX')
+    for arm in arms:
+        repeats=read(a.out/arm/'repeat_scores.jsonl')
+        receipt_arm=json.loads((a.out/arm/'DONE.json').read_bytes())
+        if sha(a.out/arm/'repeat_scores.jsonl')!=receipt_arm['repeat_scores_sha256'] or len(repeats)!=92:
+            raise ValueError('REPEAT_RECEIPT_DRIFT')
+        deltas=[r['score']-arms[arm][r['id']]['score'] for r in repeats]
+        result['stability'][arm]=dict(measurements=3,rows=46,apc=True,
+            independent_tasks=False,sd_differences_over_sqrt2=statistics.stdev(deltas)/math.sqrt(2),
+            max_abs_score_delta=max(abs(x) for x in deltas),
+            changed_score0_decisions=sum((r['score']>0)!=(arms[arm][r['id']]['score']>0) for r in repeats),
+            comparisons=92,absolute_stability_of_private_data_confirmed=False)
     for cohort in ('real191','dev520','valid46','seen397','dev152','hold336'):
         rows=[r for r in index if cohort in r['cohorts']]
         if not rows:continue
