@@ -1,5 +1,14 @@
 # V5: отдельная LoRA 35B, обучение запущено — 19.10.2026
 
+## 20.10, полный valid46 после исправления runtime завершён
+
+Основа лучшего open-review40 ZIP + fixes, без 4B: F1 .8780 (18TP/0FP).
+То же с полностью подключённой LoRA 35B: .8293 (17TP/1FP). Оба варианта имеют
+46/46 exact overall и final; исходные rendered prompts совпадают на 46/46.
+Worker-аудит подтверждает 50/50 модулей после устранения shared-expert alias reset.
+Новая LoRA не продвигается в ZIP по этому результату. Отчёт:
+[V5_VALID46_PIPELINE_RESULTS.md](V5_VALID46_PIPELINE_RESULTS.md).
+
 ## 20.10, уточнение runtime: shared-expert LoRA не была полностью активна
 
 Worker-аудит нашёл и подтвердил сброс GPU-буферов shared expert через 16 повторных
