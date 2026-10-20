@@ -47,19 +47,24 @@ possibly two hours. The v4 total deadline is recorded locally in
    Evaluate complete final weights only, against the same frozen V12 pool and
    BOTH base and previous V7 verifier. No checkpoint/threshold selection.
 
-4. `guardian-lab-v17-native-budget-v1`:
-   `/workspace/guardian-lab-20261018/v17-native-budget-20261020-v1`.
+4. `guardian-lab-v17-native-budget-v2`:
+   `/workspace/guardian-lab-20261018/v17-native-budget-20261020-v2`.
    Explicit separate limited experiment, not a passed V15 gate. Frozen before
    optimization in `V17_BUDGET_NATIVE_TRAIN_PROTOCOL.md`. Exactly32 native
-   pairs (64 rows),16 role rows,32 BCE replay =112 rows /14 updates /one epoch.
+   pairs (64 rows),16 role rows,32 disjoint native BCE replay =112 rows /14 updates /one epoch.
    Stable-prioritize bounded TRAIN false-accusation pairs, then original
    round-robin order. At least8 actual TRAIN proxy errors, two native domains.
    Original source/isolation/quote/token/gradient checks retained. Same warm
    start,16 layers, joint objective, final-only evaluation. No external-error
    training. SAME two-hour absolute deadline, 19:11:35 MSK, no clock reset.
+   V17-v1 preparation failed before optimization: excluding old replay removed
+   some intended hard pairs. V2 moves selected hard pairs into rationale SFT and
+   rebuilds a disjoint32-row native BCE replay, preferring remaining old replay
+   pairs then deterministic SHA order. No duplicate IDs or reduced error gate;
+   the old BCE replay is not claimed unchanged. See protocol correction.
 
-5. `guardian-lab-v16-final-regressions-v4`:
-   `/workspace/guardian-lab-20261018/v16-final-regressions-20261020-v4/evaluation-v16`.
+5. `guardian-lab-v16-final-regressions-v5`:
+   `/workspace/guardian-lab-20261018/v16-final-regressions-20261020-v5/evaluation-v16`.
    Wait for V17 complete final weights; score dev520/real191/valid46 with the
    original fixed views, including valid46 .40 and .70. Same absolute deadline
    as v4; skip if insufficient reserve. No quality-feedback training.
@@ -113,7 +118,7 @@ Protected histories, labels and model output blobs stay off Git.
 
 ## Supervision and recovery
 
-Finite Windows collectors sync V12, V13, V17-v1 and V16-v4 archives to corresponding
+Finite Windows collectors sync V12, V13, V17-v2 and V16-v5 archives to corresponding
 `A:/Guardian-submissions/guardian-v*-20261020*` directories. They verify archive
 size/SHA after copying. V15 exports full optimizer/RNG/order with the final
 checkpoint, or the last complete checkpoint if training fails. No resets of a
