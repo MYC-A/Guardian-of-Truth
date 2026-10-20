@@ -1,6 +1,7 @@
 # Active research continuation, 20 October 2026
 
-Snapshot: V12 complete and independently audited offbox; V13 TRAIN mining active.
+Snapshot: V12 complete and independently audited offbox; V13 TRAIN mining done.
+V15 failed its original error-count gate; V17 limited recipe preparing to train.
 No new private result, production promotion or ZIP is claimed. User authorizes
 continued genuine improvement work without fitting evaluation data. The latest
 GPU authorization is now limited by the user's latest instruction to one,
@@ -23,16 +24,18 @@ possibly two hours. The v4 total deadline is recorded locally in
 
 2. `guardian-lab-v13-native-queue-v2`:
    `/workspace/guardian-lab-20261018/v13-native-mining-20261020`.
-   V12 dependency passed; now scoring1112 source-audited native TRAIN
+   V12 dependency passed; scored1112 source-audited native TRAIN
    rows with the proper direct YES/NO verifier question. This is a mining proxy,
    not post-review deployment quality. Native receipt requirement excludes
    legacy rows without such receipts.556 complete pairs, maximum9885 input
    tokens. Only6 rows in this native subset are telecom; it lacks actor scope.
    Never use evaluation errors as training seeds.
+   Result:12 TRAIN proxy FP,65 FN; bounded selection182 rows,8 FP. All12 FP
+   are airline cancellation/compensation. Original V15 >=16-error gate fails.
 
 3. `guardian-lab-v15-native-train-v4`:
    `/workspace/guardian-lab-20261018/v15-native-rationale-20261020-v4`.
-   Currently waiting for mining. Build the frozen V15 recipe, require>=16
+   Stopped before optimization after original gate failed. Original recipe: require>=16
    selected native TRAIN correct twins with positive direct-mining scores,
    then at most one epoch, last16 layers, original V5 warm start. Joint loss:
    .5 rationale-token CE + .5 verdict BCE for SFT rows,32 frozen BCE replay rows.
@@ -44,9 +47,20 @@ possibly two hours. The v4 total deadline is recorded locally in
    Evaluate complete final weights only, against the same frozen V12 pool and
    BOTH base and previous V7 verifier. No checkpoint/threshold selection.
 
-4. `guardian-lab-v16-final-regressions-v3`:
-   `/workspace/guardian-lab-20261018/v16-final-regressions-20261020-v3/evaluation-v16`.
-   Wait for v4 complete final weights; score dev520/real191/valid46 with the
+4. `guardian-lab-v17-native-budget-v1`:
+   `/workspace/guardian-lab-20261018/v17-native-budget-20261020-v1`.
+   Explicit separate limited experiment, not a passed V15 gate. Frozen before
+   optimization in `V17_BUDGET_NATIVE_TRAIN_PROTOCOL.md`. Exactly32 native
+   pairs (64 rows),16 role rows,32 BCE replay =112 rows /14 updates /one epoch.
+   Stable-prioritize bounded TRAIN false-accusation pairs, then original
+   round-robin order. At least8 actual TRAIN proxy errors, two native domains.
+   Original source/isolation/quote/token/gradient checks retained. Same warm
+   start,16 layers, joint objective, final-only evaluation. No external-error
+   training. SAME two-hour absolute deadline, 19:11:35 MSK, no clock reset.
+
+5. `guardian-lab-v16-final-regressions-v4`:
+   `/workspace/guardian-lab-20261018/v16-final-regressions-20261020-v4/evaluation-v16`.
+   Wait for V17 complete final weights; score dev520/real191/valid46 with the
    original fixed views, including valid46 .40 and .70. Same absolute deadline
    as v4; skip if insufficient reserve. No quality-feedback training.
 
@@ -99,7 +113,7 @@ Protected histories, labels and model output blobs stay off Git.
 
 ## Supervision and recovery
 
-Finite Windows collectors sync V12, V13, V15-v4 and V16-v3 archives to corresponding
+Finite Windows collectors sync V12, V13, V17-v1 and V16-v4 archives to corresponding
 `A:/Guardian-submissions/guardian-v*-20261020*` directories. They verify archive
 size/SHA after copying. V15 exports full optimizer/RNG/order with the final
 checkpoint, or the last complete checkpoint if training fails. No resets of a

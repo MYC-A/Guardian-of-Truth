@@ -34,6 +34,18 @@ def test_teacher_verdict_boundary_cannot_flip_class_or_score_eos():
         with pytest.raises(ValueError,match='BOUNDARY'):validate_verdict_token(answer,label,answers)
 
 
+def test_budget_recipe_cannot_masquerade_as_original_v15_or_remove_replay():
+    records=[dict(id=f'{i}:{label}',pair_id=str(i),label=label,objective='sft',answer_ids=[10 if label else 11]) for i in range(40) for label in (0,1)]
+    records+=[dict(id='replay:'+str(i),objective='bce') for i in range(32)]
+    meta=dict(recipe='V17_NATIVE_BUDGET_RATIONALE_V1',sft_rows=80,selected_native_fp=8,
+        original_v15_sixteen_error_gate_passed=False,verdict_bce_weight=.5,answer_ids=dict(yes=[10],no=[11]))
+    validate_recipe(records,meta,True,True)
+    with pytest.raises(ValueError,match='FROZEN_NATIVE_RECIPE'):validate_recipe(records,meta,True)
+    with pytest.raises(ValueError,match='FROZEN_NATIVE_RECIPE'):validate_recipe(records[:-1],meta,True,True)
+    meta['selected_native_fp']=7
+    with pytest.raises(ValueError,match='BUDGET_NATIVE_RECIPE'):validate_recipe(records,meta,True,True)
+
+
 def test_failure_recovery_keeps_latest_committed_optimizer_checkpoint(tmp_path):
     import tarfile
     from types import SimpleNamespace
