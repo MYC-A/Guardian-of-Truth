@@ -27,7 +27,7 @@ def run(a):
         names+=['evaluation-v1/'+arm+'/'+n for n in ('PROGRESS.json','DONE.json','ADAPTER_BINDING.json')]
     names=[n.replace('training-v1',a.training_folder).replace('evaluation-v1',a.evaluation_folder) for n in names]
     names+=['training-v1/DONE.json','training-v1-export.INDEX.json','evaluation-v1/SUPERSEDED_BEFORE_QUALITY.json']
-    remote_root='/workspace/guardian-lab-20261018/v7-workflow-20261020'
+    remote_root=a.remote_root
     write(a.out/'COLLECTOR_START.json',dict(remote_root=remote_root,interval_seconds=60,expires_unix=a.expires,source_sha256=hashlib.sha256(Path(__file__).read_bytes()).hexdigest()))
     downloaded={};errors=[]
     previous=a.out/'DOWNLOADED.json'
@@ -88,4 +88,5 @@ print(json.dumps({n:json.loads((r/n).read_bytes()) for n in NAMES if (r/n).exist
 if __name__=='__main__':
     p=argparse.ArgumentParser();p.add_argument('--out',type=Path,required=True);p.add_argument('--expires',type=float,required=True)
     p.add_argument('--training-folder',default='training-v1');p.add_argument('--evaluation-folder',default='evaluation-v1')
+    p.add_argument('--remote-root',default='/workspace/guardian-lab-20261018/v7-workflow-20261020')
     run(p.parse_args())
