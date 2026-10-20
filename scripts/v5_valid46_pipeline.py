@@ -77,6 +77,42 @@ def binding_probe(worker, adapter_path):
                 errors=errors, checks=checked, target_filter=manager.lora_config.target_modules)
 
 
+def repair_shared_aliases(worker, adapter_path):
+    """Remove only duplicate registrations sharing the exact same GPU storage."""
+    from pathlib import Path
+    from safetensors import safe_open
+    manager = worker.model_runner.lora_manager._adapter_manager
+    def suffix(name): return 'layers.' + name.split('.layers.', 1)[1]
+    with safe_open(str(Path(adapter_path) / 'adapter_model.safetensors'), framework='pt') as f:
+        expected = {suffix(k.rsplit('.lora_A.', 1)[0]) for k in f.keys() if '.lora_A.' in k}
+    groups = {}
+    for name, module in manager.modules.items():
+        pointers = tuple(t.untyped_storage().data_ptr() for t in
+                         [*module.lora_a_stacked, *module.lora_b_stacked])
+        groups.setdefault(pointers, []).append(name)
+    removed = []; details = []
+    for names in groups.values():
+        if len(names) < 2: continue
+        candidates = [name for name in names if any(suffix(s) in expected for s in
+                       manager.packed_modules.get(name, [name]))]
+        if not candidates: continue
+        if len(candidates) != 1 or '.shared_expert.' not in candidates[0]:
+            raise ValueError('AMBIGUOUS_GPU_ALIAS_REPAIR')
+        canonical = candidates[0]
+        if any('shared_expert' not in name for name in names):
+            raise ValueError('UNEXPECTED_NON_SHARED_ALIAS')
+        details.append(dict(canonical=canonical, aliases=names, shared_gpu_storage=True))
+        for name in names:
+            if name == canonical: continue
+            manager.modules.pop(name); manager.packed_modules.pop(name, None); removed.append(name)
+    if not removed:
+        raise ValueError('NO_SHARED_GPU_ALIAS_TO_REPAIR')
+    manager.deactivate_adapter(1)
+    manager.activate_adapter(1)
+    return dict(complete=True, removed_count=len(removed), removed=removed, groups=details,
+                weights_modified=False, base_model_modified=False)
+
+
 def bound_llm(original, request, audit_path, binding_adapter=None):
     """Every generation, including review and probes, uses the same arm."""
     class Bound(original):
@@ -90,15 +126,31 @@ def bound_llm(original, request, audit_path, binding_adapter=None):
             if 'lora_request' in kwargs:
                 raise ValueError('UNEXPECTED_NESTED_LORA_REQUEST')
             result = super().generate(prompts, params, lora_request=request, **kwargs)
+            regenerated = False
             if request is not None and binding_adapter is not None and not self.binding_checked:
                 proof = self.collective_rpc(binding_probe, timeout=60, args=(str(binding_adapter),))
+                if len(proof) == 1 and not proof[0]['complete']:
+                    write(Path(audit_path).with_name('ADAPTER_BINDING_BEFORE.json'), proof)
+                    if not proof[0].get('errors') or any(not e.startswith('GPU_WEIGHT_MISMATCH:') or '.shared_expert.' not in e for e in proof[0]['errors']):
+                        raise ValueError('UNRECOGNIZED_ADAPTER_BINDING_FAILURE')
+                    if len(prompts) != 1 or params.max_tokens != 1:
+                        raise ValueError('ALIAS_REPAIR_ONLY_AT_TECHNICAL_PROBE')
+                    repair = self.collective_rpc(repair_shared_aliases, timeout=60, args=(str(binding_adapter),))
+                    write(Path(audit_path).with_name('SHARED_ALIAS_REPAIR.json'), repair)
+                    proof = self.collective_rpc(binding_probe, timeout=60, args=(str(binding_adapter),))
+                    regenerated = True
                 write(Path(audit_path).with_name('ADAPTER_BINDING.json'), proof)
                 if len(proof) != 1 or not proof[0]['complete'] or proof[0]['expected_modules'] != 50:
                     raise ValueError('FULL_ADAPTER_GPU_BINDING_NOT_PROVEN')
                 self.binding_checked = True
+                if regenerated:
+                    # The original result was only the technical exactness probe.
+                    # Return a fresh probe with all source weights actually active.
+                    result = super().generate(prompts, params, lora_request=request, **kwargs)
             with Path(audit_path).open('a', encoding='utf-8') as stream:
                 stream.write(json.dumps(dict(adapter_applied=request is not None,
                     prompts=len(prompts), outputs=len(result), max_tokens=params.max_tokens,
+                    extra_technical_probe_prompts=len(prompts) if regenerated else 0,
                     inputs_sha256=hashlib.sha256(json.dumps(prompts, sort_keys=True,
                         ensure_ascii=True, separators=(',', ':')).encode()).hexdigest())) + '\n')
             return result
@@ -130,6 +182,9 @@ def arm_run(a):
                    V5_PIPELINE_ADAPTER=str(a.training / 'adapter'),
                    V5_PIPELINE_AUDIT=str(a.out / 'generation_audit.jsonl'),
                    VLLM_ALLOW_INSECURE_SERIALIZATION='1')
+        if a.kernel_cache is not None:
+            env.update(TRITON_CACHE_DIR=str(a.kernel_cache / 'triton'),
+                       TORCHINDUCTOR_CACHE_DIR=str(a.kernel_cache / 'torchinductor'))
         return command, env, scores, model
 
     primary.prepare_stage = prepare
@@ -211,6 +266,7 @@ def run(a):
             config_sha256=sha(a.out / 'config.json'), adapter_sha256=ADAPTER_SHA,
             baseline_zip='guardian-judge-qwen36-awq-open-review40-max-34fb1c75-20261018.zip',
             baseline_config_canonical_sha256=BASELINE_CONFIG_SHA,
+            reused_kernel_cache=str(a.kernel_cache) if a.kernel_cache else None,
             runtime_deviation='eager synchronous scheduling in both arms; LoRA enabled in control too',
             auxiliary_4b=False, arms=['base', 'adapter'], repeats=1, quality_retries=0,
             source_sha256=sha(Path(__file__)), scope='35B overall + open review + MAX + mechanical fixes; valid46 only'))
@@ -232,6 +288,9 @@ def run(a):
             write(a.out / 'PROGRESS.json', dict(arm=arm, phase='running', seconds=time.monotonic()-started))
             command = [sys.executable, str(Path(__file__)), 'arm', '--arm', arm, '--training', str(a.training),
                 '--input', str(a.out / 'inputs.csv'), '--config', str(a.out / 'config.json'), '--out', str(out)]
+            if a.kernel_cache is not None:
+                if not a.kernel_cache.is_dir(): raise ValueError('MISSING_KERNEL_CACHE')
+                command += ['--kernel-cache', str(a.kernel_cache)]
             env = dict(os.environ, HF_HUB_OFFLINE='1', TRANSFORMERS_OFFLINE='1', PYTHON_DOTENV_DISABLED='1')
             with (out / 'predict.log').open('w', buffering=1) as log:
                 child = subprocess.Popen(command, cwd=ROOT, env=env, stdout=log, stderr=subprocess.STDOUT, start_new_session=True)
@@ -274,6 +333,7 @@ def main():
     for n in ('input', 'config'): ar.add_argument('--'+n, type=Path, required=True)
     for parser in (r, ar):
         for n in ('training', 'out'): parser.add_argument('--'+n, type=Path, required=True)
+        parser.add_argument('--kernel-cache', type=Path)
     a = p.parse_args()
     if a.mode == 'run':
         try:

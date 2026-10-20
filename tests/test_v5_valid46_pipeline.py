@@ -50,7 +50,25 @@ def test_failed_worker_binding_blocks_adapter_arm(tmp_path):
         def collective_rpc(self, method, **kwargs):
             return [dict(complete=False, expected_modules=50)]
     llm = bound_llm(Fake, object(), tmp_path / 'audit.jsonl', binding_adapter=tmp_path)()
-    with pytest.raises(ValueError, match='FULL_ADAPTER_GPU_BINDING_NOT_PROVEN'):
+    with pytest.raises(ValueError, match='UNRECOGNIZED_ADAPTER_BINDING_FAILURE'):
         llm.generate(['probe'], SimpleNamespace(max_tokens=1))
-    assert (tmp_path / 'ADAPTER_BINDING.json').exists()
+    assert (tmp_path / 'ADAPTER_BINDING_BEFORE.json').exists()
     assert not (tmp_path / 'audit.jsonl').exists()
+
+
+def test_shared_alias_repair_requires_successful_recheck_and_repeats_probe(tmp_path):
+    class Fake:
+        def __init__(self, **kwargs): self.calls = 0; self.rpc_calls = 0
+        def generate(self, prompts, params, **kwargs): self.calls += 1; return [self.calls]
+        def collective_rpc(self, method, **kwargs):
+            self.rpc_calls += 1
+            if self.rpc_calls == 1:
+                return [dict(complete=False, expected_modules=50, errors=[
+                    'GPU_WEIGHT_MISMATCH:language_model.model.layers.32.mlp.shared_expert.down_proj'])]
+            if self.rpc_calls == 2: return [dict(complete=True, removed_count=16)]
+            return [dict(complete=True, expected_modules=50, errors=[])]
+    llm = bound_llm(Fake, object(), tmp_path / 'audit.jsonl', binding_adapter=tmp_path)()
+    assert llm.generate(['probe'], SimpleNamespace(max_tokens=1)) == [2]
+    assert llm.generate(['quality'], SimpleNamespace(max_tokens=384)) == [3]
+    assert llm.rpc_calls == 3
+    assert json.loads((tmp_path / 'audit.jsonl').read_text().splitlines()[0])['extra_technical_probe_prompts'] == 1
