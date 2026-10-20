@@ -32,15 +32,17 @@ def validate_verdict_token(answer,label,answer_ids):
     if not answer or answer[-1] not in expected:raise ValueError('SFT_VERDICT_TOKEN_LABEL_OR_BOUNDARY')
 
 
-def validate_recipe(records,meta,native=False):
+def validate_recipe(records,meta,native=False,budget=False):
     sft=sum(r['objective']=='sft' for r in records);bce=sum(r['objective']=='bce' for r in records)
     if not native:
         if len(records)!=224 or sft!=192:raise ValueError('FROZEN_TRAIN_COUNT')
         return
-    if (meta.get('recipe')!='V15_NATIVE_RATIONALE_V1' or sft!=meta.get('sft_rows') or
+    recipe='V17_NATIVE_BUDGET_RATIONALE_V1' if budget else 'V15_NATIVE_RATIONALE_V1'
+    if (meta.get('recipe')!=recipe or sft!=meta.get('sft_rows') or
             bce!=32 or len(records)!=sft+32 or not 80<=sft<=144 or sft%8 or
             len({r['id'] for r in records})!=len(records) or meta.get('verdict_bce_weight')!=.5):
         raise ValueError('FROZEN_NATIVE_RECIPE')
+    if budget and (sft!=80 or meta.get('selected_native_fp',0)<8):raise ValueError('BUDGET_NATIVE_RECIPE')
     groups={}
     for r in records:
         if r['objective']=='sft':groups.setdefault(r['pair_id'],[]).append(r['label'])
@@ -54,7 +56,7 @@ def run(a):
         meta=json.loads((a.data/'DONE.json').read_bytes())
         if not meta['complete'] or sha(a.data/'train_tokens.jsonl')!=meta['train_tokens_sha256']:raise ValueError('TRAIN_DATA_DRIFT')
         records=read(a.data/'train_tokens.jsonl')
-        native=getattr(a,'native_recipe',False);validate_recipe(records,meta,native)
+        native=getattr(a,'native_recipe',False);validate_recipe(records,meta,native,getattr(a,'budget_recipe',False))
         source=a.lab/'v5-35b-20261019/train-recovered-v1/adapter'
         if sha(source/'adapter_model.safetensors')!=OLD_ADAPTER_SHA:raise ValueError('SOURCE_ADAPTER_DRIFT')
         modelpath=a.lab/'models/qwen36-awq';verify_model(modelpath,a.lab/'v5-35b-20261019/BASE_MODEL_MANIFEST.json')
@@ -218,4 +220,5 @@ if __name__=='__main__':
     p.add_argument('--deadline',type=float,required=True);p.add_argument('--layers',type=int,choices=[8,16],default=16)
     p.add_argument('--resume',type=Path)
     p.add_argument('--native-recipe',action='store_true')
+    p.add_argument('--budget-recipe',action='store_true')
     run(p.parse_args())

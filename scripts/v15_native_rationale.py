@@ -29,6 +29,15 @@ def restored(row):
     return walk(row)
 
 
+def budget_selection(accepted,scores):
+    # Retain all existing family/template caps. Prioritize observed TRAIN
+    # false accusations, then retain the existing cross-family round robin.
+    candidates=paired(select(accepted,scores))
+    ranked=sorted(enumerate(candidates),key=lambda item:(
+        -int(any(not r['label'] and scores[r['id']]>0 for r in item[1])),item[0]))
+    return [r for _,pair in ranked[:32] for r in sorted(pair,key=lambda r:r['label'])]
+
+
 def visible_evidence(original):
     """Pure function of policy-visible history/current turn, not labels or proofs."""
     from scripts.v4_natural_labels import observations
@@ -126,11 +135,13 @@ def run(a):
                 teachers[row['id']]=rationale
         except Exception as e:reject.append(dict(pair_id=pair[0]['pair_id'],reason=str(e)));continue
         accepted.extend(pair);tokens.update({r['id']:r for r in batch})
-    chosen=select(accepted,scores)[:128]
+    budget=getattr(a,'budget_recipe',False)
+    chosen=budget_selection(accepted,scores) if budget else select(accepted,scores)[:128]
     chosen=chosen[:len(chosen)//8*8] # retain complete pairs and full effective batches
     native=[tokens[r['id']] for r in chosen]
     hard_negatives=sum(not r['label'] and scores[r['id']]>0 for r in chosen)
-    if hard_negatives<16:raise ValueError('FEWER_THAN_16_NATIVE_TRAIN_FALSE_ACCUSATIONS_NO_UNDIRECTED_TRAINING')
+    if hard_negatives<(8 if budget else 16):raise ValueError('INSUFFICIENT_NATIVE_TRAIN_FALSE_ACCUSATIONS')
+    if budget and (len(native)!=64 or len({r['domain'] for r in native})<2):raise ValueError('BUDGET_RECIPE_COUNT_OR_DOMAIN_COVERAGE')
     roles=a.lab/'v14-native-role-data-20261020/data-v1';rm=json.loads((roles/'DONE.json').read_bytes())
     if sha(roles/'train.jsonl')!=rm['files']['train.jsonl']:raise ValueError('ROLE_DATA_DRIFT')
     role=[]
@@ -146,10 +157,12 @@ def run(a):
     dump(a.out/'RATIONALE_AUDIT.jsonl',[dict(id=r['id'],rationale=teachers[r['id']]) for r in native+role])
     write(a.out/'SOURCE_AUDIT.json',dict(native_sft=len(native),new_native_role_sft=len(role),replay_bce=32,rejected_pairs=reject,
         family_counts={str(k):v for k,v in Counter((r['domain'],r['family']) for r in native+role).items()},
-        selected_native_fp=hard_negatives,
+        selected_native_fp=hard_negatives,original_v15_sixteen_error_gate_passed=hard_negatives>=16,
+        budget_recipe=budget,
         future_execution_results_used_in_rationale=False,mutation_predicates_used_in_rationale=False,
         native_source_repetition_is_not_new_data=True,unavailable_human_review_not_replaced=True))
-    write(a.out/'DONE.json',dict(complete=True,recipe='V15_NATIVE_RATIONALE_V1',rows=len(records),sft_rows=len(native)+16,replay_bce_rows=32,
+    write(a.out/'DONE.json',dict(complete=True,recipe='V17_NATIVE_BUDGET_RATIONALE_V1' if budget else 'V15_NATIVE_RATIONALE_V1',rows=len(records),sft_rows=len(native)+16,replay_bce_rows=32,
+        original_v15_sixteen_error_gate_passed=hard_negatives>=16,selected_native_fp=hard_negatives,
         base_revision=BASE_REVISION,train_tokens_sha256=sha(a.out/'train_tokens.jsonl'),answer_ids=old['answer_ids'],verdict_bce_weight=.5,
         source_sha256=sha(Path(__file__)),source_train_sha256=sha(frozen/'train.jsonl'),mining_scores_sha256=sha(mine/'scores.jsonl'),
         role_train_sha256=sha(roles/'train.jsonl'),role_holdout_sha256=sha(roles/'holdout.jsonl'),
@@ -160,4 +173,4 @@ def run(a):
 if __name__=='__main__':
     p=argparse.ArgumentParser()
     for k in ('lab','out'):p.add_argument('--'+k,type=Path,required=True)
-    run(p.parse_args())
+    p.add_argument('--budget-recipe',action='store_true');run(p.parse_args())
