@@ -40,10 +40,12 @@ def run(a):
         queue=a.lab/'v13-native-mining-20261020/queue-v2'
         write(a.out/'START.json',dict(deadline=a.deadline,source_sha256=sha(Path(__file__)),
             protocol_sha256=sha(ROOT/'docs/judge_20261013/V15_NATIVE_RATIONALE_TRAIN_PROTOCOL.md'),
-            policy='one native rationale arm, one epoch, final checkpoint only; no eval fitting'))
+            policy='one native rationale arm, one epoch, final checkpoint only; no eval fitting',
+            training_maximum_seconds=a.training_maximum_seconds,
+            evaluation_reserve_seconds=a.evaluation_reserve_seconds))
         while not (dependency/'DONE.json').exists():
             if (dependency/'FAIL.json').exists() or (queue/'FAIL.json').exists():raise ValueError('MINING_DEPENDENCY_FAILED')
-            if time.time()>a.deadline-7200:raise TimeoutError('INSUFFICIENT_TRAIN_AND_EVAL_RESERVE')
+            if time.time()>a.deadline-a.minimum_start_reserve_seconds:raise TimeoutError('INSUFFICIENT_TRAIN_AND_EVAL_RESERVE')
             write(a.out/'PROGRESS.json',dict(phase=phase,seconds=time.monotonic()-started));time.sleep(30)
         # Native source preparation is CPU-only, after TRAIN scores freeze.
         def execute(name,command,deadline):
@@ -54,15 +56,15 @@ def run(a):
                 code=active.wait(timeout=max(1,deadline-time.time()))
             if code:raise ValueError(name+'_EXIT:'+str(code))
             active=None
-        execute('prepare',[sys.executable,str(ROOT/'scripts/v15_native_rationale.py'),'--lab',str(a.lab),'--out',str(a.out/'prepared-v1')],min(a.deadline-3600,time.time()+1200))
+        execute('prepare',[sys.executable,str(ROOT/'scripts/v15_native_rationale.py'),'--lab',str(a.lab),'--out',str(a.out/'prepared-v1')],min(a.deadline-a.evaluation_reserve_seconds-600,time.time()+1200))
         archive=a.out/'data-export.tar.gz'
         with tarfile.open(archive,'w:gz',compresslevel=3) as t:t.add(a.out/'prepared-v1',arcname='prepared-v1')
         write(a.out/'data-export.INDEX.json',dict(name=archive.name,sha256=sha(archive),bytes=archive.stat().st_size))
         while subprocess.check_output(['nvidia-smi','--query-gpu=memory.used','--format=csv,noheader,nounits'],text=True).strip()!='0':
-            if time.time()>a.deadline-3600:raise TimeoutError('GPU_RESERVE')
+            if time.time()>a.deadline-a.evaluation_reserve_seconds-600:raise TimeoutError('GPU_RESERVE')
             time.sleep(10)
         trained.parent.mkdir(exist_ok=False)
-        train_deadline=min(a.deadline-1800,time.time()+10800)
+        train_deadline=min(a.deadline-a.evaluation_reserve_seconds,time.time()+a.training_maximum_seconds)
         execute('train',[str(a.lab/'v5-35b-20261019/venv/bin/python'),str(ROOT/'scripts/v7_train.py'),
             '--lab',str(a.lab),'--data',str(a.out/'prepared-v1'),'--out',str(trained),'--layers','16','--native-recipe',
             '--deadline',str(train_deadline-180)],train_deadline)
@@ -123,4 +125,11 @@ def run(a):
 if __name__=='__main__':
     p=argparse.ArgumentParser()
     for k in ('lab','out'):p.add_argument('--'+k,type=Path,required=True)
-    p.add_argument('--deadline',type=float,required=True);run(p.parse_args())
+    p.add_argument('--deadline',type=float,required=True)
+    p.add_argument('--training-maximum-seconds',type=int,default=10800)
+    p.add_argument('--evaluation-reserve-seconds',type=int,default=1800)
+    p.add_argument('--minimum-start-reserve-seconds',type=int,default=7200)
+    a=p.parse_args()
+    if min(a.training_maximum_seconds,a.evaluation_reserve_seconds,a.minimum_start_reserve_seconds)<=0:
+        p.error('All time budgets must be positive')
+    run(a)

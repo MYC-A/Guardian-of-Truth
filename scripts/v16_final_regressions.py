@@ -63,7 +63,7 @@ def run(a):
     def stop(_sig,_frame):raise RuntimeError('SUPERVISED_FINAL_REGRESSION_STOP')
     signal.signal(signal.SIGTERM,stop)
     try:
-        v15=a.lab/'v15-native-rationale-20261020-v3';trained=v15/'training-v1/layers16'
+        v15=a.candidate_root or a.lab/'v15-native-rationale-20261020-v3';trained=v15/'training-v1/layers16'
         write(a.out/'START.json',dict(source_sha256=sha(Path(__file__)),
             protocol_sha256=sha(ROOT/'docs/judge_20261013/V16_FINAL_REGRESSION_PROTOCOL.md'),deadline=a.deadline,
             final_checkpoint_only=True,no_quality_selection=True,phase='waiting'))
@@ -116,4 +116,5 @@ def run(a):
 if __name__=='__main__':
     p=argparse.ArgumentParser()
     for k in ('lab','out'):p.add_argument('--'+k,type=Path,required=True)
+    p.add_argument('--candidate-root',type=Path)
     p.add_argument('--deadline',type=float,required=True);run(p.parse_args())
