@@ -15,7 +15,7 @@ def run(a):
         '-o','BatchMode=yes','-o','ConnectTimeout=12','-p','18293','root@209.137.198.14','python3 -']
     scp=['C:/Program Files/Git/usr/bin/scp.exe','-i','C:/Users/Igor/.ssh/guardian_vast_me',
         '-o','BatchMode=yes','-o','ConnectTimeout=12','-P','18293']
-    names=['prepared-v1/PREPARED.json','prepared-v1/EVAL_PROTOCOL.json','mining-v1/PROGRESS.json','mining-v1/DONE.json',
+    names=['prepared-v1/PREPARED.json','prepared-v1/EVAL_PROTOCOL.json','prepared-v1/REPLAY_PROTOCOL.json','mining-v1/PROGRESS.json','mining-v1/DONE.json',
         'training-v1/DONE.json','training-v1/FAIL.json','training-v1/TECHNICAL_FALLBACK.json','training-v1-export.INDEX.json',
         'evaluation-v1/DONE.json','evaluation-v1/FAIL.json','evaluation-v1/RESULTS.json','evaluation-v1/PAIR_RESULTS.json',
         'evaluation-v1-export.INDEX.json','evaluation-v1-pair-export.INDEX.json',
