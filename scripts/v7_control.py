@@ -83,6 +83,10 @@ def run(a):
                 if time.time()>GPU_END-1800:raise TimeoutError('GPU_RELEASE_WAIT')
                 time.sleep(3)
             for arm in ('base','old','new'):
+                release_wait=time.monotonic()+90
+                while subprocess.check_output(['nvidia-smi','--query-gpu=memory.used','--format=csv,noheader,nounits'],text=True).strip()!='0':
+                    if time.monotonic()>release_wait:raise TimeoutError('PREVIOUS_ARM_GPU_NOT_RELEASED')
+                    time.sleep(2)
                 folder=a.out/arm;folder.mkdir()
                 cmd=[str(a.lab/'venv/bin/python'),str(ROOT/'scripts/v7_evaluate.py'),'worker',
                     '--lab',str(a.lab),'--data',str(a.root/'prepared-v1'),'--new',chosen,'--out',str(folder),'--arm',arm,
