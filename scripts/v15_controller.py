@@ -57,6 +57,7 @@ def run(a):
             if code:raise ValueError(name+'_EXIT:'+str(code))
             active=None
         recipe_flags=['--budget-recipe'] if a.budget_recipe else []
+        if a.compact_recipe:recipe_flags+=['--compact-recipe']
         execute('prepare',[sys.executable,str(ROOT/'scripts/v15_native_rationale.py'),'--lab',str(a.lab),'--out',str(a.out/'prepared-v1')]+recipe_flags,min(a.deadline-a.evaluation_reserve_seconds-600,time.time()+1200))
         archive=a.out/'data-export.tar.gz'
         with tarfile.open(archive,'w:gz',compresslevel=3) as t:t.add(a.out/'prepared-v1',arcname='prepared-v1')
@@ -131,6 +132,7 @@ if __name__=='__main__':
     p.add_argument('--evaluation-reserve-seconds',type=int,default=1800)
     p.add_argument('--minimum-start-reserve-seconds',type=int,default=7200)
     p.add_argument('--budget-recipe',action='store_true')
+    p.add_argument('--compact-recipe',action='store_true')
     a=p.parse_args()
     if min(a.training_maximum_seconds,a.evaluation_reserve_seconds,a.minimum_start_reserve_seconds)<=0:
         p.error('All time budgets must be positive')

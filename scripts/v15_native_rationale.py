@@ -29,13 +29,13 @@ def restored(row):
     return walk(row)
 
 
-def budget_selection(accepted,scores):
+def budget_selection(accepted,scores,pair_limit=32):
     # Retain all existing family/template caps. Prioritize observed TRAIN
     # false accusations, then retain the existing cross-family round robin.
     candidates=paired(select(accepted,scores))
     ranked=sorted(enumerate(candidates),key=lambda item:(
         -int(any(not r['label'] and scores[r['id']]>0 for r in item[1])),item[0]))
-    return [r for _,pair in ranked[:32] for r in sorted(pair,key=lambda r:r['label'])]
+    return [r for _,pair in ranked[:pair_limit] for r in sorted(pair,key=lambda r:r['label'])]
 
 
 def visible_evidence(original):
@@ -108,7 +108,8 @@ def run(a):
     replay_ids={r['id'] for r in replay};replay_pairs={r.get('pair_id') for r in replay if r.get('pair_id')}
     tok=AutoTokenizer.from_pretrained(a.lab/'models/qwen36-awq',local_files_only=True)
     originals={r['id']:r for r in read(frozen/'train.jsonl')}
-    budget=getattr(a,'budget_recipe',False)
+    budget=getattr(a,'budget_recipe',False);compact=getattr(a,'compact_recipe',False)
+    if compact and not budget:raise ValueError('COMPACT_REQUIRES_NATIVE_BUDGET_RECIPE')
     accepted=[];tokens={};teachers={};reject=[]
     def encoded(row,rationale):
         review=rationale.split('\nVerdict:')[0]
@@ -136,12 +137,12 @@ def run(a):
                 teachers[row['id']]=rationale
         except Exception as e:reject.append(dict(pair_id=pair[0]['pair_id'],reason=str(e)));continue
         accepted.extend(pair);tokens.update({r['id']:r for r in batch})
-    chosen=budget_selection(accepted,scores) if budget else select(accepted,scores)[:128]
+    chosen=budget_selection(accepted,scores,24 if compact else 32) if budget else select(accepted,scores)[:128]
     chosen=chosen[:len(chosen)//8*8] # retain complete pairs and full effective batches
     native=[tokens[r['id']] for r in chosen]
     hard_negatives=sum(not r['label'] and scores[r['id']]>0 for r in chosen)
     if hard_negatives<(8 if budget else 16):raise ValueError('INSUFFICIENT_NATIVE_TRAIN_FALSE_ACCUSATIONS')
-    if budget and (len(native)!=64 or len({r['domain'] for r in native})<2):raise ValueError('BUDGET_RECIPE_COUNT_OR_DOMAIN_COVERAGE')
+    if budget and (len(native)!=(48 if compact else 64) or len({r['domain'] for r in native})<2):raise ValueError('BUDGET_RECIPE_COUNT_OR_DOMAIN_COVERAGE')
     moved_replay=[]
     if budget:
         # Hard pairs may already belong to the old BCE replay. Move them to
@@ -153,7 +154,7 @@ def run(a):
             -int(all(r['id'] in replay_ids for r in pair)),
             hashlib.sha256(('v17-replay:'+pair[0]['pair_id']).encode()).hexdigest()))
         replay=[]
-        for pair in available[:16]:
+        for pair in available[:8 if compact else 16]:
             for item in sorted(pair,key=lambda r:r['label']):
                 row=originals[item['id']];source_audit(row)
                 _,base=encode(tok,row);prompt=verifier_text(tok.decode(base['ids'],skip_special_tokens=False))
@@ -162,7 +163,7 @@ def run(a):
                 replay.append(dict(id=row['id'],ids=ids,tokens=len(ids),label=row['label'],pair_id=row['pair_id'],
                     domain=row['domain'],family=row['family'],template_id=row['template_id'],objective='bce',
                     text_sha256=hashlib.sha256(prompt.encode()).hexdigest()))
-        if len(replay)!=32:raise ValueError('INSUFFICIENT_DISJOINT_NATIVE_REPLAY')
+        if len(replay)!=(16 if compact else 32):raise ValueError('INSUFFICIENT_DISJOINT_NATIVE_REPLAY')
     roles=a.lab/'v14-native-role-data-20261020/data-v1';rm=json.loads((roles/'DONE.json').read_bytes())
     if sha(roles/'train.jsonl')!=rm['files']['train.jsonl']:raise ValueError('ROLE_DATA_DRIFT')
     role=[]
@@ -170,13 +171,13 @@ def run(a):
         if row['proposed_split']!='train':raise ValueError('ROLE_HOLDOUT_IN_TRAIN')
         audit_row(row);role.append(encoded(row,row['rationale']))
         teachers[row['id']]=row['rationale']
-    if len(role)!=16 or len(native)<64:raise ValueError('INSUFFICIENT_SOURCE_CHECKED_SFT_NO_FILL')
+    if len(role)!=16 or len(native)<(48 if compact else 64):raise ValueError('INSUFFICIENT_SOURCE_CHECKED_SFT_NO_FILL')
     records=native+role+replay
     if len({r['id'] for r in records})!=len(records) or len(records)%8:raise ValueError('DUPLICATE_OR_PARTIAL_BATCH')
     for r in replay:r['objective']='bce'
     dump(a.out/'train_tokens.jsonl',records)
     dump(a.out/'RATIONALE_AUDIT.jsonl',[dict(id=r['id'],rationale=teachers[r['id']]) for r in native+role])
-    write(a.out/'SOURCE_AUDIT.json',dict(native_sft=len(native),new_native_role_sft=len(role),replay_bce=32,rejected_pairs=reject,
+    write(a.out/'SOURCE_AUDIT.json',dict(native_sft=len(native),new_native_role_sft=len(role),replay_bce=len(replay),rejected_pairs=reject,
         family_counts={str(k):v for k,v in Counter((r['domain'],r['family']) for r in native+role).items()},
         selected_native_fp=hard_negatives,original_v15_sixteen_error_gate_passed=hard_negatives>=16,
         budget_recipe=budget,
@@ -184,7 +185,7 @@ def run(a):
         replay_rebalanced_from_native_train=budget,
         future_execution_results_used_in_rationale=False,mutation_predicates_used_in_rationale=False,
         native_source_repetition_is_not_new_data=True,unavailable_human_review_not_replaced=True))
-    write(a.out/'DONE.json',dict(complete=True,recipe='V17_NATIVE_BUDGET_RATIONALE_V1' if budget else 'V15_NATIVE_RATIONALE_V1',rows=len(records),sft_rows=len(native)+16,replay_bce_rows=32,
+    write(a.out/'DONE.json',dict(complete=True,recipe='V18_NATIVE_COMPACT_RATIONALE_V1' if compact else 'V17_NATIVE_BUDGET_RATIONALE_V1' if budget else 'V15_NATIVE_RATIONALE_V1',rows=len(records),sft_rows=len(native)+16,replay_bce_rows=len(replay),
         original_v15_sixteen_error_gate_passed=hard_negatives>=16,selected_native_fp=hard_negatives,
         base_revision=BASE_REVISION,train_tokens_sha256=sha(a.out/'train_tokens.jsonl'),answer_ids=old['answer_ids'],verdict_bce_weight=.5,
         source_sha256=sha(Path(__file__)),source_train_sha256=sha(frozen/'train.jsonl'),mining_scores_sha256=sha(mine/'scores.jsonl'),
@@ -196,4 +197,4 @@ def run(a):
 if __name__=='__main__':
     p=argparse.ArgumentParser()
     for k in ('lab','out'):p.add_argument('--'+k,type=Path,required=True)
-    p.add_argument('--budget-recipe',action='store_true');run(p.parse_args())
+    p.add_argument('--budget-recipe',action='store_true');p.add_argument('--compact-recipe',action='store_true');run(p.parse_args())

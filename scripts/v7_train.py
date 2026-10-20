@@ -32,17 +32,18 @@ def validate_verdict_token(answer,label,answer_ids):
     if not answer or answer[-1] not in expected:raise ValueError('SFT_VERDICT_TOKEN_LABEL_OR_BOUNDARY')
 
 
-def validate_recipe(records,meta,native=False,budget=False):
+def validate_recipe(records,meta,native=False,budget=False,compact=False):
     sft=sum(r['objective']=='sft' for r in records);bce=sum(r['objective']=='bce' for r in records)
     if not native:
         if len(records)!=224 or sft!=192:raise ValueError('FROZEN_TRAIN_COUNT')
         return
-    recipe='V17_NATIVE_BUDGET_RATIONALE_V1' if budget else 'V15_NATIVE_RATIONALE_V1'
+    if compact and not budget:raise ValueError('COMPACT_REQUIRES_BUDGET_RECIPE')
+    recipe='V18_NATIVE_COMPACT_RATIONALE_V1' if compact else 'V17_NATIVE_BUDGET_RATIONALE_V1' if budget else 'V15_NATIVE_RATIONALE_V1'
     if (meta.get('recipe')!=recipe or sft!=meta.get('sft_rows') or
-            bce!=32 or len(records)!=sft+32 or not 80<=sft<=144 or sft%8 or
+            bce!=(16 if compact else 32) or len(records)!=sft+bce or not (64 if compact else 80)<=sft<=144 or sft%8 or
             len({r['id'] for r in records})!=len(records) or meta.get('verdict_bce_weight')!=.5):
         raise ValueError('FROZEN_NATIVE_RECIPE')
-    if budget and (sft!=80 or meta.get('selected_native_fp',0)<8):raise ValueError('BUDGET_NATIVE_RECIPE')
+    if budget and (sft!=(64 if compact else 80) or meta.get('selected_native_fp',0)<8):raise ValueError('BUDGET_NATIVE_RECIPE')
     groups={}
     for r in records:
         if r['objective']=='sft':groups.setdefault(r['pair_id'],[]).append(r['label'])
@@ -56,14 +57,14 @@ def run(a):
         meta=json.loads((a.data/'DONE.json').read_bytes())
         if not meta['complete'] or sha(a.data/'train_tokens.jsonl')!=meta['train_tokens_sha256']:raise ValueError('TRAIN_DATA_DRIFT')
         records=read(a.data/'train_tokens.jsonl')
-        native=getattr(a,'native_recipe',False);validate_recipe(records,meta,native,getattr(a,'budget_recipe',False))
+        native=getattr(a,'native_recipe',False);validate_recipe(records,meta,native,getattr(a,'budget_recipe',False),getattr(a,'compact_recipe',False))
         source=a.lab/'v5-35b-20261019/train-recovered-v1/adapter'
         if sha(source/'adapter_model.safetensors')!=OLD_ADAPTER_SHA:raise ValueError('SOURCE_ADAPTER_DRIFT')
         modelpath=a.lab/'models/qwen36-awq';verify_model(modelpath,a.lab/'v5-35b-20261019/BASE_MODEL_MANIFEST.json')
         start=dict(base_revision=BASE_REVISION,source_adapter_sha256=OLD_ADAPTER_SHA,
             data_sha256=meta['train_tokens_sha256'],source_sha256=sha(Path(__file__)),
             seed=SEED,learning_rate=2e-5,rank=16,alpha=32,dropout=.05,layers=a.layers,
-            effective_batch=8,rows_total=len(records),objective=str(sum(r['objective']=='sft' for r in records))+' source-rationale SFT +32 original TRAIN verifier BCE; equal row weight',
+            effective_batch=8,rows_total=len(records),objective=str(sum(r['objective']=='sft' for r in records))+' source-rationale SFT +'+str(sum(r['objective']=='bce' for r in records))+' TRAIN verifier BCE; equal row weight',
             recipe=meta.get('recipe','V7_ABSTRACT_WORKFLOW_V1'),
             native_joint_loss=bool(native),verdict_bce_weight=.5 if native else 0,
             optimizer_reset=True,deadline_unix=a.deadline,human_reviewed=False,
@@ -221,4 +222,5 @@ if __name__=='__main__':
     p.add_argument('--resume',type=Path)
     p.add_argument('--native-recipe',action='store_true')
     p.add_argument('--budget-recipe',action='store_true')
+    p.add_argument('--compact-recipe',action='store_true')
     run(p.parse_args())
