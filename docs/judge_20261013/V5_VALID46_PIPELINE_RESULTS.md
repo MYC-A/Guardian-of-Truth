@@ -1,5 +1,9 @@
 # Полная ветка лучшего open-review40 ZIP с LoRA 35B — 20.10.2026
 
+Последующий запрошенный пользователем replay при квоте .70:
+[результаты](V5_VALID46_QUOTA70.md). Обе версии: 23TP/9FP/0FN, F1 .8364.
+Исходные scores сохранены, нового GPU-инференса не было.
+
 Проверена основа `guardian-judge-qwen36-awq-open-review40-max-34fb1c75-20261018.zip`
 с текущими parser/mechanical fixes и bounded turn-shape, без ветки 4B. Конфиг
 непосредственно сверен с JUDGE_CONFIG.json внутри указанного ZIP. Профиль:
