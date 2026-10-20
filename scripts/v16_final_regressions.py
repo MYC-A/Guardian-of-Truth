@@ -60,6 +60,8 @@ def analyse(a,source):
 
 def run(a):
     a.out.mkdir(parents=True,exist_ok=False);active=None;started=time.monotonic()
+    def stop(_sig,_frame):raise RuntimeError('SUPERVISED_FINAL_REGRESSION_STOP')
+    signal.signal(signal.SIGTERM,stop)
     try:
         v15=a.lab/'v15-native-rationale-20261020-v3';trained=v15/'training-v1/layers16'
         write(a.out/'START.json',dict(source_sha256=sha(Path(__file__)),
@@ -84,8 +86,14 @@ def run(a):
                     input_sha256=r['text_sha256'],oversized=len(r['ids'])>48700)
                 f.write(json.dumps(record)+'\n')
         write(a.out/'CONTROL_FROZEN.json',dict(verifier_inputs_sha256=sha(a.out/'verifier_inputs.jsonl')))
-        write(a.out/'START.json',dict(source_sha256=sha(ROOT/'scripts/v12_transfer.py'),
-            controller_sha256=sha(Path(__file__)),labels_read=False,threshold=0,rows=757,final_adapter=sha(trained/'adapter/adapter_model.safetensors')))
+        import shutil
+        shutil.copyfile(source/'EVAL_INDEX.json',a.out/'EVAL_INDEX.json')
+        shutil.copyfile(source/'EVAL_PROTOCOL.json',a.out/'EVAL_PROTOCOL.json')
+        start=json.loads((a.out/'START.json').read_bytes())
+        start.update(source_sha256=sha(ROOT/'scripts/v12_transfer.py'),controller_sha256=sha(Path(__file__)),
+            labels_read=False,threshold=0,rows=757,phase='final_verifier',eval_index_sha256=meta['eval_index_sha256'],
+            final_adapter=sha(trained/'adapter/adapter_model.safetensors'))
+        write(a.out/'START.json',start)
         command=[sys.executable,str(ROOT/'scripts/v12_transfer.py'),'worker','--lab',str(a.lab),'--out',str(a.out),
             '--arm','new','--training',str(trained),'--deadline',str(a.deadline-60)]
         with (a.out/'worker.log').open('w',buffering=1) as f:
