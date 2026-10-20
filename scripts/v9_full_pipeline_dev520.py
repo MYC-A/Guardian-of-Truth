@@ -4,6 +4,7 @@ import csv
 import hashlib
 import json
 import os
+import re
 from pathlib import Path
 import signal
 import subprocess
@@ -82,6 +83,9 @@ def analyse(a):
         runtime_deviation='eager synchronous scheduling and LoRA-capable engine without active adapter',
         source_sha256=sha(Path(__file__)),inputs_sha256=sha(a.out/'inputs.csv'),scores_sha256=sha(work/'scores.jsonl'),
         independent_validation=False,human_reviewed=False,private_improvement_measured=False,production_promoted=False)
+    result['chunk']=json.loads((a.out/'config.json').read_bytes())['chunk']
+    result['production_batch_unchanged']=result['chunk']==16
+    if result['chunk']!=16:result['runtime_deviation']+='; batch '+str(result['chunk'])+' instead of 16'
     protocol=sha(data/'REPLAY_PROTOCOL.json')
     for arm in ('base','new'):
         folder=v8/'evaluation-v8'/arm;receipt=json.loads((folder/'DONE.json').read_bytes())
@@ -100,7 +104,8 @@ def run(a):
     from scripts.v7_control import export
     a.out.mkdir(parents=True,exist_ok=False);active=None;started=time.monotonic()
     try:
-        if time.time()>a.deadline-1600:raise TimeoutError('INSUFFICIENT_FULL_PROFILE_BUDGET')
+        minimum=1050 if getattr(a,'chunk_override',None)==64 else 1600
+        if time.time()>a.deadline-minimum:raise TimeoutError('INSUFFICIENT_FULL_PROFILE_BUDGET')
         if subprocess.check_output(['nvidia-smi','--query-gpu=memory.used','--format=csv,noheader,nounits'],text=True).strip()!='0':raise ValueError('GPU_BUSY')
         source=a.lab/'data/guardian-judge-eval-data-v1/compli_dev/inputs.csv'
         csv.field_size_limit(2**31-1)
@@ -108,7 +113,10 @@ def run(a):
         if len(rows)!=520 or len({r['id'] for r in rows})!=520:raise ValueError('DEV520_ID_COVERAGE')
         with (a.out/'inputs.csv').open('w',encoding='utf-8',newline='') as f:
             w=csv.DictWriter(f,fieldnames=['id','prompt','response']);w.writeheader();w.writerows(rows)
-        write(a.out/'config.json',pipeline_config(a.lab/'models/qwen36-awq'))
+        config=pipeline_config(a.lab/'models/qwen36-awq')
+        override=getattr(a,'chunk_override',None)
+        if override is not None:config['chunk']=override
+        write(a.out/'config.json',config)
         write(a.out/'START.json',dict(before_inference=True,labels_read=False,rows=520,
             inputs_sha256=sha(a.out/'inputs.csv'),source_inputs_sha256=sha(source),
             config_sha256=sha(a.out/'config.json'),source_sha256=sha(Path(__file__)),gpu_deadline=a.deadline,
@@ -116,6 +124,10 @@ def run(a):
             v8_pair_results_sha256=sha(a.lab/'v8-json-quote-replay-20261020/evaluation-v8/PAIR_RESULTS.json'),
             purpose='Check verifier value on actual open-review/MAX instead of overall-only pool',
             promotion=False,quality_retries=0))
+        if override is not None:
+            write(a.out/'BATCH_EXPERIMENT.json',dict(chunk=override,original_chunk=16,
+                chosen_before_gold=True,reason='Measured 50-55 seconds per 16-row review; throughput control',
+                production_batch_unchanged=False,threshold_changed=False,quota_changed=False))
         verify_model(a.lab/'models/qwen36-awq',a.lab/'v5-35b-20261019/BASE_MODEL_MANIFEST.json')
         command=[sys.executable,str(Path(__file__)),'arm','--lab',str(a.lab),'--out',str(a.out),'--deadline',str(a.deadline)]
         with (a.out/'pipeline.log').open('w',buffering=1) as log:
@@ -131,6 +143,19 @@ def run(a):
         if active is not None:
             try:os.killpg(active.pid,signal.SIGTERM)
             except ProcessLookupError:pass
+            if active.poll() is None:
+                try:active.wait(timeout=30)
+                except subprocess.TimeoutExpired:os.killpg(active.pid,signal.SIGKILL);active.wait()
+        # The primary stage uses a separate process group. Only its logged engine
+        # and exact private working directory prove ownership after a timeout.
+        stage_log=a.out/'work/stage.log';released=[]
+        if stage_log.exists():
+            for pid in set(map(int,re.findall(r'EngineCore pid=(\d+)',stage_log.read_text(errors='replace')))):
+                proc=Path('/proc')/str(pid)
+                try:owned=(proc/'cwd').resolve()==(a.out/'work').resolve() and (proc/'comm').read_text().startswith('VLLM::Engine')
+                except OSError:continue
+                if owned:os.kill(pid,signal.SIGTERM);released.append(pid)
+        write(a.out/'OWN_ENGINE_CLEANUP.json',dict(term_pids=released))
         export(a.out)
 
 
@@ -139,5 +164,6 @@ if __name__=='__main__':
     else:
         p=argparse.ArgumentParser();p.add_argument('mode',choices=['run','arm'])
         p.add_argument('--lab',type=Path,required=True);p.add_argument('--out',type=Path,required=True)
+        p.add_argument('--chunk-override',type=int,choices=[64])
         p.add_argument('--deadline',type=float,required=True);a=p.parse_args()
         run(a) if a.mode=='run' else arm(a)

@@ -26,6 +26,7 @@ def fixture(tmp_path,monkeypatch):
     lab=tmp_path/'lab';out=tmp_path/'out';a=SimpleNamespace(lab=lab,out=out)
     values=[dict(id=str(i),prompt='Frozen policy and transcript '+str(i),response='Current turn') for i in range(520)]
     csvfile(out/'inputs.csv',values)
+    put(out/'config.json',dict(chunk=16))
     source=lab/'data/guardian-judge-eval-data-v1/compli_dev/inputs.csv';csvfile(source,values)
     csvfile(out/'predictions.csv',[dict(id=str(i),label=int(i<208)) for i in range(520)])
     decisions=[dict(id=str(i),hard=['mechanical finding'] if i==0 else [],ranking='max_exact_overall_final') for i in range(520)]
@@ -56,6 +57,14 @@ def test_veto_preserves_mechanical_hard_positive_and_reports_actual_tp_loss(tmp_
     assert result['arms']['base']['removed_fp']==1 and result['arms']['base']['lost_tp']==0
     assert result['arms']['new']['removed_fp']==1 and result['arms']['new']['lost_tp']==1
     assert result['arms']['base']['metrics']['tp']==104
+    assert result['production_batch_unchanged'] is True
+
+
+def test_batch_override_is_explicitly_reported(tmp_path,monkeypatch):
+    a=fixture(tmp_path,monkeypatch);put(a.out/'config.json',dict(chunk=64));v9.analyse(a)
+    result=json.loads((a.out/'RESULTS.json').read_bytes())
+    assert result['chunk']==64 and result['production_batch_unchanged'] is False
+    assert 'batch 64 instead of 16' in result['runtime_deviation']
 
 
 def test_final_score_gap_cannot_be_reported_as_full_max_pipeline(tmp_path,monkeypatch):
