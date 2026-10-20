@@ -17,7 +17,8 @@ def run(a):
         '-o','BatchMode=yes','-o','ConnectTimeout=12','-P','18293']
     names=['prepared-v1/PREPARED.json','prepared-v1/EVAL_PROTOCOL.json','mining-v1/PROGRESS.json','mining-v1/DONE.json',
         'training-v1/DONE.json','training-v1/FAIL.json','training-v1/TECHNICAL_FALLBACK.json','training-v1-export.INDEX.json',
-        'evaluation-v1/DONE.json','evaluation-v1/FAIL.json','evaluation-v1/RESULTS.json','evaluation-v1-export.INDEX.json',
+        'evaluation-v1/DONE.json','evaluation-v1/FAIL.json','evaluation-v1/RESULTS.json','evaluation-v1/PAIR_RESULTS.json',
+        'evaluation-v1-export.INDEX.json','evaluation-v1-pair-export.INDEX.json',
         'data-export.INDEX.json','first-checkpoint-export.INDEX.json']
     names+=['final-recovery-export.INDEX.json']
     for profile in ('layers16','layers8'):

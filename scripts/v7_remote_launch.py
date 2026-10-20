@@ -14,7 +14,7 @@ def remote(source):
     if p.returncode:raise SystemExit(p.returncode)
 
 def run(a):
-    names=['scripts/v7_workflow_data.py','scripts/v7_prepare.py','scripts/v5_35b_common.py','scripts/v5_valid46_pipeline.py']
+    names=[] if a.only_files else ['scripts/v7_workflow_data.py','scripts/v7_prepare.py','scripts/v5_35b_common.py','scripts/v5_valid46_pipeline.py']
     names+=a.file
     payload={n:base64.b64encode((ROOT/n).read_bytes()).decode() for n in names}
     code=f'''
@@ -22,7 +22,7 @@ from pathlib import Path
 import base64,json,shutil,subprocess
 root=Path({REMOTE!r});root.mkdir(exist_ok=True)
 code=root/{a.code!r}
-if not code.exists():shutil.copytree('/workspace/guardian-lab-20261018/v6-verifier-20261020/code-eval-27e6ee0f',code)
+if not code.exists():shutil.copytree({a.copy_from!r},code)
 for name,value in json.loads({json.dumps(json.dumps(payload))}).items():
     (code/name).write_bytes(base64.b64decode(value))
 print('CODE_UPDATED',str(code))
@@ -48,4 +48,6 @@ if __name__=='__main__':
     p=argparse.ArgumentParser();p.add_argument('phase',choices=['prepare','command','update'])
     p.add_argument('--code',default='code-v1');p.add_argument('--file',action='append',default=[])
     p.add_argument('--name',default='guardian-lab-v7-prepare-v1');p.add_argument('--command',default='')
+    p.add_argument('--copy-from',default='/workspace/guardian-lab-20261018/v6-verifier-20261020/code-eval-27e6ee0f')
+    p.add_argument('--only-files',action='store_true')
     run(p.parse_args())
