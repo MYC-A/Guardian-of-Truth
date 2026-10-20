@@ -28,10 +28,60 @@ def pipeline_config(model):
     return cfg
 
 
-def bound_llm(original, request, audit_path):
+def binding_probe(worker, adapter_path):
+    """Read-only worker proof: source modules survive packing and match GPU buffers."""
+    from pathlib import Path
+    import torch
+    from safetensors import safe_open
+    manager = worker.model_runner.lora_manager._adapter_manager
+    loaded = manager.get_adapter(1)
+    if loaded is None or 1 not in manager.lora_index_to_id:
+        raise ValueError('ADAPTER_NOT_ACTIVE_ON_WORKER')
+    slot = manager.lora_index_to_id.index(1)
+    def suffix(name): return 'layers.' + name.split('.layers.', 1)[1]
+    with safe_open(str(Path(adapter_path) / 'adapter_model.safetensors'), framework='pt') as f:
+        expected = {suffix(k.rsplit('.lora_A.', 1)[0]) for k in f.keys() if '.lora_A.' in k}
+    covered = set(); checked = []; errors = []
+    for name, weights in loaded.loras.items():
+        module = manager.modules.get(name)
+        if module is None:
+            errors.append('UNBOUND_MODULE:' + name); continue
+        aa, bb = weights.lora_a, weights.lora_b
+        packed = isinstance(aa, list)
+        sources = manager.packed_modules.get(name, [name]) if packed else [name]
+        al = aa if packed else [aa]
+        bl = bb if isinstance(bb, list) else [bb]
+        if len(sources) != len(al):
+            errors.append('PACKED_SOURCE_COUNT:' + name); continue
+        for source, a, b in zip(sources, al, bl):
+            if a is not None and b is not None: covered.add(suffix(source))
+        ga = list(module.lora_a_stacked); gb = list(module.lora_b_stacked)
+        if not packed and len(ga) > 1:
+            al = [aa] * len(ga)
+            sizes = list(module.base_layer.output_sizes)
+            bl = list(torch.split(bb, sizes, dim=0))
+        if len(al) != len(ga) or len(bl) != len(gb):
+            errors.append('GPU_SLICE_COUNT:' + name); continue
+        for i, (a, b) in enumerate(zip(al, bl)):
+            if a is None or b is None: continue
+            av = ga[i][slot, 0, :a.shape[0], :a.shape[1]]
+            bv = gb[i][slot, 0, :b.shape[0], :b.shape[1]]
+            ae = torch.equal(av, a.to(device=av.device, dtype=av.dtype))
+            be = torch.equal(bv, b.to(device=bv.device, dtype=bv.dtype))
+            checked.append(dict(module=name, slice=i, a_equal=ae, b_equal=be))
+            if not ae or not be: errors.append('GPU_WEIGHT_MISMATCH:' + name)
+    if covered != expected: errors.append('SOURCE_COVERAGE_MISMATCH')
+    return dict(complete=not errors, expected_modules=len(expected), covered_modules=len(covered),
+                packed_modules=len(loaded.loras), gpu_pairs_checked=len(checked),
+                missing_sources=sorted(expected-covered), extra_sources=sorted(covered-expected),
+                errors=errors, checks=checked, target_filter=manager.lora_config.target_modules)
+
+
+def bound_llm(original, request, audit_path, binding_adapter=None):
     """Every generation, including review and probes, uses the same arm."""
     class Bound(original):
         def __init__(self, *args, **kwargs):
+            self.binding_checked = False
             kwargs.update(enable_lora=True, max_lora_rank=16, max_loras=1,
                           max_cpu_loras=1, lora_target_modules=NATIVE_LORA_TARGETS)
             super().__init__(*args, **kwargs)
@@ -40,6 +90,12 @@ def bound_llm(original, request, audit_path):
             if 'lora_request' in kwargs:
                 raise ValueError('UNEXPECTED_NESTED_LORA_REQUEST')
             result = super().generate(prompts, params, lora_request=request, **kwargs)
+            if request is not None and binding_adapter is not None and not self.binding_checked:
+                proof = self.collective_rpc(binding_probe, timeout=60, args=(str(binding_adapter),))
+                write(Path(audit_path).with_name('ADAPTER_BINDING.json'), proof)
+                if len(proof) != 1 or not proof[0]['complete'] or proof[0]['expected_modules'] != 50:
+                    raise ValueError('FULL_ADAPTER_GPU_BINDING_NOT_PROVEN')
+                self.binding_checked = True
             with Path(audit_path).open('a', encoding='utf-8') as stream:
                 stream.write(json.dumps(dict(adapter_applied=request is not None,
                     prompts=len(prompts), outputs=len(result), max_tokens=params.max_tokens,
@@ -58,7 +114,7 @@ def stage():
     if arm not in ('base', 'adapter') or sha(adapter / 'adapter_model.safetensors') != ADAPTER_SHA:
         raise ValueError('PIPELINE_ADAPTER_OR_ARM_DRIFT')
     request = None if arm == 'base' else LoRARequest('v5-full-pipeline', 1, str(adapter.resolve()))
-    vllm.LLM = bound_llm(vllm.LLM, request, os.environ['V5_PIPELINE_AUDIT'])
+    vllm.LLM = bound_llm(vllm.LLM, request, os.environ['V5_PIPELINE_AUDIT'], binding_adapter=adapter)
     judge_stage.main()
     sys.stdout.flush(); sys.stderr.flush(); os._exit(0)
 
@@ -104,6 +160,10 @@ def validate_arm(out, arm, rows):
     audit = [json.loads(line) for line in (out / 'generation_audit.jsonl').read_bytes().splitlines()]
     if not audit or any(x['adapter_applied'] != (arm == 'adapter') for x in audit):
         raise ValueError('LORA_NOT_APPLIED_TO_EVERY_CALL:' + arm)
+    if arm == 'adapter':
+        proof = json.loads((out / 'ADAPTER_BINDING.json').read_bytes())
+        if len(proof) != 1 or not proof[0]['complete']:
+            raise ValueError('INCOMPLETE_WORKER_BINDING')
     if not any(x['max_tokens'] > 1 for x in audit):
         raise ValueError('GENERATIVE_REVIEW_NOT_RUN:' + arm)
     with (out / 'predictions.csv').open(newline='', encoding='utf-8') as f:
@@ -156,6 +216,18 @@ def run(a):
         collected = {}
         for arm in ('base', 'adapter'):
             out = a.out / arm; out.mkdir()
+            if arm == 'base' and a.reuse_base is not None:
+                import shutil
+                old = a.reuse_base
+                if sha(old / 'config.json') != sha(a.out / 'config.json') or sha(old / 'inputs.csv') != sha(a.out / 'inputs.csv'):
+                    raise ValueError('TECHNICAL_REUSE_INPUT_OR_CONFIG_DRIFT')
+                validate_arm(old / 'base', 'base', rows)
+                shutil.copytree(old / 'base', out, dirs_exist_ok=True, ignore=shutil.ignore_patterns('cache'))
+                labels, decisions, receipt = validate_arm(out, 'base', rows)
+                collected['base'] = dict(labels=labels, decisions=decisions, receipt=receipt)
+                write(a.out / 'REUSED_BASE.json', dict(source=str(old / 'base'),
+                    scores_sha256=sha(out / 'work/scores.jsonl'), reason='read-only worker binding audit after warning; no base configuration change'))
+                continue
             write(a.out / 'PROGRESS.json', dict(arm=arm, phase='running', seconds=time.monotonic()-started))
             command = [sys.executable, str(Path(__file__)), 'arm', '--arm', arm, '--training', str(a.training),
                 '--input', str(a.out / 'inputs.csv'), '--config', str(a.out / 'config.json'), '--out', str(out)]
@@ -196,6 +268,7 @@ def main():
         stage(); return
     p = argparse.ArgumentParser(); s = p.add_subparsers(dest='mode', required=True)
     r = s.add_parser('run'); r.add_argument('--lab', type=Path, required=True)
+    r.add_argument('--reuse-base', type=Path)
     ar = s.add_parser('arm'); ar.add_argument('--arm', choices=['base', 'adapter'], required=True)
     for n in ('input', 'config'): ar.add_argument('--'+n, type=Path, required=True)
     for parser in (r, ar):

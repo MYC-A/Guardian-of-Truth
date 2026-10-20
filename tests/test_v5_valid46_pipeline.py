@@ -41,3 +41,16 @@ def test_full_overall_coverage_cannot_hide_missing_final_score(tmp_path):
     (work / 'scores.jsonl').write_text('\n'.join(map(json.dumps, records)))
     with pytest.raises(ValueError, match='INCOMPLETE_EXACT_PIPELINE_COVERAGE'):
         validate_arm(tmp_path, 'base', [dict(id=str(i)) for i in range(46)])
+
+
+def test_failed_worker_binding_blocks_adapter_arm(tmp_path):
+    class Fake:
+        def __init__(self, **kwargs): pass
+        def generate(self, prompts, params, **kwargs): return [object()]
+        def collective_rpc(self, method, **kwargs):
+            return [dict(complete=False, expected_modules=50)]
+    llm = bound_llm(Fake, object(), tmp_path / 'audit.jsonl', binding_adapter=tmp_path)()
+    with pytest.raises(ValueError, match='FULL_ADAPTER_GPU_BINDING_NOT_PROVEN'):
+        llm.generate(['probe'], SimpleNamespace(max_tokens=1))
+    assert (tmp_path / 'ADAPTER_BINDING.json').exists()
+    assert not (tmp_path / 'audit.jsonl').exists()
