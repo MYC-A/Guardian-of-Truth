@@ -28,8 +28,13 @@ All pair labels balanced. Source/proof checks remain bounded and human-unreviewe
 One fixed training arm, one full epoch: warm start original V5 35B adapter
 eb7cee08c0a00c29ad1d21904aa94d29f4f83f126d53e1438dd65ef85a34ba4f,
 last16 layers24--39, rank16 alpha32 dropout.05, LR2e-5 with two-update warmup,
-AdamW weight_decay.01, effective batch8, seed20261020, clip1. Equal row weight;
-rationale-token cross entropy plus BCE replay, as in V7. No LR/layer/epoch sweep,
+AdamW weight_decay.01, effective batch8, seed20261020, clip1. Equal row weight.
+For native SFT rows, use .5 * mean rationale-token cross entropy + .5 * binary
+verdict loss at the last answer-token prediction position. This gives the
+decision explicit weight instead of mainly teaching rule copying. Verify that
+the final teacher token belongs to the correct YES/NO class and the logit is
+the predictor of that token, not the token after it. The 32 replay rows keep
+their original direct-verdict BCE. No additional forward pass. No LR/layer/epoch sweep,
 no checkpoint selection by evaluation, no threshold change. CPU/gradient/memory
 gates before updates; recoverable optimizer/RNG/order checkpoints each batch.
 Time allocation for training: finite 3 hours after mining/data preparation,
@@ -46,3 +51,7 @@ can diagnose role binding but cannot establish whole-system acceptance.
 No production or ZIP promotion. Do not promise private-score improvement. If
 native data/gradient/runtime gates fail, preserve the failure and skip training
 or downstream evaluation; do not fill from protected data or reset histories.
+
+The joint-loss design is fixed before any V13 mining score or V15 optimization.
+Waiting-only controller versions may be superseded for recovery/technical design;
+they must be preserved and have zero native training calls. No quality retry.

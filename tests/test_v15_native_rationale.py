@@ -2,7 +2,7 @@ import copy
 import json
 import pytest
 from scripts.v15_native_rationale import visible_evidence
-from scripts.v7_train import validate_recipe
+from scripts.v7_train import validate_recipe,validate_verdict_token
 
 
 def test_evidence_cannot_read_future_execution_mutation_proof_or_label():
@@ -17,14 +17,21 @@ def test_evidence_cannot_read_future_execution_mutation_proof_or_label():
 
 
 def test_native_training_requires_full_balanced_unique_pairs_and_fixed_replay():
-    records=[dict(id=f'{i}:{label}',pair_id=str(i),label=label,objective='sft') for i in range(40) for label in (0,1)]
+    records=[dict(id=f'{i}:{label}',pair_id=str(i),label=label,objective='sft',answer_ids=[10 if label else 11]) for i in range(40) for label in (0,1)]
     records+=[dict(id='replay:'+str(i),objective='bce') for i in range(32)]
-    meta=dict(recipe='V15_NATIVE_RATIONALE_V1',sft_rows=80)
+    meta=dict(recipe='V15_NATIVE_RATIONALE_V1',sft_rows=80,verdict_bce_weight=.5,answer_ids=dict(yes=[10],no=[11]))
     validate_recipe(records,meta,True)
     records[0]['label']=1
     with pytest.raises(ValueError,match='COMPLETE_PAIRS'):validate_recipe(records,meta,True)
     records[0]['label']=0;records[-1]['id']=records[0]['id']
     with pytest.raises(ValueError,match='FROZEN_NATIVE_RECIPE'):validate_recipe(records,meta,True)
+
+
+def test_teacher_verdict_boundary_cannot_flip_class_or_score_eos():
+    answers=dict(yes=[10],no=[11])
+    validate_verdict_token([2,3,10],1,answers)
+    for answer,label in [([2,3,10],0),([2,3,11,0],0),([],1)]:
+        with pytest.raises(ValueError,match='BOUNDARY'):validate_verdict_token(answer,label,answers)
 
 
 def test_failure_recovery_keeps_latest_committed_optimizer_checkpoint(tmp_path):

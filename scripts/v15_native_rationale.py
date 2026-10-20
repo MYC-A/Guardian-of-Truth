@@ -108,6 +108,8 @@ def run(a):
         _,base=encode(tok,row);text=tok.decode(base['ids'],skip_special_tokens=False)
         prompt=reasoning_text(text);ids=tok.encode(prompt,add_special_tokens=False);allids=tok.encode(prompt+rationale,add_special_tokens=False)
         if allids[:len(ids)]!=ids or len(allids)>49144:raise ValueError('ANSWER_BOUNDARY_OR_CAP')
+        from scripts.v7_train import validate_verdict_token
+        validate_verdict_token(allids[len(ids):],row['label'],old['answer_ids'])
         return dict(id=row['id'],ids=ids,answer_ids=allids[len(ids):],tokens=len(allids),label=row['label'],
             pair_id=row['pair_id'],domain=row['domain'],family=row['family'],template_id=row['template_id'],objective='sft',
             text_sha256=hashlib.sha256(prompt.encode()).hexdigest(),rationale_sha256=hashlib.sha256(rationale.encode()).hexdigest())
@@ -148,7 +150,7 @@ def run(a):
         future_execution_results_used_in_rationale=False,mutation_predicates_used_in_rationale=False,
         native_source_repetition_is_not_new_data=True,unavailable_human_review_not_replaced=True))
     write(a.out/'DONE.json',dict(complete=True,recipe='V15_NATIVE_RATIONALE_V1',rows=len(records),sft_rows=len(native)+16,replay_bce_rows=32,
-        base_revision=BASE_REVISION,train_tokens_sha256=sha(a.out/'train_tokens.jsonl'),answer_ids=old['answer_ids'],
+        base_revision=BASE_REVISION,train_tokens_sha256=sha(a.out/'train_tokens.jsonl'),answer_ids=old['answer_ids'],verdict_bce_weight=.5,
         source_sha256=sha(Path(__file__)),source_train_sha256=sha(frozen/'train.jsonl'),mining_scores_sha256=sha(mine/'scores.jsonl'),
         role_train_sha256=sha(roles/'train.jsonl'),role_holdout_sha256=sha(roles/'holdout.jsonl'),
         tokens=sum(r['tokens'] for r in records),max_tokens=max(r['tokens'] for r in records),eval_used=False,

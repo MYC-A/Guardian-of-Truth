@@ -27,6 +27,11 @@ def validate_resume(receipt,state,data_sha,layers,order):
         raise ValueError('RESUME_NOT_COMMITTED_BATCH_BOUNDARY')
 
 
+def validate_verdict_token(answer,label,answer_ids):
+    expected=answer_ids['yes'] if label else answer_ids['no']
+    if not answer or answer[-1] not in expected:raise ValueError('SFT_VERDICT_TOKEN_LABEL_OR_BOUNDARY')
+
+
 def validate_recipe(records,meta,native=False):
     sft=sum(r['objective']=='sft' for r in records);bce=sum(r['objective']=='bce' for r in records)
     if not native:
@@ -34,12 +39,14 @@ def validate_recipe(records,meta,native=False):
         return
     if (meta.get('recipe')!='V15_NATIVE_RATIONALE_V1' or sft!=meta.get('sft_rows') or
             bce!=32 or len(records)!=sft+32 or not 80<=sft<=144 or sft%8 or
-            len({r['id'] for r in records})!=len(records)):
+            len({r['id'] for r in records})!=len(records) or meta.get('verdict_bce_weight')!=.5):
         raise ValueError('FROZEN_NATIVE_RECIPE')
     groups={}
     for r in records:
         if r['objective']=='sft':groups.setdefault(r['pair_id'],[]).append(r['label'])
     if any(sorted(v)!=[0,1] for v in groups.values()):raise ValueError('NATIVE_RECIPE_NOT_COMPLETE_PAIRS')
+    for r in records:
+        if r['objective']=='sft':validate_verdict_token(r['answer_ids'],r['label'],meta['answer_ids'])
 
 def run(a):
     a.out.mkdir(exist_ok=False);started=time.monotonic();steps=0
@@ -56,6 +63,7 @@ def run(a):
             seed=SEED,learning_rate=2e-5,rank=16,alpha=32,dropout=.05,layers=a.layers,
             effective_batch=8,rows_total=len(records),objective=str(sum(r['objective']=='sft' for r in records))+' source-rationale SFT +32 original TRAIN verifier BCE; equal row weight',
             recipe=meta.get('recipe','V7_ABSTRACT_WORKFLOW_V1'),
+            native_joint_loss=bool(native),verdict_bce_weight=.5 if native else 0,
             optimizer_reset=True,deadline_unix=a.deadline,human_reviewed=False,
             status='EXPLORATORY_ONLY_HUMAN_UNVERIFIED',automatic_promotion=False)
         write(a.out/'START.json',start)
@@ -117,7 +125,15 @@ def run(a):
             if r['objective']=='sft':
                 answer_slice(len(allids),len(r['ids']),len(answer))
                 if output.shape[0]!=len(answer)+1:raise ValueError('LOGITS_ANSWER_ALIGNMENT')
-                return torch.nn.functional.cross_entropy(output[:-1],torch.tensor(answer,device='cuda'))
+                ce=torch.nn.functional.cross_entropy(output[:-1],torch.tensor(answer,device='cuda'))
+                if native:
+                    # output[-2] predicts the LAST answer token (YES/NO); [-1]
+                    # predicts the token after the answer and is not a verdict.
+                    validate_verdict_token(answer,r['label'],meta['answer_ids'])
+                    odds=torch.logsumexp(output[-2,yi],0)-torch.logsumexp(output[-2,ni],0)
+                    classification=torch.nn.functional.binary_cross_entropy_with_logits(odds,odds.new_tensor(float(r['label'])))
+                    return .5*ce+.5*classification
+                return ce
             odds=torch.logsumexp(output[-1,yi],0)-torch.logsumexp(output[-1,ni],0)
             return torch.nn.functional.binary_cross_entropy_with_logits(odds,odds.new_tensor(float(r['label'])))
         # Longest input probes memory/backward before any optimizer update; no quality choice.
