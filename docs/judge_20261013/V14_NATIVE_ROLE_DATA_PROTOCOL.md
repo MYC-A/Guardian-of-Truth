@@ -27,6 +27,8 @@ tool groups proposed TRAIN. Two held-out tools are not an independent-policy
 acceptance set and are not grounds for a ZIP. No unavailable human review claimed.
 Apply the original external exact/near/entity exclusion, and also the V4 frozen
 DEV/HOLDOUT exclusion. Reject complete pairs on a match; preserve exclusions.
+If near-duplicate linkage connects a proposed TRAIN tool to either reserved
+tool, move the entire connected component to HOLDOUT before any model call.
 
 No automatic training or production promotion from data preparation. Freeze
 the accepted data and any later training objective before optimization. Preserve

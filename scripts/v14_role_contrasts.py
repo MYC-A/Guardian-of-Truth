@@ -26,6 +26,12 @@ NORMAL_QUOTE='Agents should guide users to perform these specific actions as nee
 SOLO_QUOTE="Since you have access to the user's device, you can perform the following actions directly:"
 
 
+def component_splits(rows):
+    """Near-duplicate links take precedence over the initially proposed tool split."""
+    hold={r['split_component'] for r in rows if r['source_tool'] in HOLDOUT}
+    return [dict(r,proposed_split='holdout' if r['split_component'] in hold else 'train') for r in rows]
+
+
 def audit_row(row):
     validate(row)
     from guardian_truth.transcript import parse_document
@@ -112,7 +118,7 @@ def run(a):
         req=audit_row(r);matches,_=protected.query(shingles(neartext(req)))
         if matches or norm(pairtext(req)) in exact or ids(pairtext(req))&entities:
             blocked.add(r['pair_id']);rejected.append(dict(id=r['id'],near=matches))
-    kept=[r for r in kept if r['pair_id'] not in blocked]
+    kept=component_splits([r for r in kept if r['pair_id'] not in blocked])
     for split in ('train','holdout'):
         with (a.out/(split+'.jsonl')).open('w') as f:
             for r in kept:
