@@ -128,7 +128,7 @@ def awq_loader_compat(model_path, receipt_path):
 
 def target_names(names, layers, shared):
     """Match only the language tower, never routed experts, vision, router or MTP."""
-    if layers not in (8, 40):
+    if layers not in (8, 16, 40):
         raise ValueError('UNREGISTERED_LAYER_PROFILE')
     suffixes = target_suffixes(shared)
     result = []

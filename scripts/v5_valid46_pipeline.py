@@ -113,7 +113,7 @@ def repair_shared_aliases(worker, adapter_path):
                 weights_modified=False, base_model_modified=False)
 
 
-def bound_llm(original, request, audit_path, binding_adapter=None):
+def bound_llm(original, request, audit_path, binding_adapter=None, expected_source_modules=50):
     """Every generation, including review and probes, uses the same arm."""
     class Bound(original):
         def __init__(self, *args, **kwargs):
@@ -140,7 +140,7 @@ def bound_llm(original, request, audit_path, binding_adapter=None):
                     proof = self.collective_rpc(binding_probe, timeout=60, args=(str(binding_adapter),))
                     regenerated = True
                 write(Path(audit_path).with_name('ADAPTER_BINDING.json'), proof)
-                if len(proof) != 1 or not proof[0]['complete'] or proof[0]['expected_modules'] != 50:
+                if len(proof) != 1 or not proof[0]['complete'] or proof[0]['expected_modules'] != expected_source_modules:
                     raise ValueError('FULL_ADAPTER_GPU_BINDING_NOT_PROVEN')
                 self.binding_checked = True
                 if regenerated:
