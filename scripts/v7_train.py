@@ -26,20 +26,36 @@ def validate_resume(receipt,state,data_sha,layers,order):
     if state['rows_done']!=8*state['steps'] or not 0<state['rows_done']<=len(order):
         raise ValueError('RESUME_NOT_COMMITTED_BATCH_BOUNDARY')
 
+
+def validate_recipe(records,meta,native=False):
+    sft=sum(r['objective']=='sft' for r in records);bce=sum(r['objective']=='bce' for r in records)
+    if not native:
+        if len(records)!=224 or sft!=192:raise ValueError('FROZEN_TRAIN_COUNT')
+        return
+    if (meta.get('recipe')!='V15_NATIVE_RATIONALE_V1' or sft!=meta.get('sft_rows') or
+            bce!=32 or len(records)!=sft+32 or not 80<=sft<=144 or sft%8 or
+            len({r['id'] for r in records})!=len(records)):
+        raise ValueError('FROZEN_NATIVE_RECIPE')
+    groups={}
+    for r in records:
+        if r['objective']=='sft':groups.setdefault(r['pair_id'],[]).append(r['label'])
+    if any(sorted(v)!=[0,1] for v in groups.values()):raise ValueError('NATIVE_RECIPE_NOT_COMPLETE_PAIRS')
+
 def run(a):
     a.out.mkdir(exist_ok=False);started=time.monotonic();steps=0
     try:
         meta=json.loads((a.data/'DONE.json').read_bytes())
         if not meta['complete'] or sha(a.data/'train_tokens.jsonl')!=meta['train_tokens_sha256']:raise ValueError('TRAIN_DATA_DRIFT')
         records=read(a.data/'train_tokens.jsonl')
-        if len(records)!=224 or sum(r['objective']=='sft' for r in records)!=192:raise ValueError('FROZEN_TRAIN_COUNT')
+        native=getattr(a,'native_recipe',False);validate_recipe(records,meta,native)
         source=a.lab/'v5-35b-20261019/train-recovered-v1/adapter'
         if sha(source/'adapter_model.safetensors')!=OLD_ADAPTER_SHA:raise ValueError('SOURCE_ADAPTER_DRIFT')
         modelpath=a.lab/'models/qwen36-awq';verify_model(modelpath,a.lab/'v5-35b-20261019/BASE_MODEL_MANIFEST.json')
         start=dict(base_revision=BASE_REVISION,source_adapter_sha256=OLD_ADAPTER_SHA,
             data_sha256=meta['train_tokens_sha256'],source_sha256=sha(Path(__file__)),
             seed=SEED,learning_rate=2e-5,rank=16,alpha=32,dropout=.05,layers=a.layers,
-            effective_batch=8,rows_total=len(records),objective='192 source-rationale SFT +32 original TRAIN verifier BCE; equal row weight',
+            effective_batch=8,rows_total=len(records),objective=str(sum(r['objective']=='sft' for r in records))+' source-rationale SFT +32 original TRAIN verifier BCE; equal row weight',
+            recipe=meta.get('recipe','V7_ABSTRACT_WORKFLOW_V1'),
             optimizer_reset=True,deadline_unix=a.deadline,human_reviewed=False,
             status='EXPLORATORY_ONLY_HUMAN_UNVERIFIED',automatic_promotion=False)
         write(a.out/'START.json',start)
@@ -185,4 +201,5 @@ if __name__=='__main__':
     for k in ('lab','data','out'):p.add_argument('--'+k,type=Path,required=True)
     p.add_argument('--deadline',type=float,required=True);p.add_argument('--layers',type=int,choices=[8,16],default=16)
     p.add_argument('--resume',type=Path)
+    p.add_argument('--native-recipe',action='store_true')
     run(p.parse_args())
