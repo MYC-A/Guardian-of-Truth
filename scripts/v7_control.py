@@ -30,6 +30,8 @@ def export(folder):
         sha256=sha(archive),verified_onbox=True,complete=(folder/'DONE.json').exists()))
 
 def run(a):
+    global TRAIN_END
+    TRAIN_END=a.train_deadline
     a.out.mkdir(exist_ok=False);active=None;started=time.monotonic()
     def stop(_sig,_frame):
         if active is not None and active.poll() is None:
@@ -61,8 +63,14 @@ def run(a):
                 time.sleep(3)
             common=[str(a.lab/'v5-35b-20261019/venv/bin/python'),str(ROOT/'scripts/v7_train.py'),
                 '--lab',str(a.lab),'--data',str(a.root/'mining-v1'),'--deadline',str(TRAIN_END)]
+            if a.resume_receipt is not None:
+                while not a.resume_receipt.exists():
+                    if time.time()>TRAIN_END-600:raise TimeoutError('RESUME_SOURCE_WAIT')
+                    time.sleep(5)
+                source=Path(json.loads(a.resume_receipt.read_bytes())['training_path'])/'final'
+                common+=['--resume',str(source)]
             chosen=None
-            for layers in (16,8):
+            for layers in ((16,) if a.resume_receipt is not None else (16,8)):
                 destination=a.out/('layers'+str(layers))
                 code=execute('layers'+str(layers),common+['--out',str(destination),'--layers',str(layers)],TRAIN_END)
                 if code==0:
@@ -74,11 +82,12 @@ def run(a):
             if chosen is None:raise RuntimeError('NO_TRAINED_CANDIDATE')
             write(a.out/'DONE.json',dict(complete=True,training_path=str(chosen),trained=json.loads((chosen/'TRAINED.json').read_bytes()),seconds=time.monotonic()-started))
         else:
-            while not (a.root/'training-v1/DONE.json').exists():
-                if (a.root/'training-v1/FAIL.json').exists():raise RuntimeError('TRAIN_FAILED')
+            training=a.root/a.training_folder
+            while not (training/'DONE.json').exists():
+                if (training/'FAIL.json').exists():raise RuntimeError('TRAIN_FAILED')
                 if time.time()>GPU_END-1800:raise TimeoutError('EVALUATION_WAIT')
                 time.sleep(10)
-            chosen=json.loads((a.root/'training-v1/DONE.json').read_bytes())['training_path']
+            chosen=json.loads((training/'DONE.json').read_bytes())['training_path']
             while subprocess.check_output(['nvidia-smi','--query-gpu=memory.used','--format=csv,noheader,nounits'],text=True).strip()!='0':
                 if time.time()>GPU_END-1800:raise TimeoutError('GPU_RELEASE_WAIT')
                 time.sleep(3)
@@ -102,4 +111,7 @@ def run(a):
 if __name__=='__main__':
     p=argparse.ArgumentParser();p.add_argument('phase',choices=['train','evaluate'])
     for k in ('lab','root','out'):p.add_argument('--'+k,type=Path,required=True)
+    p.add_argument('--train-deadline',type=float,default=TRAIN_END)
+    p.add_argument('--resume-receipt',type=Path)
+    p.add_argument('--training-folder',default='training-v1')
     run(p.parse_args())

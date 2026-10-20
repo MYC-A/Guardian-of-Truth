@@ -18,6 +18,14 @@ def answer_slice(total,prompt,answer):
     if total!=prompt+answer or prompt<1 or answer<1:raise ValueError('INVALID_SFT_ALIGNMENT')
     return slice(prompt-1,total-1)
 
+def validate_resume(receipt,state,data_sha,layers,order):
+    if receipt['data_sha256']!=data_sha or receipt['base_revision']!=BASE_REVISION or receipt['layers']!=layers:
+        raise ValueError('RESUME_DATA_MODEL_PROFILE_DRIFT')
+    if state['order']!=order or state['rows_done']!=receipt['rows_done'] or state['steps']!=receipt['steps']:
+        raise ValueError('RESUME_ORDER_OR_PROGRESS_DRIFT')
+    if state['rows_done']!=8*state['steps'] or not 0<state['rows_done']<=len(order):
+        raise ValueError('RESUME_NOT_COMMITTED_BATCH_BOUNDARY')
+
 def run(a):
     a.out.mkdir(exist_ok=False);started=time.monotonic();steps=0
     try:
@@ -59,6 +67,23 @@ def run(a):
         newkeys=set(initial)-set(weights)
         if len(newkeys)!=2*expected-100 or any('lora_B.' in k and bool(torch.count_nonzero(initial[k])) for k in newkeys):raise ValueError('NEW_MODULES_NOT_ZERO_DELTA')
         del initial,weights
+        resume_state=None;resume_meta=None;prior_training_seconds=0
+        if a.resume is not None:
+            resume_meta=json.loads((a.resume/'CHECKPOINT.json').read_bytes())
+            if sha(a.resume/'adapter/adapter_model.safetensors')!=resume_meta['adapter_sha256']:raise ValueError('RESUME_ADAPTER_DRIFT')
+            restored=load_file(a.resume/'adapter/adapter_model.safetensors')
+            loaded=set_peft_model_state_dict(model,restored)
+            if loaded.unexpected_keys or any('lora_' in n for n in loaded.missing_keys):raise ValueError('INCOMPLETE_RESUME_ADAPTER')
+            model.save_pretrained(a.out/'resume-loaded-adapter',safe_serialization=True)
+            checked=load_file(a.out/'resume-loaded-adapter/adapter_model.safetensors')
+            if set(checked)!=set(restored) or any(not torch.equal(checked[k],restored[k]) for k in restored):raise ValueError('RESUME_TENSOR_VALUES_DIFFER')
+            del checked,restored
+            resume_state=torch.load(a.resume/'state.pt',map_location='cpu',weights_only=False)
+            previous=a.resume.parent/'TRAINED.json'
+            if previous.exists():
+                prior=json.loads(previous.read_bytes());prior_training_seconds=prior.get('total_training_seconds',prior['training_seconds'])
+            start.update(optimizer_reset=False,resumed_from=str(a.resume),resume_adapter_sha256=resume_meta['adapter_sha256'],
+                prior_training_seconds=prior_training_seconds,prior_committed_rows=resume_state['rows_done'])
         trainable=[(n,p) for n,p in model.named_parameters() if p.requires_grad]
         if len(trainable)!=2*expected or any('lora_' not in n or p.device.type!='cuda' for n,p in trainable):raise ValueError('TRAINABLE_BOUNDARY')
         parameters=[p for _,p in trainable]
@@ -82,7 +107,7 @@ def run(a):
         # Longest input probes memory/backward before any optimizer update; no quality choice.
         probe=max(records,key=lambda r:r['tokens']);timer=time.monotonic();loss=loss_for(probe);loss.backward();torch.cuda.synchronize()
         if not bool(torch.isfinite(loss)) or any(p.grad is None or not bool(torch.isfinite(p.grad).all()) for p in parameters):raise ValueError('TECHNICAL_GRADIENT')
-        write(a.out/'TECHNICAL_GATE.json',dict(complete=True,optimizer_updates=0,layers=a.layers,
+        write(a.out/'TECHNICAL_GATE.json',dict(complete=True,optimizer_updates=resume_state['steps'] if resume_state else 0,segment_optimizer_updates=0,layers=a.layers,
             source_modules=expected,tensors=2*expected,imported_tensors=100,old_tensors_exact=True,
             added_tensors=len(newkeys),new_B_zero=True,probe_tokens=probe['tokens'],probe_seconds=time.monotonic()-timer,
             max_memory_bytes=torch.cuda.max_memory_allocated(),compiled_awq_dequant=False,
@@ -94,7 +119,26 @@ def run(a):
         write(a.out/'ORDER.json',dict(ids=[r['id'] for r in order]))
         start.update(source_modules=expected,trainable_parameters=sum(p.numel() for p in parameters),model_ready_seconds=time.monotonic()-started)
         write(a.out/'MODEL_READY.json',start)
-        rows_done=forwarded=0;training_started=time.monotonic();stopped=False
+        rows_done=forwarded=0
+        if resume_state is not None:
+            validate_resume(resume_meta,resume_state,meta['train_tokens_sha256'],a.layers,[r['id'] for r in order])
+            optimizer.load_state_dict(resume_state['optimizer'])
+            loaded=optimizer.state_dict();saved=resume_state['optimizer']
+            if loaded['param_groups']!=saved['param_groups'] or set(loaded['state'])!=set(saved['state']):raise ValueError('RESUME_OPTIMIZER_LAYOUT')
+            for key,state in saved['state'].items():
+                for field,value in state.items():
+                    actual=loaded['state'][key][field]
+                    equal=torch.equal(actual.detach().cpu(),value.detach().cpu()) if torch.is_tensor(value) else actual==value
+                    if not equal:raise ValueError('RESUME_OPTIMIZER_VALUE:'+field)
+            torch.set_rng_state(resume_state['cpu_rng']);torch.cuda.set_rng_state_all(resume_state['cuda_rng'])
+            if not torch.equal(torch.get_rng_state(),resume_state['cpu_rng']) or any(not torch.equal(x,y) for x,y in zip(torch.cuda.get_rng_state_all(),resume_state['cuda_rng'])):
+                raise ValueError('RESUME_RNG_VALUES_DIFFER')
+            rows_done=forwarded=resume_state['rows_done'];steps=resume_state['steps']
+            write(a.out/'RESUME_PROOF.json',dict(complete=True,adapter_tensors_exact=True,optimizer_restored=True,optimizer_values_exact=True,
+                cpu_and_cuda_rng_restored=True,order_unchanged=True,rows_done=rows_done,steps=steps,
+                state_sha256=sha(a.resume/'state.pt'),checkpoint_sha256=sha(a.resume/'CHECKPOINT.json')))
+            del resume_state
+        initial_rows=rows_done;training_started=time.monotonic();stopped=False
         def stop(_sig,_frame):
             nonlocal stopped
             stopped=True
@@ -105,7 +149,7 @@ def run(a):
                 order=[r['id'] for r in order],rows_done=rows_done,steps=steps),folder/'state.pt')
             write(folder/'CHECKPOINT.json',dict(start,steps=steps,rows_done=rows_done,adapter_sha256=sha(folder/'adapter/adapter_model.safetensors')))
         with (a.out/'training.jsonl').open('w',buffering=1) as log:
-            for offset in range(0,len(order),8):
+            for offset in range(rows_done,len(order),8):
                 if stopped or time.time()>=a.deadline:break
                 batch=order[offset:offset+8];losses=[];optimizer.zero_grad(set_to_none=True)
                 for r in batch:
@@ -122,7 +166,7 @@ def run(a):
                 optimizer.step();steps+=1;rows_done+=len(batch);checkpoint('checkpoint-%03d'%steps)
                 item=dict(steps=steps,rows_done=rows_done,rows_total=len(order),loss=sum(losses)/len(losses),grad_norm=norm,
                     training_seconds=time.monotonic()-training_started,
-                    estimated_remaining_seconds=(time.monotonic()-training_started)/rows_done*(len(order)-rows_done))
+                    estimated_remaining_seconds=(time.monotonic()-training_started)/(rows_done-initial_rows)*(len(order)-rows_done))
                 log.write(json.dumps(item)+'\n');write(a.out/'PROGRESS.json',item);print(json.dumps(item),flush=True)
         checkpoint('final');model.save_pretrained(a.out/'adapter',safe_serialization=True)
         if not steps:raise ValueError('NO_COMMITTED_UPDATES')
@@ -130,6 +174,7 @@ def run(a):
         write(a.out/'TRAINED.json',dict(start,complete=True,optimizer_updates=steps,rows_done=rows_done,rows_forwarded=forwarded,
             epoch_complete=rows_done==len(order),epoch_fraction=rows_done/len(order),adapter_sha256=sha(a.out/'adapter/adapter_model.safetensors'),
             training_seconds=time.monotonic()-training_started,elapsed_seconds=time.monotonic()-started,
+            total_training_seconds=prior_training_seconds+time.monotonic()-training_started,
             budget_exhausted=rows_done<len(order),source_adapter_unchanged=True))
     except Exception as e:
         write(a.out/'FAIL.json',dict(complete=False,error=str(e),traceback=traceback.format_exc(),optimizer_updates=steps,seconds=time.monotonic()-started));raise
@@ -138,4 +183,5 @@ if __name__=='__main__':
     p=argparse.ArgumentParser()
     for k in ('lab','data','out'):p.add_argument('--'+k,type=Path,required=True)
     p.add_argument('--deadline',type=float,required=True);p.add_argument('--layers',type=int,choices=[8,16],default=16)
+    p.add_argument('--resume',type=Path)
     run(p.parse_args())
