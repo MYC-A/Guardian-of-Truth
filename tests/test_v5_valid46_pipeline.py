@@ -1,7 +1,17 @@
 import json
 from types import SimpleNamespace
 import pytest
-from scripts.v5_valid46_pipeline import bound_llm, validate_arm
+from scripts.v5_valid46_pipeline import bound_llm, validate_arm, pipeline_config
+
+
+def test_best_zip_profile_is_preserved_with_explicit_technical_overrides():
+    cfg = pipeline_config('/model')
+    assert cfg['max_num_seqs'] == 64 and cfg['max_num_batched_tokens'] == 16384
+    assert cfg['positive_rate'] == .4 and cfg['judge_stop_seconds'] == 1380
+    assert cfg['review_ranking'] == 'max_exact' and cfg['bounded_turn_shape']
+    assert cfg.get('review_citation_contract', 'legacy') == 'legacy'
+    assert 'ensemble' not in cfg
+    assert cfg['engine_overrides'] == dict(enforce_eager=True, async_scheduling=False)
 
 
 @pytest.mark.parametrize('adapter_request', [None, object()])

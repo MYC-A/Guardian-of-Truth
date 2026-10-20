@@ -15,6 +15,17 @@ sys.path[:0] = [str(ROOT), str(ROOT / 'src')]
 from scripts.v5_35b_common import BASE_REVISION, NATIVE_LORA_TARGETS, sha, verify_model, write
 
 ADAPTER_SHA = 'eb7cee08c0a00c29ad1d21904aa94d29f4f83f126d53e1438dd65ef85a34ba4f'
+BASELINE_CONFIG_SHA = '413f663a1c5421ddbd7f1dceb1ad5442e85a1a4b557e5eef1366a6b6ced5ed36'
+
+
+def pipeline_config(model):
+    cfg = json.loads((ROOT / 'submission/JUDGE_OPEN_REVIEW40.json').read_bytes())
+    digest = hashlib.sha256(json.dumps(cfg, sort_keys=True, separators=(',', ':')).encode()).hexdigest()
+    if digest != BASELINE_CONFIG_SHA:
+        raise ValueError('BEST_ZIP_CONFIG_DRIFT')
+    cfg.update(model_dir=str(model), bounded_turn_shape=True,
+               engine_overrides=dict(enforce_eager=True, async_scheduling=False))
+    return cfg
 
 
 def bound_llm(original, request, audit_path):
@@ -131,16 +142,15 @@ def run(a):
             raise ValueError('VALID46_IDENTITY')
         with (a.out / 'inputs.csv').open('w', newline='') as f:
             w = csv.DictWriter(f, fieldnames=['id', 'prompt', 'response']); w.writeheader(); w.writerows(rows)
-        cfg = json.loads((ROOT / 'submission/JUDGE_BLEND40.json').read_bytes())
-        cfg.pop('ensemble')
-        cfg['model_dir'] = str(a.lab / 'models/qwen36-awq')
-        # GDN LoRA was technically admitted with synchronous scheduling.
-        # Apply the same single runtime deviation to both arms.
-        cfg['engine_overrides'] = dict(cfg['engine_overrides'], async_scheduling=False)
+        # Start from the actual best ZIP profile, including its batch sizes,
+        # deadlines and legacy review citation contract, plus mechanical fixes.
+        cfg = pipeline_config(a.lab / 'models/qwen36-awq')
         write(a.out / 'config.json', cfg)
         write(a.out / 'START.json', dict(rows=46, inputs_sha256=sha(a.out / 'inputs.csv'),
             config_sha256=sha(a.out / 'config.json'), adapter_sha256=ADAPTER_SHA,
-            runtime_deviation='async_scheduling=false in both arms; LoRA enabled in control too',
+            baseline_zip='guardian-judge-qwen36-awq-open-review40-max-34fb1c75-20261018.zip',
+            baseline_config_canonical_sha256=BASELINE_CONFIG_SHA,
+            runtime_deviation='eager synchronous scheduling in both arms; LoRA enabled in control too',
             auxiliary_4b=False, arms=['base', 'adapter'], repeats=1, quality_retries=0,
             source_sha256=sha(Path(__file__)), scope='35B overall + open review + MAX + mechanical fixes; valid46 only'))
         collected = {}
@@ -173,7 +183,7 @@ def run(a):
                 adapter=collected['adapter']['labels'][i]) for i,r in enumerate(rows)
                 if collected['base']['labels'][i] != collected['adapter']['labels'][i]],
             private_improvement_measured=False, production_promoted=False,
-            runtime_deviation='synchronous scheduling and LoRA-capable control', seconds=time.monotonic()-started)
+            runtime_deviation='eager synchronous scheduling and LoRA-capable control', seconds=time.monotonic()-started)
         write(a.out / 'DONE.json', result)
     except Exception as error:
         import traceback
