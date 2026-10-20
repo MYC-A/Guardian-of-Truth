@@ -67,7 +67,7 @@ def run(a):
         newkeys=set(initial)-set(weights)
         if len(newkeys)!=2*expected-100 or any('lora_B.' in k and bool(torch.count_nonzero(initial[k])) for k in newkeys):raise ValueError('NEW_MODULES_NOT_ZERO_DELTA')
         del initial,weights
-        resume_state=None;resume_meta=None;prior_training_seconds=0
+        resume_state=None;resume_meta=None;prior_training_seconds=0;prior_forwarded=0
         if a.resume is not None:
             resume_meta=json.loads((a.resume/'CHECKPOINT.json').read_bytes())
             if sha(a.resume/'adapter/adapter_model.safetensors')!=resume_meta['adapter_sha256']:raise ValueError('RESUME_ADAPTER_DRIFT')
@@ -81,9 +81,9 @@ def run(a):
             resume_state=torch.load(a.resume/'state.pt',map_location='cpu',weights_only=False)
             previous=a.resume.parent/'TRAINED.json'
             if previous.exists():
-                prior=json.loads(previous.read_bytes());prior_training_seconds=prior.get('total_training_seconds',prior['training_seconds'])
+                prior=json.loads(previous.read_bytes());prior_training_seconds=prior.get('total_training_seconds',prior['training_seconds']);prior_forwarded=prior['rows_forwarded']
             start.update(optimizer_reset=False,resumed_from=str(a.resume),resume_adapter_sha256=resume_meta['adapter_sha256'],
-                prior_training_seconds=prior_training_seconds,prior_committed_rows=resume_state['rows_done'])
+                prior_training_seconds=prior_training_seconds,prior_committed_rows=resume_state['rows_done'],prior_rows_forwarded=prior_forwarded)
         trainable=[(n,p) for n,p in model.named_parameters() if p.requires_grad]
         if len(trainable)!=2*expected or any('lora_' not in n or p.device.type!='cuda' for n,p in trainable):raise ValueError('TRAINABLE_BOUNDARY')
         parameters=[p for _,p in trainable]
@@ -133,7 +133,7 @@ def run(a):
             torch.set_rng_state(resume_state['cpu_rng']);torch.cuda.set_rng_state_all(resume_state['cuda_rng'])
             if not torch.equal(torch.get_rng_state(),resume_state['cpu_rng']) or any(not torch.equal(x,y) for x,y in zip(torch.cuda.get_rng_state_all(),resume_state['cuda_rng'])):
                 raise ValueError('RESUME_RNG_VALUES_DIFFER')
-            rows_done=forwarded=resume_state['rows_done'];steps=resume_state['steps']
+            rows_done=resume_state['rows_done'];forwarded=prior_forwarded or rows_done;steps=resume_state['steps']
             write(a.out/'RESUME_PROOF.json',dict(complete=True,adapter_tensors_exact=True,optimizer_restored=True,optimizer_values_exact=True,
                 cpu_and_cuda_rng_restored=True,order_unchanged=True,rows_done=rows_done,steps=steps,
                 state_sha256=sha(a.resume/'state.pt'),checkpoint_sha256=sha(a.resume/'CHECKPOINT.json')))
@@ -176,6 +176,7 @@ def run(a):
             training_seconds=time.monotonic()-training_started,elapsed_seconds=time.monotonic()-started,
             total_training_seconds=prior_training_seconds+time.monotonic()-training_started,
             budget_exhausted=rows_done<len(order),source_adapter_unchanged=True))
+        if a.resume is not None and rows_done<len(order):raise ValueError('FULL_PASS_NOT_COMPLETED_WITHIN_DEADLINE')
     except Exception as e:
         write(a.out/'FAIL.json',dict(complete=False,error=str(e),traceback=traceback.format_exc(),optimizer_updates=steps,seconds=time.monotonic()-started));raise
 

@@ -13,14 +13,16 @@ import json,hashlib,subprocess
 r=Path({REMOTE!r})
 for name in ('prepared-v1/PREPARED.json','mining-v1/PROGRESS.json','mining-v1/DONE.json','training-v1/DONE.json','training-v1/FAIL.json',
  'training-v1/layers16/TECHNICAL_GATE.json','training-v1/layers16/MODEL_READY.json','training-v1/layers16/PROGRESS.json','training-v1/layers16/CURRENT_ROW.json','training-v1/layers16/FAIL.json',
- 'evaluation-v1/RESULTS.json','evaluation-v1/FAIL.json'):
+ 'training-v2/DONE.json','training-v2/FAIL.json','training-v2/layers16/RESUME_PROOF.json',
+ 'training-v2/layers16/TECHNICAL_GATE.json','training-v2/layers16/PROGRESS.json','training-v2/layers16/CURRENT_ROW.json','training-v2/layers16/FAIL.json',
+ 'evaluation-v2/RESULTS.json','evaluation-v2/FAIL.json'):
  if not (r/name).exists():continue
  value=json.loads((r/name).read_bytes())
  if name.endswith('PREPARED.json'):value={{k:value[k] for k in ('complete','candidates','eval_rows','max_tokens','candidate_tokens_sha256')}}
  if name.endswith('MODEL_READY.json'):value={{k:v for k,v in value.items() if k not in ('target_modules',)}}
  print(name,json.dumps(value))
 for arm in ('base','old','new'):
- p=r/'evaluation-v1'/arm/'PROGRESS.json'
+ p=r/('evaluation-v2' if (r/'FULL_PASS_AUTHORITY.json').exists() else 'evaluation-v1')/arm/'PROGRESS.json'
  if p.exists():print(str(p),p.read_text())
 subprocess.run(['nvidia-smi','--query-gpu=utilization.gpu,memory.used','--format=csv,noheader'])
 if (r/'mining-v1/DONE.json').exists():

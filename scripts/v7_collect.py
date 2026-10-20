@@ -21,7 +21,7 @@ def run(a):
         'data-export.INDEX.json','first-checkpoint-export.INDEX.json']
     names+=['final-recovery-export.INDEX.json']
     for profile in ('layers16','layers8'):
-        names+=['training-v1/'+profile+'/'+n for n in ('START.json','TECHNICAL_GATE.json','MODEL_READY.json','PROGRESS.json','CURRENT_ROW.json','TRAINED.json','FAIL.json')]
+        names+=['training-v1/'+profile+'/'+n for n in ('START.json','TECHNICAL_GATE.json','MODEL_READY.json','RESUME_PROOF.json','PROGRESS.json','CURRENT_ROW.json','TRAINED.json','FAIL.json')]
     for arm in ('base','old','new'):
         names+=['evaluation-v1/'+arm+'/'+n for n in ('PROGRESS.json','DONE.json','ADAPTER_BINDING.json')]
     names=[n.replace('training-v1',a.training_folder).replace('evaluation-v1',a.evaluation_folder) for n in names]
