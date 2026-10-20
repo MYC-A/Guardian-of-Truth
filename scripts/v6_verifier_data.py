@@ -1,8 +1,10 @@
 """Frozen, paired TRAIN-only warm-start subset and a shared verifier renderer."""
 import argparse
+import copy
 from collections import Counter, defaultdict
 import hashlib
 import json
+import re
 from pathlib import Path
 import sys
 
@@ -34,6 +36,30 @@ def verifier_text(text):
     return with_question(text, '<verifier_review>\n' + GUIDANCE + '</verifier_review>\n\n' + QUESTION)
 
 
+def source_audit(row):
+    """Replay existing bounded construction checks, including inverse tool aliases."""
+    from scripts.v4_freeze_data import audit as shape_schema_audit
+    shape_schema_audit(row)
+    if 'MECHANICAL_SOURCE_CHECKED' in row.get('audit_status', ''):
+        return 'legacy_source_checked'
+    proof=row.get('proof') or {}
+    if not proof.get('predicate') or not proof.get('native_target_execution', {}).get('before_db_sha'):
+        raise ValueError('NO_NATIVE_CONSTRUCTION_PROOF')
+    original=copy.deepcopy(row);inverse={v:k for k,v in row.get('alias_map', {}).items()}
+    if inverse:
+        pattern=re.compile(r'(?<![A-Za-z0-9_])(?:'+'|'.join(re.escape(k) for k in sorted(inverse,key=lambda x:(-len(x),x)))+r')(?![A-Za-z0-9_])')
+        def restore(value):
+            if isinstance(value,str):return pattern.sub(lambda m:inverse[m.group()],value)
+            if isinstance(value,list):return [restore(x) for x in value]
+            if isinstance(value,dict):return {inverse.get(k,k):restore(v) for k,v in value.items()}
+            return value
+        for key in ('history','tools','target_turn','policy','governing_rule'):
+            original[key]=restore(original[key])
+    from scripts.v4_audit_native import audit as native_audit
+    native_audit(original)
+    return 'native_bounded_predicate_rechecked'
+
+
 def select_pairs(rows, count=64):
     """Deterministic label-balanced pairs; no quality scores or length selection."""
     grouped = defaultdict(list)
@@ -48,7 +74,8 @@ def select_pairs(rows, count=64):
         if any(pair[0].get(k) != pair[1].get(k) for k in fields):
             continue
         if any(r.get('source') != 'tau2' or not isinstance(r.get('proof'), dict) or not r['proof']
-               or 'MECHANICAL_SOURCE_CHECKED' not in r.get('audit_status', '') for r in pair):
+               or not ('MECHANICAL_SOURCE_CHECKED' in r.get('audit_status', '') or
+                   (r['proof'].get('predicate') and r['proof'].get('native_target_execution',{}).get('before_db_sha'))) for r in pair):
             continue
         key = (pair[0]['domain'], pair[0]['family'], pair[0]['template_id'])
         buckets[key].append(pair)
@@ -86,7 +113,16 @@ def prepare(a):
     if transformers.__version__ != '5.8.0':
         raise ValueError('USE_PRODUCTION_TOKENIZER_ENVIRONMENT')
     tok = AutoTokenizer.from_pretrained(a.model, local_files_only=True, trust_remote_code=False)
-    selected = select_pairs(read(a.frozen / 'train.jsonl'))
+    raw=read(a.frozen/'train.jsonl');checked=[];rejected=[];audit_modes={}
+    for row in raw:
+        if row.get('source')!='tau2':continue
+        try:
+            audit_modes[row['id']]=source_audit(row);checked.append(row)
+        except Exception as error:
+            rejected.append(dict(id=row['id'],error_type=type(error).__name__,reason=str(error)))
+    write(a.out/'SOURCE_AUDIT.json',dict(checked_rows=len(checked),rejected_rows=rejected,
+        modes=dict(Counter(audit_modes.values())),semantic_truth_certified=False,human_reviewed=False))
+    selected = select_pairs(checked)
     protected = read(a.frozen / 'dev.jsonl') + read(a.frozen / 'holdout.jsonl')
     forbidden_components = {r['split_component'] for r in protected}
     forbidden_ids = {r['id'] for r in protected}
@@ -134,7 +170,7 @@ def prepare(a):
     write(a.out / 'EVAL_INDEX.json', dict(rows=[wanted[r['id']] for r in eval_rows],
         all_cohorts_previously_inspected=True, independent_validation=False))
     yes, no = answer_ids(tok)
-    write(a.out / 'SELECTION.json', dict(rows=[{k:r[k] for k in ('id','pair_id','domain','family','template_id','split_component','label','proof','audit_status')} for r in selected],
+    write(a.out / 'SELECTION.json', dict(rows=[dict({k:r.get(k) for k in ('id','pair_id','domain','family','template_id','split_component','label','proof','audit_status')},source_recheck=audit_modes[r['id']]) for r in selected],
         source_train_sha256=sha(a.frozen / 'train.jsonl'), source_frozen_sha256=sha(a.frozen / 'FROZEN.json'),
         template_counts={str(k):v for k,v in Counter((r['domain'],r['family'],r['template_id']) for r in selected).items()},
         training_repetition_not_new_data=True, no_quality_score_selection=True,
