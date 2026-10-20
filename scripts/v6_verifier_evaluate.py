@@ -167,6 +167,14 @@ def analyse(a):
 
 def parent(a):
     a.out.mkdir(exist_ok=False);started=time.monotonic();previous=a.lab/'v5-35b-20261019'
+    active=None
+    def stop(_sig,_frame):
+        if active is not None and active.poll() is None:
+            os.killpg(active.pid,signal.SIGTERM)
+            try:active.wait(timeout=90)
+            except subprocess.TimeoutExpired:os.killpg(active.pid,signal.SIGKILL);active.wait()
+        raise RuntimeError('SUPERVISED_EVALUATION_STOP_REQUESTED')
+    signal.signal(signal.SIGTERM,stop)
     write(a.out/'START.json',dict(complete=False,source_sha256=sha(Path(__file__)),quality_retries=0,
         arm_order=['base','old','new'],total_scoring_timeout_seconds=5400,gold_in_worker=False))
     try:
@@ -192,12 +200,14 @@ def parent(a):
                 proc=subprocess.Popen(command,stdout=log,stderr=subprocess.STDOUT,start_new_session=True,cwd=ROOT,
                     env=dict(os.environ,VLLM_ALLOW_INSECURE_SERIALIZATION='1',HF_HUB_OFFLINE='1',TRANSFORMERS_OFFLINE='1',
                         PYTHON_DOTENV_DISABLED='1',PYTHONUNBUFFERED='1'))
+                active=proc
                 try:code=proc.wait(timeout=remaining)
                 except subprocess.TimeoutExpired:
                     os.killpg(proc.pid,signal.SIGTERM)
                     try:proc.wait(timeout=90)
                     except subprocess.TimeoutExpired:os.killpg(proc.pid,signal.SIGKILL);proc.wait()
                     raise
+                active=None
             if code:raise RuntimeError('NATIVE_ARM_FAILED:'+arm+':'+str(code))
         result=analyse(a)
         write(a.out/'DONE.json',dict(complete=True,seconds=time.monotonic()-started,
