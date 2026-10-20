@@ -16,17 +16,24 @@ from scripts.v5_35b_common import read,sha,write
 
 
 def recovery(a,trained):
-    if not (trained/'final/CHECKPOINT.json').exists():return
+    checkpoint=trained/'final'
+    if not (checkpoint/'CHECKPOINT.json').exists():
+        saved=sorted(p for p in trained.glob('checkpoint-*') if (p/'CHECKPOINT.json').exists() and (p/'state.pt').exists())
+        if not saved:return
+        checkpoint=saved[-1]
     archive=a.out/'final-recovery-export.tar.gz'
     with tarfile.open(archive,'w:gz',compresslevel=3) as t:
-        for name in ('final','TRAINED.json','ORDER.json','START.json'):
+        for name in (checkpoint.name,'TRAINED.json','ORDER.json','START.json'):
             p=trained/name
             if p.exists():t.add(p,arcname='training-v1/layers16/'+name)
-    write(a.out/'final-recovery-export.INDEX.json',dict(name=archive.name,sha256=sha(archive),bytes=archive.stat().st_size))
+    write(a.out/'final-recovery-export.INDEX.json',dict(name=archive.name,sha256=sha(archive),bytes=archive.stat().st_size,
+        checkpoint=checkpoint.name,full_optimizer_rng_and_order=True))
 
 
 def run(a):
     a.out.mkdir(parents=True,exist_ok=False);active=None;phase='wait';started=time.monotonic()
+    def stop(_sig,_frame):raise RuntimeError('SUPERVISED_STOP_SAVE_COMMITTED_STATE')
+    signal.signal(signal.SIGTERM,stop)
     trained=a.out/'training-v1/layers16';evaluation=a.out/'evaluation-v15'
     try:
         dependency=a.lab/'v13-native-mining-20261020/mining-v1'

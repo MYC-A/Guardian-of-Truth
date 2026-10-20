@@ -25,3 +25,18 @@ def test_native_training_requires_full_balanced_unique_pairs_and_fixed_replay():
     with pytest.raises(ValueError,match='COMPLETE_PAIRS'):validate_recipe(records,meta,True)
     records[0]['label']=0;records[-1]['id']=records[0]['id']
     with pytest.raises(ValueError,match='FROZEN_NATIVE_RECIPE'):validate_recipe(records,meta,True)
+
+
+def test_failure_recovery_keeps_latest_committed_optimizer_checkpoint(tmp_path):
+    import tarfile
+    from types import SimpleNamespace
+    from scripts.v15_controller import recovery
+    trained=tmp_path/'training-v1/layers16'
+    for number in (1,2):
+        p=trained/f'checkpoint-{number:03d}';p.mkdir(parents=True)
+        (p/'CHECKPOINT.json').write_text('{}')
+        (p/'state.pt').write_bytes(b'optimizer-rng-order-'+bytes([number]))
+    recovery(SimpleNamespace(out=tmp_path),trained)
+    with tarfile.open(tmp_path/'final-recovery-export.tar.gz') as t:
+        assert t.extractfile('training-v1/layers16/checkpoint-002/state.pt').read().endswith(b'\x02')
+        assert all('checkpoint-001' not in n for n in t.getnames())
