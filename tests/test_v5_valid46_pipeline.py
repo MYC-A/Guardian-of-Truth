@@ -1,7 +1,7 @@
 import json
 from types import SimpleNamespace
 import pytest
-from scripts.v5_valid46_pipeline import bound_llm, validate_arm, pipeline_config
+from scripts.v5_valid46_pipeline import bound_llm, validate_arm, pipeline_config, repair_shared_aliases
 
 
 def test_best_zip_profile_is_preserved_with_explicit_technical_overrides():
@@ -72,3 +72,34 @@ def test_shared_alias_repair_requires_successful_recheck_and_repeats_probe(tmp_p
     assert llm.generate(['quality'], SimpleNamespace(max_tokens=384)) == [3]
     assert llm.rpc_calls == 3
     assert json.loads((tmp_path / 'audit.jsonl').read_text().splitlines()[0])['extra_technical_probe_prompts'] == 1
+
+
+@pytest.mark.parametrize('shared_storage', [True, False])
+def test_alias_repair_requires_identical_storage_and_preserves_canonical(monkeypatch, tmp_path, shared_storage):
+    import sys
+    canonical = 'language_model.model.layers.32.mlp.shared_expert.gate_up_proj'
+    alias = 'language_model.model.layers.32.mlp.experts._shared_experts.gate_up_proj'
+    def raw(name): return [name.replace('gate_up_proj', s) for s in ('gate_proj', 'up_proj')]
+    class Source:
+        def __enter__(self): return self
+        def __exit__(self, *args): pass
+        def keys(self): return [n + '.lora_A.weight' for n in raw(canonical)]
+    monkeypatch.setitem(sys.modules, 'safetensors', SimpleNamespace(safe_open=lambda *a, **kw:Source()))
+    def tensor(pointer): return SimpleNamespace(untyped_storage=lambda:SimpleNamespace(data_ptr=lambda:pointer))
+    one = SimpleNamespace(lora_a_stacked=[tensor(1)], lora_b_stacked=[tensor(2)])
+    two = one if shared_storage else SimpleNamespace(lora_a_stacked=[tensor(3)], lora_b_stacked=[tensor(4)])
+    calls = []
+    manager = SimpleNamespace(modules={canonical:one, alias:two},
+        packed_modules={canonical:raw(canonical), alias:raw(alias)},
+        deactivate_adapter=lambda i:calls.append(('deactivate',i)),
+        activate_adapter=lambda i:calls.append(('activate',i)))
+    worker = SimpleNamespace(model_runner=SimpleNamespace(lora_manager=SimpleNamespace(_adapter_manager=manager)))
+    if shared_storage:
+        result = repair_shared_aliases(worker, tmp_path)
+        assert result['removed'] == [alias] and result['weights_modified'] is False
+        assert manager.modules == {canonical:one} and alias not in manager.packed_modules
+        assert calls == [('deactivate',1),('activate',1)]
+    else:
+        with pytest.raises(ValueError, match='NO_SHARED_GPU_ALIAS_TO_REPAIR'):
+            repair_shared_aliases(worker, tmp_path)
+        assert len(manager.modules) == 2 and not calls

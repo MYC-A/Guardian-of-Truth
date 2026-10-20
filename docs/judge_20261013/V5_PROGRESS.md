@@ -1,5 +1,14 @@
 # V5: отдельная LoRA 35B, обучение запущено — 19.10.2026
 
+## 20.10, уточнение runtime: shared-expert LoRA не была полностью активна
+
+Worker-аудит нашёл и подтвердил сброс GPU-буферов shared expert через 16 повторных
+alias-регистраций. После точечного исправления в памяти worker все 50/50 исходных
+модулей и 62 пары GPU-матриц точно совпали. Веса и обучение не изменены. Старые
+classifier-only числа не являются оценкой полной LoRA. Полный valid46 запущен
+на основе лучшего open-review40 ZIP с parser fixes, без 4B. Before/after proof:
+`v5_evidence/pipeline_valid46_20261020/ADAPTER_BINDING*.json` и `SHARED_ALIAS_REPAIR.json`.
+
 ## 20.10, итог: полный проход и оценка завершены
 
 1458/1458 примеров, 92 optimizer updates. Экспорт скачан и проверен по SHA256.
