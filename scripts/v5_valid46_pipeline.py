@@ -191,8 +191,22 @@ def main():
     for parser in (r, ar):
         for n in ('training', 'out'): parser.add_argument('--'+n, type=Path, required=True)
     a = p.parse_args()
-    if a.mode == 'run': run(a)
-    else: arm_run(a)
+    if a.mode == 'run':
+        try:
+            run(a)
+        finally:
+            if a.out.exists():
+                import tarfile
+                archive = a.out.parent / (a.out.name + '-export.tar.gz')
+                def exclude_cache(member):
+                    return None if 'cache' in Path(member.name).parts else member
+                with tarfile.open(archive, 'w:gz', compresslevel=3) as tar:
+                    tar.add(a.out, arcname='pipeline', filter=exclude_cache)
+                write(a.out.parent / (a.out.name + '-export.INDEX.json'), dict(
+                    name=archive.name, bytes=archive.stat().st_size, sha256=sha(archive),
+                    quality_complete=(a.out / 'DONE.json').exists(), failure_recorded=(a.out / 'FAIL.json').exists()))
+    else:
+        arm_run(a)
 
 
 if __name__ == '__main__': main()
