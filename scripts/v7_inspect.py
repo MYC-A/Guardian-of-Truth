@@ -23,6 +23,14 @@ for arm in ('base','old','new'):
  p=r/'evaluation-v1'/arm/'PROGRESS.json'
  if p.exists():print(str(p),p.read_text())
 subprocess.run(['nvidia-smi','--query-gpu=utilization.gpu,memory.used','--format=csv,noheader'])
+if (r/'mining-v1/DONE.json').exists():
+ from collections import Counter
+ scores={{x['id']:x['score'] for x in [json.loads(l) for l in (r/'mining-v1/scores.jsonl').read_bytes().splitlines()]}}
+ candidates=[json.loads(l) for l in (r/'prepared-v1/candidate_tokens.jsonl').read_bytes().splitlines()]
+ selected=[json.loads(l) for l in (r/'mining-v1/train_tokens.jsonl').read_bytes().splitlines() if json.loads(l)['objective']=='sft']
+ for label,values in [('all_candidates',candidates),('selected_new_train',selected)]:
+  errors=Counter(('FP' if not x['label'] else 'FN',x['family']) for x in values if int(scores[x['id']]>0)!=x['label'])
+  print('TRAIN_ONLY_HARDNESS',label,json.dumps(dict(rows=len(values),error_count=sum(errors.values()),by_family={{str(k):v for k,v in errors.items()}})))
 '''
 if a.freeze_eval:
     code+=f'''

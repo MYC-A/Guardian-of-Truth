@@ -184,6 +184,12 @@ def analyse(data,out,lab):
     tests={c:(result['cohorts'][c]['arms']['new']['verifier']['fp']<result['cohorts'][c]['arms']['base']['verifier']['fp']
         and result['cohorts'][c]['arms']['new']['lost_tp_vs_base']==0) for c in ('real191','dev520')}
     tests['valid46_no_new_tp_loss']=result['cohorts']['valid46']['arms']['new']['lost_tp_vs_base']==0
+    # An equally harmful base verifier is not a safe deployment reference.
+    for c in ('real191','dev520'):
+        new=result['cohorts'][c]['arms']['new']
+        tests[c+'_original_pool40_no_tp_loss']=new['pool40_lost_tp']==0
+        tests[c+'_original_pool40_fewer_fp']=new['pool40_removed_fp']>0
+    tests['best_pipeline_valid46_pool70_no_tp_loss']=result['best_pipeline_valid46_pool70']['arms']['new']['lost_tp']==0
     result['offline_gate']=dict(tests=tests,passed=all(tests.values()),promotion_approved=False)
     write(out/'RESULTS.json',result);return result
 
