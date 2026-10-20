@@ -67,7 +67,7 @@ print(json.dumps({n:json.loads((r/n).read_bytes()) for n in NAMES if (r/n).exist
                     write(a.out/'DOWNLOADED.json',downloaded)
             eval_finished='evaluation-v2-export.INDEX.json' in state
             train_failed='run-v2/FAIL.json' in state or 'run-v2/training/FAIL.json' in state
-            if eval_finished or train_failed:
+            if eval_finished or (train_failed and 'run-v2-training-export.INDEX.json' in state):
                 write(a.out/'COLLECTOR_DONE.json',dict(complete=True,seconds=time.monotonic()-started,
                     evaluation_complete='evaluation-v2/DONE.json' in state,downloaded=downloaded,
                     training_failed=train_failed,quality_passed=(state.get('evaluation-v2/RESULTS.json',{}).get('offline_gate') or {}).get('passed')))
