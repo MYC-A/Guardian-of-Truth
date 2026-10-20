@@ -21,6 +21,13 @@ def test_review_must_quote_source_policy_and_unknown_cannot_veto():
     assert not keep_accusation(dict(admitted=True,score=-1))
     assert keep_accusation(dict(admitted=True,score=1))
 
+def test_training_reference_reviews_satisfy_inference_citation_contract():
+    from scripts.v7_workflow_data import FAMILIES,make_pair
+    for family in FAMILIES:
+        for row in make_pair('insurance',family,0,'0'*40):
+            review=row['rationale'].split('\nVerdict:',1)[0]
+            assert admit_review(review,row['policy'],'stop')[0]
+
 def test_binding_expected_count_is_explicit_for_sixteen_layers(tmp_path):
     class Fake:
         def __init__(self,**kwargs):pass
