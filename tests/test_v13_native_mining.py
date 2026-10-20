@@ -23,6 +23,6 @@ def test_incomplete_pair_is_excluded_without_filling_from_other_data():
 def test_binary_mining_asks_for_verdict_rather_than_first_rationale_token():
     from guardian_truth.judge.prompting import QUESTION
     from scripts.v7_prepare import REVIEW_QUESTION
-    text=mining_text('<question>old question</question>')
+    text=mining_text('rendered policy and current turn\n'+QUESTION)
     assert QUESTION in text
     assert REVIEW_QUESTION not in text
