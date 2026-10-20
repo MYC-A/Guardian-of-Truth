@@ -17,6 +17,10 @@ source-quote admission, exact tokenizer answer boundary, full untrimmed input,
 and review <=176 tokens (reserve within deployed 192). Reject complete pairs on
 failure. Select V13's bounded hard-pair order, maximum 64 pairs, round down to
 four complete pairs per batch. Require at least 32 pairs; otherwise stop.
+Require at least 16 selected correct native twins with positive direct-binary
+mining scores; otherwise stop and report insufficient targeted errors rather
+than running another undirected epoch. These are TRAIN proxy errors, not a
+claim about post-review deployment errors.
 Add the 16 fixed V14 TRAIN role contrasts and the original 32 BCE replay rows.
 Never add V14's four HOLDOUT rows. No duplicate IDs or partial effective batches.
 All pair labels balanced. Source/proof checks remain bounded and human-unreviewed.

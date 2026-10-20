@@ -99,7 +99,7 @@ def run(a):
     replay_ids={r['id'] for r in replay};replay_pairs={r.get('pair_id') for r in replay if r.get('pair_id')}
     tok=AutoTokenizer.from_pretrained(a.lab/'models/qwen36-awq',local_files_only=True)
     originals={r['id']:r for r in read(frozen/'train.jsonl')}
-    accepted=[];tokens={};reject=[]
+    accepted=[];tokens={};teachers={};reject=[]
     def encoded(row,rationale):
         review=rationale.split('\nVerdict:')[0]
         ok,status,support=admit_review(review,row['policy'])
@@ -121,25 +121,30 @@ def run(a):
                 row=originals[item['id']];source_audit(row)
                 rationale='Rule: '+' '.join(row['governing_rule'].split())+'\nEvidence: '+visible_evidence(row)+'\nVerdict: '+('YES' if row['label'] else 'NO')
                 batch.append(encoded(row,rationale))
+                teachers[row['id']]=rationale
         except Exception as e:reject.append(dict(pair_id=pair[0]['pair_id'],reason=str(e)));continue
         accepted.extend(pair);tokens.update({r['id']:r for r in batch})
     chosen=select(accepted,scores)[:128]
     chosen=chosen[:len(chosen)//8*8] # retain complete pairs and full effective batches
     native=[tokens[r['id']] for r in chosen]
+    hard_negatives=sum(not r['label'] and scores[r['id']]>0 for r in chosen)
+    if hard_negatives<16:raise ValueError('FEWER_THAN_16_NATIVE_TRAIN_FALSE_ACCUSATIONS_NO_UNDIRECTED_TRAINING')
     roles=a.lab/'v14-native-role-data-20261020/data-v1';rm=json.loads((roles/'DONE.json').read_bytes())
     if sha(roles/'train.jsonl')!=rm['files']['train.jsonl']:raise ValueError('ROLE_DATA_DRIFT')
     role=[]
     for row in read(roles/'train.jsonl'):
         if row['proposed_split']!='train':raise ValueError('ROLE_HOLDOUT_IN_TRAIN')
         audit_row(row);role.append(encoded(row,row['rationale']))
+        teachers[row['id']]=row['rationale']
     if len(role)!=16 or len(native)<64:raise ValueError('INSUFFICIENT_SOURCE_CHECKED_SFT_NO_FILL')
     records=native+role+replay
     if len({r['id'] for r in records})!=len(records) or len(records)%8:raise ValueError('DUPLICATE_OR_PARTIAL_BATCH')
     for r in replay:r['objective']='bce'
     dump(a.out/'train_tokens.jsonl',records)
+    dump(a.out/'RATIONALE_AUDIT.jsonl',[dict(id=r['id'],rationale=teachers[r['id']]) for r in native+role])
     write(a.out/'SOURCE_AUDIT.json',dict(native_sft=len(native),new_native_role_sft=len(role),replay_bce=32,rejected_pairs=reject,
         family_counts={str(k):v for k,v in Counter((r['domain'],r['family']) for r in native+role).items()},
-        selected_native_fp=sum(not r['label'] and scores[r['id']]>0 for r in chosen),
+        selected_native_fp=hard_negatives,
         future_execution_results_used_in_rationale=False,mutation_predicates_used_in_rationale=False,
         native_source_repetition_is_not_new_data=True,unavailable_human_review_not_replaced=True))
     write(a.out/'DONE.json',dict(complete=True,recipe='V15_NATIVE_RATIONALE_V1',rows=len(records),sft_rows=len(native)+16,replay_bce_rows=32,

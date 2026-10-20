@@ -81,8 +81,16 @@ def worker(a):
     if sha(Path(__file__))!=json.loads((a.out/'START.json').read_bytes())['source_sha256']:raise ValueError('EVALUATOR_CODE_DRIFT')
     receipt=json.loads((a.out/'CONTROL_FROZEN.json').read_bytes())
     if sha(a.out/'verifier_inputs.jsonl')!=receipt['verifier_inputs_sha256']:raise ValueError('INPUT_DRIFT')
+    training=getattr(a,'training',None);expected_sha=ADAPTER_SHA
     adapter=a.lab/'v7-workflow-20261020/training-v2/layers16/adapter' if a.arm=='new' else None
-    if adapter is not None and sha(adapter/'adapter_model.safetensors')!=ADAPTER_SHA:raise ValueError('ADAPTER_DRIFT')
+    if training is not None:
+        if a.arm!='new':raise ValueError('TRAINING_OVERRIDE_ONLY_FOR_NEW_ARM')
+        trained=json.loads((training/'TRAINED.json').read_bytes())
+        from scripts.v5_35b_common import BASE_REVISION
+        if (not trained['complete'] or not trained['epoch_complete'] or trained['base_revision']!=BASE_REVISION or
+                trained.get('recipe')!='V15_NATIVE_RATIONALE_V1' or trained['rows_done']!=trained['rows_total']):raise ValueError('INCOMPLETE_OR_WRONG_NATIVE_TRAINING')
+        adapter=training/'adapter';expected_sha=trained['adapter_sha256']
+    if adapter is not None and sha(adapter/'adapter_model.safetensors')!=expected_sha:raise ValueError('ADAPTER_DRIFT')
     request=LoRARequest('v12-frozen',1,str(adapter)) if adapter else None
     cfg=pipeline_config(a.lab/'models/qwen36-awq');cfg.update(gpu_memory_utilization=.85,dtype='bfloat16')
     kwargs,_=engine_kwargs(str(a.lab/'models/qwen36-awq'),cfg)
@@ -126,7 +134,7 @@ def worker(a):
                 for r in records:f.write(json.dumps(r)+'\n')
                 done+=len(records);write(a.worker_out/'PROGRESS.json',dict(done=done,total=len(rows),labels_read=False))
         write(a.worker_out/'DONE.json',dict(complete=True,rows=done,scores_sha256=sha(a.worker_out/'scores.jsonl'),
-            adapter_sha256=ADAPTER_SHA if adapter else None,labels_read=False))
+            adapter_sha256=expected_sha if adapter else None,labels_read=False))
     finally:
         if llm is not None:llm.llm_engine.engine_core.shutdown()
     sys.stdout.flush();sys.stderr.flush();os._exit(0)
@@ -219,5 +227,6 @@ def run(a):
 if __name__=='__main__':
     p=argparse.ArgumentParser();p.add_argument('mode',choices=['run','worker'])
     for k in ('lab','out'):p.add_argument('--'+k,type=Path,required=True)
-    p.add_argument('--deadline',type=float,required=True);p.add_argument('--arm',choices=['base','new']);a=p.parse_args()
+    p.add_argument('--deadline',type=float,required=True);p.add_argument('--arm',choices=['base','new'])
+    p.add_argument('--training',type=Path);a=p.parse_args()
     run(a) if a.mode=='run' else worker(a)
