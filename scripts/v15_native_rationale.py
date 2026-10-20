@@ -108,6 +108,7 @@ def run(a):
     replay_ids={r['id'] for r in replay};replay_pairs={r.get('pair_id') for r in replay if r.get('pair_id')}
     tok=AutoTokenizer.from_pretrained(a.lab/'models/qwen36-awq',local_files_only=True)
     originals={r['id']:r for r in read(frozen/'train.jsonl')}
+    budget=getattr(a,'budget_recipe',False)
     accepted=[];tokens={};teachers={};reject=[]
     def encoded(row,rationale):
         review=rationale.split('\nVerdict:')[0]
@@ -124,7 +125,7 @@ def run(a):
             text_sha256=hashlib.sha256(prompt.encode()).hexdigest(),rationale_sha256=hashlib.sha256(rationale.encode()).hexdigest())
     index=read(a.lab/'v13-native-mining-20261020/prepared-v2/TRAIN_INDEX.jsonl')
     for pair in paired(index):
-        if any(r['id'] in replay_ids or r['pair_id'] in replay_pairs for r in pair):continue
+        if not budget and any(r['id'] in replay_ids or r['pair_id'] in replay_pairs for r in pair):continue
         if pair[0]['family']=='turn_shape':continue # already handled by exact code
         batch=[]
         try:
@@ -135,13 +136,33 @@ def run(a):
                 teachers[row['id']]=rationale
         except Exception as e:reject.append(dict(pair_id=pair[0]['pair_id'],reason=str(e)));continue
         accepted.extend(pair);tokens.update({r['id']:r for r in batch})
-    budget=getattr(a,'budget_recipe',False)
     chosen=budget_selection(accepted,scores) if budget else select(accepted,scores)[:128]
     chosen=chosen[:len(chosen)//8*8] # retain complete pairs and full effective batches
     native=[tokens[r['id']] for r in chosen]
     hard_negatives=sum(not r['label'] and scores[r['id']]>0 for r in chosen)
     if hard_negatives<(8 if budget else 16):raise ValueError('INSUFFICIENT_NATIVE_TRAIN_FALSE_ACCUSATIONS')
     if budget and (len(native)!=64 or len({r['domain'] for r in native})<2):raise ValueError('BUDGET_RECIPE_COUNT_OR_DOMAIN_COVERAGE')
+    moved_replay=[]
+    if budget:
+        # Hard pairs may already belong to the old BCE replay. Move them to
+        # SFT, rather than duplicate IDs or silently discard the target errors.
+        from scripts.v6_verifier_data import verifier_text
+        chosen_ids={r['id'] for r in native};moved_replay=sorted(chosen_ids & replay_ids)
+        available=[pair for pair in paired(accepted) if not any(r['id'] in chosen_ids for r in pair)]
+        available.sort(key=lambda pair:(
+            -int(all(r['id'] in replay_ids for r in pair)),
+            hashlib.sha256(('v17-replay:'+pair[0]['pair_id']).encode()).hexdigest()))
+        replay=[]
+        for pair in available[:16]:
+            for item in sorted(pair,key=lambda r:r['label']):
+                row=originals[item['id']];source_audit(row)
+                _,base=encode(tok,row);prompt=verifier_text(tok.decode(base['ids'],skip_special_tokens=False))
+                ids=tok.encode(prompt,add_special_tokens=False)
+                if len(ids)>48700:raise ValueError('BUDGET_REPLAY_INPUT_CAP')
+                replay.append(dict(id=row['id'],ids=ids,tokens=len(ids),label=row['label'],pair_id=row['pair_id'],
+                    domain=row['domain'],family=row['family'],template_id=row['template_id'],objective='bce',
+                    text_sha256=hashlib.sha256(prompt.encode()).hexdigest()))
+        if len(replay)!=32:raise ValueError('INSUFFICIENT_DISJOINT_NATIVE_REPLAY')
     roles=a.lab/'v14-native-role-data-20261020/data-v1';rm=json.loads((roles/'DONE.json').read_bytes())
     if sha(roles/'train.jsonl')!=rm['files']['train.jsonl']:raise ValueError('ROLE_DATA_DRIFT')
     role=[]
@@ -159,6 +180,8 @@ def run(a):
         family_counts={str(k):v for k,v in Counter((r['domain'],r['family']) for r in native+role).items()},
         selected_native_fp=hard_negatives,original_v15_sixteen_error_gate_passed=hard_negatives>=16,
         budget_recipe=budget,
+        old_replay_rows_moved_to_rationale=moved_replay,
+        replay_rebalanced_from_native_train=budget,
         future_execution_results_used_in_rationale=False,mutation_predicates_used_in_rationale=False,
         native_source_repetition_is_not_new_data=True,unavailable_human_review_not_replaced=True))
     write(a.out/'DONE.json',dict(complete=True,recipe='V17_NATIVE_BUDGET_RATIONALE_V1' if budget else 'V15_NATIVE_RATIONALE_V1',rows=len(records),sft_rows=len(native)+16,replay_bce_rows=32,

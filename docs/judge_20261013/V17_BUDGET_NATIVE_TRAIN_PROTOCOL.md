@@ -15,7 +15,7 @@ Freeze before optimization: apply original family/template-capped TRAIN
 selection; stable-prioritize its pairs with positive correct-twin mining scores,
 then retain its original round-robin order. Exactly 32 complete native pairs,
 at least eight observed TRAIN false accusations and two source domains. Add
-the fixed 16 TRAIN-only role rows and 32 balanced original BCE replay rows:
+the fixed 16 TRAIN-only role rows and 32 balanced native BCE replay rows:
 112 rows / 14 optimizer updates / one epoch. No replacement of failed source,
 quote, isolation, tokenizer, loss, gradient or memory checks. No filler.
 
@@ -34,3 +34,18 @@ only time remaining within that same absolute deadline.
 Human review unavailable. Exploratory only; no production/ZIP promotion or
 guaranteed private improvement. All native examples repeat known tasks under a
 new objective except the 16 constructed role cases; this is not new task data.
+
+## Technical data-partition correction, before any optimizer update
+
+The first V17 preparation failed: excluding the original 32 BCE replay rows
+also excluded some of the exact hard pairs that this recipe intended to train.
+Preserve its FAIL and archive. Do not lower the eight-error requirement again.
+Allow all source-audited native TRAIN pairs into SFT selection. Move any selected
+old replay pairs into SFT, without duplicating IDs. For the 32 BCE rows, prefer
+remaining complete original replay pairs, then fill with complete unselected
+source-audited native TRAIN pairs in deterministic SHA256 order of
+`v17-replay:<pair_id>`. Rebuild binary verifier tokens from visible source only.
+No evaluation-driven selection. Report moved IDs and the changed replay source.
+The original 32-row replay is no longer claimed unchanged in this arm.
+Total112 rows, eight-error gate, loss, layers, epoch and deadline unchanged.
+Stop if any source, isolation, label, pair, token or count check fails.
