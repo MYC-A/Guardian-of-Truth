@@ -21,3 +21,9 @@ reset. No smaller fallback if this fails. Archive partial runs honestly. Evaluat
 only the complete final checkpoint using the fixed comparison. Original V15's
 sixteen-error gate remains failed. This small, human-unreviewed objective test
 is exploratory and does not establish private gains or acceptance.
+
+Regression scope within the same deadline: replace the waiting757-row regression
+job with valid46-only, with both original .40 and .70 views unchanged. This
+prioritizes the known prior-V7 TP-loss check. Main V12-comparison coverage stays
+1893 rows. Report dev520/real191 final-adapter regressions as unmeasured, rather
+than promising full coverage outside the time budget. No threshold selection.

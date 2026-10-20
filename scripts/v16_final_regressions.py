@@ -29,10 +29,27 @@ def apply_veto(rows,before,hard,values):
 def analyse(a,source):
     metadata=json.loads((source/'EVAL_INDEX.json').read_bytes())['rows'];values={r['id']:r for r in read(a.out/'new/scores.jsonl')}
     rows=[r for r in metadata if r['id'] in values]
-    if len(values)!=757 or len(rows)!=757:raise ValueError('FINAL_REGRESSION_COVERAGE')
+    valid_only=getattr(a,'valid_only',False);expected=46 if valid_only else 757
+    if len(values)!=expected or len(rows)!=expected:raise ValueError('FINAL_REGRESSION_COVERAGE')
     def subset(scores):return {r['id']:values[r['id']] for r in scores}
     result=dict(complete=True,final_checkpoint_only=True,threshold=0,quota_refill=False,
         independent_validation=False,private_improvement_measured=False,production_promoted=False,views={})
+    if not valid_only:
+        broad_views(a,rows,values,result,subset)
+    else:
+        result['scope']='VALID46_ONLY_TIME_BUDGET';result['dev520_real191_rechecked']=False
+    best=read(a.lab/'v5-35b-20261019/pipeline-valid46-v4/base/work/decisions.jsonl')
+    lookup={r['original_id']:r for r in rows if 'valid46' in r['cohorts']};valid=[lookup[r['id']] for r in best]
+    if len(valid)!=46:raise ValueError('VALID_CONTROL_COUNT')
+    hard={r['key'] for r in best if r['hard']};ranked={r['key']:r['ranked_by'] for r in best}
+    for rate in (.4,.7):
+        before=decide(46,hard,ranked,rate)
+        result['views']['valid46_historical_best_MAX_'+str(int(100*rate))]=apply_veto(valid,before,hard,subset(valid))
+    result['scores_sha256']=sha(a.out/'new/scores.jsonl')
+    write(a.out/'RESULTS.json',result)
+
+
+def broad_views(a,rows,values,result,subset):
     # The current full open/MAX dev520 pool, not historical overall-only scores.
     dev=[r for r in rows if 'dev520' in r['cohorts']];lookup={r['original_id']:r for r in dev}
     v10=a.lab/'v10-full-profile-batch64-20261020/evaluation-v10';d=read(v10/'work/decisions.jsonl')
@@ -47,15 +64,6 @@ def analyse(a,source):
     scores={r['id']:r['score'] for r in read(old/'scores.jsonl') if r['arm']=='base'}
     before=decide(len(real),hard,{i:scores[r['id']] for i,r in enumerate(real)},.4)
     result['views']['real191_historical_overall_only_40']=apply_veto(real,before,hard,subset(real))
-    best=read(a.lab/'v5-35b-20261019/pipeline-valid46-v4/base/work/decisions.jsonl')
-    lookup={r['original_id']:r for r in rows if 'valid46' in r['cohorts']};valid=[lookup[r['id']] for r in best]
-    if len(valid)!=46:raise ValueError('VALID_CONTROL_COUNT')
-    hard={r['key'] for r in best if r['hard']};ranked={r['key']:r['ranked_by'] for r in best}
-    for rate in (.4,.7):
-        before=decide(46,hard,ranked,rate)
-        result['views']['valid46_historical_best_MAX_'+str(int(100*rate))]=apply_veto(valid,before,hard,subset(valid))
-    result['scores_sha256']=sha(a.out/'new/scores.jsonl')
-    write(a.out/'RESULTS.json',result)
 
 
 def run(a):
@@ -66,20 +74,23 @@ def run(a):
         v15=a.candidate_root or a.lab/'v15-native-rationale-20261020-v3';trained=v15/'training-v1/layers16'
         write(a.out/'START.json',dict(source_sha256=sha(Path(__file__)),
             protocol_sha256=sha(ROOT/'docs/judge_20261013/V16_FINAL_REGRESSION_PROTOCOL.md'),deadline=a.deadline,
-            final_checkpoint_only=True,no_quality_selection=True,phase='waiting'))
+            final_checkpoint_only=True,no_quality_selection=True,phase='waiting',valid_only=a.valid_only))
         while not (v15/'DONE.json').exists():
             if (v15/'FAIL.json').exists():raise ValueError('NATIVE_CANDIDATE_FAILED_GATES')
-            if time.time()>a.deadline-1500:raise TimeoutError('FINAL_REGRESSION_WAIT_LIMIT')
+            if time.time()>a.deadline-(300 if a.valid_only else 1500):raise TimeoutError('FINAL_REGRESSION_WAIT_LIMIT')
             time.sleep(30)
         while subprocess.check_output(['nvidia-smi','--query-gpu=memory.used','--format=csv,noheader,nounits'],text=True).strip()!='0':
-            if time.time()>a.deadline-1400:raise TimeoutError('GPU_RELEASE_LIMIT')
+            if time.time()>a.deadline-(240 if a.valid_only else 1400):raise TimeoutError('GPU_RELEASE_LIMIT')
             time.sleep(10)
         source=a.lab/'v7-workflow-20261020/prepared-v1';meta=json.loads((source/'PREPARED.json').read_bytes())
         if sha(source/'eval_tokens.jsonl')!=meta['eval_tokens_sha256'] or sha(source/'EVAL_INDEX.json')!=meta['eval_index_sha256']:
             raise ValueError('FROZEN_REGRESSION_SOURCE_DRIFT')
         selection=set(json.loads((source/'EVAL_PROTOCOL.json').read_bytes())['ids'])
+        if a.valid_only:
+            valid_ids={r['id'] for r in json.loads((source/'EVAL_INDEX.json').read_bytes())['rows'] if 'valid46' in r['cohorts']}
+            selection &= valid_ids
         rows=[r for r in read(source/'eval_tokens.jsonl') if r['id'] in selection]
-        if len(rows)!=757:raise ValueError('ROW_SELECTION_DRIFT')
+        if len(rows)!=(46 if a.valid_only else 757):raise ValueError('ROW_SELECTION_DRIFT')
         with (a.out/'verifier_inputs.jsonl').open('w') as f:
             for i,r in enumerate(rows):
                 record=dict(id=r['id'],position=i,ids=r['ids'],source_policy=r['source_policy'],
@@ -91,7 +102,7 @@ def run(a):
         shutil.copyfile(source/'EVAL_PROTOCOL.json',a.out/'EVAL_PROTOCOL.json')
         start=json.loads((a.out/'START.json').read_bytes())
         start.update(source_sha256=sha(ROOT/'scripts/v12_transfer.py'),controller_sha256=sha(Path(__file__)),
-            labels_read=False,threshold=0,rows=757,phase='final_verifier',eval_index_sha256=meta['eval_index_sha256'],
+            labels_read=False,threshold=0,rows=len(rows),phase='final_verifier',eval_index_sha256=meta['eval_index_sha256'],
             final_adapter=sha(trained/'adapter/adapter_model.safetensors'))
         write(a.out/'START.json',start)
         command=[sys.executable,str(ROOT/'scripts/v12_transfer.py'),'worker','--lab',str(a.lab),'--out',str(a.out),
@@ -117,4 +128,5 @@ if __name__=='__main__':
     p=argparse.ArgumentParser()
     for k in ('lab','out'):p.add_argument('--'+k,type=Path,required=True)
     p.add_argument('--candidate-root',type=Path)
+    p.add_argument('--valid-only',action='store_true')
     p.add_argument('--deadline',type=float,required=True);run(p.parse_args())
