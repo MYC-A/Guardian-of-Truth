@@ -27,8 +27,8 @@
 3 TP. Результат не поддерживает немедленное подключение текущей LoRA как veto.
 Это НЕ точная абляция final-only: adapter final видел notes собственного
 адаптированного prepass. Нового инференса и обучения не было.
-Raw JSON: локально `reuse-verifier-score-check-v1/RESULTS.json`, его SHA и копия
-сохранены в evidence `REUSE_VERIFIER_SCORE_CHECK.json`.
+Raw JSON: локально `reuse-verifier-score-check-v1/RESULTS.json`; копия
+сохранена в evidence `REUSE_VERIFIER_SCORE_CHECK.json`.
 
 ## Ограниченный следующий эксперимент
 
