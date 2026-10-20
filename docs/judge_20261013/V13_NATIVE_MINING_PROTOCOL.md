@@ -11,10 +11,12 @@ mechanical rows are excluded from this pass: require native execution receipts.
 Do not invent explanations from future native results or from mutation metadata.
 No evaluation text, label, model error or source component can become a seed.
 
-Encode the unchanged production input, then the V7 rationale-verifier question.
-Score exact YES/NO at the position where a review would start: this is explicitly
-a TRAIN mining proxy, NOT the deployed post-review verifier score or a quality
-metric. Current frozen V7 adapter; prove all 100 modules bound on GPU. One pass,
+Encode the unchanged production input, then the established V6 direct binary
+verifier question (verifier_text), which explicitly requests a YES/NO answer.
+Do not constrain YES/NO at a position requesting the start of a Rule/Evidence
+rationale. The direct binary score is a TRAIN mining proxy, NOT the deployed
+post-review verifier score or an evaluation metric. Current frozen V7 adapter;
+prove all 100 modules bound on GPU. One pass,
 chunk 64, temperature 1 constrained to YES/NO, seed 0. No result cache or retries.
 Sort pairs by a correct twin's positive score, then positive-twin missed score,
 then stable hash. Preserve both twins. Limit eight pairs per domain/family and
@@ -28,3 +30,9 @@ Mining repeats do not create new data. This stage does not train, select an
 evaluation threshold, promote production or assemble a ZIP. Training needs a
 separate frozen objective and an audited rationale corpus; metadata-only
 predicate dictionaries are not valid explanations of the visible current turn.
+
+Pre-inference technical revision: prepared-v1 accidentally requested a rationale
+before the constrained binary token. No mining GPU call or quality metric was
+produced from that version. Archive it as superseded; prepared-v2 uses the proper
+binary question. The first queue is superseded while waiting for V12, before any
+mining. Both versions use the same protected source and audited native pairs.

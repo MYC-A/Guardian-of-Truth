@@ -17,7 +17,7 @@ def run(a):
     a.out.mkdir(parents=True,exist_ok=False);active=None;started=time.monotonic()
     try:
         dependency=a.lab/'v12-transfer-20261020/evaluation-v12'
-        prepared=a.out.parent/'prepared-v1'
+        prepared=a.out.parent/'prepared-v2'
         write(a.out/'START.json',dict(deadline=a.deadline,dependency=str(dependency),
             source_sha256=sha(Path(__file__)),purpose='TRAIN-only mining; training not scheduled'))
         while True:

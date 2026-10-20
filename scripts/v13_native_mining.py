@@ -13,6 +13,13 @@ ROOT=Path(__file__).resolve().parents[1]
 sys.path[:0]=[str(ROOT),str(ROOT/'src'),str(ROOT/'scripts')]
 from scripts.v5_35b_common import read,sha,write,verify_frozen,verify_model
 from scripts.v12_transfer import ADAPTER_SHA
+from scripts.v6_verifier_data import verifier_text
+
+
+def mining_text(text):
+    # A constrained binary score needs a binary question, not a request to start
+    # a rationale with "Rule:". This is a direct verifier mining score.
+    return verifier_text(text)
 
 
 def paired(rows):
@@ -52,7 +59,6 @@ def prepare(a):
     from transformers import AutoTokenizer
     from scripts.v6_verifier_data import source_audit
     from scripts.v5_35b_prepare import encode
-    from scripts.v7_prepare import reasoning_text
     a.out.mkdir(parents=True,exist_ok=False)
     frozen=a.lab/'v4-20261019/frozen-v2';verify_frozen(frozen)
     protected=read(frozen/'dev.jsonl')+read(frozen/'holdout.jsonl')
@@ -74,7 +80,7 @@ def prepare(a):
         for r in pair:
             _,v=encode(tok,r);text=tok.decode(v['ids'],skip_special_tokens=False)
             if hashlib.sha256(text.encode()).hexdigest()!=v['text_sha256']:raise ValueError('SOURCE_ROUNDTRIP')
-            prompt=reasoning_text(text);ids=tok.encode(prompt,add_special_tokens=False)
+            prompt=mining_text(text);ids=tok.encode(prompt,add_special_tokens=False)
             outputs.append(dict(id=r['id'],ids=ids,tokens=len(ids),text_sha256=hashlib.sha256(prompt.encode()).hexdigest()))
         if any(r['tokens']>48700 for r in outputs):too_long.append(pair[0]['pair_id']);continue
         encoded.extend(outputs)
@@ -87,7 +93,7 @@ def prepare(a):
         index_sha256=sha(a.out/'TRAIN_INDEX.jsonl'),max_tokens=max(r['tokens'] for r in encoded),
         tokens=sum(r['tokens'] for r in encoded),family_counts={str(k):v for k,v in Counter((r['domain'],r['family']) for r in metadata).items()},
         source_sha256=sha(Path(__file__)),protocol_sha256=sha(ROOT/'docs/judge_20261013/V13_NATIVE_MINING_PROTOCOL.md'),
-        eval_used=False,training_started=False,purpose='TRAIN exact-position mining proxy; not deployment score'))
+        eval_used=False,training_started=False,purpose='TRAIN direct binary verifier; not post-review deployment score'))
     from scripts.v7_control import export
     export(a.out)
 
@@ -134,7 +140,7 @@ def mine(a):
             family_counts={str(k):v for k,v in Counter((r['domain'],r['family']) for r in chosen).items()},
             scores_sha256=sha(a.out/'scores.jsonl'),selection_sha256=sha(a.out/'SELECTED_TRAIN_INDEX.jsonl'),
             source_sha256=sha(Path(__file__)),training_started=False,eval_used=False,
-            caveat='Exact score before rationale generation is a mining proxy, not deployed verifier quality',seconds=time.monotonic()-started)
+            caveat='Direct binary verifier is a mining proxy, not deployed post-review verifier quality',seconds=time.monotonic()-started)
         write(a.out/'RESULTS.json',result);write(a.out/'DONE.json',dict(complete=True,results_sha256=sha(a.out/'RESULTS.json')))
     except Exception as e:
         write(a.out/'FAIL.json',dict(error=str(e),traceback=traceback.format_exc()));raise
