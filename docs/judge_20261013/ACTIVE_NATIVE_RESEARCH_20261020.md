@@ -1,10 +1,11 @@
 # Active research continuation, 20 October 2026
 
-Snapshot after full V12 control completed; verifier arms still running.
+Snapshot: V12 complete and independently audited offbox; V13 TRAIN mining active.
 No new private result, production promotion or ZIP is claimed. User authorizes
 continued genuine improvement work without fitting evaluation data. The latest
-GPU authorization is open; the finite allocations below are agent budgets,
-not new user deadlines.
+GPU authorization is now limited by the user's latest instruction to one,
+possibly two hours. The v4 total deadline is recorded locally in
+`artifacts/v15/ALLOCATION_V4.json`; no automatic extension.
 
 ## Running dependency chain
 
@@ -12,22 +13,25 @@ not new user deadlines.
    `/workspace/guardian-lab-20261018/v12-transfer-20261020/evaluation-v12`.
    Full best-profile overall/open/MAX control completed1893/1893 exact overall
    and final scores, without trimming/fallback; positive pool757, quota.40.
-   Fresh base and frozen V7 LoRA candidate-only verifiers follow, threshold0,
+   Fresh base and frozen V7 LoRA candidate-only verifiers completed, threshold0,
    hard protection, no refill. Labels are joined only after both arms freeze.
    This cohort previously evaluated older4B adapters: EXPLORATORY, not pristine.
    Research eager/chunk64/extended time is not competition cold-start evidence.
+   F1: control .676692, base verifier .692308 (30 FP removed, no TP loss),
+   previous V7 LoRA .687692 (27 FP removed, three TP lost). See
+   `V12_TRANSFER_RESULTS.md`. These outcomes do not change the frozen V15 recipe.
 
 2. `guardian-lab-v13-native-queue-v2`:
    `/workspace/guardian-lab-20261018/v13-native-mining-20261020`.
-   Wait for complete V12 and idle GPU, then score1112 source-audited native TRAIN
+   V12 dependency passed; now scoring1112 source-audited native TRAIN
    rows with the proper direct YES/NO verifier question. This is a mining proxy,
    not post-review deployment quality. Native receipt requirement excludes
    legacy rows without such receipts.556 complete pairs, maximum9885 input
    tokens. Only6 rows in this native subset are telecom; it lacks actor scope.
    Never use evaluation errors as training seeds.
 
-3. `guardian-lab-v15-native-train-v3`:
-   `/workspace/guardian-lab-20261018/v15-native-rationale-20261020-v3`.
+3. `guardian-lab-v15-native-train-v4`:
+   `/workspace/guardian-lab-20261018/v15-native-rationale-20261020-v4`.
    Currently waiting for mining. Build the frozen V15 recipe, require>=16
    selected native TRAIN correct twins with positive direct-mining scores,
    then at most one epoch, last16 layers, original V5 warm start. Joint loss:
@@ -35,16 +39,26 @@ not new user deadlines.
    At most128 native SFT rows +16 new role rows +32 replay. Minimum64 native
    SFT rows. Pair/template caps, no duplicate IDs, no partial batches. No fill
    from protected data. If the gates fail, preserve FAIL and skip training.
-   Training allocation<=3h with separate quality reserve; outer allocation5h.
+   Training maximum5400 seconds; total remaining allocation7200 seconds with
+   quality reserve900 seconds. See `V15_TWO_HOUR_BUDGET_AMENDMENT.md`.
    Evaluate complete final weights only, against the same frozen V12 pool and
    BOTH base and previous V7 verifier. No checkpoint/threshold selection.
 
-The initial V13 prepared-v1/queue-v1 and V15 waiting-controller v1/v2 were
+4. `guardian-lab-v16-final-regressions-v3`:
+   `/workspace/guardian-lab-20261018/v16-final-regressions-20261020-v3/evaluation-v16`.
+   Wait for v4 complete final weights; score dev520/real191/valid46 with the
+   original fixed views, including valid46 .40 and .70. Same absolute deadline
+   as v4; skip if insufficient reserve. No quality-feedback training.
+
+The initial V13 prepared-v1/queue-v1 and V15 waiting-controller v1/v2/v3 were
 superseded BEFORE any mining/native optimization, with preserved receipts.
 No native training calls occurred in those superseded controllers. Current V13
 binary-question contract and V15 joint loss were frozen before mining scores.
 Six deployed V15 code/protocol hashes match local bytes in
 `CODE_FREEZE_BEFORE_TRAINING.json`.
+V16 v2 failed before inference because its copied code snapshot lacked its
+protocol document. Preserved FAIL; v3 includes the document. No GPU quality
+retry, threshold or data change.
 
 ## Data and technical evidence
 
@@ -85,7 +99,7 @@ Protected histories, labels and model output blobs stay off Git.
 
 ## Supervision and recovery
 
-Finite Windows collectors sync V12, V13 and V15-v3 archives to corresponding
+Finite Windows collectors sync V12, V13, V15-v4 and V16-v3 archives to corresponding
 `A:/Guardian-submissions/guardian-v*-20261020*` directories. They verify archive
 size/SHA after copying. V15 exports full optimizer/RNG/order with the final
 checkpoint, or the last complete checkpoint if training fails. No resets of a
