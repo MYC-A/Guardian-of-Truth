@@ -19,6 +19,7 @@ def run(a):
         'training-v1/DONE.json','training-v1/FAIL.json','training-v1/TECHNICAL_FALLBACK.json','training-v1-export.INDEX.json',
         'evaluation-v1/DONE.json','evaluation-v1/FAIL.json','evaluation-v1/RESULTS.json','evaluation-v1-export.INDEX.json',
         'data-export.INDEX.json','first-checkpoint-export.INDEX.json']
+    names+=['final-recovery-export.INDEX.json']
     for profile in ('layers16','layers8'):
         names+=['training-v1/'+profile+'/'+n for n in ('START.json','TECHNICAL_GATE.json','MODEL_READY.json','PROGRESS.json','CURRENT_ROW.json','TRAINED.json','FAIL.json')]
     for arm in ('base','old','new'):
@@ -26,6 +27,13 @@ def run(a):
     remote_root='/workspace/guardian-lab-20261018/v7-workflow-20261020'
     write(a.out/'COLLECTOR_START.json',dict(remote_root=remote_root,interval_seconds=60,expires_unix=a.expires,source_sha256=hashlib.sha256(Path(__file__).read_bytes()).hexdigest()))
     downloaded={};errors=[]
+    previous=a.out/'DOWNLOADED.json'
+    if previous.exists():
+        for name,digest in json.loads(previous.read_bytes()).items():
+            path=a.out/name
+            if path.exists():
+                with path.open('rb') as f:actual=hashlib.file_digest(f,'sha256').hexdigest()
+                if actual==digest:downloaded[name]=digest
     while time.time()<a.expires:
         code='ROOT='+repr(remote_root)+'\nNAMES='+repr(names)+'\n'+'''
 from pathlib import Path
@@ -44,6 +52,10 @@ for profile in ('layers16','layers8'):
  cp=r/'training-v1'/profile/'checkpoint-001'
  if (cp/'CHECKPOINT.json').exists():
   archive('first-checkpoint-export',[cp/'adapter',cp/'CHECKPOINT.json'])
+if (r/'training-v1/DONE.json').exists():
+ destination=Path(json.loads((r/'training-v1/DONE.json').read_bytes())['training_path'])
+ if destination.parent!=r/'training-v1':raise ValueError('UNSAFE_RECOVERY_PATH')
+ archive('final-recovery-export',[destination/'final',destination/'TRAINED.json',destination/'ORDER.json'])
 print(json.dumps({n:json.loads((r/n).read_bytes()) for n in NAMES if (r/n).exists()}))
 '''
         try:

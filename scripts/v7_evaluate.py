@@ -32,6 +32,16 @@ def keep_accusation(row):
 def worker(a):
     prepared=json.loads((a.data/'PREPARED.json').read_bytes())
     protocol=json.loads((a.data/'EVAL_PROTOCOL.json').read_bytes())
+    frozen_path=a.out.parent/'EVAL_CODE_FROZEN.json'
+    if not frozen_path.exists():
+        if a.arm!='base':raise ValueError('MISSING_INITIAL_EVALUATOR_FREEZE')
+        write(frozen_path,dict(evaluator_sha256=sha(Path(__file__)),
+            binding_sha256=sha(Path(__file__).with_name('v5_valid46_pipeline.py')),
+            controller_sha256=json.loads((a.out.parent/'START.json').read_bytes())['source_sha256'],
+            before_quality_workers=True,eval_protocol_sha256=sha(a.data/'EVAL_PROTOCOL.json')))
+    frozen=json.loads(frozen_path.read_bytes())
+    if sha(Path(__file__))!=frozen['evaluator_sha256'] or sha(Path(__file__).with_name('v5_valid46_pipeline.py'))!=frozen['binding_sha256']:
+        raise ValueError('EVALUATOR_CHANGED_AFTER_FREEZE')
     if sha(a.data/'eval_tokens.jsonl')!=prepared['eval_tokens_sha256']:raise ValueError('EVAL_INPUT_DRIFT')
     selection=set(protocol['ids']);rows=[r for r in read(a.data/'eval_tokens.jsonl') if r['id'] in selection]
     if len(rows)!=len(selection) or any(set(r)!={'id','ids','tokens','text_sha256','source_policy'} for r in rows):raise ValueError('EVAL_SCHEMA_GOLD_LEAK')
@@ -104,6 +114,7 @@ def worker(a):
                 for r in result:f.write(json.dumps(r)+'\n')
     write(a.out/'DONE.json',dict(complete=True,rows=done,arm=a.arm,input_sha256=prepared['eval_tokens_sha256'],
         eval_protocol_sha256=sha(a.data/'EVAL_PROTOCOL.json'),scores_sha256=sha(a.out/'scores.jsonl'),
+        evaluator_sha256=sha(Path(__file__)),binding_sha256=sha(Path(__file__).with_name('v5_valid46_pipeline.py')),
         repeat_scores_sha256=sha(a.out/'repeat_scores.jsonl'),seconds=time.monotonic()-started,
         timing={k:sum(t[k] for t in timing) for k in timing[0]},valid46_measurements=3,
         adapter_sha256=sha(adapter/'adapter_model.safetensors') if adapter else None,source_modules=expected,
@@ -171,6 +182,10 @@ def analyse(data,out,lab):
                 original_pool40_after_verifier=metrics(rows,gold,filtered),
                 pool40_removed_fp=sum(z and not y and gold[r['id']]==0 for r,y,z in zip(rows,filtered,original)),
                 pool40_lost_tp=sum(z and not y and gold[r['id']]==1 for r,y,z in zip(rows,filtered,original)))
+        common=[r for r in rows if all(arms[arm][r['id']]['admitted'] for arm in arms)]
+        result['cohorts'][cohort]['common_admitted_subset']=dict(rows=len(common),
+            arms={arm:metrics(common,gold,[int(arms[arm][r['id']]['score']>0) for r in common]) for arm in arms},
+            warning='post-generation diagnostic subset; not independent or the primary acceptance metric')
         result['cohorts'][cohort]['paired_group_bootstrap']=bootstrap(rows,gold,decisions['base'],decisions['new'])
     best=read(lab/'v5-35b-20261019/pipeline-valid46-v4/base/work/decisions.jsonl')
     hard={r['key'] for r in best if r['hard']};p70=decide(46,hard,{r['key']:r['ranked_by'] for r in best},.7)
