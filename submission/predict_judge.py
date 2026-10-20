@@ -47,7 +47,9 @@ def main(argv=None):
     config_path=root/'JUDGE_CONFIG.json'
     import json
     selected=json.loads(config_path.read_text(encoding='utf-8')) if config_path.is_file() else {}
-    if selected.get('ensemble'):
+    if selected.get('lora35_verifier'):
+        from scripts.judge35_submission import run
+    elif selected.get('ensemble'):
         from scripts.judge_blend_submission import run
     else:
         from scripts.judge_submission import run

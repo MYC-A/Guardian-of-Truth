@@ -1,5 +1,18 @@
 # Active research continuation, 20 October 2026
 
+LATEST OVERRIDE: user requested immediate experimental ZIP with existing35B LoRA
+and current fixes. Training and queued regressions stopped. V18 and V17v2 made
+zero optimizer updates; neither unfinished adapter is included. V19 assembled
+`A:/Guardian-submissions/guardian-judge-qwen36-35b-lora-v7-fixes40-20261020.zip`,
+30,706,314,899 bytes, SHA256
+`ffd7d9d64eae10819456722f0cb3a49ba0657923fa46dd5da9f5f940f4512123`.
+The latest completed V7 35B adapter is applied as a candidate-only verifier.
+All base shards and changed files independently hash-verified;42 CPU tests pass.
+GPU verifier smoke passed100 source modules/124 GPU pairs and2 exact candidates.
+Full/private cold runtime and quality remain unmeasured. See
+`V19_RELEASE35_ASSEMBLY.md` and `v19_evidence/`. The dependency chain below is
+historical, not authorization to restart training after this packaging request.
+
 Snapshot: V12 complete and independently audited offbox; V13 TRAIN mining done.
 V15 failed its original error-count gate; V17 limited recipe preparing to train.
 No new private result, production promotion or ZIP is claimed. User authorizes
